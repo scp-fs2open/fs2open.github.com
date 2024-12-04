@@ -1049,6 +1049,144 @@ ADE_FUNC(sendPlainMessage,
 	return ADE_RETURN_TRUE;
 }
 
+// Map from the Lua enums to the message type enums
+int getBuiltinMessageType(enum_h* enumValue)
+{
+	switch (enumValue->index) {
+	case LE_BUILTIN_MESSAGE_ATTACK_TARGET:
+		return MESSAGE_ATTACK_TARGET;
+	case LE_BUILTIN_MESSAGE_DISABLE_TARGET:
+		return MESSAGE_DISABLE_TARGET;
+	case LE_BUILTIN_MESSAGE_DISARM_TARGET:
+		return MESSAGE_DISARM_TARGET;
+	case LE_BUILTIN_MESSAGE_ATTACK_SUBSYSTEM:
+		return MESSAGE_ATTACK_SUBSYSTEM;
+	case LE_BUILTIN_MESSAGE_PROTECT_TARGET:
+		return MESSAGE_PROTECT_TARGET;
+	case LE_BUILTIN_MESSAGE_FORM_ON_MY_WING:
+		return MESSAGE_FORM_ON_MY_WING;
+	case LE_BUILTIN_MESSAGE_COVER_ME:
+		return MESSAGE_COVER_ME;
+	case LE_BUILTIN_MESSAGE_IGNORE:
+		return MESSAGE_IGNORE;
+	case LE_BUILTIN_MESSAGE_ENGAGE:
+		return MESSAGE_ENGAGE;
+	case LE_BUILTIN_MESSAGE_WARP_OUT:
+		return MESSAGE_WARP_OUT;
+	case LE_BUILTIN_MESSAGE_DOCK_YES:
+		return MESSAGE_DOCK_YES;
+	case LE_BUILTIN_MESSAGE_YESSIR:
+		return MESSAGE_YESSIR;
+	case LE_BUILTIN_MESSAGE_NOSIR:
+		return MESSAGE_NOSIR;
+	case LE_BUILTIN_MESSAGE_NO_TARGET:
+		return MESSAGE_NO_TARGET;
+	case LE_BUILTIN_MESSAGE_CHECK_6:
+		return MESSAGE_CHECK_6;
+	case LE_BUILTIN_MESSAGE_PLAYER_DIED:
+		return MESSAGE_PLAYER_DIED;
+	case LE_BUILTIN_MESSAGE_PRAISE:
+		return MESSAGE_PRAISE;
+	case LE_BUILTIN_MESSAGE_HIGH_PRAISE:
+		return MESSAGE_HIGH_PRAISE;
+	case LE_BUILTIN_MESSAGE_BACKUP:
+		return MESSAGE_BACKUP;
+	case LE_BUILTIN_MESSAGE_HELP:
+		return MESSAGE_HELP;
+	case LE_BUILTIN_MESSAGE_WINGMAN_SCREAM:
+		return MESSAGE_WINGMAN_SCREAM;
+	case LE_BUILTIN_MESSAGE_PRAISE_SELF:
+		return MESSAGE_PRAISE_SELF;
+	case LE_BUILTIN_MESSAGE_REARM_REQUEST:
+		return MESSAGE_REARM_REQUEST;
+	case LE_BUILTIN_MESSAGE_REPAIR_REQUEST:
+		return MESSAGE_REPAIR_REQUEST;
+	case LE_BUILTIN_MESSAGE_PRIMARIES_LOW:
+		return MESSAGE_PRIMARIES_LOW;
+	case LE_BUILTIN_MESSAGE_REARM_PRIMARIES:
+		return MESSAGE_REARM_PRIMARIES;
+	case LE_BUILTIN_MESSAGE_REARM_WARP:
+		return MESSAGE_REARM_WARP;
+	case LE_BUILTIN_MESSAGE_ON_WAY:
+		return MESSAGE_ON_WAY;
+	case LE_BUILTIN_MESSAGE_ALREADY_ON_WAY:
+		return MESSAGE_ALREADY_ON_WAY;
+	case LE_BUILTIN_MESSAGE_REPAIR_DONE:
+		return MESSAGE_REPAIR_DONE;
+	case LE_BUILTIN_MESSAGE_REPAIR_ABORTED:
+		return MESSAGE_REPAIR_ABORTED;
+	case LE_BUILTIN_MESSAGE_SUPPORT_KILLED:
+		return MESSAGE_SUPPORT_KILLED;
+	case LE_BUILTIN_MESSAGE_ALL_ALONE:
+		return MESSAGE_ALL_ALONE;
+	case LE_BUILTIN_MESSAGE_ARRIVE_ENEMY:
+		return MESSAGE_ARRIVE_ENEMY;
+	case LE_BUILTIN_MESSAGE_OOPS:
+		return MESSAGE_OOPS;
+	case LE_BUILTIN_MESSAGE_HAMMER_SWINE:
+		return MESSAGE_HAMMER_SWINE;
+	case LE_BUILTIN_MESSAGE_AWACS_75:
+		return MESSAGE_AWACS_75;
+	case LE_BUILTIN_MESSAGE_AWACS_25:
+		return MESSAGE_AWACS_25;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING:
+		return MESSAGE_STRAY_WARNING;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING_FINAL:
+		return MESSAGE_STRAY_WARNING_FINAL;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_HIT:
+		return MESSAGE_INSTRUCTOR_HIT;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_ATTACK:
+		return MESSAGE_INSTRUCTOR_ATTACK;
+	case LE_BUILTIN_MESSAGE_ALL_CLEAR:
+		return MESSAGE_ALL_CLEAR;
+	case LE_BUILTIN_MESSAGE_PERMISSION:
+		return MESSAGE_PERMISSION;
+	case LE_BUILTIN_MESSAGE_STRAY:
+		return MESSAGE_STRAY;
+	default:
+		return -1;
+	}
+}
+
+ADE_FUNC(sendBuiltinMessage,
+	l_Mission,
+	"ship sender, ship subject, enumeration type",
+	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
+	"The subject can be nil or it can be the target of the message like a response to a destroy order."
+	"The type must be one of the BUILTIN_MESSAGE enumerations.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	ship* sender = nullptr;
+	ship* subject = nullptr;
+	int messageType = -1;
+
+	enum_h* ehp = nullptr;
+
+	object_h* sender_ship_h = nullptr;
+	object_h* subject_ship_h = nullptr;
+
+	if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
+		return ADE_RETURN_FALSE;
+
+	if (sender_ship_h == nullptr || !sender_ship_h->isValid())
+		return ADE_RETURN_FALSE;
+
+	sender = &Ships[sender_ship_h->objp()->instance];
+
+	if (subject_ship_h != nullptr || subject_ship_h->isValid())
+		subject = &Ships[subject_ship_h->objp()->instance];
+
+	messageType = getBuiltinMessageType(ehp);
+
+	if (messageType == -1 || messageType >= Num_Message_Types) {
+		LuaError(L, "Message type is invalid!");
+		return ADE_RETURN_FALSE;
+	}
+
+	return message_send_builtin(messageType, sender, subject);
+}
+
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
 	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",

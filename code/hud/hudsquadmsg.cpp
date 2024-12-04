@@ -842,19 +842,11 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip, bool isWing 
 	}
 }
 
-SCP_string hud_squadmsg_get_order_name(int command)
+const SCP_string& hud_squadmsg_get_order_name(int command)
 {
 	Assertion(SCP_vector_inbounds(Player_orders, command), "Order does not exist! Get a coder!");
-	
-	for (auto order : Player_orders) {
-		if (order.ordering == command) {
-			return order.hud_name;
-		}
-	}
 
-	// Should be unreachable
-	return "Unknown Order!";
-
+	return Player_orders[command].hud_name;
 }
 
 scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
@@ -862,82 +854,73 @@ scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
 	Assertion(SCP_vector_inbounds(Player_orders, command), "Order does not exist! Get a coder!");
 
 	switch (command) {
-		case ATTACK_TARGET_ITEM:
-			return scripting::api::LE_ATTACK_TARGET_SQUAD_MESSAGE;
-		case DISABLE_TARGET_ITEM:
-			return scripting::api::LE_DISABLE_TARGET_SQUAD_MESSAGE;
-		case DISARM_TARGET_ITEM:
-			return scripting::api::LE_DISARM_TARGET_SQUAD_MESSAGE;
-		case PROTECT_TARGET_ITEM:
-			return scripting::api::LE_PROTECT_TARGET_SQUAD_MESSAGE;
-		case IGNORE_TARGET_ITEM:
-			return scripting::api::LE_IGNORE_TARGET_SQUAD_MESSAGE;
-		case FORMATION_ITEM:
-			return scripting::api::LE_FORMATION_SQUAD_MESSAGE;
-		case COVER_ME_ITEM:
-			return scripting::api::LE_COVER_ME_SQUAD_MESSAGE;
-		case ENGAGE_ENEMY_ITEM:
-			return scripting::api::LE_ENGAGE_ENEMY_SQUAD_MESSAGE;
-		case CAPTURE_TARGET_ITEM:
-			return scripting::api::LE_CAPTURE_TARGET_SQUAD_MESSAGE;
-		case REARM_REPAIR_ME_ITEM:
-			return scripting::api::LE_REARM_REPAIR_ME_SQUAD_MESSAGE;
-		case ABORT_REARM_REPAIR_ITEM:
-			return scripting::api::LE_ABORT_REARM_REPAIR_SQUAD_MESSAGE;
-		case STAY_NEAR_ME_ITEM:
-			return scripting::api::LE_STAY_NEAR_ME_SQUAD_MESSAGE;
-		case STAY_NEAR_TARGET_ITEM:
-			return scripting::api::LE_STAY_NEAR_TARGET_SQUAD_MESSAGE;
-		case KEEP_SAFE_DIST_ITEM:
-			return scripting::api::LE_KEEP_SAFE_DIST_SQUAD_MESSAGE;
-		case DEPART_ITEM:
-			return scripting::api::LE_DEPART_SQUAD_MESSAGE;
-		case DISABLE_SUBSYSTEM_ITEM:
-			return scripting::api::LE_DISABLE_SUBSYSTEM_SQUAD_MESSAGE;
-		default:
-			return scripting::api::LE_LUA_AI_SQUAD_MESSAGE;
+	case ATTACK_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ATTACK_TARGET;
+	case DISABLE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISABLE_TARGET;
+	case DISARM_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISARM_TARGET;
+	case PROTECT_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_PROTECT_TARGET;
+	case IGNORE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_IGNORE_TARGET;
+	case FORMATION_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_FORMATION;
+	case COVER_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_COVER_ME;
+	case ENGAGE_ENEMY_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ENGAGE_ENEMY;
+	case CAPTURE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_CAPTURE_TARGET;
+	case REARM_REPAIR_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_REARM_REPAIR_ME;
+	case ABORT_REARM_REPAIR_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ABORT_REARM_REPAIR;
+	case STAY_NEAR_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_STAY_NEAR_ME;
+	case STAY_NEAR_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_STAY_NEAR_TARGET;
+	case KEEP_SAFE_DIST_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_KEEP_SAFE_DIST;
+	case DEPART_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DEPART;
+	case DISABLE_SUBSYSTEM_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISABLE_SUBSYSTEM;
+	default:
+		return scripting::api::LE_SQUAD_MESSAGE_LUA_AI;
 	}
-
 }
 
 // Run the order issued hook. When an order is issued we first check if we should override. If so, then we run the hook and return true
 // which will skip the rest of the order code.
-bool hud_squadmsg_run_order_issued_hook(int command, ship* recipientShip, int recipientWing, ship* target, ship_subsys* subsys, bool check_override = false)
+bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* target, ship_subsys* subsys)
 {
-	
+	bool isOverride = false;
+
 	if (scripting::hooks::OnHudCommOrderIssued->isActive()) {
 		object_ship_wing_point_team* recipient = nullptr;
 
 		if (recipientShip != nullptr) {
 			recipient = new object_ship_wing_point_team(recipientShip);
-		} else if (recipientWing > 0) {
-			recipient = new object_ship_wing_point_team(&Wings[recipientWing]);
+		} else if (recipientWing != nullptr) {
+			recipient = new object_ship_wing_point_team(recipientWing);
 		}
 
 		auto paramList = scripting::hook_param_list(
-				scripting::hook_param("Player", 'o', Player_obj),
-				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(*recipient)), //Testing. Either keep this or Ship/Wing. Not both
-				scripting::hook_param("RecipientShip", 'o', &Objects[recipientShip->objnum]),
-				scripting::hook_param("RecipientWing", 'o', scripting::api::l_Wing.Set(recipientWing)),
+				scripting::hook_param("Sender", 'o', Player_obj),
+				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(*recipient)),
 				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
 				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),
 				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command)))),
 				scripting::hook_param("Name", 's', hud_squadmsg_get_order_name(command).c_str())
 			);
-		if (check_override) {
-			if (scripting::hooks::OnHudCommOrderIssued->isOverride(paramList)) {
-				scripting::hooks::OnHudCommOrderIssued->run(paramList);
-				return true;
-			} else {
-				return false;
-			}
-		} else {
-			scripting::hooks::OnHudCommOrderIssued->run(paramList);
-			return false;
+		if (scripting::hooks::OnHudCommOrderIssued->isOverride(paramList)) {
+			isOverride = true;
 		}
+		scripting::hooks::OnHudCommOrderIssued->run(paramList);
 	}
 
-	return false;
+	return isOverride;
 }
 
 // function to send an order to all fighters/bombers.
@@ -1167,7 +1150,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 			}
 		}
 
-		if (hud_squadmsg_run_order_issued_hook(command, ordering_shipp, -1, target, ainfo->targeted_subsys, true)) {
+		if (hud_squadmsg_run_order_issued_hook(command, ordering_shipp, &Ships[shipnum], nullptr, target, ainfo->targeted_subsys)) {
 			return 0; // No message was sent
 		}
 
@@ -1366,8 +1349,6 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 
 		}
 
-		hud_squadmsg_run_order_issued_hook(command, ordering_shipp, -1, target, ainfo->targeted_subsys);
-
 		// handle case of messaging one ship.  Deal with messaging all fighters next.
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
@@ -1469,7 +1450,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		Assert (Wings[wingnum].ship_index[0] != -1);
 		wing_team = Ships[Wings[wingnum].ship_index[0]].team;
 
-		if (hud_squadmsg_run_order_issued_hook(command, nullptr, wingnum, target, ainfo->targeted_subsys, true)) {
+		if (hud_squadmsg_run_order_issued_hook(command, ordering_shipp, nullptr, &Wings[wingnum], target, ainfo->targeted_subsys)) {
 			return 0; // No message was sent
 		}
 
@@ -1592,8 +1573,6 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		}
 		}
-
-		hud_squadmsg_run_order_issued_hook(command, nullptr, wingnum, target, ainfo->targeted_subsys);
 
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
