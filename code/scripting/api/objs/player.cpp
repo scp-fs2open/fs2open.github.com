@@ -15,6 +15,7 @@
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/lua/LuaTable.h"
 #include "ship/ship.h"
+#include "freespace.h"
 
 namespace scripting {
 namespace api {
@@ -309,8 +310,20 @@ ADE_FUNC(loadCampaignSavefile, l_Player, "string campaign = \"<current>\"", "Loa
 		return ADE_RETURN_FALSE;
 	}
 
+	char temp_buffer[MAX_FILENAME_LEN + 1];	// see current_campaign field in player class
+
 	if (savefile == nullptr) {
 		savefile = plh->get()->current_campaign;
+	} else {
+		memset(temp_buffer, 0, sizeof(temp_buffer));
+		strncpy(temp_buffer, savefile, MAX_FILENAME_LEN);
+
+		// drop the extension if it exists
+		auto p = stristr(temp_buffer, FS_CAMPAIGN_FILE_EXT);
+		if (p) {
+			*p = '\0';
+			savefile = temp_buffer;
+		}
 	}
 
 	pilotfile loader;

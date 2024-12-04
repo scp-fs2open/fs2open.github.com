@@ -19,6 +19,7 @@
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "stats/medals.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 #define REDALERT_INTERNAL
@@ -1595,8 +1596,7 @@ void pilotfile::csg_close()
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)
 {
-	char base[_MAX_FNAME] = { '\0' };
-	std::ostringstream buf;
+	SCP_string campaign_filename;
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		return false;
@@ -1610,18 +1610,18 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 	Assert( (Player_num >= 0) && (Player_num < MAX_PLAYERS) );
 	p = _p;
 
+	auto base = util::get_file_part(campaign);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
+
 	// build up filename for the savefile...
-	_splitpath((char*)campaign, NULL, NULL, base, NULL);
-
-	buf << p->callsign << "." << base << ".csg";
-
-	filename = buf.str().c_str();
+	sprintf(filename, NOX("%s.%s.csg"), p->callsign, base);
 
 	// if campaign file doesn't exist, abort so we don't load irrelevant data
-	buf.str(std::string());
-	buf << base << FS_CAMPAIGN_FILE_EXT;
-	if ( !cf_exists_full((char*)buf.str().c_str(), CF_TYPE_MISSIONS) ) {
-		mprintf(("CSG => Unable to find campaign file '%s'!\n", buf.str().c_str()));
+	campaign_filename = base;
+	campaign_filename += FS_CAMPAIGN_FILE_EXT;
+	if ( !cf_exists_full(campaign_filename.c_str(), CF_TYPE_MISSIONS) ) {
+		mprintf(("CSG => Unable to find campaign file '%s'!\n", campaign_filename.c_str()));
 		return false;
 	}
 
@@ -1782,9 +1782,6 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 bool pilotfile::save_savefile()
 {
-	char base[_MAX_FNAME] = { '\0' };
-	std::ostringstream buf;
-
 	if (Game_mode & GM_MULTIPLAYER) {
 		return false;
 	}
@@ -1797,12 +1794,12 @@ bool pilotfile::save_savefile()
 		return false;
 	}
 
+	auto base = util::get_file_part(Campaign.filename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
+
 	// build up filename for the savefile...
-	_splitpath(Campaign.filename, NULL, NULL, base, NULL);
-
-	buf << p->callsign << "." << base << ".csg";
-
-	filename = buf.str().c_str();
+	sprintf(filename, NOX("%s.%s.csg"), p->callsign, base);
 
 	// make sure that we can actually save this safely
 	if (m_data_invalid) {

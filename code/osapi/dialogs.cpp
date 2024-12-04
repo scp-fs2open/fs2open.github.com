@@ -5,6 +5,7 @@
 #include "cmdline/cmdline.h"
 #include "graphics/2d.h"
 #include "scripting/ade.h"
+#include "utils/string_utils.h"
 
 #include <SDL_messagebox.h>
 #include <SDL_clipboard.h>
@@ -65,17 +66,6 @@ namespace
 		return outStream.str();
 	}
 
-	const char* clean_filename(const char* filename)
-	{
-		auto separator = strrchr(filename, DIR_SEPARATOR_CHAR);
-		if (separator != nullptr)
-		{
-			filename = separator + 1;
-		}
-
-		return filename;
-	}
-
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
@@ -106,7 +96,7 @@ namespace os
 		void AssertMessage(const char * text, const char * filename, int linenum, const char * format, ...)
 		{
 			// We only want to display the file name
-			filename = clean_filename(filename);
+			filename = util::get_file_part(filename);
 
 			SCP_stringstream msgStream;
 			msgStream << "Assert: \"" << text << "\"\n";
@@ -274,7 +264,7 @@ namespace os
 		void Error(const char * filename, int line, const char * format, ...)
 		{
 			SCP_string formatText;
-			filename = clean_filename(filename);
+			filename = util::get_file_part(filename);
 
 			va_list args;
 			va_start(args, format);
@@ -354,7 +344,7 @@ namespace os
 		// Actual implementation of the warning function. Used by the various warning functions
 		void WarningImpl(const char* filename, int line, const SCP_string& text)
 		{
-			filename = clean_filename(filename);
+			filename = util::get_file_part(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("WARNING: \"%s\" at %s:%d\n", text.c_str(), filename, line));
@@ -478,7 +468,7 @@ namespace os
 			va_end(args);
 
 			// Below is essentially a stripped down copy pasta of WarningImpl
-			filename = clean_filename(filename);
+			filename = util::get_file_part(filename);
 
 			// output to the debug log before anything else (so that we have a complete record)
 			mprintf(("INFO: \"%s\" at %s:%d\n", msg.c_str(), filename, line));
