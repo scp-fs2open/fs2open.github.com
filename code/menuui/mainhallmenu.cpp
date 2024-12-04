@@ -1824,12 +1824,20 @@ void main_hall_blit_version()
  */
 void main_hall_blit_mod()
 {
-	if ((!Mod_title.empty()) && (!Mod_version.empty())) {
-
+	if (!Mod_title.empty() || !Mod_version.empty()) {
 		int w, h;
+		SCP_string mod_string;
 
-		// format the version string
-		auto mod_string = Mod_title + " " + Mod_version;
+		// build the string
+
+		if (!Mod_title.empty())
+			mod_string = Mod_title;
+
+		if (!Mod_title.empty() && !Mod_version.empty())
+			mod_string += " ";
+
+		if (!Mod_version.empty())
+			mod_string += Mod_version;
 
 		int old_font = font::get_current_fontnum();
 		font::set_font(Main_hall->font);
@@ -1842,7 +1850,6 @@ void main_hall_blit_mod()
 		gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 3 + 6), mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 		font::set_font(old_font);
-
 	}
 }
 
