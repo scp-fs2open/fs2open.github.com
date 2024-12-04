@@ -182,8 +182,7 @@ void hud_wingman_status_update()
 				continue;
 
 			auto wingp = &Wings[Squadron_wings[wing_index]];
-			for (int j = 0; j < MAX_SHIPS_PER_WING; j++) {
-				int shipnum = wingp->ship_index[j];
+			for (int shipnum: wingp->ship_index) {
 				if (shipnum < 0)
 					continue;
 
@@ -725,9 +724,8 @@ void hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_s
 {
 	// set up a map to tell where wings are going in the new arrangement
 	SCP_unordered_map<int, int> new_squad_indexes;
-	for (int cur_squad_index = 0; cur_squad_index < MAX_SQUADRON_WINGS; cur_squad_index++)
+	for (int wingnum: Squadron_wings)
 	{
-		int wingnum = Squadron_wings[cur_squad_index];
 		if (wingnum >= 0)
 		{
 			auto loc = std::find(new_squad_wingnums.begin(), new_squad_wingnums.end(), wingnum);
@@ -737,17 +735,15 @@ void hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_s
 	}
 
 	// clear or reassign the ships that are currently in the squadron wings
-	for (int cur_squad_index = 0; cur_squad_index < MAX_SQUADRON_WINGS; cur_squad_index++)
+	for (int wingnum: Squadron_wings)
 	{
-		int wingnum = Squadron_wings[cur_squad_index];
 		if (wingnum < 0)
 			continue;
 		auto wingp = &Wings[wingnum];
 		auto new_squad_index = new_squad_indexes.find(wingnum);
 
-		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		for (int shipnum: wingp->ship_index)
 		{
-			int shipnum = wingp->ship_index[j];
 			if (shipnum < 0)
 				continue;
 			auto shipp = &Ships[shipnum];
@@ -800,14 +796,13 @@ void hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_s
 			continue;
 
 		// clear the status before we actually add any wingmen
-		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
-			HUD_wingman_status[new_squad_index].status[j] = HUD_WINGMAN_STATUS_NONE;
+		for (int &status: HUD_wingman_status[new_squad_index].status)
+			status = HUD_WINGMAN_STATUS_NONE;
 
 		// now add the existing wingmen
 		auto wingp = &Wings[wingnum];
-		for (int j = 0; j < MAX_SHIPS_PER_WING; j++)
+		for (int shipnum: wingp->ship_index)
 		{
-			int shipnum = wingp->ship_index[j];
 			if (shipnum >= 0)
 				hud_wingman_status_set_index(new_squad_index, wingp, &Ships[shipnum], nullptr);
 		}
