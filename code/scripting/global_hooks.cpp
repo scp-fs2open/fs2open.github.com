@@ -403,7 +403,8 @@ const std::shared_ptr<OverridableHook<>> OnHudCommOrderIssued = OverridableHook<
 		{"RecipientWing", "wing", "The wing that will recieve this order, if any."},
 		{"Target", "ship", "The target if the order, if any. Usually the Player's current target."},
 		{"Subsystem", "subsystem", "The target subsystem, if any. Usually the Player's current target."},
-		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE enumerations"}
+		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE enumerations."},
+		{"Name", "string", "The name of the order as it appears in the squad message menu. Useful for LuaAI orders."}
 	});
 
 const std::shared_ptr<OverridableHook<>> OnHudCommMenuClosed = OverridableHook<>::Factory("On HUD Comm Menu Closed",

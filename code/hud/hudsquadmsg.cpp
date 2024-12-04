@@ -44,7 +44,7 @@ int Squad_msg_mode;							// current mode that the messaging system is in
 LOCAL int Msg_key_used;								// local variable which tells if the key being processed
 															// with the messaging system was actually used
 LOCAL int Msg_key;									// global which indicates which key was currently pressed
-LOCAL int Lua_key; // global which indicates which key was currently pressed
+LOCAL bool Msg_key_set_from_scripting;      // is true if the key was set from scripting and not from a player keypress
 LOCAL int Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
@@ -214,7 +214,7 @@ void hud_squadmsg_start()
 	}
 
 	Msg_key = -1;
-	Lua_key = -1;
+	Msg_key_set_from_scripting = false;
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
@@ -546,18 +546,14 @@ int hud_squadmsg_get_key()
 {
 	int k, i, num_keys_used;
 
-	if ( Msg_key == -1 && Lua_key == -1)
+	if ( Msg_key == -1)
 		return -1;
 
-	bool lua_selected = false;
-	if (Lua_key >= 0) {
-		k = Lua_key;
-		lua_selected = true;
-	} else {
-		k = Msg_key;
-	}
+	bool lua_selected = Msg_key_set_from_scripting;
+	k = Msg_key;
+
 	Msg_key = -1;
-	Lua_key = -1;
+	Msg_key_set_from_scripting = false;
 
 	num_keys_used = hud_squadmsg_get_total_keys();
 
@@ -846,7 +842,7 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip, bool isWing 
 	}
 }
 
-/*SCP_string hud_squadmsg_get_order_name(int command)
+SCP_string hud_squadmsg_get_order_name(int command)
 {
 	Assertion(SCP_vector_inbounds(Player_orders, command), "Order does not exist! Get a coder!");
 	
@@ -856,7 +852,10 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip, bool isWing 
 		}
 	}
 
-}*/
+	// Should be unreachable
+	return "Unknown Order!";
+
+}
 
 scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
 {
@@ -896,8 +895,7 @@ scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
 		case DISABLE_SUBSYSTEM_ITEM:
 			return scripting::api::LE_DISABLE_SUBSYSTEM_SQUAD_MESSAGE;
 		default:
-			// Should be unreachable but you never know!
-			return scripting::api::ENUM_INVALID;
+			return scripting::api::LE_LUA_AI_SQUAD_MESSAGE;
 	}
 
 }
@@ -923,7 +921,8 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* recipientShip, int re
 				scripting::hook_param("RecipientWing", 'o', scripting::api::l_Wing.Set(recipientWing)),
 				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
 				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),
-				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command))))
+				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command)))),
+				scripting::hook_param("Name", 's', hud_squadmsg_get_order_name(command).c_str())
 			);
 		if (check_override) {
 			if (scripting::hooks::OnHudCommOrderIssued->isOverride(paramList)) {
@@ -937,6 +936,8 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* recipientShip, int re
 			return false;
 		}
 	}
+
+	return false;
 }
 
 // function to send an order to all fighters/bombers.
@@ -2653,7 +2654,8 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 }
 
 void Hud_set_lua_key(int selection) {
-	Lua_key = selection;
+	Msg_key = selection;
+	Msg_key_set_from_scripting = true;
 }
 
 HudGaugeSquadMessage::HudGaugeSquadMessage():

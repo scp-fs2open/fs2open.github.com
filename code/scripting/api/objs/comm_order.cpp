@@ -61,6 +61,11 @@ ADE_FUNC(selectItem, l_Comm_Item, nullptr, "Selects the item and either proceeds
 	if (!ade_get_args(L, "o", l_Comm_Item.Get(&current)))
 		return ADE_RETURN_FALSE;
 
+	if (current < 0 || current > Num_menu_items) {
+		LuaError(L, "Lua tried to select squad message that is not valid!");
+		return ADE_RETURN_FALSE;
+	}
+
 	Hud_set_lua_key(current);
 
 	return ADE_RETURN_TRUE;
