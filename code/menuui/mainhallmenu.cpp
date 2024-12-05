@@ -2413,16 +2413,22 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 
 	if (optional_string("+Allow Fishies:")) {
 		stuff_boolean(&m->allow_fish);
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->allow_fish = true;
 	}
 
 	if (optional_string("+Left Fish Anim:")) {
 		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
 		m->l_fish_anim = temp_string;
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->l_fish_anim = "f_left";
 	}
 
 	if (optional_string("+Right Fish Anim:")) {
 		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
 		m->r_fish_anim = temp_string;
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->r_fish_anim = "f_right";
 	}
 
 	if (optional_string("+Headz Door Index:")) {
@@ -2438,6 +2444,16 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		}
 
 		parse_iface_sound("+Headz sound:", &m->headz_sound_index);
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->headz_index = OPTIONS_REGION;
+		m->headz_sound_index = InterfaceSounds::VASUDAN_BUP;
+		if (!stricmp(m->bitmap.c_str(), "2_vhall")) {
+			m->headz_anim = "2_vhallheads";
+			m->headz_background = "2_vhallhead";
+		} else {
+			m->headz_anim = "vhallheads";
+			m->headz_background = "vhallhead";
+		}
 	}
 
 	// zoom area
@@ -2861,10 +2877,9 @@ void main_hall_set_door_headz(bool init)
 		}
 	}
 
-	// Default to options region because that's what the retail vasudan cheat used
-	int region_index = OPTIONS_REGION;
+	int region_index = -1;
 
-	// Add some kludge to get the region for a custom mainhall, if applicable
+	// Add some kludge to get the region from the mainhall and check that we have everything we need
 	if ((Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty()) {
 		region_index = Main_hall->headz_index;
 	}
@@ -2885,32 +2900,8 @@ void main_hall_set_door_headz(bool init)
 				Main_hall->door_sounds.at(region_index).second);
 		}
 
-		// retail vasudan 640
-		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
-			// set the mouseover sounds
-			Main_hall->door_sounds.at(region_index).first = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(region_index).second = InterfaceSounds::VASUDAN_BUP;
-
-			// set head anim
-			Main_hall->door_anim_name.at(region_index) = "vhallheads";
-
-			// set the background
-			Main_hall->bitmap = "vhallhead";
-
-		// retail vasudan 1024
-		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
-			// set the mouseover sounds
-			Main_hall->door_sounds.at(region_index).first = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(region_index).second = InterfaceSounds::VASUDAN_BUP;
-
-			// set head anim
-			Main_hall->door_anim_name.at(region_index) = "2_vhallheads";
-
-			// set the background
-			Main_hall->bitmap = "2_vhallhead";
-
-		// add some kludge for new mainhalls to use the headz cheat with custom defintions
-		} else if ((Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty()) {
+		// this is the kludge that actually sets the mainhall door to the headz version
+		if (region_index >= 0) {
 			// set the mouseover sounds
 			Main_hall->door_sounds.at(region_index).first = Main_hall->headz_sound_index;
 			Main_hall->door_sounds.at(region_index).second = Main_hall->headz_sound_index;
@@ -2953,6 +2944,7 @@ bool main_hall_is_retail_vasudan(const main_hall_defines* hall)
 	}
 
 	// Is retail vasudan if it uses the regular or headz bitmaps for either the 640 or 1024 retail resolution filesets
+	// The latter 2 aren't strictly necessary for how this method is currently used, but you never know for the future
 	return util::isStringOneOf(hall->bitmap, {"vhall", "2_vhall", "vhallhead", "2_vhallhead"});
 }
 
@@ -2961,7 +2953,7 @@ bool main_hall_is_retail_vasudan(const main_hall_defines* hall)
 */
 bool main_hall_allows_fish()
 {
-	return Main_hall->allow_fish || main_hall_is_retail_vasudan();
+	return Main_hall->allow_fish;
 }
 
 /**
@@ -2969,7 +2961,7 @@ bool main_hall_allows_fish()
 */
 bool main_hall_allows_headz()
 {
-	return (Main_hall->headz_index >= 0 && !Main_hall->headz_anim.empty()) || main_hall_is_retail_vasudan();
+	return (Main_hall->headz_index >= 0 && !Main_hall->headz_anim.empty());
 }
 
 /**
