@@ -125,18 +125,9 @@ void fishtank_start(const SCP_string& f_left, const SCP_string& f_right)
 		return;
 	}
 	
-	// Get our anim names or use retail name
-	if (!f_left.empty()) {
-		Fish_left_anim_name = f_left;
-	} else {
-		Fish_left_anim_name = "f_left";
-	}
-
-	if (!f_left.empty()) {
-		Fish_right_anim_name = f_right;
-	} else {
-		Fish_right_anim_name = "f_right";
-	}
+	// Get our anim names
+	Fish_left_anim_name = f_left;
+	Fish_right_anim_name = f_right;
 
 	generic_anim fish_left;
 	generic_anim fish_right;
