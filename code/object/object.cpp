@@ -1280,10 +1280,10 @@ void obj_move_all_post(object *objp, float frametime)
 						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
 					}
 					//handles both defaults and adjustments.
-					float light_radius = wi->light_radius * radius_mult;
+					float light_radius = wi->light_radius;
 					float source_radius = objp->radius;
 					if (wi->render_type == WRT_LASER) {
-						light_radius = lp->laser_light_radius.handle(light_radius);
+						light_radius = lp->laser_light_radius.handle(light_radius) * radius_mult;
 						light_color.i(lp->laser_light_brightness.handle(light_color.i()) * intensity_mult);
 					} else {
 						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
@@ -1292,7 +1292,7 @@ void obj_move_all_post(object *objp, float frametime)
 						light_color.i(lp->missile_light_brightness.handle(light_color.i()) * intensity_mult);
 						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
 					}
-					if(light_radius > 0.0f && light_color.i() > 0.0f)
+					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
 						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
 				}
 			}

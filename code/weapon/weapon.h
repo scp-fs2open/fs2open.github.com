@@ -32,7 +32,6 @@
 #include "weapon/weapon_flags.h"
 #include "model/modelrender.h"
 #include "render/3d.h"
-#include "ship/ship.h"
 
 #include "utils/modular_curves.h"
 

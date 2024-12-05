@@ -719,12 +719,12 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
 	if ((weapon_info_index >= 0) && other_obj_is_weapon) {
-		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
-			return damage_left;
-		}
-		
 		weapon* wp = &Weapons[other_obj->instance];
 		weapon_info* wip = &Weapon_info[weapon_info_index];
+
+		if ( wip->wi_flags[Weapon::Info_Flags::Training] ) {
+			return damage_left;
+		}
 
 		damage_left *= wip->subsystem_factor;
 		damage_left *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
@@ -734,7 +734,7 @@ float do_subobj_hit_stuff(object *ship_objp, object *other_obj, vec3d *hitpos, i
 		weapon_info* wip = &Weapon_info[weapon_info_index];
 
 		if (Beams_use_damage_factors) {
-			if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
+			if ( wip->wi_flags[Weapon::Info_Flags::Training] ) {
 				return damage_left;
 			}
 			damage_left *= wip->subsystem_factor;

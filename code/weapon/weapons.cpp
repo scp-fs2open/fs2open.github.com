@@ -5978,7 +5978,7 @@ void weapon_process_post(object * obj, float frame_time)
 			bool spawn = wp->last_spawn_time[i].isNever();
 			float rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::SPAWN_RATE_MULT, *wp, &wp->modular_curves_instance);
 			if (rate_mult > 0.f) {
-				int required_elapsed = fl2i(wip->spawn_info[i].spawn_interval / rate_mult) * MILLISECONDS_PER_SECOND;
+				int required_elapsed = fl2i((wip->spawn_info[i].spawn_interval / rate_mult) * MILLISECONDS_PER_SECOND);
 				spawn |= timestamp_elapsed(timestamp_delta(wp->last_spawn_time[i], required_elapsed));
 			}
 
