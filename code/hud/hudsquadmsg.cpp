@@ -29,7 +29,6 @@
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/subsystem.h"
-#include "scripting/api/objs/wing.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
@@ -907,7 +906,7 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		}
 
 		auto paramList = scripting::hook_param_list(
-				scripting::hook_param("Sender", 'o', Player_obj),
+				scripting::hook_param("Sender", 'o', &Objects[sendingShip->objnum]),
 				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(*recipient)),
 				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
 				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),

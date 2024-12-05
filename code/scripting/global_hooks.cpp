@@ -397,7 +397,7 @@ const std::shared_ptr<OverridableHook<>> OnHudCommMenuOpened = OverridableHook<>
 const std::shared_ptr<OverridableHook<>> OnHudCommOrderIssued = OverridableHook<>::Factory("On HUD Comm Order Issued",
 	"Invoked when the player issues an order through the squad message menu.",
 	{
-		{"Sender", "object", "The ship that sent the order. Usually the player."},
+		{"Sender", "ship", "The ship that sent the order. Usually the player."},
 		{"Recipient", "oswpt", "The recipient of the order."},
 		{"Target", "ship", "The target if the order, if any. Usually the Player's current target."},
 		{"Subsystem", "subsystem", "The target subsystem, if any. Usually the Player's current target."},
