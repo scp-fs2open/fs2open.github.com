@@ -383,7 +383,7 @@ void get_vector_data(ubyte *data, int *size, vec3d vec)
 }
 */
 // send the specified data packet to all players
-void multi_io_send(net_player *pl, ubyte *data, int len)
+void multi_io_send(net_player *pl, const ubyte *data, int len)
 {		
 	// invalid
 	if((pl == NULL) || (NET_PLAYER_NUM(pl) >= MAX_PLAYERS)){
@@ -420,7 +420,7 @@ void multi_io_send(net_player *pl, ubyte *data, int len)
 	pl->s_info.unreliable_buffer_size += len;
 }
 
-void multi_io_send_to_all(ubyte *data, int length, net_player *ignore)
+void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignore)
 {	
 	int i;
 	Assert(MULTIPLAYER_MASTER);
@@ -471,7 +471,7 @@ void multi_io_send_force(net_player *pl)
 }
 
 // send the data packet to all players via their reliable sockets
-void multi_io_send_reliable(net_player *pl, ubyte *data, int len)
+void multi_io_send_reliable(net_player *pl, const ubyte *data, int len)
 {	
 	// invalid
 	if((pl == NULL) || (NET_PLAYER_NUM(pl) >= MAX_PLAYERS)){
@@ -508,7 +508,7 @@ void multi_io_send_reliable(net_player *pl, ubyte *data, int len)
 	pl->s_info.reliable_buffer_size += len;
 }
 
-void multi_io_send_to_all_reliable(ubyte* data, int length, net_player *ignore)
+void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_player *ignore)
 {	
 	int i;
 	Assert(MULTIPLAYER_MASTER);
@@ -2507,7 +2507,7 @@ void process_netplayer_update_packet( ubyte *data, header *hinfo )
 #define EXTRA_DEATH_VAPORIZED		(1<<0)
 #define EXTRA_DEATH_WASHED			(1<<1)
 // send a packet indicating a ship has been killed
-void send_ship_kill_packet( object *objp, object *other_objp, float percent_killed, int self_destruct )
+void send_ship_kill_packet( const object *objp, const object *other_objp, float percent_killed, int self_destruct )
 {
 	int packet_size, model;
 	ubyte data[MAX_PACKET_SIZE], was_player, extra_death_info, vaporized;
@@ -8756,7 +8756,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 #define GET_NORM_VEC(d) do { char vnorm[3]; memcpy(vnorm, data+offset, 3); d.x = (float)vnorm[0] / 127.0f; d.y = (float)vnorm[1] / 127.0f; d.z = (float)vnorm[2] / 127.0f; } while(false);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num)
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, const vec3d *force, const vec3d *hitpos, int quadrant_num)
 {
 	ubyte data[MAX_PACKET_SIZE];
 	short windex;
@@ -8788,7 +8788,7 @@ void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage
 	multi_rate_add(1, "pai", packet_size);
 }	
 
-void process_player_pain_packet(ubyte *data, header *hinfo)
+void process_player_pain_packet(const ubyte *data, header *hinfo)
 {
 	int offset;
 	short windex = 0;

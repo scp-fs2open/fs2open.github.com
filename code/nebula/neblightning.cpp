@@ -289,19 +289,20 @@ void parse_lightning_table(const char* filename)
 			// texture
 			if (optional_string("+b_texture:")) {
 				stuff_string(name, F_NAME, sizeof(name));
-				if (!Fred_running) {
+				if (!Fred_running && stricmp(name, "none") && stricmp(name, "<none>")) {
 					bolt_p->texture = bm_load(name);
+					if (bolt_p->texture < 0)
+						error_display(0, "Unable to load texture %s for bolt %s.", name, bolt_p->name);
 				}
 			}
-
-			if (!Fred_running && (bolt_p->texture < 0))
-				error_display(1, "Bolt %s has no texture defined.", bolt_p->name);
 
 			// glow
 			if (optional_string("+b_glow:")) {
 				stuff_string(name, F_NAME, sizeof(name));
-				if (!Fred_running) {
+				if (!Fred_running && stricmp(name, "none") && stricmp(name, "<none>")) {
 					bolt_p->glow = bm_load(name);
+					if (bolt_p->glow < 0)
+						error_display(0, "Unable to load glow %s for bolt %s.", name, bolt_p->name);
 				}
 			}
 

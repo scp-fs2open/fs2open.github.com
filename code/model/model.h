@@ -72,6 +72,19 @@ extern int model_render_flags_size;
 #define SUBSYSTEM_UNKNOWN			11
 #define SUBSYSTEM_MAX				12				//	maximum value for subsystem_xxx, for error checking
 
+#define SUBSYSTEM_ALL				100				//	only for use in special situations
+
+#if SUBSYSTEM_NONE != 0
+#error SUBSYSTEM_NONE must be 0!
+#endif
+#if SUBSYSTEM_MAX != (SUBSYSTEM_UNKNOWN+1)
+#error SUBSYSTEM_MAX is not correct, or SUBSYSTEM_UNKNOWN is not the last subsystem in the list!
+#endif
+#if !(SUBSYSTEM_ALL > SUBSYSTEM_MAX)
+#error SUBSYSTEM_ALL must be greater than SUBSYSTEM_MAX!
+#endif
+
+
 enum class modelread_status { FAIL, SUCCESS_REAL, SUCCESS_VIRTUAL };
 
 enum model_objnum_special : int { OBJNUM_NONE = -1, OBJNUM_COCKPIT = -2, OBJNUM_SPECIAL_MIN = -3};
@@ -853,8 +866,8 @@ public:
 
 	// linked lists for special polygon types on this model.  Most ships I think will have most
 	// of these.  (most ships however, probably won't have approach points).
-	int			n_guns;								// number of primary gun points (not counting turrets)
-	int			n_missiles;							// number of secondary missile points (not counting turrets)
+	int			n_guns;								// number of primary weapon banks (not counting turrets)
+	int			n_missiles;							// number of secondary weapon banks (not counting turrets)
 	int			n_docks;								// number of docking points
 	int			n_thrusters;						// number of thrusters on this ship.
 	w_bank		*gun_banks;							// array of gun banks
@@ -1418,7 +1431,7 @@ int model_find_texture(int model_num, int bitmap);
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *box_obj, vec3d *start_point, int *is_inside, float delta);
+float get_world_closest_box_point_with_delta(vec3d *closest_box_point, const object *box_obj, const vec3d *start_point, int *is_inside, float delta);
 
 // given a newly loaded model, page in all textures
 void model_page_in_textures(int modelnum, int ship_info_index = -1);

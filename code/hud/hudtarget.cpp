@@ -4522,7 +4522,7 @@ void hud_restore_subsystem_target(ship* shipp)
 // --------------------------------------------------------------------------------
 // get_subsystem_world_pos() returns the world position for a given subsystem on a ship
 //
-vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos)
+vec3d* get_subsystem_world_pos(const object* parent_obj, const ship_subsys* subsys, vec3d* world_pos)
 {
 	get_subsystem_pos(world_pos, parent_obj, subsys);
 
@@ -6927,7 +6927,7 @@ void HudGaugeWeaponList::initLinkIcon() {
 	}
 }
 
-void HudGaugeWeaponList::initBitmaps(char *fname_first, char *fname_entry, char *fname_last)
+void HudGaugeWeaponList::initBitmaps(const char *fname_first, const char *fname_entry, const char *fname_last)
 {
 	_background_first.first_frame = bm_load_animation(fname_first, &_background_first.num_frames);
 	if(_background_first.first_frame < 0) {
@@ -6975,7 +6975,7 @@ void HudGaugeWeaponList::initBgEntryHeight(int h)
 	_background_entry_h = h;
 }
 
-void HudGaugeWeaponList::initHeaderText(char *text)
+void HudGaugeWeaponList::initHeaderText(const char *text)
 {
 	strcpy_s(header_text, text);
 }

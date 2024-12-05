@@ -262,7 +262,7 @@ enum class InterfaceSounds {
 	GENERAL_FAIL            =10,//!< general failure sound for any event
 	SHIP_ICON_CHANGE        =11,//!< ship animation starts (ie text and ship first appear)
 	MAIN_HALL_AMBIENT       =12,//!< ambient sound for the Terran main hall (looping)
-	BTN_SLIDE               =13,//!< ambient sound for the Vasudan main hall (looping)
+	MAIN_HALL_AMBIENT_V     =13,//!< ambient sound for the Vasudan main hall (looping); in FS1, SND_BTN_SLIDE which was used for the briefing button slide-in
 	BRIEF_STAGE_CHG         =14,//!< brief stage change
 	BRIEF_STAGE_CHG_FAIL    =15,//!< brief stage change fail
 	BRIEF_ICON_SELECT       =16,//!< selet brief icon
@@ -381,8 +381,8 @@ bool parse_game_sound(const char* tag, gamesnd_id* idx_dest);
 
 gamesnd_id parse_game_sound_inline();
 
-void parse_iface_sound(const char* tag, interface_snd_id* idx_dest);
-void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list = false);
+bool parse_iface_sound(const char* tag, interface_snd_id* idx_dest);
+bool parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list = false);
 
 // this is a callback, so it needs to be a real function
 void common_play_highlight_sound();

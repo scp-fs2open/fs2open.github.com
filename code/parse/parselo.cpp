@@ -290,21 +290,24 @@ int get_line_num()
 
 //	Call this function to display an error message.
 //	error_level == 0 means this is just a warning.
-//	!0 means it's an error message.
+//	            == 1 means this is an error message.
+//	            == 2 means this is a release warning.
 //	Prints line number and other useful information.
-extern int Cmdline_noparseerrors;
 void error_display(int error_level, const char *format, ...)
 {
 	char type[8];
 	SCP_string error_text;
 	va_list args;
 
-	if (error_level == 0) {
+	if (error_level == 0 || error_level == 2) {
 		strcpy_s(type, "Warning");
 		Warning_count++;
-	} else {
+	} else if (error_level == 1) {
 		strcpy_s(type, "Error");
 		Error_count++;
+	} else {
+		Warning(LOCATION, "Invalid error level %d passed to error_display!", error_level);
+		error_level = 1;
 	}
 
 	va_start(args, format);
@@ -313,8 +316,10 @@ void error_display(int error_level, const char *format, ...)
 
 	nprintf((type, "%s(line %i): %s: %s\n", Current_filename, get_line_num(), type, error_text.c_str()));
 
-	if(error_level == 0 || Cmdline_noparseerrors)
+	if (error_level == 0 || Cmdline_noparseerrors)
 		Warning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
+	else if (error_level == 2)
+		ReleaseWarning(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 	else
 		Error(LOCATION, "%s(line %i):\n%s: %s", Current_filename, get_line_num(), type, error_text.c_str());
 }

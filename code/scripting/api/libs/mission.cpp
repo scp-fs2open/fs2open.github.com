@@ -1269,8 +1269,8 @@ ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
 	int waypoint_instance = -1;
 	if (wlh && wlh->isValid())
 	{
-		int wp_list_index = find_index_of_waypoint_list(wlh->wlp);
-		int wp_index = (int) wlh->wlp->get_waypoints().size() - 1;
+		int wp_list_index = find_index_of_waypoint_list(wlh->getList());
+		int wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
 		waypoint_instance = calc_waypoint_instance(wp_list_index, wp_index);
 	}
 	int obj_idx = waypoint_add(v3 != NULL ? v3 : &vmd_zero_vector, waypoint_instance);
@@ -1844,6 +1844,11 @@ ADE_FUNC(hasCustomStrings, l_Mission, nullptr, "Detects whether the mission has 
 ADE_FUNC(isInMission, l_Mission, nullptr, "get whether or not a mission is currently being played", "boolean", "true if in mission, false otherwise")
 {
 	return ade_set_args(L, "b", (Game_mode & GM_IN_MISSION) != 0);
+}
+
+ADE_FUNC(isPrePlayerEntry, l_Mission, nullptr, "get whether the mission is currently in the pre-player-entry state", "boolean", "true if in pre-player-entry, false otherwise")
+{
+	return ade_set_args(L, "b", Pre_player_entry);
 }
 
 ADE_FUNC(isInCampaign, l_Mission, NULL, "Get whether or not the current mission being played in a campaign (as opposed to the tech room's simulator)", "boolean", "true if in campaign, false if not")

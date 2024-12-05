@@ -391,7 +391,7 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* world_hit_pos, object* objp)
+void dock_calculate_and_apply_whack_docked_object(const vec3d* impulse, const vec3d* world_hit_pos, object* objp)
 {
 	Assertion((objp != nullptr) && (impulse != nullptr) && (world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
@@ -450,7 +450,6 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 		&local_delta_rotvel,
 		&root_delta_vel,
 		&root_objp->orient);
-
 }
 
 

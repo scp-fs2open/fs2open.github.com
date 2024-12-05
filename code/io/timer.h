@@ -139,7 +139,7 @@ TIMESTAMP _timestamp();					// use a leading underscore for now until all timest
 UI_TIMESTAMP ui_timestamp();
 
 inline bool timestamp_valid(int stamp) {
-	return stamp != 0;
+	return stamp > 0;	// 0 is the "official" invalid for legacy timestamps, but -1 is used in a lot of places too
 }
 
 // To do timing, call this with the interval you

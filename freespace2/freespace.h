@@ -195,6 +195,9 @@ int game_hacked_data();
 void game_pause();
 void game_unpause();
 
+extern bool Pre_player_entry;
+extern bool game_actually_playing();
+
 //WMC - Stuff for scripting, these make the game go
 extern camid Main_camera;
 

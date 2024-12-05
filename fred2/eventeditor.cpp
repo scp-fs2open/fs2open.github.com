@@ -102,12 +102,18 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHAINED, m_chained);
 	DDX_Check(pDX, IDC_USE_MSECS, m_use_msecs);
 	DDX_Text(pDX, IDC_OBJ_TEXT, m_obj_text);
+	DDV_MaxChars(pDX, m_obj_text, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_OBJ_KEY_TEXT, m_obj_key_text);
+	DDV_MaxChars(pDX, m_obj_key_text, NAME_LENGTH - 1);
 	DDX_CBString(pDX, IDC_AVI_FILENAME, m_avi_filename);
+	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_MESSAGE_NAME, m_message_name);
+	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_MESSAGE_TEXT, m_message_text);
+	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
 	DDX_CBIndex(pDX, IDC_PERSONA_NAME, m_persona);
 	DDX_CBString(pDX, IDC_WAVE_FILENAME, m_wave_filename);
+	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
 	DDX_Check(pDX, IDC_MISSION_LOG_TRUE, m_log_true);
 	DDX_Check(pDX, IDC_MISSION_LOG_FALSE, m_log_false);
@@ -131,13 +137,6 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	}
 	DDX_CBIndex(pDX, IDC_MESSAGE_TEAM, m_message_team);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_obj_text, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_obj_key_text, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
-	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(event_editor, CDialog)

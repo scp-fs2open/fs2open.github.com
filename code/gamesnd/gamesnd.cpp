@@ -462,9 +462,10 @@ gamesnd_id parse_game_sound_inline()
  * @param tag Tag
  * @param idx_dest Sound index destination
  * @param flags See the parse_sound_flags enum
- *
+ * @return whether the tag was found and a parse was attempted
  */
-void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
+bool parse_iface_sound(const char* tag, interface_snd_id* idx_dest)
+{
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	if(optional_string(tag))
@@ -478,7 +479,11 @@ void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
 		if (!idx_dest->isValid() && buf != "-1") {
 			error_display(0, "Could not find interface sound with name '%s'!", buf.c_str());
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 /**
@@ -491,9 +496,9 @@ void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
  * @param tag Tag
  * @param object_name Name of object being parsed
  * @param flags See the parse_sound_flags enum
- *
+ * @return whether the tag was found and a parse was attempted
  */
-void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list)
+bool parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list)
 {
 	if(optional_string(tag))
 	{
@@ -529,7 +534,11 @@ void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& desti
 		{
 			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.\n", tag, object_name, destination.size(), check));
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 /**

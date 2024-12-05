@@ -178,6 +178,7 @@ void control_config_common_init_bindings() {
 	(CYCLE_NEXT_PRIMARY,                             KEY_PERIOD, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Forward",           CC_TYPE_TRIGGER)
 	(CYCLE_PREV_PRIMARY,                              KEY_COMMA, -1, WEAPON_TAB, 1, "Cycle Primary Weapon Backward",          CC_TYPE_TRIGGER)
 	(CYCLE_PRIMARY_WEAPON_SEQUENCE,                       KEY_O, -1, WEAPON_TAB, 1776, "Cycle Primary Weapon Firing Rate",       CC_TYPE_TRIGGER)
+	(CYCLE_PRIMARY_WEAPON_PATTERN,			  KEY_ALTED | KEY_O, -1, WEAPON_TAB, 1859, "Cycle Primary Weapon Firing Pattern",	  CC_TYPE_TRIGGER)
 	(CYCLE_SECONDARY,                                KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Forward",         CC_TYPE_TRIGGER)
 	(CYCLE_NUM_MISSLES,                KEY_SHIFTED | KEY_DIVIDE, -1, WEAPON_TAB, 1, "Cycle Secondary Weapon Firing Rate",     CC_TYPE_TRIGGER)
 	(LAUNCH_COUNTERMEASURE,                               KEY_X,  3, WEAPON_TAB, 1, "Launch Countermeasure",                  CC_TYPE_TRIGGER)
@@ -209,10 +210,10 @@ void control_config_common_init_bindings() {
 	(VIEW_DIST_INCREASE,                            KEY_PADPLUS, -1, COMPUTER_TAB, 1, "Increase View Distance",             CC_TYPE_CONTINUOUS)
 	(VIEW_DIST_DECREASE,                           KEY_PADMINUS, -1, COMPUTER_TAB, 1, "Decrease View Distance",             CC_TYPE_CONTINUOUS)
 	(VIEW_CENTER,                                      KEY_PAD5, -1, COMPUTER_TAB, 1, "Center View",                        CC_TYPE_CONTINUOUS)
-	(PADLOCK_UP,                                             -1, 33, COMPUTER_TAB, 1, "View Up",                            CC_TYPE_CONTINUOUS)
-	(PADLOCK_DOWN,                                           -1, 32, COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
-	(PADLOCK_LEFT,                                           -1, 34, COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
-	(PADLOCK_RIGHT,                                          -1, 35, COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
+	(PADLOCK_UP,                                             -1, iHAT_UP,       COMPUTER_TAB, 1, "View Up",                            CC_TYPE_CONTINUOUS)
+	(PADLOCK_DOWN,                                           -1, iHAT_DOWN,     COMPUTER_TAB, 1, "View Rear",                          CC_TYPE_CONTINUOUS)
+	(PADLOCK_LEFT,                                           -1, iHAT_LEFT,     COMPUTER_TAB, 1, "View Left",                          CC_TYPE_CONTINUOUS)
+	(PADLOCK_RIGHT,                                          -1, iHAT_RIGHT,    COMPUTER_TAB, 1, "View Right",                         CC_TYPE_CONTINUOUS)
 	(VIEW_TOPDOWN,                                           -1, -1, COMPUTER_TAB, 1777, "Top-Down View",                      CC_TYPE_TRIGGER)
 	(VIEW_TRACK_TARGET,                                      -1, -1, COMPUTER_TAB, 1778, "Target Padlock View",                CC_TYPE_TRIGGER)
 
@@ -431,6 +432,7 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Cycle Nav Points",                        NAV_CYCLE},
 	{"Toggle Gliding",                          TOGGLE_GLIDING},
 	{"Cycle Primary Weapon Firing Rate",        CYCLE_PRIMARY_WEAPON_SEQUENCE},
+	{"Cycle Primary Weapon Firing Pattern",		CYCLE_PRIMARY_WEAPON_PATTERN},
 	{"Custom Control 1",                        CUSTOM_CONTROL_1},
 	{"Custom Control 2",                        CUSTOM_CONTROL_2},
 	{"Custom Control 3",                        CUSTOM_CONTROL_3},
@@ -438,67 +440,38 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
 };
 
-const char* Joy_button_text_german_u[] = {
-	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
-	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
-	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
-	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
-	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
-	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+// Localization strings for hat positions. Back[0], Forward[1], Left[2], Right[3]
+// Forward[0], Right[1], Backward[2], Left[3]
+const char* Joy_hat_text_german_u[JOY_NUM_HAT_POS] = {
+	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
 };
 
-const char* Joy_button_text_french_u[] = {
-	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
-	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
-	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
-	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
-	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		("Chapeau Arri\xc3\xa8""re"),		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+const char* Joy_hat_text_french_u[JOY_NUM_HAT_POS] = {
+	"Chapeau Avant", "Chapeau Droite", ("Chapeau Arri\xc3\xa8""re"), "Chapeau Gauche"
 };
 
-const char* Joy_button_text_polish_u[] = {
-	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
-	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
-	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
-	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
-	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xc5\x82",		("Hat Prz\xc3\xb3""d"),	"Hat Lewo",		"Hat Prawo"
+const char* Joy_hat_text_polish_u[JOY_NUM_HAT_POS] = {
+	("Hat Prz\xc3\xb3""d"), "Hat Prawo", "Hat Ty\xc5\x82", "Hat Lewo"
 };
 
-const char* Joy_button_text_english_u[] = {
-	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
-	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
-	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
-	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
-	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
-	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
+const char* Joy_hat_text_english_u[JOY_NUM_HAT_POS] = {
+	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
 };
 
-const char* Joy_button_text_german[] = {
-	"Knopf 1",		"Knopf 2",		"Knopf 3",		"Knopf 4",		"Knopf 5",		"Knopf 6",
-	"Knopf 7",		"Knopf 8",		"Knopf 9",		"Knopf 10",		"Knopf 11",		"Knopf 12",
-	"Knopf 13",		"Knopf 14",		"Knopf 15",		"Knopf 16",		"Knopf 17",		"Knopf 18",
-	"Knopf 19",		"Knopf 20",		"Knopf 21",		"Knopf 22",		"Knopf 23",		"Knopf 24",
-	"Knopf 25",		"Knopf 26",		"Knopf 27",		"Knopf 28",		"Knopf 29",		"Knopf 30",
-	"Knopf 31",		"Knopf 32",		"Hut Hinten",	"Hut Vorne",	"Hut Links",	"Hut Rechts"
+const char* Joy_hat_text_german[JOY_NUM_HAT_POS] = {
+	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
 };
 
-const char* Joy_button_text_french[] = {
-	"Bouton 1",		"Bouton 2",		"Bouton 3",		"Bouton 4",		"Bouton 5",		"Bouton 6",
-	"Bouton 7",		"Bouton 8",		"Bouton 9",		"Bouton 10",		"Bouton 11",		"Bouton 12",
-	"Bouton 13",		"Bouton 14",		"Bouton 15",		"Bouton 16",		"Bouton 17",		"Bouton 18",
-	"Bouton 19",		"Bouton 20",		"Bouton 21",		"Bouton 22",		"Bouton 23",		"Bouton 24",
-	"Bouton 25",		"Bouton 26",		"Bouton 27",		"Bouton 28",		"Bouton 29",		"Bouton 30",
-	"Bouton 31",		"Bouton 32",		"Chapeau Arri\x8Are",		"Chapeau Avant",		"Chapeau Gauche",		"Chapeau Droite"
+const char* Joy_hat_text_french[JOY_NUM_HAT_POS] = {
+	"Chapeau Avant", "Chapeau Droite", "Chapeau Arri\x8Are", "Chapeau Gauche"
 };
 
-const char* Joy_button_text_polish[] = {
-	"Przyc.1",		"Przyc.2",		"Przyc.3",		"Przyc.4",		"Przyc.5",		"Przyc.6",
-	"Przyc.7",		"Przyc.8",		"Przyc.9",		"Przyc.10",	"Przyc.11",	"Przyc.12",
-	"Przyc.13",	"Przyc.14",	"Przyc.15",	"Przyc.16",	"Przyc.17",	"Przyc.18",
-	"Przyc.19",	"Przyc.20",	"Przyc.21",	"Przyc.22",	"Przyc.23",	"Przyc.24",
-	"Przyc.25",	"Przyc.26",	"Przyc.27",	"Przyc.28",	"Przyc.29",	"Przyc.30",
-	"Przyc.31",	"Przyc.32",	"Hat Ty\xB3",		"Hat Prz\xF3\x64",	"Hat Lewo",		"Hat Prawo"
+const char* Joy_hat_text_polish[JOY_NUM_HAT_POS] = {
+	"Hat Prz\xF3\x64", "Hat Prawo", "Hat Ty\xB3", "Hat Lewo"
+};
+
+const char* Joy_hat_text_english[JOY_NUM_HAT_POS] = {
+	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
 };
 
 //English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
@@ -543,17 +516,6 @@ const char *Scan_code_text_english[] = {
 	"",				"",				"",				"",				"",				"",				"",				"",
 	"",				"",				"",				"",				"",				"",				"",				"",
 };
-
-const char* Joy_button_text_english[] = {
-	"Button 1",		"Button 2",		"Button 3",		"Button 4",		"Button 5",		"Button 6",
-	"Button 7",		"Button 8",		"Button 9",		"Button 10",	"Button 11",	"Button 12",
-	"Button 13",	"Button 14",	"Button 15",	"Button 16",	"Button 17",	"Button 18",
-	"Button 19",	"Button 20",	"Button 21",	"Button 22",	"Button 23",	"Button 24",
-	"Button 25",	"Button 26",	"Button 27",	"Button 28",	"Button 29",	"Button 30",
-	"Button 31",	"Button 32",	"Hat Back",		"Hat Forward",	"Hat Left",		"Hat Right"
-};
-
-const char **Joy_button_text = Joy_button_text_english;
 
 bool Generate_controlconfig_table = false;
 
@@ -723,7 +685,69 @@ const char *textify_scancode_universal(int code)
 	
 	return text;
 }
-//XSTR:ON
+
+const char* textify_button(int btn) {
+	static char text[BTN_MSG_LEN];
+
+	if ((btn < 0) || (btn >= JOY_TOTAL_BUTTONS))
+		return "None";
+
+	text[0] = '\0';
+
+	if (btn < JOY_NUM_BUTTONS) {
+		// Is a button.
+		if (Lcl_gr) {
+			sprintf(text, "Knopf %i", btn);
+
+		} else if (Lcl_fr) {
+			sprintf(text, "Bouton %i", btn);
+
+		} else if (Lcl_pl) {
+			sprintf(text, "Przyc.%i", btn);
+
+		} else {
+			sprintf(text, "Button %i", btn);
+		}
+
+	} else {
+		//is Hat
+		btn -= JOY_NUM_BUTTONS;
+		Assertion(btn <= JOY_NUM_HAT_POS, "Invalid btn value '%i' after hat position translation.", btn);
+
+		if (Unicode_text_mode) {
+			// use unicode character maps
+			if (Lcl_gr) {
+				strcpy_s(text, Joy_hat_text_german_u[btn]);
+
+			} else if (Lcl_fr) {
+				strcpy_s(text, Joy_hat_text_french_u[btn]);
+
+			} else if (Lcl_pl) {
+				strcpy_s(text, Joy_hat_text_polish_u[btn]);
+
+			} else {
+				strcpy_s(text, Joy_hat_text_english_u[btn]);
+			}
+		} else {
+			// use ascii character maps
+			if (Lcl_gr) {
+				strcpy_s(text, Joy_hat_text_german[btn]);
+
+			} else if (Lcl_fr) {
+				strcpy_s(text, Joy_hat_text_french[btn]);
+
+			} else if (Lcl_pl) {
+				strcpy_s(text, Joy_hat_text_polish[btn]);
+
+			} else {
+				strcpy_s(text, Joy_hat_text_english[btn]);
+			}
+		}
+	}
+
+	return text;
+}
+	//XSTR:ON
 
 void control_config_common_load_overrides();
 
@@ -756,36 +780,6 @@ void control_config_common_init()
 	// load player presets
 	load_preset_files();
 
-	// Init control label localization
-	if (Unicode_text_mode) {
-		if (Lcl_gr) {
-			Joy_button_text = Joy_button_text_german_u;
-		}
-		else if (Lcl_fr) {
-			Joy_button_text = Joy_button_text_french_u;
-		}
-		else if (Lcl_pl) {
-			Joy_button_text = Joy_button_text_polish_u;
-		}
-		else {
-			Joy_button_text = Joy_button_text_english_u;
-		}
-	}
-	else {
-		if (Lcl_gr) {
-			Joy_button_text = Joy_button_text_german;
-		}
-		else if (Lcl_fr) {
-			Joy_button_text = Joy_button_text_french;
-		}
-		else if (Lcl_pl) {
-			Joy_button_text = Joy_button_text_polish;
-		}
-		else {
-			Joy_button_text = Joy_button_text_english;
-		}
-	}
-
 	// Old XSTR indices have been put beside their corresponding label in case we use them again
 	Axis_text[0] = vm_strdup(XSTR("X Axis", 1647));		// XSTR 1021 - "Joystick/Mouse X Axis"
 	Axis_text[1] = vm_strdup(XSTR("Y Axis", 1648));		// XSTR 1022 - "Joystick/Mouse Y Axis"
@@ -793,6 +787,8 @@ void control_config_common_init()
 	Axis_text[3] = vm_strdup(XSTR("rX Axis", 1650));	// XSTR 1024 - "Joystick rX Axis"
 	Axis_text[4] = vm_strdup(XSTR("rY Axis", 1651));	// XSTR 1025 - "Joystick rY Axis"
 	Axis_text[5] = vm_strdup(XSTR("rZ Axis", 1652));	// XSTR 1026 - "Joystick rZ Axis"
+	Axis_text[6] = vm_strdup(XSTR("U Axis", 1860));
+	Axis_text[7] = vm_strdup(XSTR("V Axis", 1861));
 
 	Mouse_button_text[0] = vm_strdup(XSTR("Left Button", 1027));
 	Mouse_button_text[1] = vm_strdup(XSTR("Right Button", 1028));
@@ -1154,6 +1150,7 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(TOGGLE_GLIDING)
 
 	ADD_ENUM_TO_ACTION_MAP(CYCLE_PRIMARY_WEAPON_SEQUENCE)
+	ADD_ENUM_TO_ACTION_MAP(CYCLE_PRIMARY_WEAPON_PATTERN)
 
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_1)
 	ADD_ENUM_TO_ACTION_MAP(CUSTOM_CONTROL_2)
@@ -1206,6 +1203,8 @@ void LoadEnumsIntoAxisMap() {
 	mAxisNameToVal["RX_AXIS"] = JOY_RX_AXIS;
 	mAxisNameToVal["RY_AXIS"] = JOY_RY_AXIS;
 	mAxisNameToVal["RZ_AXIS"] = JOY_RZ_AXIS;
+	mAxisNameToVal["U_AXIS"] = JOY_U_AXIS;
+	mAxisNameToVal["V_AXIS"] = JOY_V_AXIS;
 }
 
 void LoadEnumsIntoHatMap() {
@@ -2700,7 +2699,7 @@ SCP_string CC_bind::textify() const {
 		case CID_JOY2:
 		case CID_JOY3:
 			Assert((btn >= 0) && (btn < JOY_TOTAL_BUTTONS));
-			retval = SCP_string(Joy_button_text[btn]);
+			retval = SCP_string(textify_button(btn));
 			break;
 
 		case CID_NONE:

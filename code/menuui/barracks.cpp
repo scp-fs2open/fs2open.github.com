@@ -185,17 +185,6 @@ struct barracks_bitmaps {
 	int b;
 };
 
-struct barracks_buttons {
-	const char *filename;
-	int x, y;
-	int text_x, text_y;	// this is where the text label is
-	int hotspot;
-	int repeat;
-	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
-
-	barracks_buttons(const char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
-};
-
 static int Background_bitmap = -1;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_region;
@@ -468,15 +457,13 @@ void barracks_init_stats(scoring_struct *stats)
 			Assert(Num_stat_lines < Max_stat_lines);
 
 			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-			if (Num_stat_lines >= Max_stat_lines)
+			if (Num_stat_lines < Max_stat_lines)
 			{
-				break;
+				Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
+				sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
+				sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
+				Num_stat_lines++;
 			}
-
-			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
-			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
-			Num_stat_lines++;
 
 			// work out the total score from ship kills
 			score_from_kills += stats->kills[i] * it->score;
@@ -575,7 +562,11 @@ int barracks_new_pilot_selected()
 
 	// init stuff to reflect new pilot
 	int i;
-	barracks_init_stats(&Cur_pilot->stats);
+	scoring_struct pstats;
+
+	Pilot.export_stats(&pstats);
+	barracks_init_stats(&pstats);
+
 	strcpy_s(stripped, Cur_pilot->image_filename);
 	barracks_strip_pcx(stripped);
 	for (i=0; i<Num_pilot_images; i++) {

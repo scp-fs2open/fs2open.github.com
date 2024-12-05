@@ -14,6 +14,7 @@
 #include "hud/hudtarget.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "freespace.h"
 
 extern int Training_obj_num_display_lines;
 
@@ -24,7 +25,7 @@ namespace api {
 //**********LIBRARY: HUD library
 ADE_LIB(l_HUD, "HUD", "hu", "HUD library");
 
-ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
+ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Whether the HUD is toggled on, i.e. is the HUD enabled.  See also hu.isOnHudDrawCalled()", "boolean", "Whether the HUD can be drawn")
 {
 	bool to_draw = false;
 
@@ -332,6 +333,11 @@ ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines display
 ADE_FUNC(isCommMenuOpen, l_HUD, nullptr, "Returns whether the HUD comm menu is currently being displayed", "boolean", "Whether the comm menu is open")
 {
 	return ade_set_args(L, "b", (Player->flags & PLAYER_FLAGS_MSG_MODE) != 0);
+}
+
+ADE_FUNC(isOnHudDrawCalled, l_HUD, nullptr, "Returns whether the On Hud Draw hook is called this frame.  This is useful for scripting logic that is relevant to HUD drawing but is not part of the On Hud Draw hook", "boolean", "Whether the On Hud Draw hook is called this frame")
+{
+	return ade_set_args(L, "b", game_actually_playing() && !Pre_player_entry && !(Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)));
 }
 
 ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")

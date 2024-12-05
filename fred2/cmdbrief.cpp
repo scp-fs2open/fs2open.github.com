@@ -43,13 +43,12 @@ void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(cmd_brief_dlg)
 	DDX_Text(pDX, IDC_ANI_FILENAME, m_ani_filename);
+	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_WAVE_FILENAME, m_wave_filename);
-	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
 	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
+	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(cmd_brief_dlg, CDialog)

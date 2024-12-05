@@ -1,5 +1,5 @@
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Make sure the source and binary directory are not the sample
@@ -129,6 +129,8 @@ OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
 OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
 
+OPTION(FSO_USE_LTO "Build using LTO (only for release builds)" ON)
+
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
 MARK_AS_ADVANCED(FORCE FSO_USE_OPENALSOFT)
@@ -163,6 +165,14 @@ if(FSO_BUILD_APPIMAGE)
 endif()
 
 include(clang-tidy)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTO_AVAILABLE)
+if (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+	message("Enabled LTO")
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
 
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)

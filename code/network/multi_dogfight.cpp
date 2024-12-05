@@ -146,7 +146,7 @@ void multi_df_level_pre_enter()
 }
 
 // evaluate a kill in dogfight by a netplayer
-void multi_df_eval_kill(net_player *killer, object *dead_obj)
+void multi_df_eval_kill(const net_player *killer, const object *dead_obj)
 {
 	int dead_index = -1;
 	

@@ -31,6 +31,7 @@
 #include "weapon/trails.h"
 #include "ship/ship_flags.h"
 #include "weapon/weapon_flags.h"
+#include "weapon/weapon.h"
 #include "ai/ai.h"
 
 #include <string>
@@ -131,6 +132,7 @@ public:
 
 	// dynamic weapon linking - by RSAXVC
 	int primary_bank_slot_count[MAX_SHIP_PRIMARY_BANKS];	// Fire this many slots at a time
+	int dynamic_firing_pattern[MAX_SHIP_PRIMARY_BANKS];		// Index into ship_info's dyn_firing_patterns_allowed
 	// end dynamic weapon linking
 
 	int secondary_bank_ammo[MAX_SHIP_SECONDARY_BANKS];			// Number of missiles left in secondary bank
@@ -163,8 +165,12 @@ public:
 	int	burst_seed[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];    // A random seed, recalculated only when the weapon's burst resets
 	int external_model_fp_counter[MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS];
 
-	size_t primary_bank_pattern_index[MAX_SHIP_PRIMARY_BANKS];
-	size_t secondary_bank_pattern_index[MAX_SHIP_SECONDARY_BANKS];
+	SCP_vector<int> primary_firepoint_indices[MAX_SHIP_PRIMARY_BANKS];	// A list of firepoint indices which is shuffled for random fire ordering
+	int primary_firepoint_next_to_fire_index[MAX_SHIP_PRIMARY_BANKS];	// For cycle firing modes, keeps track of which firepoint we're on
+																		// For randomized ones, keeps track of where we are in primary_firepoint_indices
+
+	size_t primary_bank_substitution_pattern_index[MAX_SHIP_PRIMARY_BANKS];
+	size_t secondary_bank_substitution_pattern_index[MAX_SHIP_SECONDARY_BANKS];
 
 	// for type5 beams, keeps track of accumulated per burst rotation, added to with each shot (or burst)
 	float per_burst_rot;
@@ -783,7 +789,6 @@ public:
 
 	float alpha_mult;
 
-	int last_fired_point[MAX_SHIP_PRIMARY_BANKS]; //for fire point cylceing
 	ship_subsys *last_fired_turret; // which turret has fired last
 
 	// fighter bay door stuff, parent side
@@ -1051,6 +1056,9 @@ typedef struct ship_type_info {
 } ship_type_info;
 
 extern SCP_vector<ship_type_info> Ship_types;
+extern bool Fighter_bomber_valid;				// Whether "fighter/bomber" can be used as a union of "fighter" and "bomber"
+extern const char *Fighter_bomber_type_name;
+extern int Ship_type_fighter, Ship_type_bomber, Ship_type_fighter_bomber;
 
 class rcs_thruster_info {
     public:
@@ -1319,6 +1327,8 @@ public:
 
 	// Shudder modifier for the ship
 	float ship_shudder_modifier;
+
+	SCP_vector<FiringPattern> dyn_firing_patterns_allowed[MAX_SHIP_PRIMARY_BANKS];
 
 	float	max_hull_strength;				// Max hull strength of this class of ship.
 	float	max_shield_strength;
@@ -1738,7 +1748,7 @@ extern void physics_ship_init(object *objp);
 //	It is specifically used for targeting.
 //	Return true/false for subsystem found/not found.
 //	Stuff vector *pos with absolute position.
-extern int get_subsystem_pos(vec3d *pos, object *objp, ship_subsys *subsysp);
+extern int get_subsystem_pos(vec3d *pos, const object *objp, const ship_subsys *subsysp);
 
 extern int ship_info_lookup(const char *name);
 extern int ship_name_lookup(const char *name, int inc_players = 0);	// returns the index into Ship array of name
@@ -1786,7 +1796,7 @@ extern void shield_hit_close();
 // trying to force through it.
 // If quadrant is -1, looks at entire shield, otherwise
 // just one quadrant
-int ship_is_shield_up( object *obj, int quadrant );
+int ship_is_shield_up( const object *obj, int quadrant );
 
 //=================================================
 void ship_model_replicate_submodels(object *objp);
@@ -1799,25 +1809,25 @@ extern void compute_slew_matrix(matrix *orient, angles *a);
 extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
 extern void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew = true);		// returns the eye data, local to the ship
 
-extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, vec3d *attacker_pos = nullptr);
+extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
-extern int ship_find_subsys(ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
-extern int ship_get_subsys_index(ship_subsys *subsys);
+extern int ship_find_subsys(const ship *sp, const char *ss_name);		// returns numerical index in linked list of subsystems
+extern int ship_get_subsys_index(const ship_subsys *subsys);
 
 extern bool ship_subsystems_blown(const ship *shipp, int type, bool skip_dying_check = false);
 extern float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_check = false, bool no_minimum_engine_str = false);
 extern ship_subsys *ship_get_subsys(const ship *shipp, const char *subsys_name);
-extern int ship_get_num_subsys(ship *shipp);
+extern int ship_get_num_subsys(const ship *shipp);
 extern ship_subsys *ship_get_closest_subsys_in_sight(const ship *sp, int subsys_type, const vec3d *attacker_pos);
 
 //WMC
-char *ship_subsys_get_name(ship_subsys *ss);
-bool ship_subsys_has_instance_name(ship_subsys *ss);
+const char *ship_subsys_get_name(const ship_subsys *ss);
+bool ship_subsys_has_instance_name(const ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys* ss, const char* n_name);
 
 // subsys disruption
-extern int ship_subsys_disrupted(ship_subsys *ss);
-extern int ship_subsys_disrupted(ship *sp, int type);
+extern int ship_subsys_disrupted(const ship_subsys *ss);
+extern int ship_subsys_disrupted(const ship *sp, int type);
 extern void ship_subsys_set_disrupted(ship_subsys *ss, int time);
 
 extern int	ship_do_rearm_frame( object *objp, float frametime );
@@ -1841,7 +1851,7 @@ extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);
 extern int ship_docking_valid(int docker, int dockee);
-extern int get_quadrant(vec3d *hit_pnt, object *shipobjp = NULL);	//	Return quadrant num of given hit point.
+extern int get_quadrant(const vec3d *hit_pnt, const object *shipobjp = nullptr);	//	Return quadrant num of given hit point.
 
 int ship_secondary_bank_has_ammo(int shipnum);	// check if current secondary bank has ammo
 
@@ -1878,7 +1888,7 @@ extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should
 #endif
 
 void ship_subsystem_delete(ship *shipp);
-float ship_quadrant_shield_strength(object *hit_objp, int quadrant_num);
+float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);
@@ -2100,7 +2110,7 @@ int get_default_player_ship_index();
  * @return point is inside bbox, TRUE/1
  * @return point is outside bbox, FALSE/0
  */
-int get_nearest_bbox_point(object *ship_obj, vec3d *start, vec3d *box_pt);
+int get_nearest_bbox_point(const object *ship_obj, const vec3d *start, vec3d *box_pt);
 
 extern flagset<Ship::Ship_Flags> Ignore_List;
 inline bool should_be_ignored(ship* shipp) {

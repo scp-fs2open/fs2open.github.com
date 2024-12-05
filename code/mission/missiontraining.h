@@ -25,7 +25,7 @@ extern int Training_context_speed_min;
 extern int Training_context_speed_max;
 extern int Training_context_speed_set;
 extern TIMESTAMP Training_context_speed_timestamp;
-extern waypoint_list *Training_context_path;
+extern int Training_context_waypoint_path;
 extern int Training_context_goal_waypoint;
 extern int Training_context_at_waypoint;
 extern float Training_context_distance;
@@ -41,6 +41,7 @@ void training_mission_shutdown();
 void training_check_objectives();
 void message_training_queue(const char *text, TIMESTAMP timestamp, int length = -1);
 SCP_string message_translate_tokens(const char *text);
+void string_replace_tokens_with_keys(SCP_string& text);
 void training_fail();
 void message_training_update_frame();
 

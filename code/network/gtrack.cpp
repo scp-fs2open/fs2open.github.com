@@ -381,9 +381,8 @@ void IdleGameTracker()
 	//End New 7-9-98
 
 	//Check for incoming
-		
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_GAME_TRACKER))
 	{
@@ -657,7 +656,7 @@ void StartTrackerGame(void *buffer)
 //A new function
 void RequestGameCountWithFilter(void *filter) 
 {
-	game_packet_header GameCountReq;
+	game_packet_header GameCountReq{};
 	ubyte packet_data[sizeof(game_packet_header)];
 	int packet_length = 0;
 

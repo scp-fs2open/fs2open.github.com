@@ -36,8 +36,10 @@ enum Joy_axis_index : short {
 	JOY_RX_AXIS,
 	JOY_RY_AXIS,
 	JOY_RZ_AXIS,
+	JOY_U_AXIS,
+	JOY_V_AXIS,
 
-	JOY_NUM_AXES	// Number of axes a joystick may have. Must be last enum in Joy_axis_index.
+	JOY_NUM_AXES	//!< Max number of joy axes that FSO can handle. Must be last enum in Joy_axis_index.
 };
 
 // Aliases for mouse axes.  Really should unify this...
@@ -296,6 +298,8 @@ enum IoActionId : int {
 	JOY_REL_THROTTLE_AXIS							= 128,
 
 	TOGGLE_HUD_SHADOWS,
+
+	CYCLE_PRIMARY_WEAPON_PATTERN,
 
 	/*!
 	 * This must always be below the last defined item
@@ -683,7 +687,6 @@ extern SCP_vector<conflict> Conflicts; //!< Stores conflict data for the keybind
 
 extern SCP_vector<CCI> Control_config;		//!< Stores the keyboard configuration
 extern SCP_vector<CC_preset> Control_config_presets; // tabled control presets; pointers to config_item arrays
-extern const char **Joy_button_text;			// String table of button labels.  XSTR'd on init.
 
 extern bool Generate_controlconfig_table;
 
@@ -908,7 +911,18 @@ const char *textify_scancode(int code);
  */
 const char *textify_scancode_universal(int code);
 
-/*!
+/**
+ * @brief Creates a button label based on btn index and locale settings.
+ * 
+ * @param[in]   btn The btn to textify
+ * 
+ * @return The text representation of the btn
+ * 
+ * @note Not thread safe.  Has an internal buffer for the return value which is overwritten on each call.
+ */
+const char* textify_button(int btn);
+
+	/*!
  * @brief Checks how long a control has been active
  *
  * @param[in] id The IoActionId of the control to check
