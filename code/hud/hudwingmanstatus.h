@@ -28,6 +28,9 @@ void	hud_set_wingman_status_none( int wing_index, int wing_pos);
 void	hud_wingman_status_start_flash(int wing_index, int wing_pos);
 void	hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp);
 
+// for resetting the gauge via sexp
+void	hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_squad_wingnums);
+
 class HudGaugeWingmanStatus: public HudGauge
 {
 protected:
