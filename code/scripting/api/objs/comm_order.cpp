@@ -2,8 +2,7 @@
 #include "comm_order.h"
 #include "hud/hudsquadmsg.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 //**********HANDLE: mission goals
 ADE_OBJ_NO_MULTI(l_Comm_Item, int, "comm_item", "Comm Item handle");
@@ -81,5 +80,4 @@ ADE_FUNC(isValid, l_Comm_Item, nullptr, "Detect if the handle is valid", "boolea
 	return ade_set_args(L, "b", (current >= 0) && (current < Num_menu_items));
 }
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api

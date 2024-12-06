@@ -271,7 +271,7 @@ ADE_INDEXER(l_Mission_Comm_Items,
 
 ADE_FUNC(__len,
 	l_Mission_Comm_Items,
-	NULL,
+	nullptr,
 	"Number of comm orders in mission currently. Note that the value will change when an order is selected or the open/closed state of the comm menu is changed.",
 	"number",
 	"Number of comm orders in the mission. 0 if comm menu is closed")
