@@ -1361,6 +1361,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	std::optional<modular_curves_entry> damage_mult_curve;
+
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
 		//Legacy table. Just populates the modular curve set!
 		SCP_string curve_name;
@@ -1369,10 +1371,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (curve < 0)
 			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 
-		if (subtype == WP_BEAM)
-			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
-		else
-			wip->weapon_hit_curves.add_curve("Lifetime", weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, modular_curves_entry{ curve });
+		damage_mult_curve.emplace(modular_curves_entry{curve});
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -2822,6 +2821,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$BeamInfo:") ) {
 		wip->wi_flags.set(Weapon::Info_Flags::Beam);
 		// beam type
+
+		if (damage_mult_curve)
+			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
+
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
@@ -3424,6 +3427,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				generic_anim_init(&bsip->texture, NULL);
 			}
 		}
+	} else {
+		// if the weapon is not a beam
+		if (damage_mult_curve)
+			wip->weapon_hit_curves.add_curve("Lifetime", weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
 	}
 
 	while ( optional_string("$Pspew:") ) {

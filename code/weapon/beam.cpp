@@ -1688,9 +1688,10 @@ void beam_render_muzzle_glow(beam *b)
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(b);
 		rand_val = 1.0f;
-	} else
+	}
 	// if the beam is warming down
-	if (b->warmdown_stamp != -1) {
+	else if (b->warmdown_stamp != -1)
+	{
 		// get warmup pct
 		pct = 1.0f - BEAM_WARMDOWN_PCT(b);
 		rand_val = 1.0f;
