@@ -33,6 +33,8 @@
 #include "model/modelrender.h"
 #include "render/3d.h"
 
+#include "utils/modular_curves.h"
+
 class object;
 class ship_subsys;
 
@@ -166,7 +168,7 @@ typedef struct weapon {
 	float launch_speed;			// the initial forward speed (can vary due to additive velocity or acceleration)
 								// currently only gets set when weapon_info->acceleration_time is used
 
-	int next_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
+	TIMESTAMP last_spawn_time[MAX_SPAWN_TYPES_PER_WEAPON];		// used for continuous child spawn
 
 	mc_info* collisionInfo; // The last collision of this weapon or NULL if it had none
 
@@ -175,7 +177,10 @@ typedef struct weapon {
 	WeaponState weapon_state; // The current state of the weapon
 
 	float beam_per_shot_rot; // for type 5 beams
+
+	modular_curves_entry_instance modular_curves_instance;
 } weapon;
+
 
 
 // info specific to beam weapons
@@ -245,7 +250,6 @@ typedef struct beam_weapon_info {
 	generic_anim beam_glow;				// muzzle glow bitmap
 	float glow_length;					// (DahBlount) determines the length the muzzle glow when using a directional glow
 	bool directional_glow;				// (DahBlount) makes the muzzle glow render to a poly that is oriented along the direction of fire
-	int beam_alpha_curve_idx;			// alpha multiplier over the lifetime of the beam
 	int beam_shots;						// # of shots the beam takes
 	float beam_shrink_factor;			// what percentage of total beam lifetime when the beam starts shrinking
 	float beam_shrink_pct;				// what percent/second the beam shrinks at
@@ -338,6 +342,16 @@ enum class FiringPattern {
 	RANDOM_REPEATING,
 };
 
+float weapon_get_lifetime_pct(const weapon& wp);
+float weapon_get_age(const weapon& wp);
+
+float beam_get_warmup_lifetime_pct(const beam& wp);
+float beam_get_warmdown_lifetime_pct(const beam& wp);
+float beam_get_warmdown_age(const beam& wp);
+
+struct weapon_info;
+extern SCP_vector<weapon_info> Weapon_info;
+
 struct weapon_info
 {
 	char	name[NAME_LENGTH];				// name of this weapon
@@ -376,19 +390,18 @@ struct weapon_info
 	float laser_headon_switch_ang;			// at what angle
 
 	float laser_length;
-	int laser_length_curve_idx;				// length over time curve
+	bool laser_length_by_frametime;
+	vec3d	bitmap_color;						// color modifier for main laser bitmap, unlike the 'laser colors' which affect the glow bitmap
 	color	laser_color_1;						// for cycling between glow colors
 	color	laser_color_2;						// for cycling between glow colors
 	float	laser_head_radius, laser_tail_radius;
 	float laser_glow_length_scale;
 	float laser_glow_head_scale;
 	float laser_glow_tail_scale;
-	int	laser_radius_curve_idx;				// tail + head radius over time curve
 	float laser_min_pixel_size;
 	vec3d	laser_pos_offset;
 
 	float	collision_radius_override;          // overrides the radius for the purposes of collision
-	int laser_alpha_curve_idx;			// alpha over time curve
 
 	bool 		light_color_set;
 	hdr_color 	light_color;		//For the light cast by the projectile
@@ -407,7 +420,6 @@ struct weapon_info
 
 	float	damage;								//	damage of weapon (for missile, damage within inner radius)
 	float	damage_time;						// point in the lifetime of the weapon at which damage starts to attenuate. This applies to non-beam primaries. (DahBlount)
-	int   damage_curve_idx;					// damage over time curve
 	float	atten_damage;							// The damage to attenuate to. (DahBlount)
 	float	damage_incidence_max;				// dmg multipler when weapon hits dead-on (perpindicular)
 	float	damage_incidence_min;				// dmg multipler when weapon hits glancing (parallel)
@@ -435,7 +447,6 @@ struct weapon_info
 	flagset<Weapon::Info_Flags>	wi_flags;							//	bit flags defining behavior, see WIF_xxxx
 
 	float turn_time;
-	int turn_rate_curve_idx;					// turn rate over time curve
 	float turn_accel_time;
 	float	cargo_size;							// cargo space taken up by individual weapon (missiles only)
 	float autoaim_fov;							// the weapon specific auto-aim field of view
@@ -664,7 +675,184 @@ struct weapon_info
 
 	animation::ModelAnimationSet animations;
 
-public:
+	enum class WeaponCurveOutputs {
+		// outputs
+		LASER_LENGTH_MULT,
+		LASER_RADIUS_MULT,
+		LASER_HEAD_RADIUS_MULT,
+		LASER_TAIL_RADIUS_MULT,
+		LASER_OFFSET_X_MULT,
+		LASER_OFFSET_Y_MULT,
+		LASER_OFFSET_Z_MULT,
+		LASER_HEADON_SWITCH_ANG_MULT,
+		LASER_HEADON_SWITCH_RATE_MULT,
+		LASER_ANIM_STATE,
+		LASER_ALPHA_MULT,
+		LASER_BITMAP_R_MULT,
+		LASER_BITMAP_G_MULT,
+		LASER_BITMAP_B_MULT,
+		LASER_GLOW_R_MULT,
+		LASER_GLOW_G_MULT,
+		LASER_GLOW_B_MULT,
+		LIGHT_INTENSITY_MULT,
+		LIGHT_RADIUS_MULT,
+		LIGHT_R_MULT,
+		LIGHT_G_MULT,
+		LIGHT_B_MULT,
+		DET_RADIUS_MULT,
+		TURN_RATE_MULT,
+		SPAWN_RATE_MULT,
+		SPAWN_COUNT_MULT,
+
+		NUM_VALUES
+	};
+
+  private:
+	static constexpr auto weapon_modular_curves_definition = make_modular_curve_definition<weapon, WeaponCurveOutputs>(
+			std::array {
+					std::pair {"Laser Length Mult", WeaponCurveOutputs::LASER_LENGTH_MULT},
+					std::pair {"Laser Radius Mult", WeaponCurveOutputs::LASER_RADIUS_MULT},
+					std::pair {"Laser Head Radius Mult", WeaponCurveOutputs::LASER_HEAD_RADIUS_MULT},
+					std::pair {"Laser Tail Radius Mult", WeaponCurveOutputs::LASER_TAIL_RADIUS_MULT},
+					std::pair {"Laser Offset X Mult", WeaponCurveOutputs::LASER_OFFSET_X_MULT},
+					std::pair {"Laser Offset Y Mult", WeaponCurveOutputs::LASER_OFFSET_Y_MULT},
+					std::pair {"Laser Offset Z Mult", WeaponCurveOutputs::LASER_OFFSET_Z_MULT},
+					std::pair {"Laser Headon Transition Angle Mult", WeaponCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT},
+					std::pair {"Laser Headon Transition Rate Mult", WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT},
+					std::pair {"Laser Animation State", WeaponCurveOutputs::LASER_ANIM_STATE},
+					std::pair {"Laser Alpha Mult", WeaponCurveOutputs::LASER_ALPHA_MULT},
+					std::pair {"Laser Bitmap R Mult", WeaponCurveOutputs::LASER_BITMAP_R_MULT},
+					std::pair {"Laser Bitmap G Mult", WeaponCurveOutputs::LASER_BITMAP_G_MULT},
+					std::pair {"Laser Bitmap B Mult", WeaponCurveOutputs::LASER_BITMAP_B_MULT},
+					std::pair {"Laser Glow R Mult", WeaponCurveOutputs::LASER_GLOW_R_MULT},
+					std::pair {"Laser Glow G Mult", WeaponCurveOutputs::LASER_GLOW_G_MULT},
+					std::pair {"Laser Glow B Mult", WeaponCurveOutputs::LASER_GLOW_B_MULT},
+					std::pair {"Light Intensity Mult", WeaponCurveOutputs::LIGHT_INTENSITY_MULT},
+					std::pair {"Light Radius Mult", WeaponCurveOutputs::LIGHT_RADIUS_MULT},
+					std::pair {"Light R Mult", WeaponCurveOutputs::LIGHT_R_MULT},
+					std::pair {"Light G Mult", WeaponCurveOutputs::LIGHT_G_MULT},
+					std::pair {"Light B Mult", WeaponCurveOutputs::LIGHT_B_MULT},
+					std::pair {"Detonation Radius Mult", WeaponCurveOutputs::DET_RADIUS_MULT},
+					std::pair {"Turn Rate Mult", WeaponCurveOutputs::TURN_RATE_MULT},
+					std::pair {"Child Spawn Rate Mult", WeaponCurveOutputs::SPAWN_RATE_MULT},
+					std::pair {"Child Spawn Count Mult", WeaponCurveOutputs::SPAWN_COUNT_MULT},
+			},
+			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
+			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
+			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
+			std::pair {"Max Hitpoints", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>{}},
+			std::pair {"Current Hitpoints", modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>{}},
+			std::pair {"Hitpoints Fraction", modular_curves_math_input<
+				modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>,
+				modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>,
+				ModularCurvesMathOperators::division
+			>{}},
+			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
+	);
+
+  public:
+	enum class WeaponHitCurveOutputs {
+		// outputs
+		DAMAGE_MULT,
+		HULL_DAMAGE_MULT,
+		SHIELD_DAMAGE_MULT,
+		SUBSYS_DAMAGE_MULT,
+		MASS_MULT,
+
+		NUM_VALUES
+	};
+
+  private:
+	static constexpr auto weapon_hit_modular_curves_definition = weapon_modular_curves_definition.derive_modular_curves_input_only_subset<object>(
+			std::pair {"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
+			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
+	).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
+			std::array {
+					std::pair {"Damage Mult", WeaponHitCurveOutputs::DAMAGE_MULT},
+					std::pair {"Hull Damage Mult", WeaponHitCurveOutputs::HULL_DAMAGE_MULT},
+					std::pair {"Shield Damage Mult", WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT},
+					std::pair {"Subsystem Damage Mult", WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT},
+					std::pair {"Mass Mult", WeaponHitCurveOutputs::MASS_MULT},
+			},
+			std::pair {"Dot", modular_curves_self_input{}}
+	);
+
+  public:
+	enum class BeamCurveOutputs {
+		// outputs
+		BEAM_WIDTH_MULT,
+		BEAM_ALPHA_MULT,
+		BEAM_ANIM_STATE,
+		GLOW_RADIUS_MULT,
+		GLOW_ALPHA_MULT,
+		GLOW_ANIM_STATE,
+
+		NUM_VALUES
+	};
+
+  private:
+	static constexpr auto beam_modular_curves_definition = make_modular_curve_definition<beam, BeamCurveOutputs>(
+			std::array {
+					std::pair {"Beam Width Mult", BeamCurveOutputs::BEAM_WIDTH_MULT},
+					std::pair {"Beam Alpha Mult", BeamCurveOutputs::BEAM_ALPHA_MULT},
+					std::pair {"Beam Anim State", BeamCurveOutputs::BEAM_ANIM_STATE},
+					std::pair {"Muzzle Glow Radius Mult", BeamCurveOutputs::GLOW_RADIUS_MULT},
+					std::pair {"Muzzle Glow Alpha Mult", BeamCurveOutputs::GLOW_ALPHA_MULT},
+					std::pair {"Muzzle Glow Anim State", BeamCurveOutputs::GLOW_ANIM_STATE},
+			},
+			std::pair {"Beam Lifetime", modular_curves_math_input<
+				modular_curves_math_input<
+					modular_curves_submember_input<&beam::life_total>,
+					modular_curves_submember_input<&beam::life_left>,
+					ModularCurvesMathOperators::subtraction
+				>,
+				modular_curves_submember_input<&beam::life_total>,
+				ModularCurvesMathOperators::division
+			>{}},
+			std::pair {"Beam Age", modular_curves_math_input<
+				modular_curves_submember_input<&beam::life_total>,
+				modular_curves_submember_input<&beam::life_left>,
+				ModularCurvesMathOperators::subtraction
+			>{}},
+			std::pair {"Warmup Lifetime", modular_curves_functional_input<beam_get_warmup_lifetime_pct>{}},
+			std::pair {"Warmdown Lifetime", modular_curves_functional_input<beam_get_warmdown_lifetime_pct>{}},
+			std::pair {"Warmdown Age", modular_curves_functional_input<beam_get_warmdown_age>{}},
+			std::pair {"Parent Radius", modular_curves_submember_input<&beam::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
+	);
+
+  public:
+	enum class BeamHitCurveOutputs {
+		// outputs
+		DAMAGE_MULT,
+		HULL_DAMAGE_MULT,
+		SHIELD_DAMAGE_MULT,
+		SUBSYS_DAMAGE_MULT,
+		MASS_MULT,
+
+		NUM_VALUES
+	};
+
+  private:
+	static constexpr auto beam_hit_modular_curves_definition =
+		beam_modular_curves_definition
+			.derive_modular_curves_subset<object, BeamHitCurveOutputs>(
+				std::array{
+					std::pair{"Damage Mult", BeamHitCurveOutputs::DAMAGE_MULT},
+					std::pair{"Hull Damage Mult", BeamHitCurveOutputs::HULL_DAMAGE_MULT},
+					std::pair{"Shield Damage Mult", BeamHitCurveOutputs::SHIELD_DAMAGE_MULT},
+					std::pair{"Subsystem Damage Mult", BeamHitCurveOutputs::SUBSYS_DAMAGE_MULT},
+					std::pair{"Mass Mult", BeamHitCurveOutputs::MASS_MULT},
+				},
+				std::pair{"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
+				std::pair{"Target Radius", modular_curves_submember_input<&object::radius>{}}
+			);
+
+  public:
+	MODULAR_CURVE_SET(weapon_curves, weapon_info::weapon_modular_curves_definition);
+	MODULAR_CURVE_SET(weapon_hit_curves, weapon_info::weapon_hit_modular_curves_definition);
+	MODULAR_CURVE_SET(beam_curves, weapon_info::beam_modular_curves_definition);
+	MODULAR_CURVE_SET(beam_hit_curves, weapon_info::beam_hit_modular_curves_definition);
+
 	weapon_info();
 
     inline bool is_primary()            const { return subtype == WP_LASER || subtype == WP_BEAM; } // either of these is allowed in a primary bank
@@ -730,8 +918,6 @@ public:
 };
 
 extern weapon_explosions Weapon_explosions;
-
-extern SCP_vector<weapon_info> Weapon_info;
 
 extern int Num_weapons;
 extern int First_secondary_index;

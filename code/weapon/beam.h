@@ -17,6 +17,7 @@
 //
 #include "globalincs/globals.h"
 #include "model/model.h"
+#include "utils/modular_curves.h"
 
 // prototypes
 class object;
@@ -218,7 +219,9 @@ typedef struct beam {
 	bool rotates;					// type 5s only, determines whether it rotates
 	float type5_rot_speed;          // how fast it rotates if it does
 
-	WeaponState weapon_state;  
+	WeaponState weapon_state;
+
+	modular_curves_entry_instance modular_curves_instance;
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams

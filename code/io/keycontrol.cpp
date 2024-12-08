@@ -221,8 +221,6 @@ int Tool_enabled = 0;
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
 
-extern float do_subobj_hit_stuff(object *ship_obj, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor);
-
 extern void mission_goal_mark_all_true( int type );
 
 int Normal_key_set[] = {
