@@ -662,7 +662,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot = 1.f)
+float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;

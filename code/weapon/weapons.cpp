@@ -2657,7 +2657,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				// since curves are used for spawn rate now, we just parse the value into a curve of spawn rate over absolute age
 				// this will behave correctly even if it's being used together with other spawn rate curves
 				SCP_string curve_name = wip->name;
-				curve_name += "SpawnDelayCurve" + spawn_weap;
+				curve_name += "SpawnDelayCurve" + std::to_string(spawn_weap);
 
 				Curve new_curve = Curve(curve_name);
 				new_curve.keyframes.push_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
