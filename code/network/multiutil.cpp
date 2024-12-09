@@ -2948,8 +2948,10 @@ int multi_get_connection_speed()
 		cspeed = CONNECTION_SPEED_CABLE;
 	} else if ( !stricmp(connection_speed, NOX("Fast")) ) {
 		cspeed = CONNECTION_SPEED_T1;
+	} else if (!stricmp(connection_speed, NOX("None"))) {
+		cspeed = CONNECTION_SPEED_T1;	// default to Fast, per the os_config_read_string() call; per #define in multi.h, None doesn't really mean anything
 	} else {
-		cspeed = CONNECTION_SPEED_NONE;
+		cspeed = CONNECTION_SPEED_NONE;	// this will now no longer be returned unless the connection speed string is invalid
 	}
 
 	return cspeed;
