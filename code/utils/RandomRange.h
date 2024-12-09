@@ -10,7 +10,14 @@
 #include <type_traits>
 #include <limits>
 
+//TODO move to type traits
+template<typename T, typename F>
+constexpr auto has_member_impl(F&& f) -> decltype(f(std::declval<T>()), true) { return true; }
 
+template<typename>
+constexpr bool has_member_impl(...) { return false; }
+
+#define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){} )
 
 namespace util {
 
@@ -134,6 +141,21 @@ class RandomRange {
 	{
 		return m_maxValue;
 	}
+
+	/**
+	 * @brief Gets the average expected value returned by this random range
+	 *
+	 * @return The average expected value
+	 */
+	ValueType avg() const
+	{
+		if constexpr (has_member(DistributionType, avg())) {
+			return m_distribution.avg();
+		}
+		else {
+			return (m_distribution.min() + m_distribution.max()) / 2.0f;
+		}
+	}
 };
 
 /**
@@ -192,6 +214,10 @@ class BoundedNormalDistribution {
 	inline result_type max() const
 	{
 		return m_param.max;
+	}
+	inline result_type avg() const
+	{
+		return m_param.normal_parameters.mean();
 	}
 	inline bool operator==(const BoundedNormalDistribution& other) const
 	{
@@ -366,21 +392,15 @@ class CurveNumberDistribution {
 	{
 		m_param = p;
 	}
-	template <typename Generator>
-	inline result_type operator()(Generator& generator, const param_type& param)
+
+	static inline result_type getRandAt(float rand, float max_integral, const param_type& param)
 	{
-		if (param.curve < 0) {
-			return 0.f;
-		}
 		float lower_bound = Curves[param.curve].keyframes.front().pos.x;
 		float upper_bound = Curves[param.curve].keyframes.back().pos.x;
 
-		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
-		float rand =
-			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
 		float curve_min = lower_bound;
 		float curve_max = upper_bound;
-		
+
 		for (size_t count = 0; count < 16; count++) {
 			float current_pos = (lower_bound + upper_bound) / 2.f;
 			float current_value = Curves[param.curve].GetValueIntegrated(current_pos);
@@ -399,6 +419,19 @@ class CurveNumberDistribution {
 			   param.min;
 	}
 	template <typename Generator>
+	inline result_type operator()(Generator& generator, const param_type& param)
+	{
+		if (param.curve < 0) {
+			return 0.f;
+		}
+
+		float max_integral = Curves[param.curve].GetValueIntegrated(Curves[param.curve].keyframes.back().pos.x);
+		float rand =
+			std::generate_canonical<float, std::numeric_limits<float>::digits, Generator>(generator) * max_integral;
+
+		return getRandAt(rand, max_integral, param);
+	}
+	template <typename Generator>
 	inline result_type operator()(Generator& generator)
 	{
 		return this->operator()(generator, m_param);
@@ -410,6 +443,18 @@ class CurveNumberDistribution {
 	inline result_type max() const
 	{
 		return Curves[m_param.curve].keyframes.back().pos.x;
+	}
+	inline result_type avg() const
+	{
+		if (m_param.curve < 0) {
+			return 0.f;
+		}
+		float lower_bound = Curves[m_param.curve].keyframes.front().pos.x;
+		float upper_bound = Curves[m_param.curve].keyframes.back().pos.x;
+
+		float max_integral = Curves[m_param.curve].GetValueIntegrated(Curves[m_param.curve].keyframes.back().pos.x);
+
+		return getRandAt((lower_bound + upper_bound) * 0.5f, max_integral, m_param);
 	}
 	inline bool operator==(const CurveNumberDistribution& other) const
 	{
@@ -507,29 +552,6 @@ class ParsedRandomRange {
   private:
 	variant m_random_range;
 
-	// these could have been one-line auto lambdas if we had C++ 14
-	struct next_helper {
-		template <typename T>
-		inline float operator()(T& range) {
-			return range.next();
-		}
-	};
-
-	struct min_helper {
-		template<typename T>
-		inline float operator()(T& range) {
-			return range.min();
-		}
-	};
-
-	struct max_helper {
-		template <typename T>
-		inline float operator()(T& range) {
-			return range.max();
-		}
-	};
-	
-
   public:
 	  template<typename T>
 	ParsedRandomRange(T&& random_range)
@@ -540,13 +562,16 @@ class ParsedRandomRange {
 		m_random_range = UniformFloatRange();
 	};
 	inline result_type next() const {
-		return static_cast<result_type>(mpark::visit(next_helper{}, m_random_range));
+		return static_cast<result_type>(mpark::visit([](auto& range) {return range.next();}, m_random_range));
 	}
 	inline result_type min() const {
-		return static_cast<result_type>(mpark::visit(min_helper{}, m_random_range));
+		return static_cast<result_type>(mpark::visit([](auto& range) {return range.min();}, m_random_range));
 	}
 	inline result_type max() const {
-		return static_cast<result_type>(mpark::visit(max_helper{}, m_random_range));
+		return static_cast<result_type>(mpark::visit([](auto& range) {return range.max();}, m_random_range));
+	}
+	inline result_type avg() const {
+		return static_cast<result_type>(mpark::visit([](auto& range) {return range.avg();}, m_random_range));
 	}
 	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {

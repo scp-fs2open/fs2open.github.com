@@ -2223,12 +2223,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	} else if (first_time) {
 		using namespace particle;
 
-		// Default value
-		wip->shield_impact_explosion_radius = 1.0f;
 		if (wip->impact_weapon_expl_effect.isValid()) {
-			//TODO
 			// Initialize with value of the previously created single particle effect
-			//wip->shield_impact_explosion_radius = singleEffect->getProperties().m_radius.next();
+			wip->shield_impact_explosion_radius = 0.0f;
+			const auto particle_effect = ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect);
+			for (const auto& particle_def : particle_effect) {
+				wip->shield_impact_explosion_radius += particle_def.m_radius.avg();
+			}
+			wip->shield_impact_explosion_radius /= static_cast<float>(particle_effect.size());
+		}
+		else {
+			// Default value
+			wip->shield_impact_explosion_radius = 1.0f;
 		}
 	}
 

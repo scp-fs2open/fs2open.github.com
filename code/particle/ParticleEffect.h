@@ -11,6 +11,9 @@
 
 class EffectHost;
 
+//Due to parsing shenanigans in weapons, this needs a forward-declare here
+int parse_weapon(int subtype, bool replace, const char *filename);
+
 namespace particle {
 
 struct particle_effect_tag {
@@ -57,6 +60,8 @@ public:
 
  private:
 	friend struct ParticleParse;
+
+	friend int ::parse_weapon(int subtype, bool replace, const char *filename);
 
 	SCP_string m_name; //!< The name of this effect
 

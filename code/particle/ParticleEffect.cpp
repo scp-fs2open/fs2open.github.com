@@ -261,7 +261,7 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 			// still shouldn't crash in those circumstances.
 			if (!part.expired()) {
 				auto trailSource = ParticleManager::get()->createSource(m_particleTrail);
-				trailSource->setHost(make_unique<EffectHostParticle>(std::move(part)));
+				trailSource->setHost(std::make_unique<EffectHostParticle>(std::move(part)));
 				trailSource->finishCreation();
 			}
 		} else {
