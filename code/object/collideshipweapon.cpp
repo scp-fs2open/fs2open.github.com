@@ -94,17 +94,21 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 		damage = wip->damage;
 	}
 
-	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
-		float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
+	float dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, &worldNormal);
 
+	if (wip->damage_incidence_max != 1.0f || wip->damage_incidence_min != 1.0f) {
 		if (dot < 0.0f)
 			dot = 0.0f;
 
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
 
-	if (wip->damage_curve_idx >= 0)
-		damage *= Curves[wip->damage_curve_idx].GetValue(f2fl(Missiontime - wp->creation_time) / wip->lifetime);
+	damage *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+
+	// we handle curve scaling for shield damage here, but hull and subsystem damage scaling happens in shiphit.cpp
+	if (quadrant_num) {
+		damage *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
+	}
 
 	// if this is friendly fire, we check for the friendly fire cap values
 	if (wp->team == shipp->team) {
@@ -118,7 +122,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 	}
 
 	// deterine whack whack
-	float		blast = wip->mass;
+	float		blast = wip->mass * wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 	vm_vec_copy_scale(&force, &weapon_obj->phys_info.vel, blast );	
 
 	// send player pain packet
@@ -131,7 +135,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 		}
 	}	
 
-	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, nullptr, dot);
 
 	// let the hud shield gauge know when Player or Player target is hit
 	hud_shield_quadrant_hit(pship_obj, quadrant_num);
