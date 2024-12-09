@@ -1575,12 +1575,10 @@ void campaign_room_scroll_info_down()
 
 void campaign_reset(const SCP_string& campaign_file)
 {
-	auto filename = campaign_file + FS_CAMPAIGN_FILE_EXT;
+	// note: we do not toss all-time stats from player's performance in campaign up till now
+	mission_campaign_savefile_delete(campaign_file.c_str());
 
-		// note: we do not toss all-time stats from player's performance in campaign up till now
-	mission_campaign_savefile_delete(filename.c_str());
-
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1);
+	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, 1);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
