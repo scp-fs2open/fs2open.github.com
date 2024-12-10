@@ -3,9 +3,7 @@
 
 #include <QtWidgets/QDialog>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 namespace Ui {
 class ShipCustomWarpDialog;
 }
@@ -58,6 +56,4 @@ class ShipCustomWarpDialog : public QDialog {
 	 */
 	void animChanged();
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

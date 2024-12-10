@@ -7,9 +7,7 @@
 
 #include <QCloseEvent>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, bool departure)
 	: QDialog(parent), ui(new Ui::ShipCustomWarpDialog()),
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
@@ -211,6 +209,4 @@ void ShipCustomWarpDialog::animChanged()
 		_model->setAnim("");
 	}
 }
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

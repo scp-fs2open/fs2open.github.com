@@ -1,8 +1,6 @@
 #pragma once
 #include "../AbstractDialogModel.h"
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 /**
  * @brief Model for QtFRED's Custom warp dialog
  */
@@ -146,5 +144,3 @@ inline void ShipCustomWarpDialogModel::modify(T& a, const T& b)
 }
 
 } // namespace dialogs
-} // namespace fred
-} // namespace fso

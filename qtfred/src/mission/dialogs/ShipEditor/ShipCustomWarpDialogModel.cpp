@@ -1,9 +1,7 @@
 #include "ShipCustomWarpDialogModel.h"
 
 #include "ship/shipfx.h"
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent, EditorViewport* viewport, bool departure)
 	: AbstractDialogModel(parent, viewport), _m_departure(departure)
 {
@@ -280,5 +278,3 @@ void ShipCustomWarpDialogModel::setPlayerSpeed(const double newValue)
 	modify(_m_player_warpout_speed, static_cast<float>(newValue));
 }
 } // namespace dialogs
-} // namespace fred
-} // namespace fso
