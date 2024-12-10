@@ -205,6 +205,8 @@ static credits_screen_buttons Buttons[NUM_BUTTONS][GR_NUM_RESOLUTIONS] = {
 };
 
 char Credits_music_name[NAME_LENGTH] = "Cinema";
+char Credits_substitute_music_name[NAME_LENGTH] = "";
+
 static int	Credits_music_handle = -1;
 static UI_TIMESTAMP	Credits_music_begin_timestamp;
 
@@ -318,6 +320,10 @@ void credits_parse_table(const char* filename)
 		if (optional_string("$Music:"))
 		{
 			stuff_string(Credits_music_name, F_NAME, NAME_LENGTH);
+		}
+		if (optional_string("$Substitute Music:"))
+		{
+			stuff_string(Credits_substitute_music_name, F_NAME, NAME_LENGTH);
 		}
 		if (optional_string("$Number of Images:"))
 		{
@@ -499,12 +505,21 @@ void credits_init()
 		Credits_artwork_index = Random::next(Credits_num_images);
 	}
 
-	auto credits_wavfile_name = credits_get_music_filename(Credits_music_name);
-	if (credits_wavfile_name != nullptr) {
-		credits_load_music(credits_wavfile_name);
-	}
+	const char *credits_wavfile_name = nullptr;
 
-	// Use this id to trigger the start of music playing on the briefing screen
+	// try substitute music first
+	if (*Credits_substitute_music_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_substitute_music_name);
+
+	// fall back to regular music
+	if (!credits_wavfile_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+
+	// if we have something, play it
+	if (credits_wavfile_name)
+		credits_load_music(credits_wavfile_name);
+
+	// Use this id to trigger the start of music playing on the credits screen
 	Credits_music_begin_timestamp = ui_timestamp(Credits_music_delay);
 
 	Credits_frametime = 0;
