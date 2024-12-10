@@ -400,6 +400,7 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/type_traits.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
 	globalincs/utility.h
@@ -1668,6 +1669,7 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/join_string.h
+	utils/modular_curves.h
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h

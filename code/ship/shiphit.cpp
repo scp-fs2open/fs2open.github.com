@@ -662,7 +662,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor)
+float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
@@ -714,13 +714,32 @@ float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3
 
 	// scale subsystem damage if appropriate
 	weapon_info_index = shiphit_get_damage_weapon(other_obj);	// Goober5000 - a NULL other_obj returns -1
-	if ((weapon_info_index >= 0) && (other_obj_is_weapon ||
-				(Beams_use_damage_factors && other_obj_is_beam))) {
-		if ( Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training] ) {
+	if ((weapon_info_index >= 0) && other_obj_is_weapon) {
+		weapon* wp = &Weapons[other_obj->instance];
+		weapon_info* wip = &Weapon_info[weapon_info_index];
+
+		if ( wip->wi_flags[Weapon::Info_Flags::Training] ) {
 			return damage_left;
 		}
-		damage_left *= Weapon_info[weapon_info_index].subsystem_factor;
-		damage_if_hull *= Weapon_info[weapon_info_index].armor_factor;
+
+		damage_left *= wip->subsystem_factor;
+		damage_left *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
+		damage_if_hull *= wip->armor_factor;
+		damage_if_hull *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wp, *ship_objp, hit_dot), &wp->modular_curves_instance);
+	} else if ((weapon_info_index >= 0) && other_obj_is_beam) {
+		weapon_info* wip = &Weapon_info[weapon_info_index];
+
+		if (Beams_use_damage_factors) {
+			if ( wip->wi_flags[Weapon::Info_Flags::Training] ) {
+				return damage_left;
+			}
+			damage_left *= wip->subsystem_factor;
+			damage_if_hull *= wip->armor_factor;
+		}
+
+		beam* b = &Beams[other_obj->instance];
+		damage_left *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
+		damage_if_hull *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*b, *other_obj), &b->modular_curves_instance);
 	}
 
 
@@ -2272,7 +2291,7 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 // Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(const object *ship_objp, const object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false)
+static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false, float hit_dot = 1.f)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2390,7 +2409,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	}
 
 	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
-	
+
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
 	if ( quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields]) )	{
@@ -2436,7 +2455,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		bool apply_hull_armor = true;
 
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
-		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor);
+		damage = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor, hit_dot);
 
 		// damage scaling doesn't apply to subsystems, but it does to the hull
 		damage *= damage_scale;
@@ -2768,7 +2787,7 @@ void ship_apply_tag(ship *shipp, int tag_level, float tag_time, object *target, 
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
 // (it might be possible to make `other_obj` const, but that would set off another const-cascade)
-void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark, int submodel_num, const vec3d *hit_normal)
+void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark, int submodel_num, const vec3d *hit_normal, float hit_dot)
 {
 	Assert(ship_objp);	// Goober5000
 	Assert(other_obj);	// Goober5000
@@ -2844,7 +2863,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 		create_sparks = false;
 	}
 	else
-		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx );
+		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, hit_dot);
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks

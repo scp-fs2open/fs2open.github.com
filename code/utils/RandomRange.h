@@ -134,6 +134,13 @@ class RandomRange {
 	{
 		return m_maxValue;
 	}
+
+	void seed(typename GeneratorType::result_type new_seed) const {
+		if (m_constant)
+			return;
+
+		m_generator.seed(new_seed);
+	}
 };
 
 /**
@@ -528,7 +535,15 @@ class ParsedRandomRange {
 			return range.max();
 		}
 	};
-	
+
+	struct seed_helper {
+		unsigned int new_seed;
+
+		template <typename T>
+		inline void operator()(T& range) {
+			range.seed(new_seed);
+		}
+	};
 
   public:
 	  template<typename T>
@@ -547,6 +562,9 @@ class ParsedRandomRange {
 	}
 	inline result_type max() const {
 		return static_cast<result_type>(mpark::visit(max_helper{}, m_random_range));
+	}
+	inline void seed(unsigned int new_seed) const {
+		mpark::visit(seed_helper{new_seed}, m_random_range);
 	}
 	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {
