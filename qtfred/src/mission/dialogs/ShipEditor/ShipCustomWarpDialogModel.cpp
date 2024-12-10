@@ -61,7 +61,7 @@ bool ShipCustomWarpDialogModel::apply()
 	}
 	int index = find_or_add_warp_params(params);
 
-	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+	for (object* objp : list_range(&obj_used_list)) {
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 			if (objp->flags[Object::Object_Flags::Marked]) {
 				if (!_m_departure)
@@ -146,7 +146,7 @@ void ShipCustomWarpDialogModel::initializeData()
 {
 	// find the params of the first marked ship
 	WarpParams* params = nullptr;
-	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
+	for (object* objp : list_range(&obj_used_list)) {
 		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
 			if (objp->flags[Object::Object_Flags::Marked]) {
 				if (!_m_departure) {

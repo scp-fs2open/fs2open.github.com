@@ -23,7 +23,10 @@
    <item>
     <widget class="QLabel" name="label">
      <property name="text">
-      <string>Note: All these parameters are optional.</string>
+      <string>All of these parameters are optional, and a mission designer will usually not need to override more than one or two. These parameters are the same as those found in ships.tbl.</string>
+     </property>
+     <property name="wordWrap">
+      <bool>true</bool>
      </property>
     </widget>
    </item>

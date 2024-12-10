@@ -57,7 +57,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
 	} else {
-		this->setWindowTitle("Edit Warp-in Parameters");
+		this->setWindowTitle("Edit Warp-In Parameters");
 	}
 	updateUI(true);
 	// Resize the dialog to the minimum size
@@ -94,7 +94,7 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 	if (firstrun) {
 		for (int i = 0; i < Num_warp_types; ++i) {
 			SCP_string name = Warp_types[i];
-			if (name == "Hyperspace") {
+			if (i == WT_HYPERSPACE) {
 				name = "Star Wars";
 			}
 			ui->comboBoxType->addItem(name.c_str());
@@ -135,7 +135,7 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		}
 	}
 
-	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Homeworld") {
+	if (ui->comboBoxType->currentIndex() == WT_SWEEPER) {
 		ui->lineEditAnim->setEnabled(true);
 		ui->labelAnim->setEnabled(true);
 	} else {
@@ -143,7 +143,7 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		ui->labelAnim->setEnabled(false);
 	}
 
-	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Star Wars") {
+	if (ui->comboBoxType->currentIndex() == WT_HYPERSPACE) {
 		ui->doubleSpinBoxExponent->setEnabled(true);
 		ui->labelExponent->setEnabled(true);
 	} else {
