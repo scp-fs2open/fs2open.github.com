@@ -56,6 +56,11 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 		_model.get(),
 		&ShipCustomWarpDialogModel::setPlayerSpeed);
 
+	if (departure) {
+		this->setWindowTitle("Edit Warp-Out Parameters");
+	} else {
+		this->setWindowTitle("Edit Warp-in Parameters");
+	}
 	updateUI(true);
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -104,8 +109,8 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		ui->lineEditStartSound->setText(_model->getStartSound().c_str());
 		ui->lineEditEndSound->setText(_model->getEndSound().c_str());
 		if (!_model->departMode()) {
-			ui->doubleSpinBoxEngage->setVisible(false);
-			ui->labelEngageTime->setVisible(false);
+			ui->doubleSpinBoxEngage->setEnabled(false);
+			ui->labelEngageTime->setEnabled(false);
 		} else {
 			ui->doubleSpinBoxEngage->setValue(_model->getEngageTime());
 		}
@@ -116,7 +121,7 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 		if (_model->departMode()) {
 			ui->labelExponent->setText(tr("Deceleration Exponent:"));
 		} else {
-			ui->labelExponent->setText(tr("Aceleration Exponent:"));
+			ui->labelExponent->setText(tr("Acceleration Exponent:"));
 		}
 		ui->doubleSpinBoxExponent->setValue(_model->getExponent());
 		ui->doubleSpinBoxRadius->setValue(_model->getRadius());
@@ -125,27 +130,27 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 			ui->checkBoxSupercap->setChecked(true);
 		}
 		if (!_model->isPlayer() || !_model->departMode()) {
-			ui->labelPlayerSpeed->setVisible(false);
-			ui->doubleSpinBoxPlayerSpeed->setVisible(false);
+			ui->labelPlayerSpeed->setEnabled(false);
+			ui->doubleSpinBoxPlayerSpeed->setEnabled(false);
 		} else {
 			ui->doubleSpinBoxPlayerSpeed->setValue(_model->getPlayerSpeed());
 		}
 	}
 
 	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Homeworld") {
-		ui->lineEditAnim->setVisible(true);
-		ui->labelAnim->setVisible(true);
+		ui->lineEditAnim->setEnabled(true);
+		ui->labelAnim->setEnabled(true);
 	} else {
-		ui->lineEditAnim->setVisible(false);
-		ui->labelAnim->setVisible(false);
+		ui->lineEditAnim->setEnabled(false);
+		ui->labelAnim->setEnabled(false);
 	}
 
 	if (ui->comboBoxType->itemText(ui->comboBoxType->currentIndex()) == "Star Wars") {
-		ui->doubleSpinBoxExponent->setVisible(true);
-		ui->labelExponent->setVisible(true);
+		ui->doubleSpinBoxExponent->setEnabled(true);
+		ui->labelExponent->setEnabled(true);
 	} else {
-		ui->doubleSpinBoxExponent->setVisible(false);
-		ui->labelExponent->setVisible(false);
+		ui->doubleSpinBoxExponent->setEnabled(false);
+		ui->labelExponent->setEnabled(false);
 	}
 }
 void ShipCustomWarpDialog::rejectHandler()
