@@ -3,21 +3,13 @@
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 #include "math/curve.h"
+#include "globalincs/type_traits.h"
 
 #include <mpark/variant.hpp>
 
 #include <random>
 #include <type_traits>
 #include <limits>
-
-//TODO move to type traits
-template<typename T, typename F>
-constexpr auto has_member_impl(F&& f) -> decltype(f(std::declval<T>()), true) { return true; }
-
-template<typename>
-constexpr bool has_member_impl(...) { return false; }
-
-#define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){} )
 
 namespace util {
 

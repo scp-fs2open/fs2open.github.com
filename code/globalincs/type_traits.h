@@ -1,5 +1,7 @@
 #pragma once
 
+#include "globalincs/scp_defines.h"
+
 #include <optional>
 #include <tl/optional.hpp>
 
@@ -17,6 +19,17 @@ template <typename... U> struct is_tuple<std::tuple <U...>> : std::true_type {};
 
 template<typename T>
 inline constexpr bool is_tuple_v = is_tuple<T>::value;
+
+template<typename T, typename F>
+constexpr auto has_member_impl(F&& f) -> decltype(f(std::declval<T>()), true) {
+	SCP_UNUSED(f);
+	return true;
+}
+
+template<typename>
+constexpr bool has_member_impl(...) { return false; }
+
+#define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){} )
 
 template<typename T, typename Enable = void>
 struct is_dereferencable_pointer : std::false_type {};
