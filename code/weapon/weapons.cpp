@@ -2822,9 +2822,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		wip->wi_flags.set(Weapon::Info_Flags::Beam);
 		// beam type
 
-		if (damage_mult_curve)
-			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
-
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
@@ -3427,9 +3424,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				generic_anim_init(&bsip->texture, NULL);
 			}
 		}
-	} else {
-		// if the weapon is not a beam
-		if (damage_mult_curve)
+	}
+
+	if (damage_mult_curve) {
+		if (wip->is_beam())
+			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
+		else
 			wip->weapon_hit_curves.add_curve("Lifetime", weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
 	}
 
