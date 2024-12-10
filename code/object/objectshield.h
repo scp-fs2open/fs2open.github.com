@@ -52,7 +52,7 @@ void shield_transfer(object *objp, int quadrant, float rate);
 /**
  * @brief Gets the shield strength (in HP) of the given object
  */
-float shield_get_strength(object *objp);
+float shield_get_strength(const object *objp);
 
 /**
  * @brief Sets the shield strength (in HP) of the given object.
@@ -74,7 +74,7 @@ void shield_add_strength(object *objp, float delta);
  *
  * @author Goober5000
  */
-float shield_get_quad(object *objp, int quadrant_num);
+float shield_get_quad(const object *objp, int quadrant_num);
 
 /**
  * @brief Sets the strength (in HP) of a shield quadrant/sector
@@ -103,7 +103,7 @@ void shield_add_quad(object *objp, int quadrant_num, float strength);
  *
  * @author Goober5000
  */
-float shield_get_max_strength(object *objp, bool no_msr = false);
+float shield_get_max_strength(const object *objp, bool no_msr = false);
 
 /**
  * @brief Sets the max shield HP of the given object. Use this to init or override a ship's default shield HP
@@ -115,7 +115,7 @@ void shield_set_max_strength(object *objp, float newmax);
  *
  * @author Goober5000
  */
-float shield_get_max_quad(object *objp);
+float shield_get_max_quad(const object *objp);
 
 /**
  * @brief Strengthens the weakest quadrant first, then spreads it out

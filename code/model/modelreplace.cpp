@@ -229,11 +229,12 @@ int reallocate_and_copy_array(T*& array, int& size, size_t to_add) {
 	//Make sure to keep old data
 	T* oldArray = array;
 
+	Assertion(size >= 0, "Tried to realloc an array of negative size %d!", size);
 	int size_before = size;
 
 	//Realloc new submodel array of proper size
 	size += static_cast<int>(to_add);
-	array = new T[size];
+	array = new T[MAX(0,size)];
 
 	//Copy over old data. Pointers in the struct can still point to old members, we will just delete the outer bsp_info array
 	for (int i = 0; i < size_before; i++)

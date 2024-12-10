@@ -1639,78 +1639,6 @@ void HudGaugeExtraTargetData::endFlashDock()
 	flash_timer[0] = timestamp(0);
 }
 
-//from aicode.cpp. Less include...problems...this way.
-extern flagset<Weapon::Info_Flags> turret_weapon_aggregate_flags(const ship_weapon *swp);
-extern bool turret_weapon_has_subtype(const ship_weapon *swp, int subtype);
-
-void get_turret_subsys_name(ship_weapon *swp, char *outstr)
-{
-	Assert(swp != NULL);	// Goober5000 //WMC
-
-	//WMC - find the first weapon, if there is one
-	if (swp->num_primary_banks || swp->num_secondary_banks) {
-		// allow the first weapon on the turret to specify the name
-		for (int i = 0; i < swp->num_primary_banks; ++i) {
-			auto wip = &Weapon_info[swp->primary_bank_weapons[i]];
-			if (*(wip->altSubsysName) != '\0') {
-				sprintf(outstr, "%s", wip->altSubsysName);
-				return;
-			}
-		} 
-		for (int i = 0; i < swp->num_secondary_banks; ++i) {
-			auto wip = &Weapon_info[swp->secondary_bank_weapons[i]];
-			if (*(wip->altSubsysName) != '\0') {
-				sprintf(outstr, "%s", wip->altSubsysName);
-				return;
-			}
-		}
-
-		// otherwise use a general name based on the type of weapon(s) on the turret
-		auto flags = turret_weapon_aggregate_flags(swp);
-
-		// check if beam or flak using weapon flags
-		if (flags[Weapon::Info_Flags::Beam]) {
-			sprintf(outstr, "%s", XSTR("Beam turret", 1567));
-		} else if (flags[Weapon::Info_Flags::Flak]) {
-			sprintf(outstr, "%s", XSTR("Flak turret", 1566));
-		} else {
-			if (turret_weapon_has_subtype(swp, WP_MISSILE)) {
-				sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-			} else if (turret_weapon_has_subtype(swp, WP_LASER)) {
-				// ballistic too! - Goober5000
-				if (flags[Weapon::Info_Flags::Ballistic]) {
-					sprintf(outstr, "%s", XSTR("Turret", 1487));
-				}
-				// the TVWP has some primaries flagged as bombs
-				else if (flags[Weapon::Info_Flags::Bomb]) {
-					sprintf(outstr, "%s", XSTR("Missile lnchr", 1569));
-				} else {
-					sprintf(outstr, "%s", XSTR("Laser turret", 1568));
-				}
-			} else {
-				// Mantis #2226: find out if there are any weapons here at all
-				if (flags.none_set()) {
-					sprintf(outstr, "%s", NOX("Unused"));
-				} else {
-					// Illegal subtype
-					static bool Turret_illegal_subtype_warned = false;
-					if (!Turret_illegal_subtype_warned) {
-						Turret_illegal_subtype_warned = true;
-						Warning(LOCATION, "This turret has an illegal subtype!  Trace out and fix!");
-					}
-					sprintf(outstr, "%s", XSTR("Turret", 1487));
-				}
-			}
-		}
-	} else if(swp->num_tertiary_banks) {
-		//TODO: add tertiary turret code stuff here
-		sprintf(outstr, "%s", NOX("Unknown"));
-	} else {
-		// This should not happen
-		sprintf(outstr, "%s", NOX("Unused"));
-	}
-}
-
 void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 {
 	ship			*target_shipp;
@@ -1805,12 +1733,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 
 		maybeFlashElement(TBOX_FLASH_SUBSYS);
 
-		// get turret subsys name
-		if (Player_ai->targeted_subsys->system_info->type == SUBSYSTEM_TURRET && !ship_subsys_has_instance_name(Player_ai->targeted_subsys)) {
-			get_turret_subsys_name(&Player_ai->targeted_subsys->weapons, outstr);
-		} else {
-			sprintf(outstr, "%s", ship_subsys_get_name(Player_ai->targeted_subsys));
-		}
+		sprintf(outstr, "%s", ship_subsys_get_name_on_hud(Player_ai->targeted_subsys));
 
 		char *p_line;
 		// hence pipe shall be the linebreak

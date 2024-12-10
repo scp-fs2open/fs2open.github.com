@@ -73,14 +73,13 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_CAMPAIGN_TYPE, m_type);
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
+	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_MISSISON_LOOP_DESC, m_branch_desc);
+	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_SOUND, m_branch_brief_sound);
 	DDX_Check(pDX, IDC_CUSTOM_TECH_DB, m_custom_tech_db);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
-	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);	
 }
 
 BEGIN_MESSAGE_MAP(campaign_editor, CFormView)

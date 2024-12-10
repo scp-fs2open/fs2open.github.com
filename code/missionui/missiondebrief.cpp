@@ -310,7 +310,6 @@ UI_XSTR Debrief_strings[GR_NUM_RESOLUTIONS][NUM_DEBRIEF_TEXT] = {
 
 
 char Debrief_current_callsign[CALLSIGN_LEN+10];
-player *Debrief_player;
 
 static UI_WINDOW Debrief_ui_window;
 static UI_BUTTON List_region;
@@ -1119,7 +1118,6 @@ void debrief_multi_list_init()
 	// switch stats display to this newly selected player
 	set_player_stats(Multi_list[0].net_player_index);
 	strcpy_s(Debrief_current_callsign, Multi_list[0].callsign);	
-	Debrief_player = Player;
 }
 
 void debrief_multi_list_scroll_up()
@@ -1172,7 +1170,6 @@ void debrief_multi_list_draw()
 				// switch stats display to this newly selected player
 				set_player_stats(Multi_list[idx].net_player_index);
 				strcpy_s(Debrief_current_callsign, Multi_list[idx].callsign);	
-				Debrief_player = Net_players[Multi_list[idx].net_player_index].m_player;				
 				break;
 			}
 		}
@@ -1510,24 +1507,16 @@ void debrief_stats_render()
 	
 	switch ( Current_stage ) {
 		case DEBRIEF_MISSION_STATS:
-			i = Current_stage - 1;
-			if ( i < 0 )
-				i = 0;
-
 			// display mission completion time
 			debrief_render_mission_time(y);
-
 			y += 2*font_height;
-			show_stats_label(i, 0, y, font_height);
-			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
+
+			show_stats_label(StatsType::MISSION_STATS, 0, y, font_height);
+			show_stats_numbers(StatsType::MISSION_STATS, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
 		case DEBRIEF_ALLTIME_STATS:
-			i = Current_stage - 1;
-			if ( i < 0 )
-				i = 0;
-
-			show_stats_label(i, 0, y, font_height);
-			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
+			show_stats_label(StatsType::ALL_TIME_EVER_STATS, 0, y, font_height);
+			show_stats_numbers(StatsType::ALL_TIME_EVER_STATS, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
 
 		case DEBRIEF_ALLTIME_KILLS:
@@ -1719,8 +1708,6 @@ void debrief_button_pressed(int num)
 void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
-	//ushort *kill_arr;
-	int *kill_arr;	//DTP max ships
 	debrief_stats_kill_info	*kill_info;
 
 	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
@@ -1732,29 +1719,23 @@ void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 		Debrief_stats_kills = new debrief_stats_kill_info[Ship_info.size()];
 	}
 
-	Assert(Debrief_player != NULL);
-
-	// kill_ar points to an array of MAX_SHIP_TYPE ints
-	if ( Current_stage == DEBRIEF_MISSION_KILLS ) {
-		kill_arr = Debrief_player->stats.m_okKills;
-	} else {		
-		kill_arr = Debrief_player->stats.kills;
-	}
+	auto stats_type = ( Current_stage == DEBRIEF_MISSION_KILLS ) ? StatsType::MISSION_STATS : StatsType::ALL_TIME_EVER_STATS;
 
 	Num_text_lines = 0;
 	i = 0;
 	for ( auto it = Ship_info.begin(); it != Ship_info.end(); i++, ++it ) {
+		int num_kills = stats_get_kills(stats_type, i);
 
 		// code used to add in mission kills, but the new system assumes that the player will accept, so
 		// all time stats already have mission stats added in.
-		if ( kill_arr[i] <= 0 ){
+		if ( num_kills <= 0 ){
 			continue;
 		}
 
 
 		kill_info = &Debrief_stats_kills[Num_text_lines++];
 
-		kill_info->num = kill_arr[i];
+		kill_info->num = num_kills;
 
 		strcpy_s(kill_info->text, it->name);
 		strcat_s(kill_info->text, NOX(":"));
@@ -1786,7 +1767,6 @@ void debrief_check_buttons()
 			// switch stats display to this newly selected player
 			set_player_stats(Multi_list[z].net_player_index);
 			strcpy_s(Debrief_current_callsign, Multi_list[z].callsign);
-			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1976,8 +1956,6 @@ void debrief_init(bool API_Access)
 //	rank_bitmaps_load();
 
 	strcpy_s(Debrief_current_callsign, Player->callsign);
-	Debrief_player = Player;
-//	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
 	// Only setup Debrief_stages and Recommendations if not running through API access.
 	if (!API_Access) {

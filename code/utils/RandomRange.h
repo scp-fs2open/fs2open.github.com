@@ -156,6 +156,13 @@ class RandomRange {
 			return (m_distribution.min() + m_distribution.max()) / 2.0f;
 		}
 	}
+
+	void seed(typename GeneratorType::result_type new_seed) const {
+		if (m_constant)
+			return;
+
+		m_generator.seed(new_seed);
+	}
 };
 
 /**
@@ -572,6 +579,9 @@ class ParsedRandomRange {
 	}
 	inline result_type avg() const {
 		return static_cast<result_type>(mpark::visit([](auto& range) {return range.avg();}, m_random_range));
+	}
+	inline void seed(unsigned int new_seed) const {
+		mpark::visit([new_seed](auto& range) {return range.seed(new_seed);}, m_random_range);
 	}
 	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {

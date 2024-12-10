@@ -1995,9 +1995,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	subsys_status *sssp;
 	ship_weapon *wp;
 
-	// texture replacements
-	polymodel *pm;
-
 	MONITOR_INC(NumShipArrivals, 1);
 
 	// base level creation - need ship name in case of duplicate textures
@@ -2304,6 +2301,15 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 				}
 			}
 
+			// double check the Pilot subsystem...
+			if (!ptr && !Fred_running)
+			{
+				// if we somehow ended up with more banks than this ship actually has, clear the excess
+				// (this can happen if the mission was edited by hand)
+				while (k > sip->num_primary_banks)
+					wp->primary_bank_weapons[--k] = -1;
+			}
+
 			if (Fred_running)
 			{
 				// only do this for the Pilot subsystem
@@ -2348,6 +2354,15 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 					wp->secondary_bank_weapons[k] = sssp->secondary_banks[j];
 					++k;
 				}
+			}
+
+			// double check the Pilot subsystem...
+			if (!ptr && !Fred_running)
+			{
+				// if we somehow ended up with more banks than this ship actually has, clear the excess
+				// (this can happen if the mission was edited by hand)
+				while (k > sip->num_secondary_banks)
+					wp->secondary_bank_weapons[--k] = -1;
 			}
 
 			if (Fred_running)
@@ -2479,7 +2494,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get(sip->model_num);
+		auto pm = model_get(sip->model_num);
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
 		num_sparks = (int)((100.0f - p_objp->initial_hull) / 5.0f);
 		if (num_sparks > max_allowed_sparks)
@@ -2611,6 +2626,17 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			}
 		}
 	}
+
+	// now that everything has been set up, do some sanity checks
+#ifndef NDEBUG
+	{
+		auto pm = model_get(sip->model_num);
+		Assertion(pm->n_guns == sip->num_primary_banks, "For %s (%s), the number of primary banks in the ship class does not match the number of gun banks in the model!", sip->name, pm->filename);
+		Assertion(shipp->weapons.num_primary_banks <= pm->n_guns, "For %s (%s), the number of primary banks in the ship is greater than the number of gun banks in the model!", shipp->ship_name, pm->filename);
+		Assertion(pm->n_missiles == sip->num_secondary_banks, "For %s (%s), the number of secondary banks in the ship class does not match the number of missile banks in the model!", sip->name, pm->filename);
+		Assertion(shipp->weapons.num_secondary_banks <= pm->n_missiles, "For %s (%s), the number of secondary banks in the ship is greater than the number of missile banks in the model!", shipp->ship_name, pm->filename);
+	}
+#endif
 
 	return objnum;
 }
@@ -3770,7 +3796,6 @@ void parse_common_object_data(p_object *p_objp)
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
-		Subsys_status[i].subsys_cargo_name = 0;
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
@@ -3788,7 +3813,6 @@ void parse_common_object_data(p_object *p_objp)
 			Subsys_status[i].subsys_cargo_name = index;
 		}
 
-		Subsys_status[i].subsys_cargo_title[0] = '\0';
 		if (optional_string("+Cargo Title:")) {
 			stuff_string(Subsys_status[i].subsys_cargo_title, F_NAME, NAME_LENGTH);
 		}
@@ -8261,6 +8285,7 @@ int allocate_subsys_status()
 	Subsys_status[Subsys_index].ai_class = SUBSYS_STATUS_NO_CHANGE;
 
 	Subsys_status[Subsys_index].subsys_cargo_name = 0;	// "Nothing"
+	Subsys_status[Subsys_index].subsys_cargo_title[0] = '\0';
 
 	return Subsys_index++;
 }

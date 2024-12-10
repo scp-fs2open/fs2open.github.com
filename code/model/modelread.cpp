@@ -1701,7 +1701,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
 
-				pm->submodel = new bsp_info[pm->n_models];
+				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -4114,7 +4114,7 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 
 
 // Given a rotating submodel, find the local and world axes of rotation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
@@ -5461,7 +5461,7 @@ int model_create_bsp_collision_tree()
 		return (int)i;
 	}
 
-	bsp_collision_tree tree;
+	bsp_collision_tree tree{};
 
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);

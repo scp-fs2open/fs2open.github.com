@@ -24,6 +24,7 @@
 #include "render/3d.h"
 #include "object/object.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "math/fvi.h"	//	For find_plane_line_intersection
 #include "math/vecmat.h"
 #include "io/key.h"
@@ -3882,13 +3883,16 @@ void CFREDView::OnAsteroidEditor()
 
 void CFREDView::OnRunFreeSpace() 
 {
-	BOOL r;
+	BOOL r = FALSE;
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 	char *lpMsgBuf;
 
 	if (!FREDDoc_ptr->SaveModified())
 		return;
+
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
 
 	si.cb = sizeof(si);
 	si.lpReserved = nullptr;
@@ -3899,37 +3903,52 @@ void CFREDView::OnRunFreeSpace()
 	si.lpReserved2 = nullptr;
 
 	// get the filename of the app and replace FRED2_Open with FS2_Open
-	std::string processed_name(AfxGetApp()->m_pszExeName); 
-	std::string::size_type fred_index = processed_name.find("fred2_open", 0); 
+	SCP_string processed_name(AfxGetApp()->m_pszExeName);
+	SCP_string processed_lowername = processed_name;
+	SCP_tolower(processed_lowername);
+	SCP_string::size_type fred_index = processed_lowername.find("fred2_open", 0);
+
 	// capitalisation! 
-	if (fred_index == std::string::npos) {
-		fred_index = processed_name.find("Fred2_Open", 0); 
+	bool capitalF = false;
+	if (fred_index != SCP_string::npos && processed_name[fred_index] == 'F') {
+		capitalF = true;
 	}
 
+	SCP_vector<SCP_string> nameAttempts;
+
 	if (fred_index != std::string::npos) {
-		// delete the fred2_open and add FS2_Open in its place
-		processed_name.erase(fred_index, 10);
-		processed_name.insert(fred_index, "FS2_Open");
+		// replace fred2_open with fs2_open
+		processed_name.erase(fred_index, 4);
+		processed_name.insert(fred_index, capitalF ? "FS" : "fs");
 		processed_name.append(".exe");
 
-		//try to start FS2_open
-		r = CreateProcess(processed_name.c_str(), nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
+		nameAttempts.push_back(processed_name);
+	}
+
+	nameAttempts.push_back("fs2_open.exe");
+	nameAttempts.push_back("fs2_open_r.exe");
+
+	// reconstruct command line
+	extern SCP_string cmdline_build_string();
+	auto commandArgs = cmdline_build_string();
+
+	for (const auto &nameAttempt: nameAttempts) {
+		// CreateProcess actually writes to the C-string, so we have to make it modifiable
+		std::unique_ptr<char[]> fullString(new char[nameAttempt.length() + commandArgs.length() + 1]);
+		strcpy(fullString.get(), nameAttempt.c_str());
+		strcat(fullString.get(), commandArgs.c_str());
+
+		// try to start FS2_open
+		r = CreateProcess(nullptr, fullString.get(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 		if (r) {
-			return;
+			break;
 		}
 	}
 
-	r = CreateProcess("start_fs2.bat", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-
-	if (!r) {
-		r = CreateProcess("fs2_open.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-	}
-
-	if (!r) {
-		r = CreateProcess("fs2_open_r.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-	}
-
-	if (!r) {
+	if (r) {
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	} else {
 		FormatMessage(
 			 FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 			 NULL,

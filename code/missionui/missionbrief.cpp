@@ -1516,9 +1516,9 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 		brief_common_get_icon_dimensions(&iw, &ih, bi);
 
 		// could be a scaled icon
-		if (bi->scale_factor != 1.0f) {
-			iw = static_cast<int>(iw * bi->scale_factor);
-			ih = static_cast<int>(ih * bi->scale_factor);
+		if (bi->scale_factor != 1.0f || Briefing_Icon_Scale_Factor != 1.0f) {
+			iw = static_cast<int>(iw * bi->scale_factor * Briefing_Icon_Scale_Factor);
+			ih = static_cast<int>(ih * bi->scale_factor * Briefing_Icon_Scale_Factor);
 		}
 
 		if ( mx < bi->x ) continue;

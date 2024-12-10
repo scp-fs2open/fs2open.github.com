@@ -75,6 +75,18 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 	return ADE_RETURN_TRUE;
 }
 
+ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string", "'Wing', or empty string if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Wing.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= Num_wings)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", "Wing");
+}
+
 ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", nullptr, "Returns nothing")
 {
 	int wingnum;

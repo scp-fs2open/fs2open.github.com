@@ -40,9 +40,8 @@ void create_wing_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(create_wing_dlg)
 	DDX_Text(pDX, IDC_NAME, m_name);
-	//}}AFX_DATA_MAP
-
 	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 4);
+	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(create_wing_dlg, CDialog)

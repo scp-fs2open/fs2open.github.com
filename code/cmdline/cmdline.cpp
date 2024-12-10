@@ -315,7 +315,6 @@ int Cmdline_cd_check = 1;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
-int Cmdline_gimme_all_medals = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_multi_log = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -640,8 +639,8 @@ void cmdline_debug_print_cmdline()
 }
 #endif
 
-// prints simple cmdline to multi.log
-void cmdline_print_cmdline_multi()
+// builds simple cmdline
+SCP_string cmdline_build_string()
 {
 	cmdline_parm *parmp;
 	int found = 0;
@@ -660,10 +659,18 @@ void cmdline_print_cmdline_multi()
 	}
 
 	if ( !found ) {
-		cmdline << " <none>";
+		return "";
 	}
 
-	ml_printf("Command line:%s", cmdline.str().c_str());
+	return cmdline.str();
+}
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	auto str = cmdline_build_string();
+
+	ml_printf("Command line:%s", str.empty() ? " <none>" : str.c_str());
 }
 
 //	Return true if this character is an extra char (white space and quotes)
@@ -671,7 +678,6 @@ int is_extra_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == 0x0a) || (ch == '\'') || (ch == '\"'));
 }
-
 
 // eliminates all leading and trailing extra chars from a string.  Returns pointer passed in.
 char *drop_extra_chars(char *str)
@@ -1580,6 +1586,12 @@ bool SetCmdlineParams()
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
 
+	// DO THIS BEFORE get_flags, as portable_mode can change the value of pref_path printed in the json
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
+	}
+
 	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
 	if ( get_flags_arg.found() ) {
 		write_flags();
@@ -2079,11 +2091,6 @@ bool SetCmdlineParams()
 	if (noshadercache_arg.found())
 	{
 		Cmdline_noshadercache = true;
-	}
-
-	if (portable_mode.found())
-	{
-		Cmdline_portable_mode = true;
 	}
 
 	if (lang_arg.found()) 

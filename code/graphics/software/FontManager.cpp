@@ -11,107 +11,124 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "localization/localize.h"
+#include "options/Option.h"
 
 namespace font
 {
-
 	SCP_map<SCP_string, TrueTypeFontData> FontManager::allocatedData;
 	SCP_map<SCP_string, std::unique_ptr<font>> FontManager::vfntFontData;
 	SCP_vector<std::unique_ptr<FSFont>> FontManager::fonts;
 
-	FSFont* FontManager::currentFont = NULL;
+	int FontManager::currentFontIndex = -1;
 
 	FSFont* FontManager::getFont(const SCP_string& name)
 	{
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++)
+		for (auto &iter: fonts)
 		{
-			if ((*iter)->getName() == name)
-				return iter->get();
-		}
-
-		return NULL;
-	}
-
-	FSFont* FontManager::getFontByFilename(const SCP_string& filename) 
-	{
-		for (auto & iter : fonts) 
-		{
-			if (iter->getFilename() == filename)
+			if (lcase_equal(iter->getName(), name))
 				return iter.get();
 		}
+
 		return nullptr;
+	}
+
+	FSFont* FontManager::getFontByFilename(const SCP_string& filename)
+	{
+		for (auto &iter: fonts)
+		{
+			if (lcase_equal(iter->getFilename(), filename))
+				return iter.get();
+		}
+
+		return nullptr;
+	}
+
+	FSFont* FontManager::getFont(int index)
+	{
+		if (!isFontNumberValid(index))
+			return nullptr;
+
+		return fonts[index].get();
 	}
 
 	FSFont *FontManager::getCurrentFont()
 	{
-		return currentFont;
+		return getFont(currentFontIndex);
 	}
 
 	int FontManager::getCurrentFontIndex()
 	{
-		if (!FontManager::isReady())
+		if (!isFontNumberValid(currentFontIndex))
 			return -1;
 
-		return FontManager::getFontIndex(currentFont);
+		return currentFontIndex;
 	}
 
 	int FontManager::getFontIndex(const SCP_string& name)
 	{
 		int index = 0;
 
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
+		for (const auto &iter: fonts)
 		{
-			if ((*iter)->getName() == name)
+			if (lcase_equal(iter->getName(), name))
 				return index;
+			index++;
 		}
 
 		return -1;
 	}
 
-	int FontManager::getFontIndex(FSFont *font)
+	int FontManager::getFontIndexByFilename(const SCP_string& filename)
 	{
-		if (font == NULL)
-			return -1;
-
 		int index = 0;
 
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
+		for (const auto &iter: fonts)
 		{
-			if (iter->get() == font)
+			if (lcase_equal(iter->getFilename(), filename))
 				return index;
+			index++;
 		}
 
 		return -1;
+	}
+
+	bool FontManager::hasScalingFonts()
+	{
+		return std::any_of(fonts.begin(), fonts.end(), [](const std::unique_ptr<FSFont>& font) {
+			const auto& thisFont = font.get();
+			return thisFont->getType() == NVG_FONT && thisFont->getScaleBehavior();
+		});
 	}
 
 	int FontManager::numberOfFonts()
 	{
-		return (int)fonts.size();
+		return static_cast<int>(fonts.size());
 	}
 
 	bool FontManager::isReady()
 	{
-		return currentFont != NULL;
+		return isFontNumberValid(currentFontIndex);
 	}
 
 	bool FontManager::isFontNumberValid(int id)
 	{
-		return id >= 0 && id < (int)fonts.size();
+		return SCP_vector_inbounds(fonts, id);
 	}
 
-	void FontManager::setCurrentFont(FSFont *font)
+	void FontManager::setCurrentFontIndex(int id)
 	{
-		Assertion(font != NULL, "New font pointer may not be NULL!");
-		currentFont = font;
+		Assertion(isFontNumberValid(id), "New font index must be valid!");
+		currentFontIndex = id;
 	}
 
 	font* FontManager::loadFontOld(const SCP_string& typeface)
 	{
-		if (vfntFontData.find(typeface) != vfntFontData.end())
+		auto iter = vfntFontData.find(typeface);
+		if (iter != vfntFontData.end())
 		{
-			font* data = vfntFontData[typeface].get();
+			font* data = iter->second.get();
 
-			Assert(data != NULL);
+			Assert(data != nullptr);
 
 			return data;
 		}
@@ -130,20 +147,22 @@ namespace font
 			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
 		}
 
-		if (fp == NULL)
+		if ( !fp )
 		{
 			mprintf(("Unable to find font file \"%s\"\n", typeface.c_str()));
-			return NULL;
+			return nullptr;
 		}
 
 		std::unique_ptr<font> fnt(new font());
-		if (!fnt)
+
+		if (typeface.size() <= MAX_FILENAME_LEN - 1)
+			strcpy_s(fnt->filename, typeface.c_str());
+		else
 		{
-			mprintf(("Unable to allocate memory for \"%s\"\n", typeface.c_str()));
-			return NULL;
+			strncpy_s(fnt->filename, typeface.c_str(), MAX_FILENAME_LEN - 1);
+			fnt->filename[MAX_FILENAME_LEN - 1] = '\0';
 		}
 
-		strcpy_s(fnt->filename, typeface.c_str());
 		cfread(&fnt->id, 4, 1, fp);
 		cfread(&fnt->version, sizeof(int), 1, fp);
 		cfread(&fnt->num_chars, sizeof(int), 1, fp);
@@ -167,16 +186,14 @@ namespace font
 		fnt->pixel_data_size = INTEL_INT(fnt->pixel_data_size); //-V570
 
 		if (fnt->kern_data_size)	{
-			fnt->kern_data = (font_kernpair *)vm_malloc(fnt->kern_data_size);
-			Assert(fnt->kern_data != NULL);
+			fnt->kern_data = new font_kernpair[fnt->kern_data_size];
 			cfread(fnt->kern_data, fnt->kern_data_size, 1, fp);
 		}
 		else {
-			fnt->kern_data = NULL;
+			fnt->kern_data = nullptr;
 		}
 		if (fnt->char_data_size)	{
-			fnt->char_data = (font_char *)vm_malloc(fnt->char_data_size);
-			Assert(fnt->char_data != NULL);
+			fnt->char_data = new font_char[fnt->char_data_size];
 			cfread(fnt->char_data, fnt->char_data_size, 1, fp);
 
 			for (int i = 0; i<fnt->num_chars; i++) {
@@ -188,15 +205,14 @@ namespace font
 			}
 		}
 		else {
-			fnt->char_data = NULL;
+			fnt->char_data = nullptr;
 		}
 		if (fnt->pixel_data_size)	{
-			fnt->pixel_data = (ubyte *)vm_malloc(fnt->pixel_data_size);
-			Assert(fnt->pixel_data != NULL);
+			fnt->pixel_data = new ubyte[fnt->pixel_data_size];
 			cfread(fnt->pixel_data, fnt->pixel_data_size, 1, fp);
 		}
 		else {
-			fnt->pixel_data = NULL;
+			fnt->pixel_data = nullptr;
 		}
 		cfclose(fp);
 
@@ -222,9 +238,9 @@ namespace font
 
 		fnt->bm_w = w;
 		fnt->bm_h = h;
-		fnt->bm_data = (ubyte *)vm_malloc(fnt->bm_w*fnt->bm_h);
-		fnt->bm_u = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
-		fnt->bm_v = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
+		fnt->bm_data = new ubyte[fnt->bm_w * fnt->bm_h];
+		fnt->bm_u = new int[fnt->num_chars];
+		fnt->bm_v = new int[fnt->num_chars];
 
 		memset(fnt->bm_data, 0, fnt->bm_w * fnt->bm_h);
 
@@ -238,7 +254,8 @@ namespace font
 				x = 0;
 				y += fnt->h + 2;
 				if (y + fnt->h > fnt->bm_h) {
-					Error(LOCATION, "Font too big!\n");
+					Warning(LOCATION, "Font %s too big!\n", fnt->filename);
+					return nullptr;
 				}
 			}
 			fnt->bm_u[i] = x;
@@ -262,18 +279,18 @@ namespace font
 
 		auto ptr = fnt.get();
 
-		vfntFontData[typeface] = std::move(fnt);
+		vfntFontData.emplace(typeface, std::move(fnt));
 
 		return ptr;
 	}
 
-	VFNTFont *FontManager::loadVFNTFont(const SCP_string& name)
+	std::pair<VFNTFont*, int> FontManager::loadVFNTFont(const SCP_string& name)
 	{
 		font* font = FontManager::loadFontOld(name);
 
-		if (font == NULL)
+		if (font == nullptr)
 		{
-			return NULL;
+			return { nullptr, -1 };
 		}
 		else
 		{
@@ -281,53 +298,48 @@ namespace font
 
 			auto ptr = vfnt.get();
 
-			fonts.push_back(std::move(vfnt));
+			fonts.emplace_back(std::move(vfnt));
 
-			return ptr;
+			return { ptr, static_cast<int>(fonts.size() - 1) };
 		}
 	}
 
-	NVGFont *FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
+	std::pair<NVGFont*, int> FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
 	{
-		if (allocatedData.find(fileName) == allocatedData.end())
+		auto iter = allocatedData.find(fileName);
+		if (iter == allocatedData.end())
 		{
-			CFILE *fontFile = cfopen(const_cast<char*>(fileName.c_str()), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
 
-			if (fontFile == NULL)
+			if (fontFile == nullptr)
 			{
 				mprintf(("Couldn't open font file \"%s\"\n", fileName.c_str()));
-				return NULL;
+				return { nullptr, -1 };
 			}
 
-			size_t size = static_cast<size_t>(cfilelength(fontFile));
+			int size = cfilelength(fontFile);
 
 			std::unique_ptr<ubyte[]> fontData(new ubyte[size]);
 
-			if (!fontData)
-			{
-				mprintf(("Couldn't allocate " SIZE_T_ARG " bytes for reading font file \"%s\"!\n", size, fileName.c_str()));
-				cfclose(fontFile);
-				return NULL;
-			}
-
-			if (!cfread(fontData.get(), (int)size, 1, fontFile))
+			if (!cfread(fontData.get(), size, 1, fontFile))
 			{
 				mprintf(("Error while reading font data from \"%s\"\n", fileName.c_str()));
 				cfclose(fontFile);
-				return NULL;
+				return { nullptr, -1 };
 			}
 
 			cfclose(fontFile);
 
 			TrueTypeFontData newData;
 
-			newData.size = size;
+			newData.size = static_cast<size_t>(size);
 			std::swap(newData.data, fontData);
 
-			allocatedData.insert(std::make_pair(fileName, std::move(newData)));
+			auto pair = allocatedData.emplace(fileName, std::move(newData));
+			iter = pair.first;
 		}
 
-		auto data = &allocatedData.find(fileName)->second;
+		auto data = &iter->second;
 
 		auto path = graphics::paths::PathRenderer::instance();
 
@@ -335,8 +347,8 @@ namespace font
 		
 		if (handle < 0)
 		{
-			mprintf(("Couldn't couldn't create font for file \"%s\"\n", fileName.c_str()));
-			return NULL;
+			mprintf(("Couldn't create font for file \"%s\"\n", fileName.c_str()));
+			return { nullptr, -1 };
 		}
 
 		std::unique_ptr<NVGFont> nvgFont(new NVGFont());
@@ -345,9 +357,9 @@ namespace font
 
 		auto ptr = nvgFont.get();
 
-		fonts.push_back(std::move(nvgFont));
+		fonts.emplace_back(std::move(nvgFont));
 
-		return ptr;
+		return { ptr, static_cast<int>(fonts.size() - 1) };
 	}
 
 	void FontManager::init()
@@ -360,6 +372,6 @@ namespace font
 		vfntFontData.clear();
 		fonts.clear();
 
-		currentFont = NULL;
+		currentFontIndex = -1;
 	}
 }

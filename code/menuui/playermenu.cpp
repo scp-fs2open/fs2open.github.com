@@ -21,6 +21,7 @@
 #include "globalincs/version.h"
 #include "io/key.h"
 #include "localization/localize.h"
+#include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
@@ -77,16 +78,6 @@ const char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 // #define PLAYER_SELECT_PALETTE			NOX("ChoosePilotPalette")	// palette for the screen
 
 #define PLAYER_SELECT_MAIN_HALL_OVERLAY		NOX("MainHall1")			// main hall help overlay
-
-// convenient struct for handling all button controls
-struct barracks_buttons {
-	const char *filename;
-	int x, y, xt, yt;
-	int hotspot;
-	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
-
-	barracks_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
-};
 
 static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {
 	{ // GR_640
@@ -327,13 +318,13 @@ void player_select_init()
 
 	// add some text
 	w = &Player_select_window;
-	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].xt, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].yt, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].xt, Player_select_buttons[gr_screen.res][CLONE_BUTTON].yt, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].xt, Player_select_buttons[gr_screen.res][DELETE_BUTTON].yt, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_x, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_x, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_x, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);
 
-	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].xt, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].yt, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);	
-	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].xt, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].yt, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].xt, Player_select_buttons[gr_screen.res][MULTI_BUTTON].yt, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_x, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);
+	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_x, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_x, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_y, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);
 	for(i=0; i<PLAYER_SELECT_NUM_TEXT; i++) {
 		w->add_XSTR(&Player_select_text[gr_screen.res][i]);
 	}
@@ -409,7 +400,7 @@ void player_select_do()
 	}
 
 	if (!Ingame_options_save_found && Using_in_game_options && !Save_file_warning_displayed) {
-		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("In-game Options are enabled but a save file could not be found. You may need to update your settings in the Options menu.", 1854));
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A new settings file has been created for the current game or mod. You may want to check the options menu to ensure everything is set to your liking.", 1854));
 		Save_file_warning_displayed = true;
 	}
 		

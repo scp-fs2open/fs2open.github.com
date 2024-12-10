@@ -6,6 +6,7 @@
 #include "fred.h"
 #include "freddoc.h"
 #include "VoiceActingManager.h"
+#include "globalincs/vmallocator.h"
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
@@ -35,6 +36,10 @@ char Voice_script_entry_format[NOTES_LENGTH];
 int Voice_export_selection;
 bool Voice_group_messages;
 
+constexpr int WINGMAN_PERSONAS = 0;
+constexpr int NON_WINGMAN_PERSONAS = 1;
+constexpr int SPECIFIC_PERSONAS_START_AT = 2;
+
 
 /////////////////////////////////////////////////////////////////////////////
 // VoiceActingManager dialog
@@ -60,6 +65,7 @@ VoiceActingManager::VoiceActingManager(CWnd* pParent /*=NULL*/)
 	m_export_debriefings = FALSE;
 	m_export_messages = FALSE;
 	m_group_messages = FALSE;
+	m_which_persona_to_sync = 0;
 	//}}AFX_DATA_INIT
 }
 
@@ -84,6 +90,7 @@ void VoiceActingManager::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_EXPORT_DEBRIEFINGS, m_export_debriefings);
 	DDX_Check(pDX, IDC_EXPORT_MESSAGES, m_export_messages);
 	DDX_Check(pDX, IDC_GROUP_MESSAGES, m_group_messages);
+	DDX_CBIndex(pDX, IDC_WHICH_TO_SYNC, m_which_persona_to_sync);
 	//}}AFX_DATA_MAP
 }
 
@@ -114,6 +121,7 @@ BEGIN_MESSAGE_MAP(VoiceActingManager, CDialog)
 	ON_BN_CLICKED(IDC_EXPORT_DEBRIEFINGS, OnExportDebriefings)
 	ON_BN_CLICKED(IDC_EXPORT_MESSAGES, OnExportMessages)
 	ON_BN_CLICKED(IDC_INCLUDE_SENDER, OnBnClickedIncludeSender)
+	ON_CBN_SELCHANGE(IDC_WHICH_TO_SYNC, OnChangeWhichToSync)
 	ON_BN_CLICKED(IDC_MESSAGE_PERSONAS_TO_SHIPS, OnCopyMessagePersonasToShips)
 	ON_BN_CLICKED(IDC_SHIP_PERSONAS_TO_MESSAGES, OnCopyShipPersonasToMessages)
 	ON_BN_CLICKED(IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL, OnSetHeadANIsUsingMessagesTbl)
@@ -169,6 +177,13 @@ BOOL VoiceActingManager::OnInitDialog()
 	
 	CButton *button = ((CButton *) GetDlgItem(IDC_GROUP_MESSAGES));
 	button->EnableWindow(m_export_everything || m_export_messages);
+
+	// populate persona dropdown
+	box = ((CComboBox *) GetDlgItem(IDC_WHICH_TO_SYNC));
+	box->AddString("<Wingman Personas>");
+	box->AddString("<Non-Wingman Personas>");
+	for (const auto& persona : Personas)
+		box->AddString(persona.name);
 
 	UpdateData(FALSE);
 
@@ -327,11 +342,15 @@ CString VoiceActingManager::generate_filename(CString section, int number, int d
 	return str;
 }
 
+#define STRCPY_IF_MODIFIED(dest, src)	{ auto temp = src; if (stricmp(dest, temp)) { strcpy(dest, temp); num_modified++; } }
+#define COPY_IF_MODIFIED(dest, src)		{ auto temp = src; if (dest != temp) { dest = temp; num_modified++; } }
+#define STRDUP_IF_MODIFIED(dest, src)	{ auto temp = src; if (dest == nullptr || stricmp(dest, temp)) { if (dest != nullptr) { free(dest); } dest = strdup(temp); num_modified++; } }
+
 void VoiceActingManager::OnGenerateFileNames() 
 {
 	int i;
 	int digits;
-	size_t modified_filenames = 0;
+	size_t num_modified = 0;
 
 	// stuff data to variables
 	UpdateData(TRUE);
@@ -344,10 +363,7 @@ void VoiceActingManager::OnGenerateFileNames()
 
 		// generate only if we're replacing or if it has a replaceable name
 		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
-		{
-			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_command_briefing, i + 1, digits)));
-			modified_filenames++;
-		}
+			STRCPY_IF_MODIFIED(filename, generate_filename(m_abbrev_command_briefing, i + 1, digits));
 	}
 
 	// briefings
@@ -358,10 +374,7 @@ void VoiceActingManager::OnGenerateFileNames()
 
 		// generate only if we're replacing or if it has a replaceable name
 		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
-		{
-			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_briefing, i + 1, digits)));
-			modified_filenames++;
-		}
+			STRCPY_IF_MODIFIED(filename, generate_filename(m_abbrev_briefing, i + 1, digits));
 	}
 
 	// debriefings
@@ -372,41 +385,30 @@ void VoiceActingManager::OnGenerateFileNames()
 
 		// generate only if we're replacing or if it has a replaceable name
 		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
-		{
-			strcpy(filename, LPCTSTR(generate_filename(m_abbrev_debriefing, i + 1, digits)));
-			modified_filenames++;
-		}
+			STRCPY_IF_MODIFIED(filename, generate_filename(m_abbrev_debriefing, i + 1, digits));
 	}
 
 	// messages
 	digits = calc_digits(Num_messages - Num_builtin_messages);
 	for (i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
-		char *filename = Messages[i + Num_builtin_messages].wave_info.name;
 		MMessage *message = &Messages[i + Num_builtin_messages];
+		const char *filename = message->wave_info.name;
 
 		// generate only if we're replacing or if it has a replaceable name
 		if (!m_no_replace || !strlen(filename) || message_filename_is_generic(filename))
-		{
-			// free existing filename
-			if (filename != NULL)
-				free(filename);
-
-			// allocate new filename
-			Messages[i + Num_builtin_messages].wave_info.name = strdup(LPCTSTR(generate_filename(m_abbrev_message, i + 1, digits, message)));
-			modified_filenames++;
-		}
+			STRDUP_IF_MODIFIED(message->wave_info.name, generate_filename(m_abbrev_message, i + 1, digits, message));
 	}
 
-	if ( modified_filenames > 0 ) {
+	if ( num_modified > 0 ) {
 		// Tell FRED that we actually modified something
 		set_modified(TRUE);
 	}
 
 	// notify user that we are done and how many filenames were changed
-	char message[128] = { '\0' };
-	snprintf(message, sizeof(message)-1, "File name generation complete. Modified " SIZE_T_ARG " messages.", modified_filenames);
-	MessageBox(message, "Woohoo!");
+	SCP_string message;
+	sprintf(message, "File name generation complete.  " SIZE_T_ARG " file %s modified.", num_modified, (num_modified == 1) ? "name was" : "names were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnGenerateScript()
@@ -566,7 +568,7 @@ void VoiceActingManager::export_one_message(const MMessage *message)
 
 /** Passed sender string will have either have the senders name
 or '\<none\>'*/
-void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum)
+void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum, bool *is_command)
 {
 	Assert( sender != NULL );
 	Assert( message != NULL );
@@ -574,11 +576,22 @@ void VoiceActingManager::get_valid_sender(char *sender, size_t sender_size, cons
 	memset(sender, 0, sender_size);
 	strncpy(sender, get_message_sender(message), sender_size - 1);
 
-	// check if we're overriding #Command
-	if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand] && !strcmp("#Command", sender))
+	if (!strcmp("#Command", sender))
 	{
-		memset(sender, 0, sender_size);
-		strncpy(sender, The_mission.command_sender, sender_size - 1);
+		if (is_command)
+			*is_command = true;
+
+		// check if we're overriding #Command
+		if (The_mission.flags[Mission::Mission_Flags::Override_hashcommand])
+		{
+			memset(sender, 0, sender_size);
+			strncpy(sender, The_mission.command_sender, sender_size - 1);
+		}
+	}
+	else
+	{
+		if (is_command)
+			*is_command = false;
 	}
 
 	// strip hash if present
@@ -971,10 +984,37 @@ void VoiceActingManager::OnBnClickedIncludeSender()
 	UpdateData(FALSE);
 }
 
+void VoiceActingManager::OnChangeWhichToSync()
+{
+	UpdateData(TRUE);
+}
+
+bool VoiceActingManager::check_persona(int persona)
+{
+	Assertion(SCP_vector_inbounds(Personas, persona), "The persona index provided to check_persona() is not in range!");
+
+	if (m_which_persona_to_sync == WINGMAN_PERSONAS)
+	{
+		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) != 0;
+	}
+	else if (m_which_persona_to_sync == NON_WINGMAN_PERSONAS)
+	{
+		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) == 0;
+	}
+	else
+	{
+		int real_persona_to_sync = m_which_persona_to_sync - SPECIFIC_PERSONAS_START_AT;
+		Assertion(SCP_vector_inbounds(Personas, real_persona_to_sync), "The m_which_persona_to_sync dropdown index is not in range!");
+		return real_persona_to_sync == persona;
+	}
+}
+
 void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 {
 	char sender_buf[NAME_LENGTH];
 	int sender_shipnum;
+	bool is_command;
+	size_t num_modified = 0;
 
 	SCP_unordered_set<int> already_assigned;
 	SCP_string inconsistent_copy_msg;
@@ -985,63 +1025,69 @@ void VoiceActingManager::OnCopyPersonas(bool messages_to_ships)
 		auto message = &Messages[i + Num_builtin_messages];
 
 		// find whoever sent this message
-		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum);
+		get_valid_sender(sender_buf, NAME_LENGTH, message, &sender_shipnum, &is_command);
+		auto sender_shipp = (sender_shipnum < 0) ? nullptr : &Ships[sender_shipnum];
 
-		// if it's a ship, copy the persona
-		if (sender_shipnum >= 0)
+		// NOTE: It is possible for a ship that is behaving as a "command source" to have a different persona than the mission's "command persona".
+		// If this is so, any messages sent by #Command will have the mission's "command persona", and any messages sent by the ship will have the ship's persona.
+
+		int persona_to_copy;
+		if (messages_to_ships)
+			persona_to_copy = message->persona_index;
+		else if (is_command)
+			persona_to_copy = The_mission.command_persona;
+		else if (sender_shipp)
+			persona_to_copy = sender_shipp->persona_index;
+		else
+			persona_to_copy = -1;
+
+		// don't copy None, and only copy the personas we want
+		if (persona_to_copy >= 0 && check_persona(persona_to_copy))
 		{
-			auto sender_shipp = &Ships[sender_shipnum];
-			auto persona_to_copy = (messages_to_ships) ? message->persona_index : sender_shipp->persona_index;
-
-			// don't copy None, and only copy wingman personas
-			if (persona_to_copy >= 0 && (Personas[persona_to_copy].flags & PERSONA_FLAG_WINGMAN))
+			if (messages_to_ships && sender_shipp)
 			{
-				if (messages_to_ships)
+				if (already_assigned.count(sender_shipnum) > 0 && sender_shipp->persona_index != persona_to_copy)
 				{
-					if (already_assigned.count(sender_shipnum) > 0 && sender_shipp->persona_index != persona_to_copy)
-					{
-						inconsistent_copy_msg += "\n\u2022 ";
-						inconsistent_copy_msg += sender_shipp->ship_name;
-					}
-
-					sender_shipp->persona_index = persona_to_copy;
-					already_assigned.insert(sender_shipnum);
+					inconsistent_copy_msg += "\n\u2022 ";
+					inconsistent_copy_msg += sender_shipp->ship_name;
 				}
-				else
+				already_assigned.insert(sender_shipnum);
+
+				COPY_IF_MODIFIED(sender_shipp->persona_index, persona_to_copy);
+			}
+			else if (!messages_to_ships)
+			{
+				if (already_assigned.count(i) > 0 && message->persona_index != persona_to_copy)
 				{
-					if (already_assigned.count(i) > 0 && message->persona_index != persona_to_copy)
-					{
-						inconsistent_copy_msg += "\n\u2022 ";
-						inconsistent_copy_msg += message->name;
-					}
-
-					message->persona_index = persona_to_copy;
-					already_assigned.insert(i);
+					inconsistent_copy_msg += "\n\u2022 ";
+					inconsistent_copy_msg += message->name;
 				}
+				already_assigned.insert(i);
+
+				COPY_IF_MODIFIED(message->persona_index, persona_to_copy);
 			}
 		}
 	}
 
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
 	if (messages_to_ships)
-	{
-		if (!inconsistent_copy_msg.empty())
-		{
-			inconsistent_copy_msg = "Attempted to copy personas from messages to ships, but the following ships send messages with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
-			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
-		}
-		else
-			MessageBox("Personas have been copied from messages to ships.", "Voice Acting Manager");
-	}
+		sprintf(message, "Personas have been copied from messages to ships.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "ship was" : "ships were");
 	else
+		sprintf(message, "Personas have been copied from ships to messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "message was" : "messages were");
+
+	if (!inconsistent_copy_msg.empty())
 	{
-		if (!inconsistent_copy_msg.empty())
-		{
-			inconsistent_copy_msg = "Attempted to copy personas from ships to messages, but the following messages are sent by ships with inconsistent personas.  You may want to review them.\n" + inconsistent_copy_msg;
-			MessageBox(inconsistent_copy_msg.c_str(), "Voice Acting Manager");
-		}
+		if (messages_to_ships)
+			message += "\n\nThe following ships send messages with inconsistent personas.  You may want to review them.\n";
 		else
-			MessageBox("Personas have been copied from ships to messages.", "Voice Acting Manager");
+			message += "\n\nThe following messages are sent by ships with inconsistent personas.  You may want to review them.\n";
+		message += inconsistent_copy_msg;
 	}
+
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnClearPersonasFromNonSenders()
@@ -1050,6 +1096,7 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 
 	char sender_buf[NAME_LENGTH];
 	int sender_shipnum;
+	size_t num_modified = 0;
 
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
@@ -1072,17 +1119,22 @@ void VoiceActingManager::OnClearPersonasFromNonSenders()
 			// for ships that aren't message senders
 			if (all_senders.count(objp->instance) == 0)
 			{
-				// only clear wingman personas
-				if ((Ships[objp->instance].persona_index >= 0) && (Personas[Ships[objp->instance].persona_index].flags & PERSONA_FLAG_WINGMAN))
+				// only for the personas we want
+				if ((Ships[objp->instance].persona_index >= 0) && check_persona(Ships[objp->instance].persona_index))
 				{
 					// clear the persona
-					Ships[objp->instance].persona_index = -1;
+					COPY_IF_MODIFIED(Ships[objp->instance].persona_index, -1);
 				}
 			}
 		}
 	}
 
-	MessageBox("Personas have been cleared from all ships that do not send messages.", "Voice Acting Manager");
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
+	sprintf(message, "Personas have been cleared from all ships that do not send messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "ship was" : "ships were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnCopyMessagePersonasToShips()
@@ -1097,6 +1149,8 @@ void VoiceActingManager::OnCopyShipPersonasToMessages()
 
 void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 {
+	size_t num_modified = 0;
+
 	// go through all messages in the mission
 	for (int i = 0; i < Num_messages - Num_builtin_messages; i++)
 	{
@@ -1106,8 +1160,8 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 		if (message->persona_index < 0)
 			continue;
 
-		// only wingman personas
-		if (!(Personas[message->persona_index].flags & PERSONA_FLAG_WINGMAN))
+		// only the personas we want
+		if (!check_persona(message->persona_index))
 			continue;
 
 		// find the corresponding head for this persona
@@ -1119,15 +1173,7 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 			if (message->persona_index == builtin_message->persona_index)
 			{
 				// either assign the correct head from scratch, or change the head to the correct one
-				if (message->avi_info.name == nullptr)
-				{
-					message->avi_info.name = strdup(builtin_message->avi_info.name);
-				}
-				else if (stricmp(message->avi_info.name, builtin_message->avi_info.name) != 0)
-				{
-					free(message->avi_info.name);
-					message->avi_info.name = strdup(builtin_message->avi_info.name);
-				}
+				STRDUP_IF_MODIFIED(message->avi_info.name, builtin_message->avi_info.name);
 
 				// done searching
 				found = true;
@@ -1141,7 +1187,12 @@ void VoiceActingManager::OnSetHeadANIsUsingMessagesTbl()
 		}
 	}
 
-	MessageBox("Message head ANIs have been assigned from builtin messages.", "Voice Acting Manager");
+	if (num_modified > 0)
+		set_modified(TRUE);
+
+	SCP_string message;
+	sprintf(message, "Message head ANIs have been assigned from builtin messages.  " SIZE_T_ARG " %s modified.", num_modified, (num_modified == 1) ? "message was" : "messages were");
+	MessageBox(message.c_str(), "Voice Acting Manager");
 }
 
 void VoiceActingManager::OnCheckAnyWingmanPersonas()

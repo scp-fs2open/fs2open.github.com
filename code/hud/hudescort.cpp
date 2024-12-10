@@ -75,7 +75,7 @@ HudGauge(HUD_OBJECT_ESCORT, HUD_ESCORT_VIEW, false, false, (VM_EXTERNAL | VM_DEA
 {
 }
 
-void HudGaugeEscort::initHeaderText(char *text)
+void HudGaugeEscort::initHeaderText(const char *text)
 {
 	strcpy_s(header_text, text);
 }
@@ -135,7 +135,7 @@ void HudGaugeEscort::initRightAlignNames(bool align)
 	right_align_names = align;
 }
 
-void HudGaugeEscort::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+void HudGaugeEscort::initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom)
 {
 	Escort_gauges[0].first_frame = bm_load_animation(fname_top, &Escort_gauges[0].num_frames);
 	if (Escort_gauges[0].first_frame == -1) {
@@ -885,7 +885,7 @@ void hud_remove_ship_from_escort(int objnum)
  * @param objp      The object hit
  * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
  */
-void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
+void hud_escort_ship_hit(const object *objp, int  /*quadrant*/)
 {
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){

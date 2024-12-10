@@ -46,7 +46,7 @@ namespace
 
 	bool get_user_sid(SCP_string& outStr)
 	{
-		HANDLE hToken = NULL;
+		HANDLE hToken = nullptr;
 		if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken) == FALSE)
 		{
 			mprintf(("Failed to get process token! Error Code: %d\n", (int)GetLastError()));
@@ -55,7 +55,7 @@ namespace
 		}
 
 		DWORD dwBufferSize;
-		GetTokenInformation(hToken, TokenUser, NULL, 0, &dwBufferSize);
+		GetTokenInformation(hToken, TokenUser, nullptr, 0, &dwBufferSize);
 
 		PTOKEN_USER ptkUser = (PTOKEN_USER) new byte[dwBufferSize];
 
@@ -72,7 +72,7 @@ namespace
 			return false;
 		}
 
-		LPTSTR sidName = NULL;
+		LPTSTR sidName = nullptr;
 		if (ConvertSidToStringSid(ptkUser->User.Sid, &sidName) == 0)
 		{
 			mprintf(("Failed to convert SID structure to string! Error Code: %d\n", (int)GetLastError()));
@@ -182,7 +182,7 @@ namespace
 
 	void registry_write_string(const char *section, const char *name, const char *value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwDisposition;
 		char keyname[1024];
 		LONG lResult;
@@ -196,10 +196,10 @@ namespace
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
 			0,						// DWORD reserved
-			NULL,						// Object class
+			nullptr,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
-			NULL,						// Default security attributes
+			nullptr,						// Default security attributes
 			&hKey,						// Location to store key
 			&dwDisposition);			// Location to store status of key
 
@@ -230,7 +230,7 @@ namespace
 
 	void registry_write_uint(const char *section, const char *name, uint value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwDisposition;
 		char keyname[1024];
 		LONG lResult;
@@ -244,10 +244,10 @@ namespace
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
 			0,							// DWORD reserved
-			NULL,						// Object class
+			nullptr,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
-			NULL,						// Default security attributes
+			nullptr,						// Default security attributes
 			&hKey,						// Location to store key
 			&dwDisposition);			// Location to store status of key
 
@@ -291,7 +291,7 @@ namespace
 	static char registry_tmp_string_data[1024];
 	const char * registry_read_string(const char *section, const char *name, const char *default_value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwType, dwLen;
 		char keyname[1024];
 		LONG lResult;
@@ -319,7 +319,7 @@ namespace
 		dwLen = 1024;
 		lResult = RegQueryValueEx(hKey,									// Handle to key
 			name,									// The values name
-			NULL,									// DWORD reserved
+			nullptr,									// DWORD reserved
 			&dwType,								// What kind it is
 			(ubyte *)&registry_tmp_string_data,				// value to set
 			&dwLen);								// How many bytes to set
@@ -341,7 +341,7 @@ namespace
 	// be passed, and if 'name' isn't found, then returns default_value
 	uint registry_read_uint(const char *section, const char *name, uint default_value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwType, dwLen;
 		char keyname[1024];
 		LONG lResult;
@@ -370,7 +370,7 @@ namespace
 		dwLen = 4;
 		lResult = RegQueryValueEx(hKey,				// Handle to key
 			name,				// The values name
-			NULL,				// DWORD reserved
+			nullptr,				// DWORD reserved
 			&dwType,			// What kind it is
 			(ubyte *)&tmp_val,	// value to set
 			&dwLen);			// How many bytes to set
@@ -400,7 +400,7 @@ static time_t filetime_to_timet(const FILETIME& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 
-static time_t key_mod_time(bool alternate_path) {
+static tl::optional<time_t> key_mod_time(bool alternate_path) {
 	char keyname[1024];
 
 	HKEY useHKey = get_registry_keyname(keyname, nullptr, alternate_path);
@@ -414,6 +414,9 @@ static time_t key_mod_time(bool alternate_path) {
 
 	if (lResult != ERROR_SUCCESS) {
 		::RegCloseKey(hKey);
+		if (lResult == ERROR_FILE_NOT_FOUND) {
+			return tl::nullopt;
+		}
 		return 0;
 	}
 
@@ -438,11 +441,20 @@ static time_t key_mod_time(bool alternate_path) {
 	return filetime_to_timet(time);
 }
 
-time_t os_registry_get_last_modification_time() {
+tl::optional<time_t> os_registry_get_last_modification_time() {
+
 	auto standard_time = key_mod_time(false);
 	auto alternate_time = key_mod_time(true);
 
-	return std::max(standard_time, alternate_time);
+	if (standard_time.has_value() && alternate_time.has_value()) {
+		return std::max(standard_time.value(), alternate_time.value());
+	} else if (alternate_time.has_value()) {
+		return alternate_time.value();
+	} else if (standard_time.has_value()) {
+		return standard_time.value();
+	} else {
+		return tl::nullopt;
+	}
 }
 
 #endif
@@ -478,17 +490,17 @@ typedef struct KeyValue
 	struct KeyValue *next;
 } KeyValue;
 
-typedef struct Section
+typedef struct IniSection
 {
 	char *name;
 
 	struct KeyValue *pairs;
-	struct Section *next;
-} Section;
+	struct IniSection *next;
+} IniSection;
 
 typedef struct Profile
 {
-	struct Section *sections;
+	struct IniSection *sections;
 } Profile;
 
 // For string config functions
@@ -507,14 +519,14 @@ static char *read_line_from_file(FILE *fp)
 	eol = 0;
 
 	do {
-		if (buf == NULL) {
-			return NULL;
+		if (buf == nullptr) {
+			return nullptr;
 		}
 
-		if (fgets(buf_start, 80, fp) == NULL) {
+		if (fgets(buf_start, 80, fp) == nullptr) {
 			if (buf_start == buf) {
 				vm_free(buf);
-				return NULL;
+				return nullptr;
 			}
 			else {
 				*buf_start = 0;
@@ -545,8 +557,8 @@ static char *trim_string(char *str)
 {
 	char *ptr;
 
-	if (str == NULL)
-		return NULL;
+	if (str == nullptr)
+		return nullptr;
 
 	/* kill any comment */
 	ptr = strchr(str, ';');
@@ -581,7 +593,7 @@ static char *trim_string(char *str)
 
 static Profile *profile_read(const char *file)
 {
-	FILE *fp = NULL;
+	FILE *fp = nullptr;
 	char *str;
 
 	if (os_is_legacy_mode()) {
@@ -599,35 +611,35 @@ static Profile *profile_read(const char *file)
 		fp = fopen(os_get_config_path(file).c_str(), "rt");
 	}
 
-	if (fp == NULL)
-		return NULL;
+	if (fp == nullptr)
+		return nullptr;
 
 	Profile *profile = (Profile *)vm_malloc(sizeof(Profile));
-	profile->sections = NULL;
+	profile->sections = nullptr;
 
-	Section **sp_ptr = &(profile->sections);
-	Section *sp = NULL;
+	IniSection **sp_ptr = &(profile->sections);
+	IniSection *sp = nullptr;
 
-	KeyValue **kvp_ptr = NULL;
+	KeyValue **kvp_ptr = nullptr;
 
-	while ((str = read_line_from_file(fp)) != NULL) {
+	while ((str = read_line_from_file(fp)) != nullptr) {
 		char *ptr = trim_string(str);
 
 		if (*ptr == '[') {
 			ptr++;
 
 			char *pend = strchr(ptr, ']');
-			if (pend != NULL) {
+			if (pend != nullptr) {
 				// if (pend[1]) { /* trailing garbage! */ }
 
 				*pend = 0;
 
 				if (*ptr) {
-					sp = (Section *)vm_malloc(sizeof(Section));
-					sp->next = NULL;
+					sp = (IniSection *)vm_malloc(sizeof(IniSection));
+					sp->next = nullptr;
 
 					sp->name = vm_strdup(ptr);
-					sp->pairs = NULL;
+					sp->pairs = nullptr;
 
 					*sp_ptr = sp;
 					sp_ptr = &(sp->next);
@@ -639,10 +651,10 @@ static Profile *profile_read(const char *file)
 		else {
 			if (*ptr) {
 				char *key = ptr;
-				char *value = NULL;
+				char *value = nullptr;
 
 				ptr = strchr(ptr, '=');
-				if (ptr != NULL) {
+				if (ptr != nullptr) {
 					*ptr = 0;
 					ptr++;
 
@@ -650,13 +662,13 @@ static Profile *profile_read(const char *file)
 				} // else { /* random garbage! */ }
 
 				if (key && *key && value /* && *value */) {
-					if (sp != NULL) {
+					if (sp != nullptr) {
 						KeyValue *kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
 
 						kvp->key = vm_strdup(key);
 						kvp->value = vm_strdup(value);
 
-						kvp->next = NULL;
+						kvp->next = nullptr;
 
 						*kvp_ptr = kvp;
 						kvp_ptr = &(kvp->next);
@@ -675,15 +687,15 @@ static Profile *profile_read(const char *file)
 
 static void profile_free(Profile *profile)
 {
-	if (profile == NULL)
+	if (profile == nullptr)
 		return;
 
-	Section *sp = profile->sections;
-	while (sp != NULL) {
-		Section *st = sp;
+	IniSection *sp = profile->sections;
+	while (sp != nullptr) {
+		IniSection *st = sp;
 		KeyValue *kvp = sp->pairs;
 
-		while (kvp != NULL) {
+		while (kvp != nullptr) {
 			KeyValue *kvt = kvp;
 
 			vm_free(kvp->key);
@@ -704,27 +716,27 @@ static void profile_free(Profile *profile)
 
 static Profile *profile_update(Profile *profile, const char *section, const char *key, const char *value)
 {
-	if (profile == NULL) {
+	if (profile == nullptr) {
 		profile = (Profile *)vm_malloc(sizeof(Profile));
 
-		profile->sections = NULL;
+		profile->sections = nullptr;
 	}
 
 	KeyValue *kvp;
 
-	Section **sp_ptr = &(profile->sections);
-	Section *sp = profile->sections;
+	IniSection **sp_ptr = &(profile->sections);
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		if (strcmp(section, sp->name) == 0) {
 			KeyValue **kvp_ptr = &(sp->pairs);
 			kvp = sp->pairs;
 
-			while (kvp != NULL) {
+			while (kvp != nullptr) {
 				if (strcmp(key, kvp->key) == 0) {
 					vm_free(kvp->value);
 
-					if (value == NULL) {
+					if (value == nullptr) {
 						*kvp_ptr = kvp->next;
 
 						vm_free(kvp->key);
@@ -742,10 +754,10 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 				kvp = kvp->next;
 			}
 
-			if (value != NULL) {
+			if (value != nullptr) {
 				/* key not found */
 				kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
-				kvp->next = NULL;
+				kvp->next = nullptr;
 				kvp->key = vm_strdup(key);
 				kvp->value = vm_strdup(value);
 			}
@@ -761,12 +773,12 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 	}
 
 	/* section not found */
-	sp = (Section *)vm_malloc(sizeof(Section));
-	sp->next = NULL;
+	sp = (IniSection *)vm_malloc(sizeof(IniSection));
+	sp->next = nullptr;
 	sp->name = vm_strdup(section);
 
 	kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
-	kvp->next = NULL;
+	kvp->next = nullptr;
 	kvp->key = vm_strdup(key);
 	kvp->value = vm_strdup(value);
 
@@ -779,16 +791,16 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 
 static char *profile_get_value(Profile *profile, const char *section, const char *key)
 {
-	if (profile == NULL)
-		return NULL;
+	if (profile == nullptr)
+		return nullptr;
 
-	Section *sp = profile->sections;
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		if (stricmp(section, sp->name) == 0) {
 			KeyValue *kvp = sp->pairs;
 
-			while (kvp != NULL) {
+			while (kvp != nullptr) {
 				if (strcmp(key, kvp->key) == 0) {
 					return kvp->value;
 				}
@@ -800,31 +812,31 @@ static char *profile_get_value(Profile *profile, const char *section, const char
 	}
 
 	/* not found */
-	return NULL;
+	return nullptr;
 }
 
 static void profile_save(Profile *profile, const char *file)
 {
-	FILE *fp = NULL;
+	FILE *fp = nullptr;
 	char tmp[MAX_PATH] = "";
 	char tmp2[MAX_PATH] = "";
 
-	if (profile == NULL)
+	if (profile == nullptr)
 		return;
 
 	fp = fopen(os_get_config_path(file).c_str(), "wt");
 
-	if (fp == NULL)
+	if (fp == nullptr)
 		return;
 
-	Section *sp = profile->sections;
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		sprintf(tmp, NOX("[%s]\n"), sp->name);
 		fputs(tmp, fp);
 
 		KeyValue *kvp = sp->pairs;
-		while (kvp != NULL) {
+		while (kvp != nullptr) {
 			sprintf(tmp2, NOX("%s=%s\n"), kvp->key, kvp->value);
 			fputs(tmp2, fp);
 			kvp = kvp->next;

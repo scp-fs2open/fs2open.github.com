@@ -155,6 +155,7 @@ bool Use_new_scanning_behavior;
 bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
+color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -1157,6 +1158,30 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			if (optional_string("+Overhead Line Color 1:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&Overhead_line_colors[0], rgba[0], rgba[1], rgba[2], rgba[3]);
+			}
+
+			if (optional_string("+Overhead Line Color 2:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&Overhead_line_colors[1], rgba[0], rgba[1], rgba[2], rgba[3]);
+			}
+
+			if (optional_string("+Overhead Line Color 3:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&Overhead_line_colors[2], rgba[0], rgba[1], rgba[2], rgba[3]);
+			}
+
+			if (optional_string("+Overhead Line Color 4:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&Overhead_line_colors[3], rgba[0], rgba[1], rgba[2], rgba[3]);
+			}
+
 			if (optional_string("$Always refresh selected weapon when viewing loadout:")) {
 				stuff_boolean(&Always_reset_selected_wep_on_loadout_open);
 			}
@@ -1618,6 +1643,12 @@ void mod_table_reset()
 	Lua_API_returns_nil_instead_of_invalid_object = false;
 	Dont_show_callsigns_in_escort_list = false;
 	Fix_scripted_velocity = false;
+	// These colors were taken from missionscreencommon.cpp line 591 which
+	// were the original colors used by the overhead ship loadout lines
+	gr_init_alphacolor(&Overhead_line_colors[0], 64, 192, 192, 255);
+	gr_init_alphacolor(&Overhead_line_colors[1], 192, 128, 64, 255);
+	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
+	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 }
 
 void mod_table_set_version_flags()

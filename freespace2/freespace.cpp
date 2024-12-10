@@ -361,7 +361,7 @@ int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
 
-int Pre_player_entry;
+bool Pre_player_entry;
 
 int	Fred_running = 0;
 bool running_unittests = false;
@@ -1057,7 +1057,7 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Pre_player_entry = 1;			//	Means the player has not yet entered.
+	Pre_player_entry = true;		//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
 	observer_init();
@@ -1877,6 +1877,7 @@ void game_init()
 #endif
 
 	font::init();					// loads up all fonts
+	font::checkFontOptions();
 	
 	// add title screen
 	game_title_screen_display();
@@ -2716,7 +2717,7 @@ void game_tst_frame()
 		}
 	}
 }
-void game_tst_mark(object *objp, ship *shipp)
+void game_tst_mark(const object *objp, const ship *shipp)
 {
 	ship_info *sip;	
 
@@ -3424,7 +3425,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
-	matrix eye_no_jitter = vmd_identity_matrix;
 
 	if(cam != nullptr)
 	{
@@ -3445,10 +3445,13 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		}
 
 		//Handle jitter if not cutscene camera
-		eye_no_jitter = eye_orient;
 		if( !(Viewer_mode & VM_FREECAMERA) ) {
 			apply_view_shake(&eye_orient);
-			cam->set_rotation(&eye_orient);
+			cam->set_rotation(&eye_orient);		// this was added in 57fbb21c; see Mantis 1743; needed to make the target indicator shake
+		}
+		//If cutscene camera, handle jitter differently
+		else if ( Game_shudder_everywhere ) {
+			apply_view_shake(&eye_orient);		// the camera rotation shouldn't be modified for cutscenes or it will produce feedback
 		}
 
 		//Maybe override FOV from SEXP
@@ -3852,15 +3855,12 @@ void game_maybe_do_dead_popup(float frametime)
 }
 
 // returns true if player is actually in a game_play stats
-int game_actually_playing()
+bool game_actually_playing()
 {
 	int state;
 
 	state = gameseq_get_state();
-	if ( (state != GS_STATE_GAME_PLAY) && (state != GS_STATE_DEATH_DIED) && (state != GS_STATE_DEATH_BLEW_UP) )
-		return 0;
-	else
-		return 1;
+	return (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_DEATH_DIED) || (state == GS_STATE_DEATH_BLEW_UP);
 }
 
 void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
@@ -4085,6 +4085,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	{
 		TRACE_SCOPE(tracing::RenderHUDHook);
 
+		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
 			if (fov_override)
 				g3_set_fov(*fov_override);
@@ -4154,7 +4155,6 @@ void game_frame(bool paused)
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
 #endif
-	int actually_playing;
 
 #ifndef NDEBUG
 	if (Framerate_delay) {
@@ -4181,7 +4181,7 @@ void game_frame(bool paused)
 	else
 	{
 		// var to hold which state we are in
-		actually_playing = game_actually_playing();
+		bool actually_playing = game_actually_playing();
 
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
@@ -4190,7 +4190,7 @@ void game_frame(bool paused)
 		}
 	
 		if (Pre_player_entry && Missiontime > Entry_delay_time) {
-			Pre_player_entry = 0;
+			Pre_player_entry = false;
 			event_music_set_start_delay();
 		}
 
@@ -6848,11 +6848,13 @@ int game_main(int argc, char *argv[])
 		output_sexps("sexps.html");
 	}
 
+	bool skip_intro = false;
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		skip_intro = scripting::hooks::OnIntroAboutToPlay->isOverride();
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone) {
+	if (!Is_standalone && !skip_intro) {
 		movie::play("intro.mve");
 	}
 
@@ -7042,7 +7044,7 @@ void game_do_training_checks()
 	}
 
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		wplp = Training_context_path;
+		wplp = find_waypoint_list_at_index(Training_context_waypoint_path);
 		if (wplp->get_waypoints().size() > (uint) Training_context_goal_waypoint) {
 			i = Training_context_goal_waypoint;
 			do {

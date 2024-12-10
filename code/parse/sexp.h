@@ -58,7 +58,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
 	OPF_SHIP_WING_POINT_OR_NONE,	// WMC - Ship, wing, point or none
-	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)
+	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)... NOTE: the type "fighter/bomber" is allowed even though it's not a real ship type; SEXPs must account for this
 	OPF_KEYPRESS,					// a default key
 	OPF_EVENT_NAME,					// name of an event
 	OPF_AI_ORDER,					// a squadmsg order player can give to a ship
@@ -315,6 +315,7 @@ enum : int {
 	OP_PERFORM_ACTIONS_BOOL_FIRST,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_LAST,	// Goober5000
 	OP_HAS_TIME_ELAPSED_MSECS,	// Goober5000
+	OP_IS_TRUE_FOR_DURATION,	// Goober5000
 
 	// OP_CATEGORY_GOAL_EVENT
 	
@@ -649,10 +650,12 @@ enum : int {
 	OP_HUD_DISABLE_EXCEPT_MESSAGES,	// Goober5000
 	OP_FORCE_JUMP,	// Goober5000
 	OP_HUD_SET_TEXT, //WMC
+	OP_HUD_SET_XSTR,
 	OP_HUD_SET_TEXT_NUM, //WMC
 	OP_HUD_SET_COORDS, //WMC
 	OP_HUD_SET_FRAME, //WMC
 	OP_HUD_SET_COLOR, //WMC
+	OP_HUD_RESET_COLOR, // Goober5000
 	OP_HUD_SET_MAX_TARGETING_RANGE, // Goober5000
 	OP_SHIP_TAG, // Goober5000
 	OP_SHIP_UNTAG, // Goober5000
@@ -661,8 +664,8 @@ enum : int {
 	OP_UNSCRAMBLE_MESSAGES,	// phreak
 	OP_CUTSCENES_SET_CUTSCENE_BARS,	// WMC
 	OP_CUTSCENES_UNSET_CUTSCENE_BARS,	// WMC
+
 	OP_CUTSCENES_FADE_IN,	// WMC
-	
 	OP_CUTSCENES_FADE_OUT,	// WMC
 	OP_CUTSCENES_SET_CAMERA_POSITION,	// WMC
 	OP_CUTSCENES_SET_CAMERA_FACING,	// WMC
@@ -919,6 +922,7 @@ enum : int {
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	OP_GOOD_PRIMARY_TIME,	// plieblang
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
+	OP_NEBULA_SET_RANGE,	// Goober5000
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -1012,8 +1016,8 @@ enum : int {
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_SIM_HULL_STRING		"Simulated Hull"
 #define SEXP_SHIELD_STRING			"Shields"
-#define SEXP_ALL_ENGINES_STRING		"<all engines>"
-#define SEXP_ALL_TURRETS_STRING		"<all turrets>"
+#define SEXP_ALL_GENERIC_SUBSYSTEM_STRING	"<all %s>"
+#define SEXP_ALL_SUBSYSTEMS_STRING			"<all subsystems>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
 #define SEXP_ANY_STRING				"<any string>"
@@ -1359,7 +1363,9 @@ typedef struct sexp_node {
 	int flags;					// Goober5000
 
 	sexp_cached_data *cache;	// Goober5000
-	int cached_variable_index;	// Goober5000
+	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
+
+	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
 } sexp_node;
 
 // Goober5000

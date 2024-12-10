@@ -451,6 +451,14 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 		return FALSE;
 
 	render_frame();	// "do the rendering!"  Renders image to offscreen buffer
+
+	// if you hit the next Assert, find Hoffoss or Allender.  If neither here, then comment it out.
+	Assert(Update_window >= 0);
+	if (Update_window) {
+		// here the code used to copy the offscreen buffer to the screen
+		Update_window--;
+	}
+
 	process_pending_messages();
 
 	FrameCount++;
@@ -679,6 +687,9 @@ void update_map_window() {
 		return;
 
 	render_frame();	// "do the rendering!"
+
+	if (Update_window > 0)
+		Update_window--;
 
 	show_control_mode();
 	process_pending_messages();

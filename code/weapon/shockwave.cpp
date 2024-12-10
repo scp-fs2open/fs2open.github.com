@@ -66,6 +66,7 @@ static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwave
                      })
                      .level(options::ExpertLevel::Advanced)
                      .importance(66)
+                     .flags({options::OptionFlags::ForceMultiValueSelection})
                      .finish();
 
 /**
@@ -80,7 +81,7 @@ static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwave
  * @return success		object number of shockwave
  * @return failure		-1
  */
-int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, int flag, int delay)
+int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create_info* sci, int flag, int delay)
 {
 	int				i, objnum, real_parent;
 	int				info_index = -1, model_id = -1;
@@ -183,7 +184,7 @@ int shockwave_create(int parent_objnum, vec3d* pos, shockwave_create_info* sci, 
  *
  * @param objp		pointer to shockwave object
  */
-void shockwave_delete(object *objp)
+void shockwave_delete(const object *objp)
 {
 	Assertion(objp->type == OBJ_SHOCKWAVE, "shockwave_delete() called on an object with a type of %d instead of OBJ_SHOCKWAVE (%d); get a coder!\n", objp->type, OBJ_SHOCKWAVE);
 	Assertion(objp->instance >= 0 && objp->instance < MAX_SHOCKWAVES, "shockwave_delete() called on an object with an invalid instance of %d (should be 0-%d); get a coder!\n", objp->instance, MAX_SHOCKWAVES - 1);
@@ -436,7 +437,7 @@ void shockwave_move(object *shockwave_objp, float frametime)
 * @param objp	pointer to shockwave object
 * @param scene	the scene's draw list we're adding this to
 */
-void shockwave_render(object *objp, model_draw_list *scene)
+void shockwave_render(const object *objp, model_draw_list *scene)
 {
 	shockwave		*sw;
 	vertex			p;
@@ -774,7 +775,7 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 	sci->rot_angles.p = sci->rot_angles.b = sci->rot_angles.h = 0.0f;
 	sci->rot_defined = false;
 	sci->damage_type_idx = sci->damage_type_idx_sav = -1;
-	sci->damage_overidden = false;
+	sci->damage_overridden = false;
 
 	sci->blast_sound_id = GameSounds::SHOCKWAVE_IMPACT;
 }
@@ -782,7 +783,7 @@ void shockwave_create_info_init(shockwave_create_info *sci)
 /**
  * Loads a shockwave in preparation for a mission
  */
-void shockwave_create_info_load(shockwave_create_info *sci)
+void shockwave_create_info_load(const shockwave_create_info *sci)
 {
 	int i = -1;
 

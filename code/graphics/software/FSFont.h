@@ -31,16 +31,17 @@ namespace font
 	class FSFont
 	{
 	private:
-		SCP_string name;	//!< The name of this font
-		SCP_string filename; //!< The file name used to retrieve this font
+		SCP_string name = "<Invalid>";	//!< The name of this font
+		SCP_string filename;			//!< The file name used to retrieve this font
 
 	protected:
-		float offsetTop;		//!< The offset at the top of a line of text
-		float offsetBottom;	//!< The offset at the bottom of a line of text
+		bool canScale = false;			//!< If the font is allowed to scale with the user font multiplier
+		float offsetTop = 0.0f;			//!< The offset at the top of a line of text
+		float offsetBottom = 0.0f;		//!< The offset at the bottom of a line of text
 
-		float _height;
-		float _ascender;
-		float _descender;
+		float _height = 0.0f;
+		float _ascender = 0.0f;
+		float _descender = 0.0f;
 
 		void checkFontMetrics();
 
@@ -51,14 +52,14 @@ namespace font
 		*
 		* @date	23.11.2011
 		*/
-		FSFont();
+		FSFont() = default;
 
 		/**
 		* @brief	Destructor.
 		*
 		* @date	23.11.2011
 		*/
-		virtual ~FSFont();
+		virtual ~FSFont() = default;
 
 		/**
 		* @brief	Sets the name of this font.
@@ -143,6 +144,15 @@ namespace font
 								   int resize_mode = -1, float *width = NULL, float *height = NULL) const = 0;
 
 		/**
+		 * @brief	Gets the scaling behavior of this font
+		 *
+		 * @date	28.8.2024
+		 *
+		 * @return	The scaling behavior
+		 */
+		[[nodiscard]] bool getScaleBehavior() const;
+
+		/**
 		* @brief	Gets the offset of this font from the top of the drawing line
 		*
 		* @date	27.11.2012
@@ -159,6 +169,15 @@ namespace font
 		* @return	The bottom offset.
 		*/
 		float getBottomOffset() const;
+
+		/**
+		 * @brief	Sets the scaling behavior
+		 *
+		 * @date	28.8.2024
+		 *
+		 * @param	scale whether or not this font can scale with the font multiplier
+		 */
+		void setScaleBehavior(bool scale);
 
 
 		/**

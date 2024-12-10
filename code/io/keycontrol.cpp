@@ -221,8 +221,6 @@ int Tool_enabled = 0;
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
 
-extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor);
-
 extern void mission_goal_mark_all_true( int type );
 
 int Normal_key_set[] = {
@@ -337,6 +335,7 @@ int Normal_key_set[] = {
 
 	TOGGLE_GLIDING,
 	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+	CYCLE_PRIMARY_WEAPON_PATTERN,
 	CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
@@ -1817,12 +1816,21 @@ int button_function_critical(int n, net_player *p = NULL)
 					polymodel *pm = model_get( sip->model_num );
 					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
-					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
-					shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
 				}
 			}
 			break;
+
+		case CYCLE_PRIMARY_WEAPON_PATTERN: {
+				ship* shipp = &Ships[objp->instance];
+				ship_weapon* swp = &shipp->weapons;
+				ship_info* sip = &Ship_info[shipp->ship_info_index];
+				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
+					int new_pattern = (swp->dynamic_firing_pattern[swp->current_primary_bank] + 1) % (sip->dyn_firing_patterns_allowed[swp->current_primary_bank].size());
+					swp->dynamic_firing_pattern[swp->current_primary_bank] = new_pattern;
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
+				}
+			} break;
 
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:
@@ -2373,6 +2381,7 @@ int button_function(int n)
 	 */
 	switch (n) {
 		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+		case CYCLE_PRIMARY_WEAPON_PATTERN:
 		case CYCLE_NEXT_PRIMARY:	// cycle to next primary weapon
 		case CYCLE_PREV_PRIMARY:	// cycle to previous primary weapon
 		case CYCLE_SECONDARY:		// cycle to next secondary weapon

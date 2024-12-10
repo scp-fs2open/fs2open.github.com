@@ -995,7 +995,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, these are deprecated 
+
+							// hide these operators per GitHub issue #6400
+							case OP_GET_VARIABLE_BY_INDEX:
+							case OP_SET_VARIABLE_BY_INDEX:
+							case OP_COPY_VARIABLE_FROM_INDEX:
+							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+							// unlike the various campaign operators, these are deprecated
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
@@ -1053,7 +1060,14 @@ void sexp_tree::right_clicked(int mode)
 							case OP_TECH_REMOVE_INTEL_XSTR:
 							case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-							// unlike the above operators, these are deprecated 
+
+							// hide these operators per GitHub issue #6400
+							case OP_GET_VARIABLE_BY_INDEX:
+							case OP_SET_VARIABLE_BY_INDEX:
+							case OP_COPY_VARIABLE_FROM_INDEX:
+							case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+							// unlike the various campaign operators, these are deprecated
 							case OP_HITS_LEFT_SUBSYSTEM:
 							case OP_CUTSCENES_SHOW_SUBTITLE:
 							case OP_ORDER:
@@ -6763,7 +6777,7 @@ sexp_list_item *sexp_tree::get_listing_opf_font()
 	sexp_list_item head;
 
 	for (i = 0; i < font::FontManager::numberOfFonts(); i++) {
-		head.add_data(const_cast<char*>(font::FontManager::getFont(i)->getName().c_str()));
+		head.add_data(font::FontManager::getFont(i)->getName().c_str());
 	}
 
 	return head.next;
@@ -7061,6 +7075,9 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_type()
 	for (i=0; i<Ship_types.size(); i++){
 		head.add_data(Ship_types[i].name);
 	}
+	if (Fighter_bomber_valid) {
+		head.add_data(Fighter_bomber_type_name);
+	}
 
 	return head.next;
 }
@@ -7261,9 +7278,19 @@ sexp_list_item *sexp_tree::get_listing_opf_subsystem_or_none(int parent_node, in
 sexp_list_item *sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
 {
 	sexp_list_item head;
+	char buffer[NAME_LENGTH];
 
-	head.add_data(SEXP_ALL_ENGINES_STRING);
-	head.add_data(SEXP_ALL_TURRETS_STRING);
+	for (int i = 0; i < SUBSYSTEM_MAX; ++i)
+	{
+		// it's not clear what the "activator" subsystem was intended to do, so let's not display it by default
+		if (i != SUBSYSTEM_NONE && i != SUBSYSTEM_UNKNOWN && i != SUBSYSTEM_ACTIVATION)
+		{
+			sprintf(buffer, SEXP_ALL_GENERIC_SUBSYSTEM_STRING, Subsystem_types[i]);
+			SCP_tolower(buffer);
+			head.add_data(buffer);
+		}
+	}
+	head.add_data(SEXP_ALL_SUBSYSTEMS_STRING);
 	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
 
 	return head.next;

@@ -326,14 +326,15 @@ typedef struct wl_ship_class_info
 
 wl_ship_class_info	Wl_ships[MAX_SHIP_CLASSES];
 
-typedef struct wl_icon_info
+struct wl_icon_info
 {
 	int				icon_bmaps[NUM_ICON_FRAMES];
 	int				laser_bmap;
 	int				model_index;
-	int				can_use;
+	bool			can_use_for_ship;
+	TriStateBool	can_use_for_bank;
 	generic_anim	animation;
-} wl_icon_info;
+};
 
 wl_icon_info	Wl_icons_teams[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 wl_icon_info	*Wl_icons = NULL;
@@ -838,7 +839,7 @@ void draw_3d_overhead_view(int model_num,
 		vec3d subobj_pos;
 		int x, y;
 		int xc, yc;
-		int num_found = 2;
+		int num_found = 0;
 
 		int bank_coords[MAX_SHIP_WEAPONS][2] = {
 			{bank1_x, bank1_y},
@@ -854,8 +855,8 @@ void draw_3d_overhead_view(int model_num,
 		for (x = 0; x < pm->n_guns; x++) {
 			if ((weapon_array[x] == selected_weapon_class && hovered_weapon_slot < 0) ||
 				x == hovered_weapon_slot) {
-				Assert(num_found < NUM_ICON_FRAMES);
-				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				Assert(num_found < MAX_SHIP_SECONDARY_BANKS);
+				gr_set_color_fast(&Overhead_line_colors[num_found]);
 				gr_circle(bank_coords[x][0] + bank_prim_offset, bank_coords[x][1] + bank_y_offset, 5, resize_mode);
 				for (y = 0; y < pm->gun_banks[x].num_slots; y++) {
 					// Stuff
@@ -920,14 +921,14 @@ void draw_3d_overhead_view(int model_num,
 			}
 		}
 
-		num_found = 2;
+		num_found = 0;
 		// Render selected secondary lines
 		for (x = 0; x < pm->n_missiles; x++) {
 			if ((weapon_array[x + MAX_SHIP_PRIMARY_BANKS] == selected_weapon_class &&
 					hovered_weapon_slot < 0) ||
 				x + MAX_SHIP_PRIMARY_BANKS == hovered_weapon_slot) {
-				Assert(num_found < NUM_ICON_FRAMES);
-				gr_set_color_fast(&Icon_colors[ICON_FRAME_NORMAL + num_found]);
+				Assert(num_found < MAX_SHIP_PRIMARY_BANKS);
+				gr_set_color_fast(&Overhead_line_colors[num_found]);
 				gr_circle(bank_coords[x + MAX_SHIP_PRIMARY_BANKS][0] + bank_sec_offset,
 					bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + bank_y_offset,
 					5,
@@ -1184,25 +1185,38 @@ int eval_weapon_flag_for_game_type(int weapon_flags)
  * Go through the possible weapons to choose from, and flag some as disabled since
  * that ship class cannot use that kind of weapon.  The weapon filter is specified
  * in ships.tbl, where each ship has a list of all the possible weapons it can use.
+ * @param ship_class the ship class that might equip this weapon
+ * @param bank_index index of bank (0..2 primary, 0..6 secondary), or <0 if the bank is not being considered
  */
-void wl_set_disabled_weapons(int ship_class)
+void wl_set_disabled_weapons(int ship_class, int bank_index)
 {
-	int				i;
-	ship_info		*sip;
-
-	if ( ship_class == - 1 )
+	if ( ship_class < 0 )
 		return;
 
 	Assert(ship_class >= 0 && ship_class < ship_info_size());
+	Assert(bank_index < MAX_SHIP_PRIMARY_BANKS + MAX_SHIP_SECONDARY_BANKS);
 	Assert( Wl_icons != NULL );
 
-	sip = &Ship_info[ship_class];
+	auto sip = &Ship_info[ship_class];
 
-	for ( i = 0; i < MAX_WEAPON_TYPES; i++ )
+	int i = 0;
+	for ( auto &wi: Weapon_info )
 	{
 		//	Determine whether weapon #i is allowed on this ship class in the current type of mission.
 		//	As of 9/6/99, the only difference is dogfight missions have a different list of legal weapons.
-		Wl_icons[i].can_use = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
+		Wl_icons[i].can_use_for_ship = eval_weapon_flag_for_game_type(sip->allowed_weapons[i]);
+
+		//	Also determine whether the weapon can be used on this bank
+		if ( bank_index < 0 || !Wl_icons[i].can_use_for_ship )
+			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
+		else if ( (wi.is_primary() && bank_index >= MAX_SHIP_PRIMARY_BANKS) || (wi.is_secondary() && bank_index < MAX_SHIP_PRIMARY_BANKS) )
+			Wl_icons[i].can_use_for_bank = TriStateBool::UNKNOWN_;
+		else if ( !eval_weapon_flag_for_game_type(sip->restricted_loadout_flag[bank_index]) || eval_weapon_flag_for_game_type(sip->allowed_bank_restricted_weapons[bank_index][i]) )
+			Wl_icons[i].can_use_for_bank = TriStateBool::TRUE_;
+		else
+			Wl_icons[i].can_use_for_bank = TriStateBool::FALSE_;
+
+		++i;
 	}
 }
 
@@ -1289,6 +1303,9 @@ void maybe_select_new_ship_weapon(int index)
 	}
 
 	Selected_wl_class = wep[index];
+
+	// some weapons are bank-specific, so re-check the disabled weapons
+	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class, index);
 }
 
 /**
@@ -1561,7 +1578,7 @@ void wl_set_selected_slot(int slot_num)
 	Selected_wl_slot = slot_num;
 	if ( Selected_wl_slot >= 0 ) {
 		Assert( Wss_slots != NULL );
-		wl_set_disabled_weapons(Wss_slots[slot_num].ship_class);
+		wl_set_disabled_weapons(Wss_slots[slot_num].ship_class, -1);
 	}
 }
 
@@ -2039,7 +2056,7 @@ void weapon_select_init()
 
 	wl_maybe_reset_selected_slot();
 	Assert( Wss_slots != NULL );
-	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class);
+	wl_set_disabled_weapons(Wss_slots[Selected_wl_slot].ship_class, -1);
 
 	Weapon_select_overlay_id = help_overlay_get_index(WL_OVERLAY);
 	help_overlay_set_state(Weapon_select_overlay_id,gr_screen.res,0);
@@ -2797,7 +2814,7 @@ void weapon_select_do(float frametime)
 		sx = mx + Wl_delta_x;
 		sy = my + Wl_delta_y;
 
-		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use > 0)
+		if ( Wl_icons[Carried_wl_icon.weapon_class].can_use_for_ship )
 		{
 			wl_icon_info *icon = &Wl_icons[Carried_wl_icon.weapon_class];
 			weapon_info *wip = &Weapon_info[Carried_wl_icon.weapon_class];
@@ -2851,7 +2868,8 @@ void weapon_select_do(float frametime)
 		}
 
 		// check so see if this is really a legal weapon to carry away
-		if ( !Wl_icons[Carried_wl_icon.weapon_class].can_use )
+		// (don't check can_use_for_bank here because we may drop the weapon on a bank that wasn't previously selected)
+		if ( !Wl_icons[Carried_wl_icon.weapon_class].can_use_for_ship )
 		{
 			int diffx, diffy;
 			diffx = abs(Carried_wl_icon.from_x-mx);
@@ -3025,7 +3043,7 @@ void wl_render_icon(int index, int x, int y, int num, int draw_num_flag, int hot
 	}
 
 	// if icon is disabled
-	if ( !icon->can_use ) {
+	if ( !icon->can_use_for_ship || icon->can_use_for_bank == TriStateBool::FALSE_ ) {
 		if(icon->icon_bmaps[0] != -1)
 			bitmap_id = icon->icon_bmaps[WEAPON_ICON_FRAME_DISABLED];	// disabled icon
 		else
@@ -3138,7 +3156,7 @@ void draw_wl_icon_with_number(int list_count, int weapon_class)
 	Assert( (Wl_icons != NULL) && (Wl_pool != NULL) );
 
 
-	if(Wl_icons[weapon_class].can_use)
+	if ( Wl_icons[weapon_class].can_use_for_ship && Wl_icons[weapon_class].can_use_for_bank != TriStateBool::FALSE_ )
 	{
 		gr_set_color_fast(&Icon_colors[WEAPON_ICON_FRAME_NORMAL]);
 	}
@@ -3251,7 +3269,8 @@ void pick_from_ship_slot(int num)
 		return;
 	}
 
-	Assert(Wl_icons[wep[num]].can_use);
+	Assert(Wl_icons[wep[num]].can_use_for_ship);
+	// we can't Assert on can_use_for_bank here because we may have clicked on a bank that isn't selected
 
 	wl_set_carried_icon(num, Selected_wl_slot, wep[num]);
 	common_flash_button_init();

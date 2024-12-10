@@ -54,18 +54,18 @@ void CMessageEditorDlg::DoDataExchange(CDataExchange* pDX)
 	//{{AFX_DATA_MAP(CMessageEditorDlg)
 	DDX_Control(pDX, IDC_TREE, m_tree);
 	DDX_CBString(pDX, IDC_AVI_FILENAME, m_avi_filename);
+	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
 	DDX_CBString(pDX, IDC_WAVE_FILENAME, m_wave_filename);
+	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_MESSAGE_TEXT, m_message_text);
+	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
 	DDX_Text(pDX, IDC_NAME, m_message_name);
+	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
 	DDX_CBIndex(pDX, IDC_PRIORITY, m_priority);
 	DDX_CBIndex(pDX, IDC_SENDER, m_sender);
 	DDX_CBIndex(pDX, IDC_PERSONA_NAME, m_persona);
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
-	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(CMessageEditorDlg, CDialog)

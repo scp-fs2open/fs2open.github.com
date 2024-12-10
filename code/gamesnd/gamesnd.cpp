@@ -462,9 +462,10 @@ gamesnd_id parse_game_sound_inline()
  * @param tag Tag
  * @param idx_dest Sound index destination
  * @param flags See the parse_sound_flags enum
- *
+ * @return whether the tag was found and a parse was attempted
  */
-void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
+bool parse_iface_sound(const char* tag, interface_snd_id* idx_dest)
+{
 	Assert( Snds_iface.size() == Snds_iface_handle.size() );
 
 	if(optional_string(tag))
@@ -478,7 +479,11 @@ void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
 		if (!idx_dest->isValid() && buf != "-1") {
 			error_display(0, "Could not find interface sound with name '%s'!", buf.c_str());
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 /**
@@ -491,9 +496,9 @@ void parse_iface_sound(const char* tag, interface_snd_id* idx_dest) {
  * @param tag Tag
  * @param object_name Name of object being parsed
  * @param flags See the parse_sound_flags enum
- *
+ * @return whether the tag was found and a parse was attempted
  */
-void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list)
+bool parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& destination, const char* object_name, bool scp_list)
 {
 	if(optional_string(tag))
 	{
@@ -529,7 +534,11 @@ void parse_iface_sound_list(const char* tag, SCP_vector<interface_snd_id>& desti
 		{
 			mprintf(("%s in '%s' has " SIZE_T_ARG " entries. This does not match entered size of %i.\n", tag, object_name, destination.size(), check));
 		}
+
+		return true;
 	}
+
+	return false;
 }
 
 /**
@@ -634,6 +643,10 @@ void parse_gamesnd_old(game_snd* gs)
 	int is_3d;
 	int temp;
 
+	// retail-style sounds with numeric indexes, as seen in the original sounds.tbl format
+	if (can_construe_as_integer(gs->name.c_str()))
+		gs->flags |= GAME_SND_RETAIL_STYLE;
+
 	// An old sound is just a single entry sound set
 	gs->sound_entries.resize(1);
 	auto& entry = gs->sound_entries.back();
@@ -642,7 +655,6 @@ void parse_gamesnd_old(game_snd* gs)
 	gs->pitch_range = util::UniformFloatRange(1.0f);
 
 	stuff_string(entry.filename, F_NAME, MAX_FILENAME_LEN, ",");
-	gs->flags |= GAME_SND_RETAIL_STYLE;
 
 	// since we have a new filename, first assume it's valid
 	gs->flags &= ~GAME_SND_NOT_VALID;
@@ -651,7 +663,7 @@ void parse_gamesnd_old(game_snd* gs)
 	{
 		entry.filename[0] = 0;
 		advance_to_eoln(nullptr);
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 	Mp++;
@@ -880,7 +892,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 	if (!stricmp(name, NOX("empty")) || !stricmp(name, NOX("none")))
 	{
 		entry->filename[0] = 0;
-		gs->flags |= GAME_SND_NOT_VALID;
+		gs->flags |= (GAME_SND_NOT_VALID | GAME_SND_EXPLICITLY_EMPTY);
 		return;
 	}
 
@@ -962,7 +974,7 @@ void parse_gamesnd_new(game_snd* gs, bool no_create)
 
 bool gamesnd_is_placeholder(const game_snd& gs)
 {
-	return gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0';
+	return (gs.sound_entries.empty() || gs.sound_entries[0].filename[0] == '\0') && !(gs.flags & GAME_SND_EXPLICITLY_EMPTY);
 }
 
 void gamesnd_parse_entry(game_snd *gs, bool &orig_no_create, SCP_vector<game_snd> *lookupVector, size_t lookupVectorMaxIndexableSize, bool (*is_reserved_index)(int))
@@ -1353,17 +1365,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
 
 						Snds.emplace_back(std::move(tempSound));
 					}
@@ -1388,17 +1395,12 @@ void parse_sound_table(const char* filename)
 						// if we are in this block, this is a new named sound that will be appended
 						int tempIndex = static_cast<int>(Snds_iface.size());
 
-						if (tempSound.flags & GAME_SND_RETAIL_STYLE)
-						{
-							// retail sounds must have names that match their indexes
-							if ((atoi(tempSound.name.c_str()) != tempIndex) && !tempSound.sound_entries.empty() && (tempSound.sound_entries[0].filename[0] != '\0'))
-								error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
-						}
-						else
-						{
-							// prevent new named sounds from colliding with reserved indexes
-							tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
-						}
+						// retail sounds with numeric names must match their indexes
+						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
+							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+
+						// prevent new named sounds from colliding with reserved indexes
+						tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);
 
 						Snds_iface.emplace_back(std::move(tempSound));
 					}

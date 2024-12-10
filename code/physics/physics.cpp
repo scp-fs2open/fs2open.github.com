@@ -824,7 +824,7 @@ bool whack_below_limit(float impulse)
 //				pi				=>		pointer to phys_info struct of object getting whacked
 //				orient		=>		orientation matrix (needed to set rotational impulse in body coords)
 //
-void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi)
+void physics_calculate_and_apply_whack(const vec3d *impulse, const vec3d *pos, physics_info *pi, const matrix *orient, const matrix *inv_moi)
 {
 	vec3d	local_angular_impulse, angular_impulse;
 
@@ -849,13 +849,12 @@ void physics_calculate_and_apply_whack(vec3d *impulse, vec3d *pos, physics_info 
 
 // This function applies the calculated delta rotational and linear velocities calculated by physics_calculate_and_apply_whack
 // or dock_calculate_and_apply_whack_docked_object in objectdock.cpp if it was a docked object
-void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient)
+void physics_apply_whack(float orig_impulse, physics_info* pi, const vec3d *delta_rotvel, const vec3d* delta_vel, const matrix* orient)
 {
 	Assertion((pi != nullptr) && (delta_rotvel != nullptr) && (delta_vel != nullptr) && (orient != nullptr),
 		"physics_apply_whack_direct invalid argument(s)");
 
-	vm_vec_scale(delta_rotvel, (float)ROTVEL_WHACK_CONST);
-	vm_vec_add2(&pi->rotvel, delta_rotvel);
+	vm_vec_scale_add2(&pi->rotvel, delta_rotvel, ROTVEL_WHACK_CONST);
 
 	//mprintf(("Whack: %7.3f %7.3f %7.3f\n", pi->rotvel.xyz.x, pi->rotvel.xyz.y, pi->rotvel.xyz.z));
 

@@ -261,7 +261,7 @@ void ssm_init()
 	validate_SSM_entries();
 }
 
-void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t ssm_index)
+void ssm_get_random_start_pos(vec3d *out, const vec3d *start, const matrix *orient, size_t ssm_index)
 {
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
@@ -305,7 +305,8 @@ void ssm_level_init()
 }
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team)
+// (it might be possible to make `target` const, but that would set off another const-cascade)
+void ssm_create(object *target, const vec3d *start, size_t ssm_index, const ssm_firing_info *override, int team)
 {	
 	ssm_strike ssm;
 	matrix dir;
