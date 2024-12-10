@@ -2104,6 +2104,17 @@ ADE_FUNC(warpIn, l_Ship, NULL, "Warps ship in", "boolean", "True if successful, 
 	if(!objh->isValid())
 		return ADE_RETURN_NIL;
 
+	if (object_is_docked(objh->objp()))
+	{
+		// Ships that are docked need a designated dock leader to bring the entire group in.  The dock leader is, de facto, the arriving ship;
+		// so by scripting a certain ship to warp in, the script author has designated it as the leader.  That being said, if the script
+		// calls warpIn() multiple times on the same docked group, only set the flag on the first ship.
+		dock_function_info dfi;
+		dock_evaluate_all_docked_objects(objh->objp(), &dfi, dock_find_dock_leader_helper);
+		if (!dfi.maintained_variables.objp_value)
+			Ships[objh->objp()->instance].flags.set(Ship::Ship_Flags::Dock_leader);
+	}
+
 	shipfx_warpin_start(objh->objp());
 
 	return ADE_RETURN_TRUE;

@@ -844,6 +844,15 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
 }
 
+void dock_find_dock_leader_helper(object *objp, dock_function_info *infop)
+{
+	if (Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+	{
+		infop->maintained_variables.objp_value = objp;
+		infop->early_return_condition = true;
+	}
+}
+
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)
 {
 	matrix local_moi, unorient, temp, world_moi;
