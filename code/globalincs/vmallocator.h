@@ -18,7 +18,30 @@
 #include <vector>
 
 template <typename T>
-using SCP_vector = std::vector<T, std::allocator<T>>;
+class SCP_vector : public std::vector<T, std::allocator<T>>
+{
+public:
+	using std::vector<T, std::allocator<T>>::vector;	// inherit all constructors
+
+	// this is needed as a workaround to a GCC compiler bug when using a templated accessor...
+	// error: dereferencing type-punned pointer will break strict-aliasing rules [-Werror=strict-aliasing]
+	inline auto size() const noexcept { return std::vector<T, std::allocator<T>>::size(); }
+
+	bool contains(const T& item) const
+	{
+		return std::find(this->begin(), this->end(), item) != this->end();
+	}
+
+	bool in_bounds(int idx) const
+	{
+		return (idx >= 0) && (static_cast<size_t>(idx) < this->size());
+	}
+
+	bool in_bounds(size_t idx) const
+	{
+		return idx < this->size();
+	}
+};
 
 template <typename T>
 bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
@@ -27,7 +50,7 @@ bool SCP_vector_contains(const SCP_vector<T>& vector, const T& item) {
 
 template <typename T>
 inline bool SCP_vector_inbounds(const SCP_vector<T>& vector, int idx) {
-	return ((idx >= 0) && (idx < static_cast<int>(vector.size())));
+	return ((idx >= 0) && (static_cast<size_t>(idx) < vector.size()));
 }
 
 template <typename T>
@@ -36,41 +59,38 @@ inline bool SCP_vector_inbounds(const SCP_vector<T>& vector, size_t idx) {
 }
 
 template <typename T>
-using SCP_list = std::list<T, std::allocator<T>>;
+class SCP_list : public std::list<T, std::allocator<T>>
+{
+public:
+	using std::list<T, std::allocator<T>>::list;	// inherit all constructors
+
+	bool contains(const T& item) const
+	{
+		return std::find(this->begin(), this->end(), item) != this->end();
+	}
+};
 
 
 extern std::locale SCP_default_locale;
 
 template <class charT>
-charT SCP_toupper(charT ch) { return std::toupper(ch, SCP_default_locale); }
+[[nodiscard]] charT SCP_toupper(charT ch) { return std::toupper(ch, SCP_default_locale); }
 
 template <class charT>
-charT SCP_tolower(charT ch) { return std::tolower(ch, SCP_default_locale); }
+[[nodiscard]] charT SCP_tolower(charT ch) { return std::tolower(ch, SCP_default_locale); }
 
-typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > SCP_string;
-
-typedef std::basic_stringstream<char, std::char_traits<char>, std::allocator<char> > SCP_stringstream;
-
-inline void SCP_tolower(SCP_string &str) {
-	std::for_each(str.begin(), str.end(), [](char &c) { c = SCP_tolower(c); });
-}
-
-inline void SCP_toupper(SCP_string &str) {
-	std::for_each(str.begin(), str.end(), [](char &c) { c = SCP_toupper(c); });
-}
-
-inline bool SCP_truncate(SCP_string &str, size_t c_str_size) {
-	if (str.length() >= c_str_size) {
-		str.resize(c_str_size - 1);
-		return true;
-	} else {
-		return false;
-	}
-}
+typedef std::basic_string<char, std::char_traits<char>, std::allocator<char>> SCP_string;
+typedef std::basic_stringstream<char, std::char_traits<char>, std::allocator<char>> SCP_stringstream;
 
 extern void SCP_tolower(char *str);
 extern void SCP_toupper(char *str);
 extern void SCP_totitle(char *str);
+
+extern void SCP_tolower(SCP_string &str);
+extern void SCP_toupper(SCP_string &str);
+extern void SCP_totitle(SCP_string &str);
+
+extern bool SCP_truncate(SCP_string &str, size_t len);
 
 extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
 extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
@@ -89,44 +109,32 @@ template <typename T>
 using SCP_deque = std::deque<T, std::allocator<T>>;
 
 template <typename T>
-using SCP_set = std::set<T, std::less<T>, std::allocator<T>>;
+class SCP_set : public std::set<T, std::less<T>, std::allocator<T>>
+{
+public:
+	using std::set<T, std::less<T>, std::allocator<T>>::set;	// inherit all constructors
 
-template <typename T>
-using SCP_multiset = std::multiset<T, std::less<T>, std::allocator<T>>;
-
-#if __cplusplus < 201402L
-template<class T, bool>
-struct enum_hasher_util {
-	inline size_t operator()(const T& elem) { return std::hash<T>()(elem); }
-};
-
-template <class T>
-struct enum_hasher_util<T, true> {
-	inline size_t operator()(const T& elem)
+	bool contains(const T& item) const
 	{
-		typedef typename std::underlying_type<T>::type enumType;
-		return std::hash<enumType>()(static_cast<enumType>(elem));
+		return this->find(item) != this->end();
 	}
 };
 
-/**
- * @brief An enum class compatible hashing class
- *
- * This is the same as std::hash except that is can handle enum classes properly using their underlying type. This is
- * only required for C++ < 14 since after that the standard mandates that enum classes should be hashable.
- *
- * @tparam T The type that should be hashed
- */
-template <class T>
-struct SCP_hash {
-	inline size_t operator()(const T& elem) const { return enum_hasher_util<T, std::is_enum<T>::value>()(elem); }
+template <typename T>
+class SCP_multiset : public std::multiset<T, std::less<T>, std::allocator<T>>
+{
+public:
+	using std::multiset<T, std::less<T>, std::allocator<T>>::multiset;	// inherit all constructors
+
+	bool contains(const T& item) const
+	{
+		return this->find(item) != this->end();
+	}
 };
 
-#else
-// No need for the special hash class so just use the standard hash
+// Now that the codebase is on C++17, we can use the standard hash.  (Enum classes are not hashable on C++ < 14.)
 template <typename T>
 using SCP_hash = std::hash<T>;
-#endif
 
 struct SCP_string_lcase_hash {
 	size_t operator()(const SCP_string& elem) const {
@@ -155,7 +163,16 @@ template <typename Key, typename T, typename Hash = SCP_hash<Key>, typename KeyE
 using SCP_unordered_map = std::unordered_map<Key, T, Hash, KeyEqual, std::allocator<std::pair<const Key, T>>>;
 
 template <typename Key, typename Hash = SCP_hash<Key>, typename KeyEqual = std::equal_to<Key>>
-using SCP_unordered_set = std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>;
+class SCP_unordered_set : public std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>
+{
+public:
+	using std::unordered_set<Key, Hash, KeyEqual, std::allocator<Key>>::unordered_set;	// inherit all constructors
+
+	bool contains(const Key& item) const
+	{
+		return this->find(item) != this->end();
+	}
+};
 
 template <typename T, typename... Args>
 typename std::enable_if<!std::is_array<T>::value, std::unique_ptr<T>>::type make_unique(Args&&... args) {

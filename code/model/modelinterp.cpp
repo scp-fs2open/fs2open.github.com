@@ -1508,14 +1508,14 @@ void model_page_out_textures(polymodel* pm, bool release, const SCP_set<int>& sk
 {
 	int i, j;
 	for (i = 0; i < pm->n_textures; i++) {
-		if (skipTextures.count(i) > 0)
+		if (skipTextures.contains(i))
 			continue;
 		pm->maps[i].PageOut(release);
 	}
 
 	// NOTE: "release" doesn't work here for some, as of yet unknown, reason - taylor
 	for (j = 0; j < pm->n_glow_point_banks; j++) {
-		if(skipGlowBanks.count(j) > 0)
+		if(skipGlowBanks.contains(j))
 			continue;
 		glow_point_bank* bank = &pm->glow_point_banks[j];
 

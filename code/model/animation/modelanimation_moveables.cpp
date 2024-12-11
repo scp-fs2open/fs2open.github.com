@@ -6,7 +6,7 @@ namespace animation {
 	ModelAnimationMoveableOrientation::ModelAnimationMoveableOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient) :
 		m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient) { }
 
-	void ModelAnimationMoveableOrientation::update(polymodel_instance* pmi, const std::vector<std::any>& args) {
+	void ModelAnimationMoveableOrientation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable orientation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -55,7 +55,7 @@ namespace animation {
 	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const std::optional<angles>& acceleration) :
 			m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient), m_velocity(velocity), m_acceleration(acceleration) { }
 
-	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const std::vector<std::any>& args) {
+	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable rotation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -135,7 +135,7 @@ namespace animation {
 	ModelAnimationMoveableTranslation::ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const std::optional<vec3d>& acceleration) :
 		  m_submodel(std::move(submodel)), m_defaultOffset(defaultOffset), m_velocity(velocity), m_acceleration(acceleration) { }
 
-	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const std::vector<std::any>& args) {
+	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable translation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -212,7 +212,7 @@ namespace animation {
 	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const std::optional<float>& acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
 
-	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const std::vector<std::any>& args) {
+	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.empty()){
 			Error(LOCATION,"Tried updating moveable axis rotation with too few (%d of 1) arguments!", (int) args.size());
 			return;
@@ -299,7 +299,7 @@ namespace animation {
 	ModelAnimationMoveableIK::ModelAnimationMoveableIK(std::vector<moveable_chainlink> chain, float time) :
 		m_time(time), m_chain(std::move(chain)) { }
 
-	void ModelAnimationMoveableIK::update(polymodel_instance* pmi, const std::vector<std::any>& args) {
+	void ModelAnimationMoveableIK::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable IK with too few (%d of 3) arguments!", (int) args.size());
 			return;
