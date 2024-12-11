@@ -226,8 +226,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
 				case AI_GOAL_DISARM_SHIP_TACTICAL:
-				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_IGNORE:
+				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
 				case AI_GOAL_FLY_TO_SHIP:
@@ -355,8 +355,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_DISARM_SHIP_TACTICAL:
-		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_FLY_TO_SHIP:
