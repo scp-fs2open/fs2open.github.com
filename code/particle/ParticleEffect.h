@@ -113,16 +113,6 @@ public:
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
-	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
-		std::array {
-			std::pair {"Particle Number Mult", ParticleCurvesOutput::PARTICLE_NUM_MULT},
-			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
-			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
-			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_SCALING}
-		},
-		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
-		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}});
-
 	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
  public:
 	/**
@@ -167,6 +157,16 @@ public:
 	float getNextSpawnDelay() const;
 
 	bool isOnetime() const { return m_duration == Duration::ONETIME; }
+
+	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
+		std::array {
+			std::pair {"Particle Number Mult", ParticleCurvesOutput::PARTICLE_NUM_MULT},
+			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
+			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
+			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_SCALING}
+		},
+		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
+		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}});
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
 };

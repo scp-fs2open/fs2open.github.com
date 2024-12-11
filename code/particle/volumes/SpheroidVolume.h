@@ -11,7 +11,7 @@ namespace particle {
 	public:
 		explicit SpheroidVolume(float bias, float stretch, float radius);
 
-		vec3d sampleRandomPoint(const matrix &orientation) override;
+		vec3d sampleRandomPoint(const matrix &orientation, const ParticleSource& source) override;
 		void parse() override {
 			//TODO
 		};

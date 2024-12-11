@@ -409,6 +409,16 @@ public:
 				std::array<std::pair<const char*, output_enum>, 0> {}, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
 		);
 	}
+
+	template<typename new_output_enum, size_t new_output_size>
+	constexpr auto derive_modular_curves_output_only_subset(std::array<std::pair<const char*, new_output_enum>, new_output_size> new_outputs) const {
+		return modular_curves_definition<
+			input_type,
+			new_output_enum,
+			new_output_size,
+			input_tuple_index,
+			input_grabbers...>(std::move(new_outputs), inputs);
+	}
 };
 
 //

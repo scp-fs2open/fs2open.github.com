@@ -12,7 +12,7 @@ namespace particle {
 	public:
 		explicit ConeVolume(::util::ParsedRandomFloatRange deviation, float length);
 
-		vec3d sampleRandomPoint(const matrix &orientation) override;
+		vec3d sampleRandomPoint(const matrix &orientation, const ParticleSource& source) override;
 		void parse() override {
 			//TODO
 		};

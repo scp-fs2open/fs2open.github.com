@@ -192,11 +192,11 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, c
 		vec3d localPos = ZERO_VECTOR;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(orientation);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation, source);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			velocity += m_velocityVolume->sampleRandomPoint(orientation) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+			velocity += m_velocityVolume->sampleRandomPoint(orientation, source) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {

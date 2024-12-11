@@ -2477,7 +2477,10 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 
 particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal)
 {
+	//Unfortunately legacy ship effects did a lot of ad-hoc computation of effect parameters.
+	//To mimic this in the modern system, these ad-hoc parameters are represented as hard-coded modular curves applied to various parts of the effect
 	std::optional<modular_curves_entry> part_number_curve, lifetime_curve, radius_curve, velocity_curve;
+	std::optional<modular_curves_entry> variance_curve;
 
 	switch (type) {
 	case LegacyShipParticleType::DAMAGE_SPEW: {
@@ -2497,7 +2500,7 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 
 		if (normal_variance <= 0.f) {
 			normal_variance = 0.2f;
-			//TODO
+			variance_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
 
 		if (lifetime.max() <= 0.f) {
@@ -2549,13 +2552,18 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		break;
 	}
 
+	auto velocity_volume = make_unique<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
+	if (variance_curve) {
+		velocity_volume->m_modular_curves.add_curve("Host Radius", particle::LegacyAACuboidVolume::VolumeModularCurveOutput::VARIANCE, *variance_curve);
+	}
+
 	auto effect = particle::ParticleEffect(
 		"", //Name
 		std::move(particle_num), //Particle num
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
-		make_unique<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true), //Velocity volume
+		std::move(velocity_volume), //Velocity volume
 		std::move(velocity), //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 		tl::nullopt, //Orientation-based velocity

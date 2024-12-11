@@ -5,7 +5,7 @@
 namespace particle {
 	SpheroidVolume::SpheroidVolume(float bias, float stretch, float radius) : m_bias(bias), m_stretch(stretch), m_radius(radius) { };
 
-	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation) {
+	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation, const ParticleSource& source) {
 		vec3d pos;
 		// get an unbiased random point in the sphere
 		vm_vec_random_in_sphere(&pos, &vmd_zero_vector, 1.0f, false);
