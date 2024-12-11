@@ -7037,8 +7037,7 @@ sexp_list_item *sexp_tree::get_listing_opf_goal_name(int parent_node)
 		}
 	} else {
 		for (const auto &goal: Mission_goals) {
-			auto temp_name = goal.name;
-			SCP_truncate(temp_name, NAME_LENGTH);
+			auto temp_name = SCP_string(goal.name, 0, NAME_LENGTH - 1);
 			head.add_data(temp_name.c_str());
 		}
 	}
@@ -7128,8 +7127,7 @@ sexp_list_item *sexp_tree::get_listing_opf_event_name(int parent_node)
 		}
 	} else {
 		for (const auto &event: Mission_events) {
-			auto temp_name = event.name;
-			SCP_truncate(temp_name, NAME_LENGTH);
+			auto temp_name = SCP_string(event.name, 0, NAME_LENGTH - 1);
 			head.add_data(temp_name.c_str());
 		}
 	}
