@@ -3,14 +3,9 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-
 #include "object/object.h"
-
-#include "particle/ParticleManager.h"
 #include "particle/particle.h"
-
 #include "io/timer.h"
-
 #include "particle/EffectHost.h"
 
 #include <tl/optional.hpp>
@@ -37,6 +32,9 @@ enum class SourceOriginType {
 };
 
 class ParticleEffect;
+struct particle_effect_tag {
+};
+using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 /**
  * @brief The orientation of a particle source
@@ -86,6 +84,8 @@ class ParticleSource {
 	std::bitset<max_composite_size> m_effect_is_running;
 
 	void initializeThrusterOffset(weapon* wp, weapon_info* wip);
+
+	friend class ParticleEffect;
  public:
 	ParticleSource();
 

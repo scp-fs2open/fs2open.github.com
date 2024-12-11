@@ -19,7 +19,7 @@ EffectHostObject::EffectHostObject(object* objp, vec3d offset, matrix orientatio
 	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)),
 	m_objsig(objp->signature), m_weaponState(getWeaponStateOrInvalid(objp)) {}
 
-std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) {
+std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const {
 	vec3d pos = m_offset;
 	if (tabled_offset) {
 		pos += *tabled_offset;
@@ -47,15 +47,19 @@ std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relati
 	return { pos, orientation };
 }
 
-vec3d EffectHostObject::getVelocity() {
+vec3d EffectHostObject::getVelocity() const {
 	return Objects[m_objnum].phys_info.vel;
 }
 
-std::pair<int, int> EffectHostObject::getParentObjAndSig() {
+std::pair<int, int> EffectHostObject::getParentObjAndSig() const {
 	return { m_objnum, m_objsig };
 }
 
-bool EffectHostObject::isValid() {
+float EffectHostObject::getHostRadius() const {
+	return Objects[m_objnum].radius;
+}
+
+bool EffectHostObject::isValid() const {
 	if (m_objnum < 0 || Objects[m_objnum].signature != m_objsig)
 		return false;
 

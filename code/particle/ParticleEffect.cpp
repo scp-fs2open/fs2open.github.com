@@ -134,11 +134,8 @@ matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::
 	}
 }
 
-void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHost>& host, const tl::optional<vec3d>& normal, const vec3d& vel, int parent, int parent_sig, float lifetime, float radius, float particle_percent) const {
-	particle_percent *= m_particleChance;
-
-	const auto& [pos, hostOrientation] = host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
-	const auto& orientation = getNewDirection(hostOrientation, normal);
+void ParticleEffect::processSource(float interp, const ParticleSource& source, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+	const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
 
 	if (m_affectedByDetail){
 		if (Detail.num_particles > 0)
@@ -153,6 +150,13 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 		if (dist > min_dist)
 			particle_percent *= min_dist / dist;
 	}
+
+	const auto& orientation = getNewDirection(hostOrientation, source.m_normal);
+
+	particle_percent *= m_particleChance * m_modular_curves.get_output(ParticleCurvesOutput::PARTICLE_NUM_MULT, source);
+	float radiusMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::RADIUS_MULT, source);
+	float lifetimeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::LIFETIME_MULT, source);
+	float velocityVolumeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, source);
 
 	float num = m_particleNum.next() * particle_percent;
 	unsigned int num_spawn;
@@ -192,7 +196,7 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 		}
 
 		if (m_velocityVolume != nullptr) {
-			velocity += m_velocityVolume->sampleRandomPoint(orientation) * m_velocity_scaling.next();
+			velocity += m_velocityVolume->sampleRandomPoint(orientation) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {
@@ -223,18 +227,18 @@ void ParticleEffect::processSource(float interp, const std::unique_ptr<EffectHos
 		info.bitmap = m_bitmap_list[m_bitmap_range.next()];
 
 		if (m_parentScale)
-			// if we were spawned by a particle, info.rad is the parent's radius and m_radius is a factor of that
-			info.rad = radius * m_radius.next();
+			// if we were spawned by a particle, parentRadius is the parent's radius and m_radius is a factor of that
+			info.rad = parentRadius * m_radius.next() * radiusMultiplier;
 		else
-			info.rad = m_radius.next();
+			info.rad = m_radius.next() * radiusMultiplier;
 
 		info.length = m_length.next();
 		if (m_hasLifetime) {
 			if (m_parentLifetime)
-				// if we were spawned by a particle, info.lifetime is the parent's remaining liftime and m_lifetime is a factor of that
-				info.lifetime = lifetime * m_lifetime.next();
+				// if we were spawned by a particle, parentLifetime is the parent's remaining liftime and m_lifetime is a factor of that
+				info.lifetime = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
 			else
-				info.lifetime = m_lifetime.next();
+				info.lifetime = m_lifetime.next() * lifetimeMultiplier;
 			info.lifetime_from_animation = m_keep_anim_length_if_available;
 		}
 		info.size_lifetime_curve = m_size_lifetime_curve;

@@ -10,13 +10,15 @@ class EffectHostParticle : public EffectHost {
 public:
 	EffectHostParticle(particle::WeakParticlePtr particle, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
-	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) override;
+	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const override;
 
-	vec3d getVelocity() override;
+	vec3d getVelocity() const override;
 
-	float getLifetime() override;
+	float getLifetime() const override;
 
-	float getScale() override;
+	float getScale() const override;
 
-	bool isValid() override;
+	float getHostRadius() const override { return getScale(); };
+
+	bool isValid() const override;
 };

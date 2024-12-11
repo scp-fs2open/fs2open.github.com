@@ -120,7 +120,6 @@ void interp_create_transparency_index_buffer(polymodel *pm, int detail_num);
 void model_interp_process_shield_mesh(polymodel * pm);
 
 void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem *subsystems);
-void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip);
 void model_set_bay_path_nums(polymodel *pm);
 
 uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size);
@@ -3550,7 +3549,6 @@ int model_load(const  char* filename, ship_info* sip, int ferror, int duplicate)
 	// Goober5000 - originally done in ship_create for no apparent reason
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
 	model_set_bay_path_nums(pm);
-	model_set_sip_particle_sizes(pm, sip);
 
 	return pm->id;
 }
@@ -3698,78 +3696,6 @@ void model_set_subsys_path_nums(polymodel *pm, int n_subsystems, model_subsystem
 		if (subsystems[i].path_num == -1)
 			subsystems[i].path_num = -2;
 	}
-}
-
-void model_set_sip_particle_sizes(polymodel* pm, ship_info* sip)
-{
-	if (sip == nullptr)
-		return;
-
-	/*particle::effects::ParticleEmitterEffect* damage_spew_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->damage_spew));
-	if (damage_spew_effect != nullptr) {
-		damage_spew_effect = new particle::effects::ParticleEmitterEffect(*damage_spew_effect);
-
-		float Particle_width = 1.2f;
-		float Particle_number = 1.2f;
-		float Particle_life = 1.2f;
-
-		auto& pe = damage_spew_effect->getEmitter();
-
-		float spark_scale_factor;
-
-		// get spark_scale_factor -- how much to increase ship sparks, based on radius
-		if (pm->rad > 40) {
-			spark_scale_factor = 1.0f;
-		} else if (pm->rad > 20) {
-			spark_scale_factor = (pm->rad - 20.0f) / 20.0f;
-		} else {
-			spark_scale_factor = 0.0f;
-		}
-
-		float spark_time_scale  = 1.0f + spark_scale_factor * (Particle_life   - 1.0f);
-		float spark_width_scale = 1.0f + spark_scale_factor * (Particle_width  - 1.0f);
-		float spark_num_scale   = 1.0f + spark_scale_factor * (Particle_number - 1.0f);
-
-		if (pe.num_high <= 1) {
-			pe.num_low  = (int) (20.0f * spark_num_scale);
-			pe.num_high = (int) (50.0f * spark_num_scale);
-		}
-
-		if (pe.normal_variance <= 0.0f) {
-			pe.normal_variance = 0.2f * spark_width_scale;
-		}
-
-		if (pe.max_life <= 0.0f) {
-			pe.min_life = 0.7f * spark_time_scale;
-			pe.max_life = 1.5f * spark_time_scale;
-		}
-
-		//TODO
-		//sip->damage_spew = particle::ParticleManager::get()->addEffect(damage_spew_effect);
-	}
-
-	particle::effects::ParticleEmitterEffect* split_particles_effect = nullptr;//TODO//dynamic_cast<particle::effects::ParticleEmitterEffect*>(particle::ParticleManager::get()->getEffect(sip->split_particles));
-	if (split_particles_effect != nullptr) {
-		split_particles_effect = new particle::effects::ParticleEmitterEffect(*split_particles_effect);
-
-		auto& pe = split_particles_effect->getEmitter();
-
-		float range = 1.0f + 0.002f * pm->rad;
-
-		if (pe.max_life <= 0.0f) {
-			pe.min_life = 0.5f*range;				// How long the particles live
-			pe.max_life = 6.0f*range;				// How long the particles live
-		}
-
-		float scale = pm->rad * 0.01f;
-		if (pe.max_rad < 0.0f) {
-			pe.min_rad = 0.5f*scale;				// Min radius
-			pe.max_rad = 1.5f*scale;				// Max radius
-		}
-
-		//TODO
-		//sip->split_particles = particle::ParticleManager::get()->addEffect(split_particles_effect);
-	}*/
 }
 
 // Determine the path indices (indicies into pm->paths[]) for the paths used for approaching/departing

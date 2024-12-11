@@ -1,6 +1,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "math/vecmat.h"
 
 #include <tl/optional.hpp>
 
@@ -15,19 +16,26 @@ protected:
 public:
 	virtual ~EffectHost() = default;
 
-	virtual std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) = 0;
+	virtual std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const = 0;
 
-	virtual vec3d getVelocity() = 0;
+	virtual vec3d getVelocity() const = 0;
 
-	virtual std::pair<int, int> getParentObjAndSig() { return {-1, -1}; }
+	float getVelocityMagnitude() const {
+		vec3d velocity = getVelocity();
+		return vm_vec_mag_quick(&velocity);
+	}
 
-	virtual float getLifetime() { return -1.f; }
+	virtual std::pair<int, int> getParentObjAndSig() const { return {-1, -1}; }
 
-	virtual float getScale() { return 1.f; }
+	virtual float getLifetime() const { return -1.f; }
 
-	virtual float getParticleMultiplier() { return 1.f; }
+	virtual float getScale() const { return 1.f; }
 
-	virtual bool isValid() { return true; }
+	virtual float getParticleMultiplier() const { return 1.f; }
+
+	virtual float getHostRadius() const { return 0.f; }
+
+	virtual bool isValid() const { return true; }
 
 	virtual void setupProcessing() {}
 

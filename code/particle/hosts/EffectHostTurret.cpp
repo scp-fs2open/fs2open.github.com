@@ -7,7 +7,7 @@
 EffectHostTurret::EffectHostTurret(object* objp, int submodel, int fire_pnt, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel), m_fire_pnt(fire_pnt) {}
 
-std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) {
+std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const {
 	ship& shipp = Ships[Objects[m_objnum].instance];
 	const polymodel* pm = model_get(Ship_info[shipp.ship_info_index].model_num);
 	const polymodel_instance* pmi = model_get_instance(shipp.model_instance_num);
@@ -56,18 +56,22 @@ std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relati
 	return { pos, orientation };
 }
 
-vec3d EffectHostTurret::getVelocity() {
+vec3d EffectHostTurret::getVelocity() const {
 	//Possible future improvement might be to calculate the actual submodel velocity, as the collision code does.
 	//This'll make velocity-inherit particles behave correctly when on fast-moving submodels.
 	//But that's a) expensive and b) different from prior behaviour.
 	return Objects[m_objnum].phys_info.vel;
 }
 
-std::pair<int, int> EffectHostTurret::getParentObjAndSig() {
+std::pair<int, int> EffectHostTurret::getParentObjAndSig() const {
 	return { m_objnum, m_objsig };
 }
 
-bool EffectHostTurret::isValid() {
+float EffectHostTurret::getHostRadius() const {
+	return Objects[m_objnum].radius;
+}
+
+bool EffectHostTurret::isValid() const {
 	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && Objects[m_objnum].type == OBJ_SHIP &&
 			model_get(Ship_info[Ships[Objects[m_objnum].instance].ship_info_index].model_num)->submodel[m_submodel].subsys_num >= 0;
 }

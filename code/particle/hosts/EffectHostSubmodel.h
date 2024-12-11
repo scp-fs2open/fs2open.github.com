@@ -11,11 +11,13 @@ class EffectHostSubmodel : public EffectHost {
 public:
 	EffectHostSubmodel(object* objp, int submodel, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
-	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) override;
+	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const override;
 
-	vec3d getVelocity() override;
+	vec3d getVelocity() const override;
 
-	std::pair<int, int> getParentObjAndSig() override;
+	std::pair<int, int> getParentObjAndSig() const override;
 
-	bool isValid() override;
+	float getHostRadius() const override;
+
+	bool isValid() const override;
 };

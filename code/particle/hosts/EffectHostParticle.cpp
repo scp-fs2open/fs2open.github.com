@@ -11,7 +11,7 @@ EffectHostParticle::EffectHostParticle(particle::WeakParticlePtr particle, matri
 	EffectHost(orientationOverride, orientationOverrideRelative), m_particle(std::move(particle)) {}
 
 //Particle hosts can never have a parent, so it'll always return global space
-std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const tl::optional<vec3d>& tabled_offset) {
+std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const tl::optional<vec3d>& tabled_offset) const {
 	const auto& particle = m_particle.lock();
 
 	vec3d pos;
@@ -39,16 +39,16 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*re
 	return { pos, orientation };
 }
 
-vec3d EffectHostParticle::getVelocity() {
+vec3d EffectHostParticle::getVelocity() const {
 	return m_particle.lock()->velocity;
 }
 
-float EffectHostParticle::getLifetime() {
+float EffectHostParticle::getLifetime() const {
 	const auto& particle = m_particle.lock();
 	return particle->max_life - particle->age;
 }
 
-float EffectHostParticle::getScale() {
+float EffectHostParticle::getScale() const {
 	const auto& particle = m_particle.lock();
 	int idx = particle->size_lifetime_curve;
 	if (idx >= 0)
@@ -57,6 +57,6 @@ float EffectHostParticle::getScale() {
 		return particle->radius;
 }
 
-bool EffectHostParticle::isValid() {
+bool EffectHostParticle::isValid() const {
 	return !m_particle.expired();
 }

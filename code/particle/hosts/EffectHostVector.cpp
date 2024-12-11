@@ -6,7 +6,7 @@ EffectHostVector::EffectHostVector(vec3d position, matrix orientation, vec3d vel
 	EffectHost(orientationOverride, orientationOverrideRelative), m_position(position), m_orientation(orientation), m_velocity(velocity) {}
 
 //Vector hosts can never have a parent, so it'll always return global space
-std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) {
+std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) const {
 	vec3d pos = m_position;
 	if (tabled_offset) {
 		vec3d offset;
@@ -20,6 +20,6 @@ std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*rela
 	return { pos, orientation };
 }
 
-vec3d EffectHostVector::getVelocity() {
+vec3d EffectHostVector::getVelocity() const {
 	return m_velocity;
 }

@@ -10,7 +10,7 @@ EffectHostBeam::EffectHostBeam(object* objp, matrix orientationOverride, bool or
 	m_objsig(objp->signature), m_weaponState(Beams[objp->instance].weapon_state) {}
 
 //Beam hosts can never have a parent, so it'll always return global space
-std::pair<vec3d, matrix> EffectHostBeam::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) {
+std::pair<vec3d, matrix> EffectHostBeam::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) const {
 	const beam& bm = Beams[m_objnum];
 	vec3d pos = bm.last_start;
 
@@ -38,7 +38,7 @@ std::pair<vec3d, matrix> EffectHostBeam::getPositionAndOrientation(bool /*relati
 	return { pos, orientation };
 }
 
-vec3d EffectHostBeam::getVelocity() {
+vec3d EffectHostBeam::getVelocity() const {
 	const beam& bm = Beams[Objects[m_objnum].instance];
 	vec3d vel;
 	vm_vec_normalized_dir(&vel, &bm.last_shot, &bm.last_start);
@@ -46,13 +46,17 @@ vec3d EffectHostBeam::getVelocity() {
 	return vel;
 }
 
-float EffectHostBeam::getParticleMultiplier() {
+float EffectHostBeam::getParticleMultiplier() const {
 	//beam particle numbers are per km
 	object* b_obj = &Objects[m_objnum];
 	return vm_vec_dist(&Beams[b_obj->instance].last_start, &Beams[b_obj->instance].last_shot) / 1000.0f;
 }
 
-bool EffectHostBeam::isValid() {
+float EffectHostBeam::getHostRadius() const {
+	return Beams[Objects[m_objnum].instance].beam_light_width;
+}
+
+bool EffectHostBeam::isValid() const {
 	return m_objnum >= 0 && Objects[m_objnum].signature == m_objsig && Objects[m_objnum].type == OBJ_BEAM &&
 		(m_weaponState == WeaponState::INVALID || Beams[Objects[m_objnum].instance].weapon_state == m_weaponState);
 }

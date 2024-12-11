@@ -45,8 +45,8 @@ bool ParticleSource::process() {
 
 	const vec3d& vel = m_host->getVelocity();
 	const auto& [parent, parent_sig] = m_host->getParentObjAndSig();
-	float radius = m_host->getScale();
-	float lifetime = m_host->getLifetime();
+	float parent_radius = m_host->getScale();
+	float parent_lifetime = m_host->getLifetime();
 	float particleMultiplier = m_host->getParticleMultiplier();
 
 	bool result = false;
@@ -64,7 +64,8 @@ bool ParticleSource::process() {
 				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() * MILLISECONDS_PER_SECOND), 1);
 				timing.m_nextCreation = timestamp_delta(timing.m_nextCreation, time_diff_ms);
 
-				effect.processSource(interp, m_host, m_normal, vel, parent, parent_sig, lifetime, radius, particleMultiplier);
+				//Some of these
+				effect.processSource(interp, *this, vel, parent, parent_sig, parent_lifetime, parent_radius, particleMultiplier);
 
 				bool isDone = effect.isOnetime() || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;
 
