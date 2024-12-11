@@ -4605,7 +4605,7 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 
 	/* I shouldn't be flying to position for what ever called me any more.
 	Set mode to none so that default dynamic behaviour gets started up again. */
-	if ( (aip->active_goal == AI_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) ) {
+	if ( (aip->active_goal == AI_ACTIVE_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) ) {
 		aip->mode = AIM_NONE;
 	}
 
@@ -5058,7 +5058,7 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 			aip->mode = aip->previous_mode;
 			aip->submode = aip->previous_submode;
 			aip->submode_start_time = Missiontime;
-			aip->active_goal = AI_GOAL_NONE;
+			aip->active_goal = AI_ACTIVE_GOAL_NONE;
 			aip->mode_time = -1;			//	Means do forever.
 			return 1;
 		}
@@ -5079,7 +5079,7 @@ int maybe_resume_previous_mode(object *objp, ai_info *aip)
 						aip->mode = aip->previous_mode;
 						aip->submode = AIS_GUARD_PATROL;
 						aip->submode_start_time = Missiontime;
-						aip->active_goal = AI_GOAL_NONE;
+						aip->active_goal = AI_ACTIVE_GOAL_NONE;
 						return 1;
 					}
 				}
@@ -5739,7 +5739,7 @@ int ai_select_primary_weapon(object *objp, object *other_objp, Weapon::Info_Flag
 	Assert( shipp->ship_info_index >= 0 && shipp->ship_info_index < ship_info_size());
 	
 	//made it so it only selects puncture weapons if the active goal is to disable something -Bobboau
-	if ((flags == Weapon::Info_Flags::Puncture) && (Ai_info[shipp->ai_index].goals[0].ai_mode & (AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL)))
+	if ((flags == Weapon::Info_Flags::Puncture) && ai_goal_is_disable_or_disarm(Ai_info[shipp->ai_index].goals[0].ai_mode))
 	{
 		if (swp->current_primary_bank >= 0) 
 		{
@@ -5966,9 +5966,9 @@ void set_primary_weapon_linkage(object *objp)
 
 	// AL 2-11-98: If ship has a disarm or disable goal, don't link unless both weapons are
 	//					puncture weapons
-	if ( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) )
+	if ( (aip->active_goal != AI_ACTIVE_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) )
 	{
-		if ( aip->goals[aip->active_goal].ai_mode & (AI_GOAL_DISABLE_SHIP|AI_GOAL_DISABLE_SHIP_TACTICAL|AI_GOAL_DISARM_SHIP|AI_GOAL_DISARM_SHIP_TACTICAL) )
+		if ( ai_goal_is_disable_or_disarm(aip->goals[aip->active_goal].ai_mode) )
 		{
 			// only continue if both primaries are puncture weapons
 			if ( swp->num_primary_banks == 2 ) {
@@ -14974,7 +14974,7 @@ int ai_need_new_target(object *pl_objp, int target_objnum)
 
 			// Goober5000 - targeting the same team is allowed if pl_objp is going bonkers
 			ai_info *pl_aip = &Ai_info[Ships[pl_objp->instance].ai_index];
-			if (pl_aip->active_goal != AI_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+			if (pl_aip->active_goal != AI_ACTIVE_GOAL_NONE && pl_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
 				if (pl_aip->goals[pl_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					return 0;
 				}
@@ -15176,7 +15176,7 @@ void ai_frame(int objnum)
 	if ( ai_need_new_target(Pl_objp, target_objnum) ) {
 		if ((aip->mode != AIM_EVADE_WEAPON) && (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC)) {
 			aip->resume_goal_time = -1;
-			aip->active_goal = AI_GOAL_NONE;
+			aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		} else if (aip->resume_goal_time == -1) {
 			// AL 12-9-97: Don't allow cargo and navbuoys to set their aip->target_objnum
 			if ( Ship_info[shipp->ship_info_index].class_type > -1 && (Ship_types[Ship_info[shipp->ship_info_index].class_type].flags[Ship::Type_Info_Flags::AI_auto_attacks]) ) {
@@ -15241,7 +15241,7 @@ void ai_frame(int objnum)
 
 	//	If there is a goal to resume and enough time has elapsed, resume the goal.
 	if ((aip->resume_goal_time > 0) && (aip->resume_goal_time < Missiontime)) {
-		aip->active_goal = AI_GOAL_NONE;
+		aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		aip->resume_goal_time = -1;
 		target_objnum = find_enemy(objnum, 2000.0f, The_mission.ai_profile->max_attackers[Game_skill_level]);
 		if (target_objnum != -1) {
@@ -15733,7 +15733,7 @@ void ai_do_default_behavior(object *obj)
     // default behavior in most cases (especially if we're docked) is to just stay put
     aip->mode = AIM_NONE;
     aip->submode_start_time = Missiontime;
-    aip->active_goal = AI_GOAL_NONE;
+    aip->active_goal = AI_ACTIVE_GOAL_NONE;
 
     // if we're not docked, we may modify the behavior a bit
     if (!object_is_docked(obj))
@@ -16443,7 +16443,7 @@ void ai_ship_destroy(int shipnum)
 			set_target_objnum(other_aip, -1);
 			//	If this ship had a dynamic goal of chasing the dead ship, clear the dynamic goal.
 			if (other_aip->resume_goal_time != -1)
-				other_aip->active_goal = AI_GOAL_NONE;
+				other_aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		}
 
 		if (other_aip->goal_objnum == dead_shipp->objnum) {

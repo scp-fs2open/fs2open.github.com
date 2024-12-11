@@ -13143,7 +13143,7 @@ void sexp_remove_goal(int n)
 		if (goalindex >= 0)
 		{
 			if (Ai_info[ship_entry->shipp()->ai_index].active_goal == goalindex)
-				Ai_info[ship_entry->shipp()->ai_index].active_goal = AI_GOAL_NONE;
+				Ai_info[ship_entry->shipp()->ai_index].active_goal = AI_ACTIVE_GOAL_NONE;
 		}
 		return;
 	}
