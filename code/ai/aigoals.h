@@ -49,7 +49,7 @@ enum ai_goal_mode : uint8_t
 	AI_GOAL_NONE = 0,
 	AI_GOAL_SCHROEDINGER,		// used for FRED when multiple ships are selected with different orders
 
-	AI_GOAL_CHASE,              // per the original #define list, AI_GOAL_CHASE started at 2 (1<<1)
+	AI_GOAL_CHASE,
 	AI_GOAL_DOCK,               // used for undocking as well
 	AI_GOAL_WAYPOINTS,
 	AI_GOAL_WAYPOINTS_ONCE,

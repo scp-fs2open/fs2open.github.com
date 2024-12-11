@@ -1711,7 +1711,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
 			{
-				ai_mode = eh->index == LE_ORDER_WAYPOINTS_ONCE ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
+				ai_mode = (eh->index == LE_ORDER_WAYPOINTS_ONCE) ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
 				int wp_list_index, wp_index;
 				calc_waypoint_indexes(tgh->objp()->instance, wp_list_index, wp_index);
 				if (wp_list_index >= 0 && wp_index >= 0)
