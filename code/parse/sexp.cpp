@@ -865,11 +865,13 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
+	{ "ai-form-on-wing-new",			OP_AI_FORM_ON_WING_NEW,					1,	1,			SEXP_GOAL_OPERATOR, },
 	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	5,			SEXP_GOAL_OPERATOR, },
 	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-stay-still-new",				OP_AI_STAY_STILL_NEW,					2,	2,			SEXP_GOAL_OPERATOR, },
 	{ "ai-play-dead",					OP_AI_PLAY_DEAD,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead-persistent",		OP_AI_PLAY_DEAD_PERSISTENT,				1,	1,			SEXP_GOAL_OPERATOR, },
 
@@ -927,9 +929,11 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_IGNORE, OP_AI_IGNORE },
 	{ AI_GOAL_IGNORE_NEW, OP_AI_IGNORE_NEW },
 	{ AI_GOAL_STAY_STILL, OP_AI_STAY_STILL },
+	{ AI_GOAL_STAY_STILL_NEW, OP_AI_STAY_STILL_NEW },
 	{ AI_GOAL_PLAY_DEAD, OP_AI_PLAY_DEAD },
 	{ AI_GOAL_PLAY_DEAD_PERSISTENT, OP_AI_PLAY_DEAD_PERSISTENT },
 	{ AI_GOAL_FORM_ON_WING, OP_AI_FORM_ON_WING },
+	{ AI_GOAL_FORM_ON_WING_NEW, OP_AI_FORM_ON_WING_NEW },
 	{ AI_GOAL_FLY_TO_SHIP, OP_AI_FLY_TO_SHIP },
 	{ AI_GOAL_REARM_REPAIR, OP_AI_REARM_REPAIR },
 };
@@ -31438,9 +31442,11 @@ int query_operator_return_type(int op)
 		case OP_AI_IGNORE:
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_STAY_STILL:
+		case OP_AI_STAY_STILL_NEW:
 		case OP_AI_PLAY_DEAD:
 		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FORM_ON_WING:
+		case OP_AI_FORM_ON_WING_NEW:
 		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
 			return OPR_AI_GOAL;
@@ -32908,12 +32914,14 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_AI_STAY_STILL:
+		case OP_AI_STAY_STILL_NEW:
 			if (!argnum)
 				return OPF_SHIP_POINT;
 			else
 				return OPF_POSITIVE;
 
 		case OP_AI_FORM_ON_WING:
+		case OP_AI_FORM_ON_WING_NEW:
 			return OPF_SHIP;
 
 		case OP_GOOD_REARM_TIME:
@@ -36586,9 +36594,11 @@ int get_category(int op_id)
 		case OP_AI_KEEP_SAFE_DISTANCE:
 		case OP_AI_IGNORE:
 		case OP_AI_STAY_STILL:
+		case OP_AI_STAY_STILL_NEW:
 		case OP_AI_PLAY_DEAD:
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_FORM_ON_WING:
+		case OP_AI_FORM_ON_WING_NEW:
 		case OP_AI_CHASE_SHIP_CLASS:
 		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FLY_TO_SHIP:
@@ -39731,9 +39741,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of target to ignore.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
-	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
+	{ OP_AI_STAY_STILL, "Ai-stay-still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
-		"which time the ship will come to life and defend itself.\r\n\r\n"
+		"which time the ship will come to life and defend itself.  All other goals specified for the ship will be cleared.\r\n\r\n"
+		"Takes 2 arguments...\r\n"
+		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
+		"\t2:\tGoal priority (number between 0 and 89)." },
+
+	{ OP_AI_STAY_STILL_NEW, "Ai-stay-still-new (Ship goal)\r\n"
+		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
+		"which time the ship will come to life and defend itself.   Unlike the legacy ai-stay-still, "
+		"no other goals specified for the ship will be cleared.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -39761,7 +39779,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_FORM_ON_WING, "Ai-form-on-wing (Ship Goal)\r\n"
 		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
-		"player order, and will cause all other goals specified for the ship to be purged.\r\n\r\n"
+		"player order, and will cause all other goals specified for the ship to be cleared.\r\n\r\n"
+		"Takes 1 argument...\r\n"
+		"\t1:\tShip to form on." },
+
+	{ OP_AI_FORM_ON_WING_NEW, "Ai-form-on-wing-new (Ship Goal)\r\n"
+		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
+		"player order. Unlike the legacy ai-form-on-wing, no other goals specified for the ship will be cleared.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tShip to form on." },
 
