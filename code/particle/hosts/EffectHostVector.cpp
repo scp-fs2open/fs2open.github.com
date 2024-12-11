@@ -2,8 +2,8 @@
 
 #include "math/vecmat.h"
 
-EffectHostVector::EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride, bool orientationOverrideRelative) :
-	EffectHost(orientationOverride, orientationOverrideRelative), m_position(position), m_orientation(orientation), m_velocity(velocity) {}
+EffectHostVector::EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride, bool orientationOverrideRelative, std::optional<float> velocityMagnitudeOverride) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_position(position), m_orientation(orientation), m_velocity(velocity), m_velocityMagnitudeOverride(velocityMagnitudeOverride) {}
 
 //Vector hosts can never have a parent, so it'll always return global space
 std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) const {
@@ -22,4 +22,11 @@ std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*rela
 
 vec3d EffectHostVector::getVelocity() const {
 	return m_velocity;
+}
+
+float EffectHostVector::getVelocityMagnitude() const {
+	if (m_velocityMagnitudeOverride)
+		return *m_velocityMagnitudeOverride;
+	else
+		return EffectHost::getVelocityMagnitude();
 }

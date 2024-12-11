@@ -1877,19 +1877,13 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 
 			//This does not seem right, but is current particle behaviour
 			vec3d normal = vmd_x_vector;
-			vec3d vel = half_ship->phys_info.vel;
-
-			// A bit of hacking is required here since the velocity for the source depends on the effect itself...
-			//TODO REGRESSION: If no explicit random velocity is tabled, set it to 1 * half_ship->explosion_vel
-			//pe.min_vel = 0.f;
-			//pe.max_vel =  half_ship->explosion_vel;
 
 			auto source = particle::ParticleManager::get()->createSource(sip->split_particles);
 
 			matrix orient;
 			vm_vector_2_matrix_norm(&orient, &normal);
 
-			source->setHost(make_unique<EffectHostVector>(model_clip_plane_pt, orient, vel));
+			source->setHost(make_unique<EffectHostVector>(model_clip_plane_pt, orient, half_ship->phys_info.vel, vmd_identity_matrix, true, half_ship->explosion_vel));
 			source->finishCreation();
 
 			if (sip->generic_debris_model_num >= 0) {

@@ -2477,7 +2477,7 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 
 particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal)
 {
-	std::optional<modular_curves_entry> part_number_curve, lifetime_curve, radius_curve;
+	std::optional<modular_curves_entry> part_number_curve, lifetime_curve, radius_curve, velocity_curve;
 
 	switch (type) {
 	case LegacyShipParticleType::DAMAGE_SPEW: {
@@ -2522,6 +2522,13 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f * 0.01f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			return curve_id;
 		}();
+		static const int split_particles_velocity_curve = []() -> int {
+			int curve_id = Curves.size();
+			auto& curve = Curves.emplace_back(";ShipParticleSplitVelocity");
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			return curve_id;
+		}();
 
 		if (lifetime.max() <= 0.f) {
 			lifetime = ::util::UniformFloatRange(0.5f, 6.f);
@@ -2531,6 +2538,11 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		if (radius.max() <= 0.f) {
 			radius = ::util::UniformFloatRange(0.5f, 1.5f);
 			radius_curve.emplace(modular_curves_entry{split_particles_radius_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+		}
+
+		if (velocity.max() <= 0.f) {
+			velocity = ::util::UniformFloatRange(0.f, 1.f);
+			velocity_curve.emplace(modular_curves_entry{split_particles_velocity_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
 	}
 	default:
@@ -2568,6 +2580,10 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 
 	if (radius_curve) {
 		effect.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, *radius_curve);
+	}
+
+	if (velocity_curve) {
+		effect.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, *radius_curve);
 	}
 
 	return particle::ParticleManager::get()->addEffect(std::move(effect));

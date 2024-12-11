@@ -20,7 +20,7 @@ public:
 
 	virtual vec3d getVelocity() const = 0;
 
-	float getVelocityMagnitude() const {
+	virtual float getVelocityMagnitude() const {
 		vec3d velocity = getVelocity();
 		return vm_vec_mag_quick(&velocity);
 	}
