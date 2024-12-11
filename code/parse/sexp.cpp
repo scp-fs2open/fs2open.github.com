@@ -39966,9 +39966,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of target to ignore.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
-	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
+	{ OP_AI_STAY_STILL, "Ai-stay-still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
-		"which time the ship will come to life and defend itself.\r\n\r\n"
+		"which time the ship will come to life and defend itself.  All other goals specified for the ship will be cleared.\r\n\r\n"
 		"Takes 2 arguments...\r\n"
 		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
 		"\t2:\tGoal priority (number between 0 and 89)." },
@@ -39996,7 +39996,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_FORM_ON_WING, "Ai-form-on-wing (Ship Goal)\r\n"
 		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
-		"player order, and will cause all other goals specified for the ship to be purged.\r\n\r\n"
+		"player order, and will cause all other goals specified for the ship to be cleared.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tShip to form on." },
 
