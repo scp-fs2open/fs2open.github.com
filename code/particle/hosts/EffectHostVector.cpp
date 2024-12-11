@@ -2,8 +2,8 @@
 
 #include "math/vecmat.h"
 
-EffectHostVector::EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride, bool orientationOverrideRelative, std::optional<float> velocityMagnitudeOverride) :
-	EffectHost(orientationOverride, orientationOverrideRelative), m_position(position), m_orientation(orientation), m_velocity(velocity), m_velocityMagnitudeOverride(velocityMagnitudeOverride) {}
+EffectHostVector::EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride, bool orientationOverrideRelative) :
+	EffectHost(orientationOverride, orientationOverrideRelative), m_position(position), m_orientation(orientation), m_velocity(velocity), m_velocityMagnitudeOverride(std::nullopt) {}
 
 //Vector hosts can never have a parent, so it'll always return global space
 std::pair<vec3d, matrix> EffectHostVector::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const tl::optional<vec3d>& tabled_offset) const {
@@ -29,4 +29,19 @@ float EffectHostVector::getVelocityMagnitude() const {
 		return *m_velocityMagnitudeOverride;
 	else
 		return EffectHost::getVelocityMagnitude();
+}
+
+float EffectHostVector::getHostRadius() const {
+	if (m_radiusOverride)
+		return *m_radiusOverride;
+	else
+		return EffectHost::getHostRadius();
+};
+
+void EffectHostVector::setVelocityMagnitudeOverride(float velocityMagnitudeOverride) {
+	m_velocityMagnitudeOverride.emplace(velocityMagnitudeOverride);
+}
+
+void EffectHostVector::setRadiusOverride(float radiusOverride) {
+	m_radiusOverride.emplace(radiusOverride);
 }

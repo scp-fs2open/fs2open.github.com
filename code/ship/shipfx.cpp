@@ -1883,7 +1883,9 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			matrix orient;
 			vm_vector_2_matrix_norm(&orient, &normal);
 
-			source->setHost(make_unique<EffectHostVector>(model_clip_plane_pt, orient, half_ship->phys_info.vel, vmd_identity_matrix, true, half_ship->explosion_vel));
+			auto host = std::make_unique<EffectHostVector>(model_clip_plane_pt, orient, half_ship->phys_info.vel, vmd_identity_matrix, true);
+			host->setVelocityMagnitudeOverride(half_ship->explosion_vel);
+			source->setHost(std::move(host));
 			source->finishCreation();
 
 			if (sip->generic_debris_model_num >= 0) {

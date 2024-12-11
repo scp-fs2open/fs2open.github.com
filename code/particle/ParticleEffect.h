@@ -16,10 +16,6 @@ class EffectHost;
 //Due to parsing shenanigans in weapons, this needs a forward-declare here
 int parse_weapon(int, bool, const char*);
 
-//Due to parsing shenanigans in ships, this needs a forward declaration here
-enum class LegacyShipParticleType : uint8_t;
-particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType, float, int, ::util::UniformFloatRange, ::util::UniformFloatRange, ::util::UniformFloatRange, ::util::UniformFloatRange, float, bool);
-
 namespace particle {
 
 /**
@@ -58,11 +54,19 @@ public:
 		SCREEN_ALIGNED
 	};
 
+	enum class ParticleCurvesOutput : uint8_t {
+		PARTICLE_NUM_MULT,
+		RADIUS_MULT,
+		LIFETIME_MULT,
+		VOLUME_VELOCITY_SCALING,
+
+		NUM_VALUES
+	};
+
  private:
 	friend struct ParticleParse;
 
 	friend int ::parse_weapon(int, bool, const char*);
-	friend ParticleEffectHandle (::create_ship_legacy_particle_effect)(::LegacyShipParticleType, float, int, ::util::UniformFloatRange, ::util::UniformFloatRange, ::util::UniformFloatRange, ::util::UniformFloatRange, float, bool);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -109,14 +113,6 @@ public:
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
-	enum class ParticleCurvesOutput : uint8_t {
-		PARTICLE_NUM_MULT,
-		RADIUS_MULT,
-		LIFETIME_MULT,
-		VOLUME_VELOCITY_SCALING,
-
-		NUM_VALUES
-	};
 	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
 		std::array {
 			std::pair {"Particle Number Mult", ParticleCurvesOutput::PARTICLE_NUM_MULT},
@@ -126,7 +122,6 @@ public:
 		},
 		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
 		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}});
-	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
 
 	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
  public:
@@ -172,6 +167,8 @@ public:
 	float getNextSpawnDelay() const;
 
 	bool isOnetime() const { return m_duration == Duration::ONETIME; }
+
+	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
 };
 
 }

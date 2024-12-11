@@ -2417,22 +2417,14 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					vec3d normal = orient->vec.fvec;
 					vm_vec_negate(&normal);
 
-					//float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
-
-					//TODO REGRESSION: Random velocity range for thruster particles must be scaled by ship speed
-					//pe.min_vel = v * 0.75f;
-					//pe.max_vel =  v * 1.25f;
-
-					//TODO REGRESSION: Particle radius must be scaled by thruster point size
-					//pe.min_rad = gpt->radius * tp->min_rad;
-					//pe.max_rad = gpt->radius * tp->max_rad;
-
 					auto source = particle::ParticleManager::get()->createSource(tp->particle_handle);
 
 					matrix orientParticle;
 					vm_vector_2_matrix_norm(&orientParticle, &normal);
 
-					source->setHost(make_unique<EffectHostVector>(npnt, orientParticle, Objects[shipp->objnum].phys_info.desired_vel));
+					auto host = std::make_unique<EffectHostVector>(npnt, orientParticle, Objects[shipp->objnum].phys_info.desired_vel);
+					host->setRadiusOverride(gpt->radius);
+					source->setHost(std::move(host));
 					source->finishCreation();
 				}
 			}

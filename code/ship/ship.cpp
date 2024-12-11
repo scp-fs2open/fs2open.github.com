@@ -4853,14 +4853,14 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			generic_anim_load(&tpart.thruster_bitmap);
 
-			tpart.particle_handle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			auto particle = particle::ParticleEffect(
 				"", //Name
 				::util::UniformFloatRange(min_n, max_n), //Particle num
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				false, //Velocity Inherit absolute?
 				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
-				::util::UniformFloatRange(0.0f), //Velocity volume multiplier
+				::util::UniformFloatRange(0.75f, 1.25f), //Velocity volume multiplier
 				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 				tl::nullopt, //Orientation-based velocity
 				tl::nullopt, //Position-based velocity
@@ -4872,7 +4872,20 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
 				::util::UniformFloatRange(min_rad, max_rad), //Radius
-				tpart.thruster_bitmap.first_frame)); //Bitmap
+				tpart.thruster_bitmap.first_frame); //Bitmap
+
+			static const int thruster_particle_curve = []() -> int {
+				int curve_id = Curves.size();
+				auto& curve = Curves.emplace_back(";ShipParticleThruster");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+
+			tpart.particle_handle = particle::ParticleManager::get()->addEffect(std::move(particle));
 		}
 
 		if (afterburner) {
