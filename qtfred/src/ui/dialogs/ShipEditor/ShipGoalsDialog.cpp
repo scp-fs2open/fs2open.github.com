@@ -77,8 +77,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		connect(behaviors[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
-			int datap = behaviors[i]->itemData(index).value<int>();
-			_model->setBehavior(i, datap);
+			_model->setBehavior(i, index);
 		});
 		connect(objects[i], QOverload<int>::of(&QComboBox::currentIndexChanged), [=](int index) {
 			int datap = objects[i]->itemData(index).value<int>();
@@ -119,22 +118,23 @@ void ShipGoalsDialog::rejectHandler()
 
 void ShipGoalsDialog::updateUI()
 {
-
 	util::SignalBlockers blockers(this);
+
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
 		behaviors[i]->clear();
 		objects[i]->clear();
 		subsys[i]->clear();
 		docks[i]->clear();
-		auto value = _model->getBehavior(i);
-		behaviors[i]->addItem("None", QVariant(int(AI_GOAL_NONE)));
-		for (int j = 0; j < _model->getGoalsSize(); j++) {
-			if (_model->getValid(j)) {
-				behaviors[i]->addItem(_model->getGoalTypes()[j].name, QVariant(int(_model->getGoalTypes()[j].def)));
-			}
+
+		for (const auto &entry : _model->get_ai_goal_combo_data()) {
+			behaviors[i]->addItem(entry.first);
 		}
-		behaviors[i]->setCurrentIndex(behaviors[i]->findData(value));
-		auto mode = value;
+
+		auto value = _model->getBehavior(i);
+		behaviors[i]->setCurrentIndex(value);
+
+		auto mode = _model->get_first_mode_from_combo_box(i);
+
 		SCP_vector<waypoint_list>::iterator ii;
 		if (i >= MAX_AI_GOALS)
 			behaviors[i]->setEnabled(false);
@@ -192,6 +192,9 @@ void ShipGoalsDialog::updateUI()
 				priority[i]->setValue(_model->getPriority(i));
 
 				break;
+
+			default:
+				break;
 			}
 			// for goals that deal with ship classes
 			switch (mode) {
@@ -206,12 +209,16 @@ void ShipGoalsDialog::updateUI()
 				priority[i]->setValue(_model->getPriority(i));
 
 				break;
+			default:
+				break;
 			} // for goals that deal with individual ships
 			switch (mode) {
 			case AI_GOAL_DESTROY_SUBSYSTEM:
-			case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
+			case AI_GOAL_CHASE:
+			case AI_GOAL_CHASE_WING:
 			case AI_GOAL_DOCK:
-			case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+			case AI_GOAL_GUARD:
+			case AI_GOAL_GUARD_WING:
 			case AI_GOAL_DISABLE_SHIP:
 			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_DISARM_SHIP:
@@ -259,11 +266,15 @@ void ShipGoalsDialog::updateUI()
 					ptr = GET_NEXT(ptr);
 				}
 				break;
+			default:
+				break;
 			}
 			// for goals that deal with wings
 			switch (mode) {
-			case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
-			case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+			case AI_GOAL_CHASE:
+			case AI_GOAL_CHASE_WING:
+			case AI_GOAL_GUARD:
+			case AI_GOAL_GUARD_WING:
 				int j;
 				for (j = 0; j < MAX_WINGS; j++) {
 					if (Wings[j].wave_count && j != _model->getWing()) {
@@ -274,7 +285,8 @@ void ShipGoalsDialog::updateUI()
 				}
 				priority[i]->setEnabled(true);
 				priority[i]->setValue(_model->getPriority(i));
-
+				break;
+			default:
 				break;
 			}
 			if (mode == AI_GOAL_DESTROY_SUBSYSTEM) {
