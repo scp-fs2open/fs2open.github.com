@@ -433,7 +433,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//AI Control Sub-Category
 	{ "add-goal",						OP_ADD_GOAL,							2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "remove-goal",					OP_REMOVE_GOAL,							2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "remove-goal",					OP_REMOVE_GOAL,							2,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-ship-goal",					OP_ADD_SHIP_GOAL,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "add-wing-goal",					OP_ADD_WING_GOAL,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-goals",					OP_CLEAR_GOALS,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -13139,12 +13139,16 @@ void sexp_remove_goal(int n)
 		if (!ship_entry->has_shipp())
 			return;										// ship not around anymore???? then forget it!
 
-		int goalindex = ai_remove_goal_sexp_sub(goal_node, Ai_info[ship_entry->shipp()->ai_index].goals);
-		if (goalindex >= 0)
-		{
-			if (Ai_info[ship_entry->shipp()->ai_index].active_goal == goalindex)
-				Ai_info[ship_entry->shipp()->ai_index].active_goal = AI_GOAL_NONE;
-		}
+		bool remove_more = false;
+		auto aip = &Ai_info[ship_entry->shipp()->ai_index];
+		do {
+			int goalindex = ai_remove_goal_sexp_sub(goal_node, aip->goals, remove_more);
+			if (goalindex >= 0)
+			{
+				if (aip->active_goal == goalindex)
+					aip->active_goal = AI_GOAL_NONE;
+			}
+		} while (remove_more);
 		return;
 	}
 
@@ -32167,11 +32171,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_AI_GOAL;
 
 		case OP_ADD_GOAL:
-		case OP_REMOVE_GOAL:
 			if ( argnum == 0 )
 				return OPF_SHIP_WING;
 			else
 				return OPF_AI_GOAL;
+
+		case OP_REMOVE_GOAL:
+			if ( argnum == 0 )
+				return OPF_SHIP_WING;
+			else if ( argnum == 1 )
+				return OPF_AI_GOAL;
+			else
+				return OPF_BOOL;
 
 		case OP_COND:
 		case OP_WHEN:
@@ -38609,10 +38620,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_REMOVE_GOAL, "Remove goal (Action operator)\r\n"
-		"\tRemoves a goal from a ship or wing.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"\tRemoves a goal from a ship or wing.  Note that, by default, only the type of goal and the priority are matched.  This operator "
+		"does not distinguish between, for example, two different waypoint goals.\r\n\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of ship or wing to remove goal from (ship/wing must be in-mission).\r\n"
-		"\t2:\tGoal to remove." },
+		"\t2:\tGoal to remove.\r\n"
+		"\t3:\tWhether to remove all matching goals (optional; defaults to false; if false, only the first matching goal will be removed).\r\n"
+		"\t4:\tWhether to ignore the priority when matching a goal (optional).\r\n"
+	},
 
 	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
 		"\tReduces the specified subsystem integrity by the specified percentage."
