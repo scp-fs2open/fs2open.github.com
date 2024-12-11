@@ -53,8 +53,14 @@ struct ship_registry_entry;
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
 // Goober5000 - note that the new disable and disarm goals (AI_GOAL_DISABLE_SHIP_TACTICAL and
 // AI_GOAL_DISARM_SHIP_TACTICAL) do not purge ANY goals, not even the ones in the one ship
-#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
-#define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
+inline bool purge_goals_all_ships(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_IGNORE || ai_mode == AI_GOAL_DISABLE_SHIP || ai_mode == AI_GOAL_DISARM_SHIP;
+}
+inline bool purge_goals_one_ship(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_IGNORE_NEW;
+}
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -86,7 +92,7 @@ ai_goal_list Ai_goal_names[] =
 	{ "Guard wing",				AI_GOAL_GUARD_WING,				0 },
 	{ "Evade ship",				AI_GOAL_EVADE_SHIP,				0 },
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,			0 },
-	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
+	{ "Keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
 	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,			0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,				0 },
 	{ "Play dead",				AI_GOAL_PLAY_DEAD,				0 },
@@ -102,7 +108,7 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-const char *Ai_goal_text(int goal, int submode)
+const char *Ai_goal_text(ai_goal_mode goal, int submode)
 {
 	switch(goal)	{
 	case AI_GOAL_CHASE:
@@ -135,22 +141,22 @@ const char *Ai_goal_text(int goal, int submode)
 		return XSTR( "rearm ", 484);
 	case AI_GOAL_FLY_TO_SHIP:
 		return XSTR( "rendezvous with ", 1597);
-	case AI_GOAL_LUA:
+	case AI_GOAL_LUA:	{
 		auto mode = ai_lua_find_mode(submode);
 		if (mode == nullptr)
 			return nullptr;
 		return mode->hudText;
 	}
-
-	// Avoid compiler warning
-	return nullptr;
+	default:
+		return nullptr;
+	}
 }
 
 /**
  * Reset all fields to their uninitialized defaults.  But if this is being called before adding a new goal, the function will set the correct signature and time.
  * Similarly the added mode, submode, and type can be assigned.
  */
-void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode, int type)
+void ai_goal_reset(ai_goal *aigp, bool adding_goal, ai_goal_mode ai_mode, int ai_submode, int type)
 {
 	if (ai_mode != AI_GOAL_NONE)
 		Assertion(adding_goal, "If a goal mode is being assigned, the adding_goal parameter must be true so that the signature and mission time can be set");
@@ -280,13 +286,13 @@ void ai_post_process_mission()
  * Determines if a goal is valid for a particular type of ship
  *
  * @param ship Ship type to test
- * @param ai_goal_type Goal type to test
+ * @param ai_mode Goal type to test
  */
-int ai_query_goal_valid( int ship, int ai_goal_type )
+int ai_query_goal_valid( int ship, ai_goal_mode ai_mode )
 {
 	int accepted;
 
-	if (ai_goal_type == AI_GOAL_NONE || ai_goal_type == AI_GOAL_LUA)
+	if (ai_mode == AI_GOAL_NONE || ai_mode == AI_GOAL_LUA)
 		return 1;  // anything can have no orders or Lua'd orders.
 
 	accepted = 0;
@@ -296,7 +302,8 @@ int ai_query_goal_valid( int ship, int ai_goal_type )
 	int ship_type = Ship_info[Ships[ship].ship_info_index].class_type;
 	if(ship_type > -1)
 	{
-		if(ai_goal_type & Ship_types[ship_type].ai_valid_goals) {
+		const auto &set = Ship_types[ship_type].ai_valid_goals;
+		if (set.find(ai_mode) != set.end()) {
 			accepted = 1;
 		}
 	}
@@ -341,7 +348,7 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 			}
 		}
 
-		aip->active_goal = AI_GOAL_NONE;
+		aip->active_goal = AI_ACTIVE_GOAL_NONE;
 	}
 
 	ai_goal_reset(&aip->goals[index]);
@@ -358,7 +365,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	for (i = 0; i < MAX_AI_GOALS; i++)
 		ai_remove_ship_goal( aip, i );			// resets active_goal and default behavior
 
-	aip->active_goal = AI_GOAL_NONE;					// for good measure
+	aip->active_goal = AI_ACTIVE_GOAL_NONE;					// for good measure
 
 	// next line moved here on 8/5/97 by MWA
 	// Don't reset player ai (and hence target)
@@ -458,9 +465,8 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 
 void ai_mission_goal_complete( ai_info *aip )
 {
-	// if the active goal is dynamic or none, just return.  (AI_GOAL_NONE is probably an error, but
-	// I don't think that this is a problem)
-	if ( (aip->active_goal == AI_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) )
+	// if the active goal is dynamic or none, just return.
+	if ( (aip->active_goal == AI_ACTIVE_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) )
 		return;
 
 	ai_remove_ship_goal( aip, aip->active_goal );
@@ -497,9 +503,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 
 	purge_goal = goal_list;
 	for ( i = 0; i < MAX_AI_GOALS; purge_goal++, i++ ) {
-		int purge_ai_mode, purge_wing;
-
-		purge_ai_mode = purge_goal->ai_mode;
+		auto purge_ai_mode = purge_goal->ai_mode;
 
 		// don't need to process AI_GOAL_NONE
 		if ( purge_ai_mode == AI_GOAL_NONE )
@@ -519,7 +523,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		// standard goals operating on either wings or ships
 		else {
 			// determine if the purge goal is acting either on the ship or the ship's wing.
-			purge_wing = wing_name_lookup( purge_goal->target_name, 1 );
+			int purge_wing = wing_name_lookup( purge_goal->target_name, 1 );
 
 			// if the target of the purge goal is a ship (purge_wing will be -1), then if the names
 			// don't match, we can continue;  if the wing is valid, don't process if the wing numbers
@@ -536,7 +540,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// ignore goals should get rid of any kind of attack goal
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
-				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS | AI_GOAL_DESTROY_SUBSYSTEM) )
+				if (ai_goal_is_disable_or_disarm(purge_ai_mode) || ai_goal_is_specific_chase(purge_ai_mode) || (purge_ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 					purge_goal->flags.set(AI::Goal_Flags::Purge);
 				break;
 
@@ -544,7 +548,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// (but not tactical disarm/disable)
 			case AI_GOAL_DISARM_SHIP:
 			case AI_GOAL_DISABLE_SHIP:
-				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS) ) {
+				if (ai_goal_is_specific_chase(purge_ai_mode)) {
 					int ai_ship_type;
 
 					// for wings we grab the ship type of the wing leader
@@ -585,7 +589,7 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	ship_obj *sop;
 
 	// only purge goals if a new goal is one of the types in next statement
-	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
+	if (!purge_goals_all_ships(aigp->ai_mode))
 		return;
 	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
@@ -728,7 +732,7 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
+void ai_add_goal_sub_player(int type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -818,7 +822,7 @@ int ai_goal_num(ai_goal *goals)
 }
 
 
-void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, const char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_scripting(int type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp )
 {
 	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
 
@@ -835,7 +839,7 @@ void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, co
 	aigp->priority = priority;
 }
 
-void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char *shipname, ai_info *aip)
+void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -859,7 +863,7 @@ void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char 
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
+void ai_add_ship_goal_player( int type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -880,7 +884,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, const char *shipn
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
+void ai_add_wing_goal_player( int type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -1232,7 +1236,7 @@ int ai_find_goal_index( ai_goal* aigp, int mode, int submode, int priority )
 
 /* Remove a goal from the given goals structure
  * Returns the index of the goal that it clears out.
- * This is important so that if active_goal == index you can set AI_GOAL_NONE.
+ * This is important so that if active_goal == index you can set AI_ACTIVE_GOAL_NONE.
  * NOTE: Callers should check the value of remove_more.  If it is true, the function should be called again.
  */
 int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
@@ -1452,7 +1456,7 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 			do {
 				goalindex = ai_remove_goal_sexp_sub(sexp, aip->goals, remove_more);
 				if (aip->active_goal == goalindex)
-					aip->active_goal = AI_GOAL_NONE;
+					aip->active_goal = AI_ACTIVE_GOAL_NONE;
 			} while (remove_more);
 		}
 	}
@@ -1911,11 +1915,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
 	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags[AI::Goal_Flags::Goals_purged]))
 	{
-		if (aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) {
+		if (purge_goals_all_ships(aigp->ai_mode)) {
 			ai_goal_purge_all_invalid_goals(aigp);
 			aigp->flags.set(AI::Goal_Flags::Goals_purged);
 		}
-		else if (aigp->ai_mode & PURGE_GOALS_ONE_SHIP) {
+		else if (purge_goals_one_ship(aigp->ai_mode)) {
 			ai_goal_purge_invalid_goals(aigp, aip->goals, aip, -1);
 			aigp->flags.set(AI::Goal_Flags::Goals_purged);
 		}

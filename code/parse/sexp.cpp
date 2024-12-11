@@ -13210,7 +13210,7 @@ void sexp_remove_goal(int n)
 			if (goalindex >= 0)
 			{
 				if (aip->active_goal == goalindex)
-					aip->active_goal = AI_GOAL_NONE;
+					aip->active_goal = AI_ACTIVE_GOAL_NONE;
 			}
 		} while (remove_more);
 		return;

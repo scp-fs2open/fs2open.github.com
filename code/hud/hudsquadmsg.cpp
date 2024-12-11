@@ -1001,7 +1001,8 @@ int enemy_message(int message) {
 int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
-	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
+	ai_goal_mode ai_mode;			// ai mode...
+	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
 	ai_lua_parameters lua_target;
@@ -1293,7 +1294,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
-	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
+	ai_goal_mode ai_mode;			// ai mode...
+	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
 	ai_lua_parameters lua_target;
