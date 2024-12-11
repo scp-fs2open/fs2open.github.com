@@ -3522,6 +3522,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 				break;
 
 			case AI_GOAL_STAY_STILL:
+			case AI_GOAL_STAY_STILL_NEW:
 				flag = 4;
 				break;
 

@@ -91,7 +91,6 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 
 	switch(ohp->aigp->ai_mode){
 		case AI_GOAL_NONE:
-		case AI_GOAL_PLACEHOLDER_1:
 		case AI_GOAL_NUM_VALUES:
 			break;
 		case AI_GOAL_DESTROY_SUBSYSTEM:
@@ -113,6 +112,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 			break;
 		case AI_GOAL_FORM_ON_WING:
 			eh_idx = LE_ORDER_FORM_ON_WING;
+			break;
+		case AI_GOAL_FORM_ON_WING_NEW:
+			eh_idx = LE_ORDER_FORM_ON_WING_NEW;
 			break;
 		case AI_GOAL_UNDOCK:
 			eh_idx = LE_ORDER_UNDOCK;
@@ -155,6 +157,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 			break;
 		case AI_GOAL_STAY_STILL:
 			eh_idx = LE_ORDER_STAY_STILL;
+			break;
+		case AI_GOAL_STAY_STILL_NEW:
+			eh_idx = LE_ORDER_STAY_STILL_NEW;
 			break;
 		case AI_GOAL_PLAY_DEAD:
 			eh_idx = LE_ORDER_PLAY_DEAD;
@@ -218,22 +223,23 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_DESTROY_SUBSYSTEM:
 				case AI_GOAL_CHASE:
 				case AI_GOAL_FORM_ON_WING:
+				case AI_GOAL_FORM_ON_WING_NEW:
 				case AI_GOAL_GUARD:
 				case AI_GOAL_DISABLE_SHIP:
 				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
 				case AI_GOAL_DISARM_SHIP_TACTICAL:
-				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_IGNORE:
+				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
 				case AI_GOAL_KEEP_SAFE_DISTANCE:
 				case AI_GOAL_FLY_TO_SHIP:
 				case AI_GOAL_STAY_STILL:
+				case AI_GOAL_STAY_STILL_NEW:
 					if ((newh->objp()->type == OBJ_SHIP) && stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)) {
 						ohp->aigp->target_name = ai_get_goal_target_name(Ships[newh->objp()->instance].ship_name, &ohp->aigp->target_name_index);
 						ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
-
 						if(ohp->odx == 0) {
 							aip->ok_to_target_timestamp = timestamp(0);
 							set_target_objnum(aip, newh->objnum);
@@ -313,13 +319,14 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_CHASE:
 		case AI_GOAL_DOCK:
 		case AI_GOAL_FORM_ON_WING:
+		case AI_GOAL_FORM_ON_WING_NEW:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISABLE_SHIP:
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_DISARM_SHIP_TACTICAL:
-		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
@@ -350,6 +357,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			break;
 
 		case AI_GOAL_STAY_STILL:
+		case AI_GOAL_STAY_STILL_NEW:
 			shipnum = ship_name_lookup(ohp->aigp->target_name);
 			if (shipnum != -1){
 				objnum = Ships[shipnum].objnum;

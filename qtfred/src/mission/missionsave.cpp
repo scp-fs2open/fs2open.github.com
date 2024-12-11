@@ -715,6 +715,10 @@ void CFred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 					str = "ai-stay-still";
 					break;
 
+				case AI_GOAL_STAY_STILL_NEW:
+					str = "ai-stay-still-new";
+					break;
+
 				case AI_GOAL_REARM_REPAIR:
 					str = "ai-rearm-repair";
 					break;

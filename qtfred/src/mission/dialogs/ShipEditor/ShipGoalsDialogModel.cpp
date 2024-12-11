@@ -167,6 +167,7 @@ namespace fso {
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
 				case AI_GOAL_STAY_STILL:
+				case AI_GOAL_STAY_STILL_NEW:
 				case AI_GOAL_CHASE_SHIP_CLASS:
 					break;
 
@@ -491,6 +492,7 @@ namespace fso {
 						break;
 
 					case AI_GOAL_STAY_STILL:
+					case AI_GOAL_STAY_STILL_NEW:
 						flag = 9; // target is a ship or a waypoint
 						break;
 

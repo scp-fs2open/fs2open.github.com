@@ -17342,6 +17342,7 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 	switch (goal) {
 	// These goals refer to ships so we need to retrieve their display name
 	case AI_GOAL_FORM_ON_WING:
+	case AI_GOAL_FORM_ON_WING_NEW:
 	case AI_GOAL_CHASE:
 	case AI_GOAL_DOCK:
 	case AI_GOAL_UNDOCK:
@@ -17410,6 +17411,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	switch (aigp->ai_mode) {
 	case AI_GOAL_FORM_ON_WING:
+	case AI_GOAL_FORM_ON_WING_NEW:
 	case AI_GOAL_GUARD_WING:
 	case AI_GOAL_CHASE_WING:
 		if (aigp->target_name) {

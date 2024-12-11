@@ -47,9 +47,8 @@ enum class ai_goal_type
 enum ai_goal_mode : uint8_t
 {
 	AI_GOAL_NONE = 0,
-	AI_GOAL_PLACEHOLDER_1,
 
-	AI_GOAL_CHASE,              // per the original #define list, AI_GOAL_CHASE started at 2 (1<<1)
+	AI_GOAL_CHASE,
 	AI_GOAL_DOCK,               // used for undocking as well
 	AI_GOAL_WAYPOINTS,
 	AI_GOAL_WAYPOINTS_ONCE,
@@ -84,6 +83,8 @@ enum ai_goal_mode : uint8_t
 	AI_GOAL_LUA,
 	AI_GOAL_DISARM_SHIP_TACTICAL,
 	AI_GOAL_DISABLE_SHIP_TACTICAL,
+	AI_GOAL_STAY_STILL_NEW,
+	AI_GOAL_FORM_ON_WING_NEW,
 
 	AI_GOAL_NUM_VALUES
 };

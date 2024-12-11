@@ -87,6 +87,7 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
 	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
+	{ "Stay still (new)",		AI_GOAL_STAY_STILL_NEW,		0 },
 	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
 	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
 };
@@ -2769,6 +2770,7 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 			break;
 
 		case AI_GOAL_STAY_STILL:
+		case AI_GOAL_STAY_STILL_NEW:
 			flag = 4;
 			break;
 

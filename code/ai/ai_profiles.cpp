@@ -657,6 +657,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
 
+				set_flag(profile, "$hud squad messages use ai-form-on-wing-new:", AI::Profile_Flags::Hudsquadmsg_new_form_on_wing);
+
 				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
 
 				if (optional_string("$rotation factor multiplier for player collisions:")) {
