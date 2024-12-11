@@ -91,7 +91,6 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 
 	switch(ohp->aigp->ai_mode){
 		case AI_GOAL_NONE:
-		case AI_GOAL_PLACEHOLDER_1:
 		case AI_GOAL_NUM_VALUES:
 			break;
 		case AI_GOAL_DESTROY_SUBSYSTEM:
@@ -223,8 +222,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_DISABLE_SHIP_TACTICAL:
 				case AI_GOAL_DISARM_SHIP:
 				case AI_GOAL_DISARM_SHIP_TACTICAL:
-				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_IGNORE:
+				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
 				case AI_GOAL_KEEP_SAFE_DISTANCE:
@@ -318,8 +317,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
 		case AI_GOAL_DISARM_SHIP_TACTICAL:
-		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_IGNORE:
+		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_KEEP_SAFE_DISTANCE:
