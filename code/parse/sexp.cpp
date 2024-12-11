@@ -5725,40 +5725,46 @@ wing *eval_wing(int node)
 
 /**
  * Returns a number parsed from the sexp node text.
- * NOTE: sexp_atoi can only be used if CTEXT was used; i.e. atoi(CTEXT(n))
+ * NOTE: sexp_atoi() should only replace atoi(CTEXT(n)) - it should not replace atoi(Sexp_nodes[node].text) - see commit 9923c87bc1
  */
 int sexp_atoi(int node)
 {
-	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 	if (node < 0)
 		return 0;
 
-	// check cache
-	if (Sexp_nodes[node].cache)
+	// SEXP caching is not set up to work in FRED, so bypass all the caching code in that case
+	if (!Fred_running)
 	{
-		// have we cached something else?
-		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
-			return 0;
+		// check cache
+		if (Sexp_nodes[node].cache)
+		{
+			// have we cached something else?
+			if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
+				return 0;
 
-		return Sexp_nodes[node].cache->numeric_literal;
-	}
+			return Sexp_nodes[node].cache->numeric_literal;
+		}
 
-	// maybe forward to a special-arg node
-	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
-	{
-		auto current_argument = Sexp_replacement_arguments.back();
-		int arg_node = current_argument.second;
+		// maybe forward to a special-arg node
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+		{
+			auto current_argument = Sexp_replacement_arguments.back();
+			int arg_node = current_argument.second;
 
-		if (arg_node >= 0)
-			return sexp_atoi(arg_node);
+			if (arg_node >= 0)
+				return sexp_atoi(arg_node);
+		}
 	}
 
 	int num = atoi(CTEXT(node));
 	ensure_opf_positive_is_positive(node, num);
 
-	// cache the value if it can't change later
-	if (!is_node_value_dynamic(node))
-		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+	if (!Fred_running)
+	{
+		// cache the value if it can't change later
+		if (!is_node_value_dynamic(node))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+	}
 
 	return num;
 }
@@ -5768,21 +5774,24 @@ int sexp_atoi(int node)
  */
 bool sexp_can_construe_as_integer(int node)
 {
-	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 	if (node < 0)
 		return false;
 
-	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
-		return true;
-
-	// maybe forward to a special-arg node
-	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	// SEXP caching is not set up to work in FRED, so bypass all the caching code in that case
+	if (!Fred_running)
 	{
-		auto current_argument = Sexp_replacement_arguments.back();
-		int arg_node = current_argument.second;
+		if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
+			return true;
 
-		if (arg_node >= 0)
-			return sexp_can_construe_as_integer(arg_node);
+		// maybe forward to a special-arg node
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+		{
+			auto current_argument = Sexp_replacement_arguments.back();
+			int arg_node = current_argument.second;
+
+			if (arg_node >= 0)
+				return sexp_can_construe_as_integer(arg_node);
+		}
 	}
 
 	return can_construe_as_integer(CTEXT(node));
