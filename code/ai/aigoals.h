@@ -24,15 +24,19 @@ struct ai_info;
 
 // macros for goals which get set via sexpressions in the mission code
 
-// types of ai goals -- tyese types will help us to determination on which goals should
+// types of ai goals -- these will help us to determine which goals should
 // have priority over others (i.e. when a player issues a goal to a wing, then a seperate
 // goal to a ship in that wing).  We would probably use this type in conjunction with
 // goal priority to establish which goal to follow
-#define AIG_TYPE_EVENT_SHIP			1		// from mission event direct to ship
-#define AIG_TYPE_EVENT_WING			2		// from mission event direct to wing
-#define AIG_TYPE_PLAYER_SHIP		3		// from player direct to ship
-#define AIG_TYPE_PLAYER_WING		4		// from player direct to wing
-#define AIG_TYPE_DYNAMIC			5		// created on the fly
+enum class ai_goal_type
+{
+	INVALID = 0,
+	EVENT_SHIP,		// from mission event direct to ship
+	EVENT_WING,		// from mission event direct to wing
+	PLAYER_SHIP,	// from player direct to ship
+	PLAYER_WING,	// from player direct to wing
+	DYNAMIC			// created on the fly
+};
 
 // IMPORTANT!  If you add a new AI_GOAL_x enum, be sure to update the functions
 // ai_update_goal_references() and query_referenced_in_ai_goals() or else risk breaking
@@ -114,7 +118,7 @@ typedef struct ai_goal {
 	int	signature;			//	Unique identifier.  All goals ever created (per mission) have a unique signature.
 	ai_goal_mode ai_mode;	// one of the AI_GOAL_* modes for this goal
 	int	ai_submode;			// maybe need a submode
-	int	type;					// one of the AIG_TYPE_* values above
+	ai_goal_type type;		// one of the ai_goal_type (originally AIG_TYPE_*) values above
 	flagset<AI::Goal_Flags>	flags;				// one of the AIGF_* values above
 	fix	time;					// time at which this goal was issued.
 	int	priority;			// how important is this goal -- number 0 - 100
@@ -146,7 +150,7 @@ typedef struct ai_goal {
 
 } ai_goal;
 
-extern void ai_goal_reset(ai_goal *aigp, bool adding_goal = false, ai_goal_mode ai_mode = AI_GOAL_NONE, int ai_submode = -1, int type = -1);
+extern void ai_goal_reset(ai_goal *aigp, bool adding_goal = false, ai_goal_mode ai_mode = AI_GOAL_NONE, int ai_submode = -1, ai_goal_type type = ai_goal_type::INVALID);
 
 
 typedef flag_def_list_templated<ai_goal_mode> ai_goal_list;
@@ -173,16 +177,16 @@ extern int ai_goal_num(ai_goal *goals);
 
 // adds goals to ships/wing through sexpressions
 extern void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip);
-extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
-extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
-extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name);
+extern void ai_add_ship_goal_sexp(int sexp, ai_goal_type type, ai_info *aip);
+extern void ai_add_wing_goal_sexp(int sexp, ai_goal_type type, wing *wingp);
+extern void ai_add_goal_sub_sexp(int sexp, ai_goal_type type, ai_info *aip, ai_goal *aigp, const char *actor_name);
 
 extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
-extern void ai_add_ship_goal_player(int type, ai_goal_mode mode, int submode, const char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
-extern void ai_add_wing_goal_player(int type, ai_goal_mode mode, int submode, const char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char* shipname, ai_info* aip, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
+extern void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char* shipname, int wingnum, const ai_lua_parameters& lua_target = { object_ship_wing_point_team(), luacpp::LuaValueList{} });
 
 extern void ai_remove_ship_goal( ai_info *aip, int index );
 extern void ai_clear_ship_goals( ai_info *aip );

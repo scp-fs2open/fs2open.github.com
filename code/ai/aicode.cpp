@@ -4871,12 +4871,10 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 				// for itself and in a wing, treat the completion as we would a ship
 				treat_as_ship = 1;
 				if ( shipp->wingnum != -1 ) {
-					int type;
-
 					// protect array access from invalid indexes
 					if ((aip->active_goal >= 0) && (aip->active_goal < MAX_AI_GOALS)) {
-						type = aip->goals[aip->active_goal].type;
-						if ( (type == AIG_TYPE_EVENT_WING) || (type == AIG_TYPE_PLAYER_WING) ) {
+						auto type = aip->goals[aip->active_goal].type;
+						if ( (type == ai_goal_type::EVENT_WING) || (type == ai_goal_type::PLAYER_WING) ) {
 							treat_as_ship = 0;
 						} else {
 							treat_as_ship = 1;
@@ -16610,7 +16608,7 @@ void ai_add_rearm_goal( object *requester_objp, object *support_objp )
 	// ensures that the player get a higher priority!
 	requester_aip->ai_flags.set(AI::AI_Flags::Awaiting_repair);	//	Tell that I'm awaiting repair.
 	if ( requester_objp->flags[Object::Object_Flags::Player_ship] )
-		ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_REARM_REPAIR, -1, requester_shipp->ship_name, support_aip );
+		ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_REARM_REPAIR, -1, requester_shipp->ship_name, support_aip );
 	else
 		ai_add_goal_ship_internal( support_aip, AI_GOAL_REARM_REPAIR, requester_shipp->ship_name, -1, -1 );
 

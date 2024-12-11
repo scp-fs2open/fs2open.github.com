@@ -156,7 +156,7 @@ const char *Ai_goal_text(ai_goal_mode goal, int submode)
  * Reset all fields to their uninitialized defaults.  But if this is being called before adding a new goal, the function will set the correct signature and time.
  * Similarly the added mode, submode, and type can be assigned.
  */
-void ai_goal_reset(ai_goal *aigp, bool adding_goal, ai_goal_mode ai_mode, int ai_submode, int type)
+void ai_goal_reset(ai_goal *aigp, bool adding_goal, ai_goal_mode ai_mode, int ai_submode, ai_goal_type type)
 {
 	if (ai_mode != AI_GOAL_NONE)
 		Assertion(adding_goal, "If a goal mode is being assigned, the adding_goal parameter must be true so that the signature and mission time can be set");
@@ -221,13 +221,13 @@ void ai_maybe_add_form_goal(wing* wingp)
 				if (Netgame.type_flags & NG_TYPE_TEAM) {
 					const ship_registry_entry* ship_regp = ship_registry_get(Ships[wingp->ship_index[j]].ship_name);
 					wingnum = TVT_wings[ship_regp->p_objp()->team];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
 				} else {
 					wingnum = Starting_wings[0];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
 				}
 			} else if (!(Game_mode & GM_MULTIPLAYER)) {
-				ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
+				ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
 			}
 		}
 	}
@@ -732,9 +732,9 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
+void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
 {
-	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
+	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
 	ai_goal_reset(aigp, true, mode, submode, type);
 
@@ -770,7 +770,7 @@ void ai_add_goal_sub_player(int type, ai_goal_mode mode, int submode, const char
 	else if ( mode == AI_GOAL_FORM_ON_WING )
 		aigp->priority = PLAYER_PRIORITY_SUPPORT_LOW;
 
-	else if ( aigp->type == AIG_TYPE_PLAYER_WING )
+	else if ( aigp->type == ai_goal_type::PLAYER_WING )	// NOLINT(readability-braces-around-statements)
 		aigp->priority = PLAYER_PRIORITY_WING;			// player wing goals not as high as ship goals
 	else
 		aigp->priority = PLAYER_PRIORITY_SHIP;
@@ -822,9 +822,9 @@ int ai_goal_num(ai_goal *goals)
 }
 
 
-void ai_add_goal_sub_scripting(int type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp )
 {
-	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
+	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
 	ai_goal_reset(aigp, true, mode, submode, type);
 
@@ -846,7 +846,7 @@ void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, co
 
 	empty_index = ai_goal_find_empty_slot(aip->goals, aip->active_goal);
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_scripting(AIG_TYPE_PLAYER_SHIP, mode, submode, priority, shipname, aigp);
+	ai_add_goal_sub_scripting(ai_goal_type::PLAYER_SHIP, mode, submode, priority, shipname, aigp);
 
 	//WMC - hack to get docking setup correctly
 	if ( mode == AI_GOAL_DOCK ) {
@@ -863,7 +863,7 @@ void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, co
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
+void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
@@ -884,7 +884,7 @@ void ai_add_ship_goal_player( int type, ai_goal_mode mode, int submode, const ch
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
+void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -908,7 +908,7 @@ void ai_add_wing_goal_player( int type, ai_goal_mode mode, int submode, const ch
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name )
+void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *aigp, const char *actor_name )
 {
 	int node, dummy, op;
 	bool priority_is_nan = false, priority_is_nan_forever = false;
@@ -1473,7 +1473,7 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 
 // adds an ai goal for an individual ship
 // type determines who has issues this ship a goal (i.e. the player/mission event/etc)
-void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
+void ai_add_ship_goal_sexp( int sexp, ai_goal_type type, ai_info *aip )
 {
 	int gindex;
 
@@ -1482,7 +1482,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 }
 
 // code to add ai goals to wings.
-void ai_add_wing_goal_sexp(int sexp, int type, wing *wingp)
+void ai_add_wing_goal_sexp(int sexp, ai_goal_type type, wing *wingp)
 {
 	int i;
 
@@ -1528,7 +1528,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 	aigp = &(aip->goals[gindex]);
 	ai_goal_reset(aigp, true);
 
-	aigp->type = AIG_TYPE_DYNAMIC;
+	aigp->type = ai_goal_type::DYNAMIC;
 	aigp->flags.set(AI::Goal_Flags::Goal_override);
 
 	switch ( goal_type ) {

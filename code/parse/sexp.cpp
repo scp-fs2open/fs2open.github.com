@@ -13176,7 +13176,7 @@ void sexp_add_goal(int n)
 		if (!ship_entry->has_shipp())
 			return;										// ship not around anymore???? then forget it!
 
-		ai_add_ship_goal_sexp(goal_node, AIG_TYPE_EVENT_SHIP, &(Ai_info[ship_entry->shipp()->ai_index]));
+		ai_add_ship_goal_sexp(goal_node, ai_goal_type::EVENT_SHIP, &(Ai_info[ship_entry->shipp()->ai_index]));
 		return;
 	}
 
@@ -13186,7 +13186,7 @@ void sexp_add_goal(int n)
 		if (wingp->flags[Ship::Wing_Flags::Gone])
 			return;										// wing not around anymore???? then forget it!
 
-		ai_add_wing_goal_sexp(goal_node, AIG_TYPE_EVENT_WING, wingp);
+		ai_add_wing_goal_sexp(goal_node, ai_goal_type::EVENT_WING, wingp);
 	}
 }
 
