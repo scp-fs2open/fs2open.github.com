@@ -53,11 +53,11 @@ struct ship_registry_entry;
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
 // Goober5000 - note that the new disable and disarm goals (AI_GOAL_DISABLE_SHIP_TACTICAL and
 // AI_GOAL_DISARM_SHIP_TACTICAL) do not purge ANY goals, not even the ones in the one ship
-inline bool purge_goals_all_ships(ai_goal_mode ai_mode)
+[[nodiscard]] bool purge_goals_all_ships(ai_goal_mode ai_mode)
 {
 	return ai_mode == AI_GOAL_IGNORE || ai_mode == AI_GOAL_DISABLE_SHIP || ai_mode == AI_GOAL_DISARM_SHIP;
 }
-inline bool purge_goals_one_ship(ai_goal_mode ai_mode)
+[[nodiscard]] bool purge_goals_one_ship(ai_goal_mode ai_mode)
 {
 	return ai_mode == AI_GOAL_IGNORE_NEW;
 }
@@ -197,12 +197,10 @@ void ai_maybe_add_form_goal(wing* wingp)
 		return;
 	}
 
-	int j;
-
 	// iterate through the ship_index list of this wing and check for orders.  We will do
 	// this for all ships in the wing instead of on a wing only basis in case some ships
 	// in the wing actually have different orders than others
-	for (j = 0; j < wingp->current_count; j++) {
+	for (int j = 0; j < wingp->current_count; j++) {
 		ai_info* aip;
 
 		Assert(wingp->ship_index[j] != -1);						// get Allender
@@ -954,11 +952,9 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		// for achievability.
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 
-
 		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
-		aigp->ai_mode = AI_GOAL_WAYPOINTS;
-		if ( op == OP_AI_WAYPOINTS_ONCE )
-			aigp->ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+		aigp->ai_mode = (op == OP_AI_WAYPOINTS_ONCE) ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
+
 		if (CDDDDR(node) < 0)
 			aigp->int_data = 0;	// handle optional node separately because we don't subtract 1 here
 		else
@@ -1058,13 +1054,9 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		break;
 
 	case OP_AI_PLAY_DEAD:
-		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
-		aigp->ai_mode = AI_GOAL_PLAY_DEAD;
-		break;
-
 	case OP_AI_PLAY_DEAD_PERSISTENT:
 		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
-		aigp->ai_mode = AI_GOAL_PLAY_DEAD_PERSISTENT;
+		aigp->ai_mode = (op == OP_AI_PLAY_DEAD) ? AI_GOAL_PLAY_DEAD : AI_GOAL_PLAY_DEAD_PERSISTENT;
 		break;
 
 	case OP_AI_KEEP_SAFE_DISTANCE:
@@ -1315,12 +1307,9 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 	/* We now need to determine what the mode and submode values are*/
 	switch( op )
 	{
-	case OP_AI_WAYPOINTS_ONCE:
-		goalmode = AI_GOAL_WAYPOINTS_ONCE;
-		priority = eval_priority_et_seq(CDDR(node));
-		break;
 	case OP_AI_WAYPOINTS:
-		goalmode = AI_GOAL_WAYPOINTS;
+	case OP_AI_WAYPOINTS_ONCE:
+		goalmode = (op == OP_AI_WAYPOINTS_ONCE) ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
 		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DESTROY_SUBSYS:
@@ -2595,16 +2584,14 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_PLAY_DEAD:
-		// if a ship is playing dead, MWA says that it shouldn't try to do anything else.
-		// clearing out goals is okay here since we are now what mode to set this AI object to.
-		ai_clear_ship_goals( aip );
-		aip->mode = AIM_PLAY_DEAD;
-		aip->submode = -1;
-		aip->submode_start_time = Missiontime;
-		break;
-
 	case AI_GOAL_PLAY_DEAD_PERSISTENT:
-		// same as above, but we don't clear out ship goals
+		// we don't clear out ship goals for the "persistent" goal variant
+		if (current_goal->ai_mode == AI_GOAL_PLAY_DEAD)
+		{
+			// if a ship is playing dead, MWA says that it shouldn't try to do anything else.
+			// clearing out goals is okay here since we are now what mode to set this AI object to.
+			ai_clear_ship_goals(aip);
+		}
 		aip->mode = AIM_PLAY_DEAD;
 		aip->submode = -1;
 		aip->submode_start_time = Missiontime;
