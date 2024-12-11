@@ -23,9 +23,16 @@ struct modular_curves_submember_input {
   private:
 	template<typename input_type, auto grabber>
 	static inline auto grab_part(const input_type& input) {
+		//Pointer to member function
+		if constexpr (std::is_member_function_pointer_v<decltype(grabber)>) {
+			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
+				return ((*input).*grabber)();
+			else
+				return (input.*grabber)();
+		}
 		//Pointer to member type, i.e. for submember access
-		if constexpr (std::is_member_object_pointer_v<decltype(grabber)>) {
-			if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>)
+		else if constexpr (std::is_member_object_pointer_v<decltype(grabber)>) {
+			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(input->*grabber);
 			else
 				return std::cref(input.*grabber);
@@ -41,7 +48,7 @@ struct modular_curves_submember_input {
 		}
 		//Integer, used to index into tuples. Should be rarely used by actual users, but is required to do child-types.
 		else if constexpr (std::is_integral_v<decltype(grabber)>) {
-			if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>)
+			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(std::get<grabber>(*input));
 			else
 				return std::cref(std::get<grabber>(input));
@@ -78,8 +85,11 @@ struct modular_curves_submember_input {
 				    return return_type(std::nullopt);
 			}
 			//Otherwise just send it on to the next grabber
-			else {
+			else if constexpr (is_instance_of_v<std::decay_t<decltype(current_access)>, std::reference_wrapper>) {
 				return grab_internal<std::decay_t<decltype(current_access.get())>, other_grabbers...>(current_access.get());
+			}
+			else {
+				return grab_internal<std::decay_t<decltype(current_access)>, other_grabbers...>(current_access);
 			}
 		}
 	}
@@ -117,8 +127,11 @@ struct modular_curves_submember_input {
 			else
 				return 1.0f;
 		}
-		else {
+		else if constexpr (is_instance_of_v<std::decay_t<decltype(result)>, std::reference_wrapper>) {
 			return number_to_float(result.get());
+		}
+		else {
+			return number_to_float(result);
 		}
 	}
 };
@@ -137,7 +150,7 @@ struct modular_curves_functional_input {
   public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>){
 			return grabber_fnc(*grab_from_tuple<tuple_idx, input_type>(input));
 		}
 		else {
@@ -192,7 +205,7 @@ private:
 public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>){
 			return *grab_from_tuple<tuple_idx, input_type>(input);
 		}
 		else {
