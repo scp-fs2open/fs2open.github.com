@@ -1010,7 +1010,7 @@ typedef struct ship_type_info {
 
 	//AI
 	SCP_set<ai_goal_mode> ai_valid_goals;
-	std::set<size_t> ai_player_orders;
+	SCP_set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
@@ -1825,8 +1825,8 @@ extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 
 extern int ship_get_type(char* output, ship_info* sip);
-extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
-extern const std::set<size_t> ship_set_default_orders_against();
+extern const SCP_set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
+extern SCP_set<size_t> ship_get_default_orders_against();
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);

@@ -358,7 +358,7 @@ void CMissionGoalsDlg::OnButtonOk()
 			SCP_string buf = "<" + goal.name + ">";
 
 			// force it to not be too long
-			if (SCP_truncate(buf, NAME_LENGTH))
+			if (SCP_truncate(buf, NAME_LENGTH - 1))
 				buf.back() = '>';
 
 			names.emplace_back(goal.name, buf);
