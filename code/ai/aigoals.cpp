@@ -1151,7 +1151,11 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		}
 	}
 
-	if ( aigp->priority > MAX_GOAL_PRIORITY || priority_is_nan || priority_is_nan_forever ) {
+	if ( priority_is_nan || priority_is_nan_forever ) {
+		Warning(LOCATION, "add-goal tried to add %s with a NaN priority; aborting...", Sexp_nodes[CAR(sexp)].text);
+		ai_goal_reset(aigp);
+		return;
+	} else if ( aigp->priority > MAX_GOAL_PRIORITY ) {
 		nprintf (("AI", "bashing add-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
@@ -1255,7 +1259,12 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 		int _priority = (n >= 0) ? eval_num(n, _priority_is_nan, _priority_is_nan_forever) : priority_if_no_n;
 		n = CDR(sexp);	// we want the first node after the goal sub-tree
 
-		if (_priority > MAX_GOAL_PRIORITY || _priority_is_nan || _priority_is_nan_forever)
+		if (_priority_is_nan || _priority_is_nan_forever)
+		{
+			Warning(LOCATION, "remove-goal tried to remove %s with a NaN priority; the priority will not be used for goal comparison", Sexp_nodes[CAR(sexp)].text);
+			_priority = -1;
+		}
+		else if (_priority > MAX_GOAL_PRIORITY)
 		{
 			nprintf(("AI", "bashing remove-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, _priority, MAX_GOAL_PRIORITY));
 			_priority = MAX_GOAL_PRIORITY;
