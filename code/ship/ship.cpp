@@ -2591,7 +2591,7 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	}
 
 	if (velocity_curve) {
-		effect.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, *radius_curve);
+		effect.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, *radius_curve);
 	}
 
 	return particle::ParticleManager::get()->addEffect(std::move(effect));
@@ -4890,7 +4890,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				return curve_id;
 			}();
 
-			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
 			particle.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
 
 			tpart.particle_handle = particle::ParticleManager::get()->addEffect(std::move(particle));

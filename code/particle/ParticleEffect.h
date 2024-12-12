@@ -56,9 +56,13 @@ public:
 
 	enum class ParticleCurvesOutput : uint8_t {
 		PARTICLE_NUM_MULT,
+		PARTICLE_FREQ_MULT,
 		RADIUS_MULT,
 		LIFETIME_MULT,
-		VOLUME_VELOCITY_SCALING,
+		VOLUME_VELOCITY_MULT,
+		INHERIT_VELOCITY_MULT,
+		POSITION_INHERIT_VELOCITY_MULT,
+		ORIENTATION_INHERIT_VELOCITY_MULT,
 
 		NUM_VALUES
 	};
@@ -146,7 +150,7 @@ public:
 							int bitmap
 	);
 
-	void processSource(float interp, const ParticleSource& host, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+	void processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
 
 	void pageIn();
 
@@ -161,12 +165,24 @@ public:
 	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
 		std::array {
 			std::pair {"Particle Number Mult", ParticleCurvesOutput::PARTICLE_NUM_MULT},
+			std::pair {"Particle Frequency Mult", ParticleCurvesOutput::PARTICLE_FREQ_MULT},
 			std::pair {"Radius Mult", ParticleCurvesOutput::RADIUS_MULT},
 			std::pair {"Lifetime Mult", ParticleCurvesOutput::LIFETIME_MULT},
-			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_SCALING}
+			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_MULT},
+			std::pair {"Velocity Inherit Mult", ParticleCurvesOutput::INHERIT_VELOCITY_MULT},
+			std::pair {"Velocity Position Inherit Mult", ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT},
+			std::pair {"Velocity Orientation Inherit Mult", ParticleCurvesOutput::ORIENTATION_INHERIT_VELOCITY_MULT}
 		},
 		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
-		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}});
+		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}},
+		//TODO Long term, this should have access to a lot of interesting host properties, especially also those that change during gameplay like current hitpoints
+		std::pair {"Effects Running", modular_curves_math_input<
+		    modular_curves_submember_input<&ParticleSource::m_effect_is_running, &decltype(ParticleSource::m_effect_is_running)::count>,
+			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
+			ModularCurvesMathOperators::division>{}})
+	.derive_modular_curves_input_only_subset<size_t>(
+		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}}
+		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
 };

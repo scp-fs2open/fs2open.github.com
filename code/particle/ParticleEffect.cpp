@@ -134,7 +134,7 @@ matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::
 	}
 }
 
-void ParticleEffect::processSource(float interp, const ParticleSource& source, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+void ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
 	const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
 
 	if (m_affectedByDetail){
@@ -153,10 +153,14 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, c
 
 	const auto& orientation = getNewDirection(hostOrientation, source.m_normal);
 
-	particle_percent *= m_particleChance * m_modular_curves.get_output(ParticleCurvesOutput::PARTICLE_NUM_MULT, source);
-	float radiusMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::RADIUS_MULT, source);
-	float lifetimeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::LIFETIME_MULT, source);
-	float velocityVolumeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::VOLUME_VELOCITY_SCALING, source);
+	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber);
+	particle_percent *= m_particleChance * m_modular_curves.get_output(ParticleCurvesOutput::PARTICLE_NUM_MULT, modularCurvesInput);
+	float radiusMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::RADIUS_MULT, modularCurvesInput);
+	float lifetimeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::LIFETIME_MULT, modularCurvesInput);
+	float velocityVolumeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modularCurvesInput);
+	float inheritVelocityMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::INHERIT_VELOCITY_MULT, modularCurvesInput);
+	float positionInheritVelocityMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT, modularCurvesInput);
+	float orientationInheritVelocityMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::ORIENTATION_INHERIT_VELOCITY_MULT, modularCurvesInput);
 
 	float num = m_particleNum.next() * particle_percent;
 	unsigned int num_spawn;
@@ -186,28 +190,28 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, c
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_quick(&info.vel);
 
-		info.vel *= m_vel_inherit.next();
+		info.vel *= m_vel_inherit.next() * inheritVelocityMultiplier;
 
 		vec3d velocity = ZERO_VECTOR;
 		vec3d localPos = ZERO_VECTOR;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(orientation, source);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			velocity += m_velocityVolume->sampleRandomPoint(orientation, source) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+			velocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {
-			velocity += orientation.vec.fvec * m_vel_inherit_from_orientation->next();
+			velocity += orientation.vec.fvec * (m_vel_inherit_from_orientation->next() * orientationInheritVelocityMultiplier);
 		}
 
 		if (m_vel_inherit_from_position.has_value()) {
 			vec3d velFromPos = localPos;
 			if (m_vel_inherit_from_position_absolute)
 				vm_vec_normalize_safe(&velFromPos);
-			velocity += velFromPos * m_vel_inherit_from_position->next();
+			velocity += velFromPos * (m_vel_inherit_from_position->next() * positionInheritVelocityMultiplier);
 		}
 
 		if (m_velocity_directional_scaling != VelocityScaling::NONE) {

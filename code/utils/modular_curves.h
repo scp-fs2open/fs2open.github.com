@@ -159,6 +159,15 @@ struct modular_curves_functional_input {
 	}
 };
 
+template<auto grabber_fnc>
+struct modular_curves_functional_full_input {
+public:
+	template<int /*tuple_idx*/, typename input_type>
+	static inline float grab(const input_type& input) {
+		return grabber_fnc(input);
+	}
+};
+
 enum class ModularCurvesMathOperators {
 	addition,
 	subtraction,

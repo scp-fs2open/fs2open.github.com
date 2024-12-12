@@ -77,26 +77,24 @@ class ParticleSource {
 
 	ParticleEffectHandle m_effect; //!< The effect that is assigned to this source
 
-	size_t m_processingCount; //!< The number of times this effect has been processed
-
 	static constexpr size_t max_composite_size = 64;
 
 	std::bitset<max_composite_size> m_effect_is_running;
 
-	void initializeThrusterOffset(weapon* wp, weapon_info* wip);
-
 	friend class ParticleEffect;
+
+	static float getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&>& source);
  public:
 	ParticleSource();
 
-	inline ParticleEffectHandle getEffect() { return m_effect; }
+	inline ParticleEffectHandle getEffectHandle() const { return m_effect; }
+
+	const SCP_vector<ParticleEffect>& getEffect() const;
 
 	inline void setEffect(ParticleEffectHandle eff) {
 		Assert(eff.isValid());
 		m_effect = eff;
 	}
-
-	inline size_t getProcessingCount() const { return m_processingCount; }
 
 	/**
 	 * @brief Finishes the creation of a particle source
