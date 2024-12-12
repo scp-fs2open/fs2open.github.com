@@ -10,26 +10,31 @@ namespace particle {
 	//
 
 	struct ParticleParse {
-		static void parseParticleProperties(ParticleEffect &effect) {
-			bool nocreate = false;
-			if (internal::required_string_if_new("+Filename:", nocreate)) {
+		static void parseBitmaps(ParticleEffect &effect) {
+			if (internal::required_string_if_new("+Filename:", false)) {
 				effect.m_bitmap_list = internal::parseAnimationList(true);
 				effect.m_bitmap_range = ::util::UniformRange<size_t>(0, effect.m_bitmap_list.size() - 1);
 			}
+		}
 
+		static void parseRadius(ParticleEffect &effect) {
 			if (optional_string("+Size:")) {
 				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
 			} else if (optional_string("+Parent Size Factor:")) {
 				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
 				effect.m_parentScale = true;
-			} else if (!nocreate) {
+			} else {
 				error_display(1, "Missing +Size or +Parent Size Factor");
 			}
+		}
 
+		static void parseLength(ParticleEffect &effect) {
 			if (optional_string("+Length:")) {
 				effect.m_length = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
+		}
 
+		static void parseLifetime(ParticleEffect &effect) {
 			if (optional_string("+Lifetime:")) {
 				if (optional_string("<none>")) {
 					// Use lifetime of effect
@@ -43,7 +48,9 @@ namespace particle {
 				effect.m_parentLifetime = true;
 				effect.m_lifetime = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
+		}
 
+		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
 				SCP_string buf;
 				stuff_string(buf, F_NAME);
@@ -53,7 +60,9 @@ namespace particle {
 					error_display(0, "Could not find curve '%s'", buf.c_str());
 				}
 			}
+		}
 
+		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
 				SCP_string buf;
 				stuff_string(buf, F_NAME);
@@ -63,7 +72,9 @@ namespace particle {
 					error_display(0, "Could not find curve '%s'", buf.c_str());
 				}
 			}
+		}
 
+		static void parseRotationType(ParticleEffect &effect) {
 			if (optional_string("+Rotation:")) {
 				char buf[NAME_LENGTH];
 				stuff_string(buf, F_NAME, NAME_LENGTH);
@@ -78,17 +89,21 @@ namespace particle {
 					error_display(0, "Rotation Type %s not supported", buf);
 				}
 			}
+		}
 
+		static void parseOffset(ParticleEffect& effect) {
 			if (optional_string("+Offset:")) {
 				stuff_vec3d(&effect.m_manual_offset.emplace());
 			}
+		}
 
+		static void parseParentLocal(ParticleEffect& effect) {
 			if (optional_string("+Remain local to parent:")) {
 				stuff_boolean(&effect.m_parent_local);
 			}
 		}
 
-		static void parseNumber(ParticleEffect &effect) {
+		static void parseParticleNumber(ParticleEffect &effect) {
 			if (internal::required_string_if_new("+Number:", false)) {
 				effect.m_particleNum = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
@@ -135,6 +150,10 @@ namespace particle {
 			if (optional_string("+Parent Velocity Factor:")) {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
+			else if (optional_string("+Parent Velocity Absolute Factor:")) {
+				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
+				effect.m_vel_inherit_absolute = true;
+			}
 		}
 
 		static void parseVelocityVolume(ParticleEffect &effect) {
@@ -149,9 +168,42 @@ namespace particle {
 			}
 		}
 
+		static void parseVelocityDirectionScale(ParticleEffect &effect) {
+			if (optional_string("+Velocity Direction Scaling:")) {
+				SCP_string dirStr;
+				stuff_string(dirStr, F_NAME);
+
+				if (!stricmp(dirStr.c_str(), "None") || !stricmp(dirStr.c_str(), "Normal")) {
+					effect.m_velocity_directional_scaling = ParticleEffect::VelocityScaling::NONE;
+				} else if (!stricmp(dirStr.c_str(), "Dot")) {
+					effect.m_velocity_directional_scaling = ParticleEffect::VelocityScaling::DOT;
+				} else if (!stricmp(dirStr.c_str(), "Inverse Dot")) {
+					effect.m_velocity_directional_scaling = ParticleEffect::VelocityScaling::DOT_INVERSE;
+				} else {
+					error_display(0, "Unknown velocity direction scaling name '%s'!", dirStr.c_str());
+				}
+			}
+		}
+
 		static void parsePositionVolume(ParticleEffect &effect) {
 			if (optional_string("+Spawn Position Volume:")) {
 				effect.m_spawnVolume = parseVolume();
+			}
+		}
+
+		static void parseVelocityInheritFromPosition(ParticleEffect &effect) {
+			if (optional_string("+Spawn Position Velocity Factor:")) {
+				effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
+			}
+			else if (optional_string("+Spawn Position Velocity Absolute Factor:")) {
+				effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
+				effect.m_vel_inherit_from_position_absolute = true;
+			}
+		}
+
+		static void parseVelocityInheritFromOrientation(ParticleEffect &effect) {
+			if (optional_string("+Spawn Orientation Velocity Factor:")) {
+				effect.m_vel_inherit_from_orientation.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 			}
 		}
 
@@ -190,6 +242,9 @@ namespace particle {
 			}
 		}
 
+		static void parseModularCurves(ParticleEffect& effect) {
+			effect.m_modular_curves.parse("$Particle Curve:");
+		}
 
 		//
 		// ------------ MODERN TABLES CODE ------------
@@ -203,6 +258,19 @@ namespace particle {
 		//
 		// ------------ LEGACY TABLES CODE ------------
 		//
+
+		static void parseParticleProperties(ParticleEffect &effect) {
+			//Emulates parsing in the legacy order, analogous to the old particle properties
+			parseBitmaps(effect);
+			parseRadius(effect);
+			parseLength(effect);
+			parseLifetime(effect);
+			parseSizeLifetimeCurve(effect);
+			parseVelocityLifetimeCurve(effect);
+			parseRotationType(effect);
+			parseOffset(effect);
+			parseParentLocal(effect);
+		}
 
 		enum class ParticleEffectLegacyType: int8_t {
 			Invalid = -1,
@@ -330,7 +398,7 @@ namespace particle {
 					}
 
 					parseVelocityVolumeScale(effect);
-					parseNumber(effect);
+					parseParticleNumber(effect);
 					parseLegacyChance(effect);
 					parseDirection(effect);
 
@@ -361,7 +429,7 @@ namespace particle {
 					effect.m_velocityVolume = make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
 
 					parseVelocityVolumeScale(effect);
-					parseNumber(effect);
+					parseParticleNumber(effect);
 					parseLegacyChance(effect);
 					parseDirection(effect);
 
@@ -395,7 +463,7 @@ namespace particle {
 						effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 					}
 
-					parseNumber(effect);
+					parseParticleNumber(effect);
 					parseLegacyChance(effect);
 
 					float radius = 10.f;
