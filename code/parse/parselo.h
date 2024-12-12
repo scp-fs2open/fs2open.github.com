@@ -164,6 +164,25 @@ extern void stuff_string_list(SCP_vector<SCP_string>& slp);
 extern size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings);
 extern void parse_string_flag_list(int &dest, flag_def_list defs[], size_t defs_size);
 
+// If this data is going to be parsed multiple times (like for mission load), then the dest variable
+// needs to be cleared in between parses, otherwise we keep bad data.
+// For tbm files, it must not be reset.
+template <class T>
+void parse_string_flag_list(SCP_set<T> &dest, flag_def_list_templated<T> defs[], size_t defs_size)
+{
+	SCP_vector<SCP_string> slp;
+	stuff_string_list(slp);
+
+	for (auto &str : slp)
+	{
+		for (size_t j = 0; j < defs_size; j++)
+		{
+			if (!stricmp(str.c_str(), defs[j].name))
+				dest.insert(defs[j].def);
+		}
+	}
+}
+
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
 // If the "is_special" flag is set, or a string was not found in the def list, it will be added to the unparsed_or_special_strings Vector
