@@ -18,11 +18,10 @@ namespace particle {
 		MODULAR_CURVE_SET(m_modular_curves, modular_curve_definition);
 		modular_curves_entry_instance m_modular_curve_instance;
 	public:
+		explicit ConeVolume();
 		explicit ConeVolume(::util::ParsedRandomFloatRange deviation, float length);
 
 		vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) override;
-		void parse() override {
-			//TODO
-		};
+		void parse() override;
 	};
 }

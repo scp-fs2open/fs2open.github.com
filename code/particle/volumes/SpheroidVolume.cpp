@@ -3,6 +3,7 @@
 #include "math/vecmat.h"
 
 namespace particle {
+	SpheroidVolume::SpheroidVolume() : m_bias(1.f), m_stretch(1.f), m_radius(1.f), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 	SpheroidVolume::SpheroidVolume(float bias, float stretch, float radius) : m_bias(bias), m_stretch(stretch), m_radius(radius), m_modular_curve_instance(m_modular_curves.create_instance()) { };
 
 	vec3d SpheroidVolume::sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) {
@@ -31,5 +32,18 @@ namespace particle {
 		}
 
 		return pos;
+	}
+
+	void SpheroidVolume::parse() {
+		if (optional_string("+Radius:")) {
+			stuff_float(&m_radius);
+		}
+		if (optional_string("+Bias:")) {
+			stuff_float(&m_bias);
+		}
+		if (optional_string("+Stretch:")) {
+			stuff_float(&m_stretch);
+		}
+		m_modular_curves.parse("$Volume Curve:");
 	}
 }

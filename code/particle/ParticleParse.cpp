@@ -113,6 +113,24 @@ namespace particle {
 			}
 		}
 
+		static std::shared_ptr<ParticleVolume> parseVolume() {
+			int type = required_string_one_of(2, "Spheroid", "Cone"); //... and future volumes
+			std::shared_ptr<ParticleVolume> volume;
+
+			switch (type) {
+				case 0:
+					volume = std::shared_ptr<SpheroidVolume>();
+					break;
+				case 1:
+					volume = std::shared_ptr<ConeVolume>();
+					break;
+				default:
+					UNREACHABLE("Invalid volume type specified!");
+			}
+			volume->parse();
+			return volume;
+		}
+
 		static void parseVelocityInherit(ParticleEffect &effect) {
 			if (optional_string("+Parent Velocity Factor:")) {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
@@ -120,12 +138,20 @@ namespace particle {
 		}
 
 		static void parseVelocityVolume(ParticleEffect &effect) {
-			//TODO
+			if (optional_string("+Velocity Volume:")) {
+				effect.m_velocityVolume = parseVolume();
+			}
 		}
 
 		static void parseVelocityVolumeScale(ParticleEffect &effect) {
 			if (internal::required_string_if_new("+Velocity:", false)) {
 				effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+		}
+
+		static void parsePositionVolume(ParticleEffect &effect) {
+			if (optional_string("+Spawn Position Volume:")) {
+				effect.m_spawnVolume = parseVolume();
 			}
 		}
 
