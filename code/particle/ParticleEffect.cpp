@@ -156,6 +156,7 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber);
 	particle_percent *= m_particleChance * m_modular_curves.get_output(ParticleCurvesOutput::PARTICLE_NUM_MULT, modularCurvesInput);
 	float radiusMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::RADIUS_MULT, modularCurvesInput);
+	float lengthMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::LENGTH_MULT, modularCurvesInput);
 	float lifetimeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::LIFETIME_MULT, modularCurvesInput);
 	float velocityVolumeMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modularCurvesInput);
 	float inheritVelocityMultiplier = m_modular_curves.get_output(ParticleCurvesOutput::INHERIT_VELOCITY_MULT, modularCurvesInput);
@@ -236,7 +237,7 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 		else
 			info.rad = m_radius.next() * radiusMultiplier;
 
-		info.length = m_length.next();
+		info.length = m_length.next() * lengthMultiplier;
 		if (m_hasLifetime) {
 			if (m_parentLifetime)
 				// if we were spawned by a particle, parentLifetime is the parent's remaining liftime and m_lifetime is a factor of that
