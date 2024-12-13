@@ -5301,7 +5301,7 @@ void parse_event(mission *pm)
 	}
 
 	if (optional_string("+Event Flags:")) {
-		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
+		parse_string_flag_list(event->flags, Mission_event_flags, Num_mission_event_flags);
 	}
 
 	if( optional_string("+Event Log Flags:") ) {

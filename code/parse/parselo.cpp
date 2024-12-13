@@ -2975,10 +2975,8 @@ size_t stuff_token_list(T *listp, size_t list_max, F stuff_one_token, const char
 // If this data is going to be parsed multiple times (like for mission load), then the dest variable 
 // needs to be set to zero in between parses, otherwise we keep bad data.
 // For tbm files, it must not be reset.
-void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size)
+void parse_string_flag_list(int &dest, flag_def_list defs[], size_t defs_size)
 {
-	Assert(dest!=NULL);	//wtf?
-
 	SCP_vector<SCP_string> slp;
 	stuff_string_list(slp);
 
@@ -2986,9 +2984,8 @@ void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size)
 	{
 		for (size_t j = 0; j < defs_size; j++)
 		{
-			if (!stricmp(str.c_str(), defs[j].name)) {
-				(*dest) |= defs[j].def;
-			}
+			if (!stricmp(str.c_str(), defs[j].name))
+				dest |= defs[j].def;
 		}
 	}
 }

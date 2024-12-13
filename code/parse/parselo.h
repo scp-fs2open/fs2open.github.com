@@ -162,7 +162,7 @@ extern int stuff_int_optional(int *i);
 extern int stuff_float_optional(float *f);
 extern void stuff_string_list(SCP_vector<SCP_string>& slp);
 extern size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings);
-extern void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size);
+extern void parse_string_flag_list(int &dest, flag_def_list defs[], size_t defs_size);
 
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
