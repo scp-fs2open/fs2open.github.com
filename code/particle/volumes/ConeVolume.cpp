@@ -1,8 +1,8 @@
 #include "ConeVolume.h"
 
 namespace particle {
-	ConeVolume::ConeVolume() : m_deviation(::util::UniformFloatRange(0.f)), m_length(1.f), m_modular_curve_instance(m_modular_curves.create_instance()) { }
-	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, float length) : m_deviation(std::move(deviation)), m_length(length), m_modular_curve_instance(m_modular_curves.create_instance()) { }
+	ConeVolume::ConeVolume() : m_deviation(::util::UniformFloatRange(0.f)), m_length(::util::UniformFloatRange(1.f)), m_modular_curve_instance(m_modular_curves.create_instance()) { }
+	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, float length) : m_deviation(std::move(deviation)), m_length(::util::UniformFloatRange(length)), m_modular_curve_instance(m_modular_curves.create_instance()) { }
 
 	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) {
 		//It is surely possible to do this more efficiently.
@@ -21,7 +21,7 @@ namespace particle {
 		matrix rotatedVel;
 		vm_matrix_x_matrix(&rotatedVel, &orientation, &m);
 
-		return rotatedVel.vec.fvec * (m_length * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, source, &m_modular_curve_instance));
+		return rotatedVel.vec.fvec * (m_length.next() * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, source, &m_modular_curve_instance));
 	}
 
 	void ConeVolume::parse() {
@@ -43,7 +43,7 @@ namespace particle {
 		}
 
 		if (optional_string("+Length:")) {
-			stuff_float(&m_length);
+			m_length = ::util::ParsedRandomFloatRange::parseRandomRange(0);
 		}
 
 		m_modular_curves.parse("$Volume Curve:");

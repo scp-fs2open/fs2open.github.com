@@ -7,7 +7,7 @@
 namespace particle {
 	class ConeVolume : public ParticleVolume {
 		::util::ParsedRandomFloatRange m_deviation;
-		float m_length;
+		::util::ParsedRandomFloatRange m_length;
 
 		enum class VolumeModularCurveOutput : uint8_t {DEVIATION, LENGTH, NUM_VALUES};
 		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_output_only_subset<VolumeModularCurveOutput>(
