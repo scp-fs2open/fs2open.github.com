@@ -7,25 +7,23 @@
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QSpinBox>
 
-#include "ShipEditorDialog.h"
-
 namespace fso {
 namespace fred {
 namespace dialogs {
 namespace Ui {
 class ShipGoalsDialog;
 }
-class ShipEditorDialog;
 class ShipGoalsDialog : public QDialog {
 	Q_OBJECT
   public:
-	explicit ShipGoalsDialog(QWidget* parent, EditorViewport* viewport);
+	explicit ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool editMultiple, int shipID, int wingID);
 	~ShipGoalsDialog() override;
 
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void showEvent(QShowEvent* e) override;
+
+	void rejectHandler();
 
   private:
 	std::unique_ptr<Ui::ShipGoalsDialog> ui;
@@ -39,8 +37,6 @@ class ShipGoalsDialog : public QDialog {
 	QSpinBox* priority[ED_MAX_GOALS];
 
 	void updateUI();
-	bool WingMode;
-	ShipEditorDialog* parentDialog = nullptr;
 };
 } // namespace dialogs
 } // namespace fred

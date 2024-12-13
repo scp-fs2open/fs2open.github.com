@@ -331,6 +331,8 @@ void AsteroidEditorDialog::updateUI()
 	ui->lineEdit_ibox_maxZ->setText(_model->AsteroidEditorDialogModel::getBoxText(AsteroidEditorDialogModel::_I_MAX_Z));
 }
 
+
+
 void AsteroidEditorDialog::done(int r)
 {
 	if(QDialog::Accepted == r)  // ok was pressed

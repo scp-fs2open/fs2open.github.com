@@ -207,17 +207,6 @@ void ShipCustomWarpDialogModel::initializeData()
 	}
 }
 
-void ShipCustomWarpDialogModel::set_modified()
-{
-	if (!_modified) {
-		_modified = true;
-	}
-}
-
-bool ShipCustomWarpDialogModel::query_modified() const
-{
-	return _modified;
-}
 void ShipCustomWarpDialogModel::setType(const int index)
 {
 	modify(_m_warp_type, index);

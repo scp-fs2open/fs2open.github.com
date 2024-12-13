@@ -19,10 +19,7 @@ bool set_cue_to_false(int* cue);
 class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
   private:
-	template <typename T>
-	void modify(T& a, const T& b);
 
-	bool _modified = false;
 
 	int m_ship;
 	int cur_subsys = -1;
@@ -48,7 +45,6 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	dockpoint_information* dockpoint_array;
 
-	void set_modified();
 
 	void update_docking_info();
 	void undock(object*, object*);
@@ -72,7 +68,6 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 
 	bool apply() override;
 	void reject() override;
-	bool query_modified();
 
 	void setVelocity(const int);
 	int getVelocity() const;
@@ -144,15 +139,6 @@ static void handle_inconsistent_flag(flagset<T>& flags, T flag, int value)
 		flags.set(flag);
 	} else if (value == Qt::Unchecked) {
 		flags.remove(flag);
-	}
-}
-template <typename T>
-inline void ShipInitialStatusDialogModel::modify(T& a, const T& b)
-{
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
 	}
 }
 } // namespace dialogs

@@ -421,21 +421,5 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>cancelPushButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipInitialStatusDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>389</x>
-     <y>563</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>375</x>
-     <y>515</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
 </ui>

@@ -9,12 +9,10 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
-ShipTBLViewer::ShipTBLViewer(QWidget* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::ShipTBLViewer()), _viewport(viewport)
+ShipTBLViewer::ShipTBLViewer(QWidget* parent, EditorViewport* viewport, int shipClass)
+	: QDialog(parent), ui(new Ui::ShipTBLViewer()), _model(new ShipTBLViewerModel(this, viewport, shipClass)),
+	  _viewport(viewport)
 {
-	parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
-	Assert(parentDialog);
-	_model = std::unique_ptr<ShipTBLViewerModel>(new ShipTBLViewerModel(this, viewport, parentDialog->getShipClass()));
 
 	ui->setupUi(this);
 
@@ -30,11 +28,6 @@ ShipTBLViewer::~ShipTBLViewer() = default;
 void ShipTBLViewer::closeEvent(QCloseEvent* event)
 {
 	QDialog::closeEvent(event);
-}
-void ShipTBLViewer::showEvent(QShowEvent* e) {
-	_model->initializeData(parentDialog->getShipClass());
-
-	QDialog::showEvent(e);
 }
 void ShipTBLViewer::updateUI()
 {

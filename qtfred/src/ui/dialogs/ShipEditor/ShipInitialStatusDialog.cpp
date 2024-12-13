@@ -9,24 +9,21 @@
 #include <globalincs/linklist.h>
 #include <mission/object.h>
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 
 namespace fso {
 	namespace fred {
 		namespace dialogs {
 
-			ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport)
-				: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()), _viewport(viewport)
+			ShipInitialStatusDialog::ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport, bool editMultiple)
+			: QDialog(parent), ui(new Ui::ShipInitialStatusDialog()),
+			  _model(new ShipInitialStatusDialogModel(this, viewport, editMultiple)), _viewport(viewport)
 			{
 				ui->setupUi(this);
-				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
-				Assert(parentDialog);
-				_model = std::unique_ptr<ShipInitialStatusDialogModel>(new ShipInitialStatusDialogModel(this,
-					viewport, parentDialog->getIfMultipleShips()));
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipInitialStatusDialogModel::apply);
-				connect(this, &QDialog::rejected, _model.get(), &ShipInitialStatusDialogModel::reject);
+				connect(ui->cancelPushButton, &QPushButton::clicked, this, &ShipInitialStatusDialog::rejectHandler);
 				connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipInitialStatusDialog::updateUI);
 
 				// Velocity
@@ -84,30 +81,15 @@ namespace fso {
 
 			ShipInitialStatusDialog::~ShipInitialStatusDialog() = default;
 
-			void ShipInitialStatusDialog::closeEvent(QCloseEvent* event)
+			void ShipInitialStatusDialog::closeEvent(QCloseEvent* e)
 			{
-				if (_model->query_modified()) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-						"Changes detected",
-						"Do you want to keep your changes?",
-						{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-					if (button == DialogButton::Cancel) {
-						event->ignore();
-						return;
-					}
-
-					if (button == DialogButton::Yes) {
-						accept();
-						return;
-					}
-				}
-
-				QDialog::closeEvent(event);
+				if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+					e->ignore();
+				};
 			}
-			void ShipInitialStatusDialog::showEvent(QShowEvent* event) {
-				_model->initializeData(parentDialog->getIfMultipleShips());
-				QDialog::showEvent(event);
+			void ShipInitialStatusDialog::rejectHandler()
+			{
+				this->close();
 			}
 			void ShipInitialStatusDialog::updateUI()
 			{

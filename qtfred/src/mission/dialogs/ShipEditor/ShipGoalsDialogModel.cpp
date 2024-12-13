@@ -618,16 +618,6 @@ namespace fso {
 					m_object[i] = data[i];
 				}
 			}
-			void ShipGoalsDialogModel::set_modified()
-			{
-				if (!_modified) {
-					_modified = true;
-				}
-			}
-			 bool ShipGoalsDialogModel::query_modified()
-			{
-				return _modified;
-			}
 			void ShipGoalsDialogModel::setShip(const int ship)
 			{
 				self_ship = ship;
