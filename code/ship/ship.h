@@ -1076,19 +1076,14 @@ class rcs_thruster_info {
 
 	vec3d pos, norm;
 
-    void reset() {
-        length = 0;
+    rcs_thruster_info() : tex_id(-1), tex_nframes(0), tex_fps(0), length(0), radius (0.0f) {
         norm.xyz.x = norm.xyz.y = norm.xyz.z = 0.0f; // I wanted to do norm = ZERO_VECTOR here, but apparently that breaks the MSVC 2015 compiler....
         pos.xyz.x = pos.xyz.y = pos.xyz.z = 0.0f;
-        radius = 0.0f;
-        tex_fps = 0;
-        tex_nframes = 0;
         use_flags.reset();
 
         start_snd = gamesnd_id();
         loop_snd = gamesnd_id();
         stop_snd = gamesnd_id();
-        tex_id = -1;
     }
 };
 
