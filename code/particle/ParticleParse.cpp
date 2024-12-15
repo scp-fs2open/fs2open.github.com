@@ -17,14 +17,14 @@ namespace particle {
 			}
 		}
 
-		static void parseRadius(ParticleEffect &effect) {
-			if (optional_string("+Size:")) {
+		template<bool modern = true> static void parseRadius(ParticleEffect &effect) {
+			if (optional_string(modern ? "+Radius:" : "+Size:")) {
 				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
-			} else if (optional_string("+Parent Size Factor:")) {
+			} else if (optional_string(modern ? "+Parent Radius Factor:" : "+Parent Size Factor:")) {
 				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
 				effect.m_parentScale = true;
 			} else {
-				error_display(1, "Missing +Size or +Parent Size Factor");
+				error_display(1, modern ? "Missing +Radius or +Parent Radius Factor" : "Missing +Size or +Parent Size Factor");
 			}
 		}
 
@@ -50,32 +50,8 @@ namespace particle {
 			}
 		}
 
-		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
-			if (optional_string("+Size over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_size_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_size_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
-			}
-		}
-
-		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
-			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_vel_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
-			}
-		}
-
-		static void parseRotationType(ParticleEffect &effect) {
-			if (optional_string("+Rotation:")) {
+		template<bool modern = true> static void parseRotationType(ParticleEffect &effect) {
+			if (optional_string(modern ? "+Bitmap Alignment:" : "+Rotation:")) {
 				char buf[NAME_LENGTH];
 				stuff_string(buf, F_NAME, NAME_LENGTH);
 				if (!stricmp(buf, "DEFAULT")) {
@@ -91,8 +67,8 @@ namespace particle {
 			}
 		}
 
-		static void parseOffset(ParticleEffect& effect) {
-			if (optional_string("+Offset:")) {
+		template<bool modern = true> static void parseOffset(ParticleEffect& effect) {
+			if (optional_string(modern ? "+Position Offset:" : "+Offset:")) {
 				stuff_vec3d(&effect.m_manual_offset.emplace());
 			}
 		}
@@ -103,8 +79,8 @@ namespace particle {
 			}
 		}
 
-		static void parseParticleNumber(ParticleEffect &effect) {
-			if (internal::required_string_if_new("+Number:", false)) {
+		template<bool modern = true> static void parseParticleNumber(ParticleEffect &effect) {
+			if (internal::required_string_if_new(modern ? "+Particle Count Per Spawn:" : "+Number:", false)) {
 				effect.m_particleNum = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 		}
@@ -146,11 +122,11 @@ namespace particle {
 			return volume;
 		}
 
-		static void parseVelocityInherit(ParticleEffect &effect) {
-			if (optional_string("+Parent Velocity Factor:")) {
+		template<bool modern = true> static void parseVelocityInherit(ParticleEffect &effect) {
+			if (optional_string(modern ? "+Velocity Inherit:" : "+Parent Velocity Factor:")) {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
-			else if (optional_string("+Parent Velocity Absolute Factor:")) {
+			else if (optional_string("+Absolute Velocity Inherit:")) {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 				effect.m_vel_inherit_absolute = true;
 			}
@@ -162,14 +138,14 @@ namespace particle {
 			}
 		}
 
-		static void parseVelocityVolumeScale(ParticleEffect &effect) {
-			if (internal::required_string_if_new("+Velocity:", false)) {
+		template<bool modern = true> static void parseVelocityVolumeScale(ParticleEffect &effect) {
+			if (internal::required_string_if_new(modern ? "+Velocity Volume Scale:" : "+Velocity:", false)) {
 				effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 		}
 
 		static void parseVelocityDirectionScale(ParticleEffect &effect) {
-			if (optional_string("+Velocity Direction Scaling:")) {
+			if (optional_string("+Velocity Direction Scale:")) {
 				SCP_string dirStr;
 				stuff_string(dirStr, F_NAME);
 
@@ -192,22 +168,22 @@ namespace particle {
 		}
 
 		static void parseVelocityInheritFromPosition(ParticleEffect &effect) {
-			if (optional_string("+Spawn Position Velocity Factor:")) {
+			if (optional_string("+Velocity From Position:")) {
 				effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 			}
-			else if (optional_string("+Spawn Position Velocity Absolute Factor:")) {
+			else if (optional_string("+Absolute Velocity From Position:")) {
 				effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 				effect.m_vel_inherit_from_position_absolute = true;
 			}
 		}
 
 		static void parseVelocityInheritFromOrientation(ParticleEffect &effect) {
-			if (optional_string("+Spawn Orientation Velocity Factor:")) {
+			if (optional_string("+Velocity From Orientation:")) {
 				effect.m_vel_inherit_from_orientation.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 			}
 		}
 
-		static void parseTiming(ParticleEffect &effect) {
+		template<bool modern = true> static void parseTiming(ParticleEffect &effect) {
 			if (optional_string("+Duration:")) {
 				if (optional_string("ONETIME")) {
 					effect.m_duration = ParticleEffect::Duration::ONETIME;
@@ -230,7 +206,7 @@ namespace particle {
 				}
 			}
 
-			if (optional_string("+Effects per second:")) {
+			if (optional_string(modern ? "+Spawns per Second:" : "+Effects per second:")) {
 				effect.m_particlesPerSecond = ::util::ParsedRandomFloatRange::parseRandomRange();
 				if (effect.m_particlesPerSecond.min() < 0.001f) {
 					error_display(0, "Invalid effects per second minimum %f. Setting was disabled.", effect.m_particlesPerSecond.min());
@@ -242,8 +218,12 @@ namespace particle {
 			}
 		}
 
-		static void parseModularCurves(ParticleEffect& effect) {
-			effect.m_modular_curves.parse("$Particle Curve:");
+		static void parseModularCurvesLifetime(ParticleEffect& effect) {
+			//TODO replace with particle modular curve set once that is implemented
+		}
+
+		static void parseModularCurvesSource(ParticleEffect& effect) {
+			effect.m_modular_curves.parse("$Particle Source Curve:");
 		}
 
 		//
@@ -251,24 +231,76 @@ namespace particle {
 		//
 
 		static ParticleEffect constructModernEffect(const SCP_string& name) {
-			//TODO
-			return ParticleEffect(name);
+			ParticleEffect effect(name);
+
+			//Particle Settings
+			parseBitmaps(effect);
+			parseRotationType(effect);
+			parseRadius(effect);
+			parseLength(effect);
+			parseLifetime(effect);
+			parseParentLocal(effect);
+
+			//Spawner Settings
+			parseTiming(effect);
+			parseParticleNumber(effect);
+			parseDirection(effect);
+			parseOffset(effect);
+			parsePositionVolume(effect);
+			parseVelocityVolume(effect);
+			parseVelocityVolumeScale(effect);
+			parseVelocityDirectionScale(effect);
+			parseVelocityInheritFromPosition(effect);
+			parseVelocityInheritFromOrientation(effect);
+			parseVelocityInherit(effect);
+
+			//Curves
+			parseModularCurvesLifetime(effect);
+			parseModularCurvesSource(effect);
+
+			//TODO parse trail
+
+			return effect;
 		}
 
 		//
 		// ------------ LEGACY TABLES CODE ------------
 		//
 
+		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
+			if (optional_string("+Size over lifetime curve:")) {
+				SCP_string buf;
+				stuff_string(buf, F_NAME);
+				effect.m_size_lifetime_curve = curve_get_by_name(buf);
+
+				if (effect.m_size_lifetime_curve < 0) {
+					error_display(0, "Could not find curve '%s'", buf.c_str());
+				}
+			}
+		}
+
+		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
+			if (optional_string("+Velocity scalar over lifetime curve:")) {
+				SCP_string buf;
+				stuff_string(buf, F_NAME);
+				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
+
+				if (effect.m_vel_lifetime_curve < 0) {
+					error_display(0, "Could not find curve '%s'", buf.c_str());
+				}
+			}
+		}
+
 		static void parseParticleProperties(ParticleEffect &effect) {
 			//Emulates parsing in the legacy order, analogous to the old particle properties
 			parseBitmaps(effect);
-			parseRadius(effect);
+			parseRadius<false>(effect);
 			parseLength(effect);
 			parseLifetime(effect);
 			parseSizeLifetimeCurve(effect);
 			parseVelocityLifetimeCurve(effect);
-			parseRotationType(effect);
-			parseOffset(effect);
+			parseRotationType<false>(effect);
+			parseOffset<false>(effect);
 			parseParentLocal(effect);
 		}
 
@@ -365,8 +397,8 @@ namespace particle {
 			switch (type) {
 				case ParticleEffectLegacyType::Single:
 					parseParticleProperties(effect);
-					parseVelocityInherit(effect);
-					parseTiming(effect);
+					parseVelocityInherit<false>(effect);
+					parseTiming<false>(effect);
 					break;
 				case ParticleEffectLegacyType::Composite: {
 					bool first = true;
@@ -397,8 +429,8 @@ namespace particle {
 						effect.m_velocityVolume = std::make_shared<ConeVolume>(::util::BoundedNormalFloatRange(::util::BoundedNormalDistribution::param_type{ std::normal_distribution<float>::param_type(0.f, fl_radians(deviation)), -PI, PI }), 1.f);
 					}
 
-					parseVelocityVolumeScale(effect);
-					parseParticleNumber(effect);
+					parseVelocityVolumeScale<false>(effect);
+					parseParticleNumber<false>(effect);
 					parseLegacyChance(effect);
 					parseDirection(effect);
 
@@ -409,8 +441,8 @@ namespace particle {
 						saw_deprecated_effect_location = true;
 					}
 
-					parseVelocityInherit(effect);
-					parseTiming(effect);
+					parseVelocityInherit<false>(effect);
+					parseTiming<false>(effect);
 
 					if (optional_string("+Trail effect:")) {
 						// This is the new and correct location. This might create duplicate effects but the warning should be clear
@@ -428,8 +460,8 @@ namespace particle {
 
 					effect.m_velocityVolume = make_shared<SpheroidVolume>(1.f, 1.f, 1.f);
 
-					parseVelocityVolumeScale(effect);
-					parseParticleNumber(effect);
+					parseVelocityVolumeScale<false>(effect);
+					parseParticleNumber<false>(effect);
 					parseLegacyChance(effect);
 					parseDirection(effect);
 
@@ -440,8 +472,8 @@ namespace particle {
 						saw_deprecated_effect_location = true;
 					}
 
-					parseVelocityInherit(effect);
-					parseTiming(effect);
+					parseVelocityInherit<false>(effect);
+					parseTiming<false>(effect);
 
 					if (optional_string("+Trail effect:")) {
 						// This is the new and correct location. This might create duplicate effects but the warning should be clear
@@ -463,7 +495,7 @@ namespace particle {
 						effect.m_vel_inherit_from_position.emplace(::util::ParsedRandomFloatRange::parseRandomRange());
 					}
 
-					parseParticleNumber(effect);
+					parseParticleNumber<false>(effect);
 					parseLegacyChance(effect);
 
 					float radius = 10.f;
@@ -498,8 +530,8 @@ namespace particle {
 
 					effect.m_spawnVolume = make_shared<SpheroidVolume>(bias, stretch, radius);
 
-					parseVelocityInherit(effect);
-					parseTiming(effect);
+					parseVelocityInherit<false>(effect);
+					parseTiming<false>(effect);
 					break;
 				}
 				default: {
@@ -531,7 +563,7 @@ namespace particle {
 
 					auto type = parseLegacyEffectType();
 
-					if (type == ParticleEffectLegacyType::Invalid)
+					if (type == ParticleEffectLegacyType::Invalid) //TODO multiple effects
 						ParticleManager::get()->addEffect(constructModernEffect(name));
 					else
 						ParticleManager::get()->addEffect(constructLegacyEffect(name, type));
