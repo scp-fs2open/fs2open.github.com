@@ -599,7 +599,7 @@ class ParsedRandomRange {
 	}
 	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange& operator=(const T& random_range) {
-		m_random_range = std::forward<T>(random_range);
+		m_random_range = random_range;
 		return *this;
 	}
 };
