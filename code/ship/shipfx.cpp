@@ -480,10 +480,11 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 
 	// dock leader needs to handle dockees
 	if (object_is_docked(objp)) {
-		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
+		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should be the dock leader at this point!\n", shipp->ship_name);
 		dock_function_info dfi;
 		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
 		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
+		shipp->flags.remove(Ship::Ship_Flags::Dock_leader);	// the dock leader flag is only used for arrival and could interfere with future scripted warpIn() calls
 	}
 
 	// let physics in on it too.
@@ -527,7 +528,6 @@ void shipfx_warpin_start( object *objp )
 	if (shipp->is_arriving())
 	{
 		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
-		Int3();
 		return;
 	}
 

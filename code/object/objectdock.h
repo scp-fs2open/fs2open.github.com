@@ -152,4 +152,7 @@ void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_i
 void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
 void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
 
+// find any ship in this group that is the dock leader
+void dock_find_dock_leader_helper(object *objp, dock_function_info *infop);
+
 #endif	// _OBJECT_DOCK_H
