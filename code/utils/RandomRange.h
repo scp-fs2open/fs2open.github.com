@@ -560,7 +560,6 @@ class ParsedRandomRange {
 	{
 		m_random_range = random_range;
 	}
-	ParsedRandomRange(const ParsedRandomRange&) = default;
 	ParsedRandomRange() {
 		m_random_range = UniformFloatRange();
 	}
