@@ -78,7 +78,7 @@ class RandomRange {
 	ValueType m_maxValue;
 
   public:
-	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value, int>::type>
+	template <typename T, typename... Ts, typename = typename std::enable_if<(sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value) && !is_instance_of_v<std::decay_t<T>, RandomRange>, int>::type>
 	explicit RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
 		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
@@ -550,16 +550,17 @@ class ParsedRandomRange {
 	variant m_random_range;
 
   public:
-	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	template<typename T, std::enable_if_t<!is_instance_of_v<std::decay_t<T>, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange(T&& random_range)
 	{
 		m_random_range = std::forward<T>(random_range);
 	}
-	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	template<typename T, std::enable_if_t<!is_instance_of_v<std::decay_t<T>, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange(const T& random_range)
 	{
 		m_random_range = random_range;
 	}
+	ParsedRandomRange(const ParsedRandomRange&) = default;
 	ParsedRandomRange() {
 		m_random_range = UniformFloatRange();
 	}
@@ -592,12 +593,12 @@ class ParsedRandomRange {
 			}
 		}
 	}
-	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	template<typename T, std::enable_if_t<!is_instance_of_v<std::decay_t<T>, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange& operator=(T&& random_range) {
 		m_random_range = std::forward<T>(random_range);
 		return *this;
 	}
-	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	template<typename T, std::enable_if_t<!is_instance_of_v<std::decay_t<T>, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange& operator=(const T& random_range) {
 		m_random_range = random_range;
 		return *this;
