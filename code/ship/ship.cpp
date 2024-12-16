@@ -2470,9 +2470,9 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 		}
 	}
 	if (min_value >= max_value)
-		return ::util::UniformRange<T_range>(max_value);
+		return ::util::UniformRange<T_range>(static_cast<T_range>(max_value));
 	else
-		return ::util::UniformRange<T_range>(min_value, max_value);
+		return ::util::UniformRange<T_range>(static_cast<T_range>(min_value), static_cast<T_range>(max_value));
 }
 
 particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal)
