@@ -105,15 +105,18 @@ namespace particle {
 		}
 
 		static std::shared_ptr<ParticleVolume> parseVolume() {
+
 			int type = required_string_one_of(2, "Spheroid", "Cone"); //... and future volumes
 			std::shared_ptr<ParticleVolume> volume;
 
 			switch (type) {
 				case 0:
-					volume = std::shared_ptr<SpheroidVolume>();
+					required_string("Spheroid"); //Because required string one of, for some reason, does not advance parsing.
+					volume = std::make_shared<SpheroidVolume>();
 					break;
 				case 1:
-					volume = std::shared_ptr<ConeVolume>();
+					required_string("Cone");
+					volume = std::make_shared<ConeVolume>();
 					break;
 				default:
 					UNREACHABLE("Invalid volume type specified!");
@@ -222,6 +225,7 @@ namespace particle {
 				required_string("+Output:");
 				int output = required_string_one_of(2, "Radius", "Velocity");
 				//The required string part enforces this to be either 0 or 1
+				required_string(output == 0 ? "Radius" : "Velocity");
 				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
 
 				required_string("+Curve Name:");

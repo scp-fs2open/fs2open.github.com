@@ -27,6 +27,7 @@ namespace particle {
 	void ConeVolume::parse() {
 		int deviation_type = required_string_one_of(2, "+Deviation:", "+Deviation Profile:");
 		if (deviation_type == 0) {
+			required_string("+Deviation:");
 			float deviation;
 			stuff_float(&deviation);
 
@@ -38,6 +39,7 @@ namespace particle {
 			m_deviation = ::util::BoundedNormalFloatRange(::util::BoundedNormalDistribution::param_type{ std::normal_distribution<float>::param_type(0.f, fl_radians(deviation)), -PI, PI });
 		}
 		else if (deviation_type == 1) {
+			required_string("+Deviation Profile:");
 			//Note, this is in radians NOT degrees. But given this is a rare and advanced option, it should be fine
 			m_deviation = ::util::ParsedRandomFloatRange::parseRandomRange(-PI, PI);
 		}
