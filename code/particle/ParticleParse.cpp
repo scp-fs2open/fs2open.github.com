@@ -198,12 +198,7 @@ namespace particle {
 			}
 
 			if (optional_string("+Delay:")) {
-				if (effect.m_duration == ParticleEffect::Duration::ONETIME) {
-					error_display(0, "+Delay is not valid for one-time effects!");
-				}
-				else {
-					effect.m_delayRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
-				}
+				effect.m_delayRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 			}
 
 			if (optional_string(modern ? "+Spawns per Second:" : "+Effects per second:")) {
