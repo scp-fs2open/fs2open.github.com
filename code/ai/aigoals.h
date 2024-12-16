@@ -147,7 +147,7 @@ typedef struct ai_goal {
 extern void ai_goal_reset(ai_goal *aigp, bool adding_goal = false, int ai_mode = AI_GOAL_NONE, int ai_submode = -1, int type = -1);
 
 
-typedef flag_def_list ai_goal_list;
+typedef flag_def_list_templated<int> ai_goal_list;
 
 extern ai_goal_list Ai_goal_names[];
 extern int Num_ai_goals;

@@ -5862,7 +5862,7 @@ static void parse_ship_type(const char *filename, const bool replace)
 	if(optional_string("$AI:"))
 	{
 		if(optional_string("+Valid goals:")) {
-			parse_string_flag_list(&stp->ai_valid_goals, Ai_goal_names, Num_ai_goals);
+			parse_string_flag_list(stp->ai_valid_goals, Ai_goal_names, Num_ai_goals);
 		}
 
 		if(optional_string("+Accept Player Orders:")) {
@@ -5905,11 +5905,11 @@ static void parse_ship_type(const char *filename, const bool replace)
 		}
 
 		if(optional_string("+Active docks:")) {
-			parse_string_flag_list(&stp->ai_active_dock, Dock_type_names, Num_dock_type_names);
+			parse_string_flag_list(stp->ai_active_dock, Dock_type_names, Num_dock_type_names);
 		}
 
 		if(optional_string("+Passive docks:")) {
-			parse_string_flag_list(&stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
+			parse_string_flag_list(stp->ai_passive_dock, Dock_type_names, Num_dock_type_names);
 		}
 
 		if(optional_string("+Ignored on cripple by:")) {
@@ -20573,7 +20573,7 @@ void parse_armor_type()
 
 	//rest of the parse data
 	if (optional_string("$Flags:"))
-		parse_string_flag_list((int*)&tat.flags, Armor_flags, Num_armor_flags);
+		parse_string_flag_list(tat.flags, Armor_flags, Num_armor_flags);
 	
 	//Add it to global armor types
 	Armor_types.push_back(tat);

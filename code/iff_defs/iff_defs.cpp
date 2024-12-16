@@ -434,7 +434,7 @@ void parse_iff_table(const char* filename)
 		}
 
 		if (optional_string("$Radar Target ID Flags:")) {
-			parse_string_flag_list((int*)&radar_target_id_flags, rti_flags, Num_rti_flags);
+			parse_string_flag_list(radar_target_id_flags, rti_flags, Num_rti_flags);
 			if (optional_string("+reset"))
 				radar_target_id_flags = 0;
 		}
