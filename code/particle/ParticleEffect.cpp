@@ -288,11 +288,11 @@ void ParticleEffect::pageIn() {
 
 std::pair<TIMESTAMP, TIMESTAMP> ParticleEffect::getEffectDuration() const {
 	std::pair<TIMESTAMP, TIMESTAMP> timing;
-	timing.first = _timestamp(m_delayRange.next() * 1000.0f);
+	timing.first = _timestamp(fl2i(m_delayRange.next() * 1000.0f));
 	if (m_duration == Duration::ALWAYS)
 		timing.second = TIMESTAMP::never();
 	else
-		timing.second = timestamp_delta(timing.first, m_durationRange.next() * 1000.0f);
+		timing.second = timestamp_delta(timing.first, fl2i(m_durationRange.next() * 1000.0f));
 	return timing;
 }
 

@@ -2409,7 +2409,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
-						::util::UniformFloatRange(count / 4.f, count), //Particle num
+						::util::UniformFloatRange(count / 4.f, i2fl(count)), //Particle num
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?

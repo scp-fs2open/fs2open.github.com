@@ -29,7 +29,7 @@ constexpr auto has_member_impl(F&& f) -> decltype(f(std::declval<T>()), true) {
 template<typename>
 constexpr bool has_member_impl(...) { return false; }
 
-#define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){} )
+#define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){ return obj.member; } )
 
 template<typename T, typename Enable = void>
 struct is_dereferencable_pointer : std::false_type {};
