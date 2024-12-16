@@ -219,7 +219,25 @@ namespace particle {
 		}
 
 		static void parseModularCurvesLifetime(ParticleEffect& effect) {
-			//TODO replace with particle modular curve set once that is implemented
+			//TODO The following loop behaves as a true subset of how parsing will work once the particle modular curve set is implemented.
+			//As such, once that's added the loop can be replaced with a modular_curve_set.parse without worry about breaking tables.
+			while (optional_string("$Particle Lifetime Curve:")) {
+				required_string("+Input: Lifetime");
+
+				required_string("+Output:");
+				int output = required_string_one_of(2, "Radius", "Velocity");
+				//The required string part enforces this to be either 0 or 1
+				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
+
+				required_string("+Curve Name:");
+				SCP_string buf;
+				stuff_string(buf, F_NAME);
+				curve = curve_get_by_name(buf);
+
+				if (curve < 0) {
+					error_display(0, "Could not find curve '%s'", buf.c_str());
+				}
+			}
 		}
 
 		static void parseModularCurvesSource(ParticleEffect& effect) {
@@ -230,7 +248,26 @@ namespace particle {
 		// ------------ MODERN TABLES CODE ------------
 		//
 
-		static ParticleEffect constructModernEffect(const SCP_string& name) {
+		static void parseModernTrail(ParticleEffect& effect, bool top_layer) {
+			if (optional_string("$Trail Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				effect.m_particleTrail = ParticleManager::get()->getEffectByName(name);
+			}
+			else if (top_layer && optional_string("$Trail Inline Effect:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				SCP_vector<ParticleEffect> trail {constructModernEffect(name, false)};
+				while (optional_string("$Continue Trail Effect:"))
+					trail.emplace_back(constructModernEffect(name));
+
+				effect.m_particleTrail = ParticleManager::get()->addEffect(std::move(trail));
+			}
+		}
+
+		static ParticleEffect constructModernEffect(const SCP_string& name, bool top_layer = true) {
 			ParticleEffect effect(name);
 
 			//Particle Settings
@@ -258,7 +295,7 @@ namespace particle {
 			parseModularCurvesLifetime(effect);
 			parseModularCurvesSource(effect);
 
-			//TODO parse trail
+			parseModernTrail(effect, top_layer);
 
 			return effect;
 		}
@@ -563,8 +600,12 @@ namespace particle {
 
 					auto type = parseLegacyEffectType();
 
-					if (type == ParticleEffectLegacyType::Invalid) //TODO multiple effects
-						ParticleManager::get()->addEffect(constructModernEffect(name));
+					if (type == ParticleEffectLegacyType::Invalid) {
+						SCP_vector<ParticleEffect> effect {constructModernEffect(name)};
+						while (optional_string("$Continue Effect:"))
+							effect.emplace_back(constructModernEffect(name));
+						ParticleManager::get()->addEffect(std::move(effect));
+					}
 					else
 						ParticleManager::get()->addEffect(constructLegacyEffect(name, type));
 				}
