@@ -4837,7 +4837,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			tpart.particle_handle = particle::util::parseEffect(sip->name);
 		}
 		else {
-			generic_anim_init(&tpart.thruster_bitmap, NULL);
+			generic_anim_init(&tpart.thruster_bitmap, nullptr);
 
 			stuff_string(tpart.thruster_bitmap.filename, F_NAME, MAX_FILENAME_LEN);
 
@@ -4863,7 +4863,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			auto particle = particle::ParticleEffect(
 				"", //Name
-				::util::UniformFloatRange(min_n, max_n), //Particle num
+				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				false, //Velocity Inherit absolute?
