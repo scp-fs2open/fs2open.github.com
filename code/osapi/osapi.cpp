@@ -741,9 +741,16 @@ static void handle_sdl_event(const SDL_Event& event) {
 
 	bool imgui_processed_this = false;
 	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
-		if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
-					imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
-		}
+		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
+		ImGui_ImplSDL2_ProcessEvent(&event);
+
+		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
+									(event.type == SDL_EventType::SDL_KEYUP ||
+									 event.type == SDL_EventType::SDL_KEYDOWN)) ||
+							   (ImGui::GetIO().WantCaptureMouse &&
+									(event.type == SDL_EventType::SDL_MOUSEBUTTONUP ||
+				 					 event.type == SDL_EventType::SDL_MOUSEBUTTONDOWN||
+									 event.type == SDL_EventType::SDL_MOUSEMOTION));
 	}
 
 	if (!imgui_processed_this) {
