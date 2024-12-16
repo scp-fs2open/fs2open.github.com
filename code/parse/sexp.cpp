@@ -18997,6 +18997,7 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 		return;
 	}
 	auto shipp = ship_entry->shipp();
+	node = CDR(node);
 
 	//replace or not
 	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
@@ -19004,8 +19005,8 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 	// backward compatibility hack for older sexps
 	if (!((ss_flag == Ship::Subsystem_Flags::Untargetable) || (ss_flag == Ship::Subsystem_Flags::No_SS_targeting)))
 	{
-		node = CDR(node);
 		setit = is_sexp_true(node);
+		node = CDR(node);
 	}
 	
 	//multiplayer packet start
