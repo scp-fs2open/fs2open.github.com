@@ -6821,15 +6821,13 @@ void physics_ship_init(object *objp)
 /**
  * Get the type of the given ship as a string
  */
-int ship_get_type(char* output, ship_info *sip)
+const char *ship_get_type(const ship_info *sip)
 {
 	if(sip->class_type < 0) {
-		strcpy(output, "Unknown");
-		return 0;
+		return XSTR("Unknown", 497);
 	}
 
-	strcpy(output, Ship_types[sip->class_type].name);
-	return 1;
+	return Ship_types[sip->class_type].name;
 }
 
 /**
