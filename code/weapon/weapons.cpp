@@ -2216,7 +2216,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
 			// NOTE: in practice, most beams are WP_LASER
-			auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+			auto&& radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
 			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(1.f), //Particle num
@@ -2235,7 +2235,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					-1.f, //Culling range multiplier
 					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 					::util::UniformFloatRange(-1.f), //Lifetime
-					std::move(radius), //Radius
+					radius, //Radius
 					bitmapIndex)); //Bitmap
 		}
 	}
@@ -2293,7 +2293,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
 				// NOTE: in practice, most beams are WP_LASER
-				auto radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+				auto&& radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
 				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
@@ -2312,7 +2312,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						::util::UniformFloatRange(-1.f), //Lifetime
-						std::move(radius), //Radius
+						radius, //Radius
 						bitmapID)); //Bitmap
 			}
 		}
@@ -3076,7 +3076,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
 				// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
 				// seriously, who though that would be a good idea?
-				auto lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
+				auto&& lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
 
 				wip->flash_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
@@ -3095,7 +3095,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
-						std::move(lifetime), //Lifetime
+						lifetime, //Lifetime
 						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
 						bitmapIndex)); //Bitmap
 			}

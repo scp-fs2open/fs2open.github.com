@@ -5,7 +5,7 @@
 #include "math/curve.h"
 #include "globalincs/type_traits.h"
 
-#include <mpark/variant.hpp>
+#include <variant>
 
 #include <random>
 #include <type_traits>
@@ -79,7 +79,7 @@ class RandomRange {
 
   public:
 	template <typename T, typename... Ts, typename = typename std::enable_if<sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value, int>::type>
-	RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
+	explicit RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
 		: m_generator(std::random_device()()), m_distribution(distributionFirstParameter, distributionParameters...)
 	{
 		m_minValue = static_cast<ValueType>(m_distribution.min());
@@ -100,7 +100,6 @@ class RandomRange {
 		m_maxValue = static_cast<ValueType>(0.0);
 		m_constant = true;
 	}
-
 	/**
 	 * @brief Determines the next random number of this range
 	 * @return The random number
@@ -481,7 +480,7 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 
 	if (curve_params.curve < 0) {
 		error_display(0, "Curve %s not found! Random distributions using this curve will return 0.", curve_name.c_str());
-		return {curve_params};
+		return CurveFloatRange{curve_params};
 	} else {
 		bool y_below_0 = false;
 		bool no_y_above_0 = true;
@@ -499,13 +498,13 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 			error_display(0,
 				"Curve %s goes below zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
-			return {curve_params};
+			return CurveFloatRange{curve_params};
 		}
 		if (no_y_above_0) {
 			error_display(0,
 				"Curve %s has no values above zero along the Y axis. Random distributions using this curve will return 0.", curve_name.c_str());
 			curve_params.curve = -1;
-			return {curve_params};
+			return CurveFloatRange{curve_params};
 		}
 	}
 
@@ -540,40 +539,45 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 		curve_params.max = max;
 	}
 
-	return {curve_params};
+	return CurveFloatRange{curve_params};
 }
 
 template<typename result_type>
-
 class ParsedRandomRange {
   public:
-	  using variant = mpark::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange>;
+	  using variant = std::variant<UniformFloatRange, BoundedNormalFloatRange, CurveFloatRange>;
   private:
 	variant m_random_range;
 
   public:
-	  template<typename T>
+	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange(T&& random_range)
 	{
 		m_random_range = std::forward<T>(random_range);
 	}
+	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	ParsedRandomRange(const T& random_range)
+	{
+		m_random_range = random_range;
+	}
 	ParsedRandomRange() {
 		m_random_range = UniformFloatRange();
-	};
+	}
+
 	inline result_type next() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) {return range.next();}, m_random_range));
+		return static_cast<result_type>(std::visit([](auto& range) {return range.next();}, m_random_range));
 	}
 	inline result_type min() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) {return range.min();}, m_random_range));
+		return static_cast<result_type>(std::visit([](auto& range) {return range.min();}, m_random_range));
 	}
 	inline result_type max() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) {return range.max();}, m_random_range));
+		return static_cast<result_type>(std::visit([](auto& range) {return range.max();}, m_random_range));
 	}
 	inline result_type avg() const {
-		return static_cast<result_type>(mpark::visit([](auto& range) {return range.avg();}, m_random_range));
+		return static_cast<result_type>(std::visit([](auto& range) {return range.avg();}, m_random_range));
 	}
 	inline void seed(unsigned int new_seed) const {
-		mpark::visit([new_seed](auto& range) {return range.seed(new_seed);}, m_random_range);
+		std::visit([new_seed](auto& range) {return range.seed(new_seed);}, m_random_range);
 	}
 	static ParsedRandomRange parseRandomRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 		switch (optional_string_either("NORMAL", "CURVE")) {
@@ -588,8 +592,13 @@ class ParsedRandomRange {
 			}
 		}
 	}
-	template<typename T>
+	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
 	ParsedRandomRange& operator=(T&& random_range) {
+		m_random_range = std::forward<T>(random_range);
+		return *this;
+	}
+	template<typename T, std::enable_if_t<!std::is_convertible_v<T, ParsedRandomRange>, bool> = true>
+	ParsedRandomRange& operator=(const T& random_range) {
 		m_random_range = std::forward<T>(random_range);
 		return *this;
 	}

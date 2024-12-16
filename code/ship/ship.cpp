@@ -2552,19 +2552,19 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		break;
 	}
 
-	auto velocity_volume = make_unique<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
+	auto velocity_volume = make_shared<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
 	if (variance_curve) {
 		velocity_volume->m_modular_curves.add_curve("Host Radius", particle::LegacyAACuboidVolume::VolumeModularCurveOutput::VARIANCE, *variance_curve);
 	}
 
 	auto effect = particle::ParticleEffect(
 		"", //Name
-		std::move(particle_num), //Particle num
+		particle_num, //Particle num
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
 		std::move(velocity_volume), //Velocity volume
-		std::move(velocity), //Velocity volume multiplier
+		velocity, //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 		tl::nullopt, //Orientation-based velocity
 		tl::nullopt, //Position-based velocity
@@ -2574,8 +2574,8 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		true, //Affected by detail
 		range, //Culling range multiplier
 		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
-		std::move(lifetime), //Lifetime
-		std::move(radius), //Radius
+		lifetime, //Lifetime
+		radius, //Radius
 		bitmap); //Bitmap
 
 	if (part_number_curve) {
@@ -2614,13 +2614,13 @@ static particle::ParticleEffectHandle parse_ship_legacy_particle_effect(LegacySh
 		}
 	}
 
-	return create_ship_legacy_particle_effect(type, range, bitmap, std::move(particle_num), std::move(radius), std::move(lifetime), std::move(velocity), normal_variance, useNormal);
+	return create_ship_legacy_particle_effect(type, range, bitmap, particle_num, radius, lifetime, velocity, normal_variance, useNormal);
 }
 
 static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, bool useNormal) {
 	return create_ship_legacy_particle_effect(
 		type, range, bitmap,
-		::util::UniformFloatRange(n_low, n_high),
+		::util::UniformFloatRange(i2fl(n_low), i2fl(n_high)),
 		::util::UniformFloatRange(min_rad, max_rad),
 		::util::UniformFloatRange(min_life, max_life),
 		::util::UniformFloatRange(min_vel, max_vel),

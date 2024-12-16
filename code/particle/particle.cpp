@@ -172,7 +172,7 @@ namespace particle
 		if (info->nframes < 0) {
 			Assertion(bm_is_valid(info->bitmap), "Invalid bitmap handle passed to particle create.");
 
-			bm_get_info(info->bitmap, NULL, NULL, NULL, &part->nframes, &fps);
+			bm_get_info(info->bitmap, nullptr, nullptr, nullptr, &part->nframes, &fps);
 
 			if (part->nframes > 1 && info->lifetime_from_animation)
 			{

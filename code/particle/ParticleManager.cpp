@@ -16,7 +16,7 @@
 namespace particle {
 std::unique_ptr<ParticleManager> ParticleManager::m_manager = nullptr;
 
-ParticleManager::ParticleManager() {}
+ParticleManager::ParticleManager() = default;
 
 void ParticleManager::init() {
 	Assertion(m_manager == nullptr, "ParticleManager was not properly shut down!");
