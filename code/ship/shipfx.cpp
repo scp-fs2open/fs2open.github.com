@@ -2685,7 +2685,7 @@ void engine_wash_ship_process(ship *shipp)
 
 	// is it time to check for engine wash 
 	int time_to_next_hit = timestamp_until(shipp->wash_timestamp);
-	if (time_to_next_hit < 0) {
+	if (time_to_next_hit <= 0) {
 		if (time_to_next_hit < -ENGINE_WASH_CHECK_INTERVAL) {
 			time_to_next_hit = 0;
 		}
