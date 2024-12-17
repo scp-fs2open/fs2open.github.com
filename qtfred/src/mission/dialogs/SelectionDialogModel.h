@@ -72,8 +72,8 @@ signals:
 	bool isFilterWaypoints() const;
 	void setFilterWaypoints(bool filter_waypoints);
 
-	bool isFilterIFFTeam(int team) const;
-	void setFilterIFFTeam(int team, bool filter);
+	bool isFilterIFFTeam(size_t team) const;
+	void setFilterIFFTeam(size_t team, bool filter);
 
 	/**
 	 * @brief Updates the selection status of the objects in the list
