@@ -119,7 +119,7 @@ int reference_handler(const char* name, sexp_ref_type type, int obj);
 int orders_reference_handler(sexp_src source, int source_index, char* msg);
 int sexp_reference_handler(int node, sexp_src source, int source_index, char* msg);
 char* object_name(int obj);
-const char* get_order_name(int order);
+const char* get_order_name(ai_goal_mode order);
 void object_moved(object* ptr);
 int invalidate_references(const char* name, sexp_ref_type type);
 int query_whole_wing_marked(int wing);
