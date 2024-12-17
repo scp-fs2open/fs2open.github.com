@@ -173,7 +173,7 @@ extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
 extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name);
 
-extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
+extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders
