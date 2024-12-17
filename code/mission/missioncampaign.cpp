@@ -1554,13 +1554,46 @@ int mission_load_up_campaign(bool fall_back_from_current)
 	auto pl = Player;
 
 	// find best campaign to use:
-	//   1) last used
-	//   2) builtin
-	//   3) anything else
+	//   1) cmdline
+	//   2) last used
+	//   3) builtin
+	//   4) anything else
 	// Note that in each step we only fall back when the error is benign, e.g. ignored or missing;
 	// if there's some other real error with the campaign file, we report it.
 	// Also note that if we *have* a current campaign, we shouldn't fall back *at all*, lest we repeatedly
 	// reset what the current campaign is, *unless* we are starting a brand new session or loading a new pilot.
+
+	// cmdline...
+	if ( Cmdline_campaign != nullptr && strlen(Cmdline_campaign) ) {
+		char* campaign = Cmdline_campaign;
+
+		// Clear cmdline value
+		// * Only set campaign once from cmdline.
+		// * Prevent subsequent load failures.
+		// * On success, campaign becomes "last used".
+		Cmdline_campaign = nullptr;
+
+		bool has_last_used_campaign = strlen(pl->current_campaign) > 0;
+		bool campaign_already_set = has_last_used_campaign
+			&& (stricmp(campaign, pl->current_campaign) == 0);
+
+		if (has_last_used_campaign) {
+			mprintf(("Current campaign is '%s'\n", pl->current_campaign));
+		}
+
+		if (!campaign_already_set) {
+			rc = mission_campaign_load(campaign, nullptr, pl);
+
+			if (rc == 0) {
+				// update pilot with the new current campaign (becomes "last used")
+				strcpy_s(pl->current_campaign, Campaign.filename);
+				mprintf(("Set current campaign to '%s'\n", campaign));
+				return rc;
+			} else {
+				mprintf(("Failed to set current campaign to '%s'\n", campaign));
+			}
+		}
+	}
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
