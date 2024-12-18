@@ -1271,8 +1271,7 @@ void obj_move_all_post(object *objp, float frametime)
 						// Classic dynamic laser color is handled with an old color object
 						color c;
 						weapon_get_laser_color(&c, objp);
-						light_color.set_rgb(&c);
-						light_color.set_rgb(i2fl(light_color.r()) * r_mult, i2fl(light_color.g()) * g_mult, i2fl(light_color.b()) * b_mult);
+						light_color.set_rgb((i2fl(c.red)/255.f) * r_mult, (i2fl(c.green)/255.f) * g_mult, (i2fl(c.blue)/255.f) * b_mult);
 						light_color.i(light_color.i() * intensity_mult);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
