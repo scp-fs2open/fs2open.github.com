@@ -2,10 +2,8 @@
 
 #include "scripting/ade_api.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 DECLARE_ADE_LIB(l_GlobalVariables);
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api

@@ -8,8 +8,7 @@
 #include "missionui/missionscreencommon.h"
 #include "playerman/managepilot.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 //**********LIBRARY: Globals
 ADE_LIB(l_GlobalVariables, "GlobalVariables", "gl", "Library of global values");
@@ -68,5 +67,4 @@ ADE_VIRTVAR(MAX_SHIP_SECONDARY_BANKS,
 	return ade_set_args(L, "i", MAX_SHIP_SECONDARY_BANKS);
 }
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api
