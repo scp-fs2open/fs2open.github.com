@@ -34,6 +34,7 @@
 #include "cmdline/cmdline.h"
 #include "parse/parselo.h"
 #include "debugconsole/console.h"
+#include "utils/string_utils.h"
 
 #if defined( SHOW_CALL_STACK ) && defined( PDB_DEBUGGING )
 #	include "globalincs/mspdb_callstack.h"
@@ -49,17 +50,6 @@ extern void gr_activate(int active);
 //    #error _ASSERT is not defined yet for debug mode with non-MSVC compilers
   #endif
 #endif
-
-const char *clean_filename( const char *name)
-{
-	const char *p = name+strlen(name)-1;
-	// Move p to point to first letter of EXE filename
-	while( (*p!='\\') && (*p!='/') && (*p!=':') && (p>= name) )
-		p--;
-	p++;
-
-	return p;
-}
 
 
 /* MSVC2005+ callstack support
@@ -87,7 +77,7 @@ public:
 		UNREFERENCED_PARAMETER( address );
 
 		StackEntry entry;
-		entry.module = clean_filename( module );
+		entry.module = util::get_file_part( module );
 		entry.symbol = symbol;
 		m_stackFrames.push_back( entry );
 	}
