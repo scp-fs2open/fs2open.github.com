@@ -18,6 +18,7 @@ public:
 	void set_vecf(const SCP_vector<float>& input);
 
 	void set_rgb(const int new_r,const int new_g,const int new_b);
+	void set_rgb(const float new_r,const float new_g,const float new_b);
 	void set_rgb(const color* const new_rgb);
 	void set_rgb(const int* const new_rgb);
 

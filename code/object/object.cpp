@@ -1266,18 +1266,15 @@ void obj_move_all_post(object *objp, float frametime)
 
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
-						// intensity is stored in the light color even if no user setting is done.
-						light_color = hdr_color(&wi->light_color);
 						// Classic dynamic laser color is handled with an old color object
 						color c;
 						weapon_get_laser_color(&c, objp);
-						light_color.set_rgb(&c);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
-						light_color.i(light_color.i() * intensity_mult);
+						light_color.set_rgb((c.red/255.f) * r_mult, (c.green/255.f) * g_mult, (c.blue/255.f) * b_mult);
+						// intensity is stored in the light color even if no user setting is done.
+						light_color.i(wi->light_color.i() * intensity_mult);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
-						light_color = hdr_color(&wi->light_color);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
+						light_color.set_rgb(wi->light_color.r() * r_mult, wi->light_color.g() * g_mult, wi->light_color.b() * b_mult);
 					}
 					//handles both defaults and adjustments.
 					float light_radius = wi->light_radius;
@@ -1290,7 +1287,7 @@ void obj_move_all_post(object *objp, float frametime)
 						source_radius *= 0.05f;
 						light_radius = lp->missile_light_radius.handle(light_radius) * radius_mult;
 						light_color.i(lp->missile_light_brightness.handle(light_color.i()) * intensity_mult);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
+						light_color.set_rgb(light_color.r() * r_mult, light_color.g() * g_mult, light_color.b() * b_mult);
 					}
 					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
 						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
