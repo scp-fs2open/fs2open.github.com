@@ -1159,7 +1159,7 @@ int CFred_mission_save::save_briefing()
 				}
 			}
 
-			if (!gr_compare_color_values(&bs->grid_color, &Color_briefing_grid)) {
+			if (!gr_compare_color_values(bs->grid_color, Color_briefing_grid)) {
 				if (save_format != MissionFormat::RETAIL) {
 					fout("\n$grid_color:");
 					fout("(%d, %d, %d, %d)", bs->grid_color.red, bs->grid_color.green, bs->grid_color.blue, bs->grid_color.alpha);

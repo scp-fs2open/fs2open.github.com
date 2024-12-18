@@ -1878,18 +1878,18 @@ void gr_set_color_fast(const color *dst)
 }
 
 //Compares the RGBA values of two colors. Returns true if the colors are identical
-bool gr_compare_color_values(color* clr1, color* clr2)
+bool gr_compare_color_values(const color& clr1, const color& clr2)
 {
-	if (clr1->red != clr2->red) {
+	if (clr1.red != clr2.red) {
 		return false;
 	}
-	if (clr1->green != clr2->green) {
+	if (clr1.green != clr2.green) {
 		return false;
 	}
-	if (clr1->blue != clr2->blue) {
+	if (clr1.blue != clr2.blue) {
 		return false;
 	}
-	if (clr1->alpha != clr2->alpha) {
+	if (clr1.alpha != clr2.alpha) {
 		return false;
 	}
 	return true;
