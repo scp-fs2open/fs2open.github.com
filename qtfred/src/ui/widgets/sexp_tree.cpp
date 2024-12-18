@@ -158,8 +158,7 @@ QStringList SexpTreeEditorInterface::getMissionGoals(const QString&  /*reference
 	list.reserve((int)Mission_goals.size());
 
 	for (const auto &goal: Mission_goals) {
-		auto temp_name = goal.name;
-		SCP_truncate(temp_name, NAME_LENGTH);
+		auto temp_name = SCP_string(goal.name, 0, NAME_LENGTH - 1);
 		list << temp_name.c_str();
 	}
 
@@ -170,8 +169,7 @@ QStringList SexpTreeEditorInterface::getMissionEvents(const QString&  /*referenc
 	list.reserve((int)Mission_events.size());
 
 	for (const auto &event: Mission_events) {
-		auto temp_name = event.name;
-		SCP_truncate(temp_name, NAME_LENGTH);
+		auto temp_name = SCP_string(event.name, 0, NAME_LENGTH - 1);
 		list << temp_name.c_str();
 	}
 
