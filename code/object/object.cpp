@@ -1272,12 +1272,12 @@ void obj_move_all_post(object *objp, float frametime)
 						color c;
 						weapon_get_laser_color(&c, objp);
 						light_color.set_rgb(&c);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
+						light_color.set_rgb(i2fl(light_color.r()) * r_mult, i2fl(light_color.g()) * g_mult, i2fl(light_color.b()) * b_mult);
 						light_color.i(light_color.i() * intensity_mult);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
 						light_color = hdr_color(&wi->light_color);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
+						light_color.set_rgb(i2fl(light_color.r()) * r_mult, i2fl(light_color.g()) * g_mult, i2fl(light_color.b()) * b_mult);
 					}
 					//handles both defaults and adjustments.
 					float light_radius = wi->light_radius;
