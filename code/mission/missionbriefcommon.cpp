@@ -284,9 +284,9 @@ void	brief_render_icons(int stage_num, float frametime);
 void	brief_maybe_create_new_grid(grid *gridp, vec3d *pos, matrix *orient, int force = 0);
 grid	*brief_create_grid(grid *gridp, vec3d *forward, vec3d *right, vec3d *center, int nrows, int ncols, float square_size);
 grid	*brief_create_default_grid(void);
-void	brief_render_grid(grid *gridp);
+void	brief_render_grid(grid *gridp, const color& color);
 void	brief_modify_grid(grid *gridp);
-void	brief_rpd_line(vec3d *v0, vec3d *v1);
+void	brief_rpd_line(vec3d *v0, vec3d *v1, const color& color);
 void	brief_set_text_color(char color_tag);
 extern void get_camera_limits(const matrix *start_camera, const matrix *end_camera, float time, vec3d *acc_max, vec3d *w_max);
 int brief_text_wipe_finished();
@@ -1319,7 +1319,7 @@ void brief_render_map(int stage_num, float frametime)
 	brief_maybe_create_new_grid(The_grid, &Current_cam_pos, &Current_cam_orient);
 
 	if (Briefing->stages[stage_num].draw_grid)
-		brief_render_grid(The_grid);
+		brief_render_grid(The_grid, Briefing->stages[stage_num].grid_color);
 
 	brief_render_fade_outs(frametime);
 
@@ -2281,13 +2281,13 @@ grid *brief_create_default_grid(void)
 /**
  * Rotate and project points and draw a line.
  */
-void brief_rpd_line(vec3d *v0, vec3d *v1)
+void brief_rpd_line(vec3d *v0, vec3d *v1, const color& clr)
 {
 	vertex	tv0, tv1;
 	g3_rotate_vertex(&tv0, v0);
 	g3_rotate_vertex(&tv1, v1);
 
-	gr_set_color_fast(&Color_briefing_grid);
+	gr_set_color_fast(&clr);
 	g3_draw_line(&tv0, &tv1);
 }
 
@@ -2296,7 +2296,7 @@ void brief_rpd_line(vec3d *v0, vec3d *v1)
  *
  * @param gridp Grid defined in a grid struct to render
  */
-void brief_render_grid(grid *gridp)
+void brief_render_grid(grid *gridp, const color& gridc)
 {
 	int	i, ncols, nrows;
 
@@ -2312,11 +2312,11 @@ void brief_render_grid(grid *gridp)
 
 	//	Draw the column lines.
 	for (i=0; i<=ncols; i++)
-		brief_rpd_line(&gridp->gpoints1[i], &gridp->gpoints2[i]);
+		brief_rpd_line(&gridp->gpoints1[i], &gridp->gpoints2[i], gridc);
 
 	//	Draw the row lines.
 	for (i=0; i<=nrows; i++)
-		brief_rpd_line(&gridp->gpoints3[i], &gridp->gpoints4[i]);
+		brief_rpd_line(&gridp->gpoints3[i], &gridp->gpoints4[i], gridc);
 }
 
 void brief_modify_grid(grid *gridp)
