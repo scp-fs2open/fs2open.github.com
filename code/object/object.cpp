@@ -1289,7 +1289,7 @@ void obj_move_all_post(object *objp, float frametime)
 						source_radius *= 0.05f;
 						light_radius = lp->missile_light_radius.handle(light_radius) * radius_mult;
 						light_color.i(lp->missile_light_brightness.handle(light_color.i()) * intensity_mult);
-						light_color.set_rgb(fl2i(i2fl(light_color.r()) * r_mult), fl2i(i2fl(light_color.g()) * g_mult), fl2i(i2fl(light_color.b()) * b_mult));
+						light_color.set_rgb(i2fl(light_color.r() * r_mult), i2fl(light_color.g()) * g_mult, i2fl(light_color.b()) * b_mult);
 					}
 					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
 						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
