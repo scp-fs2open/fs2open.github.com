@@ -1613,15 +1613,14 @@ void game_process_cheats(int k)
 	}
 	if(detectedCheatCode == CHEAT_CODE_FISH){
 		// only enable in the Vasudan main hall
-		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
-			extern void fishtank_start();
-			fishtank_start();
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_allows_fish()) {
+			main_hall_start_fishies();
 		}
 	}
 	if(detectedCheatCode == CHEAT_CODE_HEADZ){
 		// only enable in the Vasudan main hall
-		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
-			main_hall_vasudan_funny();
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_allows_headz()) {
+			main_hall_set_door_headz();
 		}
 	}
 	if(detectedCheatCode ==  CHEAT_CODE_SKIP && (gameseq_get_state() == GS_STATE_MAIN_MENU)){

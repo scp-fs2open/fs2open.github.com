@@ -40,6 +40,7 @@
 #include "scripting/scripting.h"
 #include "sound/audiostr.h"
 #include "utils/Random.h"
+#include "utils/string_utils.h"
 
 #ifndef NDEBUG
 #include "cutscene/movie.h"
@@ -69,9 +70,6 @@ static main_hall_defines *Main_hall = nullptr;
 static int Main_hall_music_index = -1;
 
 bool Main_hall_poll_key = true;
-
-int Vasudan_funny = 0;
-int Vasudan_funny_plate = -1;
 
 SCP_string Main_hall_cheat = "";
 
@@ -540,29 +538,6 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// init tooltip shader						// nearly black
 	gr_create_shader(&Main_hall_tooltip_shader, 5, 5, 5, 168);
 
-	// are we funny?
-	if (Vasudan_funny && main_hall_is_vasudan()) {
-		if (!stricmp(Main_hall->bitmap.c_str(), "vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "vhallhead";
-		} else if (!stricmp(Main_hall->bitmap.c_str(), "2_vhall")) {
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(0) = InterfaceSounds::VASUDAN_BUP;
-			Main_hall->door_sounds.at(OPTIONS_REGION).at(1) = InterfaceSounds::VASUDAN_BUP;
-			
-			// set head anim. hehe
-			Main_hall->door_anim_name.at(OPTIONS_REGION) = "2_vhallheads";
-			
-			// set the background
-			Main_hall->bitmap = "2_vhallhead";
-		}
-	}
-
 	Main_hall_bitmap_w = -1;
 	Main_hall_bitmap_h = -1;
 
@@ -676,6 +651,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 	for (idx = 0; idx < Main_hall->num_door_animations; idx++) {
 		Main_hall_door_sound_handles.emplace_back(nullptr, sound_handle::invalid());
 	}
+
+	// are we funny?
+	// Thing can't activate unless the mainhall is retail Vasudan or headz_index >= 0
+	// The check is in keycontrol.cpp in the cheats section
+	main_hall_set_door_headz(true);
 
 	// skip the first frame
 	Main_hall_frame_skip = 1;
@@ -1488,7 +1468,7 @@ void main_hall_mouse_release_region(int region)
 			snd_stop(sound_pair->second);
 		}
 
-		auto sound = Main_hall->door_sounds.at(region).at(1);
+		auto sound = Main_hall->door_sounds.at(region).second;
 
 		if (sound.isValid())
 		{
@@ -1536,7 +1516,7 @@ void main_hall_mouse_grab_region(int region)
 	}
 
 
-	auto sound = Main_hall->door_sounds.at(region).at(0);
+	auto sound = Main_hall->door_sounds.at(region).first;
 
 	if (sound.isValid())
 	{
@@ -2431,6 +2411,51 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		m->help_overlay_resolution_index = res_idx;
 	}
 
+	if (optional_string("+Allow Fishies:")) {
+		stuff_boolean(&m->allow_fish);
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->allow_fish = true;
+	}
+
+	if (optional_string("+Left Fish Anim:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->l_fish_anim = temp_string;
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->l_fish_anim = "f_left";
+	}
+
+	if (optional_string("+Right Fish Anim:")) {
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->r_fish_anim = temp_string;
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->r_fish_anim = "f_right";
+	}
+
+	if (optional_string("+Headz Door Index:")) {
+		stuff_int(&m->headz_index);
+
+		required_string("+Headz Animation:");
+		stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+		m->headz_anim = temp_string;
+
+		if (optional_string("+Headz Background:")) {
+			stuff_string(temp_string, F_NAME, MAX_FILENAME_LEN);
+			m->headz_background = temp_string;
+		}
+
+		parse_iface_sound("+Headz sound:", &m->headz_sound_index);
+	} else if (first_time && main_hall_is_retail_vasudan(m)) {
+		m->headz_index = OPTIONS_REGION;
+		m->headz_sound_index = InterfaceSounds::VASUDAN_BUP;
+		if (!stricmp(m->bitmap.c_str(), "2_vhall")) {
+			m->headz_anim = "2_vhallheads";
+			m->headz_background = "2_vhallhead";
+		} else {
+			m->headz_anim = "vhallheads";
+			m->headz_background = "vhallhead";
+		}
+	}
+
 	// zoom area
 	if (optional_string("+Zoom To:")) {
 		stuff_int(&m->zoom_area_width);
@@ -2447,7 +2472,7 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 
 	// ambient sound
 	bool ambient_found = parse_iface_sound("+Ambient Sound:", &m->ambient_sound);
-	if (!ambient_found && first_time && main_hall_is_vasudan(m))
+	if (!ambient_found && first_time && main_hall_is_retail_vasudan(m))
 		m->ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT_V;	// default to using Vasudan ambient sound in a Vasudan hall
 
 	// intercom sounds
@@ -2616,8 +2641,13 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		}
 
 		for (int idx = base_num; idx < m->num_door_animations; idx++) {
+			SCP_vector<interface_snd_id> sounds;
 			// door open and close sounds
-			parse_iface_sound_list("+Door sounds:", m->door_sounds.at(idx), "+Door sounds:", true);
+			parse_iface_sound_list("+Door sounds:", sounds, "+Door sounds:", true);
+			if (sounds.size() >= 2) {
+				m->door_sounds.at(idx).first = sounds.at(0);
+				m->door_sounds.at(idx).second = sounds.at(1);
+			}
 		}
 
 		for (int idx = base_num; idx < m->num_door_animations; idx++) {
@@ -2737,28 +2767,159 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 	}
 }
 
-/**
- * Make the vasudan main hall funny
- */
-void main_hall_vasudan_funny()
+// unload the current background and reload whatever the new one is
+void main_hall_reload_background()
 {
-	Vasudan_funny = 1;
+	// see main_hall_close() and main_hall_init()
+
+	if (Main_hall_bitmap >= 0)
+		bm_release(Main_hall_bitmap);
+
+	Main_hall_bitmap = bm_load(Main_hall->bitmap);
+
+	if (Main_hall_bitmap < 0)
+		nprintf(("General", "WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap.c_str()));
+}
+
+// unload the current door animation and reload whatever the new one is
+void main_hall_reload_door(int region)
+{
+	// see main_hall_close() and main_hall_init()
+
+	auto& door_anim = Main_hall_door_anim.at(region);
+	auto& door_anim_name = Main_hall->door_anim_name.at(region);
+
+	// save info for current animation
+	auto bg_type = door_anim.ani.bg_type;
+	int current_frame = door_anim.current_frame;
+	float anim_time = door_anim.anim_time;
+	auto direction = door_anim.direction;
+
+	if (door_anim.num_frames > 0)
+		generic_anim_unload(&door_anim);
+
+	generic_anim_init(&door_anim, door_anim_name);
+	door_anim.ani.bg_type = bg_type;
+
+	if (generic_anim_stream(&door_anim) < 0)
+		nprintf(("General", "WARNING!, Could not load door anim %s in main hall\n", door_anim_name.c_str()));
+
+	door_anim.current_frame = current_frame;
+	door_anim.anim_time = anim_time;
+	door_anim.direction = direction;
 }
 
 /**
- * Check if Vasudan main hall, based upon background graphics
+ * Toggle the selected door and background between the provided headz animation and the original
  */
-bool main_hall_is_vasudan(const main_hall_defines *hall)
+void main_hall_set_door_headz(bool init)
 {
-	if (!hall)
-	{
+	static bool Enable_headz = false;
+	static SCP_string last_main_hall_name;
+	
+	// Only toggle if we're not initializing the mainhall ui
+	// For our purposes here, "initializing" is whenever the mainhall game state is started from any other game state
+	// Since we're using static now, this kludge makes sure we use the last headz state
+	if (!init) {
+		Enable_headz = !Enable_headz;
+	} else {
+		// if we are initializing and the mainhall has changed then set everything back to default
+		if (Main_hall->name != last_main_hall_name) {
+			Enable_headz = false;
+			return;
+		}
+
+		// if we are initializing and Enable_headz is false, then we have nothing else to do here
+		if (!Enable_headz) {
+			return;
+		}
+	}
+
+	int region_index = -1;
+
+	// Add some kludge to get the region from the mainhall and check that we have everything we need
+	if ((Main_hall->headz_index >= 0) && (Main_hall->headz_index < Main_hall->num_door_animations) && !Main_hall->headz_anim.empty()) {
+		region_index = Main_hall->headz_index;
+	}
+
+	static SCP_string original_bitmap;
+	// Why is this a vector? There can only ever be one
+	static SCP_vector<std::tuple<int, SCP_string, interface_snd_id, interface_snd_id>> original_door_info;
+
+	if (Enable_headz) {
+		// save stuff so we can restore it later
+		// but only when we aren't initializing, else we rewrite what was there before with incorrect values
+		if (!init) {
+			original_bitmap = Main_hall->bitmap;
+			original_door_info.clear();
+			original_door_info.emplace_back(region_index,
+				Main_hall->door_anim_name.at(region_index),
+				Main_hall->door_sounds.at(region_index).first,
+				Main_hall->door_sounds.at(region_index).second);
+		}
+
+		// this is the kludge that actually sets the mainhall door to the headz version
+		if (region_index >= 0) {
+			// set the mouseover sounds
+			Main_hall->door_sounds.at(region_index).first = Main_hall->headz_sound_index;
+			Main_hall->door_sounds.at(region_index).second = Main_hall->headz_sound_index;
+
+			// set head anim
+			Main_hall->door_anim_name.at(region_index) = Main_hall->headz_anim;
+
+			// set the background
+			Main_hall->bitmap = Main_hall->headz_background;
+		}
+	} else {
+		// Return to original. We're not the joker here
+		Main_hall->bitmap = original_bitmap;
+		for (const auto& info : original_door_info) {
+			int door_region = std::get<0>(info);
+			Main_hall->door_anim_name.at(door_region) = std::get<1>(info);
+			Main_hall->door_sounds.at(door_region).first = std::get<2>(info);
+			Main_hall->door_sounds.at(door_region).second = std::get<3>(info);
+		}
+	}
+
+	last_main_hall_name = Main_hall->name;
+
+	// reload anything we changed, whether on or off
+	main_hall_reload_background();
+	for (const auto& info : original_door_info)
+		main_hall_reload_door(std::get<0>(info));
+}
+
+/**
+ * Lookup if retail Vasudan main hall, based upon background graphics
+ */
+bool main_hall_is_retail_vasudan(const main_hall_defines* hall)
+{
+	if (!hall) {
 		if (Main_hall)
-			hall = Main_hall;	// default to the current main hall
+			hall = Main_hall; // default to the current main hall
 		else
 			return false;
 	}
 
-	return !stricmp(hall->bitmap.c_str(), "vhall") || !stricmp(hall->bitmap.c_str(), "2_vhall");
+	// Is retail vasudan if it uses the regular or headz bitmaps for either the 640 or 1024 retail resolution filesets
+	// The latter 2 aren't strictly necessary for how this method is currently used, but you never know for the future
+	return util::isStringOneOf(hall->bitmap, {"vhall", "2_vhall", "vhallhead", "2_vhallhead"});
+}
+
+/**
+* Lookup if fish are allowed in a main hall
+*/
+bool main_hall_allows_fish()
+{
+	return Main_hall->allow_fish;
+}
+
+/**
+* Lookup if a headz graphic is defined in a main hall
+*/
+bool main_hall_allows_headz()
+{
+	return (Main_hall->headz_index >= 0 && !Main_hall->headz_anim.empty());
 }
 
 /**
@@ -2799,4 +2960,12 @@ void main_hall_unpause()
 void main_hall_toggle_help(bool enable)
 {
 	help_overlay_set_state(Main_hall_overlay_id, main_hall_get_overlay_resolution_index(), (int)enable);
+}
+
+/**
+* Start the fishies!
+*/
+void main_hall_start_fishies()
+{
+	fishtank_start(Main_hall->l_fish_anim, Main_hall->r_fish_anim);
 }
