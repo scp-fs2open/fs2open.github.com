@@ -3192,7 +3192,7 @@ int beam_collide_ship(obj_pair *pair)
 			// do the hit effect
 			if (shield_collision) {
 				if (mc_shield.shield_hit_tri != -1) {
-					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, bwi->shield_impact_effect_radius);
 				}
 			} else {
 				/* TODO */;

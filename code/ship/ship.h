@@ -1322,6 +1322,7 @@ public:
 	bool	auto_shield_spread_bypass;		// Whether weapons fired up close can bypass shields
 	int		auto_shield_spread_from_lod;	// Which LOD to project the shield from
 	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
+	float   max_shield_impact_effect_radius;
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
@@ -1768,7 +1769,7 @@ extern void create_shield_explosion(int objnum, int model_num, matrix *orient, v
 extern void shield_hit_init();
 extern void create_shield_explosion_all(object *objp);
 extern void shield_frame_init();
-extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos);
+extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float radius_override);
 extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();
