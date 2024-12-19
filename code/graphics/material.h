@@ -252,6 +252,8 @@ public:
 	bool is_batched() const;
 
 	uint get_shader_flags() const override;
+    int get_shader_runtime_early_flags() const;
+	int get_shader_runtime_flags() const;
 
 	void set_fog(int r, int g, int b, float near, float far);
 	void set_fog();

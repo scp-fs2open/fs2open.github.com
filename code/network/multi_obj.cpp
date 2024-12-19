@@ -314,7 +314,7 @@ void multi_rollback_ship_record_add_ship(int obj_num)
 	
 	if (objp->type == OBJ_SHIP) {
 		int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-		objp->interp_info.reset(subsystem_count);
+		Interp_info[obj_num].reset(subsystem_count);
 	}
 	
 	// if we're right where we should be.
@@ -475,7 +475,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 	// and print to debugif it is.
-	if (!target_timestamp.isValid() || target_timestamp.isNever()) {
+	if (!target_timestamp.isFinite()) {
 		mprintf(("Nonsense timestamp in multi_ship_record_find_frame of %s. Get ~~Allender~~ Cyborg!\n", (target_timestamp.isValid()) ? "isNever" : "NOT isValid"));
 		return frame;
 	};
@@ -484,7 +484,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 		// and print to debug if it is.	  No need to trigger the Assert in timestamp_in_between, as it is minor here. (i + 1 should be check on previous iteration, most of the time)
-		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+		if (!Oo_info.timestamps[i].isFinite()) {
 			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
 			return frame;
 		}
@@ -500,7 +500,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 
 	// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 	// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
-	if (!Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid() || Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isNever()) {
+	if (!Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isFinite()) {
 			mprintf(("timestamps[MAX_FRAMES_FRAMES_RECORDED - 1] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[MAX_FRAMES_RECORDED - 1].isValid()) ? "isNever" : "invalid"));
 			return frame;
 	}
@@ -521,7 +521,7 @@ int multi_ship_record_find_frame(int client_frame, int time_elapsed)
 	for (int i = MAX_FRAMES_RECORDED - 2; i > Oo_info.cur_frame_index; i--) {
 		// need to try to make rollback shot make some kind of sense if we have invalid timestamps,
 		// and print to debug if it is. No need to trigger the Assert in timestamp_in_between, as it is minor here.
-		if (!Oo_info.timestamps[i].isValid() || Oo_info.timestamps[i].isNever()) {
+		if (!Oo_info.timestamps[i].isFinite()) {
 			mprintf(("timestamps[i] is %s, get ~~Allender~~ Cyborg!\n", (Oo_info.timestamps[i].isValid()) ? "isNever" : "invalid"));
 			return frame;
 		}
@@ -915,9 +915,9 @@ void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIM
 
 	// now that we have valid values, we need to fix the affected values in the record.
 	do {
-		Objects[objnum].interp_info.reinterpolate_previous(
+		Interp_info[objnum].reinterpolate_previous(
 			Oo_info.timestamps[prev_index], prev_packet_index, current_packet_index,  
-			&info->positions[prev_index], &info->orientations[prev_index], &info->velocities[prev_index], &info->rotational_velocities[prev_index]
+			info->positions[prev_index], info->orientations[prev_index], info->velocities[prev_index], info->rotational_velocities[prev_index]
 			);
 		++prev_index;
 
@@ -981,7 +981,7 @@ void multi_oo_respawn_reset_info(object* objp)
 
 	// To ensure clean interpolation, we should probably just reset everything.
 	int subsystem_count = Ship_info[Ships[objp->instance].ship_info_index].n_subsystems;
-	objp->interp_info.reset(subsystem_count);
+	Interp_info[OBJ_INDEX(objp)].reset(subsystem_count);
 }
 
 // ---------------------------------------------------------------------------------------------------
@@ -1493,8 +1493,9 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 		// either send out the waypoint they are trying to get to *or* their current target
 		if (umode == AIM_WAYPOINTS) {
 			// if it's already started pointing to a waypoint, grab its net_signature and send that instead
-			if ((aip->wp_list != nullptr) && (aip->wp_index >= 0 && aip->wp_index < static_cast<int>(aip->wp_list->get_waypoints().size()))) {
-				target_signature = Objects[aip->wp_list->get_waypoints().at(aip->wp_index).get_objnum()].net_signature;
+			waypoint* wp;
+			if ((wp = find_waypoint_at_indexes(aip->wp_list_index, aip->wp_index)) != nullptr) {
+				target_signature = Objects[wp->get_objnum()].net_signature;
 			}
 		} // send the target signature. 2021 Version!
 		else if ((aip->goals[0].target_name != nullptr) && strlen(aip->goals[0].target_name) != 0) {
@@ -1797,6 +1798,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		return offset;
 	}
 
+	int objnum = OBJ_INDEX(pobjp);
+
 	// ship pointer
 	shipp = &Ships[pobjp->instance];
 	sip = &Ship_info[shipp->ship_info_index];
@@ -1864,7 +1867,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 			new_phys_info.desired_rotvel = new_phys_info.rotvel;
 		}
 
-		pobjp->interp_info.add_packet(OBJ_INDEX(pobjp), seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
+		Interp_info[objnum].add_packet(objnum, seq_num, time_delta, &new_pos, &new_phys_info.vel, &new_phys_info.rotvel, &new_phys_info.desired_vel, &new_phys_info.desired_rotvel, &new_angles, pl->player_id);
 	}
 
 	// Packet processing needs to stop here if the ship is still arriving, leaving, dead or dying to prevent bugs.
@@ -1881,9 +1884,9 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 	// hull info
 	if ( oo_flags & OO_HULL_NEW ){
 		UNPACK_PERCENT(fpct);
-		if (seq_num > pobjp->interp_info.get_hull_comparison_frame()) {
+		if (seq_num > Interp_info[objnum].get_hull_comparison_frame()) {
 			pobjp->hull_strength = fpct * Ships[pobjp->instance].ship_max_hull_strength;
-			pobjp->interp_info.set_hull_comparison_frame(seq_num);
+			Interp_info[objnum].set_hull_comparison_frame(seq_num);
 		}
 	}	
 
@@ -1892,12 +1895,12 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		float quad = shield_get_max_quad(pobjp);
 
 		// check before unpacking here so we don't have to recheck for each quadrant.
-		if (seq_num > pobjp->interp_info.get_shields_comparison_frame()) {
+		if (seq_num > Interp_info[objnum].get_shields_comparison_frame()) {
 			for (int i = 0; i < pobjp->n_quadrants; i++) {
 				UNPACK_PERCENT(fpct);
 				pobjp->shield_quadrant[i] = fpct * quad;
 			}
-			pobjp->interp_info.set_shields_comparison_frame(seq_num);
+			Interp_info[objnum].set_shields_comparison_frame(seq_num);
 		}
 		else {
 			for (int i = 0; i < pobjp->n_quadrants; i++) {
@@ -1937,8 +1940,8 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 				// update health
 				if (flags[i] & OO_SUBSYS_HEALTH) {
-					if (seq_num > pobjp->interp_info.get_subsystem_health_frame(i)) {
-						pobjp->interp_info.set_subsystem_health_frame(i, seq_num);
+					if (seq_num > Interp_info[objnum].get_subsystem_health_frame(i)) {
+						Interp_info[objnum].set_subsystem_health_frame(i, seq_num);
 						subsysp->current_hits = subsys_data[data_idx] * subsysp->max_hits;
 
 						// Aggregate if necessary.
@@ -1954,9 +1957,9 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 					bool animations_valid = false;
 
-					if (seq_num > pobjp->interp_info.get_subsystem_animation_frame(i)) {
+					if (seq_num > Interp_info[objnum].get_subsystem_animation_frame(i)) {
 						animations_valid = true;
-						pobjp->interp_info.set_subsystem_animation_frame(i, seq_num);						
+						Interp_info[objnum].set_subsystem_animation_frame(i, seq_num);						
 					}
 
 					angles prev_angs_1 = vmd_zero_angles;
@@ -2097,7 +2100,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 		float weapon_energy_pct;
 		UNPACK_PERCENT(weapon_energy_pct);
 
-		if( seq_num > pobjp->interp_info.get_ai_comparison_frame() ){
+		if( seq_num > Interp_info[objnum].get_ai_comparison_frame() ){
 			if ( shipp->ai_index >= 0 ){
 				// make sure to undo the wrap if it occurred during compression for unset ai mode.
 				if (umode == 255) {
@@ -2122,12 +2125,14 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 					Ai_info[shipp->ai_index].goals[0].target_name = nullptr;
 				// set their waypoints if in waypoint mode.
 				} else if (umode == AIM_WAYPOINTS) {
-					waypoint* destination = find_waypoint_with_instance(target_objp->instance);
-					if (destination != nullptr) {
-						Ai_info[shipp->ai_index].wp_list = destination->get_parent_list();
-						Ai_info[shipp->ai_index].wp_index = find_index_of_waypoint(Ai_info[shipp->ai_index].wp_list, destination);
+					int wp_list_index = calc_waypoint_list_index(target_objp->instance);
+					int wp_index = calc_waypoint_index(target_objp->instance);
+					if (find_waypoint_at_indexes(wp_list_index, wp_index) != nullptr) {
+						Ai_info[shipp->ai_index].wp_list_index = wp_list_index;
+						Ai_info[shipp->ai_index].wp_index = wp_index;
 					} else {
-						Ai_info[shipp->ai_index].wp_list = nullptr;
+						Ai_info[shipp->ai_index].wp_list_index = -1;
+						Ai_info[shipp->ai_index].wp_index = INVALID_WAYPOINT_POSITION;
 					}
 				} else {
 					Ai_info[shipp->ai_index].target_objnum = OBJ_INDEX(target_objp);
@@ -2137,7 +2142,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 			shipp->weapon_energy = sip->max_weapon_reserve * weapon_energy_pct;
 
-			pobjp->interp_info.set_ai_comparison_frame(seq_num);
+			Interp_info[objnum].set_ai_comparison_frame(seq_num);
 		}		
 	}	
 

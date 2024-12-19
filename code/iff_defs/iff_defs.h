@@ -17,9 +17,10 @@
 class object;
 
 // Goober5000 - new IFF color system
-#define IFF_COLOR_SELECTION			0
-#define IFF_COLOR_MESSAGE			1
-#define IFF_COLOR_TAGGED			2
+// Now variables so that modular tables can actually affect them. -MageKing17
+extern int IFF_COLOR_SELECTION;
+extern int IFF_COLOR_MESSAGE;
+extern int IFF_COLOR_TAGGED;
 
 enum IFF_hotkey_team { Default = -1, None = 0, Friendly, Hostile };
 
@@ -37,11 +38,13 @@ typedef struct iff_info {
 	// required stuff
 	char iff_name[NAME_LENGTH];
 	int color_index;							// treat this as private and use iff_get_color or iff_get_color_by_team
+	int accessibility_color_index;
 
 	// relationships
 	int attackee_bitmask;						// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	int attackee_bitmask_all_teams_at_war;		// treat this as private and use iff_get_attackee_mask or iff_x_attacks_y
 	SCP_map<int, int> observed_color_map;			// treat this as private and use iff_get_color or iff_get_color_by_team
+	SCP_map<int, int> accessibility_observed_color_map;
 	IFF_hotkey_team hotkey_team;
 
 	// flags
@@ -49,7 +52,8 @@ typedef struct iff_info {
 	flagset<Mission::Parse_Object_Flags> default_parse_flags;
 
 	// used internally, not parsed
-	TIMESTAMP ai_rearm_timestamp;
+	TIMESTAMP ai_good_rearm_timestamp;
+	TIMESTAMP ai_bad_rearm_timestamp;
 
 } iff_info;
 

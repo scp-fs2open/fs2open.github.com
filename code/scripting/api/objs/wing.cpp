@@ -31,8 +31,8 @@ ADE_INDEXER(l_Wing, "number Index", "Array of ships in the wing", "ship", "Ship 
 	//Lua-->FS2
 	sdx--;
 
-	if(ADE_SETTING_VAR && ndx != NULL && ndx->IsValid()) {
-		Wings[wdx].ship_index[sdx] = ndx->objp->instance;
+	if(ADE_SETTING_VAR && ndx != NULL && ndx->isValid()) {
+		Wings[wdx].ship_index[sdx] = ndx->objp()->instance;
 	}
 
 	return ade_set_args(L, "o", l_Ship.Set(object_h(&Objects[Ships[Wings[wdx].ship_index[sdx]].objnum])));
@@ -73,6 +73,18 @@ ADE_FUNC(isValid, l_Wing, NULL, "Detects whether handle is valid", "boolean", "t
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getBreedName, l_Wing, nullptr, "Gets the FreeSpace type name", "string", "'Wing', or empty string if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Wing.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if (idx < 0 || idx >= Num_wings)
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", "Wing");
 }
 
 ADE_FUNC(setFlag, l_Wing, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names are currently limited to the arrival and departure parseable flags.", nullptr, "Returns nothing")
@@ -263,7 +275,8 @@ ADE_VIRTVAR(TotalVanished, l_Wing, nullptr, "Gets the number of ships that have 
 	return wing_getset_helper(L, &wing::total_vanished);
 }
 
-static int wing_getset_location_helper(lua_State* L, int wing::* field, const char* location_type, const char** location_names, size_t location_names_size)
+template <typename LOC>
+static int wing_getset_location_helper(lua_State* L, LOC wing::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
 	int wingnum;
 	const char* s = nullptr;
@@ -281,10 +294,10 @@ static int wing_getset_location_helper(lua_State* L, int wing::* field, const ch
 			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
 			return ADE_RETURN_NIL;
 		}
-		Wings[wingnum].*field = location;
+		Wings[wingnum].*field = static_cast<LOC>(location);
 	}
 
-	return ade_set_args(L, "s", location_names[Wings[wingnum].*field]);
+	return ade_set_args(L, "s", location_names[static_cast<int>(Wings[wingnum].*field)]);
 }
 
 ADE_VIRTVAR(ArrivalLocation, l_Wing, "string", "The wing's arrival location", "string", "Arrival location, or nil if handle is invalid")
@@ -312,7 +325,7 @@ static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
 		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
 	}
 
-	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field] : "<no anchor>");
+	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field].c_str() : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Wing, "string", "The wing's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
@@ -348,6 +361,16 @@ ADE_VIRTVAR(DepartureDelay, l_Wing, "number", "The wing's departure delay", "num
 ADE_VIRTVAR(ArrivalDistance, l_Wing, "number", "The wing's arrival distance", "number", "Arrival distance, or nil if handle is invalid")
 {
 	return wing_getset_helper(L, &wing::arrival_distance, true);
+}
+
+ADE_VIRTVAR(WaveDelayMinimum, l_Wing, "number", "The wing's minimum wave delay", "number", "Min wave delay, or nil if handle is invalid")
+{
+	return wing_getset_helper(L, &wing::wave_delay_min, true);
+}
+
+ADE_VIRTVAR(WaveDelayMaximum, l_Wing, "number", "The wing's maximum wave delay", "number", "Max wave delay, or nil if handle is invalid")
+{
+	return wing_getset_helper(L, &wing::wave_delay_max, true);
 }
 
 

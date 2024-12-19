@@ -133,7 +133,7 @@ bool object_in_turret_fov(const object *objp, const ship_subsys *ss, const vec3d
 				model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;
 				break;
 			case OBJ_ASTEROID:
-				model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+				model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 				break;
 			default:
 				vm_vec_normalized_dir(&v2e, &objp->pos, tpos);
@@ -1215,6 +1215,7 @@ void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp,
 	}
 
 	model_instance_local_to_global_point(gpos, gun_pos, pm, pmi, tp->turret_gun_sobj, &objp->orient, &objp->pos);
+	
 
 	// we might not need to calculate this
 	if (!gvec)
@@ -1781,45 +1782,47 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
 				return false;
 			}
-			beam_fire_info fire_info;
 
-			// stuff beam firing info
-			memset(&fire_info, 0, sizeof(beam_fire_info));
-			fire_info.accuracy = 1.0f;
-			fire_info.beam_info_index = turret_weapon_class;
-			fire_info.beam_info_override = nullptr;
-			fire_info.shooter = &Objects[parent_objnum];
-			fire_info.target = turret_enemy_objp;
-			if (wip->wi_flags[Weapon::Info_Flags::Antisubsysbeam])
-				fire_info.target_subsys = turret->targeted_subsys;
-			else
-				fire_info.target_subsys = nullptr;
-			fire_info.turret = turret;
-			fire_info.burst_seed = old_burst_seed;
-			fire_info.fire_method = BFM_TURRET_FIRED;
-			fire_info.per_burst_rotation = swp->per_burst_rot;
-			fire_info.burst_index = old_burst_counter;
+			for (int i = 0; i < wip->shots; i++) {
+				beam_fire_info fire_info;
 
-			// fire a beam weapon
-			weapon_objnum = beam_fire(&fire_info);
+				// stuff beam firing info
+				memset(&fire_info, 0, sizeof(beam_fire_info));
+				fire_info.accuracy = 1.0f;
+				fire_info.beam_info_index = turret_weapon_class;
+				fire_info.beam_info_override = nullptr;
+				fire_info.shooter = &Objects[parent_objnum];
+				fire_info.target = turret_enemy_objp;
+				if (wip->wi_flags[Weapon::Info_Flags::Antisubsysbeam])
+					fire_info.target_subsys = turret->targeted_subsys;
+				else
+					fire_info.target_subsys = nullptr;
+				fire_info.turret = turret;
+				fire_info.burst_seed = old_burst_seed;
+				fire_info.fire_method = BFM_TURRET_FIRED;
+				fire_info.per_burst_rotation = swp->per_burst_rot;
+				fire_info.burst_index = (old_burst_counter * wip->shots) + i;
 
-			if (weapon_objnum != -1) {
-				objp = &Objects[weapon_objnum];
+				// fire a beam weapon
+				weapon_objnum = beam_fire(&fire_info);
 
-				parent_ship->last_fired_turret = turret;
-				turret->last_fired_weapon_info_index = turret_weapon_class;
-				turret->turret_last_fired = _timestamp();
+				if (weapon_objnum != -1) {
+					objp = &Objects[weapon_objnum];
 
-				if (scripting::hooks::OnTurretFired->isActive()) {
-					scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
-						scripting::hook_param_list(
-							scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
-							scripting::hook_param("Beam", 'o', objp),
-							scripting::hook_param("Target", 'o', turret_enemy_objp)
-						));
+					parent_ship->last_fired_turret = turret;
+					turret->last_fired_weapon_info_index = turret_weapon_class;
+					turret->turret_last_fired = _timestamp();
+
+					if (scripting::hooks::OnTurretFired->isActive()) {
+						scripting::hooks::OnTurretFired->run(scripting::hooks::WeaponUsedConditions{ parent_ship , turret_enemy_objp, SCP_vector<int>{ turret_weapon_class }, true },
+							scripting::hook_param_list(
+								scripting::hook_param("Ship", 'o', &Objects[parent_objnum]),
+								scripting::hook_param("Beam", 'o', objp),
+								scripting::hook_param("Target", 'o', turret_enemy_objp)
+							));
+					}
 				}
 			}
-
 			turret->flags.set(Ship::Subsystem_Flags::Has_fired); //set fired flag for scripting -nike
 			return true;
 		}
@@ -1988,7 +1991,14 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					}
 
 					// do mflash if the weapon has it
-					if (wip->muzzle_flash >= 0) {
+					if (wip->muzzle_effect.isValid()) {
+						//spawn particle effect
+						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
+						particleSource.moveToTurret(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos);
+						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
+						particleSource.finish();
+					}
+					else if (wip->muzzle_flash >= 0) {
 						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
 					}
 
@@ -2098,7 +2108,14 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		}
 
 		// muzzle flash?
-		if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
+		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
+			//spawn particle effect
+			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
+			particleSource.moveToTurret(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1);
+			particleSource.setVelocity(&Objects[tsi->parent_objnum].phys_info.vel);
+			particleSource.finish();
+		}
+		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
 			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		}
 
@@ -2536,9 +2553,10 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		return;
 	}
 
-	if ( lep == nullptr ){
-		return;
-	}
+	//This can't happen. See above code
+	//if ( lep == nullptr ){
+	//	return;
+	//}
 
 	//This can't happen. See above code
 	//Assert(ss->turret_enemy_objnum != -1);

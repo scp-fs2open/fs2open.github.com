@@ -47,7 +47,7 @@ ADE_VIRTVAR(Position, l_ModelPathPoint, "vector", "The current, global position 
 	}
 
 	// A submodel is only valid if the object is a ship so this is safe
-	auto objp  = p->parent->subsys.objp;
+	auto objp  = p->parent->subsys.objh.objp();
 	auto shipp = &Ships[objp->instance];
 
 	auto pmi = model_get_instance(shipp->model_instance_num);
@@ -82,7 +82,7 @@ model_path_h::model_path_h(const ship_subsys_h& _subsys, const model_path& _path
 		verts.push_back(_path.verts[i]);
 	}
 }
-bool model_path_h::isValid() const { return subsys.isSubsystemValid(); }
+bool model_path_h::isValid() const { return subsys.isValid(); }
 
 ADE_OBJ(l_ModelPath, model_path_h, "modelpath", "Path of a model");
 

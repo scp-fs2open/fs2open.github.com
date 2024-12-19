@@ -806,6 +806,22 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	return ade_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
+ADE_VIRTVAR(ShieldHitpointsMax, l_Shipclass, nullptr, "Ship class shield hitpoints", "number", "Shield hitpoints, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Shield Max Hitpoints is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].max_shield_strength);
+}
+
 ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
 	int idx;
@@ -1170,6 +1186,66 @@ ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class ha
 	ship_info *sip = &Ship_info[idx];
 
 	bool result = !sip->custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
+ADE_VIRTVAR(CustomStrings,
+	l_Shipclass,
+	nullptr,
+	"Gets the indexed custom string table for this ship. Each item in the table is a table with the following values: "
+	"Name - the name of the custom string, Value - the value associated with the custom string, String - the custom "
+	"string itself.",
+	"table",
+	"The ship's custom data table")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info* sip = &Ship_info[idx];
+	
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	int cnt = 0;
+
+	for (const auto& cs : sip->custom_strings) {
+		cnt++;
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.name));
+		item.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.value));
+		item.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.text));
+
+		table.addValue(cnt, item);
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(hasCustomStrings,
+	l_Shipclass,
+	nullptr,
+	"Detects whether the ship has any custom strings",
+	"boolean",
+	"true if the ship's custom_strings is not empty, false otherwise")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info* sip = &Ship_info[idx];
+
+	bool result = !sip->custom_strings.empty();
 	return ade_set_args(L, "b", result);
 }
 

@@ -41,6 +41,9 @@
 #include "weapon/weapon.h"
 #include "tracing/tracing.h"
 
+#define MODEL_SDR_FLAG_MODE_CPP
+#include "def_files/data/effects/model_shader_flags.h"
+
 #include <algorithm>
 #include <stack>
 #include <map>
@@ -1697,7 +1700,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
 				}
 
-				pm->submodel = new bsp_info[pm->n_models];
+				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -2659,8 +2662,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
 				{
-					char tmp_name[256];
+					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
+					constexpr int max_buffer_size = MAX_FILENAME_LEN - 8;	// leave room for the longest suffix, "-reflect"
+					if (strlen(tmp_name) >= max_buffer_size)
+					{
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						tmp_name[max_buffer_size - 1] = '\0';
+					}
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -3118,7 +3127,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 
 
 //Goober
-void model_load_texture(polymodel *pm, int i, char *file)
+void model_load_texture(polymodel *pm, int i, const char *file)
 {
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
@@ -3250,7 +3259,7 @@ void model_load_texture(polymodel *pm, int i, char *file)
 
 	// See if we need to compile a new shader for this material
 	if (Shadow_quality != ShadowQuality::Disabled)
-		gr_maybe_create_shader(SDR_TYPE_MODEL, SDR_FLAG_MODEL_SHADOW_MAP);
+		gr_maybe_create_shader(SDR_TYPE_MODEL, MODEL_SDR_FLAG_SHADOW_MAP);
 
 	gr_maybe_create_shader(SDR_TYPE_MODEL, 0);
 
@@ -3538,7 +3547,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 int model_create_instance(int objnum, int model_num)
 {
-	Assertion(objnum >= -1 && objnum < MAX_OBJECTS, "objnum must be -1 or a valid object index!");
+	Assertion(objnum > OBJNUM_SPECIAL_MIN && objnum < MAX_OBJECTS, "objnum must be -1 (none), -2 (player cockpit) or a valid object index!");
 
 	// this will also run a bunch of Assertions
 	auto pm = model_get(model_num);
@@ -3839,7 +3848,7 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
-	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
 		return NULL;
 
 	return Polygon_models[num];
@@ -4023,7 +4032,7 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 
 
 // Given a rotating submodel, find the local and world axes of rotation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
@@ -4862,7 +4871,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		if (model_instance_num < 0) {
 			return;
 		}
-		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 	}
 	else {
 		return;
@@ -5155,7 +5164,7 @@ void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color )
+void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5175,10 +5184,11 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 		smi->arc_pts[smi->num_arcs][0] = *v1;
 		smi->arc_pts[smi->num_arcs][1] = *v2;
 
-		if (arc_type == MARC_TYPE_SHIP) {
+		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
 			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
 			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
 			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
+			smi->arc_width[smi->num_arcs] = width;
 		}
 
 		smi->num_arcs++;
@@ -5369,7 +5379,7 @@ int model_create_bsp_collision_tree()
 		return (int)i;
 	}
 
-	bsp_collision_tree tree;
+	bsp_collision_tree tree{};
 
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);

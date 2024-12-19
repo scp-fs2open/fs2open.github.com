@@ -113,7 +113,7 @@ int Main_hall_right_click;
 int Main_hall_last_clicked_region;
 
 // use this to determine how long the cursor has to linger on a region before it starts playing
-#define MAIN_HALL_REGION_LINGER		175		// in ms
+int Main_hallregion_linger_delay = 175; // in ms
 int Main_hall_region_linger_stamp = -1;
 
 // handle any right clicks which may have occured
@@ -309,6 +309,8 @@ static int F1_text_done = 0;
 int Main_hall_help_stamp = -1;
 void main_hall_process_help_stuff();
 
+bool Main_hall_use_defaults = true;
+
 
 // ----------------------------------------------------------------------------
 // VOICE RECORDING STUFF
@@ -473,6 +475,13 @@ void main_hall_init(const SCP_string &main_hall_name)
 		return;
 	}
 
+	extern bool Campaign_room_no_campaigns;
+
+	// Log if we don't have a campaign set yet.
+	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
+		mprintf(("No valid campaign is currently selected for the active player!\n"));
+	}
+
 	// gameseq_post_event(GS_EVENT_SCRIPTING);
 
 	int idx;
@@ -497,7 +506,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	}
 
 	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
-	if (Main_hall && Main_hall->name != main_hall_to_load) {
+	if (!Main_hall || Main_hall->name != main_hall_to_load) {
 		main_hall_stop_ambient();
 	}
 
@@ -1081,10 +1090,14 @@ void main_hall_do(float frametime)
 	help_overlay_maybe_blit(Main_hall_overlay_id, main_hall_get_overlay_resolution_index());
 
 	// blit the freespace version #
-	main_hall_blit_version();
+	if (Main_hall->render_version) {
+		main_hall_blit_version();
+	}
 
 	// blit the mod title and version
-	main_hall_blit_mod();
+	if (Main_hall->render_title) {
+		main_hall_blit_mod();
+	}
 
 	// blit ship and weapon table status
 #ifndef NDEBUG
@@ -1093,11 +1106,6 @@ void main_hall_do(float frametime)
 
 	gr_flip();
 	gr_reset_screen_scale();
-
-	// Log if we don't have a campaign set yet.
-	if (!(Player->flags & PLAYER_FLAGS_IS_MULTI) && Campaign_file_missing && !Campaign_room_no_campaigns) {
-		mprintf(("No valid campaign is currently selected for the active player!\n"));
-	}
 
 	// Display a popup if playermenu loaded a player file with a different version than expected
 	bool popup_shown = player_tips_controls();
@@ -1440,7 +1448,7 @@ void main_hall_handle_mouse_location(int cur_region)
 			// set the linger time
 			if (Main_hall_region_linger_stamp == -1) {
 				Main_hall_mouse_region = cur_region;
-				Main_hall_region_linger_stamp = timestamp(MAIN_HALL_REGION_LINGER);
+				Main_hall_region_linger_stamp = timestamp(Main_hallregion_linger_delay);
 			}
 		}
 	} else { // if it was over a region but isn't anymore, release that region
@@ -1718,22 +1726,17 @@ void main_hall_notify_do()
  */
 void main_hall_start_ambient()
 {
-	int play_ambient_loop = 0;
-
 	if (Main_hall_paused) {
 		return;
 	}
 
-	if (!Main_hall_ambient_loop.isValid()) {
-		play_ambient_loop = 1;
-	} else {
-		if (!snd_is_playing(Main_hall_ambient_loop)) {
-			play_ambient_loop = 1;
-		}
-	}
+	if (!Main_hall_ambient_loop.isValid() || !snd_is_playing(Main_hall_ambient_loop)) {
+		// if no main hall (e.g. on pilot select screen) use the default
+		auto sound = Main_hall ? Main_hall->ambient_sound : InterfaceSounds::MAIN_HALL_AMBIENT;
 
-	if (play_ambient_loop) {
-		Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT));
+		if (sound.isValid()) {
+			Main_hall_ambient_loop = snd_play_looping(gamesnd_get_interface_sound(sound));
+		}
 	}
 
 	// no need to restart the intercom, since the game will set the timestamp for a new one
@@ -1784,7 +1787,12 @@ void main_hall_stop_ambient()
 void main_hall_reset_ambient_vol()
 {
 	if (Main_hall_ambient_loop.isValid()) {
-		snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(InterfaceSounds::MAIN_HALL_AMBIENT)->volume_range.next());
+		// if no main hall (e.g. on pilot select screen) use the default
+		auto sound = Main_hall ? Main_hall->ambient_sound : InterfaceSounds::MAIN_HALL_AMBIENT;
+
+		if (sound.isValid()) {
+			snd_set_volume(Main_hall_ambient_loop, gamesnd_get_interface_sound(sound)->volume_range.next());
+		}
 	}
 }
 
@@ -1816,12 +1824,20 @@ void main_hall_blit_version()
  */
 void main_hall_blit_mod()
 {
-	if ((!Mod_title.empty()) && (!Mod_version.empty())) {
-
+	if (!Mod_title.empty() || !Mod_version.empty()) {
 		int w, h;
+		SCP_string mod_string;
 
-		// format the version string
-		auto mod_string = Mod_title + " " + Mod_version;
+		// build the string
+
+		if (!Mod_title.empty())
+			mod_string = Mod_title;
+
+		if (!Mod_title.empty() && !Mod_version.empty())
+			mod_string += " ";
+
+		if (!Mod_version.empty())
+			mod_string += Mod_version;
 
 		int old_font = font::get_current_fontnum();
 		font::set_font(Main_hall->font);
@@ -1834,7 +1850,6 @@ void main_hall_blit_mod()
 		gr_string(5, gr_screen.max_h_unscaled_zoomed - (h * 3 + 6), mod_string.c_str(), GR_RESIZE_MENU_ZOOMED);
 
 		font::set_font(old_font);
-
 	}
 }
 
@@ -2156,18 +2171,20 @@ void region_info_init(main_hall_defines &m)
 		m.regions.clear();
 	}
 	
-	main_hall_region defaults[] = {
-		main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
-		main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
-		main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
-		main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
-		main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
-		main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
-		main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
-	};
+	if (Main_hall_use_defaults) {
+		main_hall_region defaults[] = {
+			main_hall_region(0,  0,  XSTR( "Exit FreeSpace 2", 353), EXIT_REGION, ""),
+			main_hall_region(1, 'B', XSTR( "Barracks - Manage your FreeSpace 2 pilots", 354), BARRACKS_REGION, ""),
+			main_hall_region(2, 'R', XSTR( "Ready room - Start or continue a campaign", 355), START_REGION, ""),
+			main_hall_region(3, 'T', XSTR( "Tech room - View specifications of FreeSpace 2 ships and weaponry", 356), TECH_ROOM_REGION, ""),
+			main_hall_region(4,  0,  XSTR( "Options - Change your FreeSpace 2 options", 357), OPTIONS_REGION, ""),
+			main_hall_region(5, 'C', XSTR( "Campaign Room - View all available campaigns", 358), CAMPAIGN_ROOM_REGION, ""),
+			main_hall_region(6, 'G', "Quick start", QUICK_START_REGION, "")
+		};
 	
-	for (int idx = 0; idx < 7; idx++) {
-		m.regions.push_back(defaults[idx]);
+		for (int idx = 0; idx < 7; idx++) {
+			m.regions.push_back(defaults[idx]);
+		}
 	}
 	
 	// XSTR( "Multiplayer - Start or join a multiplayer game", 359)
@@ -2214,12 +2231,25 @@ void parse_main_hall_table(const char* filename)
 
 		reset_parse();
 
-		if (optional_string("$Num Resolutions:")) {
-			stuff_int(&num_resolutions);
+		if (optional_string("$Base mainhalls on retail defaults:")) {
+			stuff_boolean(&Main_hall_use_defaults);
 		}
 
-		if (num_resolutions < 1) {
-			Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+		if (optional_string("$Num Resolutions:")) {
+			stuff_int(&num_resolutions);
+			if (num_resolutions < 1) {
+				Error(LOCATION, "$Num Resolutions in %s is %d. (Must be 1 or greater)", filename, num_resolutions);
+			}
+		}
+
+		if (optional_string("$Door animation delay on hover:")) {
+			int linger_temp;
+			stuff_int(&linger_temp);
+			if (linger_temp < 0) {
+				mprintf(("The value '%i' for '$Door animation delay on hover:' must be greater than 0, setting to 0!", linger_temp));
+				linger_temp = 0;
+			}
+			Main_hallregion_linger_delay = linger_temp;
 		}
 
 		// find out what hall we read next
@@ -2406,6 +2436,19 @@ void parse_one_main_hall(bool replace, int num_resolutions, int &hall_idx, int &
 		stuff_int(&m->zoom_area_width);
 		stuff_int(&m->zoom_area_height);
 	}
+
+	if (optional_string("+Render Mod Title:")) {
+		stuff_boolean(&m->render_title);
+	}
+
+	if (optional_string("+Render FSO Version:")) {
+		stuff_boolean(&m->render_version);
+	}
+
+	// ambient sound
+	bool ambient_found = parse_iface_sound("+Ambient Sound:", &m->ambient_sound);
+	if (!ambient_found && first_time && main_hall_is_vasudan(m))
+		m->ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT_V;	// default to using Vasudan ambient sound in a Vasudan hall
 
 	// intercom sounds
 	if (optional_string("+Num Intercom Sounds:")) {
@@ -2703,11 +2746,19 @@ void main_hall_vasudan_funny()
 }
 
 /**
- * Lookup if Vasudan main hall, based upon background graphics
+ * Check if Vasudan main hall, based upon background graphics
  */
-bool main_hall_is_vasudan()
+bool main_hall_is_vasudan(const main_hall_defines *hall)
 {
-	return !stricmp(Main_hall->bitmap.c_str(), "vhall") || !stricmp(Main_hall->bitmap.c_str(), "2_vhall");
+	if (!hall)
+	{
+		if (Main_hall)
+			hall = Main_hall;	// default to the current main hall
+		else
+			return false;
+	}
+
+	return !stricmp(hall->bitmap.c_str(), "vhall") || !stricmp(hall->bitmap.c_str(), "2_vhall");
 }
 
 /**

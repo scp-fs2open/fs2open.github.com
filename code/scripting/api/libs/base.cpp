@@ -86,7 +86,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	if (Cmdline_lua_devmode) {
 		nprintf(("scripting", "ERROR: %s\n", str.c_str()));
 	} else {
-		Error(LOCATION, "%s", lua_tostring(L, -1));
+		Error(LOCATION, "%s", lua_tostring_nullsafe(L, -1));
 	}
 
 	return ADE_RETURN_NIL;
@@ -207,11 +207,26 @@ ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vect
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
-ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a fairly random normalized vector object.", "vector", "Vector object")
+ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a random normalized vector object.", "vector", "Vector object")
 {
 	vec3d v3;
-	vm_vec_rand_vec(&v3);
+	vm_vec_random_in_sphere(&v3, &vmd_zero_vector, 1.0f, true);
 	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
+ADE_FUNC(createRandomOrientation, l_Base, nullptr, "Creates a random orientation object.", "orientation", "Orientation object")
+{
+	vec3d fvec, uvec;
+	matrix fvec_orient, final_orient;
+
+	vm_vec_random_in_sphere(&fvec, &vmd_zero_vector, 1.0f, true);
+	vm_vector_2_matrix(&fvec_orient, &fvec, nullptr, nullptr);
+
+	vm_vec_random_in_circle(&uvec, &vmd_zero_vector, &fvec_orient, 1.0f, true);
+
+	vm_vector_2_matrix(&final_orient, &fvec, &uvec);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final_orient)));
 }
 
 ADE_FUNC(createSurfaceNormal,
@@ -283,9 +298,14 @@ ADE_FUNC(findPointOnLineNearestSkewLine,
 	return ade_set_args(L, "o", l_Vector.Set(dest));
 }
 
-ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+ADE_FUNC(getFrametimeOverall, l_Base, nullptr, "The overall frame time in fix units (seconds * 65536) since the engine has started", "number", "Overall time (fix units)")
 {
 	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
+ADE_FUNC(getSecondsOverall, l_Base, nullptr, "The overall time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "f", f2fl(game_get_overall_frametime()));
 }
 
 ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
@@ -492,7 +512,7 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 	if(!ade_get_args(L, "o", l_GameEvent.GetPtr(&gh)))
 		return ade_set_error(L, "b", false);
 
-	if(!gh->IsValid())
+	if(!gh->isValid())
 		return ade_set_error(L, "b", false);
 
 	gameseq_post_event(gh->Get());
@@ -501,24 +521,30 @@ ADE_FUNC(postGameEvent, l_Base, "gameevent Event", "Sets current game event. Not
 }
 
 ADE_FUNC(XSTR,
-		 l_Base,
-		 "string text, number id",
-		 "Gets the translated version of text with the given id. "
-			 "The uses the tstrings table for performing the translation. Passing -1 as the id will always return the given text.",
-		 "string",
-		 "The translated text") {
+	l_Base,
+	"string text, number id, boolean tstrings=true",
+	"Gets the translated version of text with the given id. "
+	"This uses the tstrings.tbl for performing the translation by default. Set tstrings to false to use "
+	"strings.tbl instead. Passing -1 as the id will always return the given text.",
+	"string",
+	"The translated text")
+{
 	const char* text = nullptr;
 	int id = -1;
+	bool use_tstrings = true;
 
-	if (!ade_get_args(L, "si", &text, &id)) {
+	if (!ade_get_args(L, "si|b", &text, &id, &use_tstrings)) {
 		return ADE_RETURN_NIL;
 	}
 
-	SCP_string xstr;
-	sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
-
 	SCP_string translated;
-	lcl_ext_localize(xstr, translated);
+	if (use_tstrings) {
+		SCP_string xstr;
+		sprintf(xstr, "XSTR(\"%s\", %d)", text, id);
+		lcl_ext_localize(xstr, translated);
+	} else {
+		translated = XSTR(text, id);
+	}
 
 	return ade_set_args(L, "s", translated.c_str());
 }
@@ -590,6 +616,16 @@ ADE_FUNC(isEngineVersionAtLeast,
 	return ade_set_args(L, "b", gameversion::check_at_least(version));
 }
 
+ADE_FUNC(usesInvalidInsteadOfNil,
+	l_Base,
+	nullptr,
+	"Checks if the '$Lua API returns nil instead of invalid object:' option is set in game_settings.tbl.",
+	"boolean",
+	"true if the option is set, false otherwise")
+{
+	return Lua_API_returns_nil_instead_of_invalid_object ? ADE_RETURN_TRUE : ADE_RETURN_FALSE;
+}
+
 ADE_FUNC(getCurrentLanguage,
 		 l_Base,
 		 nullptr,
@@ -645,8 +681,7 @@ ADE_FUNC(getModTitle, l_Base, nullptr,
          "Returns the title of the current mod as defined in game_settings.tbl. Will return an empty string if not defined.",
          "string", "The mod title")
 {
-	auto str = Mod_title;
-	return ade_set_args(L, "s", str.c_str());
+	return ade_set_args(L, "s", Mod_title.c_str());
 }
 
 ADE_FUNC(getModVersion, l_Base, nullptr,

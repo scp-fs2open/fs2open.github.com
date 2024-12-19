@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>28</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -70,6 +70,10 @@
     <addaction name="actionClone_Marked_Objects"/>
     <addaction name="actionDelete"/>
     <addaction name="actionDelete_Wing"/>
+    <addaction name="separator"/>
+    <addaction name="actionLock_Marked_Objects"/>
+    <addaction name="actionUnlock_All_Objects"/>
+    <addaction name="actionSelectionLock"/>
     <addaction name="separator"/>
     <addaction name="actionDisable_Undo"/>
    </widget>
@@ -166,7 +170,7 @@
     <addaction name="actionWaypoint_Paths"/>
     <addaction name="actionMission_Objectives"/>
     <addaction name="actionEvents"/>
-    <addaction name="actionTeam_Loadout"/>
+    <addaction name="actionLoadout"/>
     <addaction name="actionBackground"/>
     <addaction name="actionReinforcements"/>
     <addaction name="actionAsteroid_Field"/>
@@ -230,6 +234,7 @@
     <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
+    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -479,7 +484,7 @@
     <string>SelectionLock</string>
    </property>
    <property name="toolTip">
-    <string>Selection Lock (Spacebar)</string>
+    <string>Prevent selection from changing (Spacebar)</string>
    </property>
    <property name="shortcut">
     <string>Space</string>
@@ -666,6 +671,16 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Del</string>
+   </property>
+  </action>
+  <action name="actionLock_Marked_Objects">
+   <property name="text">
+    <string>&amp;Lock Marked Objects</string>
+   </property>
+  </action>
+  <action name="actionUnlock_All_Objects">
+   <property name="text">
+    <string>&amp;Unlock All Objects</string>
    </property>
   </action>
   <action name="actionDisable_Undo">
@@ -1117,7 +1132,7 @@
     <string>Shift+E</string>
    </property>
   </action>
-  <action name="actionTeam_Loadout">
+  <action name="actionLoadout">
    <property name="text">
     <string>&amp;Team Loadout</string>
    </property>
@@ -1424,6 +1439,14 @@
     <string>Ctrl+Shift+D</string>
    </property>
   </action>
+  <action name="actionError_Checker_Checks_Potential_Issues">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Error checker checks for potential issues</string>
+   </property>
+  </action>
   <action name="actionError_Checker">
    <property name="text">
     <string>&amp;Error Checker</string>
@@ -1438,11 +1461,11 @@
    </property>
   </action>
   <action name="actionShow_SEXP_Help">
-   <property name="text">
-    <string>&amp;Show SEXP Help</string>
-   </property>
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>&amp;Show SEXP Help</string>
    </property>
   </action>
   <action name="actionAbout">

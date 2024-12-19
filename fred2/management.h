@@ -77,7 +77,7 @@ int create_object(vec3d* pos, int waypoint_instance = -1);
 int create_player(vec3d* pos, matrix* orient, int type = -1);
 void create_new_mission();
 void reset_mission();
-void clear_mission();
+void clear_mission(bool fast_reload = false);
 int query_valid_object(int index = cur_object_index);
 int query_valid_ship(int index = cur_object_index);
 int query_valid_waypoint(int index = cur_object_index);
@@ -142,5 +142,7 @@ extern void update_custom_wing_indexes();
 extern void stuff_special_arrival_anchor_name(char* buf, int iff_index, int restrict_to_players, int retail_format);
 extern void stuff_special_arrival_anchor_name(char* buf, int anchor_num, int retail_format);
 extern void update_texture_replacements(const char* old_name, const char* new_name);
+
+extern void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len);
 
 #endif

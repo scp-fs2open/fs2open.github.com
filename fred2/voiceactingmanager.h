@@ -37,6 +37,7 @@ public:
 	BOOL m_export_debriefings;
 	BOOL m_export_messages;
 	BOOL m_group_messages;
+	int m_which_persona_to_sync;
 	//}}AFX_DATA
 
 
@@ -57,9 +58,10 @@ protected:
 	CString generate_filename(CString section, int number, int digits, const MMessage *message=nullptr);
 	const char *get_message_sender(const MMessage *message);
 	void export_one_message(const MMessage *message);
-	void get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum = nullptr);
+	void get_valid_sender(char *sender, size_t sender_size, const MMessage *message, int *sender_shipnum = nullptr, bool *is_command = nullptr);
 	void group_message_indexes(SCP_vector<int> &message_indexes);
 	void group_message_indexes_in_tree(int node, SCP_vector<int> &source_list, SCP_vector<int> &destination_list);
+	bool check_persona(int persona);
 
 	CFILE *fp;
 	int fout(const char *format, ...);
@@ -91,11 +93,13 @@ protected:
 	afx_msg void OnExportDebriefings();
 	afx_msg void OnExportMessages();
 	afx_msg void OnBnClickedIncludeSender();
+	afx_msg void OnChangeWhichToSync();
 	afx_msg void OnCopyPersonas(bool messages_to_ships);
 	afx_msg void OnCopyMessagePersonasToShips();
 	afx_msg void OnCopyShipPersonasToMessages();
 	afx_msg void OnSetHeadANIsUsingMessagesTbl();
 	afx_msg void OnClearPersonasFromNonSenders();
+	afx_msg void OnCheckAnyWingmanPersonas();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

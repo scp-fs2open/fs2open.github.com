@@ -7,7 +7,7 @@ redalert_stage_h::redalert_stage_h() : ra_brief(-1), ra_stage(-1) {}
 
 redalert_stage_h::redalert_stage_h(int brief, int stage) : ra_brief(brief), ra_stage(stage) {}
 
-bool redalert_stage_h::IsValid() const
+bool redalert_stage_h::isValid() const
 {
 	return ra_brief >= 0 && ra_stage >= 0;
 }

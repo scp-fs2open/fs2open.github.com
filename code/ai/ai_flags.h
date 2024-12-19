@@ -32,6 +32,8 @@ namespace AI {
 		Unload_primaries,			//	Fire primaries as fast as possible!
 		Trying_unsuccessfully_to_warp,	// Trying to warp, but can't warp at the moment
 		Free_afterburner_use,		// Use afterburners while following waypoints or flying towards objects
+		Waypoints_no_formation,		// wont get into formation when running waypoints as part of a wing
+
 
 		NUM_VALUES
 	};
@@ -99,6 +101,10 @@ namespace AI {
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
 		Fix_ramming_stationary_targets_bug,
+		Fix_avoid_shockwave_bugs,   // a) waiting until a homing weapon actually homes before evading;
+		                            // b) picking the correct expected impact position for capships;
+		                            // c) not clearing shockwave_object for ships;
+		                            // d) checking the explosion damage of the correct ship
         Force_beam_turret_fov,
 		Free_afterburner_use,
         Glide_decay_requires_thrust,
@@ -157,7 +163,12 @@ namespace AI {
 		Whackable_debris,
 		Whackable_asteroids,
 		Dynamic_goals_afterburn_hard,
+		Player_orders_afterburn_hard,
 		Hudsquadmsg_tactical_disarm_disable,
+		Align_to_target_when_guarding_still,
+		Debris_respects_big_damage,
+		Dont_limit_change_in_speed_due_to_physics_whack,
+		Guards_ignore_protected_attackers,
 
 		NUM_VALUES
 	};

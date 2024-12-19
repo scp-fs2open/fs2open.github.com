@@ -16,13 +16,20 @@ const std::shared_ptr<Hook<>> OnSplashEnd = Hook<>::Factory("On Splash End",
 	"Executed just after the splash screen fades out.",
 	{});
 
-const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
+const std::shared_ptr<OverridableHook<>> OnIntroAboutToPlay = OverridableHook<>::Factory("On Intro About To Play",
 	"Executed just before the intro movie is played.",
 	{});
 
+const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>::Factory("On Movie About To Play",
+	"Executed just before any cutscene movie is played.",
+	{
+		{"Filename", "string", "The filename of the movie that is about to play."},
+		{"ViaTechRoom", "boolean", "Whether the movie player was invoked through the tech room."},
+	});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
-	{ 
+	{
 		{"OldState", "gamestate", "The gamestate that was executing."}, 
 		{"NewState", "gamestate", "The gamestate that will be executing."}
 	});
@@ -30,6 +37,9 @@ const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Facto
 const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",
 	"Executed regularly during loading of a mission.",
 	{ {"Progress", "number", "A number from 0 to 1 indicating how far along the loading process the game is."}});
+
+const std::shared_ptr<Hook<>> OnLoadComplete =
+	Hook<>::Factory("On Load Complete", "Executed once a mission load has completed.", {});
 
 const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
 	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
@@ -58,13 +68,23 @@ const std::shared_ptr<Hook<ControlActionConditions>> OnActionStopped = Hook<Cont
 	"Invoked whenever a user action is no longer invoked through control input.",
 	{ {"Action", "string", "The name of the action that was stopped."} });
 
-const std::shared_ptr<Hook<>> OnKeyPressed = Hook<>::Factory("On Key Pressed",
-	"Invoked whenever a key is pressed.",
-	{ {"Key", "string", "The scancode of the key that has been pressed."} });
+const std::shared_ptr<OverridableHook<KeyPressConditions>> OnKeyPressed = OverridableHook<KeyPressConditions>::Factory("On Key Pressed",
+	"Invoked whenever a key is pressed. If overridden, FSO behaves as if this key has simply not been pressed. "
+	"The only thing that FSO will do with this key if overridden is fire the corresponding OnKeyReleased hook once the key is released. "
+	"Be especially careful if overriding modifier keys (such as Alt and Shift) with this.",
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."}
+	});
 
-const std::shared_ptr<Hook<>> OnKeyReleased = Hook<>::Factory("On Key Released",
+const std::shared_ptr<Hook<KeyPressConditions>> OnKeyReleased = Hook<KeyPressConditions>::Factory("On Key Released",
 	"Invoked whenever a key is released.",
-	{ {"Key", "string", "The scancode of the key that has been released."} });
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."},
+		{"TimeHeld", "number", "The time that this key has been held down in milliseconds. Can be 0 if input latency fluctuates."},
+		{"WasOverridden", "boolean", "Whether or not the key press corresponding to this release was overridden."}
+	});
 
 const std::shared_ptr<Hook<>> OnMouseMoved = Hook<>::Factory("On Mouse Moved",
 	"Invoked whenever the mouse is moved.",
@@ -108,17 +128,17 @@ const std::shared_ptr<Hook<ShipSourceConditions>> OnDebrisCreated = Hook<ShipSou
 
 const std::shared_ptr<OverridableHook<CollisionConditions>> OnShipCollision = OverridableHook<CollisionConditions>::Factory("On Ship Collision",
 	"Invoked when a ship collides with another object. Note: When two ships collide this will be called twice, once "
-	"with each ship object as the \"Ship\" parameter.",
-	{{"Self", "object", "The \"other\" object that collided with the ship."},
-		{"Object",
-			"ship",
-			"The ship object with which the \"other\" object collided with. Provided for consistency with other "
-			"collision hooks."},
-		{"Ship", "ship", "Same as \"Object\""},
+	"with each ship as the \"Self\" parameter.",
+	{{"Self", "object", "The object the ship collided with."},
+		{"Object", "ship",
+			"The ship that collided with \"Self\". Provided for consistency with other collision hooks."},
+		{"Ship", "ship", "For ship-on-ship collisions, the same as \"Self\". For ship-on-object collisions, the same as \"Object\"."},
 		{"Hitpos", "vector", "The world position where the collision was detected"},
+		{"ShipSubmodel", "submodel", "The submodel of \"Ship\" involved in the collision, if \"Ship\" was the heavier object"},
 		{"Debris", "object", "The debris object with which the ship collided (only set for debris collisions)"},
 		{"Asteroid", "object", "The asteroid object with which the ship collided (only set for asteroid collisions)"},
-		{"ShipB", "ship", "For ship on ship collisions, the \"other\" ship."},
+		{"ShipB", "ship", "For ship-on-ship collisions, the same as \"Object\" (only set for ship-on-ship collisions)"},
+		{"ShipBSubmodel", "submodel", "For ship-on-ship collisions, the submodel of \"ShipB\" involved in the collision, if \"ShipB\" was the heavier object"},
 		{"Weapon", "weapon", "The weapon object with which the ship collided (only set for weapon collisions)"},
 		{"Beam", "weapon", "The beam object with which the ship collided (only set for beam collisions)"}});
 

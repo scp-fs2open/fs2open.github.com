@@ -4,20 +4,28 @@ modernize-*,\
 -modernize-avoid-c-arrays,\
 -modernize-make-unique,\
 -modernize-raw-string-literal,\
+-modernize-use-default-member-init,\
+-modernize-use-nodiscard,\
 -modernize-use-trailing-return-type,\
 -modernize-use-using,\
 performance-*,\
+-performance-no-int-to-ptr,\
 -performance-type-promotion-in-math-fn,\
 misc-*,\
+-misc-include-cleaner,\
 -misc-macro-parentheses,\
 -misc-misplaced-widening-cast,\
+-misc-no-recursion,\
 -misc-non-private-member-variables-in-classes,\
 -misc-static-assert,\
 -misc-unused-parameters,\
+-misc-use-anonymous-namespace,\
 readability-*,\
 -readability-avoid-const-params-in-decls,\
 -readability-else-after-return,\
+-readability-function-cognitive-complexity,\
 -readability-function-size,\
+-readability-identifier-length,\
 -readability-identifier-naming,\
 -readability-implicit-bool-conversion,\
 -readability-inconsistent-declaration-parameter-name,\
@@ -29,10 +37,13 @@ readability-*,\
 "
 WarningsAsErrors: ''
 HeaderFilterRegex: 'code/.*$|freespace2/.*$|qtfred/.*$|test/src/.*$|build/.*$'
-AnalyzeTemporaryDtors: false
 CheckOptions:
   - key:          'misc-assert-side-effect.AssertMacros'
     value:        'assert,Assert,Assertion'
+  - key:          'misc-const-correctness.AnalyzeValues'
+    value:        'false'
+  - key:          'misc-const-correctness.TransformValues'
+    value:        'false'
   - key:          'modernize-use-emplace.ContainersWithPushBack'
     value:        'std::vector;std::deque;std::list;SCP_vector;SCP_deque;SCP_list'
   - key:          'readability-braces-around-statements.ShortStatementLines'

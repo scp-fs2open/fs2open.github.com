@@ -73,8 +73,8 @@ BOOL warp_params_dlg::OnInitDialog()
 	ptr->ResetContent();
 	for (int i = 0; i < Num_warp_types; ++i)
 		ptr->AddString(Warp_types[i]);
-	for (int i = 0; i < Num_fireball_types; ++i)
-		ptr->AddString(Fireball_info[i].unique_id);
+	for (const auto &fi: Fireball_info)
+		ptr->AddString(fi.unique_id);
 
 	// find the params of the first marked ship
 	WarpParams *params = nullptr;

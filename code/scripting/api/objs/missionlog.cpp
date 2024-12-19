@@ -14,23 +14,23 @@ namespace api {
 log_entry_h::log_entry_h() : section(-1) {}
 log_entry_h::log_entry_h(int l_section) : section(l_section) {}
 
-log_line_complete* log_entry_h::getSection() const
+const log_line_complete* log_entry_h::getSection() const
 {
 	if (!isValid())
 		return nullptr;
 
-	return &Log_scrollback_vec[section];
+	return mission_log_scrollback_get_line(section);
 }
 
 bool log_entry_h::isValid() const
 {
-	return section >= 0 && section < (int)Log_scrollback_vec.size();
+	return section >= 0 && section < mission_log_scrollback_num_lines();
 }
 
 message_entry_h::message_entry_h() : section(-1) {}
 message_entry_h::message_entry_h(int l_section) : section(l_section) {}
 
-line_node* message_entry_h::getSection() const
+const line_node* message_entry_h::getSection() const
 {
 	if (!isValid())
 		return nullptr;

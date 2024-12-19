@@ -11,16 +11,16 @@ namespace api {
 
 class font_h
 {
-	font::FSFont *font;
+	int _fontIndex;
 
 public:
-	explicit font_h(font::FSFont* fontIn);
-
+	font_h(int fontIndex);
 	font_h();
 
-	font::FSFont* Get();
+	font::FSFont* Get() const;
+	int GetIndex() const;
 
-	bool isValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Font, font_h);

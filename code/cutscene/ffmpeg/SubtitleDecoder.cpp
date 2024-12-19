@@ -122,7 +122,7 @@ void SubtitleDecoder::pushSubtitleFrame(AVPacket* packet, AVSubtitle* subtitle) 
 	}
 
 	SubtitleFramePtr frame(new SubtitleFrame());
-	frame->text = processed_text;
+	frame->text = std::move(processed_text);
 
 	frame->displayStartTime = start_time;
 	frame->displayEndTime = end_time;

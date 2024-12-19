@@ -2,13 +2,14 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "missionui/missionweaponchoice.h"
+#include "network/multiteamselect.h"
 
 namespace scripting {
 namespace api {
 
 ss_wing_info_h::ss_wing_info_h() : ss_wing(-1) {}
 ss_wing_info_h::ss_wing_info_h(int l_wing) : ss_wing(l_wing) {}
-bool ss_wing_info_h::IsValid() const
+bool ss_wing_info_h::isValid() const
 {
 	return ss_wing >= 0;
 }
@@ -17,9 +18,14 @@ ss_wing_info* ss_wing_info_h::getWing() const
 	return &Ss_wings[ss_wing];
 }
 
+int ss_wing_info_h::getWingIndex() const
+{
+	return ss_wing;
+}
+
 ss_slot_info_h::ss_slot_info_h() {}
-ss_slot_info_h::ss_slot_info_h(ss_slot_info* l_slots, int l_idx) : ss_slots(l_slots), ss_idx(l_idx) {}
-bool ss_slot_info_h::IsValid() const
+ss_slot_info_h::ss_slot_info_h(ss_slot_info* l_slots, int l_idx, int l_wing) : ss_slots(l_slots), ss_idx(l_idx), ss_wing(l_wing) {}
+bool ss_slot_info_h::isValid() const
 {
 	return ss_slots != nullptr;
 }
@@ -28,9 +34,19 @@ ss_slot_info* ss_slot_info_h::getSlot() const
 	return &ss_slots[ss_idx];
 }
 
+int ss_slot_info_h::getSlotIndex() const
+{
+	return ss_idx;
+}
+
+int ss_slot_info_h::getWingIndex() const
+{
+	return ss_wing;
+}
+
 wss_unit_wep_h::wss_unit_wep_h() : ss_unit(-1) {}
 wss_unit_wep_h::wss_unit_wep_h(int l_unit) : ss_unit(l_unit) {}
-bool wss_unit_wep_h::IsValid() const
+bool wss_unit_wep_h::isValid() const
 {
 	return ss_unit >= 0;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
@@ -42,7 +58,7 @@ wss_unit* wss_unit_wep_h::getBank() const
 
 wss_unit_count_h::wss_unit_count_h() : ss_unit(-1) {}
 wss_unit_count_h::wss_unit_count_h(int l_unit) : ss_unit(l_unit) {}
-bool wss_unit_count_h::IsValid() const
+bool wss_unit_count_h::isValid() const
 {
 	return ss_unit >= 0;
 	// return ((ss_unit >= 0) && ((ss_bank >= 0) && (ss_bank <= 6)));
@@ -51,10 +67,6 @@ wss_unit* wss_unit_count_h::getBank() const
 {
 	return &Wss_slots[ss_unit];
 }
-
-// HERE BE MY NOTES SIR!
-//  create_wings() in missionshipchoice.cpp seems to be what we want to finally use on Commit, maybe
-
 
 //**********HANDLE: loadout wing
 ADE_OBJ(l_Loadout_Wing_Slot, ss_slot_info_h, "loadout_wing_slot", "Loadout wing slot handle");
@@ -92,7 +104,7 @@ ADE_VIRTVAR(isWeaponLocked,
 	return ade_set_args(L, "b", (current.getSlot()->status & WING_SLOT_WEAPONS_DISABLED) != 0);
 }
 
-ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used in the current mission", "boolean", "The slot disabled status")
+ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used in the current mission or disabled for the current player in multi", "boolean", "The slot disabled status")
 {
 	ss_slot_info_h current;
 	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
@@ -103,7 +115,13 @@ ADE_VIRTVAR(isDisabled, l_Loadout_Wing_Slot, nullptr, "If the slot is not used i
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "b", !current.getSlot()->in_mission);
+	bool result = !current.getSlot()->in_mission;
+	if (Game_mode & GM_MULTIPLAYER) {
+		int index = (current.getWingIndex() * MAX_WING_SLOTS) + current.getSlotIndex();
+		result = multi_ts_disabled_slot(index);
+	} 
+
+	return ade_set_args(L, "b", result);
 }
 
 ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or filled. true if filled, false if empty", "boolean", "The slot filled status")
@@ -115,6 +133,10 @@ ADE_VIRTVAR(isFilled, l_Loadout_Wing_Slot, "boolean", "If the slot is empty or f
 	}
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (!(current.getSlot()->status & WING_SLOT_DISABLED)) {
 			if (setv) {
 				current.getSlot()->status &= ~WING_SLOT_EMPTY;
@@ -142,8 +164,35 @@ ADE_VIRTVAR(isPlayer, l_Loadout_Wing_Slot, nullptr, "If the slot is a player shi
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "b", (current.getSlot()->status & WING_SLOT_IS_PLAYER) != 0);
+	bool result = (current.getSlot()->status & WING_SLOT_IS_PLAYER) != 0;
+	if (Game_mode & GM_MULTIPLAYER) {
+		int index = (current.getWingIndex() * MAX_WING_SLOTS) + current.getSlotIndex();
+		result = multi_ts_is_player_in_slot(index);
+	} 
+
+	return ade_set_args(L, "b", result);
 }
+
+ADE_VIRTVAR(isPlayerAllowed, l_Loadout_Wing_Slot, nullptr, "If the slot is allowed to have player ship. In single player this is functionally the same as isPlayer.", "boolean", "The slot player allowed status")
+{
+	ss_slot_info_h current;
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	bool result = (current.getSlot()->status & WING_SLOT_IS_PLAYER) != 0;
+	if (Game_mode & GM_MULTIPLAYER) {
+		int index = (current.getWingIndex() * MAX_WING_SLOTS) + current.getSlotIndex();
+		result = multi_ts_is_player_allowed_in_slot(index);
+	}
+
+	return ade_set_args(L, "b", result);
+}
+
 // Probably don't need this one!
 ADE_VIRTVAR(ShipClassIndex,
 	l_Loadout_Wing_Slot,
@@ -162,6 +211,28 @@ ADE_VIRTVAR(ShipClassIndex,
 	}
 
 	return ade_set_args(L, "i", (current.getSlot()->original_ship_class + 1));
+}
+
+ADE_VIRTVAR(Callsign,
+	l_Loadout_Wing_Slot,
+	nullptr,
+	"The callsign of the ship slot. In multiplayer this may be the player's callsign.",
+	"string",
+	"the callsign")
+{
+	ss_slot_info_h current;
+	if (!ade_get_args(L, "o", l_Loadout_Wing_Slot.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	char name[NAME_LENGTH];
+	ss_return_name(current.getWingIndex(), current.getSlotIndex(), name);
+
+	return ade_set_args(L, "s", name);
 }
 
 //**********HANDLE: loadout amount
@@ -188,6 +259,10 @@ ADE_INDEXER(l_Loadout_Amount,
 
 	idx--; // Convert from Lua
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		ship_info* sip = &Ship_info[current.getBank()->ship_class];
 		int widx = current.getBank()->wep[idx];
 		if (widx >= 0 && widx < (int)Weapon_info.size()) {
@@ -255,6 +330,10 @@ ADE_INDEXER(l_Loadout_Weapon,
 	wepIndex--; // Convert from Lua
 	bank--; //Convert from Lua
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (bankType == -1 || wepIndex > weapon_info_size()) {
 			LuaError(L, "The provided bank or weapon index is invalid!");
 		} else {
@@ -319,6 +398,10 @@ ADE_VIRTVAR(ShipClassIndex,
 	shipIndex--; //Convert from Lua
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (shipIndex > -1) {
 			// If we're not trying to empty the slot then make sure it's a valid ship index
 			if (shipIndex > ship_info_size()) {
@@ -391,7 +474,7 @@ ADE_INDEXER(l_Loadout_Wing,
 	if (!ade_get_args(L, "oi", l_Loadout_Wing.Get(&current), &idx))
 		return ade_set_error(L, "s", "");
 	idx--; // Convert to Lua's 1 based index system
-	return ade_set_args(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h(current.getWing()->ss_slots, idx)));
+	return ade_set_args(L, "o", l_Loadout_Wing_Slot.Set(ss_slot_info_h(current.getWing()->ss_slots, idx, current.getWingIndex())));
 }
 
 //This seems superfluous because the loadout wing slots is always max but not only is it something scripters may expect,

@@ -49,18 +49,18 @@ static int Key_sets[MAX_KEYED_TARGETS] = {
 
 static int Hotkey_bits[MAX_SHIPS];  // bitfield indicating which hotkeys are used by each ship
 
-static int Hotkey_sets_saved;			// have we saved the sets for this mission
+static bool Hotkey_sets_saved;			// have we saved the sets for this mission
 
-static int Mission_hotkey_save_timestamp;		// timestamp used to tell us when we can save
-#define HOTKEY_SAVE_TIME				15000		// save sets this number of milliseconds into the mission
+static TIMESTAMP Mission_hotkey_save_timestamp;					// timestamp used to tell us when we can save
+constexpr int HOTKEY_SAVE_TIME = 15 * MILLISECONDS_PER_SECOND;	// save sets this number of milliseconds into the mission
 
 typedef struct {
 	int setnum;
 	char name[NAME_LENGTH];
 } HK_save_info;
 
-HK_save_info Hotkey_saved_info[MAX_HOTKEY_TARGET_ITEMS];
-int Num_hotkeys_saved;
+static HK_save_info Hotkey_saved_info[MAX_HOTKEY_TARGET_ITEMS];
+static int Num_hotkeys_saved;
 
 
 static const char *Hotkey_background_fname[GR_NUM_RESOLUTIONS] = {
@@ -317,8 +317,8 @@ void mission_hotkey_set_defaults(bool restore)
 	}
 
 	// set the variable letting us know that we should save the hotkey sets
-	Hotkey_sets_saved = 0;
-	Mission_hotkey_save_timestamp = timestamp(HOTKEY_SAVE_TIME);
+	Hotkey_sets_saved = false;
+	Mission_hotkey_save_timestamp = _timestamp(HOTKEY_SAVE_TIME);
 
 	// if we have hotkeys saved from the previous run of this mission, then simply keep the cleared
 	// sets, and let the restore code take care of it!  This works because this function is currently
@@ -425,7 +425,7 @@ void mission_hotkey_maybe_save_sets()
 		}
 	}
 
-	Hotkey_sets_saved = 1;
+	Hotkey_sets_saved = true;
 }
 
 // function which gets called from MissionParse to maybe add a ship or wing to a hotkey set.
@@ -504,6 +504,12 @@ int get_wing_hotkeys(int n)
 int get_ship_hotkeys(int n)
 {
 	return Hotkey_bits[Hotkey_lines[n].index];
+}
+
+void hotkey_lines_reset_all() {
+	for (auto& line : Hotkey_lines) {
+		line = hotkey_line();
+	}
 }
 
 // add a line of hotkey smuck to end of list
@@ -1014,6 +1020,7 @@ void mission_hotkey_init()
 
 	Scroll_offset = 0;
 	Selected_line = 1;
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 }
 
@@ -1217,7 +1224,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 
 	font::set_font(font::FONT1);
 	int line = Scroll_offset;
-	while (hotkey_line_query_visible(line)) {
+	while (hotkey_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		//int z = Hotkey_lines[line].index;
 		int y = Hotkey_list_coords[gr_screen.res][1] + Hotkey_lines[line].y - Hotkey_lines[Scroll_offset].y;
 		int hotkeys = 0;

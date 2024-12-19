@@ -31,6 +31,7 @@
 #include "math/staticrand.h"
 #include "missionui/missionweaponchoice.h"
 #include "mod_table/mod_table.h"
+#include "model/animation/modelanimation_driver.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -84,7 +85,7 @@ int Weapon_flyby_sound_enabled = 1;
 DCF_BOOL( weapon_flyby, Weapon_flyby_sound_enabled )
 #endif
 
-static int Weapon_flyby_sound_timer;	
+static TIMESTAMP Weapon_flyby_sound_timer;
 
 weapon Weapons[MAX_WEAPONS];
 SCP_vector<weapon_info> Weapon_info;
@@ -195,7 +196,9 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 		Warning(LOCATION, "The \"beam no whack\" flag has been deprecated.  Set the beam's mass to 0 instead.  This has been done for you.\n");
 		weaponp->mass = 0.0f;
 	}}, //special case
-    { "cycle",							Weapon::Info_Flags::Cycle,								true },
+    { "cycle",							Weapon::Info_Flags::NUM_VALUES,							false, [](const SCP_string& /*spawn*/, weapon_info* weaponp, flagset<Weapon::Info_Flags>& /*flags*/) {
+		weaponp->firing_pattern = FiringPattern::CYCLE_FORWARD;
+	}}, //special case
     { "small only",						Weapon::Info_Flags::Small_only,							true },
     { "same turret cooldown",			Weapon::Info_Flags::Same_turret_cooldown,				true },
     { "apply no light",					Weapon::Info_Flags::Mr_no_lighting,						true },
@@ -273,8 +276,8 @@ int Player_weapon_precedence_line;	// And this is the line the precedence list w
 // Used to avoid playing too many impact sounds in too short a time interval.
 // This will elimate the odd "stereo" effect that occurs when two weapons impact at 
 // nearly the same time, like from a double laser (also saves sound channels!)
-#define	IMPACT_SOUND_DELTA	50		// in milliseconds
-int		Weapon_impact_timer;			// timer, initialized at start of each mission
+constexpr int IMPACT_SOUND_DELTA = 50;	// in milliseconds
+static TIMESTAMP Weapon_impact_timer;	// timer, initialized at start of each mission
 
 // energy suck defines
 #define ESUCK_DEFAULT_WEAPON_REDUCE				(10.0f)
@@ -295,10 +298,6 @@ const float HOMING_DEFAULT_FREE_FLIGHT_FACTOR = 0.25f;
 // time delay between each swarm missile that is fired
 #define SWARM_MISSILE_DELAY				150
 
-// homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
-// range. Check the comment in weapon_set_tracking_info() for more details
-#define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
-
 // default number of missiles or bullets rearmed per load sound during rearm
 #define REARM_NUM_MISSILES_PER_BATCH 4              
 #define REARM_NUM_BALLISTIC_PRIMARIES_PER_BATCH 100 
@@ -316,7 +315,7 @@ weapon_explosions::weapon_explosions()
 	ExplosionInfo.clear();
 }
 
-int weapon_explosions::GetIndex(char *filename)
+int weapon_explosions::GetIndex(const char *filename) const
 {
 	if ( filename == NULL ) {
 		Int3();
@@ -332,7 +331,7 @@ int weapon_explosions::GetIndex(char *filename)
 	return -1;
 }
 
-int weapon_explosions::Load(char *filename, int expected_lods)
+int weapon_explosions::Load(const char *filename, int expected_lods)
 {
 	char name_tmp[MAX_FILENAME_LEN] = "";
 	int bitmap_id = -1;
@@ -406,13 +405,13 @@ void weapon_explosions::PageIn(int idx)
 	}
 }
 
-int weapon_explosions::GetAnim(int weapon_expl_index, vec3d *pos, float size)
+int weapon_explosions::GetAnim(int weapon_expl_index, const vec3d *pos, float size) const
 {
 	if ( (weapon_expl_index < 0) || (weapon_expl_index >= (int)ExplosionInfo.size()) )
 		return -1;
 
 	//Get our weapon expl for the day
-	weapon_expl_info *wei = &ExplosionInfo[weapon_expl_index];
+	auto wei = &ExplosionInfo[weapon_expl_index];
 
 	if (wei->lod_count == 1)
 		return wei->lod[0].bitmap_id;
@@ -778,7 +777,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 	sprintf(buf, "%sShockwave damage:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_float(&sci->damage);
-		sci->damage_overidden = true;
+		if (sci->damage < 0.0f)
+			sci->damage = 0.0f;
+		sci->damage_overridden = true;
 	}
 
 	sprintf(buf, "%sShockwave damage type:", pre_char);
@@ -1191,6 +1192,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_headon_switch_rate);
 	}
 
+	if (optional_string("@Laser Bitmap Color:")) {
+		stuff_vec3d(&wip->bitmap_color);
+	}
+
 	if(optional_string("@Laser Color:"))
 	{
 		// This might be confusing at first glance. If we're a modular table (!first_time),
@@ -1225,12 +1230,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->laser_length);
 	}
 
+	if (optional_string("@Multiply Laser Length By Frametime:")) {
+		stuff_boolean(&wip->laser_length_by_frametime);
+	}
+
 	if (optional_string("@Laser Length Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->laser_length_curve_idx = curve_get_by_name(curve_name);
-		if (wip->laser_length_curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser length curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 	
 	if(optional_string("@Laser Head Radius:")) {
@@ -1244,17 +1251,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("@Laser Radius Multiplier over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->laser_radius_curve_idx = curve_get_by_name(curve_name);
-		if (wip->laser_radius_curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser radius curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
+	if (optional_string("@Laser Glow Length Scale:")) {
+		stuff_float(&wip->laser_glow_length_scale);
+	}
+
+	if (optional_string("@Laser Glow Head Scale:")) {
+		stuff_float(&wip->laser_glow_head_scale);
+	}
+
+	if (optional_string("@Laser Glow Tail Scale:")) {
+		stuff_float(&wip->laser_glow_tail_scale);
+	}
+
+  if (optional_string("@Laser Position Offset:")) {
+			stuff_vec3d(&wip->laser_pos_offset);
+	}
+
+  parse_optional_float_into("@Laser Min Pixel Size:", &wip->laser_min_pixel_size);
 
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->laser_alpha_curve_idx = curve_get_by_name(curve_name);
-		if (wip->laser_alpha_curve_idx < 0)
-			Warning(LOCATION, "Unrecognized laser alpha curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 	}
 
 	if (parse_optional_color3i_into("$Light color:", &wip->light_color)) {
@@ -1307,9 +1327,15 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if(optional_string("$Damage:")) {
 		stuff_float(&wip->damage);
+
+		if (wip->damage < 0.0f) {
+			Warning(LOCATION, "$Damage in weapon '%s' should not be negative.\nConsider the 'heals' flag instead if this is intentional. ", wip->name);
+			wip->damage = 0.0f;
+		}
+
 		//WMC - now that shockwave damage can be set for them individually,
 		//do this automagically
-		if(!wip->shockwave.damage_overidden) {
+		if(!wip->shockwave.damage_overridden) {
 			wip->shockwave.damage = wip->damage;
 		}
 	}
@@ -1335,12 +1361,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	std::optional<modular_curves_entry> damage_mult_curve;
+
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
+		//Legacy table. Just populates the modular curve set!
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		wip->damage_curve_idx = curve_get_by_name(curve_name);
-		if (wip->damage_curve_idx < 0)
+		int curve = curve_get_by_name(curve_name);
+		if (curve < 0)
 			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+
+		damage_mult_curve.emplace(modular_curves_entry{curve});
 	}
 	
 	if(optional_string("$Damage Type:")) {
@@ -1451,6 +1482,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	wip->weapon_curves.parse("$Lifetime Curve:");
+
+	wip->weapon_hit_curves.parse("$Hit Curve:");
+
+	wip->beam_curves.parse("$Beam Curve:");
+
+	wip->beam_hit_curves.parse("$Beam Hit Curve:");
+
 	if(optional_string("$Energy Consumed:")) {
 		stuff_float(&wip->energy_consumed);
 	}
@@ -1475,7 +1514,30 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			error_display(0, "Weapon %s autoaim fov was greater than 180, setting to %f\n", wip->name, fovt);
 		}
 
+		wip->aiming_flags.set(Object::Aiming_Flags::Autoaim); 
 		wip->autoaim_fov = fovt * PI / 180.0f;
+
+		if (optional_string("+Converging Autoaim"))
+			wip->aiming_flags.set(Object::Aiming_Flags::Autoaim_convergence);
+
+		if (optional_string("+Minimum Distance:"))
+			stuff_float(&wip->minimum_convergence_distance);
+	}
+
+	if (optional_string("$Convergence:")) {
+		if (optional_string("+Automatic")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Auto_convergence);
+			if (optional_string("+Minimum Distance:"))
+				stuff_float(&wip->minimum_convergence_distance);
+		}
+		if (optional_string("+Standard")) {
+			wip->aiming_flags.set(Object::Aiming_Flags::Std_convergence);
+			if (required_string("+Distance:"))
+				stuff_float(&wip->convergence_distance);
+		}
+
+		//Purposefully left off +Offset here because I don't think it makes much sense per weapon as it has more to do with ship bank positioning.
+		//Would be trivial to add if someone wanted but we'd have to decide which takes precedent.. ship or weapon?
 	}
 
 	bool temp_is_homing = false;	// this variable should ONLY be used to store the parse value.  All checks aside from the block five lines later should exclusively use wip->is_homing()
@@ -1541,9 +1603,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				wip->turn_rate_curve_idx = curve_get_by_name(curve_name);
-				if (wip->turn_rate_curve_idx < 0)
-					Warning(LOCATION, "Unrecognized turn rate curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -1602,9 +1662,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
 				SCP_string curve_name;
 				stuff_string(curve_name, F_NAME);
-				wip->turn_rate_curve_idx = curve_get_by_name(curve_name);
-				if (wip->turn_rate_curve_idx < 0)
-					Warning(LOCATION, "Unrecognized turn rate curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -2091,7 +2149,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if ( optional_string("+Max Life:") ) {
 			stuff_float(&ti->max_life);
-			ti->stamp = fl2i(1000.0f*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
+			ti->spew_duration = fl2i(MILLISECONDS_PER_SECOND*ti->max_life)/(NUM_TRAIL_SECTIONS+1);
 		}
 
 		if (optional_string("+Spread:"))
@@ -2157,6 +2215,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			using namespace particle;
 
 			// Only beams do this randomization
+			// NOTE: in practice, most beams are WP_LASER and do not do this
 			if (subtype == WP_BEAM)
 			{
 				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -2225,6 +2284,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				using namespace particle;
 
 				// Only beams do this randomization
+				// NOTE: in practice, most beams are WP_LASER and do not do this
 				if (subtype == WP_BEAM)
 				{
 					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
@@ -2339,6 +2399,45 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	while (optional_string("$Conditional Impact:")) {
+		int armor_index;
+		ConditionalImpact ci;
+		ci.min_health_threshold = std::numeric_limits<float>::lowest();
+		ci.max_health_threshold = std::numeric_limits<float>::max();
+		ci.min_angle_threshold = 0.f;
+		ci.max_angle_threshold = 180.f;
+		ci.dinky = false;
+
+		bool invalid_armor = false;
+		required_string("+Armor Type:");
+			stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (!stricmp(fname, "NO ARMOR")) {
+			armor_index = -1;
+		} else {
+			armor_index = armor_type_get_idx(fname);
+			if (armor_index < 0) {
+				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+				invalid_armor = true;
+			}
+		};
+		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
+		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
+		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
+		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
+		parse_optional_bool_into("+Dinky:", &ci.dinky);
+		required_string("+Effect Name:");
+			ci.effect = particle::util::parseEffect(wip->name);
+		SCP_vector<ConditionalImpact> ci_vec;
+		if (wip->conditional_impacts.count(armor_index) == 1) {
+			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[armor_index];
+			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
+		}
+		ci_vec.push_back(ci);
+		if (!invalid_armor) {
+			wip->conditional_impacts[armor_index] = ci_vec;
+		}
+	}
+
 	if (optional_string("$Inflight Effect:")) {
 		auto effetIdx = particle::util::parseEffect(wip->name);
 		wip->state_effects[WeaponState::NORMAL] = effetIdx;
@@ -2364,12 +2463,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
-	// muzzle flash
-	if ( optional_string("$Muzzleflash:") ) {
-		stuff_string(fname, F_NAME, NAME_LENGTH);
+	if (optional_string("$Muzzle Effect:")) {
+		wip->muzzle_effect = particle::util::parseEffect(wip->name);
+	} else {
+		// muzzle flash
+		if (optional_string("$Muzzleflash:")) {
+			stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		// look it up
-		wip->muzzle_flash = mflash_lookup(fname);
+			// look it up
+			wip->muzzle_flash = mflash_lookup(fname);
+		}
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -2550,11 +2653,23 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (spawn_weap < MAX_SPAWN_TYPES_PER_WEAPON)
 		{
 			// Get delay out of the way before handling interval so we can do adjusted lifetime 
+			float delay = 0.f;
 			if (optional_string("+Delay:")) {
-				stuff_float(&wip->spawn_info[spawn_weap].spawn_interval_delay);
+				stuff_float(&delay);
+
+				// since curves are used for spawn rate now, we just parse the value into a curve of spawn rate over absolute age
+				// this will behave correctly even if it's being used together with other spawn rate curves
+				SCP_string curve_name = wip->name;
+				curve_name += "SpawnDelayCurve" + std::to_string(spawn_weap);
+
+				Curve new_curve = Curve(curve_name);
+				new_curve.keyframes.push_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				new_curve.keyframes.push_back(curve_keyframe{ vec2d { delay, 1.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				Curves.push_back(new_curve);
+				wip->weapon_curves.add_curve("Age", weapon_info::WeaponCurveOutputs::SPAWN_RATE_MULT, modular_curves_entry{(static_cast<int>(Curves.size()) - 1)});
 			}
 
-			float adjusted_lifetime = wip->lifetime - wip->spawn_info[spawn_weap].spawn_interval_delay;
+			float adjusted_lifetime = wip->lifetime - delay;
 
 			if (temp_interval >= MINIMUM_SPAWN_INTERVAL) {
 				wip->spawn_info[spawn_weap].spawn_interval = temp_interval;
@@ -2598,6 +2713,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Lifetime Variation Factor When Child:"))
+	{
+		stuff_float(&wip->lifetime_variation_factor_when_child);
+	}
+
 	if (wip->wi_flags[Weapon::Info_Flags::Local_ssm] && optional_string("$Local SSM:"))
 	{
 		if(optional_string("+Warpout Delay:")) {
@@ -2637,8 +2757,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				}
 			}
 			else {
-				if ((temp < 0) || (temp >= Num_fireball_types)) {
-					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, Num_fireball_types - 1, wip->name);
+				if (!SCP_vector_inbounds(Fireball_info, temp)) {
+					error_display(0, "Fireball index [%d] out of range (should be 0-%d) for LSSM weapon [%s].", temp, static_cast<int>(Fireball_info.size()) - 1, wip->name);
 					wip->lssm_warpeffect = FIREBALL_WARP;
 				}
 				else {
@@ -2674,8 +2794,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_int(&wip->cmeasure_timer_interval);
 		}
 
-		if (optional_string("+Use Fire Wait:")) {
-			wip->cmeasure_firewait = (int) (wip->fire_wait*1000.0f);
+		// This was originally coded with the colon which implies a boolean input but that was not needed
+		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait")) {
+			wip->cmeasure_firewait = (int)(wip->fire_wait * 1000.0f);
 		}
 
 		if (optional_string("+Failure Launch Delay Multiplier for AI:")) {
@@ -2704,6 +2825,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if ( optional_string("$BeamInfo:") ) {
 		wip->wi_flags.set(Weapon::Info_Flags::Beam);
 		// beam type
+
 		if(optional_string("+Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
 
@@ -2811,9 +2933,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (optional_string("+Opacity over Lifetime Curve:")) {
 			SCP_string curve_name;
 			stuff_string(curve_name, F_NAME);
-			wip->b_info.beam_alpha_curve_idx = curve_get_by_name(curve_name);
-			if (wip->b_info.beam_alpha_curve_idx < 0)
-				Warning(LOCATION, "Unrecognized beam alpha curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+			wip->beam_curves.add_curve("Beam Lifetime", weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
 		}
 
 		// # of shots (only used for type D beams)
@@ -3055,6 +3175,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				stuff_vec3d(&t5info->end_pos_rand);
 			}
 
+			if (optional_string("+Slash position over beam lifetime curve:")) {
+				SCP_string curve_name;
+				stuff_string(curve_name, F_NAME);
+				t5info->slash_pos_curve_idx = curve_get_by_name(curve_name);
+				if (t5info->slash_pos_curve_idx < 0)
+					Warning(LOCATION, "Unrecognized slash position curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+				if (t5info->no_translate)
+					Warning(LOCATION, "Beam weapon %s has a slash position curve defined, but doesn't slash!", wip->name);
+			}
+
 			if (optional_string("+Orient Offsets to Target:")) {
 				stuff_boolean(&t5info->target_orient_positions);
 			}
@@ -3066,6 +3196,14 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Continuous Rotation:")) {
 				stuff_float(&t5info->continuous_rot);
 				t5info->continuous_rot *= (PI / 180.f);
+			}
+
+			if (optional_string("+Rotation over beam lifetime curve:")) {
+				SCP_string curve_name;
+				stuff_string(curve_name, F_NAME);
+				t5info->rot_curve_idx = curve_get_by_name(curve_name);
+				if (t5info->rot_curve_idx < 0)
+					Warning(LOCATION, "Unrecognized rotation curve '%s' for weapon %s", curve_name.c_str(), wip->name);
 			}
 
 			if (optional_string("+Continuous Rotation Axis:")) {
@@ -3122,7 +3260,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (optional_string("+Per Burst Rotation:")) {
 				stuff_float(&t5info->per_burst_rot);
 				t5info->per_burst_rot = fl_radians(t5info->per_burst_rot);
-				if (t5info->per_burst_rot < -PI2 || t5info->per_burst_rot > PI2) {
+				if (t5info->per_burst_rot > PI2) {
 					Warning(LOCATION, "Per Burst Rotation on beam '%s' must not exceed 360 degrees.", wip->name);
 					t5info->per_burst_rot = 0.0f;
 				}
@@ -3292,6 +3430,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (damage_mult_curve) {
+		if (wip->is_beam())
+			wip->beam_hit_curves.add_curve("Lifetime", weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
+		else
+			wip->weapon_hit_curves.add_curve("Lifetime", weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, *damage_mult_curve);
+	}
+
 	while ( optional_string("$Pspew:") ) {
 		int spew_index = -1;
 		// check for pspew flag
@@ -3437,7 +3582,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			temp_data.ssm_entry = fname;
 			if (Delayed_SSM_data.find(wip->name) == Delayed_SSM_data.end())
 				Delayed_SSM_names.push_back(wip->name);
-			Delayed_SSM_data[wip->name] = temp_data;
+			Delayed_SSM_data[wip->name] = std::move(temp_data);
 		} else {
 			// We'll still want to validate the index later. -MageKing17
 			delayed_ssm_index_data temp_data;
@@ -3445,35 +3590,61 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			temp_data.linenum = get_line_num();
 			if (Delayed_SSM_indices_data.find(wip->name) == Delayed_SSM_indices_data.end())
 				Delayed_SSM_indices.push_back(wip->name);
-			Delayed_SSM_indices_data[wip->name] = temp_data;
+			Delayed_SSM_indices_data[wip->name] = std::move(temp_data);
 		}
 	}// SSM index -Bobboau
 
 	if(optional_string("$FOF:")){
 		stuff_float(&wip->field_of_fire);
 
-		if(optional_string("+FOF Spread Rate:")){
+		bool max_required = false;
+		if (optional_string("+FOF Spread Rate:")) {
 			stuff_float(&wip->fof_spread_rate);
-			if(required_string("+FOF Reset Rate:")){
+			if (required_string("+FOF Reset Rate:")) {
 				stuff_float(&wip->fof_reset_rate);
 			}
+			max_required = true;
+		}
 
-			if(required_string("+Max FOF:")){
-				float max_fof;
-				stuff_float(&max_fof);
-				wip->max_fof_spread = max_fof - wip->field_of_fire;
+		if (optional_string("+Max FOF:")){
+			float max_fof;
+			stuff_float(&max_fof);
+			wip->max_fof_spread = max_fof - wip->field_of_fire;
 
-				if (wip->max_fof_spread <= 0.0f) {
-					Warning(LOCATION, "WARNING: +Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
-					wip->max_fof_spread = 0.0f;
-				}
+			if (wip->max_fof_spread <= 0.0f) {
+				error_display(0, "+Max FOF must be at least as big as $FOF for '%s'! Defaulting to match $FOF, no spread will occur!", wip->name);
+				wip->max_fof_spread = 0.0f;
 			}
+		}
+
+		if (max_required && wip->max_fof_spread <= 0.0f) {
+			error_display(0, "+Max FOF for '%s' must be used if +FOF Spread Rate: is used! Disabling FOF spread instead...", wip->name);
+			wip->fof_spread_rate = 0.0f;
+			wip->fof_reset_rate = 0.0f;
+		}		
+	}
+
+	if(optional_string("$Firing Pattern:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
+		if (!stricmp(fname, "CYCLE FORWARD")) {
+			wip->firing_pattern = FiringPattern::CYCLE_FORWARD;
+		} else if (!stricmp(fname, "CYCLE REVERSE")) {
+			wip->firing_pattern = FiringPattern::CYCLE_REVERSE;
+		} else if (!stricmp(fname, "RANDOM EXHAUSTIVE")) {
+			wip->firing_pattern = FiringPattern::RANDOM_EXHAUSTIVE;
+		} else if (!stricmp(fname, "RANDOM NONREPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_NONREPEATING;
+		} else if (!stricmp(fname, "RANDOM REPEATING")) {
+			wip->firing_pattern = FiringPattern::RANDOM_REPEATING;
 		}
 	}
 
-
 	if( optional_string("$Shots:")){
 		stuff_int(&wip->shots);
+	}
+
+	if( optional_string("$Cycle Multishot:")){
+		stuff_int(&wip->cycle_multishot);
 	}
 
 	//Left in for compatibility
@@ -3622,6 +3793,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		animation::ModelAnimationParseHelper::parseAnimsetInfo(wip->animations, 'w', wip->name);
 	}
 
+	if (optional_string("$Driven Animations:")) {
+		animation::ModelAnimationParseHelper::parseAnimsetInfoDrivers(wip->animations, 'w', wip->name, animation::parse_object_property_driver_source);
+	}
+	
 	/* Generate a substitution pattern for this weapon.
 	This pattern is very naive such that it calculates the lowest common denominator as being all of
 	the periods multiplied together.
@@ -3715,6 +3890,27 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Custom data:")) 
 	{
 		parse_string_map(wip->custom_data, "$end_custom_data", "+Val:");
+	}
+
+	if (optional_string("$Custom Strings")) {
+		while (optional_string("$Name:")) {
+			custom_string cs;
+
+			// The name of the string
+			stuff_string(cs.name, F_NAME);
+
+			// Arbitrary string value used for grouping strings together
+			required_string("+Value:");
+			stuff_string(cs.value, F_NAME);
+
+			// The string text itself
+			required_string("+String:");
+			stuff_string(cs.text, F_MULTITEXT);
+
+			wip->custom_strings.push_back(cs);
+		}
+
+		required_string("$end_custom_strings");
 	}
 
 	return w_id;
@@ -3854,20 +4050,22 @@ void parse_weaponstbl(const char *filename)
 void weapon_sort_by_type()
 {
 	weapon_info *lasers = NULL, *big_lasers = NULL, *beams = NULL, *missiles = NULL, *big_missiles = NULL, *child_primaries = NULL, *child_secondaries = NULL;
-	int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
-	int i, weapon_index;
+	unsigned int num_lasers = 0, num_big_lasers = 0, num_beams = 0, num_missiles = 0, num_big_missiles = 0, num_child_primaries = 0, num_child_secondaries = 0;
+	int weapon_index;
 
 	// get the initial count of each weapon type
-	for (i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (const auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					num_beams++;
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_primaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_lasers++;
 				else
 					num_lasers++;
@@ -3878,9 +4076,9 @@ void weapon_sort_by_type()
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
 					num_child_secondaries++;
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
 					num_big_missiles++;
 				else
 					num_missiles++;
@@ -3895,73 +4093,68 @@ void weapon_sort_by_type()
 	// allocate the buckets
 	if (num_lasers) {
 		lasers = new weapon_info[num_lasers];
-		Verify( lasers != NULL );
 		num_lasers = 0;
 	}
 
 	if (num_big_lasers) {
 		big_lasers = new weapon_info[num_big_lasers];
-		Verify( big_lasers != NULL );
 		num_big_lasers = 0;
 	}
 
 	if (num_beams) {
 		beams = new weapon_info[num_beams];
-		Verify( beams != NULL );
 		num_beams = 0;
 	}
 
 	if (num_missiles) {
 		missiles = new weapon_info[num_missiles];
-		Verify( missiles != NULL );
 		num_missiles = 0;
 	}
 
 	if (num_big_missiles) {
 		big_missiles = new weapon_info[num_big_missiles];
-		Verify( big_missiles != NULL );
 		num_big_missiles = 0;
 	}
 
 	if (num_child_primaries) {
 		child_primaries = new weapon_info[num_child_primaries];
-		Verify( child_primaries != NULL );
 		num_child_primaries = 0;
 	}
 
 	if (num_child_secondaries) {
 		child_secondaries = new weapon_info[num_child_secondaries];
-		Verify( child_secondaries != NULL );
 		num_child_secondaries = 0;
 	}
 
 	// fill the buckets
-	for (i = 0; i < weapon_info_size(); i++) {
-		switch (Weapon_info[i].subtype)
+	for (auto& wi : Weapon_info) {
+		switch (wi.subtype)
 		{
 			case WP_UNUSED:
 				continue;
 
 			case WP_LASER:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_primaries[num_child_primaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_lasers[num_big_lasers++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Beam])      // many beams are found in the laser section
+					beams[num_beams++] = std::move(wi);
+				else if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_primaries[num_child_primaries++] = std::move(wi);
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_lasers[num_big_lasers++] = std::move(wi);
 				else
-					lasers[num_lasers++] = Weapon_info[i];
+					lasers[num_lasers++] = std::move(wi);
 				break;
 		
 			case WP_BEAM:
-				beams[num_beams++] = Weapon_info[i];
+				beams[num_beams++] = std::move(wi);
 				break;
 
 			case WP_MISSILE:
-				if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Child])
-					child_secondaries[num_child_secondaries++] = Weapon_info[i];
-				else if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Big_only])
-					big_missiles[num_big_missiles++] = Weapon_info[i];
+				if (wi.wi_flags[Weapon::Info_Flags::Child])
+					child_secondaries[num_child_secondaries++] = std::move(wi);
+				else if (wi.wi_flags[Weapon::Info_Flags::Big_only])
+					big_missiles[num_big_missiles++] = std::move(wi);
 				else
-					missiles[num_missiles++]=Weapon_info[i];
+					missiles[num_missiles++] = std::move(wi);
 				break;
 
 			default:
@@ -3972,29 +4165,29 @@ void weapon_sort_by_type()
 	weapon_index = 0;
 
 	// reorder the weapon_info structure according to our rules defined above
-	for (i = 0; i < num_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = lasers[i];
+	for (size_t i = 0; i < num_lasers; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(lasers[i]);
 
-	for (i = 0; i < num_big_lasers; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_lasers[i];
+	for (size_t i = 0; i < num_big_lasers; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(big_lasers[i]);
 
-	for (i = 0; i < num_beams; i++, weapon_index++)
-		Weapon_info[weapon_index] = beams[i];
+	for (size_t i = 0; i < num_beams; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(beams[i]);
 
-	for (i = 0; i < num_child_primaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_primaries[i];
+	for (size_t i = 0; i < num_child_primaries; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(child_primaries[i]);
 
 	// designate start of secondary weapons so that we'll have the correct offset later on
 	First_secondary_index = weapon_index;
 
-	for (i = 0; i < num_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = missiles[i];
+	for (size_t i = 0; i < num_missiles; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(missiles[i]);
 
-	for (i = 0; i < num_big_missiles; i++, weapon_index++)
-		Weapon_info[weapon_index] = big_missiles[i];
+	for (size_t i = 0; i < num_big_missiles; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(big_missiles[i]);
 
-	for (i = 0; i < num_child_secondaries; i++, weapon_index++)
-		Weapon_info[weapon_index] = child_secondaries[i];
+	for (size_t i = 0; i < num_child_secondaries; i++, weapon_index++)
+		Weapon_info[weapon_index] = std::move(child_secondaries[i]);
 
 
 	if (lasers)			delete [] lasers;
@@ -4673,15 +4866,12 @@ void weapon_level_init()
 	// clear out used_weapons between missions
 	memset(used_weapons, 0, Weapon_info.size() * sizeof(int));
 
-	Weapon_flyby_sound_timer = timestamp(0);
-	Weapon_impact_timer = 1;	// inited each level, used to reduce impact sounds
+	Weapon_flyby_sound_timer = TIMESTAMP::immediate();
+	Weapon_impact_timer = TIMESTAMP::immediate();	// inited each level, used to reduce impact sounds
 }
 
 MONITOR( NumWeaponsRend )
 
-const float weapon_glow_scale_f = 2.3f;
-const float weapon_glow_scale_r = 2.3f;
-const float weapon_glow_scale_l = 1.5f;
 const float weapon_glow_alpha = 0.85f;
 
 void weapon_delete(object *obj)
@@ -4704,8 +4894,12 @@ void weapon_delete(object *obj)
 
 	Assert(wp->weapon_info_index >= 0);
 	wp->weapon_info_index = -1;
+
 	if (wp->swarm_info_ptr != nullptr)
 		wp->swarm_info_ptr.reset();
+
+	if (wp->homing_cache_ptr != nullptr)
+		wp->homing_cache_ptr.reset();
 
 	if(wp->cscrew_index >= 0) {
 		cscrew_delete(wp->cscrew_index);
@@ -5452,25 +5646,24 @@ void weapon_home(object *obj, int num, float frame_time)
             (wp->homing_object->type == OBJ_SHIP) && 
             (wip->subtype != WP_LASER))				
         {
-			if (Fixed_missile_detonation)
+			// by default, we just detonate the missile immediately
+			wp->lifeleft = 0.001f;
+
+			// try to be smart about this... if we are homing on a subsystem, give the missile enough time to reach the other side of it
+			if (Fixed_missile_detonation && wp->homing_subsys)
 			{
-				// try to be smart about this... if we have a submodel, and it's not destroyed, give the missile enough time to reach the other side of it
-				if (wp->homing_subsys && wp->homing_subsys->submodel_instance_1 && !wp->homing_subsys->submodel_instance_1->blown_off)
+				// if we have a submodel, use the submodel radius
+				if (wp->homing_subsys->system_info->subobj_num >= 0)
 				{
 					auto pm = model_get(Ship_info[Ships[wp->homing_object->instance].ship_info_index].model_num);
 					auto sm = &pm->submodel[wp->homing_subsys->system_info->subobj_num];
 					wp->lifeleft = sm->rad / obj->phys_info.speed;
 				}
-				// otherwise detonate the missile immediately
+				// otherwise use the subsystem radius
 				else
 				{
-					wp->lifeleft = 0.001f;
+					wp->lifeleft = wp->homing_subsys->system_info->radius / obj->phys_info.speed;
 				}
-			}
-			else
-			{
-				// retail just detonates the missile immediately
-				wp->lifeleft = 0.001f;
 			}
 
 			// this flag is needed so we don't prolong the missile's life by repeatedly detonating it
@@ -5534,8 +5727,8 @@ void weapon_home(object *obj, int num, float frame_time)
 		vm_vec_copy_scale( &obj->phys_info.desired_vel, &obj->orient.vec.fvec, obj->phys_info.speed);
 
 		vec3d turnrate_mod = vm_vec_new(1.0f, 1.0f, 1.0f);
-		if (wip->turn_rate_curve_idx >= 0)
-			turnrate_mod *= Curves[wip->turn_rate_curve_idx].GetValue(time_alive / wip->lifetime);
+
+		turnrate_mod *= wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, *wp, &wp->modular_curves_instance);
 
 		// turn the missile towards the target only if non-swarm.  Homing swarm missiles choose
 		// a different vector to turn towards, this is done in swarm_update_direction().
@@ -5544,7 +5737,6 @@ void weapon_home(object *obj, int num, float frame_time)
 			vel = vm_vec_mag(&obj->phys_info.desired_vel);
 
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
-
 		}
 	}
 }
@@ -5639,18 +5831,24 @@ void weapon_process_pre( object *obj, float  frame_time)
 		}
 	}
 
+	float det_radius_adjusted = wip->det_radius;
+
 	//WMC - Maybe detonate weapon anyway!
-	if(wip->det_radius > 0.0f)
+	if(det_radius_adjusted > 0.0f)
 	{
+		det_radius_adjusted *= wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::DET_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+
+		det_radius_adjusted = MAX(det_radius_adjusted, 0.f);
+
 		if((weapon_has_homing_object(wp)) && (wp->homing_object->type != 0))
 		{
-			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= wip->det_radius)
+			if(!IS_VEC_NULL(&wp->homing_pos) && vm_vec_dist(&wp->homing_pos, &obj->pos) <= det_radius_adjusted)
 			{
 				weapon_detonate(obj);
 			}
 		} else if(wp->target_num > -1)
 		{
-			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= wip->det_radius)
+			if(vm_vec_dist(&obj->pos, &Objects[wp->target_num].pos) <= det_radius_adjusted)
 			{
 				weapon_detonate(obj);
 			}
@@ -5714,7 +5912,7 @@ void weapon_maybe_play_flyby_sound(object *weapon_objp, weapon *wp)
 						snd_play_3d( gamesnd_get_game_sound(GameSounds::WEAPON_FLYBY), &weapon_objp->pos, &Eye_position );
 					}
 				}
-				Weapon_flyby_sound_timer = timestamp(200);
+				Weapon_flyby_sound_timer = _timestamp(200);
                 wp->weapon_flags.set(Weapon::Weapon_Flags::Played_flyby_sound);
 			}
 		}
@@ -5819,22 +6017,27 @@ void weapon_process_post(object * obj, float frame_time)
 	// do continuous spawns
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
-			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
-				if (timestamp_elapsed(wp->next_spawn_time[i])) {
-					spawn_child_weapons(obj, i);
+			bool spawn = wp->last_spawn_time[i].isNever();
+			float rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::SPAWN_RATE_MULT, *wp, &wp->modular_curves_instance);
+			if (rate_mult > 0.f) {
+				int required_elapsed = fl2i((wip->spawn_info[i].spawn_interval / rate_mult) * MILLISECONDS_PER_SECOND);
+				spawn |= timestamp_elapsed(timestamp_delta(wp->last_spawn_time[i], required_elapsed));
+			}
 
-					// do the spawn effect
-					if (wip->spawn_info[i].spawn_effect.isValid()) {
-						auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
-						particleSource.moveTo(&obj->pos);
-						particleSource.setOrientationFromVec(&obj->phys_info.vel);
-						particleSource.setVelocity(&obj->phys_info.vel);
-						particleSource.finish();
-					}
+			if (spawn) {
+				spawn_child_weapons(obj, i);
 
-					// update next_spawn_time
-					wp->next_spawn_time[i] = timestamp() + (int)(wip->spawn_info[i].spawn_interval * 1000.f);
+				// do the spawn effect
+				if (wip->spawn_info[i].spawn_effect.isValid()) {
+					auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
+
+					particleSource.moveTo(&obj->pos, &obj->orient);
+					particleSource.setVelocity(&obj->phys_info.vel);
+					particleSource.finish();
 				}
+
+				// update next_spawn_time
+				wp->last_spawn_time[i] = _timestamp();
 			}
 		}
 	}
@@ -6255,12 +6458,12 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 	// the weapon to the wrong bank.  Hopefully this isn't a problem.
 	for ( int pi = 0; pi < MAX_SHIP_PRIMARY_BANKS; pi++ ) {
 		if ( ship_weapon_p->primary_bank_weapons[pi] == weapon_type ) {
-			return &(ship_weapon_p->primary_bank_pattern_index[pi]);
+			return &(ship_weapon_p->primary_bank_substitution_pattern_index[pi]);
 		}
 	}
 	for ( int si = 0; si < MAX_SHIP_SECONDARY_BANKS; si++ ) {
 		if ( ship_weapon_p->secondary_bank_weapons[si] == weapon_type ) {
-			return &(ship_weapon_p->secondary_bank_pattern_index[si]);
+			return &(ship_weapon_p->secondary_bank_substitution_pattern_index[si]);
 		}
 	}
 	return NULL;
@@ -6529,6 +6732,8 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		}
 	}
 
+	wp->modular_curves_instance = wip->weapon_curves.create_instance();
+
 	if(wip->wi_flags[Weapon::Info_Flags::Cmeasure]) {
 		// For the next two frames, any non-timer-based countermeasures will pulse each frame.
 		Cmeasures_homing_check = 2;
@@ -6691,18 +6896,10 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 		for (int i = 0; i < wip->num_spawn_weapons_defined; i++) {
 			if (wip->spawn_info[i].spawn_interval >= MINIMUM_SPAWN_INTERVAL) {
-				int delay;
-				if (wip->spawn_info[i].spawn_interval_delay < 0.f)
-					delay = (int)(wip->spawn_info[i].spawn_interval * 1000);
-				else
-					delay = (int)(wip->spawn_info[i].spawn_interval_delay * 1000);
-
-				if (delay < 10)
-					delay = 10; // cap at 10 ms
-				wp->next_spawn_time[i] = timestamp(delay);
+				wp->last_spawn_time[i] = TIMESTAMP::never();
 			}
 			else
-				wp->next_spawn_time[i] = INT_MAX; // basically never expire
+				wp->last_spawn_time[i] = TIMESTAMP::invalid(); // never spawn
 		}
 	}
 
@@ -6864,6 +7061,8 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 			spawn_count = wip->spawn_info[i].spawn_count;
 		}
 
+		spawn_count = fl2i(i2fl(spawn_count) * wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::SPAWN_COUNT_MULT, *wp, &wp->modular_curves_instance));
+
 		child_id = wip->spawn_info[i].spawn_wep_index;
 		if (child_id < 0)
 			continue;
@@ -6943,7 +7142,9 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 						rand_val = static_randf(objp->net_signature + j);
 					}
 
-					Weapons[Objects[weapon_objnum].instance].lifeleft *= rand_val*0.4f + 0.8f;
+					float child_factor = child_wip->lifetime_variation_factor_when_child;
+
+					Weapons[Objects[weapon_objnum].instance].lifeleft *= std::max(0.01f, rand_val*(child_factor*2.0f) + (1.0f - child_factor));
 					if (child_wip->wi_flags[Weapon::Info_Flags::Remote]) {
 						parent_shipp->weapons.detonate_weapon_time = timestamp((int)(DEFAULT_REMOTE_DETONATE_TRIGGER_WAIT * 1000));
 						parent_shipp->weapons.remote_detonaters_active++;
@@ -6967,7 +7168,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
  * Figures out whether to play disarmed or armed hit sound, checks that the
  * chosen one exists, and plays it
  */
-void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
+void weapon_play_impact_sound(const weapon_info *wip, const vec3d *hitpos, bool is_armed)
 {
 	if(is_armed)
 	{
@@ -6992,7 +7193,7 @@ void weapon_play_impact_sound(weapon_info *wip, vec3d *hitpos, bool is_armed)
  *
  * @note Uses Weapon_impact_timer global for timer variable
  */
-void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool is_armed, int quadrant)
+void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant)
 {
 	float shield_str;
 
@@ -7015,7 +7216,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 		case OBJ_ASTEROID:
 			if ( timestamp_elapsed(Weapon_impact_timer) ) {
 				weapon_play_impact_sound(wip, hitpos, is_armed);	
-				Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+				Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 			}
 			return;
 			break;
@@ -7077,7 +7278,7 @@ void weapon_hit_do_sound(object *hit_obj, weapon_info *wip, vec3d *hitpos, bool 
 			} // end switch
 		}
 
-		Weapon_impact_timer = timestamp(IMPACT_SOUND_DELTA);
+		Weapon_impact_timer = _timestamp(IMPACT_SOUND_DELTA);
 	}
 }
 
@@ -7090,7 +7291,7 @@ extern bool turret_weapon_has_flags(const ship_weapon *swp, Weapon::Info_Flags f
  * @param blast_pos	World pos of weapon blast
  * @param wi_index	Weapon info index of weapon causing blast
  */
-void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_index)
+void weapon_do_electronics_effect(const object *ship_objp, const vec3d *blast_pos, int wi_index)
 {
 	weapon_info			*wip;
 	ship				*shipp;
@@ -7181,7 +7382,7 @@ void weapon_do_electronics_effect(object *ship_objp, vec3d *blast_pos, int wi_in
  * @return		No damage occurred, -1
  * @return		Damage occured, 0
  */
-int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
+int weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage, float *blast, float *damage, float limit)
 {
 	float dist;
 	vec3d box_pt;
@@ -7236,7 +7437,7 @@ int weapon_area_calc_damage(object *objp, vec3d *pos, float inner_rad, float out
  * @param blast				Force of blast
  * @param make_shockwave	Boolean, whether to create a shockwave or not
  */
-void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *blast_pos, float blast, bool make_shockwave)
+void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, const vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
 	polymodel		*pm;
@@ -7283,9 +7484,9 @@ void weapon_area_apply_blast(vec3d * /*force_apply_pos*/, object *objp, vec3d *b
  * @param wobjp		Object pointer to weapon causing explosion
  * @param sci		Shockwave info
  * @param pos		World pos of explosion center
- * @param other_obj	Object pointer to ship that weapon impacted on (can be NULL)
+ * @param impacted_obj	Object pointer to ship that weapon impacted on (can be NULL)
  */
-void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos, object *other_obj)
+void weapon_do_area_effect(object *wobjp, const shockwave_create_info *sci, const vec3d *pos, const object *impacted_obj)
 {
 	weapon_info	*wip;
 	object		*objp;
@@ -7321,28 +7522,53 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 		}
 
 		// scale damage
-		damage *= weapon_get_damage_scale(wip, wobjp, other_obj);		
+		damage *= weapon_get_damage_scale(wip, wobjp, impacted_obj);		
 
 		weapon_info* target_wip;
 
 		switch ( objp->type ) {
-		case OBJ_SHIP:
+		case OBJ_SHIP: {
 			// If we're doing an AoE Electronics blast, do the electronics stuff (unless it also has the regular "electronics"
 			// flag and this is the ship the missile directly impacted; then leave it for the regular code below) -MageKing17
-			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == other_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) {
+			if ( (wip->wi_flags[Weapon::Info_Flags::Aoe_Electronics]) && !((objp->flags[Object::Object_Flags::Invulnerable]) || ((objp == impacted_obj) && (wip->wi_flags[Weapon::Info_Flags::Electronics]))) ) { // NOLINT(readability-simplify-boolean-expr)
 				weapon_do_electronics_effect(objp, pos, Weapons[wobjp->instance].weapon_info_index);
 			}
+
+			weapon* wp = &Weapons[wobjp->instance];
+			ship* shipp = &Ships[objp->instance];
+
+			// if this is friendly fire, we check for the friendly fire cap values
+			if (wp->team == shipp->team) {
+				if (wobjp->parent > -1 && &Objects[wobjp->parent] == objp && The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level] >= 0.f) {
+					// if this is a ship damaging itself, we use the self damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_self_damage_cap[Game_skill_level]);
+				} else if (The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+					// otherwise we use the friendly damage cap
+					damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+				}
+			}
+
 			ship_apply_global_damage(objp, wobjp, pos, damage, wip->shockwave.damage_type_idx);
 			weapon_area_apply_blast(nullptr, objp, pos, blast, false);
 			break;
+			}
 		case OBJ_ASTEROID:
 			weapon_area_apply_blast(nullptr, objp, pos, blast, true);
 			asteroid_hit(objp, nullptr, nullptr, damage, nullptr);
 			break;
-		case OBJ_WEAPON:
+		case OBJ_WEAPON: {
+		
 			target_wip = &Weapon_info[Weapons[objp->instance].weapon_info_index];
 			if (target_wip->armor_type_idx >= 0)
 				damage = Armor_types[target_wip->armor_type_idx].GetDamage(damage, wip->shockwave.damage_type_idx, 1.0f, false);
+
+			weapon* wp = &Weapons[wobjp->instance];
+			weapon* target_wp = &Weapons[objp->instance];
+		
+			// if this is friendly fire, we check for the friendly fire cap value
+			if (wp->team == target_wp->team && The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level] >= 0.f) {
+				damage = MIN(damage, The_mission.ai_profile->weapon_friendly_damage_cap[Game_skill_level]);
+			}
 
 			objp->hull_strength -= damage;
 			if (objp->hull_strength < 0.0f) {
@@ -7351,6 +7577,7 @@ void weapon_do_area_effect(object *wobjp, shockwave_create_info *sci, vec3d *pos
 				Weapons[objp->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 			}
 			break;
+			}
 		default:
 			Int3();
 			break;
@@ -7415,7 +7642,7 @@ bool weapon_armed(weapon *wp, bool hit_target)
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int quadrant, vec3d* hitnormal )
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal )
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -7433,6 +7660,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	bool		hit_target = false;
 
 	ship		*shipp;
+	weapon		*target_wp;
+	weapon_info *target_wip;
 	int         objnum;
 
 	Assert((weapon_type >= 0) && (weapon_type < weapon_info_size()));
@@ -7448,26 +7677,85 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeathStarted->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
 	// check if the weapon actually hit the intended target
 	if (weapon_has_homing_object(wp))
-		if (wp->homing_object == other_obj)
+		if (wp->homing_object == impacted_obj)
 			hit_target = true;
 
 	//This is an expensive check
 	bool armed_weapon = weapon_armed(&Weapons[num], hit_target);
 
 	// if this is the player ship, and is a laser hit, skip it. wait for player "pain" to take care of it
-	if ((other_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) {
-		weapon_hit_do_sound(other_obj, wip, hitpos, armed_weapon, quadrant);
+	if ((impacted_obj != Player_obj) || (wip->subtype != WP_LASER) || !MULTIPLAYER_CLIENT) { // NOLINT(readability-simplify-boolean-expr)
+		weapon_hit_do_sound(impacted_obj, wip, hitpos, armed_weapon, quadrant);
 	}
 
-	if (wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos);
-		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+
+ 	bool valid_conditional_impact = false;
+	int relevant_armor_idx = -1;
+	float relevant_fraction = 1.0f;
+	float hit_angle = 0.0f;
+	vec3d reverse_incoming = weapon_obj->orient.vec.fvec;
+	vm_vec_negate(&reverse_incoming);
+
+	if (hitnormal) {
+		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
+	}
+
+	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr) { 
+		switch (impacted_obj->type) {
+			case OBJ_SHIP:
+				shipp = &Ships[impacted_obj->instance];
+				if (quadrant == -1) {
+					relevant_armor_idx = shipp->armor_type_idx;
+					relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
+				} else {
+					relevant_armor_idx = shipp->shield_armor_type_idx;
+					relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
+				}
+				break;
+			case OBJ_WEAPON:
+				target_wp = &Weapons[impacted_obj->instance];
+				target_wip = &Weapon_info[target_wp->weapon_info_index];
+				relevant_armor_idx = target_wip->armor_type_idx;
+				relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
+				break;
+			default:
+				break;
+		}
+		
+		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
+			for (const auto& ci : wip->conditional_impacts[relevant_armor_idx]) {
+				if (((!armed_weapon) == ci.dinky)
+					&& relevant_fraction >= ci.min_health_threshold
+					&& relevant_fraction <= ci.max_health_threshold
+					&& hit_angle >= fl_radians(ci.min_angle_threshold)
+					&& hit_angle <= fl_radians(ci.max_angle_threshold)
+				) {
+					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
+					particleSource.moveTo(hitpos, &weapon_obj->last_orient);
+					particleSource.setVelocity(&weapon_obj->phys_info.vel);
+
+					if (hitnormal)
+					{
+						particleSource.setOrientationNormal(hitnormal);
+					}
+
+					particleSource.finish();
+
+					valid_conditional_impact = true;
+				}
+			}
+		}
+	}
+
+
+	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
+              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
@@ -7476,10 +7764,9 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 
 		particleSource.finish();
-	} else if (wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
+	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos);
-		particleSource.setOrientationFromVec(&weapon_obj->phys_info.vel);
+		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
 		particleSource.setVelocity(&weapon_obj->phys_info.vel);
 
 		if (hitnormal)
@@ -7490,18 +7777,18 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		particleSource.finish();
 	}
 
-	if ((other_obj != nullptr) && (quadrant == -1) && (wip->piercing_impact_effect.isValid() && armed_weapon)) {
-		if ((other_obj->type == OBJ_SHIP) || (other_obj->type == OBJ_DEBRIS)) {
+	if ((impacted_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+		if ((impacted_obj->type == OBJ_SHIP) || (impacted_obj->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
 
-			if (other_obj->type == OBJ_SHIP) {
+			if (impacted_obj->type == OBJ_SHIP) {
 				float draw_limit, hull_pct;
 				int dmg_type_idx, piercing_type;
 
-				shipp = &Ships[other_obj->instance];
+				shipp = &Ships[impacted_obj->instance];
 
-				hull_pct = other_obj->hull_strength / shipp->ship_max_hull_strength;
+				hull_pct = impacted_obj->hull_strength / shipp->ship_max_hull_strength;
 				dmg_type_idx = wip->damage_type_idx;
 				draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
 				
@@ -7522,8 +7809,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 				using namespace particle;
 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
-				primarySource.moveTo(&weapon_obj->pos);
-				primarySource.setOrientationMatrix(&weapon_obj->last_orient);
+				primarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
 				primarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 				if (hitnormal)
@@ -7535,8 +7821,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 
 				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
-					secondarySource.moveTo(&weapon_obj->pos);
-					secondarySource.setOrientationMatrix(&weapon_obj->last_orient);
+					secondarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
 					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
 
 					if (hitnormal)
@@ -7553,7 +7838,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	//Set shockwaves flag
 	int sw_flag = SW_WEAPON;
 
-	if ( ((other_obj) && (other_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
+	if ( ((impacted_obj) && (impacted_obj->type == OBJ_WEAPON)) || (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon])) {
 		sw_flag |= SW_WEAPON_KILL;
 	}
 
@@ -7570,7 +7855,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 			shockwave_create(OBJ_INDEX(weapon_obj), hitpos, sci, sw_flag, -1);
 		}
 		else {
-			weapon_do_area_effect(weapon_obj, sci, hitpos, other_obj);
+			weapon_do_area_effect(weapon_obj, sci, hitpos, impacted_obj);
 		}
 	}
 
@@ -7580,13 +7865,13 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 	}	
 
 	// if this weapon has the "Electronics" flag set, then disrupt subsystems in sphere
-	if ((other_obj != NULL) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
-		if (other_obj->type == OBJ_SHIP) {
-			weapon_do_electronics_effect(other_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
+	if ((impacted_obj != nullptr) && (wip->wi_flags[Weapon::Info_Flags::Electronics])) {
+		if (impacted_obj->type == OBJ_SHIP) {
+			weapon_do_electronics_effect(impacted_obj, &weapon_obj->pos, Weapons[weapon_obj->instance].weapon_info_index);
 		}
 	}
 
-	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !other_obj) {
+	if (!wip->pierce_objects || wip->spawn_children_on_pierce || !impacted_obj) {
 		// spawn weapons - note the change from FS 1 multiplayer.
 		if (wip->wi_flags[Weapon::Info_Flags::Spawn]) {
 			if (!((wip->wi_flags[Weapon::Info_Flags::Dont_spawn_if_shot]) && (Weapons[num].weapon_flags[Weapon::Weapon_Flags::Destroyed_by_weapon]))) {			// prevent spawning of children if shot down and the dont spawn if shot flag is set (DahBlount)
@@ -7595,8 +7880,8 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		}
 	}
 
-	//No other_obj means this weapon detonates
-	if (wip->pierce_objects && other_obj)
+	//No impacted_obj means this weapon detonates
+	if (wip->pierce_objects && impacted_obj && impacted_obj->type != OBJ_WEAPON)
 		return;
 
 	// For all objects that had this weapon as a target, wipe it out, forcing find of a new enemy
@@ -7637,7 +7922,7 @@ void weapon_hit( object * weapon_obj, object * other_obj, vec3d * hitpos, int qu
 		scripting::hooks::OnMissileDeath->run(scripting::hooks::WeaponDeathConditions{ wp },
 			scripting::hook_param_list(
 			scripting::hook_param("Weapon", 'o', weapon_obj),
-			scripting::hook_param("Object", 'o', other_obj)));
+			scripting::hook_param("Object", 'o', impacted_obj)));
 	}
 
     weapon_obj->flags.set(Object::Object_Flags::Should_be_dead);
@@ -8526,7 +8811,7 @@ DCF(pspew, "Particle spew help and status provider")
 /**
  * Return a scale factor for damage which should be applied for 2 collisions
  */
-float weapon_get_damage_scale(weapon_info *wip, object *wep, object *target)
+float weapon_get_damage_scale(const weapon_info *wip, const object *wep, const object *target)
 {
 	weapon *wp;	
 	int from_player = 0;
@@ -8651,7 +8936,7 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
-void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx) {
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx) {
 	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
 	particle::create(hitpos,
 					 &vmd_zero_vector,
@@ -8665,7 +8950,7 @@ void shield_impact_explosion(vec3d *hitpos, object *objp, float radius, int idx)
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
 // the two are cross-faded into each other so it can switch to the more appropriate bitmap depending on the angle
 // returns the alpha multiplier to be used for the main bitmap
-float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, int bitmap, float width1, float width2, int r, int g, int b){
+float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, float switch_ang, float switch_rate, int bitmap, float width1, float width2, int r, int g, int b){
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
@@ -8677,18 +8962,18 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	float head_alpha, side_alpha;
 
 	// get the head vs side apparent proportions
-	if (wip->laser_headon_switch_ang < 0.0f) {
+	if (switch_ang < 0.0f) {
 		head_alpha = ((width1 + width2) / 2) * fabs(cosf(ang));
 		side_alpha = wip->laser_length * fabs(sinf(ang));
 	}
 	else {
-		head_alpha = tanf(wip->laser_headon_switch_ang);
+		head_alpha = tanf(switch_ang);
 		side_alpha = 1 / head_alpha;
 		side_alpha = side_alpha * fabs(sinf(ang));
 		head_alpha = head_alpha * fabs(cosf(ang));
 	}
-	head_alpha = powf(head_alpha, wip->laser_headon_switch_rate);
-	side_alpha = powf(side_alpha, wip->laser_headon_switch_rate);
+	head_alpha = powf(head_alpha, switch_rate);
+	side_alpha = powf(side_alpha, switch_rate);
 
 	// turn it into 0..1
 	float head_side_total = head_alpha + side_alpha;
@@ -8696,7 +8981,7 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	side_alpha /= head_side_total;
 
 	// make the transition instant past 20
-	if (wip->laser_headon_switch_rate >= 20.0f) {
+	if (switch_rate >= 20.0f) {
 		if (head_alpha > side_alpha) {
 			head_alpha = 1.0f;
 			side_alpha = 0.0f;
@@ -8729,6 +9014,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 	wp = &Weapons[num];
 	wip = &Weapon_info[Weapons[num].weapon_info_index];
 
+
 	if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 		if (wp->alpha_current == -1.0f) {
 			wp->alpha_current = wip->alpha_max;
@@ -8755,24 +9041,68 @@ void weapon_render(object* obj, model_draw_list *scene)
 	{
 	case WRT_LASER:
 		{
+			float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+			float radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float head_radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEAD_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float tail_radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_TAIL_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			float offset_x_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_X_MULT, *wp, &wp->modular_curves_instance);
+			float offset_y_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Y_MULT, *wp, &wp->modular_curves_instance);
+			float offset_z_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
+			float switch_ang_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
+			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
+			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE);
+			float anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			float alpha_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_r_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_g_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
+			float bitmap_b_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_B_MULT, *wp, &wp->modular_curves_instance);
+			float glow_r_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_GLOW_R_MULT, *wp, &wp->modular_curves_instance);
+			float glow_g_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_GLOW_G_MULT, *wp, &wp->modular_curves_instance);
+			float glow_b_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_GLOW_B_MULT, *wp, &wp->modular_curves_instance);
+
+			if (wip->laser_length_by_frametime) {
+				length_mult *= flFrametime;
+			}
 
 			float alphaf = 1.0f;
 			int framenum = 0;
 			int headon_framenum = 0;
 
-			float time = f2fl(Missiontime - wp->creation_time) / wip->lifetime;
 			float laser_length = wip->laser_length;
-			if (wip->laser_length_curve_idx >= 0)
-				laser_length *= Curves[wip->laser_length_curve_idx].GetValue(time);
-			float radius_mult = 1.0f;
-			if (wip->laser_radius_curve_idx >= 0) {
-				radius_mult = Curves[wip->laser_radius_curve_idx].GetValue(time);
-				if (radius_mult <= 0.0001f)
-					radius_mult = 0.0001f;
-			}
+			laser_length *= length_mult;
+			float head_radius = wip->laser_head_radius;
+			float tail_radius = wip->laser_tail_radius;
+			head_radius *= head_radius_mult * radius_mult;
+			tail_radius *= tail_radius_mult * radius_mult;
 
 			if (laser_length < 0.0001f)
 				return;
+			
+			if (head_radius <= 0.0001f) {
+				head_radius = 0.0001f;
+			}
+			if (tail_radius <= 0.0001f) {
+				tail_radius = 0.0001f;
+			}
+
+
+			vec3d rotated_offset;
+
+			vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &obj->orient);
+
+			rotated_offset.xyz.x *= offset_x_mult;
+			rotated_offset.xyz.y *= offset_y_mult;
+			rotated_offset.xyz.z *= offset_z_mult;
+
+			// By default, the laser's actual position is at its tail point, near the trailing edge of the bitmap.
+			// Before deriving the headp from the tailp, we move the tailp by the modder-specified offset, multiplied by laser_length.
+			// That way, the offset is relative to laser_length, and moving the bitmap so that the laser's position is, for example,
+			// at the center or head of the laser is easy.
+			vec3d headp, tailp;
+				vm_vec_scale_add(&tailp, &obj->pos, &rotated_offset, laser_length);
+				vm_vec_scale_add(&headp, &tailp, &obj->orient.vec.fvec, laser_length);
+
+			float main_bitmap_alpha_mult = 1.0;
 
 			if (wip->laser_bitmap.first_frame >= 0) {					
 				gr_set_color_fast(&wip->laser_color_1);
@@ -8780,54 +9110,73 @@ void weapon_render(object* obj, model_draw_list *scene)
 				if (wip->laser_bitmap.num_frames > 1) {
 					wp->laser_bitmap_frame += flFrametime;
 
-					framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
+					if (anim_has_curve) {
+						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames - 1) * anim_state);
+					} else {
+						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
+					}
+
+					CLAMP(framenum, 0, wip->laser_bitmap.num_frames - 1);
 				}
 
 				if (wip->laser_headon_bitmap.num_frames > 1) {
 					wp->laser_headon_bitmap_frame += flFrametime;
 
-					headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+					if (anim_has_curve) {
+						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state);
+					} else {
+						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
+					}
+
+					CLAMP(framenum, 0, wip->laser_headon_bitmap.num_frames - 1);
 				}
 
-				if (wip->wi_flags[Weapon::Info_Flags::Transparent])
+				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
 					alphaf = wp->alpha_current;
-				if (wip->laser_alpha_curve_idx >= 0)
-					alphaf *= Curves[wip->laser_alpha_curve_idx].GetValue(time);
+				}
+				alphaf *= alpha_mult;
 				CLAMP(alphaf, 0.0f, 1.0f);
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if(nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if(nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
-				vec3d headp;
-				vm_vec_scale_add(&headp, &obj->pos, &obj->orient.vec.fvec, laser_length);
-
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&obj->pos, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp, head_radius, wip->laser_min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, tail_radius, wip->laser_min_pixel_size);
 
-				int alpha = static_cast<int>(alphaf * 255.0f);
+				int bitmap_r = fl2i(alphaf * wip->bitmap_color.xyz.x * bitmap_r_mult);
+				int bitmap_g = fl2i(alphaf * wip->bitmap_color.xyz.y * bitmap_g_mult);
+				int bitmap_b = fl2i(alphaf * wip->bitmap_color.xyz.z * bitmap_b_mult);
+				CLAMP(bitmap_r, 0, 255);
+				CLAMP(bitmap_g, 0, 255);
+				CLAMP(bitmap_b, 0, 255);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &obj->pos,
+					main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp, &tailp,
+						wip->laser_headon_switch_ang * switch_ang_mult,
+						wip->laser_headon_switch_rate * switch_rate_mult,
 						wip->laser_headon_bitmap.first_frame + headon_framenum,
 						scaled_head_radius,
 						scaled_tail_radius,
-						alpha, alpha, alpha);
-					alpha = static_cast<int>(alphaf * main_bitmap_alpha_mult * 255.0);
+						bitmap_r, bitmap_g, bitmap_b);
+
+					bitmap_r = fl2i(i2fl(bitmap_r) * main_bitmap_alpha_mult);
+					bitmap_g = fl2i(i2fl(bitmap_g) * main_bitmap_alpha_mult);
+					bitmap_b = fl2i(i2fl(bitmap_b) * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
 					wip->laser_bitmap.first_frame + framenum,
 					&headp,
 					scaled_head_radius,
-					&obj->pos,
+					&tailp,
 					scaled_tail_radius,
-					alpha, alpha, alpha);
+					bitmap_r, bitmap_g, bitmap_b);
 			}
 
 			// maybe draw laser glow bitmap
@@ -8837,10 +9186,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 				// *Tail point "getting bigger" as well as headpoint isn't being taken into consideration, so
 				//  it caused uneven glow between the head and tail, which really shows in big lasers. So...fixed!    -Et1
-				vec3d headp2, tailp;
+				vec3d headp2, tailp2;
 
-				vm_vec_scale_add(&headp2, &obj->pos, &obj->orient.vec.fvec, laser_length * weapon_glow_scale_l);
-				vm_vec_scale_add(&tailp, &obj->pos, &obj->orient.vec.fvec, laser_length * (1 -  weapon_glow_scale_l) );
+				float glow_scale_l_modified = wip->laser_glow_length_scale / 2.f + 0.5f;
+
+				vm_vec_scale_add(&headp2, &tailp, &obj->orient.vec.fvec, laser_length * glow_scale_l_modified);
+				vm_vec_scale_add(&tailp2, &tailp, &obj->orient.vec.fvec, laser_length * (1 - glow_scale_l_modified));
 
 				framenum = 0;
 
@@ -8856,9 +9207,13 @@ void weapon_render(object* obj, model_draw_list *scene)
 					while (wp->laser_glow_bitmap_frame > wip->laser_glow_bitmap.total_time)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
-					framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
+					if (anim_has_curve) {
+						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames) * anim_state);
+					} else {
+						framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
+					}
 
-					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames-1);
+					CLAMP(framenum, 0, wip->laser_glow_bitmap.num_frames - 1);
 				}
 
 				if (wip->laser_glow_headon_bitmap.num_frames > 1) {
@@ -8873,7 +9228,11 @@ void weapon_render(object* obj, model_draw_list *scene)
 					while (wp->laser_glow_headon_bitmap_frame > wip->laser_glow_headon_bitmap.total_time)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
-					headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
+					if (anim_has_curve) {
+						framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames) * anim_state);
+					} else {
+						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
+					}
 
 					CLAMP(headon_framenum, 0, wip->laser_glow_headon_bitmap.num_frames - 1);
 				}
@@ -8883,43 +9242,50 @@ void weapon_render(object* obj, model_draw_list *scene)
 				} else {
 					alphaf = weapon_glow_alpha;
 				}
-				if (wip->laser_alpha_curve_idx >= 0)
-					alphaf *= Curves[wip->laser_alpha_curve_idx].GetValue(time);
+				alphaf *= alpha_mult;
 				CLAMP(alphaf, 0.0f, 1.0f);
 
 				if (Neb_affects_weapons) {
 					float nebalpha = 1.0f;
-					if (nebula_handle_alpha(nebalpha, &obj->pos, Neb2_fog_visibility_weapon))
+					if (nebula_handle_alpha(nebalpha, &tailp, Neb2_fog_visibility_weapon))
 						alphaf *= nebalpha;
 				}
 
 				// Scale the laser so that it always appears some configured amount of pixels wide, no matter the distance.
 				// Only affects width, length remains unchanged.
-				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, wip->laser_head_radius * radius_mult, Min_pixel_size_laser);
-				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp, wip->laser_tail_radius * radius_mult, Min_pixel_size_laser);
+				float scaled_head_radius = model_render_get_diameter_clamped_to_min_pixel_size(&headp2, head_radius, wip->laser_min_pixel_size);
+				float scaled_tail_radius = model_render_get_diameter_clamped_to_min_pixel_size(&tailp2, tail_radius, wip->laser_min_pixel_size);
 
-				int r = static_cast<int>(static_cast<float>(c.red) * alphaf);
-				int g = static_cast<int>(static_cast<float>(c.green) * alphaf);
-				int b = static_cast<int>(static_cast<float>(c.blue) * alphaf);
+				int r = fl2i(i2fl(c.red) * glow_r_mult * alphaf);
+				int g = fl2i(i2fl(c.green) * glow_g_mult * alphaf);
+				int b = fl2i(i2fl(c.blue) * glow_b_mult * alphaf);
 
 				// render the head-on bitmap if appropriate and maybe adjust the main bitmap's alpha
 				if (wip->laser_glow_headon_bitmap.first_frame >= 0) {
-					float main_bitmap_alpha_mult = weapon_render_headon_bitmap(obj, &headp2, &tailp,
+					float head_alpha = 1.0f - main_bitmap_alpha_mult;
+
+					r = fl2i(r * head_alpha);
+					g = fl2i(g * head_alpha);
+					b = fl2i(b * head_alpha);
+
+					batching_add_laser(
 						wip->laser_glow_headon_bitmap.first_frame + headon_framenum,
-						scaled_head_radius * weapon_glow_scale_f,
-						scaled_tail_radius * weapon_glow_scale_r,
+						&headp2,
+						scaled_head_radius * wip->laser_glow_head_scale,
+						&tailp2,
+						scaled_tail_radius * wip->laser_glow_tail_scale,
 						r, g, b);
-					r = static_cast<int>(static_cast<float>(c.red) * alphaf * main_bitmap_alpha_mult);
-					g = static_cast<int>(static_cast<float>(c.green) * alphaf * main_bitmap_alpha_mult);
-					b = static_cast<int>(static_cast<float>(c.blue) * alphaf * main_bitmap_alpha_mult);
+					r = fl2i(i2fl(c.red) * glow_r_mult * alphaf * main_bitmap_alpha_mult);
+					g = fl2i(i2fl(c.green) * glow_g_mult * alphaf * main_bitmap_alpha_mult);
+					b = fl2i(i2fl(c.blue) * glow_b_mult * alphaf * main_bitmap_alpha_mult);
 				}
 
 				batching_add_laser(
 					wip->laser_glow_bitmap.first_frame + framenum,
 					&headp2,
-					scaled_head_radius * weapon_glow_scale_f,
-					&tailp,
-					scaled_tail_radius * weapon_glow_scale_r,
+					scaled_head_radius * wip->laser_glow_head_scale,
+					&tailp2,
+					scaled_tail_radius * wip->laser_glow_tail_scale,
 					r, g, b);
 			}
 
@@ -8930,7 +9296,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 		{
 			model_render_params render_info;
 
-			uint render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
+			uint64_t render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
 				render_flags |= MR_NO_LIGHTING;
@@ -8981,6 +9347,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 			}
 
 			render_info.set_flags(render_flags);
+
+			if (wp->model_instance_num >= 0)
+				render_info.set_replacement_textures(model_get_instance(wp->model_instance_num)->texture_replace);
 
 			model_render_queue(&render_info, scene, wip->model_num, &obj->orient, &obj->pos);
 
@@ -9112,17 +9481,25 @@ void weapon_info::reset()
 	this->laser_headon_switch_ang = -1.0f;
 	this->laser_headon_switch_rate = 2.0f;
 	this->laser_length = 10.0f;
-	this->laser_length_curve_idx = -1;
+	this->laser_length_by_frametime = false;
+	this->bitmap_color = { { { 255.f, 255.f, 255.f } } };
 	gr_init_color(&this->laser_color_1, 255, 255, 255);
 	gr_init_color(&this->laser_color_2, 255, 255, 255);
 	this->laser_head_radius = 1.0f;
 	this->laser_tail_radius = 1.0f;
-	this->laser_radius_curve_idx = -1;
-	this->laser_alpha_curve_idx = -1;
+	this->laser_glow_length_scale = 2.0f;
+	this->laser_glow_head_scale = 2.3f;
+	this->laser_glow_tail_scale = 2.3f;
+	this->laser_min_pixel_size = Min_pixel_size_laser;
+	vm_vec_zero(&this->laser_pos_offset);
 
 	this->light_color_set = false;
 	this->light_color.reset();
 	this->light_radius = -1.0f; //Defaults handled at runtime via lighting profile if left negative
+
+	this->weapon_curves.reset();
+	this->weapon_hit_curves.reset();
+	this->beam_curves.reset();
 
 	this->collision_radius_override = -1.0f;
 	this->max_speed = 10.0f;
@@ -9141,7 +9518,6 @@ void weapon_info::reset()
 	this->atten_damage = -1.0f;
 	this->damage_incidence_max = 1.0f;
 	this->damage_incidence_min = 1.0f;
-	this->damage_curve_idx = -1;
 
 	shockwave_create_info_init(&this->shockwave);
 	shockwave_create_info_init(&this->dinky_shockwave);
@@ -9170,7 +9546,6 @@ void weapon_info::reset()
 
 	this->turn_time = 1.0f;
 	this->turn_accel_time = 0.f;
-	this->turn_rate_curve_idx = -1;
 	this->cargo_size = 1.0f;
 	this->autoaim_fov = 0.0f;
 	this->rearm_rate = 1.0f;
@@ -9179,6 +9554,10 @@ void weapon_info::reset()
 	// *Minimum weapon range, default is 0 -Et1
 	this->weapon_min_range = 0.0f;
 	this->optimum_range = 0.0f;
+
+	this->aiming_flags.reset();
+	this->minimum_convergence_distance = 0.0f;
+	this->convergence_distance = 100.0f;
 
 	this->pierce_objects = false;
 	this->spawn_children_on_pierce = false;
@@ -9195,6 +9574,8 @@ void weapon_info::reset()
 		this->spawn_info[i].spawn_interval_delay = -1.f;
 		this->spawn_info[i].spawn_chance = 1.f;
 	}
+
+	this->lifetime_variation_factor_when_child = 0.2f;
 
 	this->swarm_count = -1;
 	// *Default is 150  -Et1
@@ -9246,7 +9627,7 @@ void weapon_info::reset()
 	this->tr_info.max_life = 1.0f;
 	this->tr_info.spread = 0.0f;
 	this->tr_info.a_decay_exponent = 1.0f;
-	this->tr_info.stamp = 0;
+	this->tr_info.spew_duration = 0;
 	generic_bitmap_init(&this->tr_info.texture, NULL);
 	this->tr_info.n_fade_out_sections = 0;
 	this->tr_info.texture_stretch = 1.0f;
@@ -9264,6 +9645,10 @@ void weapon_info::reset()
 
 	this->piercing_impact_effect = particle::ParticleEffectHandle::invalid();
 	this->piercing_impact_secondary_effect = particle::ParticleEffectHandle::invalid();
+
+	this->conditional_impacts.clear();
+
+	this->muzzle_effect = particle::ParticleEffectHandle::invalid();
 
 	this->state_effects.clear();
 
@@ -9287,7 +9672,9 @@ void weapon_info::reset()
 	this->fof_spread_rate = 0.0f;
 	this->fof_reset_rate = 0.0f;
 	this->max_fof_spread = 0.0f;
+	this->firing_pattern = FiringPattern::STANDARD;
 	this->shots = 1;
+	this->cycle_multishot = 1;
 
 	//customizeable corkscrew stuff
 	this->cs_num_fired = 4;
@@ -9329,7 +9716,6 @@ void weapon_info::reset()
 	this->b_info.beam_num_sections = 0;
 	this->b_info.glow_length = 0;
 	this->b_info.directional_glow = false;
-	this->b_info.beam_alpha_curve_idx = -1;
 	this->b_info.beam_shots = 1;
 	this->b_info.beam_shrink_factor = 0.0f;
 	this->b_info.beam_shrink_pct = 0.0f;
@@ -9351,9 +9737,11 @@ void weapon_info::reset()
 	vm_vec_zero(&this->b_info.t5info.end_pos_offset);
 	vm_vec_zero(&this->b_info.t5info.start_pos_rand);
 	vm_vec_zero(&this->b_info.t5info.end_pos_rand);
+	this->b_info.t5info.slash_pos_curve_idx = -1;
 	this->b_info.t5info.target_orient_positions = false;
 	this->b_info.t5info.target_scale_positions = false;
 	this->b_info.t5info.continuous_rot = 0.f;
+	this->b_info.t5info.rot_curve_idx = -1;
 	this->b_info.t5info.continuous_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 	this->b_info.t5info.per_burst_rot = 0.f;
 	this->b_info.t5info.per_burst_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
@@ -9478,7 +9866,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("Name,Type,Velocity,Range,Damage Hull,DPS Hull,Damage Shield,DPS Shield,Damage Subsystem,DPS Subsystem,Power Use,Fire Wait,ROF,Reload,1/Reload,Area Effect,Shockwave%s\n", all_weapons ? ",Player Allowed" : ""));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+		if (!wi.is_primary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -9562,7 +9950,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_MISSILE)
+		if (!wi.is_secondary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])
@@ -9622,7 +10010,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	mprintf(("\n"));
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_LASER && wi.subtype != WP_BEAM)
+		if (!wi.is_primary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed])
@@ -9703,7 +10091,7 @@ void weapon_spew_stats(WeaponSpewType type)
 	}
 	for (auto &wi : Weapon_info)
 	{
-		if (wi.subtype != WP_MISSILE)
+		if (!wi.is_secondary())
 			continue;
 
 		if (all_weapons || wi.wi_flags[Weapon::Info_Flags::Player_allowed] || wi.wi_flags[Weapon::Info_Flags::Child])
@@ -9937,4 +10325,12 @@ bool weapon_multilock_can_lock_on_target(object* shooter, object* target_objp, w
 
 bool weapon_has_homing_object(weapon* wp) {
 	return wp->homing_object != &obj_used_list;
+}
+
+float weapon_get_lifetime_pct(const weapon& wp) {
+	return f2fl(Missiontime - wp.creation_time) / Weapon_info[wp.weapon_info_index].lifetime;
+}
+
+float weapon_get_age(const weapon& wp) {
+	return f2fl(Missiontime - wp.creation_time);
 }

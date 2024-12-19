@@ -76,6 +76,10 @@ class volumetric_nebula {
 	int noiseVolumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
 
+	float udfScale = 1.0f;
+
+	bool enabled = true;
+
 	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
 	friend class LabUi; //Lab
 	friend class CFred_mission_save; //FRED
@@ -89,6 +93,7 @@ public:
 
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
+	const std::tuple<float, float, float>& getNebulaColor() const;
 
 	bool getEdgeSmoothing() const;
 	int getSteps() const;
@@ -96,7 +101,6 @@ public:
 
 	float getOpacityDistance() const;
 	float getStepsize() const;
-	float getStepalpha() const;
 	float getAlphaLim() const;
 
 	float getEmissiveSpread() const;
@@ -116,8 +120,12 @@ public:
 	void renderVolumeBitmap();
 	int getVolumeBitmapHandle() const;
 	int getNoiseVolumeBitmapHandle() const;
+	float getUDFScale() const;
 
 	float getAlphaToPos(const vec3d& pnt, float distance_mult) const;
+
+	void set_enabled(bool set_enabled);
+	bool get_enabled() const;
 };
 
 void volumetrics_level_close();

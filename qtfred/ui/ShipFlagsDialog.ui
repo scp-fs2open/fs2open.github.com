@@ -376,12 +376,25 @@
       </layout>
      </item>
      <item>
-      <widget class="fso::fred::ShipFlagCheckbox" name="noMoveCheckbox">
+      <widget class="fso::fred::ShipFlagCheckbox" name="noChangePosCheckbox">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not move under any circumstances&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not change position until destroyed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
-        <string>Does Not Move</string>
+        <string>Does Not Change Position</string>
+       </property>
+       <property name="tristate">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="fso::fred::ShipFlagCheckbox" name="noChangeOrientCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not change orientation until destroyed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>Does Not Change Orientation</string>
        </property>
        <property name="tristate">
         <bool>true</bool>

@@ -220,7 +220,7 @@ ADE_FUNC(__len, l_Tables_FireballClasses, NULL, "Number of fireball classes", "n
 	if (!fireballs_inited)
 		return ade_set_args(L, "i", 0);
 
-	return ade_set_args(L, "i", Num_fireball_types);
+	return ade_set_args(L, "i", static_cast<int>(Fireball_info.size()));
 }
 
 //*****SUBLIBRARY: Tables/SimulatedSpeechOverrides

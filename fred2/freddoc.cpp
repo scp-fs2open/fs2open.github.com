@@ -77,7 +77,7 @@ CFREDDoc::CFREDDoc() {
 
 	FREDDoc_ptr = this;
 
-	for (i = 0; i < BACKUP_DEPTH; i++)
+	for (i = 0; i < MISSION_BACKUP_DEPTH; i++)
 		undo_desc[i].Empty();
 }
 
@@ -115,7 +115,7 @@ bool CFREDDoc::autoload() {
 	}
 
 	// Load Backup.002
-	r = load_mission(name);
+	r = load_mission(name, MPF_FAST_RELOAD);
 	Update_window = 1;
 
 	// Delete Backup.001
@@ -124,7 +124,7 @@ bool CFREDDoc::autoload() {
 	cf_delete(backup_name, CF_TYPE_MISSIONS);
 
 	// Rename Backups. .002 becomes .001, .003 becomes .002, etc.
-	for (i = 1; i < BACKUP_DEPTH; i++) {
+	for (i = 1; i < MISSION_BACKUP_DEPTH; i++) {
 		sprintf(backup_name + len, ".%.3d", i + 1);
 		sprintf(name + len, ".%.3d", i);
 		cf_rename(backup_name, name, CF_TYPE_MISSIONS);
@@ -155,7 +155,7 @@ int CFREDDoc::autosave(char *desc) {
 		return -1;
 	}
 
-	for (i = BACKUP_DEPTH; i > 1; i--) {
+	for (i = MISSION_BACKUP_DEPTH; i > 1; i--) {
 		undo_desc[i] = undo_desc[i - 1];
 	}
 
@@ -227,7 +227,7 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 	// activate the localizer hash table
 	fhash_flush();
 
-	clear_mission();
+	clear_mission(flags & MPF_FAST_RELOAD);
 
 	// message 1: required version
 	if (!parse_main(pathname, flags)) {
@@ -457,7 +457,7 @@ void CFREDDoc::OnFileImportFSM() {
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);
 
-	clear_mission();
+	clear_mission(true);
 
 	int num_files = 0;
 	int successes = 0;
@@ -490,7 +490,7 @@ void CFREDDoc::OnFileImportFSM() {
 		strcpy_s(fs1_path, fs1_path_mfc);
 
 		// load mission into memory
-		if (!load_mission(fs1_path, MPF_IMPORT_FSM))
+		if (!load_mission(fs1_path, MPF_IMPORT_FSM | MPF_FAST_RELOAD))
 			continue;
 
 		// get filename
@@ -535,7 +535,7 @@ void CFREDDoc::OnFileImportFSM() {
 	if (num_files > 1)
 	{
 		create_new_mission();
-		MessageBox(NULL, "Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
+		Fred_view_wnd->MessageBox("Import complete.  Please check the destination folder to verify all missions were imported successfully.", "Status", MB_OK);
 	}
 	else if (num_files == 1)
 	{
@@ -568,7 +568,8 @@ BOOL CFREDDoc::OnNewDocument() {
 	return TRUE;
 }
 
-BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
+BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
+{
 	if (Briefing_dialog)
 		Briefing_dialog->icon_select(-1);  // clean things up first
 
@@ -585,7 +586,58 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname) {
 	strncpy(Mission_filename, filename, len);
 	Mission_filename[len] = 0;
 
-	if (!load_mission(pathname)) {
+	// first, just grab the info of this mission
+	if (!parse_main(pathname, MPF_ONLY_MISSION_INFO))
+	{
+		*Mission_filename = 0;
+		return FALSE;
+	}
+	SCP_string created = The_mission.created;
+	CFileLocation res = cf_find_file_location(pathname, CF_TYPE_ANY);
+	time_t modified = res.m_time;
+	if (!res.found)
+	{
+		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", pathname);
+		created = "";	// prevent any backup check from succeeding so we just load the actual specified file
+	}
+
+	// now check all the autosaves
+	SCP_string backup_name;
+	CFileLocation backup_res;
+	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
+	{
+		backup_name = MISSION_BACKUP_NAME;
+		char extension[5];
+		sprintf(extension, ".%.3d", i);
+		backup_name += extension;
+
+		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
+		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
+		{
+			SCP_string this_created = The_mission.created;
+			time_t this_modified = backup_res.m_time;
+
+			if (created == this_created && this_modified > modified)
+				break;
+		}
+
+		backup_name.clear();
+	}
+
+	// maybe load from the backup instead
+	if (!backup_name.empty())
+	{
+		SCP_string prompt = "Autosaved file ";
+		prompt += backup_name;
+		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
+		int z = Fred_view_wnd->MessageBox(prompt.c_str(), "Recover from autosave", MB_ICONQUESTION | MB_YESNO);
+		if (z == IDYES)
+			pathname = backup_res.full_name.c_str();
+	}
+
+	// now we can actually load either the original path or the backup path
+	if (!load_mission(pathname))
+	{
 		*Mission_filename = 0;
 		return FALSE;
 	}
@@ -652,7 +704,7 @@ BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
 	}
 
 	SetModifiedFlag(FALSE);
-	if (!load_mission(pathname))
+	if (!load_mission(pathname, MPF_FAST_RELOAD))
 		Error(LOCATION, "Failed attempting to reload mission after saving.  Report this bug now!");
 
 	if (Briefing_dialog) {
@@ -816,7 +868,7 @@ Assert((flag == 0) || (flag == 1));
 
 //	fp = cfopen(filename, flag ? "wb" : "rb");
 //	if (!fp)
-//		MessageBox(NULL, strerror(errno), "File Open Error!", MB_ICONSTOP);
+//		Fred_view_wnd->MessageBox(strerror(errno), "File Open Error!", MB_ICONSTOP);
 
 //	Find highest used object if writing.
 if (flag == 1) {

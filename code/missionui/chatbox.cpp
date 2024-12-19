@@ -230,8 +230,7 @@ int Chat_scroll_down_coord[2];
 // what chars other than letters and number's we'll toss
 #define CHATBOX_INVALID_CHARS				NOX("~`")			// this is primarily so that we don't interfere with the voice recording keys
 
-// common defines and data
-#define CHATBOX_STRING_LEN					(CALLSIGN_LEN + CHATBOX_MAX_LEN + 32)
+// common defines and 
 UI_WINDOW	Chat_window;
 UI_INPUTBOX	Chat_inputbox;
 UI_BUTTON Chat_enter_text;
@@ -275,17 +274,12 @@ int Chatbox_created = 0;
 ///////////////////////////////////////////////////////////
 // Chat window text
 ///////////////////////////////////////////////////////////
-#define MAX_BRIEF_CHAT_LINES 60   // how many lines we can store in the scrollback buffer
 #define BRIEF_DISPLAY_SPACING 2   // pixel spacing between chat lines
 
-// the first byte of the text string will be the net player id of the 
-char Brief_chat_lines[MAX_BRIEF_CHAT_LINES][CHATBOX_STRING_LEN];
-int Brief_chat_indents[MAX_BRIEF_CHAT_LINES];
+// the first byte of the text string will be the net player id of the
+SCP_list<brief_chat> Brief_chat;
 
-int Brief_chat_next_index[MAX_BRIEF_CHAT_LINES];
-int Brief_chat_prev_index[MAX_BRIEF_CHAT_LINES];
-int Num_brief_chat_lines;
-int Brief_current_add_line;
+// the index of the chat line we will start rendering at
 int Brief_start_display_index;
 
 // chatbox line recall data
@@ -304,7 +298,6 @@ void chatbox_set_mode(int mode_flags);
 void chatbox_toggle_size();
 void chatbox_toggle_size_adjust_lines();
 void chat_autosplit_line(char *msg,char *remainder);
-int chatbox_num_displayed_lines();
 void chatbox_recall_add(char *string);
 void chatbox_recall_up();
 void chatbox_recall_down();
@@ -409,28 +402,49 @@ size_t chatbox_get_msg_target_length(char *msg)
 
 }
 
+// send a msg to the game chat
+void chatbox_send_msg(char* msg)
+{
+	// check if this message is supposed to have a recipient
+	int target = chatbox_get_msg_target_type(msg);
+
+	// tack on the null terminator in the boundary case
+	size_t x = strlen(msg);
+	if (x >= CHATBOX_MAX_LEN) {
+		msg[CHATBOX_MAX_LEN - 1] = '\0';
+	}
+
+	// if I'm the server, then broadcast the packet
+	chatbox_recall_add(msg);
+	if (target != MULTI_MSG_EXPR) {
+		send_game_chat_packet(Net_player, msg, target);
+	} else {
+		// copy the name of the player the message is being sent to
+		char temp[CHATBOX_MAX_LEN];
+		size_t target_length = chatbox_get_msg_target_length(msg);
+		strncpy(temp, msg + 1, target_length - 2);
+		temp[target_length - 2] = '\0';
+		send_game_chat_packet(Net_player, msg, target, nullptr, temp);
+	}
+
+	chatbox_add_line(msg, MY_NET_PLAYER_NUM);
+}
+
 // automatically split up any input text, send it, and leave the remainder 
 void chatbox_autosplit_line()
 {
-	char msg[150];
-	char temp[150];
-	int msg_pixel_width;
-	int target;
-	size_t target_length = 0;
+	char msg[CHATBOX_MAX_LEN];
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
-	memset(msg,0,150);
+	memset(msg, 0, CHATBOX_MAX_LEN);
 	Chat_inputbox.get_text(msg);
-	const char* remainder = "";
-
-	// check if this message is supposed to have a recipient
-	target = chatbox_get_msg_target_type(msg); 
-	target_length = chatbox_get_msg_target_length(msg); 
+	const char* remainder = ""; 
 
 	// determine if the width of the string in pixels is > than the inputbox width -- if so,
 	// then send the message
-	gr_get_string_size(&msg_pixel_width, NULL, msg);
+	int msg_pixel_width;
+	gr_get_string_size(&msg_pixel_width, nullptr, msg);
 	// if ( msg_pixel_width >= (Chatbox_inputbox_w - Player->short_callsign_width) ) {
 	if ( msg_pixel_width >= (Chatbox_inputbox_w - 25)) {
 		auto last_space = strrchr(msg, ' ');
@@ -440,22 +454,16 @@ void chatbox_autosplit_line()
 		} else {
 			remainder = "";
 		}	
-		// if I'm the server, then broadcast the packet		
-		chatbox_recall_add(msg);
+		
+		chatbox_send_msg(msg);
 
-		if (target != MULTI_MSG_EXPR) {
-  			send_game_chat_packet(Net_player, msg, target);
-		}
-		else {
-			// copy the name of the player the message is being sent to
-			strncpy(temp, msg+1, target_length-2);
-			temp[target_length-2] = '\0';
-			send_game_chat_packet(Net_player, msg, target, NULL, temp);
-		}
-		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
+		// check if this message is supposed to have a recipient
+		int target = chatbox_get_msg_target_type(msg);
 
 		if (target != MULTI_MSG_ALL) {
 			// we need to add the target the message is going to before we add the rest of the string
+			char temp[CHATBOX_MAX_LEN];
+			size_t target_length = chatbox_get_msg_target_length(msg);
 			strncpy(temp, msg, target_length);
  			temp[target_length] = ' '; 
  			temp[target_length+1] = '\0'; 
@@ -467,26 +475,7 @@ void chatbox_autosplit_line()
 			Chat_inputbox.set_text(remainder);
 		}
 	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
-		// tack on the null terminator in the boundary case
-		size_t x = strlen(msg);
-		if(x >= CHATBOX_MAX_LEN){
-			msg[CHATBOX_MAX_LEN-1] = '\0';
-		}
-	
-		// if I'm the server, then broadcast the packet		
-		chatbox_recall_add(msg);
-		if (target != MULTI_MSG_EXPR) {
-  			send_game_chat_packet(Net_player, msg, target);
-		}
-		else {
-			// copy the name of the player the message is being sent to
-			strncpy(temp, msg+1, target_length-2);
-			temp[target_length-2] = '\0';
-			send_game_chat_packet(Net_player, msg, target, NULL, temp);
-		}
-
-		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
-
+		chatbox_send_msg(msg);
 		// display any remainder of text on the next line
 		Chat_inputbox.set_text(remainder);		
 	}	
@@ -666,11 +655,9 @@ void chatbox_clear()
 {
 	// only do this if we have valid data
 	if(Chatbox_created){
-		// clear all chat data
-		memset(Brief_chat_lines,0,(MAX_BRIEF_CHAT_LINES * (CHATBOX_MAX_LEN + 2)));		
+		// clear all chat data	
+		Brief_chat.clear();
 		Brief_start_display_index=0;
-		Num_brief_chat_lines=0;
-		Brief_current_add_line=0;
 
 		// clear all line recall data
 		Chatbox_recall_count = 0;
@@ -708,15 +695,11 @@ void chatbox_render()
 // try and scroll the chatbox up. return 0 or 1 on fail or success
 int chatbox_scroll_up()
 {	
-	if(Num_brief_chat_lines > Chatbox_max_lines){
-		int prev = Brief_chat_prev_index[Brief_start_display_index];
-	
-		// check to make sure we won't be going "up" above the "beginning" of the text array
-	   if(Brief_chat_prev_index[Brief_current_add_line] != prev && !(Num_brief_chat_lines < MAX_BRIEF_CHAT_LINES && Brief_start_display_index==0)){
-			Brief_start_display_index = prev;
+	if (static_cast<int>(Brief_chat.size()) > Chatbox_max_lines) {
+		if (Brief_start_display_index > 0) {
+			Brief_start_display_index--;
 			return 1;
-		}
-		
+		}		
 	} 
 	return 0;
 }
@@ -724,50 +707,18 @@ int chatbox_scroll_up()
 // try and scroll the chatbox down, return 0 or 1 on fail or success
 int chatbox_scroll_down()
 {
-	int idx;
-	int next;
-	
-   if(Num_brief_chat_lines > Chatbox_max_lines){
-		// yuck. There's got to be a better way to do this.
-		next = Brief_chat_next_index[Brief_start_display_index];
-		for(idx = 1;idx <= Chatbox_max_lines; idx++){
-			next = Brief_chat_next_index[next];
-		}
-			
-		// check to make sure we won't be going "down" below the "bottom" of the text array
-		if(Brief_chat_next_index[Brief_current_add_line] != next){
-			Brief_start_display_index = Brief_chat_next_index[Brief_start_display_index];
+	if (static_cast<int>(Brief_chat.size()) > Chatbox_max_lines) {
+		if (Brief_start_display_index < (static_cast<int>(Brief_chat.size()) - Chatbox_max_lines)) {
+			Brief_start_display_index++;
 			return 1;
 		}
 	}
 	return 0;
 }
-	
-// quick explanation as to how the scrolling works :
-// Brief_chat_next_index is an array A of size n, where A[i] = i+1 and A[n] = 0
-// Brief_chat_prev_index is an array A of size n, where A[i] = i-1 and A[0] = n
-// in other words, if you increment an integer i = A[i], you get the next index (or the prev)
-// with wrapping. In this way, as chat lines are entered, they are continuously wrapped 
-// around the Brief_chat_lines array so we can keep it at a fixed size. These arrays are used
-// for both entering new chat strings as well as moving the Brief_start_display_index 
-// integer, which is self-explanatory
 
 void chatbox_chat_init()
 {
-	int idx;	
-		
-   chatbox_clear();
-
-	// setup the wraparound arrays
-	for(idx=0;idx<MAX_BRIEF_CHAT_LINES;idx++){
-      Brief_chat_next_index[idx] = idx+1;
-	}
-	Brief_chat_next_index[MAX_BRIEF_CHAT_LINES-1]=0;
-
-	for(idx=MAX_BRIEF_CHAT_LINES-1; idx > 0 ; idx--){
-		Brief_chat_prev_index[idx] = idx - 1;
-	}
-	Brief_chat_prev_index[0] = MAX_BRIEF_CHAT_LINES-1;	
+	chatbox_clear();	
 
 	// initialize the line recall data
 	Chatbox_recall_count = 0;
@@ -776,91 +727,68 @@ void chatbox_chat_init()
 	memset(Chatbox_recall_lines,0,CHATBOX_MAX_RECALL_LINES * (CHATBOX_MAX_LEN + 2));	
 }
 
+void chat_box_add_chat_to_list(brief_chat& chat)
+{
+	if (Brief_chat.size() >= MAX_BRIEF_CHAT_LINES) {
+		Brief_chat.erase(Brief_chat.begin());
+	}
+
+	Brief_chat.push_back(chat);
+}
+
 // int Test_color = 0;
 void chatbox_add_line(const char *msg, int pid, int add_id)
-{
-	int backup;
-	int	n_lines,idx;
-	int	n_chars[3];		
-	const char	*p_str[3];			// for the initial line (unindented)
-	char msg_extra[CHATBOX_STRING_LEN];
-
+{	
 	if(!Chatbox_created){
 		return;
 	}
 
+	brief_chat chat;
+	chat.indent = false;
+	chat.player_id = pid;
+
 	// maybe stick on who sent the message	
 	if(add_id){
 		if(MULTI_STANDALONE(Net_players[pid])){
-			sprintf(msg_extra, NOX("%s %s"), NOX("<SERVER>"), msg );
+			strcpy_s(chat.callsign, "<SERVER>");
 		} else {
-			sprintf(msg_extra, NOX("%s: %s"), Net_players[pid].m_player->short_callsign, msg );
+			strcpy_s(chat.callsign, Net_players[pid].m_player->short_callsign);
 		}
 	} else {
-		strcpy_s(msg_extra,msg);
+		chat.callsign[0] = '\0';
 	}	
-	Assert(strlen(msg_extra) < (CHATBOX_STRING_LEN - 2));	
 
 	// split the text up into as many lines as necessary
-	n_lines = split_str(msg_extra, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
-	Assert(n_lines != -1);	
+	int n_chars[3];	
+	const char* p_str[3]; // for the initial line (unindented)
+	int n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
+	Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");	
 
-	// setup the first line -- be sure to clear out the line
-	memset( Brief_chat_lines[Brief_current_add_line], 0, CHATBOX_STRING_LEN );
-
-	// add the player id #
-	Brief_chat_lines[Brief_current_add_line][0] = (char)(pid % 16);	
-	// Brief_chat_lines[Brief_current_add_line][0] = (char)Test_color;	
-	// Test_color = (Test_color == MAX_PLAYERS - 1) ? 0 : Test_color++;
-
-	// set the indent to 0
-	Brief_chat_indents[Brief_current_add_line] = 0;
+	// will happen if msg is all whitespace, in which case we should ignore it
+	if (n_lines == 0) {
+		return;
+	}
 
 	// copy in the chars
-	strncpy(&Brief_chat_lines[Brief_current_add_line][1],p_str[0],CHATBOX_STRING_LEN - 1);
-	if(n_chars[0] >= CHATBOX_STRING_LEN){
-		Brief_chat_lines[Brief_current_add_line][CHATBOX_STRING_LEN - 1] = '\0';
-	} else {
-		Brief_chat_lines[Brief_current_add_line][n_chars[0] + 1] = '\0';
-	}
-	
-	// increment the total line count if we haven't reached the max already
-	if(Num_brief_chat_lines<MAX_BRIEF_CHAT_LINES){
-		Num_brief_chat_lines++;
-	}
-	
-	// get the index of the next string to add text to
-	Brief_current_add_line = Brief_chat_next_index[Brief_current_add_line];	
+	strcpy_s(chat.text, p_str[0]);
+
+	chat_box_add_chat_to_list(chat);
 	
 	// if we have more than 1 line, re-split everything so that the rest are indented
 	if(n_lines > 1){
 		// split up the string after the first break-marker
+		char msg_extra[CHATBOX_STRING_LEN];
 		n_lines = split_str(msg_extra + n_chars[0],Chatbox_disp_w - CHAT_LINE_INDENT,n_chars,p_str,3, CHATBOX_STRING_LEN);
-		Assert(n_lines != -1);		
+		Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");		
 
 		// setup these remaining lines
-		for(idx=0;idx<n_lines;idx++){
-			// add the player id#
-			Brief_chat_lines[Brief_current_add_line][0] = (char)(pid % 16);	
+		for(int idx=0;idx<n_lines;idx++){
+			brief_chat i_chat;
+			i_chat.player_id = pid;
+			i_chat.indent = true;
+			strcpy_s(i_chat.text, p_str[idx]);
 
-			// add the proper indent
-			Brief_chat_indents[Brief_current_add_line] = CHAT_LINE_INDENT;
-
-			// copy in the line text itself
-			strncpy(&Brief_chat_lines[Brief_current_add_line][1],p_str[idx],CHATBOX_STRING_LEN-1); 
-			if(n_chars[idx] >= CHATBOX_STRING_LEN){
-				Brief_chat_lines[Brief_current_add_line][CHATBOX_STRING_LEN - 1] = '\0';
-			} else {
-				Brief_chat_lines[Brief_current_add_line][n_chars[idx] + 1] = '\0';
-			}
-			
-			// increment the total line count if we haven't reached the max already
-			if(Num_brief_chat_lines<MAX_BRIEF_CHAT_LINES){
-				Num_brief_chat_lines++;
-			}
-			
-			// get the index of the next line to add text to
-			Brief_current_add_line = Brief_chat_next_index[Brief_current_add_line];				
+			chat_box_add_chat_to_list(i_chat);
 		}
 	}
 			
@@ -873,11 +801,8 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	// if this line of text is from the player himself, automatically go to the bottom of
 	// the chat list
 	if(pid == MY_NET_PLAYER_NUM){
-		if(Num_brief_chat_lines > Chatbox_max_lines){
-			Brief_start_display_index = Brief_current_add_line;
-			for(backup = 1;backup <= Chatbox_max_lines;backup++){
-				Brief_start_display_index = Brief_chat_prev_index[Brief_start_display_index];
-			}
+		if (static_cast<int>(Brief_chat.size()) > Chatbox_max_lines) {
+			Brief_start_display_index = (static_cast<int>(Brief_chat.size()) - Chatbox_max_lines);
 		}
 	}
 	// if we have enough lines of text to require scrolling, scroll down by one.
@@ -888,54 +813,69 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 
 void chatbox_render_chat_lines()
 {
-   int started_at,player_num,count,ly,line_height;	
-	
-	started_at = Brief_start_display_index;
-	count = 0;	
-	ly = Chatbox_begin_y;
-	line_height = gr_get_font_height() + 1;
-	while((count < Chatbox_max_lines) && (count < Num_brief_chat_lines)){	
-		// determine what player this chat line came from, and set the appropriate text color
-		player_num = Brief_chat_lines[started_at][0];	   		
-		
-		// print the line out
-		gr_set_color_fast(Color_netplayer[player_num]);
+	int count = 0;	
+	int ly = Chatbox_begin_y;
+	int line_height = gr_get_font_height() + 1;
 
-		// draw the first line (no indent)						
-		gr_string(Chatbox_begin_x + Brief_chat_indents[started_at],ly,&Brief_chat_lines[started_at][1],GR_RESIZE_MENU);		
+	if (Brief_chat.empty()) {
+		return;
+	}
+
+	Assertion(Brief_start_display_index >= 0 && Brief_start_display_index < static_cast<int>(Brief_chat.size()),
+		"Chat display index is invalid, please report!");
+
+	auto chat = Brief_chat.begin();
+	std::advance(chat, Brief_start_display_index);
+
+	while (chat != Brief_chat.end() && count < Chatbox_max_lines) {	
+		char msg[CHATBOX_STRING_LEN];
+
+		// add the player callsign
+		sprintf(msg, "%s %s", chat->callsign, chat->text);
+		Assertion(strlen(msg) < (CHATBOX_STRING_LEN - 2), "Chat string is too long, please report!");
+
+		// print the line out
+		gr_set_color_fast(Color_netplayer[chat->player_id]);
+
+		// draw the first line (no indent)
+		int indent = 0;
+		if (chat->indent) {
+			indent = CHAT_LINE_INDENT;
+		}
+		gr_string(Chatbox_begin_x + indent, ly, msg, GR_RESIZE_MENU);
 
 		// if we're in a team vs. team game, blit the player color icon
-		if(Netgame.type_flags & NG_TYPE_TEAM){
-			switch(Net_players[player_num].p_info.team){
-			case 0 :
+		if (Netgame.type_flags & NG_TYPE_TEAM) {
+			switch (Net_players[chat->player_id].p_info.team) {
+			case 0:
 				// if he's a team captain
-				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
-					if(Multi_common_icons[MICON_TEAM0_SELECT] != -1){
+				if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
+					if (Multi_common_icons[MICON_TEAM0_SELECT] != -1) {
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
-					} 
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
+					}
 				}
 				// just you're average peon
 				else {
-					if(Multi_common_icons[MICON_TEAM0] != -1){
+					if (Multi_common_icons[MICON_TEAM0] != -1) {
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM0]);
-						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
 					}
 				}
 				break;
-			case 1 :
+			case 1:
 				// if he's a team captain
-				if(Net_players[player_num].flags & NETINFO_FLAG_TEAM_CAPTAIN){
-					if(Multi_common_icons[MICON_TEAM1_SELECT] != -1){
+				if (Net_players[chat->player_id].flags & NETINFO_FLAG_TEAM_CAPTAIN) {
+					if (Multi_common_icons[MICON_TEAM1_SELECT] != -1) {
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1_SELECT]);
-						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
 					}
 				}
 				// just your average peon
 				else {
-					if(Multi_common_icons[MICON_TEAM1] != -1){
+					if (Multi_common_icons[MICON_TEAM1] != -1) {
 						gr_set_bitmap(Multi_common_icons[MICON_TEAM1]);
-						gr_bitmap(Chatbox_icon_x,ly-2,GR_RESIZE_MENU);
+						gr_bitmap(Chatbox_icon_x, ly - 2, GR_RESIZE_MENU);
 					}
 				}
 				break;
@@ -943,11 +883,9 @@ void chatbox_render_chat_lines()
 		}
 
 		// increment the count and line position
-		count++;		
+		count++;
+		++chat;
 		ly += line_height;
-		
-		// increment the started at index
-		started_at = Brief_chat_next_index[started_at];
 	}		
 }
 
@@ -971,50 +909,12 @@ void chatbox_toggle_size()
 
 void chatbox_toggle_size_adjust_lines()
 {
-	int count_diff;
-	
-	// if the chatbox is now big, move the starting display index _up_ as far as possible
-	if(Chatbox_mode_flags & CHATBOX_FLAG_BIG){				
-		// if we've wrapped around	or we have more chatlines then we can display, move back as far as we can
-		if((Num_brief_chat_lines > MAX_BRIEF_CHAT_LINES) || (Num_brief_chat_lines > Chatbox_max_lines)){			
-			count_diff = Chatbox_max_lines - chatbox_num_displayed_lines();		
-			while(count_diff > 0){
-				Brief_start_display_index = Brief_chat_prev_index[Brief_start_display_index];
-				count_diff--;
-			}
-		}
-		// otherwise start displaying from position 0
-		else {					
-			Brief_start_display_index = 0;			
-		}			
+	if ((static_cast<int>(Brief_chat.size()) > Chatbox_max_lines)) {
+		Brief_start_display_index = (static_cast<int>(Brief_chat.size()) - Chatbox_max_lines);
 	}
-	// if the chatbox is now small, move the starting display index down as far as we need
-	else if(Chatbox_mode_flags & CHATBOX_FLAG_SMALL){
-		count_diff = chatbox_num_displayed_lines();
-		// if we were displaying more lines than we can now
-		if(count_diff > Chatbox_max_lines){
-			count_diff -= Chatbox_max_lines;
-			while(count_diff > 0){
-				Brief_start_display_index = Brief_chat_next_index[Brief_start_display_index];
-				count_diff--;
-			}
-		}
+	else {
+		Brief_start_display_index = 0;
 	}
-}
-
-int chatbox_num_displayed_lines()
-{
-	int idx = Brief_start_display_index;
-	int count;
-
-	// count the lines up
-	count = 0;
-	while(idx != Brief_current_add_line){
-		idx = Brief_chat_next_index[idx];
-		count++;
-	}
-
-	return count;
 }
 
 // force the chatbox to go into small mode (if its in large mode) - will not wotk if in multi paused chatbox mode

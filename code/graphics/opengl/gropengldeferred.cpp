@@ -68,7 +68,7 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	Deferred_lighting = true;
 	GL_state.ColorMask(true, true, true, true);
 	
-	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT6 };
+	GLenum buffers[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2, GL_COLOR_ATTACHMENT3, GL_COLOR_ATTACHMENT4, GL_COLOR_ATTACHMENT5 };
 
 	if (Cmdline_msaa_enabled > 0) {
 		//Ensure MSAA Mode if necessary
@@ -226,7 +226,7 @@ void gr_opengl_deferred_lighting_finish()
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
 
 	// Render on top of the composite buffer texture
-	glDrawBuffer(GL_COLOR_ATTACHMENT6);
+	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glReadBuffer(GL_COLOR_ATTACHMENT4);
 	glBlitFramebuffer(0,
 		0,
@@ -346,7 +346,7 @@ void gr_opengl_deferred_lighting_finish()
 			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
 
 			if (l.type == Light_Type::Cone) {
-				light_data->dualCone = l.dual_cone ? 1.0f : 0.0f;
+				light_data->dualCone = (l.flags & LF_DUAL_CONE) ? 1.0f : 0.0f;
 				light_data->coneAngle = l.cone_angle;
 				light_data->coneInnerAngle = l.cone_inner_angle;
 				light_data->coneDir = l.vec2;
@@ -523,8 +523,10 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if (The_mission.volumetrics && !override_fog) {
+	else if (The_mission.volumetrics && The_mission.volumetrics->get_enabled() && !override_fog) {
 		GR_DEBUG_SCOPE("Volumetric Nebulae");
+		TRACE_SCOPE(tracing::Volumetrics);
+
 		const volumetric_nebula& neb = *The_mission.volumetrics;
 
 		Assertion(neb.isVolumeBitmapValid(), "The volumetric nebula was not properly initialized!");
@@ -550,9 +552,11 @@ void gr_opengl_deferred_lighting_finish()
 			uint32_t array_index;
 			gr_set_texture_addressing(TMAP_ADDRESS_CLAMP);
 			gr_opengl_tcache_set(neb.getVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 3);
+			glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			if (neb.getNoiseActive()) {
 				gr_set_texture_addressing(TMAP_ADDRESS_WRAP);
 				gr_opengl_tcache_set(neb.getNoiseVolumeBitmapHandle(), TCACHE_TYPE_3DTEX, &u_scale, &v_scale, &array_index, 4);
+				glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 			}
 		}
 
@@ -567,8 +571,12 @@ void gr_opengl_deferred_lighting_finish()
 			data->nebPos = neb.getPos();
 			data->nebSize = neb.getSize();
 			data->stepsize = neb.getStepsize();
-			data->globalstepalpha = neb.getStepalpha();
+			data->opacitydistance = neb.getOpacityDistance();
 			data->alphalimit = neb.getAlphaLim();
+			data->nebColor[0] = std::get<0>(neb.getNebulaColor());
+			data->nebColor[1] = std::get<1>(neb.getNebulaColor());
+			data->nebColor[2] = std::get<2>(neb.getNebulaColor());
+			data->udfScale = neb.getUDFScale();
 			data->emissiveSpreadFactor = neb.getEmissiveSpread();
 			data->emissiveIntensity = neb.getEmissiveIntensity();
 			data->emissiveFalloff = neb.getEmissiveFalloff();
@@ -598,7 +606,7 @@ void gr_opengl_deferred_lighting_finish()
 	else {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
-		glReadBuffer(GL_COLOR_ATTACHMENT6);
+		glReadBuffer(GL_COLOR_ATTACHMENT5);
 		glBlitFramebuffer(0,
 						  0,
 						  gr_screen.max_w,

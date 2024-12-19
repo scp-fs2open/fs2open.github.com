@@ -50,6 +50,9 @@ typedef struct _Chat_command {
 	_Chat_command *next;
 } Chat_command;
 
+// For returning a player's channel when searching by player name
+extern char User_req_channel[100];
+
 //Prototypes
 void ChatInit(void);
 int ConnectToChatServer(char *serveraddr, char *nickname, char *trackerid);
@@ -61,7 +64,7 @@ char *GetChatUserList();
 int SetNewChatChannel(char *channel);
 char *GetChannelList(void);
 char *GetTrackerIdByUser(char *nickname);
-char *GetChannelByUser(char *nickname);
+char *GetChannelByUser(const char *nickname);
 
 char *ChatGetString(void);
 const char *GetWordNum(int num, const char *l_String);

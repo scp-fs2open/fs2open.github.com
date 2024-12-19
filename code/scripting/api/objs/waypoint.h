@@ -12,12 +12,13 @@ DECLARE_ADE_OBJ(l_Waypoint, object_h);
 
 struct waypointlist_h
 {
-	waypoint_list *wlp;
-	char name[NAME_LENGTH];
+	int wl_index;
 	waypointlist_h();
-	explicit waypointlist_h(waypoint_list *n_wlp);
+	explicit waypointlist_h(int _wl_index);
+	explicit waypointlist_h(waypoint_list* _wlp);
 	explicit waypointlist_h(const char* wlname);
-	bool IsValid();
+	bool isValid() const;
+	waypoint_list* getList() const;
 };
 
 DECLARE_ADE_OBJ(l_WaypointList, waypointlist_h);

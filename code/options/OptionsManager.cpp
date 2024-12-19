@@ -5,6 +5,7 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
+#include <tl/optional.hpp>
 
 namespace {
 
@@ -36,18 +37,20 @@ OptionsManager* options::OptionsManager::instance()
 }
 
 //Gets the value of an option from the Config using the option key
-std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key) const
+tl::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
 	auto override_iter = _config_overrides.find(key);
 	if (override_iter != _config_overrides.end()) {
 		// We return a reference to an existing object so we need to increment the reference count
 		json_incref(override_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(override_iter->second.get());
 	}
 
 	auto changed_iter = _changed_values.find(key);
 	if (changed_iter != _changed_values.end()) {
 		json_incref(changed_iter->second.get());
+		// coverity[multiple_init_smart_ptr:FALSE] - according to m!m, this is most likely a false positive: "I think Coverity does not understand the usage of default_delete" in jansson.h, line 23
 		return std::unique_ptr<json_t>(changed_iter->second.get());
 	}
 
@@ -57,11 +60,11 @@ std::unique_ptr<json_t> OptionsManager::getValueFromConfig(const SCP_string& key
 		throw std::runtime_error("Invalid key");
 	}
 
-	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str());
+	auto value = os_config_read_string(parts.first.c_str(), parts.second.c_str(), (const char*)0, true);
 
 	if (value == nullptr) {
-		// TODO: This is not really an error but I would like to avoid return nullptr here...
-		throw std::runtime_error("No value available");
+		// Signal that there is no value for this key
+		return tl::nullopt;
 	}
 
 	json_error_t err;
@@ -92,7 +95,7 @@ void OptionsManager::setOverride(const SCP_string& key, const SCP_string& json)
 }
 
 //Adds an option to the options vector
-const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& option)
+const OptionBase* OptionsManager::addOption(std::shared_ptr<const OptionBase>&& option)
 {
 	_options.emplace_back(std::move(option));
 	_optionsSorted = false; // Order got invalidated by adding a new option
@@ -103,22 +106,33 @@ const OptionBase* OptionsManager::addOption(std::unique_ptr<const OptionBase>&& 
 }
 
 //Removes an option from the options vector
-void OptionsManager::removeOption(const OptionBase* option)
+void OptionsManager::removeOption(const std::shared_ptr<const OptionBase>& option)
 {
 	_optionsMapping.erase(option->getConfigKey());
 	_options.erase(
 	    std::remove_if(_options.begin(), _options.end(),
-	                   [option](const std::unique_ptr<const OptionBase>& ptr) { return ptr.get() == option; }));
+	                   [option](const std::shared_ptr<const OptionBase>& ptr) { return ptr == option; }));
+}
+
+// Returns an option with the specified name
+const OptionBase* OptionsManager::getOptionByKey(SCP_string key)
+{
+	for (size_t i = 0; i < _options.size(); i++) {
+		if (_options[i].get()->getConfigKey() == key) {
+			return _options[i].get();
+		}
+	}
+	return nullptr;
 }
 
 //Returns a table of all built-in options available
-const SCP_vector<std::unique_ptr<const options::OptionBase>>& OptionsManager::getOptions()
+const SCP_vector<std::shared_ptr<const options::OptionBase>>& OptionsManager::getOptions()
 {
 	if (!_optionsSorted) {
 		// Keep options sorted by only sorting them when necessary
 
 		std::sort(_options.begin(), _options.end(),
-		          [](const std::unique_ptr<const OptionBase>& left, const std::unique_ptr<const OptionBase>& right) {
+		          [](const std::shared_ptr<const OptionBase>& left, const std::shared_ptr<const OptionBase>& right) {
 			          return *left < *right;
 		          });
 
@@ -145,7 +159,7 @@ bool OptionsManager::persistOptionChanges(const options::OptionBase* option)
 
 	auto val = json_dump_string(iter->second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+	os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 
 	auto changed = option->valueChanged(iter->second.get());
 
@@ -167,7 +181,7 @@ SCP_vector<const options::OptionBase*> OptionsManager::persistChanges()
 
 		auto val = json_dump_string(entry.second.get(), JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 
-		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str());
+		os_config_write_string(parts.first.c_str(), parts.second.c_str(), val.c_str(), true);
 	}
 	SCP_vector<const options::OptionBase*> unchanged;
 
@@ -202,13 +216,75 @@ void OptionsManager::printValues()
 	for (auto& opt : _options) {
 		// If we're not using in-game options and the option is not a retail option, then skip
 		// This ensures we only log options that are actually impacting the current game instance
-		// This code set aside until PR 5895 is merged
-		//if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
-		//	continue;
-		//}
+		if (!Using_in_game_options && !(opt->getFlags()[options::OptionFlags::RetailBuiltinOption])){
+			continue;
+		}
+
+		// Log the option
 		mprintf(("Option.%s: %s\n",
 			opt->getConfigKey().c_str(),
 			opt->getCurrentValueDescription().display.c_str()));
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_binary_option(SCP_string key, bool value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto val = thisOpt->getCurrentValueDescription();
+		SCP_string newVal = value ? "true" : "false"; // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({val.display, newVal.c_str()});
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_multi_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		auto values = thisOpt->getValidValues();
+		thisOpt->setValueDescription(values[value]);
+	}
+}
+
+//Sets value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_range_option(SCP_string key, int value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
+	}
+}
+
+//Sets the value saved within the option, but does not actually change the variables tied to the option
+//Used for persistence and UI updates
+void OptionsManager::set_ingame_range_option(SCP_string key, float value)
+{
+	if (!Using_in_game_options) {
+		return;
+	}
+
+	const OptionBase* thisOpt = getOptionByKey(key);
+	if (thisOpt != nullptr) {
+		SCP_string newVal = std::to_string(value); // OptionsManager stores values as serialized strings
+		thisOpt->setValueDescription({newVal.c_str(), newVal.c_str()});
 	}
 }
 

@@ -34,6 +34,9 @@ struct OpenALInformation {
 
 OpenALInformation openal_get_platform_information();
 
+int openal_find_playback_device_by_name(const SCP_string& device);
+int openal_find_capture_device_by_name(const SCP_string& device);
+
 // if an error occurs after executing 'x' then do 'y'
 #define OpenAL_ErrorCheck( x, y )	do {	\
 	x;	\

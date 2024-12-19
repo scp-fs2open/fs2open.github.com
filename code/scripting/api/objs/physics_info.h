@@ -25,7 +25,7 @@ struct physics_info_h
 
 	physics_info_h(physics_info *in_pi);
 
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Physics, physics_info_h);

@@ -49,15 +49,15 @@ bool EffectTiming::continueProcessing(const ParticleSource* source) const
 	return true;
 }
 
-bool EffectTiming::shouldCreateEffect(ParticleSource* source, EffectTiming::TimingState& localState) const
+int EffectTiming::shouldCreateEffect(ParticleSource* source, EffectTiming::TimingState& localState) const
 {
-	if (m_particlesPerSecond < 0.0f) {
+	if (m_particlesPerSecond.min() < 0.0f) {
 		// If this is not specified then on every frame we will create exactly one effect
 		if (localState.initial) {
 			localState.initial = false;
-			return true;
+			return 0;
 		} else {
-			return false;
+			return -1;
 		}
 	}
 
@@ -68,14 +68,16 @@ bool EffectTiming::shouldCreateEffect(ParticleSource* source, EffectTiming::Timi
 	if (source->getTiming()->nextCreationTimeExpired())
 	{
 		// Invert this so we can compute the time difference between effect creations
-		auto secondsPerParticle = 1.0f / m_particlesPerSecond;
-		auto time_diff_ms = fl2i(secondsPerParticle * 1000.f);
+		auto secondsPerParticle = 1.0f / m_particlesPerSecond.next();
+		// we need to clamp this to 1 because a spawn delay of 0 means we try to spawn infinite particles
+		auto time_diff_ms = std::max(fl2i(secondsPerParticle * MILLISECONDS_PER_SECOND), 1);
+		int creation_time = source->getTiming()->getNextCreationTime();
 		source->getTiming()->incrementNextCreationTime(time_diff_ms);
 
-		return true;
+		return timestamp_since(creation_time);
 	}
 
-	return false;
+	return -1;
 }
 
 EffectTiming EffectTiming::parseTiming() {
@@ -90,7 +92,7 @@ EffectTiming EffectTiming::parseTiming() {
 		}
 		else {
 			timing.m_duration = Duration::Range;
-			timing.m_durationRange = ::util::parseUniformRange<float>(0.0f);
+			timing.m_durationRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 		}
 	}
 
@@ -99,15 +101,18 @@ EffectTiming EffectTiming::parseTiming() {
 			error_display(0, "+Delay is not valid for one-time effects!");
 		}
 		else {
-			timing.m_delayRange = ::util::parseUniformRange<float>(0.0f);
+			timing.m_delayRange = ::util::ParsedRandomFloatRange::parseRandomRange(0.0f);
 		}
 	}
 
 	if (optional_string("+Effects per second:")) {
-		stuff_float(&timing.m_particlesPerSecond);
-		if (timing.m_particlesPerSecond < 0.001f) {
-			error_display(0, "Invalid effect per second value %f. Setting was disabled.", timing.m_particlesPerSecond);
-			timing.m_particlesPerSecond = -1.f;
+		timing.m_particlesPerSecond = ::util::ParsedRandomFloatRange::parseRandomRange();
+		if (timing.m_particlesPerSecond.min() < 0.001f) {
+			error_display(0, "Invalid effects per second minimum %f. Setting was disabled.", timing.m_particlesPerSecond.min());
+			timing.m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
+		}
+		if (timing.m_particlesPerSecond.max() > 1000.0f) {
+			error_display(0, "Effects per second maximum %f is above 1000. Delay between effects will be clamped to 1 millisecond.", timing.m_particlesPerSecond.max());
 		}
 	}
 

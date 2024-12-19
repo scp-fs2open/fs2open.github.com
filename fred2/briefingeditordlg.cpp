@@ -100,12 +100,15 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_HILIGHT, m_hilight);
 	DDX_CBIndex(pDX, IDC_ICON_IMAGE, m_icon_image);
 	DDX_Text(pDX, IDC_ICON_LABEL, m_icon_label);
+	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
 	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
+	DDV_MaxChars(pDX, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 	DDX_Text(pDX, IDC_ICON_SCALE, m_icon_scale);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_TIME, m_time);
 	DDX_Text(pDX, IDC_VOICE, m_voice);
+	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 	DDX_CBIndex(pDX, IDC_TEAM, m_icon_team);
 	DDX_CBIndex(pDX, IDC_SHIP_TYPE, m_ship_type);
 	DDX_Check(pDX, IDC_LOCAL, m_change_local);
@@ -119,10 +122,6 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	DDX_Check(pDX, IDC_USE_CARGO_ICON, m_use_cargo);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
-	DDV_MaxChars(pDX, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)

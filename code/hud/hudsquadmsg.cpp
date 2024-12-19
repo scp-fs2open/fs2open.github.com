@@ -508,7 +508,7 @@ int hud_squadmsg_read_key( int k )
 		// after messaging is over.  Return true for a while.
 		if ( !timestamp_elapsed(Msg_eat_key_timestamp) ) {
 			for (i = 0; i < num_keys_used; i++ ) {
-				if ( keyd_pressed[keys_used[i]] )
+				if ( key_is_pressed(keys_used[i]) )
 					return 1;
 			}
 		}
@@ -524,7 +524,7 @@ int hud_squadmsg_read_key( int k )
 				key_found = 1;
 			}
 
-			if ( keyd_pressed[k] ) {
+			if ( key_is_pressed(k) ) {
 				key_found = 1;
 			}
 
@@ -639,7 +639,7 @@ void hud_squadmsg_repair_rearm( int toggle_state, object *objp)
 		if ( mission_is_repair_scheduled( tobj ) ) {
 			message_send_builtin(MESSAGE_ALREADY_ON_WAY, nullptr, nullptr, multi_player_num, multi_player_team);
 		} else {
-			robjnum = hud_support_find_closest(OBJ_INDEX(tobj));
+			robjnum = hud_support_find_closest( tobj );
 			if ( robjnum != -1 ) {
 				message_send_builtin(MESSAGE_ALREADY_ON_WAY, &Ships[Objects[robjnum].instance], nullptr, multi_player_num, multi_player_team);
 			} else {
@@ -2635,7 +2635,7 @@ bool HudGaugeSquadMessage::maybeFlashPageScroll(bool flash_fast)
 	return draw_bright;
 }
 
-bool HudGaugeSquadMessage::canRender()
+bool HudGaugeSquadMessage::canRender() const
 {
 	if(hud_disabled_except_messages() && !message_gauge) {
 		return false;

@@ -24,6 +24,9 @@
 #define GAME_SND_USE_DS3D			(1<<0)
 #define GAME_SND_VOICE				(1<<1)
 #define GAME_SND_NOT_VALID			(1<<2)
+#define GAME_SND_PRELOAD			(1<<3)	//!< preload sound (ie read from disk before mission starts)
+#define GAME_SND_RETAIL_STYLE		(1<<4)
+#define GAME_SND_EXPLICITLY_EMPTY	(1<<5)	// a sound that has been parsed as empty
 
 // Priorities that can be passed to snd_play() functions to limit how many concurrent sounds of a 
 // given type are played.
@@ -93,10 +96,9 @@ struct game_snd
 	GameSoundCycleType cycle_type = GameSoundCycleType::SequentialCycle;
 	size_t last_entry_index; //!< The last sound entry used by this sound.
 
-	util::UniformFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound
-	util::UniformFloatRange volume_range; //!< The possible range of the default volume (range is (0, 1]).
+	util::ParsedRandomFloatRange pitch_range; //!< The range of possible pitch values used randomly for this sound
+	util::ParsedRandomFloatRange volume_range; //!< The possible range of the default volume (range is (0, 1]).
 
-	bool preload = false;			//!< preload sound (ie read from disk before mission starts)
 	EnhancedSoundData enhanced_sound_data;
 
 	game_snd( );

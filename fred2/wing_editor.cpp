@@ -359,8 +359,8 @@ void wing_editor::initialize_data_safe(int full_update)
 		if (m_formation_scale.Right(1) == CString("."))
 			m_formation_scale.Append("0");
 
-		m_arrival_location = Wings[cur_wing].arrival_location;
-		m_departure_location = Wings[cur_wing].departure_location;
+		m_arrival_location = static_cast<int>(Wings[cur_wing].arrival_location);
+		m_departure_location = static_cast<int>(Wings[cur_wing].departure_location);
 		m_arrival_delay = Wings[cur_wing].arrival_delay;
 		m_arrival_delay_min = Wings[cur_wing].wave_delay_min;
 		m_arrival_delay_max = Wings[cur_wing].wave_delay_max;
@@ -370,7 +370,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		m_no_dynamic = (Wings[cur_wing].flags[Ship::Wing_Flags::No_dynamic])?1:0;
 
 		// Add the ships/special items to the combo box here before data is updated
-		if ( m_arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY) ) {
 			management_add_ships_to_combo( arrival_box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			management_add_ships_to_combo( arrival_box, SHIPS_2_COMBO_SPECIAL | SHIPS_2_COMBO_ALL_SHIPS );
@@ -398,7 +398,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		}
 
 		// add the ships to the departure target combo box
-		if ( m_departure_location == DEPART_AT_DOCK_BAY ) {
+		if ( m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY) ) {
 			management_add_ships_to_combo( departure_box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			departure_box->ResetContent();
@@ -474,7 +474,7 @@ void wing_editor::initialize_data_safe(int full_update)
 		GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
-	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
+	if (m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) {
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
 		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -488,7 +488,7 @@ void wing_editor::initialize_data_safe(int full_update)
 	} else {
 		GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
 	}
-	if (m_departure_location == DEPART_AT_DOCK_BAY) {
+	if (m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY)) {
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
 		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -800,8 +800,8 @@ void wing_editor::update_data_safe()
 	MODIFY(Wings[cur_wing].formation, m_formation - 1);
 	MODIFY(Wings[cur_wing].formation_scale, (float)atof(m_formation_scale));
 
-	MODIFY(Wings[cur_wing].arrival_location, m_arrival_location);
-	MODIFY(Wings[cur_wing].departure_location, m_departure_location);
+	MODIFY(Wings[cur_wing].arrival_location, static_cast<ArrivalLocation>(m_arrival_location));
+	MODIFY(Wings[cur_wing].departure_location, static_cast<DepartureLocation>(m_departure_location));
 	MODIFY(Wings[cur_wing].arrival_delay, m_arrival_delay);
 	if (m_arrival_delay_min > m_arrival_delay_max) {
 		if (!bypass_errors) {
@@ -820,7 +820,7 @@ void wing_editor::update_data_safe()
 		MODIFY(Wings[cur_wing].arrival_anchor, i);
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
-		if (((m_arrival_location != ARRIVE_AT_LOCATION) && (m_arrival_location != ARRIVE_FROM_DOCK_BAY)) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 			d = int(std::min(500.0f, 2.0f * Objects[Ships[i].objnum].radius));
 			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
 				if (!bypass_errors) {
@@ -1252,7 +1252,7 @@ void wing_editor::OnSelchangeArrivalLocation()
 		}
 
 		// determine which items we should put into the arrival target combo box
-		if ( m_arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY) ) {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_SPECIAL | SHIPS_2_COMBO_ALL_SHIPS );
@@ -1263,7 +1263,7 @@ void wing_editor::OnSelchangeArrivalLocation()
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
 
-	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
+	if (m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))	{
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
 		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -1287,7 +1287,7 @@ void wing_editor::OnSelchangeDepartureLocation()
 		}
 		// we need to build up the list box content based on the departure type.  When
 		// from a docking bay, only show ships in the list which have them.  Show all ships otherwise
-		if ( m_departure_location == DEPART_AT_DOCK_BAY ) {
+		if ( m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY) ) {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			// I think that this section is currently illegal
@@ -1298,7 +1298,7 @@ void wing_editor::OnSelchangeDepartureLocation()
 		GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
 	}
 
-	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
+	if (m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY))	{
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -1375,7 +1375,7 @@ void wing_editor::OnRestrictArrival()
 	// grab stuff from GUI
 	UpdateData(TRUE);
 
-	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
+	if (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))
 	{
 		Int3();
 		return;
@@ -1410,7 +1410,7 @@ void wing_editor::OnRestrictDeparture()
 	// grab stuff from GUI
 	UpdateData(TRUE);
 
-	if (m_departure_location != DEPART_AT_DOCK_BAY)
+	if (m_departure_location != static_cast<int>(DepartureLocation::TO_DOCK_BAY))
 	{
 		Int3();
 		return;

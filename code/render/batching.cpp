@@ -344,7 +344,7 @@ void batching_add_bitmap_rotated_internal(primitive_batch *batch, int texture, v
 	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
 }
 
-void batching_add_polygon_internal(primitive_batch *batch, int texture, vec3d *pos, matrix *orient, float width, float height, color *clr)
+void batching_add_polygon_internal(primitive_batch *batch, int texture, const vec3d *pos, const matrix *orient, float width, float height, color *clr)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
 
@@ -603,7 +603,7 @@ void batching_add_line_internal(primitive_batch *batch, int texture, vec3d *star
 	batch->add_triangle(&verts[3], &verts[4], &verts[5]);
 }
 
-void batching_add_laser_internal(primitive_batch *batch, int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
+void batching_add_laser_internal(primitive_batch *batch, int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r, int g, int b)
 {
 	Assert(batch->get_render_info().prim_type == PRIM_TYPE_TRIS);
 
@@ -700,7 +700,7 @@ void batching_add_volume_bitmap(int texture, vertex *pnt, int orient, float rad,
 
 	primitive_batch *batch;
 	
-	if ( gr_is_capable(CAPABILITY_SOFT_PARTICLES) ) {
+	if ( gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES) ) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
@@ -721,7 +721,7 @@ void batching_add_volume_bitmap_rotated(int texture, vertex *pnt, float angle, f
 
 	primitive_batch *batch;
 
-	if ( gr_is_capable(CAPABILITY_SOFT_PARTICLES) ) {
+	if ( gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES) ) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);
@@ -740,7 +740,7 @@ void batching_add_distortion_bitmap_rotated(int texture, vertex *pnt, float angl
 		return;
 	}
 
-	if ( !gr_is_capable(CAPABILITY_DISTORTION) ) {
+	if ( !gr_is_capable(gr_capability::CAPABILITY_DISTORTION) ) {
 		return;
 	}
 
@@ -759,7 +759,7 @@ void batching_add_distortion_beam(int texture, vec3d *start, vec3d *end, float w
 		return;
 	}
 
-	if ( !gr_is_capable(CAPABILITY_DISTORTION) ) {
+	if ( !gr_is_capable(gr_capability::CAPABILITY_DISTORTION) ) {
 		return;
 	}
 
@@ -840,7 +840,7 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 	batching_add_line_internal(batch, lineTexture, start, end, widthStart, widthEnd, &clr);
 }
 
-void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float width2, int r, int g, int b)
+void batching_add_laser(int texture, const vec3d *p0, float width1, const vec3d *p1, float width2, int r, int g, int b)
 {
 	Assertion((texture >= 0), "batching_add_laser() attempted for invalid texture");
 	if ( texture < 0 ) {
@@ -852,7 +852,7 @@ void batching_add_laser(int texture, vec3d *p0, float width1, vec3d *p1, float w
 	batching_add_laser_internal(batch, texture, p0, width1, p1, width2, r, g, b);
 }
 
-void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float width, float height, float alpha)
+void batching_add_volume_polygon(int texture, const vec3d* pos, const matrix* orient, float width, float height, float alpha)
 {
 	Assertion((texture >= 0), "batching_add_volume_polygon() attempted for invalid texture");
 	if (texture < 0) {
@@ -861,7 +861,7 @@ void batching_add_volume_polygon(int texture, vec3d* pos, matrix* orient, float 
 
 	primitive_batch* batch;
 
-	if (gr_is_capable(CAPABILITY_SOFT_PARTICLES)) {
+	if (gr_is_capable(gr_capability::CAPABILITY_SOFT_PARTICLES)) {
 		batch = batching_find_batch(texture, batch_info::VOLUME_EMISSIVE);
 	} else {
 		batch = batching_find_batch(texture, batch_info::FLAT_EMISSIVE);

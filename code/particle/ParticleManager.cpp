@@ -22,7 +22,8 @@
 namespace {
 using namespace particle;
 
-const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
+constexpr size_t effectTypeNamesMax = static_cast<size_t>(EffectType::MAX);
+const char* effectTypeNames[effectTypeNamesMax] = {
 	"Single",
 	"Composite",
 	"Cone",
@@ -31,16 +32,17 @@ const char* effectTypeNames[static_cast<int64_t>(EffectType::MAX)] = {
 };
 
 const char* getEffectTypeName(EffectType type) {
-	Assertion(static_cast<int64_t>(type) >= static_cast<int64_t>(EffectType::Single)
-				  && static_cast<int64_t>(type) < static_cast<int64_t>(EffectType::MAX),
-			  "Invalid effect type specified!");
+	int index = static_cast<int>(type);
+	if (index >= 0 && static_cast<size_t>(index) < effectTypeNamesMax)
+		return effectTypeNames[index];
 
-	return effectTypeNames[static_cast<int64_t>(type)];
+	UNREACHABLE("Invalid effect type %d specified!", index);
+	return "INVALID";
 }
 
 ParticleEffectPtr constructEffect(const SCP_string& name, EffectType type) {
 	using namespace effects;
-	// Use an unique_ptr to make sure memory is deallocated if an exception is thrown
+	// Use a unique_ptr to make sure memory is deallocated if an exception is thrown
 	std::unique_ptr<ParticleEffect> effect;
 
 	switch (type) {
@@ -84,14 +86,11 @@ EffectType parseEffectType() {
 	SCP_string type;
 	stuff_string(type, F_NAME);
 
-	for (size_t i = 0; i < static_cast<size_t>(EffectType::MAX); ++i) {
-		if (!stricmp(type.c_str(), effectTypeNames[i])) {
-			return static_cast<EffectType>(i);
-		}
-	}
-
-	error_display(0, "Unknown effect type '%s'!", type.c_str());
-	return EffectType::Invalid;
+	int i = string_lookup(type.c_str(), effectTypeNames, effectTypeNamesMax, "EffectType", true);
+	if (i >= 0)
+		return static_cast<EffectType>(i);
+	else
+		return EffectType::Invalid;
 }
 
 void parseCallback(const char* fileName) {
@@ -171,7 +170,7 @@ ParticleEffectHandle ParticleManager::getEffectByName(const SCP_string& name)
 
 	auto foundIterator = find_if(m_effects.begin(), m_effects.end(),
 								 [&name](const std::shared_ptr<ParticleEffect>& ptr) {
-									 return !stricmp(ptr->getName().c_str(), name.c_str());
+									 return lcase_equal(ptr->getName(), name);
 								 });
 
 	if (foundIterator == m_effects.end()) {
@@ -264,7 +263,7 @@ ParticleSourceWrapper ParticleManager::createSource(ParticleEffectHandle index)
 		// To ensure this we reserve the number of sources we will need (current sources + sources being created)
 		if (m_processingSources) {
 			// If we are already in our onFrame, we need to apply the hack to the right vector though
-			m_deferredSourceAdding.reserve(m_sources.size() + childEffects.size());
+			m_deferredSourceAdding.reserve(m_deferredSourceAdding.size() + childEffects.size());
 		} else {
 			m_sources.reserve(m_sources.size() + childEffects.size());
 		}
@@ -375,7 +374,7 @@ SCP_vector<int> parseAnimationList(bool critical) {
 		// single name case
 		SCP_string name;
 		stuff_string(name, F_FILESPEC);
-		bitmap_strings.push_back(name);
+		bitmap_strings.push_back(std::move(name));
 	}
 	
 	SCP_vector<int> handles;

@@ -68,15 +68,29 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveToObject(object* obj, vec3d* d)
+	void ParticleSourceWrapper::moveToObject(const object* obj, const vec3d* d)
 	{
 		for (auto& source : m_sources)
 		{
 			source->getOrigin()->moveToObject(obj, d);
 		}
 	}	
+
+	void ParticleSourceWrapper::moveToSubobject(const object* obj, int subobject, const vec3d* d)
+	{
+		for (auto& source : m_sources) {
+			source->getOrigin()->moveToSubobject(obj, subobject, d);
+		}
+	}	
+
+	void ParticleSourceWrapper::moveToTurret(const object* obj, int subobject, int fire_pos)
+	{
+		for (auto& source : m_sources) {
+			source->getOrigin()->moveToTurret(obj, subobject, fire_pos);
+		}
+	}	
 	
-	void ParticleSourceWrapper::moveToBeam(object* obj)
+	void ParticleSourceWrapper::moveToBeam(const object* obj)
 	{
 		for (auto& source : m_sources)
 		{
@@ -84,15 +98,15 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::moveTo(vec3d* pos)
+	void ParticleSourceWrapper::moveTo(const vec3d* pos, const matrix* orientation)
 	{
 		for (auto& source : m_sources)
 		{
-			source->getOrigin()->moveTo(pos);
+			source->getOrigin()->moveTo(pos, orientation);
 		}
 	}
 
-	void ParticleSourceWrapper::setVelocity(vec3d* vel)
+	void ParticleSourceWrapper::setVelocity(const vec3d* vel)
 	{
 		for (auto& source : m_sources)
 		{
@@ -100,7 +114,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationFromNormalizedVec(vec3d* normalizedDir, bool relative)
+	void ParticleSourceWrapper::setOrientationFromNormalizedVec(const vec3d* normalizedDir, bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -109,7 +123,7 @@ namespace particle
 	}
 
 
-	void ParticleSourceWrapper::setOrientationFromVec(vec3d* dir, bool relative)
+	void ParticleSourceWrapper::setOrientationFromVec(const vec3d* dir, bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -117,7 +131,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationMatrix(matrix* mtx, bool relative)
+	void ParticleSourceWrapper::setOrientationMatrix(const matrix* mtx, bool relative)
 	{
 		for (auto& source : m_sources)
 		{
@@ -125,7 +139,7 @@ namespace particle
 		}
 	}
 
-	void ParticleSourceWrapper::setOrientationNormal(vec3d* normal)
+	void ParticleSourceWrapper::setOrientationNormal(const vec3d* normal)
 	{
 		for (auto& source : m_sources)
 		{

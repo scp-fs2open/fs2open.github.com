@@ -1202,9 +1202,6 @@ static bool printNextDebugMessage() {
 #endif
 
 static void init_extensions() {
-	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
-	Use_compressed_textures = GLAD_GL_EXT_texture_compression_s3tc;
-	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
@@ -1412,8 +1409,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  GL_max_renderbuffer_size,
 		  GL_max_renderbuffer_size ));
 
-	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  S3TC texture support: %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  BPTC texture support: %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
@@ -1437,32 +1434,34 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 bool gr_opengl_is_capable(gr_capability capability)
 {
 	switch ( capability ) {
-	case CAPABILITY_ENVIRONMENT_MAP:
+	case gr_capability::CAPABILITY_ENVIRONMENT_MAP:
 		return true;
-	case CAPABILITY_NORMAL_MAP:
+	case gr_capability::CAPABILITY_NORMAL_MAP:
 		return Cmdline_normal ? true : false;
-	case CAPABILITY_HEIGHT_MAP:
+	case gr_capability::CAPABILITY_HEIGHT_MAP:
 		return Cmdline_height ? true : false;
-	case CAPABILITY_SOFT_PARTICLES:
-	case CAPABILITY_DISTORTION:
+	case gr_capability::CAPABILITY_SOFT_PARTICLES:
+	case gr_capability::CAPABILITY_DISTORTION:
 		return Gr_enable_soft_particles && !Cmdline_no_fbo && !Cmdline_no_geo_sdr_effects;
-	case CAPABILITY_POST_PROCESSING:
+	case gr_capability::CAPABILITY_POST_PROCESSING:
 		return Gr_post_processing_enabled  && !Cmdline_no_fbo;
-	case CAPABILITY_DEFERRED_LIGHTING:
+	case gr_capability::CAPABILITY_DEFERRED_LIGHTING:
 		return !Cmdline_no_fbo && light_deferred_enabled();
-	case CAPABILITY_SHADOWS:
-	case CAPABILITY_THICK_OUTLINE:
+	case gr_capability::CAPABILITY_SHADOWS:
+	case gr_capability::CAPABILITY_THICK_OUTLINE:
 		return !Cmdline_no_geo_sdr_effects;
-	case CAPABILITY_BATCHED_SUBMODELS:
+	case gr_capability::CAPABILITY_BATCHED_SUBMODELS:
 		return true;
-	case CAPABILITY_TIMESTAMP_QUERY:
+	case gr_capability::CAPABILITY_TIMESTAMP_QUERY:
 		return GLAD_GL_ARB_timer_query != 0; // Timestamp queries are available from 3.3 onwards
-	case CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
+	case gr_capability::CAPABILITY_SEPARATE_BLEND_FUNCTIONS:
 		return GLAD_GL_ARB_draw_buffers_blend != 0; // We need an OpenGL extension for this
-	case CAPABILITY_PERSISTENT_BUFFER_MAPPING:
+	case gr_capability::CAPABILITY_PERSISTENT_BUFFER_MAPPING:
 		return GLAD_GL_ARB_buffer_storage != 0;
-	case CAPABILITY_BPTC:
+	case gr_capability::CAPABILITY_BPTC:
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
+	case gr_capability::CAPABILITY_LARGE_SHADER:
+		return !Cmdline_no_large_shaders;
 	}
 
 	return false;

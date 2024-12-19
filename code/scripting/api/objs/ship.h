@@ -6,8 +6,6 @@
 namespace scripting {
 namespace api {
 
-DECLARE_ADE_OBJ(l_ShipTextures, object_h);
-
 //**********HANDLE: Ship
 DECLARE_ADE_OBJ(l_Ship, object_h);
 }

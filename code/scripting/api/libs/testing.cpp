@@ -177,10 +177,10 @@ ADE_FUNC_DEPRECATED(createParticle,
 	if(rev)
 		pi.reverse = 0;
 
-	if(objh != NULL && objh->IsValid())
+	if(objh != NULL && objh->isValid())
 	{
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig = objh->objp->signature;
+		pi.attached_objnum = objh->objnum;
+		pi.attached_sig = objh->sig;
 	}
 
 	particle::WeakParticlePtr p = particle::createPersistent(&pi);

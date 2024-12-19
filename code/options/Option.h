@@ -9,6 +9,7 @@
 #include <functional>
 #include <utility>
 #include <mpark/variant.hpp>
+#include <tl/optional.hpp>
 
 namespace options {
 
@@ -28,6 +29,19 @@ FLAG_LIST(OptionFlags) {
 	 * boolean option even though the option is not designed for that.
 	 */
 	ForceMultiValueSelection = 0,
+	/**
+	 * @brief Whether or not the option is built-in to FSO's retail Options UI
+	 *
+	 * This can be useful if an option should be ignored in cases like the SCP Options UI where
+	 * it's only appropriate to display options that are not otherwise accessible to retail players.
+	 */
+	RetailBuiltinOption = 1,
+	/**
+	 * @brief Forces the range type slider to use an integer instead of a float
+	 *
+	 * This can be useful if an option cannot accept float values.
+	 */
+	RangeTypeInteger = 2,
 
 	NUM_VALUES
 };
@@ -50,18 +64,23 @@ class OptionBase {
 
 	SCP_string _config_key;
 
-	SCP_string _category = "Other";
+	std::pair<const char*, int> _category = {"Other", 1829};
 
 	SCP_string _title;
 	SCP_string _description;
 
 	int _importance = 0;
 
+	float _min = 0;
+	float _max = 1;
+
+	bool _is_once = false;
+
 	SCP_unordered_map<PresetKind, SCP_string> _preset_values;
 
 	flagset<OptionFlags> _flags;
 
-	std::unique_ptr<json_t> getConfigValue() const;
+	tl::optional<std::unique_ptr<json_t>> getConfigValue() const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
 
@@ -71,14 +90,20 @@ class OptionBase {
 	ExpertLevel getExpertLevel() const;
 	void setExpertLevel(ExpertLevel expert_level);
 
-	const SCP_string& getCategory() const;
-	void setCategory(const SCP_string& category);
+	const SCP_string getCategory() const;
+	void setCategory(const std::pair<const char*, int>& category);
 
 	int getImportance() const;
 	void setImportance(int importance);
 
+	std::pair<float, float> getRangeValues() const;
+	void setRangeValues(float min, float max);
+
 	const flagset<OptionFlags>& getFlags() const;
 	void setFlags(const flagset<OptionFlags>& flags);
+
+	bool getIsOnce() const;
+	void setIsOnce(bool is_once);
 
 	const SCP_string& getConfigKey() const;
 	const SCP_string& getTitle() const;
@@ -223,7 +248,12 @@ class Option : public OptionBase {
 	T getValue() const
 	{
 		try {
-			return _deserializer(getConfigValue().get());
+			tl::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
+			//missing keys are signalled via the optional
+			if (!config_value.has_value()) {
+				return _defaultValueFunc();
+			}
+			return _deserializer(config_value->get());
 		} catch (const std::exception&) {
 			// deserializers are allowed to throw on error
 			return _defaultValueFunc();
@@ -415,7 +445,7 @@ class OptionBuilder {
 	OptionBuilder(OptionBuilder&&) noexcept = delete;
 	OptionBuilder& operator=(OptionBuilder&&) noexcept = delete;
 	//Set the category of the option
-	OptionBuilder& category(const SCP_string& category)
+	OptionBuilder& category(const std::pair<const char*, int>& category)
 	{
 		_instance.setCategory(category);
 		return *this;
@@ -494,6 +524,7 @@ class OptionBuilder {
 	//The global variable to bind the option to once. Will require game restart to persist changes.
 	OptionBuilder& bind_to_once(T* dest)
 	{
+		_instance.setIsOnce(true);
 		return change_listener([dest](const T& val, bool initial) {
 			if (initial) {
 				*dest = val;
@@ -505,6 +536,7 @@ class OptionBuilder {
 	OptionBuilder& range(T min, T max)
 	{
 		Assertion(min <= max, "Invalid number range!");
+		_instance.setRangeValues(static_cast<float>(min), static_cast<float>(max));
 		_instance.setInterpolator(
 		    [min, max](float f) { return min + static_cast<T>((max - min) * f); },
 		    [min, max](T f) { return static_cast<float>(f - min) / static_cast<float>(max - min); });
@@ -529,13 +561,13 @@ class OptionBuilder {
 		return *this;
 	}
 	//Finishes building the option and returns a pointer to it
-	const Option<T>* finish()
+	std::shared_ptr<const Option<T>> finish()
 	{
 		for (auto& val : _preset_values) {
 			_instance.setPreset(val.first, json_dump_string_new(_instance.getSerializer()(val.second),
 			                                                    JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY));
 		}
-		std::unique_ptr<Option<T>> opt_ptr(new Option<T>(_instance));
+		auto opt_ptr = make_shared<Option<T>>(_instance);
 
 		if (mpark::holds_alternative<std::pair<const char*, int>>(_title)) {
 			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_title);
@@ -547,9 +579,8 @@ class OptionBuilder {
 			lcl_delayed_xstr(opt_ptr->_description, xstr_info.first, xstr_info.second);
 		}
 
-		auto ptr = opt_ptr.get(); // We need to get the pointer now since we loose the type information otherwise
-		OptionsManager::instance()->addOption(std::unique_ptr<OptionBase>(opt_ptr.release()));
-		return ptr;
+		OptionsManager::instance()->addOption(opt_ptr);
+		return opt_ptr;
 	}
 };
 

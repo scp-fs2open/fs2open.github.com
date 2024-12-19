@@ -11,7 +11,7 @@
 
 #include <qevent.h>
 #include <FredApplication.h>
-#include <ui/dialogs/ShipEditorDialog.h>
+#include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
@@ -30,6 +30,7 @@
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
+#include <ui/dialogs/LoadoutDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -70,7 +71,7 @@ FredView::FredView(QWidget* parent) : QMainWindow(parent), ui(new Ui::FredView()
 	ui->actionUndo->setShortcuts(QKeySequence::Undo);
 	ui->actionDelete->setShortcuts(QKeySequence::Delete);
 
-	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDIalog);
+	connect(ui->actionOpen, &QAction::triggered, this, &FredView::openLoadMissionDialog);
 	connect(ui->actionNew, &QAction::triggered, this, &FredView::newMission);
 
 	connect(fredApp, &FredApplication::onIdle, this, &FredView::updateUI);
@@ -134,6 +135,7 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionError_Checker_Checks_Potential_Issues->setChecked(_viewport->Error_checker_checks_potential_issues); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -141,7 +143,9 @@ void FredView::loadMissionFile(const QString& pathName) {
 	try {
 		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-		fred->loadMission(pathName.toStdString());
+		auto pathToLoad = fred->maybeUseAutosave(pathName.toStdString());
+
+		fred->loadMission(pathToLoad);
 
 		QApplication::restoreOverrideCursor();
 	} catch (const fso::fred::mission_load_error&) {
@@ -152,7 +156,7 @@ void FredView::loadMissionFile(const QString& pathName) {
 	}
 }
 
-void FredView::openLoadMissionDIalog() {
+void FredView::openLoadMissionDialog() {
 	qDebug() << "Loading from directory:" << QDir::currentPath();
 	QString pathName = QFileDialog::getOpenFileName(this, tr("Load mission"), QString(), tr("FS2 missions (*.fs2)"));
 
@@ -545,6 +549,12 @@ void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
 void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
 	fred->showHiddenObjects();
 }
+void FredView::on_actionLock_Marked_Objects_triggered(bool  /*enabled*/) {
+	fred->lockMarkedObjects();
+}
+void FredView::on_actionUnlock_All_Objects_triggered(bool  /*enabled*/) {
+	fred->unlockAllObjects();
+}
 void FredView::onUpdateViewSpeeds() {
 	ui->actionx1->setChecked(_viewport->physics_speed == 1);
 	ui->actionx2->setChecked(_viewport->physics_speed == 2);
@@ -744,6 +754,10 @@ void FredView::on_actionCommand_Briefing_triggered(bool) {
 }
 void FredView::on_actionReinforcements_triggered(bool) {
 	auto editorDialog = new dialogs::ReinforcementsDialog(this, _viewport);
+	editorDialog->show();
+}
+void FredView::on_actionLoadout_triggered(bool) {
+	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
 	editorDialog->show();
 }
 DialogButton FredView::showButtonDialog(DialogType type,
@@ -1098,6 +1112,9 @@ void FredView::on_actionCancel_Subsystem_triggered(bool) {
 }
 void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
 	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
+}
+void FredView::on_actionError_Checker_Checks_Potential_Issues_triggered(bool) {
+	_viewport->Error_checker_checks_potential_issues = !_viewport->Error_checker_checks_potential_issues;
 }
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();

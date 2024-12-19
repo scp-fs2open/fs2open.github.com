@@ -467,14 +467,17 @@ void model_collide_parse_bsp_tmappoly(bsp_collision_leaf *leaf, SCP_vector<model
 
 	nv = uw(p + TMAP_NVERTS);
 
-	if ( nv > TMAP_MAX_VERTS ) {
-		Int3();
+	if (nv > TMAP_MAX_VERTS) {
+		Error(LOCATION, "Model contains TMAP chunk with more than %d vertices!", TMAP_MAX_VERTS);
 		return;
 	}
 
 	int tmap_num = w(p + TMAP_TEXNUM);
 
-	Assert(tmap_num >= 0 && tmap_num < MAX_MODEL_TEXTURES);
+	if (tmap_num < 0 || tmap_num >= MAX_MODEL_TEXTURES) {
+		Error(LOCATION, "Model contains TMAP2 chunk with invalid texture id (%d)!", tmap_num);
+		return;
+	}
 
 	auto verts = reinterpret_cast<model_tmap_vert_old*>(&p[TMAP_VERTS]);
 
@@ -1198,15 +1201,13 @@ int model_collide(mc_info *mc_info_obj)
 
 	}
 
-	if ( Mc->flags & MC_SUBMODEL )	{
-		// Check only one subobject
-		mc_check_subobj( Mc->submodel_num );
-		// Check submodel and any children
-	} else if (Mc->flags & MC_SUBMODEL_INSTANCE) {
+	// Check only one subobject; or check submodel and any children
+	if ( (Mc->flags & MC_SUBMODEL) || (Mc->flags & MC_SUBMODEL_INSTANCE) ) {
+		// note: within this function, MC_SUBMODEL will return after one check; but MC_SUBMODEL_INSTANCE will not
 		mc_check_subobj(Mc->submodel_num);
-	} else {
-		// Check all the the highest detail model polygons and subobjects for intersections
-
+	}
+	// Check all the the highest detail model polygons and subobjects for intersections
+	else {
 		// Don't check it or its children if it is destroyed
 		if ( Mc_pmi ) {
 			if ( !Mc_pmi->submodel[Mc_pm->detail[0]].blown_off ) {

@@ -29,6 +29,8 @@
 #include "missionui/missionscreencommon.h"
 #include "nebula/neb.h"
 #include "network/multi.h"
+#include "options/OptionsManager.h"
+#include "options/Option.h"
 #include "osapi/osregistry.h"
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
@@ -283,6 +285,17 @@ int Options_skills_text_coords[GR_NUM_RESOLUTIONS][4] = {
 		750, 169, 246, 21		// GR_1024
 	}
 };
+
+int Options_scp_string_coords[GR_NUM_RESOLUTIONS][2] = {
+	{
+		265, 18		// GR_640
+	},
+	{
+		465, 25		// GR_1024
+	}
+};
+
+std::pair<SCP_string, int> Options_scp_string_text = {"Press F3 to access additional options", 1831};
 
 
 // ---------------------------------------------------------------------------------------------------------
@@ -666,6 +679,11 @@ void options_cancel_exit()
 		Detail = Detail_original;
 	}
 
+	// We have to discard in game options here
+	if (Using_in_game_options) {
+		options::OptionsManager::instance()->discardChanges();
+	}
+
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -690,6 +708,18 @@ void options_change_gamma(float delta)
 	sprintf(tmp_gamma_string, NOX("%.2f"), gamma);
 
 	os_config_write_string( NULL, NOX("GammaD3D"), tmp_gamma_string );
+
+	// The Gamma option sets its display value differently to the serialized value itself
+	// so we'll leave this here instead of trying to make a global method that works just
+	// for this one specific case
+	if (Using_in_game_options) {
+		const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey("Graphics.Gamma");
+		if (thisOpt != nullptr) {
+			auto val = thisOpt->getCurrentValueDescription();
+			SCP_string newVal = std::to_string(gamma);  // OptionsManager stores values as serialized strings
+			thisOpt->setValueDescription({val.display, newVal.c_str()});
+		}
+	}
 }
 
 void options_button_pressed(int n)
@@ -740,6 +770,7 @@ void options_button_pressed(int n)
 
 			// BEGIN - detail level tab buttons
 
+			// Target View Rendering is currently not handled by in-game options, assumes "On"
 		case HUD_TARGETVIEW_RENDER_ON:
 			Detail.targetview_model = 1;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -750,6 +781,7 @@ void options_button_pressed(int n)
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
+			// Planets is currently not handled by in-game options, assumes "On"
 		case PLANETS_ON:
 			Detail.planets_suns = 1;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -760,6 +792,7 @@ void options_button_pressed(int n)
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
+			// Weapon extras is currently not handled by in-game options, assumes "On"
 		case WEAPON_EXTRAS_ON:
 			Detail.weapon_extras = 1;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -798,29 +831,35 @@ void options_button_pressed(int n)
 
 		case GAMMA_DOWN:
 			options_change_gamma(-0.05f);
+			// Gamma in-game change is handled in the above method
 			break;
 
 		case GAMMA_UP:
 			options_change_gamma(0.05f);
+			// Gamma in-game change is handled in the above method
 			break;
 
 		case BRIEF_VOICE_ON:
 			Briefing_voice_enabled = true;
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", true);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case BRIEF_VOICE_OFF:
 			Briefing_voice_enabled = false;
+			options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", false);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_ON:
 			Use_mouse_to_fly = 1;
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", true);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MOUSE_OFF:
 			Use_mouse_to_fly = 0;
+			options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", false);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 	}
@@ -832,6 +871,7 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos != Sound_volume_int) {
 		Sound_volume_int = Options_sliders[gr_screen.res][OPT_SOUND_VOLUME_SLIDER].slider.pos;
 		snd_set_effects_volume((float) (Sound_volume_int) / 9.0f);
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume); // Volume options save the global float, not the range slider position
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
@@ -839,7 +879,7 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos != Music_volume_int) {
 		Music_volume_int = Options_sliders[gr_screen.res][OPT_MUSIC_VOLUME_SLIDER].slider.pos;
 		event_music_set_volume((float) (Music_volume_int) / 9.0f);
-
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume); // Volume options save the global float, not the range slider position
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
@@ -847,28 +887,46 @@ void options_sliders_update()
 	if (Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos != Voice_volume_int) {
 		Voice_volume_int = Options_sliders[gr_screen.res][OPT_VOICE_VOLUME_SLIDER].slider.pos;
 		snd_set_voice_volume((float) (Voice_volume_int) / 9.0f);
+		options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume); // Volume options save the global float, not the range slider position
 		options_play_voice_clip();
 	}
 
 	if (Mouse_sensitivity != Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos) {
 		Mouse_sensitivity = Options_sliders[gr_screen.res][OPT_MOUSE_SENS_SLIDER].slider.pos;
+		options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_sensitivity != Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos) {
 		Joy_sensitivity = Options_sliders[gr_screen.res][OPT_JOY_SENS_SLIDER].slider.pos;
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Joy_dead_zone_size != Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5) {
 		Joy_dead_zone_size = Options_sliders[gr_screen.res][OPT_JOY_DEADZONE_SLIDER].slider.pos * 5;
+		options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
 
 	if (Game_skill_level != Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos) {
 		Game_skill_level = Options_sliders[gr_screen.res][OPT_SKILL_SLIDER].slider.pos;
+		options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 	}
+}
+
+void options_detail_sliders_in_game_update()
+{
+	// Save in-game options settings
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
 }
 
 void options_accept()
@@ -881,6 +939,15 @@ void options_accept()
 			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "PXO is selected but password or username is missing");
 			return;
 		}
+	}
+
+	// We have to save in game options here
+	if (Using_in_game_options) {
+		// detail sliders are updated every frame but it's silly to run OptionsManager every frame, too
+		// so just set them on Accept and then persist.
+		options_detail_sliders_in_game_update();
+
+		options::OptionsManager::instance()->persistChanges();
 	}
 
 	// If music is zero volume, disable
@@ -1178,6 +1245,17 @@ void options_menu_do_frame(float  /*frametime*/)
 
 		case KEY_ENTER:			
 			break;
+
+		case KEY_F3: // SCP ingame options
+			if (Using_in_game_options) {
+				// Going into F3 Options needs to either discard or save the changes made here. 
+				// There's an argument to be made for both but I feel like saving is the better choice - Mjn
+				options::OptionsManager::instance()->persistChanges();
+
+				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
+				gameseq_post_event(GS_EVENT_INGAME_OPTIONS);
+			}
+			break;
 	}	
 
 	for (i=0; i<NUM_BUTTONS; i++) {
@@ -1274,6 +1352,15 @@ void options_menu_do_frame(float  /*frametime*/)
 	// maybe blit a waveform
 	if(Tab == MULTIPLAYER_TAB){
 		options_multi_vox_process_waveform();
+	}
+
+	// maybe blit the SCP Options string
+	if (Using_in_game_options) {
+		gr_set_color_fast(&Color_bright_blue);
+		gr_string(Options_scp_string_coords[gr_screen.res][OPTIONS_X_COORD],
+			Options_scp_string_coords[gr_screen.res][OPTIONS_Y_COORD],
+			XSTR(Options_scp_string_text.first.c_str(), Options_scp_string_text.second),
+			GR_RESIZE_MENU);
 	}
 	
 	gr_flip();

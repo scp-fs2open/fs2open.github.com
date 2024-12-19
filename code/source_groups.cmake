@@ -251,6 +251,8 @@ add_file_folder("Default files\\\\data\\\\effects"
 	def_files/data/effects/main-f.sdr
 	def_files/data/effects/main-g.sdr
 	def_files/data/effects/main-v.sdr
+	def_files/data/effects/main_large.sdr
+	def_files/data/effects/main_small.sdr
 	def_files/data/effects/model_shader_flags.h
 	def_files/data/effects/msaa-f.sdr
 	def_files/data/effects/nanovg-f.sdr
@@ -398,6 +400,7 @@ add_file_folder("GlobalIncs"
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/type_traits.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
 	globalincs/utility.h
@@ -1031,10 +1034,23 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/Ingame_Options.cpp
+	options/Ingame_Options.h
+	options/Ingame_Options_internal.h
 	options/Option.cpp
 	options/Option.h
 	options/OptionsManager.cpp
 	options/OptionsManager.h
+)
+
+add_file_folder("Options\\\\Dialogs"
+	options/dialogs/ingame_options_ui.h
+	options/dialogs/ingame_options_ui.cpp
+)
+
+add_file_folder("Options\\\\Manager"
+	options/manager/ingame_options_manager.h
+	options/manager/ingame_options_manager.cpp
 )
 
 # OsApi files
@@ -1128,6 +1144,8 @@ add_file_folder("PcxUtils"
 add_file_folder("Physics"
 	physics/physics.cpp
 	physics/physics.h
+	physics/physics_state.cpp
+	physics/physics_state.h
 )
 
 # PilotFile files
@@ -1228,6 +1246,7 @@ add_file_folder("Scripting"
 	scripting/ade_args.h
 	scripting/ade_doc.cpp
 	scripting/ade_doc.h
+	scripting/ade_external_serializer.h
 	scripting/doc_html.cpp
 	scripting/doc_html.h
 	scripting/doc_json.cpp
@@ -1400,6 +1419,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/model_path.h
 	scripting/api/objs/movie_player.cpp
 	scripting/api/objs/movie_player.h
+	scripting/api/objs/multi_objects.cpp
+	scripting/api/objs/multi_objects.h
 	scripting/api/objs/object.cpp
 	scripting/api/objs/object.h
 	scripting/api/objs/option.cpp
@@ -1648,6 +1669,7 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/join_string.h
+	utils/modular_curves.h
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h

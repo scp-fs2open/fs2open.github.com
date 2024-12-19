@@ -73,7 +73,19 @@ extern int anim_timer_start;
 void common_button_do(int i);
 
 //If new enums are added here be sure to also update the description for the API version in scripting\api\libs\ui.cpp - Mjn
-enum class commit_pressed_status { SUCCESS, GENERAL_FAIL, PLAYER_NO_WEAPONS,  NO_REQUIRED_WEAPON, NO_REQUIRED_WEAPON_MULTIPLE, BANK_GAP_ERROR, PLAYER_NO_SLOT};
+enum class commit_pressed_status { 
+	SUCCESS, 
+	GENERAL_FAIL, 
+	PLAYER_NO_WEAPONS,  
+	NO_REQUIRED_WEAPON, 
+	NO_REQUIRED_WEAPON_MULTIPLE, 
+	BANK_GAP_ERROR, 
+	PLAYER_NO_SLOT, 
+	MULTI_PLAYERS_NO_SHIPS,
+	MULTI_NOT_ALL_ASSIGNED,
+	MULTI_NO_PRIMARY,
+	MULTI_NO_SECONDARY
+};
 
 // common_select_init() performs initialization common to the briefing/ship select/weapon select
 // screens.  This includes loading/setting the palette, loading the background animation, loading
@@ -209,8 +221,8 @@ int store_wss_data(ubyte *data, const unsigned int max_size, interface_snd_id so
 int restore_wss_data(ubyte *data);
 
 class ship_info;
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos=NULL, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, int flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, int effect = 2);
+void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x1, int x2, int y1, int y2, ship_info* sip = NULL, int resize_mode = GR_RESIZE_FULL, const vec3d *closeup_pos = &vmd_zero_vector);
+void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos=nullptr, float closeup_zoom = .65f, float rev_rate = REVOLUTION_RATE, uint64_t flags = MR_AUTOCENTER | MR_NO_FOGGING, int resize_mode=GR_RESIZE_FULL, int effect = 2);
 
 void common_set_team_pointers(int team);
 void common_reset_team_pointers();

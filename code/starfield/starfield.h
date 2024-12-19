@@ -57,8 +57,9 @@ extern SCP_vector<background_t> Backgrounds;
 extern int Nmodel_num;
 extern int Nmodel_instance_num;
 extern matrix Nmodel_orient;
-extern int Nmodel_flags;
+extern uint64_t Nmodel_flags;
 extern int Nmodel_bitmap;
+extern float Nmodel_alpha;
 
 extern bool Motion_debris_override;
 extern bool Motion_debris_enabled;
@@ -81,6 +82,8 @@ void stars_swap_backgrounds(int idx1, int idx2);
 void stars_pack_backgrounds();
 bool stars_background_empty(const background_t &bg);
 
+void stars_get_data(bool is_sun, int idx, starfield_list_entry& sle);
+void stars_set_data(bool is_sun, int idx, starfield_list_entry& sle);
 
 // add a new sun or bitmap instance
 int stars_add_sun_entry(starfield_list_entry *sun_ptr);
@@ -148,8 +151,10 @@ void stars_draw_sun_glow(int sun_n);
 void stars_camera_cut();
 
 // call this to set a specific model as the background model
-void stars_set_background_model(const char *model_name, const char *texture_name, int flags = DEFAULT_NMODEL_FLAGS);
+void stars_set_background_model(int new_model, int new_bitmap = -1, uint64_t flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
+void stars_set_background_model(const char *model_name, const char *texture_name, uint64_t flags = DEFAULT_NMODEL_FLAGS, float alpha = 1.0f);
 void stars_set_background_orientation(const matrix *orient = nullptr);
+void stars_set_background_alpha(float alpha = 1.0f);
 
 // lookup a starfield bitmap, return index or -1 on fail
 int stars_find_bitmap(const char *name);

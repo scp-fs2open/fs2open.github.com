@@ -20,13 +20,13 @@ ADE_VIRTVAR(Class, l_Fireball, "fireballclass", "Fireball's class", "fireballcla
 	if(!ade_get_args(L, "o|o", l_Fireball.GetPtr(&oh), l_Fireballclass.Get(&nc)))
 		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
 
-	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
+	if (oh->objp()->instance < 0 || oh->objp()->instance >= static_cast<int>(Fireballs.size()))
 		return ade_set_error(L, "o", l_Fireballclass.Set(-1));
 
-	fireball *fb = &Fireballs[oh->objp->instance];
+	fireball *fb = &Fireballs[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && nc > -1) {
 		fb->fireball_info_index = nc;
@@ -42,15 +42,15 @@ ADE_VIRTVAR(RenderType, l_Fireball, "enumeration", "Fireball's render type", "en
 	if (!ade_get_args(L, "o|o", l_Fireball.GetPtr(&oh), l_Enum.Get(&type)))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
+	if (oh->objp()->instance < 0 || oh->objp()->instance >= static_cast<int>(Fireballs.size()))
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
-	fireball* fb = &Fireballs[oh->objp->instance];
+	fireball* fb = &Fireballs[oh->objp()->instance];
 
-	if (ADE_SETTING_VAR && type.IsValid()) {
+	if (ADE_SETTING_VAR && type.isValid()) {
 		int nt = -1;
 		switch (type.index) {
 		case LE_FIREBALL_MEDIUM_EXPLOSION:
@@ -90,13 +90,13 @@ ADE_VIRTVAR(TimeElapsed, l_Fireball, NULL, "Time this fireball exists in seconds
 	if(!ade_get_args(L, "o", l_Fireball.GetPtr(&oh), &nll))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	if (oh->objp->instance < 0 || oh->objp->instance <= static_cast<int>(Fireballs.size())) 
+	if (oh->objp()->instance < 0 || oh->objp()->instance <= static_cast<int>(Fireballs.size())) 
 		return ade_set_error(L, "f", 0.0f);
 
-	fireball *fb = &Fireballs[oh->objp->instance];
+	fireball *fb = &Fireballs[oh->objp()->instance];
 
 	return ade_set_args(L, "f", fb->time_elapsed);
 }
@@ -108,13 +108,13 @@ ADE_VIRTVAR(TotalTime, l_Fireball, NULL, "Total lifetime of the fireball's anima
 	if (!ade_get_args(L, "o", l_Fireball.GetPtr(&oh), &nll))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
-	if (oh->objp->instance < 0 || oh->objp->instance >= static_cast<int>(Fireballs.size()))
+	if (oh->objp()->instance < 0 || oh->objp()->instance >= static_cast<int>(Fireballs.size()))
 		return ade_set_error(L, "f", 0.0f);
 
-	fireball* fb = &Fireballs[oh->objp->instance];
+	fireball* fb = &Fireballs[oh->objp()->instance];
 
 	return ade_set_args(L, "f", fb->total_time);
 }
@@ -125,10 +125,10 @@ ADE_FUNC(isWarp, l_Fireball, NULL, "Checks if the fireball is a warp effect.", "
 	if(!ade_get_args(L, "o", l_Fireball.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ADE_RETURN_FALSE;
 
-	if(fireball_is_warp(oh->objp))
+	if(fireball_is_warp(oh->objp()))
 		return ADE_RETURN_TRUE;
 
 	return ADE_RETURN_FALSE;
@@ -142,11 +142,11 @@ ADE_FUNC(vanish, l_Fireball, nullptr, "Vanishes this fireball from the mission."
 	if (!ade_get_args(L, "o", l_Fireball.GetPtr(&oh)))
 		return ade_set_error(L, "b", false);
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "b", false);
 
 	//Should be sufficient for Fireballs, as the fireball internal functions also call this, for example to free up a fireball if the limit is reached
-	obj_delete(OBJ_INDEX(oh->objp));
+	obj_delete(oh->objnum);
 
 	return ade_set_args(L, "b", true);
 }

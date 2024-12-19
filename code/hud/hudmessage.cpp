@@ -305,7 +305,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, nullptr, msg, (int)(ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, (ptr + 2 - msg));
 			offset = sw;
 		}
 
@@ -641,7 +641,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 
 	// determine the length of the sender's name for underlining
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, (int)(ptr - buf));
+		gr_get_string_size(&w, nullptr, buf, (ptr - buf));
 	}
 
 	// create the new node for the vector
@@ -812,7 +812,7 @@ void hud_scrollback_button_pressed(int n)
 
 		case SHOW_EVENTS_BUTTON:
 			Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-			Scroll_max = Num_log_lines * gr_get_font_height();
+			Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 			hud_scroll_reset();
 			break;
 
@@ -843,7 +843,7 @@ void hud_initialize_scrollback_lines()
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), (int)node_msg.text.length());
+			gr_get_string_size(&width, &height, node_msg.text.c_str(), node_msg.text.length());
 
 			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 			if (width > max_width) {
@@ -913,9 +913,9 @@ void hud_scrollback_init()
 	Background_bitmap = bm_load(Hud_mission_log_fname[gr_screen.res]);
 	// Status_bitmap = bm_load(Hud_mission_log_status_fname[gr_screen.res]);
 
-	message_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
+	mission_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
 	if (Scrollback_mode == SCROLLBACK_MODE_EVENT_LOG)
-		Scroll_max = Num_log_lines * gr_get_font_height();
+		Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 	else if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES)
 		Scroll_max = Num_obj_lines * gr_get_font_height();
 	else
@@ -928,7 +928,7 @@ void hud_scrollback_init()
 void hud_scrollback_close()
 {
 	ML_objectives_close();
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
 	//if (Status_bitmap >= 0)
@@ -960,7 +960,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else {
@@ -975,7 +975,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		case KEY_SHIFTED | KEY_TAB:
 			if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
@@ -1264,7 +1264,7 @@ void HudGaugeTalkingHead::pageIn()
 	bm_page_in_aabitmap( Head_frame.first_frame, Head_frame.num_frames );
 }
 
-bool HudGaugeTalkingHead::canRender()
+bool HudGaugeTalkingHead::canRender() const
 {
 	if (sexp_override) {
 		return false;

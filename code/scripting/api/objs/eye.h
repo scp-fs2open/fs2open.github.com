@@ -13,7 +13,7 @@ class eye_h {
 
 	eye_h();
 	eye_h(int n_m, int n_e);
-	bool IsValid();
+	bool isValid() const;
 };
 
 DECLARE_ADE_OBJ(l_Eyepoint, eye_h);

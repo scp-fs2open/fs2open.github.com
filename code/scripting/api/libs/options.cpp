@@ -64,7 +64,7 @@ ADE_FUNC(discardChanges, l_Options, nullptr, "Discard any changes made to the op
 ADE_VIRTVAR(MultiLogin, l_Options, "string", "The multiplayer PXO login name", "string", "The login name")
 {
 	const char* login = nullptr;
-	ade_get_args(L, "|s", &login);
+	ade_get_args(L, "*|s", &login);
 	
 	if (ADE_SETTING_VAR && (login != nullptr)) {
 		strcpy_s(Multi_tracker_login, login);
@@ -77,7 +77,7 @@ ADE_VIRTVAR(MultiLogin, l_Options, "string", "The multiplayer PXO login name", "
 ADE_VIRTVAR(MultiPassword, l_Options, "string", "The multiplayer PXO login password", "boolean", "True if a password is set, false otherwise")
 {
 	const char* pswd = nullptr;
-	ade_get_args(L, "|s", &pswd);
+	ade_get_args(L, "*|s", &pswd);
 
 	if (ADE_SETTING_VAR && (pswd != nullptr)) {
 		strcpy_s(Multi_tracker_passwd, pswd);
@@ -90,7 +90,7 @@ ADE_VIRTVAR(MultiPassword, l_Options, "string", "The multiplayer PXO login passw
 ADE_VIRTVAR(MultiSquad, l_Options, "string", "The multiplayer PXO squad name", "string", "The squad name")
 {
 	const char* squad = nullptr;
-	ade_get_args(L, "|s", &squad);
+	ade_get_args(L, "*|s", &squad);
 
 	if (ADE_SETTING_VAR && (squad != nullptr)) {
 		strcpy_s(Multi_tracker_squad_name, squad);
@@ -149,6 +149,18 @@ ADE_FUNC(writeIPAddressTable, l_Options, "table", "Saves the table to the multip
 	}
 
 	return ade_set_args(L, "b", multi_join_write_ip_address_file(list));
+}
+
+ADE_FUNC(verifyIPAddress, l_Options, "string", "Verifies if a string is a valid IP address", "boolean", "True if valid, false otherwise")
+{
+	
+	const char* ip;
+
+	if (!ade_get_args(L, "s", &ip)) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ade_set_args(L, "b", psnet_is_valid_ip_string(ip));
 }
 
 } // namespace api

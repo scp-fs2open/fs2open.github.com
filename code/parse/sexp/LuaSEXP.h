@@ -30,6 +30,9 @@ protected:
 	// just a helper for parseTable
 	static bool parseCheckEndOfDescription();
 
+	// another helper
+	static bool maybeExtractSexpSpecialRetVal(const luacpp::LuaValue& value, int& sexp_retval);
+
  public:
 	static std::pair<SCP_string, int> get_parameter_type(const SCP_string& name);
 	static int get_return_type(const SCP_string& name);

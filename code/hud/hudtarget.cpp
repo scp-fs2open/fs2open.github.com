@@ -1587,13 +1587,14 @@ int hud_target_ship_can_be_scanned(ship *shipp)
 	if (shipp->flags[Ship::Ship_Flags::Cargo_revealed])
 		return 0;
 
-	// allow ships with scannable flag set
-	if (shipp->flags[Ship::Ship_Flags::Scannable])
+	// The old behavior treats some ship types as always scannable. The new behavior only checks the ship's Scannable flag.
+	if (shipp->flags[Ship::Ship_Flags::Scannable]) {
 		return 1;
-
-	// ignore ships that don't carry cargo
-	if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable]))
+	} else if (Use_new_scanning_behavior) {
 		return 0;
+	} else if ((sip->class_type < 0) || !(Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Scannable])) {
+		return 0;
+	}
 
 	return 1;
 }
@@ -2518,7 +2519,7 @@ void hud_target_in_reticle_new()
 			{
 				int pof = 0;
 				pof = Asteroids[A->instance].asteroid_subtype;
-				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].model_num[pof];
+				mc.model_num = Asteroid_info[Asteroids[A->instance].asteroid_type].subtypes[pof].model_number;
 			}
 			break;
 		case OBJ_JUMP_NODE:
@@ -2627,12 +2628,24 @@ void hud_target_in_reticle_old()
 
 	target_obj = hud_reticle_pick_target();
 	if ( target_obj != NULL ) {
+		int oldTargetNum = Player_ai->target_objnum; 
 		set_target_objnum( Player_ai, OBJ_INDEX(target_obj) );
 		hud_shield_hit_reset(target_obj);
 
 		if ( target_obj->type == OBJ_SHIP ) {
-			hud_maybe_set_sorted_turret_subsys(&Ships[target_obj->instance]);
-			hud_restore_subsystem_target(&Ships[target_obj->instance]);
+			ship* shipp = &Ships[target_obj->instance];
+
+			// if the player is attempting to target the same ship under their reticule again
+			// then lets select the nearest subsystem for them.
+			if (Automatically_select_subsystem_under_reticle_when_targeting_same_ship &&
+				Ship_info[shipp->ship_info_index].is_big_or_huge() &&
+				oldTargetNum == Player_ai->target_objnum) {
+				hud_target_subsystem_in_reticle();
+			}
+			else {
+				hud_maybe_set_sorted_turret_subsys(shipp);
+				hud_restore_subsystem_target(shipp);
+			}
 		}
 	}
 	else {
@@ -3033,7 +3046,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 	// even if the screen position overflowed, it will still be pointing in the correct direction
 	unsize( &hostile_vertex.screen.xyw.x, &hostile_vertex.screen.xyw.y );
 
-	ang = atan2_safe(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
+	ang = atan2(-(hostile_vertex.screen.xyw.y - tablePosY), hostile_vertex.screen.xyw.x - tablePosX);
 	sin_ang=sinf(ang);
 	cos_ang=cosf(ang);
 
@@ -4026,6 +4039,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 	//overwritten if using non-default leadIndicatorBehaviors, this is desired.
 	bank_to_fire = hud_get_best_primary_bank(&prange);
 	wip = &Weapon_info[swp->primary_bank_weapons[bank_to_fire]];
+	bool no_primary_indicator = false;
 
 	if (Lead_indicator_behavior != leadIndicatorBehavior::DEFAULT && Player_ship->flags[Ship::Ship_Flags::Primary_linked]) {
 		vec3d averaged_lead_pos;
@@ -4054,6 +4068,7 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 				continue;
 			}
 
+			// Note! This is function call that actually determines if primary or secondary target gauges are going to be rendered.
 			frame_offset = pickFrame(weapon_range, srange, dist_to_target);
 
 			if (frame_offset >= 0) {
@@ -4069,6 +4084,10 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 		if (average_instances > 0 && Lead_indicator_behavior == leadIndicatorBehavior::AVERAGE) {
 			averaged_lead_pos = averaged_lead_pos/i2fl(average_instances);
 			renderIndicator(frame_offset, targetp, &averaged_lead_pos);
+		
+		// This handles an edge case where secondary weapon indicators might not have been rendered, despite possibly being in range.
+		} else if ( frame_offset == -1) {
+			no_primary_indicator = true;
 		}
 	}
 	else if (bank_to_fire >= 0) { //leadIndicatorBehavior::DEFAULT
@@ -4076,7 +4095,11 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			prange = 0.0f; // no ballistic trajectory, primary is 'always out of range'
 		}
 
+		// Note! This is function call that actually determines if primary or secondary target gauges are going to be rendered.
 		frame_offset = pickFrame(prange, srange, dist_to_target);
+
+		// note here, that srange being -1.0f is indicative of the Dont_merge_indicators flag being used above,
+		// or the missile being a dumbfire.
 		if ( frame_offset < 0 && srange != -1.0f ) {
 			return;
 		}
@@ -4085,16 +4108,26 @@ void HudGaugeLeadIndicator::renderLeadCurrentTarget()
 			renderIndicator(frame_offset, targetp, &lead_target_pos);
 		}
 	}
-	else return;
+	//Cyborg - this `else return;` would force the secondary indicator off if no primaries are available.
+	//Sure this is not a very common case, but we don't need the early return.
+	//We are safe from any ill effects because we're not going to try to render any primary indicators 
+	//after this point anyway (the first argument for renderIndicator is forced to 0 below).  
+	//Anyone who rewrites this function to somehow re-evaluate primary indicators will have to revist this.
+	//else return;
+
 
 	//do dumbfire lead indicator - color is orange (255,128,0) - bright, (192,96,0) - dim
 	//phreak changed 9/01/02
+	//Cyborg - This section mainly handles dumbfire indicators, unless Dont_merge_indicators is set, forcing a separate indicator
+	//for homing weapons. OR if no_primary_indicator is true (no primary indicator was drawn when in multiple or average mode)
+	//We are guaranteed (if the target is in the homing cone) to get here because in both of those situations srange is
+	//forced to -1.0f, precluding the early returns.
 	if((swp->current_secondary_bank>=0) && (swp->secondary_bank_weapons[swp->current_secondary_bank] >= 0)) {
 		int bank=swp->current_secondary_bank;
 		wip=&Weapon_info[swp->secondary_bank_weapons[bank]];
 
-		//get out of here if the secondary weapon is a homer or if its out of range
-		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] )
+		//get out of here if the secondary weapon is a homer and we don't have independent indicator behavior
+		if ( wip->is_homing() && !wip->wi_flags[Weapon::Info_Flags::Dont_merge_indicators] && !no_primary_indicator )
 			return;
 
 		double max_dist = MIN((wip->lifetime * wip->max_speed), wip->weapon_range);
@@ -4489,7 +4522,7 @@ void hud_restore_subsystem_target(ship* shipp)
 // --------------------------------------------------------------------------------
 // get_subsystem_world_pos() returns the world position for a given subsystem on a ship
 //
-vec3d* get_subsystem_world_pos(object* parent_obj, ship_subsys* subsys, vec3d* world_pos)
+vec3d* get_subsystem_world_pos(const object* parent_obj, const ship_subsys* subsys, vec3d* world_pos)
 {
 	get_subsystem_pos(world_pos, parent_obj, subsys);
 
@@ -4739,7 +4772,7 @@ int hud_communications_state(ship *sp, bool for_death_scream)
 	}
 
 	// Goober5000 - check for scrambled communications
-	if (emp_active_local() || sp->flags[Ship::Ship_Flags::Scramble_messages])
+	if ((emp_active_local() && !sp->flags[Ship::Ship_Flags::EMP_doesnt_scramble_messages]) || sp->flags[Ship::Ship_Flags::Scramble_messages])
 		return COMM_SCRAMBLED;
 
 	return COMM_OK;
@@ -6528,8 +6561,7 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 	g3_project_vertex(eye_vertex);
 
 	if (eye_vertex->flags&PF_OVERFLOW) {
-		Int3();			//	This is unlikely to happen, but can if a clip goes through the player's eye.
-		Player_ai->target_objnum = -1;
+		//	This is unlikely to happen, but can if a clip goes through the player's eye.
 		if (!in_frame)
 			g3_end_frame();
 		return;
@@ -6591,7 +6623,6 @@ void HudGaugeOffscreen::calculatePosition(vertex* target_point, vec3d *tpos, vec
 			xpos = gr_screen.clip_right_unscaled - half_gauge_length;
 
 	} else {
-		Int3();
 		if (!in_frame)
 			g3_end_frame();
 		return;
@@ -6896,7 +6927,7 @@ void HudGaugeWeaponList::initLinkIcon() {
 	}
 }
 
-void HudGaugeWeaponList::initBitmaps(char *fname_first, char *fname_entry, char *fname_last)
+void HudGaugeWeaponList::initBitmaps(const char *fname_first, const char *fname_entry, const char *fname_last)
 {
 	_background_first.first_frame = bm_load_animation(fname_first, &_background_first.num_frames);
 	if(_background_first.first_frame < 0) {
@@ -6944,7 +6975,7 @@ void HudGaugeWeaponList::initBgEntryHeight(int h)
 	_background_entry_h = h;
 }
 
-void HudGaugeWeaponList::initHeaderText(char *text)
+void HudGaugeWeaponList::initHeaderText(const char *text)
 {
 	strcpy_s(header_text, text);
 }
@@ -7338,7 +7369,7 @@ void HudGaugeHardpoints::render(float  /*frametime*/)
 	vertex draw_point;
 	vec3d subobj_pos;
 
-	int render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
+	uint64_t render_flags = MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING | MR_NO_TEXTURING | MR_NO_ZBUFFER;
 
 	setGaugeColor();
 	float alpha = gr_screen.current_color.alpha / 255.0f;

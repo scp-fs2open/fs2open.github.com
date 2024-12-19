@@ -347,7 +347,8 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item* get_listing_opf_team_colors();
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_motion_debris();
-	sexp_list_item* get_listing_opf_asteroid_debris();
+	static sexp_list_item* get_listing_opf_asteroid_types();
+	static sexp_list_item* get_listing_opf_debris_types();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
@@ -360,7 +361,9 @@ class sexp_tree: public QTreeWidget {
 	sexp_list_item *get_listing_opf_bolt_types();
 	sexp_list_item *get_listing_opf_traitor_overrides();
 	sexp_list_item *get_listing_opf_lua_general_orders();
+	sexp_list_item *get_listing_opf_message_types();
 	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_mission_custom_strings();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

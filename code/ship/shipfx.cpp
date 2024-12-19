@@ -84,14 +84,14 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	}
 }
 
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient);
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 /**
  * Check if subsystem has live debris and create
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -270,7 +270,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	}
 }
 
-void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion)
 {
 	vec3d subobj_pos;
 
@@ -298,7 +298,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *sub
 	}
 }
 
-static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *pmi, vec3d *exp_center)
+static void shipfx_blow_up_hull(object *obj, const polymodel *pm, const polymodel_instance *pmi, const vec3d *exp_center)
 {
 	int i;
 	ushort sig_save;
@@ -344,7 +344,7 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 /**
  * Creates "ndebris" pieces of debris on random verts of the the "submodel" in the ship's model.
  */
-void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_center)
+void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center)
 {
 	int i;
 
@@ -785,7 +785,7 @@ void shipfx_warpout_frame( object *objp, float frametime )
 /**
  * Given world point see if it is in a shadow.
  */
-bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
+bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 {
 	object *objp;
 	ship_obj *so;
@@ -802,7 +802,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
 	rp0 = *eye_pos;	
 	
 	// get the light dir
-	if(!light_get_global_dir(&light_dir, sun_n)){
+	if(!light_get_global_dir(&light_dir, light_n)){
 		return false;
 	}
 
@@ -979,7 +979,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int sun_n )
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 		mc.model_instance_num = -1;
-		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check
 		mc.submodel_num = -1;
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position
@@ -1051,12 +1051,26 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// HACK - let the flak guns do this on their own since they fire so quickly
 	// Also don't create if its the player in the cockpit unless he's also got show_ship_model, provided render_player_mflash isnt on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
-	bool player_show_ship_model = objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
-	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+	bool player_show_ship_model =
+		objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
+	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
-		vec3d real_dir;
-		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
-		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
+			// if there's a muzzle effect entry, we use that
+			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
+				vec3d gun_world_pos;
+				vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[OBJ_INDEX(objp)].orient);
+				vm_vec_add2(&gun_world_pos, &Objects[OBJ_INDEX(objp)].pos);
+
+				// spawn particle effect
+				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
+				particleSource.moveToObject(objp, gun_pos);
+				particleSource.setOrientationFromVec(gun_dir, true);
+				particleSource.setVelocity(&objp->phys_info.vel);
+				particleSource.finish();
+			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
+			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
+				mflash_create(gun_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
+			}
 	}
 
 	if ( pm->num_lights < 1 ) return;
@@ -1606,7 +1620,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	vm_vec_add2(&debris_clip_plane_pt, &half_ship->local_pivot);
 
 	// set up render flags
-	uint render_flags = MR_NORMAL;
+	uint64_t render_flags = MR_NORMAL;
 
 	if ( Rendering_to_shadow_map ) {
 		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
@@ -1646,7 +1660,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 				model_render_params render_info;
 
 				render_info.set_clip_plane(debris_clip_plane_pt, clip_plane_norm);
-				render_info.set_replacement_textures(shipp->ship_replacement_textures);
+				render_info.set_replacement_textures(pmi->texture_replace);
 				render_info.set_flags(render_flags);
 
 				submodel_render_queue(&render_info, scene, pm, pmi, pm->debris_objects[i], &half_ship->orient, &tmp);
@@ -1690,7 +1704,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 	render_info.set_flags(render_flags);
 	render_info.set_clip_plane(model_clip_plane_pt, clip_plane_norm);
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+	render_info.set_replacement_textures(pmi->texture_replace);
 	render_info.set_object_number(shipp->objnum);
 
 	if (Ship_info[shipp->ship_info_index].uses_team_colors && !shipp->flags[Ship::Ship_Flags::Render_without_miscmap]) {
@@ -1728,7 +1742,7 @@ void shipfx_large_blowup_init(ship *shipp)
 	split_ship_init(shipp, &Split_ships[i] );
 }
 
-void shipfx_debris_limit_speed(debris *db, ship *shipp)
+void shipfx_debris_limit_speed(const debris *db, const ship *shipp)
 {
 	if(db == NULL || shipp == NULL)
 		return;
@@ -2118,13 +2132,13 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	object *obj = &Objects[shipp->objnum];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 	int model_num = sip->model_num;
+	polymodel* pm = model_get(model_num);
 
 	// first do any passive ship arcs, separate from damage or emp arcs
 	for (int passive_arc_info_idx = 0; passive_arc_info_idx < (int)sip->ship_passive_arcs.size(); passive_arc_info_idx++) {
 		if (!shipp->flags[Ship::Ship_Flags::No_passive_lightning] && timestamp_elapsed(shipp->passive_arc_next_times[passive_arc_info_idx])) {
 
 			ship_passive_arc_info* arc_info = &sip->ship_passive_arcs[passive_arc_info_idx];
-			polymodel* pm = model_get(model_num);
 
 			// find the specified submodels involved, if necessary
 			if (arc_info->submodels.first < 0 || arc_info->submodels.second < 0) {
@@ -2153,9 +2167,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
 				// spawn the arc in the first unused slot
-				for (int j = 0; j < MAX_SHIP_ARCS; j++) {
+				for (int j = 0; j < MAX_ARC_EFFECTS; j++) {
 					if (!shipp->arc_timestamp[j].isValid()) {
-						shipp->arc_timestamp[j] = _timestamp((int)(arc_info->duration * MILLISECONDS_PER_SECOND));
+						shipp->arc_timestamp[j] = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
 
 						vec3d v1, v2, offset;
 						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
@@ -2175,6 +2189,21 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						shipp->arc_secondary_color[j] = arc_info->secondary_color;
 
 						shipp->arc_type[j] = MARC_TYPE_SHIP;
+
+						if (arc_info->width > 0.0f) {
+							shipp->arc_width[j] = arc_info->width;
+						} else {
+							// same width as other arc types in model_render_add_lightning
+							// try and scale the size a bit so that it looks equally well on smaller vessels
+							shipp->arc_width[j] = Arc_width_default_damage;
+							if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+								shipp->arc_width[j] *= (pm->rad * Arc_width_radius_multiplier_damage);
+
+								if (shipp->arc_width[j] < Arc_width_minimum_damage) {
+									shipp->arc_width[j] = Arc_width_minimum_damage;
+								}
+							}
+						}
 
 						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
 						break;
@@ -2296,7 +2325,8 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
+		int num_damage_arcs = 0;
+		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
 			if ( !shipp->arc_timestamp[i].isValid() )	{
 				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
 
@@ -2327,8 +2357,11 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 				}
 					
 				n++;
-				if ( n == n_arcs )
+				num_damage_arcs++;
+				if ( n == n_arcs || num_damage_arcs >= MAX_SHIP_DAMAGE_ARCS)
 					break;	// Don't need to create anymore
+			} else if (shipp->arc_type[i] == MARC_TYPE_DAMAGED || shipp->arc_type[i] == MARC_TYPE_EMP) {
+				num_damage_arcs ++;
 			}
 	
 			// rotate v2 out of local coordinates into world.
@@ -2358,7 +2391,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// maybe move arc points around
-	for (int i=0; i<MAX_SHIP_ARCS; i++ )	{
+	for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
 		//Only move arc points around for Damaged or EMP type arcs
 		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
 			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
@@ -4445,9 +4478,9 @@ int WE_Hyperspace::warpStart()
 	
 	if (m_direction == WarpDirection::WARP_IN)
 	{
-		p_object* p_objp = mission_parse_get_parse_object(shipp->ship_name);
-		if (p_objp != nullptr) {
-			initial_velocity = (float)p_objp->initial_velocity * sip->max_speed / 100.0f;
+		auto ship_entry = ship_registry_get(shipp->ship_name);
+		if (ship_entry && ship_entry->has_p_objp()) {
+			initial_velocity = ship_entry->p_objp()->initial_velocity * sip->max_speed / 100.0f;
 		}
 
 		shipp->flags.set(Ship::Ship_Flags::Arriving_stage_1);

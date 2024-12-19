@@ -52,7 +52,6 @@ static bool Psnet_active = false;
 
 static int Network_status;
 int Psnet_failure_code = 0;
-int Psnet_connection;
 
 uint16_t Psnet_default_port;
 
@@ -423,8 +422,6 @@ void psnet_init(uint16_t port_num)
 		return;
 	}
 
-	Psnet_connection = NETWORK_CONNECTION_LAN;
-
 	Network_status = NETWORK_STATUS_NO_PROTOCOL;
 
 #ifdef _WIN32
@@ -660,11 +657,6 @@ bool psnet_init_my_addr()
  */
 int psnet_get_network_status()
 {
-	// first case is when "none" is selected
-	if (Psnet_connection == NETWORK_CONNECTION_NONE) {
-		return NETWORK_ERROR_NO_TYPE;
-	}
-
 	// first, check the connection status of the network
 	if (Network_status == NETWORK_STATUS_NO_WINSOCK) {
 		return NETWORK_ERROR_NO_WINSOCK;
@@ -818,7 +810,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
 	}
 
 	FD_ZERO(&wfds);
-	FD_SET(Psnet_socket, &wfds);
+	FD_SET_SAFE(Psnet_socket, &wfds);
 
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 0;
@@ -829,7 +821,7 @@ int psnet_send(net_addr *who_to_addr, void *data, int len, int np_index)	// NOLI
 	}
 
 	// if the write file descriptor is not set, then bail!
-	if ( !FD_ISSET(Psnet_socket, &wfds) ) {
+	if ( !FD_ISSET_SAFE(Psnet_socket, &wfds) ) {
 		return 0;
 	}
 
@@ -2005,14 +1997,14 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 		timeout.tv_usec = 0;
 
 		FD_ZERO(&read_fds);
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		if ( SELECT(static_cast<int>(Psnet_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE) == SOCKET_ERROR ) {
 			break;
 		}
 
 		// if the file descriptor is not set, then bail!
-		if ( !FD_ISSET(Psnet_socket, &read_fds) ) {
+		if ( !FD_ISSET_SAFE(Psnet_socket, &read_fds) ) {
 			break;
 		}
 
@@ -2050,14 +2042,14 @@ void psnet_rel_connect_to_server(PSNET_SOCKET *socket, net_addr *server_addr)
 		timeout.tv_usec = 0;
 
 		FD_ZERO(&read_fds);
-		FD_SET(Psnet_socket, &read_fds);
+		FD_SET_SAFE(Psnet_socket, &read_fds);
 
 		if ( SELECT(static_cast<int>(Psnet_socket+1), &read_fds, nullptr, nullptr, &timeout, PSNET_TYPE_RELIABLE) == SOCKET_ERROR ) {
 			break;
 		}
 
 		// if the file descriptor is not set, then bail!
-		if ( !FD_ISSET(Psnet_socket, &read_fds) ) {
+		if ( !FD_ISSET_SAFE(Psnet_socket, &read_fds) ) {
 			continue;
 		}
 

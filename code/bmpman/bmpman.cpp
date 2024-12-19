@@ -1027,10 +1027,6 @@ int bm_is_compressed(int num) {
 	auto entry = bm_get_entry(num);
 	BM_TYPE type = BM_TYPE_NONE;
 
-	//duh
-	if (!Use_compressed_textures)
-		return 0;
-
 	type = entry->comp_type;
 
 	switch (type) {

@@ -29,12 +29,19 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionhotkey.h"
+#include "missionui/chatbox.h"
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
+#include "network/chat_api.h"
 #include "network/multi.h"
+#include "network/multiui.h"
+#include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
+#include "network/multi_pause.h"
 #include "network/multi_pxo.h"
+#include "network/multimsgs.h"
+#include "network/multi_ingame.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -59,6 +66,7 @@
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/player.h"
 #include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/multi_objects.h"
 #include "scripting/api/objs/rank.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
@@ -236,7 +244,7 @@ ADE_FUNC(maybePlayCutscene, l_UserInterface, "enumeration MovieType, boolean Res
 	if (!ade_get_args(L, "obi", l_Enum.Get(&movie_type), &restart_music, &score_index))
 		return ADE_RETURN_NIL;
 
-	if (!movie_type.IsValid() || movie_type.index < LE_MOVIE_PRE_FICTION || movie_type.index > LE_MOVIE_END_CAMPAIGN)
+	if (!movie_type.isValid() || movie_type.index < LE_MOVIE_PRE_FICTION || movie_type.index > LE_MOVIE_END_CAMPAIGN)
 	{
 		Warning(LOCATION, "Invalid movie type index %d", movie_type.index);
 		return ADE_RETURN_NIL;
@@ -453,6 +461,15 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(stopMusic, l_UserInterface_MainHall, "boolean Fade=false", "Stops the mainhall music. True to fade, false to stop immediately.", nullptr, "nothing")
+{
+	bool fade = false;
+	if (!ade_get_args(L, "|b", &fade))
+		return ADE_RETURN_NIL;
+	main_hall_stop_music(fade);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(toggleHelp,
 	l_UserInterface_MainHall,
 	"boolean",
@@ -503,15 +520,16 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 	return ade_set_args(L, "t", &out);
 }
 
-ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
+ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, boolean changeState", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
+	bool changeState = true;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plh), &changeState)) {
 		return ADE_RETURN_FALSE;
 	}
 
-	barracks_accept_pilot(plh->get());
+	barracks_accept_pilot(plh->get(), changeState);
 	return ADE_RETURN_TRUE;
 }
 
@@ -773,14 +791,57 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
-	"built-in errors or 0 if successful. 1 = general error, 2 = a player ship has no weapons, 3 = the required weapon was not found "
-	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
-	"and all empty banks must be at the bottom of the list, 6 = a player has no ship selected",
-	"number error",
+	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_ enums to indicate any errors.",
+	"enumeration",
 	"the error value")
 {
-	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
+	commit_pressed_status rc;
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		rc = multi_ts_commit_pressed();
+	} else {
+		rc = commit_pressed();
+	}
+
+	lua_enum eh_idx = ENUM_INVALID;
+	switch (rc) {
+	case commit_pressed_status::GENERAL_FAIL:
+		eh_idx = LE_COMMIT_FAIL;
+		break;
+	case commit_pressed_status::PLAYER_NO_WEAPONS:
+		eh_idx = LE_COMMIT_PLAYER_NO_WEAPONS;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE;
+		break;
+	case commit_pressed_status::BANK_GAP_ERROR:
+		eh_idx = LE_COMMIT_BANK_GAP_ERROR;
+		break;
+	case commit_pressed_status::PLAYER_NO_SLOT:
+		eh_idx = LE_COMMIT_PLAYER_NO_SLOT;
+		break;
+	case commit_pressed_status::MULTI_PLAYERS_NO_SHIPS:
+		eh_idx = LE_COMMIT_MULTI_PLAYERS_NO_SHIPS;
+		break;
+	case commit_pressed_status::MULTI_NOT_ALL_ASSIGNED:
+		eh_idx = LE_COMMIT_MULTI_NOT_ALL_ASSIGNED;
+		break;
+	case commit_pressed_status::MULTI_NO_PRIMARY:
+		eh_idx = LE_COMMIT_MULTI_NO_PRIMARY;
+		break;
+	case commit_pressed_status::MULTI_NO_SECONDARY:
+		eh_idx = LE_COMMIT_MULTI_NO_SECONDARY;
+		break;
+	case commit_pressed_status::SUCCESS:
+	default:
+		eh_idx = LE_COMMIT_SUCCESS;
+		break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_FUNC(renderBriefingModel,
@@ -1437,6 +1498,10 @@ ADE_INDEXER(l_Ship_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Ss_pool[idx] = 0;
 		} else {
@@ -1471,6 +1536,10 @@ ADE_INDEXER(l_Weapon_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Wl_pool[idx] = 0;
 		} else {
@@ -1557,6 +1626,48 @@ ADE_INDEXER(l_Loadout_Ships,
 ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
 {
 	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
+}
+
+ADE_FUNC(sendShipRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromType, number ToType, number FromSlotIndex, number ToSlotIndex, number ShipClassIndex",
+	"Sends a request to the host to change a ship slot. From/To types are 0 for Ship Slot, 1 for Player Slot, 2 for Pool",
+	nullptr,
+	nullptr)
+{
+	int fromType; //2 for pool, 1 for player, 0 for slot
+	int toType;  // 2 for pool, 1 for player, 0 for slot
+	int fromSlot;
+	int toSlot;
+	int shipClassIdx;
+	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	multi_ts_drop(fromType, --fromSlot, toType, --toSlot,  --shipClassIdx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendWeaponRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromBank, number ToBank, number fromPoolWepIdx, number toPoolWepIdx, number shipSlot",
+	"Sends a request to the host to change a ship slot.",
+	nullptr,
+	nullptr)
+{
+	int fromBank;
+	int toBank;
+	int fromList;
+	int toList;
+	int shipSlot;
+	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	wl_drop(--fromBank, --fromList, --toBank, --toList, --shipSlot);
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom
@@ -1649,6 +1760,7 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
 
+	// coverity[uninit_use_in_call:FALSE] - name is assigned via ade_get_args
 	int idx = get_cutscene_index_by_name(name);
 
 	if (idx < 0) {
@@ -1809,13 +1921,13 @@ ADE_FUNC(initHotkeysList,
 
 	reset_hotkeys();
 	hotkey_set_selected_line(1);
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 
 	// We want to allow the API to handle expanding wings on its own,
 	// so lets expand every wing in the list and not try to handle it after that.
 	for (int i = 0; i < MAX_LINES; i++) {
-		auto item = Hotkey_lines[i];
-		if (item.type == HotkeyLineType::WING) {
+		if (Hotkey_lines[i].type == HotkeyLineType::WING) {
 			expand_wing(i, true);
 		}
 	}
@@ -1896,8 +2008,7 @@ ADE_FUNC(__len, l_Hotkeys, nullptr, "The number of valid hotkey ships", "number"
 
 	// this is dumb, but whatever
 	for (int i = 0; i < MAX_LINES; i++) {
-		auto item = Hotkey_lines[i];
-		if (item.type == HotkeyLineType::NONE) {
+		if (Hotkey_lines[i].type == HotkeyLineType::NONE) {
 			s = i;
 			break;
 		}
@@ -1969,10 +2080,8 @@ ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the M
 {
 	SCP_UNUSED(L);
 
-	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
-
-	//explicitely do not split lines!
-	message_log_init_scrollback(0, false);
+	//explicitly do not split lines!
+	mission_log_init_scrollback(0, false);
 
 	return ADE_RETURN_NIL;
 }
@@ -1981,7 +2090,7 @@ ADE_FUNC(closeMissionLog, l_UserInterface_MissionLog, nullptr, "Clears the Missi
 {
 	SCP_UNUSED(L);
 
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 
 	return ADE_RETURN_NIL;
 }
@@ -1998,7 +2107,7 @@ ADE_INDEXER(l_Log_Entries,
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+	if ((idx < 0) || (idx >= mission_log_scrollback_num_lines()))
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 
 	return ade_set_args(L, "o", l_Log_Entry.Set(log_entry_h(idx)));
@@ -2006,7 +2115,7 @@ ADE_INDEXER(l_Log_Entries,
 
 ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of mission log entries", "number", "The number of log entries.")
 {
-	return ade_set_args(L, "i", (int)Log_scrollback_vec.size());
+	return ade_set_args(L, "i", mission_log_scrollback_num_lines());
 }
 
 ADE_LIB_DERIV(l_Log_Messages, "Log_Messages", nullptr, nullptr, l_UserInterface_MissionLog);
@@ -2475,6 +2584,1301 @@ ADE_FUNC(closePause, l_UserInterface_PauseScreen, nullptr, "Makes sure everythin
 	Pause_saved_screen = -1;
 
 	Paused = false;
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPXO
+ADE_LIB_DERIV(l_UserInterface_MultiPXO,
+	"MultiPXO",
+	nullptr,
+	"API for accessing data related to the Multi PXO UI.",
+	l_UserInterface);
+
+ADE_FUNC(initPXO, l_UserInterface_MultiPXO, nullptr, "Makes sure everything is done correctly to begin a multi lobby session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_init(0, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePXO, l_UserInterface_MultiPXO, nullptr, "Makes sure everything is done correctly to end a multi lobby session.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiPXO, nullptr, "Runs the network commands to update the lobby lists once.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_do_normal(true);
+
+	// run api stuff
+	if (Multi_pxo_connected) {
+		multi_pxo_api_process();
+	}
+	multi_pxo_process_common();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getPXOLinks,
+	l_UserInterface_MultiPXO,
+	nullptr,
+	"Gets all the various PXO links and returns them as a table of strings",
+	"table",
+	"A table of URLs")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable urls = LuaTable::create(L);
+
+	int i = 1;
+	urls.addValue(i++, Multi_options_g.pxo_rank_url);
+	urls.addValue(i++, Multi_options_g.pxo_create_url);
+	urls.addValue(i++, Multi_options_g.pxo_verify_url);
+	urls.addValue(i++, Multi_options_g.pxo_banner_url);
+
+	return ade_set_args(L, "t", urls);
+}
+
+ADE_FUNC(getChat,
+	l_UserInterface_MultiPXO,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Mode - the mode where 0 is normal, 1 is private message, 2 is channel switch, 3 is server message, 4 is MOTD",
+	"table",
+	"A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	int i = 1;
+	for (auto& line : Multi_pxo_chat) {
+		
+		char callsign[CALLSIGN_LEN];
+		char text[MAX_CHAT_LINE_LEN];
+
+		char* spacePos = std::strchr(line.text, ' ');
+
+		if (spacePos != nullptr) {
+			// Calculate the length of the callsign
+			int len = static_cast<int>(spacePos - line.text);
+
+			// Copy the callsign
+			std::strncpy(callsign, line.text, len);
+			callsign[len] = '\0';
+
+			// Copy the text
+			std::strcpy(text, spacePos + 1); // Copy from the character after spacePos
+		}
+
+		int mode;
+		switch (line.mode) {
+		case CHAT_MODE_PRIVATE:
+			mode = 1;
+			break;
+		case CHAT_MODE_CHANNEL_SWITCH:
+			mode = 2;
+			break;
+		case CHAT_MODE_SERVER:
+			mode = 3;
+			break;
+		case CHAT_MODE_MOTD:
+			mode = 4;
+			break;
+		default:
+			mode = 0;
+			break;
+		}
+
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), callsign));
+		item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), text));
+		item.addValue("Mode", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), mode));
+
+		chats.addValue(i++, item);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat, l_UserInterface_MultiPXO, "string", "Sends a string to the current channel's IRC chat", nullptr, nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	multi_pxo_chat_send(msg);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getPlayers, l_UserInterface_MultiPXO, nullptr, "Gets the entire player list as a table of strings", "string[]", "A table of player names")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	for (size_t i = 0; i < Multi_pxo_players.size(); i++) {
+		chats.addValue(i + 1, Multi_pxo_players[i]);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(getPlayerChannel,
+	l_UserInterface_MultiPXO,
+	"string",
+	"Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if "
+	"channel is private or player is not found.",
+	"string string",
+	"The response string and the player's channel")
+{
+	const char* plr_name;
+	if (!ade_get_args(L, "s", &plr_name))
+		return ADE_RETURN_NIL;
+
+	if (!Multi_pxo_connected) {
+		return ade_set_args(L, "ss", "", "");
+	}
+
+	char* channel = nullptr;
+
+	GetChannelByUser(plr_name);
+
+	while (channel == nullptr) {
+		os_sleep(10);
+		multi_pxo_api_process();
+		channel = GetChannelByUser(nullptr);
+	}
+
+	SCP_string response;
+	SCP_string channel_name;
+	if (channel == (char *)-1) {
+		response = XSTR("User not found", 964);
+		channel_name = "";
+	} else {
+		if (*channel == '*') {
+			response = XSTR("Player is logged in but is not on a channel", 965);
+			channel_name = "";
+		} else {
+			// if they are on a public channel, display which one
+			if (*channel == '#') {
+				sprintf(response, XSTR("Found %s on :", 966), plr_name);
+				response += channel;
+				channel_name = channel;
+
+			// if they are on a private channel
+			} else if (*channel == '+') {
+				sprintf(response, XSTR("Found %s on a private channel", 967), plr_name);
+				channel_name = "";
+			}
+		}
+	}
+
+	return ade_set_args(L, "ss", response.c_str(), channel_name.c_str());
+}
+
+ADE_FUNC(getPlayerStats, l_UserInterface_MultiPXO, "string", "Gets a handle of the player stats by player name or invalid handle if the name is invalid", "scoring_stats", "Player stats handle")
+{
+	const char* plr_name;
+	if (!ade_get_args(L, "s", &plr_name))
+		return ade_set_error(L, "o", l_ScoringStats.Set(scoring_stats_h()));
+	
+	if (multi_pxo_maybe_get_player(plr_name))
+	{
+		return ade_set_args(L, "o", l_ScoringStats.Set(scoring_stats_h(Multi_pxo_pinfo_player.stats, &Multi_pxo_pinfo_player)));
+	}
+	
+	return ade_set_args(L, "o", l_ScoringStats.Set(scoring_stats_h()));
+}
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiPXO, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+	
+	return ade_set_args(L, "s", Multi_pxo_status_text);
+}
+
+ADE_VIRTVAR(MotdText, l_UserInterface_MultiPXO, nullptr, "The current message of the day", "string", "the motd text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Pxo_motd);
+}
+
+ADE_VIRTVAR(bannerFilename, l_UserInterface_MultiPXO, nullptr, "The current banner filename", "string", "the banner filename")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_pxo_banner.ban_file);
+}
+
+ADE_VIRTVAR(bannerURL, l_UserInterface_MultiPXO, nullptr, "The current banner URL", "string", "the banner url")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_pxo_banner.ban_url);
+}
+
+ADE_LIB_DERIV(l_PXO_Channels, "Channels", nullptr, nullptr, l_UserInterface_MultiPXO);
+ADE_INDEXER(l_PXO_Channels,
+	"number Index",
+	"Array of channels",
+	"pxo_channel",
+	"channel handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Multi_pxo_channels.size()))
+		return ade_set_args(L, "o", l_Channel.Set(channel_h()));
+
+	return ade_set_args(L, "o", l_Channel.Set(channel_h(idx)));
+}
+
+ADE_FUNC(__len, l_PXO_Channels, nullptr, "The number of channels available", "number", "The number of channels.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_pxo_channels.size()));
+}
+
+ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, nullptr, "Joins the specified private channel", nullptr, nullptr)
+{
+	const char* channel;
+	if (!ade_get_args(L, "s", &channel))
+		return ADE_RETURN_NIL;
+
+	SCP_string name = channel;
+	name.insert(0, "+");
+
+	pxo_channel priv;
+	strcpy_s(priv.name, name.c_str());
+	priv.num_users = 0;
+
+	multi_pxo_maybe_join_channel(&priv);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lines as a table of strings", "string[]", "The help lines")
+{
+	SCP_UNUSED(L);
+
+	multi_pxo_help_load();
+
+	using namespace luacpp;
+
+	LuaTable pages = LuaTable::create(L);
+
+	int count = 1;
+	for (auto i = 0; i < MULTI_PXO_MAX_PAGES; i++) {
+		for (int idx = 0; idx < Multi_pxo_help_pages[i].num_lines; idx++) {
+			SCP_string text = Multi_pxo_help_pages[i].text[idx];
+			pages.addValue(count, text.c_str());
+			count++;
+		}
+	}
+
+	multi_pxo_help_free();
+
+	return ade_set_args(L, "t", pages);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiGeneral
+ADE_LIB_DERIV(l_UserInterface_MultiGeneral,
+	"MultiGeneral",
+	nullptr,
+	"API for accessing general data related to all Multi UIs with the exception of the PXO Lobby.",
+	l_UserInterface);
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiGeneral, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_notify_text);
+}
+
+ADE_VIRTVAR(InfoText, l_UserInterface_MultiGeneral, nullptr, "The current info text", "string", "the info text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_all_text);
+}
+
+ADE_FUNC(getNetGame,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"The handle to the netgame. Note that the netgame will be invalid if a multiplayer game has not been joined or created.",
+	"netgame",
+	"The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiGeneral);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players, nullptr, "The number of net players", "number", "The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_FUNC(getChat,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Color - the color the text should be according to the player id",
+	"table",
+	"A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	int i = 1;
+	SCP_string text = "";
+	SCP_string callsign = "";
+	color* clr = nullptr;
+
+	auto createChatEntry = [L, &i, &chats](const SCP_string& this_text, const SCP_string& this_callsign, const color* this_clr) {
+			auto item = luacpp::LuaTable::create(L);
+			item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_callsign.c_str()));
+			item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_text.c_str()));
+			item.addValue("Color", l_Color.Set(*this_clr));
+			chats.addValue(i++, item);
+	};
+
+
+	bool send = false;
+	for (auto& chat : Brief_chat) {
+
+		// In API mode we don't need to worry about line splits
+		// so reconnect all indented lines into a single chat line and
+		// let the API's UI deal with the rest.
+		// But first send the previous chat line, if any, to the lua table
+		// now that we know we're done concatenating indented lines.
+		if (!chat.indent) {
+			if (send){
+				createChatEntry(text, callsign, clr);
+
+				//Sent, so now clear and start over
+				text.clear();
+				callsign.clear();
+				clr = nullptr;
+			}
+
+			text = chat.text;
+			callsign = chat.callsign;
+			clr = Color_netplayer[chat.player_id];
+
+			send = true;
+		} else {
+			text += chat.text;
+		}
+	}
+
+	// We might have one more line to add
+	if (send) {
+		createChatEntry(text, callsign, clr);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat,
+	l_UserInterface_MultiGeneral,
+	"string",
+	"Sends a string to the current game's IRC chat. Limited to 125 characters. Anything after that is dropped.",
+	nullptr,
+	nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	char temp[CHATBOX_MAX_LEN];
+	strncpy(temp, msg, CHATBOX_MAX_LEN);
+	temp[CHATBOX_MAX_LEN - 1] = '\0';
+
+	chatbox_send_msg(temp);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(quitGame,
+	l_UserInterface_MultiGeneral,
+	nullptr, "Quits the game for the current player and returns them to the PXO lobby", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_quit_game(PROMPT_ALL);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setPlayerState, l_UserInterface_MultiGeneral, nullptr, "Sets the current player's network state based on the current game state.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	int state = gameseq_get_state();
+
+	// We really only need to handle this for game states that the lua API
+	// completely replaces; Where the state_init() code doesn't actually run
+	// but it won't hurt to include others.
+	// This may not be an exhaustive list. Feel free to add more.
+	switch (state) {
+	case GS_STATE_BRIEFING:
+		Net_player->state = NETPLAYER_STATE_BRIEFING;
+		break;
+	case GS_STATE_CMD_BRIEF:
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+		break;
+	case GS_STATE_SHIP_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_WEAPON_SELECT:
+		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
+		break;
+	case GS_STATE_RED_ALERT:
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+		break;
+	case GS_STATE_DEBRIEF:
+		Net_player->state = NETPLAYER_STATE_DEBRIEF;
+		break;
+	case GS_STATE_FICTION_VIEWER:
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+		break;
+	case GS_STATE_MULTI_HOST_SETUP:
+		Net_player->state = NETPLAYER_STATE_HOST_SETUP;
+		break;
+	case GS_STATE_MULTI_MISSION_SYNC:
+		Net_player->state = NETPLAYER_STATE_MISSION_SYNC;
+		break;
+	case GS_STATE_TEAM_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_MULTI_CLIENT_SETUP:
+		Net_player->state = NETPLAYER_STATE_JOINED;
+		break;
+	default:
+		break;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiJoinGame
+ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
+	"MultiJoinGame",
+	nullptr,
+	"API for accessing data related to the Multi Join Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to begin a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to end a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Runs the network required commands to update the lists once and handle join requests",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(refresh, l_UserInterface_MultiJoinGame, nullptr, "Force refreshing the games list", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	broadcast_game_query();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createGame,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Starts creating a new game and moves to the new UI",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_create_game();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendJoinRequest,
+	l_UserInterface_MultiJoinGame,
+	"[boolean AsObserver]",
+	"Sends a join game request",
+	"boolean",
+	"True if successful, false otherwise")
+{
+
+	bool observer = false;
+	ade_get_args(L, "*|b", &observer);
+
+	if (Active_games.empty()) {
+		multi_common_add_notify(XSTR("No games found!", 757));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_selected_item == nullptr) {
+		multi_common_add_notify(XSTR("No game selected!", 758));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
+		multi_common_add_notify(XSTR("Still waiting on previous join request!", 759));
+	} else {
+		// otherwise, if he's already played PXO games, warn him
+
+		if (Player->flags & PLAYER_FLAGS_HAS_PLAYED_PXO) {
+			if (!multi_join_warn_pxo()) {
+				return ADE_RETURN_FALSE;
+			}
+		}
+
+		// send a join request packet
+		multi_join_send_join_request(observer);
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
+ADE_INDEXER(l_Active_Games,
+	"number Index",
+	"Array of active games",
+	"active_game",
+	"active game handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Active_games.size()))
+		return ade_set_args(L, "o", l_Active_Game.Set(active_game_h()));
+
+	return ade_set_args(L, "o", l_Active_Game.Set(active_game_h(idx)));
+}
+
+ADE_FUNC(__len,
+	l_Active_Games,
+	nullptr,
+	"The number of active games available",
+	"number",
+	"The number of active games.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiStartGame
+ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
+	"MultiStartGame",
+	nullptr,
+	"API for accessing data related to the Multi Start Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiStart,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Initializes the Create Game methods and variables",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiStart,
+	l_UserInterface_MultiStartGame,
+	"boolean Start_or_Quit",
+	"Finalizes the new game settings and moves to the host game UI if true or cancels if false. Defaults to true.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		multi_start_game_close(true);
+	} else {
+		multi_quit_game(PROMPT_NONE);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Runs the network required commands to update the status text",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setName,
+	l_UserInterface_MultiStartGame,
+	"string Name",
+	"Sets the game's name",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ADE_RETURN_FALSE;
+
+	if (strlen(name) > MAX_GAMENAME_LEN + 1) {
+		return ADE_RETURN_FALSE;
+	}
+
+	strcpy_s(Multi_sg_netgame->name, name);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setGameType,
+	l_UserInterface_MultiStartGame,
+	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
+	"Sets the game's type and, optionally, the password or rank index.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	enum_h* game = nullptr;
+	const char* password = nullptr;
+	int rank_idx = 0;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&game))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	switch (game->index) {
+	case LE_MULTI_GAME_TYPE_OPEN:
+		Multi_sg_netgame->mode = NG_MODE_OPEN;
+		break;
+	case LE_MULTI_GAME_TYPE_PASSWORD:
+		Multi_sg_netgame->mode = NG_MODE_PASSWORD;
+		if (!ade_get_args(L, "*s", &password)) {
+			return ADE_RETURN_FALSE;
+		}
+		if ((password == nullptr) || (strlen(password) > MAX_PASSWD_LEN + 1)) {
+			return ADE_RETURN_FALSE;
+		}
+		strcpy_s(Multi_sg_netgame->passwd, password);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_ABOVE:
+		Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_BELOW:
+		Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	default:
+		return ADE_RETURN_FALSE;
+		break;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiHostSetup
+ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
+	"MultiHostSetup",
+	nullptr,
+	"API for accessing data related to the Multi Host Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the host setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	"boolean Commit_or_Quit",
+	"Closes Multi Host Setup. True to commit, false to quit.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		int idx = -1;
+		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
+			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) == 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		else {
+			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) == 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		if (multi_create_ok_to_commit(idx)) {
+			//Some of this seems redundant but that's what the retail UI does!
+			multi_create_accept_hit(Netgame.campaign_mode, idx);
+		}
+	} else {
+		multi_quit_game(PROMPT_HOST);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Missions,
+	"number Index",
+	"Array of net missions",
+	"net_mission",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_mission_list, idx))
+		return ade_set_args(L, "o", l_NetMission.Set(net_mission_h()));
+
+	return ade_set_args(L, "o", l_NetMission.Set(net_mission_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Missions, nullptr, "The number of net missions", "number", "The number of missions.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_mission_list.size()));
+}
+
+ADE_LIB_DERIV(l_Net_Campaigns, "NetCampaigns", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Campaigns,
+	"number Index",
+	"Array of net campaigns",
+	"net_campaign",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_campaign_list, idx))
+		return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h()));
+
+	return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Campaigns, nullptr, "The number of net campaigns", "number", "The number of campaigns.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_campaign_list.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiClientSetup
+ADE_LIB_DERIV(l_UserInterface_MultiClientSetup,
+	"MultiClientSetup",
+	nullptr,
+	"API for accessing data related to the Multi Client Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the client setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Cancels Multi Client Setup and leaves the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_quit_game(PROMPT_CLIENT);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiSync
+ADE_LIB_DERIV(l_UserInterface_MultiSync,
+	"MultiSync",
+	nullptr,
+	"API for accessing data related to the Multi Sync UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiSync,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Makes sure everything is done correctly to begin the multi sync ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiSync,
+	l_UserInterface_MultiSync, "boolean QuitGame",
+	"Closes MultiSync. If QuitGame is true then it cancels and leaves the game automatically.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (!choice) {
+		multi_sync_close(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Runs the network required commands to run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startCountdown, l_UserInterface_MultiSync, nullptr,
+	"Starts the Launch Mission Countdown that, when finished, will move all players into the mission.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	
+	multi_sync_start_countdown();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCountdownTime,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Gets the current countdown time. Will be -1 before the countdown starts otherwise will be the num seconds until missions starts.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "i", Multi_sync_countdown);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPreJoin
+ADE_LIB_DERIV(l_UserInterface_MultiPreJoin,
+	"MultiPreJoin",
+	nullptr,
+	"API for accessing data related to the Pre Join UI.",
+	l_UserInterface);
+
+ADE_FUNC(initPreJoin,
+	l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Makes sure everything is done correctly to init the pre join ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_select_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Join_Ship_Choices, "JoinShipChoices", nullptr, nullptr, l_UserInterface_MultiPreJoin);
+ADE_INDEXER(l_Join_Ship_Choices,
+	"number Index",
+	"Array of ship choices. Ingame Join must be inited first",
+	"net_join_choice",
+	"net choice handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Ingame_ship_choices, idx))
+		return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h()));
+
+	return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h(idx)));
+}
+
+ADE_FUNC(__len, l_Join_Ship_Choices, nullptr, "The number of ship choices", "number", "The number of ships.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Ingame_ship_choices.size()));
+}
+
+ADE_FUNC(closePreJoin,
+	l_UserInterface_MultiPreJoin,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or cancel the pre join. True to accept, False to quit",
+	"boolean",
+	"returns true if successful, false otherwise")
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	bool result;
+	if (accept) {
+		result = multi_ingame_join_accept(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+		result = true;
+	}
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
+
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Runs the network required commands.", "number", "The seconds left until pre join times out")
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_join_calc_avail(true);
+	int time = multi_ingame_handle_timeout(true);
+
+	return ade_set_args(L, "i", time);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPauseScreen
+ADE_LIB_DERIV(l_UserInterface_MultiPauseScreen,
+	"MultiPauseScreen",
+	nullptr,
+	"API for accessing data related to the Pause Screen UI.",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Returns true if the game is paused, false otherwise",
+	"boolean",
+	"true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Multi_paused);
+}
+
+ADE_VIRTVAR(Pauser,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"The callsign of who paused the game. Empty string if invalid",
+	"string",
+	"the callsign")
+{
+	SCP_UNUSED(L);
+	
+	if ((Multi_pause_pauser != NULL) && (Multi_pause_pauser->m_player != NULL)) {
+		return ade_set_args(L, "s", Multi_pause_pauser->m_player->callsign);
+	}
+
+	return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(requestUnpause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Sends a request to unpause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_request(0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(initPause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Makes sure everything is done correctly to pause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause,
+	l_UserInterface_MultiPauseScreen,
+	"[boolean EndMission]",
+	"Makes sure everything is done correctly to unpause the game. If end mission is true then it tries to end the mission.",
+	nullptr,
+	nullptr)
+{
+	bool end_mission = false;
+	ade_get_args(L, "*b", &end_mission);
+
+	multi_pause_close(end_mission, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiDogfightDebrief
+ADE_LIB_DERIV(l_UserInterface_MultiDogfightDebrief,
+	"MultiDogfightDebrief",
+	nullptr,
+	"API for accessing data related to the Dogfight Debrief UI.",
+	l_UserInterface);
+
+ADE_FUNC(getDogfightScores,
+	l_UserInterface_MultiDogfightDebrief,
+	"net_player",
+	"The handle to the dogfight scores",
+	"dogfight_scores",
+	"The dogfight scores handle")
+{
+	net_player_h player;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&player)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Dogfight_Scores.Set(dogfight_scores_h(player.getIndex())));
+}
+
+ADE_FUNC(initDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Makes sure everything is done correctly to init the dogfight scores.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or close the debrief. True to accept, False to quit",
+	nullptr,
+	nullptr)
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	if (accept) {
+		multi_debrief_accept_hit();
+	} else {
+		multi_debrief_esc_hit();
+	}
+	multi_df_debrief_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_do(true);
 
 	return ADE_RETURN_NIL;
 }

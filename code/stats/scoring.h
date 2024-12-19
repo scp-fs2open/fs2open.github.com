@@ -166,8 +166,8 @@ void scoring_level_close(int accepted = 1);
 void scoring_backout_accept( scoring_struct *score );
 void scoring_do_accept( scoring_struct *score );
 
-void scoring_add_damage(object *ship_obj,object *other_obj,float damage);
-int scoring_eval_kill(object *ship_obj);
+void scoring_add_damage(const object *ship_obj, const object *other_obj, float damage);
+int scoring_eval_kill(const object *ship_obj);
 int scoring_eval_kill_on_weapon(object *weapon_obj, object *other_obj);
 void scoring_eval_assists(ship *sp,int killer_sig, bool enemy_player = false);
 
@@ -175,7 +175,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool enemy_player = false);
 void scoring_bash_rank(player *pl,int rank);
 
 // eval a hit on an object (for primary and secondary hit purposes)
-void scoring_eval_hit(object *hit_obj, object *other_obj, int from_blast = 0);
+void scoring_eval_hit(const object *hit_obj, const object *other_obj, int from_blast = 0);
 
 // get a scaling factor for adding/subtracting from mission score
 float scoring_get_scale_factor();

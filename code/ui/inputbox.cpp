@@ -99,6 +99,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 
 	base_create( wnd, UI_KIND_INPUTBOX, _x, _y, _w, th+4 );
 	text = (char *) vm_malloc( _text_len + 1);
+	memset(text, 0, _text_len + 1);
 
 	// input boxes no longer use background
 	_flags |= UI_INPUTBOX_FLAG_NO_BACK;
@@ -130,6 +131,7 @@ void UI_INPUTBOX::create(UI_WINDOW *wnd, int _x, int _y, int _w, int _text_len, 
 	locked = 0;
 	valid_chars = NULL;
 	invalid_chars = NULL;
+	valid = true;
 }
 
 void UI_INPUTBOX::set_valid_chars(const char *vchars)
@@ -181,6 +183,8 @@ void UI_INPUTBOX::destroy()
 		vm_free(passwd_text);
 		passwd_text = NULL;
 	}
+
+	valid = false;
 
 	UI_GADGET::destroy();
 }
@@ -496,10 +500,20 @@ int UI_INPUTBOX::pressed()
 	return pressed_down;
 }
 
-void UI_INPUTBOX::get_text(char *out)
+bool UI_INPUTBOX::is_valid()
 {
-	strncpy(out, text, length);
-	out[length] = 0;
+	return valid;
+}
+
+void UI_INPUTBOX::get_text(char *out, size_t max_out_len)
+{
+	strncpy(out, text, max_out_len);
+	out[max_out_len-1] = 0;
+}
+
+void UI_INPUTBOX::get_text(SCP_string &out)
+{
+	out = text;
 }
 
 void UI_INPUTBOX::set_text(const char *in)
@@ -510,7 +524,7 @@ void UI_INPUTBOX::set_text(const char *in)
 	if (in_length > length)
 		Assert(0);	// tried to force text into an input box that won't fit into allocated memory
 
-	strcpy(text, in);
+	strncpy(text, in, length);
 	
 	if (flags & UI_INPUTBOX_FLAG_PASSWD) {
 		memset(passwd_text, INPUTBOX_PASSWD_CHAR, strlen(text));

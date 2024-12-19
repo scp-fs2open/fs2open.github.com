@@ -62,7 +62,7 @@ extern int model_interp_get_texture(const texture_info *tinfo, int elapsed_time)
 
 class model_render_params
 {
-	uint Model_flags;
+	uint64_t Model_flags;
 	uint Debug_flags;
 
 	int Objnum;
@@ -83,10 +83,7 @@ class model_render_params
 
 	int Insignia_bitmap;
 
-	const int *Replacement_textures;
-	bool Manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
-									  // in that case, model_render_params is responsible for allocating and destroying
-									  // the Replacement_textures array (this is handled elsewhere otherwise)
+	std::shared_ptr<const model_texture_replace> Replacement_textures;
 
 	bool Team_color_set;
 	team_color Current_team_color;
@@ -109,9 +106,8 @@ class model_render_params
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
 	model_render_params();
-	~model_render_params();
 
-	void set_flags(uint flags);
+	void set_flags(uint64_t flags);
 	void set_debug_flags(uint flags);
 	void set_object_number(int num);
 	void set_detail_level_lock(int detail_level_lock);
@@ -122,7 +118,7 @@ public:
 	void set_alpha(float alpha);
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
-	void set_replacement_textures(const int *textures);
+	void set_replacement_textures(std::shared_ptr<const model_texture_replace> textures);
 	void set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures);
 	void set_team_color(const team_color &clr);
 	void set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
@@ -137,7 +133,7 @@ public:
 	bool is_alpha_mult_set() const;
 	bool uses_thick_outlines() const;
 
-	uint get_model_flags() const;
+	uint64_t get_model_flags() const;
 	uint get_debug_flags() const;
 	int get_object_number() const;
 	int get_detail_level_lock() const;
@@ -149,7 +145,7 @@ public:
 	float get_alpha() const;
 	int get_forced_bitmap() const;
 	int get_insignia_bitmap() const;
-	const int* get_replacement_textures() const;
+	std::shared_ptr<const model_texture_replace> get_replacement_textures() const;
 	const team_color& get_team_color() const;
 	const vec3d& get_clip_plane_pos() const;
 	const vec3d& get_clip_plane_normal() const;
@@ -311,7 +307,7 @@ void model_render_queue(const model_render_params* render_info, model_draw_list*
 void submodel_render_immediate(const model_render_params* render_info, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void submodel_render_queue(const model_render_params* render_info, model_draw_list* scene, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void model_render_buffers(model_draw_list* scene, model_material* rendering_material, const model_render_params* interp, const vertex_buffer* buffer, const polymodel* pm, int mn, int detail_level, uint tmap_flags);
-bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint flags);
+bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint64_t flags);
 void model_render_arc(const vec3d* v1, const vec3d* v2, const color* primary, const color* secondary, float arc_width);
 void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);

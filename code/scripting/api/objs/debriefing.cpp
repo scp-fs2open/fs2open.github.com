@@ -10,7 +10,7 @@ debrief_stage* debrief_stage_h::getStage() const
 	return stage;
 };
 
-bool debrief_stage_h::IsValid() const
+bool debrief_stage_h::isValid() const
 {
 	return stage != nullptr;
 }

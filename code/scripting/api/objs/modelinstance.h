@@ -19,8 +19,9 @@ class modelinstance_h
 
 	polymodel_instance *Get();
 
-	bool IsValid();
+	bool isValid() const;
 };
+DECLARE_ADE_OBJ(l_ModelInstanceTextures, modelinstance_h);
 DECLARE_ADE_OBJ(l_ModelInstance, modelinstance_h);
 
 class submodelinstance_h
@@ -42,7 +43,7 @@ public:
 	bsp_info *GetSubmodel();
 	int GetSubmodelIndex();
 
-	bool IsValid();
+	bool isValid() const;
 };
 DECLARE_ADE_OBJ(l_SubmodelInstance, submodelinstance_h);
 

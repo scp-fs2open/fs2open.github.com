@@ -27,7 +27,7 @@ struct net_player;
 //
 
 // check to see if a net player needs to be respawned
-void multi_respawn_check(object *objp);
+void multi_respawn_check(const object *objp);
 
 // respawn normally
 void multi_respawn_normal();

@@ -137,9 +137,9 @@ void script_parse_lua_script(const char *filename) {
 
 		script_function func;
 		func.language = SC_LUA;
-		func.function = function;
+		func.function = std::move(function);
 
-		Script_system.AddGameInitFunction(func);
+		Script_system.AddGameInitFunction(std::move(func));
 	} catch (const LuaException& e) {
 		LuaError(Script_system.GetLuaSession(), "Failed to parse %s: %s", filename, e.what());
 	}
@@ -239,10 +239,29 @@ static bool global_condition_valid(const script_condition& condition)
 			return false;
 		if (Current_key_down == 0)
 			return false;
-		// WMC - could be more efficient, but whatever.
-		if (stricmp(textify_scancode_universal(Current_key_down), condition.condition_string.c_str()) != 0)
-			return false;
-		break;
+
+		//Remove key masks that the API does not check against
+		int key_down_modifier = ~KEY_CTRLED & ~KEY_MASK & Current_key_down;
+
+		//Pretend that debug is the same as cheat
+		if (key_down_modifier & KEY_DEBUGGED)
+			key_down_modifier = (key_down_modifier & ~KEY_DEBUGGED) | KEY_DEBUGGED1;
+
+		//For reasons only known to Volition, LCtrl and RCtrl are differentiated in name, while Alt and Shift are not.
+		//As only the first of these identical names will be matched, replace the R versions with the L versions
+		int key_down = Current_key_down & KEY_MASK;
+		switch(key_down) {
+			case KEY_RALT:
+				key_down = KEY_LALT;
+				break;
+			case KEY_RSHIFT:
+				key_down = KEY_LSHIFT;
+				break;
+			default:
+				break;
+		}
+
+		return condition.condition_cached_value == (key_down | key_down_modifier);
 	}
 
 	case CHC_VERSION: {
@@ -327,6 +346,52 @@ int cache_condition(ConditionalType type, const SCP_string& value){
 		{
 			return 0;
 		}
+	}
+	case CHC_KEYPRESS:
+	{
+		int keycode = 0;
+		//Technically, keys can be also CTRLED and DEBUGGED, but since the API never made a distinction, they will not be cached and filtered later
+		if (value.find("Cheat") != SCP_string::npos)
+		{
+			keycode |= KEY_DEBUGGED1;
+		}
+		if (value.find("Alt") != SCP_string::npos)
+		{
+			keycode |= KEY_ALTED;
+		}
+		if (value.find("Shift") != SCP_string::npos)
+		{
+			keycode |= KEY_SHIFTED;
+		}
+
+		//Now, if Alt / Shift is ONLY the modifer, remove them here. If they are the only key pressed, the modifier still needs to be enabled, but the key also needs matching
+		SCP_string key_copy = value;
+		if (key_copy.rfind("Cheat-", 0) == 0){
+			key_copy = key_copy.substr(6);
+		}
+		if (key_copy.rfind("Alt-", 0) == 0){
+			key_copy = key_copy.substr(4);
+		}
+		if (key_copy.rfind("Shift-", 0) == 0){
+			key_copy = key_copy.substr(6);
+		}
+
+		bool foundKey = false;
+		for (int key = 0; key < NUM_KEYS; key++){
+			extern const char *Scan_code_text_english[];
+			if (stricmp(Scan_code_text_english[key], key_copy.c_str()) == 0) {
+				keycode |= key & KEY_MASK;
+				foundKey = true;
+				break;
+			}
+		}
+
+		if (!foundKey) {
+			Warning(LOCATION, "No key %s found for %s in conditional hook! The hook will not trigger!", key_copy.c_str(), value.c_str());
+			return -1;
+		}
+
+		return keycode;
 	}
 	default:
 		return -1;
@@ -621,7 +686,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		script_func.function = function;
+		script_func.function = std::move(function);
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 	}

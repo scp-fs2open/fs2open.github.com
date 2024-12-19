@@ -22,6 +22,8 @@ enum lua_enum : int32_t {
 	LE_MOUSE_MIDDLE_BUTTON,
 	LE_MOUSE_X1_BUTTON,
 	LE_MOUSE_X2_BUTTON,
+	LE_FLIGHTMODE_FLIGHTCURSOR,
+	LE_FLIGHTMODE_SHIPLOCKED,
 	LE_ORDER_ATTACK,
 	LE_ORDER_ATTACK_ANY,
 	LE_ORDER_DEPART,
@@ -171,6 +173,37 @@ enum lua_enum : int32_t {
 	LE_SCROLLBACK_SOURCE_SATISFIED,
 	LE_SCROLLBACK_SOURCE_COMMAND,
 	LE_SCROLLBACK_SOURCE_NETPLAYER,
+	LE_MULTI_TYPE_COOP,
+	LE_MULTI_TYPE_TEAM,
+	LE_MULTI_TYPE_DOGFIGHT,
+	LE_MULTI_TYPE_SQUADWAR,
+	LE_MULTI_OPTION_RANK,
+	LE_MULTI_OPTION_LEAD,
+	LE_MULTI_OPTION_ANY,
+	LE_MULTI_OPTION_HOST,
+	LE_MULTI_GAME_TYPE_OPEN,
+	LE_MULTI_GAME_TYPE_PASSWORD,
+	LE_MULTI_GAME_TYPE_RANK_ABOVE,
+	LE_MULTI_GAME_TYPE_RANK_BELOW,
+	LE_SEXP_TRUE,
+	LE_SEXP_FALSE,
+	LE_SEXP_KNOWN_FALSE,
+	LE_SEXP_KNOWN_TRUE,
+	LE_SEXP_UNKNOWN,
+	LE_SEXP_NAN,
+	LE_SEXP_NAN_FOREVER,
+	LE_SEXP_CANT_EVAL,
+	LE_COMMIT_SUCCESS,
+	LE_COMMIT_FAIL,
+	LE_COMMIT_PLAYER_NO_WEAPONS,
+	LE_COMMIT_NO_REQUIRED_WEAPON,
+	LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE,
+	LE_COMMIT_BANK_GAP_ERROR,
+	LE_COMMIT_PLAYER_NO_SLOT,
+	LE_COMMIT_MULTI_PLAYERS_NO_SHIPS,
+	LE_COMMIT_MULTI_NOT_ALL_ASSIGNED,
+	LE_COMMIT_MULTI_NO_PRIMARY,
+	LE_COMMIT_MULTI_NO_SECONDARY,
 	ENUM_NEXT_INDEX,
 	ENUM_COMBINATION,
 	ENUM_INVALID
@@ -202,13 +235,13 @@ public:
 
 	SCP_string getName() const;
 
-	bool IsValid() const;
+	bool isValid() const;
 
 	friend enum_h operator&(const enum_h& l, const enum_h& other);
 	friend enum_h operator|(const enum_h& l, const enum_h& other);
 
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
+	static void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	static void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 

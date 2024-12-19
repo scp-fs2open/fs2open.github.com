@@ -99,6 +99,14 @@ struct ivec2 {
 	int x, y;
 };
 
+inline bool operator<(const ivec3& l, const ivec3& r){
+	return l.x < r.x || (l.x == r.x && (l.y < r.y || (l.y == r.y && l.z < r.z)));
+}
+
+inline bool operator<(const ivec2& l, const ivec2& r){
+	return l.x < r.x || (l.x == r.x && l.y < r.y);
+}
+
 namespace scripting {
 	class ade_table_entry;
 }
@@ -117,9 +125,6 @@ typedef struct vec3d {
 		} xyz;
 		float a1d[3];
 	};
-
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 } vec3d;
 
 typedef struct vec2d {
@@ -375,8 +380,13 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
 
+// since a lot of header files will try to #define TRUE and FALSE,
+// making them constexpr here doesn't gain us much
 #define TRUE	1
 #define FALSE	0
+
+// the trailing underscores are to avoid conflicts with previously #define'd tokens
+enum class TriStateBool : int { FALSE_ = 0, TRUE_ = 1, UNKNOWN_ = -1 };
 
 
 // lod checker for (modular) table parsing
@@ -442,7 +452,7 @@ public:
 	class camera *getCamera();
 	size_t getIndex();
 	int getSignature();
-	bool isValid();
+	bool isValid() const;
 };
 
 #include "globalincs/vmallocator.h"

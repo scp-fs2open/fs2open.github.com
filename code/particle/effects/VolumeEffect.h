@@ -23,13 +23,13 @@ namespace particle {
 			float m_stretch = 1.0f;
 			util::EffectTiming m_timing;
 
-			::util::UniformUIntRange m_particleNum;
-			float m_particleChance;
-			::util::UniformFloatRange m_particleRoll;
+			::util::ParsedRandomUintRange m_particleNum;
+			float m_particleChance = 1.0f;
+			::util::ParsedRandomFloatRange m_particleRoll;
 
-			::util::UniformFloatRange m_velocity;
+			::util::ParsedRandomFloatRange m_velocity;
 
-			::util::UniformFloatRange m_vel_inherit;
+			::util::ParsedRandomFloatRange m_vel_inherit;
 
 		public:
 			explicit VolumeEffect(const SCP_string& name);

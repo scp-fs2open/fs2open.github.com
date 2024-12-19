@@ -40,9 +40,11 @@ int collide_weapon_weapon( obj_pair * pair )
 	if (A->parent_sig == B->parent_sig)
 		return 1;
 
+	float dot = vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec);
+
 	//	Only shoot down teammate's missile if not traveling in nearly same direction.
 	if (Weapons[A->instance].team == Weapons[B->instance].team)
-		if (vm_vec_dot(&A->orient.vec.fvec, &B->orient.vec.fvec) > 0.7f)
+		if (dot > 0.7f)
 			return 1;
 
 	//	Ignore collisions involving a bomb if the bomb is not yet armed.
@@ -64,12 +66,17 @@ int collide_weapon_weapon( obj_pair * pair )
 		if (!(wipA->wi_flags[Weapon::Info_Flags::No_radius_doubling])) {
 			A_radius *= 2;		// Makes bombs easier to hit
 		}
+
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (wipA->is_locked_homing())
+			extra_buggy_time = (wipA->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipA->lifetime;
 		
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
 			if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if (A_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (A_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -78,11 +85,16 @@ int collide_weapon_weapon( obj_pair * pair )
 			B_radius *= 2;		// Makes bombs easier to hit
 		}
 
+		// the erroneous extra time a bomb stays invulnerable without the fix
+		float extra_buggy_time = 0.0f;
+		if (wipB->is_locked_homing())
+			extra_buggy_time = (wipB->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipB->lifetime;
+
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
 			if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 				return 0;
 		}
-		else if (B_time_alive < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
+		else if (B_time_alive - extra_buggy_time < The_mission.ai_profile->delay_bomb_arm_timer[Game_skill_level] )
 			return 0;
 	}
 
@@ -110,27 +122,26 @@ int collide_weapon_weapon( obj_pair * pair )
 		// damage calculation should not be done on clients, the server will tell the client version of the bomb when to die
 		if(!a_override && !b_override && !MULTIPLAYER_CLIENT)
 		{
+			float dot_curve = -dot;
 			float aDamage = wipA->damage;
-			if (wipA->damage_curve_idx >= 0)
-				aDamage *= Curves[wipA->damage_curve_idx].GetValue(A_time_alive / wipA->lifetime);
+			aDamage *= wipA->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wpA, *B, dot_curve), &wpA->modular_curves_instance);
+			aDamage *= wipA->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wpA, *B, dot_curve), &wpA->modular_curves_instance);
 			if (wipB->armor_type_idx >= 0)
 				aDamage = Armor_types[wipB->armor_type_idx].GetDamage(aDamage, wipA->damage_type_idx, 1.0f, false);
 
 			float bDamage = wipB->damage;
-			if (wipB->damage_curve_idx >= 0)
-				bDamage *= Curves[wipB->damage_curve_idx].GetValue(B_time_alive / wipB->lifetime);
+			bDamage *= wipB->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wpB, *A, dot_curve), &wpB->modular_curves_instance);
+			bDamage *= wipB->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::HULL_DAMAGE_MULT, std::forward_as_tuple(*wpB, *A, dot_curve), &wpB->modular_curves_instance);
 			if (wipA->armor_type_idx >= 0)
 				bDamage = Armor_types[wipA->armor_type_idx].GetDamage(bDamage, wipB->damage_type_idx, 1.0f, false);
 
 			if (wipA->weapon_hitpoints > 0) {
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
-						wpA->lifeleft = 0.001f;
-						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						wpB->lifeleft = 0.001f;
-						wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
+						weapon_hit(A, B, &A->pos, -1, nullptr);
 						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						weapon_hit(B, A, &B->pos, -1, nullptr);
 					} else {
 						A->hull_strength -= bDamage;
 						B->hull_strength -= aDamage;
@@ -145,36 +156,30 @@ int collide_weapon_weapon( obj_pair * pair )
 						}
 						
 						if (A->hull_strength < 0.0f) {
-							wpA->lifeleft = 0.001f;
-							wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+							weapon_hit(A, B, &A->pos, -1, nullptr);
 						}
 						if (B->hull_strength < 0.0f) {
-							wpB->lifeleft = 0.001f;
-							wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+							weapon_hit(B, A, &B->pos, -1, nullptr);
 						}
 					}
 				} else {
 					A->hull_strength -= bDamage;
-					wpB->lifeleft = 0.001f;
-					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+					weapon_hit(B, A, &B->pos, -1, nullptr);
 					if (A->hull_strength < 0.0f) {
-						wpA->lifeleft = 0.001f;
-						wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+						weapon_hit(A, B, &A->pos, -1, nullptr);
 					}
 				}
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
-				wpA->lifeleft = 0.001f;
-				wpA->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+				weapon_hit(A, B, &A->pos, -1, nullptr);
 				if (B->hull_strength < 0.0f) {
-					wpB->lifeleft = 0.001f;
-					wpB->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
+					weapon_hit(B, A, &B->pos, -1, nullptr);
 				}
 			}
 

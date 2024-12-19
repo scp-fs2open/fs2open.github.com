@@ -3,24 +3,26 @@
 #include "globalincs/pstypes.h"
 #include "graphics/software/FSFont.h"
 
+extern float Font_Scale_Factor;
+
 namespace font
 {
 	struct font;
 	class NVGFont : public FSFont
 	{
 	private:
-		int m_handle;
-		float m_letterSpacing;
-		float m_size;
-		float m_tabWidth;
+		int m_handle = -1;
+		float m_letterSpacing = 0.0f;
+		float m_size = 12.0f;
+		float m_tabWidth = 20.0f;
 
-		font* m_specialCharacters;
+		font* m_specialCharacters = nullptr;
 
 		float m_lineHeight = 0.0f;
 
 	public:
-		NVGFont();
-		~NVGFont() override;
+		NVGFont() = default;
+		~NVGFont() override = default;
 
 		int getHandle() const { return m_handle; }
 		float getSize() const { return m_size; }

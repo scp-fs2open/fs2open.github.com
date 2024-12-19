@@ -788,7 +788,7 @@ void FredRenderer::render_model_x_htl(vec3d* pos, grid* gridp, int  /*col_scheme
 void FredRenderer::render_one_model_htl(object* objp,
 										int cur_object_index,
 										bool Bg_bitmap_dialog) {
-	int j, z;
+	int z;
 	object* o2;
 
 	Assert(objp->type != OBJ_NONE);
@@ -839,11 +839,13 @@ void FredRenderer::render_one_model_htl(object* objp,
 
 	// build flags
 	if ((view().Show_ship_models || view().Show_outlines) && ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START))) {
+		uint64_t flags = 0;
+
 		g3_start_instance_matrix(&Eye_position, &Eye_matrix, 0);
 		if (view().Show_ship_models) {
-			j = MR_NORMAL;
+			flags = MR_NORMAL;
 		} else {
-			j = MR_NO_POLYS;
+			flags = MR_NO_POLYS;
 		}
 
 		uint debug_flags = 0;
@@ -860,22 +862,22 @@ void FredRenderer::render_one_model_htl(object* objp,
 		model_clear_instance(Ship_info[Ships[z].ship_info_index].model_num);
 
 		if (!view().Lighting_on) {
-			j |= MR_NO_LIGHTING;
+			flags |= MR_NO_LIGHTING;
 		}
 
 		if (view().FullDetail) {
-			j |= MR_FULL_DETAIL;
+			flags |= MR_FULL_DETAIL;
 		}
 
 		if (Fred_outline) {
-			j |= MR_SHOW_OUTLINE_HTL;
+			flags |= MR_SHOW_OUTLINE_HTL;
 		}
 
 		model_render_params render_info;
 		render_info.set_debug_flags(debug_flags);
 		render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
-		render_info.set_replacement_textures(Ships[z].ship_replacement_textures);
-		render_info.set_flags(j);
+		render_info.set_replacement_textures(model_get_instance(Ships[z].model_instance_num)->texture_replace);
+		render_info.set_flags(flags);
 
 		g3_done_instance(0);
 
@@ -895,7 +897,7 @@ void FredRenderer::render_one_model_htl(object* objp,
 				vm_vec_scale_add(&warpin_pos, &objp->pos, &objp->orient.vec.fvec, warpin_dist);
 
 				render_info.set_color(65, 65, 65);	// grey; see rgba_defaults
-				render_info.set_flags(j | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
+				render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
 				model_render_immediate(&render_info, Ship_info[Ships[z].ship_info_index].model_num, Ships[z].model_instance_num, &objp->orient, &warpin_pos);
 			}
 		}

@@ -123,7 +123,7 @@ OptionBase::OptionBase(SCP_string config_key, SCP_string title, SCP_string descr
 }
 
 //Return the option value from the config
-std::unique_ptr<json_t> OptionBase::getConfigValue() const { return _parent->getValueFromConfig(_config_key); }
+tl::optional<std::unique_ptr<json_t>> OptionBase::getConfigValue() const { return _parent->getValueFromConfig(_config_key); }
 
 //Return the option expert_level value
 ExpertLevel OptionBase::getExpertLevel() const { return _expert_level; }
@@ -135,10 +135,13 @@ void OptionBase::setExpertLevel(ExpertLevel expert_level) { _expert_level = expe
 void OptionBase::setPreset(PresetKind preset, const SCP_string& value) { _preset_values.emplace(preset, value); }
 
 //Return the option category
-const SCP_string& OptionBase::getCategory() const { return _category; }
+const SCP_string OptionBase::getCategory() const { return XSTR(_category.first, _category.second); }
 
 //Set the option category
-void OptionBase::setCategory(const SCP_string& category) { _category = category; }
+void OptionBase::setCategory(const std::pair<const char*, int>& category)
+{
+	_category = category;
+}
 
 //Return unique built-in key for the option
 const SCP_string& OptionBase::getConfigKey() const {
@@ -164,10 +167,24 @@ int OptionBase::getImportance() const {
 void OptionBase::setImportance(int importance) {
 	_importance = importance;
 }
+
+//Get option min/max range values
+std::pair<float, float> OptionBase::getRangeValues() const {
+	return std::make_pair(_min, _max);
+}
+
+//Set option min/max range values
+void OptionBase::setRangeValues(float min, float max)
+{
+	_min = min;
+	_max = max;
+}
+
 bool operator<(const OptionBase& lhs, const OptionBase& rhs) {
-	if (lhs._category < rhs._category)
+	auto val = stricmp(lhs._category.first, rhs._category.first);
+	if (val < 0)
 		return true;
-	if (rhs._category < lhs._category)
+	if (val > 0)
 		return false;
 	return lhs._importance > rhs._importance; // Importance is sorted from highest to lowest
 }
@@ -189,6 +206,14 @@ const flagset<OptionFlags>& OptionBase::getFlags() const {
 //Set flags for this option
 void OptionBase::setFlags(const flagset<OptionFlags>& flags) {
 	_flags = flags;
+}
+
+bool OptionBase::getIsOnce() const {
+	return _is_once;
+}
+
+void OptionBase::setIsOnce(bool is_once) {
+	_is_once = is_once;
 }
 
 //persists any changes made to this specific option and returns whether or not it was successful

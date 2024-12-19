@@ -82,6 +82,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggle2DMission, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Mission_2d); });
 	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_showing_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
+	connect(ui->toggleOverrideHashCommand, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Override_hashcommand); });
 	connect(ui->togglePreloadSubspace, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Preload_subspace); });
 
 	// AI Profiles
@@ -247,6 +248,7 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleGoalsInBriefing->setChecked(flags[Mission::Mission_Flags::Toggle_showing_goals]);
 	ui->toggleHardcodedAutopilot->setChecked(flags[Mission::Mission_Flags::Deactivate_ap]);
 	ui->toggleMissionEndToMainhall->setChecked(flags[Mission::Mission_Flags::End_to_mainhall]);
+	ui->toggleOverrideHashCommand->setChecked(flags[Mission::Mission_Flags::Override_hashcommand]);
 	ui->toggleNoBriefing->setChecked(flags[Mission::Mission_Flags::No_briefing]);
 	ui->toggleNoTraitor->setChecked(flags[Mission::Mission_Flags::No_traitor]);
 	ui->togglePromotion->setChecked(flags[Mission::Mission_Flags::No_promotion]);
