@@ -61,6 +61,6 @@ add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
 
-if(NOT APPLE)
+if(FSO_BUILD_WITH_OPENXR)
 	add_subdirectory(openxr)
 endif()

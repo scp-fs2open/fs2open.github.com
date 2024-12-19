@@ -21,7 +21,7 @@
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
 
-#if defined __APPLE_CC__
+#ifndef FS_OPENXR
 
 //Not supported
 
@@ -38,7 +38,7 @@
 
 #include <SDL_syswm.h>
 
-#ifndef __APPLE_CC__
+#ifdef FS_OPENXR
 
 //SETUP FUNCTIONS OGL
 SCP_vector<const char*> gr_opengl_openxr_get_extensions() {

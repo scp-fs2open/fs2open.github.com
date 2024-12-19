@@ -127,6 +127,17 @@ OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
+IF(NOT APPLE)
+	SET(OPENXR_BUILD_DEFAULT ON)
+ELSE()
+	SET(OPENXR_BUILD_DEFAULT OFF)
+ENDIF()
+OPTION(FSO_BUILD_WITH_OPENXR "Build with OpenXR support" ${OPENXR_BUILD_DEFAULT})
+IF(FSO_BUILD_WITH_OPENXR AND APPLE)
+	MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. Not supported on macOS - setting to OFF.")
+	SET(FSO_BUILD_WITH_OPENXR OFF CACHE BOOL "" FORCE)
+ENDIF()
+
 OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
 
 OPTION(FSO_USE_LTO "Build using LTO (only for release builds)" ON)
@@ -144,6 +155,7 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
 # Include cotire file from https://github.com/sakra/cotire/
@@ -233,3 +245,4 @@ message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
 message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
 message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
+message(STATUS "With OpenXR: ${FSO_BUILD_WITH_OPENXR}")

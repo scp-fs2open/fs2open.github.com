@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <tl/optional.hpp>
 
-#ifndef __APPLE_CC__
+#ifdef FS_OPENXR
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
