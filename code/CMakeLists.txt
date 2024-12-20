@@ -25,7 +25,11 @@ if (FSO_BUILD_WITH_OPENGL)
 	endif()
 endif()
 
-if(FSO_BUILD_WITH_OPENXR_DEBUG)
+if(FSO_BUILD_WITH_OPENXR)
+	add_definitions(-DFS_OPENXR)
+endif()
+
+if(FSO_BUILD_WITH_OPENXR_DEBUG AND FSO_BUILD_WITH_OPENXR)
 	add_definitions(-DFS_OPENXR_DEBUG)
 endif()
 
@@ -79,7 +83,7 @@ target_link_libraries(code PUBLIC hidapi::hidapi)
 
 target_link_libraries(code PUBLIC imgui)
 
-IF(NOT APPLE)
+IF(FSO_BUILD_WITH_OPENXR)
 	target_link_libraries(code PUBLIC OpenXR::openxr_loader)
 	target_include_directories(code PUBLIC OpenXR::Headers)
 ENDIF()

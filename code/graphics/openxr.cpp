@@ -9,7 +9,7 @@
 
 std::unique_ptr<star[]> Stars_XRBuffer;
 
-#ifndef __APPLE_CC__
+#ifdef FS_OPENXR
 
 #define XR_MAKE_VERSION_SHORT(major, minor, patch) \
     ((((major) & 0x3ffU) << 20) | (((minor) & 0x3ffU) << 10) | ((patch) & 0x3ffU))
@@ -522,12 +522,13 @@ void openxr_start_frame() {
 }
 
 #else
-//Stubs for Mac, as linking with OpenXR causes issues there.
+// Stubs for when building without OpenXR support.
+// NOTE: macOS has issues linking with OpenXR.
 
 void openxr_prepare(float hudscale) {}
 
 float openxr_preinit(float req_ar, float scale) {
-	mprintf(("Cannot create OpenXR session on macOS.\n"));
+	mprintf(("Cannot create OpenXR session. Not built with OpenXR support.\n"));
 	return 0.0f;
 }
 
