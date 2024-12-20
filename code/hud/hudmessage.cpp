@@ -305,7 +305,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, nullptr, msg, (ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, 1.0f, (ptr + 2 - msg));
 			offset = sw;
 		}
 
@@ -641,7 +641,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 
 	// determine the length of the sender's name for underlining
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, (ptr - buf));
+		gr_get_string_size(&w, nullptr, buf, 1.0f, (ptr - buf));
 	}
 
 	// create the new node for the vector
@@ -843,7 +843,7 @@ void hud_initialize_scrollback_lines()
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), node_msg.text.length());
+			gr_get_string_size(&width, &height, node_msg.text.c_str(), 1.0f, node_msg.text.length());
 
 			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 			if (width > max_width) {
