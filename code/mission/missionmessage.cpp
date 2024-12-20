@@ -42,6 +42,8 @@
 #include "utils/Random.h"
 
 bool Allow_generic_backup_messages = false;
+bool Always_loop_head_anis = false;
+bool Use_newer_head_ani_suffix = false;
 float Command_announces_enemy_arrival_chance = 0.25;
 
 #define DEFAULT_MOOD 0
@@ -757,6 +759,12 @@ void parse_msgtbl(const char* filename)
 		// now we can start parsing
 		parse_custom_message_types(false); // Already parsed, so skip it
 		if (optional_string("#Message Settings")) {
+			if (optional_string("$Always loop head anis:")) {
+				stuff_boolean(&Always_loop_head_anis);
+			}
+			if (optional_string("$Use newer head ani suffix features:")) {
+				stuff_boolean(&Use_newer_head_ani_suffix);
+			}
 			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
 				stuff_boolean(&Allow_generic_backup_messages);
 			}
@@ -1392,41 +1400,63 @@ void message_play_anim( message_q *q )
 		// assigned, the logic will drop down below like it's supposed to
 		if (persona_index >= 0)
 		{
-			if ( Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT) ) {
-				// get a random head
-				if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-					rand_index = MAX_WINGMAN_HEADS;		// [0,MAX) are regular heads; MAX is always death head
-					is_death_scream = 1;
-				} else {
-					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-				}
-				strcpy_s(temp, ani_name);
-				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
-				subhead_selected = TRUE;
-			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
-				// get a random head
-				// Goober5000 - *sigh*... if mission designers assign a command persona
-				// to a wingman head, they risk having the death ani play
-				if ( !strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7) ) {
-					mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
-					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-				} else {
-					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-				}
+			if (!Use_newer_head_ani_suffix) {
+				if (Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT)) {
+					// get a random head
+					if (q->builtin_type == MESSAGE_WINGMAN_SCREAM) {
+						rand_index = MAX_WINGMAN_HEADS; // [0,MAX) are regular heads; MAX is always death head
+						is_death_scream = 1;
+					} else {
+						rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+					}
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+					subhead_selected = TRUE;
+				} else if (Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE)) {
+					// get a random head
+					// Goober5000 - *sigh*... if mission designers assign a command persona
+					// to a wingman head, they risk having the death ani play
+					if (!strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7)) {
+						mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
+						rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+					} else {
+						rand_index = ((int)Missiontime % MAX_COMMAND_HEADS);
+					}
 
-				strcpy_s(temp, ani_name);
-				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
-				subhead_selected = TRUE;
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+					subhead_selected = TRUE;
+				} else {
+					mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
+				}
 			} else {
-				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
+				// Explicitely allow death anims for large ships now. Only command can't have a death message.
+				if (!(Personas[persona_index].flags & PERSONA_FLAG_COMMAND) && q->builtin_type == MESSAGE_WINGMAN_SCREAM) {
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s-death", temp);
+					subhead_selected = TRUE;
+				} else {
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s-reg", temp);
+					subhead_selected = TRUE;
+				}
+			}
+		} else {
+			// In suffix mode if we don't have a persona AND the anim doesn't exist then append -reg
+			if (Use_newer_head_ani_suffix) {
+				strcpy_s(temp, ani_name);
+				sprintf_safe(ani_name, "%s-reg", temp);
+				subhead_selected = TRUE;
 			}
 		}
 
 		if (!subhead_selected) {
-			// choose between a and b
-			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-			strcpy_s(temp, ani_name);
-			sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
+			if (!Use_newer_head_ani_suffix) {
+				// choose between a and b
+				rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+				strcpy_s(temp, ani_name);
+				sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+			}
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
 		nprintf(("Messaging", "playing head %s for %s\n", ani_name, q->who_from));
@@ -1462,7 +1492,9 @@ void message_play_anim( message_q *q )
 			return;
 		}
 		
-		anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		if (!Always_loop_head_anis) {
+			anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		}
 		Playing_messages[Num_messages_playing].anim_data = &anim_info->anim_data;
 		message_calc_anim_start_frame(Message_wave_duration, &anim_info->anim_data, is_death_scream);
 		Playing_messages[Num_messages_playing].play_anim = true;
