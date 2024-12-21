@@ -527,7 +527,8 @@ struct weapon_info
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
 	int 	selection_effect;
 
-	float shield_impact_explosion_radius;
+	float shield_impact_effect_radius;    // shield surface effect radius
+	float shield_impact_explosion_radius; // shield-specific particle effect radius
 
 	particle::ParticleEffectHandle impact_weapon_expl_effect; // Impact particle effect
 	particle::ParticleEffectHandle dinky_impact_weapon_expl_effect; // Dinky impact particle effect
