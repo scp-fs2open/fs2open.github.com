@@ -1404,7 +1404,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		for(const auto &line: lines)
 		{
 			//Draw the string
-			gr_string(x, curr_y, s + line.first, resize_mode, line.second);
+			gr_string(x, curr_y, s + line.first, resize_mode, 1.0f, line.second);
 
 			//Increment line height
 			curr_y += line_ht;

@@ -96,7 +96,7 @@ namespace font
 	{
 		return std::any_of(fonts.begin(), fonts.end(), [](const std::unique_ptr<FSFont>& font) {
 			const auto& thisFont = font.get();
-			return thisFont->getType() == NVG_FONT && thisFont->getScaleBehavior();
+			return thisFont->getScaleBehavior();
 		});
 	}
 
