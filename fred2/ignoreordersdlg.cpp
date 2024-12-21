@@ -54,7 +54,7 @@ END_MESSAGE_MAP()
 BOOL ignore_orders_dlg::OnInitDialog() 
 {
 	int i;
-	std::set<size_t> default_orders, orders_accepted;
+	SCP_set<size_t> default_orders, orders_accepted;
 	char buf[128];
 	object *objp;
 
@@ -80,7 +80,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 		default_orders.clear();
 		for ( objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 			if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-				const std::set<size_t>& these_orders = ship_get_default_orders_accepted( &Ship_info[Ships[objp->instance].ship_info_index] );
+				const SCP_set<size_t>& these_orders = ship_get_default_orders_accepted( &Ship_info[Ships[objp->instance].ship_info_index] );
 				if ( default_orders.empty() )
 					default_orders = these_orders;
 				else if ( default_orders != these_orders )
@@ -103,7 +103,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 	if ( m_ship >= 0 ) {
 		orders_accepted = Ships[m_ship].orders_accepted;
 		for ( i = 0; i < (int) m_orderList.size(); i++) {
-			if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end())
+			if (orders_accepted.contains(m_orderList[i]))
 				ignore_orders_list->SetCheck(i, BST_CHECKED);
 		}
 	} else {
@@ -117,14 +117,14 @@ BOOL ignore_orders_dlg::OnInitDialog()
 				orders_accepted = Ships[objp->instance].orders_accepted;
 				if ( first_time ) {
 					for (i = 0; i < (int) m_orderList.size(); i++) {
-						if (orders_accepted.find(m_orderList[i]) != orders_accepted.end())
+						if (orders_accepted.contains(m_orderList[i]))
 							ignore_orders_list->SetCheck(i, BST_CHECKED);
 					}
 					first_time = 0;
 				} else {
 					for (i = 0; i < (int) m_orderList.size(); i++) {
 						// see if the order matches the check box order
-						if ( orders_accepted.find(m_orderList[i]) != orders_accepted.end() ) {
+						if (orders_accepted.contains(m_orderList[i])) {
 							// if it matches, if it is not already set, then it is indeterminate.
 							if (ignore_orders_list->GetCheck(i) == BST_UNCHECKED )
 								ignore_orders_list->SetCheck(i, BST_INDETERMINATE);
@@ -152,7 +152,7 @@ BOOL ignore_orders_dlg::OnInitDialog()
 // variable based on the state of the checkboxes
 void ignore_orders_dlg::OnOK() 
 {
-	std::set<size_t> orders_accepted;
+	SCP_set<size_t> orders_accepted;
 	int i;
 	object *objp;
 
