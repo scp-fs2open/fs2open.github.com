@@ -654,7 +654,7 @@ void credits_init()
 
 	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		gr_get_string_size(NULL, &temp_h, iter->c_str(), 1.0f, iter->length());
+		gr_get_string_size(nullptr, &temp_h, iter->c_str(), 1.0f, iter->length());
 
 		h = h + temp_h;
 	}
