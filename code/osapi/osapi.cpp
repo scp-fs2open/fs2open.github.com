@@ -32,7 +32,7 @@ namespace
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
 
-	char* preferencesPath = nullptr;
+	SCP_string preferencesPath;
 
 	bool checkedLegacyMode = false;
 	bool legacyMode = false;
@@ -41,38 +41,50 @@ namespace
 	os::Viewport* mainViewPort = nullptr;
 	SDL_Window* mainSDLWindow = nullptr;
 
-	const char* getPreferencesPath()
+	SCP_string getPreferencesPath()
 	{
 		// Lazily initialize the preferences path
-		if (!preferencesPath) {
+		if (preferencesPath.empty()) {
 			//Check for a custom path set by env variable
 			auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
 			if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
-				preferencesPath = envPreferencesPath;
+				preferencesPath = SCP_string(envPreferencesPath);
 			}
 			else {
-				preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+				char* sdlPreferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+				if (sdlPreferencesPath != nullptr) {
+					preferencesPath = SCP_string(sdlPreferencesPath);
+					SDL_free(sdlPreferencesPath);
+					sdlPreferencesPath = nullptr;
+				}
+				else {
+					// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
+					// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
+					static bool sdl_is_borked_warning = false;
+					if (!sdl_is_borked_warning) {
+						ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
+							"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
+							"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
+							"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
+						sdl_is_borked_warning = true;
+					}
+				}
 			}
 
-			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
-			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
-		    if (preferencesPath == nullptr) {
-				static bool sdl_is_borked_warning = false;
-				if (!sdl_is_borked_warning) {
-					ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
-						"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
-						"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
-						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
-					sdl_is_borked_warning = true;
-				}
-				// No preferences path, try current directory.
+			// No preferences path, try current directory.
+			if (preferencesPath.empty()) {
 				Cmdline_portable_mode = true;
 				return "." DIR_SEPARATOR_STR;
 		    }
+
+			// Ensure path ends with a path separator (slash)
+			if (!preferencesPath.empty() && (preferencesPath.back() != DIR_SEPARATOR_CHAR)) {
+				preferencesPath += DIR_SEPARATOR_CHAR;
+			}
 #ifdef WIN32
 		    try {
-			    auto current           = preferencesPath;
-			    const auto prefPathEnd = preferencesPath + strlen(preferencesPath);
+			    auto current           = preferencesPath.begin();
+			    const auto prefPathEnd = preferencesPath.end();
 			    while (current != prefPathEnd) {
 				    const auto cp = utf8::next(current, prefPathEnd);
 				    if (cp > 127) {
@@ -81,12 +93,12 @@ namespace
 					    const auto invalid_end = current;
 						static bool force_portable_warning = false;
 						if (!force_portable_warning) {
-							utf8::prior(current, preferencesPath);
+							utf8::prior(current, preferencesPath.begin());
 							ReleaseWarning(LOCATION,
 								"Determined the preferences path as \"%s\". That path is not supported since it "
 								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
 								"the commandline to avoid this message in the future.",
-								preferencesPath, std::string(current, invalid_end).c_str());
+								preferencesPath.c_str(), std::string(current, invalid_end).c_str());
 							force_portable_warning = true;
 						}
 						Cmdline_portable_mode = true;
@@ -94,13 +106,13 @@ namespace
 				    }
 			    }
 		    } catch (const std::exception& e) {
-			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath,
+			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath.c_str(),
 			          e.what());
 		    }
 #endif
 	    }
 
-	    if (preferencesPath) {
+	    if (!preferencesPath.empty()) {
 			return preferencesPath;
 		}
 		else {
@@ -567,7 +579,7 @@ bool os_is_legacy_mode()
 	if (legacyMode) {
 		// Print a message for the people running it from the terminal
 		fprintf(stdout, "FSO is running in legacy config mode. Please either update your launcher or"
-			" copy the configuration and pilot files to '%s' for better future compatibility.\n", getPreferencesPath());
+			" copy the configuration and pilot files to '%s' for better future compatibility.\n", getPreferencesPath().c_str());
 	}
 
 	checkedLegacyMode = true;
@@ -583,11 +595,6 @@ void os_deinit()
 {
 	// Free the view ports 
 	os::closeAllViewports();
-
-	if (preferencesPath) {
-		SDL_free(preferencesPath);
-		preferencesPath = nullptr;
-	}
 
 	SDL_Quit();
 }
