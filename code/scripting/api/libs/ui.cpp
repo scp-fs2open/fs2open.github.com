@@ -301,8 +301,10 @@ ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the Pilot Select UI.",
               l_UserInterface);
 
-ADE_VIRTVAR(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
-            "The maximum number of pilots")
+ADE_VIRTVAR_DEPRECATED(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
+	"The maximum number of pilots",
+	gameversion::version(25, 0, 0, 0),
+	"This variable has moved to the GlobalVariabls library.")
 {
 	return ade_set_args(L, "i", MAX_PILOTS);
 }
