@@ -280,7 +280,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	int nSample = (n << (oversampling - 1)) + 1;
 	auto volumeSampleCache = make_unique<bool[]>(nSample * nSample * nSample);
 
-	int modelnum = model_load(hullPof.c_str(), 0, nullptr);
+	int modelnum = model_load(hullPof.c_str());
 
 	const polymodel* pm = model_get(modelnum);
 	//Scale up by 2% to ensure that the 3d volume texture does not end on an axis aligned edge with full opacity.

@@ -280,8 +280,7 @@ void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_inf
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.type = particle::PARTICLE_BITMAP;
-			p.optional_data = mbi->anim_id;
+			p.bitmap = mbi->anim_id;
 			p.attached_objnum = attached_objnum;
 			p.attached_sig = local->signature;
 
@@ -302,8 +301,7 @@ void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_inf
 			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.type = particle::PARTICLE_BITMAP;
-			p.optional_data = mbi->anim_id;
+			p.bitmap = mbi->anim_id;
 			p.attached_objnum = -1;
 			p.attached_sig = 0;
 
