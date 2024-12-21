@@ -71,6 +71,16 @@ void hdr_color::set_rgb(int new_r, int new_g, int new_b)
 }
 
 /**
+ * @brief Sets RGB values from three 0.0-1.0 floats
+ */
+void hdr_color::set_rgb(float new_r, float new_g, float new_b)
+{
+	this->red = new_r;
+	this->green = new_g;
+	this->blue = new_b;
+}
+
+/**
  * @brief Sets RGBA values from an old style color object
  */
 void hdr_color::set_rgb(const color* const new_color)
