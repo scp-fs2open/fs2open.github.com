@@ -2786,48 +2786,6 @@ void main_hall_reload_door(int region)
 {
 	// see main_hall_close() and main_hall_init()
 
-	auto &door_anim = Main_hall_door_anim.at(region);
-	auto &door_anim_name = Main_hall->door_anim_name.at(region);
-
-	// save info for current animation
-	auto bg_type = door_anim.ani.bg_type;
-	int current_frame = door_anim.current_frame;
-	float anim_time = door_anim.anim_time;
-	auto direction = door_anim.direction;
-
-	if (door_anim.num_frames > 0)
-		generic_anim_unload(&door_anim);
-
-	generic_anim_init(&door_anim, door_anim_name);
-	door_anim.ani.bg_type = bg_type;
-
-	if (generic_anim_stream(&door_anim) < 0)
-		nprintf(("General", "WARNING!, Could not load door anim %s in main hall\n", door_anim_name.c_str()));
-
-	door_anim.current_frame = current_frame;
-	door_anim.anim_time = anim_time;
-	door_anim.direction = direction;
-}
-
-// unload the current background and reload whatever the new one is
-void main_hall_reload_background()
-{
-	// see main_hall_close() and main_hall_init()
-
-	if (Main_hall_bitmap >= 0)
-		bm_release(Main_hall_bitmap);
-
-	Main_hall_bitmap = bm_load(Main_hall->bitmap);
-
-	if (Main_hall_bitmap < 0)
-		nprintf(("General", "WARNING! Couldn't load main hall background bitmap %s\n", Main_hall->bitmap.c_str()));
-}
-
-// unload the current door animation and reload whatever the new one is
-void main_hall_reload_door(int region)
-{
-	// see main_hall_close() and main_hall_init()
-
 	auto& door_anim = Main_hall_door_anim.at(region);
 	auto& door_anim_name = Main_hall->door_anim_name.at(region);
 
