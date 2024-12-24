@@ -443,11 +443,11 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 // Localization strings for hat positions. Back[0], Forward[1], Left[2], Right[3]
 // This ordering is used to follow the same logic as hatBtnToEnum in joy-sdl.cpp
 const char* Joy_hat_text_german_u[JOY_NUM_HAT_POS] = {
-	"Hut Hinten", "Hut Vorne", "Hut Rechts", "Hut Links"
+	"Hut Hinten", "Hut Vorne", "Hut Links", "Hut Rechts"
 };
 
 const char* Joy_hat_text_french_u[JOY_NUM_HAT_POS] = {
-	("Chapeau Arri\xc3\xa8""re"), "Chapeau Avant", "Chapeau Droite", "Chapeau Gauche"
+	("Chapeau Arri\xc3\xa8""re"), "Chapeau Avant", "Chapeau Gauche", "Chapeau Droite"
 };
 
 const char* Joy_hat_text_polish_u[JOY_NUM_HAT_POS] = {
