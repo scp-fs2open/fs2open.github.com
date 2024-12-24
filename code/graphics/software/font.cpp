@@ -539,11 +539,11 @@ namespace font
 		font_initialized = false;
 	}
 
-	int force_fit_string(char *str, int max_str, int max_width)
+	int force_fit_string(char *str, int max_str, int max_width, float scale)
 	{
 		int w;
 
-		gr_get_string_size(&w, NULL, str);
+		gr_get_string_size(&w, nullptr, str, scale);
 		if (w > max_width) {
 			if ((int)strlen(str) > max_str - 3) {
 				Assert(max_str >= 3);
@@ -551,11 +551,11 @@ namespace font
 			}
 
 			strcpy(str + strlen(str) - 1, "...");
-			gr_get_string_size(&w, NULL, str);
+			gr_get_string_size(&w, nullptr, str, scale);
 			while (w > max_width) {
 				Assert(strlen(str) >= 4);  // if this is hit, a bad max_width was passed in and the calling function needs fixing.
 				strcpy(str + strlen(str) - 4, "...");
-				gr_get_string_size(&w, NULL, str);
+				gr_get_string_size(&w, nullptr, str, scale);
 			}
 		}
 

@@ -3487,7 +3487,7 @@ void display_parse_diagnostics()
 // terminator is placed where required to make the first line <= max_pixel_w.  The remaining
 // text is returned (leading whitespace removed).  If the line doesn't need to be split,
 // NULL is returned.
-char *split_str_once(char *src, int max_pixel_w)
+char *split_str_once(char *src, int max_pixel_w, float scale)
 {
 	char *brk = nullptr;
 	bool last_was_white = false;
@@ -3498,7 +3498,7 @@ char *split_str_once(char *src, int max_pixel_w)
 		return src;  // if there's no width, skip everything else
 
 	int w;
-	gr_get_string_size(&w, nullptr, src);
+	gr_get_string_size(&w, nullptr, src, scale);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return nullptr;  // string doesn't require a cut
 	}
@@ -3506,7 +3506,7 @@ char *split_str_once(char *src, int max_pixel_w)
 	size_t i;
 	size_t len = strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, nullptr, src, 1.0f, i + 1);
+		gr_get_string_size(&w, nullptr, src, scale, i + 1);
 
 		if (w <= max_pixel_w) {
 			if (src[i] == '\n') {  // reached natural end of line
