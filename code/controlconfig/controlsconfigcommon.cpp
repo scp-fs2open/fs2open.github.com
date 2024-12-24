@@ -441,37 +441,37 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 };
 
 // Localization strings for hat positions. Back[0], Forward[1], Left[2], Right[3]
-// Forward[0], Right[1], Backward[2], Left[3]
+// This ordering is used to follow the same logic as hatBtnToEnum in joy-sdl.cpp
 const char* Joy_hat_text_german_u[JOY_NUM_HAT_POS] = {
-	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
+	"Hut Hinten", "Hut Vorne", "Hut Rechts", "Hut Links"
 };
 
 const char* Joy_hat_text_french_u[JOY_NUM_HAT_POS] = {
-	"Chapeau Avant", "Chapeau Droite", ("Chapeau Arri\xc3\xa8""re"), "Chapeau Gauche"
+	("Chapeau Arri\xc3\xa8""re"), "Chapeau Avant", "Chapeau Droite", "Chapeau Gauche"
 };
 
 const char* Joy_hat_text_polish_u[JOY_NUM_HAT_POS] = {
-	("Hat Prz\xc3\xb3""d"), "Hat Prawo", "Hat Ty\xc5\x82", "Hat Lewo"
+	"Hat Ty\xc5\x82", ("Hat Prz\xc3\xb3""d"), "Hat Lewo", "Hat Prawo"
 };
 
 const char* Joy_hat_text_english_u[JOY_NUM_HAT_POS] = {
-	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
+	"Hat Back", "Hat Forward", "Hat Left", "Hat Right"
 };
 
 const char* Joy_hat_text_german[JOY_NUM_HAT_POS] = {
-	"Hut Vorne", "Hut Rechts", "Hut Hinten", "Hut Links"
+	"Hut Hinten", "Hut Vorne", "Hut Links", "Hut Rechts"
 };
 
 const char* Joy_hat_text_french[JOY_NUM_HAT_POS] = {
-	"Chapeau Avant", "Chapeau Droite", "Chapeau Arri\x8Are", "Chapeau Gauche"
+	"Chapeau Arri\x8Are", "Chapeau Avant", "Chapeau Gauche", "Chapeau Droite"
 };
 
 const char* Joy_hat_text_polish[JOY_NUM_HAT_POS] = {
-	"Hat Prz\xF3\x64", "Hat Prawo", "Hat Ty\xB3", "Hat Lewo"
+	"Hat Ty\xB3", "Hat Prz\xF3\x64", "Hat Lewo", "Hat Prawo"
 };
 
 const char* Joy_hat_text_english[JOY_NUM_HAT_POS] = {
-	"Hat Forward", "Hat Right", "Hat Back", "Hat Left"
+	"Hat Back", "Hat Forward", "Hat Left", "Hat Right"
 };
 
 //English scancodes are still needed eclusively for the scripting API, as we need to give generic and stable scan code names to the API that are neither translated nor localized to keyboard layout.
