@@ -8,6 +8,8 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 
+#if WITH_DISCORD
+
 #include "discord_rpc.h"
 
 namespace {
@@ -284,3 +286,19 @@ void set_presence_gameplay()
 
 } // namespace discord
 } // namespace libs
+
+#else
+// Stubs for building without Discord support.
+namespace libs {
+namespace discord {
+
+void init() {
+	mprintf(("Cannot create Discord session. Not built with Discord support.\n"));
+}
+void shutdown() {}
+void set_presence_string(const SCP_string &text) {}
+void set_presence_gameplay() {}
+
+} // namespace discord
+} // namespace libs
+#endif
