@@ -1034,6 +1034,8 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/default_settings_table.cpp
+	options/default_settings_table.h
 	options/Ingame_Options.cpp
 	options/Ingame_Options.h
 	options/Ingame_Options_internal.h

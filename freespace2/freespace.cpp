@@ -147,6 +147,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/default_settings_table.h"
 #include "options/Ingame_Options.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
@@ -1755,8 +1756,11 @@ void game_init()
 
 	mod_table_init();		// load in all the mod dependent settings
 
-	// This needs to be delayed until we know if the new options are actually going to be used
+	// Must be run after mod table is parsed so we know the value of Using_in_game_options
+	// Must be run before everything else inits so we can init those with the correct
+	// default values or user preferences
 	if (Using_in_game_options) {
+		default_settings_init(); // load in current preferred default options values, if any
 		options::OptionsManager::instance()->loadInitialValues();
 	}
 

@@ -172,7 +172,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
-os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
+os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
 {
@@ -192,6 +192,23 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
+// Not sure if window mode should support default settings
+/*static void parse_window_mode_func()
+{
+	required_string("+Value:");
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "windowed")) {
+		Gr_configured_window_state = os::ViewportState::Windowed;
+	} else if (lcase_equal(value, "borderless")) {
+		Gr_configured_window_state = os::ViewportState::Borderless;
+	} else if (lcase_equal(value, "fullscreen")) {
+		Gr_configured_window_state = os::ViewportState::Fullscreen;
+	} else {
+		Warning(LOCATION, "%s is an invalide window mode", value.c_str());
+	}
+}*/
+
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
@@ -201,8 +218,9 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
                               {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
-                     .default_val(os::ViewportState::Fullscreen)
+                     .default_func([&]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
+                     //.parser(parse_window_mode_func)
                      .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
@@ -479,6 +497,19 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
+static void parse_post_processing_func()
+{
+	required_string("+Value:");
+	bool value;
+	stuff_boolean(&value);
+
+	if (value) {
+		Gr_post_processing_enabled = true;
+	} else {
+		Gr_post_processing_enabled = false;
+	}
+}
+
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
@@ -486,9 +517,10 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([&]() { return Gr_post_processing_enabled; })
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
+                     .parser(parse_post_processing_func)        
                      .finish();
 
 bool Gr_enable_vsync = true;

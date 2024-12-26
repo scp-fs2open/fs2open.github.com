@@ -1,0 +1,60 @@
+/*
+ * Created by Mike "MjnMixael" Nelson for the FreeSpace2 Source Code Project.
+ * You may not sell or otherwise commercially exploit the source or things you
+ * create based on the source.
+ *
+ * This file is in charge of the "default_settings.tbl", and allows games and mods
+ * to define default options settings that will be used on first launch or if a player
+ * has not chosen and saved a specific option value.
+ */
+
+#include "options/default_settings_table.h"
+#include "options/Option.h"
+#include "parse/parselo.h"
+
+void parse_default_settings_table(const char* filename)
+{
+	try {
+		read_file_text(filename, CF_TYPE_TABLES);
+
+		reset_parse();
+
+		// allow settings to be in any order, just as in parse_ai_profiles_tbl
+		while (!check_for_string("#END")) {
+			// start parsing
+			optional_string("#DEFAULT SETTINGS");
+
+			while (optional_string("$Option Key:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
+
+				const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
+
+				if (thisOpt == nullptr) {
+					Warning(LOCATION, "%s is not a valid option!", name.c_str());
+					skip_to_start_of_string_either("$Option Key:", "#END");
+					continue;
+				}
+				thisOpt->parseDefaultSetting();
+			}
+		}
+
+		required_string("#END");
+	} catch (const parse::ParseException& e) {
+		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n",
+			(filename) ? filename : "<default default_settings.tbl>",
+			e.what()));
+		return;
+	}
+}
+
+void default_settings_init()
+{
+	// if a default_settings.tbl exists read it
+	if (cf_exists_full("default_settings.tbl", CF_TYPE_TABLES)) {
+		parse_default_settings_table("default_settings.tbl");
+	}
+
+	// parse any modular tables
+	parse_modular_table("*-defs.tbm", parse_default_settings_table);
+}
