@@ -35,6 +35,7 @@ void parse_default_settings_table(const char* filename)
 					skip_to_start_of_string_either("$Option Key:", "#END");
 					continue;
 				}
+				required_string("+Value:");
 				thisOpt->parseDefaultSetting();
 			}
 		}
