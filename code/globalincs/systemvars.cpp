@@ -344,6 +344,53 @@ void detail_level_set(int level)
 	Detail = Detail_defaults[level];
 }
 
+void change_default_detail_level(int level, DetailSetting  selection, int value) {
+	if (level < 0 || level >= NUM_DEFAULT_DETAIL_LEVELS) {
+		throw std::out_of_range("Invalid detail level: " + std::to_string(level));
+	}
+
+	Assertion(level >= 0 && level < NUM_DEFAULT_DETAIL_LEVELS, "Invalid detail level selected. Get a coder!");
+
+	// Use a switch statement for more readable access to the struct members
+	switch (selection) {
+	case DetailSetting::NebulaDetail:
+		Detail_defaults[level].nebula_detail = value;
+		break;
+	case DetailSetting::DetailDistance:
+		Detail_defaults[level].detail_distance = value;
+		break;
+	case DetailSetting::HardwareTextures:
+		Detail_defaults[level].hardware_textures = value;
+		break;
+	case DetailSetting::NumSmallDebris:
+		Detail_defaults[level].num_small_debris = value;
+		break;
+	case DetailSetting::NumParticles:
+		Detail_defaults[level].num_particles = value;
+		break;
+	case DetailSetting::NumStars:
+		Detail_defaults[level].num_stars = value;
+		break;
+	case DetailSetting::ShieldEffects:
+		Detail_defaults[level].shield_effects = value;
+		break;
+	case DetailSetting::Lighting:
+		Detail_defaults[level].lighting = value;
+		break;
+	case DetailSetting::TargetViewModel:
+		Detail_defaults[level].targetview_model = value;
+		break;
+	case DetailSetting::PlanetsSuns:
+		Detail_defaults[level].planets_suns = value;
+		break;
+	case DetailSetting::WeaponExtras:
+		Detail_defaults[level].weapon_extras = value;
+		break;
+	default:
+		Assertion(false, "Invalid detail level selection. Get a coder!");
+	}
+}
+
 // Returns the current detail level or -1 if custom.
 int current_detail_level()
 {

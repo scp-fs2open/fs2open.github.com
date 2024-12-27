@@ -137,17 +137,57 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
+static void parse_gamma_func()
+{
+	required_string("+Value:");
+	float value;
+	stuff_float(&value);
+
+	constexpr float EPSILON = 0.0001f;
+
+	if (value < 0.1f - EPSILON || value > 5.0f + EPSILON) {
+		Warning(LOCATION, "%f is not a valid gamma value! (Out of range)", value);
+		return;
+	}
+
+	float expected_i = value / 0.05f;
+	int i = fl2i(std::round(expected_i));
+
+	if (std::abs(value - (0.05f * i)) < EPSILON && i >= 2 && i <= 100) {
+		Gr_gamma = value;
+		return;
+	}
+
+	Warning(LOCATION, "%f is not a valid gamma value! (Invalid increment)", value);
+}
+
 static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
                      std::pair<const char*, int>{"Brightness", 1375},
                      std::pair<const char*, int>{"The brightness value used for the game window", 1738})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(1.0f)
+                     .default_func([&]() { return Gr_gamma; })
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_gamma_func)
                      .finish();
 
+static void parse_lighting_func()
+{
+	required_string("+Value:");
+	int value[MAX_DETAIL_LEVEL];
+	stuff_int_list(value, MAX_DETAIL_LEVEL, RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < MAX_DETAIL_LEVEL; i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_LEVEL) {
+			Warning(LOCATION, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(i, DetailSetting::Lighting, value[i]);
+		}
+	}
+}
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
                                                                                    { 1, {"Low", 1160}},
@@ -161,7 +201,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([&]() { return Detail.lighting; })
                      .change_listener([](int val, bool initial) {
                           Detail.lighting = val;
                           if (!initial) {
@@ -170,6 +210,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_lighting_func)
                      .finish();
 
 os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;

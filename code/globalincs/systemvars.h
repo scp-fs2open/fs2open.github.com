@@ -164,6 +164,22 @@ typedef struct detail_levels {
 	int		weapon_extras;				// extra weapon details. trails, glows
 } detail_levels;
 
+enum class DetailSetting {
+	NebulaDetail,
+	DetailDistance,
+	HardwareTextures,
+	NumSmallDebris,
+	NumParticles,
+	NumStars,
+	ShieldEffects,
+	Lighting,
+	TargetViewModel,
+	PlanetsSuns,
+	WeaponExtras,
+
+	Num_detail_settings
+};
+
 // Global values used to access detail levels in game and libs
 extern detail_levels Detail;
 
@@ -174,6 +190,9 @@ extern detail_levels Detail;
 // NUM_DEFAULT_DETAIL_LEVELS - highest
 // To set the parameters in Detail to some set of defaults
 void detail_level_set(int level);
+
+// level is 0 - lowest, NUM_DEFAULT_DETAIL_LEVELS - hights
+void change_default_detail_level(int level, DetailSetting selection, int value);
 
 // Returns the current detail level or -1 if custom.
 int current_detail_level();
