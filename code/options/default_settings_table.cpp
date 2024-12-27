@@ -26,8 +26,6 @@ void parse_default_settings_table(const char* filename)
 		// allow settings to be in any order, just as in parse_ai_profiles_tbl
 		while (!check_for_string("#END")) {
 
-			int check = check_for_string("$Option Key:");
-
 			//while (check_for_string("$Option Key:")) {
 				if (optional_string("$Option Key:")) {
 					SCP_string name;

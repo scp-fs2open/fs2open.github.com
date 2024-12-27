@@ -84,8 +84,6 @@ bool delete_pilot_file(const char *pilot_name)
 // this works on barracks and player_select interface screens
 void init_new_pilot(player *p, int reset)
 {
-	int cur_speed;
-
 	if (reset) {
 		hud_set_default_hud_config(p);		// use a default hud config
 
@@ -93,11 +91,9 @@ void init_new_pilot(player *p, int reset)
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
 		// set the default detail level based on tabling rather than the above method
-		cur_speed = Default_detail_level;
+		DefaultDetailLevel cur_speed = Default_detail_level;
 
-#if NUM_DEFAULT_DETAIL_LEVELS != 4
-#error Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4
-#endif
+		static_assert(static_cast<int>(DefaultDetailLevel::Num_detail_levels) == 4, "Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4");
 
 		detail_level_set(cur_speed);
 

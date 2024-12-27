@@ -156,7 +156,7 @@ const std::tuple<float, float, float>& volumetric_nebula::getNebulaColor() const
 }
 
 bool volumetric_nebula::getEdgeSmoothing() const {
-	return Detail.nebula_detail == MAX_DETAIL_LEVEL || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
+	return Detail.nebula_detail == MAX_DETAIL_VALUE || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
 }
 
 int volumetric_nebula::getSteps() const {
@@ -164,7 +164,7 @@ int volumetric_nebula::getSteps() const {
 		return 8;
 
 	//Minimal setting (if not hard-set to 8) is steps / 2, max settings is steps.  Ensure it doesn't drop below 8, 10, 12, 14, 16.
-	return std::max(steps * (MAX_DETAIL_LEVEL + 1) / (2 * (MAX_DETAIL_LEVEL + 1) - Detail.nebula_detail), 8 + 2 * Detail.nebula_detail);
+	return std::max(steps * (MAX_DETAIL_VALUE + 1) / (2 * (MAX_DETAIL_VALUE + 1) - Detail.nebula_detail), 8 + 2 * Detail.nebula_detail);
 }
 
 int volumetric_nebula::getGlobalLightSteps() const {
@@ -172,7 +172,7 @@ int volumetric_nebula::getGlobalLightSteps() const {
 		return 4;
 
 	//Minimal setting (if not hard-set to 4) is globalLightSteps / 2, max settings is globalLightSteps. Ensure it doesn't drop below 4, 5, 6, 7, 8.
-	return std::max(globalLightSteps * (MAX_DETAIL_LEVEL + 1) / (2 * (MAX_DETAIL_LEVEL + 1) - Detail.nebula_detail), 4 + Detail.nebula_detail);
+	return std::max(globalLightSteps * (MAX_DETAIL_VALUE + 1) / (2 * (MAX_DETAIL_VALUE + 1) - Detail.nebula_detail), 4 + Detail.nebula_detail);
 }
 
 float volumetric_nebula::getOpacityDistance() const {

@@ -45,7 +45,7 @@ int Default_weapon_select_effect;
 int Default_fiction_viewer_ui;
 bool Enable_external_shaders;
 bool Enable_external_default_scripts;
-int Default_detail_level;
+DefaultDetailLevel Default_detail_level;
 bool Full_color_head_anis;
 bool Dont_automatically_select_turret_when_targeting_ship;
 bool Automatically_select_subsystem_under_reticle_when_targeting_same_ship;
@@ -556,13 +556,13 @@ void parse_mod_table(const char *filename)
 
 				stuff_int(&detail_level);
 
-				mprintf(("Game Settings Table: Setting default detail level to %i of %i-%i\n", detail_level, 0, NUM_DEFAULT_DETAIL_LEVELS - 1));
+				mprintf(("Game Settings Table: Setting default detail level to %i of %i-%i\n", detail_level, 0, static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1));
 
-				if (detail_level < 0 || detail_level > NUM_DEFAULT_DETAIL_LEVELS - 1) {
-					error_display(0, "Invalid detail level: %i, setting to %i", detail_level, Default_detail_level);
+				if (detail_level < 0 || detail_level > static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1) {
+					error_display(0, "Invalid detail level: %i, setting to %i", detail_level, static_cast<int>(Default_detail_level));
 				}
 				else {
-					Default_detail_level = detail_level;
+					Default_detail_level = static_cast<DefaultDetailLevel>(detail_level);
 				}
 			}
 
@@ -1528,7 +1528,7 @@ void mod_table_reset()
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
-	Default_detail_level = 3; // "very high" seems a reasonable default in 2012 -zookeeper
+	Default_detail_level = DefaultDetailLevel::High; // "high" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
 	Automatically_select_subsystem_under_reticle_when_targeting_same_ship = false;

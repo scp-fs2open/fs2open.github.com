@@ -843,38 +843,38 @@ void pilotfile::plr_read_settings()
 	// detail
 	//Preset not handled by OptionsManager
 	Detail.setting           = handler->readInt("setting");
-	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
+	clamp_value_with_warn(&Detail.setting, -1, static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1, "Detail Level Preset");
 
 	Detail.nebula_detail     = handler->readInt("nebula_detail");
-	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
 
 	Detail.detail_distance   = handler->readInt("detail_distance");
-	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_VALUE, "Model Detail");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
 
 	Detail.hardware_textures = handler->readInt("hardware_textures");
-	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_VALUE, "3D Hardware Textures");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
 
 	Detail.num_small_debris  = handler->readInt("num_small_debris");
-	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_VALUE, "Impact Effects");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
 
 	Detail.num_particles     = handler->readInt("num_particles");
-	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_VALUE, "Particles");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
 
 	Detail.num_stars         = handler->readInt("num_stars");
-	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_VALUE, "Stars");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
 
 	Detail.shield_effects    = handler->readInt("shield_effects");
-	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_VALUE, "Shield Hit Effects");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
 
 	Detail.lighting          = handler->readInt("lighting");
-	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_VALUE, "Lighting");
 	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
 
 	//Rest not handled by OptionsManager
@@ -916,23 +916,23 @@ void pilotfile::plr_write_settings()
 	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
-	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
+	clamp_value_with_warn(&Detail.setting, -1, static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1, "Detail Level Preset");
 	handler->writeInt("setting", Detail.setting);
-	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
 	handler->writeInt("nebula_detail", Detail.nebula_detail);
-	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_VALUE, "Model Detail");
 	handler->writeInt("detail_distance", Detail.detail_distance);
-	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_VALUE, "3D Hardware Textures");
 	handler->writeInt("hardware_textures", Detail.hardware_textures);
-	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_VALUE, "Impact Effects");
 	handler->writeInt("num_small_debris", Detail.num_small_debris);
-	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_VALUE, "Particles");
 	handler->writeInt("num_particles", Detail.num_particles);
-	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_VALUE, "Stars");
 	handler->writeInt("num_stars", Detail.num_stars);
-	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_VALUE, "Shield Hit Effects");
 	handler->writeInt("shield_effects", Detail.shield_effects);
-	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_VALUE, "Lighting");
 	handler->writeInt("lighting", Detail.lighting);
 	handler->writeInt("targetview_model", Detail.targetview_model);
 	handler->writeInt("planets_suns", Detail.planets_suns);

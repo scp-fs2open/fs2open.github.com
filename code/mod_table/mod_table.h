@@ -53,7 +53,7 @@ extern overhead_style Default_overhead_ship_style;
 extern int Default_fiction_viewer_ui;
 extern bool Enable_external_shaders;
 extern bool Enable_external_default_scripts;
-extern int Default_detail_level;
+extern DefaultDetailLevel Default_detail_level;
 extern bool Full_color_head_anis;
 extern bool Dont_automatically_select_turret_when_targeting_ship;
 extern bool Automatically_select_subsystem_under_reticle_when_targeting_same_ship;

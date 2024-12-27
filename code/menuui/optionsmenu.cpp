@@ -351,7 +351,7 @@ void options_detail_init();
 void options_detail_hide_stuff();
 void options_detail_unhide_stuff();
 void options_detail_do_frame();
-void options_detail_set_level(int level);
+void options_detail_set_level(DefaultDetailLevel level);
 
 // text
 #define OPTIONS_NUM_TEXT				49
@@ -772,59 +772,59 @@ void options_button_pressed(int n)
 
 			// Target View Rendering is currently not handled by in-game options, assumes "On"
 		case HUD_TARGETVIEW_RENDER_ON:
-			Detail.targetview_model = 1;
+			Detail.targetview_model = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HUD_TARGETVIEW_RENDER_OFF:
-			Detail.targetview_model = 0;
+			Detail.targetview_model = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 			// Planets is currently not handled by in-game options, assumes "On"
 		case PLANETS_ON:
-			Detail.planets_suns = 1;
+			Detail.planets_suns = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case PLANETS_OFF:
-			Detail.planets_suns = 0;
+			Detail.planets_suns = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 			// Weapon extras is currently not handled by in-game options, assumes "On"
 		case WEAPON_EXTRAS_ON:
-			Detail.weapon_extras = 1;
+			Detail.weapon_extras = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case WEAPON_EXTRAS_OFF:
-			Detail.weapon_extras = 0;
+			Detail.weapon_extras = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;		
 
 		case LOW_DETAIL_N:
-			options_detail_set_level(0);
+			options_detail_set_level(DefaultDetailLevel::Low);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MEDIUM_DETAIL_N:
-			options_detail_set_level(1);
+			options_detail_set_level(DefaultDetailLevel::Medium);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HIGH_DETAIL_N:
-			options_detail_set_level(2);
+			options_detail_set_level(DefaultDetailLevel::High);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case VERY_HIGH_DETAIL_N:
-			options_detail_set_level(3);
+			options_detail_set_level(DefaultDetailLevel::Highest);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case CUSTOM_DETAIL_N:
-			options_detail_set_level(-1);
+			options_detail_set_level(DefaultDetailLevel::Custom);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 			// END - detail level tab buttons
@@ -1529,7 +1529,7 @@ void options_detail_do_frame()
 		options_force_button_frame(HUD_TARGETVIEW_RENDER_ON, 0);
 	}
 
-	if ( Detail.planets_suns == 1 ) {
+	if ( Detail.planets_suns) {
 		options_force_button_frame(PLANETS_ON, 2);
 		options_force_button_frame(PLANETS_OFF, 0);
 	} else {
@@ -1580,7 +1580,7 @@ void options_detail_do_frame()
 }
 
 // Set all the detail settings to a predefined level
-void options_detail_set_level(int level)
+void options_detail_set_level(DefaultDetailLevel level)
 {
 	detail_level_set(level);
 	options_detail_synch_sliders();

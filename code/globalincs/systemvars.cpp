@@ -155,88 +155,84 @@ void game_busy(const char *filename)
 	}
 }
 
-#if MAX_DETAIL_LEVEL != 4
-#error MAX_DETAIL_LEVEL is assumed to be 4 in SystemVars.cpp
-#endif
+static_assert(MAX_DETAIL_VALUE == 4, "MAX_DETAIL_VALUE is assumed to be 4 in SystemVars.cpp");
 
-#if NUM_DEFAULT_DETAIL_LEVELS != 4
-#error NUM_DEFAULT_DETAIL_LEVELS is assumed to be 4 in SystemVars.cpp
-#endif
+static_assert(static_cast<int>(DefaultDetailLevel::Num_detail_levels) == 4, "Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4");
 
 // Detail level stuff
-detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
+detail_levels Detail_defaults[static_cast<int>(DefaultDetailLevel::Num_detail_levels)] = {
 	{				// Low
 		0,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		0,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		0,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		0,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		0,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		2,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+					// ===== Analogs (0-MAX_DETAIL_VALUE) ====
+		0,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		0,			// detail_distance;			// 0=lowest MAX_DETAIL_VALUE=highest		
+		0,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_VALUE=no culling
+		0,			//	num_small_debris;			// 0=min number, MAX_DETAIL_VALUE=max number
+		0,			//	num_particles;				// 0=min number, MAX_DETAIL_VALUE=max number
+		0,			//	num_stars;					// 0=min number, MAX_DETAIL_VALUE=max number
+		0,			//	shield_effects;			// 0=min, MAX_DETAIL_VALUE=max
+		2,			// lighting;					// 0=min, MAX_DETAIL_VALUE=max		
 
 					// ====  Booleans ====
-		0,			//	targetview_model;			// 0=off, 1=on		
-		0,			//	planets_suns;				// 0=off, 1=on		
-		0,			// weapon_extras
+		false,			//	targetview_model;			// 0=off, 1=on		
+		false,			//	planets_suns;				// 0=off, 1=on		
+		false,			// weapon_extras
 	},
 	{				// Medium
 		1,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		2,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		2,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		3,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+					// ===== Analogs (0-MAX_DETAIL_VALUE) ====
+		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		2,			// detail_distance;			// 0=lowest MAX_DETAIL_VALUE=highest		
+		2,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_VALUE=no culling
+		2,			//	num_small_debris;			// 0=min number, MAX_DETAIL_VALUE=max number
+		2,			//	num_particles;				// 0=min number, MAX_DETAIL_VALUE=max number
+		2,			//	num_stars;					// 0=min number, MAX_DETAIL_VALUE=max number
+		2,			//	shield_effects;			// 0=min, MAX_DETAIL_VALUE=max
+		3,			// lighting;					// 0=min, MAX_DETAIL_VALUE=max		
 
 		// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon extras				
+		true,			//	targetview_model;			// 0=off, 1=on		
+		true,			//	planets_suns;				// 0=off, 1=on
+		true,			// weapon extras				
 	},
 	{				// High level
 		2,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		3,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		3,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		3,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		3,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		4,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+					// ===== Analogs (0-MAX_DETAIL_VALUE) ====
+		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		2,			// detail_distance;			// 0=lowest MAX_DETAIL_VALUE=highest		
+		3,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_VALUE=no culling
+		3,			//	num_small_debris;			// 0=min number, MAX_DETAIL_VALUE=max number
+		3,			//	num_particles;				// 0=min number, MAX_DETAIL_VALUE=max number
+		4,			//	num_stars;					// 0=min number, MAX_DETAIL_VALUE=max number
+		3,			//	shield_effects;			// 0=min, MAX_DETAIL_VALUE=max
+		4,			// lighting;					// 0=min, MAX_DETAIL_VALUE=max		
 
 										// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon_extras
+		true,			//	targetview_model;			// 0=off, 1=on		
+		true,			//	planets_suns;				// 0=off, 1=on
+		true,			// weapon_extras
 	},
 	{				// Highest level
 		3,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		4,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		4,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+					// ===== Analogs (0-MAX_DETAIL_VALUE) ====
+		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		4,			// detail_distance;			// 0=lowest MAX_DETAIL_VALUE=highest		
+		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_VALUE=no culling
+		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_VALUE=max number
+		4,			//	num_particles;				// 0=min number, MAX_DETAIL_VALUE=max number
+		4,			//	num_stars;					// 0=min number, MAX_DETAIL_VALUE=max number
+		4,			//	shield_effects;			// 0=min, MAX_DETAIL_VALUE=max
+		4,			// lighting;					// 0=min, MAX_DETAIL_VALUE=max		
 
 										// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon_extras
+		true,			//	targetview_model;			// 0=off, 1=on		
+		true,			//	planets_suns;				// 0=off, 1=on
+		true,			// weapon_extras
 	},
 };
 
 // Global used to access detail levels in game and libs
-detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
+detail_levels Detail = Detail_defaults[static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1];
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
                                                                                    { 1, {"Low", 1160}},
@@ -250,7 +246,7 @@ const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.De
                      .importance(8)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .change_listener([](int val, bool) {
                           Detail.detail_distance = val;
                           return true;
@@ -264,7 +260,7 @@ const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Textu
                      .importance(6)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .change_listener([](int val, bool) {
                           Detail.hardware_textures = val;
                           return true;
@@ -278,7 +274,7 @@ const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Part
                      .importance(5)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .change_listener([](int val, bool) {
                           Detail.num_particles = val;
                           return true;
@@ -291,7 +287,7 @@ const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.Sm
                      std::pair<const char*, int>{"Level of detail of impact effects", 1743})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .importance(4)
                      .change_listener([](int val,bool) {
                           Detail.num_small_debris = val;
@@ -306,7 +302,7 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
                      .importance(3)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .change_listener([](int val, bool) {
                           Detail.shield_effects = val;
                           return true;
@@ -320,7 +316,7 @@ const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
                      .importance(2)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .change_listener([](int val, bool) {
                           Detail.num_stars = val;
                           return true;
@@ -332,59 +328,64 @@ const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
 // 0 - lowest
 // NUM_DETAIL_LEVELS - highest
 // To set the parameters in Detail to some set of defaults
-void detail_level_set(int level)
+void detail_level_set(DefaultDetailLevel level)
 {
-	if ( level < 0 )	{
+	if ( level == DefaultDetailLevel::Custom )	{
 		Detail.setting = -1;
 		return;
 	}
-	Assert( level >= 0 );
-	Assert( level < NUM_DEFAULT_DETAIL_LEVELS );
 
-	Detail = Detail_defaults[level];
+	Detail = Detail_defaults[static_cast<int>(level)];
 }
 
-void change_default_detail_level(int level, DetailSetting  selection, int value) {
-	if (level < 0 || level >= NUM_DEFAULT_DETAIL_LEVELS) {
-		throw std::out_of_range("Invalid detail level: " + std::to_string(level));
-	}
-
-	Assertion(level >= 0 && level < NUM_DEFAULT_DETAIL_LEVELS, "Invalid detail level selected. Get a coder!");
+// Change detail values 0 - MAX_DETAIL_VALUE
+void change_default_detail_level(DefaultDetailLevel level, DetailSetting  selection, int value) {
 
 	// Use a switch statement for more readable access to the struct members
 	switch (selection) {
 	case DetailSetting::NebulaDetail:
-		Detail_defaults[level].nebula_detail = value;
+		Detail_defaults[static_cast<int>(level)].nebula_detail = value;
 		break;
 	case DetailSetting::DetailDistance:
-		Detail_defaults[level].detail_distance = value;
+		Detail_defaults[static_cast<int>(level)].detail_distance = value;
 		break;
 	case DetailSetting::HardwareTextures:
-		Detail_defaults[level].hardware_textures = value;
+		Detail_defaults[static_cast<int>(level)].hardware_textures = value;
 		break;
 	case DetailSetting::NumSmallDebris:
-		Detail_defaults[level].num_small_debris = value;
+		Detail_defaults[static_cast<int>(level)].num_small_debris = value;
 		break;
 	case DetailSetting::NumParticles:
-		Detail_defaults[level].num_particles = value;
+		Detail_defaults[static_cast<int>(level)].num_particles = value;
 		break;
 	case DetailSetting::NumStars:
-		Detail_defaults[level].num_stars = value;
+		Detail_defaults[static_cast<int>(level)].num_stars = value;
 		break;
 	case DetailSetting::ShieldEffects:
-		Detail_defaults[level].shield_effects = value;
+		Detail_defaults[static_cast<int>(level)].shield_effects = value;
 		break;
 	case DetailSetting::Lighting:
-		Detail_defaults[level].lighting = value;
+		Detail_defaults[static_cast<int>(level)].lighting = value;
 		break;
+	default:
+		Assertion(false, "Invalid detail level selection. Get a coder!");
+	}
+}
+
+// Change detail values bool overload
+void change_default_detail_level(DefaultDetailLevel level, DetailSetting selection, bool value)
+{
+
+	// Use a switch statement for more readable access to the struct members
+	switch (selection) {
 	case DetailSetting::TargetViewModel:
-		Detail_defaults[level].targetview_model = value;
+		Detail_defaults[static_cast<int>(level)].targetview_model = value;
 		break;
 	case DetailSetting::PlanetsSuns:
-		Detail_defaults[level].planets_suns = value;
+		Detail_defaults[static_cast<int>(level)].planets_suns = value;
 		break;
 	case DetailSetting::WeaponExtras:
-		Detail_defaults[level].weapon_extras = value;
+		Detail_defaults[static_cast<int>(level)].weapon_extras = value;
 		break;
 	default:
 		Assertion(false, "Invalid detail level selection. Get a coder!");
@@ -397,7 +398,7 @@ int current_detail_level()
 //	return Detail.setting;
 	int i;
 
-	for (i=0; i<NUM_DEFAULT_DETAIL_LEVELS; i++ )	{
+	for (i = 0; i < static_cast<int>(DefaultDetailLevel::Num_detail_levels); i++) {
 		if ( memcmp( &Detail, &Detail_defaults[i], sizeof(detail_levels) )==0 )	{
 			return i;
 		}
