@@ -332,6 +332,9 @@ typedef struct texture_replace {
 
 extern SCP_vector<texture_replace> Fred_texture_replacements;
 
+// which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
+extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
+
 typedef struct alt_class {
 	int ship_class;				
 	int variable_index;			// if set allows the class to be set by a variable

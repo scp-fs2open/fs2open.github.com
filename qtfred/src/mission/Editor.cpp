@@ -272,6 +272,26 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 															  { DialogButton::Ok });
 	}
 
+	// message 4: check for "immobile" flag migration
+	if (!Fred_migrated_immobile_ships.empty()) {
+		SCP_string msg = "The \"immobile\" ship flag has been superseded by the \"don't-change-position\", and \"don't-change-orientation\" flags.  "
+			"All ships which previously had \"Does Not Move\" checked in the ship flags editor will now have both \"Does Not Change Position\" and "
+			"\"Does Not Change Orientation\" checked.  After you close this dialog, the error checker will check for any potential issues, including "
+			"issues involving these flags.\n\nThe following ships have been migrated:";
+
+		for (int shipnum : Fred_migrated_immobile_ships) {
+			msg += "\n\t";
+			msg += Ships[shipnum].ship_name;
+		}
+
+		truncate_message_lines(msg, 30);
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
+														"Ship Flag Migration",
+														msg,
+														{ DialogButton::Ok });
+		_lastActiveViewport->Error_checker_checks_potential_issues_once = true;
+	}
+
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
@@ -537,6 +557,7 @@ void Editor::clearMission(bool fast_reload) {
 	}
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -2651,7 +2672,7 @@ int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
 			return 1;
 	}
 
-	if (_lastActiveViewport->Error_checker_checks_potential_issues)
+	if (_lastActiveViewport->Error_checker_checks_potential_issues || _lastActiveViewport->Error_checker_checks_potential_issues_once)
 		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
 	{
@@ -2662,11 +2683,12 @@ int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
 		if (!bad_node_str.empty())		// the previous function adds a space at the end
 			bad_node_str.pop_back();
 
-		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
 		if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", error_buf.c_str(), { DialogButton::Ok, DialogButton::Cancel }) != DialogButton::Ok)
 			return 1;
 	}
+	_lastActiveViewport->Error_checker_checks_potential_issues_once = false;
 
 	return 0;
 }
