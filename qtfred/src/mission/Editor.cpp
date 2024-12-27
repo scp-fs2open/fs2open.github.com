@@ -19,6 +19,7 @@
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
 #include <localization/fhash.h>
+#include <scripting/global_hooks.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
@@ -380,6 +381,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	stars_post_level_init();
 
 	missionLoaded(filepath);
+
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
 
 	return true;
 }
