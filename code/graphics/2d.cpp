@@ -474,7 +474,7 @@ static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.
                      .importance(100)
                      .finish();
 
-bool Gr_enable_soft_particles = false;
+bool Gr_enable_soft_particles = true;
 
 static void parse_soft_particle_func() {
 	bool value;

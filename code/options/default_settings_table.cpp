@@ -10,6 +10,7 @@
 
 #include "options/default_settings_table.h"
 #include "options/Option.h"
+#include "options/OptionsManager.h"
 #include "parse/parselo.h"
 
 void parse_default_settings_table(const char* filename)
@@ -19,25 +20,41 @@ void parse_default_settings_table(const char* filename)
 
 		reset_parse();
 
+		// start parsing
+		optional_string("#DEFAULT SETTINGS");
+
 		// allow settings to be in any order, just as in parse_ai_profiles_tbl
 		while (!check_for_string("#END")) {
-			// start parsing
-			optional_string("#DEFAULT SETTINGS");
 
-			while (optional_string("$Option Key:")) {
-				SCP_string name;
-				stuff_string(name, F_NAME);
+			int check = check_for_string("$Option Key:");
 
-				const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
+			//while (check_for_string("$Option Key:")) {
+				if (optional_string("$Option Key:")) {
+					SCP_string name;
+					stuff_string(name, F_NAME);
 
-				if (thisOpt == nullptr) {
-					Warning(LOCATION, "%s is not a valid option!", name.c_str());
-					skip_to_start_of_string_either("$Option Key:", "#END");
-					continue;
+					const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
+
+					if (thisOpt == nullptr) {
+						Warning(LOCATION, "%s is not a valid option!", name.c_str());
+						skip_to_start_of_string_either("$Option Key:", "#END");
+						continue;
+					}
+					required_string("+Value:");
+					thisOpt->parseDefaultSetting();
+
+					// If an option is enforced and not retail we set the flag so that the default value is set
+					// later during initialization, the option will be hidden from the options menu
+					// Retail options cannot be hidden because we can't really hide them from the menu
+					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
+						if (optional_string_one_of(2, "+Enforce", "+Enforced")) {
+							options::OptionsManager::instance()->enforceOption(name);
+						}
+					}
+				} else {
+					break;
 				}
-				required_string("+Value:");
-				thisOpt->parseDefaultSetting();
-			}
+			//}
 		}
 
 		required_string("#END");
