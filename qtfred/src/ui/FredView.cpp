@@ -704,6 +704,7 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 }
 void FredView::on_actionEvents_triggered(bool) {
 	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
@@ -733,6 +734,7 @@ void FredView::on_actionMission_Specs_triggered(bool) {
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionShips_triggered(bool)
@@ -981,7 +983,8 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 void FredView::on_actionSelectionList_triggered(bool) {
 	auto dialog = new dialogs::SelectionDialog(this, _viewport);
 	// This is a modal dialog
-	dialog->exec();
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 	_viewport->Lookat_mode = enabled;
