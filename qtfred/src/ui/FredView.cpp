@@ -728,6 +728,7 @@ void FredView::on_actionBriefing_triggered(bool) {
 }
 void FredView::on_actionMission_Specs_triggered(bool) {
 	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
+	missionSpecEditor->setAttribute(Qt::WA_DeleteOnClose);
 	missionSpecEditor->show();
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {

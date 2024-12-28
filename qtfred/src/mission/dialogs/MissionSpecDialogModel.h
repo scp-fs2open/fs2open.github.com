@@ -16,10 +16,6 @@ class MissionSpecDialogModel : public AbstractDialogModel {
 private:
 	void initializeData();
 
-	template<typename T> 
-	void modify(T &a, const T &b);
-
-	bool _modified = false;
 
 	SCP_string _m_created;
 	SCP_string _m_modified;
@@ -48,8 +44,6 @@ private:
 	flagset<Mission::Mission_Flags> _m_flags;
 
 	int _m_type;
-
-	void set_modified();
 
 public:
 	MissionSpecDialogModel(QObject* parent, EditorViewport* viewport);
@@ -122,17 +116,7 @@ public:
 	void setDesignerNoteText(const SCP_string&);
 	SCP_string getDesignerNoteText();
 
-	bool query_modified();
 };
-
-template<typename T>
-inline void MissionSpecDialogModel::modify(T &a, const T &b) {
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
 
 }
 }
