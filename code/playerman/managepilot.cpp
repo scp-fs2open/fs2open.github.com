@@ -99,7 +99,7 @@ void init_new_pilot(player *p, int reset)
 
 		Game_skill_level = game_get_default_skill_level();
 
-		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
+		mprintf(( "Setting detail level to %d because of new pilot\n", static_cast<int>(cur_speed) ));
 		Use_mouse_to_fly = true;
 		Mouse_sensitivity = 4;
 		if (!Using_in_game_options) {
