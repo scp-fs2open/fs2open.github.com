@@ -9063,3 +9063,15 @@ bool check_for_24_1_data()
 
 	return false;
 }
+
+bool check_for_25_0_data()
+{
+	for (int i = 0; i < Num_teams; i++) {
+		for (int j = 0; j < Briefings[i].num_stages; i++) {
+			if (!gr_compare_color_values(Briefings[i].stages[j].grid_color, Color_briefing_grid)) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
