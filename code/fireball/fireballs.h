@@ -149,6 +149,8 @@ float fireball_wormhole_intensity( fireball *fb );
 
 // Gamma39er function
 float fireball_wormhole_flare_radius(fireball* fb);
+float slowdown_exp_to_line(float t, float start, float slope);
+
 
 // Gamma39er Time Varying Function
 /*

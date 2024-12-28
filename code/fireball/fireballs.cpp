@@ -556,7 +556,8 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		float new_time = vary_time_elapsed(fb->time_elapsed, 1.4f, fb->warp_open_duration*1.25f);
+		// float new_time = vary_time_elapsed(fb->time_elapsed, 2.5f, fb->warp_open_duration*1.25f);
+		float new_time = 3.4f - slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration*0.95f, 3.4f, fb->warp_open_duration/0.95f);
 		framenum = bm_get_anim_frame(fl->bitmap_id, new_time, 0.0f, true);
 
 		if ( fb->orient )	{
@@ -1135,6 +1136,12 @@ float fireball_wormhole_flare_radius(fireball* fb) {
 	return rad;
 }
 
+float slowdown_exp_to_line(float t, float start, float slope) {
+	float b = logf(start - slope + 1.0f);
+
+	return expf(-b * (t - 1.0f)) - slope * t + slope - 1;
+}
+
 extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
 
 void fireball_render(object* obj, model_draw_list *scene)
@@ -1182,8 +1189,29 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 			float flare_rad = obj->radius * fireball_wormhole_flare_radius(fb);
 
+			matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+			matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+			// float angle = vary_time_elapsed(fb->time_elapsed, 2 * PI, fb->warp_open_duration*1.5) / 4.0f - PI;
+			float angle = -slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration, PI*0.75, PI / 4.0f);
+
+			matrix *bank_angle = vm_angle_2_matrix(&m, angle, 1);
+
 			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, flare_rad, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			warpin_queue_render(scene,
+				obj,
+				// &obj->orient * bank_angle,
+				vm_matrix_x_matrix(&dest, &obj->orient, bank_angle),
+				&obj->pos,
+				fb->current_bitmap,
+				rad,
+				percent_life,
+				flare_rad,
+				obj->radius,
+				fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0,
+				fi->warp_glow_bitmap,
+				fi->warp_ball_bitmap,
+				fi->warp_model_id);
 		}
 		break;
 
