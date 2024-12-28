@@ -234,6 +234,10 @@ BEGIN
         MENUITEM "Delete\tDel",                 32789
         MENUITEM "Delete Wing\tCtrl+Del",       33035
         MENUITEM SEPARATOR
+        MENUITEM "Lock Marked Objects",         ID_EDIT_LOCK_MARKED_OBJECTS
+        MENUITEM "Unlock All Objects",          ID_EDIT_UNLOCK_ALL_OBJECTS
+        MENUITEM "Selection Lock",              ID_SELECTION_LOCK
+        MENUITEM SEPARATOR
         MENUITEM "Disable Undo",                33055
     END
     POPUP "&View"
@@ -385,6 +389,7 @@ BEGIN
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
+        MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
         MENUITEM "Error checker\tShift+H",      32978
     END
     POPUP "&Help"
@@ -884,6 +889,9 @@ BEGIN
     LTEXT           "Max Respawns",IDC_STATIC,8,97,52,8
     EDITTEXT        IDC_RESPAWNS,86,94,50,14,ES_AUTOHSCROLL | ES_NUMBER
     CONTROL         "Spin1",IDC_RESPAWN_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,94,11,14
+    LTEXT           "Max Respawn Delay",IDC_STATIC,7,113,78,12
+    EDITTEXT        IDC_MAX_RESPAWN_DELAY,86,112,50,14,ES_AUTOHSCROLL | ES_NUMBER
+    CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
     PUSHBUTTON      "Custom Wing Names",IDC_CUSTOM_WING_NAMES,9,143,128,14
     GROUPBOX        "Squadron Reassign",IDC_STATIC,1,164,148,44
     LTEXT           "Name",IDC_STATIC,13,175,28,8
@@ -916,11 +924,14 @@ BEGIN
     COMBOBOX        IDC_COMMAND_SENDER,209,139,99,140,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
     LTEXT           "Persona",IDC_STATIC,165,156,40,8
     COMBOBOX        IDC_COMMAND_PERSONA,209,155,99,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
     GROUPBOX        "Mission Music",IDC_STATIC,157,192,154,47
     LTEXT           "Default",IDC_STATIC,161,204,40,8
     COMBOBOX        IDC_EVENT_MUSIC,207,203,99,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     LTEXT           "If music pack is present",IDC_STATIC,161,217,43,16
     COMBOBOX        IDC_SUBSTITUTE_EVENT_MUSIC,207,219,99,140,CBS_DROPDOWN | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,156,244,140,15
     GROUPBOX        "Flags",IDC_STATIC,321,20,158,198
     CONTROL         "All Teams at War",IDC_FULL_WAR,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,31,72,10
     CONTROL         "Red Alert Mission",IDC_RED_ALERT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,41,78,10
@@ -944,26 +955,20 @@ BEGIN
     CONTROL         "Toggle Starting in Chase View",IDC_TOGGLE_START_CHASE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,161,146,10
     CONTROL         "2D Mission",IDC_2D_MISSION,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,171,123,10
+    CONTROL         "Toggle Showing Goals In Briefing",IDC_TOGGLE_SHOWING_GOALS,
+                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
+    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
+    CONTROL         "Preload Subspace Tunnel",IDC_PRELOAD_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
     LTEXT           "AI Profile",IDC_STATIC,320,229,32,8
     COMBOBOX        IDC_AI_PROFILE,378,226,93,140,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    PUSHBUTTON      "Custom Data",IDC_OPEN_CUSTOM_DATA,318,244,71,15
+    PUSHBUTTON      "Custom Strings",IDC_OPEN_CUSTOM_STRINGS,400,244,71,15
     LTEXT           "Mission Description",IDC_STATIC,4,260,62,8
     EDITTEXT        IDC_MISSION_DESC,4,272,471,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
     RTEXT           "Designer Notes",IDC_STATIC,2,306,50,8
     EDITTEXT        IDC_MISSION_NOTES,3,316,472,29,ES_MULTILINE | ES_AUTOVSCROLL | ES_WANTRETURN
     DEFPUSHBUTTON   "OK",IDOK,368,0,50,14
     PUSHBUTTON      "Cancel",IDCANCEL,424,0,50,14
-    LTEXT           "Max Respawn Delay",IDC_STATIC,7,113,78,12
-    EDITTEXT        IDC_MAX_RESPAWN_DELAY,86,112,50,14,ES_AUTOHSCROLL | ES_NUMBER
-    CONTROL         "",IDC_MAX_RESPAWN_DELAY_SPIN,"msctls_updown32",UDS_SETBUDDYINT | UDS_ALIGNRIGHT | UDS_AUTOBUDDY | UDS_ARROWKEYS,136,112,11,14
-    PUSHBUTTON      "Sound Environment",IDC_SOUND_ENVIRONMENT_BUTTON,156,244,140,15
-    PUSHBUTTON      "Custom Data",IDC_OPEN_CUSTOM_DATA,318,244,71,15
-    CONTROL         "Toggle Showing Goals In Briefing",IDC_TOGGLE_SHOWING_GOALS,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,181,142,10
-    CONTROL         "Mission End to Mainhall",IDC_END_TO_MAINHALL,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,191,142,10
-    CONTROL         "Preload Subspace Tunnel",IDC_PRELOAD_SUBSPACE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,326,201,142,10
-    CONTROL         "Override #Command in event messages",IDC_OVERRIDE_HASHCOMMAND,
-                    "Button",BS_AUTOCHECKBOX | WS_TABSTOP,166,172,142,10
-    PUSHBUTTON      "Custom Strings",IDC_OPEN_CUSTOM_STRINGS,400,244,71,15
 END
 
 IDD_PREFERENCES DIALOG 0, 0, 333, 81
@@ -1667,13 +1672,7 @@ BEGIN
     CONTROL         "Active Field",IDC_ACTIVE_FIELD,"Button",BS_AUTORADIOBUTTON,33,42,53,10
     CONTROL         "Passive Field",IDC_PASSIVE_FIELD,"Button",BS_AUTORADIOBUTTON,33,54,57,10
     CONTROL         "Asteroid",IDC_FIELD_ASTEROID,"Button",BS_AUTORADIOBUTTON,55,81,41,10
-    CONTROL         "Debris",IDC_FIELD_DEBRIS,"Button",BS_AUTORADIOBUTTON,55,92,30,10
-    CONTROL         "Brown",IDC_SUBTYPE1,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,109,36,10
-    COMBOBOX        IDC_SHIP_DEBRIS1,92,107,74,95,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Blue",IDC_SUBTYPE2,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,124,30,10
-    COMBOBOX        IDC_SHIP_DEBRIS2,92,122,74,95,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
-    CONTROL         "Orange",IDC_SUBTYPE3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,39,139,39,10
-    COMBOBOX        IDC_SHIP_DEBRIS3,92,137,74,95,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
+    CONTROL         "Debris",IDC_FIELD_DEBRIS,"Button",BS_AUTORADIOBUTTON,55,92,40,10
     EDITTEXT        IDC_MIN_X,230,57,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MAX_X,230,73,40,14,ES_AUTOHSCROLL
     EDITTEXT        IDC_MIN_Y,230,89,40,14,ES_AUTOHSCROLL
@@ -1719,8 +1718,10 @@ BEGIN
     LISTBOX         IDC_FIELD_TARGET_LIST,385,70,151,60,LBS_NOINTEGRALHEIGHT | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Add",IDC_ADD_FIELD_TARGET,385,136,41,14
     PUSHBUTTON      "Remove",IDC_REMOVE_FIELD_TARGET,430,136,40,14
-    CONTROL         "Use enhanced spawn checking",IDC_RANGE_OVERRIDE, "Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,163,130,10
+    CONTROL         "Use enhanced spawn checking",IDC_RANGE_OVERRIDE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,193,163,130,10
     LTEXT           "(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)",IDC_STATIC,192,176,155,26
+    PUSHBUTTON      "Select Debris Types",IDC_SELECT_DEBRIS,98,114,75,28
+    PUSHBUTTON      "Select Asteroid Types",IDC_SELECT_ASTEROID,18,114,75,28
 END
 
 IDD_CAMPAIGN DIALOGEX 0, 0, 270, 441
@@ -1991,7 +1992,7 @@ BEGIN
     LTEXT           "Wave Filename",IDC_STATIC,209,205,50,8
 END
 
-IDD_SHIP_FLAGS DIALOGEX 0, 0, 286, 295
+IDD_SHIP_FLAGS DIALOGEX 0, 0, 286, 305
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Additional Ship Properties"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
@@ -2035,8 +2036,8 @@ BEGIN
     CONTROL         "Vaporize on Death",IDC_VAPORIZE,"Button",BS_3STATE | WS_TABSTOP,165,87,97,10
     EDITTEXT        IDC_RESPAWN_PRIORITY,226,97,49,14,ES_AUTOHSCROLL
     LTEXT           "Respawn Priority",IDC_STATIC,166,100,54,8
-    DEFPUSHBUTTON   "OK",IDOK,145,274,65,14
-    PUSHBUTTON      "Cancel",IDCANCEL,214,274,65,14
+    DEFPUSHBUTTON   "OK",IDOK,145,282,65,14
+    PUSHBUTTON      "Cancel",IDCANCEL,214,282,65,14
     CONTROL         "AutoNav Carry Status",IDC_NAV_CARRY,"Button",BS_3STATE | WS_TABSTOP,165,114,97,10
     CONTROL         "AutoNav Needs Link",IDC_NAV_NEEDSLINK,"Button",BS_3STATE | WS_TABSTOP,165,124,97,10
     CONTROL         "Hide Ship Name",IDC_HIDE_SHIP_NAME,"Button",BS_3STATE | WS_TABSTOP,165,135,99,10
@@ -2046,7 +2047,8 @@ BEGIN
     CONTROL         "Laser Protect Ship",IDC_LASER_PROTECT_SHIP,"Button",BS_3STATE | WS_TABSTOP,12,110,80,8
     CONTROL         "Missile Protect Ship",IDC_MISSILE_PROTECT_SHIP,"Button",BS_3STATE | WS_TABSTOP,12,118,80,8
     GROUPBOX        "Turret Threats",IDC_STATIC,7,83,102,48
-    CONTROL         "Does Not Move",IDC_IMMOBILE,"Button",BS_3STATE | WS_TABSTOP,7,274,66,10
+    CONTROL         "Does Not Change Position",IDC_DONT_CHANGE_POSITION,"Button",BS_3STATE | WS_TABSTOP,7,274,132,10
+    CONTROL         "Does Not Change Orientation",IDC_DONT_CHANGE_ORIENTATION,"Button",BS_3STATE | WS_TABSTOP,7,282,132,10
     CONTROL         "Cloaked",IDC_CLOAKED,"Button",BS_3STATE | WS_TABSTOP,165,167,42,10
     CONTROL         "Scramble Messages",IDC_SCRAMBLE_MESSAGES,"Button",BS_3STATE | WS_TABSTOP,165,177,79,10
     CONTROL         "No Collisions",IDC_NO_COLLIDE,"Button",BS_3STATE | WS_TABSTOP,165,188,66,10
@@ -2179,12 +2181,12 @@ BEGIN
     PUSHBUTTON      "Global Affected-By-Gravity",IDC_AFFECTED_BY_GRAVITY,7,58,100,14
 END
 
-IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 250
+IDD_VOICE_MANAGER DIALOGEX 0, 0, 407, 284
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "Voice Acting Manager"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,237
+    GROUPBOX        "File Name Options",IDC_FILE_NAME_OPTIONS,7,7,130,271
     GROUPBOX        "Abbreviations",IDC_ABBREVIATIONS,12,17,120,101
     LTEXT           "Campaign",IDC_LBL_ABBREV_CAMPAIGN,17,28,58,10
     EDITTEXT        IDC_ABBREV_CAMPAIGN,82,27,44,12,ES_AUTOHSCROLL
@@ -2208,7 +2210,7 @@ BEGIN
     CONTROL         "Don't replace existing file names",IDC_NO_REPLACE,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,14,186,116,10
     PUSHBUTTON      "Generate File Names",IDC_GENERATE_FILE_NAMES,12,200,120,14
-    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,237
+    GROUPBOX        "Script Options",IDC_SCRIPT_OPTIONS,143,7,257,271
     GROUPBOX        "Script Entry Format",IDC_ENTRY,149,17,246,101
     EDITTEXT        IDC_ENTRY_FORMAT,154,28,109,83,ES_MULTILINE | ES_AUTOHSCROLL | ES_WANTRETURN
     LTEXT           "Placeholder - this text is set at runtime",IDC_ENTRY_FORMAT_DESC,270,28,120,85
@@ -2223,11 +2225,12 @@ BEGIN
     CONTROL         "Group send-message-list messages before others",IDC_GROUP_MESSAGES,
                     "Button",BS_AUTOCHECKBOX | BS_TOP | BS_MULTILINE | WS_TABSTOP,293,182,100,19
     GROUPBOX        "Sync Personas",IDC_SYNC_PERSONAS,149,121,119,118
+    COMBOBOX        IDC_WHICH_TO_SYNC,154,133,109,200,CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP
     PUSHBUTTON      "Copy message personas to ships",IDC_MESSAGE_PERSONAS_TO_SHIPS,154,151,109,14
     PUSHBUTTON      "Copy ship personas to messages",IDC_SHIP_PERSONAS_TO_MESSAGES,154,168,109,14
     PUSHBUTTON      "Set head ANIs using personas in messages.tbl",IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL,154,211,109,23,BS_MULTILINE
     PUSHBUTTON      "Clear personas from ships that don't send messages",IDC_CLEAR_PERSONAS_FROM_NON_SENDERS,154,185,109,23,BS_MULTILINE
-    LTEXT           "NOTE: Only wingman personas are modified here.",IDC_LBL_NOTE,155,132,107,16
+    PUSHBUTTON      "Check if messages sent by \x22<any wingman>\x22 have at least one ship with that persona",IDC_CHECK_ANY_WINGMAN_PERSONAS,149,242,119,30,BS_MULTILINE
 END
 
 IDD_CUSTOM_WING_NAMES DIALOG 0, 0, 390, 54
@@ -3384,7 +3387,6 @@ BEGIN
     0
 END
 
-
 IDD_LOADOUT_EDITOR AFX_DIALOG_LAYOUT
 BEGIN
     0
@@ -3494,6 +3496,10 @@ BEGIN
                             "When setting initially docked ships to initially undocked, move the smaller ship away from the dockpoint by one ship length"
     ID_EDIT_CLONEMARKEDOBJECTS 
                             "Clone every marked object in-place, like Ctrl-drag without the dragging"
+    ID_EDIT_LOCK_MARKED_OBJECTS
+                            "Prevent marked objects from being selected or moved"
+    ID_EDIT_UNLOCK_ALL_OBJECTS
+                            "Allow all objects to be selected or moved"
     ID_MISC_POINTUSINGUVEC  "When using the Object Editor to point ships, take the ship's current up-vector into account"
     ID_MUSIC_PLAYER         "Preview music files"
 END
@@ -3623,7 +3629,7 @@ BEGIN
     ID_SELECT_LIST          "Select from List\nSelect List (H)"
     ID_CONSTRAIN_Y          "Constrain movement to global Y axis\nY Constraint"
     ID_ZOOM                 "Zoom view in/out\nZoom Mode"
-    ID_SELECTION_LOCK       "Selection Lock\nSelection Lock (Spacebar)"
+    ID_SELECTION_LOCK       "Prevent selection from changing\nSelection Lock (Spacebar)"
     ID_DISSOLVE_WING        "Remove selected ships from Wing(s)\nRemove from Wing"
 END
 

@@ -58,7 +58,7 @@ enum sexp_opf_t : int {
 	OPF_SHIP_WING_SHIPONTEAM_POINT,	// name of a ship, wing, any ship on a team, or a point
 	OPF_SHIP_WING_POINT,
 	OPF_SHIP_WING_POINT_OR_NONE,	// WMC - Ship, wing, point or none
-	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)
+	OPF_SHIP_TYPE,					// type of ship (fighter/bomber/etc)... NOTE: the type "fighter/bomber" is allowed even though it's not a real ship type; SEXPs must account for this
 	OPF_KEYPRESS,					// a default key
 	OPF_EVENT_NAME,					// name of an event
 	OPF_AI_ORDER,					// a squadmsg order player can give to a ship
@@ -134,7 +134,8 @@ enum sexp_opf_t : int {
 	OPF_TRANSLATING_SUBSYSTEM,		// Goober5000 - a translating subsystem
 	OPF_ANY_HUD_GAUGE,				// Goober5000 - both custom and builtin
 	OPF_WING_FLAG,					// Goober5000 - The name of a wing flag
-	OPF_ASTEROID_DEBRIS,			// MjnMixael - Debris types as defined in asteroids.tbl
+	OPF_ASTEROID_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, asteroid types only
+	OPF_DEBRIS_TYPES,				// MjnMixael - Asteroids from asteroids.tbl, debris types only
 	OPF_WING_FORMATION,				// Goober5000 - as defined in ships.tbl
 	OPF_MOTION_DEBRIS,				// MjnMixael - Motion debris types as defined in stars.tbl
 	OPF_TURRET_TYPE,				// MjnMixael - Turret types as defined in aiturret.cpp
@@ -142,6 +143,8 @@ enum sexp_opf_t : int {
 	OPF_TRAITOR_OVERRIDE,			// MjnMixael - Traitor overrides as defined in traitor.tbl
 	OPF_LUA_GENERAL_ORDER,          // MjnMixael - General orders as defined in sexps.tbl
 	OPF_CHILD_LUA_ENUM,			    // MjnMixael - Used to let Lua Enums reference Enums
+	OPF_MISSION_CUSTOM_STRING,      // MjnMixael - The custom strings as defined in FRED
+	OPF_MESSAGE_TYPE,      // naomimyselfandi - A message type (Attack Target et al.)
 
 	//Must always be at the end of the list
 	First_available_opf_id
@@ -311,6 +314,8 @@ enum : int {
 	OP_XOR,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_FIRST,	// Goober5000
 	OP_PERFORM_ACTIONS_BOOL_LAST,	// Goober5000
+	OP_HAS_TIME_ELAPSED_MSECS,	// Goober5000
+	OP_IS_TRUE_FOR_DURATION,	// Goober5000
 
 	// OP_CATEGORY_GOAL_EVENT
 	
@@ -347,9 +352,11 @@ enum : int {
 	OP_DESTROYED_DEPARTED_DELAY,
 	OP_PERCENT_SHIPS_DISARMED,	// Goober5000
 	OP_PERCENT_SHIPS_DISABLED,	// Goober5000
+
 	OP_PERCENT_SHIPS_ARRIVED,	// FUBAR-BDHR
 	OP_NAV_IS_VISITED,	// Kazan
 	OP_WAS_DESTROYED_BY_DELAY,	// WCS
+	OP_PERCENT_SHIPS_SCANNED,	// Goober5000
 	
 	// OP_CATEGORY_TIME
 	
@@ -411,14 +418,15 @@ enum : int {
 	OP_NUM_SHIPS_IN_BATTLE,	// phreak
 	OP_CURRENT_SPEED, // WMCoolmon
 	OP_IS_IFF,	// Goober5000
+	OP_IS_SPECIES,	// Goober5000
 	OP_NUM_WITHIN_BOX,	// WMCoolmon
 	OP_SCRIPT_EVAL_NUM, // WMCoolmon
 	OP_SCRIPT_EVAL_STRING, // WMCoolmon
 	OP_NUM_SHIPS_IN_WING,	// Karajorma
 	OP_GET_PRIMARY_AMMO, // Karajorma
 	OP_GET_SECONDARY_AMMO, // Karajorma
+
 	OP_NUM_ASSISTS, // Karajorma
-	
 	OP_SHIP_SCORE, // Karajorma
 	OP_SHIP_DEATHS, // Karajorma
 	OP_RESPAWNS_LEFT, // Karajorma
@@ -429,7 +437,6 @@ enum : int {
 	OP_PRIMARY_FIRED_SINCE, // Karajorma
 	OP_SECONDARY_FIRED_SINCE, // Karajorma
 	OP_CUTSCENES_GET_FOV, // Echelon9
-	OP_GET_THROTTLE_SPEED, // Karajorma
 	OP_HITS_LEFT_SUBSYSTEM_GENERIC, // Goober5000
 	OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, // Goober5000
 	OP_GET_OBJECT_PITCH,	// Goober5000
@@ -451,12 +458,14 @@ enum : int {
 	OP_IS_IN_BOX, // Sushi
 	OP_IS_IN_MISSION, // Goober5000
 	OP_ARE_SHIP_FLAGS_SET, // Karajorma
+	OP_ARE_WING_FLAGS_SET, // Goober5000
+
+	OP_GET_THROTTLE_SPEED, // Karajorma
+	OP_HAS_ARMOR_TYPE, // MjnMixael
 	OP_TURRET_GET_PRIMARY_AMMO, // DahBlount, part of the turret ammo code
+	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_TURRET_HAS_PRIMARY_WEAPON,      // MjnMixael
 	OP_TURRET_HAS_SECONDARY_WEAPON, // MjnMixael
-	OP_HAS_ARMOR_TYPE, // MjnMixael
-	
-	OP_TURRET_GET_SECONDARY_AMMO,	// DahBlount, part of the turret ammo code
 	OP_IS_DOCKED,	// Goober5000
 	OP_IS_IN_TURRET_FOV,	// Goober5000
 	OP_GET_HOTKEY, // wookieejedi
@@ -467,13 +476,12 @@ enum : int {
 	OP_SCRIPT_EVAL_BOOL, // Goober5000
 	OP_IS_CONTAINER_EMPTY,	// Karajorma/jg18
 	OP_GET_CONTAINER_SIZE,	// Karajorma/jg18
+
 	OP_LIST_HAS_DATA,	// Karajorma/jg18
 	OP_LIST_DATA_INDEX,	// Karajorma/jg18
 	OP_MAP_HAS_KEY,	// Karajorma/jg18
 	OP_MAP_HAS_DATA_ITEM,	// Karajorma/jg18
 	OP_ANGLE_FVEC_TARGET, // Lafiel
-	
-	OP_ARE_WING_FLAGS_SET, // Goober5000
 	OP_IS_SHIP_EMP_ACTIVE,	// MjnMixael
 	OP_PLAYER_IS_CHEATING_BASTARD,	// The E
 	OP_TURRET_FIRED_SINCE,	// Asteroth
@@ -513,6 +521,7 @@ enum : int {
 	OP_FOR_CONTAINER_DATA,	// jg18
 	OP_FOR_MAP_CONTAINER_KEYS,	// jg18
 	OP_ON_MISSION_SKIP,	// Goober5000
+	OP_FOR_SUBSYSTEMS,	// Goober5000
 
 	// OP_CATEGORY_CHANGE
 	// sexpressions with side-effects
@@ -523,6 +532,7 @@ enum : int {
 	OP_SET_SUBSYSTEM_STRNGTH,
 	OP_PROTECT_SHIP,
 	OP_SEND_MESSAGE,
+	OP_SEND_BUILTIN_MESSAGE,
 	OP_SELF_DESTRUCT,
 	OP_CLEAR_GOALS,
 	OP_ADD_GOAL,
@@ -640,10 +650,12 @@ enum : int {
 	OP_HUD_DISABLE_EXCEPT_MESSAGES,	// Goober5000
 	OP_FORCE_JUMP,	// Goober5000
 	OP_HUD_SET_TEXT, //WMC
+	OP_HUD_SET_XSTR,
 	OP_HUD_SET_TEXT_NUM, //WMC
 	OP_HUD_SET_COORDS, //WMC
 	OP_HUD_SET_FRAME, //WMC
 	OP_HUD_SET_COLOR, //WMC
+	OP_HUD_RESET_COLOR, // Goober5000
 	OP_HUD_SET_MAX_TARGETING_RANGE, // Goober5000
 	OP_SHIP_TAG, // Goober5000
 	OP_SHIP_UNTAG, // Goober5000
@@ -652,8 +664,8 @@ enum : int {
 	OP_UNSCRAMBLE_MESSAGES,	// phreak
 	OP_CUTSCENES_SET_CUTSCENE_BARS,	// WMC
 	OP_CUTSCENES_UNSET_CUTSCENE_BARS,	// WMC
+
 	OP_CUTSCENES_FADE_IN,	// WMC
-	
 	OP_CUTSCENES_FADE_OUT,	// WMC
 	OP_CUTSCENES_SET_CAMERA_POSITION,	// WMC
 	OP_CUTSCENES_SET_CAMERA_FACING,	// WMC
@@ -689,6 +701,7 @@ enum : int {
 	OP_NEBULA_CHANGE_STORM,
 	OP_NEBULA_TOGGLE_POOF,
 	OP_NEBULA_FADE_POOF,
+	OP_VOLUMETRICS_TOGGLE,
 	
 	OP_TURRET_CHANGE_WEAPON,
 	OP_TURRET_SET_TARGET_ORDER,
@@ -710,6 +723,7 @@ enum : int {
 	OP_LOCK_SECONDARY_WEAPON, // Karajorma
 	OP_UNLOCK_SECONDARY_WEAPON, // Karajorma
 	OP_SET_CAMERA_SHUDDER,	// Goober5000
+	OP_SET_FRIENDLY_DAMAGE_CAPS, // Kestrellius
 	OP_ALLOW_TREASON, // Karajorma
 	OP_SHIP_COPY_DAMAGE,	// Goober5000
 	OP_CHANGE_SUBSYSTEM_NAME,	// Karajorma
@@ -864,6 +878,7 @@ enum : int {
 	OP_TURRET_SET_INACCURACY,	// Asteroth
 	
 	OP_REPLACE_TEXTURE,	// Lafiel
+	OP_REPLACE_TEXTURE_SKYBOX,	// Lafiel
 	OP_NEBULA_CHANGE_FOG_COLOR,	// Asteroth
 	OP_SET_ALPHA_MULT,	// Lafiel
 	OP_DESTROY_INSTANTLY_WITH_DEBRIS,	// Asteroth
@@ -900,10 +915,14 @@ enum : int {
 	OP_VALIDATE_GENERAL_ORDERS,		// MjnMixael
 	OP_USED_CHEAT,	// Kiloku
 	OP_SET_ASTEROID_FIELD,	// MjnMixael
-
 	OP_SET_DEBRIS_FIELD,	// MjnMixael
+	OP_CONFIG_ASTEROID_FIELD,  // MjnMixael
+	OP_CONFIG_DEBRIS_FIELD,  // MjnMixael
+	OP_CONFIG_FIELD_TARGETS,  // MjnMixael
 	OP_SET_MOTION_DEBRIS,   // MjnMixael
 	OP_GOOD_PRIMARY_TIME,	// plieblang
+	OP_SET_SKYBOX_ALPHA,	// Goober5000
+	OP_NEBULA_SET_RANGE,	// Goober5000
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -997,8 +1016,8 @@ enum : int {
 #define SEXP_HULL_STRING			"Hull"
 #define SEXP_SIM_HULL_STRING		"Simulated Hull"
 #define SEXP_SHIELD_STRING			"Shields"
-#define SEXP_ALL_ENGINES_STRING		"<all engines>"
-#define SEXP_ALL_TURRETS_STRING		"<all turrets>"
+#define SEXP_ALL_GENERIC_SUBSYSTEM_STRING	"<all %s>"
+#define SEXP_ALL_SUBSYSTEMS_STRING			"<all subsystems>"
 #define SEXP_ARGUMENT_STRING		"<argument>"
 #define SEXP_NONE_STRING			"<none>"
 #define SEXP_ANY_STRING				"<any string>"
@@ -1225,6 +1244,7 @@ enum sexp_error_check
 	SEXP_CHECK_MISPLACED_SPECIAL_ARGUMENT,
 	SEXP_CHECK_AMBIGUOUS_GOAL_NAME,
 	SEXP_CHECK_AMBIGUOUS_EVENT_NAME,
+	SEXP_CHECK_INVALID_CONTAINER,
 	SEXP_CHECK_MISSING_CONTAINER_MODIFIER,
 	SEXP_CHECK_INVALID_LIST_MODIFIER,
 	SEXP_CHECK_WRONG_MAP_KEY_TYPE,
@@ -1249,6 +1269,9 @@ enum sexp_error_check
 	SEXP_CHECK_INVALID_ORDER_RECIPIENT,
 	SEXP_CHECK_INVALID_SHIP_WING_WHOLETEAM,
 	SEXP_CHECK_MUST_BE_INTEGER,
+	SEXP_CHECK_INVALID_CUSTOM_STRING,
+	SEXP_CHECK_INVALID_MESSAGE_TYPE,
+	SEXP_CHECK_POTENTIAL_ISSUE,
 };
 
 
@@ -1340,7 +1363,9 @@ typedef struct sexp_node {
 	int flags;					// Goober5000
 
 	sexp_cached_data *cache;	// Goober5000
-	int cached_variable_index;	// Goober5000
+	int cached_variable_index;	// Goober5000 - note, this can be used for special-arg nodes, not just variable nodes
+
+	int duration_index;			// Goober5000 - only used if node is the is-true-for-duration operator
 } sexp_node;
 
 // Goober5000
@@ -1352,6 +1377,8 @@ typedef struct sexp_node {
 #define SNF_CHECKED_ARG_FOR_VAR		(1<<5)
 #define SNF_CHECKED_NODE_FOR_OPF_POSITIVE	(1<<6)
 #define SNF_NODE_IS_OPF_POSITIVE	(1<<7)
+#define SNF_DESCENDANT_OF_WHEN_ARG_OP		(1<<8)
+#define SNF_NOT_DESCENDANT_OF_WHEN_ARG_OP	(1<<9)
 #define SNF_DEFAULT_VALUE			SNF_ARGUMENT_VALID
 
 typedef struct sexp_variable {
@@ -1414,6 +1441,7 @@ extern int get_operator_const(int node);
 extern int find_operator_index(int op_const);
 
 extern int check_sexp_syntax(int node, int return_type = OPR_BOOL, int recursive = 0, int *bad_node = 0 /*NULL*/, sexp_mode mode = sexp_mode::GENERAL);
+extern int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg);
 extern int get_sexp_main(void);	//	Returns start node
 extern int run_sexp(const char* sexpression, bool run_eval_num = false, bool *is_nan_or_nan_forever = nullptr); // debug and lua sexps
 extern int stuff_sexp_variable_list();
@@ -1446,11 +1474,6 @@ extern wing *eval_wing(int node);
 extern int sexp_get_variable_index(int node);
 extern int sexp_atoi(int node);
 extern bool sexp_can_construe_as_integer(int node);
-
-// Goober5000
-void do_action_for_each_special_argument(int cur_node);
-bool special_argument_appears_in_sexp_tree(int node);
-bool special_argument_appears_in_sexp_list(int node);
 
 // Goober5000 - for special-arg SEXPs
 extern bool is_when_argument_op(int op_const);
@@ -1622,9 +1645,6 @@ struct object_ship_wing_point_team
 
 	bool operator==(const object_ship_wing_point_team &other) const;
 	bool operator!=(const object_ship_wing_point_team &other) const;
-
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 void eval_object_ship_wing_point_team(object_ship_wing_point_team* oswpt, int node, const char* ctext_override = nullptr);

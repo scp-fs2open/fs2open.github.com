@@ -14,6 +14,7 @@
 #include "hud/hudtarget.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "freespace.h"
 
 extern int Training_obj_num_display_lines;
 
@@ -24,7 +25,7 @@ namespace api {
 //**********LIBRARY: HUD library
 ADE_LIB(l_HUD, "HUD", "hu", "HUD library");
 
-ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
+ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Whether the HUD is toggled on, i.e. is the HUD enabled.  See also hu.isOnHudDrawCalled()", "boolean", "Whether the HUD can be drawn")
 {
 	bool to_draw = false;
 
@@ -43,6 +44,19 @@ ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "I
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(HUDHighContrast, l_HUD, "boolean", "Gets or sets whether the HUD is currently high-contrast", "boolean", "Whether the HUD is high-contrast")
+{
+	bool value = false;
+
+	if(!ade_get_args(L, "*|b", &value))
+		return ADE_RETURN_NIL;
+
+	if(ADE_SETTING_VAR)
+		HUD_high_contrast = value;
+
+	return ade_set_args(L, "b", HUD_high_contrast);
 }
 
 ADE_VIRTVAR(HUDDisabledExceptMessages, l_HUD, "boolean", "Specifies if only the messages gauges of the hud are drawn", "boolean", "true if only the message gauges are drawn, false otherwise")
@@ -255,7 +269,7 @@ ADE_FUNC(flashTargetBox, l_HUD, "enumeration section, [number duration_in_millis
 		return ADE_RETURN_NIL;
 
 	int section_index = 0;
-	if (section.IsValid())
+	if (section.isValid())
 	{
 		switch (section.index)
 		{
@@ -293,7 +307,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 	if (!ade_get_args(L, "o|o", l_Object.GetPtr(&targetee_h), l_Vector.GetPtr(&targeter_pos)))
 		return ADE_RETURN_NIL;
 
-	if (targetee_h == nullptr || !targetee_h->IsValid())
+	if (targetee_h == nullptr || !targetee_h->isValid())
 		return ADE_RETURN_NIL;
 
 	if (targeter_pos == nullptr)
@@ -307,7 +321,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 		}
 	}
 
-	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	auto dist = hud_find_target_distance(targetee_h->objp(), targeter_pos);
 	return ade_set_args(L, "f", dist);
 }
 
@@ -319,6 +333,11 @@ ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines display
 ADE_FUNC(isCommMenuOpen, l_HUD, nullptr, "Returns whether the HUD comm menu is currently being displayed", "boolean", "Whether the comm menu is open")
 {
 	return ade_set_args(L, "b", (Player->flags & PLAYER_FLAGS_MSG_MODE) != 0);
+}
+
+ADE_FUNC(isOnHudDrawCalled, l_HUD, nullptr, "Returns whether the On Hud Draw hook is called this frame.  This is useful for scripting logic that is relevant to HUD drawing but is not part of the On Hud Draw hook", "boolean", "Whether the On Hud Draw hook is called this frame")
+{
+	return ade_set_args(L, "b", game_actually_playing() && !Pre_player_entry && !(Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)));
 }
 
 ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")

@@ -71,6 +71,12 @@ struct DocumentationEnum {
 	int value;
 };
 
+struct DocumentationOption {
+	SCP_string title;
+	SCP_string description;
+	SCP_string key;
+};
+
 struct DocumentationAction {
 	SCP_string name;
 	SCP_string description;
@@ -90,6 +96,8 @@ struct ScriptingDocumentation {
 	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
 
 	SCP_vector<DocumentationEnum> enumerations;
+	
+	SCP_vector<DocumentationOption> options;
 };
 
 }

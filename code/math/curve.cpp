@@ -1,16 +1,12 @@
 
+#include "globalincs/utility.h"
 #include "math/curve.h"
 #include "parse/parselo.h"
 
 SCP_vector<Curve> Curves;
 
-int curve_get_by_name(SCP_string& in_name) {
-	for (int i = 0; i < (int)Curves.size(); i++) {
-		if (lcase_equal(Curves[i].name, in_name))
-			return i;
-	}
-
-	return -1;
+int curve_get_by_name(const SCP_string& in_name) {
+	return find_item_with_name(Curves, in_name);
 }
 
 void parse_curve_table(const char* filename) {
@@ -28,7 +24,7 @@ void parse_curve_table(const char* filename) {
 			int index = curve_get_by_name(name);
 
 			if (index < 0) {
-				Curve curv = Curve(name);
+				Curve curv = Curve(std::move(name));
 				curv.ParseData();
 				Curves.push_back(curv);
 			} else {
@@ -43,10 +39,11 @@ void parse_curve_table(const char* filename) {
 }
 
 void fill_default_curves() {
-	for (int i = 2; i < 6; i++) {
+	for (int i = 1; i < 6; i++) {
 		for (int rev = 0; rev < 2; rev++) {
 			SCP_string name("EaseIn");
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -56,11 +53,15 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
+			if (i == 1)
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, 1.0f });
+			else
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 
 			name = "EaseOut";
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -70,11 +71,15 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+			if (i == 1)
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, -1.0f });
+			else
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 
 			name = "EaseInOut";
 			switch (i) {
+			case 1: name += "Circ"; break;
 			case 2: name += "Quad"; break;
 			case 3: name += "Cubic"; break;
 			case 4: name += "Quart"; break;
@@ -84,8 +89,14 @@ void fill_default_curves() {
 				name += "Rev";
 
 			Curves.emplace_back(name);
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
-			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+
+			if (i == 1) {
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Circular, 0.0f, 1.0f });
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Circular, 0.0f, -1.0f });
+			} else {
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.0f, rev ? 1.0f : 0.0f}, CurveInterpFunction::Polynomial, (float)i, 1.0f });
+				Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 0.5f, 0.5f}, CurveInterpFunction::Polynomial, (float)i, -1.0f });
+			}
 			Curves.back().keyframes.push_back(curve_keyframe{ vec2d { 1.0f, rev ? 0.0f : 1.0f}, CurveInterpFunction::Constant, 0.0f, 0.0f });
 		}
 	}
@@ -224,10 +235,67 @@ float Curve::GetValue(float x_val) const {
 			return kframe->pos.y + out * (next_pos->y - kframe->pos.y);
 		case CurveInterpFunction::Curve:
 			// add 0.5 to ensure this behaves like rounding
-			out = Curves[(int)(kframe->param1 + 0.5f)].GetValue(t);
+			out = Curves[fl2i(kframe->param1 + 0.5f)].GetValue(t);
 			return kframe->pos.y + out * (next_pos->y - kframe->pos.y);
 		default:
 			UNREACHABLE("Unrecognized curve function");
 			return 0.0f;
 	}
+}
+
+float Curve::GetValueIntegrated(float x_val) const
+{
+	float integrated_value = 0.f;
+
+	if (x_val < keyframes[0].pos.x) {
+		return (keyframes[0].pos.x - x_val) * keyframes[0].pos.y;
+	}
+
+	for (size_t i = 0; i < keyframes.size(); i++) {
+		const curve_keyframe* kframe = &keyframes[i];
+		if (i == keyframes.size() - 1) {
+			integrated_value += (x_val - kframe->pos.x) * kframe->pos.y;
+			break;
+		}
+		const vec2d* next_pos = &keyframes[i+1].pos;
+		float end_x = MIN(x_val, next_pos->x);
+		bool last_keyframe = false;
+		if (x_val <= next_pos->x) {
+			last_keyframe = true;
+		}
+		float t = (end_x - kframe->pos.x) / (next_pos->x - kframe->pos.x);
+		float m = (next_pos->y - kframe->pos.y) * (next_pos->x - kframe->pos.x);
+		float out;
+		integrated_value += (end_x - kframe->pos.x) * kframe->pos.y;
+		switch (kframe->interp_func) {
+		case CurveInterpFunction::Constant:
+			break;
+		case CurveInterpFunction::Linear:
+			integrated_value += t * t * m * 0.5f;
+			break;
+		case CurveInterpFunction::Polynomial:
+			out = kframe->param2 > 0.0f ? powf(t, kframe->param1 + 1.f) : (powf(1 - t, kframe->param1 + 1.f) + (kframe->param1 * t) + t - 1.f);
+			integrated_value += (out * m)/(kframe->param1 + 1.f);
+			break;
+		case CurveInterpFunction::Circular:
+			if (kframe->param2 > 0.0f) {
+				integrated_value += m * (0.5f * (-sqrtf(1.f - (t * t)) * t - asin(t)) + t);
+			} else {
+				integrated_value += m * (0.5f * sqrtf(-(t - 2) * t) * (t - 1) + asin(sqrtf(t) / sqrtf(2.f)));
+			}
+			break;
+		case CurveInterpFunction::Curve:
+			// add 0.5 to ensure this behaves like rounding
+			integrated_value += m * (Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(t) - Curves[fl2i(kframe->param1 + 0.5f)].GetValueIntegrated(0.f));
+			break;
+		default:
+			UNREACHABLE("Unrecognized curve function");
+			break;
+		}
+		if (last_keyframe) {
+			break;
+		}
+	}
+
+	return integrated_value;
 }

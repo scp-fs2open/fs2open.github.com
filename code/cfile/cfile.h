@@ -377,6 +377,7 @@ struct CFileLocation {
 	SCP_string full_name;
 	size_t size          = 0;
 	size_t offset        = 0;
+	time_t m_time        = 0;
 	const void* data_ptr = nullptr;
 
 	explicit CFileLocation(bool found_in = false) : found(found_in) {}

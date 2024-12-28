@@ -47,6 +47,7 @@ public:
 
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }
+	inline bool isFinite() const { return isValid() && !isNever(); }
 };
 
 // Timestamp measuring game time.  Sensitive to time compression and pausing.
@@ -63,6 +64,7 @@ public:
 
 	inline bool isNever() const { return m_val == 0; }
 	inline bool isImmediate() const { return m_val == 1; }
+	inline bool isFinite() const { return isValid() && !isNever(); }
 };
 
 // For converting from old-style timestamps:
@@ -137,7 +139,7 @@ TIMESTAMP _timestamp();					// use a leading underscore for now until all timest
 UI_TIMESTAMP ui_timestamp();
 
 inline bool timestamp_valid(int stamp) {
-	return stamp != 0;
+	return stamp > 0;	// 0 is the "official" invalid for legacy timestamps, but -1 is used in a lot of places too
 }
 
 // To do timing, call this with the interval you

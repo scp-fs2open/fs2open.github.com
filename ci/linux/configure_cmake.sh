@@ -21,16 +21,13 @@ if [ "$RUNNER_OS" = "macOS" ]; then
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_WITH_VULKAN=OFF"
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
 else
-    CXXFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas -static-libstdc++"
-    CFLAGS="-m64 -mtune=generic -mfpmath=sse -msse -msse2 -pipe -Wno-unknown-pragmas"
-    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON"
+    PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
 fi
 
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
 if [[ "$COMPILER" =~ ^clang.*$ ]]; then
     CMAKE_OPTIONS="$CMAKE_OPTIONS -DCLANG_USE_LIBCXX=ON"
     # force clang to silently allow -static-libstdc++ flag
-    CXXFLAGS="$CXXFLAGS -Qunused-arguments"
 fi
 
 if [ ! "$CCACHE_PATH" = "" ]; then

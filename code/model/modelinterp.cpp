@@ -611,7 +611,7 @@ ubyte Interp_subspace_r = 255;
 ubyte Interp_subspace_g = 255;
 ubyte Interp_subspace_b = 255;
 
-void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint flags )
+void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint64_t flags )
 {
 	if ( flags & MR_SHOW_OUTLINE_PRESET )	{
 		return;
@@ -686,7 +686,7 @@ void model_draw_debug_points(const polymodel *pm, const bsp_info *submodel, uint
 /**
  * Debug code to show all the paths of a model
  */
-void model_draw_paths_htl( int model_num, uint flags )
+void model_draw_paths_htl( int model_num, uint64_t flags )
 {
 	int i,j;
 	vec3d pnt;
@@ -824,7 +824,7 @@ DCF_BOOL( Arcs, Interp_lightning )
 
 int interp_box_offscreen( vec3d *min, vec3d *max )
 {
-	if ( keyd_pressed[KEY_LSHIFT] )	{
+	if ( key_is_pressed(KEY_LSHIFT) )	{
 		return IBOX_ALL_ON;
 	}
 
@@ -867,7 +867,7 @@ int interp_box_offscreen( vec3d *min, vec3d *max )
 	return IBOX_ALL_ON;	
 }
 
-void model_render_shields( polymodel * pm, uint flags )
+void model_render_shields( polymodel * pm, uint64_t flags )
 {
 	int i, j;
 	shield_tri *tri;
@@ -1385,7 +1385,7 @@ int model_find_texture(int model_num, int bitmap)
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_model_closest_box_point_with_delta(vec3d *closest_box_point, vec3d *start_point, int modelnum, int *is_inside, float delta)
+float get_model_closest_box_point_with_delta(vec3d *closest_box_point, const vec3d *start_point, int modelnum, int *is_inside, float delta)
 {
 	int i, idx;
 	vec3d box_point, ray_direction, *extremes;
@@ -1437,7 +1437,7 @@ float get_model_closest_box_point_with_delta(vec3d *closest_box_point, vec3d *st
 // positive return value means start_point is outside extended box
 // displaces closest point an optional amount delta to the outside of the box
 // closest_box_point can be NULL.
-float get_world_closest_box_point_with_delta(vec3d *closest_box_point, object *box_obj, vec3d *start_point, int *is_inside, float delta)
+float get_world_closest_box_point_with_delta(vec3d *closest_box_point, const object *box_obj, const vec3d *start_point, int *is_inside, float delta)
 {
 	vec3d temp, box_start;
 	float dist;
@@ -3294,7 +3294,7 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 			Num_verts[it->first] -= poly.Num_verts;
 			Num_verts[it->second] += poly.Num_verts;
 			--Num_polies[it->first];
-			++Num_polies[it->first];
+			++Num_polies[it->second];
 		}
 	}
 }

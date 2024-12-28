@@ -309,7 +309,6 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 	size_t idx;
 	index_list_t ilist;
 
-
 	multi_stats.score = stats->score;
 	multi_stats.rank = stats->rank;
 	multi_stats.assists = stats->assists;
@@ -325,11 +324,10 @@ void pilotfile::set_multi_stats(const scoring_struct *stats)
 	multi_stats.s_shots_hit = stats->s_shots_hit;
 	multi_stats.s_bonehead_hits = stats->s_bonehead_hits;
 
-	multi_stats.flight_time = stats->flight_time;
 	multi_stats.missions_flown = stats->missions_flown;
+	multi_stats.flight_time = stats->flight_time;
 	multi_stats.last_flown = stats->last_flown;
 	multi_stats.last_backup = stats->last_backup;
-
 
 	// ship kills
 	multi_stats.ship_kills.clear();
@@ -401,4 +399,64 @@ void pilotfile::reset_stats()
 		ss_stats[i]->ship_kills.clear();
 		ss_stats[i]->medals_earned.clear();
 	}
+}
+
+/**
+ * @brief Export stats to given scoring struct, sanitized for current mod data
+ * 
+ * @param[out] stats Scoring struct for exported data
+ * 
+ * @returns true if stats were exported successfully
+ */
+bool pilotfile::export_stats(scoring_struct *stats)
+{
+	scoring_special_t *p_stats = nullptr;
+
+	if ( !stats ) {
+		return false;
+	}
+
+	stats->init();
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		p_stats = &multi_stats;
+	} else {
+		p_stats = &all_time_stats;
+	}
+
+	stats->score = p_stats->score;
+	stats->rank = p_stats->rank;
+	stats->assists = p_stats->assists;
+	stats->kill_count = p_stats->kill_count;
+	stats->kill_count_ok = p_stats->kill_count_ok;
+	stats->bonehead_kills = p_stats->bonehead_kills;
+
+	stats->p_shots_fired = p_stats->p_shots_fired;
+	stats->p_shots_hit = p_stats->p_shots_hit;
+	stats->p_bonehead_hits = p_stats->p_bonehead_hits;
+
+	stats->s_shots_fired = p_stats->s_shots_fired;
+	stats->s_shots_hit = p_stats->s_shots_hit;
+	stats->s_bonehead_hits = p_stats->s_bonehead_hits;
+
+	stats->missions_flown = p_stats->missions_flown;
+	stats->flight_time = p_stats->flight_time;
+	stats->last_flown = p_stats->last_flown;
+	stats->last_backup = p_stats->last_backup;
+
+	// only export ships that this mod knows about (should already be index)
+	for (auto &item : p_stats->ship_kills) {
+		if ( (item.index >= 0) && (item.index < MAX_SHIP_CLASSES) ) {
+			stats->kills[item.index] = item.val;
+		}
+	}
+
+	// same for medals
+	for (auto &item : p_stats->medals_earned) {
+		if ( SCP_vector_inbounds(stats->medal_counts, item.index) ) {
+			stats->medal_counts[item.index] = item.val;
+		}
+	}
+
+	return true;
 }

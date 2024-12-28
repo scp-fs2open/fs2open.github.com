@@ -1,5 +1,16 @@
 #include "gropenglopenxr.h"
 
+// this block should go before the #includes otherwise MSVC will sometimes warn about APIENTRY redefinition
+// (glad.h checks for redefinition of the symbol, but minwindef.h does not)
+#ifdef WIN32
+
+#define XR_USE_PLATFORM_WIN32
+#include <unknwn.h>
+
+#endif
+// the other platforms do not go before the #includes because this will cause conflicts from symbols defined in XLib,
+// specifically None and Always; see https://stackoverflow.com/questions/22476110/c-compiling-error-including-x11-x-h-x11-xlib-h
+
 #include "io/cursor.h"
 #include "io/mouse.h"
 #include "graphics/matrix.h"
@@ -10,13 +21,7 @@
 #include "graphics/opengl/ShaderProgram.h"
 #include "osapi/osapi.h"
 
-
-#ifdef WIN32
-
-#define XR_USE_PLATFORM_WIN32
-#include <unknwn.h>
-
-#elif defined __APPLE_CC__
+#ifndef FS_OPENXR
 
 //Not supported
 
@@ -33,7 +38,7 @@
 
 #include <SDL_syswm.h>
 
-#ifndef __APPLE_CC__
+#ifdef FS_OPENXR
 
 //SETUP FUNCTIONS OGL
 SCP_vector<const char*> gr_opengl_openxr_get_extensions() {
@@ -124,10 +129,10 @@ bool gr_opengl_openxr_create_session() {
 	};
 
 	XrSessionCreateInfo sessionCreateInfo {
-		sessionCreateInfo.type = XR_TYPE_SESSION_CREATE_INFO,
-		sessionCreateInfo.next = &graphicsBinding,
-		sessionCreateInfo.createFlags = 0,
-		sessionCreateInfo.systemId = xr_system
+		XR_TYPE_SESSION_CREATE_INFO,
+		&graphicsBinding,
+		0,
+		xr_system
 	};
 
 	XrResult sessionInit = xrCreateSession(xr_instance, &sessionCreateInfo, &xr_session);
@@ -249,9 +254,9 @@ bool gr_opengl_openxr_flip() {
 		xrAcquireSwapchainImage(swapchain, &acquireImageInfo, &activeIndex);
 
 		XrSwapchainImageWaitInfo waitImageInfo{
-			waitImageInfo.type = XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO,
+			XR_TYPE_SWAPCHAIN_IMAGE_WAIT_INFO,
 			nullptr,
-			waitImageInfo.timeout = std::numeric_limits<int64_t>::max()
+			std::numeric_limits<int64_t>::max()
 		};
 		xrWaitSwapchainImage(swapchain, &waitImageInfo);
 

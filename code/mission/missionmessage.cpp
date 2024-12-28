@@ -40,16 +40,17 @@
 #include "sound/fsspeech.h"
 #include "species_defs/species_defs.h"
 #include "utils/Random.h"
-#include "weapon/emp.h"
 
 bool Allow_generic_backup_messages = false;
+bool Always_loop_head_anis = false;
+bool Use_newer_head_ani_suffix = false;
 float Command_announces_enemy_arrival_chance = 0.25;
 
 #define DEFAULT_MOOD 0
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
-builtin_message Builtin_messages[] = {
+SCP_vector<builtin_message> Builtin_messages = {
   #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
     NAME,                                                              \
     CHANCE,                                                            \
@@ -74,7 +75,8 @@ constexpr int BUILTIN_MATCHES_PERSONA = 64;
 constexpr int BUILTIN_BOOST_LEVEL_THREE = (BUILTIN_BOOST_LEVEL_ONE | BUILTIN_BOOST_LEVEL_TWO);
 
 int get_builtin_message_type(const char* name) {
-	for (int i = 0; i < MAX_BUILTIN_MESSAGE_TYPES; i++) {
+	size_t count = Builtin_messages.size();
+	for (unsigned int i = 0; i < count; i++) {
 		if (!stricmp(Builtin_messages[i].name, name)) {
 			return i;
 		}
@@ -110,7 +112,7 @@ int Num_messages_playing;						// number of is a message currently playing?
 pmessage Playing_messages[MAX_PLAYING_MESSAGES];
 
 int Message_shipnum;						// ship number of who is sending message to player -- used outside this module
-int Message_expire;							// timestamp to extend the duration of message brackets when not using voice files
+static TIMESTAMP Message_expire;			// timestamp to extend the duration of message brackets when not using voice files
 
 // variables to control message queuing.  All new messages to the player are queued.  The array
 // will be ordered by priority, then time submitted.
@@ -674,6 +676,64 @@ void message_moods_parse()
 	required_string("#End");
 }
 
+int parse_existing_message_type() {
+	char name[NAME_LENGTH];
+	stuff_string(name, F_NAME, NAME_LENGTH);
+	int type = get_builtin_message_type(name);
+	if (type == MESSAGE_NONE && stricmp(name, "None")) {
+		Warning(LOCATION, "Unknown message type %s", name);
+	}
+	return type;
+}
+
+int parse_message_priority() {
+	// TODO: Convert this to required_string_one_of.
+	if (optional_string("High")) {
+		return MESSAGE_PRIORITY_HIGH;
+	} else if (optional_string("Low")) {
+		return MESSAGE_PRIORITY_LOW;
+	} else {
+		required_string("Normal");
+		return MESSAGE_PRIORITY_NORMAL;
+	}
+}
+
+void parse_custom_message_types(bool live = true) {
+	if (optional_string("#Custom Message Types")) {
+		while (optional_string("$Custom Message Type:")) {
+			char name[NAME_LENGTH];
+			stuff_string(name, F_NAME, NAME_LENGTH);
+			required_string("+Fallback:");
+			int fallback = parse_existing_message_type();
+			required_string("+Priority:");
+			int priority = parse_message_priority();
+			if (live) {
+				if (get_builtin_message_type(name) == MESSAGE_NONE) {
+					Builtin_messages.push_back({ strdup(name), 100, -1, 0, priority, MESSAGE_TIME_SOON, fallback });
+				} else {
+					Warning(LOCATION, "Custom message type %s is already defined", name);
+				}
+			}
+		}
+		required_string("#End");
+	}
+}
+
+void parse_custom_message_table(const char* filename) {
+	read_file_text(filename, CF_TYPE_TABLES);
+	reset_parse();
+	parse_custom_message_types();
+}
+
+void message_types_init() {
+	static bool table_read = false;
+	if (!table_read) {
+		table_read = true;
+		parse_custom_message_table("messages.tbl");
+		parse_modular_table("*-msg.tbm", parse_custom_message_table);
+	}
+}
+
 void parse_msgtbl(const char* filename)
 {
 	try {
@@ -697,7 +757,14 @@ void parse_msgtbl(const char* filename)
 		}
 
 		// now we can start parsing
+		parse_custom_message_types(false); // Already parsed, so skip it
 		if (optional_string("#Message Settings")) {
+			if (optional_string("$Always loop head anis:")) {
+				stuff_boolean(&Always_loop_head_anis);
+			}
+			if (optional_string("$Use newer head ani suffix features:")) {
+				stuff_boolean(&Use_newer_head_ani_suffix);
+			}
 			if (optional_string("$Allow Any Ship To Send Backup Messages:")) {
 				stuff_boolean(&Allow_generic_backup_messages);
 			}
@@ -789,6 +856,8 @@ void messages_init()
 	static int table_read = 0;
 
 	if ( !table_read ) {
+		message_types_init(); // To be safe, but in practice this should have been called already
+
 		Default_command_persona = -1;
 		Default_support_persona = -1;
 
@@ -892,9 +961,7 @@ void message_mission_shutdown()
 	training_mission_shutdown();
 
 	// kill/stop all playing messages sounds and animations if we need to
-	if (Num_messages_playing) {
-		message_kill_all(1);
-	}
+	message_kill_all(true);
 
 	// remove the wave sounds from memory
 	for (i = 0; i < Num_message_waves; i++ ) {
@@ -956,14 +1023,14 @@ void message_resume_all()
 
 // function to kill all currently playing messages.  kill_all parameter tells us to
 // kill only the animations that are playing, or wave files too
-void message_kill_all( int kill_all )
+void message_kill_all( bool kill_all )
 {
-	int i;
-
-	Assert( Num_messages_playing );
+	if (Num_messages_playing <= 0) {
+		return;
+	}
 
 	// kill sounds for all voices currently playing
-	for ( i = 0; i < Num_messages_playing; i++ ) {
+	for (int i = 0; i < Num_messages_playing; i++ ) {
 		/*if ( (Playing_messages[i].anim != NULL) && anim_playing(Playing_messages[i].anim) ) {
 			anim_stop_playing( Playing_messages[i].anim );
 			Playing_messages[i].anim=NULL;
@@ -1064,10 +1131,9 @@ int message_playing_unique()
 
 // returns the highest priority of the currently playing messages
 #define MESSAGE_GET_HIGHEST		1
-#define MESSAGE_GET_LOWEST			2
+#define MESSAGE_GET_LOWEST		2
 int message_get_priority(int which)
 {
-	int i;
 	int priority;
 
 	if ( which == MESSAGE_GET_HIGHEST ){
@@ -1076,7 +1142,7 @@ int message_get_priority(int which)
 		priority = MESSAGE_PRIORITY_HIGH;
 	}
 
-	for ( i = 0; i < Num_messages_playing; i++ ) {
+	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if ( (which == MESSAGE_GET_HIGHEST) && (Playing_messages[i].priority > priority) ){
 			priority = Playing_messages[i].priority;
 		} else if ( (which == MESSAGE_GET_LOWEST) && (Playing_messages[i].priority < priority) ){
@@ -1140,7 +1206,7 @@ void message_load_wave(int index, const char *filename)
 }
 
 // Goober5000
-bool message_filename_is_generic(char *filename)
+bool message_filename_is_generic(const char *filename)
 {
 	char truncated_filename[MAX_FILENAME_LEN];
 
@@ -1334,41 +1400,63 @@ void message_play_anim( message_q *q )
 		// assigned, the logic will drop down below like it's supposed to
 		if (persona_index >= 0)
 		{
-			if ( Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT) ) {
-				// get a random head
-				if ( q->builtin_type == MESSAGE_WINGMAN_SCREAM ) {
-					rand_index = MAX_WINGMAN_HEADS;		// [0,MAX) are regular heads; MAX is always death head
-					is_death_scream = 1;
-				} else {
-					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-				}
-				strcpy_s(temp, ani_name);
-				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
-				subhead_selected = TRUE;
-			} else if ( Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE) ) {
-				// get a random head
-				// Goober5000 - *sigh*... if mission designers assign a command persona
-				// to a wingman head, they risk having the death ani play
-				if ( !strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7) ) {
-					mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
-					rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-				} else {
-					rand_index = ((int) Missiontime % MAX_COMMAND_HEADS);
-				}
+			if (!Use_newer_head_ani_suffix) {
+				if (Personas[persona_index].flags & (PERSONA_FLAG_WINGMAN | PERSONA_FLAG_SUPPORT)) {
+					// get a random head
+					if (q->builtin_type == MESSAGE_WINGMAN_SCREAM) {
+						rand_index = MAX_WINGMAN_HEADS; // [0,MAX) are regular heads; MAX is always death head
+						is_death_scream = 1;
+					} else {
+						rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+					}
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+					subhead_selected = TRUE;
+				} else if (Personas[persona_index].flags & (PERSONA_FLAG_COMMAND | PERSONA_FLAG_LARGE)) {
+					// get a random head
+					// Goober5000 - *sigh*... if mission designers assign a command persona
+					// to a wingman head, they risk having the death ani play
+					if (!strnicmp(ani_name, "Head-TP", 7) || !strnicmp(ani_name, "Head-VP", 7)) {
+						mprintf(("message '%s' incorrectly assigns a command/largeship persona to a wingman animation!\n", m->name));
+						rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+					} else {
+						rand_index = ((int)Missiontime % MAX_COMMAND_HEADS);
+					}
 
-				strcpy_s(temp, ani_name);
-				sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
-				subhead_selected = TRUE;
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+					subhead_selected = TRUE;
+				} else {
+					mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
+				}
 			} else {
-				mprintf(("message '%s' uses an unrecognized persona type\n", m->name));
+				// Explicitely allow death anims for large ships now. Only command can't have a death message.
+				if (!(Personas[persona_index].flags & PERSONA_FLAG_COMMAND) && q->builtin_type == MESSAGE_WINGMAN_SCREAM) {
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s-death", temp);
+					subhead_selected = TRUE;
+				} else {
+					strcpy_s(temp, ani_name);
+					sprintf_safe(ani_name, "%s-reg", temp);
+					subhead_selected = TRUE;
+				}
+			}
+		} else {
+			// In suffix mode if we don't have a persona AND the anim doesn't exist then append -reg
+			if (Use_newer_head_ani_suffix) {
+				strcpy_s(temp, ani_name);
+				sprintf_safe(ani_name, "%s-reg", temp);
+				subhead_selected = TRUE;
 			}
 		}
 
 		if (!subhead_selected) {
-			// choose between a and b
-			rand_index = ((int) Missiontime % MAX_WINGMAN_HEADS);
-			strcpy_s(temp, ani_name);
-			sprintf_safe(ani_name, "%s%c", temp, 'a'+rand_index);
+			if (!Use_newer_head_ani_suffix) {
+				// choose between a and b
+				rand_index = ((int)Missiontime % MAX_WINGMAN_HEADS);
+				strcpy_s(temp, ani_name);
+				sprintf_safe(ani_name, "%s%c", temp, 'a' + rand_index);
+			}
 			mprintf(("message '%s' with invalid head.  Fix by assigning persona to the message.\n", m->name));
 		}
 		nprintf(("Messaging", "playing head %s for %s\n", ani_name, q->who_from));
@@ -1397,16 +1485,16 @@ void message_play_anim( message_q *q )
 		// This call relies on the fact that AVI_play will return -1 if the AVI cannot be played
 		// if any messages are already playing, kill off any head anims that are currently playing.  We will
 		// only play a head anim of the newest messages being played
-		if ( Num_messages_playing > 0 ) {
-			nprintf(("messaging", "killing off any currently playing head animations\n"));
-			message_kill_all( 0 );
-		}
+		nprintf(("messaging", "killing off any currently playing head animations\n"));
+		message_kill_all(false);
 
 		if ( hud_disabled() ) {
 			return;
 		}
 		
-		anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		if (!Always_loop_head_anis) {
+			anim_info->anim_data.direction = GENERIC_ANIM_DIRECTION_NOLOOP;
+		}
 		Playing_messages[Num_messages_playing].anim_data = &anim_info->anim_data;
 		message_calc_anim_start_frame(Message_wave_duration, &anim_info->anim_data, is_death_scream);
 		Playing_messages[Num_messages_playing].play_anim = true;
@@ -1449,6 +1537,11 @@ void message_queue_process()
 //			if ( (Playing_messages[i].wave != -1) && snd_is_playing(Playing_messages[i].wave) )
 			if ((Playing_messages[i].wave.isValid()) && (snd_time_remaining(Playing_messages[i].wave) > 250))
 				wave_done = 0;
+
+			// Don't kill paused messages
+			if ((Playing_messages[i].wave.isValid()) && snd_is_paused(Playing_messages[i].wave)) {
+				wave_done = 0;
+			}
 
 			// Goober5000
 			if (fsspeech_playing())
@@ -1631,7 +1724,7 @@ void message_queue_process()
 		// message priority.
 
 		if ( q->builtin_type == MESSAGE_HAMMER_SWINE ) {
-			message_kill_all(1);
+			message_kill_all(true);
 		} else if ( message_playing_specific_builtin(MESSAGE_HAMMER_SWINE) ) {
 			MessageQ_num = 0;
 			return;
@@ -1639,7 +1732,7 @@ void message_queue_process()
 			// builtin is playing and we have a unique message to play.  Kill currently playing message
 			// so unique can play uninterrupted.  Only unique messages higher than low priority will interrupt
 			// other messages.
-			message_kill_all(1);
+			message_kill_all(true);
 			nprintf(("messaging", "Killing all currently playing messages to play unique message\n"));
 		} else if ( message_playing_builtin() && (q->message_num < Num_builtin_messages) ) {
 			// when a builtin message is queued, we might either overlap or interrupt the currently
@@ -1650,7 +1743,7 @@ void message_queue_process()
 			if ( Num_messages_playing ) {
 				if ( message_get_priority(MESSAGE_GET_HIGHEST) < q->priority ) {
 					// lower priority message playing -- kill it.
-					message_kill_all(1);
+					message_kill_all(true);
 					nprintf(("messaging", "Killing all currently playing messages to play high priority builtin\n"));
 				} else if ( message_get_priority(MESSAGE_GET_LOWEST) > q->priority ) {
 					// queued message is a lower priority, so wait it out
@@ -1665,7 +1758,7 @@ void message_queue_process()
 			// code messages can kill any low priority mission specific messages
 			if ( Num_messages_playing ) {
 				if ( message_get_priority(MESSAGE_GET_HIGHEST) == MESSAGE_PRIORITY_LOW ) {
-					message_kill_all(1);
+					message_kill_all(true);
 					nprintf(("messaging", "Killing low priority unique messages to play code message\n"));
 				} else {
 					return;			// do nothing.
@@ -1708,7 +1801,7 @@ void message_queue_process()
 	// translate tokens in message to the real things
 	buf = message_translate_tokens(q->special_message ? q->special_message.get() : m->message);
 
-	Message_expire = timestamp(static_cast<int>(42 * buf.size()));
+	Message_expire = _timestamp(static_cast<int>(42 * buf.size()));
 
 	// play wave first, since need to know duration for picking anim start frame
 	if(message_play_wave(q) == false) {
@@ -2384,10 +2477,10 @@ void message_maybe_distort()
 		
 			if ( Message_wave_muted ) {
 				if ( !was_muted )
-					snd_set_volume(Playing_messages[i].wave, 0.0f);
+					snd_set_volume(Playing_messages[i].wave, 0.0f, true);
 			} else {
 				if ( was_muted )
-					snd_set_volume(Playing_messages[i].wave, (Master_sound_volume * aav_voice_volume));
+					snd_set_volume(Playing_messages[i].wave, (Master_voice_volume * aav_voice_volume), true);
 			}
 		}
 	}

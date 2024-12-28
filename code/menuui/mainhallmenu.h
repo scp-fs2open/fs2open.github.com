@@ -66,6 +66,11 @@ public:
 	int zoom_area_width = -1;
 	int zoom_area_height = -1;
 
+	bool render_title = true;
+	bool render_version = true;
+
+	interface_snd_id ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT;
+
 	// intercom defines -------------------
 
 	// # of intercom sounds
@@ -136,7 +141,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
+	SCP_vector<std::pair<interface_snd_id, interface_snd_id>> door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;
@@ -205,7 +210,8 @@ int main_hall_get_overlay_resolution_index();
 int main_hall_id();
 
 // Vasudan?
-bool main_hall_is_vasudan();
+// (defaults to the current main hall, but now allows checking another specified main hall)
+bool main_hall_is_vasudan(const main_hall_defines *hall = nullptr);
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();

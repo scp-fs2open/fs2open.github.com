@@ -7,23 +7,21 @@
 namespace scripting {
 namespace api {
 
-physics_info_h::physics_info_h() {
-	objh = object_h();
-	pi = NULL;
+physics_info_h::physics_info_h()
+	: objh(), pi(nullptr)
+{}
+physics_info_h::physics_info_h(object* objp)
+	: objh(objp), pi(nullptr)
+{
+	if (objh.isValid())
+		pi = &objh.objp()->phys_info;
 }
-physics_info_h::physics_info_h(object* objp) {
-	objh = object_h(objp);
-	pi = &objp->phys_info;
-}
-physics_info_h::physics_info_h(physics_info* in_pi) {
-	pi = in_pi;
-}
-bool physics_info_h::IsValid() {
-	if (objh.objp != NULL) {
-		return objh.IsValid();
-	} else {
-		return (pi != NULL);
-	}
+physics_info_h::physics_info_h(physics_info* in_pi)
+	: objh(), pi(in_pi)
+{}
+bool physics_info_h::isValid() const
+{
+	return pi != nullptr && objh.isValid();
 }
 
 
@@ -36,7 +34,7 @@ ADE_VIRTVAR(AfterburnerAccelerationTime, l_Physics, "number", "Afterburner accel
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -53,7 +51,7 @@ ADE_VIRTVAR(AfterburnerVelocityMax, l_Physics, "vector", "Afterburner max veloci
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -70,7 +68,7 @@ ADE_VIRTVAR(BankingConstant, l_Physics, "number", "Banking constant", "number", 
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -87,7 +85,7 @@ ADE_VIRTVAR(ForwardAccelerationTime, l_Physics, "number", "Forward acceleration 
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -104,7 +102,7 @@ ADE_VIRTVAR(ForwardDecelerationTime, l_Physics, "number", "Forward deceleration 
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -121,7 +119,7 @@ ADE_VIRTVAR(ForwardThrust, l_Physics, "number", "Forward thrust amount (-1 - 1),
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -138,7 +136,7 @@ ADE_VIRTVAR(Mass, l_Physics, "number", "Object mass", "number", "Object mass, or
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -155,7 +153,7 @@ ADE_VIRTVAR(RotationalVelocity, l_Physics, "vector", "Rotational velocity (Local
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -172,7 +170,7 @@ ADE_VIRTVAR(RotationalVelocityDamping, l_Physics, "number", "Rotational damping,
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -189,7 +187,7 @@ ADE_VIRTVAR(RotationalVelocityDesired, l_Physics, "vector", "Desired rotational 
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -206,7 +204,7 @@ ADE_VIRTVAR(RotationalVelocityMax, l_Physics, "vector", "Maximum rotational velo
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -223,7 +221,7 @@ ADE_VIRTVAR(ShockwaveShakeAmplitude, l_Physics, "number", "How much shaking from
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -240,7 +238,7 @@ ADE_VIRTVAR(SideThrust, l_Physics, "number", "Side thrust amount (-1 - 1), used 
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -257,7 +255,7 @@ ADE_VIRTVAR(SlideAccelerationTime, l_Physics, "number", "Time to accelerate to m
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -274,7 +272,7 @@ ADE_VIRTVAR(SlideDecelerationTime, l_Physics, "number", "Time to decelerate from
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -284,18 +282,22 @@ ADE_VIRTVAR(SlideDecelerationTime, l_Physics, "number", "Time to decelerate from
 	return ade_set_args(L, "f", pih->pi->slide_decel_time_const);
 }
 
-ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector)", "vector", "Object velocity, or null vector if handle is invalid")
+ADE_VIRTVAR(Velocity, l_Physics, "vector", "Object world velocity (World vector). Setting this value may have minimal effect unless the $Fix scripted velocity game settings flag is used.", "vector", "Object velocity, or null vector if handle is invalid")
 {
 	physics_info_h *pih;
 	vec3d *v3=NULL;
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
 		pih->pi->vel = *v3;
+		pih->pi->speed = vm_vec_mag(&pih->pi->vel);							
+		pih->pi->fspeed = vm_vec_dot(&pih->objh.objp()->orient.vec.fvec, &pih->pi->vel);
+		if (Fix_scripted_velocity)
+			pih->pi->flags |= PF_SCRIPTED_VELOCITY; // set flag to ensure physics respects this new value
 	}
 
 	return ade_set_args(L, "o", l_Vector.Set(pih->pi->vel));
@@ -308,7 +310,7 @@ ADE_VIRTVAR(VelocityDamping, l_Physics, "number", "Damping, the natural period (
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -325,7 +327,7 @@ ADE_VIRTVAR(VelocityDesired, l_Physics, "vector", "Desired velocity (World vecto
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -342,7 +344,7 @@ ADE_VIRTVAR(VelocityMax, l_Physics, "vector", "Object max local velocity (Local 
 	if(!ade_get_args(L, "o|o", l_Physics.GetPtr(&pih), l_Vector.GetPtr(&v3)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if(ADE_SETTING_VAR && v3 != NULL) {
@@ -359,7 +361,7 @@ ADE_VIRTVAR(VerticalThrust, l_Physics, "number", "Vertical thrust amount (-1 - 1
 	if(!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if(ADE_SETTING_VAR) {
@@ -377,7 +379,7 @@ ADE_VIRTVAR(AfterburnerActive, l_Physics, "boolean", "Specifies if the afterburn
 	if(!ade_get_args(L, "o|b", l_Physics.GetPtr(&pih), &set))
 		return ade_set_error(L, "b", false);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR)
@@ -401,7 +403,7 @@ ADE_VIRTVAR(GravityConst, l_Physics, "number", "Multiplier for the effect of gra
 	if (!ade_get_args(L, "o|f", l_Physics.GetPtr(&pih), &grav_const))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!pih->IsValid())
+	if (!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if (ADE_SETTING_VAR) {
@@ -417,7 +419,7 @@ ADE_FUNC(isValid, l_Physics, NULL, "True if valid, false or nil if not", "boolea
 	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", pih->IsValid());
+	return ade_set_args(L, "b", pih->isValid());
 }
 
 ADE_FUNC(getSpeed, l_Physics, NULL, "Gets total speed as of last frame", "number", "Total speed, or 0 if handle is invalid")
@@ -426,7 +428,7 @@ ADE_FUNC(getSpeed, l_Physics, NULL, "Gets total speed as of last frame", "number
 	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	return ade_set_args(L, "f", pih->pi->speed);
@@ -438,7 +440,7 @@ ADE_FUNC(getForwardSpeed, l_Physics, NULL, "Gets total speed in the ship's 'forw
 	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
 		return ade_set_error(L, "f", 0.0f);
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	return ade_set_args(L, "f", pih->pi->fspeed);
@@ -451,7 +453,7 @@ ADE_FUNC(isAfterburnerActive, l_Physics, NULL, "True if Afterburners are on, fal
 	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
 		return ADE_RETURN_NIL;
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "b", false);
 
 	if (pih->pi->flags & PF_AFTERBURNER_ON)
@@ -467,7 +469,7 @@ ADE_FUNC(isGliding, l_Physics, NULL, "True if glide mode is on, false or nil if 
 	if(!ade_get_args(L, "o", l_Physics.GetPtr(&pih)))
 		return ADE_RETURN_NIL;
 
-	if(!pih->IsValid())
+	if(!pih->isValid())
 		return ade_set_error(L, "b", false);
 
 	if (pih->pi->flags & (PF_GLIDING|PF_FORCE_GLIDE))
@@ -488,11 +490,11 @@ ADE_FUNC(applyWhack, l_Physics, "vector Impulse, [ vector Position]", "Applies a
 
 	objh = pih->objh;
 	if (offset == nullptr)
-		offset = &objh.objp->pos;
+		offset = &objh.objp()->pos;
 	else
-		vm_vec_add2(offset, &objh.objp->pos);
+		vm_vec_add2(offset, &objh.objp()->pos);
 
-	ship_apply_whack(impulse, offset, objh.objp);
+	ship_apply_whack(impulse, offset, objh.objp());
 
 	return ADE_RETURN_TRUE;
 
@@ -510,10 +512,10 @@ ADE_FUNC(applyWhackWorld, l_Physics, "vector Impulse, [ vector Position]", "Appl
 
 	objh = pih->objh;
 	if (!world_pos) {
-		world_pos = &objh.objp->pos;
+		world_pos = &objh.objp()->pos;
 	}
 
-	ship_apply_whack(impulse, world_pos, objh.objp);
+	ship_apply_whack(impulse, world_pos, objh.objp());
 
 	return ADE_RETURN_TRUE;
 

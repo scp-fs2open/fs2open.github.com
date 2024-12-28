@@ -5,9 +5,107 @@
 #include "modelinstance.h"
 #include "object.h"
 #include "vecmath.h"
+#include "texture.h"
 
 namespace scripting {
 namespace api {
+
+//**********HANDLE: modelinstancetextures (compatible with preceding shiptextures)
+ADE_OBJ(l_ModelInstanceTextures, modelinstance_h, "modelinstancetextures", "Model instance textures handle");
+
+ADE_FUNC(__len, l_ModelInstanceTextures, nullptr, "Number of textures on a model instance", "number", "Number of textures on the model instance, or 0 if handle is invalid")
+{
+	modelinstance_h *mih;
+	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
+		return ade_set_error(L, "i", 0);
+
+	if(!mih->isValid())
+		return ade_set_error(L, "i", 0);
+
+	polymodel *pm = model_get(mih->Get()->model_num);
+
+	if(pm == nullptr)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", pm->n_textures*TM_NUM_TYPES);
+}
+
+ADE_INDEXER(l_ModelInstanceTextures, "number/string IndexOrTextureFilename", "Array of model instance textures", "texture", "Texture, or invalid texture handle on failure")
+{
+	modelinstance_h *mih;
+	const char* s;
+	texture_h* tdx = nullptr;
+	if (!ade_get_args(L, "os|o", l_ModelInstanceTextures.GetPtr(&mih), &s, l_Texture.GetPtr(&tdx)))
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+
+	if (!mih->isValid() || s == nullptr)
+		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+
+	polymodel_instance *pmi = mih->Get();
+	polymodel *pm = model_get(pmi->model_num);
+	int final_index = -1;
+	int i;
+
+	char fname[MAX_FILENAME_LEN];
+	if (pmi->texture_replace != nullptr)
+	{
+		for(i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
+		{
+			bm_get_filename((*pmi->texture_replace)[i], fname);
+
+			if(!strextcmp(fname, s)) {
+				final_index = i;
+				break;
+			}
+		}
+	}
+
+	if(final_index < 0)
+	{
+		for (i = 0; i < pm->n_textures; i++)
+		{
+			int tm_num = pm->maps[i].FindTexture(s);
+			if(tm_num > -1)
+			{
+				final_index = i*TM_NUM_TYPES+tm_num;
+				break;
+			}
+		}
+	}
+
+	if (final_index < 0)
+	{
+		final_index = atoi(s) - 1;	//Lua->FS2
+
+		if (final_index < 0 || final_index >= MAX_REPLACEMENT_TEXTURES)
+			return ade_set_error(L, "o", l_Texture.Set(texture_h()));
+	}
+
+	if (ADE_SETTING_VAR) {
+		if (pmi->texture_replace == nullptr) {
+			pmi->texture_replace = make_shared<model_texture_replace>();
+		}
+
+		if (tdx != nullptr) {
+			(*pmi->texture_replace)[final_index] = tdx->isValid() ? tdx->handle : -1;
+		}
+	}
+
+	if (pmi->texture_replace != nullptr && (*pmi->texture_replace)[final_index] >= 0)
+		return ade_set_args(L, "o", l_Texture.Set(texture_h((*pmi->texture_replace)[final_index])));
+	else
+		return ade_set_args(L, "o", l_Texture.Set(texture_h(pm->maps[final_index / TM_NUM_TYPES].textures[final_index % TM_NUM_TYPES].GetTexture())));
+}
+
+ADE_FUNC(isValid, l_ModelInstanceTextures, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	modelinstance_h *mih;
+	if(!ade_get_args(L, "o", l_ModelInstanceTextures.GetPtr(&mih)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", mih->isValid());
+}
+
 
 ADE_OBJ(l_ModelInstance, modelinstance_h, "model_instance", "Model instance handle");
 
@@ -25,7 +123,7 @@ polymodel_instance *modelinstance_h::Get()
 {
 	return _pmi;
 }
-bool modelinstance_h::IsValid()
+bool modelinstance_h::isValid() const
 {
 	return (_pmi != nullptr);
 }
@@ -49,25 +147,25 @@ submodelinstance_h::submodelinstance_h()
 {}
 polymodel_instance *submodelinstance_h::GetModelInstance()
 {
-	return IsValid() ? _pmi : nullptr;
+	return isValid() ? _pmi : nullptr;
 }
 submodel_instance *submodelinstance_h::Get()
 {
-	return IsValid() ? &_pmi->submodel[_submodel_num] : nullptr;
+	return isValid() ? &_pmi->submodel[_submodel_num] : nullptr;
 }
 polymodel *submodelinstance_h::GetModel()
 {
-	return IsValid() ? _pm : nullptr;
+	return isValid() ? _pm : nullptr;
 }
 bsp_info *submodelinstance_h::GetSubmodel()
 {
-	return IsValid() ? &_pm->submodel[_submodel_num] : nullptr;
+	return isValid() ? &_pm->submodel[_submodel_num] : nullptr;
 }
 int submodelinstance_h::GetSubmodelIndex()
 {
-	return IsValid() ? _submodel_num : -1;
+	return isValid() ? _submodel_num : -1;
 }
-bool submodelinstance_h::IsValid()
+bool submodelinstance_h::isValid() const
 {
 	return _pmi != nullptr && _pm != nullptr && _submodel_num >= 0 && _submodel_num < _pm->n_models;
 }
@@ -94,6 +192,29 @@ ADE_FUNC(getObject, l_ModelInstance, nullptr, "Returns the object that this inst
 	return ade_set_object_with_breed(L, mih->Get()->objnum);
 }
 
+ADE_VIRTVAR(Textures, l_ModelInstance, "modelinstancetextures", "Gets model instance textures", "modelinstancetextures", "Model instance textures, or invalid modelinstancetextures handle if modelinstance handle is invalid")
+{
+	modelinstance_h *sh = nullptr;
+	modelinstance_h *dh;
+	if(!ade_get_args(L, "o|o", l_ModelInstance.GetPtr(&dh), l_ModelInstance.GetPtr(&sh)))
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
+
+	if(!dh->isValid())
+		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
+
+	if(ADE_SETTING_VAR && sh && sh->isValid()) {
+		polymodel_instance *src = sh->Get();
+		polymodel_instance *dest = dh->Get();
+
+		if (src->texture_replace != nullptr)
+		{
+			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
+		}
+	}
+
+	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dh->Get())));
+}
+
 ADE_VIRTVAR(SubmodelInstances, l_ModelInstance, nullptr, "Submodel instances", "submodel_instances", "Model submodel instances, or an invalid modelsubmodelinstances handle if the model instance handle is invalid")
 {
 	modelinstance_h *mih = nullptr;
@@ -116,7 +237,7 @@ ADE_FUNC(isValid, l_ModelInstance, nullptr, "True if valid, false or nil if not"
 	if (!ade_get_args(L, "o", l_ModelInstance.GetPtr(&mih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", mih->IsValid());
+	return ade_set_args(L, "b", mih->isValid());
 }
 
 ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance of this submodel", "model_instance", "A model instancve")
@@ -125,7 +246,7 @@ ADE_FUNC(getModelInstance, l_SubmodelInstance, nullptr, "Gets the model instance
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_ModelInstance.Set(modelinstance_h()));
 
 	return ade_set_args(L, "o", l_ModelInstance.Set(modelinstance_h(smih->GetModelInstance())));
@@ -137,7 +258,7 @@ ADE_FUNC(getSubmodel, l_SubmodelInstance, nullptr, "Gets the submodel of this in
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(smih->GetModel(), smih->GetSubmodelIndex())));
@@ -150,7 +271,7 @@ ADE_VIRTVAR(Orientation, l_SubmodelInstance, "orientation", "Gets or sets the su
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Matrix.GetPtr(&mh)))
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Matrix.Set(matrix_h()));
 
 	auto smi = smih->Get();
@@ -184,7 +305,7 @@ ADE_VIRTVAR(TranslationOffset,
 	if (!ade_get_args(L, "o|o", l_SubmodelInstance.GetPtr(&smih), l_Vector.GetPtr(&vec)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	if (ADE_SETTING_VAR && vec != nullptr)
@@ -207,7 +328,7 @@ ADE_FUNC(findWorldPoint, l_SubmodelInstance, "vector", "Calculates the world coo
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&pnt)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	auto pmi = smih->GetModelInstance();
@@ -226,7 +347,7 @@ ADE_FUNC(findWorldDir, l_SubmodelInstance, "vector", "Calculates the world direc
 	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&dir)))
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "o", l_Vector.Set(vmd_zero_vector));
 
 	auto pmi = smih->GetModelInstance();
@@ -246,7 +367,7 @@ bool findObjectPointAndOrientationSub(lua_State *L, bool use_object, vec3d *outp
 	if (!ade_get_args(L, "ooo", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&local_pnt), l_Matrix.GetPtr(&local_orient)))
 		return false;
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return false;
 
 	auto pmi = smih->GetModelInstance();
@@ -293,7 +414,7 @@ ADE_FUNC(findLocalPointAndOrientation, l_SubmodelInstance, "vector, orientation,
 	if (!ade_get_args(L, "ooo|b", l_SubmodelInstance.GetPtr(&smih), l_Vector.Get(&global_pnt), l_Matrix.GetPtr(&global_orient), &fromWorld))
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
 
-	if (!smih->IsValid())
+	if (!smih->isValid())
 		return ade_set_error(L, "oo", l_Vector.Set(vmd_zero_vector), l_Matrix.Set(matrix_h(&vmd_zero_matrix)));
 
 	auto pmi = smih->GetModelInstance();
@@ -311,7 +432,7 @@ ADE_FUNC(isValid, l_SubmodelInstance, nullptr, "True if valid, false or nil if n
 	if (!ade_get_args(L, "o", l_SubmodelInstance.GetPtr(&smih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", smih->IsValid());
+	return ade_set_args(L, "b", smih->isValid());
 }
 
 
@@ -326,7 +447,7 @@ ADE_FUNC(__len, l_ModelSubmodelInstances, nullptr, "Number of submodel instances
 	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
 		return ade_set_error(L, "i", 0);
 
-	if (!msih->IsValid())
+	if (!msih->isValid())
 		return ade_set_error(L, "i", 0);
 
 	auto pmi = msih->Get();
@@ -349,7 +470,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "oi", l_ModelSubmodelInstances.GetPtr(&msih), &index))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid())
+		if (!msih->isValid())
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index--; // Lua --> C/C++
@@ -361,7 +482,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "os", l_ModelSubmodelInstances.GetPtr(&msih), &name))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid() || name == nullptr)
+		if (!msih->isValid() || name == nullptr)
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index = model_find_submodel_index(msih->Get()->model_num, name);
@@ -373,7 +494,7 @@ ADE_INDEXER(l_ModelSubmodelInstances, "submodel_instance", "number|string IndexO
 		if (!ade_get_args(L, "oo", l_ModelSubmodelInstances.GetPtr(&msih), l_Submodel.GetPtr(&smh)))
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
-		if (!msih->IsValid() || !smh->IsValid())
+		if (!msih->isValid() || !smh->isValid())
 			return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
 
 		index = smh->GetSubmodelIndex();
@@ -394,7 +515,7 @@ ADE_FUNC(isValid, l_ModelSubmodelInstances, nullptr, "Detects whether handle is 
 	if (!ade_get_args(L, "o", l_ModelSubmodelInstances.GetPtr(&msih)))
 		return ADE_RETURN_NIL;
 
-	return ade_set_args(L, "b", msih->IsValid());
+	return ade_set_args(L, "b", msih->isValid());
 }
 
 }

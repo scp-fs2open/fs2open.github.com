@@ -407,7 +407,6 @@ void common_maybe_play_cutscene(int movie_type, bool restart_music, int music)
 				common_music_close(); 
 				music_off = true;
 				movie::play(The_mission.cutscenes[i].filename);	//Play the movie!
-				cutscene_mark_viewable( The_mission.cutscenes[i].filename );
 			}
 		}
 	}
@@ -1549,7 +1548,7 @@ int restore_wss_data(ubyte *data)
 	return offset;
 }
 
-void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
+void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, int y, int w, int h, ship_info *sip, int resize_mode, const vec3d *closeup_pos)
 {
 	matrix	object_orient	= IDENTITY_MATRIX;
 	angles rot_angles = vmd_zero_angles;
@@ -1661,8 +1660,7 @@ void draw_model_icon(int model_id, int flags, float closeup_zoom, int x, int y, 
 	gr_reset_clip();
 }
 
-void light_set_all_relevent();
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, vec3d *closeup_pos, float closeup_zoom, float rev_rate, int flags, int resize_mode, int effect)
+void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, int effect)
 {
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
@@ -1671,6 +1669,11 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 	float time = (timer_get_milliseconds()-anim_timer_start)/1000.0f;
 	angles rot_angles, view_angles;
 	matrix model_orient;
+
+	auto pm = model_get(model_id);
+	vec3d closeup_pos_default = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
+	if (!closeup_pos || IS_VEC_NULL(closeup_pos))
+		closeup_pos = &closeup_pos_default;
 
 	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
 
@@ -1713,7 +1716,6 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		ship_normal.xyz.x = 0.0f;
 		ship_normal.xyz.y = -1.0f;
 		ship_normal.xyz.z = 0.0f;
-		polymodel *pm = model_get(model_id);
 
 		//Make the clipping plane
 		float clip = -pm->rad*0.7f;
@@ -1726,13 +1728,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		vm_vec_scale_sub(&plane_point,&vmd_zero_vector,&wire_normal,clip);
 
 		g3_start_frame(1);
-		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) > 0.0f) ) {
-			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
-		} else {
-			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
-			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
-		}
-
+		g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
@@ -1891,15 +1887,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		g3_start_frame(1);
 
-		polymodel *pm = model_get(model_id);
-
 		// render the wodel
-		if ( (closeup_pos != NULL) && (vm_vec_mag(closeup_pos) > 0.0f) ) {
-			g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
-		} else {
-			vec3d pos = { { { 0.0f, 0.0f, -(pm->rad * 1.5f) } } };
-			g3_set_view_matrix(&pos, &vmd_identity_matrix, closeup_zoom);
-		}
+		g3_set_view_matrix(closeup_pos, &vmd_identity_matrix, closeup_zoom);
 
 		//setup lights
 		common_setup_room_lights();
@@ -1960,13 +1949,13 @@ void common_setup_room_lights()
 	light_reset();
 	auto tempv = vm_vec_new(-1.0f,0.3f,-1.0f);
 	auto tempc = hdr_color(1.0f,0.95f,0.9f, 0.0f, 1.5f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	tempv.xyz={-0.4f,0.4f,1.1f};
 	tempc = hdr_color(0.788f,0.886f,1.0f,0.0f,1.5f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	tempv.xyz={0.4f,0.1f,0.4f};
 	tempc = hdr_color(1.0f,1.0f,1.0f,0.0f,0.4f);
-	light_add_directional(&tempv,&tempc);
+	light_add_directional(&tempv,-1,false,&tempc);
 	gr_set_ambient_light(53, 53, 53);
 	light_rotate_all();
 }

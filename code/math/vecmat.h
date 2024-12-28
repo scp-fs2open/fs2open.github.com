@@ -179,6 +179,11 @@ void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k);
 //dest *= n/d
 void vm_vec_scale2(vec3d *dest, float n, float d);
 
+// interpolate between two vectors
+// dest = k * (src1 - src0)
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, float k);
+
 bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
 bool vm_vec_equal(const vec3d &self, const vec3d &other);
@@ -480,9 +485,6 @@ void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, c
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
 
-// Version of atan2() that is safe for optimized builds
-float atan2_safe(float x, float y);
-
 // Translates from world coordinates to body coordinates
 vec3d* vm_rotate_vec_to_body(vec3d *body_vec, const vec3d *world_vec, const matrix *orient);
 
@@ -594,12 +596,6 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 
 // calculates the best rvec to match another orient while maintaining a given fvec
 void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
-
-// Cyborg17 - Rotational interpolation between two angle structs in radians, given a rotational velocity, in radians.
-// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f.
-// rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
-// You will get strange results otherwise.
-void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
 // Interpolate between two matrices, using t as a percentage progress between them.
 // Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,

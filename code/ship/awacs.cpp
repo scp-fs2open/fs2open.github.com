@@ -26,8 +26,8 @@
 //
 
 // timestamp for updating AWACS stuff
-#define AWACS_STAMP_TIME			1000
-static int Awacs_stamp = -1;
+constexpr int AWACS_STAMP_TIME = 1 * MILLISECONDS_PER_SECOND;
+static TIMESTAMP Awacs_stamp;
 
 // total awacs levels for all teams
 static SCP_vector<float> Awacs_team;	// total AWACS capabilities for each team				// Awacs_friendly - Awacs_hostile
@@ -68,8 +68,8 @@ void awacs_level_init()
 {
 	static bool arrays_initted = false;
 
-	// set the update timestamp to -1 
-	Awacs_stamp = -1;
+	// when the mission starts, update immediately before we update on intervals
+	Awacs_stamp = TIMESTAMP::immediate();
 
 	if ( !arrays_initted ) {
 		Awacs_team.reserve(Iff_info.size());
@@ -88,10 +88,10 @@ void awacs_level_init()
 void awacs_process()
 {
 	// if we need to update total AWACS levels, do so now
-	if ((Awacs_stamp == -1) || timestamp_elapsed(Awacs_stamp))
+	if (timestamp_elapsed(Awacs_stamp))
 	{
 		// reset the timestamp
-		Awacs_stamp = timestamp(AWACS_STAMP_TIME);
+		Awacs_stamp = _timestamp(AWACS_STAMP_TIME);
 
 		// recalculate everything
 		awacs_update_all_levels();
@@ -290,6 +290,7 @@ const     float FULLY_TARGETABLE        = (viewer_has_primitive_sensors ? ((dist
 				if (test > Awacs[idx].subsys->awacs_radius)
 					continue;
 
+				// coverity[dead_error_line:FALSE] - closest_index will be a value other than -1 on future loop iterations
 				if ((closest_index == -1) || (test < closest))
 				{
 					closest = test;
@@ -480,7 +481,7 @@ int ship_is_visible_by_team(const object *target, const ship *viewer)
 	int team = viewer->team;
 
 	// this can happen in multi, where networking is processed before first frame sim
-	if (Awacs_stamp == -1) {
+	if (Awacs_stamp.isImmediate()) {
 		awacs_process();
 	}
 

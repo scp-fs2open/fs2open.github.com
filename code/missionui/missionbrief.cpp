@@ -1396,7 +1396,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
 			} else {
 				Closeup_icon->modelnum = model_load(sip, true);
-				Closeup_icon->model_instance_num = model_create_instance(-1, Closeup_icon->modelnum);
+				Closeup_icon->model_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Closeup_icon->modelnum);
 				model_set_up_techroom_instance(sip, Closeup_icon->model_instance_num);
 			}
 		}
@@ -1516,9 +1516,9 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 		brief_common_get_icon_dimensions(&iw, &ih, bi);
 
 		// could be a scaled icon
-		if (bi->scale_factor != 1.0f) {
-			iw = static_cast<int>(iw * bi->scale_factor);
-			ih = static_cast<int>(ih * bi->scale_factor);
+		if (bi->scale_factor != 1.0f || Briefing_Icon_Scale_Factor != 1.0f) {
+			iw = static_cast<int>(iw * bi->scale_factor * Briefing_Icon_Scale_Factor);
+			ih = static_cast<int>(ih * bi->scale_factor * Briefing_Icon_Scale_Factor);
 		}
 
 		if ( mx < bi->x ) continue;

@@ -12,6 +12,7 @@
 #include "gamesequence/gamesequence.h"
 #include "controlconfig/controlsconfig.h"
 #include "headtracking/headtracking.h"
+#include "playerman/player.h"
 
 extern int mouse_inited;
 
@@ -129,7 +130,7 @@ ADE_FUNC(mouseButtonDownCount,
 	if (!ade_get_args(L, "o|b", l_Enum.Get(&buttonCheck), &reset_count))
 		return ade_set_error(L, "i", -1);
 
-	if (!buttonCheck.IsValid())
+	if (!buttonCheck.isValid())
 		return ade_set_error(L, "i", -1);
 
 	switch (buttonCheck.index)
@@ -312,6 +313,94 @@ ADE_FUNC(AxisInverted, l_Mouse, "number cid, number axis, boolean inverted", "Ge
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
+}
+
+ADE_VIRTVAR(FlightCursorMode, l_Mouse, "enumeration FlightMode", "Flight Mode; uses LE_FLIGHTMODE_* enumerations.", "enumeration", "enumeration flight mode")
+{
+	enum_h flightmode_arg;
+
+	if (!ade_get_args(L, "*|o", l_Enum.Get(&flightmode_arg))) {
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+	}
+
+	if (ADE_SETTING_VAR && flightmode_arg.isValid()) {
+		switch (flightmode_arg.index) {
+		case LE_FLIGHTMODE_FLIGHTCURSOR:
+			Player_flight_mode = FlightMode::FlightCursor;
+			break;
+		case LE_FLIGHTMODE_SHIPLOCKED:
+			Player_flight_mode = FlightMode::ShipLocked;
+			break;
+		default:
+			Warning(LOCATION, "Invalid flight mode index %d in io.FlightCursorMode", flightmode_arg.index);
+			break;
+		}
+	}
+
+	switch (Player_flight_mode) {
+	case FlightMode::FlightCursor:
+		return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_FLIGHTMODE_FLIGHTCURSOR)));
+	case FlightMode::ShipLocked:
+		return ade_set_args(L, "o", l_Enum.Set(enum_h(LE_FLIGHTMODE_SHIPLOCKED)));
+	default:
+		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
+	}
+
+}
+
+ADE_VIRTVAR(FlightCursorExtent, l_Mouse, "number angle", "How far from the center the cursor can go.", "number", "Flight cursor extent in radians")
+{
+	float extent_angle;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &extent_angle))
+	{
+		Flight_cursor_extent = extent_angle;
+	}
+
+	return ade_set_args(L, "f", Flight_cursor_extent);
+}
+
+ADE_VIRTVAR(FlightCursorDeadzone, l_Mouse, "number angle", "How far from the center the cursor needs to go before registering.", "number", "Flight cursor deadzone in radians")
+{
+	float deadzone_angle;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &deadzone_angle))
+	{
+		Flight_cursor_deadzone = deadzone_angle;
+	}
+
+	return ade_set_args(L, "f", Flight_cursor_deadzone);
+}
+
+ADE_VIRTVAR(FlightCursorPitch, l_Mouse, "number", "Flight cursor pitch value", "number", "Flight cursor pitch value")
+{
+	float val_pitch;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_pitch)) {
+		Player_flight_cursor.p = val_pitch;
+	}
+
+	return ade_set_args(L, "f", Player_flight_cursor.p);
+}
+
+ADE_VIRTVAR(FlightCursorHeading, l_Mouse, "number", "Flight cursor heading value", "number", "Flight cursor heading value")
+{
+	float val_heading;
+
+	if (ADE_SETTING_VAR && ade_get_args(L, "*f", &val_heading)) {
+		Player_flight_cursor.h = val_heading;
+	}
+
+	return ade_set_args(L, "f", Player_flight_cursor.h);
+}
+
+ADE_FUNC(resetFlightCursor, l_Mouse, nullptr, "Resets flight cursor position to the center of the screen.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+	Player_flight_cursor.p = 0.0f;
+	Player_flight_cursor.h = 0.0f;
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(setCursorImage, l_Mouse, "string filename", "Sets mouse cursor image, and allows you to lock/unlock the image. (A locked cursor may only be changed with the unlock parameter)", "boolean", "true if successful, false otherwise")

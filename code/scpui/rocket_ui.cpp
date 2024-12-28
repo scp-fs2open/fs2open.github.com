@@ -16,6 +16,7 @@
 #include "mod_table/mod_table.h"
 #include "osapi/osapi.h"
 #include "scpui/IncludeNodeHandler.h"
+#include "scpui/RocketDecoratorsInstancer.h"
 #include "scpui/RocketFileInterface.h"
 #include "scpui/RocketLuaSystemInterface.h"
 #include "scpui/RocketRenderingInterface.h"
@@ -41,6 +42,8 @@
 
 #include <codecvt>
 #include <locale>
+
+#include <SDL_stdinc.h>
 
 using namespace Rocket::Core;
 
@@ -505,21 +508,6 @@ bool key_event_handler(const SDL_Event& evt)
 		return input_context->ProcessKeyUp(translateKey(evt.key.keysym.sym), get_modifier_state());
 	}
 }
-#if _MSC_VER >= 1900
-std::u16string utf8_to_utf16(const char* utf8_string)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<int16_t>, int16_t> convert;
-	auto intString = convert.from_bytes(utf8_string);
-
-	return std::u16string(reinterpret_cast<const char16_t*>(intString.data()));
-}
-#else
-std::u16string utf8_to_utf16(const char* utf8_string)
-{
-	std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
-	return convert.from_bytes(utf8_string);
-}
-#endif
 
 bool text_input_handler(const SDL_Event& evt)
 {
@@ -534,7 +522,7 @@ bool text_input_handler(const SDL_Event& evt)
 	}
 
 	// libRocket expects UCS-2 so we first need to convert to that
-	auto ucs2String = utf8_to_utf16(evt.text.text);
+	auto ucs2String = std::basic_string<unsigned short>(SDL_iconv_utf8_ucs2(evt.text.text));
 
 	bool consumed = true;
 	for (auto& c : ucs2String) {
@@ -577,6 +565,18 @@ void initialize()
 		->RemoveReference();
 
 	XMLParser::RegisterNodeHandler("include", new IncludeNodeHandler())->RemoveReference();
+
+	// Register custom underline decorator with its own instancer
+	Rocket::Core::DecoratorInstancer* underline_instancer = new scpui::decorators::UnderlineDecoratorInstancer();
+	Rocket::Core::Factory::RegisterDecoratorInstancer("underline", underline_instancer);
+
+	// Register custom corner-borders decorator with its own instancer
+	Rocket::Core::DecoratorInstancer* corner_borders_instancer = new scpui::decorators::BorderDecoratorInstancer();
+	Rocket::Core::Factory::RegisterDecoratorInstancer("corner-borders", corner_borders_instancer);
+
+	// Decrease the reference counts (as it is managed by libRocket after registration)
+	underline_instancer->RemoveReference();
+	corner_borders_instancer->RemoveReference();
 
 	// Setup the plugin a style sheet properties for the sound support
 	Rocket::Core::RegisterPlugin(new SoundPlugin());

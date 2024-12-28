@@ -141,6 +141,9 @@ SCP_vector<cc_line> Cc_lines;
 // Backups for use when user closes the config menu without saving
 SCP_vector<CCI> Control_config_backup;
 
+// The current preset that the user is working on and will likely want to save to
+static SCP_string Current_preset_name;
+
 // Undo system
 Undo_system Undo_controls;
 
@@ -923,8 +926,8 @@ bool control_config_do_reset(bool cycle, bool API_Access)
 
 	// first, determine how many bindings need to be changed
 	for (size_t e = 0; e < Control_config.size(); ++e) {
-		auto item = Control_config[e];
-		auto default_item = default_bindings[e];
+		const auto& item = Control_config[e];
+		const auto& default_item = default_bindings[e];
 
 		if (item.disabled) {
 			// skip
@@ -1291,11 +1294,12 @@ bool control_config_accept(bool API_Access)
 			char* cstr; // Must be a char *, because popup_input may return nullptr and std::string don't like it
 
 		retry:;
+			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
 				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
 				"abort to config menu.",
 				32 - 6,
-				Player->callsign);
+				default_string.c_str());
 			if (cstr == nullptr) {
 				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1354,6 +1358,9 @@ bool control_config_accept(bool API_Access)
 			// consistant ordering
 			Control_config_presets.resize(1);
 			load_preset_files();
+
+			// finally, save the new preset so that changes will get saved to this preset
+			Current_preset_name = preset.name;
 		} else {
 			return false;
 		}
@@ -1537,9 +1544,11 @@ void control_config_init(bool API_Access)
 	// Init preset cycling system
 	auto preset_it = control_config_get_current_preset();
 	if (preset_it == Control_config_presets.end()) {
+		Current_preset_name.clear();
 		Defaults_cycle_pos = 0;
 
 	} else {
+		Current_preset_name = preset_it->name;
 		Defaults_cycle_pos = static_cast<unsigned int>(std::distance(Control_config_presets.begin(), preset_it));
 	}
 
@@ -1651,6 +1660,9 @@ void control_config_close(bool API_Access)
 	Cc_lines.clear();
 	Conflicts.clear();
 	Undo_controls.clear();
+
+	// Clear this, just to be tidy
+	Current_preset_name.clear();
 }
 
 SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic) {
@@ -1896,7 +1908,7 @@ int control_config_draw_list(int select_tease_line) {
 	char buf[256];  // c_str buffer
 	int font_height = gr_get_font_height();
 
-	for (line = Scroll_offset; cc_line_query_visible(line); ++line) {
+	for (line = Scroll_offset; cc_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX); ++line) {
 		z = Cc_lines[line].cc_index;
 
 		// screen coordinate y = list box origin y + (this item's relative y - topmost item's relative y)
@@ -2091,7 +2103,7 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		}
 
 		if ((ctrl == BANK_WHEN_PRESSED || ctrl == GLIDE_WHEN_PRESSED) && (Last_key >= 0) && (k <= 0) &&
-			!keyd_pressed[Last_key]) {
+			!key_is_pressed(Last_key)) {
 			// If the selected cc_item is BANK_WHEN_PRESSED or GLIDE_WHEN_PRESSED, and
 			// If the polled key is a modifier, and
 			// k was consumed, and
@@ -2123,9 +2135,12 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && (j < JOY_TOTAL_BUTTONS)) {
 			// Bind the joy button
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item, API_Access);
 
-			strcpy_s(bound_string, Joy_button_text[j]);
+			CC_bind joy_bind(static_cast<CID>(joy), j);
+
+			control_config_bind(ctrl, joy_bind, item, API_Access);
+
+			strcpy_s(bound_string, joy_bind.textify().c_str());
 			done = true;
 		}
 
@@ -2159,9 +2174,10 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 					if (mouse_down(mouse_bind)) {
 						Assert(!Control_config[ctrl].is_axis());
+
 						control_config_bind(ctrl, mouse_bind, item, API_Access);
 
-						strcpy_s(bound_string, Joy_button_text[i]);
+						strcpy_s(bound_string, mouse_bind.textify().c_str());
 						done = true;
 
 						break;
@@ -2820,12 +2836,12 @@ int check_control_used(int id, int key)
 
 		// check what current modifiers are pressed
 		mask = 0;
-		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
+		if (key_is_pressed(KEY_LSHIFT, true) || key_is_pressed(KEY_RSHIFT, true)) {
 			// Any shift key is pressed, add KEY_SHIFTED mask
 			mask |= KEY_SHIFTED;
 		}
 
-		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
+		if (key_is_pressed(KEY_LALT, true) || key_is_pressed(KEY_RALT, true)) {
 			// Any alt key is pressed, add KEY_ALTED to the mask
 			mask |= KEY_ALTED;
 		}
@@ -2841,7 +2857,7 @@ int check_control_used(int id, int key)
 
 			z &= KEY_MASK;
 
-			if (keyd_pressed[z] || key_down_count(z)) {
+			if (key_is_pressed(z, true)) {
 				// Key combo is pressed, control activated
 				control_used(id);
 				return 1;

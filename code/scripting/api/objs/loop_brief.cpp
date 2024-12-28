@@ -7,7 +7,7 @@ cmission_h::cmission_h() : l_stage(-1) {}
 
 cmission_h::cmission_h(int stage) : l_stage(stage) {}
 
-bool cmission_h::IsValid() const
+bool cmission_h::isValid() const
 {
 	return l_stage >= 0;
 }

@@ -34,7 +34,6 @@ extern int Cmdline_cd_check;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;
-extern int Cmdline_gimme_all_medals;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_multi_log;
 extern int Cmdline_multi_stream_chat_to_file;
@@ -63,10 +62,7 @@ extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
-extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
-extern int Cmdline_bloom_intensity;
-extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
 extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
@@ -84,12 +80,9 @@ extern int Cmdline_orb_radar;
 extern int Cmdline_rearm_timer;
 
 // Gameplay related
-extern int Cmdline_ship_choice_3d;
-extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_autopilot_interruptable;
 extern int Cmdline_stretch_menu;
 extern bool Cmdline_capture_mouse;
-extern int Cmdline_no_screenshake;
 extern int Cmdline_deadzone;
 extern bool Cmdline_enable_vr;
 
@@ -130,6 +123,7 @@ extern bool Cmdline_noshadercache;
 extern bool Cmdline_prefer_ipv4;
 extern bool Cmdline_prefer_ipv6;
 extern bool Cmdline_dump_packet_type;
+extern bool Cmdline_no_large_shaders;
 #ifdef WIN32
 extern bool Cmdline_alternate_registry_path;
 #endif
@@ -149,6 +143,7 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
+extern bool Cmdline_retail_time_compression_range;
 extern bool Cmdline_benchmark_mode;
 extern const char *Cmdline_pilot;
 extern bool Cmdline_noninteractive;

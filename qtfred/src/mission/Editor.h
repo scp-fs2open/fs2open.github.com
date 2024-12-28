@@ -15,6 +15,9 @@
 #include <memory>
 #include <stdexcept>
 
+#define MISSION_BACKUP_NAME     "Backup"
+#define MISSION_BACKUP_DEPTH    9
+
 namespace fso {
 namespace fred {
 
@@ -36,6 +39,8 @@ class Editor : public QObject {
 
 	void createNewMission();
 
+	std::string maybeUseAutosave(const std::string& filepath);
+
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
 
@@ -49,7 +54,7 @@ class Editor : public QObject {
 	/* Schedules updates for all renderes */
 	void updateAllViewports();
 
-	int create_player(int num, vec3d* pos, matrix* orient, int type = -1, int init = 1);
+	int create_player(vec3d* pos, matrix* orient, int type = -1);
 
 	int create_ship(matrix* orient, vec3d* pos, int ship_type);
 
@@ -63,6 +68,9 @@ class Editor : public QObject {
 
 	void hideMarkedObjects();
 	void showHiddenObjects();
+
+	void lockMarkedObjects();
+	void unlockAllObjects();
 
 	int dup_object(object* objp);
 
@@ -181,11 +189,14 @@ class Editor : public QObject {
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 	static void lcl_fred_replace_stuff(QString& text);
 
+	SCP_vector<int> getStartingWingLoadoutUseCounts();
+
 	static const ai_goal_list* getAi_goal_list();
 	static int getAigoal_list_size();
 	const char* error_check_initial_orders(ai_goal* goals, int ship, int wing);
+
   private:
-	void clearMission();
+	void clearMission(bool fast_reload = false);
 
 	void initialSetup();
 
@@ -195,8 +206,6 @@ class Editor : public QObject {
 	EditorViewport* _lastActiveViewport = nullptr;
 
 	int numMarked = 0;
-
-	int Default_player_model = -1;
 
 	std::vector<int> Shield_sys_teams;
 	std::vector<int> Shield_sys_types;
@@ -210,6 +219,10 @@ class Editor : public QObject {
 	char err_flags[MAX_OBJECTS];
 	int obj_count = 0;
 	int g_err = 0;
+
+	// ship and weapon usage pools
+	int _ship_usage[MAX_TVT_TEAMS][MAX_SHIP_CLASSES];
+	int _weapon_usage[MAX_TVT_TEAMS][MAX_WEAPON_TYPES];
 
 	int common_object_delete(int obj);
 
@@ -262,6 +275,8 @@ class Editor : public QObject {
 
 	void generate_team_weaponry_usage_list(int team, int* arr);
 
+	void generate_ship_usage_list(int* arr, int wing);
+
 	int get_visible_sub_system_count(ship* shipp);
 
 	int get_next_visible_subsys(ship* shipp, ship_subsys** next_subsys);
@@ -273,7 +288,7 @@ class Editor : public QObject {
 	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
-	int fred_check_sexp(int sexp, int type, const char* msg, ...);
+	int fred_check_sexp(int sexp, int type, const char* location, ...);
 
 
 	int global_error_check_mixed_player_wing(int w);
@@ -281,6 +296,8 @@ class Editor : public QObject {
 	int global_error_check_player_wings(int multi);
 
 	const char* get_order_name(int order);
+
+	void updateStartingWingLoadoutUseCounts();
 };
 
 } // namespace fred

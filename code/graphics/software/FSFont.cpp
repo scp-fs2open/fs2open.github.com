@@ -2,12 +2,10 @@
 
 namespace font
 {
-	FSFont::FSFont() : name(SCP_string("<Invalid>")), offsetTop(0.0f), offsetBottom(0.0f)
-	{
-	}
 
-	FSFont::~FSFont()
+	void FSFont::setScaleBehavior(bool scale)
 	{
+		this->canScale = scale;
 	}
 
 	void FSFont::setBottomOffset(float offset)
@@ -28,6 +26,11 @@ namespace font
 	void FSFont::setFilename(const SCP_string& newName) 
 	{
 		this->filename = newName;
+	}
+
+	[[nodiscard]] bool FSFont::getScaleBehavior() const
+	{
+		return this->canScale;
 	}
 
 	float FSFont::getBottomOffset() const

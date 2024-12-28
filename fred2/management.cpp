@@ -95,7 +95,6 @@ waypoint *cur_waypoint = NULL;
 waypoint_list *cur_waypoint_list = NULL;
 int delete_flag;
 int bypass_update = 0;
-int Default_player_model = 0;
 int Update_ship = 0;
 int Update_wing = 0;
 
@@ -233,8 +232,6 @@ void lcl_fred_replace_stuff(CString &text)
 	text.Replace("\\", "$backslash");
 }
 
-void brief_init_colors();
-
 void fred_preload_all_briefing_icons()
 {
 	for (SCP_vector<briefing_icon_info>::iterator ii = Briefing_icon_info.begin(); ii != Briefing_icon_info.end(); ++ii)
@@ -314,21 +311,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
  	Cmdline_window = 1;
 
 	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
+	gr_set_gamma(3.0f);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
-	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
-	// system if a special mod_table option is set
-	if (Enable_scripts_in_fred) {
-		script_init();			//WMC
-	}
-
 	font::init();					// loads up all fonts  
-
-	gr_set_gamma(3.0f);
-	
-	key_init();
-	mouse_init();
 
 	curves_init();
 	particle::ParticleManager::init();
@@ -339,6 +326,82 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
+
+	hud_init_comm_orders();		// Goober5000
+
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
+	rank_init();
+	traitor_init();
+	medals_init();			// get medal names for sexpression usage
+
+	key_init();
+	mouse_init();
+
+	model_init();
+	virtual_pof_init();
+
+	event_music_init();
+
+	alpha_colors_init();
+
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
+	animation::ModelAnimationParseHelper::parseTables();
+
+	sexp_startup(); // Must happen before ship init for LuaAI
+
+	obj_init();
+	armor_init();
+	ai_init();
+	ai_profiles_init();
+	weapon_init();
+	glowpoint_init();
+	ship_init();
+
+	techroom_intel_init();
+	hud_positions_init();
+
+	asteroid_init();
+	mission_brief_common_init();
+
+	neb2_init();						// fullneb stuff
+	nebl_init();						// neb lightning
+	stars_init();
+	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
+
+	lighting_profiles::load_profiles();
+
+	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
+	// system if a special mod_table option is set
+	if (Enable_scripts_in_fred) {
+		// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
+		script_init();			//WMC
+	}
+
+	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
+	}
+
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
+	}
+
+	libs::ffmpeg::initialize();
+
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();
@@ -359,49 +422,17 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	strcpy_s(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
 	Voice_export_selection = 0;
 
-	hud_init_comm_orders();		// Goober5000
+	Show_waypoints = TRUE;
 
-	alpha_colors_init();
-	
-	mission_brief_common_init();	
-
-	sexp_startup(); // Must happen before ship init for LuaAI
-
-	animation::ModelAnimationParseHelper::parseTables();
-	obj_init();
-	model_free_all();				// Free all existing models
-	virtual_pof_init();
-	ai_init();
-	ai_profiles_init();
-	armor_init();
-	weapon_init();
-	medals_init();			// get medal names for sexpression usage
-	glowpoint_init();
-	ship_init();
-	techroom_intel_init();
-	hud_positions_init();
-	asteroid_init();
-	lighting_profiles::load_profiles();
-	traitor_init();
-
-	// get fireball IDs for sexpression usage
-	// (we don't need to init the entire system via fireball_init, we just need the information)
-	fireball_parse_tbl();
 
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();
 	fhash_activate();
 
-	neb2_init();						// fullneb stuff
-	stars_init();
-	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
-	brief_init_colors();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
-	event_music_init();
 	fiction_viewer_reset();
 	cmd_brief_reset();
-	Show_waypoints = TRUE;
 
 	// mission creation requires the existence of a timestamp snapshot
 	timer_start_frame();
@@ -409,41 +440,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mission_campaign_clear();
 	create_new_mission();
 
-	// neb lightning
-	nebl_init();
-
-	libs::ffmpeg::initialize();
-
-
-	// wookieejedi
-	// load in the controls and defaults including the controlconfigdefault.tbl
-	// this allows the sexp tree in key-pressed to actually match what the game will use
-	// especially useful when a custom Controlconfigdefaults.tbl is used
-	control_config_common_init();
-
 	gr_reset_clip();
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
-	// Get the default player ship
-	Default_player_model = get_default_player_ship_index();
-
 	Fred_main_wnd -> init_tools();
-
-	Script_system.RunInitFunctions();
-	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
-	if (scripting::hooks::OnGameInit->isActive()) {
-		scripting::hooks::OnGameInit->run();
-	}
-	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		scripting::hooks::OnSplashScreen->run();
-	}
-
-	// A non-deprecated hook that runs after the splash screen has faded out.
-	if (scripting::hooks::OnSplashEnd->isActive()) {
-		scripting::hooks::OnSplashEnd->run();
-	}
 
 	return true;
 }
@@ -690,29 +691,9 @@ int create_object(vec3d *pos, int waypoint_instance)
 {
 	int obj, n;
 
-	if (cur_ship_type_combo_index == Id_select_type_waypoint)
+	if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_waypoint)) {
 		obj = create_waypoint(pos, waypoint_instance);
-
-	else if (cur_ship_type_combo_index == Id_select_type_start) {
-		if (Player_starts >= MAX_PLAYERS) {
-			Fred_main_wnd->MessageBox("Unable to create new player start point.\n"
-				"You have reached the maximum limit.", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else if (The_mission.game_type & MISSION_TYPE_SINGLE) {
-			Fred_main_wnd->MessageBox("You can't have more than one player start in\n"
-				"single player missions.\n", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-			Fred_main_wnd->MessageBox("You can't have more than one player start in\n"
-				"a training missions.\n", NULL, MB_OK | MB_ICONEXCLAMATION);
-			obj = -2;
-
-		} else
-			obj = create_player(Player_starts, pos, NULL, Default_player_model);
-
-	} else if (cur_ship_type_combo_index == Id_select_type_jump_node) {
+	} else if (cur_ship_type_combo_index == static_cast<int>(Id_select_type_jump_node)) {
 		CJumpNode jnp(pos);
 		obj = jnp.GetSCPObjectNumber();
 		Jump_nodes.push_back(std::move(jnp));
@@ -740,12 +721,12 @@ int create_object(vec3d *pos, int waypoint_instance)
 	return obj;
 }
 
-int create_player(int num, vec3d *pos, matrix *orient, int type, int init)
+int create_player(vec3d *pos, matrix *orient, int type)
 {
 	int obj;
 
 	if (type == -1){
-		type = Default_player_model;
+		type = get_default_player_ship_index();
 	}
 	Assert(type >= 0);
 
@@ -785,12 +766,12 @@ void reset_mission()
 {
 	clear_mission();
 
-	create_player(0, &vmd_zero_vector, &vmd_identity_matrix);
+	create_player(&vmd_zero_vector, &vmd_identity_matrix);
 
 	stars_post_level_init();
 }
 
-void clear_mission()
+void clear_mission(bool fast_reload)
 {
 	char *str;
 	int i, j, count;
@@ -806,7 +787,10 @@ void clear_mission()
 	mission_init(&The_mission);
 
 	obj_init();
-	model_free_all();				// Free all existing models
+
+	if (!fast_reload)
+		model_free_all();				// Free all existing models
+
 	ai_init();
 	asteroid_level_init();
 	ship_level_init();
@@ -831,11 +815,14 @@ void clear_mission()
 			}
 		}
 	}
-	t = CTime::GetCurrentTime();
+
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = str;
-	strcpy_s(The_mission.created, t.Format("%x at %X"));
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
@@ -2555,4 +2542,9 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 		if (!stricmp(ii->ship_name, old_name))
 			strcpy_s(ii->ship_name, new_name);
 	}
+}
+
+void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len)
+{
+	std::strftime(dest, dest_max_len, "%x at %X", src);
 }

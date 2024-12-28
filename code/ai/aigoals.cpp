@@ -166,7 +166,7 @@ void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode,
 	aigp->target_name = nullptr;
 	aigp->target_name_index = -1;
 
-	aigp->wp_list = nullptr;
+	aigp->wp_list_index = -1;
 
 	aigp->target_instance = -1;
 	aigp->target_signature = -1;
@@ -738,8 +738,8 @@ void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_
 
 	if ( mode == AI_GOAL_WARP ) {
 		if (submode >= 0) {
-			aigp->wp_list = find_waypoint_list_at_index(submode);
-			Assert(aigp->wp_list != NULL);
+			aigp->wp_list_index = submode;
+			Assert(find_waypoint_list_at_index(aigp->wp_list_index) != nullptr);
 		}
 	}
 
@@ -750,6 +750,9 @@ void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_
 
 	if ( target_name != NULL )
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
+		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 
 
 	// special case certain orders from player so that ships continue to do the right thing
@@ -904,6 +907,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipn
 void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name )
 {
 	int node, dummy, op;
+	bool priority_is_nan = false, priority_is_nan_forever = false;
 
 	Assert ( Sexp_nodes[sexp].first != -1 );
 	node = Sexp_nodes[sexp].first;
@@ -929,7 +933,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 
 
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_WAYPOINTS;
 		if ( op == OP_AI_WAYPOINTS_ONCE )
 			aigp->ai_mode = AI_GOAL_WAYPOINTS_ONCE;
@@ -947,9 +951,9 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		// store the name of the subsystem in the docker.name field for now -- this field must get
 		// fixed up when the goal is valid since we need to locate the subsystem on the ship's model
-		aigp->docker.name = ai_get_goal_target_name(CTEXT(CDR(CDR(node))), &dummy);
+		aigp->docker.name = ai_get_goal_target_name(CTEXT(CDDR(node)), &dummy);
 		aigp->flags.set(AI::Goal_Flags::Subsys_needs_fixup);
-		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(node)))) );
+		aigp->priority = eval_num(CDDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DISABLE_SHIP:
@@ -957,7 +961,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->ai_mode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_ENGINE;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DISARM_SHIP:
@@ -965,27 +969,27 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->ai_mode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_TURRET;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_WARP_OUT:
 		aigp->ai_mode = AI_GOAL_WARP;
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 		// the following goal is obsolete, but here for compatibility
 	case OP_AI_WARP:
 		aigp->ai_mode = AI_GOAL_WARP;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_UNDOCK:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// Goober5000 - optional undock with something
-		if (CDR(CDR(node)) != -1)
-			aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(CDR(node))), &aigp->target_name_index );
+		if (CDDR(node) != -1)
+			aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
 
 		aigp->ai_mode = AI_GOAL_UNDOCK;
 		aigp->ai_submode = AIS_UNDOCK_0;
@@ -995,7 +999,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	{
 		aigp->ai_mode = AI_GOAL_REARM_REPAIR;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// this goal needs some extra setup
 		// if this doesn't work, the goal will be immediately removed
@@ -1013,36 +1017,36 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	case OP_AI_STAY_STILL:
 		aigp->ai_mode = AI_GOAL_STAY_STILL;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DOCK:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->docker.name = ai_add_dock_name(CTEXT(CDR(CDR(node))));
-		aigp->dockee.name = ai_add_dock_name(CTEXT(CDR(CDR(CDR(node)))));
-		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(CDR(node))))) );
+		aigp->docker.name = ai_add_dock_name(CTEXT(CDDR(node)));
+		aigp->dockee.name = ai_add_dock_name(CTEXT(CDDDR(node)));
+		aigp->priority = eval_num(CDDDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		aigp->ai_mode = AI_GOAL_DOCK;
 		aigp->ai_submode = AIS_DOCK_0;		// be sure to set the submode
 		break;
 
 	case OP_AI_CHASE_ANY:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_CHASE_ANY;
 		break;
 
 	case OP_AI_PLAY_DEAD:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_PLAY_DEAD;
 		break;
 
 	case OP_AI_PLAY_DEAD_PERSISTENT:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_PLAY_DEAD_PERSISTENT;
 		break;
 
 	case OP_AI_KEEP_SAFE_DISTANCE:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 
@@ -1052,7 +1056,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		bool is_nan, is_nan_forever;
 
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDDR(node)) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// distance from ship
 		if ( CDDDR(node) < 0 )
@@ -1088,7 +1092,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		if ( op == OP_AI_CHASE ) {
 			aigp->ai_mode = AI_GOAL_CHASE;
@@ -1138,7 +1142,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 				localnode = CDR(localnode);
 			}
 
-			aigp->priority = atoi( CTEXT(localnode) );
+			aigp->priority = eval_num(localnode, priority_is_nan, priority_is_nan_forever);
 
 			aigp->lua_ai_target = { std::move(target), luaAIMode->sexp.getSEXPArgumentList(CDR(localnode)) };
 		}
@@ -1147,8 +1151,12 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		}
 	}
 
-	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
-		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", CTEXT(node), aigp->priority, MAX_GOAL_PRIORITY));
+	if ( priority_is_nan || priority_is_nan_forever ) {
+		Warning(LOCATION, "add-goal tried to add %s with a NaN priority; aborting...", Sexp_nodes[CAR(sexp)].text);
+		ai_goal_reset(aigp);
+		return;
+	} else if ( aigp->priority > MAX_GOAL_PRIORITY ) {
+		nprintf (("AI", "bashing add-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
@@ -1224,9 +1232,10 @@ int ai_find_goal_index( ai_goal* aigp, int mode, int submode, int priority )
 
 /* Remove a goal from the given goals structure
  * Returns the index of the goal that it clears out.
- * This is important so that if active_goal == index you can set AI_GOAL_NONE
+ * This is important so that if active_goal == index you can set AI_GOAL_NONE.
+ * NOTE: Callers should check the value of remove_more.  If it is true, the function should be called again.
  */
-int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
+int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 {
 	/* Sanity check */
 	Assert( Sexp_nodes[ sexp ].first != -1 );
@@ -1242,115 +1251,150 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	/* The operator to use */
 	int op = get_operator_const( node );
 
+	// since this logic is common to all goals removed by the remove-goal sexp
+	auto eval_priority_et_seq = [sexp, &remove_more](int n, int priority_if_no_n = -1)->int
+	{
+		bool _priority_is_nan = false, _priority_is_nan_forever = false;
+
+		int _priority = (n >= 0) ? eval_num(n, _priority_is_nan, _priority_is_nan_forever) : priority_if_no_n;
+		n = CDR(sexp);	// we want the first node after the goal sub-tree
+
+		if (_priority_is_nan || _priority_is_nan_forever)
+		{
+			Warning(LOCATION, "remove-goal tried to remove %s with a NaN priority; the priority will not be used for goal comparison", Sexp_nodes[CAR(sexp)].text);
+			_priority = -1;
+		}
+		else if (_priority > MAX_GOAL_PRIORITY)
+		{
+			nprintf(("AI", "bashing remove-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, _priority, MAX_GOAL_PRIORITY));
+			_priority = MAX_GOAL_PRIORITY;
+		}
+
+		if (n >= 0)
+		{
+			remove_more = is_sexp_true(n);
+			n = CDR(n);
+		}
+
+		if (n >= 0)
+		{
+			if (is_sexp_true(n))
+				_priority = -1;
+			n = CDR(n);
+		}
+
+		return _priority;
+	};
+
 	/* We now need to determine what the mode and submode values are*/
 	switch( op )
 	{
 	case OP_AI_WAYPOINTS_ONCE:
 		goalmode = AI_GOAL_WAYPOINTS_ONCE;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_WAYPOINTS:
 		goalmode = AI_GOAL_WAYPOINTS;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DESTROY_SUBSYS:
 		goalmode = AI_GOAL_DESTROY_SUBSYSTEM;
-		priority = ( CDR( CDR( CDR(node) ) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( CDR( node ) ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDDR(node));
 		break;
 	case OP_AI_DISABLE_SHIP:
 	case OP_AI_DISABLE_SHIP_TACTICAL:
 		goalmode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DISARM_SHIP:
 	case OP_AI_DISARM_SHIP_TACTICAL:
 		goalmode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_WARP_OUT:
 		goalmode = AI_GOAL_WARP;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_WARP:
 		goalmode = AI_GOAL_WARP;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_UNDOCK:
 		goalmode = AI_GOAL_UNDOCK;
 		goalsubmode = AIS_UNDOCK_0;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_STAY_STILL:
 		goalmode = AI_GOAL_STAY_STILL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DOCK:
 		goalmode = AI_GOAL_DOCK;
 		goalsubmode = AIS_DOCK_0;
-		priority = ( CDR( CDR( CDR( CDR(node) ) ) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( CDR( CDR( node ) ) ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDDDR(node));
 		break;
 	case OP_AI_CHASE_ANY:
 		goalmode = AI_GOAL_CHASE_ANY;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_PLAY_DEAD:
 	case OP_AI_PLAY_DEAD_PERSISTENT:
 		goalmode = (op == OP_AI_PLAY_DEAD) ? AI_GOAL_PLAY_DEAD : AI_GOAL_PLAY_DEAD_PERSISTENT;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_KEEP_SAFE_DISTANCE:
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		goalmode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 	case OP_AI_CHASE:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		if ( wing_name_lookup( CTEXT( CDR( node ) ), 1 ) != -1 )
 			goalmode = AI_GOAL_CHASE_WING;
 		else
 			goalmode = AI_GOAL_CHASE;
 		break;
 	case OP_AI_GUARD:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		if ( wing_name_lookup( CTEXT( CDR( node ) ), 1 ) != -1 )
 			goalmode = AI_GOAL_GUARD_WING;
 		else
 			goalmode = AI_GOAL_GUARD;
 		break;
 	case OP_AI_GUARD_WING:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_GUARD_WING;
 		break;
 	case OP_AI_CHASE_WING:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_CHASE_WING;
 		break;
 	case OP_AI_CHASE_SHIP_CLASS:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_CHASE_SHIP_CLASS;
 		break;
 	case OP_AI_EVADE_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_EVADE_SHIP;
 		break;
 	case OP_AI_STAY_NEAR_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = (op == OP_AI_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 		break;
 	case OP_AI_FORM_ON_WING:
-		priority = 99;
+		priority = eval_priority_et_seq(-1, 99);
 		goalmode = AI_GOAL_FORM_ON_WING;
 		break;
 	case OP_AI_FLY_TO_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_FLY_TO_SHIP;
 		break;
 	case OP_AI_REARM_REPAIR:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_REARM_REPAIR;
 		break;
 	default:
@@ -1366,7 +1410,7 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 				localnode = CDR(localnode);
 			}
 
-			priority = localnode >= 0 ? atoi( CTEXT(localnode) ) : -1;
+			priority = eval_priority_et_seq(localnode);
 		}
 		else {
 			UNREACHABLE("Invalid SEXP-OP %s (number %d) for an AI goal!", Sexp_nodes[node].text, op);
@@ -1378,7 +1422,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	int goalindex = ai_find_goal_index( aigp, goalmode, goalsubmode, priority );
 
 	if ( goalindex == -1 )
+	{
+		remove_more = false;
 		return -1; /* no more to do; */
+	}
 
 	/* Clear out the contents of the goal. We can't use ai_remove_ship_goal since it needs ai_info and
 	 * we've only got ai_goals */
@@ -1392,6 +1439,7 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
+	bool remove_more = false;
 
 	// remove the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
@@ -1399,9 +1447,13 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			goalindex = ai_remove_goal_sexp_sub( sexp, Ai_info[Ships[num].ai_index].goals );
-			if ( Ai_info[Ships[num].ai_index].active_goal == goalindex )
-				Ai_info[Ships[num].ai_index].active_goal = AI_GOAL_NONE;
+			auto aip = &Ai_info[Ships[num].ai_index];
+
+			do {
+				goalindex = ai_remove_goal_sexp_sub(sexp, aip->goals, remove_more);
+				if (aip->active_goal == goalindex)
+					aip->active_goal = AI_GOAL_NONE;
+			} while (remove_more);
 		}
 	}
 
@@ -1409,7 +1461,9 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 	// there are more waves to come
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) 
 	{
-		ai_remove_goal_sexp_sub( sexp, wingp->ai_goals );
+		do {
+			ai_remove_goal_sexp_sub(sexp, wingp->ai_goals, remove_more);
+		} while (remove_more);
 	}
 }
 
@@ -1602,10 +1656,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// check to see if we have a valid list.  If not, then try to set one up.  If that
 	// fails, then we must pitch this order
 	if ( (aigp->ai_mode == AI_GOAL_WAYPOINTS_ONCE) || (aigp->ai_mode == AI_GOAL_WAYPOINTS) ) {
-		if ( aigp->wp_list == NULL ) {
-			aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
+		if ( aigp->wp_list_index < 0 ) {
+			aigp->wp_list_index = find_matching_waypoint_list_index(aigp->target_name);
 
-			if ( aigp->wp_list == NULL ) {
+			if ( aigp->wp_list_index < 0 ) {
 				Warning(LOCATION, "Unknown waypoint list %s - not found in mission file.  Killing ai goal", aigp->target_name );
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
@@ -2341,7 +2395,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			flags |= WPF_REPEAT;
 		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
 			flags |= WPF_BACKTRACK;
-		ai_start_waypoints(objp, current_goal->wp_list, flags, current_goal->int_data);
+		ai_start_waypoints(objp, current_goal->wp_list_index, flags, current_goal->int_data);
 		break;
 	}
 

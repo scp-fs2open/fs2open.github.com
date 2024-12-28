@@ -333,6 +333,7 @@
 #define IDC_SPIN6                       1066
 #define IDC_SET_HEAD_ANIS_USING_MESSAGES_TBL 1066
 #define IDC_CLEAR_PERSONAS_FROM_NON_SENDERS 1067
+#define IDC_CHECK_ANY_WINGMAN_PERSONAS  1068
 #define ID_SHOW_FIGHTERS                1071
 #define IDC_PRIORITY7                   1071
 #define ID_SHOW_CAPITALSHIPS            1072
@@ -495,6 +496,7 @@
 #define IDC_SBITMAP                     1189
 #define IDC_ASCT1_VARIABLES_COMBO1      1189
 #define IDC_WEAPON_VARIABLES_COMBO      1189
+#define IDC_WHICH_TO_SYNC               1189
 #define IDC_ASCT1_CLASS_COMBO2          1190
 #define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
@@ -1118,7 +1120,6 @@
 #define IDC_SYNC_PERSONAS               1582
 #define IDC_TOGGLE_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
-#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENTRY_FORMAT_DESC           1588
@@ -1138,6 +1139,8 @@
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
 #define IDC_PRELOAD_SUBSPACE            1605
+#define IDC_DONT_CHANGE_POSITION        1606
+#define IDC_DONT_CHANGE_ORIENTATION     1607
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1163,7 +1166,6 @@
 #define IDC_GROUP_MESSAGES              1628
 #define IDC_INCLUDE_SENDER              1629
 #define IDC_DISABLE_ETS                 1630
-#define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
 #define IDC_NEB2_NEAR_MULTIPLIER        1632
@@ -1257,6 +1259,8 @@
 #define IDC_NOISE_RESOLUTION            1702
 #define IDC_SPIN_NOISE_RESOLUTION       1703
 #define IDC_REQUIRED_WEAPONS            1704
+#define IDC_SELECT_DEBRIS               1705
+#define IDC_SELECT_ASTEROID             1706
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1449,13 +1453,14 @@
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
 #define ID_VIEW_OUTLINE_AT_WARPIN       32993
+#define ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES 32994
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
-#define ID_HIDE_OBJECTS                 33002
+#define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004
 #define ID_EXPAND_ALL                   33005
@@ -1516,6 +1521,8 @@
 #define ID_PREV_SUBSYS                  33060
 #define ID_CANCEL_SUBSYS                33061
 #define ID_HIGHLIGHT_SUBSYS             33062
+#define ID_EDIT_LOCK_MARKED_OBJECTS     33063
+#define ID_EDIT_UNLOCK_ALL_OBJECTS      33064
 #define ID_SHOW_DOCK_POINTS             33065
 #define ID_SHOW_PATHS                   33066
 #define ID_DUMP_STATS                   33067

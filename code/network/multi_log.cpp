@@ -30,10 +30,10 @@
 #define MULTI_LOGFILE_UPDATE_TIME			2520			// every 42 minutes
 
 // time when the logfile was opened
-int Multi_log_open_systime = -1;
+time_t Multi_log_open_systime = -1;
 
 // time when we last updated the logfile
-int Multi_log_update_systime = -1;
+time_t Multi_log_update_systime = -1;
 
 // ----------------------------------------------------------------------------------------------------
 // MULTI LOGFILE FUNCTIONS
@@ -66,8 +66,8 @@ void multi_log_write_trailer()
 // write out some info about stuff
 void multi_log_write_update()
 {
-	int diff = (int)difftime(time(NULL), Multi_log_open_systime);
-	int hours, mins, seconds;
+	long diff = d2lr(difftime(time(nullptr), Multi_log_open_systime));
+	long hours, mins, seconds;
 
 	// figure out some time values
 	hours = diff / 3600;
@@ -75,7 +75,7 @@ void multi_log_write_update()
 	seconds = (diff - (hours * 3600) - (mins * 60));
 
 	// print it out
-	ml_printf("Server has been active for %d hours, %d minutes, and %d seconds", hours, mins, seconds);
+	ml_printf("Server has been active for %ld hours, %ld minutes, and %ld seconds", hours, mins, seconds);
 }
 
 // write out some info helpful for debugging
@@ -110,7 +110,7 @@ void multi_log_init()
 		multi_log_write_info();
 
 		// initialize our timer info
-		Multi_log_open_systime = (int) time(NULL);
+		Multi_log_open_systime = time(NULL);
 		Multi_log_update_systime = Multi_log_open_systime;
 	} 
 }
@@ -130,7 +130,7 @@ void multi_log_process()
 		// write the update
 		multi_log_write_update();
 
-		Multi_log_update_systime = (int) time(NULL);
+		Multi_log_update_systime = time(NULL);
 	}
 }
 

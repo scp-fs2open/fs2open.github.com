@@ -69,7 +69,11 @@ CodecContextParameters getCodecParameters(AVStream* stream) {
 	paras.height       = stream->codecpar->height;
 	paras.pixel_format = (AVPixelFormat)stream->codecpar->format;
 
-	paras.channel_layout = stream->codecpar->channel_layout;
+	#if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(59, 36, 255)
+		paras.channel_layout = stream->codecpar->ch_layout.u.mask;
+	#else
+		paras.channel_layout = stream->codecpar->channel_layout;
+	#endif
 	paras.sample_rate    = stream->codecpar->sample_rate;
 	paras.audio_format   = (AVSampleFormat)stream->codecpar->format;
 

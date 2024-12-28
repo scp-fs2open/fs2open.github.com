@@ -32,6 +32,8 @@
 
 struct wing;
 struct p_dock_instance;
+enum class ArrivalLocation;
+enum class DepartureLocation;
 
 #define NUM_NEBULAS			3				// how many background nebulas we have altogether
 #define NUM_NEBULA_COLORS	9
@@ -51,15 +53,17 @@ int get_special_anchor(const char *name);
 extern const gameversion::version MISSION_VERSION;
 extern const gameversion::version LEGACY_MISSION_VERSION;
 
-// This checks to see if a mission has data that requires saving in a newer format.  This would warrant
+// These check to see if a mission has data that requires saving in a newer format.  This would warrant
 // a "soft version bump" rather than a hard bump because not all missions are affected.
 extern bool check_for_23_3_data();
+extern bool check_for_24_1_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
 // mission parse flags used for parse_mission() to tell what kind of information to get from the mission file
 #define MPF_ONLY_MISSION_INFO	(1 << 0)
 #define MPF_IMPORT_FSM			(1 << 1)
+#define MPF_FAST_RELOAD			(1 << 2)	// skip clearing some stuff so we can load the mission faster (usually since it's the same mission)
 
 // bitfield definitions for missions game types
 #define OLD_MAX_GAME_TYPES				4					// needed for compatibility
@@ -84,9 +88,9 @@ extern bool check_for_23_3_data();
 
 // Goober5000
 typedef struct support_ship_info {
-	int		arrival_location;				// arrival location
+	ArrivalLocation		arrival_location;				// arrival location
 	int		arrival_anchor;					// arrival anchor
-	int		departure_location;				// departure location
+	DepartureLocation	departure_location;				// departure location
 	int		departure_anchor;				// departure anchor
 	float	max_hull_repair_val;			// % of a ship's hull that can be repaired -C
 	float	max_subsys_repair_val;			// same thing, except for subsystems -C
@@ -126,11 +130,11 @@ typedef struct mission_default_custom_data {
 	SCP_string description;
 } mission_default_custom_data;
 
-typedef struct mission_custom_string {
+typedef struct custom_string {
 	SCP_string name;
 	SCP_string value;
 	SCP_string text;
-} mission_custom_string;
+} custom_string;
 
 // descriptions of flags for FRED
 template <class T>
@@ -191,7 +195,7 @@ typedef struct mission {
 
 	SCP_map<SCP_string, SCP_string> custom_data;
 
-	SCP_vector<mission_custom_string> custom_strings;
+	SCP_vector<custom_string> custom_strings;
 
 	void Reset( );
 
@@ -216,19 +220,28 @@ typedef struct mission {
 extern mission The_mission;
 extern char Mission_filename[80];  // filename of mission in The_mission (Fred only)
 
-// defines for arrival locations.  These defines should match their counterparts in the arrival location
-// array
-#define	MAX_ARRIVAL_NAMES				4
-#define	ARRIVE_AT_LOCATION			0
-#define	ARRIVE_NEAR_SHIP				1
-#define	ARRIVE_IN_FRONT_OF_SHIP		2
-#define	ARRIVE_FROM_DOCK_BAY			3
+// enums for arrival locations.  The integer values of these enums should match their counterparts in the arrival location array
+#define	MAX_ARRIVAL_NAMES				9
+enum class ArrivalLocation : int
+{
+	AT_LOCATION = 0,
+	NEAR_SHIP = 1,
+	IN_FRONT_OF_SHIP = 2,
+	IN_BACK_OF_SHIP = 3,
+	ABOVE_SHIP = 4,
+	BELOW_SHIP = 5,
+	TO_LEFT_OF_SHIP = 6,
+	TO_RIGHT_OF_SHIP = 7,
+	FROM_DOCK_BAY = 8
+};
 
-// defines for departure locations.  These defines should match their counterparts in the departure location
-// array
+// enums for departure locations.  The integer values of these enums should match their counterparts in the departure location array
 #define MAX_DEPARTURE_NAMES			2
-#define DEPART_AT_LOCATION				0
-#define DEPART_AT_DOCK_BAY				1
+enum class DepartureLocation : int
+{
+	AT_LOCATION = 0,
+	TO_DOCK_BAY = 1
+};
 
 #define	MAX_GOAL_TYPE_NAMES	3
 
@@ -306,6 +319,7 @@ typedef struct subsys_status {
 	int	secondary_ammo[MAX_SHIP_SECONDARY_BANKS];
 	int	ai_class;
 	int	subsys_cargo_name;
+	char subsys_cargo_title[NAME_LENGTH];
 } subsys_status;
 
 typedef struct texture_replace {
@@ -341,6 +355,7 @@ public:
 	int loadout_team = -1;						// original team, should never be changed after being set!!
 	int	ai_goals = -1;							// sexp of lists of goals that this ship should try and do
 	char	cargo1 = '\0';
+	char cargo_title[NAME_LENGTH] = "";
 	SCP_string team_color_setting;
 
 	int	subsys_index = -1;						// index into subsys_status array
@@ -349,14 +364,14 @@ public:
 	int	initial_hull = 100;
 	int	initial_shields = 100;
 
-	int	arrival_location = ARRIVE_AT_LOCATION;
+	ArrivalLocation arrival_location = ArrivalLocation::AT_LOCATION;
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
 	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
 	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;
 
-	int	departure_location = DEPART_AT_LOCATION;
+	DepartureLocation departure_location = DepartureLocation::AT_LOCATION;
 	int	departure_anchor = -1;
 	int departure_path_mask = 0;				// Goober5000
 	int	departure_cue = -1;			//	Index in Sexp_nodes of this sexp.
@@ -453,6 +468,8 @@ typedef struct team_data {
 #define MAX_SHIP_LIST	16
 
 extern team_data Team_data[MAX_TVT_TEAMS];
+extern int Num_teams;
+
 extern subsys_status *Subsys_status;
 extern int Subsys_index;
 
@@ -461,9 +478,7 @@ extern matrix Parse_viewer_orient;
 
 extern fix Mission_end_time;
 
-extern char Parse_names[MAX_SHIPS + MAX_WINGS][NAME_LENGTH];
-extern size_t Num_parse_names;
-extern int Num_teams;
+extern SCP_vector<SCP_string> Parse_names;
 
 extern char			Player_start_shipname[NAME_LENGTH];
 extern int			Player_start_shipnum;
@@ -483,8 +498,7 @@ bool parse_main(const char *mission_name, int flags = 0);
 p_object *mission_parse_get_arrival_ship(ushort net_signature);
 p_object *mission_parse_get_arrival_ship(const char *name);
 bool mission_check_ship_yet_to_arrive(const char *name);
-p_object *mission_parse_get_parse_object(ushort net_signature);
-p_object *mission_parse_get_parse_object(const char *name);
+p_object *mission_parse_find_parse_object(const char *name);
 int parse_create_object(p_object *objp, bool standalone_ship = false);
 void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &parse_flags);
 
@@ -554,6 +568,8 @@ void clear_texture_replacements();
 // Goober5000
 subsys_status *parse_get_subsys_status(p_object *pobjp, const char *subsys_name);
 
+// MjnMixael
+custom_string* get_custom_string_by_name(SCP_string name);
 
 #endif
 

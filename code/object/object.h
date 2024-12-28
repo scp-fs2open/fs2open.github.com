@@ -18,8 +18,9 @@
 #include "object/object.h"
 #include "object/object_flags.h"
 #include "physics/physics.h"
+#include "physics/physics_state.h"
+#include "io/timer.h"					// prevents some include issues with files in the actions folder
 #include "utils/event.h"
-#include "network/multi_interpolate.h"
 
 #include <functional>
 
@@ -154,8 +155,6 @@ public:
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
 
-	interpolation_manager interp_info;
-
 	object();
 	~object();
 	void clear();
@@ -177,30 +176,18 @@ namespace luacpp {
 extern int Num_objects;
 extern object Objects[];
 
-struct object_h {
-	object *objp;
-	int sig;
+struct object_h final	// prevent subclassing because classes which might use this should have their own isValid member function
+{
+	int objnum = -1;
+	int sig = -1;
 
-	bool IsValid() const {return (objp != nullptr && objp->signature == sig && sig > 0); }
-	object_h(object *in) {objp = in; sig = (in == nullptr) ? -1 : in->signature; }
-	object_h() { objp = nullptr; sig = -1; }
+	object_h(const object* in_objp);
+	object_h(int in_objnum);
+	object_h();
 
-	object_h(int objnum)
-	{
-		if (objnum >= 0 && objnum < MAX_OBJECTS)
-		{
-			objp = &Objects[objnum];
-			sig = objp->signature;
-		}
-		else
-		{
-			objp = nullptr;
-			sig = -1;
-		}
-	}
-
-	static void serialize(lua_State* L, const scripting::ade_table_entry& tableEntry, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	static void deserialize(lua_State* L, const scripting::ade_table_entry& tableEntry, char* data_ptr, ubyte* data, int& offset);
+	bool isValid() const;
+	object* objp() const;
+	object* objp_or_null() const;
 };
 
 // object backup struct used by Fred.
@@ -301,9 +288,9 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 void obj_init_all_ships_physics();
 
 // Goober5000
-float get_hull_pct(object *objp);
-float get_sim_hull_pct(object *objp);
-float get_shield_pct(object *objp);
+float get_hull_pct(const object *objp);
+float get_sim_hull_pct(const object *objp);
+float get_shield_pct(const object *objp);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);
@@ -327,8 +314,6 @@ void obj_move_all_pre(object *objp, float frametime);
 void obj_move_all_post(object *objp, float frametime);
 
 void obj_move_call_physics(object *objp, float frametime);
-
-// multiplayer object update stuff begins -------------------------------------------
 
 // move an observer object in multiplayer
 void obj_observer_move(float frame_time);
@@ -386,5 +371,31 @@ void obj_render_queue_all();
  * @return @c true if the two pointers refer to the same object
  */
 bool obj_compare(object *left, object *right);
+
+////////////////////////////////////////////////////////////
+// physics_state api functions that require the object type
+
+/**
+ * @brief Populate a physics snapshot directly from the info in an object
+ *
+ * @param[in,out] snapshot Destination physics snapshot
+ * @param[in]     objp The object pointer that we are pulling information from
+ *
+ * @author J Fernandez
+ */
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp);
+
+/**
+ * @brief Change the object's physics info to match the info contained in a snapshot.
+ *
+ * @param[in,out] objp Destination object pointer
+ * @param[in]     source The physics snapshot we are pulling information from
+ *
+ * @details To be used when interpolating or restoring a game state.
+ * 
+ * @author J Fernandez
+ */
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source);
+
 
 #endif

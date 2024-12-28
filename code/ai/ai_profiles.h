@@ -57,6 +57,8 @@ public:
 	
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
+	float weapon_friendly_damage_cap[NUM_SKILL_LEVELS];
+	float weapon_self_damage_cap[NUM_SKILL_LEVELS];
 	float turn_time_scale[NUM_SKILL_LEVELS];				// speed at which enemy ships turn
 	float glide_attack_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "glide attack" move
 	float circle_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "circle strafe" move
@@ -99,6 +101,9 @@ public:
 
 	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
 
+	// minimum radius for the line-of-sight (los) detection --wookieejedi
+	float los_min_detection_radius;
+
 	int ai_path_mode;
 
 	// radii to use for the radius for subsystem path points and default value --wookieejedi
@@ -117,6 +122,9 @@ public:
 
 	// how often turrets shoulds check for new targets, milliseconds
 	float turret_target_recheck_time;
+
+	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
+	float rot_fac_multiplier_ply_collisions; 
 
     void reset();
 };

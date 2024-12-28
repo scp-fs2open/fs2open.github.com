@@ -81,7 +81,7 @@ int HUD_color_blue = 0;
 int HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;		// 1 -> HUD_COLOR_ALPHA_USER_MAX
 
 int HUD_draw     = 1;
-int HUD_contrast = 0;										// high or lo contrast (for nebula, etc)
+bool HUD_high_contrast = false;										// high or low contrast (for nebula, etc)
 bool HUD_shadows = false;
 
 // Goober5000
@@ -363,7 +363,7 @@ void HudGauge::initPosition(int x, int y)
 	position[1] = y;
 }
 
-void HudGauge::getPosition(int *x, int *y)
+void HudGauge::getPosition(int *x, int *y) const
 {
 	*x = position[0];
 	*y = position[1];
@@ -390,7 +390,7 @@ void HudGauge::initFont(int input_font_num)
 	}
 }
 
-int HudGauge::getFont()
+int HudGauge::getFont() const
 {
 	return font_num;
 }
@@ -404,7 +404,7 @@ void HudGauge::initOriginAndOffset(float originX, float originY, int offsetX, in
 	tabled_offset[1] = offsetY;
 }
 
-void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY)
+void HudGauge::getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const
 {
 	*originX = tabled_origin[0];
 	*originY = tabled_origin[1];
@@ -420,19 +420,24 @@ void HudGauge::initCoords(bool use_coords, int coordsX, int coordsY)
 	tabled_coords[1] = coordsY;
 }
 
-void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY)
+void HudGauge::getCoords(bool *use_coords, int *coordsX, int *coordsY) const
 {
 	*use_coords = tabled_use_coords;
 	*coordsX = tabled_coords[0];
 	*coordsY = tabled_coords[1];
 }
 
-const char* HudGauge::getCustomGaugeName()
+void HudGauge::initHiRes(const char* fname)
+{
+	hi_res = (strncmp(fname, "2_", 2) == 0);
+}
+
+const char* HudGauge::getCustomGaugeName() const
 {
 	return custom_name;
 }
 
-const char* HudGauge::getCustomGaugeText()
+const char* HudGauge::getCustomGaugeText() const
 {
 	return custom_text.c_str();
 }
@@ -483,17 +488,17 @@ void HudGauge::setGaugeColor(int bright_index)
 	if(bright_index != HUD_C_NONE){
 		switch(bright_index){
 		case HUD_C_DIM:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 
@@ -523,15 +528,15 @@ void HudGauge::setGaugeColor(int bright_index)
 	} else {
 		switch(maybeFlashSexp()) {
 		case 0:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 		case 1:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 			break;
 		default:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
 		}
 	}
@@ -539,33 +544,37 @@ void HudGauge::setGaugeColor(int bright_index)
 	gr_set_color_fast(&gauge_color);	
 }
 
-bool HudGauge::isCustom()
+bool HudGauge::isCustom() const
 {
 	return custom_gauge;
 }
 
-int HudGauge::getBaseWidth()
+bool HudGauge::isHiRes() const
+{
+	return hi_res;
+}
+
+int HudGauge::getBaseWidth() const
 {
 	return base_w;
 }
 
-int HudGauge::getBaseHeight()
+int HudGauge::getBaseHeight() const
 {
 	return base_h;
 }
 
-float HudGauge::getAspectQuotient()
+float HudGauge::getAspectQuotient() const
 {
 	return aspect_quotient;
 }
 
-int HudGauge::getConfigType()
+int HudGauge::getConfigType() const
 {
-	//return gauge_type;
 	return gauge_config;
 }
 
-int HudGauge::getObjectType()
+int HudGauge::getObjectType() const
 {
 	return gauge_object;
 }
@@ -588,7 +597,7 @@ void HudGauge::updateColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&gauge_color, r, g, b, a);
 }
 
- const color& HudGauge::getColor()
+ const color& HudGauge::getColor() const
 {
 	return gauge_color;
 }
@@ -613,12 +622,12 @@ void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
 	render_for_cockpit_toggle = cockpit_view_choice;
 }
 
-bool HudGauge::isOffbyDefault()
+bool HudGauge::isOffbyDefault() const
 {
 	return off_by_default;
 }
 
-bool HudGauge::isActive()
+bool HudGauge::isActive() const
 {
 	return active && !sexp_override;
 }
@@ -643,7 +652,7 @@ void HudGauge::startPopUp(int time)
 	popup_timer = timestamp(time);
 }
 
-int HudGauge::popUpActive()
+int HudGauge::popUpActive() const
 {
 	//Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
 	if ( !pop_up ) {
@@ -673,7 +682,7 @@ void HudGauge::startFlashSexp()
 	flash_status = false;
 }
 
-bool HudGauge::flashExpiredSexp()
+bool HudGauge::flashExpiredSexp() const
 {
 	if(timestamp_elapsed(flash_duration)) {
 		return true;
@@ -1147,7 +1156,7 @@ void HudGauge::initialize()
 	sexp_lock_color = false;
 }
 
-bool HudGauge::canRender()
+bool HudGauge::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -1293,12 +1302,12 @@ void HUD_init()
 	last_percent_throttle = 0.0f;
 
 	// default to high contrast in the nebula
-	HUD_contrast = 0;
+	HUD_high_contrast = false;
 	HUD_draw     = 1;
 	HUD_disable_except_messages = 0;
 
 	if(The_mission.flags[Mission::Mission_Flags::Fullneb]){
-		HUD_contrast = 1;
+		HUD_high_contrast = true;
 	}
 
 	// reset to infinite
@@ -2835,43 +2844,39 @@ int hud_get_dock_time( object *docker_objp )
 /**
  * @brief Locate the closest support ship which is trying to dock with player
  * 
- * @param objnum Object number of player
+ * @param objp Object of player
  * @return Number of support ship, -1 if there is no support ship currently trying to dock
  */
-int hud_support_find_closest( int objnum )
+int hud_support_find_closest( object *objp )
 {
-	ai_info		*aip;
-	object		*objp;
-	int i;
-
-	objp = &Objects[objnum];
+	// invalid if player is dead or a ghost
+	if (objp->flags[Object::Object_Flags::Should_be_dead] || objp->type != OBJ_SHIP)
+		return -1;
 
 	for (auto sop: list_range(&Ship_obj_list)) {
 		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
-		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
-			int pship_index, sindex;
+		auto shipp = &Ships[Objects[sop->objnum].instance];
+		if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support] ) {
 
 			// make sure support ship is not dying
-            auto shipp = &Ships[Objects[sop->objnum].instance];
-            
 			if ( !(shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
-
-				Assert( objp->type == OBJ_SHIP );
-				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];
-				pship_index = objp->instance;
+				auto aip = &Ai_info[shipp->ai_index];
 
 				// we must check all goals for this support ship -- not just the first one
-				for ( i = 0; i < MAX_AI_GOALS; i++ ) {
+				for ( int i = 0; i < MAX_AI_GOALS; i++ ) {
 
 					// we can use == in the next statement (and should) since a ship will only ever be
 					// following one order at a time.
 					if ( aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR ) {
 						Assert( aip->goals[i].target_name );
-						sindex = ship_name_lookup( aip->goals[i].target_name );
-						if ( sindex == pship_index )
-							return sop->objnum;
+
+						auto entry = ship_registry_get( aip->goals[i].target_name );
+						if (entry && entry->status == ShipStatus::PRESENT) {
+							if ( entry->shipnum == objp->instance )
+								return sop->objnum;
+						}
 					}
 				}
 			}
@@ -2893,7 +2898,7 @@ void hud_support_view_update()
 
 	// If we haven't determined yet who the rearm ship is, try to!
 	if (Hud_support_objnum == -1) {
-		Hud_support_objnum = hud_support_find_closest( OBJ_INDEX(Player_obj) );
+		Hud_support_objnum = hud_support_find_closest( Player_obj );
 		if ( Hud_support_objnum >= 0 ) {
 			Hud_support_obj_sig = Objects[Hud_support_objnum].signature;
 			Hud_support_target_sig = Player_obj->signature;
@@ -3054,7 +3059,7 @@ void HudGaugeSupport::render(float  /*frametime*/)
 		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
 	} else {
 		if ( Hud_support_objnum == -1 ) {
-			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+			if (The_mission.support_ships.arrival_location == ArrivalLocation::FROM_DOCK_BAY)
 			{
 				strcpy_s(outstr, XSTR( "exiting hangar", 1622));
 			}
@@ -3310,17 +3315,17 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 	if(bright_index != HUD_C_NONE){
 		switch(bright_index){
 		case HUD_C_DIM:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 
@@ -3350,15 +3355,15 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 	} else {
 		switch(flash_status) {
 		case 0:
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		case 1:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		default:			
-			alpha = HUD_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;	
+			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
 			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
 			break;
 		}
@@ -3745,10 +3750,6 @@ int hud_objective_notify_active()
  * @details Since the player's view vector may be different from the ship's forward vector,
  * we calculate the offset of those two in pixels and store the x and y offsets in
  * variables HUD_nose_x and HUD_nose_y (Swifty)
- *
- * @param viewer_obj Object, likely to be player
- * @param wiggedy_wack
- * @param eye_orient 
  */
 void HUD_set_offsets()
 {
@@ -3758,6 +3759,8 @@ void HUD_set_offsets()
 	} else {
 		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
 	}
+
+	hud_reticle_set_flight_cursor_offset();
 }
 
 /**
@@ -3861,12 +3864,12 @@ void hud_save_restore_camera_data(int save)
 
 void hud_toggle_contrast()
 {
-	HUD_contrast = !HUD_contrast;
+	HUD_high_contrast = !HUD_high_contrast;
 }
 
-void hud_set_contrast(int high)
+void hud_set_contrast(bool high)
 {
-	HUD_contrast = high;
+	HUD_high_contrast = high;
 }
 
 void hud_toggle_shadows()
@@ -3905,7 +3908,9 @@ void hud_page_in()
 
 HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
-	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
+	ship_info *player_sip = nullptr;
+	if (Player_ship && Player_ship->ship_info_index >= 0)
+		player_sip = &Ship_info[Player_ship->ship_info_index];
 
 	// go through all gauges for all ships and defaults
 	if (check_all_gauges) {
@@ -3968,9 +3973,9 @@ int hud_get_default_gauge_index(const char *name)
 	return -1;
 }
 
-HudGauge *hud_get_gauge(const char *name)
+HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges)
 {
-	auto gauge = hud_get_custom_gauge(name);
+	auto gauge = hud_get_custom_gauge(name, check_all_custom_gauges);
 	if (gauge == nullptr)
 	{
 		int idx = hud_get_default_gauge_index(name);
@@ -3985,7 +3990,7 @@ HudGauge(HUD_OBJECT_MULTI_MSG, HUD_MESSAGE_LINES, false, true, 0, 255, 255, 255)
 {
 }
 
-bool HudGaugeMultiMsg::canRender() 
+bool HudGaugeMultiMsg::canRender() const
 {
 	return true;
 }

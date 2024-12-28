@@ -20,7 +20,7 @@ class SingleParticleEffect: public ParticleEffect {
 
 	util::EffectTiming m_timing;
 
-	::util::UniformFloatRange m_vel_inherit;
+	::util::ParsedRandomFloatRange m_vel_inherit;
 
  public:
 	explicit SingleParticleEffect(const SCP_string& name);

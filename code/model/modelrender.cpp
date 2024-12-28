@@ -49,7 +49,7 @@ color Wireframe_color;
 
 extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
 
-int model_render_determine_elapsed_time(int objnum, uint flags);
+int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
 model_batch_buffer TransformBufferHandler;
 
@@ -64,8 +64,7 @@ model_render_params::model_render_params() :
 	Xparent_alpha(1.0f),
 	Forced_bitmap(-1),
 	Insignia_bitmap(-1),
-	Replacement_textures(NULL),
-	Manage_replacement_textures(false),
+	Replacement_textures(nullptr),
 	Team_color_set(false),
 	Clip_plane_set(false),
 	Animated_effect(-1),
@@ -91,13 +90,7 @@ model_render_params::model_render_params() :
 	gr_init_color(&Color, 0, 0, 0);
 }
 
-model_render_params::~model_render_params() 
-{
-	if (Manage_replacement_textures)
-		vm_free(const_cast<int*>(Replacement_textures));
-}
-
-uint model_render_params::get_model_flags() const
+uint64_t model_render_params::get_model_flags() const
 {
 	return Model_flags; 
 }
@@ -157,7 +150,7 @@ int model_render_params::get_insignia_bitmap() const
 	return Insignia_bitmap; 
 }
 
-const int* model_render_params::get_replacement_textures() const
+std::shared_ptr<const model_texture_replace> model_render_params::get_replacement_textures() const
 { 
 	return Replacement_textures; 
 }
@@ -223,19 +216,14 @@ bool model_render_params::is_team_color_set() const
 	return Team_color_set;
 }
 
-void model_render_params::set_replacement_textures(const int *textures)
+void model_render_params::set_replacement_textures(std::shared_ptr<const model_texture_replace> textures)
 {
-	Replacement_textures = textures;
+	Replacement_textures = std::move(textures);
 }
 
 void model_render_params::set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures)
 {
-	auto textures = (int*)vm_malloc(MAX_REPLACEMENT_TEXTURES * sizeof(int));
-
-	for (int i = 0; i < MAX_REPLACEMENT_TEXTURES; i++)
-		textures[i] = -1;
-
-	Manage_replacement_textures = true;
+	auto textures = make_shared<model_texture_replace>();
 
 	polymodel* pm = model_get(modelnum);
 
@@ -247,11 +235,11 @@ void model_render_params::set_replacement_textures(int modelnum, const SCP_vecto
 
 			int tnum = tmap->FindTexture(tr.old_texture);
 			if (tnum > -1)
-				textures[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
+				(*textures)[i * TM_NUM_TYPES + tnum] = bm_load(tr.new_texture);
 		}
 	}
 
-	Replacement_textures = textures;
+	Replacement_textures = std::move(textures);
 }
 
 void model_render_params::set_insignia_bitmap(int bitmap)
@@ -301,7 +289,7 @@ void model_render_params::set_object_number(int num)
 	Objnum = num;
 }
 
-void model_render_params::set_flags(uint flags)
+void model_render_params::set_flags(uint64_t flags)
 {
 	Model_flags = flags;
 }
@@ -491,7 +479,7 @@ void model_draw_list::add_buffer_draw(const model_material *render_material, con
 		// make sure that the deferred flag is disabled or else some parts of the rendered colors go missing
 		// TODO: This should really be handled somewhere else. This feels like a crude hack...
 		auto possibly_deferred = draw_data.render_material.get_depth_mode() == ZBUFFER_TYPE_FULL
-			&& gr_is_capable(CAPABILITY_DEFERRED_LIGHTING) && light_deferred_enabled();
+			&& gr_is_capable(gr_capability::CAPABILITY_DEFERRED_LIGHTING) && light_deferred_enabled();
 
 		if (possibly_deferred) {
 			// Fog is handled differently in deferred shader situations
@@ -862,6 +850,7 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			
 			break;
 
+		case MARC_TYPE_SCRIPTED:
 		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
 				primary = smi->arc_primary_color_1[i];
@@ -870,16 +859,8 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			}
 
 			secondary = smi->arc_secondary_color[i];
-      
-      			// try and scale the size a bit so that it looks equally well on smaller vessels
-			width = Arc_width_default_damage;
-			if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
-				width *= (pm->rad * Arc_width_radius_multiplier_damage);
 
-				if (width < Arc_width_minimum_damage) {
-					width = Arc_width_minimum_damage;
-				}
-			}
+			width = smi->arc_width[i];
 
 			break;
 
@@ -996,7 +977,7 @@ int model_render_determine_detail(float depth, int model_num, int detail_level_l
 void model_render_buffers(model_draw_list* scene, model_material *rendering_material, const model_render_params* interp, const vertex_buffer *buffer, const polymodel *pm, int mn, int detail_level, uint tmap_flags)
 {
 	bsp_info *submodel = nullptr;
-	const uint model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 	const uint debug_flags = interp->get_debug_flags();
 	const int obj_num = interp->get_object_number();
 
@@ -1061,7 +1042,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 	int texture_maps[TM_NUM_TYPES] = { -1 };
 	size_t buffer_size = buffer->tex_buf.size();
-	const int *replacement_textures = interp->get_replacement_textures();
+	const auto& replacement_textures = interp->get_replacement_textures();
 
 	for ( size_t i = 0; i < buffer_size; i++ ) {
 		int tmap_num = buffer->tex_buf[i].texture;
@@ -1088,12 +1069,12 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			
 		} else if ( !no_texturing ) {
 			// pick the texture, animating it if necessary
-			if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] == REPLACE_WITH_INVISIBLE) ) {
+			if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] == REPLACE_WITH_INVISIBLE) ) {
 				// invisible textures aren't rendered, but we still have to skip assigning the underlying model texture
 				texture_maps[TM_BASE_TYPE] = -1;
-			} else if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+			} else if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
 				// an underlying texture is replaced with a real new texture
-				tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+				tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 				texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 			} else {
 				// we just use the underlying texture
@@ -1108,8 +1089,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			if ( !(model_flags & MR_NO_GLOWMAPS) ) {
 				auto tglow = &tmap->textures[TM_GLOW_TYPE];
 
-				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
-					tex_replace[TM_GLOW_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_GLOW_TYPE]);
+				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_GLOW_TYPE] >= 0) ) {
+					tex_replace[TM_GLOW_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_GLOW_TYPE]);
 					texture_maps[TM_GLOW_TYPE] = model_interp_get_texture(&tex_replace[TM_GLOW_TYPE], elapsed_time);
 				} else if (tglow->GetTexture() >= 0) {
 					// shockwaves are special, their current frame has to come out of the shockwave code to get the timing correct
@@ -1122,8 +1103,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			}
 
 			if (!(debug_flags & MR_DEBUG_NO_SPEC)) {
-				if (replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
-					tex_replace[TM_SPECULAR_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPECULAR_TYPE]);
+				if (replacement_textures != nullptr && (*replacement_textures)[rt_begin_index + TM_SPECULAR_TYPE] >= 0) {
+					tex_replace[TM_SPECULAR_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_SPECULAR_TYPE]);
 					texture_maps[TM_SPECULAR_TYPE] = model_interp_get_texture(&tex_replace[TM_SPECULAR_TYPE], elapsed_time);
 				}
 				else {
@@ -1131,8 +1112,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				}
 			}
 
-			if ( replacement_textures != NULL && replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
-				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
+			if ( replacement_textures != nullptr && (*replacement_textures)[rt_begin_index + TM_SPEC_GLOSS_TYPE] >= 0 ) {
+				tex_replace[TM_SPEC_GLOSS_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_SPEC_GLOSS_TYPE]);
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tex_replace[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			} else {
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], elapsed_time);
@@ -1145,24 +1126,25 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				auto ambient_map = &tmap->textures[TM_AMBIENT_TYPE];
 				auto misc_map = &tmap->textures[TM_MISC_TYPE];
 
-				if (replacement_textures != NULL) {
-					if (replacement_textures[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
-						tex_replace[TM_NORMAL_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_NORMAL_TYPE]);
+				if (replacement_textures != nullptr) {
+					const auto& replacement_textures_deref = *replacement_textures;
+					if (replacement_textures_deref[rt_begin_index + TM_NORMAL_TYPE] >= 0) {
+						tex_replace[TM_NORMAL_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_NORMAL_TYPE]);
 						norm_map = &tex_replace[TM_NORMAL_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
-						tex_replace[TM_HEIGHT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_HEIGHT_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_HEIGHT_TYPE] >= 0) {
+						tex_replace[TM_HEIGHT_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_HEIGHT_TYPE]);
 						height_map = &tex_replace[TM_HEIGHT_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
-						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_AMBIENT_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_AMBIENT_TYPE] >= 0) {
+						tex_replace[TM_AMBIENT_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_AMBIENT_TYPE]);
 						ambient_map = &tex_replace[TM_AMBIENT_TYPE];
 					}
 
-					if (replacement_textures[rt_begin_index + TM_MISC_TYPE] >= 0) {
-						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_MISC_TYPE]);
+					if (replacement_textures_deref[rt_begin_index + TM_MISC_TYPE] >= 0) {
+						tex_replace[TM_MISC_TYPE] = texture_info(replacement_textures_deref[rt_begin_index + TM_MISC_TYPE]);
 						misc_map = &tex_replace[TM_MISC_TYPE];
 					}
 				}
@@ -1181,8 +1163,8 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 
 			//Check for invisible or transparent textures so they don't show up in the shadow maps - Valathil
 			if ( Rendering_to_shadow_map ) {
-				if ( (replacement_textures != NULL) && (replacement_textures[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
-					tex_replace[TM_BASE_TYPE] = texture_info(replacement_textures[rt_begin_index + TM_BASE_TYPE]);
+				if ( (replacement_textures != nullptr) && ((*replacement_textures)[rt_begin_index + TM_BASE_TYPE] >= 0) ) {
+					tex_replace[TM_BASE_TYPE] = texture_info((*replacement_textures)[rt_begin_index + TM_BASE_TYPE]);
 					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tex_replace[TM_BASE_TYPE], elapsed_time);
 				} else {
 					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
@@ -1282,7 +1264,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		}
 	}
 
-	const uint model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	if (sm->flags[Model::Submodel_flags::Is_thruster]) {
 		if ( !( model_flags & MR_SHOW_THRUSTERS ) ) {
@@ -1343,7 +1325,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 	scene->pop_transform();
 }
 
-float model_render_determine_light_factor(const model_render_params* interp, const vec3d *pos, uint flags)
+float model_render_determine_light_factor(const model_render_params* interp, const vec3d *pos, uint64_t flags)
 {
 	if ( flags & MR_IS_ASTEROID ) {
 		// Dim it based on distance
@@ -1391,7 +1373,7 @@ float model_render_determine_box_scale()
 
 // Goober5000
 // Returns milliseconds since texture animation started.
-int model_render_determine_elapsed_time(int objnum, uint flags)
+int model_render_determine_elapsed_time(int objnum, uint64_t flags)
 {
 	if ( objnum >= 0 ) {
 		object *objp = &Objects[objnum];
@@ -1407,7 +1389,7 @@ int model_render_determine_elapsed_time(int objnum, uint flags)
 	return timestamp_get_mission_time_in_milliseconds();
 }
 
-bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, int detail_level, uint flags)
+bool model_render_determine_autocenter(vec3d *auto_back, const polymodel *pm, int detail_level, uint64_t flags)
 {
 	if ( flags & MR_AUTOCENTER ) {
 		// standard autocenter using data in model
@@ -1457,7 +1439,7 @@ gr_alpha_blend model_render_determine_blend_mode(int base_bitmap, bool blending)
 	return ALPHA_BLEND_ALPHA_BLEND_ALPHA;
 }
 
-bool model_render_check_detail_box(const vec3d *view_pos, const polymodel *pm, int submodel_num, uint flags)
+bool model_render_check_detail_box(const vec3d *view_pos, const polymodel *pm, int submodel_num, uint64_t flags)
 {
 	Assert(pm != NULL);
 
@@ -1546,7 +1528,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 		rendering_material.set_team_color(render_info->get_team_color());
 	}
 		
-	uint flags = render_info->get_model_flags();
+	uint64_t flags = render_info->get_model_flags();
 	int objnum = render_info->get_object_number();
 
 	// Set the flags we will pass to the tmapper
@@ -2550,7 +2532,7 @@ void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, co
 	}
 }
 
-void model_render_debug_children(const polymodel *pm, int mn, int detail_level, uint debug_flags)
+void model_render_debug_children(const polymodel *pm, int mn, int detail_level, uint64_t debug_flags)
 {
 	int i;
 
@@ -2584,7 +2566,7 @@ void model_render_debug_children(const polymodel *pm, int mn, int detail_level, 
 	g3_done_instance(true);
 }
 
-void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, uint flags, uint debug_flags, int objnum, int detail_level_locked )
+void model_render_debug(int model_num, const matrix *orient, const vec3d *pos, uint64_t flags, uint debug_flags, int objnum, int detail_level_locked )
 {
 	polymodel *pm = model_get(model_num);	
 	
@@ -2703,7 +2685,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	int i;
 
 	const int objnum = interp->get_object_number();
-	const int model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	model_material rendering_material;
 	polymodel *pm = model_get(model_num);
@@ -2998,7 +2980,8 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		}
 	}
 
-	if ( !( model_flags & MR_NO_TEXTURING ) ) {
+	// MARKED!
+	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
 		scene->add_insignia(interp, pm, detail_level, interp->get_insignia_bitmap());
 	}
 
@@ -3032,7 +3015,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 void model_render_only_glowpoint_lights(const model_render_params* interp, int model_num, int model_instance_num, const matrix* orient, const vec3d* pos)
 {
 	const int objnum = interp->get_object_number();
-	const int model_flags = interp->get_model_flags();
+	const uint64_t model_flags = interp->get_model_flags();
 
 	polymodel *pm = model_get(model_num);
 	polymodel_instance *pmi = nullptr;
@@ -3090,6 +3073,41 @@ void model_render_set_wireframe_color(const color* clr)
 	Wireframe_color = *clr;
 }
 
+void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* old_name, const char* new_name)
+{
+	Assert(pmi != nullptr);
+	polymodel* pm = model_get(pmi->model_num);
+
+	int final_index = -1;
+
+	for (int i = 0; i < pm->n_textures; i++)
+	{
+		int tm_num = pm->maps[i].FindTexture(old_name);
+		if (tm_num > -1)
+		{
+			final_index = i * TM_NUM_TYPES + tm_num;
+			break;
+		}
+	}
+
+	if (final_index >= 0)
+	{
+		int texture;
+
+		if (!stricmp(new_name, "invisible"))
+			texture = REPLACE_WITH_INVISIBLE;
+		else
+			texture = bm_load_either(new_name);
+
+		if (pmi->texture_replace == nullptr) {
+			pmi->texture_replace = make_shared<model_texture_replace>();
+		}
+
+		(*pmi->texture_replace)[final_index] = texture;
+	} else
+		Warning(LOCATION, "Invalid texture '%s' used for replacement texture", old_name);
+}
+
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos)
@@ -3100,7 +3118,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 	float closeup_zoom;
 	int model_num;
 	bool model_lighting = true;
-	uint render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
+	uint64_t render_flags = MR_AUTOCENTER | MR_NO_FOGGING;
 
 	switch (model_type) {
 		case TECH_SHIP:
@@ -3120,6 +3138,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
 			break;
 
@@ -3189,7 +3208,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 	// Create an instance for ships that can be used to clear out destroyed subobjects from rendering
 	if (model_type == TECH_SHIP) {
-		model_instance = model_create_instance(-1, model_num);
+		model_instance = model_create_instance(model_objnum_special::OBJNUM_NONE, model_num);
 		model_set_up_techroom_instance(&Ship_info[class_idx], model_instance);
 	}
 

@@ -45,7 +45,7 @@ class ConeShape {
 				deviation = 1.0f;
 			}
 
-			m_normalDeviation = ::util::NormalFloatRange(0.0, fl_radians(deviation));
+			m_normalDeviation = ::util::NormalFloatRange(0.f, fl_radians(deviation));
 		}
 	}
 

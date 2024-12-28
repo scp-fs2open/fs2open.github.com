@@ -40,6 +40,7 @@
 #ifdef SCP_UNIX
 #include "osapi/osapi.h"
 #include <dirent.h>
+#include <sys/stat.h>
 #endif
 
 #include <cstring>
@@ -164,11 +165,9 @@ Flag exe_params[] =
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON  | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nonormal" },
 	{ "-emissive_light",	"Enable emissive light from ships",			true,	0,									EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON  | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noheight" },
-	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-no_post_process",	"Disable post-processing",					true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_post_process" },
 	{ "-soft_particles",	"Enable soft particles",					true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
 	{ "-aa",				"Enable Post-process anti-aliasing",		true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-aa" },
-	{ "-nolightshafts",		"Disable lightshafts",						true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nolightshafts"},
 	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_explosions", },
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
@@ -192,13 +191,10 @@ Flag exe_params[] =
 	{ "-capture_mouse",		"Capture the mouse within the window",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-capture_mouse", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
-	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
-	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
-	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
-	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
 	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
+	{ "-orig_speedx_range", "Restrict speedup/slowdown (1x to 4x)", 	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-orig_speedx_range", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -241,6 +237,8 @@ Flag exe_params[] =
 	{ "-prefer_ipv6",		"Prefer IPv6 DNS lookups",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-prefer_ipv6", },
 	{ "-log_multi_packet",	"Log multi packet types ",					true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-log_multi_packet",},
 	{ "-no_bsp_align",		"Disable pof BSP data alignment",			true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_bsp_align", },
+    { "-no_large_shaders",	"Split large shader into smaller shaders",		true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_large_shaders", },
+
 #ifdef WIN32
 	{ "-fix_registry",	"Use a different registry path",				true,	0,									EASY_DEFAULT,					"Troubleshoot", "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fix_registry", },
 #endif
@@ -317,7 +315,6 @@ int Cmdline_cd_check = 1;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
-int Cmdline_gimme_all_medals = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_multi_log = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -341,15 +338,12 @@ cmdline_parm emissive_power_arg("-emissive", "Multiplies the brightness of all a
 cmdline_parm emissive_arg("-emissive_light", "Enable emissive light from ships", AT_NONE);		// semi-deprecated but still functional
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
 cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
 cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
-cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
 cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
-cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
 cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
@@ -359,7 +353,6 @@ cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), req
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
-cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
@@ -377,10 +370,7 @@ int Cmdline_spec = 1;
 int Cmdline_emissive = 0;
 int Cmdline_normal = 1;
 int Cmdline_height = 1;
-int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
-int Cmdline_bloom_intensity = 25;
-bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
@@ -406,22 +396,16 @@ int Cmdline_orb_radar = 0;
 int Cmdline_rearm_timer = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
-cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
-cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 cmdline_parm vr("-vr", nullptr, AT_NONE);
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
-int Cmdline_ship_choice_3d = 0;
-int Cmdline_weapon_choice_3d = 0;
 int Cmdline_autopilot_interruptable = 1;
 int Cmdline_stretch_menu = 0;
 bool Cmdline_capture_mouse = false;
-int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
 bool Cmdline_enable_vr = false;
 
@@ -478,6 +462,7 @@ cmdline_parm prefer_ipv4_arg("-prefer_ipv4", nullptr, AT_NONE);
 cmdline_parm prefer_ipv6_arg("-prefer_ipv6", nullptr, AT_NONE);
 cmdline_parm log_multi_packet_arg("-log_multi_packet", nullptr, AT_NONE);
 cmdline_parm no_bsp_align_arg("-no_bsp_align", nullptr, AT_NONE);
+cmdline_parm no_large_shaders("-no_large_shaders", NULL, AT_NONE);
 #ifdef WIN32
 cmdline_parm fix_registry("-fix_registry", NULL, AT_NONE);
 #endif
@@ -501,6 +486,7 @@ bool Cmdline_prefer_ipv4 = false;
 bool Cmdline_prefer_ipv6 = false;
 bool Cmdline_dump_packet_type = false;
 bool Cmdline_no_bsp_align = false;
+bool Cmdline_no_large_shaders = false;
 #ifdef WIN32
 bool Cmdline_alternate_registry_path = false;
 #endif
@@ -529,6 +515,7 @@ cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_f
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
+cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
@@ -567,6 +554,7 @@ int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
+bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
@@ -609,6 +597,13 @@ cmdline_parm deprecated_spec_tube_arg("-spec_tube", "Deprecated", AT_NONE);
 cmdline_parm deprecated_ambient_factor_arg("-ambient_factor", "Deprecated", AT_NONE);	//
 cmdline_parm deprecated_ship_choice_3d_arg("-ship_choice_3d", "Deprecated", AT_NONE);
 cmdline_parm deprecated_weapon_choice_3d_arg("-weapon_choice_3d", "Deprecated", AT_NONE);
+cmdline_parm deprecated_no_screenshake("-no_screenshake", "Deprecated", AT_NONE);
+cmdline_parm deprecated_bloom_intensity_arg("-bloom_intensity", "Deprecated", AT_INT);
+cmdline_parm deprecated_nomotiondebris_arg("-nomotiondebris", "Deprecated", AT_NONE);
+cmdline_parm deprecated_flightshaftsoff_arg("-nolightshafts", "Deprecated", AT_NONE);
+cmdline_parm deprecated_use_warp_flash("-warp_flash", "Deprecated", AT_NONE);
+cmdline_parm deprecated_use_3dwarp("-3dwarp", "Deprecated", AT_NONE);
+cmdline_parm deprecated_enable_3d_shockwave_arg("-3dshockwave", "Deprecated", AT_NONE);
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -644,8 +639,8 @@ void cmdline_debug_print_cmdline()
 }
 #endif
 
-// prints simple cmdline to multi.log
-void cmdline_print_cmdline_multi()
+// builds simple cmdline
+SCP_string cmdline_build_string()
 {
 	cmdline_parm *parmp;
 	int found = 0;
@@ -664,10 +659,18 @@ void cmdline_print_cmdline_multi()
 	}
 
 	if ( !found ) {
-		cmdline << " <none>";
+		return "";
 	}
 
-	ml_printf("Command line:%s", cmdline.str().c_str());
+	return cmdline.str();
+}
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	auto str = cmdline_build_string();
+
+	ml_printf("Command line:%s", str.empty() ? " <none>" : str.c_str());
 }
 
 //	Return true if this character is an extra char (white space and quotes)
@@ -675,7 +678,6 @@ int is_extra_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == 0x0a) || (ch == '\'') || (ch == '\"'));
 }
-
 
 // eliminates all leading and trailing extra chars from a string.  Returns pointer passed in.
 char *drop_extra_chars(char *str)
@@ -1208,92 +1210,132 @@ bool cmdline_parm::has_param() {
 }
 
 #ifdef SCP_UNIX
-// Return a vector with all filesystem names of "parent/dir" relative to parent.
-// dir must not contain a slash.
-static SCP_vector<SCP_string> unix_get_single_dir_names(const SCP_string& parent, const SCP_string& dir)
+extern void normalize_directory_separators(SCP_string &str);
+
+static SCP_string get_real_mod_path(const char *mod)
 {
-	SCP_vector<SCP_string> ret;
+	DIR *dirp;
+	SCP_string fullpath;
+	SCP_string mod_path = mod;
 
-	DIR *dp;
-	if ((dp = opendir(parent.c_str())) == NULL) {
-		Warning(LOCATION, "Can't open directory '%s' when searching mod paths. Ignoring. errno=%d", parent.c_str(), errno);
-		return ret;
+	normalize_directory_separators(mod_path);
+
+	fullpath = SCP_string(".") + DIR_SEPARATOR_STR;
+	fullpath += mod_path;
+
+	// check if path already exists
+	dirp = opendir(fullpath.c_str());
+
+	if (dirp) {
+		// found it, return unchanged
+		closedir(dirp);
+
+		return mod_path;
 	}
 
-	dirent *dirp;
-	while ((dirp = readdir(dp)) != NULL) {
-		if (!stricmp(dirp->d_name, dir.c_str())) {
-			ret.push_back(dirp->d_name);
+	// not found, check for a difference in case
+	SCP_string new_mod_path;
+	SCP_string part;
+	struct dirent *dir;
+	SCP_string::size_type separator;
+	SCP_string::size_type offset = 0;
+
+	fullpath = SCP_string(".") + DIR_SEPARATOR_STR;
+
+	do {
+		separator = mod_path.find(DIR_SEPARATOR_CHAR, offset);
+
+		if (separator != SCP_string::npos) {
+			part = mod_path.substr(offset, separator-offset);
+			offset += separator-offset + 1;
+		} else {
+			part = mod_path.substr(offset);
+			offset += part.length();
 		}
-	}
-	(void)closedir(dp);
 
-	return ret;
-}
+		dirp = opendir(fullpath.c_str());
 
-// Return a vector with all filesystem names of "parent/dir" relative to parent.
-// Recurses to deal with slashes in dir.
-static SCP_vector<SCP_string> unix_get_dir_names(const SCP_string& parent, const SCP_string& dir)
-{
-	size_t slash = dir.find_first_of("/\\");
-
-	// no subdirectories, no need to recurse
-	if (slash == std::string::npos) {
-		return unix_get_single_dir_names(parent, dir);
-	}
-
-	// get the names of the first component of dir
-	SCP_vector<SCP_string> this_dir_names = unix_get_single_dir_names(parent, dir.substr(0, slash));
-
-	SCP_string rest = dir.substr(slash + 1);
-
-	SCP_vector<SCP_string> ret;
-
-	// search for the rest of dir in each of these
-	SCP_vector<SCP_string>::iterator ii, end = this_dir_names.end();
-	for (ii = this_dir_names.begin(); ii != end; ++ii) {
-		SCP_string this_dir_path = parent + "/" + *ii;
-		SCP_vector<SCP_string> mod_path = unix_get_dir_names(this_dir_path, rest);
-
-		// add all found paths relative to parent
-		SCP_vector<SCP_string>::iterator ii2, end2 = mod_path.end();
-		for (ii2 = mod_path.begin(); ii2 != end2; ++ii2) {
-			ret.push_back(*ii + "/" + *ii2);
+		if ( !dirp ) {
+			break;
 		}
+
+		while ((dir = readdir(dirp)) != nullptr) {
+			if (stricmp(dir->d_name, part.c_str())) {
+				continue;
+			}
+
+			SCP_string fn = fullpath + dir->d_name;
+
+			// make sure it accessible and a directory
+			struct stat buf;
+
+			if (stat(fn.c_str(), &buf) == -1) {
+				continue;
+			}
+
+			if ( !S_ISDIR(buf.st_mode) ) {
+				continue;
+			}
+
+			if ( !new_mod_path.empty() ) {
+				new_mod_path += DIR_SEPARATOR_STR;
+			}
+
+			new_mod_path += dir->d_name;
+
+			fullpath += dir->d_name;
+			fullpath += DIR_SEPARATOR_STR;
+
+			break;
+		}
+
+		if (dirp) {
+			closedir(dirp);
+		}
+	} while (offset < mod_path.length());
+
+	// Append anything left from mod_path onto the new path. This will catch trailing separators
+	// as well as mod folders which don't exist so that the mod string remains unchanged except
+	// for the directory name case.
+	if (new_mod_path.length() != mod_path.length()) {
+		new_mod_path += mod_path.substr(new_mod_path.length());
 	}
 
-	return ret;
+	return new_mod_path;
 }
 
 // For case sensitive filesystems (e.g. Linux/BSD) perform case-insensitive dir matches.
+//
+// NOTE: Aside from change in case no alterations should be made to the modlist. Missing
+//       mod folders should be left in place and no errors or warnings should be generated.
+//       There should be no difference between Windows and non-Windows modlist handling.
 static void handle_unix_modlist(char **modlist, size_t *len)
 {
 	// search filesystem for given paths
 	SCP_vector<SCP_string> mod_paths;
-	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ","))
-	{
-		SCP_vector<SCP_string> this_mod_paths = unix_get_dir_names(".", cur_mod);
-		// Ignore non-existing mods for unit tests
-		if (!running_unittests && this_mod_paths.empty()) {
-			ReleaseWarning(LOCATION, "Can't find mod '%s'. Ignoring.", cur_mod);
-		}
-		mod_paths.insert(mod_paths.end(), this_mod_paths.begin(), this_mod_paths.end());
+
+	for (char *cur_mod = strtok(*modlist, ","); cur_mod != NULL; cur_mod = strtok(NULL, ",")) {
+		SCP_string path = get_real_mod_path(cur_mod);
+		mod_paths.push_back(path);
 	}
 
 	// create new char[] to replace modlist
 	size_t total_len = 0;
-	SCP_vector<SCP_string>::iterator ii, end = mod_paths.end();
-	for (ii = mod_paths.begin(); ii != end; ++ii) {
-		total_len += ii->length() + 1;
+
+	for (auto &path : mod_paths) {
+		total_len += path.length() + 1;
 	}
 
 	char *new_modlist = new char[total_len + 1];
 	memset(new_modlist, 0, total_len + 1);
-	end = mod_paths.end();
-	for (ii = mod_paths.begin(); ii != end; ++ii) {
-		strcat_s(new_modlist, total_len + 1, ii->c_str());
-		strcat_s(new_modlist, total_len + 1, ","); // replace later with NUL
+
+	for (auto &path : mod_paths) {
+		strcat_s(new_modlist, total_len + 1, path.c_str());
+		strcat_s(new_modlist, total_len + 1, ",");
 	}
+
+	// remove trailing comma
+	new_modlist[total_len-1] = '\0';
 
 	// make the rest of the modlist manipulation unaware that anything happened here
 	delete [] *modlist;
@@ -1543,6 +1585,12 @@ bool SetCmdlineParams()
 // Sets externed variables used for communication cmdline information
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
+
+	// DO THIS BEFORE get_flags, as portable_mode can change the value of pref_path printed in the json
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
+	}
 
 	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
 	if ( get_flags_arg.found() ) {
@@ -1799,7 +1847,7 @@ bool SetCmdlineParams()
 	if(mod_arg.found() ) {
 		Cmdline_mod = mod_arg.str();
 
-		// strip off blank space it it's there
+		// strip off blank space if it's there
 		if ( Cmdline_mod[strlen(Cmdline_mod)-1] == ' ' ) {
 			Cmdline_mod[strlen(Cmdline_mod)-1] = '\0';
 		}
@@ -1842,10 +1890,6 @@ bool SetCmdlineParams()
 		Cmdline_show_pos = 1;
 	}
 
-	if ( nomotiondebris_arg.found() ) {
-		Motion_debris_enabled = false;
-	}
-
 	if( mipmap_arg.found() ) {
 		Cmdline_mipmap = 1;
 	}
@@ -1859,7 +1903,7 @@ bool SetCmdlineParams()
 		if (val > 0.1) {
 			VIEWER_ZOOM_DEFAULT = val;
 		} else {
-			VIEWER_ZOOM_DEFAULT = 0.75f;
+			VIEWER_ZOOM_DEFAULT = DEFAULT_FOV;
 		}
 	}
 
@@ -1886,20 +1930,8 @@ bool SetCmdlineParams()
 		Cmdline_orb_radar = 1;
 	}
 
-	if ( use_3dwarp.found() ) {
-		Fireball_use_3d_warp = true;
-	}
-
-	if ( use_warp_flash.found() ) {
-		Fireball_warp_flash = true;
-	}
-
 	if ( allow_autpilot_interrupt.found() )	{
 		Cmdline_autopilot_interruptable = 0;
-	}
-
-	if ( no_screenshake.found() ) {
-		Cmdline_no_screenshake = 1;
 	}
 	
 	if ( deadzone.found() ) {
@@ -2061,11 +2093,6 @@ bool SetCmdlineParams()
 		Cmdline_noshadercache = true;
 	}
 
-	if (portable_mode.found())
-	{
-		Cmdline_portable_mode = true;
-	}
-
 	if (lang_arg.found()) 
 	{
 		Cmdline_lang = lang_arg.str();
@@ -2074,6 +2101,10 @@ bool SetCmdlineParams()
 	if (no_bsp_align_arg.found()) {
 		Cmdline_no_bsp_align = true;
 	}
+
+    if (no_large_shaders.found()) {
+        Cmdline_no_large_shaders = true;
+    }
 	
 #ifdef WIN32
 	if (fix_registry.found()) {
@@ -2116,11 +2147,6 @@ bool SetCmdlineParams()
         Cmdline_ati_color_swap = 1;
     }
 
-	if ( enable_3d_shockwave_arg.found() )
-	{
-		Cmdline_enable_3d_shockwave = 1;
-	}
-
 	if ( softparticles_arg.found() )
 	{
 		Cmdline_softparticles = 1;
@@ -2139,16 +2165,6 @@ bool SetCmdlineParams()
 	if ( no_postprocess_arg.found() )
 	{
 		Gr_post_processing_enabled = false;
-	}
-
-	if ( bloom_intensity_arg.found() )
-	{
-		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
-	}
-
-	if ( flightshaftsoff_arg.found() )
-	{
-		Cmdline_force_lightshaft_off = true;
 	}
 
 	if( reparse_mainhall_arg.found() )
@@ -2215,6 +2231,11 @@ bool SetCmdlineParams()
 	if (no_unfocused_pause_arg.found())
 	{
 		Cmdline_no_unfocus_pause = true;
+	}
+
+	if (retail_time_compression_range_arg.found())
+	{
+		Cmdline_retail_time_compression_range = true;
 	}
 	
 	if (benchmark_mode_arg.found())

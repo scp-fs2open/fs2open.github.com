@@ -13,7 +13,7 @@ class LabUi {
   private:
 	void build_options_menu();
 	void build_ship_list() const;
-	void build_species_entry(species_info species_def, int species_idx) const;
+	void build_species_entry(const species_info &species_def, int species_idx) const;
 	void build_weapon_list() const;
 	void build_weapon_subtype_list() const;
 	void build_background_list() const;

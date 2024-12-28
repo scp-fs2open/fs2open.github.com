@@ -83,7 +83,7 @@ typedef struct shockwave_create_info {
 	int radius_curve_idx;   // curve for shockwave radius over time
 	angles rot_angles;
 	bool rot_defined;		// if the modder specified rot_angles
-	bool damage_overidden;  // did this have shockwave damage specifically set or not
+	bool damage_overridden;  // did this have shockwave damage specifically set or not
 
 	int damage_type_idx;
 	int damage_type_idx_sav;	// stored value from table used to reset damage_type_idx
@@ -92,15 +92,17 @@ typedef struct shockwave_create_info {
 
 } shockwave_create_info;
 
+extern bool Use_3D_shockwaves;
+
 extern void shockwave_create_info_init(shockwave_create_info *sci);
-extern void shockwave_create_info_load(shockwave_create_info *sci);
+extern void shockwave_create_info_load(const shockwave_create_info *sci);
 
 void shockwave_level_init();
 void shockwave_level_close();
-void shockwave_delete(object *objp);
+void shockwave_delete(const object *objp);
 void shockwave_move_all(float frametime);
-int  shockwave_create(int parent_objnum, vec3d *pos, shockwave_create_info *sci, int flag, int delay = -1);
-void shockwave_render(object *objp, model_draw_list *scene);
+int  shockwave_create(int parent_objnum, const vec3d *pos, const shockwave_create_info *sci, int flag, int delay = -1);
+void shockwave_render(const object *objp, model_draw_list *scene);
 int shockwave_load(const char *s_name, bool shock_3D = false);
 
 int   shockwave_get_weapon_index(int index);

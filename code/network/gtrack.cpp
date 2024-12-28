@@ -63,6 +63,7 @@ static unsigned int FirstGameOverPacket;
 static int SendingGameOver;
 //End New 7-9-98
 
+static void SendClientHolePunch(sockaddr_in6 *addr);
 
 static int SerializeGamePacket(const game_packet_header *gph, ubyte *data)
 {
@@ -82,6 +83,7 @@ static int SerializeGamePacket(const game_packet_header *gph, ubyte *data)
 		// these have no other data
 		case GNT_CLIENT_ACK:
 		case GNT_GAMEOVER:
+		case GNT_NAT_HOLE_PUNCH_ACK:
 			break;
 
 		// this one may or may not have extra data
@@ -259,6 +261,23 @@ static void DeserializeGamePacket(const ubyte *data, const int data_size, game_p
 			break;
 		}
 
+		case GNT_NAT_HOLE_PUNCH_REQ: {
+			// using data_size here since gph.len hasn't been adjusted yet
+			if (data_size == (GAME_HEADER_ONLY_SIZE+sizeof(hole_punch_addr_ip6))) {
+				auto ipv6 = reinterpret_cast<hole_punch_addr_ip6 *>(&gph->data);
+
+				PXO_GET_DATA(ipv6->addr);
+				PXO_GET_USHORT(ipv6->port);
+			} else {
+				auto ipv4 = reinterpret_cast<hole_punch_addr *>(&gph->data);
+
+				PXO_GET_UINT(ipv4->addr);
+				PXO_GET_USHORT(ipv4->port);
+			}
+
+			break;
+		}
+
 		default:
 			break;
 	}
@@ -362,9 +381,8 @@ void IdleGameTracker()
 	//End New 7-9-98
 
 	//Check for incoming
-		
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET(Psnet_socket, &read_fds);
+	FD_SET_SAFE(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1),&read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_GAME_TRACKER))
 	{
@@ -475,7 +493,31 @@ void IdleGameTracker()
 				// tell user about it
 				multi_fs_tracker_report_probe_status(flags, next_try);
 				break;
+
+			case GNT_NAT_HOLE_PUNCH_REQ:
+				sockaddr_in6 nataddr;
+
+				nataddr.sin6_family = AF_INET6;
+
+				if (inpacket.len == (GAME_HEADER_ONLY_SIZE+sizeof(hole_punch_addr_ip6))) {
+					auto ipv6 = reinterpret_cast<hole_punch_addr_ip6 *>(&inpacket.data);
+
+					nataddr.sin6_addr = ipv6->addr;
+					nataddr.sin6_port = ipv6->port;
+				} else {
+					auto ipv4 = reinterpret_cast<hole_punch_addr *>(&inpacket.data);
+					in_addr addr;
+
+					addr.s_addr = ipv4->addr;
+
+					psnet_map4to6(&addr, &nataddr.sin6_addr);
+					nataddr.sin6_port = ipv4->port;
+				}
+
+				SendClientHolePunch(&nataddr);
+				break;
 			}
+
 			AckPacket(inpacket.sig);			
 		}
 	}
@@ -614,7 +656,7 @@ void StartTrackerGame(void *buffer)
 //A new function
 void RequestGameCountWithFilter(void *filter) 
 {
-	game_packet_header GameCountReq;
+	game_packet_header GameCountReq{};
 	ubyte packet_data[sizeof(game_packet_header)];
 	int packet_length = 0;
 
@@ -626,4 +668,25 @@ void RequestGameCountWithFilter(void *filter)
 	packet_length = SerializeGamePacket(&GameCountReq, packet_data);
 	SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0,
 		   reinterpret_cast<LPSOCKADDR>(&gtrackaddr), sizeof(gtrackaddr), PSNET_TYPE_GAME_TRACKER);
+}
+
+static void SendClientHolePunch(sockaddr_in6 *addr)
+{
+	game_packet_header HolePunchAck;
+	ubyte packet_data[sizeof(game_packet_header)];
+	int packet_length = 0;
+
+	// if client is IPv6, and we can't do that, then just skip it
+	if ( !IN6_IS_ADDR_V4MAPPED(&addr->sin6_addr) && !(psnet_get_ip_mode() & PSNET_IP_MODE_V6) ) {
+		return;
+	}
+
+	HolePunchAck.game_type = GT_FS2OPEN;
+	HolePunchAck.type = GNT_NAT_HOLE_PUNCH_ACK;
+	HolePunchAck.len = GAME_HEADER_ONLY_SIZE;
+	HolePunchAck.sig = 0; // to make sure tracker ignores this packet when it's ACK'd there
+
+	packet_length = SerializeGamePacket(&HolePunchAck, packet_data);
+	SENDTO(Psnet_socket, reinterpret_cast<char *>(&packet_data), packet_length, 0,
+			reinterpret_cast<LPSOCKADDR>(addr), sizeof(sockaddr_in6), PSNET_TYPE_GAME_TRACKER);
 }

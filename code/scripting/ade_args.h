@@ -235,7 +235,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 		// WMC - Try and get at function name from upvalue
 		if (!get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX))) {
 			if (lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
-				strcpy_s(state.funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
+				strcpy_s(state.funcname, lua_tostring_nullsafe(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
 
 		// WMC - Totally unknown function
@@ -305,6 +305,17 @@ template<typename T>
 void set_single_arg(lua_State* L, char fmt, ade_odata_setter<T>&& od)
 {
 	Assertion(fmt == 'o', "Invalid format character '%c' for object type!", fmt);
+
+	if (Lua_API_returns_nil_instead_of_invalid_object) {
+		// If the underlying type has an isValid, it'll be evaluated; otherwise it'll be always true.
+		bool isValid = ade_is_valid<T>::get(od.value);
+
+		if (!isValid) {
+			lua_pushnil(L);
+			return;
+		}
+	}
+
 	// Use the common helper method
 	luacpp::convert::pushValue(L, std::forward<ade_odata_setter<T>>(od));
 }
@@ -366,13 +377,20 @@ int ade_set_args(lua_State* L, const char* fmt, Args&&... args)
 }
 
 /**
- * @brief Return a value in error
+ * @brief Return a value in error.  Normally this behaves just like ade_set_args, but it can be configured to return nil instead.
  *
  * Should be used if the value is not valid
  *
  * @ingroup ade_api
  */
-#define ade_set_error ade_set_args
+template <typename... Args>
+inline int ade_set_error(lua_State* L, const char* fmt, Args&&... args)
+{
+	if (Lua_API_returns_nil_instead_of_invalid_object)
+		return 0;	// ADE_RETURN_NIL
+	else
+		return ade_set_args(L, fmt, std::forward<Args>(args)...);
+}
 }
 
 #endif //FS2_OPEN_ADE_ARGS_H

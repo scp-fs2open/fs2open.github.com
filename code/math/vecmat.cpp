@@ -63,36 +63,6 @@ bool vm_matrix_equal(const matrix4 &self, const matrix4 &other)
 		vm_vec_equal(self.vec.pos, other.vec.pos);
 }
 
-// -----------------------------------------------------------
-// atan2_safe()
-//
-// Wrapper around atan2() that used atanf() to calculate angle.  Safe
-// for optimized builds.  Handles special cases when x == 0.
-//
-float atan2_safe(float y, float x)
-{
-	float ang;
-
-	// special case, x == 0
-	if ( x == 0.0f ) {
-		if ( y == 0.0f ) 
-			ang = 0.0f;
-		else if ( y > 0.0f )
-			ang = PI_2;
-		else
-			ang = -PI_2;
-
-		return ang;
-	}
-	
-	ang = atanf(y/x);
-	if ( x < 0.0f ){
-		ang += PI;
-	}
-
-	return ang;
-}
-
 // ---------------------------------------------------------------------
 // vm_vec_component()
 //
@@ -417,6 +387,16 @@ void vm_vec_scale2(vec3d *dest, float n, float d)
 	dest->xyz.z = dest->xyz.z* n * d;
 }
 
+// interpolate between two vectors
+// dest = src0 + (k * (src1 - src0))
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, const float k)
+{
+	dest->xyz.x = ((src1->xyz.x - src0->xyz.x) * k) + src0->xyz.x;
+	dest->xyz.y = ((src1->xyz.y - src0->xyz.y) * k) + src0->xyz.y;
+	dest->xyz.z = ((src1->xyz.z - src0->xyz.z) * k) + src0->xyz.z;
+}
+
 //returns dot product of 2 vectors
 float vm_vec_dot(const vec3d *v0, const vec3d *v1)
 {
@@ -490,9 +470,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 
 	//	Mainly here to trap attempts to normalize a null vector.
 	if (m <= 0.0f) {
-		mprintf(("Null vec3d in vec3d normalize.\n"
-				 "Trace out of vecmat.cpp and find offending code.\n"));
-
+		nprintf(("Network", "Null vec3d in vec3d normalize.\n"
+			"Trace out of vecmat.cpp and find offending code.\n"));
 		dest->xyz.x = 1.0f;
 		dest->xyz.y = 0.0f;
 		dest->xyz.z = 0.0f;
@@ -971,7 +950,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 {
 	float sinh,cosh,cosp;
 
-	a->h = atan2_safe(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
+	a->h = atan2(m->vec.fvec.xyz.x,m->vec.fvec.xyz.z);
 
 	sinh = sinf(a->h); cosh = cosf(a->h);
 
@@ -986,7 +965,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 
 	fvec_xz_distance = fl_sqrt( ( (m->vec.fvec.xyz.x)*(m->vec.fvec.xyz.x) ) + ( (m->vec.fvec.xyz.z)*(m->vec.fvec.xyz.z) ) );
 
-	a->p = atan2_safe(-m->vec.fvec.xyz.y, fvec_xz_distance);
+	a->p = atan2(-m->vec.fvec.xyz.y, fvec_xz_distance);
 
 	if (cosp == 0.0f)	//the cosine of pitch is zero.  we're pitched straight up. say no bank
 
@@ -998,7 +977,7 @@ angles *vm_extract_angles_matrix(angles *a, const matrix *m)
 		sinb = m->vec.rvec.xyz.y/cosp;
 		cosb = m->vec.uvec.xyz.y/cosp;
 
-		a->b = atan2_safe(sinb,cosb);
+		a->b = atan2(sinb,cosb);
 	}
 
 
@@ -1044,7 +1023,7 @@ static angles *vm_extract_angles_vector_normalized(angles *a, const vec3d *v)
 
 	a->p = asinf_safe(-v->xyz.y);
 
-	a->h = atan2_safe(v->xyz.z,v->xyz.x);
+	a->h = atan2(v->xyz.z,v->xyz.x);
 
 	return a;
 }
@@ -1713,10 +1692,10 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
 		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
 
-		solutions = { 2 * atan2_safe(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
-					  2 * atan2_safe(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
-					  2 * atan2_safe(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
-					  2 * atan2_safe(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+		solutions = { 2 * atan2(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
+					  2 * atan2(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
+					  2 * atan2(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
+					  2 * atan2(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
 	}
 	float value = -2.0f;
 	float correct = 0;
@@ -2931,68 +2910,6 @@ void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_
 	vm_vec_unrotate(out_rvec, &temp, &dest_frame);
 }
 
-// Cyborg17 - Rotational interpolation between two angle structs in radians.  Assumes that the rotation direction is the smaller arc difference.
-// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f inclusive.
-// rot_vel is only used to determine the rotation direction. This functions assumes a <= 2PI rotation in any axis.  
-// You will get inaccurate results otherwise.
-void vm_interpolate_angles_quick(angles *dest0, angles *src0, angles *src1, float interp_perc) {
-	
-	Assertion((interp_perc >= 0.0f) && (interp_perc <= 1.0f), "Interpolation percentage, %f, sent to vm_interpolate_angles is invalid. The valid range is [0,1], go find a coder!", interp_perc);
-
-	angles arc_measures;
-
-	arc_measures.p = src1->p - src0->p;	
-	arc_measures.h = src1->h - src0->h;	
-	arc_measures.b = src1->b - src0->b;
-
-	  // pitch
-	  // if start and end are basically the same, assume we can basically jump to the end.
-	if ( (fabs(arc_measures.p) < 0.00001f) ) {
-		arc_measures.p = 0.0f;
-
-	} // Test if we actually need to go in the other direction
-	else if (arc_measures.p > (PI*1.5f)) {
-		arc_measures.p = PI2 - arc_measures.p;
-
-	} // Test if we actually need to go in the other direction for negative values
-	else if (arc_measures.p < -PI_2) {
-		arc_measures.p = -PI2 - arc_measures.p;
-	}
-
-	  // heading
-	  // if start and end are basically the same, assume we can basically jump to the end.
-	if ( (fabs(arc_measures.h) < 0.00001f) ) {
-		arc_measures.h = 0.0f;
-
-	} // Test if we actually need to go in the other direction
-	else if (arc_measures.h > (PI*1.5f)) {
-		arc_measures.h = PI2 - arc_measures.h;
-
-	} // Test if we actually need to go in the other direction for negative values
-	else if (arc_measures.h < -PI_2) {
-		arc_measures.h = -PI2 - arc_measures.h;
-	}
-
-	// bank
-	// if start and end are basically the same, assume we can basically jump to the end.
-	if ( (fabs(arc_measures.b) < 0.00001f) ) {
-		arc_measures.b = 0.0f;
-
-	} // Test if we actually need to go in the other direction
-	else if (arc_measures.b > (PI*1.5f)) {
-		arc_measures.b = PI2 - arc_measures.b;
-
-	} // Test if we actually need to go in the other direction for negative values
-	else if (arc_measures.b < -PI_2) {
-		arc_measures.b = -PI2 - arc_measures.b;
-	}
-
-	// Now just multiply the difference in angles by the given percentage, and then subtract it from the destination angles.
-	// If arc_measures is 0.0f, then we are basically bashing to the ending orientation without worrying about the inbetween.
-	dest0->p = src0->p + (arc_measures.p * interp_perc);
-	dest0->h = src0->h + (arc_measures.h * interp_perc);
-	dest0->b = src0->b + (arc_measures.b * interp_perc);
-}
 
 // Interpolate between two matrices, using t as a percentage progress between them.
 // Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,

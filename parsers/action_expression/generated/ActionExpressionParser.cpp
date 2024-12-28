@@ -670,7 +670,7 @@ ActionExpressionParser::Initializer::Initializer() {
 		if (name.empty()) {
 			_tokenNames.push_back("<INVALID>");
 		} else {
-      _tokenNames.push_back(name);
+      _tokenNames.push_back(std::move(name));
     }
 	}
 

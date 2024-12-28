@@ -13,6 +13,7 @@
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
 #include "ship/ship.h"
+#include "options/Option.h"
 
 extern int radar_target_id_flags;
 
@@ -23,6 +24,10 @@ int Iff_traitor;
 int radar_iff_color[5][2][4];
 int iff_bright_delta;
 int *iff_color_brightness = &iff_bright_delta;
+
+int IFF_COLOR_SELECTION = 0;
+int IFF_COLOR_MESSAGE   = 1;
+int IFF_COLOR_TAGGED    = 2;
 
 // global only to file
 SCP_vector <std::pair<color, color>> Iff_colors;		// AL 1-2-97: Create two IFF colors, regular and bright
@@ -35,6 +40,21 @@ flag_def_list rti_flags[] = {
 };
 
 int Num_rti_flags = sizeof(rti_flags)/sizeof(flag_def_list);
+
+static bool AccessiblitySupported = false;
+
+// used by In-Game Options menu
+static bool AccessibilityEnabled = false;
+
+static auto AccessibilityOption = options::OptionBuilder<bool>("Game.IffAccessibility",
+	std::pair<const char*, int>{"Accessibility IFF Colors", 1855},
+	std::pair<const char*, int>{"Enables or disables IFF Accessibility color overrides", 1856})
+										 .category(std::make_pair("Game", 1824))
+										 .default_val(false)
+										 .level(options::ExpertLevel::Advanced)
+										 .bind_to_once(&AccessibilityEnabled)
+										 .importance(60)
+										 .finish();
 
 /**
  * Borrowed from ship.cpp, ship_iff_init_colors
@@ -109,6 +129,8 @@ struct observed_color_t {
 
 static SCP_vector<SCP_vector<observed_color_t>> observed_color_table;
 
+static SCP_vector<SCP_vector<observed_color_t>> accessibility_observed_color_table;
+
 void resolve_iff_data()
 {
 	// first get the traitor
@@ -153,13 +175,30 @@ void resolve_iff_data()
 			int target_iff = iff_lookup(observed_color.iff_name);
 
 			// valid?
-			if (target_iff >= 0)
+			if (target_iff >= 0) {
 				iff->observed_color_map[target_iff] = observed_color.color_index;
-			else
+			} else{
 				Warning(LOCATION,
 					"Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n",
 					observed_color.iff_name,
 					iff->iff_name);
+			}
+		}
+
+		// resolve the accessibility observed color list names
+		for (const auto& observed_color : accessibility_observed_color_table[cur_iff]) {
+			// find out who
+			int target_iff = iff_lookup(observed_color.iff_name);
+
+			// valid?
+			if (target_iff >= 0) {
+				iff->accessibility_observed_color_map[target_iff] = observed_color.color_index;
+			} else {
+				Warning(LOCATION,
+					"Observed color IFF %s not found for IFF %s in iff_defs.tbl!\n",
+					observed_color.iff_name,
+					iff->iff_name);
+			}
 		}
 
 		// resolve the all teams at war relationships
@@ -242,6 +281,10 @@ void parse_iff_table(const char* filename)
 			stuff_string(traitor_name, F_NAME, NAME_LENGTH);
 		}
 
+		if (optional_string("$Accessibility Supported:")) {
+			stuff_boolean(&AccessiblitySupported);
+		}
+
 		int rgb[3];
 
 		// check if alternate colours are wanted to be used for these
@@ -249,28 +292,28 @@ void parse_iff_table(const char* filename)
 		if ((optional_string("$Selection Color:")) || (optional_string("$Selection Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_SELECTION = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0xff, 0xff, 0xff);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_SELECTION = iff_init_color(0xff, 0xff, 0xff);
 
 		// Marks the ship currently saying something
 		if ((optional_string("$Message Color:")) || (optional_string("$Message Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_MESSAGE = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0x7f, 0x7f, 0x7f);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_MESSAGE = iff_init_color(0x7f, 0x7f, 0x7f);
 
 		// Marks the tagged ships
 		if ((optional_string("$Tagged Color:")) || (optional_string("$Tagged Colour:")))
 		{
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			iff_init_color(rgb[0], rgb[1], rgb[2]);
+			IFF_COLOR_TAGGED = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
-		else
-			iff_init_color(0xff, 0xff, 0x00);
+		else if (!Parsing_modular_table)
+			IFF_COLOR_TAGGED = iff_init_color(0xff, 0xff, 0x00);
 
 		// init radar blips colour table
 		int a_bright, a_dim;
@@ -391,7 +434,7 @@ void parse_iff_table(const char* filename)
 		}
 
 		if (optional_string("$Radar Target ID Flags:")) {
-			parse_string_flag_list((int*)&radar_target_id_flags, rti_flags, Num_rti_flags);
+			parse_string_flag_list(radar_target_id_flags, rti_flags, Num_rti_flags);
 			if (optional_string("+reset"))
 				radar_target_id_flags = 0;
 		}
@@ -431,9 +474,12 @@ void parse_iff_table(const char* filename)
 				Iff_info.push_back(ifft);
 				attack_names.emplace_back();
 				observed_color_table.emplace_back();
+				accessibility_observed_color_table.emplace_back();
 				iffp = &Iff_info[Iff_info.size() - 1];
 				//Initialize this to white for new IFFs
 				iffp->color_index = iff_init_color(255, 255, 255);
+				// Initialize this to white for new IFFs
+				iffp->accessibility_color_index = iff_init_color(255, 255, 255);
 				//Make sure flags are reset for new IFFs
 				iffp->default_parse_flags.reset();
 			}
@@ -444,6 +490,12 @@ void parse_iff_table(const char* filename)
 			if (optional_string_either("$Colour:", "$Color:") != -1) {
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
+			}
+
+			// get the accessiblity iff color
+			if (optional_string_either("$Accessibility Colour:", "$Accessibility Color:") != -1) {
+				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				iffp->accessibility_color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
 
@@ -464,6 +516,18 @@ void parse_iff_table(const char* filename)
 				// get color observed
 				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 				observed_color_table[cur_iff].back().color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
+			}
+
+			// get the list of accessibility observed colors
+			while (optional_string("+Accessibility Sees")) {
+				accessibility_observed_color_table[cur_iff].emplace_back();
+				// get iff observed
+				stuff_string_until(accessibility_observed_color_table[cur_iff].back().iff_name, "As:", NAME_LENGTH);
+				required_string("As:");
+
+				// get color observed
+				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				accessibility_observed_color_table[cur_iff].back().color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
 			// get F3 override
@@ -525,7 +589,8 @@ void parse_iff_table(const char* filename)
             }
 
 			// this is cleared between each level but let's just set it here for thoroughness
-			iffp->ai_rearm_timestamp = TIMESTAMP::invalid();
+			iffp->ai_good_rearm_timestamp = TIMESTAMP::invalid();
+			iffp->ai_bad_rearm_timestamp = TIMESTAMP::invalid();
 		}
 
 		required_string("#End");
@@ -545,6 +610,11 @@ void iff_init()
 
 	// parse any modular tables
 	parse_modular_table("*-iff.tbm", parse_iff_table);
+
+	if (!AccessiblitySupported) {
+		options::OptionsManager::instance()->removeOption(AccessibilityOption);
+		AccessibilityEnabled = false;
+	}
 
 	// now resolve the relationships
 	resolve_iff_data();
@@ -579,7 +649,9 @@ int iff_lookup(const char *iff_name)
  */
 int iff_get_attackee_mask(int attacker_team)
 {
-	Assert(attacker_team >= 0 && attacker_team < (int)Iff_info.size());
+	Assertion(SCP_vector_inbounds(Iff_info, attacker_team), "Attempted to get the attackee mask of an attacker team that is out of bounds");
+	if (!SCP_vector_inbounds(Iff_info, attacker_team))
+		return 0;
 
 	//	All teams attack all other teams.
 	if (Mission_all_attack)
@@ -658,14 +730,22 @@ color *iff_get_color(int color_index, int is_bright)
  */
 color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 {
-	Assert(team >= 0 && team < (int)Iff_info.size());
-	Assert(seen_from_team < (int)Iff_info.size());
-	Assert(is_bright == 0 || is_bright == 1);
+	Assertion(SCP_vector_inbounds(Iff_info, team), "Cannot get color by team because team is invalid. Get a coder!");
+	Assertion((is_bright == 0 || is_bright == 1), "Error with brightness selection when getting color. Get a coder!");
+
+	int color_index;
+
+	if (AccessibilityEnabled) {
+		color_index = Iff_info[team].accessibility_color_index;
+	} else {
+		color_index = Iff_info[team].color_index;
+	}
 
 
 	// is this guy being seen by anyone?
-	if (seen_from_team < 0)
-		return is_bright == 0 ? &Iff_colors[Iff_info[team].color_index].first : &Iff_colors[Iff_info[team].color_index].second;
+	if (seen_from_team < 0) {
+		return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
+	}
 
 	// Goober5000 - base the following on "sees X as" from iff code
 	// c.f. AL's comment:
@@ -675,13 +755,21 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
 	//						drawn friendly.  If the team is different than the player's, then draw the
 	//						appropriate IFF.
 
+	// This goes here because seen_from_team can validly be a negative number. In that case color_map is undefined
+	// but that doesn't matter because we return in the statement above here. Below here, color_map needs to be defined
+	// which will happen if seen_from_team is valid.
+	Assertion(SCP_vector_inbounds(Iff_info, seen_from_team), "Cannot get color because seen_from_team is invalid. Get a coder!");
 
-	// assume an observed color is defined; if not, use normal color
-	auto it = Iff_info[seen_from_team].observed_color_map.find(team);
-	int color_index = Iff_info[team].color_index;
+	if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
+		const auto& color_map = AccessibilityEnabled ? Iff_info[seen_from_team].accessibility_observed_color_map : Iff_info[seen_from_team].observed_color_map;
 
-	if (it != Iff_info[seen_from_team].observed_color_map.end())
-		color_index = it->second;
+		// assume an observed color is defined; if not, use normal color
+		auto it = color_map.find(team);
+
+		if (it != color_map.end()) {
+			color_index = it->second;
+		}
+	}
 	
 	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
 }
@@ -693,22 +781,38 @@ color *iff_get_color_by_team(int team, int seen_from_team, int is_bright)
  */
 color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bright, object *objp)
 {
-	Assert(team >= 0 && team < (int)Iff_info.size());
-	Assert(seen_from_team < (int)Iff_info.size());
-	Assert(is_bright == 0 || is_bright == 1);
+	Assertion(SCP_vector_inbounds(Iff_info, team), "Cannot get color by team because team is invalid. Get a coder!");
+	Assertion((is_bright == 0 || is_bright == 1), "Error with brightness selection when getting color. Get a coder!");
 
-	int alt_color_index = -1;
+	int color_index;
+
+	if (AccessibilityEnabled) {
+		color_index = Iff_info[team].accessibility_color_index;
+	} else {
+		color_index = Iff_info[team].color_index;	
+	}
 
 	// is this guy being seen by anyone?
-	if (seen_from_team < 0)
-		return is_bright == 0 ? &Iff_colors[Iff_info[team].color_index].first : &Iff_colors[Iff_info[team].color_index].second;
-
-	int color_index = -1;
-	{
-		auto it = Iff_info[seen_from_team].observed_color_map.find(team);
-		if (it != Iff_info[seen_from_team].observed_color_map.end())
-			color_index = it->second;
+	if (seen_from_team < 0) {
+		return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
 	}
+
+	// This goes here because seen_from_team can validly be a negative number. In that case color_map is undefined
+	// but that doesn't matter because we return in the statement above here. Below here, color_map needs to be defined
+	// which will happen if seen_from_team is valid.
+	Assertion(SCP_vector_inbounds(Iff_info, seen_from_team), "Cannot get color because seen_from_team is invalid. Get a coder!");
+
+	if (SCP_vector_inbounds(Iff_info, seen_from_team)) {
+		const auto& color_map = AccessibilityEnabled ? Iff_info[seen_from_team].accessibility_observed_color_map : Iff_info[seen_from_team].observed_color_map;
+
+		auto it = color_map.find(team);
+
+		if (it != color_map.end()) {
+			color_index = it->second;
+		}
+	}
+
+	int alt_color_index = -1;
 
 	// switch in case some sort of parent iff color inheritance for example for bombs is wanted...
 	switch(objp->type)
@@ -732,12 +836,15 @@ color *iff_get_color_by_team_and_object(int team, int seen_from_team, int is_bri
 			break;
 	}
 
+
+	int this_color_index = -1;
 	// temporary solution.... 
-	if (alt_color_index >= 0)
-		color_index = alt_color_index;
-	if (color_index < 0)
-		color_index = Iff_info[team].color_index;
+	if (alt_color_index >= 0) {
+		this_color_index = alt_color_index;
+	} else {
+		this_color_index = color_index;
+	}
 
 
-	return is_bright == 0 ? &Iff_colors[color_index].first : &Iff_colors[color_index].second;
+	return is_bright == 0 ? &Iff_colors[this_color_index].first : &Iff_colors[this_color_index].second;
 }

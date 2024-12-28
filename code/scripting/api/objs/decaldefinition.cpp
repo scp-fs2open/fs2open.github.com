@@ -86,7 +86,7 @@ ADE_FUNC(create, l_DecalDefinitionclass, "number width, number height, number mi
 	if (idx < 0 || idx >= static_cast<int>(decals::DecalDefinitions.size()))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid() || !smh->IsValid())
+	if (!objh->isValid() || !smh->isValid())
 		return ADE_RETURN_NIL;
 
 	decals::creation_info info;
@@ -101,7 +101,7 @@ ADE_FUNC(create, l_DecalDefinitionclass, "number width, number height, number mi
 	else
 		info.lifetime = util::UniformFloatRange(minLifetime, maxLifetime);
 
-	decals::addDecal(info, objh->objp, smh->GetSubmodelIndex(), local_pos == nullptr ? vmd_zero_vector : *local_pos, local_orient == nullptr ? vmd_identity_matrix : *local_orient->GetMatrix());
+	decals::addDecal(info, objh->objp(), smh->GetSubmodelIndex(), local_pos == nullptr ? vmd_zero_vector : *local_pos, local_orient == nullptr ? vmd_identity_matrix : *local_orient->GetMatrix());
 
 	return ADE_RETURN_NIL;
 }

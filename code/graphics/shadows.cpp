@@ -37,14 +37,14 @@ bool Shadow_quality_uses_mod_option = false;
 auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shadows",
                      std::pair<const char*, int>{"Shadow Quality", 1750},
                      std::pair<const char*, int>{"The quality of the shadows", 1751})
-                     .values({{ShadowQuality::Disabled, {"Disabled", 1779}},
+                     .values({{ShadowQuality::Disabled, {"Disabled", 413}},
                               {ShadowQuality::Low, {"Low", 1160}},
                               {ShadowQuality::Medium, {"Medium", 1161}},
                               {ShadowQuality::High, {"High", 1162}},
                               {ShadowQuality::Ultra, {"Ultra", 1721}}})
                      .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
                      .level(options::ExpertLevel::Advanced)
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(ShadowQuality::Disabled)
                      .importance(80)
                      .finish();
@@ -494,8 +494,8 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 				render_info.set_object_number(OBJ_INDEX(objp));
 				render_info.set_flags(MR_IS_ASTEROID | MR_NO_TEXTURING | MR_NO_LIGHTING);
 				
-				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype]);
-				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype], &objp->orient, &objp->pos);
+				model_clear_instance( Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number);
+				model_render_queue(&render_info, &scene, Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number, &objp->orient, &objp->pos);
 			}
 			break;
 

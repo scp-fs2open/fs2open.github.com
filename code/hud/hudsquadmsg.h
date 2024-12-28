@@ -213,7 +213,7 @@ public:
 	void initPgDnOffsets(int x, int y);
 
 	void render(float frametime) override;
-	bool canRender() override;
+	bool canRender() const override;
 	void pageIn() override;
 	void initialize() override;
 	void startFlashPageScroll(int duration = 1400);

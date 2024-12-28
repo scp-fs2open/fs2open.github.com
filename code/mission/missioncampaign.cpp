@@ -49,6 +49,7 @@
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 // campaign wasn't ended
@@ -422,7 +423,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load(const char* filename, const char* full_path, player* pl, int load_savefile, bool reset_stats)
+int mission_campaign_load(const char* filename, const char* full_path, player* pl, int load_savefile)
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -674,13 +675,11 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 				Campaign.num_missions = 0;
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
-			} else {
-				// make sure we initialize red alert data for the new CSG
-				red_alert_clear();
-				// and reset stats when requested
-				if (reset_stats) {
-					pl->stats.init();
-				}
+			}
+			// start with fresh new campaign data
+			else {
+				Pilot.clear_savefile(false);	// don't reset ships and weapons because they are currently the campaign's starting ones
+				Campaign.next_mission = 0;
 				Pilot.save_savefile();
 			}
 		}
@@ -742,13 +741,15 @@ void mission_campaign_init()
  */
 void mission_campaign_savefile_delete(const char* cfilename)
 {
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-
-	_splitpath( cfilename, NULL, NULL, base, NULL );
+	char filename[_MAX_FNAME];
 
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		return;	// no such thing as a multiplayer campaign savefile
 	}
+
+	auto base = util::get_file_part(cfilename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
 
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
@@ -1470,7 +1471,6 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	movie::play(filename);	//Play the movie!
-	cutscene_mark_viewable( filename );
 }
 
 /**
@@ -1671,6 +1671,18 @@ void mission_campaign_skip_to_next()
 
 	// now set the next mission
 	mission_campaign_eval_next_mission();
+
+	// because all goals/events are marked true, it's possible for the campaign condition to unexpectedly *not* evaluate to the next mission
+	// (e.g. if is-previous-goal-false or is-previous-event-false is used without the optional argument), so this is a failsafe
+	if (Campaign.next_mission == Campaign.current_mission) {
+		Campaign.next_mission++;
+		if (Campaign.next_mission < Campaign.num_missions) {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!  Choosing the next-in-sequence mission as a failsafe...");
+		} else {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!");
+			Campaign.next_mission = -1;
+		}
+	}
 
 	// clear out relevant player vars
 	Player->failures_this_session = 0;

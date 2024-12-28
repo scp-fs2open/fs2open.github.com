@@ -3,10 +3,28 @@
 #include "graphics/paths/PathRenderer.h"
 
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 
 #include "localization/localize.h"
 
 #include <limits>
+
+float Font_Scale_Factor = 1.0;
+
+static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontScaleFactor",
+										   std::pair<const char*, int>{"Font Scale Factor", 1862},
+										   std::pair<const char*, int>{"Sets a multipler to scale fonts by. Only works on fonts the mod has explicitely allowed", 1863})
+										   .category(std::make_pair("Game", 1824))
+										   .range(0.2f, 4.0f) // Upper limit is somewhat arbitrary
+										   .level(options::ExpertLevel::Advanced)
+										   .default_val(1.0)
+										   .bind_to(&Font_Scale_Factor)
+										   .importance(55)
+										   .finish();
+
+void removeFontMultiplierOption() {
+	options::OptionsManager::instance()->removeOption(FontScaleFactor);
+}
 
 namespace
 {
@@ -75,16 +93,6 @@ namespace font
 		return length;
 	}
 
-	NVGFont::NVGFont() : m_handle(-1), m_letterSpacing(0.0f), m_size(12.0f), m_tabWidth(20.0f)
-	{
-
-	}
-
-	NVGFont::~NVGFont()
-	{
-
-	}
-	
 	void NVGFont::setHandle(int handle)
 	{
 		Assertion(handle >= 0, "Invalid font handle passed!");
@@ -130,8 +138,13 @@ namespace font
 		path->saveState();
 		path->resetState();
 
+		float scale_factor = Font_Scale_Factor;
+		if (!canScale) {
+			scale_factor = 1.0f;
+		}
+
 		path->fontFaceId(m_handle);
-		path->fontSize(m_size);
+		path->fontSize(m_size * scale_factor);
 		path->textLetterSpacing(m_letterSpacing);
 		path->textAlign(static_cast<TextAlign>(ALIGN_TOP | ALIGN_LEFT));
 

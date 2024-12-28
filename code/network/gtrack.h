@@ -50,6 +50,9 @@
 #define	GNT_GAMELIST_DATA_NEW	9
 #define	GNT_GAME_PROBE_STATUS	10
 #define	GNT_GAMEUPDATE_STATUS	11
+// NOTE: IDs 12-16 are special for Descent3 and shouldn't be used here!!
+#define GNT_NAT_HOLE_PUNCH_REQ	17
+#define GNT_NAT_HOLE_PUNCH_ACK	18
 
 #define	GT_FREESPACE			1
 #define	GT_DESCENT3				2
@@ -111,6 +114,17 @@ typedef struct {
 	char pad[3];					// 3-bytes padding for size/alignment
 } filter_game_list_struct;
 
+#pragma pack(push, 1)
+struct hole_punch_addr {
+	uint32_t addr;
+	uint16_t port;
+};
+
+struct hole_punch_addr_ip6 {
+	in6_addr addr;
+	uint16_t port;
+};
+#pragma pack(pop)
 
 //Function prototypes
 

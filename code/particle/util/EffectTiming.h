@@ -35,10 +35,10 @@ enum class Duration {
 class EffectTiming {
  private:
 	Duration m_duration;
-	::util::UniformFloatRange m_delayRange;
-	::util::UniformFloatRange m_durationRange;
+	::util::ParsedRandomFloatRange m_delayRange;
+	::util::ParsedRandomFloatRange m_durationRange;
 
-	float m_particlesPerSecond = -1.f;
+	::util::ParsedRandomFloatRange m_particlesPerSecond = ::util::UniformFloatRange(-1.f);
  public:
 	struct TimingState {
 		bool initial = true;
@@ -60,13 +60,15 @@ class EffectTiming {
 	bool continueProcessing(const ParticleSource* source) const;
 
 	/**
-	 * @brief Given the properties of this timing structure, determine if a new effect should be created for a source.
+	 * @brief Given the properties of this timing structure, determine if a new effect should be created for a source,
+	 * and if so, at what point during the frame the effect should spawn.
 	 * @param source The source to check.
 	 * @param localState Internal state used by this function that is needed multiple times. Default construct
 	 * TimingState and then pass it to this function.
-	 * @return @c true if a new effect should be created, @c false. This might return @c true multiple times per frame.
+	 * If an effect should be created, @return the number of milliseconds between the creation time and the current time.
+	 * If no effect should be created, @return -1.
 	 */
-	bool shouldCreateEffect(ParticleSource* source, TimingState& localState) const;
+	int shouldCreateEffect(ParticleSource* source, TimingState& localState) const;
 
 	/**
      * @brief Parses an effect timing class

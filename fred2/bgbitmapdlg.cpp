@@ -13,19 +13,20 @@
 #include "globalincs/vmallocator.h"
 #include "stdafx.h"
 #include "FRED.h"
-#include "BgBitmapDlg.h"
-#include "listitemchooser.h"
-#include "lighting/lighting_profiles.h"
-#include "starfield/starfield.h"
-#include "bmpman/bmpman.h"
-#include "graphics/light.h"
 #include "FREDView.h"
 #include "FREDDoc.h"
-#include "starfield/nebula.h"
+#include "BgBitmapDlg.h"
+#include "listitemchooser.h"
+#include "bmpman/bmpman.h"
+#include "graphics/light.h"
+#include "lighting/lighting_profiles.h"
+#include "math/bitarray.h"
+#include "mission/missionparse.h"
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "parse/parselo.h"
-#include "mission/missionparse.h"
+#include "starfield/starfield.h"
+#include "starfield/nebula.h"
 #include <vcruntime.h>
 
 #ifdef _DEBUG
@@ -120,7 +121,8 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SBITMAP_B, b_bank);
 	DDV_MinMaxInt(pDX, b_bank, 0, 359);
 	DDX_Text(pDX, IDC_SBITMAP_H, b_heading);
-	DDV_MinMaxInt(pDX, b_heading, 0, 359);	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
+	DDV_MinMaxInt(pDX, b_heading, 0, 359);
+	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
 	DDV_MinMaxFloat(pDX, b_scale_x, .001f, 18.0f);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_Y, b_scale_y);
 	DDV_MinMaxFloat(pDX, b_scale_y, .001f, 18.0f);
@@ -231,7 +233,6 @@ BOOL bg_bitmap_dlg::OnInitDialog()
 void bg_bitmap_dlg::create()
 {
 	char buf[40];
-	int i;
 	CComboBox *box;
 
 	CDialog::Create(bg_bitmap_dlg::IDD);
@@ -242,7 +243,7 @@ void bg_bitmap_dlg::create()
 	GetDlgItem(IDC_SUN1_B_SPIN)->EnableWindow(FALSE);
 	
 	box = (CComboBox *) GetDlgItem(IDC_NEBCOLOR);
-	for (i=0; i<NUM_NEBULA_COLORS; i++){
+	for (int i=0; i<NUM_NEBULA_COLORS; i++){
 		box->AddString(Nebula_colors[i]);
 	}	
 
@@ -254,15 +255,15 @@ void bg_bitmap_dlg::create()
 	build_nebfile_list();	
 
 	// setup neb poof names
-	for (i = 0; i < (int)Poof_info.size(); ++i)
+	for (size_t i = 0; i < Poof_info.size(); ++i)
 	{
 		((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->AddString(Poof_info[i].name);
 
 		// check all relevant poofs
-		if (Neb2_poof_flags & (1 << i))
-			((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->SetSel(i, TRUE);
+		if (get_bit(Neb2_poof_flags.get(), i))
+			((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->SetSel(static_cast<int>(i), TRUE);
 		else
-			((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->SetSel(i, FALSE);
+			((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->SetSel(static_cast<int>(i), FALSE);
 	}
 
 	m_skybox_model = _T(The_mission.skybox_model);
@@ -280,7 +281,7 @@ void bg_bitmap_dlg::create()
 	if (m_skybox_heading < 0) m_skybox_heading += 360;
 
 
-	for (i = 0; i < (int)Neb2_bitmap_filenames.size(); i++) {
+	for (size_t i = 0; i < Neb2_bitmap_filenames.size(); i++) {
 		((CComboBox*)GetDlgItem(IDC_NEB2_TEXTURE))->AddString(Neb2_bitmap_filenames[i].c_str());
 	}
 	// if we have a texture selected already
@@ -346,10 +347,10 @@ void bg_bitmap_dlg::create()
 	((CButton*)GetDlgItem(IDC_NEB2_TOGGLE_TRAILS))->SetCheck(m_toggle_trails);
 
 	// setup background numbering
-	for (i = 0; i < (int)Backgrounds.size(); i++) 
+	for (size_t i = 0; i < Backgrounds.size(); i++)
 	{
 		char temp[NAME_LENGTH];
-		sprintf(temp, "Background %d", i + 1);
+		sprintf(temp, "Background " SIZE_T_ARG, i + 1);
 
 		((CComboBox*) GetDlgItem(IDC_BACKGROUND_NUM))->AddString(temp);
 		((CComboBox*) GetDlgItem(IDC_BACKGROUND_SWAP_NUM))->AddString(temp);
@@ -432,11 +433,11 @@ void bg_bitmap_dlg::OnClose()
 		}
 
 		// store poof flags
-		Neb2_poof_flags = 0;
-		for (int i = 0; i < (int)Poof_info.size(); ++i)
+		clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
+		for (size_t i = 0; i < Poof_info.size(); ++i)
 		{
-			if (((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->GetSel(i))
-				Neb2_poof_flags |= (1 << i);
+			if (((CListBox*) GetDlgItem(IDC_NEB2_POOF_LIST))->GetSel(static_cast<int>(i)))
+				set_bit(Neb2_poof_flags.get(), i);
 		}
 		
 		// get the bitmap name

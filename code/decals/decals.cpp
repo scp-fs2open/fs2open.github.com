@@ -174,7 +174,7 @@ void parse_decals_table(const char* filename) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
 
-			DecalDefinition def(name);
+			DecalDefinition def(std::move(name));
 			def.parse();
 
 			DecalDefinitions.push_back(std::move(def));
@@ -186,17 +186,17 @@ void parse_decals_table(const char* filename) {
 		return;
 	}
 
-	if (!gr_is_capable(CAPABILITY_DEFERRED_LIGHTING)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_DEFERRED_LIGHTING)) {
 		// We need deferred lighting
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of deferred lighting.\n"));
 	}
-	if (!gr_is_capable(CAPABILITY_NORMAL_MAP)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_NORMAL_MAP)) {
 		// We need normal mapping for the full feature range
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of normal mapping.\n"));
 	}
-	if (!gr_is_capable(CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
+	if (!gr_is_capable(gr_capability::CAPABILITY_SEPARATE_BLEND_FUNCTIONS)) {
 		// We need separate blending functions for different color buffers
 		Decal_system_active = false;
 		mprintf(("Note: Decal system has been disabled due to lack of separate color buffer blend functions.\n"));
@@ -220,17 +220,17 @@ struct Decal {
 		vm_vec_make(&scale, 1.f, 1.f, 1.f);
 	}
 
-	bool isValid() {
-		if (!object.IsValid()) {
+	bool isValid() const {
+		if (!object.isValid()) {
 			return false;
 		}
-		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
+		if (object.objp()->flags[Object::Object_Flags::Should_be_dead]) {
 			return false;
 		}
 
-		if (orig_obj_type != object.objp->type) {
+		if (orig_obj_type != object.objp()->type) {
 			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
-			         OBJ_INDEX(object.objp), Object_type_names[orig_obj_type], Object_type_names[object.objp->type]));
+			         object.objnum, Object_type_names[orig_obj_type], Object_type_names[object.objp()->type]));
 			return false;
 		}
 
@@ -241,7 +241,7 @@ struct Decal {
 			}
 		}
 
-		auto objp = object.objp;
+		auto objp = object.objp();
 		if (objp->type == OBJ_SHIP) {
 			auto shipp = &Ships[objp->instance];
 			auto model_instance = model_get_instance(shipp->model_instance_num);
@@ -339,7 +339,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	}
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
-		dest_info.radius = util::parseUniformRange(0.0001f);
+		dest_info.radius = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 	}
 
 	if (required_string_if_new("+Lifetime:", is_new_entry)) {
@@ -347,7 +347,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 			dest_info.lifetime = util::UniformFloatRange(-1.0f);
 		} else {
 			// Require at least a small lifetime so that the calculations don't have to deal with div-by-zero
-			dest_info.lifetime = util::parseUniformRange(0.0001f);
+			dest_info.lifetime = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 		}
 	}
 
@@ -393,9 +393,9 @@ void initializeMission() {
 }
 
 matrix4 getDecalTransform(Decal& decal) {
-	Assertion(decal.object.objp->type == OBJ_SHIP, "Only ships are currently supported for decals!");
+	Assertion(decal.object.objp()->type == OBJ_SHIP, "Only ships are currently supported for decals!");
 
-	auto objp = decal.object.objp;
+	auto objp = decal.object.objp();
 	auto ship = &Ships[objp->instance];
 	auto pmi = model_get_instance(ship->model_instance_num);
 	auto pm = model_get(pmi->model_num);
@@ -501,7 +501,7 @@ void renderAll() {
 	draw_list.render();
 }
 
-void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
+void addDecal(creation_info& info, const object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
 	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}

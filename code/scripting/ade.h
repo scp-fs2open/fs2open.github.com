@@ -6,6 +6,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
+#include "globalincs/utility.h"
 
 #include "object/object.h"
 #include "scripting/ade_doc.h"
@@ -25,6 +26,8 @@ extern "C" {
  * These functions enable the code to communicate with external scripts and expose an API for them to use
  */
 
+// lua_tostring will return NULL if and only if it cannot convert to a string; nil values are converted to "nil"
+#define lua_tostring_nullsafe(L,i)	coalesce(lua_tostring(L,i), "<UNABLE TO CONVERT TO STRING>")
 
 namespace scripting {
 
@@ -221,6 +224,26 @@ const char* ade_get_type_string(lua_State* L, int argnum);
  * @ingroup ade_api
  */
 bool ade_is_internal_type(const char* typeName);
+
+template <typename T, typename = int>
+struct ade_is_valid : std::false_type
+{
+	static inline bool get(const T& /*t*/)
+	{
+		//Things without an isValid are always considered valid from this point of view.
+		return true;
+	}
+};
+
+template <typename T>
+struct ade_is_valid <T, decltype((void)(std::declval<T>().isValid()), 0)> : std::true_type
+{
+	static inline bool get(const T& t)
+	{
+		//Things with an isValid return that.
+		return t.isValid();
+	}
+};
 
 /**
  * @brief Converts an object index to something that can be used with ade_set_args.

@@ -130,6 +130,7 @@
 #include "network/multi_endgame.h"
 #include "network/multi_fstracker.h"
 #include "network/multi_ingame.h"
+#include "network/multi_interpolate.h"
 #include "network/multi_log.h"
 #include "network/multi_pause.h"
 #include "network/multi_pxo.h"
@@ -146,6 +147,7 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "observer/observer.h"
+#include "options/Ingame_Options.h"
 #include "options/Option.h"
 #include "options/OptionsManager.h"
 #include "osapi/osapi.h"
@@ -260,13 +262,14 @@ static SCP_string skill_level_display(int value)
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
                      .default_val(DEFAULT_SKILL_LEVEL)
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 bool Screenshake_enabled = true;
@@ -274,7 +277,7 @@ bool Screenshake_enabled = true;
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
-                     .category("Graphics")
+                     .category(std::make_pair("Graphics", 1825))
                      .default_val(Screenshake_enabled)
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
@@ -288,7 +291,7 @@ static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes",
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
-                     .category("Game")
+                     .category(std::make_pair("Game", 1824))
                      .default_val(Allow_unfocused_pause)
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
@@ -358,7 +361,7 @@ int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
 
-int Pre_player_entry;
+bool Pre_player_entry;
 
 int	Fred_running = 0;
 bool running_unittests = false;
@@ -659,16 +662,18 @@ DCF(sn_glare, "Sets the sun glare scale (Default is 1.7)")
 }
 
 float Supernova_last_glare = 0.0f;
-bool stars_sun_has_glare(int index);
+
 void game_sunspot_process(float frametime)
 {
 	TRACE_SCOPE(tracing::SunspotProcess);
-	int n_lights, idx;
 	float Sun_spot_goal = 0.0f;
+
+	int supernova_sun_idx = 0;
+	int supernova_light_idx = light_find_for_sun(supernova_sun_idx);
 
 	// supernova
 	auto sn_stage = supernova_stage();
-	if (sn_stage != SUPERNOVA_STAGE::NONE) {
+	if (sn_stage != SUPERNOVA_STAGE::NONE && supernova_light_idx >= 0) {
 		// sunspot differently based on supernova stage
 		switch (sn_stage) {
 		// this case is only here to make gcc happy - apparently it doesn't know we already checked for it
@@ -683,7 +688,7 @@ void game_sunspot_process(float frametime)
 			pct = supernova_sunspot_pct();
 
 			vec3d light_dir;				
-			light_get_global_dir(&light_dir, 0);
+			light_get_global_dir(&light_dir, supernova_light_idx);
 			float dot;
 			dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec );
 			
@@ -696,9 +701,9 @@ void game_sunspot_process(float frametime)
 			}
 
 			// draw the sun glow
-			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, 0 ) )	{
+			if ( !shipfx_eye_in_shadow( &Eye_position, Viewer_obj, supernova_light_idx ) )	{
 				// draw the glow for this sun
-				stars_draw_sun_glow(0);	
+				stars_draw_sun_glow(supernova_sun_idx);
 			}
 
 			Supernova_last_glare = Sun_spot_goal;
@@ -735,24 +740,27 @@ void game_sunspot_process(float frametime)
 		Sun_spot_goal = 0.0f;
 		if ( Sun_drew )	{
 			// check sunspots for all suns
-			n_lights = light_get_global_count();
+			int n_lights = light_get_global_count();
 
 			// check
-			for(idx=0; idx<n_lights; idx++)	{
-				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, idx);
+			for(int light_idx=0; light_idx<n_lights; light_idx++)	{
+				bool in_shadow = shipfx_eye_in_shadow(&Eye_position, Viewer_obj, light_idx);
 
 				if (!in_shadow) {
 					vec3d light_dir;				
-					light_get_global_dir(&light_dir, idx);
+					light_get_global_dir(&light_dir, light_idx);
 
-					//only do sunglare stuff if this sun has one
-					if (stars_sun_has_glare(idx))	{
+					//only do sunglare stuff if this light source has one
+					if (light_has_glare(light_idx))	{
 						float dot = vm_vec_dot( &light_dir, &Eye_matrix.vec.fvec )*0.5f+0.5f;
 						Sun_spot_goal += (float)pow(dot,85.0f);
 					}
 
 					// draw the glow for this sun
-					stars_draw_sun_glow(idx);				
+					int sun_idx = light_get_sun_index(light_idx);
+					if (sun_idx >= 0) {
+						stars_draw_sun_glow(sun_idx);
+					}
 				}
 			}
 
@@ -884,6 +892,7 @@ void game_level_close()
 		// De-Initialize the game subsystems
 		obj_delete_all();
 		obj_reset_colliders();
+		multi_interpolate_clear_all(); // object related
 		sexp_music_close();	// Goober5000
 		event_music_level_close();
 		game_stop_looped_sounds();
@@ -962,8 +971,7 @@ void game_level_close()
 	}
 }
 
-uint load_gl_init;
-uint load_mission_load;
+time_t load_gl_init;
 uint load_post_level_init;
 extern bool Cmdline_reuse_rng_seed;
 extern uint Cmdline_rng_seed;
@@ -975,7 +983,7 @@ extern uint Cmdline_rng_seed;
 void game_level_init()
 {
 	game_busy( NOX("** starting game_level_init() **") );
-	load_gl_init = (uint) time(nullptr);
+	load_gl_init = time(nullptr);
 
 	// seed the random number generator in multiplayer
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1000,6 +1008,7 @@ void game_level_init()
 	Game_shudder_time = TIMESTAMP::invalid();
 
 	Perspective_locked = false;
+	Slew_locked = false;
 
 	// reset the geometry map and distortion map batcher, this should to be done pretty soon in this mission load process (though it's not required)
 	batch_reset();
@@ -1048,7 +1057,7 @@ void game_level_init()
 	control_config_clear_used_status();
 	collide_ship_ship_sounds_init();
 
-	Pre_player_entry = 1;			//	Means the player has not yet entered.
+	Pre_player_entry = true;		//	Means the player has not yet entered.
 	Entry_delay_time = 0;			//	Could get overwritten in mission read.
 
 	observer_init();
@@ -1076,7 +1085,8 @@ void game_level_init()
 	// campaign wasn't ended
 	Campaign_ending_via_supernova = 0;
 
-	load_gl_init = (uint) (time(nullptr) - load_gl_init);
+	load_gl_init = (time(nullptr) - load_gl_init);
+	mprintf(("Game_level_init took %ld seconds\n", load_gl_init));
 
 	//WMC - Init multi players for level
 	if (Game_mode & GM_MULTIPLAYER && Player != nullptr) {
@@ -1269,6 +1279,13 @@ void game_loading_callback_close()
 	Game_loading_background = -1;
 
 	font::set_font(font::FONT1);
+
+	// Mission loading during multi doesn't always set a new state event
+	// so this hook will let Lua scripts know we've finished no matter what
+	// game type is currently being played.
+	if (scripting::hooks::OnLoadComplete->isActive()) {
+		scripting::hooks::OnLoadComplete->run();
+	}
 }
 
 /**
@@ -1431,9 +1448,7 @@ bool game_start_mission()
 	}
 
 	game_busy( NOX("** starting mission_load() **") );
-	load_mission_load = (uint) time(nullptr);
 	bool load_success = mission_load(Game_current_mission_filename);
-	load_mission_load = (uint)(time(nullptr) - load_mission_load);
 
 	// free up memory from parsing the mission
 	stop_parse();
@@ -1762,8 +1777,13 @@ void game_init()
 		Cmdline_freespace_no_music = 1;
 		Cmdline_NoFPSCap = 0;
 		Cmdline_load_all_weapons = 0;
-		Cmdline_enable_3d_shockwave = 0;
+
+		// Force some ingame options to off
 		Fireball_use_3d_warp = false;
+		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.WarpFlash", false);
+
+		Use_3D_shockwaves = false;
+		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.3DShockwaves", false);
 
 		// now init the standalone server code
 		std_init_standalone();
@@ -1857,6 +1877,7 @@ void game_init()
 #endif
 
 	font::init();					// loads up all fonts
+	font::checkFontOptions();
 	
 	// add title screen
 	game_title_screen_display();
@@ -1939,6 +1960,7 @@ void game_init()
 
 	player_controls_init();
 	model_init();	
+	virtual_pof_init();
 
 	event_music_init();
 
@@ -1958,7 +1980,6 @@ void game_init()
 	sexp_startup();
 
 	obj_init();	
-	virtual_pof_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();
@@ -2541,7 +2562,7 @@ void game_set_view_clip(float  /*frametime*/)
 
 extern int Tool_enabled;
 int tst = 0;
-int tst_time = 0;
+time_t tst_time = 0;
 int tst_big = 0;
 vec3d tst_pos;
 int tst_bitmap = -1;
@@ -2596,7 +2617,7 @@ void game_tst_frame()
 	
 	// setup tst
 	if(tst == 2){		
-		tst_time = (int) time(nullptr);
+		tst_time = time(nullptr);
 
 		// load the tst bitmap		
 		switch(Random::next(4)){
@@ -2696,7 +2717,7 @@ void game_tst_frame()
 		}
 	}
 }
-void game_tst_mark(object *objp, ship *shipp)
+void game_tst_mark(const object *objp, const ship *shipp)
 {
 	ship_info *sip;	
 
@@ -2986,11 +3007,7 @@ bool is_screenshake_enabled()
 	if (Game_mode & GM_MULTIPLAYER) {
 		return true;
 	} else {
-		if (Using_in_game_options) {
-			return Screenshake_enabled;
-		} else {
-			return !Cmdline_no_screenshake;
-		}
+		return ScreenShakeOption->getValue();
 	}
 }
 
@@ -3408,7 +3425,6 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 	g3_start_frame(game_zbuffer);
 
 	camera *cam = cid.getCamera();
-	matrix eye_no_jitter = vmd_identity_matrix;
 
 	if(cam != nullptr)
 	{
@@ -3429,10 +3445,13 @@ void game_render_frame( camid cid, const vec3d* offset, const matrix* rot_offset
 		}
 
 		//Handle jitter if not cutscene camera
-		eye_no_jitter = eye_orient;
 		if( !(Viewer_mode & VM_FREECAMERA) ) {
 			apply_view_shake(&eye_orient);
-			cam->set_rotation(&eye_orient);
+			cam->set_rotation(&eye_orient);		// this was added in 57fbb21c; see Mantis 1743; needed to make the target indicator shake
+		}
+		//If cutscene camera, handle jitter differently
+		else if ( Game_shudder_everywhere ) {
+			apply_view_shake(&eye_orient);		// the camera rotation shouldn't be modified for cutscenes or it will produce feedback
 		}
 
 		//Maybe override FOV from SEXP
@@ -3836,15 +3855,12 @@ void game_maybe_do_dead_popup(float frametime)
 }
 
 // returns true if player is actually in a game_play stats
-int game_actually_playing()
+bool game_actually_playing()
 {
 	int state;
 
 	state = gameseq_get_state();
-	if ( (state != GS_STATE_GAME_PLAY) && (state != GS_STATE_DEATH_DIED) && (state != GS_STATE_DEATH_BLEW_UP) )
-		return 0;
-	else
-		return 1;
+	return (state == GS_STATE_GAME_PLAY) || (state == GS_STATE_DEATH_DIED) || (state == GS_STATE_DEATH_BLEW_UP);
 }
 
 void game_render_hud(camid cid, const fov_t* fov_override = nullptr)
@@ -4069,6 +4085,7 @@ void game_do_full_frame(DEBUG_TIMER_SIG const vec3d* offset = nullptr, const mat
 	{
 		TRACE_SCOPE(tracing::RenderHUDHook);
 
+		// see also hu.isOnHudDrawCalled()
 		if (scripting::hooks::OnHudDraw->isActive()) {
 			if (fov_override)
 				g3_set_fov(*fov_override);
@@ -4138,7 +4155,6 @@ void game_frame(bool paused)
 	fix flip_time1=0, flip_time2=0;
 	fix clear_time1=0, clear_time2=0;
 #endif
-	int actually_playing;
 
 #ifndef NDEBUG
 	if (Framerate_delay) {
@@ -4165,7 +4181,7 @@ void game_frame(bool paused)
 	else
 	{
 		// var to hold which state we are in
-		actually_playing = game_actually_playing();
+		bool actually_playing = game_actually_playing();
 
 		if ((!(Game_mode & GM_MULTIPLAYER)) || ((Game_mode & GM_MULTIPLAYER) && !(Net_player->flags & NETINFO_FLAG_OBSERVER))) {
 			if (!(Game_mode & GM_STANDALONE_SERVER)){
@@ -4174,7 +4190,7 @@ void game_frame(bool paused)
 		}
 	
 		if (Pre_player_entry && Missiontime > Entry_delay_time) {
-			Pre_player_entry = 0;
+			Pre_player_entry = false;
 			event_music_set_start_delay();
 		}
 
@@ -5155,6 +5171,10 @@ void game_process_event( int current_state, int event )
 			gameseq_push_state(GS_STATE_SCRIPTING_MISSION);
 			break;
 
+		case GS_EVENT_INGAME_OPTIONS:
+			gameseq_push_state(GS_STATE_INGAME_OPTIONS);
+			break;
+
 		default:
 			Error(LOCATION, "FSO does not have a valid game state to set. It tried to set %d", event);
 			break;
@@ -5222,6 +5242,7 @@ void game_leave_state( int old_state, int new_state )
 		case GS_STATE_GAMEPLAY_HELP:
 		case GS_STATE_LAB:
 		case GS_STATE_SCRIPTING_MISSION:
+		case GS_STATE_INGAME_OPTIONS:
 			end_mission = 0;  // these events shouldn't end a mission
 			break;
 	}
@@ -5667,6 +5688,10 @@ void game_leave_state( int old_state, int new_state )
 				}
 			}
 			scripting_state_close();
+			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_close();
 			break;
 	}
 
@@ -6237,6 +6262,9 @@ void mouse_force_pos(int x, int y);
 		case GS_STATE_SCRIPTING_MISSION:
 			scripting_state_init();
 			break;
+
+		case GS_STATE_INGAME_OPTIONS:
+			ingame_options_init();
 	} // end switch
 
 	//WMC - now do user scripting stuff
@@ -6584,6 +6612,10 @@ void game_do_state(int state)
 			scripting_state_do_frame(flFrametime, false);
 			break;
 
+		case GS_STATE_INGAME_OPTIONS:
+			game_set_frametime(GS_STATE_INGAME_OPTIONS);
+			ingame_options_do_frame();
+
    } // end switch(gs_current_state)
 
 	if (LoggingEnabled && Cmdline_debug_window) {
@@ -6816,11 +6848,13 @@ int game_main(int argc, char *argv[])
 		output_sexps("sexps.html");
 	}
 
+	bool skip_intro = false;
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
+		skip_intro = scripting::hooks::OnIntroAboutToPlay->isOverride();
 		scripting::hooks::OnIntroAboutToPlay->run();
 	}
 
-	if (!Is_standalone) {
+	if (!Is_standalone && !skip_intro) {
 		movie::play("intro.mve");
 	}
 
@@ -7010,7 +7044,7 @@ void game_do_training_checks()
 	}
 
 	if (Training_context & TRAINING_CONTEXT_FLY_PATH) {
-		wplp = Training_context_path;
+		wplp = find_waypoint_list_at_index(Training_context_waypoint_path);
 		if (wplp->get_waypoints().size() > (uint) Training_context_goal_waypoint) {
 			i = Training_context_goal_waypoint;
 			do {

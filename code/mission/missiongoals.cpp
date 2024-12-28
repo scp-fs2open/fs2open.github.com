@@ -1406,8 +1406,10 @@ void mission_goal_mark_all_true(int type)
 	int i;
 
 	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
-		if ( (Mission_goals[i].type & GOAL_TYPE_MASK) == type )
+		if ( (Mission_goals[i].type & GOAL_TYPE_MASK) == type ) {
 			Mission_goals[i].satisfied = GOAL_COMPLETE;
+			mission_log_add_entry(LOG_GOAL_SATISFIED, Mission_goals[i].name.c_str(), nullptr, i);
+		}
 	}
 
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("All %s goals marked true"), Goal_type_text(type) );

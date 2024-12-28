@@ -1,4 +1,5 @@
 #include "techroom.h"
+#include "pilotfile/pilotfile.h"
 
 namespace scripting {
 namespace api {
@@ -6,7 +7,7 @@ namespace api {
 sim_mission_h::sim_mission_h() : missionIdx(-1), isCMission(false) {}
 sim_mission_h::sim_mission_h(int index, bool cmission) : missionIdx(index), isCMission(cmission) {}
 
-bool sim_mission_h::IsValid() const
+bool sim_mission_h::isValid() const
 {
 	return missionIdx >= 0;
 }
@@ -22,7 +23,7 @@ sim_mission* sim_mission_h::getStage() const
 cutscene_info_h::cutscene_info_h() : cutscene(-1) {}
 cutscene_info_h::cutscene_info_h(int scene) : cutscene(scene) {}
 
-bool cutscene_info_h::IsValid() const
+bool cutscene_info_h::isValid() const
 {
 	return SCP_vector_inbounds(Cutscenes, cutscene);
 }
@@ -166,18 +167,20 @@ ADE_VIRTVAR(Description, l_TechRoomCutscene, nullptr, "The cutscene description"
 
 ADE_VIRTVAR(isVisible,
 	l_TechRoomCutscene,
-	nullptr,
+	"boolean",
 	"If the cutscene should be visible by default",
 	"boolean",
 	"true if visible, false if not visible")
 {
 	cutscene_info_h current;
-	if (!ade_get_args(L, "o", l_TechRoomCutscene.Get(&current))) {
+	bool visible;
+	if (!ade_get_args(L, "o|b", l_TechRoomCutscene.Get(&current), &visible)) {
 		return ADE_RETURN_NIL;
 	}
 
 	if (ADE_SETTING_VAR) {
-		LuaError(L, "This property is read only.");
+		current.getScene()->flags.set(Cutscene::Cutscene_Flags::Viewable, visible);
+		Pilot.save_savefile();
 	}
 	if (current.getScene()->flags[Cutscene::Cutscene_Flags::Viewable, Cutscene::Cutscene_Flags::Always_viewable] &&
 		!current.getScene()->flags[Cutscene::Cutscene_Flags::Never_viewable]) 
@@ -228,7 +231,7 @@ ADE_FUNC(isValid, l_TechRoomCutscene, NULL, "Detects whether cutscene is valid",
 		return ADE_RETURN_NIL;
 	}
 
-	return ade_set_args(L, "b", current.IsValid());
+	return ade_set_args(L, "b", current.isValid());
 }
 
 } // namespace api

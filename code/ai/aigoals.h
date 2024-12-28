@@ -119,7 +119,7 @@ typedef struct ai_goal {
 
 	const char *target_name;	// name of the thing that this goal acts upon
 	int		target_name_index;	// index of goal_target_name in Goal_target_names[][]
-	waypoint_list *wp_list;		// waypoints that this ship might fly.
+	int wp_list_index;			// waypoints that this ship might fly.
 	int target_instance;		// instance of thing this ship might be chasing (currently only used for weapons; note, not the same as objnum!)
 	int	target_signature;		// signature of object this ship might be chasing (currently only used for weapons; paired with above value to confirm target)
 
@@ -147,7 +147,7 @@ typedef struct ai_goal {
 extern void ai_goal_reset(ai_goal *aigp, bool adding_goal = false, int ai_mode = AI_GOAL_NONE, int ai_submode = -1, int type = -1);
 
 
-typedef flag_def_list ai_goal_list;
+typedef flag_def_list_templated<int> ai_goal_list;
 
 extern ai_goal_list Ai_goal_names[];
 extern int Num_ai_goals;
@@ -173,7 +173,7 @@ extern void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip );
 extern void ai_add_wing_goal_sexp( int sexp, int type, wing *wingp );
 extern void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name);
 
-extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp );
+extern int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more );
 extern void ai_remove_wing_goal_sexp( int sexp, wing *wingp );
 
 // adds goals to ships/sings through player orders

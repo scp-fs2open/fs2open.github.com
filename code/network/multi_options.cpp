@@ -54,11 +54,12 @@ bool Multi_cfg_missing = true;
 auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 									std::pair<const char*, int>{"PXO", 1383},
 									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
-									.category("Multi")
+									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
 									.default_val(true)
 									.bind_to(&Multi_options_g.pxo)
 									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
 									.finish();
 
 // These next few options are a little messy because the values are stored in the player file
@@ -90,12 +91,13 @@ static bool local_broadcast_change(bool val, bool initial)
 auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBroadcast",
 									std::pair<const char*, int>{"Broadcast Locally", 1387},
 									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
-									.category("Multi")
+									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
 									.default_val(false)
                                     .bind_to(&BroadcastGamesLocally)
 									.change_listener(local_broadcast_change)
 									.importance(10)
+									.flags({options::OptionFlags::RetailBuiltinOption})
 									.finish();
 
 static bool AlwaysFlushCache = false;
@@ -120,9 +122,9 @@ static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", 1
 auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache",
 									std::pair<const char*, int>{"Flush Cache", 1399},
 									std::pair<const char*, int>{"Whether or not flush the multidata cache before games", 1810})
-									.category("Multi")
+									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
-                                    .flags({options::OptionFlags::ForceMultiValueSelection})
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
                                     .display(flush_cache_display) 
 									.default_val(false)
                                     .bind_to(&AlwaysFlushCache)
@@ -152,9 +154,9 @@ static SCP_string transfer_missions_display(bool mode) { return mode ? XSTR("/mu
 auto TransferMissionsOption __UNUSED = options::OptionBuilder<bool>("Multi.TransferMissions",
 									std::pair<const char*, int>{"Transfer Missions", 1396},
 									std::pair<const char*, int>{"What appdata folder to save missions to", 1811})
-									.category("Multi")
+									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
-                                    .flags({options::OptionFlags::ForceMultiValueSelection})
+                                    .flags({options::OptionFlags::ForceMultiValueSelection, options::OptionFlags::RetailBuiltinOption})
                                     .display(transfer_missions_display) 
 									.default_val(false)
                                     .bind_to(&CacheMissionsToMultidata)
@@ -456,13 +458,8 @@ void multi_options_set_local_defaults(multi_local_options *options)
 	// accept pix by default and broadcast on the local subnet
 	options->flags = (MLO_FLAG_ACCEPT_PIX | MLO_FLAG_LOCAL_BROADCAST);	
 
-	// set the object update level based on the type of network connection specified by the user
-	// at install (or launcher) time.
-	if ( Psnet_connection == NETWORK_CONNECTION_DIALUP ) {
-		options->obj_update_level = OBJ_UPDATE_LOW;
-	} else {
-		options->obj_update_level = Default_multi_object_update_level;
-	}
+	// set the object update level based on the type of network connection specified by the mod
+	options->obj_update_level = Default_multi_object_update_level;
 }
 
 // fill in the passed netgame options struct with the data from my player file data (only host/server should do this)

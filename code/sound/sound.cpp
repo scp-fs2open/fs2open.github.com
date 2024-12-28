@@ -65,11 +65,12 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Effects",
                      std::pair<const char*, int>{"Effects", 1370},
                      std::pair<const char*, int>{"Volume used for playing in-game effects", 1734})
-                     .category("Audio")
+                     .category(std::make_pair("Audio", 1826))
                      .default_val(Default_sound_volume)
                      .range(0.0f, 1.0f)
                      .change_listener(effects_volume_change_listener)
                      .importance(2)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
@@ -87,11 +88,12 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Voice",
                      std::pair<const char*, int>{"Voice", 1372},
                      std::pair<const char*, int>{"Volume used for playing voice audio", 1735})
-                     .category("Audio")
+                     .category(std::make_pair("Audio", 1826))
                      .default_val(Default_voice_volume)
                      .range(0.0f, 1.0f)
                      .change_listener(voice_volume_change_listener)
                      .importance(0)
+                     .flags({options::OptionFlags::RetailBuiltinOption})
                      .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;
@@ -129,7 +131,7 @@ struct aav {
 aav aav_data[3];
 
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
-#define	MIN_SOUND_VOLUME				0.05f
+#define	MIN_SOUND_VOLUME				0.005f
 
 static int snd_next_sig	= 1;
 
@@ -320,11 +322,14 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 	if (!ds_initialized)
 		return sound_load_id::invalid();
 
-	if (!VALID_FNAME(entry->filename))
-		return sound_load_id::invalid();
-
 	if (flags && *flags & GAME_SND_NOT_VALID)
 		return sound_load_id::invalid();
+
+	if (!VALID_FNAME(entry->filename)) {
+		if (flags)
+			*flags |= GAME_SND_NOT_VALID;
+		return sound_load_id::invalid();
+	}
 
 	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
@@ -336,6 +341,12 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
 			if ( (Sounds[n].info.n_channels == 1) || !(flags && *flags & GAME_SND_USE_DS3D) ) {
+				// Check we need to populate the signature here, as modders may desire to use 
+				// a sound file more than once in their tables.
+				if (entry->id_sig == -1) {
+					entry->id_sig = Sounds[n].sig;
+				}
+
 				return sound_load_id(static_cast<int>(n));
 			}
 		}
@@ -1071,7 +1082,7 @@ void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 	//looping sound volumes are updated in snd_do_frame
 	if(!isLoopingSound) {
 		if (is_voice) {
-			new_volume = volume * (Master_voice_volume * aav_effect_volume);
+			new_volume = volume * (Master_voice_volume * aav_voice_volume);
 		} else {
 			new_volume = volume * (Master_sound_volume * aav_effect_volume);
 		}
@@ -1280,8 +1291,7 @@ void snd_rewind(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
-
-	snd = &Sounds[ds_get_sound_id(channel)].info;
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
 	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
@@ -1309,10 +1319,9 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
-	snd = &Sounds[ds_get_sound_id(channel)].info;
-
-	current_offset = ds_get_play_position(ds_get_channel(snd_handle));	// current offset into the sound
+	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
 	current_time = (float)current_offset/bps;										// how many seconds we're into the sound
 
@@ -1323,35 +1332,32 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 	desired_time = current_time + seconds;											// where we want to be
 	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
-	ds_set_position(ds_get_channel(snd_handle),desired_offset);
+	ds_set_position(channel,desired_offset);
 }
 
 // this could probably be optimized a bit
 void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 {
-	sound_info *snd;
-
 	if(!snd_is_playing(snd_handle))
 		return;
 
-	auto channel = ds_get_channel(snd_handle);
+	auto id_handle = snd_get_sound_id(snd_handle);
 
-	int idx = ds_get_sound_index(channel);
-	Assertion(SCP_vector_inbounds(Sounds, idx), "Attempt to get a sound that is not loaded, please report!");
+	Assertion(SCP_vector_inbounds(Sounds, id_handle.value()), "Attempt to get a sound %i that is not loaded, please report!", id_handle.value());
 
-	snd = &Sounds[idx].info;
+	const auto& snd = Sounds[id_handle.value()].info;
 
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)((float)snd->size * val));
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>((static_cast<float>(snd.size) * val)));
 	} 
 	// set the position as an absolute # of seconds from the beginning of the sound
 	else {
 		float bps;
-		Assert(val <= (float)snd->duration/1000.0f);
-		bps = (float)snd->sample_rate * (float)snd->bits;							// data rate			
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)(bps * val));
+		Assert(val <= static_cast<float>(snd.duration) / 1000.0f);
+		bps = static_cast<float>(snd.sample_rate) * static_cast<float>(snd.bits);							// data rate			
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>(bps * val));
 	}
 }
 

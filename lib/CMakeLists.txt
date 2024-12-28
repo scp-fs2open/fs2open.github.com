@@ -15,7 +15,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_subdirectory(opengl)
 endif()
 
-ADD_SUBDIRECTORY(libsdl)
+include(SDL2.cmake)
 
 ADD_SUBDIRECTORY(jansson)
 # These are only required for the web-ui which is non-Windows
@@ -33,7 +33,9 @@ if (FSO_BUILD_WITH_FFMPEG)
 	include(FFmpeg.cmake)
 endif()
 
-add_subdirectory(discord)
+if (FSO_BUILD_WITH_DISCORD)
+	add_subdirectory(discord)
+endif()
 
 include(libRocket.cmake)
 
@@ -61,6 +63,6 @@ add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
 
-if(NOT APPLE)
+if(FSO_BUILD_WITH_OPENXR)
 	add_subdirectory(openxr)
 endif()

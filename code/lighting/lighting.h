@@ -47,10 +47,15 @@ typedef struct light {
 	float	r,g,b;							// The color components of the light
 	float	cone_angle;						// angle for cone lights
 	float	cone_inner_angle;				// the inner angle for calculating falloff
-	bool	dual_cone;						// should the cone be shining in both directions?
+	int		flags;							// see below
+	int		sun_index;						// if this light corresponds to a sun
 	float source_radius;					// The actual size of the object or volume emitting the light
 	int instance;
 } light;
+
+#define LF_DUAL_CONE	(1<<0)		// should the cone be shining in both directions?
+#define LF_NO_GLARE		(1<<1)		// for example, a sun with $NoGlare
+#define LF_DEFAULT		0			// no flags by default
 
 extern SCP_vector<light> Static_light;
 
@@ -91,8 +96,8 @@ extern void light_reset();
 
 //Intensity in lighting inputs multiplies the base colors.
 
-extern void light_add_directional(const vec3d *dir, const hdr_color *new_color, const float source_radius = 0.0f );
-extern void light_add_directional(const vec3d *dir, float intensity, float r, float g, float b, const float source_radius = 0.0f);
+extern void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, const hdr_color *new_color, const float source_radius = 0.0f );
+extern void light_add_directional(const vec3d *dir, int sun_index, bool no_glare, float intensity, float r, float g, float b, const float source_radius = 0.0f);
 extern void light_add_point(const vec3d * pos, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
 extern void light_add_point(const vec3d * pos, float r1, float r2, float intensity, float r, float g, float b, const float source_radius = 0.0f);
 extern void light_add_tube(const vec3d *p0, const vec3d *p1, float r1, float r2, const hdr_color *new_color, const float source_radius = 0.0f);
@@ -110,8 +115,13 @@ void light_apply_rgb( ubyte *param_r, ubyte *param_g, ubyte *param_b, const vec3
 extern int light_get_global_count();
 
 // Fills direction of global light source N in pos.
-// Returns 0 if there is no global light.
-extern int light_get_global_dir(vec3d *pos, int n);
+// Returns false if there is no global light.
+extern bool light_get_global_dir(vec3d *pos, int n);
+
+extern bool light_has_glare(int n);
+
+extern int light_get_sun_index(int n);
+extern int light_find_for_sun(int sun_index);
 
 bool light_compare_by_type(const light &a, const light &b);
 

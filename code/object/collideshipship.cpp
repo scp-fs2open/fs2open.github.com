@@ -20,11 +20,13 @@
 #include "io/joy_ff.h"
 #include "io/timer.h"
 #include "network/multi.h"
+#include "network/multi_interpolate.h"
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "object/objectshield.h"
 #include "scripting/global_hooks.h"
+#include "scripting/api/objs/model.h"
 #include "playerman/player.h"
 #include "render/3d.h"			// needed for View_position, which is used when playing 3d sound
 #include "ship/ship.h"
@@ -462,7 +464,7 @@ static bool check_subsystem_landing_allowed(ship_info *heavy_sip, collision_info
 
 	for (int i = 0; i < heavy_sip->n_subsystems; i++) {
 		if (heavy_sip->subsystems[i].flags[Model::Subsystem_Flags::Allow_landing] &&
-			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->submodel_num) 
+			heavy_sip->subsystems[i].subobj_num == ship_ship_hit_info->heavy_submodel_num)
 		{
 			return true;
 		}
@@ -581,7 +583,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 			model_instance_num = Ships[heavy->instance].model_instance_num;
 			pmi = model_get_instance(model_instance_num);
 		} else if (heavy->type == OBJ_ASTEROID) {
-			pm = Asteroid_info[Asteroids[heavy->instance].asteroid_type].modelp[Asteroids[heavy->instance].asteroid_subtype];
+			pm = model_get(Asteroid_info[Asteroids[heavy->instance].asteroid_type].subtypes[Asteroids[heavy->instance].asteroid_subtype].model_number);
 			model_instance_num = Asteroids[heavy->instance].model_instance_num;
 			pmi = model_get_instance(model_instance_num);
 		} else if (heavy->type == OBJ_DEBRIS) {
@@ -593,11 +595,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		}
 		
 		//Previously, a side effect of moving submodel collision excluded turrets from imparting momentum to colliders
-		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
+		if ( pmi != nullptr && pm->submodel[ship_ship_hit_info->heavy_submodel_num].rotation_type != MOVEMENT_TYPE_TURRET) {
 			//Find the global movement of the position that hit the ship
 			vec3d last_frame_col_pos, col_pos;
-			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos, true);
-			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->submodel_num, &heavy->orient, &heavy->pos);
+			model_instance_local_to_global_point(&last_frame_col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->heavy_submodel_num, &heavy->orient, &heavy->pos, true);
+			model_instance_local_to_global_point(&col_pos, &ship_ship_hit_info->hit_pos, pm, pmi, ship_ship_hit_info->heavy_submodel_num, &heavy->orient, &heavy->pos);
 
 			//Calculate the movement speed from that
 			vm_vec_sub(&local_vel_from_submodel, &col_pos, &last_frame_col_pos);
@@ -687,47 +689,45 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
+	vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
+	get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
+	vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
+	float rotation_factor_heavy = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
 	if (heavy == Player_obj) {
-		vm_vec_zero( &delta_rotvel_heavy );
-		heavy_denom = 1.0f / heavy->phys_info.mass;
-	} else {
-		vm_vec_cross(&rotational_impulse_heavy, &ship_ship_hit_info->r_heavy, &impulse);
-		get_I_inv(&heavy_I_inv, &heavy->phys_info.I_body_inv, &heavy->orient);
-		vm_vec_rotate(&delta_rotvel_heavy, &rotational_impulse_heavy, &heavy_I_inv);
-		float rotation_factor = (heavy->type == OBJ_SHIP) ? heavy_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
-		vm_vec_scale(&delta_rotvel_heavy, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
-		heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
-		if (heavy_denom < 0) {
-			// sanity check
-			heavy_denom = 0.0f;
-		}
-		heavy_denom += 1.0f / heavy->phys_info.mass;
-	} 
+		rotation_factor_heavy *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+	}
+	vm_vec_scale(&delta_rotvel_heavy, rotation_factor_heavy); // hack decrease rotation (delta_rotvel)
+	vm_vec_cross(&delta_vel_from_delta_rotvel_heavy, &delta_rotvel_heavy , &ship_ship_hit_info->r_heavy);
+	heavy_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_heavy, &ship_ship_hit_info->collision_normal);
+	if (heavy_denom < 0) {
+		// sanity check
+		heavy_denom = 0.0f;
+	}
+	heavy_denom += 1.0f / heavy->phys_info.mass;
 
 	// calculate the effect on the velocity of the collison point per unit impulse
 	// first find the effect thru change in rotvel
 	// then find the change in the cm vel
-	// SUSHI: If on a landing surface, use the same shortcut the player gets
-	// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
-	// when trying to do AI landings for certain ships
-	if (lighter == Player_obj || subsys_landing_allowed) {
-		vm_vec_zero( &delta_rotvel_light );
-		light_denom = 1.0f / lighter->phys_info.mass;
-	} else {
-		vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
-		get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
-		vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
-		float rotation_factor = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
-		vm_vec_scale(&delta_rotvel_light, rotation_factor);		// hack decrease rotation (delta_rotvel)
-		vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
-		light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
-		if (light_denom < 0) {
-			// sanity check
-			light_denom = 0.0f;
-		}
-		light_denom += 1.0f / lighter->phys_info.mass;
-	} 
+	vm_vec_cross(&rotational_impulse_light, &ship_ship_hit_info->r_light, &impulse);
+	get_I_inv(&light_I_inv, &lighter->phys_info.I_body_inv, &lighter->orient);
+	vm_vec_rotate(&delta_rotvel_light, &rotational_impulse_light, &light_I_inv);
+	float rotation_factor_light = (lighter->type == OBJ_SHIP) ? light_sip->collision_physics.rotation_factor : COLLISION_ROTATION_FACTOR;
+	if (subsys_landing_allowed) {
+		// SUSHI: If on a landing surface, use the same shortcut the player gets
+		// This is a bit of a hack, but gets around some nasty unpredictable collision behavior
+		// when trying to do AI landings for certain ships
+		rotation_factor_light *= 0.0f;
+	} else if (lighter == Player_obj) {
+		rotation_factor_light *= The_mission.ai_profile->rot_fac_multiplier_ply_collisions;
+	}
+	vm_vec_scale(&delta_rotvel_light, rotation_factor_light); // hack decrease rotation (delta_rotvel)
+	vm_vec_cross(&delta_vel_from_delta_rotvel_light, &delta_rotvel_light, &ship_ship_hit_info->r_light);
+	light_denom = vm_vec_dot(&delta_vel_from_delta_rotvel_light, &ship_ship_hit_info->collision_normal);
+	if (light_denom < 0) {
+		// sanity check
+		light_denom = 0.0f;
+	}
+	light_denom += 1.0f / lighter->phys_info.mass;
 
 	// calculate the necessary impulse to achieved the desired relative velocity after the collision
 	// update damage info in mc
@@ -787,7 +787,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// We will try not to worry about the left over time in the frame
 	// heavy's position unchanged by collision
 	// light's position is heavy's position plus relative position from heavy
-	if (should_collide && !lighter->flags[Object::Object_Flags::Immobile]){
+	if (should_collide && !lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]){
 		vm_vec_add(&lighter->pos, &heavy->pos, &ship_ship_hit_info->light_collision_cm_pos);
 	}
 
@@ -799,7 +799,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 
 	if (should_collide){
 
-		if (!heavy->flags[Object::Object_Flags::Immobile]) {
+		if (!heavy->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
 			Assert(!vm_is_vec_nan(&direction_light));
 			vm_vec_scale_add2(&heavy->pos, &direction_light, 0.2f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 			vm_vec_scale_add2(&heavy->pos, &ship_ship_hit_info->collision_normal, -0.1f * lighter->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
@@ -819,7 +819,7 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (ship_ship_hit_info->is_landing) {
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal, LANDING_POS_OFFSET);
 	}
-	else if (!lighter->flags[Object::Object_Flags::Immobile]) {
+	else if (!lighter->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile]) {
 		vm_vec_scale_add2(&lighter->pos, &direction_light, -0.2f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 		vm_vec_scale_add2(&lighter->pos, &ship_ship_hit_info->collision_normal,  0.1f * heavy->phys_info.mass / (heavy->phys_info.mass + lighter->phys_info.mass));
 	}
@@ -1185,8 +1185,6 @@ int collide_ship_ship( obj_pair * pair )
 		ship_ship_hit_info.heavy = HeavyOne;		// heavy object, generally slower moving
 		ship_ship_hit_info.light = LightOne;		// light object, generally faster moving
 
-		vec3d world_hit_pos;
-
 		hit = ship_ship_check_collision(&ship_ship_hit_info);
 
 		pair->next_check_time = timestamp(0);
@@ -1195,21 +1193,33 @@ int collide_ship_ship( obj_pair * pair )
 		{
 			bool a_override = false, b_override = false;
 
+			// get world hitpos - do it here in case the override hooks need it
+			vec3d world_hit_pos;
+			vm_vec_add(&world_hit_pos, &ship_ship_hit_info.heavy->pos, &ship_ship_hit_info.hit_pos);
+
+			// get submodel handle if scripting needs it
+			bool has_submodel = (ship_ship_hit_info.heavy_submodel_num >= 0);
+			scripting::api::submodel_h smh(ship_ship_hit_info.heavy_model_num, ship_ship_hit_info.heavy_submodel_num);
+
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+				a_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 						scripting::hook_param("Object", 'o', B),
 						scripting::hook_param("Ship", 'o', A),
 						scripting::hook_param("ShipB", 'o', B),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+						scripting::hook_param("Hitpos", 'o', world_hit_pos),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A)),
+						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 
 				// Yes, this should be reversed.
-				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{{A, B}},
+				b_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 						scripting::hook_param("Object", 'o', A),
 						scripting::hook_param("Ship", 'o', B),
 						scripting::hook_param("ShipB", 'o', A),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+						scripting::hook_param("Hitpos", 'o', world_hit_pos),
+						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B)),
+						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 			}
 
 			if(!a_override && !b_override)
@@ -1244,9 +1254,6 @@ int collide_ship_ship( obj_pair * pair )
 					vm_vec_copy_normalize(&ship_ship_hit_info.collision_normal, &ship_ship_hit_info.r_light);
 					vm_vec_negate(&ship_ship_hit_info.collision_normal);
 				}
-
-				// get world hitpos
-				vm_vec_add(&world_hit_pos, &heavy_obj->pos, &ship_ship_hit_info.r_heavy);
 
 				// do physics
 				calculate_ship_ship_collision_physics(&ship_ship_hit_info);
@@ -1391,8 +1398,10 @@ int collide_ship_ship( obj_pair * pair )
 									if ((LightOne == &Objects[current_player.m_player->objnum]) || (HeavyOne == &Objects[current_player.m_player->objnum])) {
 										// finally if the host is also a player, ignore making these adjustments for him because he is in a pure simulation.
 										if (&Ships[Objects[current_player.m_player->objnum].instance] != Player_ship) {
+											Assertion(Interp_info.find(current_player.m_player->objnum) != Interp_info.end(), "Somehow the collision code thinks there is not a player ship interp record in multi when there really *should* be.  This is a coder mistake, please report!");
+
 											// temp set this as an uninterpolated ship, to make the collision look more natural until the next update comes in.
-											Objects[current_player.m_player->objnum].interp_info.force_interpolation_mode();
+											Interp_info[current_player.m_player->objnum].force_interpolation_mode();
 
 											// check to see if it has been long enough since the last collision, if not, negate the damage
 											if (!timestamp_elapsed(current_player.s_info.player_collision_timestamp)) {
@@ -1436,7 +1445,7 @@ int collide_ship_ship( obj_pair * pair )
 
 					float damage_heavy = (100.0f * damage / HeavyOne->phys_info.mass);
 					ship_apply_local_damage(ship_ship_hit_info.heavy, ship_ship_hit_info.light, &world_hit_pos, damage_heavy, light_shipp->collision_damage_type_idx, 
-						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.submodel_num, &ship_ship_hit_info.collision_normal);
+						quadrant_num, CREATE_SPARKS, ship_ship_hit_info.heavy_submodel_num, &ship_ship_hit_info.collision_normal);
 
 					hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
@@ -1457,22 +1466,26 @@ int collide_ship_ship( obj_pair * pair )
 
 			if(!(b_override && !a_override))
 			{
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
 														   scripting::hook_param("Object", 'o', B),
 														   scripting::hook_param("Ship", 'o', A),
 														   scripting::hook_param("ShipB", 'o', B),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A)),
+														   scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
 			}
 			if((b_override && !a_override) || (!b_override && !a_override))
 			{
 				// Yes, this should be reversed.
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{A, B}}, 
+				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
 														   scripting::hook_param("Object", 'o', A),
 														   scripting::hook_param("Ship", 'o', B),
 														   scripting::hook_param("ShipB", 'o', A),
-														   scripting::hook_param("Hitpos", 'o', world_hit_pos)));
+														   scripting::hook_param("Hitpos", 'o', world_hit_pos),
+														   scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B)),
+														   scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
 			}
 
 			return 0;

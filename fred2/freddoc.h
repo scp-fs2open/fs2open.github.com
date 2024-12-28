@@ -10,7 +10,8 @@
  */
 #include "MissionSave.h"
 
-#define MISSION_BACKUP_NAME "Backup"
+#define MISSION_BACKUP_NAME     "Backup"
+#define MISSION_BACKUP_DEPTH    9
 
 #define US_WORLD_CHANGED    0x01
 #define US_VIEW_CHANGED     0x02
@@ -145,7 +146,7 @@ public:
 	virtual void Dump(CDumpContext &dc) const;
 #endif
 
-	CString undo_desc[BACKUP_DEPTH + 1];    //!< String array of the undo descriptions
+	CString undo_desc[MISSION_BACKUP_DEPTH + 1];    //!< String array of the undo descriptions
 
 protected:
 	/**

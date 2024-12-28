@@ -184,6 +184,14 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Max Beam Friendly Fire Damage:"))
 					parse_float_list(profile->beam_friendly_damage_cap, NUM_SKILL_LEVELS);
 
+				if (optional_string("$Max Weapon Friendly Fire Damage:")) {
+					parse_float_list(profile->weapon_friendly_damage_cap, NUM_SKILL_LEVELS);
+				}
+					
+				if (optional_string("$Max Weapon Self Damage:")) {
+					parse_float_list(profile->weapon_self_damage_cap, NUM_SKILL_LEVELS);
+				}
+
 				if (optional_string("$Player Countermeasure Life Scale:"))
 					parse_float_list(profile->cmeasure_life_scale, NUM_SKILL_LEVELS);
 
@@ -471,9 +479,19 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
+				if (optional_string("$exact los minimum detection radius:")) {
+					stuff_float(&profile->los_min_detection_radius);
+				}
+
 				set_flag(profile, "$fighterbay arrivals use carrier orientation:", AI::Profile_Flags::Fighterbay_arrivals_use_carrier_orient);
 
 				set_flag(profile, "$fighterbay departures use carrier orientation:", AI::Profile_Flags::Fighterbay_departures_use_carrier_orient);
+
+				set_flag(profile, "$debris damage respects 'big damage' flag:", AI::Profile_Flags::Debris_respects_big_damage);
+
+				set_flag(profile, "$don't limit change in speed due to physics whack:", AI::Profile_Flags::Dont_limit_change_in_speed_due_to_physics_whack);
+
+				set_flag(profile, "$guards ignore protected attackers:", AI::Profile_Flags::Guards_ignore_protected_attackers);
 
 				if (optional_string("$ai path mode:"))
 				{
@@ -625,7 +643,19 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$dynamic goals afterburn hard:", AI::Profile_Flags::Dynamic_goals_afterburn_hard);
 
+				set_flag(profile, "$player orders afterburn hard:", AI::Profile_Flags::Player_orders_afterburn_hard);
+
 				set_flag(profile, "$hud squad messages use tactical disarm/disable:", AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+
+				set_flag(profile, "$align to target when guarding stationary ship:", AI::Profile_Flags::Align_to_target_when_guarding_still);
+
+				if (optional_string("$rotation factor multiplier for player collisions:")) {
+					stuff_float(&profile->rot_fac_multiplier_ply_collisions);
+				}
+
+				set_flag(profile, "$fix avoid-shockwave bugs:", AI::Profile_Flags::Fix_avoid_shockwave_bugs);
+
+				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
 				if (saved_Mp && (saved_Mp == Mp))
@@ -633,7 +663,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					char tmp[60];
 					memset(tmp, 0, 60);
 					strncpy(tmp, Mp, 59);
-					mprintf(("WARNING: Unrecognized parameter in ai_profiles: %s\n", tmp));
+					mprintf(("WARNING: Unrecognized parameter in %s: %s\n", filename, tmp));
 
 					Mp++;
 				}
@@ -707,6 +737,7 @@ void ai_profile_t::reset()
 
     flags.reset();
 
+    los_min_detection_radius = 10.0f;
     ai_path_mode = AI_PATH_MODE_NORMAL;
 	subsystem_path_radii = 0;
     bay_arrive_speed_mult = 1.0f;
@@ -714,6 +745,7 @@ void ai_profile_t::reset()
 	second_order_lead_predict_factor = 0;
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 	turret_target_recheck_time = 2000.0f;
+	rot_fac_multiplier_ply_collisions = 0.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
@@ -736,10 +768,12 @@ void ai_profile_t::reset()
         shield_energy_scale[i] = 0;
         afterburner_recharge_scale[i] = 0;
         player_damage_scale[i] = 0;
-		player_damage_inflicted_scale[i] = 0;
+        player_damage_inflicted_scale[i] = 0;
 
         subsys_damage_scale[i] = 0;
-        beam_friendly_damage_cap[i] = 0;
+        beam_friendly_damage_cap[i] = -1.f;
+        weapon_friendly_damage_cap[i] = -1.f;
+        weapon_self_damage_cap[i] = -1.f;
         turn_time_scale[i] = 0;
         glide_attack_percent[i] = 0;
         circle_strafe_percent[i] = 0;
@@ -818,5 +852,13 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(23, 4, 0)) {
 		flags.set(AI::Profile_Flags::Hudsquadmsg_tactical_disarm_disable);
+	}
+	if (mod_supports_version(24, 2, 0)) {
+		flags.set(AI::Profile_Flags::Debris_respects_big_damage);
+		flags.set(AI::Profile_Flags::Force_beam_turret_fov);
+		flags.set(AI::Profile_Flags::Guards_ignore_protected_attackers);
+	}
+	if (mod_supports_version(25, 0, 0)) {
+		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 	}
 }

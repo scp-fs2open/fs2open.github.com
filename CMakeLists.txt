@@ -1,5 +1,5 @@
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Make sure the source and binary directory are not the sample
@@ -122,12 +122,27 @@ option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
 
+OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
+
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
+IF(NOT APPLE)
+	SET(OPENXR_BUILD_DEFAULT ON)
+ELSE()
+	SET(OPENXR_BUILD_DEFAULT OFF)
+ENDIF()
+OPTION(FSO_BUILD_WITH_OPENXR "Build with OpenXR support" ${OPENXR_BUILD_DEFAULT})
+IF(FSO_BUILD_WITH_OPENXR AND APPLE)
+	MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. Not supported on macOS - setting to OFF.")
+	SET(FSO_BUILD_WITH_OPENXR OFF CACHE BOOL "" FORCE)
+ENDIF()
+
 OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
+
+OPTION(FSO_USE_LTO "Build using LTO (only for release builds)" ON)
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
@@ -139,9 +154,11 @@ mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
 mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_DISCORD)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
 # Include cotire file from https://github.com/sakra/cotire/
@@ -163,6 +180,14 @@ if(FSO_BUILD_APPIMAGE)
 endif()
 
 include(clang-tidy)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTO_AVAILABLE)
+if (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+	message("Enabled LTO")
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
 
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
@@ -221,5 +246,7 @@ message(STATUS "Building qtFRED: ${FSO_BUILD_QTFRED}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")
 message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
+message(STATUS "With Discord: ${FSO_BUILD_WITH_DISCORD}")
 message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
 message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
+message(STATUS "With OpenXR: ${FSO_BUILD_WITH_OPENXR}")

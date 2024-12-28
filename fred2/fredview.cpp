@@ -24,6 +24,7 @@
 #include "render/3d.h"
 #include "object/object.h"
 #include "globalincs/linklist.h"
+#include "globalincs/vmallocator.h"
 #include "math/fvi.h"	//	For find_plane_line_intersection
 #include "math/vecmat.h"
 #include "io/key.h"
@@ -103,9 +104,8 @@ int physics_rot = 20;
 int box_marking = 0;
 int last_mouse_x, last_mouse_y, mouse_dx, mouse_dy;
 int Cur_bitmap = -1;
-int Id_select_type_jump_node;
-int Id_select_type_start = 0;
-int Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_waypoint = 0;
+UINT_PTR Id_select_type_jump_node = 0;
 int Hide_ship_cues = 0, Hide_wing_cues = 0;
 int Move_ships_when_undocking = 1;			// true by default
 int Highlight_selectable_subsys = 0;
@@ -269,6 +269,8 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINES_ON_SELECTED, OnUpdateViewOutlinesOnSelected)
 	ON_COMMAND(ID_VIEW_OUTLINE_AT_WARPIN, OnViewOutlineAtWarpin)
 	ON_UPDATE_COMMAND_UI(ID_VIEW_OUTLINE_AT_WARPIN, OnUpdateViewOutlineAtWarpin)
+	ON_COMMAND(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnErrorCheckerChecksPotentialIssues)
+	ON_UPDATE_COMMAND_UI(ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, OnUpdateErrorCheckerChecksPotentialIssues)
 	ON_UPDATE_COMMAND_UI(ID_NEW_SHIP_TYPE, OnUpdateNewShipType)
 	ON_COMMAND(ID_SHOW_STARFIELD, OnShowStarfield)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_STARFIELD, OnUpdateShowStarfield)
@@ -303,8 +305,10 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_COMMAND(ID_REVERT, OnRevert)
 	ON_UPDATE_COMMAND_UI(ID_REVERT, OnUpdateRevert)
 	ON_WM_SETCURSOR()
-	ON_COMMAND(ID_HIDE_OBJECTS, OnHideObjects)
+	ON_COMMAND(ID_HIDE_MARKED_OBJECTS, OnHideMarkedObjects)
 	ON_COMMAND(ID_SHOW_HIDDEN_OBJECTS, OnShowHiddenObjects)
+	ON_COMMAND(ID_EDIT_LOCK_MARKED_OBJECTS, OnLockMarkedObjects)
+	ON_COMMAND(ID_EDIT_UNLOCK_ALL_OBJECTS, OnUnlockAllObjects)
 	ON_COMMAND(ID_EDIT_UNDO, OnEditUndo)
 	ON_UPDATE_COMMAND_UI(ID_EDIT_UNDO, OnUpdateEditUndo)
 	ON_COMMAND(ID_EDITORS_BRIEFING, OnEditorsBriefing)
@@ -502,6 +506,7 @@ void CFREDView::OnUpdateViewGrid(CCmdUI* pCmdUI)
 void CFREDView::OnViewWaypoints() 
 {
 	Show_waypoints = !Show_waypoints;
+	correct_marking();
 	Update_window = 1;
 }
 
@@ -1314,7 +1319,7 @@ void select_objects()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden])
+		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing])
 			valid = 0;
 
 		Assert(ptr->type != OBJ_NONE);
@@ -1481,26 +1486,33 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 	} else {
 		if (menu.LoadMenu(IDR_MENU_EDIT_POPUP)) {
-			int i;
+			size_t i;
 			CMenu* pPopup = menu.GetSubMenu(0);
 			CMenu shipPopup, player_submenu;
 			CMenu *species_submenu = new CMenu[Species_info.size()];
 			ASSERT(pPopup != NULL);
 
 			// create a popup menu based on the ship models read in ship.cpp.
+			// note: the offsets from SHIP_TYPES must correspond to the indexes in the ship type dropdown
+
 			shipPopup.CreatePopupMenu();
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_waypoint, "Waypoint");
 			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_jump_node, "Jump Node");
-			shipPopup.AppendMenu(MF_STRING | MF_ENABLED, SHIP_TYPES + Id_select_type_start, "Player Start");
-			for (i=0; i<(int)Species_info.size(); i++) {
+
+			for (i=0; i<Species_info.size(); i++) {
 				species_submenu[i].CreatePopupMenu();
 				shipPopup.AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 					(UINT) species_submenu[i].m_hMenu, Species_info[i].species_name);
 			}
 
-			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it)
+			i = 0;
+			for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+				if (it->flags[Ship::Info_Flags::No_fred])
+					continue;	// because the dropdown skips "no_fred", we need to skip it here too
 				species_submenu[it->species].AppendMenu(MF_STRING |
 					MF_ENABLED, SHIP_TYPES + i, it->name);
+				i++;
+			}
 
 			pPopup->AppendMenu(MF_STRING | MF_POPUP | MF_ENABLED,
 				(UINT) shipPopup.m_hMenu, "New Object Type");
@@ -1574,17 +1586,22 @@ CFREDView *CFREDView::GetView()
 // the ships.  Shouldn't conflict with any other ID_* thingys.
 BOOL CFREDView::OnCmdMsg(UINT nID, int nCode, void* pExtra, AFX_CMDHANDLERINFO* pHandlerInfo) 
 {
-	int id = (int) nID;
-
 	if (!pHandlerInfo) {
-		if ((id >= SHIP_TYPES) && (id < SHIP_TYPES + (int)ship_type_combo_box_size + 3)) {
+		if ((nID >= SHIP_TYPES) && (nID < SHIP_TYPES + ship_type_combo_box_size + 2)) {	// the 2 are waypoint and jump node
+			int idx = static_cast<int>(nID - SHIP_TYPES);
 			if (nCode == CN_COMMAND) {
-				cur_ship_type_combo_index = id - SHIP_TYPES;
+				cur_ship_type_combo_index = idx;
 				m_new_ship_type_combo_box.SetCurSel(cur_ship_type_combo_index);
+
+				// now that we've updated the combo box, try to actually create something
+				// see also CFREDView::OnLButtonDown
+				int waypoint_instance = cur_waypoint ? Objects[cur_waypoint->get_objnum()].instance : -1;
+				Selection_lock = 0;
+				on_object = create_object_on_grid(waypoint_instance);
 
 			} else if (nCode == CN_UPDATE_COMMAND_UI)	{
 				// Update UI element state
-				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index + SHIP_TYPES == id);
+				((CCmdUI*) pExtra)->SetCheck(cur_ship_type_combo_index == idx);
 				((CCmdUI*) pExtra)->Enable(TRUE);
 			}
 
@@ -2615,7 +2632,7 @@ int CFREDView::global_error_check()
 				return -1;
 			}
 
-			if (Ships[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Ships[i].arrival_anchor < 0){
 					if (error("Ship \"%s\" requires a valid arrival target", Ships[i].ship_name)){
 						return 1;
@@ -2623,7 +2640,7 @@ int CFREDView::global_error_check()
 				}
 			}
 
-			if (Ships[i].departure_location != DEPART_AT_LOCATION) {
+			if (Ships[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Ships[i].departure_anchor < 0){
 					if (error("Ship \"%s\" requires a valid departure target", Ships[i].ship_name)){
 						return 1;
@@ -2820,13 +2837,13 @@ int CFREDView::global_error_check()
 				return -1;
 			}
 
-			if (Wings[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Wings[i].arrival_anchor < 0)
 					if (error("Wing \"%s\" requires a valid arrival target", Wings[i].name))
 						return 1;
 			}
 
-			if (Wings[i].departure_location != DEPART_AT_LOCATION) {
+			if (Wings[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Wings[i].departure_anchor < 0)
 					if (error("Wing \"%s\" requires a valid departure target", Wings[i].name))
 						return 1;
@@ -3354,41 +3371,57 @@ int CFREDView::internal_error(const char *msg, ...)
 	return -1;
 }
 
-int CFREDView::fred_check_sexp(int sexp, int type, const char *msg, ...)
+int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 {
-	SCP_string buf, sexp_buf, error_buf, bad_node_str;
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
-	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-		bad_node_str.pop_back();
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (z < 0 && z > -100)
+			err = 1;
+
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
 	}
 
-	sprintf(error_buf, "Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)", buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+	if (Error_checker_checks_potential_issues)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	if (z < 0 && z > -100)
-		err = 1;
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (err)
-		return internal_error(error_buf.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (error(error_buf.c_str()))
-		return 1;
+		if (Fred_main_wnd->MessageBox(error_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
+			return 1;
+	}
 
 	return 0;
 }
@@ -3797,6 +3830,18 @@ void CFREDView::OnUpdateViewOutlineAtWarpin(CCmdUI* pCmdUI)
 	pCmdUI->SetCheck(Draw_outline_at_warpin_position);
 }
 
+void CFREDView::OnErrorCheckerChecksPotentialIssues()
+{
+	Error_checker_checks_potential_issues = !Error_checker_checks_potential_issues;
+	theApp.write_ini_file();
+	Update_window = 1;
+}
+
+void CFREDView::OnUpdateErrorCheckerChecksPotentialIssues(CCmdUI* pCmdUI)
+{
+	pCmdUI->SetCheck(Error_checker_checks_potential_issues);
+}
+
 void CFREDView::OnUpdateNewShipType(CCmdUI* pCmdUI) 
 {
 	int z;
@@ -3838,13 +3883,16 @@ void CFREDView::OnAsteroidEditor()
 
 void CFREDView::OnRunFreeSpace() 
 {
-	BOOL r;
+	BOOL r = FALSE;
 	STARTUPINFO si;
 	PROCESS_INFORMATION pi;
 	char *lpMsgBuf;
 
 	if (!FREDDoc_ptr->SaveModified())
 		return;
+
+	ZeroMemory(&si, sizeof(si));
+	ZeroMemory(&pi, sizeof(pi));
 
 	si.cb = sizeof(si);
 	si.lpReserved = nullptr;
@@ -3855,37 +3903,52 @@ void CFREDView::OnRunFreeSpace()
 	si.lpReserved2 = nullptr;
 
 	// get the filename of the app and replace FRED2_Open with FS2_Open
-	std::string processed_name(AfxGetApp()->m_pszExeName); 
-	std::string::size_type fred_index = processed_name.find("fred2_open", 0); 
+	SCP_string processed_name(AfxGetApp()->m_pszExeName);
+	SCP_string processed_lowername = processed_name;
+	SCP_tolower(processed_lowername);
+	SCP_string::size_type fred_index = processed_lowername.find("fred2_open", 0);
+
 	// capitalisation! 
-	if (fred_index == std::string::npos) {
-		fred_index = processed_name.find("Fred2_Open", 0); 
+	bool capitalF = false;
+	if (fred_index != SCP_string::npos && processed_name[fred_index] == 'F') {
+		capitalF = true;
 	}
 
+	SCP_vector<SCP_string> nameAttempts;
+
 	if (fred_index != std::string::npos) {
-		// delete the fred2_open and add FS2_Open in its place
-		processed_name.erase(fred_index, 10);
-		processed_name.insert(fred_index, "FS2_Open");
+		// replace fred2_open with fs2_open
+		processed_name.erase(fred_index, 4);
+		processed_name.insert(fred_index, capitalF ? "FS" : "fs");
 		processed_name.append(".exe");
 
-		//try to start FS2_open
-		r = CreateProcess(processed_name.c_str(), nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
+		nameAttempts.push_back(processed_name);
+	}
+
+	nameAttempts.push_back("fs2_open.exe");
+	nameAttempts.push_back("fs2_open_r.exe");
+
+	// reconstruct command line
+	extern SCP_string cmdline_build_string();
+	auto commandArgs = cmdline_build_string();
+
+	for (const auto &nameAttempt: nameAttempts) {
+		// CreateProcess actually writes to the C-string, so we have to make it modifiable
+		std::unique_ptr<char[]> fullString(new char[nameAttempt.length() + commandArgs.length() + 1]);
+		strcpy(fullString.get(), nameAttempt.c_str());
+		strcat(fullString.get(), commandArgs.c_str());
+
+		// try to start FS2_open
+		r = CreateProcess(nullptr, fullString.get(), nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
 		if (r) {
-			return;
+			break;
 		}
 	}
 
-	r = CreateProcess("start_fs2.bat", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-
-	if (!r) {
-		r = CreateProcess("fs2_open.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-	}
-
-	if (!r) {
-		r = CreateProcess("fs2_open_r.exe", nullptr, nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi);
-	}
-
-	if (!r) {
+	if (r) {
+		CloseHandle(pi.hProcess);
+		CloseHandle(pi.hThread);
+	} else {
 		FormatMessage(
 			 FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM,
 			 NULL,
@@ -3997,7 +4060,7 @@ BOOL CFREDView::OnSetCursor(CWnd* pWnd, UINT nHitTest, UINT message)
 	return CView::OnSetCursor(pWnd, nHitTest, message);
 }
 
-void CFREDView::OnHideObjects() 
+void CFREDView::OnHideMarkedObjects()
 {
 	object *ptr;
 
@@ -4012,13 +4075,41 @@ void CFREDView::OnHideObjects()
 	}
 }
 
-void CFREDView::OnShowHiddenObjects() 
+void CFREDView::OnShowHiddenObjects()
 {
 	object *ptr;
 
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		ptr->flags.remove(Object::Object_Flags::Hidden);
+		ptr = GET_NEXT(ptr);
+	}
+
+	Update_window = 1;
+}
+
+void CFREDView::OnLockMarkedObjects()
+{
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+            ptr->flags.set(Object::Object_Flags::Locked_from_editing);
+			unmark_object(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+}
+
+void CFREDView::OnUnlockAllObjects()
+{
+	object *ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Locked_from_editing);
 		ptr = GET_NEXT(ptr);
 	}
 

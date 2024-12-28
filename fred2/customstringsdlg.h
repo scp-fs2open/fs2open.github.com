@@ -64,7 +64,7 @@ class CustomStringsDlg : public CDialog {
 
 	bool m_text_edit_focus;
 
-	SCP_vector<mission_custom_string> m_custom_strings;
+	SCP_vector<custom_string> m_custom_strings;
 
 	// read-only view of data pair keys
 	SCP_vector<SCP_string> m_lister_keys;

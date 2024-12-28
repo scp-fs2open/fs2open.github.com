@@ -298,7 +298,8 @@ public:
 	sexp_list_item *get_listing_opf_wing_flags();
 	sexp_list_item *get_listing_opf_team_colors();
 	sexp_list_item *get_listing_opf_nebula_patterns();
-	sexp_list_item *get_listing_opf_asteroid_debris();
+	sexp_list_item *get_listing_opf_asteroid_types();
+	sexp_list_item *get_listing_opf_debris_types();
 	sexp_list_item *get_listing_opf_motion_debris();
 	sexp_list_item *get_listing_opf_game_snds();
 	sexp_list_item *get_listing_opf_fireball();
@@ -311,8 +312,10 @@ public:
 	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
 	sexp_list_item *get_listing_opf_bolt_types();
 	sexp_list_item *get_listing_opf_traitor_overrides();
+	sexp_list_item *get_listing_opf_message_types();
 	sexp_list_item *get_listing_opf_lua_general_orders();
 	sexp_list_item *get_listing_opf_lua_enum(int parent_node, int arg_index);
+	sexp_list_item *get_listing_opf_mission_custom_strings();
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;

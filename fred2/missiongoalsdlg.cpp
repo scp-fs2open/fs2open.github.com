@@ -94,12 +94,12 @@ void CMissionGoalsDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_GOAL_TYPE_DROP, m_goal_type);
 	DDX_CBIndex(pDX, IDC_DISPLAY_GOAL_TYPES_DROP, m_display_goal_types);
 	DDX_Text(pDX, IDC_GOAL_NAME, m_name);
+	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 1);
 	DDX_Check(pDX, IDC_GOAL_INVALID, m_goal_invalid);
 	DDX_Text(pDX, IDC_GOAL_SCORE, m_goal_score);
 	DDX_Check(pDX, IDC_NO_MUSIC, m_no_music);
 	DDX_CBIndex(pDX, IDC_OBJ_TEAM, m_team);
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_name, NAME_LENGTH - 1);
 }
 
 BEGIN_MESSAGE_MAP(CMissionGoalsDlg, CDialog)

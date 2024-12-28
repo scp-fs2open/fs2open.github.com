@@ -18,7 +18,12 @@ medal_stuff* medal_h::getMedal() const
 
 bool medal_h::isValid() const
 {
-	return medal >= 0 && medal < (int)Medals.size();
+	return SCP_vector_inbounds(Medals, medal);
+}
+
+bool medal_h::isRank() const
+{
+	return medal == Rank_medal_index;
 }
 
 //**********HANDLE: medal
@@ -104,6 +109,32 @@ ADE_VIRTVAR(FirstMod, l_Medal, nullptr, "The first mod of the medal. Some start 
 		start = 1;
 
 	return ade_set_args(L, "i", start);
+}
+
+ADE_VIRTVAR(KillsNeeded, l_Medal, nullptr, "The number of kills needed to earn this badge. If not a badge, then returns 0", "number", "The number of kills needed")
+{
+	medal_h current;
+	if (!ade_get_args(L, "o", l_Medal.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+	if (!current.isValid()) {
+		return ade_set_error(L, "i", 0);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "i", current.getMedal()->kills_needed);
+}
+
+ADE_FUNC(isRank, l_Medal, nullptr, "Detects whether medal is the rank medal", "boolean", "true if yes, false if not, nil if a syntax/type error occurs")
+{
+	medal_h current;
+	if (!ade_get_args(L, "o", l_Medal.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isRank());
 }
 
 } // namespace api

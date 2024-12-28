@@ -22,10 +22,10 @@ ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hu
 	if(!ade_get_args(L, "o|b", l_Debris.GetPtr(&oh), &b))
 		return ade_set_error(L, "b", false);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "b", false);
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR) {
 		db->is_hull = b;
@@ -42,10 +42,10 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 	if(!ade_get_args(L, "o|o", l_Debris.GetPtr(&oh), &shipIdx))
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR) {
 		if (shipIdx >= 0 && shipIdx < ship_info_size())
@@ -63,10 +63,10 @@ ADE_VIRTVAR(DoNotExpire, l_Debris, "boolean", "Whether the debris should expire.
 	if (!ade_get_args(L, "o|b", l_Debris.GetPtr(&objh), &set))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	debris *db = &Debris[objh->objp->instance];
+	debris *db = &Debris[objh->objp()->instance];
 
 	if (ADE_SETTING_VAR)
 	{
@@ -97,10 +97,10 @@ ADE_VIRTVAR(LifeLeft, l_Debris, "number", "The time this debris piece will last.
 	if (!ade_get_args(L, "o|f", l_Debris.GetPtr(&objh), &lifeleft))
 		return ADE_RETURN_NIL;
 
-	if (!objh->IsValid())
+	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	debris *db = &Debris[objh->objp->instance];
+	debris *db = &Debris[objh->objp()->instance];
 
 	if (ADE_SETTING_VAR)
 		db->lifeleft = lifeleft;
@@ -114,10 +114,10 @@ ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "nu
 	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if(!oh->IsValid())
+	if(!oh->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	polymodel *pm = model_get(db->model_num);
 
@@ -136,7 +136,7 @@ ADE_FUNC(isValid, l_Debris, NULL, "Return if this debris handle is valid", "bool
 	if(!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", oh != NULL && oh->IsValid());
+	return ade_set_args(L, "b", oh != NULL && oh->isValid());
 }
 
 ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic debris model, not a model subobject", "boolean", "true if Debris_model")
@@ -145,10 +145,10 @@ ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic deb
 	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ADE_RETURN_FALSE;
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	return ade_set_args(L, "b", debris_is_generic(db));
 }
@@ -159,10 +159,10 @@ ADE_FUNC(isVaporized, l_Debris, nullptr, "Return if this debris is the vaporized
 	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ADE_RETURN_FALSE;
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ADE_RETURN_FALSE;
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	return ade_set_args(L, "b", debris_is_vaporized(db));
 }
@@ -174,11 +174,11 @@ ADE_FUNC(vanish, l_Debris, nullptr, "Vanishes this piece of debris from the miss
 	if (!ade_get_args(L, "o", l_Debris.GetPtr(&oh)))
 		return ade_set_error(L, "b", false);
 
-	if (!oh->IsValid())
+	if (!oh->isValid())
 		return ade_set_error(L, "b", false);
 
 	//This skips all the fancy deathroll stuff, and just cleans it from the mission
-	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);
+	oh->objp()->flags.set(Object::Object_Flags::Should_be_dead);
 
 	return ade_set_args(L, "b", true);
 }

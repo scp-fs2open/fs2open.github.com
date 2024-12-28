@@ -39,7 +39,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void showContextMenu(const QPoint& globalPos);
 
  public slots:
-	void openLoadMissionDIalog();
+	void openLoadMissionDialog();
 
 	void newMission();
 
@@ -61,6 +61,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionHide_Marked_Objects_triggered(bool enabled);
 	void on_actionShow_All_Hidden_Objects_triggered(bool enabled);
+
+	void on_actionLock_Marked_Objects_triggered(bool enabled);
+	void on_actionUnlock_All_Objects_triggered(bool enabled);
 
 	void on_actionx1_triggered(bool enabled);
 	void on_actionx2_triggered(bool enabled);
@@ -90,6 +93,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCampaign_triggered(bool);
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionReinforcements_triggered(bool);
+	void on_actionLoadout_triggered(bool);
 
 	void on_actionSelectionLock_triggered(bool enabled);
 
@@ -125,6 +129,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionMove_Ships_When_Undocking_triggered(bool);
 
+	void on_actionError_Checker_Checks_Potential_Issues_triggered(bool);
 	void on_actionError_Checker_triggered(bool);
 
 	void on_actionAbout_triggered(bool);

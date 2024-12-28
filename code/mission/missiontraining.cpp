@@ -92,7 +92,7 @@ int	Training_context_speed_set;
 int	Training_context_speed_min;
 int	Training_context_speed_max;
 TIMESTAMP	Training_context_speed_timestamp;
-waypoint_list *Training_context_path;
+int Training_context_waypoint_path;
 int Training_context_goal_waypoint;
 int Training_context_at_waypoint;
 float	Training_context_distance;
@@ -187,7 +187,7 @@ void HudGaugeDirectives::initBitmaps(char *fname_top, char *fname_middle, char *
 	}
 }
 
-bool HudGaugeDirectives::canRender()
+bool HudGaugeDirectives::canRender() const
 {
 	if (sexp_override) {
 		return false;
@@ -340,7 +340,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 
 		if ( second_line ) {
 
-			if (directives_top.first_frame >= 0)
+			if (directives_middle.first_frame >= 0)
 				renderBitmap(directives_middle.first_frame, bx, by);
 			
 			by += text_h;
@@ -398,7 +398,7 @@ void training_mission_init()
 	Training_context = 0;
 	Training_context_speed_set = 0;
 	Training_context_speed_timestamp = TIMESTAMP::invalid();
-	Training_context_path = nullptr;
+	Training_context_waypoint_path = -1;
 
 	Players_target = UNINITIALIZED;
 	Players_mlocked = UNINITIALIZED;
@@ -418,8 +418,8 @@ int comp_training_lines_by_born_on_date(const int *e1, const int *e2)
  *
  * Sort on EVENT_CURRENT and born on date, for other events (EVENT_SATISFIED, EVENT_FAILED) sort on born on date
  */
-#define MIN_SATISFIED_TIME		5
-#define MIN_FAILED_TIME			7
+#define MIN_SATISFIED_TIME		5 * MILLISECONDS_PER_SECOND
+#define MIN_FAILED_TIME			7 * MILLISECONDS_PER_SECOND
 void sort_training_objectives()
 {
 	int i, offset;
@@ -507,10 +507,9 @@ void sort_training_objectives()
 		}
 	}
 
-
-	int slot_idx, unkn_vis, last_directive;
 	// go through list and bump as needed
 	for (i=0; i<num_offset_events; i++) {
+		int slot_idx, unkn_vis, slot_directive;
 
 		// find most recent directive that would not be shown
 		for (unkn_vis=offset-1; unkn_vis>=0; unkn_vis--) {
@@ -522,22 +521,32 @@ void sort_training_objectives()
 		// find first slot that can be bumped
 		// look at the last (N-4 to N) positions
 		for (slot_idx=0; slot_idx<Max_directives; slot_idx++) {
-			if ( Training_obj_lines[i+offset] & TRAINING_OBJ_STATUS_KNOWN ) {
+			if ( Training_obj_lines[slot_idx+offset] & TRAINING_OBJ_STATUS_KNOWN ) {
 				break;
 			}
 		}
 
-		// shift and replace (mark old one as STATUS_KNOWN)
-		// store the directive that won't be shown
-		last_directive = Training_obj_lines[Training_obj_num_lines-1];
-
-		for (int j=slot_idx; j>0; j--) {
-			Training_obj_lines[j+offset-1] = Training_obj_lines[j+offset-2];
+		if (slot_idx == Max_directives){
+			// We did not manage to find space for all directives! This is bad, but nothing we can do about it.
+			break;
 		}
+
+		// Since the directive to be shown here is older than the ones currently on display, remove the directive to be bumped and then shift all others up one until that entry.
+		// Store the directive to be bumped for later.
+		slot_directive = Training_obj_lines[slot_idx+offset];
+
+		// Shift newer objectives
+		for (int j=slot_idx; j>0; j--) {
+			Training_obj_lines[j+offset] = Training_obj_lines[j+offset-1];
+		}
+
+		//Place directive to be shown in the topmost slot
 		Training_obj_lines[offset] = Training_obj_lines[unkn_vis];
-		Training_obj_lines[unkn_vis] = last_directive;
-		Training_obj_lines[unkn_vis] &= ~TRAINING_OBJ_LINES_EVENT_STATUS_MASK;
-		Training_obj_lines[unkn_vis] |= TRAINING_OBJ_STATUS_KNOWN;
+
+		//Restore bumped directive on the non-rendered slot
+		Training_obj_lines[unkn_vis] = slot_directive;
+
+		Assertion((Training_obj_lines[unkn_vis] & TRAINING_OBJ_LINES_EVENT_STATUS_MASK) == TRAINING_OBJ_STATUS_KNOWN, "Objective bumped was not known");
 	}
 
 	// remove event status
@@ -677,6 +686,10 @@ char *translate_message_token(char *str)
 	}
 
 	return NULL;
+}
+
+void string_replace_tokens_with_keys(SCP_string& text) {
+	text = message_translate_tokens(text.c_str());
 }
 
 /**
@@ -1050,7 +1063,7 @@ HudGauge(HUD_OBJECT_TRAINING_MESSAGES, HUD_DIRECTIVES_VIEW, false, true, VM_EXTE
 {
 }
 
-bool HudGaugeTrainingMessages::canRender()
+bool HudGaugeTrainingMessages::canRender() const
 {
 	if (hud_disabled() && !hud_disabled_except_messages()) {
 		return false;

@@ -134,7 +134,7 @@ void dock_dock_objects(object *objp1, int dockpoint1, object *objp2, int dockpoi
 void dock_undock_objects(object *objp1, object *objp2);
 
 // apply force to a docked assembly of ships
-void dock_calculate_and_apply_whack_docked_object(vec3d* force, const vec3d* hit_pos, object* objp);
+void dock_calculate_and_apply_whack_docked_object(const vec3d* force, const vec3d* hit_pos, object* objp);
 
 	/**
  * @brief Undocks everything from the given object
@@ -151,5 +151,8 @@ void object_set_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info
 void object_remove_arriving_stage1_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
 void object_set_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
 void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_info * /*infop*/ );
+
+// find any ship in this group that is the dock leader
+void dock_find_dock_leader_helper(object *objp, dock_function_info *infop);
 
 #endif	// _OBJECT_DOCK_H

@@ -87,6 +87,29 @@ void hdr_color::set_rgb(const int* const new_rgb)
 	this->set_rgb(new_rgb[0], new_rgb[1], new_rgb[2]);
 }
 
+/**
+ * @brief Sets RGBAI values from five 0.0-1.0 floats
+ */
+void hdr_color::set_rgbai(float new_r, float new_g, float new_b, float new_a, float new_i)
+{
+	this->red = new_r;
+	this->green = new_g;
+	this->blue = new_b;
+	this->alpha = new_a;
+	this->intensity = new_i;
+}
+
+/**
+ * @brief Multiplies RGBAI values with five 0.0-1.0 floats
+ */
+void hdr_color::multiply_rgbai(float r_mult, float g_mult, float b_mult, float a_mult, float i_mult)
+{
+	this->red *= r_mult;
+	this->green *= g_mult;
+	this->blue *= b_mult;
+	this->alpha *= a_mult;
+	this->intensity *= i_mult;
+}
 
 /**
  * @brief retreives unmultiplied 0.0f-1.0f color component.

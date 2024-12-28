@@ -45,8 +45,15 @@ namespace
 	{
 		// Lazily initialize the preferences path
 		if (!preferencesPath) {
-		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-			
+			//Check for a custom path set by env variable
+			auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
+			if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
+				preferencesPath = envPreferencesPath;
+			}
+			else {
+				preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+			}
+
 			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
 			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
 		    if (preferencesPath == nullptr) {
@@ -512,14 +519,20 @@ bool os_is_legacy_mode()
 					<< "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
-		// At this point we can't determine if the old config exists so just assume that it does
-		auto old_config_exists = true;
-		time_t old_config_time = os_registry_get_last_modification_time();
+		tl::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
+		time_t old_config_time = 0;
 
-		// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
-		path_stream.str("");
-		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
-		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		//Check if the registry key exists
+		auto old_config_exists = optional_old_config_time.has_value();
+
+		if (old_config_exists) {
+			old_config_time = optional_old_config_time.value();
+			// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
+			// Only get this if the old config exists
+			path_stream.str("");
+			path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+			old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		}
 #endif
 
 		if (new_config_exists && old_config_exists) {
@@ -727,8 +740,17 @@ static void handle_sdl_event(const SDL_Event& event) {
 	using namespace os::events;
 
 	bool imgui_processed_this = false;
-	if (gameseq_get_state() == GS_STATE_LAB && (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse)) {
-		imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
+	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
+		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
+		ImGui_ImplSDL2_ProcessEvent(&event);
+
+		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
+									(event.type == SDL_EventType::SDL_KEYUP ||
+									 event.type == SDL_EventType::SDL_KEYDOWN)) ||
+							   (ImGui::GetIO().WantCaptureMouse &&
+									(event.type == SDL_EventType::SDL_MOUSEBUTTONUP ||
+				 					 event.type == SDL_EventType::SDL_MOUSEBUTTONDOWN||
+									 event.type == SDL_EventType::SDL_MOUSEMOTION));
 	}
 
 	if (!imgui_processed_this) {

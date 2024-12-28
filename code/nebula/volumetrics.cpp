@@ -151,6 +151,10 @@ const vec3d& volumetric_nebula::getSize() const {
 	return size;
 }
 
+const std::tuple<float, float, float>& volumetric_nebula::getNebulaColor() const {
+	return nebulaColor;
+}
+
 bool volumetric_nebula::getEdgeSmoothing() const {
 	return Detail.nebula_detail == MAX_DETAIL_LEVEL || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
 }
@@ -177,10 +181,6 @@ float volumetric_nebula::getOpacityDistance() const {
 
 float volumetric_nebula::getStepsize() const {
 	return getOpacityDistance() / static_cast<float>(getSteps());
-}
-
-float volumetric_nebula::getStepalpha() const {
-	return -(powf(getAlphaLim(), 1.0f / static_cast<float>(getSteps())) - 1.0f);
 }
 
 float volumetric_nebula::getAlphaLim() const {
@@ -246,6 +246,32 @@ static anl::CInstructionIndex getCustomNoise(anl::CKernel& kernel, const SCP_str
 	return builder.eval(expression);
 }
 
+static inline std::array<ivec3, 6> getNeighbors(const ivec3& pnt){
+	return {
+		ivec3{pnt.x+1, pnt.y, pnt.z},
+		ivec3{pnt.x-1, pnt.y, pnt.z},
+		ivec3{pnt.x, pnt.y+1, pnt.z},
+		ivec3{pnt.x, pnt.y-1, pnt.z},
+		ivec3{pnt.x, pnt.y, pnt.z+1},
+		ivec3{pnt.x, pnt.y, pnt.z-1}
+	};
+}
+
+//Nebula distance must be a lower bound to avoid errors, so subtract sqrt(2) in each dimension
+static inline float getNebDistSquared(const ivec3& l, const ivec3& r, const vec3d& scale, bool lowerBound) {
+	int dx = (l.x - r.x) * (l.x - r.x);
+	int dy = (l.y - r.y) * (l.y - r.y);
+	int dz = (l.z - r.z) * (l.z - r.z);
+
+	if (lowerBound){
+		dx -= 2;
+		dy -= 2;
+		dz -= 2;
+	}
+
+	return (dx < 0 ? 0 : dx) * scale.xyz.x * scale.xyz.x + (dy < 0 ? 0 : dy) * scale.xyz.y * scale.xyz.y + (dz < 0 ? 0 : dz) * scale.xyz.z * scale.xyz.z;
+}
+
 void volumetric_nebula::renderVolumeBitmap() {
 	Assertion(!hullPof.empty(), "Volumetric Nebula was not properly configured. Did you call parse_volumetric_nebula()?");
 	Assertion(!isVolumeBitmapValid(), "Volume bitmap was already rendered!");
@@ -277,6 +303,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	//Calculate minimum "bottom left" corner of scaled size box
 	vec3d bl = pm->mins - (size * ((scaleFactor - 1.0f) / 2.0f / scaleFactor));
 
+	//Go through sampling procedure to test where the nebula even is
 	for (int x = 0; x < nSample; x++) {
 		for (int y = 0; y < nSample; y++) {
 			vec3d start = bl;
@@ -321,26 +348,98 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 	model_unload(modelnum);
 
+	//Sample the nebula values from the binary cubegrid.
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
-	float oversamplingDivisor = 255.0f / static_cast<float>((1 << (oversampling - 1)) + 1);
+	int oversamplingCount = (1 << (oversampling - 1)) + 1;
+	float oversamplingDivisor = 255.1f / static_cast<float>(oversamplingCount);
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
 			for (int z = 0; z < n; z++) {
-				volumeBitmapData[COLOR_3D_ARRAY_POS(n, R, x, y, z)] = static_cast<ubyte>(std::get<0>(nebulaColor) * 255.0f);
-				volumeBitmapData[COLOR_3D_ARRAY_POS(n, G, x, y, z)] = static_cast<ubyte>(std::get<1>(nebulaColor) * 255.0f);
-				volumeBitmapData[COLOR_3D_ARRAY_POS(n, B, x, y, z)] = static_cast<ubyte>(std::get<2>(nebulaColor) * 255.0f);
-				
-				float sum = 0.0f;
+				int sum = 0;
 				for (int sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
 					for (int sy = y * oversampling; sy <= (y + 1) * oversampling; sy++) {
 						for (int sz = z * oversampling; sz <= (z + 1) * oversampling; sz++) {
 							if (volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
-								sum += 1.0f;
+								sum++;
 						}
 					}
 				}
-				
-				volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)] = static_cast<ubyte>(sum * oversamplingDivisor);
+
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)] = static_cast<ubyte>(static_cast<float>(sum) * oversamplingDivisor);
+			}
+		}
+	}
+
+	// Test for edges in the nebula to compute the UDF
+	auto volumeEdgeCache = make_unique<ivec3[]>(n * n * n);
+	SCP_set<ivec3> udfBFS_checking, udfBFS_to_check;
+
+	for (int x = 0; x < n; x++) {
+		for (int y = 0; y < n; y++) {
+			for (int z = 0; z < n; z++) {
+				const ubyte& nebula_density = volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, x, y, z)];
+
+				//If we have neither full nor no nebula presence, it's an edge.
+				if (nebula_density > 0 && nebula_density < 255) {
+					udfBFS_to_check.emplace(ivec3{x, y, z});
+					volumeEdgeCache[x * n * n + y * n + z] = ivec3{x, y, z};
+				}
+				else {
+					bool found_edge = false;
+					//it's possible that we get completely sharp edges. So test for that.
+					for (const ivec3& neighbor : getNeighbors({x, y, z})){
+						if (neighbor.x < 0 || neighbor.x >= n || neighbor.y < 0 || neighbor.y >= n || neighbor.z < 0 || neighbor.z >= n)
+							continue;
+
+						if (nebula_density != volumeBitmapData[COLOR_3D_ARRAY_POS(n, A, neighbor.x, neighbor.y, neighbor.z)]){
+							found_edge = true;
+							break;
+						}
+					}
+
+					if (found_edge) {
+						udfBFS_to_check.emplace(ivec3{x, y, z});
+						volumeEdgeCache[x * n * n + y * n + z] = ivec3{x, y, z};
+					}
+					else
+						volumeEdgeCache[x * n * n + y * n + z] = ivec3{-1, -1, -1};
+				}
+			}
+		}
+	}
+
+	//BFS from the known nebula edges to find the distance to the closest edge
+	while(!udfBFS_to_check.empty()){
+		udfBFS_checking = udfBFS_to_check;
+		udfBFS_to_check.clear();
+
+		for (const ivec3& toCheck : udfBFS_checking){
+			const ivec3& closestEdgeTile = volumeEdgeCache[toCheck.x * n * n + toCheck.y * n + toCheck.z];
+
+			for (const ivec3& neighbor : getNeighbors(toCheck)) {
+				if (neighbor.x < 0 || neighbor.x >= n || neighbor.y < 0 || neighbor.y >= n || neighbor.z < 0 || neighbor.z >= n)
+					continue;
+
+				ivec3& neighborClosestEdgeTile = volumeEdgeCache[neighbor.x * n * n + neighbor.y * n + neighbor.z];
+
+				if (neighborClosestEdgeTile.x < 0 || getNebDistSquared(neighbor, closestEdgeTile, size, false) < getNebDistSquared(neighbor, neighborClosestEdgeTile, size, false)) {
+					neighborClosestEdgeTile = closestEdgeTile;
+					udfBFS_to_check.emplace(neighbor);
+				}
+			}
+		}
+	}
+
+	//Compute the actual UDF from the BFS
+	//scale is the maximal distance possible.
+	udfScale = vm_vec_mag(&size);
+	for (int x = 0; x < n; x++) {
+		for (int y = 0; y < n; y++) {
+			for (int z = 0; z < n; z++) {
+				float dist = sqrtf(getNebDistSquared(ivec3{x, y, z}, volumeEdgeCache[x * n * n + y * n + z], size, true)) / static_cast<float>(n); //in meters
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, R, x, y, z)] = static_cast<ubyte>(dist / udfScale * 255.0f); //UDF
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, G, x, y, z)] = 0; // Reserved
+				volumeBitmapData[COLOR_3D_ARRAY_POS(n, B, x, y, z)] = 0; // Reserved
 			}
 		}
 	}
@@ -392,6 +491,10 @@ int volumetric_nebula::getNoiseVolumeBitmapHandle() const {
 	return noiseVolumeBitmapHandle;
 }
 
+float volumetric_nebula::getUDFScale() const {
+	return udfScale;
+}
+
 float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) const {
 	// This pretty much emulates the volumetric shader. This could be slow, so I hope it's not needed too often
 	vec3d ray_direction;
@@ -411,7 +514,7 @@ float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) co
 	}
 
 	float alpha = 1.0f;
-	const float stepalpha = getStepalpha();
+	const float stepalpha = -(powf(getAlphaLim(), 1.0f / (getOpacityDistance() / getStepsize())) - 1.0f);
 	const int n = 1 << resolution;
 	for (float stept = maxTmin; stept < minTmax; stept += getStepsize()) {
 		vec3d localpos = (Eye_position + (ray_direction * stept) - bb_min) / size * static_cast<float>(n);
@@ -430,6 +533,13 @@ float volumetric_nebula::getAlphaToPos(const vec3d& pnt, float distance_mult) co
 	CLAMP(alpha, 0.0f, 1.0f);
 	return alpha;
 }
+
+void volumetric_nebula::set_enabled(bool set_enabled){
+	enabled = set_enabled;
+}
+bool volumetric_nebula::get_enabled() const {
+	return enabled;
+};
 
 void volumetrics_level_close() {
 	if (The_mission.volumetrics)

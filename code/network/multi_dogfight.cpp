@@ -96,12 +96,6 @@ int Multi_df_check_coords[GR_NUM_RESOLUTIONS] = {
 	45	
 };
 
-// players when the screen started - we need to store this explicity so that even after players leave, we can display the full kill matrix
-typedef struct multi_df_score {
-	char callsign[CALLSIGN_LEN+1];		// callsign for this guy	
-	scoring_struct stats;					// stats for the guy	
-	int np_index;								// absolute index into the netplayers array
-} multi_df_score;
 multi_df_score Multi_df_score[MAX_PLAYERS];
 int Multi_df_score_count = 0;
 
@@ -152,7 +146,7 @@ void multi_df_level_pre_enter()
 }
 
 // evaluate a kill in dogfight by a netplayer
-void multi_df_eval_kill(net_player *killer, object *dead_obj)
+void multi_df_eval_kill(const net_player *killer, const object *dead_obj)
 {
 	int dead_index = -1;
 	
@@ -181,7 +175,7 @@ void multi_df_eval_kill(net_player *killer, object *dead_obj)
 }
 
 // debrief
-void multi_df_debrief_init()
+void multi_df_debrief_init(bool API_Access)
 {
 	// no longer is mission
 	Game_mode &= ~(GM_IN_MISSION);	
@@ -201,10 +195,17 @@ void multi_df_debrief_init()
 	chatbox_create();
 
 	// always play success music
-	common_music_init(SCORE_DEBRIEFING_SUCCESS);
+	if (!API_Access) {
+		common_music_init(SCORE_DEBRIEFING_SUCCESS);
+	}
 
 	// setup kill matrix
 	multi_df_setup_kill_matrix();
+
+	// The rest is UI code we don't need for the API, so just return here
+	if (API_Access) {
+		return;
+	}
 
 	UI_WINDOW *w;
 	ui_button_info *b;
@@ -241,58 +242,64 @@ void multi_df_debrief_init()
 }
 
 // do frame
-void multi_df_debrief_do()
+void multi_df_debrief_do(bool API_Access)
 {
 	int k, new_k;
 	char buf[256];
 	
-	k = chatbox_process();	
-	new_k = Multi_df_window.process(k, 0);	
+	k = chatbox_process();
+	if (!API_Access) {
+		new_k = Multi_df_window.process(k, 0);
 
-	// process keypresses
-	switch(new_k){
-	case KEY_ESC:
-		multi_debrief_esc_hit();
-		break;
+		// process keypresses
+		switch (new_k) {
+		case KEY_ESC:
+			multi_debrief_esc_hit();
+			break;
+		}
+
+		// process buttons
+		multi_df_process_buttons();
+
+		// music stuff
+		common_music_do();
 	}
-
-	// process buttons	
-	multi_df_process_buttons();
-
-	// music stuff
-	common_music_do();
-
 	// process debriefing details
 	multi_debrief_do_frame();
 
-	// draw the background
-	GR_MAYBE_CLEAR_RES(Multi_df_background_bitmap);
-	if (Multi_df_background_bitmap >= 0) {
-		gr_set_bitmap(Multi_df_background_bitmap);
-		gr_bitmap(0, 0, GR_RESIZE_MENU);
-	} 
+	if (!API_Access) {
+		// draw the background
+		GR_MAYBE_CLEAR_RES(Multi_df_background_bitmap);
+		if (Multi_df_background_bitmap >= 0) {
+			gr_set_bitmap(Multi_df_background_bitmap);
+			gr_bitmap(0, 0, GR_RESIZE_MENU);
+		}
 
-	// draw the window
-	Multi_df_window.draw();	
+		// draw the window
+		Multi_df_window.draw();
 
-	// kill matrix
-	multi_df_blit_kill_matrix();
+		// kill matrix
+		multi_df_blit_kill_matrix();
 
-	// render the chatbox
-	chatbox_render();
+		// render the chatbox
+		chatbox_render();
 
-	// draw the mission title
-	strcpy_s(buf, The_mission.name);
-	font::force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
-	gr_set_color_fast(&Color_bright_white);
-	gr_string(Kill_matrix_title_coords[gr_screen.res][0], Kill_matrix_title_coords[gr_screen.res][1], buf, GR_RESIZE_MENU);
+		// draw the mission title
+		strcpy_s(buf, The_mission.name);
+		font::force_fit_string(buf, 255, Kill_matrix_title_coords[gr_screen.res][2]);
+		gr_set_color_fast(&Color_bright_white);
+		gr_string(Kill_matrix_title_coords[gr_screen.res][0],
+			Kill_matrix_title_coords[gr_screen.res][1],
+			buf,
+			GR_RESIZE_MENU);
 
-	// flip
-	gr_flip();
+		// flip
+		gr_flip();
+	}
 }
 
 // close
-void multi_df_debrief_close()
+void multi_df_debrief_close(bool API_Access)
 {
 	int idx;
 	scoring_struct *sc;
@@ -322,8 +329,10 @@ void multi_df_debrief_close()
 		}
 	}
 
-	// music stuff
-	common_music_close();
+	if (!API_Access) {
+		// music stuff
+		common_music_close();
+	}
 }
 
 

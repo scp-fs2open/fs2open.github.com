@@ -13,7 +13,7 @@ class ParticleSource;
  *
  * @ingroup particleSystems
  */
-enum class EffectType: int64_t {
+enum class EffectType: int {
 	Invalid = -1,
 	Single,
 	Composite,
@@ -36,7 +36,7 @@ enum class EffectType: int64_t {
  */
 class ParticleEffect {
  protected:
-	SCP_string m_name; //!< The name if this effect
+	SCP_string m_name; //!< The name of this effect
 
  public:
 	/**

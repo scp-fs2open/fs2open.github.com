@@ -31,7 +31,7 @@ inline int aici_getset_helper(lua_State* L, float control_info::* value) {
 	if (!ade_get_args(L, "o|f", l_AI_Helper.Get(&ship), &f))
 		return ade_set_error(L, "f", 0.0f);
 
-	if (!ship.IsValid())
+	if (!ship.isValid())
 		return ade_set_error(L, "f", 0.0f);
 
 	if (ADE_SETTING_VAR) {
@@ -89,7 +89,7 @@ ADE_FUNC(turnTowardsPoint,
 		return ADE_RETURN_NIL;
 	}
 
-	ai_turn_towards_vector(target, ship.objp, nullptr, nullptr, bank, (diffTurn ? 0 : AITTV_FAST) | (argnum >= 5 ? AITTV_FORCE_DELTA_BANK : 0), nullptr, modifier);
+	ai_turn_towards_vector(target, ship.objp(), nullptr, nullptr, bank, (diffTurn ? 0 : AITTV_FAST) | (argnum >= 5 ? AITTV_FORCE_DELTA_BANK : 0), nullptr, modifier);
 	return ADE_RETURN_NIL;
 }
 
@@ -111,9 +111,9 @@ ADE_FUNC(turnTowardsOrientation,
 	}
 
 	matrix* mat = target->GetMatrix();
-	vec3d targetVec = mat->vec.fvec + ship.objp->pos;
+	vec3d targetVec = mat->vec.fvec + ship.objp()->pos;
 
-	ai_turn_towards_vector(&targetVec, ship.objp, nullptr, nullptr, 0.0f, (diffTurn ? 0 : AITTV_FAST), &mat->vec.rvec, modifier);
+	ai_turn_towards_vector(&targetVec, ship.objp(), nullptr, nullptr, 0.0f, (diffTurn ? 0 : AITTV_FAST), &mat->vec.rvec, modifier);
 	return ADE_RETURN_NIL;
 }
 

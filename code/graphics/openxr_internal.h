@@ -7,7 +7,7 @@
 #include <type_traits>
 #include <tl/optional.hpp>
 
-#ifndef __APPLE_CC__
+#ifdef FS_OPENXR
 
 #include <openxr/openxr.h>
 #include <openxr/openxr_platform.h>
@@ -41,7 +41,7 @@ void openxr_start_frame();
 void openxr_reset_offset();
 
 template<typename openxr_fnc, typename... arg_t>
-tl::optional<typename std::result_of<openxr_fnc(arg_t...)>::type> openxr_callExtensionFunction(const char* const name, arg_t&&... args) {
+tl::optional<std::invoke_result_t<openxr_fnc,arg_t...>> openxr_callExtensionFunction(const char* const name, arg_t&&... args) {
 	openxr_fnc func;
 
 	if (xrGetInstanceProcAddr(xr_instance, name, (PFN_xrVoidFunction*)&func) != XR_SUCCESS) {

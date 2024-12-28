@@ -93,11 +93,22 @@ class pilotfile {
 		bool save_player(player *_p = nullptr);
 		bool save_savefile();
 
+		void clear_savefile(bool reset_ships_and_weapons);
+
 		// updating stats, multi and/or all-time
 		void update_stats(scoring_struct *stats, bool training = false);
 		void update_stats_backout(scoring_struct *stats, bool training = false);
 		void set_multi_stats(const scoring_struct *stats);
 		void reset_stats();
+
+		/**
+		 * @brief Export stats to given scoring struct, sanitized for current mod data
+		 * 
+		 * @param[out] stats Scoring struct for exported data
+		 * 
+		 * @returns true if stats were exported successfully
+		 */
+		bool export_stats(scoring_struct *stats);
 
 		/**
 		 * Verifies a pilot file with the given filename
@@ -119,7 +130,7 @@ class pilotfile {
 		bool verify(const char *fname, int *rank = nullptr, char *valid_language = nullptr, int* flags = nullptr);
 
 		// whether current campaign savefile has valid data to work with
-		bool is_invalid()
+		bool is_invalid() const
 		{
 			return m_data_invalid;
 		}
@@ -204,7 +215,7 @@ class pilotfile {
 		// --------------------------------------------------------------------
 		// CSG specific
 		// --------------------------------------------------------------------
-		void csg_reset_data();
+		void csg_reset_data(bool reset_ships_and_weapons);
 		void csg_close();
 
 		void csg_read_flags();

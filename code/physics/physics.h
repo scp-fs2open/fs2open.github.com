@@ -34,6 +34,7 @@
 #define PF_NEWTONIAN_DAMP		(1 << 16)	// SUSHI: Whether or not to use newtonian dampening
 #define PF_MANEUVER_NO_DAMP		(1 << 17)	// Goober5000 - don't damp velocity changes in physics; used for instantaneous acceleration
 #define PF_BALLISTIC			(1 << 18)	// Asteroth - not moving 'under its own power', simplified physics calculations
+#define PF_SCRIPTED_VELOCITY    (1 << 19)   // Asteroth - velocity was modified via script, should not be altered by the engine for this frame
 
 extern const float SUPERCAP_WARP_T_CONST;
 extern const float SUPERCAP_WARP_EXCESS_SPD_THRESHOLD;
@@ -160,8 +161,8 @@ extern void physics_sim_vel(vec3d * position, physics_info * pi,matrix * orient,
 extern void physics_sim_rot(matrix * orient, physics_info * pi, float sim_time );
 extern bool whack_below_limit(const vec3d* impulse);
 extern bool whack_below_limit(float impulse);
-extern void physics_calculate_and_apply_whack(vec3d *force, vec3d *pos, physics_info *pi, matrix *orient, matrix *inv_moi);
-extern void physics_apply_whack(float orig_impulse, physics_info* pi, vec3d *delta_rotvel, vec3d* delta_vel, matrix* orient);
+extern void physics_calculate_and_apply_whack(const vec3d *force, const vec3d *pos, physics_info *pi, const matrix *orient, const matrix *inv_moi);
+extern void physics_apply_whack(float orig_impulse, physics_info* pi, const vec3d *delta_rotvel, const vec3d* delta_vel, const matrix* orient);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
 extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
 int check_rotvel_limit( physics_info *pi );

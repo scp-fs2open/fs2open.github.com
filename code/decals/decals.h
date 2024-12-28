@@ -65,10 +65,10 @@ typedef int DecalReference;
  */
 struct creation_info {
 	DecalReference definition_handle = -1;
-	util::UniformFloatRange radius = ::util::UniformFloatRange(-1.0f);
+	util::ParsedRandomFloatRange radius = ::util::UniformFloatRange(-1.0f);
 	float width = -1.0f;
 	float height = -1.0f;
-	util::UniformFloatRange lifetime = ::util::UniformFloatRange(-1.0f);
+	util::ParsedRandomFloatRange lifetime = ::util::UniformFloatRange(-1.0f);
 	bool random_rotation = false;
 };
 
@@ -134,7 +134,7 @@ void renderAll();
  * orientation should look along the direction
  */
 void addDecal(creation_info& info,
-			  object* host,
+			  const object* host,
 			  int submodel,
 			  const vec3d& local_pos,
 			  const matrix& local_orient);

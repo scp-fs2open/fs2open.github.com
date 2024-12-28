@@ -12,12 +12,14 @@
 #include "mission/missionload.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
+#include "options/OptionsManager.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "stats/medals.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 #define REDALERT_INTERNAL
@@ -811,84 +813,82 @@ void pilotfile::csg_read_redalert()
 
 	ship_list_size = cfread_int(cfp);
 
-	if (ship_list_size <= 0) {
-		return;
-	}
+	if (ship_list_size > 0) {
+		cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
 
-	cfread_string_len(t_string, MAX_FILENAME_LEN, cfp);
+		Red_alert_precursor_mission = t_string;
 
-	Red_alert_precursor_mission = t_string;
+		for (idx = 0; idx < ship_list_size; idx++) {
+			red_alert_ship_status ras;
 
-	for (idx = 0; idx < ship_list_size; idx++) {
-		red_alert_ship_status ras;
+			cfread_string_len(t_string, NAME_LENGTH, cfp);
+			ras.name = t_string;
 
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-		ras.name = t_string;
+			ras.hull = cfread_float(cfp);
 
-		ras.hull = cfread_float(cfp);
-
-		// ship class, index into ship_list[]
-		i = cfread_int(cfp);
-		if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
-			mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
-			ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
-		} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
-			ras.ship_class = i;
-		} else {
-			ras.ship_class = ship_list[i].index;
-		}
-
-		// subsystem hits
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			hit = cfread_float(cfp);
-			ras.subsys_current_hits.push_back( hit );
-		}
-
-		// subsystem aggregate hits
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			hit = cfread_float(cfp);
-			ras.subsys_aggregate_current_hits.push_back( hit );
-		}
-
-		// primary weapon loadout and status
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
+			// ship class, index into ship_list[]
 			i = cfread_int(cfp);
-			weapons.index = weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
-
-			// triggering this means something is really fubar
-			if (weapons.index < 0) {
-				continue;
+			if ( (i >= (int)ship_list.size()) || (i < RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {
+				mprintf(("CSG => Parse Warning: Invalid value for red alert ship index (%d), emptying slot.\n", i));
+				ras.ship_class = RED_ALERT_DESTROYED_SHIP_CLASS;
+			} else if ( (i < 0 ) && (i >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) ) {  // ship destroyed/exited
+				ras.ship_class = i;
+			} else {
+				ras.ship_class = ship_list[i].index;
 			}
 
-			ras.primary_weapons.push_back( weapons );
-		}
+			// subsystem hits
+			count = cfread_int(cfp);
 
-		// secondary weapon loadout and status
-		count = cfread_int(cfp);
-
-		for (j = 0; j < count; j++) {
-			i = cfread_int(cfp);
-			weapons.index = weapon_list[i].index;
-			weapons.count = cfread_int(cfp);
-
-			// triggering this means something is really fubar
-			if (weapons.index < 0) {
-				continue;
+			for (j = 0; j < count; j++) {
+				hit = cfread_float(cfp);
+				ras.subsys_current_hits.push_back( hit );
 			}
 
-			ras.secondary_weapons.push_back( weapons );
-		}
+			// subsystem aggregate hits
+			count = cfread_int(cfp);
 
-		// this is quite likely a *bad* thing if it doesn't happen
-		if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
-			Red_alert_ship_status.push_back( ras );
+			for (j = 0; j < count; j++) {
+				hit = cfread_float(cfp);
+				ras.subsys_aggregate_current_hits.push_back( hit );
+			}
+
+			// primary weapon loadout and status
+			count = cfread_int(cfp);
+
+			for (j = 0; j < count; j++) {
+				i = cfread_int(cfp);
+				weapons.index = weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
+
+				// triggering this means something is really fubar
+				if (weapons.index < 0) {
+					continue;
+				}
+
+				ras.primary_weapons.push_back( weapons );
+			}
+
+			// secondary weapon loadout and status
+			count = cfread_int(cfp);
+
+			for (j = 0; j < count; j++) {
+				i = cfread_int(cfp);
+				weapons.index = weapon_list[i].index;
+				weapons.count = cfread_int(cfp);
+
+				// triggering this means something is really fubar
+				if (weapons.index < 0) {
+					continue;
+				}
+
+				ras.secondary_weapons.push_back( weapons );
+			}
+
+			// this is quite likely a *bad* thing if it doesn't happen
+			if (ras.ship_class >= RED_ALERT_LOWEST_VALID_SHIP_CLASS) {
+				Red_alert_ship_status.push_back( ras );
+			}
 		}
 	}
 
@@ -901,26 +901,25 @@ void pilotfile::csg_read_redalert()
 
 	wing_list_size = cfread_int(cfp);
 
-	if (wing_list_size <= 0) {
-		return;
+	if (wing_list_size > 0) {
+		for (idx = 0; idx < wing_list_size; idx++) {
+			red_alert_wing_status rws;
+
+			cfread_string_len(t_string, NAME_LENGTH, cfp);
+			rws.name = t_string;
+
+			rws.latest_wave = cfread_int(cfp);
+
+			rws.wave_count = cfread_int(cfp);
+			rws.total_arrived_count = cfread_int(cfp);
+			rws.total_departed = cfread_int(cfp);
+			rws.total_destroyed = cfread_int(cfp);
+			rws.total_vanished = cfread_int(cfp);
+
+			Red_alert_wing_status.push_back(rws);
+		}
 	}
 
-	for (idx = 0; idx < wing_list_size; idx++) {
-		red_alert_wing_status rws;
-
-		cfread_string_len(t_string, NAME_LENGTH, cfp);
-		rws.name = t_string;
-
-		rws.latest_wave = cfread_int(cfp);
-
-		rws.wave_count = cfread_int(cfp);
-		rws.total_arrived_count = cfread_int(cfp);
-		rws.total_departed = cfread_int(cfp);
-		rws.total_destroyed = cfread_int(cfp);
-		rws.total_vanished = cfread_int(cfp);
-
-		Red_alert_wing_status.push_back(rws);
-	}
 }
 
 void pilotfile::csg_write_redalert()
@@ -1175,55 +1174,47 @@ void pilotfile::csg_write_variables()
 void pilotfile::csg_read_settings()
 {
 	clamped_range_warnings.clear();
+
 	// sound/voice/music
-	if (!Using_in_game_options) {
-		float temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
-		snd_set_effects_volume(temp_volume);
+	float temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+	snd_set_effects_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume);
 
-		temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
-		event_music_set_volume(temp_volume);
+	temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+	event_music_set_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume);
 
-		temp_volume = cfread_float(cfp);
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
-		snd_set_voice_volume(temp_volume);
+	temp_volume = cfread_float(cfp);
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+	snd_set_voice_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume);
 
-		Briefing_voice_enabled = cfread_int(cfp) != 0;
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
-		// correct offset
-		cfread_float(cfp);
-		cfread_float(cfp);
-		cfread_float(cfp);
-
-		cfread_int(cfp);
-	}
+	Briefing_voice_enabled = cfread_int(cfp) != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", Briefing_voice_enabled);
 
 
 	// skill level
 	Game_skill_level = cfread_int(cfp);
 	clamp_value_with_warn(&Game_skill_level, 0, 4, "Game Skill Level");
+	options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 
 	// input options
-	if (!Using_in_game_options) {
-		Use_mouse_to_fly   = cfread_int(cfp) != 0;
-		Mouse_sensitivity  = cfread_int(cfp);
-		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	Use_mouse_to_fly   = cfread_int(cfp) != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", Use_mouse_to_fly);
 
-		Joy_sensitivity    = cfread_int(cfp);
-		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	Mouse_sensitivity  = cfread_int(cfp);
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 
-		Joy_dead_zone_size = cfread_int(cfp);
-		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	Joy_sensitivity    = cfread_int(cfp);
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
 
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
-		cfread_int(cfp);
-		cfread_int(cfp);
-		cfread_int(cfp);
-		cfread_int(cfp);
-	}
+	Joy_dead_zone_size = cfread_int(cfp);
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZone", Joy_dead_zone_size);
 
 	if (csg_ver < 3) {
 		// detail
@@ -1530,7 +1521,7 @@ void pilotfile::csg_write_container(const sexp_container &container)
 	}
 }
 
-void pilotfile::csg_reset_data()
+void pilotfile::csg_reset_data(bool reset_ships_and_weapons)
 {
 	int idx;
 	cmission *missionp;
@@ -1545,8 +1536,10 @@ void pilotfile::csg_reset_data()
 	p->stats.init();
 
 	// zero out allowed ships/weapons
-	memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
-	memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+	if (reset_ships_and_weapons) {
+		memset(Campaign.ships_allowed, 0, sizeof(Campaign.ships_allowed));
+		memset(Campaign.weapons_allowed, 0, sizeof(Campaign.weapons_allowed));
+	}
 
 	// reset campaign status
 	Campaign.prev_mission = -1;
@@ -1603,8 +1596,7 @@ void pilotfile::csg_close()
 
 bool pilotfile::load_savefile(player *_p, const char *campaign)
 {
-	char base[_MAX_FNAME] = { '\0' };
-	std::ostringstream buf;
+	SCP_string campaign_filename;
 
 	if (Game_mode & GM_MULTIPLAYER) {
 		return false;
@@ -1618,18 +1610,18 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 	Assert( (Player_num >= 0) && (Player_num < MAX_PLAYERS) );
 	p = _p;
 
+	auto base = util::get_file_part(campaign);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
+
 	// build up filename for the savefile...
-	_splitpath((char*)campaign, NULL, NULL, base, NULL);
-
-	buf << p->callsign << "." << base << ".csg";
-
-	filename = buf.str().c_str();
+	sprintf(filename, NOX("%s.%s.csg"), p->callsign, base);
 
 	// if campaign file doesn't exist, abort so we don't load irrelevant data
-	buf.str(std::string());
-	buf << base << FS_CAMPAIGN_FILE_EXT;
-	if ( !cf_exists_full((char*)buf.str().c_str(), CF_TYPE_MISSIONS) ) {
-		mprintf(("CSG => Unable to find campaign file '%s'!\n", buf.str().c_str()));
+	campaign_filename = base;
+	campaign_filename += FS_CAMPAIGN_FILE_EXT;
+	if ( !cf_exists_full(campaign_filename.c_str(), CF_TYPE_MISSIONS) ) {
+		mprintf(("CSG => Unable to find campaign file '%s'!\n", campaign_filename.c_str()));
 		return false;
 	}
 
@@ -1658,7 +1650,7 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 	mprintf(("CSG => Loading '%s' with version %d...\n", filename.c_str(), (int)csg_ver));
 
-	csg_reset_data();
+	csg_reset_data(true);
 
 	// the point of all this: read in the CSG contents
 	while ( !cfeof(cfp) ) {
@@ -1770,6 +1762,10 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 		}
 	}
 
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these campaign options set
+	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
+	//options::OptionsManager::instance()->persistChanges();
+
 	// if the campaign (for whatever reason) doesn't have a squad image, use the multi one
 	if (p->s_squad_filename[0] == '\0') {
 		strcpy_s(p->s_squad_filename, p->m_squad_filename);
@@ -1786,9 +1782,6 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 
 bool pilotfile::save_savefile()
 {
-	char base[_MAX_FNAME] = { '\0' };
-	std::ostringstream buf;
-
 	if (Game_mode & GM_MULTIPLAYER) {
 		return false;
 	}
@@ -1801,12 +1794,12 @@ bool pilotfile::save_savefile()
 		return false;
 	}
 
+	auto base = util::get_file_part(Campaign.filename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
+
 	// build up filename for the savefile...
-	_splitpath(Campaign.filename, NULL, NULL, base, NULL);
-
-	buf << p->callsign << "." << base << ".csg";
-
-	filename = buf.str().c_str();
+	sprintf(filename, NOX("%s.%s.csg"), p->callsign, base);
 
 	// make sure that we can actually save this safely
 	if (m_data_invalid) {
@@ -1874,6 +1867,19 @@ bool pilotfile::save_savefile()
 	csg_close();
 
 	return true;
+}
+
+void pilotfile::clear_savefile(bool reset_ships_and_weapons)
+{
+	if (Game_mode & GM_MULTIPLAYER) {
+		return;
+	}
+
+	// set player ptr first thing
+	Assert((Player_num >= 0) && (Player_num < MAX_PLAYERS));
+	p = &Players[Player_num];
+
+	csg_reset_data(reset_ships_and_weapons);
 }
 
 /*

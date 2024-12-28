@@ -806,6 +806,22 @@ ADE_VIRTVAR(HitpointsMax, l_Shipclass, "number", "Ship class hitpoints", "number
 	return ade_set_args(L, "f", Ship_info[idx].max_hull_strength);
 }
 
+ADE_VIRTVAR(ShieldHitpointsMax, l_Shipclass, nullptr, "Ship class shield hitpoints", "number", "Shield hitpoints, or 0 if handle is invalid")
+{
+	int idx;
+	if(!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ade_set_error(L, "f", 0.0f);
+
+	if(idx < 0 || idx >= ship_info_size())
+		return ade_set_error(L, "f", 0.0f);
+
+	if(ADE_SETTING_VAR) {
+		LuaError(L, "Setting Shield Max Hitpoints is not supported");
+	}
+
+	return ade_set_args(L, "f", Ship_info[idx].max_shield_strength);
+}
+
 ADE_VIRTVAR(Species, l_Shipclass, "species", "Ship class species", "species", "Ship class species, or invalid species handle if shipclass handle is invalid")
 {
 	int idx;
@@ -1173,6 +1189,66 @@ ADE_FUNC(hasCustomData, l_Shipclass, nullptr, "Detects whether the ship class ha
 	return ade_set_args(L, "b", result);
 }
 
+ADE_VIRTVAR(CustomStrings,
+	l_Shipclass,
+	nullptr,
+	"Gets the indexed custom string table for this ship. Each item in the table is a table with the following values: "
+	"Name - the name of the custom string, Value - the value associated with the custom string, String - the custom "
+	"string itself.",
+	"table",
+	"The ship's custom data table")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info* sip = &Ship_info[idx];
+	
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	int cnt = 0;
+
+	for (const auto& cs : sip->custom_strings) {
+		cnt++;
+		auto item = luacpp::LuaTable::create(L);
+
+		item.addValue("Name", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.name));
+		item.addValue("Value", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.value));
+		item.addValue("String", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), cs.text));
+
+		table.addValue(cnt, item);
+	}
+
+	return ade_set_args(L, "t", &table);
+}
+
+ADE_FUNC(hasCustomStrings,
+	l_Shipclass,
+	nullptr,
+	"Detects whether the ship has any custom strings",
+	"boolean",
+	"true if the ship's custom_strings is not empty, false otherwise")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Shipclass.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (idx < 0 || idx >= ship_info_size())
+		return ADE_RETURN_NIL;
+
+	ship_info* sip = &Ship_info[idx];
+
+	bool result = !sip->custom_strings.empty();
+	return ade_set_args(L, "b", result);
+}
+
 ADE_FUNC(isValid, l_Shipclass, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
@@ -1267,10 +1343,10 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"boolean restart, number x, number y, [number width = 629, number height = 355, number = currentEffectSetting]",
+	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
-	"defaults to the mod setting or the model's setting.",
+	"defaults to the mod setting or the model's setting. Zoom is a multiplier to the model's closeup_zoom value.",
 	"boolean",
 	"true if rendered, false if error")
 {
@@ -1281,7 +1357,8 @@ ADE_FUNC(renderSelectModel,
 	int x2 = 629;
 	int y2 = 355;
 	int effect = -1;
-	if (!ade_get_args(L, "obii|iii", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect))
+	float zoom = 1.3f;
+	if (!ade_get_args(L, "obii|iiif", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect, &zoom))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1331,7 +1408,7 @@ ADE_FUNC(renderSelectModel,
 		y2,
 		&ShipRot,
 		&sip->closeup_pos,
-		sip->closeup_zoom * 1.3f,
+		sip->closeup_zoom * zoom,
 		rev_rate,
 		MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,
