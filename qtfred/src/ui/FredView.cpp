@@ -721,10 +721,12 @@ void FredView::onShipClassSelected(int ship_class) {
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
+	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
 	asteroidFieldEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
 void FredView::on_actionMission_Specs_triggered(bool) {
@@ -740,12 +742,14 @@ void FredView::on_actionWaypoint_Paths_triggered(bool) {
 void FredView::on_actionShips_triggered(bool)
 {
 	auto editorDialog = new dialogs::ShipEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
 	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
+	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
 	editorCampaign->show();
 }
 void FredView::on_actionObjects_triggered(bool) {
@@ -1128,13 +1132,15 @@ void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();
 }
 void FredView::on_actionAbout_triggered(bool) {
-	dialogs::AboutDialog dialog(this);
-	dialog.exec();
+	auto dialog = new dialogs::AboutDialog(this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionBackground_triggered(bool) {
-	dialogs::BackgroundEditorDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::BackgroundEditorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionShield_System_triggered(bool) {
@@ -1144,8 +1150,9 @@ void FredView::on_actionShield_System_triggered(bool) {
 }
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
-	dialogs::VoiceActingManager dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::VoiceActingManager(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void FredView::on_actionMission_Objectives_triggered(bool) {
 	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
