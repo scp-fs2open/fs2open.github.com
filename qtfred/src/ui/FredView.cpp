@@ -1144,8 +1144,9 @@ void FredView::on_actionMission_Objectives_triggered(bool) {
 }
 
 void FredView::on_actionFiction_Viewer_triggered(bool) {
-	dialogs::FictionViewerDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 } // namespace fred
