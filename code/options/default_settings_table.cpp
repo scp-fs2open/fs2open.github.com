@@ -58,7 +58,7 @@ void parse_default_settings_table(const char* filename)
 		required_string("#END");
 	} catch (const parse::ParseException& e) {
 		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n",
-			(filename) ? filename : "<default default_settings.tbl>",
+			(filename) ? filename : "<default_settings.tbl>",
 			e.what()));
 		return;
 	}
