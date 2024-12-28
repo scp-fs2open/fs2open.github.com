@@ -23,38 +23,36 @@ void parse_default_settings_table(const char* filename)
 		// start parsing
 		optional_string("#DEFAULT SETTINGS");
 
-		// allow settings to be in any order, just as in parse_ai_profiles_tbl
+		// allow settings to be in any order
 		while (!check_for_string("#END")) {
 
-			//while (check_for_string("$Option Key:")) {
-				if (optional_string("$Option Key:")) {
-					SCP_string name;
-					stuff_string(name, F_NAME);
+			if (optional_string("$Option Key:")) {
+				SCP_string name;
+				stuff_string(name, F_NAME);
 
-					const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
+				const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
 
-					if (thisOpt == nullptr) {
-						Warning(LOCATION, "%s is not a valid option!", name.c_str());
-						skip_to_start_of_string_either("$Option Key:", "#END");
-						continue;
-					}
-					required_string("+Value:");
-					thisOpt->parseDefaultSetting();
-
-					// If an option is enforced and not retail we set the flag so that the default value is set
-					// later during initialization, the option will be hidden from the options menu
-					// Retail options cannot be hidden because we can't really hide them from the menu
-					if ((optional_string_one_of(2, "+Enforce", "+Enforced")) != -1) {
-						if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
-							options::OptionsManager::instance()->enforceOption(name);
-						} else {
-							Warning(LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
-						}
-					}
-				} else {
-					break;
+				if (thisOpt == nullptr) {
+					Warning(LOCATION, "%s is not a valid option!", name.c_str());
+					skip_to_start_of_string_either("$Option Key:", "#END");
+					continue;
 				}
-			//}
+				required_string("+Value:");
+				thisOpt->parseDefaultSetting();
+
+				// If an option is enforced and not retail we set the flag so that the default value is set
+				// later during initialization, the option will be hidden from the options menu
+				// Retail options cannot be hidden because we can't really hide them from the menu
+				if ((optional_string_one_of(2, "+Enforce", "+Enforced")) != -1) {
+					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
+						options::OptionsManager::instance()->enforceOption(name);
+					} else {
+						Warning(LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
+					}
+				}
+			} else {
+				break;
+			}
 		}
 
 		required_string("#END");
