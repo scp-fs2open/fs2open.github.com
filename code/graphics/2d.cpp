@@ -183,8 +183,7 @@ static void parse_lighting_func()
 		if (value[i] < 0 || value[i] > static_cast<int>(DefaultDetailLevel::Num_detail_levels)) {
 			Warning(LOCATION, "%i is an invalid detail level value!", value[i]);
 		} else {
-			DefaultDetailLevel level = static_cast<DefaultDetailLevel>(i);
-			change_default_detail_level(level, DetailSetting::Lighting, value[i]);
+			change_default_detail_level(static_cast<DefaultDetailLevel>(i), DetailSetting::Lighting, value[i]);
 		}
 	}
 }
