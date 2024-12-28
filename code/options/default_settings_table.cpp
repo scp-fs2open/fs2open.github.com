@@ -44,9 +44,11 @@ void parse_default_settings_table(const char* filename)
 					// If an option is enforced and not retail we set the flag so that the default value is set
 					// later during initialization, the option will be hidden from the options menu
 					// Retail options cannot be hidden because we can't really hide them from the menu
-					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
-						if ((optional_string_one_of(2, "+Enforce", "+Enforced")) != -1) {
+					if ((optional_string_one_of(2, "+Enforce", "+Enforced")) != -1) {
+						if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
 							options::OptionsManager::instance()->enforceOption(name);
+						} else {
+							Warning(LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
 						}
 					}
 				} else {
