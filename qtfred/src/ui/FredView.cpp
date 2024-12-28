@@ -863,8 +863,9 @@ void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 void FredView::orientEditorTriggered() {
 	auto dialog = new dialogs::ObjectOrientEditorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	// This is a modal dialog
-	dialog->exec();
+	dialog->show();
 }
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
