@@ -1133,8 +1133,9 @@ void FredView::on_actionBackground_triggered(bool) {
 }
 
 void FredView::on_actionShield_System_triggered(bool) {
-	dialogs::ShieldSystemDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::ShieldSystemDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
