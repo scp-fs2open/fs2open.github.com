@@ -27,6 +27,8 @@ public:
 protected:
 	void closeEvent(QCloseEvent*) override;
 
+	void rejectHandler();
+
 private:
     std::unique_ptr<Ui::CustomWingNamesDialog> ui;
 	std::unique_ptr<CustomWingNamesDialogModel> _model;
