@@ -1143,8 +1143,9 @@ void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 	dialog.exec();
 }
 void FredView::on_actionMission_Objectives_triggered(bool) {
-	dialogs::MissionGoalsDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionFiction_Viewer_triggered(bool) {
