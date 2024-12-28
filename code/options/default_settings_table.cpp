@@ -45,7 +45,7 @@ void parse_default_settings_table(const char* filename)
 					// later during initialization, the option will be hidden from the options menu
 					// Retail options cannot be hidden because we can't really hide them from the menu
 					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
-						if (optional_string_one_of(2, "+Enforce", "+Enforced")) {
+						if ((optional_string_one_of(2, "+Enforce", "+Enforced")) != -1) {
 							options::OptionsManager::instance()->enforceOption(name);
 						}
 					}

@@ -165,7 +165,7 @@ static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma
                      std::pair<const char*, int>{"Brightness", 1375},
                      std::pair<const char*, int>{"The brightness value used for the game window", 1738})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_func([&]() { return Gr_gamma; })
+                     .default_func([]() { return Gr_gamma; })
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
@@ -201,7 +201,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_func([&]() { return Detail.lighting; })
+                     .default_func([]() { return Detail.lighting; })
                      .change_listener([](int val, bool initial) {
                           Detail.lighting = val;
                           if (!initial) {
@@ -260,7 +260,7 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
                               {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
-                     .default_func([&]() { return Gr_configured_window_state; })
+                     .default_func([]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
                      //.parser(parse_window_mode_func)
                      .finish();
@@ -489,13 +489,13 @@ static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphic
                      std::pair<const char*, int>{"Enable or disable soft particle rendering", 1762})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_func([&]() { return Gr_enable_soft_particles; })
+                     .default_func([]() { return Gr_enable_soft_particles; })
                      .bind_to_once(&Gr_enable_soft_particles)
                      .importance(68)
                      .parser(parse_soft_particle_func)
                      .finish();
 
-flagset<FramebufferEffects> Gr_framebuffer_effects;
+flagset<FramebufferEffects> Gr_framebuffer_effects{};
 
 static void parse_framebuffer_func() {
 	SCP_string value;
@@ -529,7 +529,7 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                               {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
                               {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
                               {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
-                     .default_func([&]() { return flagset<FramebufferEffects>(); } )
+                     .default_func([]() { return Gr_framebuffer_effects; } )
                      .bind_to_once(&Gr_framebuffer_effects)
                      .importance(77)
                      .parser(parse_framebuffer_func)
@@ -581,7 +581,7 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                               {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
                               {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
                               {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
-                     .default_func([&]() { return AntiAliasMode::None; } )
+                     .default_func([]() { return Gr_aa_mode; } )
                      .bind_to(&Gr_aa_mode)
                      .importance(79)
                      .parser(parse_anti_aliasing_func)
@@ -621,7 +621,7 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                               {4, {"4 Samples", 1694}},
                               {8, {"8 Samples", 1695}},
                               {16, {"16 Samples", 1696}}})
-                     .default_func([&]() { return Cmdline_msaa_enabled; } )
+                     .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
                      .parser(parse_msaa_func)
@@ -650,7 +650,7 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_func([&]() { return Gr_post_processing_enabled; })
+                     .default_func([]() { return Gr_post_processing_enabled; })
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
                      .parser(parse_post_processing_func)        
@@ -671,7 +671,7 @@ static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync"
                      std::pair<const char*, int>{"Controls how the engine does vertical synchronization", 1767})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_func([&]() { return Gr_enable_vsync; })
+                     .default_func([]() { return Gr_enable_vsync; })
                      .bind_to_once(&Gr_enable_vsync)
                      .importance(70)
                      .parser(parse_vsync_func)  
