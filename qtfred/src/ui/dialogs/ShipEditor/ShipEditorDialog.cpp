@@ -203,7 +203,7 @@ void ShipEditorDialog::on_tblInfoButton_clicked()
 void ShipEditorDialog::update()
 {
 	if (this->isVisible()) {
-		if (_model->getNumSelectedObjects() && _model->_modified) {
+		if (_model->getNumSelectedObjects() && _model->query_modified()) {
 			_model->apply();
 		}
 		_model->initializeData();
