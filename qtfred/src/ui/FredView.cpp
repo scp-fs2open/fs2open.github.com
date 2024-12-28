@@ -753,6 +753,7 @@ void FredView::on_actionObjects_triggered(bool) {
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
 	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionReinforcements_triggered(bool) {
