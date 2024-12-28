@@ -93,7 +93,7 @@ void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max
 	std::strftime(dest, dest_max_len, "%x at %X", src);
 }
 
-bool rejectOrCloseHandler(QDialog* dialog,
+bool rejectOrCloseHandler(__UNUSED QDialog* dialog,
 	fso::fred::dialogs::AbstractDialogModel* model,
 	fso::fred::EditorViewport* viewport)
 {
