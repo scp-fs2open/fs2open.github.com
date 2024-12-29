@@ -1528,7 +1528,7 @@ void mod_table_reset()
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;
 	Enable_external_default_scripts = false;
-	Default_detail_level = DefaultDetailLevel::High; // "high" seems a reasonable default in 2012 -zookeeper
+	Default_detail_level = DefaultDetailLevel::Highest; // "highest" seems a reasonable default in 2012 -zookeeper
 	Full_color_head_anis = false;
 	Dont_automatically_select_turret_when_targeting_ship = false;
 	Automatically_select_subsystem_under_reticle_when_targeting_same_ship = false;

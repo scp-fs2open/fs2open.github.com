@@ -33,7 +33,7 @@ void parse_default_settings_table(const char* filename)
 				const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
 
 				if (thisOpt == nullptr) {
-					Warning(LOCATION, "%s is not a valid option!", name.c_str());
+					error_display(0, "%s is not a valid option!", name.c_str());
 					skip_to_start_of_string_either("$Option Key:", "#END");
 					continue;
 				}
@@ -47,7 +47,7 @@ void parse_default_settings_table(const char* filename)
 					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
 						options::OptionsManager::instance()->enforceOption(name);
 					} else {
-						Warning(LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
+						error_display(0, LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
 					}
 				}
 			} else {

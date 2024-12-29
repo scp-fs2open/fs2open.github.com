@@ -146,7 +146,7 @@ static void parse_gamma_func()
 	constexpr float EPSILON = 0.0001f;
 
 	if (value < 0.1f - EPSILON || value > 5.0f + EPSILON) {
-		Warning(LOCATION, "%f is not a valid gamma value! (Out of range)", value);
+		error_display(0, "%f is not a valid gamma value! (Out of range)", value);
 		return;
 	}
 
@@ -158,7 +158,7 @@ static void parse_gamma_func()
 		return;
 	}
 
-	Warning(LOCATION, "%f is not a valid gamma value! (Invalid increment)", value);
+	error_display(0, "%f is not a valid gamma value! (Invalid increment)", value);
 }
 
 static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
@@ -181,7 +181,7 @@ static void parse_lighting_func()
 	for (int i = 0; i < static_cast<int>(DefaultDetailLevel::Num_detail_levels); i++) {
 
 		if (value[i] < 0 || value[i] > static_cast<int>(DefaultDetailLevel::Num_detail_levels)) {
-			Warning(LOCATION, "%i is an invalid detail level value!", value[i]);
+			error_display(0, "%i is an invalid detail level value!", value[i]);
 		} else {
 			change_default_detail_level(static_cast<DefaultDetailLevel>(i), DetailSetting::Lighting, value[i]);
 		}
@@ -243,7 +243,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	} else if (lcase_equal(value, "fullscreen")) {
 		Gr_configured_window_state = os::ViewportState::Fullscreen;
 	} else {
-		Warning(LOCATION, "%s is an invalide window mode", value.c_str());
+		error_display(0, "%s is an invalide window mode", value.c_str());
 	}
 }*/
 
@@ -515,7 +515,7 @@ static void parse_framebuffer_func() {
 			Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
 		} // No need for "none" case
 	} else {
-		Warning(LOCATION, "%s is not a valid framebuffer effect setting", value.c_str());
+		error_display(0, "%s is not a valid framebuffer effect setting", value.c_str());
 	}
 }
 
@@ -563,7 +563,7 @@ static void parse_anti_aliasing_func() {
 			Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
 		}
 	} else {
-		Warning(LOCATION, "%s is not a valid anti aliasing setting", value.c_str());
+		error_display(0, "%s is not a valid anti aliasing setting", value.c_str());
 	}
 }
 
@@ -607,7 +607,7 @@ static void parse_msaa_func()
 			Cmdline_msaa_enabled = 16;
 		}
 	} else {
-		Warning(LOCATION, "%s is not a valid MSAA setting", value.c_str());
+		error_display(0, "%s is not a valid MSAA setting", value.c_str());
 	}
 }
 
