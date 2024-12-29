@@ -78,9 +78,9 @@ public:
 	void initUseExpandedColors(bool useexpandedcolors);
 	void pageIn() override;
 	void initialize() override;
-	void render(float frametime) override;
 	void renderBackground(int num_wings_to_draw);
 	void renderDots(int wing_index, int screen_index, int num_wings_to_draw);
+	void render(float frametime, bool config = false) override;
 	void initFlash();
 	bool maybeFlashStatus(int wing_index, int wing_pos);
 };

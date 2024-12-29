@@ -437,7 +437,7 @@ void HudGaugeRadar::initDistanceInfinityOffsets(int x, int y)
 	Radar_dist_offsets[RR_INFINITY][1] = y;
 }
 
-void HudGaugeRadar::render(float  /*frametime*/)
+void HudGaugeRadar::render(float  /*frametime*/, bool /*config*/)
 {
 }
 
@@ -471,19 +471,19 @@ void HudGaugeRadar::drawRange()
 	switch ( HUD_config.rp_dist ) {
 
 	case RR_SHORT:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], "%s", XSTR( "2k", 467));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], 1.0f, false, "%s", XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], "%s", XSTR( "10k", 468));
+		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], 1.0f, false, "%s", XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:
 		if (Unicode_text_mode) {
 			// This escape sequence is the UTF-8 encoding of the infinity symbol. We can't use u8 yet since VS2013 doesn't support it
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "\xE2\x88\x9E");
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], 1.0f, false, "\xE2\x88\x9E");
 		} else {
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], 1.0f, false, "%c", Radar_infinity_icon);
 		}
 		break;
 

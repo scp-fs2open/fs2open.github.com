@@ -234,7 +234,7 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	return is_flashing;
 }
 
-void HudGaugeEscort::render(float  /*frametime*/)
+void HudGaugeEscort::render(float  /*frametime*/, bool /*config*/)
 {
 	int	i = 0;
 
@@ -398,7 +398,7 @@ void HudGaugeEscort::renderIcon(int x, int y, int index)
 			}
 		}
 	}
-	renderPrintf( x+ship_integrity_offsets[0] + offset, y+ship_integrity_offsets[1], EG_NULL, "%d", screen_integrity);
+	renderPrintfWithGauge( x+ship_integrity_offsets[0] + offset, y+ship_integrity_offsets[1], EG_NULL, 1.0f, false, "%d", screen_integrity);
 
 	//Let's be nice.
 	setGaugeColor();
@@ -453,9 +453,9 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 
 	// show ship integrity
 	if(objp == NULL){	
-		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
+		renderPrintfWithGauge( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, 1.0f, false, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	} else {
-		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
+		renderPrintfWithGauge( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, 1.0f, false, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	}
 }
 

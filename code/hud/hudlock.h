@@ -58,7 +58,7 @@ public:
 	void initLoopLockedAnim(bool loop);
 	void initBlinkLockedAnim(bool blink);
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void renderOld(float frametime);
 	void renderLockTriangles(int center_x, int center_y, float frametime);
 	void renderLockTrianglesNew(int center_x, int center_y, float frametime, lock_info *slot);

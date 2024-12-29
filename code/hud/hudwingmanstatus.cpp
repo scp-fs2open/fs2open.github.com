@@ -11,6 +11,7 @@
 
 #include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
+#include "hud/hudconfig.h"
 #include "hud/hudtargetbox.h"
 #include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
@@ -556,7 +557,7 @@ int hud_wingman_status_wingmen_exist(int num_wings_to_draw)
 	return 0;
 }
 
-void HudGaugeWingmanStatus::render(float  /*frametime*/)
+void HudGaugeWingmanStatus::render(float  /*frametime*/, bool /*config*/)
 {
 	int i, count, num_wings_to_draw = 0;
 

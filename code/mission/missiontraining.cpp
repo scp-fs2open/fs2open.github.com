@@ -235,7 +235,7 @@ void HudGaugeDirectives::pageIn()
 	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
 }
 
-void HudGaugeDirectives::render(float  /*frametime*/)
+void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 {
 	char buf[256], *second_line;
 	int i, x, y, z, end, offset, bx, by;
@@ -262,7 +262,7 @@ void HudGaugeDirectives::render(float  /*frametime*/)
 		renderBitmap(directives_top.first_frame, position[0], position[1]);
 
 	// print out title
-	renderPrintf(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, "%s", XSTR( "directives", 422));
+	renderPrintfWithGauge(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, 1.0f, false, "%s", XSTR( "directives", 422));
 
 	bx = position[0];
 	by = position[1] + middle_frame_offset_y;
@@ -1093,7 +1093,7 @@ void HudGaugeTrainingMessages::pageIn()
 /**
  * Displays (renders) the training message to the screen
  */
-void HudGaugeTrainingMessages::render(float  /*frametime*/)
+void HudGaugeTrainingMessages::render(float /*frametime*/, bool /*config*/)
 {
 	const char *str;
 	char buf[256];
@@ -1142,7 +1142,7 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (static_cast<size_t>(str - Training_lines[i]) == Training_message_mods[count].pos)) {
 				buf[z] = 0;
-				renderPrintf(x, y, "%s", buf);
+				renderPrintf(x, y, 1.0f, false, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
@@ -1164,7 +1164,7 @@ void HudGaugeTrainingMessages::render(float  /*frametime*/)
 
 		if (z) {
 			buf[z] = 0;
-			renderPrintf(x, y, "%s", buf);
+			renderPrintf(x, y, 1.0f, false, "%s", buf);
 		}
 	}
 }

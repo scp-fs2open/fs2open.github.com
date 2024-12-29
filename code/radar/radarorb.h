@@ -55,7 +55,7 @@ public:
 	void drawOutlinesHtl();
 	void setupViewHtl();
 	int calcAlpha(vec3d* pt);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void plotBlip(blip *b, vec3d *scaled_pos);
 };
