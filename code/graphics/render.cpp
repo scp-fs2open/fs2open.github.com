@@ -245,25 +245,36 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   &gr_screen.current_color,
 					   scale_factor);
 }
-void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror) {
+void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-
 
 	int reclip;
 #ifndef NDEBUG
 	int count = 0;
 #endif
 
+	int bw, bh, do_resize;
+
+	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
+
+	if (scale_factor != 1.0f) {
+		bw = fl2i(bw * scale_factor);
+		bh = fl2i(bh * scale_factor);
+
+		// If we're scaling then we need to scale these to make sure the right and bottom clip planes are scaled as well
+		w = fl2i(w * scale_factor);
+		h = fl2i(h * scale_factor);
+
+		sx = fl2i(sx * scale_factor);
+		sy = fl2i(sy * scale_factor);
+	}
+
 	int dx1 = x;
 	int dx2 = x + w - 1;
 	int dy1 = y;
 	int dy2 = y + h - 1;
-
-	int bw, bh, do_resize;
-
-	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
 
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = 1;
@@ -312,7 +323,6 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		if (dy2 > clip_bottom) {
 			dy2 = clip_bottom;
 		}
-
 
 		if (sx < 0) {
 			dx1 -= sx;
@@ -365,18 +375,19 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
 	bitmap_ex_internal(dx1,
-					   dy1,
-					   (dx2 - dx1 + 1),
-					   (dy2 - dy1 + 1),
-					   sx,
-					   sy,
-					   resize_mode,
-					   true,
-					   mirror,
-					   &gr_screen.current_color);
+		dy1,
+		(dx2 - dx1 + 1),
+		(dy2 - dy1 + 1),
+		sx,
+		sy,
+		resize_mode,
+		true,
+		mirror,
+		&gr_screen.current_color,
+		scale_factor);
 }
 //these are penguins bitmap functions
-void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
+void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
@@ -386,14 +397,26 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
 	int count = 0;
 #endif
 
+	int bw, bh, do_resize;
+
+	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
+
+	if (scale_factor != 1.0f) {
+		bw = fl2i(bw * scale_factor);
+		bh = fl2i(bh * scale_factor);
+
+		// If we're scaling then we need to scale these to make sure the right and bottom clip planes are scaled as well
+		w = fl2i(w * scale_factor);
+		h = fl2i(h * scale_factor);
+
+		sx = fl2i(sx * scale_factor);
+		sy = fl2i(sy * scale_factor);
+	}
+
 	int dx1 = x;
 	int dx2 = x + w - 1;
 	int dy1 = y;
 	int dy2 = y + h - 1;
-
-	int bw, bh, do_resize;
-
-	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
 
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = 1;
@@ -496,7 +519,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
 	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, false, false, &clr);
+	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, false, mirror, &clr, scale_factor);
 }
 
 #define MAX_VERTS_PER_DRAW 300
