@@ -4241,6 +4241,59 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 				break;
 			}
 
+			// examine uses of alter-ship-flag and are-ship-flags-set with "immobile"
+			case OP_ALTER_SHIP_FLAG:
+			case OP_ARE_SHIP_FLAGS_SET:
+			{
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				bool immobile_used = false;
+
+				// check to see the flag is specified by the sexp (don't check to see what the flag may be applied to)
+				if (op_num == OP_ALTER_SHIP_FLAG)
+				{
+					auto flag_name = CTEXT(first_arg_node);
+					sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+					if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						immobile_used = true;
+				}
+				else
+				{
+					for (int n = CDR(first_arg_node); n >= 0; n = CDR(n))
+					{
+						auto flag_name = CTEXT(n);
+						sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+						if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						{
+							immobile_used = true;
+							break;
+						}
+					}
+				}
+
+				// now check if any ships are created with any of the flags
+				if (immobile_used)
+				{
+					for (const auto so : list_range(&Ship_obj_list))
+					{
+						const auto &obj = Objects[so->objnum];
+						if (obj.flags[Object::Object_Flags::Immobile, Object::Object_Flags::Dont_change_position, Object::Object_Flags::Dont_change_orientation])
+						{
+							issue_msg = "At least one ship (";
+							issue_msg += Ships[obj.instance].ship_name;
+							issue_msg += ") has \"Does Not Change Position\" and/or \"Does Not Change Orientation\" checked, while this ";
+							issue_msg += Sexp_nodes[node].text;
+							issue_msg += " operator uses the \"immobile\" flag.  Be aware that all three flags are independent and setting/checking one flag will not "
+								"set/check another.  For convenience, the set-mobile and set-immobile operators will clear conflicting flags, but alter-ship-flag will not.";
+							return SEXP_CHECK_POTENTIAL_ISSUE;
+						}
+					}
+				}
+				break;
+			}
+
 			default:
 				break;
 		}

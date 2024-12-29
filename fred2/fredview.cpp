@@ -3406,7 +3406,7 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 			return 1;
 	}
 
-	if (Error_checker_checks_potential_issues)
+	if (Error_checker_checks_potential_issues || Error_checker_checks_potential_issues_once)
 		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
 	{
@@ -3417,11 +3417,12 @@ int CFREDView::fred_check_sexp(int sexp, int type, const char *location, ...)
 		if (!bad_node_str.empty())		// the previous function adds a space at the end
 			bad_node_str.pop_back();
 
-		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
 		if (Fred_main_wnd->MessageBox(error_buf.c_str(), "Warning", MB_OKCANCEL | MB_ICONINFORMATION) != IDOK)
 			return 1;
 	}
+	Error_checker_checks_potential_issues_once = false;
 
 	return 0;
 }
