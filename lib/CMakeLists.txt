@@ -33,7 +33,9 @@ if (FSO_BUILD_WITH_FFMPEG)
 	include(FFmpeg.cmake)
 endif()
 
-add_subdirectory(discord)
+if (FSO_BUILD_WITH_DISCORD)
+	add_subdirectory(discord)
+endif()
 
 include(libRocket.cmake)
 

@@ -49,6 +49,7 @@
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 // campaign wasn't ended
@@ -740,13 +741,15 @@ void mission_campaign_init()
  */
 void mission_campaign_savefile_delete(const char* cfilename)
 {
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-
-	_splitpath( cfilename, NULL, NULL, base, NULL );
+	char filename[_MAX_FNAME];
 
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		return;	// no such thing as a multiplayer campaign savefile
 	}
+
+	auto base = util::get_file_part(cfilename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
 
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
