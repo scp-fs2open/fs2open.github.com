@@ -90,10 +90,10 @@ void init_new_pilot(player *p, int reset)
 		control_config_use_preset(Control_config_presets[0]);		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
-		// set the default detail level based on tabling rather than the above method
-		DefaultDetailLevel cur_speed = Default_detail_level;
+		// set the default detail preset based on tabling rather than the above method
+		DefaultDetailPreset cur_speed = Default_detail_preset;
 
-		static_assert(static_cast<int>(DefaultDetailLevel::Num_detail_levels) == 4, "Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4");
+		static_assert(static_cast<int>(DefaultDetailPreset::Num_detail_presets) == 4, "Code in ManagePilot assumes Num_detail_presets = 4");
 
 		detail_level_set(cur_speed);
 

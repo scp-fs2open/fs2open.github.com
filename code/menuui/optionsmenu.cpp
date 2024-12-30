@@ -351,7 +351,7 @@ void options_detail_init();
 void options_detail_hide_stuff();
 void options_detail_unhide_stuff();
 void options_detail_do_frame();
-void options_detail_set_level(DefaultDetailLevel level);
+void options_detail_set_level(DefaultDetailPreset preset);
 
 // text
 #define OPTIONS_NUM_TEXT				49
@@ -804,27 +804,27 @@ void options_button_pressed(int n)
 			break;		
 
 		case LOW_DETAIL_N:
-			options_detail_set_level(DefaultDetailLevel::Low);
+			options_detail_set_level(DefaultDetailPreset::Low);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MEDIUM_DETAIL_N:
-			options_detail_set_level(DefaultDetailLevel::Medium);
+			options_detail_set_level(DefaultDetailPreset::Medium);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HIGH_DETAIL_N:
-			options_detail_set_level(DefaultDetailLevel::High);
+			options_detail_set_level(DefaultDetailPreset::High);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case VERY_HIGH_DETAIL_N:
-			options_detail_set_level(DefaultDetailLevel::Highest);
+			options_detail_set_level(DefaultDetailPreset::VeryHigh);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case CUSTOM_DETAIL_N:
-			options_detail_set_level(DefaultDetailLevel::Custom);
+			options_detail_set_level(DefaultDetailPreset::Custom);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 			// END - detail level tab buttons
@@ -1545,14 +1545,9 @@ void options_detail_do_frame()
 		options_force_button_frame(WEAPON_EXTRAS_ON, 0);
 	}	
 
-	int current_detail;
+	DefaultDetailPreset current_preset = (Detail.setting != DefaultDetailPreset::Custom) ? current_detail_preset() : DefaultDetailPreset::Custom;
 
-	if ( Detail.setting >= 0 ) {
-		current_detail = current_detail_level();
-		Detail.setting = current_detail;
-	} else {
-		current_detail = -1;
-	}
+	Detail.setting = current_preset;
 
 	options_force_button_frame(LOW_DETAIL_N, 0);
 	options_force_button_frame(MEDIUM_DETAIL_N, 0);
@@ -1560,29 +1555,29 @@ void options_detail_do_frame()
 	options_force_button_frame(VERY_HIGH_DETAIL_N, 0);
 	options_force_button_frame(CUSTOM_DETAIL_N, 0);
 
-	switch ( current_detail ) {
-	case -1:
+	switch (current_preset) {
+	case DefaultDetailPreset::Custom:
 		options_force_button_frame(CUSTOM_DETAIL_N, 2);
 		break;
-	case 0:
+	case DefaultDetailPreset::Low:
 		options_force_button_frame(LOW_DETAIL_N, 2);
 		break;
-	case 1:
+	case DefaultDetailPreset::Medium:
 		options_force_button_frame(MEDIUM_DETAIL_N, 2);
 		break;
-	case 2:
+	case DefaultDetailPreset::High:
 		options_force_button_frame(HIGH_DETAIL_N, 2);
 		break;
-	case 3:
+	case DefaultDetailPreset::VeryHigh:
 		options_force_button_frame(VERY_HIGH_DETAIL_N, 2);
 		break;
 	}
 }
 
 // Set all the detail settings to a predefined level
-void options_detail_set_level(DefaultDetailLevel level)
+void options_detail_set_level(DefaultDetailPreset preset)
 {
-	detail_level_set(level);
+	detail_level_set(preset);
 	options_detail_synch_sliders();
 }
 

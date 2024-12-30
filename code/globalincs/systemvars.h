@@ -141,12 +141,23 @@ extern bool Trail_render_override;
 // or bad things will happen, I promise.
 //====================================================================================
 
+// This refers to the total number of default levels as defined in Detail_defaults[]. Should only be 4.
+enum class DefaultDetailPreset {
+	Custom = -1, // Special level used only in certain cases
+	Low,
+	Medium,
+	High,
+	VeryHigh,
+
+	Num_detail_presets
+};
+
 #define MAX_DETAIL_VALUE 4			// The highest valid value for the "analog" detail level settings. Lowest is 0.
 
 // If you change this, update player file in ManagePilot.cpp
 typedef struct detail_levels {
 
-	int		setting;						// Which default setting this was created from.   0=lowest... DefaultDetailLevel::Num_detail_levels-1, -1=Custom
+	DefaultDetailPreset		setting;						// Which default setting this was created from.   0=lowest... DefaultDetailPreset::Num_detail_presets-1, -1=Custom
 
 	// "Analogs"
 	int		nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
@@ -182,32 +193,21 @@ enum class DetailSetting {
 	Num_detail_settings
 };
 
-// This refers to the total number of default levels as defined in Detail_defaults[]. Should only be 4.
-enum class DefaultDetailLevel {
-	Custom = -1, // Special level used only in certain cases
-	Low,
-	Medium,
-	High,
-	Highest,
-
-	Num_detail_levels
-};
-
 // Global values used to access detail levels in game and libs
 extern detail_levels Detail;
 
 // Call this with:
 // 0 - lowest
-// NUM_DEFAULT_DETAIL_LEVELS - highest
+// Num_detail_presets - highest
 // To set the parameters in Detail to some set of defaults
-void detail_level_set(DefaultDetailLevel level);
+void detail_level_set(DefaultDetailPreset preset);
 
-// level is 0 - lowest, NUM_DEFAULT_DETAIL_LEVELS - hights
-void change_default_detail_level(DefaultDetailLevel level, DetailSetting selection, int value);
-void change_default_detail_level(DefaultDetailLevel level, DetailSetting selection, bool value);
+// level is 0 - lowest, Num_detail_presets - hights
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, int value);
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, bool value);
 
-// Returns the current detail level or -1 if custom.
-int current_detail_level();
+// Returns the current detail preset or -1 if custom.
+DefaultDetailPreset current_detail_preset();
 
 #define safe_kill(a) if(a)vm_free(a)
 

@@ -153,7 +153,7 @@ namespace particle
 			world_pos += Objects[info->attached_objnum].pos;
 		}
 		// treat particles on lower detail levels as 'further away' for the purposes of culling
-		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(static_cast<int>(DefaultDetailLevel::Num_detail_levels) - Detail.num_particles));
+		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(static_cast<int>(DefaultDetailPreset::Num_detail_presets) - Detail.num_particles));
 		// treat bigger particles as 'closer'
 		adjusted_dist /= info->rad;
 		float cull_start_dist = 1000.f;

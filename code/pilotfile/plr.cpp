@@ -842,8 +842,9 @@ void pilotfile::plr_read_settings()
 
 	// detail
 	//Preset not handled by OptionsManager
-	Detail.setting           = handler->readInt("setting");
-	clamp_value_with_warn(&Detail.setting, -1, static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1, "Detail Level Preset");
+	int setting_value           = handler->readInt("setting");
+	clamp_value_with_warn(&setting_value, -1, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1, "Detail Level Preset");
+	Detail.setting = static_cast<DefaultDetailPreset>(setting_value);
 
 	Detail.nebula_detail     = handler->readInt("nebula_detail");
 	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
@@ -916,8 +917,11 @@ void pilotfile::plr_write_settings()
 	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
-	clamp_value_with_warn(&Detail.setting, -1, static_cast<int>(DefaultDetailLevel::Num_detail_levels) - 1, "Detail Level Preset");
-	handler->writeInt("setting", Detail.setting);
+	int setting_value = static_cast<int>(Detail.setting); // Convert enum to int for clamping
+	clamp_value_with_warn(&setting_value, -1, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1, "Detail Level Preset");
+	Detail.setting = static_cast<DefaultDetailPreset>(setting_value); // Convert back to enum
+	handler->writeInt("setting", setting_value);
+
 	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
 	handler->writeInt("nebula_detail", Detail.nebula_detail);
 	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_VALUE, "Model Detail");
