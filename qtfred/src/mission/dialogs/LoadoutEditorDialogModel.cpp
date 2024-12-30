@@ -933,6 +933,7 @@ void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, c
 	}
 	set_modified();
 	buildCurrentLists();
+	modelChanged();
 }
 
 bool LoadoutDialogModel::getSkipValidation() {

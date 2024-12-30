@@ -260,6 +260,7 @@ void ReinforcementsDialogModel::setUseCount(int count)
 	for (auto& reinforcement : _selectedReinforcementIndices) {
 		std::get<1>(_reinforcementList[reinforcement]) = count;
 	}
+	modelChanged();
 	set_modified();
 }
 
@@ -268,6 +269,7 @@ void ReinforcementsDialogModel::setBeforeArrivalDelay(int delay)
 	for (auto& reinforcement : _selectedReinforcementIndices) {
 		std::get<2>(_reinforcementList[reinforcement]) = delay;
 	}
+	modelChanged();
 	set_modified();
 }
 

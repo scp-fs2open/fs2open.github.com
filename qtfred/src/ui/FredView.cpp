@@ -872,7 +872,7 @@ void FredView::orientEditorTriggered() {
 	auto dialog = new dialogs::ObjectOrientEditorDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	// This is a modal dialog
-	dialog->show();
+	dialog->exec();
 }
 void FredView::onUpdateEditorActions() {
 	ui->actionObjects->setEnabled(query_valid_object(fred->currentObject));
@@ -989,7 +989,7 @@ void FredView::on_actionSelectionList_triggered(bool) {
 	auto dialog = new dialogs::SelectionDialog(this, _viewport);
 	// This is a modal dialog
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	dialog->exec();
 }
 void FredView::on_actionOrbitSelected_triggered(bool enabled) {
 	_viewport->Lookat_mode = enabled;

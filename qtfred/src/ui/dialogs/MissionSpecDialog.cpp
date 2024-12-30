@@ -300,7 +300,7 @@ void MissionSpecDialog::squadronNameChanged(const QString & string) {
 void MissionSpecDialog::on_customWingNameButton_clicked() {
 	CustomWingNamesDialog* dialog = new CustomWingNamesDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	dialog->exec();
 }
 
 void MissionSpecDialog::on_squadronLogoButton_clicked() {
