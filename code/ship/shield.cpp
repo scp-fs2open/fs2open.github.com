@@ -61,7 +61,7 @@ typedef struct shield_hit {
 	fix	start_time;								//	start time of this object
 	int	type;									//	type, probably the weapon type, to indicate the bitmap to use
 	int	objnum;									//	Object index, needed to get current orientation, position.
-	int radius_override;						//  the weapon which caused the hit may adjust the size of the effect
+	float radius_override;						//  the weapon which caused the hit may adjust the size of the effect
 	int	num_tris;								//	Number of Shield_tris comprising this shield.
 	int	tri_list[MAX_TRIS_PER_HIT];				//	Indices into Shield_tris, triangles for this shield hit.
 	ubyte rgb[3];								//  rgb colors
