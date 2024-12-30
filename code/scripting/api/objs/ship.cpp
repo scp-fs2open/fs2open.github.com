@@ -32,6 +32,7 @@
 #include "object/objectdock.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "scripting/api/objs/message.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
@@ -847,6 +848,23 @@ ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The inde
 		shipp->persona_index = p_index - 1;
 
 	return ade_set_args(L, "i", shipp->persona_index + 1);
+}
+
+ADE_FUNC(getPersona, l_Ship, nullptr, "Gets the persona of the ship, if any", "persona", "Persona handle or invalid handle on error")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ade_set_error(L, "o", l_Persona.Set(-1));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Persona.Set(-1));
+
+	ship* shipp = &Ships[objh->objp()->instance];
+
+	if (!SCP_vector_inbounds(Personas, shipp->persona_index))
+		return ade_set_args(L, "o", l_Persona.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Persona.Set(shipp->persona_index));
 }
 
 ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "modelinstancetextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
