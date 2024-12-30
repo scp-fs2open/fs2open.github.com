@@ -47,7 +47,7 @@ void parse_default_settings_table(const char* filename)
 					if (!(thisOpt->getFlags()[options::OptionFlags::RetailBuiltinOption])) {
 						options::OptionsManager::instance()->enforceOption(name);
 					} else {
-						error_display(0, LOCATION, "%s is a retail builtin option and cannot be enforced!", name.c_str());
+						error_display(0, "%s is a retail builtin option and cannot be enforced!", name.c_str());
 					}
 				}
 			} else {
