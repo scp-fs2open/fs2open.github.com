@@ -524,9 +524,11 @@ void render_shield(int shield_num)
 				hit_radius = si->max_shield_impact_effect_radius;
 			}
 
-			color clr;
-			gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
-			shield_render_decal(pm, orient, centerp, &sh->hit_orient, &sh->hit_pos, hit_radius, bitmap_id, &clr);
+			if (hit_radius > 0.0) {
+				color clr;
+				gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
+				shield_render_decal(pm, orient, centerp, &sh->hit_orient, &sh->hit_pos, hit_radius, bitmap_id, &clr);
+			}
 		}
 	}
 }
