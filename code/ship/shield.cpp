@@ -427,15 +427,15 @@ void render_shield(int shield_num)
 	object	*objp;
 	ship		*shipp;
 	ship_info	*si;
-	shield_hit* shit = &Shield_hits[shield_num];
+	shield_hit* sh = &Shield_hits[shield_num];
 
-	if (shit->type == SH_UNUSED)	{
+	if (sh->type == SH_UNUSED)	{
 		return;
 	}
 
-	Assert(shit->objnum >= 0);
+	Assert(sh->objnum >= 0);
 
-	objp = &Objects[shit->objnum];
+	objp = &Objects[sh->objnum];
 
 	if (objp->flags[Object::Object_Flags::No_shields])	{
 		return;
@@ -443,13 +443,13 @@ void render_shield(int shield_num)
 
 	//	If this object didn't get rendered, don't render its shields.  In fact, make the shield hit go away.
 	if (!(objp->flags[Object::Object_Flags::Was_rendered])) {
-		shit->type = SH_UNUSED;
+		sh->type = SH_UNUSED;
 		return;
 	}
 
 	//	At detail levels 1, 3, animations play at double speed to reduce load.
 	if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 3) ) {
-		shit->start_time -= Frametime;
+		sh->start_time -= Frametime;
 	}
 
 	MONITOR_INC(NumShieldRend,1);
@@ -460,18 +460,18 @@ void render_shield(int shield_num)
 
 	//	If this ship is in its deathroll, make the shield hit effects go away faster.
 	if (shipp->flags[Ship::Ship_Flags::Dying])	{
-		shit->start_time -= fl2f(2*flFrametime);
+		sh->start_time -= fl2f(2*flFrametime);
 	}
 
 	//	Detail level stuff.  When lots of shield hits, maybe make them go away faster.
 	if (Poly_count > 50) {
-		if (shit->start_time + (SHIELD_HIT_DURATION*50)/Poly_count < Missiontime) {
-			shit->type = SH_UNUSED;
+		if (sh->start_time + (SHIELD_HIT_DURATION*50)/Poly_count < Missiontime) {
+			sh->type = SH_UNUSED;
 			free_global_tri_records(shield_num);
 			return;
 		}
-	} else if ((shit->start_time + SHIELD_HIT_DURATION) < Missiontime) {
-		shit->type = SH_UNUSED;
+	} else if ((sh->start_time + SHIELD_HIT_DURATION) < Missiontime) {
+		sh->type = SH_UNUSED;
 		free_global_tri_records(shield_num);
 		return;
 	}
@@ -490,26 +490,26 @@ void render_shield(int shield_num)
 	// don't try to draw if we don't have an ani
 	if ( sa->first_frame >= 0 )
 	{
-		frame_num = bm_get_anim_frame(sa->first_frame, f2fl(Missiontime - shit->start_time), f2fl(SHIELD_HIT_DURATION));
+		frame_num = bm_get_anim_frame(sa->first_frame, f2fl(Missiontime - sh->start_time), f2fl(SHIELD_HIT_DURATION));
 		bitmap_id = sa->first_frame + frame_num;
 
 		float alpha = 0.9999f;
 		nebula_handle_alpha(alpha, centerp, Neb2_fog_visibility_shield);
 
 		ubyte r, g, b;
-		r = (ubyte)(shit->rgb[0] * alpha);
-		g = (ubyte)(shit->rgb[1] * alpha);
-		b = (ubyte)(shit->rgb[2] * alpha);
+		r = (ubyte)(sh->rgb[0] * alpha);
+		g = (ubyte)(sh->rgb[1] * alpha);
+		b = (ubyte)(sh->rgb[2] * alpha);
 
 		if ( bitmap_id <= -1 ) {
 			return;
 		}
 
 		if ( (Detail.shield_effects == 1) || (Detail.shield_effects == 2) ) {
-			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[shit->tri_list[0]], orient, centerp, r, g, b);
+			shield_render_low_detail_bitmap(bitmap_id, alpha, &Global_tris[sh->tri_list[0]], orient, centerp, r, g, b);
 		} else if ( Detail.shield_effects < 4 ) {
-			for ( int i = 0; i < shit->num_tris; i++ ) {
-				shield_render_triangle(bitmap_id, alpha, &Global_tris[shit->tri_list[i]], orient, centerp, r, g, b);
+			for ( int i = 0; i < sh->num_tris; i++ ) {
+				shield_render_triangle(bitmap_id, alpha, &Global_tris[sh->tri_list[i]], orient, centerp, r, g, b);
 			}
 		} else {
 			float hit_radius = pm->core_radius;
@@ -517,8 +517,8 @@ void render_shield(int shield_num)
 				hit_radius = pm->core_radius * 0.5f;
 			}
 
-			if (shit->radius_override >= 0.0f)
-				hit_radius = shit->radius_override;
+			if (sh->radius_override >= 0.0f)
+				hit_radius = sh->radius_override;
 
 			if (si->max_shield_impact_effect_radius >= 0.0f && hit_radius > si->max_shield_impact_effect_radius) {
 				hit_radius = si->max_shield_impact_effect_radius;
@@ -526,7 +526,7 @@ void render_shield(int shield_num)
 
 			color clr;
 			gr_init_alphacolor(&clr, r, g, b, fl2i(alpha * 255.0f));
-			shield_render_decal(pm, orient, centerp, &shit->hit_orient, &shit->hit_pos, hit_radius, bitmap_id, &clr);
+			shield_render_decal(pm, orient, centerp, &sh->hit_orient, &sh->hit_pos, hit_radius, bitmap_id, &clr);
 		}
 	}
 }
