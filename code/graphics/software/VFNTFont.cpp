@@ -94,10 +94,7 @@ namespace font
 			}
 		}
 
-		float scale_factor = Font_Scale_Factor;
-		if (!canScale) {
-			scale_factor = 1.0f;
-		}
+		float scale_factor = (canScale && !Fred_running) ? Font_Scale_Factor : 1.0f;
 		scale_factor *= scaleMultiplier;
 
 		if (h1)
