@@ -1571,6 +1571,9 @@ void options_detail_do_frame()
 	case DefaultDetailPreset::VeryHigh:
 		options_force_button_frame(VERY_HIGH_DETAIL_N, 2);
 		break;
+	default:
+		Assertion(false, "Invalid preset called for in Options menu");
+		break;
 	}
 }
 
