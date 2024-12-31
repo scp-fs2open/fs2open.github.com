@@ -1,5 +1,5 @@
 # -*- mode:cmake -*-
-cmake_minimum_required (VERSION 2.8)
+cmake_minimum_required (VERSION 3.7)
 # 2.8 needed because of ExternalProject
 
 # Detect build type, fallback to release and throw a warning if use didn't specify any
@@ -25,20 +25,6 @@ option(WITH_STATIC_CRT "(Visual C++) Enable to statically link CRT, which avoids
 
 project(LIBANTLR4)
 
-if(CMAKE_VERSION VERSION_EQUAL "3.0.0" OR
-   CMAKE_VERSION VERSION_GREATER "3.0.0")
-  CMAKE_POLICY(SET CMP0026 NEW)
-  CMAKE_POLICY(SET CMP0054 OLD)
-  CMAKE_POLICY(SET CMP0045 OLD)
-  CMAKE_POLICY(SET CMP0042 OLD)
-endif()
-
-if(CMAKE_VERSION VERSION_EQUAL "3.3.0" OR
-   CMAKE_VERSION VERSION_GREATER "3.3.0")
-  CMAKE_POLICY(SET CMP0059 OLD)
-  CMAKE_POLICY(SET CMP0054 OLD)
-endif()
-
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   #find_package(PkgConfig REQUIRED)
   #pkg_check_modules(UUID REQUIRED uuid)
@@ -57,7 +43,7 @@ if(WITH_DEMO)
     message(FATAL_ERROR "Missing antlr4.jar location. You can specify it's path using: -DANTLR_JAR_LOCATION=<path>")
   else()
     get_filename_component(ANTLR_NAME ${ANTLR_JAR_LOCATION} NAME_WE)
-    if(NOT EXISTS "${ANTLR_JAR_LOCATION}")
+    if(NOT EXISTS ANTLR_JAR_LOCATION)
       message(FATAL_ERROR "Unable to find ${ANTLR_NAME} in ${ANTLR_JAR_LOCATION}")
     else()
       message(STATUS "Found ${ANTLR_NAME}: ${ANTLR_JAR_LOCATION}")
@@ -73,8 +59,9 @@ else()
   set(MY_CXX_WARNING_FLAGS "  -Wall -pedantic -W")
 endif()
 
+
 # Initialize CXXFLAGS.
-if("${CMAKE_VERSION}" VERSION_GREATER 3.1.0)
+if(CMAKE_VERSION VERSION_GREATER 3.1.0)
   set(CMAKE_CXX_STANDARD 11)
   set(CMAKE_CXX_STANDARD_REQUIRED ON)
 else()
@@ -99,20 +86,20 @@ else()
 endif()
 
 # Compiler-specific C++11 activation.
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE GCC_VERSION)
     # Just g++-5.0 and greater contain <codecvt> header. (test in ubuntu)
     if(NOT (GCC_VERSION VERSION_GREATER 5.0 OR GCC_VERSION VERSION_EQUAL 5.0))
         message(FATAL_ERROR "${PROJECT_NAME} requires g++ 5.0 or greater.")
     endif ()
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ANDROID) 
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ANDROID)
 	# Need -Os cflag and cxxflags here to work with exception handling on armeabi.
 	# see  https://github.com/android-ndk/ndk/issues/573
 	# and without -stdlib=libc++ cxxflags
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND APPLE)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND APPLE)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -stdlib=libc++")
-elseif ("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang" AND ( CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD") )
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang" AND ( CMAKE_SYSTEM_NAME MATCHES "Linux" OR CMAKE_SYSTEM_NAME MATCHES "FreeBSD") )
     execute_process(
         COMMAND ${CMAKE_CXX_COMPILER} -dumpversion OUTPUT_VARIABLE CLANG_VERSION)
     if(NOT (CLANG_VERSION VERSION_GREATER 4.2.1 OR CLANG_VERSION VERSION_EQUAL 4.2.1))
