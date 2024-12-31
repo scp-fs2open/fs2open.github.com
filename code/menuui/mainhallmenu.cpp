@@ -72,7 +72,7 @@ bool Main_hall_poll_key = true;
 
 SCP_string Main_hall_cheat = "";
 
-SCP_string Enforced_main_hall = "";
+SCP_string Enforced_main_hall;
 
 // ----------------------------------------------------------------------------
 // MISC interface data
@@ -499,7 +499,7 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// sanity checks
 	if (Main_hall_defines.empty()) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
-	} else if (requested_hall == "") {
+	} else if (requested_hall.empty()) {
 		// we were passed a blank main hall name, so load the first available main hall
 		main_hall_get_name(main_hall_to_load, 0);
 	} else if (main_hall_get_pointer(requested_hall) == nullptr) {
