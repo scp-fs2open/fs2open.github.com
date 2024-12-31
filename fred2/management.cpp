@@ -873,6 +873,7 @@ void clear_mission(bool fast_reload)
 	set_physics_controls();
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();

@@ -45,7 +45,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "Linux")
   #target_link_libraries(antlr4_static ${UUID_LIBRARIES})
 elseif(APPLE)
 #  target_link_libraries(antlr4_shared ${COREFOUNDATION_LIBRARY})
-  target_link_libraries(antlr4_static ${COREFOUNDATION_LIBRARY})
+  target_link_libraries(antlr4_static PRIVATE ${COREFOUNDATION_LIBRARY})
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -55,9 +55,9 @@ else()
 endif()
 
 
-if("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   set(disabled_compile_warnings "${disabled_compile_warnings} -Wno-dollar-in-identifier-extension -Wno-four-char-constants")
-elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU" OR "${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU" OR CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   set(disabled_compile_warnings "${disabled_compile_warnings} -Wno-multichar")
 endif()
 

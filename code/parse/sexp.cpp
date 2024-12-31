@@ -50,6 +50,7 @@
 #include "hud/hudparse.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"		// for the order sexp
+#include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/keycontrol.h"
 #include "io/timer.h"
@@ -479,6 +480,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",				OP_SET_WEAPON_ENERGY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -544,9 +548,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-vanish",				OP_SHIP_SUBSYS_VANISHED,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
-	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
-	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -698,6 +699,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-squadron-wings",				OP_SET_SQUADRON_WINGS,			1,	MAX_SQUADRON_WINGS,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -4234,6 +4236,59 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 							issue_msg += wingp->name;
 							issue_msg += " has more than one wave and arrives from a docking bay.  Be careful when checking for this wing's destruction.  If the "
 								"mothership is destroyed before all waves have arrived, the wing will not be considered destroyed.";
+							return SEXP_CHECK_POTENTIAL_ISSUE;
+						}
+					}
+				}
+				break;
+			}
+
+			// examine uses of alter-ship-flag and are-ship-flags-set with "immobile"
+			case OP_ALTER_SHIP_FLAG:
+			case OP_ARE_SHIP_FLAGS_SET:
+			{
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				bool immobile_used = false;
+
+				// check to see the flag is specified by the sexp (don't check to see what the flag may be applied to)
+				if (op_num == OP_ALTER_SHIP_FLAG)
+				{
+					auto flag_name = CTEXT(first_arg_node);
+					sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+					if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						immobile_used = true;
+				}
+				else
+				{
+					for (int n = CDR(first_arg_node); n >= 0; n = CDR(n))
+					{
+						auto flag_name = CTEXT(n);
+						sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+						if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						{
+							immobile_used = true;
+							break;
+						}
+					}
+				}
+
+				// now check if any ships are created with any of the flags
+				if (immobile_used)
+				{
+					for (const auto so : list_range(&Ship_obj_list))
+					{
+						const auto &obj = Objects[so->objnum];
+						if (obj.flags[Object::Object_Flags::Immobile, Object::Object_Flags::Dont_change_position, Object::Object_Flags::Dont_change_orientation])
+						{
+							issue_msg = "At least one ship (";
+							issue_msg += Ships[obj.instance].ship_name;
+							issue_msg += ") has \"Does Not Change Position\" and/or \"Does Not Change Orientation\" checked, while this ";
+							issue_msg += Sexp_nodes[node].text;
+							issue_msg += " operator uses the \"immobile\" flag.  Be aware that all three flags are independent and setting/checking one flag will not "
+								"set/check another.  For convenience, the set-mobile and set-immobile operators will clear conflicting flags, but alter-ship-flag will not.";
 							return SEXP_CHECK_POTENTIAL_ISSUE;
 						}
 					}
@@ -13661,6 +13716,30 @@ void multi_sexp_hud_display_gauge()
 	if (Current_sexp_network_packet.get_int(show_for)) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
 	}
+}
+
+void sexp_set_squadron_wings(int node)
+{
+	std::array<int, MAX_SQUADRON_WINGS> new_squad_wingnums;
+
+	// get the new set of squadron wings
+	for (int i = 0, n = node; i < MAX_SQUADRON_WINGS; i++)
+	{
+		int wingnum = -1;
+
+		if (n >= 0)
+		{
+			auto wingp = eval_wing(n);
+			if (wingp)
+				wingnum = WING_INDEX(wingp);
+
+			n = CDR(n);
+		}
+
+		new_squad_wingnums[i] = wingnum;
+	}
+
+	hud_set_new_squadron_wings(new_squad_wingnums);
 }
 
 // Goober5000
@@ -28589,6 +28668,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SQUADRON_WINGS:
+				sexp_set_squadron_wings(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -31178,6 +31262,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -32570,6 +32655,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else
 				return OPF_MESSAGE_OR_STRING;
+
+		case OP_SET_SQUADRON_WINGS:
+			return OPF_WING;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -36464,6 +36552,7 @@ int get_category(int op_id)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
 		case OP_ABORT_REARM:
@@ -36847,6 +36936,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -41733,64 +41823,74 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
-		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot."
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tShip to force (ship must be in-mission)\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
 	},
 
 	{OP_HUD_SET_DIRECTIVE, "hud-set-directive\r\n"
-		"\tSets the text of a given custom hud gauge to the provided text."
+		"\tSets the text of a given custom hud gauge to the provided text.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences.\r\n"
 	},
 
 	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active (deprecated)\r\n"
-		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges."
+		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_CLEAR_MESSAGES, "hud-clear-messages\r\n"
-		"\tClears active messages displayed on the HUD."
+		"\tClears active messages displayed on the HUD.\r\n"
 		"Takes no arguments\r\n"
 	},
 
 	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type (deprecated)\r\n"
-		"\tActivates or deactivates all hud gauges of a given type."
+		"\tActivates or deactivates all hud gauges of a given type.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
-		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl."
+		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge name\r\n"
 	},
 
 	{OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, "hud-set-builtin-gauge-active\r\n"
-		"\tActivates or deactivates a builtin hud gauge grouping."
+		"\tActivates or deactivates a builtin hud gauge grouping.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge Group name\r\n"
 	},
 
 	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
-		"\tActivates or deactivates hud static as if sensors are damaged."
+		"\tActivates or deactivates hud static as if sensors are damaged.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
 	},
 
 	{OP_HUD_FORCE_EMP_EFFECT, "hud-force-emp-effect\r\n"
-		"\tActivates or deactivates emp effect for the player."
+		"\tActivates or deactivates emp effect for the player.\r\n"
 		"Takes 2 or more Arguments...\r\n"
 		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
 		"\t2:\tNumber, emp duration in milliseconds\r\n"
 		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
+	},
+
+	{OP_SET_SQUADRON_WINGS, "set-squadron-wings\r\n"
+		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.  "
+		"The squadron status will be updated to the current status of the wings, but note that if any ships in those wings have "
+		"previously been destroyed, the HUD display may look different than expected.  (Specifically, destroyed ships may be "
+		"indicated as missing or may cause other ships in the same wing to appear in different positions.)  However, any wings "
+		"that are shared between one display and the next will be preserved.\r\n"
+		"Takes 1 to " SCP_TOKEN_TO_STR(MAX_SQUADRON_WINGS) " arguments...\r\n"
+		"\tAll:\tWing to display\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"
