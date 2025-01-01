@@ -428,9 +428,9 @@ static void parse_fireball_tbl(const char *table_filename)
 				} else {
 					// PI / 2.75f, PI / 10.0f, 4.5f
 					// The
-					fi->rot_anim[0] = 1 / 2.75f;
-					fi->rot_anim[1] = 1 / 10.0f;
-					fi->rot_anim[2] = 4.5f;
+					fi->rot_anim[0] = 0.365f;
+					fi->rot_anim[1] = 0.083f;
+					fi->rot_anim[2] = 2.0f;
 				}
 
 				if (optional_string("+Frame anim:")) {
@@ -452,7 +452,7 @@ static void parse_fireball_tbl(const char *table_filename)
 					// 1.0f, 1.0f, 5.0f
 					fi->frame_anim[0] = 1.0f;
 					fi->frame_anim[1] = 1.0f;
-					fi->frame_anim[2] = 5.0f;
+					fi->frame_anim[2] = 3.0f;
 				}
 			} else {
 				fi->cinematic = false;
