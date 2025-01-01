@@ -55,11 +55,16 @@ typedef struct fireball_info {
 
 	bool	use_3d_warp;
 	bool	fireball_used;
+	bool    bobboau_anim;
+
+	// Customize how large the warp and it's flare are.
+	float warp_size_ratio;
+	float flare_size_ratio;
 
 	// Cinematic Warp stuff
 	bool    cinematic;
-	float   warp_size_ratio;
-	float   flare_size_ratio;
+	float   rot_anim[3];
+	float   frame_anim[3];
 
 	char	warp_glow[NAME_LENGTH];
 	int		warp_glow_bitmap;
@@ -142,24 +147,17 @@ int fireball_ship_explosion_type(ship_info *sip);
 // returns the index of the fireball bitmap for this asteroid. -1 if there is none.
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
-// Gamma39er interpolation functions
+// Gamma39er cinematic wormhole function
 float cutscene_wormhole(float t);
 
 // returns the intensity of a wormhole
 float fireball_wormhole_intensity( fireball *fb );
 
-// Gamma39er function
+// Gamma39er flare radius function
 float fireball_wormhole_flare_radius(fireball* fb);
-float fireball_bobboau_flare_radius(fireball* fb);
-float slowdown_exp_to_line(float t, float start, float slope);
-float exp_to_line(float t, float start_slope, float end_slope, float scale);
 
-// Gamma39er Time Varying Function
-/*
-float h : This is the speed of time at start 
-float duration : duration of time varying
-*/
-float vary_time_elapsed(float t, float init_slope, float duration);
+// Gamma39er exponential velocity to linear velocity function
+float exp_to_line(float t, float start_slope, float end_slope, float scale);
 
 // Goober5000
 extern bool Knossos_warp_ani_used;

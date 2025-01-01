@@ -374,6 +374,24 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->use_3d_warp = true;
 			}
 
+			if (optional_string("$Bobboau anim:")) {
+				stuff_boolean(&fi->bobboau_anim);
+			} else {
+				fi->bobboau_anim = false;
+			}
+
+			if (optional_string("$Warp size ratio:")) {
+				stuff_float(&fi->warp_size_ratio);
+			} else {
+				fi->warp_size_ratio = 1;
+			}
+
+			if (optional_string("$Flare size ratio:")) {
+				stuff_float(&fi->flare_size_ratio);
+			} else {
+				fi->flare_size_ratio = 1.5;
+			}
+
 			if (optional_string("$Cinematic:")) {
 				stuff_boolean(&fi->cinematic);
 
@@ -387,6 +405,54 @@ static void parse_fireball_tbl(const char *table_filename)
 					stuff_float(&fi->flare_size_ratio);
 				} else {
 					fi->flare_size_ratio = 5.3;
+				}
+
+				// The first two values need to be implied multiples of PI
+				// for convenience. These shouldn't need to be faster than a full
+				// rotation per second, which is already ridiculous.
+				if (optional_string("+Rotation anim:")) {
+					float rot_start_slope, rot_end_slope, rot_scale;
+
+					stuff_float(&rot_start_slope);
+					stuff_float(&rot_end_slope);
+					stuff_float(&rot_scale);
+
+					// Multiples of PI so the range is [0, 2*PI)
+					CLAMP(rot_start_slope, 0, 2);
+					CLAMP(rot_end_slope, 0, 2);
+					MAX(rot_scale, 0);
+
+					fi->rot_anim[0] = rot_start_slope;
+					fi->rot_anim[1] = rot_end_slope;
+					fi->rot_anim[2] = rot_scale;
+				} else {
+					// PI / 2.75f, PI / 10.0f, 4.5f
+					// The
+					fi->rot_anim[0] = 1 / 2.75f;
+					fi->rot_anim[1] = 1 / 10.0f;
+					fi->rot_anim[2] = 4.5f;
+				}
+
+				if (optional_string("+Frame anim:")) {
+					float frame_start_slope, frame_end_slope, frame_scale;
+
+					stuff_float(&frame_start_slope);
+					stuff_float(&frame_end_slope);
+					stuff_float(&frame_scale);
+
+					// A frame rate that is 4 times the normal speed is ridiculous
+					CLAMP(frame_start_slope, 0, 4);
+					CLAMP(frame_end_slope, 1, 4);
+					MAX(frame_scale, 0);
+
+					fi->frame_anim[0] = frame_start_slope;
+					fi->frame_anim[1] = frame_end_slope;
+					fi->frame_anim[2] = frame_scale;
+				} else {
+					// 1.0f, 1.0f, 5.0f
+					fi->frame_anim[0] = 1.0f;
+					fi->frame_anim[1] = 1.0f;
+					fi->frame_anim[2] = 5.0f;
 				}
 			} else {
 				fi->cinematic = false;
@@ -534,14 +600,6 @@ void fireball_delete_all()
 	}
 }
 
-float vary_time_elapsed(float t, float init_slope, float duration) {
-	if (t < duration) {
-		return init_slope * t - (init_slope - 1.0f) / (2.0f * duration) * powf(t, 2.0f);
-	}
-
-	return t - duration / 2.0f + init_slope * duration / 2.0f;
-}
-
 void fireball_set_framenum(int num)
 {
 	int				framenum;
@@ -565,11 +623,10 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		// float new_time = vary_time_elapsed(fb->time_elapsed, 2.5f, fb->warp_open_duration*1.25f);
 		float new_time = fb->time_elapsed;
 		if (fd->cinematic) {
-			//new_time = 3.4f - slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration*0.95f, 3.4f, fb->warp_open_duration/0.95f);
-			new_time = exp_to_line(fb->time_elapsed, 1.0f, 1.0f, 5.0f);
+			float duration_ratio = 2.0f / fb->warp_open_duration;
+			new_time = exp_to_line(fb->time_elapsed, fd->frame_anim[0] * duration_ratio, fd->frame_anim[1], fd->frame_anim[2] * duration_ratio);
 		}
 
 		framenum = bm_get_anim_frame(fl->bitmap_id, new_time, 0.0f, true);
@@ -1104,18 +1161,6 @@ float fireball_wormhole_flare_radius(fireball* fb) {
 	return rad;
 }
 
-float fireball_bobboau_flare_radius(fireball* fb) {
-	float life_percent = fb->time_elapsed / fb->total_time;
-	float r = powf((2.0f * life_percent) - 1.0f, 24.0f);
-	return r;
-}
-
-float slowdown_exp_to_line(float t, float start, float slope) {
-	float b = logf(start - slope + 1.0f);
-
-	return expf(-b * (t - 1.0f)) - slope * t + slope - 1;
-}
-
 float exp_to_line(float t, float start_value, float end_slope, float scale) {
 	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
 }
@@ -1164,33 +1209,39 @@ void fireball_render(object* obj, model_draw_list *scene)
 		case FIREBALL_WARP_EFFECT: {
 			fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 			float percent_life = fb->time_elapsed / fb->total_time;
-			float rad = obj->radius * fireball_wormhole_intensity(fb);
+			float rad = obj->radius * fireball_wormhole_intensity(fb) * fi->warp_size_ratio;
 
-			float flare_rad = obj->radius;
+			float flare_rad = obj->radius * fi->flare_size_ratio;
 
 			matrix* warp_orientation;
 
-			if (fi->cinematic) {
-				rad *= fi->warp_size_ratio;
-				flare_rad *= fireball_wormhole_flare_radius(fb) * fi->flare_size_ratio;
+			// Flare animation selection
+			if (fi->bobboau_anim) {
+				flare_rad += powf((2.0f * percent_life) - 1.0f, 24.0f) * obj->radius * 1.5f * fi->flare_size_ratio;
+			} else if (fi->cinematic) {
+				flare_rad *= fireball_wormhole_flare_radius(fb);
+			} else {
+				flare_rad *= fireball_wormhole_intensity(fb);
+			}
 
+			if (fi->cinematic) {
 				matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 				matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-				//float angle = -slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration, PI * 0.75, PI / 4.0f);
+				float duration_ratio = 2.0f / fb->warp_open_duration;
 
-				float angle = exp_to_line(fb->time_elapsed, PI / 2.75f, PI / 10.0f, 4.5f);
+				float angle = exp_to_line(fb->time_elapsed, PI * fi->rot_anim[0] * duration_ratio, 
+					PI * fi->rot_anim[1], 
+					fi->rot_anim[2] * duration_ratio);
 
 				matrix* bank_angle = vm_angle_2_matrix(&m, angle, 1);
 				warp_orientation = vm_matrix_x_matrix(&dest, &obj->orient, bank_angle);
 			} else {
-				flare_rad *= 1.5;
 				warp_orientation = &obj->orient;
 			}
 
 			warpin_queue_render(scene,
 				obj,
-				// &obj->orient * bank_angle,
 				warp_orientation,
 				&obj->pos,
 				fb->current_bitmap,
