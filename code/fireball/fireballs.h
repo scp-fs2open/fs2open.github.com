@@ -56,6 +56,11 @@ typedef struct fireball_info {
 	bool	use_3d_warp;
 	bool	fireball_used;
 
+	// Cinematic Warp stuff
+	bool    cinematic;
+	float   warp_size_ratio;
+	float   flare_size_ratio;
+
 	char	warp_glow[NAME_LENGTH];
 	int		warp_glow_bitmap;
 	char	warp_ball[NAME_LENGTH];
@@ -138,7 +143,6 @@ int fireball_ship_explosion_type(ship_info *sip);
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
 // Gamma39er interpolation functions
-float parabolic_elbow(float t);
 float cutscene_wormhole(float t);
 
 // returns the intensity of a wormhole
@@ -146,8 +150,9 @@ float fireball_wormhole_intensity( fireball *fb );
 
 // Gamma39er function
 float fireball_wormhole_flare_radius(fireball* fb);
+float fireball_bobboau_flare_radius(fireball* fb);
 float slowdown_exp_to_line(float t, float start, float slope);
-
+float exp_to_line(float t, float start_slope, float end_slope, float scale);
 
 // Gamma39er Time Varying Function
 /*

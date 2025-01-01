@@ -373,6 +373,24 @@ static void parse_fireball_tbl(const char *table_filename)
 				// rather than just having the default model that might or might not be used
 				fi->use_3d_warp = true;
 			}
+
+			if (optional_string("$Cinematic:")) {
+				stuff_boolean(&fi->cinematic);
+
+				if (optional_string("+Warp size ratio:")) {
+					stuff_float(&fi->warp_size_ratio);
+				} else {
+					fi->warp_size_ratio = 1.6;
+				}
+
+				if (optional_string("+Flare size ratio:")) {
+					stuff_float(&fi->flare_size_ratio);
+				} else {
+					fi->flare_size_ratio = 5.3;
+				}
+			} else {
+				fi->cinematic = false;
+			}
 		}
 
 		required_string("#End");
@@ -548,7 +566,12 @@ void fireball_set_framenum(int num)
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
 		// float new_time = vary_time_elapsed(fb->time_elapsed, 2.5f, fb->warp_open_duration*1.25f);
-		float new_time = 3.4f - slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration*0.95f, 3.4f, fb->warp_open_duration/0.95f);
+		float new_time = fb->time_elapsed;
+		if (fd->cinematic) {
+			//new_time = 3.4f - slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration*0.95f, 3.4f, fb->warp_open_duration/0.95f);
+			new_time = exp_to_line(fb->time_elapsed, 1.0f, 1.0f, 5.0f);
+		}
+
 		framenum = bm_get_anim_frame(fl->bitmap_id, new_time, 0.0f, true);
 
 		if ( fb->orient )	{
@@ -1040,18 +1063,6 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	return index;
 }
 
-float parabolic_elbow(float t) {
-	if (t >= 0.0f && t < 2.0f / 3.0f) {
-		return powf(t, 0.4f);
-	} else if (t >= 2.0 / 3.0f && t < 4.0f / 3.0f) {
-		return powf(1.0f - powf(t - 4.0f / 3.0f, 2.0f) / (4.0f / 3.0f), 0.4f);
-	} else if (t >= 4.0f / 3.0f) {
-		return 1.0f;
-	}
-
-	return 0.0f;
-}
-
 float cutscene_wormhole(float t) {
 	float a = 25.0f * powf(t, 4.0f);
 	return a / (a + 1.0f);
@@ -1061,57 +1072,25 @@ float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
 
-	/* float rad = parabolic_elbow(t / fb->warp_open_duration);
-		
-	rad *= parabolic_elbow((fb->total_time - t) / fb->warp_close_duration);
-	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_open_duration));
-	rad /= parabolic_elbow(fb->total_time / (2.0f * fb->warp_close_duration));
-
-	return rad;*/
-
 	float rad = cutscene_wormhole(t / fb->warp_open_duration);
 
-	rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
-	rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
-	rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
+	fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 
+	if (fi->cinematic) {
+		rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
+		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
+		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
+	} else {
+		if (t < fb->warp_open_duration) {
+			rad = (float)pow(t / fb->warp_open_duration, 0.4f);
+		} else if (t < fb->total_time - fb->warp_close_duration) {
+			rad = 1.0f;
+		} else {
+			rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
+		}
+	}
 
 	return rad;
-
-	/*
-	float rad;
-
-	float open_elbow_width = powf(fb->warp_open_duration, 2.0f)*4.0f/3.0f;
-	float open_elbow_vertex = fb->warp_open_duration*4.0f/3.0f;
-	float open_elbow_transition = fb->warp_open_duration * 2.0f / 3.0f;
-
-	float close_elbow_width = powf(fb->warp_close_duration, 2.0f) * 4.0f / 3.0f;
-	float close_elbow_vertex = fb->warp_close_duration * 4.0f / 3.0f;
-	float close_elbow_transition = fb->warp_close_duration * 2.0f / 3.0f;
-
-	if ( t < open_elbow_vertex )	{
-		float time_open = t / (fb->warp_open_duration);
-		float warptime;
-		if (t < open_elbow_transition) {
-			warptime = time_open;
-		} else {
-			warptime = 1.0f - powf(t - open_elbow_vertex, 2.0f) / open_elbow_width;
-			// warptime = 0.5f;
-		}
-		rad = (float)pow(warptime, 0.4f);
-	} else if ( t < fb->total_time - close_elbow_vertex)	{
-		rad = 1.0f;
-	} else {
-		float time_close = (fb->total_time - t) / fb->warp_close_duration;
-		float warptime;
-		if (t < fb->total_time - close_elbow_vertex + close_elbow_transition) {
-			warptime = 1.0f - powf((fb->total_time - t) - close_elbow_vertex, 2.0f) / close_elbow_width;
-		} else {
-			warptime = time_close;
-		}
-		rad = (float)pow(warptime, 0.4f);
-	}
-	return rad;*/
 }
 
 float fireball_wormhole_flare_radius(fireball* fb) {
@@ -1119,18 +1098,26 @@ float fireball_wormhole_flare_radius(fireball* fb) {
 	float d1 = fb->warp_open_duration;
 	float d2 = fb->warp_close_duration;
 
-	// float speed = 6.0f;
-
 	float rad = 2 * (1.0f - exp(-4.0f * powf(1.7f * t/d1, 3.0f))) - (1.0f - exp(-2.0f * powf(1.7f * t/d1, 3.0f)));
 	rad *= (1.0f - exp(-2.0f * (fb->total_time - t) / d2));
 
 	return rad;
 }
 
+float fireball_bobboau_flare_radius(fireball* fb) {
+	float life_percent = fb->time_elapsed / fb->total_time;
+	float r = powf((2.0f * life_percent) - 1.0f, 24.0f);
+	return r;
+}
+
 float slowdown_exp_to_line(float t, float start, float slope) {
 	float b = logf(start - slope + 1.0f);
 
 	return expf(-b * (t - 1.0f)) - slope * t + slope - 1;
+}
+
+float exp_to_line(float t, float start_value, float end_slope, float scale) {
+	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
 }
 
 extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
@@ -1175,24 +1162,36 @@ void fireball_render(object* obj, model_draw_list *scene)
 		break;
 
 		case FIREBALL_WARP_EFFECT: {
+			fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 			float percent_life = fb->time_elapsed / fb->total_time;
 			float rad = obj->radius * fireball_wormhole_intensity(fb);
 
-			float flare_rad = obj->radius * fireball_wormhole_flare_radius(fb);
+			float flare_rad = obj->radius;
 
-			matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-			matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+			matrix* warp_orientation;
 
-			// float angle = vary_time_elapsed(fb->time_elapsed, 2 * PI, fb->warp_open_duration*1.5) / 4.0f - PI;
-			float angle = -slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration, PI*0.75, PI / 4.0f);
+			if (fi->cinematic) {
+				rad *= fi->warp_size_ratio;
+				flare_rad *= fireball_wormhole_flare_radius(fb) * fi->flare_size_ratio;
 
-			matrix *bank_angle = vm_angle_2_matrix(&m, angle, 1);
+				matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+				matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
-			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
+				//float angle = -slowdown_exp_to_line(fb->time_elapsed / fb->warp_open_duration, PI * 0.75, PI / 4.0f);
+
+				float angle = exp_to_line(fb->time_elapsed, PI / 2.75f, PI / 10.0f, 4.5f);
+
+				matrix* bank_angle = vm_angle_2_matrix(&m, angle, 1);
+				warp_orientation = vm_matrix_x_matrix(&dest, &obj->orient, bank_angle);
+			} else {
+				flare_rad *= 1.5;
+				warp_orientation = &obj->orient;
+			}
+
 			warpin_queue_render(scene,
 				obj,
 				// &obj->orient * bank_angle,
-				vm_matrix_x_matrix(&dest, &obj->orient, bank_angle),
+				warp_orientation,
 				&obj->pos,
 				fb->current_bitmap,
 				rad,

@@ -70,7 +70,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 
 	vm_vec_scale_add( &center, pos, &orient->vec.fvec, -(max_radius/2.5f)/3.0f );
 
-	float warp_model_radius = model_get(warp_model_id)->rad;
+	//float warp_model_radius = model_get(warp_model_id)->rad;
 
 	// Cyborg17, Initialize the *whole* struct, set some starting values and share with the rest of the array.
 	verts[0] = {};
@@ -78,32 +78,17 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
 	if (warp_glow_bitmap >= 0) {
-
-		//float r = (1.0f - exp(-time_elapsed * 10.0f)) * (0.75f);
-
 		float r = flare_rad;
 
-		//r += (powf(time_elapsed, ))
-
-		//r *= (1.0f - exp(-(1.0f - time_elapsed) * 100.0f));
-			
-		// r *= max_radius*warp_model_radius/7.5f;
-		r *= warp_model_radius / 7.5f;
 		// Add in noise 
 		int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
 		r *= (0.40f + Noise[noise_frame] * 0.10f);
 
-		// float flashSpeed = 80.0f;
-
-		// r += (flashSpeed * life_percent) * exp(-(flashSpeed * life_percent) + 1) * max_radius * 2.0f;
-
-
-
 		// Bobboau's warp thingie, toggled by cmdline
-		if (warpin_show_flash()) {
+		/*if (warpin_show_flash()) {
 			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
-		}
+		}*/
 
 		vecs[4] = center;
 		verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
@@ -120,7 +105,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 	if ( (warp_model_id >= 0) && (warp_3d) ) {
 		model_render_params render_info;
 
-		float scale = radius / 25.0f;
+		float scale = radius;
 
 		vec3d warp_scale;
 
