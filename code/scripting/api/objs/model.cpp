@@ -1284,7 +1284,7 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 	return ade_set_args(L, "oo", l_Vector.Set(final_pos),l_Matrix.Set(matrix_h(&final_orient)));
 }
 
-ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "number", "<i>true</i> if valid, <i>false</i> otherwise")
+ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "boolean", "true if valid, false otherwise")
 {
 	dockingbay_h* dbh = NULL;
 

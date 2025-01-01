@@ -216,7 +216,7 @@ ADE_FUNC(playGameSound,
 	}
 }
 
-ADE_FUNC(playInterfaceSound, l_Audio, "sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
+ADE_FUNC(playInterfaceSound, l_Audio, "number index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
 	int idx;
 	if(!ade_get_args(L, "i", &idx))

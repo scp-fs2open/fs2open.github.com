@@ -108,7 +108,7 @@ ADE_FUNC(read,
 	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
 	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
 	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-	"number|string...",
+	"string",
 	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;

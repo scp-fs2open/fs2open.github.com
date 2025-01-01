@@ -1255,6 +1255,8 @@ add_file_folder("Scripting"
 	scripting/doc_html.h
 	scripting/doc_json.cpp
 	scripting/doc_json.h
+	scripting/doc_luastub.cpp
+	scripting/doc_luastub.h
 	scripting/doc_parser.cpp
 	scripting/doc_parser.h
 	scripting/global_hooks.cpp

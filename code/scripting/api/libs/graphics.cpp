@@ -524,7 +524,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 
 ADE_FUNC(setColor,
 	l_Graphics,
-	"number|color /* red value or color object */, number Green, number Blue, [number Alpha]",
+	"number|color /* red value or color object */, [number Green, number Blue, number Alpha]",
 	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
 	nullptr,
 	nullptr)
@@ -554,7 +554,7 @@ ADE_FUNC(setColor,
 
 ADE_FUNC(getColor,
 	l_Graphics,
-	"boolean",
+	"[boolean]",
 	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
 	"number, number, number, number | color",
 	"rgba color which is currently in use for 2D drawing")

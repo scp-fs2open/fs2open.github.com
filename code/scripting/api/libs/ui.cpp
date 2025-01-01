@@ -133,13 +133,15 @@ ADE_FUNC(enableInput,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
+ADE_FUNC(disableInput, l_UserInterface, nullptr, "Disables UI input", nullptr, "nothing")
 {
+	SCP_UNUSED(L);
+	
 	scpui::disableInput();
 	game_flush();
 	Main_hall_poll_key = true;
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR(ColorTags,
@@ -318,7 +320,7 @@ ADE_VIRTVAR(ErrorCount, l_UserInterface_PilotSelect, nullptr, "The amount of err
 }
 
 ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
-         "Lists all pilots available for the pilot selection<br>", "string[]",
+         "Lists all pilots available for the pilot selection<br>", "table",
          "A table containing the pilots (without a file extension) or nil on error")
 {
 	using namespace luacpp;
@@ -493,7 +495,7 @@ ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
-         "string[]", "The list of pilot filenames or nil on error")
+         "table", "The list of pilot filenames or nil on error")
 {
 	pilot_load_pic_list();
 
@@ -507,7 +509,7 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
-         "string[]", "The list of squad filenames or nil on error")
+         "table", "The list of squad filenames or nil on error")
 {
 	pilot_load_squad_pic_list();
 
@@ -520,7 +522,7 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 	return ade_set_args(L, "t", &out);
 }
 
-ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, boolean changeState", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
+ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, [boolean changeState]", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
@@ -589,7 +591,7 @@ ADE_FUNC(getCampaignList,
 	l_UserInterface_Campaign,
 	nullptr,
 	"Get the campaign name and description lists",
-	"string[], string[], string[]",
+	"table, table, table",
 	"Three tables with the names, file names, and descriptions of the campaigns")
 {
 	luacpp::LuaTable nameTable        = luacpp::LuaTable::create(L);
@@ -2881,7 +2883,7 @@ ADE_FUNC(__len, l_PXO_Channels, nullptr, "The number of channels available", "nu
 	return ade_set_args(L, "i", static_cast<int>(Multi_pxo_channels.size()));
 }
 
-ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, nullptr, "Joins the specified private channel", nullptr, nullptr)
+ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, "string channel", "Joins the specified private channel", nullptr, nullptr)
 {
 	const char* channel;
 	if (!ade_get_args(L, "s", &channel))
@@ -3215,7 +3217,7 @@ ADE_FUNC(sendJoinRequest,
 {
 
 	bool observer = false;
-	ade_get_args(L, "*|b", &observer);
+	ade_get_args(L, "|b", &observer);
 
 	if (Active_games.empty()) {
 		multi_common_add_notify(XSTR("No games found!", 757));

@@ -1083,7 +1083,7 @@ ADE_VIRTVAR(EndMission,
 	return ADE_RETURN_NIL;
 }
 
-ADE_VIRTVAR(SkillLevel, l_NetGame, nullptr, "The current skill level the game, 0-4", "number", "the skill level")
+ADE_VIRTVAR(SkillLevel, l_NetGame, "number", "The current skill level the game, 0-4", "number", "the skill level")
 {
 	net_game_h current;
 	int skill = 0;
@@ -1098,7 +1098,7 @@ ADE_VIRTVAR(SkillLevel, l_NetGame, nullptr, "The current skill level the game, 0
 	return ade_set_args(L, "i", multi_ho_get_skill_level());
 }
 
-ADE_VIRTVAR(RespawnLimit, l_NetGame, nullptr, "The current respawn limit", "number", "the respawn limit")
+ADE_VIRTVAR(RespawnLimit, l_NetGame, "number", "The current respawn limit", "number", "the respawn limit")
 {
 	net_game_h current;
 	int respawn = 0;
@@ -1116,7 +1116,7 @@ ADE_VIRTVAR(RespawnLimit, l_NetGame, nullptr, "The current respawn limit", "numb
 	return ade_set_args(L, "i", current.getNetgame()->options.respawn);
 }
 
-ADE_VIRTVAR(TimeLimit, l_NetGame, nullptr, "The current time limit in minutes. -1 means no limit.", "number", "the time limit")
+ADE_VIRTVAR(TimeLimit, l_NetGame, "number", "The current time limit in minutes. -1 means no limit.", "number", "the time limit")
 {
 	net_game_h current;
 	int time = 0;
@@ -1136,7 +1136,7 @@ ADE_VIRTVAR(TimeLimit, l_NetGame, nullptr, "The current time limit in minutes. -
 	return ade_set_args(L, "i", current.getNetgame()->options.mission_time_limit);
 }
 
-ADE_VIRTVAR(KillLimit, l_NetGame, nullptr, "The current kill limit", "number", "the kill limit")
+ADE_VIRTVAR(KillLimit, l_NetGame, "number", "The current kill limit", "number", "the kill limit")
 {
 	net_game_h current;
 	int kill = 0;
@@ -1156,7 +1156,7 @@ ADE_VIRTVAR(KillLimit, l_NetGame, nullptr, "The current kill limit", "number", "
 	return ade_set_args(L, "i", current.getNetgame()->options.kill_limit);
 }
 
-ADE_VIRTVAR(ObserverLimit, l_NetGame, nullptr, "The current observer limit", "number", "the observer limit")
+ADE_VIRTVAR(ObserverLimit, l_NetGame, "number", "The current observer limit", "number", "the observer limit")
 {
 	net_game_h current;
 	int observer = 0;
@@ -1176,7 +1176,7 @@ ADE_VIRTVAR(ObserverLimit, l_NetGame, nullptr, "The current observer limit", "nu
 	return ade_set_args(L, "i", current.getNetgame()->options.max_observers);
 }
 
-ADE_VIRTVAR(Locked, l_NetGame, nullptr, "Whether or not the loadouts have been locked for the current team. Can be set only by the host or team captain.", "number", "the locked status")
+ADE_VIRTVAR(Locked, l_NetGame, "boolean", "Whether or not the loadouts have been locked for the current team. Can be set only by the host or team captain.", "boolean", "the locked status")
 {
 	net_game_h current;
 	bool locked = false;
