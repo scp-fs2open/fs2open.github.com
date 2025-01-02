@@ -64,7 +64,7 @@ public:
 	void drawContactCircle( int x, int y, int rad );
 	void drawContactImage( int x, int y, int rad, int idx, int clr_idx, int size );
 	void drawCrosshairs(int x, int y);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void plotBlip(blip *b, int *x, int *y);
 	void plotObject( object *objp );

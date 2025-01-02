@@ -395,6 +395,14 @@ namespace
 			}
 		}
 
+		if (optional_string("+Can Scale:")) {
+			bool temp;
+
+			stuff_boolean(&temp);
+
+			font->setScaleBehavior(temp);
+		}
+
 		if (optional_string("+Top offset:"))
 		{
 			float temp;
@@ -531,11 +539,11 @@ namespace font
 		font_initialized = false;
 	}
 
-	int force_fit_string(char *str, int max_str, int max_width)
+	int force_fit_string(char *str, int max_str, int max_width, float scale)
 	{
 		int w;
 
-		gr_get_string_size(&w, NULL, str);
+		gr_get_string_size(&w, nullptr, str, scale);
 		if (w > max_width) {
 			if ((int)strlen(str) > max_str - 3) {
 				Assert(max_str >= 3);
@@ -543,11 +551,11 @@ namespace font
 			}
 
 			strcpy(str + strlen(str) - 1, "...");
-			gr_get_string_size(&w, NULL, str);
+			gr_get_string_size(&w, nullptr, str, scale);
 			while (w > max_width) {
 				Assert(strlen(str) >= 4);  // if this is hit, a bad max_width was passed in and the calling function needs fixing.
 				strcpy(str + strlen(str) - 4, "...");
-				gr_get_string_size(&w, NULL, str);
+				gr_get_string_size(&w, nullptr, str, scale);
 			}
 		}
 
@@ -705,7 +713,7 @@ int gr_get_dynamic_font_lines(int number_default_lines) {
 	return fl2i((number_default_lines * 10) / (gr_get_font_height() + 1));
 }
 
-void gr_get_string_size(int *w1, int *h1, const char *text, size_t len)
+void gr_get_string_size(int* w1, int* h1, const char* text, float scaleMultiplier, size_t len)
 {
 	if (!FontManager::isReady())
 	{
@@ -721,7 +729,7 @@ void gr_get_string_size(int *w1, int *h1, const char *text, size_t len)
 	float w = 0.0f;
 	float h = 0.0f;
 
-	FontManager::getCurrentFont()->getStringSize(text, len, -1, &w, &h);
+	FontManager::getCurrentFont()->getStringSize(text, len, -1, &w, &h, scaleMultiplier);
 
 	if (w1)
 	{

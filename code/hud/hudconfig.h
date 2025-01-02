@@ -53,6 +53,9 @@ extern int HUD_default_popup_mask2;
 extern int HUD_config_default_flags;
 extern int HUD_config_default_flags2;
 
+extern const int HC_gauge_config_coords[GR_NUM_RESOLUTIONS][4];
+extern int HC_resize_mode;
+
 /**
  * @brief Contains core HUD configuration data
  * @note Is not default init'd.  Assumes new player, PLR, or CSG reads will correctly set data.
@@ -92,6 +95,45 @@ struct HC_gauge_region
 	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
 };
 
+class BoundingBox {
+  public:
+	int x1, x2, y1, y2;
+
+	// Default constructor (initializes to invalid state)
+	BoundingBox() : x1(-1), x2(-1), y1(-1), y2(-1) {}
+
+	// Constructor
+	BoundingBox(int nx1, int nx2, int ny1, int ny2) : x1(nx1), x2(nx2), y1(ny1), y2(ny2) {}
+
+	bool isOverlapping(const BoundingBox& other) const
+	{
+		return (x2 >= other.x1 && // Not completely to the left
+				x1 <= other.x2 && // Not completely to the right
+				y2 >= other.y1 && // Not completely above
+				y1 <= other.y2);  // Not completely below
+	}
+
+	// Check if the bounding box is valid (no negative coordinates)
+	bool isValid() const
+	{
+		return x1 >= 0 && x2 >= 0 && y1 >= 0 && y2 >= 0;
+	}
+
+	// Static function to check if any bounding box in an array overlaps with a new one
+	static bool isOverlappingAny(const BoundingBox mouse_coords[NUM_HUD_GAUGES], const BoundingBox& newBox, int self_index)
+	{
+		for (int i = 0; i < NUM_HUD_GAUGES; i++) {
+			if (i == self_index) {
+				continue;
+			}
+			if (mouse_coords[i].isValid() && mouse_coords[i].isOverlapping(newBox)) {
+				return true;
+			}
+		}
+		return false;
+	}
+};
+
 /*!
  * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
  * @note main definition in hudconfig.cpp
@@ -102,6 +144,8 @@ extern int HC_gauge_hot;
 extern int HC_gauge_selected;
 extern int HC_select_all;
 extern float HC_gauge_scale;
+extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
+extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 
 const char* HC_gauge_descriptions(int n);
 
@@ -202,6 +246,38 @@ void hud_config_color_load(const char *name);
  * @brief save the current hud gauges settings to a preset file
  */
 void hud_config_color_save(const char* name);
+
+/*!
+ * @brief same as hud_config_covert_coords but only returns the scale and doesn't convert any coords
+ */
+void hud_config_get_scale(int baseW, int baseH, float& outScale);
+
+/*!
+ * @brief converts a set of coordinates to HUD Config's rendering coordinates
+ */
+void hud_config_convert_coords(int x, int y, float scale, int& outX, int& outY);
+
+/*!
+ * @brief converts a set of coordinates to HUD Config's rendering coordinates
+ */
+void hud_config_convert_coords(float x, float y, float scale, float& outX, float& outY);
+
+/*!
+* @brief convert the given HUD gauge position coordinates to a set more appropriate for the HUD Config UI and return the smaller scale value used
+* so that other offsets and positions can be multiplied in turn
+*/
+void hud_config_convert_coord_sys(int x, int y, int baseW, int baseH, int& outX, int& outY, float& outScale);
+
+/*!
+ * @brief convert the given HUD gauge position coordinates to a set more appropriate for the HUD Config UI and return
+ * the smaller scale value used so that other offsets and positions can be multiplied in turn
+ */
+void hud_config_convert_coord_sys(float x, float y, int baseW, int baseH, float& outX, float& outY, float& outScale);
+
+/*!
+ * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
+ */
+void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2);
 
 #endif
 

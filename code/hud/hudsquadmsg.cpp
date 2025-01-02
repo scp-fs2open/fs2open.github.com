@@ -2660,7 +2660,7 @@ bool HudGaugeSquadMessage::canRender() const
 	return true;
 }
 
-void HudGaugeSquadMessage::render(float  /*frametime*/)
+void HudGaugeSquadMessage::render(float  /*frametime*/, bool /*config*/)
 {
 	char *title;
 	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;
@@ -2738,7 +2738,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/)
 
 		// first do the number
 		item_num = (i+1) % MAX_MENU_DISPLAY;
-		renderPrintf(sx, sy, EG_SQ1 + i, NOX("%1d."), item_num);
+		renderPrintfWithGauge(sx, sy, EG_SQ1 + i, 1.0f, false, NOX("%1d."), item_num);
 
 		// then the text
 		renderString(sx + Item_offset_x, sy, EG_SQ1 + i, text);
@@ -2775,22 +2775,22 @@ void HudGaugeSquadMessage::render(float  /*frametime*/)
 	startFlashPageScroll();
 	maybeFlashPageScroll();
 	if ( First_menu_item > 0 ) {
-		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], "%s", XSTR( "[pgup]", 312) );
+		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], 1.0f, false, "%s", XSTR( "[pgup]", 312) );
 	}
 
 	if ( (First_menu_item + nitems) < Num_menu_items ) {
-		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], "%s", XSTR( "[pgdn]", 313));
+		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], 1.0f, false, "%s", XSTR( "[pgdn]", 313));
 	}
 
 	if ( messaging_allowed ) {
 		if ( none_valid ){
-			renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "No valid items", 314));
+			renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", XSTR("No valid items", 314));
 		} else if (Msg_shortcut_command != -1){
-			renderPrintf( sx, by - Item_h + 2, "%s", comm_order_get_text(Msg_shortcut_command));
+			renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", comm_order_get_text(Msg_shortcut_command));
 		}
 	} else {
 		// if this player is not allowed to message, then display message saying so
-		renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "Not allowed to message", 315));
+		renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", XSTR("Not allowed to message", 315));
 	}
 
 }

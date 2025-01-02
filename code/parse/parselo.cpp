@@ -3487,7 +3487,7 @@ void display_parse_diagnostics()
 // terminator is placed where required to make the first line <= max_pixel_w.  The remaining
 // text is returned (leading whitespace removed).  If the line doesn't need to be split,
 // NULL is returned.
-char *split_str_once(char *src, int max_pixel_w)
+char *split_str_once(char *src, int max_pixel_w, float scale)
 {
 	char *brk = nullptr;
 	bool last_was_white = false;
@@ -3498,7 +3498,7 @@ char *split_str_once(char *src, int max_pixel_w)
 		return src;  // if there's no width, skip everything else
 
 	int w;
-	gr_get_string_size(&w, nullptr, src);
+	gr_get_string_size(&w, nullptr, src, scale);
 	if ( (w <= max_pixel_w) && !strstr(src, "\n") ) {
 		return nullptr;  // string doesn't require a cut
 	}
@@ -3506,7 +3506,7 @@ char *split_str_once(char *src, int max_pixel_w)
 	size_t i;
 	size_t len = strlen(src);
 	for (i=0; i<len; i++) {
-		gr_get_string_size(&w, nullptr, src, i + 1);
+		gr_get_string_size(&w, nullptr, src, scale, i + 1);
 
 		if (w <= max_pixel_w) {
 			if (src[i] == '\n') {  // reached natural end of line
@@ -3878,7 +3878,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 		// no newlines found, check length.
 		size_t stringlen = pos_end - pos_start;
 		int line_width = 0;
-		gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, stringlen);
+		gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, 1.0f, stringlen);
 		if (stringlen <= 1) {
 			// in this case checking is pointless, single-character strings can't wrap.
 			// copy into the return vector and then bail.
@@ -3895,7 +3895,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			size_t center = 0;
 			while ((search_max - search_min) > 0) {
 				center = search_min + ((search_max - search_min) / 2);
-				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, center);
+				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
 					search_max = center;
 					search_min = center;
@@ -3981,7 +3981,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 		// no newlines found, check length.
 		size_t stringlen = ch_end - ch_start;
 		int line_width = 0;
-		gr_get_string_size(&line_width, nullptr, ch_start, stringlen);
+		gr_get_string_size(&line_width, nullptr, ch_start, 1.0f, stringlen);
 		if (stringlen <= 1) {
 			// in this case checking is pointless, single-character strings can't wrap.
 			// copy into the return vector and then bail.
@@ -3998,7 +3998,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 			size_t center = 0;
 			while ((search_max - search_min) > 0) {
 				center = search_min + ((search_max - search_min) / 2);
-				gr_get_string_size(&line_width, nullptr, ch_start, center);
+				gr_get_string_size(&line_width, nullptr, ch_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
 					search_max = center;
 					search_min = center;

@@ -310,6 +310,7 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	}
 };
 
+int HC_resize_mode = GR_RESIZE_MENU;
 const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
@@ -512,6 +513,8 @@ static UI_WINDOW					HC_ui_window;
 int							HC_gauge_hot;			// mouse is over this gauge
 int							HC_gauge_selected;	// gauge is selected
 float						HC_gauge_scale; // scale used for drawing the hud gauges
+int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
+BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 
 // HUD colors
 typedef struct hc_col {
@@ -605,6 +608,11 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 
 	HC_gauge_coords.clear();
 	HC_gauge_coords.resize(NUM_HUD_GAUGES);
+
+	// Clear the mouse coords array
+	for (auto& coord : HC_gauge_mouse_coords) {
+		coord = {-1, -1, -1, -1};
+	}
 
 	if (w < 0) {
 		HC_gauge_scale = 1.0f;
@@ -849,6 +857,44 @@ void hud_config_popup_flag_clear(int i)
 	} else {
 		HUD_config.popup_flags2 &= ~(1<<(i-32));
 	}
+}
+
+void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2) {
+	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
+}
+
+void hud_config_convert_coords(int x, int y, float scale, int& outX, int& outY)
+{
+	outX = HC_gauge_coordinates[0] + static_cast<int>(x * scale);
+	outY = HC_gauge_coordinates[2] + static_cast<int>(y * scale);
+}
+
+void hud_config_convert_coords(float x, float y, float scale, float& outX, float& outY)
+{
+	outX = HC_gauge_coordinates[0] + x * scale;
+	outY = HC_gauge_coordinates[2] + y * scale;
+}
+
+void hud_config_get_scale(int baseW, int baseH, float& outScale)
+{
+	// Determine the scaling factor
+	float scaleX = static_cast<float>(HC_gauge_coordinates[4]) / baseW;
+	float scaleY = static_cast<float>(HC_gauge_coordinates[5]) / baseH;
+
+	// Use the smallest scale factor
+	outScale = std::min(scaleX, scaleY);
+}
+
+void hud_config_convert_coord_sys(int x, int y, int baseW, int baseH, int& outX, int& outY, float& outScale)
+{
+	hud_config_get_scale(baseW, baseH, outScale);
+	hud_config_convert_coords(x, y, outScale, outX, outY);
+}
+
+void hud_config_convert_coord_sys(float x, float y, int baseW, int baseH, float& outX, float& outY, float& outScale)
+{
+	hud_config_get_scale(baseW, baseH, outScale);
+	hud_config_convert_coords(x, y, outScale, outX, outY);
 }
 
 /*!

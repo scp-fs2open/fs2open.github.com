@@ -2909,8 +2909,7 @@ void HudGaugeReticleTriangle::initTriHeight(float h)
 	Target_triangle_height = h;
 }
 
-void HudGaugeReticleTriangle::render(float  /*frametime*/)
-{
+void HudGaugeReticleTriangle::render(float /*frametime*/, bool /*config*/) {
 }
 
 // Render a missile warning triangle that has a tail on it to indicate distance
@@ -3162,7 +3161,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_MISSILE_TRI, HUD_MISSILE_WARNING_ARROW)
 {
 }
 
-void HudGaugeMissileTriangles::render(float  /*frametime*/)
+void HudGaugeMissileTriangles::render(float /*frametime*/, bool /*config*/)
 {
 	object		*A;
 	missile_obj	*mo;
@@ -3211,7 +3210,7 @@ void HudGaugeOrientationTee::pageIn()
 // outer reticle ring.  If the T is at 12 o'clock, the target is facing the player, if the T
 // is at 6 o'clock the target is facing away from the player.  If the T is at 3 or 9 o'clock
 // the target is facing 90 away from the player.
-void HudGaugeOrientationTee::render(float  /*frametime*/)
+void HudGaugeOrientationTee::render(float /*frametime*/, bool /*config*/)
 {
 	object* targetp;
 
@@ -3674,7 +3673,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_HOSTILE_TRI, HUD_HOSTILE_TRIANGLE)
 {
 }
 
-void HudGaugeHostileTriangle::render(float  /*frametime*/)
+void HudGaugeHostileTriangle::render(float /*frametime*/, bool /*config*/)
 {
 	if (hostile_obj && maybeFlashSexp() != 1) {
 		bool in_frame = g3_in_frame() > 0;
@@ -3899,7 +3898,7 @@ int HudGaugeLeadIndicator::pickFrame(float prange, float srange, float dist_to_t
 	return frame_offset;
 }
 
-void HudGaugeLeadIndicator::render(float  /*frametime*/)
+void HudGaugeLeadIndicator::render(float /*frametime*/, bool /*config*/)
 {
 	if(Player->target_is_dying) {
 		return;
@@ -4323,7 +4322,7 @@ void HudGaugeLeadSight::pageIn()
 	bm_page_in_aabitmap(Lead_sight.first_frame, Lead_sight.num_frames);
 }
 
-void HudGaugeLeadSight::render(float  /*frametime*/)
+void HudGaugeLeadSight::render(float /*frametime*/, bool /*config*/)
 {
 	vec3d		target_pos;
 	vec3d		source_pos;
@@ -4651,7 +4650,7 @@ HudGaugeReticleTriangle(HUD_OBJECT_TARGET_TRI, HUD_TARGET_TRIANGLE)
 {
 }
 
-void HudGaugeTargetTriangle::render(float  /*frametime*/)
+void HudGaugeTargetTriangle::render(float /*frametime*/, bool /*config*/)
 {
 	if ( Player_ai->target_objnum == -1)
 		return;
@@ -4872,7 +4871,7 @@ void HudGaugeAutoTarget::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoTarget::render(float  /*frametime*/)
+void HudGaugeAutoTarget::render(float /*frametime*/, bool /*config*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -4959,7 +4958,7 @@ void HudGaugeAutoSpeed::initOffColor(int r, int g, int b, int a)
 	gr_init_alphacolor(&Off_color, r, g, b, a);
 }
 
-void HudGaugeAutoSpeed::render(float  /*frametime*/)
+void HudGaugeAutoSpeed::render(float /*frametime*/, bool /*config*/)
 {
 	if (Player_ship->flags[Ship::Ship_Flags::Primitive_sensors])
 		return;
@@ -5562,7 +5561,7 @@ void HudGaugeCmeasures::pageIn()
 	bm_page_in_aabitmap(Cmeasure_gauge.first_frame, Cmeasure_gauge.num_frames);
 }
 
-void HudGaugeCmeasures::render(float  /*frametime*/)
+void HudGaugeCmeasures::render(float /*frametime*/, bool /*config*/)
 {
 	if ( Cmeasure_gauge.first_frame < 0) {
 		return;	// failed to load coutermeasure gauge background
@@ -5585,7 +5584,7 @@ void HudGaugeCmeasures::render(float  /*frametime*/)
 		Int3();	// player ship doesn't exist?
 		return;
 	}
-	renderPrintf(position[0] + Cm_text_val_offsets[0], position[1] + Cm_text_val_offsets[1], NOX("%02d"), Player_ship->cmeasure_count);
+	renderPrintf(position[0] + Cm_text_val_offsets[0], position[1] + Cm_text_val_offsets[1], 1.0f, false, NOX("%02d"), Player_ship->cmeasure_count);
 }
 
 HudGaugeAfterburner::HudGaugeAfterburner():
@@ -5608,7 +5607,7 @@ void HudGaugeAfterburner::initBitmaps(char *fname)
 }
 
 //	Render the HUD afterburner energy gauge
-void HudGaugeAfterburner::render(float  /*frametime*/)
+void HudGaugeAfterburner::render(float /*frametime*/, bool /*config*/)
 {
 	float percent_left;
 	int	clip_h,w,h;
@@ -5717,7 +5716,7 @@ void HudGaugeWeaponEnergy::pageIn()
 	bm_page_in_aabitmap( Energy_bar.first_frame, Energy_bar.num_frames);
 }
 
-void HudGaugeWeaponEnergy::render(float  /*frametime*/)
+void HudGaugeWeaponEnergy::render(float /*frametime*/, bool /*config*/)
 {
 	int x;
 	bool use_new_gauge = false;
@@ -6169,7 +6168,7 @@ void HudGaugeWeapons::pageIn()
 	}
 }
 
-void HudGaugeWeapons::render(float  /*frametime*/)
+void HudGaugeWeapons::render(float /*frametime*/, bool /*config*/)
 {
 	ship_weapon	*sw;
 	int			np, ns;		// np == num primary, ns == num secondary
@@ -6229,14 +6228,14 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 		// indicate if this is linked or currently armed
 		if ( ((sw->current_primary_bank == i) && !(Player_ship->flags[Ship::Ship_Flags::Primary_linked])) || ((Player_ship->flags[Ship::Ship_Flags::Primary_linked]) && !(Weapon_info[sw->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Nolink]))) {
-			renderPrintf(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
+			renderPrintfWithGauge(position[0] + Weapon_plink_offset_x, name_y, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 		}
 
 		// either render this primary's image or its name
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + Weapon_pname_offset_x, name_y);
 		} else {
-			renderPrintf(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, "%s", weapon_name);
+			renderPrintfWithGauge(position[0] + Weapon_pname_offset_x, name_y, EG_WEAPON_P2, 1.0f, false, "%s", weapon_name);
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
@@ -6292,14 +6291,14 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
+			renderPrintfWithGauge(position[0] + Weapon_sunlinked_offset_x, name_y, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			// don't draw the link indicator if the fire can't be fired link.
 			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
 			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
 					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
-				renderPrintf(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, "%c", Weapon_link_icon);
+				renderPrintfWithGauge(position[0] + Weapon_slinked_offset_x, name_y, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
@@ -6313,7 +6312,7 @@ void HudGaugeWeapons::render(float  /*frametime*/)
 			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
+					renderPrintfWithGauge(position[0] + Weapon_sreload_offset_x, name_y, EG_NULL, 1.0f, false, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -6453,7 +6452,7 @@ void HudGaugeOffscreen::pageIn()
 {
 }
 
-void HudGaugeOffscreen::render(float  /*frametime*/)
+void HudGaugeOffscreen::render(float /*frametime*/, bool /*config*/)
 {
 	// don't show offscreen indicator if we're warping out.
 	if ( Player->control_mode != PCM_NORMAL ) {
@@ -6829,7 +6828,7 @@ void HudGaugeWarheadCount::pageIn()
 	bm_page_in_aabitmap(Warhead.first_frame, Warhead.num_frames);
 }
 
-void HudGaugeWarheadCount::render(float  /*frametime*/)
+void HudGaugeWarheadCount::render(float /*frametime*/, bool /*config*/)
 {
 	if(Player_obj->type == OBJ_OBSERVER) {
 		return;
@@ -7031,8 +7030,7 @@ void HudGaugeWeaponList::maybeFlashWeapon(int index)
 	}
 }
 
-void HudGaugeWeaponList::render(float  /*frametime*/)
-{
+void HudGaugeWeaponList::render(float /*frametime*/, bool /*config*/) {
 
 }
 
@@ -7057,7 +7055,7 @@ void HudGaugePrimaryWeapons::initPrimaryAmmoOffsetX(int x)
 	_pammo_offset_x = x;
 }
 
-void HudGaugePrimaryWeapons::render(float  /*frametime*/)
+void HudGaugePrimaryWeapons::render(float /*frametime*/, bool /*config*/)
 {
 	ship_weapon	*sw;
 
@@ -7102,14 +7100,14 @@ void HudGaugePrimaryWeapons::render(float  /*frametime*/)
 
 		// indicate if this is linked or currently armed
 		if ( (sw->current_primary_bank == i) || (Player_ship->flags[Ship::Ship_Flags::Primary_linked]) ) {
-			renderPrintf(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
+			renderPrintfWithGauge(position[0] + _plink_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 		}
 
 		// either render this primary's image or its name
 		if(Weapon_info[sw->primary_bank_weapons[0]].hud_image_index != -1) {
 			renderBitmap(Weapon_info[sw->primary_bank_weapons[i]].hud_image_index, position[0] + _pname_offset_x, text_y_offset);
 		} else {
-			renderPrintf(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P2, "%s", weapon_name);
+			renderPrintfWithGauge(position[0] + _pname_offset_x, position[1] + text_y_offset, EG_WEAPON_P2, 1.0f, false, "%s", weapon_name);
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
@@ -7170,7 +7168,7 @@ void HudGaugeSecondaryWeapons::initSecondaryUnlinkedOffsetX(int x)
 	_sunlinked_offset_x = x;
 }
 
-void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
+void HudGaugeSecondaryWeapons::render(float /*frametime*/, bool /*config*/)
 {
 	ship_weapon	*sw;
 
@@ -7209,14 +7207,14 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 
 		if ( sw->current_secondary_bank == i ) {
 			// show that this is the current secondary armed
-			renderPrintf(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
+			renderPrintfWithGauge(position[0] + _sunlinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 
 			// indicate if this is linked
 			// don't draw the link indicator if the fire can't be fired link.
 			// the link flag is ignored rather than cleared so the player can cycle past a no-doublefire weapon without the setting being cleared
 			if ( Player_ship->flags[Ship::Ship_Flags::Secondary_dual_fire] && !wip->wi_flags[Weapon::Info_Flags::No_doublefire] &&
 					!The_mission.ai_profile->flags[AI::Profile_Flags::Disable_player_secondary_doublefire] ) {
-				renderPrintf(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, "%c", Weapon_link_icon);
+				renderPrintfWithGauge(position[0] + _slinked_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, false, "%c", Weapon_link_icon);
 			}
 
 			// show secondary weapon's image or print its name
@@ -7230,7 +7228,7 @@ void HudGaugeSecondaryWeapons::render(float  /*frametime*/)
 			if ((sw->current_secondary_bank >= 0) && ship_secondary_has_ammo(sw, i)) {
 				int ms_till_fire = timestamp_until(sw->next_secondary_fire_stamp[sw->current_secondary_bank]);
 				if ( (ms_till_fire >= 500) && ((wip->fire_wait >= 1 ) || (ms_till_fire > wip->fire_wait*1000)) ) {
-					renderPrintf(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, "%d", (int)std::lround(ms_till_fire/1000.0f));
+					renderPrintfWithGauge(position[0] + _sreload_offset_x, position[1] + text_y_offset, EG_NULL, 1.0f, false, "%d", (int)std::lround(ms_till_fire/1000.0f));
 				}
 			}
 		} else {
@@ -7291,7 +7289,7 @@ void HudGaugeHardpoints::initDrawOptions(bool primary_models, bool secondary_mod
 	draw_secondary_models = secondary_models;
 }
 
-void HudGaugeHardpoints::render(float  /*frametime*/)
+void HudGaugeHardpoints::render(float /*frametime*/, bool /*config*/)
 {
 	int			sx, sy;
 	ship			*sp;

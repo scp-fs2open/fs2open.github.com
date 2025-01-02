@@ -2387,7 +2387,7 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
-				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
+				gr_get_string_size(&w, &h, Weapon_desc_lines[i], 1.0f, curr_len);
 				gr_printf_menu(weapon_title_coords[0]+w, weapon_title_coords[1]+(line_height*i), "%c", bright_char[i]);
 
 				// restore the bright char to the string
@@ -2415,7 +2415,7 @@ void wl_render_weapon_desc(float frametime)
 
 				// draw the bright letters
 				gr_set_color_fast(&Color_bright_white);
-				gr_get_string_size(&w, &h, Weapon_desc_lines[i], curr_len);
+				gr_get_string_size(&w, &h, Weapon_desc_lines[i], 1.0f, curr_len);
 				gr_printf_menu(weapon_desc_coords[0]+w, weapon_desc_coords[1]+(line_height*(i-2)), "%c", bright_char[i]);
 
 				// restore the bright char to the string
@@ -2467,7 +2467,7 @@ void wl_weapon_desc_start_wipe()
 
 	// break title into two lines if too long
 	strcpy_s(Weapon_desc_lines[0], Weapon_info[Selected_wl_class].title);
-	gr_get_string_size(&w, &h, Weapon_info[Selected_wl_class].title, title_len);
+	gr_get_string_size(&w, &h, Weapon_info[Selected_wl_class].title, 1.0f, title_len);
 	if (w > Weapon_title_max_width[gr_screen.res]) {
 		// split
 		currchar_src = (size_t)(((float)title_len / (float)w) * Weapon_title_max_width[gr_screen.res]);			// char to start space search at
@@ -2979,7 +2979,7 @@ void wl_render_icon_count(int num, int x, int y)
 	Assert(number_to_draw >= 0);
 
 	sprintf(buf, "%d", number_to_draw);
-	gr_get_string_size(&num_w, &num_h, buf, strlen(buf));
+	gr_get_string_size(&num_w, &num_h, buf, 1.0f, strlen(buf));
 
 	// render
 	gr_set_color_fast(&Color_white);
