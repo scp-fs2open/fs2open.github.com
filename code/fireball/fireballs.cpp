@@ -383,13 +383,13 @@ static void parse_fireball_tbl(const char *table_filename)
 			if (optional_string("$Warp size ratio:")) {
 				stuff_float(&fi->warp_size_ratio);
 			} else {
-				fi->warp_size_ratio = 1;
+				fi->warp_size_ratio = 1.0f;
 			}
 
 			if (optional_string("$Flare size ratio:")) {
 				stuff_float(&fi->flare_size_ratio);
 			} else {
-				fi->flare_size_ratio = 1.5;
+				fi->flare_size_ratio = 1.5f;
 			}
 
 			if (optional_string("$Cinematic:")) {
@@ -398,13 +398,13 @@ static void parse_fireball_tbl(const char *table_filename)
 				if (optional_string("+Warp size ratio:")) {
 					stuff_float(&fi->warp_size_ratio);
 				} else {
-					fi->warp_size_ratio = 1.6;
+					fi->warp_size_ratio = 1.6f;
 				}
 
 				if (optional_string("+Flare size ratio:")) {
 					stuff_float(&fi->flare_size_ratio);
 				} else {
-					fi->flare_size_ratio = 5.3;
+					fi->flare_size_ratio = 5.3f;
 				}
 
 				// The first two values need to be implied multiples of PI
