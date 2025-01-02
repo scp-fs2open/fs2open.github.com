@@ -13,7 +13,6 @@ class ShipPathsDialogModel : public AbstractDialogModel {
 	SCP_vector<bool> m_path_list;
 	int m_path_mask;
 	int m_ship;
-	bool _modified = false;
   public:
 	ShipPathsDialogModel(QObject* parent,
 		EditorViewport* viewport,
@@ -22,7 +21,6 @@ class ShipPathsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 	bool modify(const int, const bool);
-	bool query_modified() const;
 	SCP_vector<bool> getPathList() const;
 	polymodel* getModel() const;
 };

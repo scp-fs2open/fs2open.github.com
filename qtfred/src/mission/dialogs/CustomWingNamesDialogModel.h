@@ -24,21 +24,11 @@ public:
 private:
 	void initializeData();
 
-	template<typename T>
-	void modify(T &a, T &b);
 
 	SCP_string _m_starting[3];
 	SCP_string _m_squadron[5];
 	SCP_string _m_tvt[2];
 };
-
-template<typename T>
-inline void CustomWingNamesDialogModel::modify(T & a, T & b) {
-	if (a != b) {
-		a = b;
-		modelChanged();
-	}
-}
 
 }
 }

@@ -5,14 +5,15 @@
 #include <globalincs/linklist.h>
 #include <mission/object.h>
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 
 namespace fso {
 namespace fred {
 namespace dialogs {
-ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::ShipGoalsDialog()),
+ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool editMultiple, int shipID, int wingID)
+	: QDialog(parent), ui(new Ui::ShipGoalsDialog()), _model(new ShipGoalsDialogModel(this,
+														  viewport, editMultiple, shipID, wingID)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
@@ -71,18 +72,7 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport)
 	priority[8] = ui->prioritySpinBox9;
 	priority[9] = ui->prioritySpinBox10;
 	connect(this, &QDialog::accepted, _model.get(), &ShipGoalsDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &ShipGoalsDialogModel::reject);
-	parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
-	if (parentDialog == nullptr) {
-		//TODO: Add wing editor Here
-		WingMode = true;
-	} else {
-		_model = std::unique_ptr<ShipGoalsDialogModel>(new ShipGoalsDialogModel(this,
-			viewport,
-			parentDialog->getIfMultipleShips(),
-			Ships[parentDialog->getSingleShip()].objnum,
-			-1));
-	}
+	connect(ui->cancelButton, &QPushButton::clicked, this, &ShipGoalsDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
@@ -116,35 +106,15 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport)
 
 ShipGoalsDialog::~ShipGoalsDialog() = default;
 
-void ShipGoalsDialog::showEvent(QShowEvent* e)
+void ShipGoalsDialog::closeEvent(QCloseEvent* e)
 {
-	if (!WingMode) {
-		_model->initializeData(parentDialog->getIfMultipleShips(), Ships[parentDialog->getSingleShip()].objnum, -1);
-	}
-
-	QDialog::showEvent(e);
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
-void ShipGoalsDialog::closeEvent(QCloseEvent* event)
+void ShipGoalsDialog::rejectHandler()
 {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+	this->close();
 }
 
 void ShipGoalsDialog::updateUI()

@@ -18,10 +18,13 @@ class AsteroidEditorDialog : public QDialog
 	Q_OBJECT
 public:
 	AsteroidEditorDialog(FredView* parent, EditorViewport* viewport);
-	~AsteroidEditorDialog() override;
+  ~AsteroidEditorDialog() override;
+
+  protected:
+  void closeEvent(QCloseEvent* e) override;
+	void rejectHandler();
 
 private:
-	void done(int r) override;
 
 	void toggleEnabled(bool enabled);
 	void toggleInnerBoxEnabled(bool enabled);

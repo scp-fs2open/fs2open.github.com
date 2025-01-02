@@ -6,6 +6,7 @@
 #include <qtablewidget.h>
 #include <QListWidget>
 #include <QMessageBox>
+#include <mission/util.h>
 
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
@@ -23,7 +24,7 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &LoadoutDialog::updateUI);
 	connect(this, &QDialog::accepted, _model.get(), &LoadoutDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &LoadoutDialogModel::reject);
+	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &LoadoutDialog::rejectHandler);
 
 	// Ship and Weapon lists, selection changed.
 	connect(ui->listShipsNotUsed, 
@@ -237,7 +238,19 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 }
 
 // a result of competing CI requirements
-LoadoutDialog::~LoadoutDialog(){} // NOLINT
+LoadoutDialog::~LoadoutDialog() {} // NOLINT
+
+void LoadoutDialog::closeEvent(QCloseEvent* e)
+{
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
+}
+
+void LoadoutDialog::rejectHandler()
+{
+	this->close();
+}
 
 void LoadoutDialog::onSwitchViewButtonPressed()
 {

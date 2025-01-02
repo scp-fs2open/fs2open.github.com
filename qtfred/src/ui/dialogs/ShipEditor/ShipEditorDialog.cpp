@@ -174,41 +174,36 @@ void ShipEditorDialog::showEvent(QShowEvent* e) {
 
 void ShipEditorDialog::on_miscButton_clicked()
 {
-	if (!flagsDialog) {
-		flagsDialog = std::unique_ptr<ShipFlagsDialog>(new dialogs::ShipFlagsDialog(this, _viewport));
-	}
-	flagsDialog->show();
+	auto dialog = new dialogs::ShipFlagsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void ShipEditorDialog::on_initialStatusButton_clicked()
 {
-	if (!initialStatusDialog) {
-		initialStatusDialog =
-			std::unique_ptr<ShipInitialStatusDialog>(new dialogs::ShipInitialStatusDialog(this, _viewport));
-	}
-	initialStatusDialog->show();
+	auto dialog = new dialogs::ShipInitialStatusDialog(this, _viewport, getIfMultipleShips());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
-	if (!GoalsDialog) {
-		GoalsDialog = std::unique_ptr<ShipGoalsDialog>(new dialogs::ShipGoalsDialog(this, _viewport));
-	}
-	GoalsDialog->show();
+	auto dialog = new dialogs::ShipGoalsDialog(this, _viewport, getIfMultipleShips(), Ships[getSingleShip()].objnum, -1);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void ShipEditorDialog::on_tblInfoButton_clicked()
 {
-	if (!TBLViewer) {
-		TBLViewer = std::unique_ptr<ShipTBLViewer>(new dialogs::ShipTBLViewer(this, _viewport));
-	}
-	TBLViewer->show();
+	auto dialog = new dialogs::ShipTBLViewer(this, _viewport, getShipClass());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void ShipEditorDialog::update()
 {
 	if (this->isVisible()) {
-		if (_model->getNumSelectedObjects() && _model->_modified) {
+		if (_model->getNumSelectedObjects() && _model->query_modified()) {
 			_model->apply();
 		}
 		_model->initializeData();
@@ -801,11 +796,9 @@ void ShipEditorDialog::DepartureCueChanged(const bool value)
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
 {
-	if (!TextureReplacementDialog) {
-		TextureReplacementDialog =
-			std::unique_ptr<ShipTextureReplacementDialog>(new dialogs::ShipTextureReplacementDialog(this, _viewport));
-	}
-	TextureReplacementDialog->show();
+	auto dialog = new dialogs::ShipTextureReplacementDialog(this, _viewport, getIfMultipleShips());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void ShipEditorDialog::on_playerShipButton_clicked()
@@ -838,18 +831,15 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 	{
-	if (!playerOrdersDialog) {
-		playerOrdersDialog = std::unique_ptr<PlayerOrdersDialog>(new dialogs::PlayerOrdersDialog(this, _viewport));
-	}
-	playerOrdersDialog->show();
+	auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
-	if (!specialStatsDialog) {
-		specialStatsDialog =
-			std::unique_ptr<ShipSpecialStatsDialog>(new dialogs::ShipSpecialStatsDialog(this, _viewport));
-	}
-	specialStatsDialog->show();
+	auto dialog = new dialogs::ShipSpecialStatsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void ShipEditorDialog::on_hideCuesButton_clicked()
 {
@@ -873,6 +863,7 @@ void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 {
 	int target_class = Ships[_model->getArrivalTarget()].ship_info_index;
 	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, false);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 
 
@@ -880,17 +871,20 @@ void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 void ShipEditorDialog::on_customWarpinButton_clicked()
 {
 	auto dialog = new dialogs::ShipCustomWarpDialog(this, _viewport, false);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
 void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
 	int target_class = Ships[_model->getDepartureTarget()].ship_info_index;
 	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, true);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
 void ShipEditorDialog::on_customWarpoutButton_clicked()
 {
 	auto dialog = new dialogs::ShipCustomWarpDialog(this, _viewport, true);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
 } // namespace dialogs

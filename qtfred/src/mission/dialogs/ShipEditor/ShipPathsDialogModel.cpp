@@ -76,10 +76,6 @@ bool ShipPathsDialogModel::modify(const int index, const bool value)
 		return false;
 	}
 }
-bool ShipPathsDialogModel::query_modified() const
-{
-	return _modified;
-}
 SCP_vector<bool> ShipPathsDialogModel::getPathList() const
 {
 	return m_path_list;
