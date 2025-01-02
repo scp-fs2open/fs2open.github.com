@@ -29,6 +29,7 @@ public:
  protected:
 	void keyPressEvent(QKeyEvent* event) override;
 	void closeEvent(QCloseEvent*) override;
+	void rejectHandler();
  private:
 
 	void updateMusicComboBox();

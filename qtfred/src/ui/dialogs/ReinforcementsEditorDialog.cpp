@@ -1,6 +1,6 @@
 #include "ReinforcementsEditorDialog.h"
 #include "ui_ReinforcementsDialog.h"
-
+#include "mission/util.h"
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
@@ -22,7 +22,9 @@ namespace dialogs {
 
 		connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ReinforcementsDialog::updateUI);
 		connect(this, &QDialog::accepted, _model.get(), &ReinforcementsDialogModel::apply);
-		connect(this, &QDialog::rejected, _model.get(), &ReinforcementsDialogModel::reject);			
+		connect(ui->okAndCancelButtonBox,
+			&QDialogButtonBox::rejected,
+			this, &ReinforcementsDialog::rejectHandler);			
 
 
 		connect(ui->delayLineEdit,
@@ -197,7 +199,16 @@ namespace dialogs {
 
 	ReinforcementsDialog::~ReinforcementsDialog() {} // NOLINT
 
-	void ReinforcementsDialog::closeEvent(QCloseEvent* ){}
+	void ReinforcementsDialog::closeEvent(QCloseEvent* e){
+		if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+			e->ignore();
+		};
+	}
+
+	void ReinforcementsDialog::rejectHandler()
+	{
+		this->close();
+	}
 
 }
 }

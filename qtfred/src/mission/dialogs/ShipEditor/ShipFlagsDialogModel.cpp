@@ -12,12 +12,6 @@
 namespace fso {
 namespace fred {
 namespace dialogs {
-void ShipFlagsDialogModel::set_modified()
-{
-	if (!_modified) {
-		_modified = true;
-	}
-}
 int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
 {
 	if (val) {
@@ -1125,11 +1119,6 @@ void ShipFlagsDialogModel::setNoSelfDestruct(const int state)
 int ShipFlagsDialogModel::getNoSelfDestruct() const
 {
 	return m_no_disabled_self_destruct;
-}
-
-bool ShipFlagsDialogModel::query_modified()
-{
-	return _modified;
 }
 
 void ShipFlagsDialogModel::initializeData()

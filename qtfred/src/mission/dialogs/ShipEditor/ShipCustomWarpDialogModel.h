@@ -10,12 +10,6 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	 * @brief Initialises data for the model
 	 */
 	void initializeData();
-	template <typename T>
-	/**
-	 * @brief Copies rvalue to the lvalue while setting the modified variable.
-	 */
-	void modify(T& a, const T& b);
-	bool _modified = false;
 	bool _m_departure;
 
 	int _m_warp_type;
@@ -34,7 +28,6 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	/**
 	 * @brief Marks the model as modifed
 	 */
-	void set_modified();
 
   public:
 	/**
@@ -113,11 +106,6 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	 * @return If the model is working on a player.
 	 */
 	bool isPlayer() const;
-	/**
-	 * @brief Getter
-	 * @return If the model has been modified.
-	 */
-	bool query_modified() const;
 
 	// Setters
 	void setType(const int index);
@@ -132,15 +120,5 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	void setSupercap(const bool);
 	void setPlayerSpeed(const double);
 };
-
-template <typename T>
-inline void ShipCustomWarpDialogModel::modify(T& a, const T& b)
-{
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
 
 } // namespace dialogs

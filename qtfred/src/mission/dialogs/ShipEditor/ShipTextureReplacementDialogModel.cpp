@@ -627,17 +627,6 @@ namespace fso {
 				Assert(index < currentTextures.size());
 				modify(inheritMap[index][type], state);
 			}
-			void ShipTextureReplacementDialogModel::set_modified()
-			{
-				if (!_modified) {
-					_modified = true;
-				}
-			}
-
-			bool ShipTextureReplacementDialogModel::query_modified() const
-			{
-				return  _modified;;
-			}
 		}
 	}
 }

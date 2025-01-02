@@ -24,7 +24,10 @@ public:
 protected:
 	void keyPressEvent(QKeyEvent* event) override;
 	void closeEvent(QCloseEvent*) override;
-private:
+
+	void rejectHandler();
+
+  private:
 	void updateUI();
 	void updateTeam();
 	void updateType();

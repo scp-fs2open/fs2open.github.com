@@ -25,12 +25,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void initialize(ai_goal* goals, int ship);
 	void initialize_multi();
 
-	template <typename T>
-	void modify(T& a, const T& b);
 
-	bool _modified = false;
-
-	void set_modified();
 
 	int self_ship, self_wing;
 	int m_behavior[ED_MAX_GOALS];
@@ -53,7 +48,6 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void initializeData(bool multi, int self_ship, int self_wing);
 	bool apply() override;
 	void reject() override;
-	 bool query_modified();
 
 	void setShip(const int);
 	 int getShip() const;
@@ -85,15 +79,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	void setPriority(const int, const int);
 	 int getPriority(const int) const;
 };
-template <typename T>
-inline void ShipGoalsDialogModel::modify(T& a, const T& b)
-{
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
+
 } // namespace dialogs
 } // namespace fred
 } // namespace fso

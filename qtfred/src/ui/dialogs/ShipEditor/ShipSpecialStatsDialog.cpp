@@ -3,7 +3,7 @@
 #include "ui_ShipSpecialStatsDialog.h"
 
 #include <ui/util/SignalBlockers.h>
-
+#include <mission/util.h>
 #include <QCloseEvent>
 
 namespace fso {
@@ -17,7 +17,7 @@ namespace fso {
 				ui->setupUi(this);
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipSpecialStatsDialogModel::apply);
-				connect(this, &QDialog::rejected, _model.get(), &ShipSpecialStatsDialogModel::reject);
+				connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipSpecialStatsDialog::rejectHandler);
 				connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipSpecialStatsDialog::updateUI);
 
 				connect(ui->explodeCheckBox, &QCheckBox::toggled, _model.get(), &ShipSpecialStatsDialogModel::setSpecialExp);
@@ -43,32 +43,16 @@ namespace fso {
 
 			ShipSpecialStatsDialog::~ShipSpecialStatsDialog() = default;
 
-			void ShipSpecialStatsDialog::closeEvent(QCloseEvent* event)
+			void ShipSpecialStatsDialog::closeEvent(QCloseEvent* e)
 			{
-				if (_model->query_modified()) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-						"Changes detected",
-						"Do you want to keep your changes?",
-						{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-					if (button == DialogButton::Cancel) {
-						event->ignore();
-						return;
-					}
-
-					if (button == DialogButton::Yes) {
-						accept();
-						return;
-					}
-				}
-
-				QDialog::closeEvent(event);
+				if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+					e->ignore();
+				};
 			}
 
-			void ShipSpecialStatsDialog::showEvent(QShowEvent* event) {
-				_model->initializeData();
-
-				QDialog::showEvent(event);
+			void ShipSpecialStatsDialog::rejectHandler()
+			{
+				this->close();
 			}
 
 			void ShipSpecialStatsDialog::updateUI()

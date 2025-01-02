@@ -4,6 +4,7 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <mission/util.h>
 namespace fso {
 	namespace fred {
 		namespace dialogs {
@@ -35,19 +36,18 @@ namespace fso {
 			}
 
 
-			ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport)
+			ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport, bool multiEdit)
 				: QDialog(parent), ui(new Ui::ShipTextureReplacementDialog()),
-				_viewport(viewport)
+				  _model(new ShipTextureReplacementDialogModel(this, viewport, multiEdit)), _viewport(viewport)
 			{
 				ui->setupUi(this);
 
-				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
-				Assert(parentDialog);
-				_model = std::unique_ptr<ShipTextureReplacementDialogModel>(new ShipTextureReplacementDialogModel(this,
-					viewport, parentDialog->getIfMultipleShips()));
 
 				connect(this, &QDialog::accepted, _model.get(), &ShipTextureReplacementDialogModel::apply);
-				connect(this, &QDialog::rejected, _model.get(), &ShipTextureReplacementDialogModel::reject);
+				connect(ui->buttonBox,
+					&QDialogButtonBox::rejected,
+					this,
+					&ShipTextureReplacementDialog::rejectHandler);
 				listmodel = new MapModel(_model.get(), this);
 				ui->TexturesList->setModel(listmodel);
 				QItemSelectionModel* selectionModel = ui->TexturesList->selectionModel();
@@ -89,29 +89,16 @@ namespace fso {
 			}
 			ShipTextureReplacementDialog::~ShipTextureReplacementDialog() = default;
 
-			void ShipTextureReplacementDialog::closeEvent(QCloseEvent* event)
+			void ShipTextureReplacementDialog::closeEvent(QCloseEvent* e)
 			{
-				if (_model->query_modified()) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-						{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-					if (button == DialogButton::Cancel) {
-						event->ignore();
-						return;
-					}
-
-					if (button == DialogButton::Yes) {
-						accept();
-						return;
-					}
-				}
-
-				QDialog::closeEvent(event);
+				if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+					e->ignore();
+				};
 			}
 
-			void ShipTextureReplacementDialog::showEvent(QShowEvent* event) {
-				_model->initialiseData(parentDialog->getIfMultipleShips());
-				QDialog::showEvent(event);
+			void ShipTextureReplacementDialog::rejectHandler()
+			{
+				this->close();
 			}
 
 			void ShipTextureReplacementDialog::updateUI()

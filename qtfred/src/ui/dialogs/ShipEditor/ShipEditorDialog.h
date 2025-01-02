@@ -15,7 +15,6 @@
 #include "ShipCustomWarpDialog.h"
 
 #include <QAbstractButton>
-#include <QtWidgets/QDialog>
 
 
 namespace fso {
@@ -25,13 +24,6 @@ namespace dialogs {
 namespace Ui {
 class ShipEditorDialog;
 }
-
-class ShipTBLViewer;
-class ShipGoalsDialog;
-class ShipInitialStatusDialog;
-class ShipFlagsDialog;
-class ShipTextureReplacementDialog;
-class PlayerOrdersDialog;
 
 /**
 * @brief QTFred's Ship Editor
@@ -137,14 +129,6 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void departureDelayChanged(const int);
 	void departureWarpChanged(const bool);
 	void DepartureCueChanged(const bool);
-
-	std::unique_ptr<ShipGoalsDialog> GoalsDialog = nullptr;
-	std::unique_ptr<ShipInitialStatusDialog> initialStatusDialog = nullptr;
-	std::unique_ptr<ShipFlagsDialog> flagsDialog = nullptr;
-	std::unique_ptr<ShipTextureReplacementDialog> TextureReplacementDialog = nullptr;
-	std::unique_ptr<PlayerOrdersDialog> playerOrdersDialog = nullptr;
-	std::unique_ptr<ShipSpecialStatsDialog> specialStatsDialog = nullptr;
-	std::unique_ptr<ShipTBLViewer> TBLViewer = nullptr;
 };
 } // namespace dialogs
 } // namespace fred
