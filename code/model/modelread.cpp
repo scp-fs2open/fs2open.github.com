@@ -3270,20 +3270,28 @@ int model_load(ship_info* sip, bool prefer_tech_model)
 	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
 		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
 		// techroom model, which is decidedly wrong for the mission itself.
-		return model_load(sip->pof_file_tech, 0, nullptr);
+		return model_load(sip->pof_file_tech);
 	} else {
-		return model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		return model_load(sip->pof_file, sip);
 	}
 }
 
 //returns the number of this model
-int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
+int model_load(const  char* filename, ship_info* sip, int ferror, int duplicate)
 {
 	int i, num;
 	polymodel *pm = NULL;
 
 	if ( !model_initted )
 		model_init();
+
+	int n_subsystems = 0;
+	model_subsystem* subsystems = nullptr;
+
+	if (sip != nullptr) {
+		n_subsystems = sip->n_subsystems;
+		subsystems = sip->subsystems;
+	}
 
 	num = -1;
 

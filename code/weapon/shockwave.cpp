@@ -531,7 +531,7 @@ int shockwave_load(const char *s_name, bool shock_3D)
 		return s_index;
 
 	if (shock_3D) {
-		si->model_id = model_load( si->filename, 0, NULL );
+		si->model_id = model_load( si->filename );
 
 		if ( si->model_id < 0 ) {
 			Shockwave_info.pop_back();
@@ -617,7 +617,7 @@ void shockwave_level_init()
 		// the 2D shockwave shouldn't need anything like this
 		if (Shockwave_info[0].model_id >= 0) {
 			Assertion(!strcmp(Shockwave_info[0].filename, Default_shockwave_3D_filename), "Shockwave_info[0] should be the default shockwave, but somehow isn't.\nShockwave_info[0].filename = \"%s\"\nDefault_shockwave_3D_filename = \"%s\"\nGet a coder!\n", Shockwave_info[0].filename, Default_shockwave_3D_filename);
-			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename, 0, NULL );
+			Shockwave_info[0].model_id = model_load( Default_shockwave_3D_filename );
 		}
 	}
 
@@ -755,7 +755,7 @@ void shockwave_page_in()
 		} else if (it->model_id >= 0) {
 			// for a model we have to run model_load() on it again to make sure
 			// that it's ref_count is sane for this mission
-			int idx __UNUSED = model_load( it->filename, 0, NULL );
+			int idx __UNUSED = model_load( it->filename );
 			Assertion( idx == it->model_id , "Shockwave_info[" SIZE_T_ARG "] got two different model_ids: %d and %d. Filename is \"%s\". Get a coder!\n", std::distance(Shockwave_info.begin(), it), idx, it->model_id, it->filename);
 
 			model_page_in_textures( it->model_id );

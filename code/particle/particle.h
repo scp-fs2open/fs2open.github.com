@@ -45,21 +45,14 @@ namespace particle
 	//=============== LOW-LEVEL SINGLE PARTICLE CREATION CODE ====================
 	//============================================================================
 
-	/**
-	 * The different types of particles
-	 */
-	enum ParticleType
-	{
-		PARTICLE_DEBUG, //!< A simple sphere; optional data provides the color which defaults to red
-		PARTICLE_BITMAP, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
-		PARTICLE_FIRE, //!< The vclip used for explosions, optional means nothing
-		PARTICLE_SMOKE, //!< The vclip used for smoke, optional means nothing
-		PARTICLE_SMOKE2, //!< The vclip used for smoke, optional means nothing
-		PARTICLE_BITMAP_PERSISTENT, //!< A bitmap, optional data is the bitmap number.  If bitmap is an animation, lifetime is calculated by the number of frames and fps.
+	extern int Anim_bitmap_id_fire;
+	extern int Anim_num_frames_fire;
 
-		NUM_PARTICLE_TYPES,
-		INVALID_TYPE
-	};
+	extern int Anim_bitmap_id_smoke;
+	extern int Anim_num_frames_smoke;
+
+	extern int Anim_bitmap_id_smoke2;
+	extern int Anim_num_frames_smoke2;
 
 	// particle creation stuff
 	typedef struct particle_info {
@@ -68,8 +61,8 @@ namespace particle
 		vec3d vel = vmd_zero_vector;
 		float lifetime = -1.0f;
 		float rad = -1.0f;
-		ParticleType type = INVALID_TYPE;
-		int optional_data = -1;
+		int bitmap = -1;
+		int nframes = -1;
 
 		// new-style particle info
 		int attached_objnum = -1;				// if these are set, the pos is relative to the pos of the origin of the attached object
@@ -91,8 +84,7 @@ namespace particle
 		float	max_life;			// How much life we had
 		bool    looping;            // If the particle will loop its animation at the end of its life instead of expiring
 		float	radius;				// radius
-		int		type;				// type										// -1 = None
-		int		optional_data;		// depends on type
+		int		bitmap;		// depends on type
 		int		nframes;			// If an ani, how many frames?	
 
 		// new style data
@@ -131,8 +123,7 @@ namespace particle
 				const vec3d* vel,
 				float lifetime,
 				float rad,
-				ParticleType type,
-				int optional_data = -1,
+				int bitmap = -1,
 				const object* objp = nullptr,
 				bool reverse = false);
 
@@ -147,30 +138,6 @@ namespace particle
 	 * @return A weak reference to the particle
 	 */
     WeakParticlePtr createPersistent(particle_info* pinfo);
-
-	//============================================================================
-	//============== HIGH-LEVEL PARTICLE SYSTEM CREATION CODE ====================
-	//============================================================================
-
-	// Use a structure rather than pass a ton of parameters to particle_emit
-	typedef struct particle_emitter {
-		int		num_low;			// Lowest number of particles to create
-		int		num_high;			// Highest number of particles to create
-		vec3d	pos;				// Where the particles emit from
-		vec3d	vel;				// Initial velocity of all the particles
-		float	min_life;			// How long the particles live
-		float	max_life;			// How long the particles live
-		vec3d	normal;				// What normal the particle emit arond
-		float	normal_variance;	// How close they stick to that normal 0=good, 1=360 degree
-		float	min_vel;			// How fast the slowest particle can move
-		float	max_vel;			// How fast the fastest particle can move
-		float	min_rad;			// Min radius
-		float	max_rad;			// Max radius
-	} particle_emitter;
-
-	// Creates a bunch of particles. You pass a structure
-	// rather than a bunch of parameters.
-	void emit(particle_emitter *pe, ParticleType type, int optional_data, float range = 1.0);
 }
 
 #endif // _PARTICLE_H
