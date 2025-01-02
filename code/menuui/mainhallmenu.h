@@ -170,6 +170,7 @@ extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
 extern bool Main_hall_poll_key;
 
+extern SCP_string Enforced_main_hall;
 
 // initialize the main hall proper 
 void main_hall_init(const SCP_string &main_hall_name);
