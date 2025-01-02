@@ -49,6 +49,7 @@
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 // campaign wasn't ended
@@ -740,13 +741,15 @@ void mission_campaign_init()
  */
 void mission_campaign_savefile_delete(const char* cfilename)
 {
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-
-	_splitpath( cfilename, NULL, NULL, base, NULL );
+	char filename[_MAX_FNAME];
 
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		return;	// no such thing as a multiplayer campaign savefile
 	}
+
+	auto base = util::get_file_part(cfilename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
 
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
@@ -1554,13 +1557,46 @@ int mission_load_up_campaign(bool fall_back_from_current)
 	auto pl = Player;
 
 	// find best campaign to use:
-	//   1) last used
-	//   2) builtin
-	//   3) anything else
+	//   1) cmdline
+	//   2) last used
+	//   3) builtin
+	//   4) anything else
 	// Note that in each step we only fall back when the error is benign, e.g. ignored or missing;
 	// if there's some other real error with the campaign file, we report it.
 	// Also note that if we *have* a current campaign, we shouldn't fall back *at all*, lest we repeatedly
 	// reset what the current campaign is, *unless* we are starting a brand new session or loading a new pilot.
+
+	// cmdline...
+	if ( Cmdline_campaign != nullptr && strlen(Cmdline_campaign) ) {
+		char* campaign = Cmdline_campaign;
+
+		// Clear cmdline value
+		// * Only set campaign once from cmdline.
+		// * Prevent subsequent load failures.
+		// * On success, campaign becomes "last used".
+		Cmdline_campaign = nullptr;
+
+		bool has_last_used_campaign = strlen(pl->current_campaign) > 0;
+		bool campaign_already_set = has_last_used_campaign
+			&& (stricmp(campaign, pl->current_campaign) == 0);
+
+		if (has_last_used_campaign) {
+			mprintf(("Current campaign is '%s'\n", pl->current_campaign));
+		}
+
+		if (!campaign_already_set) {
+			rc = mission_campaign_load(campaign, nullptr, pl);
+
+			if (rc == 0) {
+				// update pilot with the new current campaign (becomes "last used")
+				strcpy_s(pl->current_campaign, Campaign.filename);
+				mprintf(("Set current campaign to '%s'\n", campaign));
+				return rc;
+			} else {
+				mprintf(("Failed to set current campaign to '%s'\n", campaign));
+			}
+		}
+	}
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {

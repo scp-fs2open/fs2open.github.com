@@ -266,6 +266,23 @@ bool CFREDDoc::load_mission(const char *pathname, int flags) {
 		Fred_view_wnd->MessageBox(msg.c_str());
 	}
 
+	// message 4: check for "immobile" flag migration
+	if (!Fred_migrated_immobile_ships.empty()) {
+		SCP_string msg = "The \"immobile\" ship flag has been superseded by the \"don't-change-position\", and \"don't-change-orientation\" flags.  "
+			"All ships which previously had \"Does Not Move\" checked in the ship flags editor will now have both \"Does Not Change Position\" and "
+			"\"Does Not Change Orientation\" checked.  After you close this dialog, the error checker will check for any potential issues, including "
+			"issues involving these flags.\n\nThe following ships have been migrated:";
+
+		for (int shipnum : Fred_migrated_immobile_ships) {
+			msg += "\n\t";
+			msg += Ships[shipnum].ship_name;
+		}
+
+		truncate_message_lines(msg, 30);
+		Fred_view_wnd->MessageBox(msg.c_str());
+		Error_checker_checks_potential_issues_once = true;
+	}
+
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {

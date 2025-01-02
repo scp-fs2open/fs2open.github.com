@@ -92,6 +92,7 @@ extern int Cmdline_no_enhanced_sound;
 
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support
+extern char *Cmdline_campaign;	 // for campaign support
 // Multiplayer/Network related
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;

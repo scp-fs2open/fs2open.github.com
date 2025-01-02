@@ -1113,10 +1113,9 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 	}
 #ifndef NDEBUG
-	char bname[_MAX_FNAME];
+	char bname[FILESPEC_LENGTH];
 
 	if ( !ss_warning_shown_mismatch) {
-		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
 		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
@@ -1602,9 +1601,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
 	// into the game quicker
-#if 0
+#ifndef NDEBUG
 	{
-		char bname[_MAX_FNAME];
+		char bname[FILESPEC_LENGTH];
 
 		_splitpath(filename, NULL, NULL, bname, NULL);
 		sprintf(debug_name, "%s.subsystems", bname);

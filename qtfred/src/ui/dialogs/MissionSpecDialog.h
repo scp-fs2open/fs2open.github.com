@@ -27,6 +27,7 @@ public:
 
 protected:
 	void closeEvent(QCloseEvent*) override;
+  void rejectHandler();
 
 private slots:
 	void on_customWingNameButton_clicked();

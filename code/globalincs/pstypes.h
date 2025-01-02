@@ -220,15 +220,19 @@ struct particle_pnt {
 	vec3d up;
 };
 
+// for compiler compatibility, even though C++17 supports omitting the template type...
+
 //def_list
-struct flag_def_list {
+template<typename T>
+struct flag_def_list_templated {
 	const char *name;
-	int def;
+	T def;
 	ubyte var;
 };
+using flag_def_list = flag_def_list_templated<int>;
 
 //A list of parse names for a flag enum
-template<class T>
+template<typename T>
 struct flag_def_list_new {
     const char* name;			// The parseable representation of this flag
     T def;				// The flag definition for this flag

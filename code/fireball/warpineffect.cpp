@@ -34,6 +34,14 @@ static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.Wa
                      .importance(65)
                      .finish();
 
+bool warpin_show_flash() {
+	if (Using_in_game_options) {
+		return WarpFlashOption->getValue();
+	} else {
+		return Fireball_warp_flash;
+	}
+}
+
 void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 {
 	vec3d norm;
@@ -76,7 +84,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		r *= (0.40f + Noise[noise_frame] * 0.30f);
 
 		// Bobboau's warp thingie, toggled by cmdline
-		if (Fireball_warp_flash) {
+		if (warpin_show_flash()) {
 			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
 		}
 
@@ -159,7 +167,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		warpin_batch_draw_face( texture_bitmap_num, &verts[0], &verts[3], &verts[4] );
 	}
 
-	if (warp_ball_bitmap >= 0 && Fireball_warp_flash) {
+	if (warp_ball_bitmap >= 0 && warpin_show_flash()) {
 		flash_ball warp_ball(20, .1f,.25f, &orient->vec.fvec, pos, 4.0f, 0.5f);
 
 		float adg = (2.0f * life_percent) - 1.0f;

@@ -50,6 +50,7 @@
 #include "hud/hudparse.h"
 #include "hud/hudshield.h"
 #include "hud/hudsquadmsg.h"		// for the order sexp
+#include "hud/hudwingmanstatus.h"
 #include "iff_defs/iff_defs.h"
 #include "io/keycontrol.h"
 #include "io/timer.h"
@@ -433,7 +434,7 @@ SCP_vector<sexp_oper> Operators = {
 
 	//AI Control Sub-Category
 	{ "add-goal",						OP_ADD_GOAL,							2,	2,			SEXP_ACTION_OPERATOR,	},
-	{ "remove-goal",					OP_REMOVE_GOAL,							2,	2,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "remove-goal",					OP_REMOVE_GOAL,							2,	4,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "add-ship-goal",					OP_ADD_SHIP_GOAL,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "add-wing-goal",					OP_ADD_WING_GOAL,						2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "clear-goals",					OP_CLEAR_GOALS,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
@@ -479,6 +480,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-arrival-info",				OP_SET_ARRIVAL_INFO,					2,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-departure-info",				OP_SET_DEPARTURE_INFO,					2,	7,			SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
+	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Shields, Engines and Weapons Sub-Category
 	{ "set-weapon-energy",				OP_SET_WEAPON_ENERGY,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma
@@ -544,9 +548,6 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ship-subsys-vanish",				OP_SHIP_SUBSYS_VANISHED,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-subsys-ignore_if_dead",		OP_SHIP_SUBSYS_IGNORE_IF_DEAD,			3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "awacs-set-radius",				OP_AWACS_SET_RADIUS,					3,	3,			SEXP_ACTION_OPERATOR,	},
-	{ "alter-ship-flag",				OP_ALTER_SHIP_FLAG,						3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Karajorma 
-	{ "alter-wing-flag",				OP_ALTER_WING_FLAG,						2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
-	{ "cancel-future-waves",			OP_CANCEL_FUTURE_WAVES,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	}, // naomimyselfandi
 
 	//Cargo Sub-Category
 	{ "transfer-cargo",					OP_TRANSFER_CARGO,						2,	2,			SEXP_ACTION_OPERATOR,	},
@@ -698,6 +699,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "hud-set-max-targeting-range",	OP_HUD_SET_MAX_TARGETING_RANGE,			1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "hud-force-sensor-static",		OP_HUD_FORCE_SENSOR_STATIC,				1,	1,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
 	{ "hud-force-emp-effect",			OP_HUD_FORCE_EMP_EFFECT,				2,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "set-squadron-wings",				OP_SET_SQUADRON_WINGS,			1,	MAX_SQUADRON_WINGS,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 
 	//Nav Sub-Category
 	{ "add-nav-waypoint",				OP_NAV_ADD_WAYPOINT,					3,	4,			SEXP_ACTION_OPERATOR,	},	//kazan
@@ -4241,6 +4243,59 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 				break;
 			}
 
+			// examine uses of alter-ship-flag and are-ship-flags-set with "immobile"
+			case OP_ALTER_SHIP_FLAG:
+			case OP_ARE_SHIP_FLAGS_SET:
+			{
+				Object::Object_Flags object_flag = Object::Object_Flags::NUM_VALUES;
+				Ship::Ship_Flags ship_flag = Ship::Ship_Flags::NUM_VALUES;
+				Mission::Parse_Object_Flags parse_obj_flag = Mission::Parse_Object_Flags::NUM_VALUES;
+				AI::AI_Flags ai_flag = AI::AI_Flags::NUM_VALUES;
+				bool immobile_used = false;
+
+				// check to see the flag is specified by the sexp (don't check to see what the flag may be applied to)
+				if (op_num == OP_ALTER_SHIP_FLAG)
+				{
+					auto flag_name = CTEXT(first_arg_node);
+					sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+					if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						immobile_used = true;
+				}
+				else
+				{
+					for (int n = CDR(first_arg_node); n >= 0; n = CDR(n))
+					{
+						auto flag_name = CTEXT(n);
+						sexp_check_flag_arrays(flag_name, object_flag, ship_flag, parse_obj_flag, ai_flag);
+						if (object_flag == Object::Object_Flags::Immobile || parse_obj_flag == Mission::Parse_Object_Flags::OF_Immobile)
+						{
+							immobile_used = true;
+							break;
+						}
+					}
+				}
+
+				// now check if any ships are created with any of the flags
+				if (immobile_used)
+				{
+					for (const auto so : list_range(&Ship_obj_list))
+					{
+						const auto &obj = Objects[so->objnum];
+						if (obj.flags[Object::Object_Flags::Immobile, Object::Object_Flags::Dont_change_position, Object::Object_Flags::Dont_change_orientation])
+						{
+							issue_msg = "At least one ship (";
+							issue_msg += Ships[obj.instance].ship_name;
+							issue_msg += ") has \"Does Not Change Position\" and/or \"Does Not Change Orientation\" checked, while this ";
+							issue_msg += Sexp_nodes[node].text;
+							issue_msg += " operator uses the \"immobile\" flag.  Be aware that all three flags are independent and setting/checking one flag will not "
+								"set/check another.  For convenience, the set-mobile and set-immobile operators will clear conflicting flags, but alter-ship-flag will not.";
+							return SEXP_CHECK_POTENTIAL_ISSUE;
+						}
+					}
+				}
+				break;
+			}
+
 			default:
 				break;
 		}
@@ -5725,40 +5780,46 @@ wing *eval_wing(int node)
 
 /**
  * Returns a number parsed from the sexp node text.
- * NOTE: sexp_atoi can only be used if CTEXT was used; i.e. atoi(CTEXT(n))
+ * NOTE: sexp_atoi() should only replace atoi(CTEXT(n)) - it should not replace atoi(Sexp_nodes[node].text) - see commit 9923c87bc1
  */
 int sexp_atoi(int node)
 {
-	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 	if (node < 0)
 		return 0;
 
-	// check cache
-	if (Sexp_nodes[node].cache)
+	// SEXP caching is not set up to work in FRED, so bypass all the caching code in that case
+	if (!Fred_running)
 	{
-		// have we cached something else?
-		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
-			return 0;
+		// check cache
+		if (Sexp_nodes[node].cache)
+		{
+			// have we cached something else?
+			if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_NUMBER)
+				return 0;
 
-		return Sexp_nodes[node].cache->numeric_literal;
-	}
+			return Sexp_nodes[node].cache->numeric_literal;
+		}
 
-	// maybe forward to a special-arg node
-	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
-	{
-		auto current_argument = Sexp_replacement_arguments.back();
-		int arg_node = current_argument.second;
+		// maybe forward to a special-arg node
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+		{
+			auto current_argument = Sexp_replacement_arguments.back();
+			int arg_node = current_argument.second;
 
-		if (arg_node >= 0)
-			return sexp_atoi(arg_node);
+			if (arg_node >= 0)
+				return sexp_atoi(arg_node);
+		}
 	}
 
 	int num = atoi(CTEXT(node));
 	ensure_opf_positive_is_positive(node, num);
 
-	// cache the value if it can't change later
-	if (!is_node_value_dynamic(node))
-		Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+	if (!Fred_running)
+	{
+		// cache the value if it can't change later
+		if (!is_node_value_dynamic(node))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_NUMBER, num, -1);
+	}
 
 	return num;
 }
@@ -5768,21 +5829,24 @@ int sexp_atoi(int node)
  */
 bool sexp_can_construe_as_integer(int node)
 {
-	Assertion(!Fred_running, "This function relies on SEXP caching which is not set up to work in FRED!");
 	if (node < 0)
 		return false;
 
-	if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
-		return true;
-
-	// maybe forward to a special-arg node
-	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	// SEXP caching is not set up to work in FRED, so bypass all the caching code in that case
+	if (!Fred_running)
 	{
-		auto current_argument = Sexp_replacement_arguments.back();
-		int arg_node = current_argument.second;
+		if (Sexp_nodes[node].cache && Sexp_nodes[node].cache->sexp_node_data_type == OPF_NUMBER)
+			return true;
 
-		if (arg_node >= 0)
-			return sexp_can_construe_as_integer(arg_node);
+		// maybe forward to a special-arg node
+		if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+		{
+			auto current_argument = Sexp_replacement_arguments.back();
+			int arg_node = current_argument.second;
+
+			if (arg_node >= 0)
+				return sexp_can_construe_as_integer(arg_node);
+		}
 	}
 
 	return can_construe_as_integer(CTEXT(node));
@@ -13139,12 +13203,16 @@ void sexp_remove_goal(int n)
 		if (!ship_entry->has_shipp())
 			return;										// ship not around anymore???? then forget it!
 
-		int goalindex = ai_remove_goal_sexp_sub(goal_node, Ai_info[ship_entry->shipp()->ai_index].goals);
-		if (goalindex >= 0)
-		{
-			if (Ai_info[ship_entry->shipp()->ai_index].active_goal == goalindex)
-				Ai_info[ship_entry->shipp()->ai_index].active_goal = AI_GOAL_NONE;
-		}
+		bool remove_more = false;
+		auto aip = &Ai_info[ship_entry->shipp()->ai_index];
+		do {
+			int goalindex = ai_remove_goal_sexp_sub(goal_node, aip->goals, remove_more);
+			if (goalindex >= 0)
+			{
+				if (aip->active_goal == goalindex)
+					aip->active_goal = AI_GOAL_NONE;
+			}
+		} while (remove_more);
 		return;
 	}
 
@@ -13648,6 +13716,30 @@ void multi_sexp_hud_display_gauge()
 	if (Current_sexp_network_packet.get_int(show_for)) {
 		Sexp_hud_display_warpout = (show_for > 1)? timestamp(show_for) : (show_for);
 	}
+}
+
+void sexp_set_squadron_wings(int node)
+{
+	std::array<int, MAX_SQUADRON_WINGS> new_squad_wingnums;
+
+	// get the new set of squadron wings
+	for (int i = 0, n = node; i < MAX_SQUADRON_WINGS; i++)
+	{
+		int wingnum = -1;
+
+		if (n >= 0)
+		{
+			auto wingp = eval_wing(n);
+			if (wingp)
+				wingnum = WING_INDEX(wingp);
+
+			n = CDR(n);
+		}
+
+		new_squad_wingnums[i] = wingnum;
+	}
+
+	hud_set_new_squadron_wings(new_squad_wingnums);
 }
 
 // Goober5000
@@ -18997,6 +19089,7 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 		return;
 	}
 	auto shipp = ship_entry->shipp();
+	node = CDR(node);
 
 	//replace or not
 	// OP_SHIP_SUBSYS_TARGETABLE/UNTARGETABLE, OP_SHIP_SUBSYS_TARGETABLE and OP_TURRET_SUBSYS_TARGET_ENABLE/DISABLE 
@@ -19004,8 +19097,8 @@ void sexp_ship_deal_with_subsystem_flag(int op_node, int node, Ship::Subsystem_F
 	// backward compatibility hack for older sexps
 	if (!((ss_flag == Ship::Subsystem_Flags::Untargetable) || (ss_flag == Ship::Subsystem_Flags::No_SS_targeting)))
 	{
-		node = CDR(node);
 		setit = is_sexp_true(node);
+		node = CDR(node);
 	}
 	
 	//multiplayer packet start
@@ -28575,6 +28668,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_SET_SQUADRON_WINGS:
+				sexp_set_squadron_wings(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			// Goober5000
 			case OP_PLAYER_USE_AI:
 			case OP_PLAYER_NOT_USE_AI:
@@ -31164,6 +31262,7 @@ int query_operator_return_type(int op)
 		case OP_HUD_CLEAR_MESSAGES:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
 		case OP_SET_DEATH_MESSAGE:
@@ -32167,11 +32266,18 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_AI_GOAL;
 
 		case OP_ADD_GOAL:
-		case OP_REMOVE_GOAL:
 			if ( argnum == 0 )
 				return OPF_SHIP_WING;
 			else
 				return OPF_AI_GOAL;
+
+		case OP_REMOVE_GOAL:
+			if ( argnum == 0 )
+				return OPF_SHIP_WING;
+			else if ( argnum == 1 )
+				return OPF_AI_GOAL;
+			else
+				return OPF_BOOL;
 
 		case OP_COND:
 		case OP_WHEN:
@@ -32549,6 +32655,9 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_NUMBER;
 			else
 				return OPF_MESSAGE_OR_STRING;
+
+		case OP_SET_SQUADRON_WINGS:
+			return OPF_WING;
 
 		case OP_PLAYER_USE_AI:
 		case OP_PLAYER_NOT_USE_AI:
@@ -36443,6 +36552,7 @@ int get_category(int op_id)
 		case OP_TOGGLE_ASTEROID_FIELD:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 		case OP_SET_GRAVITY_ACCEL:
 		case OP_FORCE_REARM:
 		case OP_ABORT_REARM:
@@ -36826,6 +36936,7 @@ int get_subcategory(int op_id)
 		case OP_HUD_SET_MAX_TARGETING_RANGE:
 		case OP_HUD_FORCE_SENSOR_STATIC:
 		case OP_HUD_FORCE_EMP_EFFECT:
+		case OP_SET_SQUADRON_WINGS:
 			return CHANGE_SUBCATEGORY_HUD;
 
 		case OP_NAV_ADD_WAYPOINT:
@@ -38609,10 +38720,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_REMOVE_GOAL, "Remove goal (Action operator)\r\n"
-		"\tRemoves a goal from a ship or wing.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"\tRemoves a goal from a ship or wing.  Note that, by default, only the type of goal and the priority are matched.  This operator "
+		"does not distinguish between, for example, two different waypoint goals.\r\n\r\n"
+		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of ship or wing to remove goal from (ship/wing must be in-mission).\r\n"
-		"\t2:\tGoal to remove." },
+		"\t2:\tGoal to remove.\r\n"
+		"\t3:\tWhether to remove all matching goals (optional; defaults to false; if false, only the first matching goal will be removed).\r\n"
+		"\t4:\tWhether to ignore the priority when matching a goal (optional).\r\n"
+	},
 
 	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
 		"\tReduces the specified subsystem integrity by the specified percentage."
@@ -41708,64 +41823,74 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_FORCE_GLIDE, "force-glide\r\n"
-		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot."
+		"\tForces a given ship into glide mode, provided it is capable of gliding. Note that the player will not be able to leave glide mode, and that a ship in glide mode cannot warp out or enter autopilot.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tShip to force (ship must be in-mission)\r\n"
 		"\t2:\tTrue to activate glide, False to deactivate\r\n"
 	},
 
 	{OP_HUD_SET_DIRECTIVE, "hud-set-directive\r\n"
-		"\tSets the text of a given custom hud gauge to the provided text."
+		"\tSets the text of a given custom hud gauge to the provided text.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tText that will be displayed. This text will be treated as directive text, meaning that references to mapped keys will be replaced with the user's preferences.\r\n"
 	},
 
 	{OP_HUD_GAUGE_SET_ACTIVE, "hud-gauge-set-active (deprecated)\r\n"
-		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges."
+		"\tActivates or deactivates a given hud gauge.  Works for custom and retail gauges.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tHUD Gauge name\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_CLEAR_MESSAGES, "hud-clear-messages\r\n"
-		"\tClears active messages displayed on the HUD."
+		"\tClears active messages displayed on the HUD.\r\n"
 		"Takes no arguments\r\n"
 	},
 
 	{OP_HUD_ACTIVATE_GAUGE_TYPE, "hud-activate-gauge-type (deprecated)\r\n"
-		"\tActivates or deactivates all hud gauges of a given type."
+		"\tActivates or deactivates all hud gauges of a given type.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tGauge Type\r\n"
 		"\t2:\tBoolean, whether or not to display this gauge\r\n"
 	},
 
 	{OP_HUD_SET_CUSTOM_GAUGE_ACTIVE, "hud-set-custom-gauge-active\r\n"
-		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl."
+		"\tActivates or deactivates a custom hud gauge defined in hud_gauges.tbl.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge name\r\n"
 	},
 
 	{OP_HUD_SET_BUILTIN_GAUGE_ACTIVE, "hud-set-builtin-gauge-active\r\n"
-		"\tActivates or deactivates a builtin hud gauge grouping."
+		"\tActivates or deactivates a builtin hud gauge grouping.\r\n"
 		"Takes 2 Arguments...\r\n"
 		"\t1:\tBoolean, whether or not to display this gauge\r\n"
 		"\tRest:\tHUD Gauge Group name\r\n"
 	},
 
 	{OP_HUD_FORCE_SENSOR_STATIC, "hud-force-sensor-static\r\n"
-		"\tActivates or deactivates hud static as if sensors are damaged."
+		"\tActivates or deactivates hud static as if sensors are damaged.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tBoolean, whether or not to enable sensor static\r\n"
 	},
 
 	{OP_HUD_FORCE_EMP_EFFECT, "hud-force-emp-effect\r\n"
-		"\tActivates or deactivates emp effect for the player."
+		"\tActivates or deactivates emp effect for the player.\r\n"
 		"Takes 2 or more Arguments...\r\n"
 		"\t1:\tNumber, emp intensity (0 to 500)\r\n"
 		"\t2:\tNumber, emp duration in milliseconds\r\n"
 		"\t3:\tString or message to display. \"none\" to display nothing. Defaults to \"Emp\"\r\n"
+	},
+
+	{OP_SET_SQUADRON_WINGS, "set-squadron-wings\r\n"
+		"\tSets the wings displayed on the squadron HUD display.  By default these are Alpha, Beta, Gamma, Delta, and Epsilon.  "
+		"The squadron status will be updated to the current status of the wings, but note that if any ships in those wings have "
+		"previously been destroyed, the HUD display may look different than expected.  (Specifically, destroyed ships may be "
+		"indicated as missing or may cause other ships in the same wing to appear in different positions.)  However, any wings "
+		"that are shared between one display and the next will be preserved.\r\n"
+		"Takes 1 to " SCP_TOKEN_TO_STR(MAX_SQUADRON_WINGS) " arguments...\r\n"
+		"\tAll:\tWing to display\r\n"
 	},
 
 	{OP_ADD_TO_COLGROUP, "add-to-collision-group\r\n"

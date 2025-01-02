@@ -1,6 +1,6 @@
 #include "CommandBriefingDialog.h"
 #include "ui_CommandBriefingDialog.h"
-
+#include "mission/util.h"
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
@@ -22,7 +22,7 @@ namespace dialogs {
 		connect(this, &QDialog::accepted, _model.get(), &CommandBriefingDialogModel::apply);
 		connect(viewport->editor, &Editor::currentObjectChanged, _model.get(), &CommandBriefingDialogModel::apply);
 		connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &CommandBriefingDialogModel::apply);
-		connect(this, &QDialog::rejected, _model.get(), &CommandBriefingDialogModel::reject);
+		connect(ui->okAndCancelButtons, &QDialogButtonBox::rejected, this, &CommandBriefingDialog::rejectHandler);
 
 		connect(ui->actionChangeTeams,
 			static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
@@ -283,8 +283,16 @@ namespace dialogs {
 
 	CommandBriefingDialog::~CommandBriefingDialog() {}; //NOLINT
 
-	void CommandBriefingDialog::closeEvent(QCloseEvent*){}
-
-} // dialogs
+	void CommandBriefingDialog::closeEvent(QCloseEvent* e)
+	{
+		if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+			e->ignore();
+		};
+	}
+	void CommandBriefingDialog::rejectHandler()
+	{
+		this->close();
+	}
+	} // dialogs
 } // fred
 } // fso

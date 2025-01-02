@@ -207,15 +207,6 @@ namespace fso {
 			void ShipSpecialStatsDialogModel::reject()
 			{
 			}
-			void ShipSpecialStatsDialogModel::set_modified()
-			{
-				if (!_modified) {
-					_modified = true;
-				}
-			}
-			bool ShipSpecialStatsDialogModel::query_modified() {
-				return _modified;
-			}
 			bool ShipSpecialStatsDialogModel::getSpecialExp() const
 			{
 				return m_special_exp;

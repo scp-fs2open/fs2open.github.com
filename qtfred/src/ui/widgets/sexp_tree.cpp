@@ -4568,7 +4568,7 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_wing_shiponteam_point() {
 	for (i = 0; i < (int)Iff_info.size(); i++) {
 		SCP_string tmp;
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
-		std::transform(begin(tmp), end(tmp), begin(tmp), [](char c) { return (char)::tolower(c); });
+		SCP_tolower(tmp);
 		head.add_data(tmp.c_str());
 	}
 

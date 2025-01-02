@@ -20,6 +20,8 @@ public:
 	void set_rgb(const int new_r,const int new_g,const int new_b);
 	void set_rgb(const color* const new_rgb);
 	void set_rgb(const int* const new_rgb);
+	void set_rgbai(const float new_r,const float new_g,const float new_b,const float new_a = 1.f,const float new_i = 1.f);
+	void multiply_rgbai(const float r_mult,const float g_mult,const float b_mult,const float a_mult = 1.f,const float i_mult = 1.f);
 
 	float r() const;
 	float r(const float in);

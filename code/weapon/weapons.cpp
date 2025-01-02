@@ -2260,6 +2260,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	if (optional_string("$Shield Impact Effect Radius:")) {
+		stuff_float(&wip->shield_impact_effect_radius);
+	}
+
 	if (optional_string("$Dinky Impact Effect:")) {
 		wip->dinky_impact_weapon_expl_effect = particle::util::parseEffect(wip->name);
 	} else {
@@ -9720,6 +9724,7 @@ void weapon_info::reset()
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));
 	this->selection_effect = Default_weapon_select_effect;
 
+	this->shield_impact_effect_radius = -1.0f;
 	this->shield_impact_explosion_radius = 1.0f;
 
 	this->impact_weapon_expl_effect = particle::ParticleEffectHandle::invalid();

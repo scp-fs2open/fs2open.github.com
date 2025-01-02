@@ -53,11 +53,6 @@ namespace fso {
 			{
 			}
 
-			 bool PlayerOrdersDialogModel::query_modified() const
-			{
-				return _modified;
-			}
-
 			 SCP_vector<size_t> PlayerOrdersDialogModel::getAcceptedOrders() const
 			{
 				return acceptedOrders;
@@ -155,12 +150,6 @@ namespace fso {
 					}
 				}
 				modelChanged();
-			}
-			void PlayerOrdersDialogModel::set_modified()
-			{
-				if (!_modified) {
-					_modified = true;
-				}
 			}
 		}
 	}
