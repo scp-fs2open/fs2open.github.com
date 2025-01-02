@@ -420,7 +420,7 @@ static void parse_fireball_tbl(const char *table_filename)
 					// Multiples of PI so the range is [0, 2*PI)
 					CLAMP(rot_start_slope, 0, 2);
 					CLAMP(rot_end_slope, 0, 2);
-					MAX(rot_scale, 0);
+					rot_scale = MAX(0.0f, rot_scale);
 
 					fi->rot_anim[0] = rot_start_slope;
 					fi->rot_anim[1] = rot_end_slope;
@@ -443,7 +443,7 @@ static void parse_fireball_tbl(const char *table_filename)
 					// A frame rate that is 4 times the normal speed is ridiculous
 					CLAMP(frame_start_slope, 0, 4);
 					CLAMP(frame_end_slope, 1, 4);
-					MAX(frame_scale, 0);
+					frame_scale = MAX(0.0f, frame_scale);
 
 					fi->frame_anim[0] = frame_start_slope;
 					fi->frame_anim[1] = frame_end_slope;
