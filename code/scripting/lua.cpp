@@ -77,6 +77,7 @@ extern "C" {
 #include "scripting/api/libs/cfile.h"
 #include "scripting/api/libs/controls.h"
 #include "scripting/api/libs/engine.h"
+#include "scripting/api/libs/globals.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/api/libs/hookvars.h"
 #include "scripting/api/libs/hud.h"
