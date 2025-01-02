@@ -1311,6 +1311,7 @@ void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
 void gr_set_color_fast(const color *dst);
+bool gr_compare_color_values(const color& clr1, const color& clr2);
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);

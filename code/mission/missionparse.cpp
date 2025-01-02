@@ -1518,6 +1518,14 @@ void parse_briefing(mission * /*pm*/, int flags)
 			if (optional_string("$no_grid"))
 				bs->draw_grid = false;
 
+			if (optional_string("$grid_color:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&bs->grid_color, rgba[0], rgba[1], rgba[2], rgba[3]);
+			} else {
+				bs->grid_color = Color_briefing_grid;
+			}
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 
@@ -9058,5 +9066,17 @@ bool check_for_24_1_data()
 		(Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty()))
 		return true;
 
+	return false;
+}
+
+bool check_for_24_3_data()
+{
+	for (int i = 0; i < Num_teams; i++) {
+		for (int j = 0; j < Briefings[i].num_stages; i++) {
+			if (!gr_compare_color_values(Briefings[i].stages[j].grid_color, Color_briefing_grid)) {
+				return true;
+			}
+		}
+	}
 	return false;
 }
