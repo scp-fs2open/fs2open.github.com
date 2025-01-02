@@ -241,7 +241,7 @@ bool StartAutopilot()
 			// is support ship trying to rearm-repair
 			if ( ai_find_goal_index( support_ship_aip->goals, AI_GOAL_REARM_REPAIR ) == -1 ) {
 				// no, so tell it to depart
-				ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WARP, -1, NULL, support_ship_aip );
+				ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_WARP, -1, nullptr, support_ship_aip );
 			} else {
 				// yes
 				send_autopilot_msgID(NP_MSG_FAIL_SUPPORT_WORKING);
@@ -464,12 +464,12 @@ bool StartAutopilot()
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), &Ai_info[Ships[i].ai_index] );
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
 			}
@@ -485,15 +485,15 @@ bool StartAutopilot()
 			{	
 				//ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip );
 
-				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_STAY_NEAR_SHIP, 0, target_shipname, wingnum );
-				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
+				//ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_STAY_NEAR_SHIP, 0, target_shipname, wingnum );
+				//ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
 				//ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 				
 				ai_clear_wing_goals( &Wings[i] );
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), i );
+					ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), i );
 
 					// "fix up" the goal
 					for (j = 0; j < MAX_AI_GOALS; j++)
@@ -507,7 +507,7 @@ bool StartAutopilot()
 				}
 				else
 				{
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, i );
+					ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, i );
 
 				}
 			}

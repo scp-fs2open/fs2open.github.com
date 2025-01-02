@@ -67,10 +67,12 @@ std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const 
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Attack",					AI_GOAL_CHASE,				0 },
+	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
+	{ "Guard",					AI_GOAL_GUARD,				0 },
+	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
@@ -2906,6 +2908,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 
 			break;
 		}
+
+		default:
+			break;
 		}
 
 		switch (goals[i].ai_mode) {
@@ -2917,7 +2922,6 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wing assigned to guard a different team";
 			}
-
 			break;
 
 		case AI_GOAL_CHASE:
@@ -2933,19 +2937,21 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wings assigned to attack same team";
 			}
+			break;
 
+		default:
 			break;
 		}
 	}
 
 	return NULL;
 }
-const char* Editor::get_order_name(int order) {
+const char* Editor::get_order_name(ai_goal_mode order) {
 	if (order == AI_GOAL_NONE)  // special case
 		return "None";
 
 	for (auto& entry : Ai_goal_list)
-		if (entry.def & order)
+		if (entry.def == order)
 			return entry.name;
 
 	return "???";

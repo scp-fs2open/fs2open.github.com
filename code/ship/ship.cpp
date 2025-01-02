@@ -17298,9 +17298,6 @@ SCP_string ship_return_orders(ship* sp)
 	// The active goal is always in the first element of aip->goals[]
 	aigp = &aip->goals[0];
 
-	if (aigp->ai_mode < 0)
-		return SCP_string();
-
 	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
 		return SCP_string();

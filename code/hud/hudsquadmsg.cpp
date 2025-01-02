@@ -1001,7 +1001,8 @@ int enemy_message(int message) {
 int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
-	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
+	ai_goal_mode ai_mode;			// ai mode...
+	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
 	ai_lua_parameters lua_target;
@@ -1257,7 +1258,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		// handle case of messaging one ship.  Deal with messaging all fighters next.
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
-			ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], lua_target);
+			ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], lua_target);
 			if (update_history == SQUADMSG_HISTORY_ADD_ENTRY) {
 				hud_add_issued_order(Ships[shipnum].ship_name, command);
 				hud_update_last_order(target_shipname, player_num, special_index); 
@@ -1293,7 +1294,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, int update_history, int player_num )
 {
 	ai_info *ainfo;
-	int ai_mode, ai_submode;					// ai mode and submode needed for ship commands
+	ai_goal_mode ai_mode;			// ai mode...
+	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
 	ai_lua_parameters lua_target;
@@ -1476,7 +1478,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
-			ai_add_wing_goal_player(AIG_TYPE_PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, lua_target);
+			ai_add_wing_goal_player(ai_goal_type::PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, lua_target);
 
 			if (update_history == SQUADMSG_HISTORY_ADD_ENTRY) {
 				hud_add_issued_order(Wings[wingnum].name, command);

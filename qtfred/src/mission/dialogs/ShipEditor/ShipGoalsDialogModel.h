@@ -24,6 +24,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	int Ai_goal_list_size = Editor::getAigoal_list_size();
 	void initialize(ai_goal* goals, int ship);
 	void initialize_multi();
+	void init_combo_data();
 
 
 
@@ -34,6 +35,7 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 	SCP_string m_subsys[ED_MAX_GOALS];
 	long long m_dock2[ED_MAX_GOALS];
 	//int m_data[ED_MAX_GOALS];
+	SCP_vector<std::pair<const char*, SCP_set<ai_goal_mode>>> m_ai_goal_combo_data;
 	int valid[MAX_VALID];
 
 	bool m_multi_edit;
@@ -45,6 +47,10 @@ class ShipGoalsDialogModel : public AbstractDialogModel {
 
   public:
 	ShipGoalsDialogModel(QObject* parent, EditorViewport* viewport, bool multi, int self_ship, int self_wing);
+
+	const SCP_vector<std::pair<const char*, SCP_set<ai_goal_mode>>> &get_ai_goal_combo_data();
+	ai_goal_mode get_first_mode_from_combo_box(int which_item);
+
 	void initializeData(bool multi, int self_ship, int self_wing);
 	bool apply() override;
 	void reject() override;
