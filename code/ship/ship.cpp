@@ -1170,6 +1170,7 @@ void ship_info::clone(const ship_info& other)
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
 	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
+	max_shield_impact_effect_radius = other.max_shield_impact_effect_radius;
 
 	// ...Hmm. A memcpy() seems slightly overkill here, but I've settled into the pattern of "array gets memcpy'd", so... -MageKing17
 	memcpy(shield_point_augment_ctrls, other.shield_point_augment_ctrls, sizeof(int) * 4);
@@ -1510,6 +1511,7 @@ void ship_info::move(ship_info&& other)
 	auto_shield_spread_bypass = other.auto_shield_spread_bypass;
 	auto_shield_spread_from_lod = other.auto_shield_spread_from_lod;
 	auto_shield_spread_min_span = other.auto_shield_spread_min_span;
+	max_shield_impact_effect_radius = other.max_shield_impact_effect_radius;
 
 	std::swap(shield_point_augment_ctrls, other.shield_point_augment_ctrls);
 
@@ -1949,6 +1951,8 @@ ship_info::ship_info()
 	auto_shield_spread_bypass = false;
 	auto_shield_spread_from_lod = -1;
 	auto_shield_spread_min_span = -1.0f;
+
+	max_shield_impact_effect_radius = -1.0f;
 
 	for (int i = 0; i < 4; i++)
 	{
@@ -3937,6 +3941,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			else
 				sip->auto_shield_spread_from_lod = temp;
 		}
+
+		if (optional_string("+Max Shield Impact Effect Radius:"))
+			stuff_float(&sip->max_shield_impact_effect_radius);
 	}
 
 	if(optional_string("$Model Point Shield Controls:")) {
