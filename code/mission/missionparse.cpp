@@ -9064,7 +9064,7 @@ bool check_for_24_1_data()
 	return false;
 }
 
-bool check_for_25_0_data()
+bool check_for_24_3_data()
 {
 	for (int i = 0; i < Num_teams; i++) {
 		for (int j = 0; j < Briefings[i].num_stages; i++) {
