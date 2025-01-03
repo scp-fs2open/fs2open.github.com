@@ -13798,7 +13798,7 @@ void sexp_allow_treason (int n)
 void sexp_set_player_orders(int n) 
 {
 	bool allow_order;
-	std::set<size_t> orders;
+	SCP_set<size_t> orders;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp()) {
@@ -13807,7 +13807,7 @@ void sexp_set_player_orders(int n)
 	auto shipp = ship_entry->shipp();
 
 	// we need to know which orders this ship class can accept.
-	const std::set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
+	const SCP_set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 	n = CDR(n);
 	allow_order = is_sexp_true(n);
 	n = CDR(n);
@@ -13833,7 +13833,7 @@ void sexp_set_player_orders(int n)
 		shipp->orders_accepted.insert(orders.begin(), orders.end());
 	}
 	else {
-		std::set<size_t> diff;
+		SCP_set<size_t> diff;
 		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
 		shipp->orders_accepted = std::move(diff);
@@ -13849,11 +13849,11 @@ void sexp_set_order_allowed_for_target(int n)
 	}
 	auto shipp = ship_entry->shipp();
 
-	const std::set<size_t>& default_orders = ship_set_default_orders_against();
+	const auto default_orders = ship_get_default_orders_against();
 	n = CDR(n);
 	bool allow_order = is_sexp_true(n);
 	n = CDR(n);
-	std::set<size_t> orders;
+	SCP_set<size_t> orders;
 	do {
 		for( size_t order : default_orders){
 			//Once we exceed the number of valid orders, break and warn
@@ -13876,7 +13876,7 @@ void sexp_set_order_allowed_for_target(int n)
 		shipp->orders_allowed_against.insert(orders.begin(), orders.end());
 	}
 	else {
-		std::set<size_t> diff;
+		SCP_set<size_t> diff;
 		std::set_difference(shipp->orders_allowed_against.begin(), shipp->orders_allowed_against.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
 		shipp->orders_allowed_against = std::move(diff);
@@ -23131,7 +23131,7 @@ void sexp_update_moveable_animation(int node)
 	node = CDR(node);
 
 	//For now this only contains integers. It is very much feasible though that certain moveables might be updateable with strings and other non-numbers. For this, the C-side of the moveable code already supports other types
-	std::vector<linb::any> args;
+	SCP_vector<linb::any> args;
 
 	while(node >= 0) {
 		args.emplace_back(eval_num(node, is_nan, is_nan_forever));
