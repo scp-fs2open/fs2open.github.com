@@ -312,7 +312,7 @@ void multi_pinfo_popup_init(net_player *np)
 
 	// backup hardware textures setting and bash to max
 	Multi_pinfo_hardware_texture_backup = Detail.hardware_textures;
-	Detail.hardware_textures = MAX_DETAIL_LEVEL;
+	Detail.hardware_textures = MAX_DETAIL_VALUE;
 
 	// zero bitmap info
 	Mp_pilot.bitmap = -1;

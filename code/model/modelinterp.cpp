@@ -1009,9 +1009,7 @@ DCF(model_darkening,"Makes models darker with distance")
 // 3
 // 4 - None
 
-#if MAX_DETAIL_LEVEL != 4
-#error MAX_DETAIL_LEVEL is assumed to be 4 in ModelInterp.cpp
-#endif
+static_assert(MAX_DETAIL_VALUE == 4, "MAX_DETAIL_VALUE is assumed to be 4 in SystemVars.cpp");
 
 
 /**

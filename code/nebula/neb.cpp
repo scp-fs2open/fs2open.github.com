@@ -140,7 +140,7 @@ const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.N
                      std::pair<const char*, int>{"Detail level of nebulas", 1697})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_val(MAX_DETAIL_VALUE)
                      .importance(7)
                      .change_listener([](int val, bool) {
                           Detail.nebula_detail = val;
@@ -412,7 +412,7 @@ void neb2_poof_setup() {
 		}
 	}
 	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
-	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
+	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_VALUE + 0.5f); // scale the poofs down based on detail level
 }
 
 void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[])

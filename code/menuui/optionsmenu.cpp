@@ -351,7 +351,7 @@ void options_detail_init();
 void options_detail_hide_stuff();
 void options_detail_unhide_stuff();
 void options_detail_do_frame();
-void options_detail_set_level(int level);
+void options_detail_set_level(DefaultDetailPreset preset);
 
 // text
 #define OPTIONS_NUM_TEXT				49
@@ -772,59 +772,59 @@ void options_button_pressed(int n)
 
 			// Target View Rendering is currently not handled by in-game options, assumes "On"
 		case HUD_TARGETVIEW_RENDER_ON:
-			Detail.targetview_model = 1;
+			Detail.targetview_model = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HUD_TARGETVIEW_RENDER_OFF:
-			Detail.targetview_model = 0;
+			Detail.targetview_model = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 			// Planets is currently not handled by in-game options, assumes "On"
 		case PLANETS_ON:
-			Detail.planets_suns = 1;
+			Detail.planets_suns = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case PLANETS_OFF:
-			Detail.planets_suns = 0;
+			Detail.planets_suns = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 			// Weapon extras is currently not handled by in-game options, assumes "On"
 		case WEAPON_EXTRAS_ON:
-			Detail.weapon_extras = 1;
+			Detail.weapon_extras = true;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case WEAPON_EXTRAS_OFF:
-			Detail.weapon_extras = 0;
+			Detail.weapon_extras = false;
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;		
 
 		case LOW_DETAIL_N:
-			options_detail_set_level(0);
+			options_detail_set_level(DefaultDetailPreset::Low);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case MEDIUM_DETAIL_N:
-			options_detail_set_level(1);
+			options_detail_set_level(DefaultDetailPreset::Medium);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case HIGH_DETAIL_N:
-			options_detail_set_level(2);
+			options_detail_set_level(DefaultDetailPreset::High);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case VERY_HIGH_DETAIL_N:
-			options_detail_set_level(3);
+			options_detail_set_level(DefaultDetailPreset::VeryHigh);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 
 		case CUSTOM_DETAIL_N:
-			options_detail_set_level(-1);
+			options_detail_set_level(DefaultDetailPreset::Custom);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 			break;
 			// END - detail level tab buttons
@@ -1529,7 +1529,7 @@ void options_detail_do_frame()
 		options_force_button_frame(HUD_TARGETVIEW_RENDER_ON, 0);
 	}
 
-	if ( Detail.planets_suns == 1 ) {
+	if ( Detail.planets_suns) {
 		options_force_button_frame(PLANETS_ON, 2);
 		options_force_button_frame(PLANETS_OFF, 0);
 	} else {
@@ -1545,14 +1545,9 @@ void options_detail_do_frame()
 		options_force_button_frame(WEAPON_EXTRAS_ON, 0);
 	}	
 
-	int current_detail;
+	DefaultDetailPreset current_preset = (Detail.setting != DefaultDetailPreset::Custom) ? current_detail_preset() : DefaultDetailPreset::Custom;
 
-	if ( Detail.setting >= 0 ) {
-		current_detail = current_detail_level();
-		Detail.setting = current_detail;
-	} else {
-		current_detail = -1;
-	}
+	Detail.setting = current_preset;
 
 	options_force_button_frame(LOW_DETAIL_N, 0);
 	options_force_button_frame(MEDIUM_DETAIL_N, 0);
@@ -1560,29 +1555,32 @@ void options_detail_do_frame()
 	options_force_button_frame(VERY_HIGH_DETAIL_N, 0);
 	options_force_button_frame(CUSTOM_DETAIL_N, 0);
 
-	switch ( current_detail ) {
-	case -1:
+	switch (current_preset) {
+	case DefaultDetailPreset::Custom:
 		options_force_button_frame(CUSTOM_DETAIL_N, 2);
 		break;
-	case 0:
+	case DefaultDetailPreset::Low:
 		options_force_button_frame(LOW_DETAIL_N, 2);
 		break;
-	case 1:
+	case DefaultDetailPreset::Medium:
 		options_force_button_frame(MEDIUM_DETAIL_N, 2);
 		break;
-	case 2:
+	case DefaultDetailPreset::High:
 		options_force_button_frame(HIGH_DETAIL_N, 2);
 		break;
-	case 3:
+	case DefaultDetailPreset::VeryHigh:
 		options_force_button_frame(VERY_HIGH_DETAIL_N, 2);
+		break;
+	default:
+		Assertion(false, "Invalid preset called for in Options menu");
 		break;
 	}
 }
 
 // Set all the detail settings to a predefined level
-void options_detail_set_level(int level)
+void options_detail_set_level(DefaultDetailPreset preset)
 {
-	detail_level_set(level);
+	detail_level_set(preset);
 	options_detail_synch_sliders();
 }
 
