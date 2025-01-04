@@ -9057,17 +9057,14 @@ bool check_for_24_1_data()
 		}
 	}
 
-	if ((Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
-		(Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty()))
-		return true;
-
-	return false;
+	return (Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
+		   (Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty());
 }
 
 bool check_for_24_3_data()
 {
 	for (int i = 0; i < Num_teams; i++) {
-		for (int j = 0; j < Briefings[i].num_stages; i++) {
+		for (int j = 0; j < Briefings[i].num_stages; j++) {
 			if (!gr_compare_color_values(Briefings[i].stages[j].grid_color, Color_briefing_grid)) {
 				return true;
 			}
