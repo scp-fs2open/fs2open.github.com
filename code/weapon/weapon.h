@@ -344,6 +344,7 @@ enum class FiringPattern {
 
 float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
+float weapon_get_viewing_angle(const weapon& wp);
 
 float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
@@ -749,7 +750,8 @@ struct weapon_info
 				modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>,
 				ModularCurvesMathOperators::division
 			>{}},
-			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
+			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
+			std::pair {"Viewing Angle", modular_curves_functional_input<weapon_get_viewing_angle>{}}
 	);
 
   public:

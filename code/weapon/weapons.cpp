@@ -10468,3 +10468,13 @@ float weapon_get_lifetime_pct(const weapon& wp) {
 float weapon_get_age(const weapon& wp) {
 	return f2fl(Missiontime - wp.creation_time);
 }
+
+float weapon_get_viewing_angle(const weapon& wp) {
+	object* wep_objp = &Objects[wp.objnum];
+	weapon_info* wip = &Weapon_info[wp.weapon_info_index];
+
+	vec3d reye;
+	vm_vec_sub(&reye, &Eye_position, &wep_objp->pos);
+	vm_vec_normalize(&reye);
+	return vm_vec_dot(&reye, &wep_objp->orient.vec.fvec);
+}
