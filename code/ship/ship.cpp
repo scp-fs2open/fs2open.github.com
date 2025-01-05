@@ -2449,7 +2449,7 @@ template<typename T_parse, typename T_range = T_parse>
 static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char *min_name, const char *max_name, const char* id_string, const char *error_name, const char* shipname, bool min_can_be_0) {
 	constexpr const char* const non_neg_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n";
 	constexpr const char* const pos_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n";
-	T_parse uninitialized = min_can_be_0 ? static_cast<T_parse>(0) : (std::numeric_limits<T_range>::min() + (std::is_integral<T_parse>::value ? 1 : 0));
+	T_parse uninitialized = min_can_be_0 ? static_cast<T_parse>(0) : (static_cast<T_parse>(std::numeric_limits<T_range>::min()) + (std::is_integral<T_parse>::value ? 1 : 0));
 	T_parse max_value = uninitialized, min_value = uninitialized;
 
 	if(optional_string(max_name))
@@ -2485,7 +2485,7 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	switch (type) {
 	case LegacyShipParticleType::DAMAGE_SPEW: {
 		static const int damage_spew_curve = []() -> int {
-			int curve_id = Curves.size();
+			int curve_id = static_cast<int>(Curves.size());
 			auto& curve = Curves.emplace_back(";ShipParticleDamageSpew");
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f}, CurveInterpFunction::Constant, 0.f, 0.f});
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{20.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
@@ -2512,21 +2512,21 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	}
 	case LegacyShipParticleType::SPLIT_PARTICLES: {
 		static const int split_particles_lifetime_curve = []() -> int {
-			int curve_id = Curves.size();
+			int curve_id = static_cast<int>(Curves.size());
 			auto& curve = Curves.emplace_back(";ShipParticleSplitLifetime");
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 1.f + 100000.f * 0.002f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			return curve_id;
 		}();
 		static const int split_particles_radius_curve = []() -> int {
-			int curve_id = Curves.size();
+			int curve_id = static_cast<int>(Curves.size());
 			auto& curve = Curves.emplace_back(";ShipParticleSplitRadius");
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f * 0.01f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			return curve_id;
 		}();
 		static const int split_particles_velocity_curve = []() -> int {
-			int curve_id = Curves.size();
+			int curve_id = static_cast<int>(Curves.size());
 			auto& curve = Curves.emplace_back(";ShipParticleSplitVelocity");
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
@@ -4883,7 +4883,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				tpart.thruster_bitmap.first_frame); //Bitmap
 
 			static const int thruster_particle_curve = []() -> int {
-				int curve_id = Curves.size();
+				int curve_id = static_cast<int>(Curves.size());
 				auto& curve = Curves.emplace_back(";ShipParticleThruster");
 				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
 				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
