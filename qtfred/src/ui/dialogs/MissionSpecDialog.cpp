@@ -3,7 +3,7 @@
 #include "ui_MissionSpecDialog.h"
 
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 #include <QFileDialog>
 
@@ -17,7 +17,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
     ui->setupUi(this);
 
 	connect(this, &QDialog::accepted, _model.get(), &MissionSpecDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &MissionSpecDialogModel::reject);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, _model.get(), &MissionSpecDialogModel::reject);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &MissionSpecDialog::updateUI);
 
@@ -103,23 +103,14 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 MissionSpecDialog::~MissionSpecDialog() {
 }
 
-void MissionSpecDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-		{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void MissionSpecDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
+}
+void MissionSpecDialog::rejectHandler()
+{
+	this->close();
 }
 
 void MissionSpecDialog::updateUI() {
@@ -308,6 +299,7 @@ void MissionSpecDialog::squadronNameChanged(const QString & string) {
 
 void MissionSpecDialog::on_customWingNameButton_clicked() {
 	CustomWingNamesDialog* dialog = new CustomWingNamesDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->exec();
 }
 

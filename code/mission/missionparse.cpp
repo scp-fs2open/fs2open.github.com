@@ -167,6 +167,8 @@ SCP_vector<SCP_string> Parse_names;
 
 SCP_vector<texture_replace> Fred_texture_replacements;
 
+SCP_unordered_set<int> Fred_migrated_immobile_ships;
+
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
@@ -2863,6 +2865,9 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
         {
             objp->flags.set(Object::Object_Flags::Dont_change_position);
             objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+
+            // keep track of migrated ships
+            Fred_migrated_immobile_ships.insert(objp->instance);
         }
         else
             objp->flags.set(Object::Object_Flags::Immobile);
@@ -5296,7 +5301,7 @@ void parse_event(mission *pm)
 	}
 
 	if (optional_string("+Event Flags:")) {
-		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
+		parse_string_flag_list(event->flags, Mission_event_flags, Num_mission_event_flags);
 	}
 
 	if( optional_string("+Event Log Flags:") ) {

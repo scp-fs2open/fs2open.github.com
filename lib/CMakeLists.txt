@@ -33,7 +33,9 @@ if (FSO_BUILD_WITH_FFMPEG)
 	include(FFmpeg.cmake)
 endif()
 
-add_subdirectory(discord)
+if (FSO_BUILD_WITH_DISCORD)
+	add_subdirectory(discord)
+endif()
 
 include(libRocket.cmake)
 
@@ -61,6 +63,6 @@ add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
 
-if(NOT APPLE)
+if(FSO_BUILD_WITH_OPENXR)
 	add_subdirectory(openxr)
 endif()

@@ -3,6 +3,7 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <mission/util.h>
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -29,53 +30,14 @@ ShipPathsDialog::ShipPathsDialog(QWidget* parent,
 	resize(QDialog::sizeHint());
 }
 ShipPathsDialog::~ShipPathsDialog() = default;
-void ShipPathsDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-		if (button == DialogButton::No) {
-			_model->reject();
-		}
-	}
-
-	QDialog::closeEvent(event);
+void ShipPathsDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
 void ShipPathsDialog::rejectHandler()
 {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-		if (button == DialogButton::No) {
-			_model->reject();
-			QDialog::reject();
-		}
-	} else {
-		_model->reject();
-		QDialog::reject();
-	}
+	this->close();
 }
 void ShipPathsDialog::updateUI() {
 	util::SignalBlockers blockers(this);

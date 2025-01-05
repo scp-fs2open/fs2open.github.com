@@ -141,7 +141,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
+	SCP_vector<std::pair<interface_snd_id, interface_snd_id>> door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;

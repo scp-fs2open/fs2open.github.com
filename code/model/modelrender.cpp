@@ -3125,7 +3125,11 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			}
 
 			// Make sure model is loaded
-			model_num = model_load(sip->pof_file, sip, 0);
+      if (VALID_FNAME(sip->pof_file_tech)) {
+				model_num = model_load(sip->pof_file_tech, sip, 0);
+			} else {
+				model_num = model_load(sip->pof_file, sip, 0);
+			}
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
 			break;

@@ -164,6 +164,7 @@ class EditorViewport {
 	bool Lookat_mode = false;
 	bool Move_ships_when_undocking = true;
 	bool Error_checker_checks_potential_issues = true;
+	bool Error_checker_checks_potential_issues_once = false;
 
 	Editor* editor = nullptr;
 	FredRenderer* renderer = nullptr;

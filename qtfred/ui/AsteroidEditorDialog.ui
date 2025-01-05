@@ -378,22 +378,6 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>dialogButtonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::AsteroidEditorDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>337</x>
-     <y>317</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>337</x>
-     <y>169</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
  <buttongroups>
   <buttongroup name="radioActivePassive"/>

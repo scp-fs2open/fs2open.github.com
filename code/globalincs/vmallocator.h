@@ -52,11 +52,11 @@ typedef std::basic_string<char, std::char_traits<char>, std::allocator<char> > S
 typedef std::basic_stringstream<char, std::char_traits<char>, std::allocator<char> > SCP_stringstream;
 
 inline void SCP_tolower(SCP_string &str) {
-	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_tolower(c); });
+	std::for_each(str.begin(), str.end(), [](char &c) { c = SCP_tolower(c); });
 }
 
 inline void SCP_toupper(SCP_string &str) {
-	std::transform(str.begin(), str.end(), str.begin(), [](char c) { return SCP_toupper(c); });
+	std::for_each(str.begin(), str.end(), [](char &c) { c = SCP_toupper(c); });
 }
 
 inline bool SCP_truncate(SCP_string &str, size_t c_str_size) {

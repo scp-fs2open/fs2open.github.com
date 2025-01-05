@@ -157,6 +157,7 @@ bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 
+#ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
                      std::pair<const char*, int>{"Toggle Discord Rich Presence", 1755})
@@ -179,6 +180,7 @@ static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord"
                           return true;
                      })
                      .finish();
+#endif
 
 void mod_table_set_version_flags();
 

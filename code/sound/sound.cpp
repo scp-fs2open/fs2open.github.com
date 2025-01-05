@@ -117,9 +117,12 @@ SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
 SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
 
 //For the adjust-audio-volume sexp
-float aav_voice_volume = 1.0f;
 float aav_music_volume = 1.0f;
+float aav_voice_volume = 1.0f;
 float aav_effect_volume = 1.0f;
+
+// these must correspond to the order of the AAV_ #defines
+static float* aav_volume[] = { &aav_music_volume, &aav_voice_volume, &aav_effect_volume };
 
 struct aav {
 	float start_volume;
@@ -1548,19 +1551,15 @@ int sound_env_supported()
 	return ds_eax_is_inited();
 }
 
+void adjust_volume_on_frame(float* volume_now, aav* data);
+
 // Called once per game frame
 //
-
-void adjust_volume_on_frame(float* volume_now, aav* data);
-void update_looping_sound_volumes(SCP_list<LoopingSoundInfo>& looping_sounds);
 void snd_do_frame()
 {
 	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
-
-	update_looping_sound_volumes(currentlyLoopingSoundInfos);
-	update_looping_sound_volumes(currentlyLooping3dSoundInfos);
 
 	ds_do_frame();
 }
@@ -1574,40 +1573,25 @@ void update_looping_sound_volumes(SCP_list<LoopingSoundInfo> &looping_sounds)
 	}
 }
 
-void snd_adjust_audio_volume(int type, float percent, int time)
+void snd_adjust_audio_volume(int aav_type, float percent, int delta_time)
 {
-	Assert( type >= 0 && type < 3 );
-	
-	if ( type >= 0 && type < 3 ) {
-		switch (type) {
-		case AAV_MUSIC:
-			aav_data[type].start_volume = aav_music_volume;
-			if (percent < aav_music_volume)
-				aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_music_volume;
-			break;
-		case AAV_VOICE:
-			aav_data[type].start_volume = aav_voice_volume;
-			if (percent < aav_voice_volume)
-				aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_voice_volume;
-			break;
-		case AAV_EFFECTS:
-			aav_data[type].start_volume = aav_effect_volume;
-			if (percent < aav_effect_volume)
-				aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_effect_volume;
-			break;
-		default:
-			Int3();
-		}
+	Assertion(aav_type >= 0 && aav_type <= 2, "aav_type is out of range!");
+	if (aav_type < 0 || aav_type > 2)
+		return;
 
-		aav_data[type].delta_time = time;
-		aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
-	}
+	aav_data[aav_type].start_volume = *aav_volume[aav_type];
+	if (percent < *aav_volume[aav_type])
+		aav_data[aav_type].delta = (*aav_volume[aav_type] - percent) * -1.0f;
+	else
+		aav_data[aav_type].delta = percent - *aav_volume[aav_type];
+
+	aav_data[aav_type].delta_time = delta_time;
+	aav_data[aav_type].start_time = f2fl(Missiontime) * MILLISECONDS_PER_SECOND;
+
+
+	// if the delta_time is 0 [immediate], make the relevant updates without waiting for the next frame's snd_do_frame()
+	if (delta_time <= 0)
+		adjust_volume_on_frame(aav_volume[aav_type], &aav_data[aav_type]);
 }
 
 void adjust_volume_on_frame(float* volume_now, aav* data)
@@ -1619,28 +1603,30 @@ void adjust_volume_on_frame(float* volume_now, aav* data)
 	if (*volume_now == (data->start_volume + data->delta))
 		return;
 	
-	float msMissiontime = (f2fl(Missiontime) * 1000);
+	float msMissiontime = f2fl(Missiontime) * MILLISECONDS_PER_SECOND;
 	
-	if ( msMissiontime > ( data->start_time + data->delta_time) ) {
-		*volume_now = data->start_volume + data->delta;
-		return;
-	}
-	
-	float done = 0.0f;
 	//How much change do we need?
-	if (data->delta_time == 0)
-		done = 1.0f;
+	//if immediate, or if the time has elapsed, use the target volume
+	if (data->delta_time <= 0 || msMissiontime >= (data->start_time + data->delta_time))
+		*volume_now = data->start_volume + data->delta;
 	else
-		done =(float) (msMissiontime - data->start_time)/data->delta_time;
+	{
+		float done = (msMissiontime - data->start_time) / data->delta_time;
 
-	//apply change
-	*volume_now = data->start_volume + (data->delta * done);
-	CLAMP(*volume_now, 0.0f, 1.0f);
+		//apply change
+		*volume_now = data->start_volume + (data->delta * done);
+		CLAMP(*volume_now, 0.0f, 1.0f);
+	}
 
 	// if setting music volume, trigger volume change in playing tracks
 	// done here in order to avoid setting music volume in every frame regardless if it changed or not
 	if (&aav_music_volume == volume_now) {
 		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
+	// for similar reasons, if setting effects volume, trigger volume change here
+	else if (&aav_effect_volume == volume_now) {
+		update_looping_sound_volumes(currentlyLoopingSoundInfos);
+		update_looping_sound_volumes(currentlyLooping3dSoundInfos);
 	}
 }
 
