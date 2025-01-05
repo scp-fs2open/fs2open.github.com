@@ -48,7 +48,7 @@ ADE_VIRTVAR(Index, l_Persona, nullptr, nullptr, "number", "The index of the pers
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Setting index is not supported");
 
-	return ade_set_args(L, "i", idx);
+	return ade_set_args(L, "i", idx + 1);
 }
 
 ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
