@@ -1302,6 +1302,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/controls.h
 	scripting/api/libs/engine.cpp
 	scripting/api/libs/engine.h
+	scripting/api/libs/globals.cpp
+	scripting/api/libs/globals.h
 	scripting/api/libs/graphics.cpp
 	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp
