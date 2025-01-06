@@ -3138,9 +3138,9 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			if (VALID_FNAME(sip->pof_file_tech)) {
-				model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0], 0);
+				model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0], ErrorType::WARNING);
 			} else {
-				model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+				model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], ErrorType::WARNING);
 			}
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
@@ -3159,7 +3159,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			if (VALID_FNAME(wip->tech_model)) {
-				model_num = model_load(wip->tech_model, 0, nullptr, 0);
+				model_num = model_load(wip->tech_model, 0, nullptr, ErrorType::WARNING);
 			} else {
 				// no tech model!!
 				return false;

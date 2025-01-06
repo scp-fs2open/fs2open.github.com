@@ -266,6 +266,8 @@ typedef struct coord2d {
 extern int Global_warning_count;
 extern int Global_error_count;
 
+enum class ErrorType : ubyte { NONE = 0, WARNING, FATAL_ERROR };
+
 #include "osapi/outwnd.h"
 
 // To debug printf do this:
@@ -328,11 +330,14 @@ constexpr bool LoggingEnabled = false;
 	#define Int3() debug_int3(__FILE__, __LINE__)
 #endif	// NDEBUG
 
+
+// the older MIN and MAX macros were vulnerable to performance issues since they duplicated their tokens
+
 #ifndef MIN
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MIN(a,b) std::min(a,b)
 #endif
 #ifndef MAX
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define MAX(a,b) std::max(a,b)
 #endif
 
 
@@ -425,18 +430,15 @@ extern void game_busy(const char *filename = NULL);
 
 const char *XSTR(const char *str, int index, bool force_lookup = false);
 
-// Caps V between MN and MX.
-template <class T> void CAP( T& v, T mn, T mx )
-{
-	if ( v < mn ) {
-		v = mn;
-	} else if ( v > mx ) {
-		v = mx;
-	}
-}
+// The older CLAMP macro was vulnerable to performance issues since it duplicated its tokens.  (The older CAP was a function.)  Technically
+// the new macro duplicates the LHS, but that should be ok.
 
-// faster version of CAP()
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(false)
+// Ensure that x is at least min and at most max.
+#define CLAMP(x, min, max) { x = std::clamp(x, min, max); }
+
+// Ensure that x is at least min and at most max.
+#define CAP(v, mn, mx) CLAMP(v, mn, mx)
+
 
 //=========================================================
 // Memory management functions

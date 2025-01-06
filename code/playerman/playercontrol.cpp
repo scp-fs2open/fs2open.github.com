@@ -833,7 +833,7 @@ void read_keyboard_controls( control_info * ci, float frame_time, physics_info *
 		if (!Control_config[JOY_REL_THROTTLE_AXIS].empty())
 			ci->forward_cruise_percent += f2fl(axis[Action::REL_THROTTLE]) * 100.0f * frame_time;
 
-		CLAMP(ci->forward_cruise_percent, 0, 100);
+		CLAMP(ci->forward_cruise_percent, 0.0f, 100.0f);
 
 		// set up the firing stuff.  Read into control info ala Descent so that weapons will be
 		// created during the object simulation phase, and not immediately as was happening before.
