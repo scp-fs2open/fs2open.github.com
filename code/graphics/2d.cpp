@@ -3123,7 +3123,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 
 		for (x = 0; x < 256; x++) {
 			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0, 65535);
+			CLAMP(val, 0., 65535.);
 
 			base_ramp[x] = (ushort)val;
 		}
@@ -3131,7 +3131,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 		for (y = 0; y < 3; y++) {
 			for (x = 0; x < 256; x++) {
 				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0, 65535);
+				CLAMP(val, 0., 65535.);
 
 				ramp[x + y * 256] = (ushort)val;
 			}

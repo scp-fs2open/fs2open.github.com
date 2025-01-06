@@ -109,7 +109,7 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 	for (int i = 0; i < (int) samples.size(); i++) {
 		if (samples[i].open_profiles) {
 			samples[i].num_children--;
-			samples[i].num_children = MAX(samples[i].num_children, 0);
+			samples[i].num_children = MAX(samples[i].num_children, 0u);
 		}
 	}
 }

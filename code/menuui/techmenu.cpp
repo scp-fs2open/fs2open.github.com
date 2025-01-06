@@ -387,7 +387,7 @@ void techroom_select_new_entry()
 
 				// Make sure model is loaded
 				if (VALID_FNAME(wip->tech_model)) {
-					Techroom_modelnum = model_load(wip->tech_model, nullptr, 0);
+					Techroom_modelnum = model_load(wip->tech_model, nullptr, ErrorType::WARNING);
 				}
 
 				if (Techroom_modelnum >= 0) {

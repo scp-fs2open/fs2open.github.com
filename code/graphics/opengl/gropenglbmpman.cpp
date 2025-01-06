@@ -106,7 +106,10 @@ int gr_opengl_bm_make_render_target(int handle, int *width, int *height, int *bp
 	}
 	
 	if ( (flags & BMP_FLAG_CUBEMAP) && (*width != *height) ) {
-		MIN(*width, *height) = MAX(*width, *height);
+		if (*width < *height)
+			*width = *height;
+		else
+			*height = *width;
 	}
 
 	if ( opengl_make_render_target(handle, width, height, bpp, mm_lvl, flags) ) {
