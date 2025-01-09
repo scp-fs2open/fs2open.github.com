@@ -1567,8 +1567,7 @@ void ai_big_strafe_attack()
 	accelerate_ship(aip, accel);
 
 	// if haven't been hit in quite a while, leave strafe mode
-	fix long_enough;
-	long_enough = F1_0 * The_mission.ai_profile->strafe_max_unhit_time;
+	fix long_enough = F1_0 * fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (last_hit > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1690,7 +1689,7 @@ void ai_big_strafe_glide_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	// (same as ai_big_strafe_attack)
-	fix long_enough = F1_0 * The_mission.ai_profile->strafe_max_unhit_time;
+	fix long_enough = F1_0 * fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
