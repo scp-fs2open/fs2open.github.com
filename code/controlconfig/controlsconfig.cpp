@@ -1758,7 +1758,7 @@ bool control_config_delete_preset(CC_preset preset) {
 	return delete_preset_file(preset);
 }
 
-bool control_config_create_new_preset(SCP_string newName, bool overwrite)
+bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
@@ -1806,7 +1806,7 @@ bool control_config_create_new_preset(SCP_string newName, bool overwrite)
 	return false; //should be unreachable, but just in case
 }
 
-bool control_config_clone_preset(CC_preset preset, SCP_string newName, bool overwrite) {
+bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newName, bool overwrite) {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
