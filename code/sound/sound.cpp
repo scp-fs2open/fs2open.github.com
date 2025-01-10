@@ -1050,30 +1050,22 @@ void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 		return;
 	}
 
-	bool isLoopingSound = false;
-
-
 	auto iter = currentlyLoopingSoundInfos.find(sig);
 	if (iter != currentlyLoopingSoundInfos.end()) {
 		iter->second.m_dynamicVolume = volume;
-		isLoopingSound = true;
 	} else {
 		iter = currentlyLooping3dSoundInfos.find(sig);
 		if (iter != currentlyLooping3dSoundInfos.end()) {
 			iter->second.m_dynamicVolume = volume;
-			isLoopingSound = true;
 		}
 	}
 
-	//looping sound volumes are updated in snd_do_frame
-	if(!isLoopingSound) {
-		if (is_voice) {
-			new_volume = volume * (Master_voice_volume * aav_voice_volume);
-		} else {
-			new_volume = volume * (Master_sound_volume * aav_effect_volume);
-		}
-		ds_set_volume( channel, new_volume );
+	if (is_voice) {
+		new_volume = volume * (Master_voice_volume * aav_voice_volume);
+	} else {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
 	}
+	ds_set_volume( channel, new_volume );
 }
 
 // ---------------------------------------------------------------------------------------
