@@ -500,23 +500,27 @@ static void parse_framebuffer_func() {
 	SCP_string value;
 	stuff_string(value, F_NAME);
 
-	if (util::isStringOneOf(value, { "shockwaves", "thrusters", "all", "none" })) {
-		Gr_framebuffer_effects = flagset<FramebufferEffects>(); // Clear only if valid
+	// Convert to lowercase once
+    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 
-		SCP_string lowercase_value = value;
-		std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+    // Use a map to associate strings with their respective actions
+    static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+        {"shockwaves", []() { Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves); }},
+        {"thrusters",  []() { Gr_framebuffer_effects.set(FramebufferEffects::Thrusters); }},
+        {"all",        []() { 
+                              Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves);
+                              Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
+        }},
+        {"none",       []() { /* No-op */ }}
+    };
 
-		if (lowercase_value == "shockwaves") {
-			Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves);
-		} else if (lowercase_value == "thrusters") {
-			Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
-		} else if (lowercase_value == "all") {
-			Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves);
-			Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
-		} // No need for "none" case
-	} else {
-		error_display(0, "%s is not a valid framebuffer effect setting", value.c_str());
-	}
+    auto it = effectActions.find(value);
+    if (it != effectActions.end()) {
+        Gr_framebuffer_effects = flagset<FramebufferEffects>(); // Clear only if valid
+        it->second(); // Execute the corresponding action
+    } else {
+        error_display(0, "%s is not a valid framebuffer effect setting", value.c_str());
+    }
 }
 
 static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<FramebufferEffects>>("Graphics.FramebufferEffects",
@@ -541,27 +545,24 @@ static void parse_anti_aliasing_func() {
 	SCP_string value;
 	stuff_string(value, F_NAME);
 
-	if (util::isStringOneOf(value, {"None", "FXAA Low", "FXAA Medium", "FXAA High", "SMAA Low", "SMAA Medium", "SMAA High", "SMAA Ultra"})) {
-		SCP_string lowercase_value = value;
-		std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+	std::transform(value.begin(), value.end(), value.begin(), ::tolower);
 
-		if (lowercase_value == "none") {
-			Gr_aa_mode = AntiAliasMode::None;
-		} else if (lowercase_value == "fxaa low") {
-			Gr_aa_mode = AntiAliasMode::FXAA_Low;
-		} else if (lowercase_value == "fxaa medium") {
-			Gr_aa_mode = AntiAliasMode::FXAA_Medium;
-		} else if (lowercase_value == "fxaa high") {
-			Gr_aa_mode = AntiAliasMode::FXAA_High;
-		} else if (lowercase_value == "smaa low") {
-			Gr_aa_mode = AntiAliasMode::SMAA_Low;
-		} else if (lowercase_value == "smaa medium") {
-			Gr_aa_mode = AntiAliasMode::SMAA_Medium;
-		} else if (lowercase_value == "smaa high") {
-			Gr_aa_mode = AntiAliasMode::SMAA_High;
-		} else if (lowercase_value == "smaa ultra") {
-			Gr_aa_mode = AntiAliasMode::SMAA_Ultra;
-		}
+	// Map of valid values to AntiAliasMode
+	static const std::unordered_map<std::string, AntiAliasMode> aaModeMap = {
+		{"none", AntiAliasMode::None},
+		{"fxaa low", AntiAliasMode::FXAA_Low},
+		{"fxaa medium", AntiAliasMode::FXAA_Medium},
+		{"fxaa high", AntiAliasMode::FXAA_High},
+		{"smaa low", AntiAliasMode::SMAA_Low},
+		{"smaa medium", AntiAliasMode::SMAA_Medium},
+		{"smaa high", AntiAliasMode::SMAA_High},
+		{"smaa ultra", AntiAliasMode::SMAA_Ultra},
+	};
+
+	// Look up the value in the map
+	auto it = aaModeMap.find(value);
+	if (it != aaModeMap.end()) {
+		Gr_aa_mode = it->second; // Set the mode
 	} else {
 		error_display(0, "%s is not a valid anti aliasing setting", value.c_str());
 	}
@@ -593,19 +594,22 @@ static void parse_msaa_func()
 	SCP_string value;
 	stuff_string(value, F_NAME);
 
-	if (util::isStringOneOf(value, {"Off", "4 Samples", "8 Samples", "16 Samples"})) {
-		SCP_string lowercase_value = value;
-		std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+	// Convert to lowercase
+	SCP_string lowercase_value = value;
+	std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
 
-		if (lowercase_value == "off") {
-			Cmdline_msaa_enabled = 0;
-		} else if (lowercase_value == "4 samples") {
-			Cmdline_msaa_enabled = 4;
-		} else if (lowercase_value == "8 samples") {
-			Cmdline_msaa_enabled = 8;
-		} else if (lowercase_value == "16 samples") {
-			Cmdline_msaa_enabled = 16;
-		}
+	// Map valid values to MSAA settings
+	static const std::unordered_map<std::string, int> msaaMap = {
+		{"off", 0},
+		{"4 samples", 4},
+		{"8 samples", 8},
+		{"16 samples", 16},
+	};
+
+	// Look up the value in the map
+	auto it = msaaMap.find(lowercase_value);
+	if (it != msaaMap.end()) {
+		Cmdline_msaa_enabled = it->second; // Set the MSAA level
 	} else {
 		error_display(0, "%s is not a valid MSAA setting", value.c_str());
 	}
