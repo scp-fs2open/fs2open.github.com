@@ -43,7 +43,7 @@ namespace AI {
 		Dockee_index_valid,	// when set, index field for dockee is valid
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
 		Subsys_needs_fixup,	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
-		Goal_override,		// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
+		Goal_override,		// paired with ai_goal_type::DYNAMIC to mean this goal overrides any other goal
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)

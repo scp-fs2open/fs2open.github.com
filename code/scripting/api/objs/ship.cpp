@@ -1553,7 +1553,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 
 	bool tgh_valid = tgh && tgh->isValid();
 	bool tgsh_valid = tgsh && tgsh->isValid();
-	int ai_mode = AI_GOAL_NONE;
+	ai_goal_mode ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
 	const char *ai_shipname = NULL;
 	switch(eh->index)

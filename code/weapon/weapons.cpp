@@ -6373,7 +6373,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
 			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
-			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+			if (parent_aip->active_goal != AI_ACTIVE_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
 				if (parent_aip->goals[parent_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					targeting_same = 0;
 				}
@@ -7900,7 +7900,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 			set_target_objnum(aip, -1);
 			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
 			if (aip->resume_goal_time != -1)
-				aip->active_goal = AI_GOAL_NONE;
+				aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		}
         
 		if (aip->goal_objnum == objnum) {
