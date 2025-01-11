@@ -690,7 +690,7 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 		aip->prev_goal_point = En_objp->pos;
 	} else {
 		//	If moving slowly, maybe evade incoming fire.
-		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed) {
+		if (Pl_objp->phys_info.speed < 3.0f) {
 			object *objp;
 			for ( objp = GET_FIRST(&obj_used_list); objp !=END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp) ) {
 				if (objp->flags[Object::Object_Flags::Should_be_dead])
@@ -718,18 +718,20 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 						}
 					}
 			}
-			
-			// Since ship is moving slowly and attacking a large ship, scan if enemy fighters are near, if so
-			// then enter strafe mode
-			if ( The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip) ) {
-				aip->previous_mode = aip->mode;
-				aip->mode = AIM_STRAFE;
-				aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
-				ai_big_strafe_position();
-				return;
-			}
 
-		} // end if ( Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed ) 
+		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
+
+		// if moving slowly and attacking a large ship, 
+		// check if need to enter standard strafe mode
+		// including ai_profile flag and if enemy fighters are near
+		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed && 
+			(The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
+			aip->previous_mode = aip->mode;
+			aip->mode = AIM_STRAFE;
+			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
+			ai_big_strafe_position();
+			return;
+		}
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
 		if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
@@ -1567,7 +1569,7 @@ void ai_big_strafe_attack()
 	accelerate_ship(aip, accel);
 
 	// if haven't been hit in quite a while, leave strafe mode
-	fix long_enough = F1_0 * fl2f(The_mission.ai_profile->strafe_max_unhit_time);
+	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (last_hit > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1689,7 +1691,7 @@ void ai_big_strafe_glide_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	// (same as ai_big_strafe_attack)
-	fix long_enough = F1_0 * fl2f(The_mission.ai_profile->strafe_max_unhit_time);
+	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
