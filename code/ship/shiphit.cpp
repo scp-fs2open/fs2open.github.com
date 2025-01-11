@@ -2610,7 +2610,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 					shipp->wash_killed = 1;
 				}
 
-				float percent_killed = -get_hull_pct(ship_objp);
+				float percent_killed = -get_hull_pct(ship_objp, true);
 				if (percent_killed > 1.0f){
 					percent_killed = 1.0f;
 				}

@@ -1316,7 +1316,9 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 
 	// use the current hull percentage for damage-after-death purposes
 	// (note that this does not actually affect scoring)
-	float percent_killed = get_hull_pct(victim->objp());
+	float percent_killed = -get_hull_pct(victim->objp(), true);
+	if (percent_killed > 1.0f)
+		percent_killed = 1.0f;
 
 	ship_hit_kill(victim->objp(), killer ? killer->objp() : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig), true);
 
