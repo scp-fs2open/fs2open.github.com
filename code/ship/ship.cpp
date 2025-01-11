@@ -15372,7 +15372,7 @@ bool ship_subsystems_blown(const ship* shipp, int type, bool skip_dying_check)
 	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_subsystems_blown() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+	if (shipp->flags[Ship::Ship_Flags::Dying] && !skip_dying_check)
 		return true;
 
 	// short circuit 1
@@ -15399,7 +15399,7 @@ float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_c
 	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_get_subsystem_strength() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+	if (shipp->flags[Ship::Ship_Flags::Dying] && !skip_dying_check)
 		return 0.0f;
 
 	// short circuit 1

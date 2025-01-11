@@ -288,9 +288,18 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 void obj_init_all_ships_physics();
 
 // Goober5000
-float get_hull_pct(const object *objp);
-float get_sim_hull_pct(const object *objp);
+float get_hull_pct(const object *objp, bool allow_negative = false);
+float get_sim_hull_pct(const object *objp, bool allow_negative = false);
 float get_shield_pct(const object *objp);
+
+struct ship_registry_entry;
+
+// SEXPs evaluated during debriefing are susceptible to a "use-after-free" problem where the object and ship have been deleted but still
+// contain information useful for debriefing.  Since the ship registry still contains object and ship indexes, use this rather than the
+// instance and objnum indexes in the object and ship structures themselves.
+float get_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative = false);
+float get_sim_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative = false);
+float get_shield_pct(const ship_registry_entry *ship_entry);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);
