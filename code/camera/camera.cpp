@@ -95,7 +95,7 @@ auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVT
 					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
 					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
 					 .category(std::make_pair("Graphics", 1825))
-					 .default_func(false)
+					 .default_val(false)
 					 .change_listener([](bool val, bool) {
 					      if (!val) {
 					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;
