@@ -20,6 +20,4 @@ bool isStringOneOf(const std::string& value, const std::vector<std::string>& can
 	});
 }
 
-}
-
 } // namespace util
