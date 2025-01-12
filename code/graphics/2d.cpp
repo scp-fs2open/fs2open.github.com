@@ -43,6 +43,7 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+#include "utils/string_utils.h"
 #include "gamesequence/gamesequence.h"
 
 #ifdef WITH_OPENGL
@@ -137,17 +138,55 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
+static void parse_gamma_func()
+{
+	float value;
+	stuff_float(&value);
+
+	constexpr float EPSILON = 0.0001f;
+
+	if (value < 0.1f - EPSILON || value > 5.0f + EPSILON) {
+		error_display(0, "%f is not a valid gamma value! (Out of range)", value);
+		return;
+	}
+
+	float expected_i = value / 0.05f;
+	int i = fl2i(std::round(expected_i));
+
+	if (std::abs(value - (0.05f * i)) < EPSILON && i >= 2 && i <= 100) {
+		Gr_gamma = value;
+		return;
+	}
+
+	error_display(0, "%f is not a valid gamma value! (Invalid increment)", value);
+}
+
 static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
                      std::pair<const char*, int>{"Brightness", 1375},
                      std::pair<const char*, int>{"The brightness value used for the game window", 1738})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(1.0f)
+                     .default_func([]() { return Gr_gamma; })
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_gamma_func)
                      .finish();
 
+static void parse_lighting_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::Lighting, value[i]);
+		}
+	}
+}
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
                                                                                    { 1, {"Low", 1160}},
@@ -161,7 +200,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([]() { return Detail.lighting; })
                      .change_listener([](int val, bool initial) {
                           Detail.lighting = val;
                           if (!initial) {
@@ -170,9 +209,10 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_lighting_func)
                      .finish();
 
-os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
+os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
 {
@@ -192,6 +232,24 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
+/*static void parse_window_mode_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "windowed")) {
+		Gr_configured_window_state = os::ViewportState::Windowed;
+	} else if (lcase_equal(value, "borderless")) {
+		Gr_configured_window_state = os::ViewportState::Borderless;
+	} else if (lcase_equal(value, "fullscreen")) {
+		Gr_configured_window_state = os::ViewportState::Fullscreen;
+	} else {
+		error_display(0, "%s is an invalide window mode", value.c_str());
+	}
+}*/
+
+// Window mode can support default settings but I'm not sure if there would
+// ever be a reason to and this should probably remain a user-only setting
+// similar to other graphics hardware settings
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
@@ -201,8 +259,9 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
                               {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
-                     .default_val(os::ViewportState::Fullscreen)
+                     .default_func([]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
+                     //.parser(parse_window_mode_func)
                      .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
@@ -283,6 +342,10 @@ static bool videodisplay_change(int display, bool initial)
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
+
+// Video display cannot support default settings because graphics have not been
+// initialized so we can't validate the setting. But also, this should probably
+// only ever be a user setting
 static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
                      std::pair<const char*, int>{"The display used for rendering", 1742})
@@ -393,6 +456,10 @@ static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 	}
 	 */
 }
+
+// Resolution cannot support default settings because graphics have not been
+// initialized so we can't validate the setting. But also, this should probably
+// only ever be a user setting
 static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.Resolution",
                      std::pair<const char*, int>{"Resolution", 1748},
                      std::pair<const char*, int>{"The rendering resolution", 1749})
@@ -407,19 +474,54 @@ static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.
                      .importance(100)
                      .finish();
 
-bool Gr_enable_soft_particles = false;
+bool Gr_enable_soft_particles = true;
+
+static void parse_soft_particle_func() {
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_soft_particles = value;
+}
 
 static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles",
                      std::pair<const char*, int>{"Soft Particles", 1761},
                      std::pair<const char*, int>{"Enable or disable soft particle rendering", 1762})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_enable_soft_particles; })
                      .bind_to_once(&Gr_enable_soft_particles)
                      .importance(68)
+                     .parser(parse_soft_particle_func)
                      .finish();
 
-flagset<FramebufferEffects> Gr_framebuffer_effects;
+flagset<FramebufferEffects> Gr_framebuffer_effects{};
+
+static void parse_framebuffer_func() {
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	// Convert to lowercase once
+    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+
+    // Use a map to associate strings with their respective actions
+    static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+        {"shockwaves", []() { Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves); }},
+        {"thrusters",  []() { Gr_framebuffer_effects.set(FramebufferEffects::Thrusters); }},
+        {"all",        []() { 
+                              Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves);
+                              Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
+        }},
+        {"none",       []() { /* No-op */ }}
+    };
+
+    auto it = effectActions.find(value);
+    if (it != effectActions.end()) {
+        Gr_framebuffer_effects = flagset<FramebufferEffects>(); // Clear only if valid
+        it->second(); // Execute the corresponding action
+    } else {
+        error_display(0, "%s is not a valid framebuffer effect setting", value.c_str());
+    }
+}
 
 static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<FramebufferEffects>>("Graphics.FramebufferEffects",
                      std::pair<const char*, int>{"Framebuffer effects", 1732},
@@ -430,13 +532,41 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                               {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
                               {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
                               {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
-                     .default_val({})
+                     .default_func([]() { return Gr_framebuffer_effects; } )
                      .bind_to_once(&Gr_framebuffer_effects)
                      .importance(77)
+                     .parser(parse_framebuffer_func)
                      .finish();
 
 AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
 AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
+
+static void parse_anti_aliasing_func() {
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+
+	// Map of valid values to AntiAliasMode
+	static const std::unordered_map<std::string, AntiAliasMode> aaModeMap = {
+		{"none", AntiAliasMode::None},
+		{"fxaa low", AntiAliasMode::FXAA_Low},
+		{"fxaa medium", AntiAliasMode::FXAA_Medium},
+		{"fxaa high", AntiAliasMode::FXAA_High},
+		{"smaa low", AntiAliasMode::SMAA_Low},
+		{"smaa medium", AntiAliasMode::SMAA_Medium},
+		{"smaa high", AntiAliasMode::SMAA_High},
+		{"smaa ultra", AntiAliasMode::SMAA_Ultra},
+	};
+
+	// Look up the value in the map
+	auto it = aaModeMap.find(value);
+	if (it != aaModeMap.end()) {
+		Gr_aa_mode = it->second; // Set the mode
+	} else {
+		error_display(0, "%s is not a valid anti aliasing setting", value.c_str());
+	}
+}
 
 static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode",
                      std::pair<const char*, int>{"Anti Aliasing", 1752},
@@ -451,12 +581,40 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                               {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
                               {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
                               {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
-                     .default_val(AntiAliasMode::None)
+                     .default_func([]() { return Gr_aa_mode; } )
                      .bind_to(&Gr_aa_mode)
                      .importance(79)
+                     .parser(parse_anti_aliasing_func)
                      .finish();
 
 extern int Cmdline_msaa_enabled;
+
+static void parse_msaa_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	// Convert to lowercase
+	SCP_string lowercase_value = value;
+	std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+
+	// Map valid values to MSAA settings
+	static const std::unordered_map<std::string, int> msaaMap = {
+		{"off", 0},
+		{"4 samples", 4},
+		{"8 samples", 8},
+		{"16 samples", 16},
+	};
+
+	// Look up the value in the map
+	auto it = msaaMap.find(lowercase_value);
+	if (it != msaaMap.end()) {
+		Cmdline_msaa_enabled = it->second; // Set the MSAA level
+	} else {
+		error_display(0, "%s is not a valid MSAA setting", value.c_str());
+	}
+}
+
 static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples",
                      std::pair<const char*, int>{"Multisample Anti Aliasing", 1758},
                      std::pair<const char*, int>{"Controls whether multisample anti asliasing is enabled, and with how many samples", 1759})
@@ -466,9 +624,10 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                               {4, {"4 Samples", 1694}},
                               {8, {"8 Samples", 1695}},
                               {16, {"16 Samples", 1696}}})
-                     .default_val(0)
+                     .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
+                     .parser(parse_msaa_func)
                      .finish();
 
 bool gr_is_fxaa_mode(AntiAliasMode mode)
@@ -479,6 +638,14 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
+static void parse_post_processing_func()
+{
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_post_processing_enabled = value;
+}
+
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
@@ -486,21 +653,31 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_post_processing_enabled; })
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
+                     .parser(parse_post_processing_func)        
                      .finish();
 
 bool Gr_enable_vsync = true;
+
+static void parse_vsync_func()
+{
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_vsync = value;
+}
 
 static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync",
                      std::pair<const char*, int>{"Vertical Sync", 1766},
                      std::pair<const char*, int>{"Controls how the engine does vertical synchronization", 1767})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_enable_vsync; })
                      .bind_to_once(&Gr_enable_vsync)
                      .importance(70)
+                     .parser(parse_vsync_func)  
                      .finish();
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;

@@ -99,7 +99,7 @@ public:
 	// Player-specific autoaim FOV override
 	float player_autoaim_fov[NUM_SKILL_LEVELS];
 
-	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
+	float detail_distance_mult[MAX_DETAIL_VALUE + 1];	//MAX_DETAIL_VALUE really needs to be 4
 
 	// minimum radius for the line-of-sight (los) detection --wookieejedi
 	float los_min_detection_radius;

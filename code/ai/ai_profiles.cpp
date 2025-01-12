@@ -377,7 +377,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				if (optional_string("$Detail Distance Multiplier:"))
-					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_LEVEL + 1);
+					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_VALUE + 1);
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
@@ -822,7 +822,7 @@ void ai_profile_t::reset()
         player_autoaim_fov[i] = 0;
     }
 
-    for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
+    for (int i = 0; i <= MAX_DETAIL_VALUE; ++i) {
         detail_distance_mult[i] = 0;
     }
 
