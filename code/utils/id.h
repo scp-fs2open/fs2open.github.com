@@ -52,4 +52,13 @@ protected:
 	Impl m_val;
 };
 
+struct ID_Hash
+{
+	template <class Tag, class Impl, Impl default_value>
+	size_t operator()(const ID<Tag, Impl, default_value> &id) const
+	{
+		return std::hash<Impl>{}(id.value());
+	}
+};
+
 }
