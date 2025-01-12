@@ -239,7 +239,7 @@ void outputLibrary(FILE* fp, const DocumentationElement* el, const SCP_vector<co
 
 
 // Function to output a Class
-void outputClass(FILE* fp, const DocumentationElement* el, const SCP_vector<const DocumentationElement*>& parents)
+void outputClass(FILE* fp, const DocumentationElement* el)
 {
 	SCP_string escapedDescription;
 	if (!el->description.empty()) {
@@ -384,7 +384,7 @@ void outputFunction(FILE* fp, const DocumentationElement* el, const SCP_vector<c
 
 
 // Function to output a Property
-void outputProperty(FILE* fp, const DocumentationElement* el, const SCP_vector<const DocumentationElement*>& parents)
+void outputProperty(FILE* fp, const DocumentationElement* el)
 {
 	if (el) {
 		const auto propEl = static_cast<const DocumentationElementProperty*>(el);
@@ -451,14 +451,14 @@ void OutputElement(FILE* fp, const std::unique_ptr<DocumentationElement>& el, co
 			outputLibrary(fp, el.get(), parents);
 			break;
 		case ElementType::Class:
-			outputClass(fp, el.get(), parents);
+			outputClass(fp, el.get());
 			break;
 		case ElementType::Function:
 		case ElementType::Operator:
 			outputFunction(fp, el.get(), parents);
 			break;
 		case ElementType::Property:
-			outputProperty(fp, el.get(), parents);
+			outputProperty(fp, el.get());
 			break;
 		default:
 			Warning(LOCATION, "Unknown type '%d' passed to ade_table_entry::OutputMeta", static_cast<int>(el->type));
