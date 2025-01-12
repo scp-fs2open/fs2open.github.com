@@ -92,3 +92,32 @@ void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max
 {
 	std::strftime(dest, dest_max_len, "%x at %X", src);
 }
+
+bool rejectOrCloseHandler(__UNUSED QDialog* dialog,
+	fso::fred::dialogs::AbstractDialogModel* model,
+	fso::fred::EditorViewport* viewport)
+{
+	if (model->query_modified()) {
+		auto button = viewport->dialogProvider->showButtonDialog(fso::fred::DialogType::Question,
+			"Changes detected",
+			"Do you want to keep your changes?",
+			{fso::fred::DialogButton::Yes, fso::fred::DialogButton::No, fso::fred::DialogButton::Cancel});
+
+		if (button == fso::fred::DialogButton::Cancel) {
+			return false;
+		}
+
+		if (button == fso::fred::DialogButton::Yes) {
+			model->apply();
+			return true;
+		}
+		if (button == fso::fred::DialogButton::No) {
+			model->reject();
+			return true;
+		}
+		return false;
+	} else {
+		model->reject();
+		return true;
+	}
+}

@@ -89,6 +89,10 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		return ade_set_error(L, "o", l_Enum.Set(enum_h()));
 
 	switch(ohp->aigp->ai_mode){
+		case AI_GOAL_NONE:
+		case AI_GOAL_PLACEHOLDER_1:
+		case AI_GOAL_NUM_VALUES:
+			break;
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_CHASE_WEAPON:
 		case AI_GOAL_CHASE:
@@ -169,6 +173,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_CHASE_SHIP_CLASS:
 			eh_idx = LE_ORDER_ATTACK_SHIP_CLASS;
 			break;
+		case AI_GOAL_LUA:
+			eh_idx = LE_ORDER_LUA;
+			break;
 	}
 
 	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
@@ -180,7 +187,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 	object_h *newh = NULL;
 	ai_info *aip = NULL;
 	waypoint_list *wpl = NULL;
-	int shipnum = -1, objnum = -1;
+	int shipnum = -1, wingnum = -1, objnum = -1;
 	if(!ade_get_args(L, "o|o", l_Order.GetPtr(&ohp), l_Object.GetPtr(&newh)))
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
@@ -272,6 +279,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 						}
 					}
 					break;
+				default:
+					break;
 			}
 		}
 	}
@@ -322,11 +331,13 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			break;
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD_WING:
-			int wingnum = wing_name_lookup(ohp->aigp->target_name);
+			wingnum = wing_name_lookup(ohp->aigp->target_name);
 			if (Wings[wingnum].current_count > 0){
 				shipnum = Wings[wingnum].ship_index[0];
 				objnum = Ships[shipnum].objnum;
 			}
+			break;
+		default:
 			break;
 	}
 

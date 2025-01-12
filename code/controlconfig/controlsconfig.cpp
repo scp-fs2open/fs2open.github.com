@@ -1335,11 +1335,11 @@ bool control_config_accept(bool API_Access)
 				cfclose(fp);
 				int n = popup(flags,
 					2,
-					POPUP_OK,
 					POPUP_CANCEL,
+					POPUP_OK,
 					"'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name",
 					str.c_str());
-				if ((n == 1) || (n == -1)) {
+				if ((n == 0) || (n == -1)) {
 					// If Cancel button was pressed, or popup dismissed:
 					// retry
 					gamesnd_play_iface(InterfaceSounds::USER_SELECT);

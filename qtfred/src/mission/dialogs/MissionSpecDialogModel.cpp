@@ -367,16 +367,6 @@ SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
 }
 
-void MissionSpecDialogModel::set_modified() {
-	if (!_modified) {
-		_modified = true;
-	}
-}
-
-bool MissionSpecDialogModel::query_modified() {
-	return _modified;
-}
-
 }
 }
 }

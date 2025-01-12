@@ -1025,7 +1025,7 @@ typedef struct ship_type_info {
 	float fog_complete_dist;
 
 	//AI
-	int	ai_valid_goals;
+	SCP_set<ai_goal_mode> ai_valid_goals;
 	std::set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
@@ -1046,7 +1046,7 @@ typedef struct ship_type_info {
 		: debris_max_speed( 0.f ),
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  skip_deathroll_chance( 0.f )
 
 	{
@@ -1331,6 +1331,7 @@ public:
 	bool	auto_shield_spread_bypass;		// Whether weapons fired up close can bypass shields
 	int		auto_shield_spread_from_lod;	// Which LOD to project the shield from
 	float	auto_shield_spread_min_span;	// Minimum distance weapons must travel until allowed to collide with the shield
+	float   max_shield_impact_effect_radius;
 
 	int		shield_point_augment_ctrls[4];	// Re-mapping of shield augmentation controls for model point shields
 
@@ -1782,7 +1783,7 @@ extern void create_shield_explosion(int objnum, int model_num, matrix *orient, v
 extern void shield_hit_init();
 extern void create_shield_explosion_all(object *objp);
 extern void shield_frame_init();
-extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos);
+extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float radius_override);
 extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();

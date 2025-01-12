@@ -9,6 +9,58 @@ namespace fso {
 			{
 				initializeData(multi, shipp, wingp);
 			}
+			void ShipGoalsDialogModel::init_combo_data()
+			{
+				// don't add more than one of the same string (case-insensitive)
+				SCP_unordered_map<SCP_string, size_t, SCP_string_lcase_hash, SCP_string_lcase_equal_to> strings_to_indexes;
+
+				// start by adding "None"
+				auto none_str = "None";
+				strings_to_indexes.emplace(none_str, 0);
+				SCP_set<ai_goal_mode> none_set{ AI_GOAL_NONE };
+				m_ai_goal_combo_data.clear();
+				m_ai_goal_combo_data.emplace_back(none_str, std::move(none_set));
+
+				// initialize the data used in the combo boxes in the Initial Orders dialog
+				for (int i = 0; i < Ai_goal_list_size; ++i)
+				{
+					if (!valid[i])
+						continue;
+					auto &entry = Editor::getAi_goal_list()[i];
+
+					// see if we already added the string
+					auto ii = strings_to_indexes.find(entry.name);
+					if (ii != strings_to_indexes.end())
+					{
+						// skip adding the string, but add the entry's goal definition to the combo box data at the existing index
+						m_ai_goal_combo_data[ii->second].second.insert(entry.def);
+					}
+					else
+					{
+						// this string will correspond to the index that is about to be created
+						strings_to_indexes[entry.name] = m_ai_goal_combo_data.size();
+
+						// add the entry's goal definition as the first (maybe only) member of the set
+						SCP_set<ai_goal_mode> new_set{ entry.def };
+						m_ai_goal_combo_data.emplace_back(entry.name, std::move(new_set));
+					}
+				}
+			}
+			const SCP_vector<std::pair<const char*, SCP_set<ai_goal_mode>>> &ShipGoalsDialogModel::get_ai_goal_combo_data()
+			{
+				return m_ai_goal_combo_data;
+			};
+			ai_goal_mode ShipGoalsDialogModel::get_first_mode_from_combo_box(int which_item)
+			{
+				// which_item indicates initial goal 1 through MAX_AI_GOALS, so find that behavior...
+				int behavior_index = m_behavior[which_item];
+
+				// the behavior is the index into the combo box that contains a subset of goals from Ai_goal_list
+				const auto &set = m_ai_goal_combo_data[behavior_index].second;
+
+				// just get the first mode in the set, since chase/chase-wing and guard/guard-wing are handled respectively together
+				return *(set.begin());
+			}
 			bool ShipGoalsDialogModel::apply()
 			{
 				int i;
@@ -79,7 +131,7 @@ namespace fso {
 			void ShipGoalsDialogModel::update_item(const int item)
 			{
 				char* docker, * dockee, * subsys;
-				int mode;
+				ai_goal_mode mode;
 				char save[80]{};
 				SCP_string error_message;
 				waypoint_list* wp_list;
@@ -90,7 +142,7 @@ namespace fso {
 				if (!m_multi_edit || m_priority[item] >= 0)
 					goalp[item].priority = m_priority[item];
 
-				mode = m_behavior[item];
+				mode = get_first_mode_from_combo_box(item);
 				switch (mode) {
 				case AI_GOAL_NONE:
 				case AI_GOAL_CHASE_ANY:
@@ -143,7 +195,8 @@ namespace fso {
 
 					break;
 
-				case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
+				case AI_GOAL_CHASE:
+				case AI_GOAL_CHASE_WING:
 					switch (m_object[item] & TYPE_MASK) {
 					case TYPE_SHIP:
 					case TYPE_PLAYER:
@@ -198,7 +251,8 @@ namespace fso {
 
 					break;
 
-				case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+				case AI_GOAL_GUARD:
+				case AI_GOAL_GUARD_WING:
 					switch (m_object[item] & TYPE_MASK) {
 					case TYPE_SHIP:
 					case TYPE_PLAYER:
@@ -338,6 +392,9 @@ namespace fso {
 						case AI_GOAL_WAYPOINTS_ONCE:
 							// case AI_GOAL_WARP:
 							valid[i] = 0;
+							break;
+						default:
+							break;
 						}
 					}
 				}
@@ -363,6 +420,9 @@ namespace fso {
 					}
 				}
 
+				// initialize the data for the behavior boxes (they remain constant while the dialog is open)
+				init_combo_data();
+
 				if (self_ship >= 0) {
 					initialize(Ai_info[Ships[self_ship].ai_index].goals, self_ship);
 				}
@@ -376,7 +436,8 @@ namespace fso {
 			}
 			void ShipGoalsDialogModel::initialize(ai_goal* goals, int ship)
 			{
-				int i, item, num, inst, flag, mode;
+				int i, item, num, inst, flag;
+				ai_goal_mode mode;
 				object* ptr;
 				SCP_vector<SCP_string> docks;
 
@@ -403,9 +464,16 @@ namespace fso {
 						m_priority[item] = 50;
 					}
 
-					m_behavior[item] = -1;
+					m_behavior[item] = 0;
 					if (mode != AI_GOAL_NONE) {
-						m_behavior[item] = mode;
+						i = static_cast<int>(m_ai_goal_combo_data.size());
+						while (i-- > 0) {
+							const auto &set = m_ai_goal_combo_data[i].second;
+							if (set.find(mode) != set.end()) {
+								m_behavior[item] = i;
+								break;
+							}
+						}
 					}
 
 					switch (mode) {
@@ -548,7 +616,8 @@ namespace fso {
 								}
 							}
 						}
-
+						break;
+					default:
 						break;
 					}
 
@@ -617,16 +686,6 @@ namespace fso {
 					m_dock2[i] = dock2[i];
 					m_object[i] = data[i];
 				}
-			}
-			void ShipGoalsDialogModel::set_modified()
-			{
-				if (!_modified) {
-					_modified = true;
-				}
-			}
-			 bool ShipGoalsDialogModel::query_modified()
-			{
-				return _modified;
 			}
 			void ShipGoalsDialogModel::setShip(const int ship)
 			{

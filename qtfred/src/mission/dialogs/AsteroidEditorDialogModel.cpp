@@ -26,7 +26,6 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_field_type(FT_ACTIVE),
 	_debris_genre(DG_ASTEROID),
 	_bypass_errors(false),
-	_modified(false),
 	_cur_field(0),
 	_last_field(-1)
 {
@@ -492,21 +491,6 @@ void AsteroidEditorDialogModel::update_init()
 	_field_debris_type = _a_field.field_debris_type;
 
 	_last_field = _cur_field;
-}
-
-void AsteroidEditorDialogModel::set_modified()
-{
-	_modified = true;
-}
-
-void AsteroidEditorDialogModel::unset_modified()
-{
-	_modified = false;
-}
-
-bool AsteroidEditorDialogModel::get_modified()
-{
-	return _modified;
 }
 
 void AsteroidEditorDialogModel::showErrorDialogNoCancel(const SCP_string& message)

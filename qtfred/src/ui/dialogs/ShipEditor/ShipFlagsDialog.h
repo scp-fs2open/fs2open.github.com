@@ -21,7 +21,8 @@ class ShipFlagsDialog : public QDialog {
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void showEvent(QShowEvent*) override;
+
+	void rejectHandler();
 
   private:
 	std::unique_ptr<Ui::ShipFlagsDialog> ui;
