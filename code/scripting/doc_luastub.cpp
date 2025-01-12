@@ -6,8 +6,8 @@
 namespace scripting {
 namespace {
 
-static SCP_vector<std::pair<SCP_string, SCP_string>> Hook_variables;
-static SCP_vector<std::pair<SCP_string, SCP_string>> Aliases;
+SCP_vector<std::pair<SCP_string, SCP_string>> Hook_variables;
+SCP_vector<std::pair<SCP_string, SCP_string>> Aliases;
 
 //Forward declrattion
 SCP_string get_output_type_link(const ade_type_info& type_info, SCP_string nestedFuncName = "");
@@ -154,7 +154,7 @@ SCP_string get_output_type_link(const ade_type_info& type_info, SCP_string neste
 	}
 
 	case ade_type_info_type::Function:
-		return create_function_alias(type_info, nestedFuncName);
+		return create_function_alias(type_info, std::move(nestedFuncName));
 
 	case ade_type_info_type::Generic: {
 		rstring = get_output_type_link(type_info.elements().front());
