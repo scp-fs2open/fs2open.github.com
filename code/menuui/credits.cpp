@@ -56,7 +56,7 @@ const char *fs2_open_credit_text =
 	"Hassan \"Karajorma\" Kazmi\n"
 	"Derek \"Kazan\" Meek\n"
 	"Nick \"phreak\" Iannetta\n"
-	"David \"EatThePath\" Gibson\n"
+	"Zoe \"EatThePath\" Gibson\n"
 	"Mike \"MjnMixael\" Nelson\n"
 	"argv[-1], Backslash, Baezon\n"
 	"CommanderDJ, Cyborg, DTP\n"
