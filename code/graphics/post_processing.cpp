@@ -40,7 +40,7 @@ PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
 // used by In-Game Options menu
 bool Post_processing_enable_lightshafts = true;
 
-static void parse_lightshafts_func()
+void parse_lightshafts_func()
 {
 	bool enabled;
 	stuff_boolean(&enabled);
@@ -60,7 +60,7 @@ static auto LightshaftsOption __UNUSED = options::OptionBuilder<bool>("Graphics.
 
 int Post_processing_bloom_intensity = 25; // using default value of Cmdline_bloom_intensity
 
-static void parse_bloom_intensity_func()
+void parse_bloom_intensity_func()
 {
 	int value;
 	stuff_int(&value);
