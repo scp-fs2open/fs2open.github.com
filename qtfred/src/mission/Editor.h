@@ -295,7 +295,7 @@ class Editor : public QObject {
 
 	int global_error_check_player_wings(int multi);
 
-	const char* get_order_name(int order);
+	static const char* get_order_name(ai_goal_mode order);
 
 	void updateStartingWingLoadoutUseCounts();
 };

@@ -32,6 +32,25 @@ ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The
 	return ade_set_args(L, "s", Personas[idx].name);
 }
 
+ADE_VIRTVAR(Index, l_Persona, nullptr, nullptr, "number", "The index of the persona")
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ade_set_args(L, "i", -1);
+
+	if (Personas.empty())
+		return ade_set_args(L, "i", -1);
+
+	if (!SCP_vector_inbounds(Personas, idx))
+		return ade_set_args(L, "i", -1);
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting index is not supported");
+
+	return ade_set_args(L, "i", idx + 1);
+}
+
 ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
 {
 	int idx = -1;

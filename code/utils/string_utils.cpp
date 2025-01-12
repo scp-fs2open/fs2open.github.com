@@ -15,7 +15,7 @@ std::vector<std::string> split_string(const std::string& s, char delim) {
 bool isStringOneOf(const std::string& value, const std::vector<std::string>& candidates)
 {
 	return std::any_of(candidates.begin(), candidates.end(), [&value](const std::string& candidate) {
-		return !stricmp(value.c_str(), candidate.c_str());
+		return lcase_equal(value, candidate);
 	});
 }
 

@@ -17,6 +17,7 @@
 #include "mission/missionparse.h"
 #include "FredRender.h"
 #include "Management.h"
+#include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "MainFrm.h"
 #include "bmpman/bmpman.h"
@@ -934,6 +935,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
+		Briefing->stages[to].grid_color = Color_briefing_grid;
 		return;
 	}
 
@@ -947,6 +949,8 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
+	// For now let's just always set this back to default. Eventually when we have a UI color picker in qtFRED, we can copy from stage to stage
+	Briefing->stages[to].grid_color = Color_briefing_grid;
 
 	memmove( Briefing->stages[to].icons, Briefing->stages[from].icons, sizeof(brief_icon)*MAX_STAGE_ICONS );
 	memmove( Briefing->stages[to].lines, Briefing->stages[from].lines, sizeof(brief_line)*MAX_BRIEF_STAGE_LINES );

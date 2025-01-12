@@ -633,17 +633,6 @@ bool ShipInitialStatusDialogModel::apply()
 
 void ShipInitialStatusDialogModel::reject() {}
 
-void ShipInitialStatusDialogModel::set_modified()
-{
-	if (!_modified) {
-		_modified = true;
-	}
-}
-
- bool ShipInitialStatusDialogModel::query_modified()
-{
-	return _modified;
-}
 
 void ShipInitialStatusDialogModel::setVelocity(const int value)
 {

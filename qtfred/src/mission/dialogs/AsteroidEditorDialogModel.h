@@ -61,13 +61,7 @@ public:
 	void update_init();
 	bool validate_data();
 
-	void set_modified();
-	void unset_modified();
-	bool get_modified();
-
 private:
-	template<typename T>
-	void modify(T &a, const T &b);
 
 	void showErrorDialogNoCancel(const SCP_string& message);
 	void initializeData();
@@ -98,7 +92,6 @@ private:
 	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?
 
 	bool _bypass_errors;
-	bool _modified;
 	int  _cur_field;
 	int  _last_field;
 
@@ -109,15 +102,6 @@ private:
 	// and the inverse as a map + roids - populate in ctor
 	std::unordered_map<int, int> debris_inverse_idx_lookup;
 };
-
-template<typename T>
-inline void AsteroidEditorDialogModel::modify(T &a, const T &b) {
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
 
 } // namespace dialogs
 } // namespace fred

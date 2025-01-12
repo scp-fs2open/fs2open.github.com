@@ -10,11 +10,6 @@ namespace fso {
 			private:
 				void initSubTypes(polymodel* model, int);
 
-				template<typename T>
-				void modify(T& a, const T& b);
-				bool _modified = false;
-				void set_modified();
-
 				bool m_multi;
 				//Used to dermeine what type of texutre a map has.
 				SCP_vector<SCP_map<SCP_string, bool>> subTypesAvailable;
@@ -50,18 +45,8 @@ namespace fso {
 				void setReplace(const size_t index, const SCP_string& type, const bool state);
 				void setInherit(const size_t index, const SCP_string& type, const bool state);
 
-				bool query_modified() const;
 
 			};
-			template<typename T>
-			inline void ShipTextureReplacementDialogModel::modify(T& a, const T& b)
-			{
-				if (a != b) {
-					a = b;
-					set_modified();
-					modelChanged();
-				}
-			}
 		}
 	}
 }

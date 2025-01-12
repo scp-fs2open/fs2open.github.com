@@ -3,7 +3,7 @@
 #include "ShieldSystemDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_ShieldSystemDialog.h"
-
+#include "mission/util.h"
 
 namespace fso {
 namespace fred {
@@ -17,7 +17,7 @@ ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewpor
     ui->setupUi(this);
 	
 	connect(this, &QDialog::accepted, _model.get(), &ShieldSystemDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &ShieldSystemDialogModel::reject);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &ShieldSystemDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShieldSystemDialog::updateUI);
 
@@ -113,25 +113,15 @@ void ShieldSystemDialog::keyPressEvent(QKeyEvent* event) {
 	QDialog::keyPressEvent(event);
 }
 
-void ShieldSystemDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-			{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void ShieldSystemDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
+void ShieldSystemDialog::rejectHandler()
+{
+	this->close();
+}
 }
 }
 }

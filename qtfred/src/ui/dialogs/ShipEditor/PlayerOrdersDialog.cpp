@@ -2,24 +2,20 @@
 
 #include "ui_PlayerOrdersDialog.h"
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 namespace fso {
 	namespace fred {
 		namespace dialogs {
-			PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport)
-				: QDialog(parent), ui(new Ui::PlayerOrdersDialog()),
+	PlayerOrdersDialog::PlayerOrdersDialog(QDialog* parent, EditorViewport* viewport, bool editMultiple)
+			: QDialog(parent), ui(new Ui::PlayerOrdersDialog()),
+			  _model(new PlayerOrdersDialogModel(this, viewport, editMultiple)),
 				_viewport(viewport)
 			{
-				parentDialog = dynamic_cast<ShipEditorDialog*>(parent);
-				Assert(parentDialog);
-				_model = std::unique_ptr<PlayerOrdersDialogModel>(new PlayerOrdersDialogModel(this,
-					viewport,
-					parentDialog->getIfMultipleShips()));
 
 				ui->setupUi(this);
 				connect(this, &QDialog::accepted, _model.get(), &PlayerOrdersDialogModel::apply);
-				connect(this, &QDialog::rejected, _model.get(), &PlayerOrdersDialogModel::reject);
+				connect(ui->cancelButton, &QPushButton::clicked, this, &PlayerOrdersDialog::rejectHandler);
 				for (size_t i = 0; i < _model->getAcceptedOrders().size(); i++) {
 					//i == 0 check added to avoid culling first entry where getAcceptedOrders returns 0
 					if (_model->getAcceptedOrders()[i] || i == 0) {
@@ -43,30 +39,15 @@ namespace fso {
 				resize(QDialog::sizeHint());
 			}
 			PlayerOrdersDialog::~PlayerOrdersDialog() = default;
-			void PlayerOrdersDialog::closeEvent(QCloseEvent* event)
+			void PlayerOrdersDialog::closeEvent(QCloseEvent* e)
 			{
-				if (_model->query_modified()) {
-					auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-						{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-					if (button == DialogButton::Cancel) {
-						event->ignore();
-						return;
-					}
-
-					if (button == DialogButton::Yes) {
-						accept();
-						return;
-					}
-				}
-
-				QDialog::closeEvent(event);
+				if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+					e->ignore();
+				};
 			}
-			void PlayerOrdersDialog::showEvent(QShowEvent* e)
+			void PlayerOrdersDialog::rejectHandler()
 			{
-				_model->initialiseData(parentDialog->getIfMultipleShips());
-
-				QDialog::showEvent(e);
+				this->close();
 			}
 			void PlayerOrdersDialog::updateUI()
 			{

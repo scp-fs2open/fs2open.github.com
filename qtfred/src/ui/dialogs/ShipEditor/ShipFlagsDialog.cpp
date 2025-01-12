@@ -3,7 +3,7 @@
 #include "ui_ShipFlagsDialog.h"
 
 #include <ui/util/SignalBlockers.h>
-
+#include<mission/util.h>
 #include <QCloseEvent>
 
 namespace fso {
@@ -17,6 +17,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 
 	connect(this, &QDialog::accepted, _model.get(), &ShipFlagsDialogModel::apply);
+	connect(ui->cancelButton, &QPushButton::clicked, this, &ShipFlagsDialog::rejectHandler);
 	connect(this, &QDialog::rejected, _model.get(), &ShipFlagsDialogModel::reject);
 
 
@@ -100,35 +101,16 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 
 ShipFlagsDialog::~ShipFlagsDialog() = default;
 
-void ShipFlagsDialog::closeEvent(QCloseEvent* event)
+void ShipFlagsDialog::closeEvent(QCloseEvent* e)
 {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
-void ShipFlagsDialog::showEvent(QShowEvent* event)
+void ShipFlagsDialog::rejectHandler()
 {
-		_model->initializeData();
-
-	QDialog::showEvent(event);
+	this->close();
 }
-
 void ShipFlagsDialog::updateUI()
 {
 	util::SignalBlockers blockers(this);

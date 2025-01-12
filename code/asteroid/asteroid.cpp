@@ -629,7 +629,7 @@ void asteroid_create_all()
 		return;
 	}
 
-	int max_asteroids = Asteroid_field.num_initial_asteroids; // * (1.0f - 0.1f*(MAX_DETAIL_LEVEL-Detail.asteroid_density)));
+	int max_asteroids = Asteroid_field.num_initial_asteroids; // * (1.0f - 0.1f*(MAX_DETAIL_VALUE-Detail.asteroid_density)));
 
 	int num_debris_types = 0;
 

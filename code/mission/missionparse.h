@@ -57,6 +57,7 @@ extern const gameversion::version LEGACY_MISSION_VERSION;
 // a "soft version bump" rather than a hard bump because not all missions are affected.
 extern bool check_for_23_3_data();
 extern bool check_for_24_1_data();
+extern bool check_for_24_3_data();
 
 #define WING_PLAYER_BASE	0x80000  // used by Fred to tell ship_index in a wing points to a player
 
@@ -331,6 +332,9 @@ typedef struct texture_replace {
 } texture_replace;
 
 extern SCP_vector<texture_replace> Fred_texture_replacements;
+
+// which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
+extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
 
 typedef struct alt_class {
 	int ship_class;				

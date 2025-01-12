@@ -923,6 +923,7 @@ enum : int {
 	OP_GOOD_PRIMARY_TIME,	// plieblang
 	OP_SET_SKYBOX_ALPHA,	// Goober5000
 	OP_NEBULA_SET_RANGE,	// Goober5000
+	OP_SET_SQUADRON_WINGS,	// Goober5000
 	
 	// OP_CATEGORY_AI
 	// defined for AI goals
@@ -1281,10 +1282,12 @@ enum sexp_error_check
 // numbers used in special_training_check() function
 #define SPECIAL_CHECK_TRAINING_FAILURE	2000
 
-typedef struct sexp_ai_goal_link {
-	int ai_goal;
+enum ai_goal_mode : uint8_t;
+
+struct sexp_ai_goal_link {
+	ai_goal_mode ai_goal;
 	int op_code;
-} sexp_ai_goal_link;
+};
 
 
 enum class sexp_oper_type
