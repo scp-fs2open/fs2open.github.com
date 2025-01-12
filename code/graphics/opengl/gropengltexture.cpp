@@ -51,15 +51,37 @@ extern int ENVMAP;
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
 																		                { 1, {"Trilinear", 1678}}};
 
+static void parse_texture_filtering_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	std::transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"bilinear", []() { GL_mipmap_filter = 0; }},
+		{"trilinear", []() { GL_mipmap_filter = 1; }}};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
+	}
+}
+
 static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
                      std::pair<const char*, int>{"Texture Filtering", 1763},
                      std::pair<const char*, int>{"Texture filtering option", 1764})
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(TextureFilteringValues)
-                     .default_val(0)
+                     .default_func([]() {return 0;})
                      .bind_to_once(&GL_mipmap_filter)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_texture_filtering_func)
                      .finish();
 
 static SCP_vector<float> anisotropic_value_enumerator()

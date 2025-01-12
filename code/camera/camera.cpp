@@ -55,7 +55,7 @@ APPLY_TO_FOV_T(+, add)
 APPLY_TO_FOV_T(-, sub)
 
 // Used to set the default value for in-game options
-static constexpr float fov_default = DEFAULT_FOV;
+static float fov_default = DEFAULT_FOV;
 
 static SCP_string fov_display(float val)
 {
@@ -64,6 +64,15 @@ static SCP_string fov_display(float val)
 	sprintf(out, u8"%.1f\u00B0", degrees);
 	return out;
 }
+
+static void parse_fov_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.436332f, 1.5708f);
+	fov_default = value;
+}
+
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 std::pair<const char*, int>{"Field Of View", 1703},
 					 std::pair<const char*, int>{"The vertical field of view", 1704})
@@ -74,9 +83,10 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					      return true;
 					 })
 					 .display(fov_display)
-					 .default_val(fov_default)
+					 .default_func([]() { return fov_default; })
 					 .level(options::ExpertLevel::Advanced)
 					 .importance(60)
+					 .parser(parse_fov_func)
 					 .finish();
 
 bool Use_cockpit_fov = false;
@@ -85,7 +95,7 @@ auto CockpitFOVToggleOption = options::OptionBuilder<bool>("Graphics.CockpitFOVT
 					 std::pair<const char*, int>{"Cockpit FOV Toggle", 1838},
 					 std::pair<const char*, int>{"Whether or not to use a different FOV for cockpit rendering from normal rendering", 1839})
 					 .category(std::make_pair("Graphics", 1825))
-					 .default_val(false)
+					 .default_func(false)
 					 .change_listener([](bool val, bool) {
 					      if (!val) {
 					           COCKPIT_ZOOM_DEFAULT = VIEWER_ZOOM_DEFAULT;

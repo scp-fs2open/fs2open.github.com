@@ -104,14 +104,22 @@ DCF(light,"Changes lighting parameters")
 // used by In-Game Options menu
 static bool DeferredLightingEnabled = true;
 
+static void parse_deferred_lighting_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	DeferredLightingEnabled = enabled;
+}
+
 static auto DeferredLightingOption = options::OptionBuilder<bool>("Graphics.DeferredLighting",
                   std::pair<const char*, int>{"Deferred Lighting", 1782},
                   std::pair<const char*, int>{"Enables or disables deferred lighting", 1783})
                   .category(std::make_pair("Graphics", 1825))
-                  .default_val(true)
+                  .default_func([]() { return DeferredLightingEnabled;})
                   .level(options::ExpertLevel::Advanced)
                   .bind_to_once(&DeferredLightingEnabled)
                   .importance(60)
+                  .parser(parse_deferred_lighting_func)
                   .finish();
 
 
