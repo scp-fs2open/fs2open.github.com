@@ -39,10 +39,9 @@
 #define MIN_DOT_TO_ATTACK_MOVING_SUBSYS	0.97f
 
 // AI BIG MAGIC NUMBERS
+// Select strafing options are now exposed to modders  --wookieejedi
 #define	STRAFE_RETREAT_COLLIDE_TIME	2.0		// when anticipated collision time is less than this, begin retreat
 #define	STRAFE_RETREAT_COLLIDE_DIST	100		// when perpendicular distance to *surface* is less than this, begin retreat
-#define	STRAFE_RETREAT_BOX_DIST			300		// distance beyond the bounding box to retreat
-#define STRAFE_MAX_UNHIT_TIME		20		// Maximum amount of time to stay in strafe mode if not hit
 
 #define	EVADE_BOX_BASE_DISTANCE			300		// standard distance to end evade submode
 #define	EVADE_BOX_MIN_DISTANCE			200		// minimun distance to end evade submode, after long time
@@ -719,18 +718,20 @@ void ai_big_chase_attack(ai_info *aip, ship_info *sip, vec3d *enemy_pos, float d
 						}
 					}
 			}
-			
-			// Since ship is moving slowly and attacking a large ship, scan if enemy fighters are near, if so
-			// then enter strafe mode
-			if ( ai_big_maybe_start_strafe(aip, sip) ) {
-				aip->previous_mode = aip->mode;
-				aip->mode = AIM_STRAFE;
-				aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
-				ai_big_strafe_position();
-				return;
-			}
 
 		} // end if ( Pl_objp->phys_info.speed < 3.0f ) 
+
+		// if moving slowly and attacking a large ship, 
+		// check if need to enter standard strafe mode
+		// including ai_profile flag and if enemy fighters are near
+		if (Pl_objp->phys_info.speed < The_mission.ai_profile->standard_strafe_when_below_speed && 
+			(The_mission.ai_profile->flags[AI::Profile_Flags::Standard_strafe_used_more] || ai_big_maybe_start_strafe(aip, sip))) {
+			aip->previous_mode = aip->mode;
+			aip->mode = AIM_STRAFE;
+			aip->submode_parm0 = Missiontime;	// use parm0 as time strafe mode entered (i.e. MODE start time)
+			ai_big_strafe_position();
+			return;
+		}
 
 		//Maybe enter glide strafe (check every 8 seconds, on a different schedule for each ship)
 		if ((sip->can_glide == true) && !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && static_randf((Missiontime + static_rand(aip->shipnum)) >> 19) < aip->ai_glide_strafe_percent) {
@@ -1439,7 +1440,7 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 
 	//if ((dot_to_enemy > 1.0f - 0.1f * En_objp->radius/(dist_to_enemy + 1.0f)) && (Pl_objp->phys_info.speed > dist_to_enemy/5.0f))
 
-	// Inside 2 sec retreat, setting goal point to box point + 300m
+	// Inside 2 sec retreat, setting goal point to box point + strafe_retreat_box_dist
 	// If collision, use std collision resolution.
 	if ( !(aip->ai_flags[AI::AI_Flags::Kamikaze]) && ((aip->ai_flags[AI::AI_Flags::Target_collision]) || (time_to_target < STRAFE_RETREAT_COLLIDE_TIME) || (dist_normal_to_target < STRAFE_RETREAT_COLLIDE_DIST + speed_to_dist_penalty)) ) {
 		if (aip->ai_flags[AI::AI_Flags::Target_collision]) {
@@ -1447,13 +1448,13 @@ static int ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 			aip->ai_flags.remove(AI::AI_Flags::Target_collision);
 			big_ship_collide_recover_start(Pl_objp, En_objp, nullptr);
 		} else {
-			// too close for comfort so fly to box point + 300
+			// too close for comfort so fly to box point + strafe_retreat_box_dist
 			aip->submode = AIS_STRAFE_RETREAT1;
 			aip->submode_start_time = Missiontime;
 
 			int is_inside;
 			vec3d goal_point;
-			get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, STRAFE_RETREAT_BOX_DIST);
+			get_world_closest_box_point_with_delta(&goal_point, En_objp, &Pl_objp->pos, &is_inside, The_mission.ai_profile->strafe_retreat_box_dist);
 
 			// set goal point
 			aip->goal_point = goal_point;
@@ -1568,8 +1569,7 @@ void ai_big_strafe_attack()
 	accelerate_ship(aip, accel);
 
 	// if haven't been hit in quite a while, leave strafe mode
-	fix long_enough;
-	long_enough = F1_0 * STRAFE_MAX_UNHIT_TIME;
+	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (last_hit > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}
@@ -1641,7 +1641,7 @@ void ai_big_strafe_glide_attack()
 		//Keep going until we are too far away.
 		//If we are still on approach but too far away, this will still trigger. This will allow us to reposition the target
 		//point and allow for a "jinking" effect.
-		if (target_ship_dist > (STRAFE_RETREAT_BOX_DIST + target_objp->radius) &&
+		if (target_ship_dist > (The_mission.ai_profile->strafe_retreat_box_dist + target_objp->radius) &&
 			Missiontime - aip->submode_start_time > i2f(GLIDE_STRAFE_MIN_TIME)) {
 			//This checks whether we are moving toward the target or away from it.  If moving towards, we reset the stage so that we
 			//pick a new attack vector (jinking). If moving away, we're at the end of a run so do a full reset (possibly allowing a 
@@ -1691,7 +1691,7 @@ void ai_big_strafe_glide_attack()
 
 	// if haven't been hit in quite a while, leave strafe mode
 	// (same as ai_big_strafe_attack)
-	fix long_enough = F1_0 * STRAFE_MAX_UNHIT_TIME;
+	fix long_enough = fl2f(The_mission.ai_profile->strafe_max_unhit_time);
 	if ( (Missiontime - aip->last_hit_time > long_enough) && ( (Missiontime - aip->submode_parm0) > long_enough) ) {
 		ai_big_switch_to_chase_mode(aip);
 	}

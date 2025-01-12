@@ -126,6 +126,11 @@ public:
 	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
 	float rot_fac_multiplier_ply_collisions; 
 
+	// Strafing options  --wookieejedi
+	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
+	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
+	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
+
     void reset();
 };
 

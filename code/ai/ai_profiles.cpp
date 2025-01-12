@@ -655,6 +655,20 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix avoid-shockwave bugs:", AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 
+				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
+
+				if (optional_string("$standard strafe triggers under this speed:")) {
+					stuff_float(&profile->standard_strafe_when_below_speed);
+				}
+
+				if (optional_string("$strafe distance from target bounding box:")) {
+					stuff_float(&profile->strafe_retreat_box_dist);
+				}
+
+				if (optional_string("$strafe stops after time unhit:")) {
+					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -746,6 +760,10 @@ void ai_profile_t::reset()
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 	turret_target_recheck_time = 2000.0f;
 	rot_fac_multiplier_ply_collisions = 0.0f;
+
+	standard_strafe_when_below_speed = 3.0f;
+	strafe_retreat_box_dist = 300.0f;
+	strafe_max_unhit_time = 20.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
