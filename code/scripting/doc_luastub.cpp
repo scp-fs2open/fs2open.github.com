@@ -437,10 +437,6 @@ void OutputElement(FILE* fp, const std::unique_ptr<DocumentationElement>& el, co
 		return;
 	}
 
-	if (el->name == "waypointlist") {
-		mprintf((""));
-	}
-
 	// First output any child libraries, excluding table-like libraries
 	for (const auto& child : el->children) {
 		if (child->type == ElementType::Library && !isTableLikeLibrary(child.get())) {
@@ -488,7 +484,7 @@ void OutputElement(FILE* fp, const std::unique_ptr<DocumentationElement>& el, co
 	// This allows the Lua environment to pick them up as valid variables with defined
 	// return types. Scripters should refer to scripting.html to know when they are valid
 	if (el->name == "HookVariables") {
-		for (const auto var : Hook_variables) {
+		for (const auto& var : Hook_variables) {
 			SCP_string type = var.second;
 			if (type.find("function") != SCP_string::npos) {
 				parseFunctionSignature(type);
