@@ -1674,7 +1674,7 @@ void beam_render_muzzle_glow(beam *b)
 	bool player_show_ship_model = (
 		b->objp == Player_obj  
 		&& Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model] 
-		&& (!Show_ship_only_if_cockpits_enabled || (Show_ship_only_if_cockpits_enabled && Cockpit_active)));
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
 	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
 		return;
 	}

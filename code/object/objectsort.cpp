@@ -236,7 +236,7 @@ void obj_render_all(const std::function<void(object*)>& render_function, bool *d
 			&& (obj->type == OBJ_SHIP)
 			&& c_viewer
 			&& (Ship_info[Ships[obj->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model])
-			&& (!Show_ship_only_if_cockpits_enabled || (Show_ship_only_if_cockpits_enabled && Cockpit_active)) )
+			&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) )
 		{
 			(*draw_viewer_last) = true;
 			continue;
