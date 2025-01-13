@@ -611,11 +611,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->model_instance_num = hull_flag ? model_create_instance(objnum, db->model_num) : -1;
 
 	// ensure that any texture replace on parent ship gets copied to debris --wookieejedi
-	polymodel_instance* pmi_parent = model_get_instance(Objects[parent_objnum].instance);
-	polymodel_instance* pmi_debris = model_get_instance(db->model_instance_num);
-	if (pmi_parent->texture_replace != nullptr) {
-		pmi_debris->texture_replace = std::make_shared<model_texture_replace>(*pmi_parent->texture_replace);
-	}
+	model_get_instance(db->model_instance_num)->texture_replace = model_get_instance(Objects[parent_objnum].instance)->texture_replace;
 
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
