@@ -1392,7 +1392,7 @@ int popup_conditional_do(int (*condition)(), const char *text)
 			auto pi = &Popup_info;
 			auto paramList = scripting::hook_param_list(
 				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
-					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? true : false;
+					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals);
 					return luacpp::LuaValueList{};
 					})),
 				scripting::hook_param("Text", 's', pi->raw_text));
