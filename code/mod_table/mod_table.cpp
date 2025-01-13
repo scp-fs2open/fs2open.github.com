@@ -123,6 +123,7 @@ std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
 bool Show_ship_casts_shadow;
 bool Cockpit_shares_coordinate_space;
+bool Show_ship_only_if_cockpits_enabled;
 bool Custom_briefing_icons_always_override_standard_icons;
 float Min_pixel_size_thruster;
 float Min_pixel_size_beam;
@@ -872,6 +873,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Cockpit_shares_coordinate_space);
 			}
 
+			if (optional_string("$Show Ship enabled only if Cockpits enabled:")) {
+				stuff_boolean(&Show_ship_only_if_cockpits_enabled);
+			}
+
 			if (optional_string("$Minimum Pixel Size Thrusters:")) {
 				stuff_float(&Min_pixel_size_thruster);
 			}
@@ -1604,6 +1609,7 @@ void mod_table_reset()
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
 	Show_ship_casts_shadow = false;
 	Cockpit_shares_coordinate_space = false;
+	Show_ship_only_if_cockpits_enabled = false;
 	Custom_briefing_icons_always_override_standard_icons = false;
 	Min_pixel_size_thruster = 0.0f;
 	Min_pixel_size_beam = 0.0f;

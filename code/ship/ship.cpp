@@ -8028,7 +8028,9 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
 	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
-	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
+	const bool renderShipModel = ( 
+		sip->flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
 			|| !(Viewer_mode & VM_EXTERNAL));
 	Cockpit_active = renderCockpitModel;
