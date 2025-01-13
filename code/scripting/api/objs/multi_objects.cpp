@@ -244,7 +244,7 @@ ADE_VIRTVAR(Description, l_Channel, nullptr, "The description of the channel", "
 	return ade_set_args(L, "s", current.getChannel()->desc);
 }
 
-ADE_VIRTVAR(NumPlayers, l_Channel, nullptr, "The number of players in the channel", "string", "The number of players")
+ADE_VIRTVAR(NumPlayers, l_Channel, nullptr, "The number of players in the channel", "number", "The number of players")
 {
 	channel_h current;
 	if (!ade_get_args(L, "o", l_Channel.Get(&current))) {
@@ -261,7 +261,7 @@ ADE_VIRTVAR(NumPlayers, l_Channel, nullptr, "The number of players in the channe
 	return ade_set_args(L, "i", static_cast<int>(current.getChannel()->num_users));
 }
 
-ADE_VIRTVAR(NumGames, l_Channel, nullptr, "The number of games the channel", "string", "The number of games")
+ADE_VIRTVAR(NumGames, l_Channel, nullptr, "The number of games the channel", "number", "The number of games")
 {
 	channel_h current;
 	if (!ade_get_args(L, "o", l_Channel.Get(&current))) {

@@ -2762,7 +2762,7 @@ ADE_FUNC(getPlayerChannel,
 	"string",
 	"Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if "
 	"channel is private or player is not found.",
-	"string string",
+	"string, string",
 	"The response string and the player's channel")
 {
 	const char* plr_name;
@@ -3644,8 +3644,8 @@ ADE_FUNC(getCountdownTime,
 	l_UserInterface_MultiSync,
 	nullptr,
 	"Gets the current countdown time. Will be -1 before the countdown starts otherwise will be the num seconds until missions starts.",
-	nullptr,
-	nullptr)
+	"number",
+	"The countdown in seconds")
 {
 	SCP_UNUSED(L);
 

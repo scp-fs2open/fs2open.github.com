@@ -95,11 +95,6 @@ ADE_FUNC(__len, l_Graphics_Cameras, NULL, "Gets number of cameras", "number", "N
 //****SUBLIBRARY: Graphics/Fonts
 ADE_LIB_DERIV(l_Graphics_Fonts, "Fonts", nullptr, "Font library", l_Graphics);
 
-ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
-{
-	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
-}
-
 ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
 {
 	if (lua_isnumber(L, 2))
@@ -127,6 +122,11 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 
 		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFontIndex(s))));
 	}
+}
+
+ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
+{
+	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
 }
 
 ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
