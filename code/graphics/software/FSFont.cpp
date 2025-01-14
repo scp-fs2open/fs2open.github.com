@@ -21,6 +21,11 @@ void removeFontMultiplierOption()
 	options::OptionsManager::instance()->removeOption(FontScaleFactor);
 }
 
+float get_font_scale_factor()
+{
+	return FontScaleFactor->getValue();
+}
+
 namespace font
 {
 
