@@ -374,21 +374,31 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->use_3d_warp = true;
 			}
 
-			if (optional_string("$Bobboau anim:")) {
-				stuff_boolean(&fi->bobboau_anim);
-			} else {
-				fi->bobboau_anim = false;
+			if (optional_string("$Flare anim:")) {
+				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
+				case 0:
+					fi->style = warp_flare_anim::CLASSIC;
+					break;
+				case 1:
+					fi->style = warp_flare_anim::ENHANCED;
+					break;
+				case 2:
+					fi->style = warp_flare_anim::CINEMATIC;
+					break;
+				}
+			} else if (first_time) {
+				fi->style = warp_flare_anim::CLASSIC;
 			}
 
 			if (optional_string("$Warp size ratio:")) {
 				stuff_float(&fi->warp_size_ratio);
-			} else {
+			} else if (first_time) {
 				fi->warp_size_ratio = 1.0f;
 			}
 
 			if (optional_string("$Flare size ratio:")) {
 				stuff_float(&fi->flare_size_ratio);
-			} else {
+			} else if (first_time) {
 				fi->flare_size_ratio = 1.5f;
 			}
 
@@ -411,50 +421,31 @@ static void parse_fireball_tbl(const char *table_filename)
 				// for convenience. These shouldn't need to be faster than a full
 				// rotation per second, which is already ridiculous.
 				if (optional_string("+Rotation anim:")) {
-					float rot_start_slope, rot_end_slope, rot_scale;
+					stuff_float_list(fi->rot_anim, 3);
 
-					stuff_float(&rot_start_slope);
-					stuff_float(&rot_end_slope);
-					stuff_float(&rot_scale);
-
-					// Multiples of PI so the range is [0, 2*PI)
-					CLAMP(rot_start_slope, 0, 2);
-					CLAMP(rot_end_slope, 0, 2);
-					rot_scale = MAX(0.0f, rot_scale);
-
-					fi->rot_anim[0] = rot_start_slope;
-					fi->rot_anim[1] = rot_end_slope;
-					fi->rot_anim[2] = rot_scale;
+					CLAMP(fi->rot_anim[0], 0.0f, 2.0f);
+					CLAMP(fi->rot_anim[1], 0.0f, 2.0f);
+					fi->rot_anim[2] = MAX(0.0f, fi->rot_anim[2]);
 				} else {
-					// PI / 2.75f, PI / 10.0f, 4.5f
-					// The
+					// PI / 2.75f, PI / 10.0f, 2.0f
 					fi->rot_anim[0] = 0.365f;
 					fi->rot_anim[1] = 0.083f;
 					fi->rot_anim[2] = 2.0f;
 				}
 
 				if (optional_string("+Frame anim:")) {
-					float frame_start_slope, frame_end_slope, frame_scale;
-
-					stuff_float(&frame_start_slope);
-					stuff_float(&frame_end_slope);
-					stuff_float(&frame_scale);
+					stuff_float_list(fi->frame_anim, 3);
 
 					// A frame rate that is 4 times the normal speed is ridiculous
-					CLAMP(frame_start_slope, 0, 4);
-					CLAMP(frame_end_slope, 1, 4);
-					frame_scale = MAX(0.0f, frame_scale);
-
-					fi->frame_anim[0] = frame_start_slope;
-					fi->frame_anim[1] = frame_end_slope;
-					fi->frame_anim[2] = frame_scale;
+					CLAMP(fi->frame_anim[0], 0, 4);
+					CLAMP(fi->frame_anim[1], 1, 4);
+					fi->frame_anim[2] = MAX(0.0f, fi->frame_anim[2]);
 				} else {
-					// 1.0f, 1.0f, 5.0f
 					fi->frame_anim[0] = 1.0f;
 					fi->frame_anim[1] = 1.0f;
 					fi->frame_anim[2] = 3.0f;
 				}
-			} else {
+			} else if (first_time) {
 				fi->cinematic = false;
 			}
 		}
@@ -1216,9 +1207,9 @@ void fireball_render(object* obj, model_draw_list *scene)
 			matrix* warp_orientation;
 
 			// Flare animation selection
-			if (fi->bobboau_anim) {
+			if (fi->style == warp_flare_anim::ENHANCED) {
 				flare_rad += powf((2.0f * percent_life) - 1.0f, 24.0f) * obj->radius * 1.5f * fi->flare_size_ratio;
-			} else if (fi->cinematic) {
+			} else if (fi->style == warp_flare_anim::CINEMATIC) {
 				flare_rad *= fireball_wormhole_flare_radius(fb);
 			} else {
 				flare_rad *= fireball_wormhole_intensity(fb);

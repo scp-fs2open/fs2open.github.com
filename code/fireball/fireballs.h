@@ -39,6 +39,14 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
+// Gamma39er: Flare animation enum. Add new animation types here.
+enum class warp_flare_anim
+{
+	CLASSIC,
+	ENHANCED,
+	CINEMATIC
+};
+
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
 	char	filename[MAX_FILENAME_LEN];
@@ -55,7 +63,9 @@ typedef struct fireball_info {
 
 	bool	use_3d_warp;
 	bool	fireball_used;
-	bool    bobboau_anim;
+	// bool    bobboau_anim;
+
+	warp_flare_anim style;
 
 	// Customize how large the warp and it's flare are.
 	float warp_size_ratio;
