@@ -32,14 +32,15 @@
 // ---------------------------------------------------------------------------------------------------------------------------------------
 // MISSION FICTION VIEWER DEFINES/VARS
 //
-#define NUM_FVW_SETTINGS	2
-const char *Fiction_viewer_ui_names[NUM_FVW_SETTINGS] =
+constexpr int NUM_FVW_LAYOUTS = 2;
+
+const char *Fiction_viewer_ui_names[NUM_FVW_LAYOUTS] =
 {
 	"FS2",	// FreeSpace 2
 	"WCS"	// Wing Commander Saga
 };
 
-const char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_screen_filename[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"FictionViewer",		// GR_640
@@ -51,7 +52,7 @@ const char *Fiction_viewer_screen_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS]
 	}
 };
 
-const char *Fiction_viewer_screen_mask[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_screen_mask[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"FictionViewer-m",		// GR_640
@@ -63,7 +64,7 @@ const char *Fiction_viewer_screen_mask[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
 	}
 };
 
-int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+int Fiction_viewer_text_coordinates[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS][4] =
 {
 	// standard FS2-style interface
 	{
@@ -93,7 +94,7 @@ int Fiction_viewer_text_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
 // the xt and yt fields aren't normally used for width and height,
 // but the fields would go unused here and this is more
 // convenient for initialization
-ui_button_info Fiction_viewer_buttons[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][NUM_FVW_BUTTONS] =
+ui_button_info Fiction_viewer_buttons[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS][NUM_FVW_BUTTONS] =
 {
 	// standard FS2-style interface
 	{
@@ -124,7 +125,7 @@ ui_button_info Fiction_viewer_buttons[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][NUM_
 	}
 };
 
-const char *Fiction_viewer_slider_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Fiction_viewer_slider_filename[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	// standard FS2-style interface
 	{
@@ -138,7 +139,7 @@ const char *Fiction_viewer_slider_filename[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS]
 	}
 };
 
-int Fiction_viewer_slider_coordinates[NUM_FVW_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+int Fiction_viewer_slider_coordinates[NUM_FVW_LAYOUTS][GR_NUM_RESOLUTIONS][4] =
 {
 	// standard FS2-style interface
 	{
@@ -314,7 +315,7 @@ void fiction_viewer_init()
 		if (Fiction_viewer_ui < 0)
 		{
 			// no UI specified; use the last UI in the array that has an available background bitmap
-			for (Fiction_viewer_ui = NUM_FVW_SETTINGS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
+			for (Fiction_viewer_ui = NUM_FVW_LAYOUTS - 1; Fiction_viewer_ui >= 0; Fiction_viewer_ui--)
 			{
 				Fiction_viewer_bitmap = bm_load(Fiction_viewer_screen_filename[Fiction_viewer_ui][gr_screen.res]);
 				if (Fiction_viewer_bitmap >= 0)
@@ -514,7 +515,7 @@ bool mission_has_fiction()
 int fiction_viewer_ui_name_to_index(const char *ui_name)
 {
 	int i;
-	for (i = 0; i < NUM_FVW_SETTINGS; i++)
+	for (i = 0; i < NUM_FVW_LAYOUTS; i++)
 	{
 		if (!stricmp(ui_name, Fiction_viewer_ui_names[i]))
 		{

@@ -77,8 +77,7 @@ typedef struct wl_bitmap_group
 #define WEAPON_ICON_FRAME_SELECTED			2
 #define WEAPON_ICON_FRAME_DISABLED			3
 
-
-#define NUM_WEAPON_SETTINGS	2
+constexpr int NUM_WL_LAYOUTS = 2;
 
 #define MAX_WEAPON_BUTTONS	8
 #define MIN_WEAPON_BUTTONS	7
@@ -132,7 +131,7 @@ static wl_buttons Buttons[GR_NUM_RESOLUTIONS][MAX_WEAPON_BUTTONS] = {
 };
 
 
-static const char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_single[NUM_WL_LAYOUTS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -143,7 +142,7 @@ static const char *Wl_mask_single[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static const char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_mask_multi[NUM_WL_LAYOUTS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadoutmulti-m",
 		"2_weaponloadoutmulti-m"
@@ -155,7 +154,7 @@ static const char *Wl_mask_multi[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
 	}
 };
 
-static const char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Wl_loadout_select_mask[NUM_WL_LAYOUTS][GR_NUM_RESOLUTIONS] = {
 	{
 		"weaponloadout-m",
 		"2_weaponloadout-m"
@@ -167,7 +166,7 @@ static const char *Wl_loadout_select_mask[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTION
 };
 
 
-static const char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_background_fname[NUM_WL_LAYOUTS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadout",
 		"2_WeaponLoadout"
@@ -178,7 +177,7 @@ static const char *Weapon_select_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RE
 	}
 };
 
-static const char *Weapon_select_multi_background_fname[NUM_WEAPON_SETTINGS][GR_NUM_RESOLUTIONS] = {
+static const char *Weapon_select_multi_background_fname[NUM_WL_LAYOUTS][GR_NUM_RESOLUTIONS] = {
 	{
 		"WeaponLoadoutMulti",
 		"2_WeaponLoadoutMulti"
