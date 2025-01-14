@@ -337,7 +337,7 @@ extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool a
 extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
-char *split_str_once(char *src, int max_pixel_w);
+char *split_str_once(char *src, int max_pixel_w, float scale = 1.0f);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  int* n_chars,
