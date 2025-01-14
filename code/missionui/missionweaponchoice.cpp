@@ -93,6 +93,32 @@ constexpr int NUM_WL_LAYOUTS = 2;
 #define WL_BUTTON_MULTI_LOCK				6
 #define WL_BUTTON_APPLY_ALL					7
 
+// mask regions for icons in the scrollable lists
+// NOLINTBEGIN(modernize-macro-to-enum)
+#define ICON_PRIMARY_0				28
+#define ICON_PRIMARY_1				29
+#define ICON_PRIMARY_2				30
+#define ICON_PRIMARY_3				31
+#define ICON_SECONDARY_0			10
+#define ICON_SECONDARY_1			11
+#define ICON_SECONDARY_2			12
+#define ICON_SECONDARY_3			13
+// NOLINTEND(modernize-macro-to-enum)
+
+constexpr int NUM_PRIMARY_MASK_REGIONS = 4;
+constexpr int NUM_SECONDARY_MASK_REGIONS = 4;
+
+// mask regions for icons that sit above the ship
+// NOLINTBEGIN(modernize-macro-to-enum)
+#define ICON_SHIP_PRIMARY_0		32
+#define ICON_SHIP_PRIMARY_1		33
+#define ICON_SHIP_PRIMARY_2		34
+#define ICON_SHIP_SECONDARY_0		35
+#define ICON_SHIP_SECONDARY_1		36
+#define ICON_SHIP_SECONDARY_2		37
+#define ICON_SHIP_SECONDARY_3		38
+// NOLINTEND(modernize-macro-to-enum)
+
 extern int anim_timer_start;
 
 int Weapon_select_overlay_id = -1;
@@ -567,7 +593,7 @@ void weapon_button_do(int i)
 {
 	switch ( i ) {
 			case WL_BUTTON_SCROLL_PRIMARY_UP:
-				if ( common_scroll_up_pressed(&Plist_start, Plist_size, 4) ) {
+				if ( common_scroll_up_pressed(&Plist_start, Plist_size, NUM_PRIMARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -575,7 +601,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_PRIMARY_DOWN:
-				if ( common_scroll_down_pressed(&Plist_start, Plist_size, 4) ) {
+				if ( common_scroll_down_pressed(&Plist_start, Plist_size, NUM_PRIMARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -583,7 +609,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_UP:
-				if ( common_scroll_up_pressed(&Slist_start, Slist_size, 4) ) {
+				if ( common_scroll_up_pressed(&Slist_start, Slist_size, NUM_SECONDARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -591,7 +617,7 @@ void weapon_button_do(int i)
 			break;
 
 			case WL_BUTTON_SCROLL_SECONDARY_DOWN:
-				if ( common_scroll_down_pressed(&Slist_start, Slist_size, 4) ) {
+				if ( common_scroll_down_pressed(&Slist_start, Slist_size, NUM_SECONDARY_MASK_REGIONS) ) {
 					gamesnd_play_iface(InterfaceSounds::SCROLL);
 				} else {
 					gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
@@ -1245,26 +1271,27 @@ void maybe_select_wl_slot(int block, int slot)
  */
 void maybe_select_new_weapon(int index)
 {
-	int weapon_class;
+	int region_index, weapon_class;
 
 	// if a weapon is being carried, do nothing
 	if ( wl_icon_being_carried() ) {
 		return;
 	}
 
-	int region_index = ICON_PRIMARY_0+index;
-	if ( index > 3 ) {
-		region_index = ICON_SECONDARY_0 + (index - 4);
+	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
+		region_index = ICON_PRIMARY_0 + index;
+	} else {
+		region_index = ICON_SECONDARY_0 + (index - NUM_PRIMARY_MASK_REGIONS);
 	}
 
 	if ( Wl_mouse_down_on_region != region_index ) {
 		return;
 	}
 
-	if ( index < 4 ) {
+	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
 		weapon_class = Plist[Plist_start+index];
 	} else {
-		weapon_class = Slist[Slist_start+index-4];
+		weapon_class = Slist[Slist_start+index-NUM_PRIMARY_MASK_REGIONS];
 	}
 
 	if ( weapon_class >= 0 ) {
@@ -1880,7 +1907,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 					if ( Weapon_info[wi_index].subtype == WP_MISSILE )
 					{
 						int secondary_bank_index;
-						secondary_bank_index = bank-3;
+						secondary_bank_index = bank - MAX_SHIP_PRIMARY_BANKS;
 						if ( secondary_bank_index < 0 ) {
 							Int3();
 							secondary_bank_index = 0;
@@ -2257,9 +2284,12 @@ void do_mouse_over_list_weapon(int index)
 {
 	Hot_weapon_icon = index;
 
-	int region_index = ICON_PRIMARY_0+index;
-	if ( index > 3 ) {
-		region_index = ICON_SECONDARY_0 + (index - 4);
+	int region_index;
+
+	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
+		region_index = ICON_PRIMARY_0 + index;
+	} else {
+		region_index = ICON_SECONDARY_0 + (index - NUM_PRIMARY_MASK_REGIONS);
 	}
 	
 	if ( Wl_mouse_down_on_region != region_index ){
@@ -2315,10 +2345,10 @@ int do_mouse_over_ship_weapon(int index)
 
 	if ( wl_icon_being_carried() && is_moved ) {
 		if ( Weapon_info[Carried_wl_icon.weapon_class].subtype != WP_MISSILE ) {
-			if ( (index < 3) && (Wss_slots[Selected_wl_slot].wep_count[index] >= 0) ) 
+			if ( (index < MAX_SHIP_PRIMARY_BANKS) && (Wss_slots[Selected_wl_slot].wep_count[index] >= 0) )
 				Hot_weapon_bank = index;
 		} else {
-			if ( index >= 3 && ( Wss_slots[Selected_wl_slot].wep_count[index] >= 0) ) 
+			if ( index >= MAX_SHIP_PRIMARY_BANKS && ( Wss_slots[Selected_wl_slot].wep_count[index] >= 0) )
 				Hot_weapon_bank = index;
 		}
 	}
@@ -3187,14 +3217,14 @@ void draw_wl_icons()
 	count=0;
 	for ( i = Plist_start; i < Plist_size; i++ ) {
 		draw_wl_icon_with_number(count, Plist[i]);
-		if ( ++count > 3 )
+		if ( ++count >= NUM_PRIMARY_MASK_REGIONS )
 			break;
 	}
 
 	count=0;
 	for ( i = Slist_start; i < Slist_size; i++ ) {
-		draw_wl_icon_with_number(count+4, Slist[i]);
-		if ( ++count > 3 )
+		draw_wl_icon_with_number(count+NUM_PRIMARY_MASK_REGIONS, Slist[i]);
+		if ( ++count >= NUM_SECONDARY_MASK_REGIONS )
 			break;
 	}
 }
@@ -3222,10 +3252,10 @@ void wl_pick_icon_from_list(int index)
 		return;
 	}
 
-	if ( index < 4 ) {
+	if ( index < NUM_PRIMARY_MASK_REGIONS ) {
 		weapon_class = Plist[Plist_start+index];
 	} else {
-		weapon_class = Slist[Slist_start+index-4];
+		weapon_class = Slist[Slist_start+index-NUM_PRIMARY_MASK_REGIONS];
 	}
 
 	// there isn't a weapon there at all!
@@ -3256,7 +3286,7 @@ void pick_from_ship_slot(int num)
 {
 	int mx, my, *wep, *wep_count;
 		
-	Assert(num < 7);
+	Assert(num < MAX_SHIP_WEAPONS);
 
 	if ( Selected_wl_slot == -1 )
 		return;
@@ -3576,7 +3606,7 @@ void wl_saturate_bank(int ship_slot, int bank)
 		return;
 	}
 
-	max_count = wl_calc_missile_fit(slot->wep[bank], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[bank-3]);
+	max_count = wl_calc_missile_fit(slot->wep[bank], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[bank - MAX_SHIP_PRIMARY_BANKS]);
 	overflow = slot->wep_count[bank] - max_count;
 	if ( overflow > 0 ) {
 		Assert( Wl_pool != NULL );
@@ -3686,7 +3716,7 @@ int wl_swap_slot_slot(int from_bank, int to_bank, int ship_slot, interface_snd_i
 		// case 2a: secondaries are the same type
 		if ( slot->wep[from_bank] == slot->wep[to_bank] ) {
 			int dest_max, dest_can_fit, source_can_give;
-			dest_max = wl_calc_missile_fit(slot->wep[to_bank], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[to_bank-3]);
+			dest_max = wl_calc_missile_fit(slot->wep[to_bank], Ship_info[slot->ship_class].secondary_bank_ammo_capacity[to_bank - MAX_SHIP_PRIMARY_BANKS]);
 
 			dest_can_fit = dest_max - slot->wep_count[to_bank];
 
