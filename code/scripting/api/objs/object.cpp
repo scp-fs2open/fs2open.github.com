@@ -224,7 +224,7 @@ ADE_VIRTVAR(ModelInstance, l_Object, nullptr, "model instance used by this objec
 	if (ADE_SETTING_VAR)
 		LuaError(L, "Assigning model instances is not implemented");
 
-	int id = object_get_model_instance(objh->objp());
+	int id = object_get_model_instance_num(objh->objp());
 	if (id < 0)
 		return ADE_RETURN_NIL;
 

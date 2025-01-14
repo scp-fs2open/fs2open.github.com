@@ -5126,7 +5126,7 @@ void model_do_intrinsic_motions(object *objp)
 	// we are handling a specific object
 	if (objp)
 	{
-		int model_instance_num = object_get_model_instance(objp);
+		int model_instance_num = object_get_model_instance_num(objp);
 		if (model_instance_num >= 0)
 		{
 			auto obj_it = Intrinsic_motions.find(model_instance_num);

@@ -1601,8 +1601,8 @@ void obj_move_all(float frametime)
 			ship_move_subsystems(objp);
 
 		// do animation on this object
-		int model_instance_num = object_get_model_instance(objp);
-		if (model_instance_num > -1) {
+		int model_instance_num = object_get_model_instance_num(objp);
+		if (model_instance_num >= 0) {
 			polymodel_instance* pmi = model_get_instance(model_instance_num);
 			animation::ModelAnimation::stepAnimations(frametime, pmi);
 		}
@@ -2046,9 +2046,9 @@ int obj_get_by_signature(int sig)
 }
 
 /**
- * Gets object model
+ * Gets the model number for this object, or -1 if none
  */
-int object_get_model(const object *objp)
+int object_get_model_num(const object *objp)
 {
 	switch(objp->type)
 	{
@@ -2079,7 +2079,19 @@ int object_get_model(const object *objp)
 	return -1;
 }
 
-int object_get_model_instance(const object *objp)
+/**
+ * Gets the model for this object, or nullptr if none
+ */
+polymodel *object_get_model(const object *objp)
+{
+	int model_num = object_get_model_num(objp);
+	return model_num >= 0 ? model_get(model_num) : nullptr;
+}
+
+/**
+ * Gets the model instance number for this object, or -1 if none
+ */
+int object_get_model_instance_num(const object *objp)
 {
 	if (objp == nullptr)
 		return -1;
@@ -2117,6 +2129,15 @@ int object_get_model_instance(const object *objp)
 	}
 
 	return -1;
+}
+
+/**
+ * Gets the model instance for this object, or nullptr if none
+ */
+polymodel_instance *object_get_model_instance(const object *objp)
+{
+	int model_instance_num = object_get_model_instance_num(objp);
+	return model_instance_num >= 0 ? model_get_instance(model_instance_num) : nullptr;
 }
 
 bool obj_compare(object* left, object* right) {

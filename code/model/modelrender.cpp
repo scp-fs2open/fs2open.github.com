@@ -2731,7 +2731,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {
@@ -3033,7 +3033,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {

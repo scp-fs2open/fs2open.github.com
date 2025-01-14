@@ -15,7 +15,6 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
-#include "object/object.h"
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "physics/physics_state.h"
@@ -122,6 +121,8 @@ extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;
+class polymodel;
+struct polymodel_instance;
 
 class object
 {
@@ -356,8 +357,11 @@ void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
-int object_get_model(const object *objp);
-int object_get_model_instance(const object *objp);
+
+int object_get_model_num(const object *objp);
+polymodel *object_get_model(const object *objp);
+int object_get_model_instance_num(const object *objp);
+polymodel_instance *object_get_model_instance(const object *objp);
 
 void obj_render_queue_all();
 
