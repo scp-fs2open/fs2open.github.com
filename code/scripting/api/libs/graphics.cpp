@@ -124,7 +124,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 	}
 }
 
-ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
+ADE_FUNC(__len, l_Graphics_Fonts, nullptr, "Number of loaded fonts", "number", "Number of loaded fonts")
 {
 	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
 }
