@@ -1828,6 +1828,7 @@ void wl_add_index_to_list(int wi_index)
 void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 {
 	int i, wi_index;
+	auto &si = Ship_info[ship_class];
 
 	Assert( Wl_pool != NULL );
 
@@ -1858,8 +1859,16 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 								continue;
 							}
 
-							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[new_index]) ) {
+							// check whether the weapon is allowed in general for this ship
+							if ( !eval_weapon_flag_for_game_type(si.allowed_weapons[new_index]) ) {
 								continue;
+							}
+
+							// check whether the weapon is allowed for this bank
+							if (eval_weapon_flag_for_game_type(si.restricted_loadout_flag[i])) {
+								if (!eval_weapon_flag_for_game_type(si.allowed_bank_restricted_weapons[i][new_index])) {
+									continue;
+								}
 							}
 
 							wep[i] = new_index;
@@ -1877,7 +1886,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 							Int3();
 							secondary_bank_index = 0;
 						}
-						new_wep_count = wl_calc_missile_fit(wi_index, Ship_info[ship_class].secondary_bank_ammo_capacity[secondary_bank_index]);
+						new_wep_count = wl_calc_missile_fit(wi_index, si.secondary_bank_ammo_capacity[secondary_bank_index]);
 					}
 
 					wep_count[i] = MIN(new_wep_count, Wl_pool[wi_index]);
