@@ -2,7 +2,7 @@
 #include "MissionGoalsDialog.h"
 
 #include "ui/util/SignalBlockers.h"
-
+#include "mission/util.h"
 #include "ui_MissionGoalsDialog.h"
 
 namespace fso {
@@ -26,7 +26,7 @@ MissionGoalsDialog::MissionGoalsDialog(QWidget* parent, EditorViewport* viewport
 	ui->helpTextBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 
 	connect(this, &QDialog::accepted, _model.get(), &MissionGoalsDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &MissionGoalsDialogModel::reject);
+	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &MissionGoalsDialog::rejectHandler);
 
 	connect(_model.get(), &MissionGoalsDialogModel::modelChanged, this, &MissionGoalsDialog::updateUI);
 
@@ -198,29 +198,15 @@ void MissionGoalsDialog::changeGoalCategory(int type) {
 		recreate_tree();
 	}
 }
-void MissionGoalsDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto result = QMessageBox::question(this,
-											"Close",
-											"Do you want to keep your changes?",
-											QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-											QMessageBox::Cancel);
-
-		if (result == QMessageBox::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (result == QMessageBox::Yes) {
-			accept();
-			event->accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void MissionGoalsDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
+void MissionGoalsDialog::rejectHandler()
+{
+	this->close();
+}
 }
 }
 }

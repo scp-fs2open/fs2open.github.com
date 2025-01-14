@@ -147,6 +147,7 @@ void ReinforcementsDialogModel::addToReinforcements(const SCP_vector<SCP_string>
 	_listUpdateRequired = true;
 	_numberLineEditUpdateRequired = true;
 	modelChanged();
+	set_modified();
 }
 
 void ReinforcementsDialogModel::removeFromReinforcements(const SCP_vector<SCP_string>& namesIn) 
@@ -170,6 +171,7 @@ void ReinforcementsDialogModel::removeFromReinforcements(const SCP_vector<SCP_st
 	_listUpdateRequired = true;
 	_numberLineEditUpdateRequired = true;
 	modelChanged();
+	set_modified();
 }
 
 // remember to call this and getReinforcementList together
@@ -250,6 +252,7 @@ void ReinforcementsDialogModel::selectReinforcement(const SCP_vector<SCP_string>
 
 	_numberLineEditUpdateRequired = true;
 	modelChanged();
+	set_modified();
 }
 
 void ReinforcementsDialogModel::setUseCount(int count) 
@@ -257,6 +260,8 @@ void ReinforcementsDialogModel::setUseCount(int count)
 	for (auto& reinforcement : _selectedReinforcementIndices) {
 		std::get<1>(_reinforcementList[reinforcement]) = count;
 	}
+	modelChanged();
+	set_modified();
 }
 
 void ReinforcementsDialogModel::setBeforeArrivalDelay(int delay) 
@@ -264,6 +269,8 @@ void ReinforcementsDialogModel::setBeforeArrivalDelay(int delay)
 	for (auto& reinforcement : _selectedReinforcementIndices) {
 		std::get<2>(_reinforcementList[reinforcement]) = delay;
 	}
+	modelChanged();
+	set_modified();
 }
 
 void ReinforcementsDialogModel::moveReinforcementsUp()
@@ -284,6 +291,7 @@ void ReinforcementsDialogModel::moveReinforcementsUp()
 		updateSelectedIndices();
 		_listUpdateRequired = true;
 		modelChanged();
+		set_modified();
 	}
 }
 
@@ -303,6 +311,7 @@ void ReinforcementsDialogModel::moveReinforcementsDown()
 		updateSelectedIndices();
 		_listUpdateRequired = true;
 		modelChanged();
+		set_modified();
 	}
 }
 

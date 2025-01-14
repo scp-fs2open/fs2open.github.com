@@ -957,21 +957,5 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::LoadoutDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>309</x>
-     <y>625</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>309</x>
-     <y>321</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
 </ui>

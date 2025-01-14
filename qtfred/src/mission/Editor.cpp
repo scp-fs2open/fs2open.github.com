@@ -19,6 +19,7 @@
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
 #include <localization/fhash.h>
+#include <scripting/global_hooks.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
@@ -66,10 +67,12 @@ std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const 
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Attack",					AI_GOAL_CHASE,				0 },
+	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
+	{ "Guard",					AI_GOAL_GUARD,				0 },
+	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
@@ -271,6 +274,26 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 															  { DialogButton::Ok });
 	}
 
+	// message 4: check for "immobile" flag migration
+	if (!Fred_migrated_immobile_ships.empty()) {
+		SCP_string msg = "The \"immobile\" ship flag has been superseded by the \"don't-change-position\", and \"don't-change-orientation\" flags.  "
+			"All ships which previously had \"Does Not Move\" checked in the ship flags editor will now have both \"Does Not Change Position\" and "
+			"\"Does Not Change Orientation\" checked.  After you close this dialog, the error checker will check for any potential issues, including "
+			"issues involving these flags.\n\nThe following ships have been migrated:";
+
+		for (int shipnum : Fred_migrated_immobile_ships) {
+			msg += "\n\t";
+			msg += Ships[shipnum].ship_name;
+		}
+
+		truncate_message_lines(msg, 30);
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
+														"Ship Flag Migration",
+														msg,
+														{ DialogButton::Ok });
+		_lastActiveViewport->Error_checker_checks_potential_issues_once = true;
+	}
+
 	obj_merge_created_list();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
@@ -380,6 +403,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 	stars_post_level_init();
 
 	missionLoaded(filepath);
+
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
 
 	return true;
 }
@@ -530,6 +559,7 @@ void Editor::clearMission(bool fast_reload) {
 	}
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -2644,7 +2674,7 @@ int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
 			return 1;
 	}
 
-	if (_lastActiveViewport->Error_checker_checks_potential_issues)
+	if (_lastActiveViewport->Error_checker_checks_potential_issues || _lastActiveViewport->Error_checker_checks_potential_issues_once)
 		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
 	if (z)
 	{
@@ -2655,11 +2685,12 @@ int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
 		if (!bad_node_str.empty())		// the previous function adds a space at the end
 			bad_node_str.pop_back();
 
-		sprintf(error_buf, "Potential issue detected in %s:\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
 		if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", error_buf.c_str(), { DialogButton::Ok, DialogButton::Cancel }) != DialogButton::Ok)
 			return 1;
 	}
+	_lastActiveViewport->Error_checker_checks_potential_issues_once = false;
 
 	return 0;
 }
@@ -2877,6 +2908,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 
 			break;
 		}
+
+		default:
+			break;
 		}
 
 		switch (goals[i].ai_mode) {
@@ -2888,7 +2922,6 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wing assigned to guard a different team";
 			}
-
 			break;
 
 		case AI_GOAL_CHASE:
@@ -2904,19 +2937,21 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wings assigned to attack same team";
 			}
+			break;
 
+		default:
 			break;
 		}
 	}
 
 	return NULL;
 }
-const char* Editor::get_order_name(int order) {
+const char* Editor::get_order_name(ai_goal_mode order) {
 	if (order == AI_GOAL_NONE)  // special case
 		return "None";
 
 	for (auto& entry : Ai_goal_list)
-		if (entry.def & order)
+		if (entry.def == order)
 			return entry.name;
 
 	return "???";

@@ -3,7 +3,6 @@
 #include <QtWidgets/QDialog>
 #include <QAbstractListModel>
 #include <QItemSelectionModel>
-#include "ShipEditorDialog.h"
 #include <mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.h>
 
 namespace fso {
@@ -13,7 +12,6 @@ namespace fso {
 			namespace Ui {
 				class ShipTextureReplacementDialog;
 			}
-				class ShipEditorDialog;
 			//Model for mapping data to listview in Texture Replace dialog
 			class MapModel : public QAbstractListModel
 			{
@@ -30,20 +28,19 @@ namespace fso {
 				Q_OBJECT
 
 			public:
-				explicit ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport);
+				explicit ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport, bool multiEdit);
 				~ShipTextureReplacementDialog() override;
 			protected:
 				void closeEvent(QCloseEvent*) override;
-			  void showEvent(QShowEvent*) override;
 			private:
 				std::unique_ptr<Ui::ShipTextureReplacementDialog> ui;
 				std::unique_ptr<ShipTextureReplacementDialogModel> _model;
 				EditorViewport* _viewport;
-				ShipEditorDialog* parentDialog;
 				int row = 0;
 				MapModel* listmodel;
 				void updateUI();
 				void updateUIFull();
+				void rejectHandler();
 
 				void setMain();
 				void setMisc();

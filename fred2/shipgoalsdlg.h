@@ -29,6 +29,8 @@ public:
 	void OnOK();
 	void update();
 	void initialize(ai_goal *goals, int ship = cur_ship);
+	void init_combo_data(int valid[]);
+	ai_goal_mode get_first_mode_from_combo_box(int which_item);
 	ShipGoalsDlg(CWnd* pParent = NULL);   // standard constructor
 
 	int self_ship, self_wing;
@@ -38,6 +40,7 @@ public:
 	int m_subsys[ED_MAX_GOALS];
 	int m_dock2[ED_MAX_GOALS];
 	int m_data[ED_MAX_GOALS];
+	SCP_vector<std::pair<const char*, SCP_set<ai_goal_mode>>> m_ai_goal_combo_data;
 
 	CComboBox *m_behavior_box[ED_MAX_GOALS];
 	CComboBox *m_object_box[ED_MAX_GOALS];

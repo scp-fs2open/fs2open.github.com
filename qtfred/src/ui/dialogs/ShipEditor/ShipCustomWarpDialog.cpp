@@ -2,6 +2,8 @@
 
 #include "ui_ShipCustomWarpDialog.h"
 
+#include "mission/util.h"
+
 #include <ship/shipfx.h>
 #include <ui/util/SignalBlockers.h>
 
@@ -67,26 +69,9 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 ShipCustomWarpDialog::~ShipCustomWarpDialog() = default;
 void ShipCustomWarpDialog::closeEvent(QCloseEvent* e)
 {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			e->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-		if (button == DialogButton::No) {
-			_model->reject();
-		}
-	}
-	QDialog::closeEvent(e);
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
 void ShipCustomWarpDialog::updateUI(const bool firstrun)
 {
@@ -153,29 +138,9 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 }
 void ShipCustomWarpDialog::rejectHandler()
 {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-			"Changes detected",
-			"Do you want to keep your changes?",
-			{DialogButton::Yes, DialogButton::No, DialogButton::Cancel});
-
-		if (button == DialogButton::Cancel) {
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-		if (button == DialogButton::No) {
-			_model->reject();
-			QDialog::reject();
-		}
-	} else {
-		_model->reject();
-		QDialog::reject();
-	}
+	this->close();
 }
+
 void ShipCustomWarpDialog::startSoundChanged()
 {
 	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some

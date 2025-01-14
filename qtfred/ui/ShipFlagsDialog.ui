@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>421</width>
-    <height>664</height>
+    <height>745</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -706,22 +706,6 @@
     <hint type="destinationlabel">
      <x>251</x>
      <y>509</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipFlagsDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>389</x>
-     <y>563</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>375</x>
-     <y>515</y>
     </hint>
    </hints>
   </connection>

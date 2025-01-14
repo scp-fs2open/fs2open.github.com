@@ -47,8 +47,6 @@ class FictionViewerDialogModel: public AbstractDialogModel {
  private:
 	void initializeData();
 
-	template<typename T>
-	void modify(T &a, const T &b);
 
 	SCP_string _storyFile;
 	SCP_string _fontFile;
@@ -58,15 +56,6 @@ class FictionViewerDialogModel: public AbstractDialogModel {
 
 	int _maxStoryFileLength, _maxFontFileLength, _maxVoiceFileLength;
 };
-
-
-template<typename T>
-inline void FictionViewerDialogModel::modify(T &a, const T &b) {
-	if (a != b) {
-		a = b;
-		modelChanged();
-	}
-}
 
 }
 }

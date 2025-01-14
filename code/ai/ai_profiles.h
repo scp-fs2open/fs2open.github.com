@@ -99,7 +99,7 @@ public:
 	// Player-specific autoaim FOV override
 	float player_autoaim_fov[NUM_SKILL_LEVELS];
 
-	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
+	float detail_distance_mult[MAX_DETAIL_VALUE + 1];	//MAX_DETAIL_VALUE really needs to be 4
 
 	// minimum radius for the line-of-sight (los) detection --wookieejedi
 	float los_min_detection_radius;
@@ -125,6 +125,11 @@ public:
 
 	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
 	float rot_fac_multiplier_ply_collisions; 
+
+	// Strafing options  --wookieejedi
+	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
+	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
+	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
 
     void reset();
 };

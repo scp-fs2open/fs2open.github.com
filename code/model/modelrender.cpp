@@ -945,9 +945,8 @@ int model_render_determine_detail(float depth, int model_num, int detail_level_l
 			i = detail_level_locked+1;
 		} else {
 
-#if MAX_DETAIL_LEVEL != 4
-#error Code in modelrender.cpp assumes MAX_DETAIL_LEVEL == 4
-#endif
+			static_assert(MAX_DETAIL_VALUE == 4, "MAX_DETAIL_VALUE is assumed to be 4 in SystemVars.cpp");
+
 			for ( i = 0; i < pm->n_detail_levels; i++ )	{
 				if ( depth <= pm->detail_depth[i] ) {
 					break;
@@ -3137,7 +3136,11 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			}
 
 			// Make sure model is loaded
-			model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+			if (VALID_FNAME(sip->pof_file_tech)) {
+				model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0], 0);
+			} else {
+				model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+			}
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
 			break;

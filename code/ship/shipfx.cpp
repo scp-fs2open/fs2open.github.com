@@ -912,7 +912,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				}
 			}
 
-			if ( sip->flags[Ship::Info_Flags::Show_ship_model] ) {
+			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
+				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 
 				mc.model_instance_num = -1;
@@ -1051,8 +1052,10 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// HACK - let the flak guns do this on their own since they fire so quickly
 	// Also don't create if its the player in the cockpit unless he's also got show_ship_model, provided render_player_mflash isnt on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
-	bool player_show_ship_model =
-		objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
+	bool player_show_ship_model = (
+		objp == Player_obj 
+		&& Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
 	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
 			// if there's a muzzle effect entry, we use that

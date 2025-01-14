@@ -1762,7 +1762,7 @@ void stars_draw_stars()
 
 	int tmp_num_stars = 0;
 
-	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_LEVEL;
+	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_VALUE;
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
 	auto path = graphics::paths::PathRenderer::instance();

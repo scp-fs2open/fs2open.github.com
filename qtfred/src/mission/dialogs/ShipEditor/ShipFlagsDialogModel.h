@@ -9,11 +9,6 @@ namespace dialogs {
 class ShipFlagsDialogModel : public AbstractDialogModel {
   private:
 
-	template <typename T>
-	void modify(T& a, const T& b);
-
-	bool _modified = false;
-
 	int m_red_alert_carry;
 	int m_scannable;
 	int m_reinforcement;
@@ -61,7 +56,6 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	int m_escort_value;
 	int m_respawn_priority;
 
-	void set_modified();
 	static int tristate_set(const int val, const int cur_state);
 	void update_ship(const int);
 
@@ -205,18 +199,7 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	void setNoSelfDestruct(const int);
 	int getNoSelfDestruct() const;
 
-	bool query_modified();
 };
-
-template <typename T>
-inline void ShipFlagsDialogModel::modify(T& a, const T& b)
-{
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
 } // namespace dialogs
 } // namespace fred
 } // namespace fso

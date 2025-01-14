@@ -122,10 +122,12 @@ CCriticalSection CS_cur_object_index;
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Attack",					AI_GOAL_CHASE,				0 },
+	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
+	{ "Guard",					AI_GOAL_GUARD,				0 },
+	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
@@ -873,6 +875,7 @@ void clear_mission(bool fast_reload)
 	set_physics_controls();
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -2226,7 +2229,7 @@ char *object_name(int obj)
 	return "*unknown*";
 }
 
-const char *get_order_name(int order)
+const char *get_order_name(ai_goal_mode order)
 {
 	int i;
 
@@ -2234,7 +2237,7 @@ const char *get_order_name(int order)
 		return "None";
 
 	for (i=0; i<Ai_goal_list_size; i++)
-		if (Ai_goal_list[i].def & order)
+		if (Ai_goal_list[i].def == order)
 			return Ai_goal_list[i].name;
 
 	return "???";

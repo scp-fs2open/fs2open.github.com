@@ -590,11 +590,7 @@ static void gr_string_old(float sx,
 
 	gr_set_2d_matrix();
 
-	float scale_factor = Font_Scale_Factor;
-	if (!canScale) {
-		scale_factor = 1.0f;
-	}
-
+	float scale_factor = (canScale && !Fred_running) ? Font_Scale_Factor : 1.0f;
 	scale_factor *= scaleMultiplier;
 
 	while (s < end) {
@@ -798,10 +794,8 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 
 		auto nvgFont = static_cast<NVGFont*>(currentFont);
 
-		float scale_factor = Font_Scale_Factor;
-		if (!nvgFont->getScaleBehavior()) {
-			scale_factor = 1.0f;
-		}
+		float scale_factor = (nvgFont->getScaleBehavior() && !Fred_running) ? Font_Scale_Factor : 1.0f;
+		scale_factor *= scaleMultiplier;
 
 		scale_factor *= scaleMultiplier;
 
