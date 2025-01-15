@@ -723,7 +723,7 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 		}
 		else {
 			if (ge == nullptr) {
-				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL), scale_factor);
+				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL), false, scale_factor);
 			}
 			else if (ge->draw == true) {
 				// currently only for lua streaminganim objects
