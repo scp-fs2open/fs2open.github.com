@@ -374,22 +374,6 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->use_3d_warp = true;
 			}
 
-			if (optional_string("$Flare anim:")) {
-				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
-				case 0:
-					fi->style = warp_flare_anim::CLASSIC;
-					break;
-				case 1:
-					fi->style = warp_flare_anim::ENHANCED;
-					break;
-				case 2:
-					fi->style = warp_flare_anim::CINEMATIC;
-					break;
-				}
-			} else if (first_time) {
-				fi->style = warp_flare_anim::CLASSIC;
-			}
-
 			if (optional_string("$Warp size ratio:")) {
 				stuff_float(&fi->warp_size_ratio);
 			} else if (first_time) {
@@ -402,19 +386,52 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->flare_size_ratio = 1.5f;
 			}
 
-			if (optional_string("$Cinematic:")) {
-				stuff_boolean(&fi->cinematic);
+			if (optional_string("$Warp flare style:")) {
+				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
+				case 0:
+					fi->warp_flare_style = warp_style::CLASSIC;
+					break;
+				case 1:
+					fi->warp_flare_style = warp_style::ENHANCED;
+					break;
+				case 2:
+					fi->warp_flare_style = warp_style::CINEMATIC;
+					break;
+				}
 
+				// Set warp flare option
+				if (optional_string("+Flare size ratio:")) {
+					stuff_float(&fi->flare_size_ratio);
+				} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
+					fi->flare_size_ratio = 5.3f;
+				}
+
+			} else if (first_time) {
+				fi->warp_flare_style = warp_style::CLASSIC;
+			}
+
+			if (optional_string("$Warp model style:")) {
+				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
+				case 0:
+					fi->warp_model_style = warp_style::CLASSIC;
+					break;
+				case 1:
+					fi->warp_model_style = warp_style::ENHANCED; // There is no warp model animation for enhanced.
+					break;
+				case 2:
+					fi->warp_model_style = warp_style::CINEMATIC;
+					break;
+				}
+			} else if (first_time) {
+				fi->warp_model_style = warp_style::CLASSIC;
+			}
+			
+			// Set warp_model_style options if cinematic style is chosen
+			if (fi->warp_model_style == warp_style::CINEMATIC) {
 				if (optional_string("+Warp size ratio:")) {
 					stuff_float(&fi->warp_size_ratio);
 				} else {
 					fi->warp_size_ratio = 1.6f;
-				}
-
-				if (optional_string("+Flare size ratio:")) {
-					stuff_float(&fi->flare_size_ratio);
-				} else {
-					fi->flare_size_ratio = 5.3f;
 				}
 
 				// The first two values need to be implied multiples of PI
@@ -433,6 +450,7 @@ static void parse_fireball_tbl(const char *table_filename)
 					fi->rot_anim[2] = 2.0f;
 				}
 
+				// Variable frame rate for faster propagation of ripples
 				if (optional_string("+Frame anim:")) {
 					stuff_float_list(fi->frame_anim, 3);
 
@@ -445,8 +463,6 @@ static void parse_fireball_tbl(const char *table_filename)
 					fi->frame_anim[1] = 1.0f;
 					fi->frame_anim[2] = 3.0f;
 				}
-			} else if (first_time) {
-				fi->cinematic = false;
 			}
 		}
 
@@ -615,7 +631,7 @@ void fireball_set_framenum(int num)
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
 		float new_time = fb->time_elapsed;
-		if (fd->cinematic) {
+		if (fd->warp_model_style == warp_style::CINEMATIC) {
 			float duration_ratio = 2.0f / fb->warp_open_duration;
 			new_time = exp_to_line(fb->time_elapsed, fd->frame_anim[0] * duration_ratio, fd->frame_anim[1], fd->frame_anim[2] * duration_ratio);
 		}
@@ -1124,7 +1140,7 @@ float fireball_wormhole_intensity(fireball *fb)
 
 	fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 
-	if (fi->cinematic) {
+	if (fi->warp_model_style == warp_style::CINEMATIC) {
 		rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
@@ -1207,15 +1223,15 @@ void fireball_render(object* obj, model_draw_list *scene)
 			matrix* warp_orientation;
 
 			// Flare animation selection
-			if (fi->style == warp_flare_anim::ENHANCED) {
+			if (fi->warp_flare_style == warp_style::ENHANCED) {
 				flare_rad += powf((2.0f * percent_life) - 1.0f, 24.0f) * obj->radius * 1.5f * fi->flare_size_ratio;
-			} else if (fi->style == warp_flare_anim::CINEMATIC) {
+			} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
 				flare_rad *= fireball_wormhole_flare_radius(fb);
 			} else {
 				flare_rad *= fireball_wormhole_intensity(fb);
 			}
 
-			if (fi->cinematic) {
+			if (fi->warp_model_style == warp_style::CINEMATIC) {
 				matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 				matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
 
