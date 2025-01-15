@@ -885,12 +885,8 @@ ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "mo
 	polymodel_instance *dest = model_get_instance(Ships[dh->objp()->instance].model_instance_num);
 
 	if(ADE_SETTING_VAR && sh && sh->isValid()) {
-		polymodel_instance *src = model_get_instance(Ships[sh->objp()->instance].model_instance_num);
-
-		if (src->texture_replace != nullptr)
-		{
-			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
-		}
+		dest->texture_replace = model_get_instance(Ships[sh->objp()->instance].model_instance_num)->texture_replace;
+		
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));

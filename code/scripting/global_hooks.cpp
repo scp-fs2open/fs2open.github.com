@@ -421,7 +421,8 @@ const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Fact
 	{
 		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."},
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
-		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."}
+		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."},
+		{"Text", "string", "The dialog text as it may have been updated this frame"}
 	});
 
 const std::shared_ptr<Hook<>> OnDialogClose = Hook<>::Factory("On Dialog Close",

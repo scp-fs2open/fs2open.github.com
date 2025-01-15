@@ -6,6 +6,10 @@
 
 #include <limits>
 
+void removeFontMultiplierOption();
+
+float get_font_scale_factor();
+
 namespace font
 {
 	/**
@@ -139,9 +143,10 @@ namespace font
 		* @param textLen		Length of the text. Use -1 if the string should be checked until the next \0 character.
 		* @param [out]	width 	If non-null, the width.
 		* @param [out]	height	If non-null, the height.
+		* @param scaleMultiplier The scale to use to apply scaling in addition to user settings
 		*/
 		virtual void getStringSize(const char *text, size_t textLen = std::numeric_limits<size_t>::max(),
-								   int resize_mode = -1, float *width = NULL, float *height = NULL) const = 0;
+								   int resize_mode = -1, float *width = nullptr, float *height = nullptr, float scaleMultiplier = 1.0f) const = 0;
 
 		/**
 		 * @brief	Gets the scaling behavior of this font
