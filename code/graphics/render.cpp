@@ -797,8 +797,6 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 		float scale_factor = (nvgFont->getScaleBehavior() && !Fred_running) ? get_font_scale_factor() : 1.0f;
 		scale_factor *= scaleMultiplier;
 
-		scale_factor *= scaleMultiplier;
-
 		float originalSize = nvgFont->getSize();
 		float scaledSize = originalSize * scale_factor;
 
