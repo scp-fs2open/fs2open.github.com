@@ -6,7 +6,9 @@
 
 #include <limits>
 
-extern float Font_Scale_Factor;
+void removeFontMultiplierOption();
+
+float get_font_scale_factor();
 
 namespace font
 {
