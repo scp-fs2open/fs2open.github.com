@@ -1318,7 +1318,7 @@ void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
 // new bitmap functions
-void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
+void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
 
 // special function for drawing polylines. this function is specifically intended for

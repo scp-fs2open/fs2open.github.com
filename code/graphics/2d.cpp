@@ -2091,7 +2091,7 @@ void gr_set_shader(shader *shade)
 }
 
 // new bitmap functions
-void gr_bitmap(int _x, int _y, int resize_mode)
+void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 {
 	GR_DEBUG_SCOPE("2D Bitmap");
 
@@ -2104,6 +2104,11 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	}
 
 	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
+
+	if (scale_factor != 1.0f) {
+		_w = static_cast<int>(_w * scale_factor);
+		_h = static_cast<int>(_h * scale_factor);
+	}
 
 	x = i2fl(_x);
 	y = i2fl(_y);
@@ -2119,22 +2124,22 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 	verts[0].screen.xyw.x = x;
 	verts[0].screen.xyw.y = y;
-	verts[0].texture_position.u = 0.0f;
+	verts[0].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[0].texture_position.v = 0.0f;
 
 	verts[1].screen.xyw.x = x + w;
 	verts[1].screen.xyw.y = y;
-	verts[1].texture_position.u = 1.0f;
+	verts[1].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[1].texture_position.v = 0.0f;
 
 	verts[2].screen.xyw.x = x + w;
 	verts[2].screen.xyw.y = y + h;
-	verts[2].texture_position.u = 1.0f;
+	verts[2].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[2].texture_position.v = 1.0f;
 
 	verts[3].screen.xyw.x = x;
 	verts[3].screen.xyw.y = y + h;
-	verts[3].texture_position.u = 0.0f;
+	verts[3].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[3].texture_position.v = 1.0f;
 
 	// turn off zbuffering
