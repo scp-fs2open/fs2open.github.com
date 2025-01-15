@@ -950,6 +950,7 @@ int popup_do(popup_info *pi, int flags)
 					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
 					return luacpp::LuaValueList{};
 					})),
+				scripting::hook_param("Text", 's', pi->raw_text),
 				scripting::hook_param("IsDeathPopup", 'b', false));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
@@ -1020,10 +1021,12 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
 					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals) ? 1 : 0;
 					return luacpp::LuaValueList{};
-					})));
+					})),
+				scripting::hook_param("Text", 's', pi->raw_text));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
 			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+			gr_flip();
 		}
 
 		if (!isScriptingOverride) {
@@ -1384,32 +1387,52 @@ int popup_conditional_do(int (*condition)(), const char *text)
 		game_do_state_common(gameseq_get_state());	// do stuff common to all states
 		gr_restore_screen(Popup_screen_id);
 
-		// draw one frame first
-		Popup_window.draw();
-		popup_force_draw_buttons(&Popup_info);
-		popup_draw_msg_text(&Popup_info, Popup_flags);
-		popup_draw_button_text(&Popup_info, Popup_flags);
-		gr_flip();
+		bool isScriptingOverride = false;
+		if (scripting::hooks::OnDialogFrame->isActive()) {
+			auto pi = &Popup_info;
+			auto paramList = scripting::hook_param_list(
+				scripting::hook_param("Submit", 'u', luacpp::LuaFunction::createFromStdFunction(Script_system.GetLuaSession(), [&done, &choice, pi](lua_State* L, const luacpp::LuaValueList& resolveVals) {
+					done = popup_resolve_scripting(L, choice, pi->input_text, resolveVals);
+					return luacpp::LuaValueList{};
+					})),
+				scripting::hook_param("Text", 's', pi->raw_text));
 
-		// test the condition function or process for the window
-		if ((test = condition()) > 0) {
-			done = true;
-			choice = test;
-		} else {
-			k = Popup_window.process();						// poll for input, handle mouse
-			choice = popup_process_keys(&Popup_info, k, Popup_flags);
+			scripting::hooks::OnDialogFrame->run(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+			gr_flip();
+		}
 
-			if (choice != POPUP_NOCHANGE) {
+		if (!isScriptingOverride) {
+			// draw one frame first
+			Popup_window.draw();
+			popup_force_draw_buttons(&Popup_info);
+			popup_draw_msg_text(&Popup_info, Popup_flags);
+			popup_draw_button_text(&Popup_info, Popup_flags);
+			gr_flip();
+
+			// test the condition function or process for the window
+			if ((test = condition()) > 0) {
 				done = true;
-			}
-
-			if ( !done ) {
-				choice = popup_check_buttons(&Popup_info);
+				choice = test;
+			} else {
+				k = Popup_window.process(); // poll for input, handle mouse
+				choice = popup_process_keys(&Popup_info, k, Popup_flags);
 
 				if (choice != POPUP_NOCHANGE) {
 					done = true;
 				}
+
+				if (!done) {
+					choice = popup_check_buttons(&Popup_info);
+
+					if (choice != POPUP_NOCHANGE) {
+						done = true;
+					}
+				}
 			}
+		} else if ((test = condition()) > 0) {
+			done = true;
+			choice = test;
 		}
 	}
 
