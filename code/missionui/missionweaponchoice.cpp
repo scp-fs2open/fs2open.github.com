@@ -1827,15 +1827,16 @@ void wl_add_index_to_list(int wi_index)
  */
 void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 {
-	int i, wi_index;
+	int bank, wi_index;
+	auto &si = Ship_info[ship_class];
 
 	Assert( Wl_pool != NULL );
 
-	for ( i = 0; i < MAX_SHIP_WEAPONS; i++ ) {
-		wi_index = wep[i];
+	for ( bank = 0; bank < MAX_SHIP_WEAPONS; bank++ ) {
+		wi_index = wep[bank];
 		if ( wi_index >= 0 ) {
-			if ( (wep_count[i] > 0) && ((Wl_pool[wi_index] - wep_count[i]) >= 0) ) {
-				Wl_pool[wi_index] -= wep_count[i];
+			if ( (wep_count[bank] > 0) && ((Wl_pool[wi_index] - wep_count[bank]) >= 0) ) {
+				Wl_pool[wi_index] -= wep_count[bank];
 			} else {
 				// not enough weapons in pool
 				// TEMP HACK: FRED doesn't fill in a weapons pool if there are no starting wings... so
@@ -1844,7 +1845,7 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 					wl_add_index_to_list(wi_index);
 				} else {
 
-					if ( (Wl_pool[wi_index] <= 0) || (wep_count[i] == 0) ) {
+					if ( (Wl_pool[wi_index] <= 0) || (wep_count[bank] == 0) ) {
 						// fresh out of this weapon, pick an alternate pool weapon if we can
 						for (const auto &new_index : Player_weapon_precedence) {
 							Assertion(new_index >= 0, "Somehow, a negative index (%d) got into Player_weapon_precedence; this should not happen. Get a coder!", new_index);
@@ -1858,33 +1859,41 @@ void wl_remove_weps_from_pool(int *wep, int *wep_count, int ship_class)
 								continue;
 							}
 
-							if ( !eval_weapon_flag_for_game_type(Ship_info[ship_class].allowed_weapons[new_index]) ) {
+							// check whether the weapon is allowed in general for this ship
+							if ( !eval_weapon_flag_for_game_type(si.allowed_weapons[new_index]) ) {
 								continue;
 							}
 
-							wep[i] = new_index;
+							// check whether the weapon is allowed for this bank
+							if (eval_weapon_flag_for_game_type(si.restricted_loadout_flag[bank])) {
+								if (!eval_weapon_flag_for_game_type(si.allowed_bank_restricted_weapons[bank][new_index])) {
+									continue;
+								}
+							}
+
+							wep[bank] = new_index;
 							wi_index = new_index;
 							break;
 						}
 					}
 
-					int new_wep_count = wep_count[i];
+					int new_wep_count = wep_count[bank];
 					if ( Weapon_info[wi_index].subtype == WP_MISSILE )
 					{
 						int secondary_bank_index;
-						secondary_bank_index = i-3;
+						secondary_bank_index = bank-3;
 						if ( secondary_bank_index < 0 ) {
 							Int3();
 							secondary_bank_index = 0;
 						}
-						new_wep_count = wl_calc_missile_fit(wi_index, Ship_info[ship_class].secondary_bank_ammo_capacity[secondary_bank_index]);
+						new_wep_count = wl_calc_missile_fit(wi_index, si.secondary_bank_ammo_capacity[secondary_bank_index]);
 					}
 
-					wep_count[i] = MIN(new_wep_count, Wl_pool[wi_index]);
-					Assert(wep_count[i] >= 0);
-					Wl_pool[wi_index] -= wep_count[i];
-					if ( wep_count[i] <= 0 ) {
-						wep[i] = -1;
+					wep_count[bank] = MIN(new_wep_count, Wl_pool[wi_index]);
+					Assert(wep_count[bank] >= 0);
+					Wl_pool[wi_index] -= wep_count[bank];
+					if ( wep_count[bank] <= 0 ) {
+						wep[bank] = -1;
 					}
 				}
 			}
