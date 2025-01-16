@@ -2231,17 +2231,18 @@ ADE_FUNC(usePreset,
 
 ADE_FUNC(createPreset,
 	l_UserInterface_ControlConfig,
-	"string Name",
+	"string Name, [boolean overwrite]",
 	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
 	"boolean",
 	"The return status")
 {
 	const char* preset;
-	ade_get_args(L, "s", &preset);
+	bool overwrite = false;
+	ade_get_args(L, "s|b", &preset, &overwrite);
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name, overwrite)));
 }
 
 ADE_FUNC(undoLastChange,
