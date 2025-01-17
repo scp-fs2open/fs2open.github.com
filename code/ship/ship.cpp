@@ -18744,7 +18744,7 @@ void ship_page_in()
 		// is this a valid ship?
 		if (Ships[i].objnum >= 0)
 		{
-			polymodel_instance* pmi = model_get_instance(object_get_model_instance(&Objects[Ships[i].objnum]));
+			polymodel_instance* pmi = object_get_model_instance(&Objects[Ships[i].objnum]);
 			// do we have any textures?
 			if (pmi->texture_replace != nullptr)
 			{
