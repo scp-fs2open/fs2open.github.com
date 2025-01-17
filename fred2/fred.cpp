@@ -447,8 +447,11 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 	game_do_frame();  // do stuff that needs doing, whether we render or not.
 	show_control_mode();
 
-	if (!Update_window)
-		return FALSE;
+	// At some point between 2002 and 2006, the Update_window code was removed, but since we don't have FRED history from that period,
+	// we don't know the exact rationale.  However, since FRED appears to have no difficulty rendering every frame, and since there may
+	// be parts of FRED that don't set Update_window when they need to (for example, the background editor), let's keep this disabled.
+	//if (!Update_window)
+	//	return FALSE;
 
 	render_frame();	// "do the rendering!"  Renders image to offscreen buffer
 
