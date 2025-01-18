@@ -437,6 +437,15 @@ const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
 		{ "Cheat", "string", "The cheat code the user typed" },
 	});
 
+const std::shared_ptr<OverridableHook<>> OnMissionGoalStatusChanged = scripting::OverridableHook<>::Factory(
+	"On Mission Goal Status Changed", "Called when a goal is marked as failed or completed.",
+	{
+		{"Name", "string", "The name of the goal."},
+		{"Description", "string", "The description of the goal."},
+		{"Type", "number", "The goal type. 1 for Primary, 2 for secondary, 3 for bonus."},
+		{"State", "boolean", "True if the goal was completed, false if it was failed."},
+	});
+
 const std::shared_ptr<Hook<>> OnMissionAboutToEndHook = Hook<>::Factory("On Mission About To End",
 	"Called when a mission is about to end but has not run any mission-ending logic",
 	{});
