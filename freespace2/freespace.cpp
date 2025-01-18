@@ -260,44 +260,72 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
+static void parse_skill_func()
+{
+	int value;
+	stuff_int(&value);
+
+	value -= 1; // Parse 1-5 for the skill levels but convert to our internal 0-4
+	CLAMP(value, 0, 4);
+
+	Game_skill_level = value;
+}
+
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
                      .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
-                     .default_val(DEFAULT_SKILL_LEVEL)
+                     .default_func([]() { return DEFAULT_SKILL_LEVEL; })
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_skill_func)
                      .finish();
 
 bool Screenshake_enabled = true;
+
+static void parse_screenshake_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Screenshake_enabled = enabled;
+}
 
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(Screenshake_enabled)
+                     .default_func([]() { return Screenshake_enabled; })
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
                      .bind_to(&Screenshake_enabled)
+                     .parser(parse_screenshake_func)
                      .finish();
 
 bool Allow_unfocused_pause = true;
 
 static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes", 1394) : XSTR("No", 1395); }
 
+static void parse_unfocused_pause_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Allow_unfocused_pause = enabled;
+}
+
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
                      .category(std::make_pair("Game", 1824))
-                     .default_val(Allow_unfocused_pause)
+                     .default_func([]() { return Allow_unfocused_pause; })
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
                      .importance(55)
                      .bind_to(&Allow_unfocused_pause)
+                     .parser(parse_unfocused_pause_func)
                      .finish();
 
 #define EXE_FNAME			("fs2.exe")

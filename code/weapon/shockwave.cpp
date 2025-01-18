@@ -53,12 +53,19 @@ static SCP_string shockwave_mode_display(bool mode) { return mode ? XSTR("3D", 1
 
 bool Use_3D_shockwaves = true;
 
+static void parse_shockwaves_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Use_3D_shockwaves = enabled;
+}
+
 static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwaves",
                      std::pair<const char*, int>{"Shockwaves", 1722},
                      std::pair<const char*, int>{"The way shockwaves are displayed. Changes will be reflected in the next loaded mission.", 1723})
                      .category(std::make_pair("Graphics", 1825))
                      .display(shockwave_mode_display)
-                     .default_val(true)
+                     .default_func([]() { return Use_3D_shockwaves;})
                      .bind_to(&Use_3D_shockwaves)
                      .change_listener([](float, bool) {
                          Default_shockwave_loaded = 0; // If we change then we have to force shockwave reload
@@ -67,6 +74,7 @@ static auto Shockwave3DMode = options::OptionBuilder<bool>("Graphics.3DShockwave
                      .level(options::ExpertLevel::Advanced)
                      .importance(66)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_shockwaves_func)
                      .finish();
 
 /**
