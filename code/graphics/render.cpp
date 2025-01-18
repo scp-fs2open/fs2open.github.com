@@ -544,13 +544,8 @@ static void gr_string_old(float sx,
 {
 	GR_DEBUG_SCOPE("Render VFNT string");
 
-	int letter;
 	float x = sx;
 	float y = sy;
-	bool do_resize;
-	float bw, bh;
-	float u0, u1, v0, v1;
-	float x1, x2, y1, y2;
 
 	material render_mat;
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
@@ -569,9 +564,10 @@ static void gr_string_old(float sx,
 
 	bm_get_info(fontData->bitmap_id, &ibw, &ibh);
 
-	bw = i2fl(ibw);
-	bh = i2fl(ibh);
+	float bw = i2fl(ibw);
+	float bh = i2fl(ibh);
 
+	bool do_resize;
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
 	} else {
@@ -593,6 +589,7 @@ static void gr_string_old(float sx,
 	float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
 	scale_factor *= scaleMultiplier;
 
+	int letter;
 	while (s < end) {
 		// Handle line breaks
 		while (*s == '\n') {
@@ -626,34 +623,35 @@ static void gr_string_old(float sx,
 		float char_width = i2fl(raw_width);
 		float char_height = i2fl(height);
 
-		u0 = u / bw;
-		v0 = v / bh;
-		u1 = (u + char_width) / bw;
-		v1 = (v + char_height) / bh;
-
 		// Scale output dimensions and positions
 		float xc = x; // Keep the X position unscaled
 		float yc = y; // Keep the Y position unscaled
 		float wc = char_width * scale_factor; // Scale width
 		float hc = char_height * scale_factor; // Scale height
 
-		// Apply offsets
-		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-		x2 = x1 + wc;
-		y2 = y1 + hc;
-
-		// Check clipping
-		if ((x1 >= clip_right) || (x2 <= clip_left) || (y1 >= clip_bottom) || (y2 <= clip_top)) {
+		// Check if the character is completely out of bounds. This uses scaled width and height
+		if ((xc > clip_right) || ((xc + wc) < clip_left) || (yc > clip_bottom) || ((yc + hc) < clip_top)) {
 			x += raw_spacing * scale_factor;
 			continue;
 		}
+
+		// Apply offsets
+		float x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+		float y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+		float x2 = x1 + wc;
+		float y2 = y1 + hc;
 
 		// Resize screen positions
 		if (do_resize) {
 			gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 			gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 		}
+
+		// Get the character from the UV
+		float u0 = u / bw;
+		float v0 = v / bh;
+		float u1 = (u + char_width) / bw;
+		float v1 = (v + char_height) / bh;
 
 		// Add vertices for the character
 		String_render_buff[buffer_offset++] = {x1, y1, u0, v0};
