@@ -437,8 +437,8 @@ const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
 		{ "Cheat", "string", "The cheat code the user typed" },
 	});
 
-const std::shared_ptr<OverridableHook<>> OnMissionObjectivesChanged = scripting::OverridableHook<>::Factory(
-	"On Mission Objectives Changed", "Called when a goal is marked as failed or completed.",
+const std::shared_ptr<OverridableHook<>> OnMissionGoalStatusChanged = scripting::OverridableHook<>::Factory(
+	"On Mission Goal Status Changed", "Called when a goal is marked as failed or completed.",
 	{
 		{"Name", "string", "The name of the objective."},
 		{"Description", "string", "The description of the objective."},

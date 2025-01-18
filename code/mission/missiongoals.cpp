@@ -743,16 +743,16 @@ void mission_goal_status_change( int goal_num, int new_status)
 
 	bool isOverride = false;
 
-	if (scripting::hooks::OnMissionObjectivesChanged->isActive()) {
+	if (scripting::hooks::OnMissionGoalStatusChanged->isActive()) {
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Name", 's', Mission_goals[goal_num].name),
 			scripting::hook_param("Description", 's', Mission_goals[goal_num].message),
 			scripting::hook_param("Type", 'i', type + 1),
 			scripting::hook_param("State", 'b', new_status == GOAL_COMPLETE));
-		if (scripting::hooks::OnMissionObjectivesChanged->isOverride(paramList)) {
+		if (scripting::hooks::OnMissionGoalStatusChanged->isOverride(paramList)) {
 			isOverride = true; // Override here only prevents displaying the goals and playing the music. Everything
 							   // else still runs.
 		}
-		scripting::hooks::OnMissionObjectivesChanged->run(paramList);
+		scripting::hooks::OnMissionGoalStatusChanged->run(paramList);
 	}
 
 	Mission_goals[goal_num].satisfied = new_status;

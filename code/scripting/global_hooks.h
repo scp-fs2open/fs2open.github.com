@@ -81,7 +81,7 @@ extern const std::shared_ptr<Hook<>>									OnDialogClose;
 
 extern const std::shared_ptr<Hook<>>									OnCheat;
 
-extern const std::shared_ptr<OverridableHook<>>                         OnMissionObjectivesChanged;
+extern const std::shared_ptr<OverridableHook<>>                         OnMissionGoalStatusChanged;
 
 extern const std::shared_ptr<Hook<>>									OnMissionAboutToEndHook;
 extern const std::shared_ptr<OverridableHook<>>							OnMissionEndHook;
