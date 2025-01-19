@@ -7265,7 +7265,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 		objp->shield_quadrant[0] = 100.0f;
 	} else {
 		shipp->ship_max_shield_strength = sip->max_shield_strength;
-		shield_set_strength(objp, shield_get_max_strength(objp));
+		shield_set_strength(objp, shield_get_max_strength(shipp));
 	}
 
 	shipp->orders_accepted = ship_get_default_orders_accepted( sip );
@@ -11561,7 +11561,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 
 		// shield
 		if (sp->special_shield > 0) {
-			shield_pct = shield_get_strength(objp) / shield_get_max_strength(objp);
+			shield_pct = shield_get_strength(objp) / shield_get_max_strength(sp);
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = shield_get_strength(objp) / (sip_orig->max_shield_strength * sip_orig->max_shield_recharge);
 		} else {
@@ -11730,7 +11730,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->ship_max_shield_strength = sip->max_shield_strength;
 		}
 
-		shield_set_strength(objp, shield_pct * shield_get_max_strength(objp));
+		shield_set_strength(objp, shield_pct * shield_get_max_strength(sp));
 	}
 
 	// Goober5000: div-0 checks
@@ -15374,7 +15374,7 @@ bool ship_subsystems_blown(const ship* shipp, int type, bool skip_dying_check)
 	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_subsystems_blown() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+	if (shipp->flags[Ship::Ship_Flags::Dying] && !skip_dying_check)
 		return true;
 
 	// short circuit 1
@@ -15401,7 +15401,7 @@ float ship_get_subsystem_strength(const ship *shipp, int type, bool skip_dying_c
 	Assertion( (type >= 0) && (type < SUBSYSTEM_MAX), "ship_get_subsystem_strength() subsystem type %d is out of range!", type );
 
 	//	For a dying ship, all subsystem strengths are zero.
-	if (Objects[shipp->objnum].hull_strength <= 0.0f && !skip_dying_check)
+	if (shipp->flags[Ship::Ship_Flags::Dying] && !skip_dying_check)
 		return 0.0f;
 
 	// short circuit 1
@@ -15508,7 +15508,7 @@ float ship_calculate_rearm_duration( object *objp )
 	sip = &Ship_info[sp->ship_info_index];
 
 	//find out time to repair shields
-	float max_shields = shield_get_max_strength(objp);
+	float max_shields = shield_get_max_strength(sp);
 	if(sip->sup_shield_repair_rate > 0.0f && max_shields > 0.0f)
 		shield_rep_time = (max_shields - shield_get_strength(objp)) / (max_shields * sip->sup_shield_repair_rate);
 	
@@ -15653,7 +15653,7 @@ int ship_do_rearm_frame( object *objp, float frametime )
 	if ( !(objp->flags[Object::Object_Flags::No_shields]) )
 	{
 		shield_str = shield_get_strength(objp);
-		max_shield_str = shield_get_max_strength(objp);
+		max_shield_str = shield_get_max_strength(shipp);
 		if ( shield_str < (max_shield_str) ) {
 			if ( objp == Player_obj ) {
 				player_maybe_start_repair_sound();
@@ -17842,7 +17842,7 @@ void ship_maybe_ask_for_help(ship* sp, ship* attacker)
 		return;	// no shields on ship, no don't check shield levels
 	}
 
-	if (shield_get_strength(objp) > (sip->ask_help_shield_percent * shield_get_max_strength(objp))) {
+	if (shield_get_strength(objp) > (sip->ask_help_shield_percent * shield_get_max_strength(sp))) {
 		return;
 	}
 
