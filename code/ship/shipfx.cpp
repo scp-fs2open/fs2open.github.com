@@ -1176,7 +1176,7 @@ DCF(particle_width, "Sets multiplier for angular width of the particle spew ( 0 
 
 	dc_stuff_float(&value);
 
-	CLAMP(value, 0.0, 5.0);
+	CLAMP(value, 0.0f, 5.0f);
 	Particle_width = value;
 
 	dc_printf("Particle_width set to %f\n", Particle_width);
@@ -1195,7 +1195,7 @@ DCF(particle_num, "Sets multiplier for the number of particles created")
 
 	dc_stuff_float(&value);
 
-	CLAMP(value, 0.0, 5.0);
+	CLAMP(value, 0.0f, 5.0f);
 	Particle_number = value;
 
 	dc_printf("Particle_number set to %f\n", Particle_number);
@@ -1213,7 +1213,7 @@ DCF(particle_life, "Multiplier for the lifetime of particles created")
 
 	dc_stuff_float(&value);
 
-	CLAMP(value, 0.0, 5.0);
+	CLAMP(value, 0.0f, 5.0f);
 	Particle_life = value;
 
 	dc_printf("Particle_life set to %f\n", Particle_life);

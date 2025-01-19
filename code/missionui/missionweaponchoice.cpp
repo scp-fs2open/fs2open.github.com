@@ -1364,7 +1364,7 @@ void wl_load_icons(int weapon_class)
 	{
 		if(VALID_FNAME(wip->tech_model))
 		{
-			icon->model_index = model_load(wip->tech_model, 0, NULL, 0);
+			icon->model_index = model_load(wip->tech_model, 0, nullptr, ErrorType::WARNING);
 		}
 		if(wip->render_type != WRT_LASER && icon->model_index == -1)
 		{
@@ -2770,7 +2770,7 @@ void weapon_select_do(float frametime)
 
 		//Get the model
 		if (VALID_FNAME(wip->tech_model)) {
-			modelIdx = model_load(wip->tech_model, 0, NULL, 0);
+			modelIdx = model_load(wip->tech_model, 0, nullptr, ErrorType::WARNING);
 		}
 		if (wip->render_type != WRT_LASER && modelIdx == -1) {
 			modelIdx = model_load(wip->pofbitmap_name, 0, NULL);

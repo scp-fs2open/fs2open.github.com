@@ -1177,7 +1177,7 @@ void gr_2d_stop_buffer() {
 gr_buffer_handle gr_immediate_buffer_handle;
 static size_t immediate_buffer_offset = 0;
 static size_t immediate_buffer_size = 0;
-static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
+static const size_t IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	if (gr_screen.mode == GR_STUB) {

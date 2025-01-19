@@ -1151,7 +1151,7 @@ ADE_FUNC(renderSelectModel,
 
 	int modelNum;
 	if (VALID_FNAME(wip->tech_model)) {
-		modelNum = model_load(wip->tech_model, 0, nullptr, 0);
+		modelNum = model_load(wip->tech_model, 0, nullptr, ErrorType::WARNING);
 	} else if (wip->render_type != WRT_LASER) {
 		modelNum = model_load(wip->pofbitmap_name, 0, nullptr);
 	} else {

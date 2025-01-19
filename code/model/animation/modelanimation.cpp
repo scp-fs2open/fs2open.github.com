@@ -1478,7 +1478,7 @@ namespace animation {
 				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
-					CLAMP(instance.time, 0, instance.duration);
+					CLAMP(instance.time, 0.0f, instance.duration);
 					instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
 				};
 			}
@@ -1508,7 +1508,7 @@ namespace animation {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {
-						CLAMP(property, 0, instance.*(*target.clamp));
+						CLAMP(property, 0.0f, instance.*(*target.clamp));
 					}
 				});
 			}
@@ -1538,7 +1538,7 @@ namespace animation {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {
-						CLAMP(property, 0, instance.*(*target.clamp));
+						CLAMP(property, 0.0f, instance.*(*target.clamp));
 					}
 				});
 			}
