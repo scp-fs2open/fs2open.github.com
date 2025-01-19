@@ -984,24 +984,8 @@ typedef struct ship_passive_arc_info {
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
-	float		min_rad;
-	float		max_rad;
-	int			n_high;
-	int			n_low;
-	float		variance;
+	particle::ParticleEffectHandle particle_handle;
 } thruster_particles;
-
-typedef struct particle_effect {
-	int				n_low;
-	int				n_high;
-	float			min_rad;
-	float			max_rad;
-	float			min_life;
-	float			max_life;
-	float			min_vel;
-	float			max_vel;
-	float			variance;
-} particle_effect;
 
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
@@ -1237,13 +1221,11 @@ public:
 	SCP_vector<int> explosion_bitmap_anims;
 	float skip_deathroll_chance;					
 
-	particle_effect		impact_spew;
-	particle_effect		damage_spew;
-	particle_effect		split_particles;
-	particle_effect		knossos_end_particles;
-	particle_effect		regular_end_particles;
-
-	particle::ParticleEffectHandle death_effect;
+	particle::ParticleEffectHandle		impact_spew;
+	particle::ParticleEffectHandle		damage_spew;
+	particle::ParticleEffectHandle		split_particles;
+	particle::ParticleEffectHandle		knossos_end_particles;
+	particle::ParticleEffectHandle		regular_end_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;

@@ -8,6 +8,7 @@
 #include "math/bitarray.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
+#include "particle/particle.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
 

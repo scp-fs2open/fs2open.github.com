@@ -68,6 +68,8 @@
 #include "object/objectsnd.h"
 #include "object/waypoint.h"
 #include "parse/parselo.h"
+#include "particle/ParticleEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "scripting/hook_api.h"
 #include "scripting/global_hooks.h"
 #include "particle/particle.h"
@@ -168,6 +170,9 @@ static void ship_set_eye(object *obj, int eye_index);
 static void ship_start_targeting_laser(ship *shipp);
 static void ship_add_ship_type_kill_count(int ship_info_index);
 static int ship_info_lookup_sub(const char *token);
+
+enum class LegacyShipParticleType : uint8_t {DAMAGE_SPEW, SPLIT_PARTICLES, OTHER};
+static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, bool useNormal = false);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1073,8 +1078,6 @@ void ship_info::clone(const ship_info& other)
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
 
-	death_effect = other.death_effect;
-
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
 	debris_min_speed = other.debris_min_speed;
@@ -1429,8 +1432,6 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
-
-	std::swap(death_effect, other.death_effect);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1814,58 +1815,21 @@ ship_info::ship_info()
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
-	impact_spew.n_high = 30;
-	impact_spew.n_low = 25;
-	impact_spew.max_rad = 0.5f;
-	impact_spew.min_rad = 0.2f;
-	impact_spew.max_life = 0.55f;
-	impact_spew.min_life = 0.05f;
-	impact_spew.max_vel = 12.0f;
-	impact_spew.min_vel = 2.0f;
-	impact_spew.variance = 1.0f;
+	static auto default_impact_spew = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire);
+	impact_spew = default_impact_spew;
 
 	// default values from shipfx.cpp
-	damage_spew.n_high = 1;						// 1 is used here to trigger retail behaviour
-	damage_spew.n_low = 0;
-	damage_spew.max_rad = 1.3f;
-	damage_spew.min_rad = 0.7f;
-	damage_spew.max_life = 0.0f;
-	damage_spew.min_life = 0.0f;
-	damage_spew.max_vel = 12.0f;
-	damage_spew.min_vel = 3.0f;
-	damage_spew.variance = 0.0f;
+	static auto default_damage_spew = default_ship_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, 1, 0, 1.3f, 0.7f, 1.0f, 1.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke);
+	damage_spew = default_damage_spew;
 
-	split_particles.n_high = 80;
-	split_particles.n_low = 40;
-	split_particles.max_rad = 0.0f;
-	split_particles.min_rad = 0.0f;
-	split_particles.max_life = 0.0f;
-	split_particles.min_life = 0.0f;
-	split_particles.max_vel = 0.0f;
-	split_particles.min_vel = 0.0f;
-	split_particles.variance = 2.0f;
+	static auto default_split_particles = default_ship_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, 80, 40, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
+	split_particles = default_split_particles;
 
-	knossos_end_particles.n_high = 30;
-	knossos_end_particles.n_low = 15;
-	knossos_end_particles.max_rad = 100.0f;
-	knossos_end_particles.min_rad = 30.0f;
-	knossos_end_particles.max_life = 12.0f;
-	knossos_end_particles.min_life = 2.0f;
-	knossos_end_particles.max_vel = 350.0f;
-	knossos_end_particles.min_vel = 50.0f;
-	knossos_end_particles.variance = 2.0f;
+	static auto default_knossos_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2);
+	knossos_end_particles = default_knossos_end_particles;
 
-	regular_end_particles.n_high = 100;
-	regular_end_particles.n_low = 50;
-	regular_end_particles.max_rad = 1.5f;
-	regular_end_particles.min_rad = 0.1f;
-	regular_end_particles.max_life = 4.0f;
-	regular_end_particles.min_life = 0.5f;
-	regular_end_particles.max_vel = 20.0f;
-	regular_end_particles.min_vel = 0.0f;
-	regular_end_particles.variance = 2.0f;
-
-	death_effect = particle::ParticleEffectHandle::invalid();
+	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, true);
+	regular_end_particles = default_regular_end_particles;
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -2475,109 +2439,196 @@ static void parse_ship_sounds(ship_info *sip)
 	parse_ship_sound("$DeathRollSnd:",                    GameSounds::DEATH_ROLL, sip);
 	parse_ship_sound("$ExplosionSnd:",                    GameSounds::SHIP_EXPLODE_1, sip);
 	parse_ship_sound("$SubsysExplosionSnd:",              GameSounds::SUBSYS_EXPLODE, sip);
-} 
+}
 
-static void parse_ship_particle_effect(ship_info* sip, particle_effect* pe, const char *id_string)
+static inline void parse_ship_particle_random_range_parse_helper(float* value) {
+	stuff_float(value);
+}
+
+static inline void parse_ship_particle_random_range_parse_helper(int* value) {
+	stuff_int(value);
+}
+
+template<typename T_parse, typename T_range = T_parse>
+static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char *min_name, const char *max_name, const char* id_string, const char *error_name, const char* shipname, bool min_can_be_0) {
+	constexpr const char* const non_neg_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be non-negative.\n";
+	constexpr const char* const pos_print_str = std::is_integral<T_parse>::value ? "Bad value %i, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n" : "Bad value %f, defined as %s particle %s (%s) in ship '%s'.\nValue should be positive.\n";
+	T_parse uninitialized = min_can_be_0 ? static_cast<T_parse>(0) : (static_cast<T_parse>(std::numeric_limits<T_range>::min()) + (std::is_integral<T_parse>::value ? 1 : 0));
+	T_parse max_value = uninitialized, min_value = uninitialized;
+
+	if(optional_string(max_name))
+	{
+		parse_ship_particle_random_range_parse_helper(&max_value);
+		if (max_value < 0 || (max_value <= 0.0f && !min_can_be_0)) {
+			Warning(LOCATION, min_can_be_0 ? non_neg_print_str : pos_print_str, max_value, id_string, error_name, "min", shipname);
+			max_value = uninitialized;
+		}
+	}
+
+	if(optional_string(min_name))
+	{
+		parse_ship_particle_random_range_parse_helper(&min_value);
+		if (min_value < 0 || (min_value <= 0.0f && !min_can_be_0)) {
+			Warning(LOCATION, min_can_be_0 ? non_neg_print_str : pos_print_str, min_value, id_string, error_name, "max", shipname);
+			min_value = uninitialized;
+		}
+	}
+	if (min_value >= max_value)
+		return ::util::UniformRange<T_range>(static_cast<T_range>(max_value));
+	else
+		return ::util::UniformRange<T_range>(static_cast<T_range>(min_value), static_cast<T_range>(max_value));
+}
+
+particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal)
 {
-	float tempf;
-	int temp;
-	if(optional_string("+Max particles:"))
-	{
-		stuff_int(&temp);
-		if (temp < 0) {
-			Warning(LOCATION,"Bad value %i, defined as %s particle number (max) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
-		} else {
-			pe->n_high = temp;
-			if (pe->n_high == 0) {
-				// notification for disabling the particles
-				mprintf(("Particle effect for %s disabled on ship '%s'.\n", id_string, sip->name));
-			}
-		}
-	}
-	if(optional_string("+Min particles:"))
-	{
-		stuff_int(&temp);
-		if (temp < 0) {
-			Warning(LOCATION,"Bad value %i, defined as %s particle number (min) in ship '%s'.\nValue should be a non-negative integer.\n", temp, id_string, sip->name);
-		} else {
-			pe->n_low = temp;
-		}
-	}
-	if (pe->n_low > pe->n_high)
-		pe->n_low = pe->n_high;
+	//Unfortunately legacy ship effects did a lot of ad-hoc computation of effect parameters.
+	//To mimic this in the modern system, these ad-hoc parameters are represented as hard-coded modular curves applied to various parts of the effect
+	std::optional<modular_curves_entry> part_number_curve, lifetime_curve, radius_curve, velocity_curve;
+	std::optional<modular_curves_entry> variance_curve;
 
-	if(optional_string("+Max Radius:"))
-	{
-		stuff_float(&tempf);
-		if (tempf <= 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle radius (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->max_rad = tempf;
-		}
-	}
-	if(optional_string("+Min Radius:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle radius (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->min_rad = tempf;
-		}
-	}
-	if (pe->min_rad > pe->max_rad)
-		pe->min_rad = pe->max_rad;
+	switch (type) {
+	case LegacyShipParticleType::DAMAGE_SPEW: {
+		static const int damage_spew_curve = []() -> int {
+			int curve_id = static_cast<int>(Curves.size());
+			auto& curve = Curves.emplace_back(";ShipParticleDamageSpew");
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f}, CurveInterpFunction::Constant, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{20.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{40.f, 1.2f}, CurveInterpFunction::Constant, 0.f, 0.f});
+			return curve_id;
+		}();
 
-	if(optional_string("+Max Lifetime:"))
-	{
-		stuff_float(&tempf);
-		if (tempf <= 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (max) in ship '%s'.\nValue should be a positive float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->max_life = tempf;
+		if (particle_num.max() <= 1.f) {
+			particle_num = ::util::UniformFloatRange(20.f, 50.f);
+			part_number_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
-	}
-	if(optional_string("+Min Lifetime:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle lifetime (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->min_life = tempf;
-		}
-	}
-	if (pe->min_life > pe->max_life)
-		pe->min_life = pe->max_life;
 
-	if(optional_string("+Max Velocity:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (max) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->max_vel = tempf;
+		if (normal_variance <= 0.f) {
+			normal_variance = 0.2f;
+			variance_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+		}
+
+		if (lifetime.max() <= 0.f) {
+			lifetime = ::util::UniformFloatRange(0.7f, 1.5f);
+			lifetime_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+		}
+
+		break;
+	}
+	case LegacyShipParticleType::SPLIT_PARTICLES: {
+		static const int split_particles_lifetime_curve = []() -> int {
+			int curve_id = static_cast<int>(Curves.size());
+			auto& curve = Curves.emplace_back(";ShipParticleSplitLifetime");
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 1.f + 100000.f * 0.002f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			return curve_id;
+		}();
+		static const int split_particles_radius_curve = []() -> int {
+			int curve_id = static_cast<int>(Curves.size());
+			auto& curve = Curves.emplace_back(";ShipParticleSplitRadius");
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f * 0.01f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			return curve_id;
+		}();
+		static const int split_particles_velocity_curve = []() -> int {
+			int curve_id = static_cast<int>(Curves.size());
+			auto& curve = Curves.emplace_back(";ShipParticleSplitVelocity");
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			return curve_id;
+		}();
+
+		if (lifetime.max() <= 0.f) {
+			lifetime = ::util::UniformFloatRange(0.5f, 6.f);
+			lifetime_curve.emplace(modular_curves_entry{split_particles_lifetime_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+		}
+
+		if (radius.max() <= 0.f) {
+			radius = ::util::UniformFloatRange(0.5f, 1.5f);
+			radius_curve.emplace(modular_curves_entry{split_particles_radius_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+		}
+
+		if (velocity.max() <= 0.f) {
+			velocity = ::util::UniformFloatRange(0.f, 1.f);
+			velocity_curve.emplace(modular_curves_entry{split_particles_velocity_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
 	}
-	if(optional_string("+Min Velocity:"))
-	{
-		stuff_float(&tempf);
-		if (tempf < 0.0f) {
-			Warning(LOCATION,"Bad value %f, defined as %s particle velocity (min) in ship '%s'.\nValue should be a non-negative float.\n", tempf, id_string, sip->name);
-		} else {
-			pe->min_vel = tempf;
-		}
+	default:
+		break;
 	}
-	if (pe->min_vel > pe->max_vel)
-		pe->min_vel = pe->max_vel;
+
+	auto velocity_volume = make_shared<particle::LegacyAACuboidVolume>(normal_variance, 1.f, true);
+	if (variance_curve) {
+		velocity_volume->m_modular_curves.add_curve("Host Radius", particle::LegacyAACuboidVolume::VolumeModularCurveOutput::VARIANCE, *variance_curve);
+	}
+
+	auto effect = particle::ParticleEffect(
+		"", //Name
+		particle_num, //Particle num
+		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+		::util::UniformFloatRange(1.f), //Velocity Inherit
+		false, //Velocity Inherit absolute?
+		std::move(velocity_volume), //Velocity volume
+		velocity, //Velocity volume multiplier
+		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+		tl::nullopt, //Orientation-based velocity
+		tl::nullopt, //Position-based velocity
+		nullptr, //Position volume
+		particle::ParticleEffectHandle::invalid(), //Trail
+		1.f, //Chance
+		true, //Affected by detail
+		range, //Culling range multiplier
+		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		lifetime, //Lifetime
+		radius, //Radius
+		bitmap); //Bitmap
+
+	if (part_number_curve) {
+		effect.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::PARTICLE_NUM_MULT, *part_number_curve);
+	}
+
+	if (lifetime_curve) {
+		effect.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::LIFETIME_MULT, *lifetime_curve);
+	}
+
+	if (radius_curve) {
+		effect.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, *radius_curve);
+	}
+
+	if (velocity_curve) {
+		effect.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, *radius_curve);
+	}
+
+	return particle::ParticleManager::get()->addEffect(std::move(effect));
+}
+
+static particle::ParticleEffectHandle parse_ship_legacy_particle_effect(LegacyShipParticleType type, ship_info* sip, const char *id_string, float range, int bitmap, bool useNormal = false)
+{
+	auto particle_num = parse_ship_particle_random_range<int, float>("+Min particles:", "+Max particles:", id_string, "number", sip->name, true);
+	auto radius = parse_ship_particle_random_range<float>("+Min Radius:", "+Max Radius:", id_string, "radius", sip->name, true);
+	auto lifetime = parse_ship_particle_random_range<float>("+Min Lifetime:", "+Max Lifetime:", id_string, "lifetime", sip->name, true);
+	auto velocity = parse_ship_particle_random_range<float>("+Min Velocity:", "+Max Velocity:", id_string, "velocity", sip->name, false);
+	float normal_variance = 0.0f;
 
 	if(optional_string("+Normal Variance:"))
 	{
-		stuff_float(&tempf);
-		if ((tempf >= 0.0f) && (tempf <= 2.0f)) {
-			pe->variance = tempf;
-		} else {
-			Warning(LOCATION,"Bad value %f, defined as %s particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", tempf, id_string, sip->name);
+		stuff_float(&normal_variance);
+		if ((normal_variance < 0.0f) || (normal_variance > 2.0f)) {
+			normal_variance = 0.0f;
+			Warning(LOCATION,"Bad value %f, defined as %s particle normal variance in ship '%s'.\nValue should be a float from 0.0 to 2.0.\n", normal_variance, id_string, sip->name);
 		}
 	}
+
+	return create_ship_legacy_particle_effect(type, range, bitmap, particle_num, radius, lifetime, velocity, normal_variance, useNormal);
+}
+
+static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, bool useNormal) {
+	return create_ship_legacy_particle_effect(
+		type, range, bitmap,
+		::util::UniformFloatRange(i2fl(n_low), i2fl(n_high)),
+		::util::UniformFloatRange(min_rad, max_rad),
+		::util::UniformFloatRange(min_life, max_life),
+		::util::UniformFloatRange(min_vel, max_vel),
+		variance, useNormal);
 }
 
 static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
@@ -3271,16 +3322,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		}
 	}
 
-	//HACK -
-	//This should really be reworked so that all particle fields
-	//are settable, but erg, just not happening right now -C
-	if(optional_string("$Impact Spew:"))
+	if(optional_string("$Impact Spew Effect:"))
 	{
-		parse_ship_particle_effect(sip, &sip->impact_spew, "impact spew");
+		sip->impact_spew = particle::util::parseEffect(sip->name);
 	}
-	if(optional_string("$Damage Spew:"))
+	else if(optional_string("$Impact Spew:"))
 	{
-		parse_ship_particle_effect(sip, &sip->damage_spew, "damage spew");
+		sip->impact_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "impact spew", 1.f, particle::Anim_bitmap_id_fire);
+	}
+	if(optional_string("$Damage Spew Effect:"))
+	{
+		sip->damage_spew = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Damage Spew:"))
+	{
+		sip->damage_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, sip, "damage spew", 1.f, particle::Anim_bitmap_id_smoke);
 	}
 
 	if(optional_string("$Collision Physics:"))
@@ -3784,23 +3840,31 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->death_roll_zrotation_cap = 0.0;
 	}
 
-	if(optional_string("$Ship Splitting Particles:"))
+	if(optional_string("$Ship Splitting Effect:"))
 	{
-		parse_ship_particle_effect(sip, &sip->split_particles, "ship split spew");
+		sip->split_particles = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Ship Splitting Particles:"))
+	{
+		sip->split_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, sip, "ship split spew", 1.f, particle::Anim_bitmap_id_smoke2);
 	}
 
 	if (optional_string("$Ship Death Effect:"))
 	{
-		sip->death_effect = particle::util::parseEffect(sip->name);
+		sip->regular_end_particles = particle::util::parseEffect(sip->name);
 	}
 	else if(optional_string("$Ship Death Particles:"))
 	{
-		parse_ship_particle_effect(sip, &sip->regular_end_particles, "normal death spew");
+		sip->regular_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2);
 	}
 
-	if(optional_string("$Alternate Death Particles:"))
+	if(optional_string("$Alternate Death Effect:"))
 	{
-		parse_ship_particle_effect(sip, &sip->knossos_end_particles, "knossos death spew");
+		sip->knossos_end_particles = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Alternate Death Particles:"))
+	{
+		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, true);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
@@ -4481,7 +4545,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	else if (first_time && VALID_FNAME(sip->pof_file))
 	{
 		//Calculate from the model file. This is inefficient, but whatever
-		int model_idx = model_load(sip->pof_file, 0, NULL);
+		int model_idx = model_load(sip->pof_file);
 		polymodel *pm = model_get(model_idx);
 
 		//Go through, find best
@@ -4758,32 +4822,86 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	while ( optional_string("$Thruster Particles:") ) {
 		bool afterburner = false;
+		bool modern_particle = false;
 		thruster_particles tpart;
 
 		if ( optional_string("$Thruster Particle Bitmap:") )
 			afterburner = false;
 		else if ( optional_string("$Afterburner Particle Bitmap:") )
 			afterburner = true;
+		else if ( optional_string("$Thruster Effect:") ) {
+			afterburner = true;
+			modern_particle = true;
+		}
+		else if ( optional_string("$Afterburner Effect:") ) {
+			afterburner = true;
+			modern_particle = true;
+		}
 		else
 			Error( LOCATION, "formatting error in the thruster's particle section for %s '%s'\n", info_type_name, sip->name );
 
-		generic_anim_init(&tpart.thruster_bitmap, NULL);
-		stuff_string(tpart.thruster_bitmap.filename, F_NAME, MAX_FILENAME_LEN);
+		if (modern_particle) {
+			tpart.particle_handle = particle::util::parseEffect(sip->name);
+		}
+		else {
+			generic_anim_init(&tpart.thruster_bitmap, nullptr);
 
-		required_string("$Min Radius:");
-		stuff_float(&tpart.min_rad);
-		
-		required_string("$Max Radius:");
-		stuff_float(&tpart.max_rad);
-		
-		required_string("$Min created:");
-		stuff_int(&tpart.n_low);
-		
-		required_string("$Max created:");
-		stuff_int(&tpart.n_high);
-		
-		required_string("$Variance:");
-		stuff_float(&tpart.variance);
+			stuff_string(tpart.thruster_bitmap.filename, F_NAME, MAX_FILENAME_LEN);
+
+			float min_rad, max_rad;
+			int min_n, max_n;
+			float variance;
+			required_string("$Min Radius:");
+			stuff_float(&min_rad);
+
+			required_string("$Max Radius:");
+			stuff_float(&max_rad);
+
+			required_string("$Min created:");
+			stuff_int(&min_n);
+
+			required_string("$Max created:");
+			stuff_int(&max_n);
+
+			required_string("$Variance:");
+			stuff_float(&variance);
+
+			generic_anim_load(&tpart.thruster_bitmap);
+
+			auto particle = particle::ParticleEffect(
+				"", //Name
+				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
+				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+				::util::UniformFloatRange(1.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+				::util::UniformFloatRange(0.75f, 1.25f), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				tl::nullopt, //Orientation-based velocity
+				tl::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				true, //Affected by detail
+				1.0f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
+				::util::UniformFloatRange(min_rad, max_rad), //Radius
+				tpart.thruster_bitmap.first_frame); //Bitmap
+
+			static const int thruster_particle_curve = []() -> int {
+				int curve_id = static_cast<int>(Curves.size());
+				auto& curve = Curves.emplace_back(";ShipParticleThruster");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+
+			tpart.particle_handle = particle::ParticleManager::get()->addEffect(std::move(particle));
+		}
 
 		if (afterburner) {
 			sip->afterburner_thruster_particles.push_back( tpart );
@@ -9246,25 +9364,16 @@ static void ship_dying_frame(object *objp, int ship_num)
 				shipp->next_fireball = timestamp_rand(333,500);
 
 				// emit particles
-				particle::particle_emitter	pe;
-				particle_effect		pef = sip->knossos_end_particles;
-				
-				pe.num_low = pef.n_low;					// Lowest number of particles to create
-				pe.num_high = pef.n_high;				// Highest number of particles to create
-				pe.pos = outpnt;				// Where the particles emit from
-				pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-				pe.min_life = pef.min_life;	// How long the particles live
-				pe.max_life = pef.max_life;	// How long the particles live
-				pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-				pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-				pe.min_vel = pef.min_vel;
-				pe.max_vel = pef.max_vel;
-				pe.min_rad = pef.min_rad;	// * objp->radius;
-				pe.max_rad = pef.max_rad; // * objp->radius;
+				auto source = particle::ParticleManager::get()->createSource(sip->knossos_end_particles);
 
-				if (pe.num_high > 0) {
-					particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, 50 );
-				}
+				// For some reason these consider the uvec to be forward...
+				matrix newOrient;
+				newOrient.vec.fvec = objp->orient.vec.uvec;
+				newOrient.vec.uvec = objp->orient.vec.fvec * -1.f;
+				newOrient.vec.rvec = objp->orient.vec.rvec;
+
+				source->setHost(make_unique<EffectHostVector>(outpnt, newOrient, objp->phys_info.vel));
+				source->finishCreation();
 
 				// do sound - maybe start a random sound, if it has played far enough.
 				do_sub_expl_sound(objp->radius, &outpnt, shipp->sub_expl_sound_handle.data());
@@ -9365,36 +9474,17 @@ static void ship_dying_frame(object *objp, int ship_num)
 			}
 
 			if (!knossos_ship){
-				if (sip->death_effect.isValid()) {
+				if (sip->regular_end_particles.isValid()) {
+					// Previously, this had a branch where legacy-type particles had their orientation changed to point upwards for a nondescript reason.
+					// While this likely makes very little difference in practice, we will pretend that the uvec of the ship is the normal, and orient legacy effects using it.
+
 					// Use the new particle effect
-					auto source = particle::ParticleManager::get()->createSource(sip->death_effect);
+					auto source = particle::ParticleManager::get()->createSource(sip->regular_end_particles);
 
 					// Use the position since the ship is going to be invalid soon
-					source.moveTo(&objp->pos, &objp->orient);
-					source.setVelocity(&objp->phys_info.vel);
-
-					source.finish();
-				} else {
-					// play a random explosion
-					particle::particle_emitter	pe;
-					particle_effect		pef = sip->regular_end_particles;
-
-					pe.num_low = pef.n_low;					// Lowest number of particles to create
-					pe.num_high = pef.n_high;				// Highest number of particles to create
-					pe.pos = objp->pos;				// Where the particles emit from
-					pe.vel = objp->phys_info.vel;	// Initial velocity of all the particles
-					pe.min_life = pef.min_life;				// How long the particles live
-					pe.max_life = pef.max_life;				// How long the particles live
-					pe.normal = objp->orient.vec.uvec;	// What normal the particle emit around
-					pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-					pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-					pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
-					pe.min_rad = pef.min_rad;				// Min radius
-					pe.max_rad = pef.max_rad;				// Max radius
-
-					if (pe.num_high > 0) {
-						particle::emit( &pe, particle::PARTICLE_SMOKE2, 0 );
-					}
+					source->setHost(make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel));
+					source->setNormal(objp->orient.vec.uvec);
+					source->finishCreation();
 				}
 			}
 
@@ -11058,11 +11148,11 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		Error(LOCATION, "Cannot create ship %s; pof file is not valid", sip->name);
 		return -1;
 	}
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);		// use the highest detail level
+	sip->model_num = model_load(sip->pof_file, sip);		// use the highest detail level
 
 	if(VALID_FNAME(sip->cockpit_pof_file))
 	{
-		sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+		sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 	}
 
 	// maybe load an optional hud target model
@@ -11070,16 +11160,16 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 		// check to see if a "real" ship uses this model. if so, load it up for him so that subsystems are setup properly
 		for(auto it = Ship_info.begin(); it != Ship_info.end(); ++it){
 			if(!stricmp(it->pof_file, sip->pof_file_hud)){
-				it->model_num = model_load(it->pof_file, it->n_subsystems, &it->subsystems[0]);
+				it->model_num = model_load(it->pof_file, &*it);
 			}
 		}
 
 		// mow load it for me with no subsystems
-		sip->model_num_hud = model_load(sip->pof_file_hud, 0, NULL);
+		sip->model_num_hud = model_load(sip->pof_file_hud);
 	}
 
 	if (VALID_FNAME(sip->generic_debris_pof_file)) {
-		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file, 0, nullptr);
+		sip->generic_debris_model_num = model_load(sip->generic_debris_pof_file);
 		if (sip->generic_debris_model_num >= 0) {
 			polymodel* pm = model_get(sip->generic_debris_model_num);
 			sip->generic_debris_num_submodels = pm->n_models;
@@ -11306,12 +11396,12 @@ static void ship_model_change(int n, int ship_type)
 
 	// get new model
 	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		sip->model_num = model_load(sip->pof_file, sip);
 	}
 
 	if ( sip->cockpit_model_num == -1 ) {
 		if ( VALID_FNAME(sip->cockpit_pof_file) ) {
-			sip->cockpit_model_num = model_load(sip->cockpit_pof_file, 0, NULL);
+			sip->cockpit_model_num = model_load(sip->cockpit_pof_file);
 		}
 	}
 
@@ -18478,7 +18568,7 @@ void ship_page_in()
 			num_subsystems_needed += sip->n_subsystems;
 
 			// load the darn model and page in textures
-			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			sip->model_num = model_load(sip->pof_file, &*sip);
 
 			if (sip->model_num >= 0) {
 				model_page_in_textures(sip->model_num, i);
@@ -18609,7 +18699,7 @@ void ship_page_in()
 
 				// the model should already be loaded so this wouldn't take long, but
 				// we need to make sure that the load count for the model is correct
-				test_id = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+				test_id = model_load(sip->pof_file, &*sip);
 				Assert( test_id == model_previously_loaded );
 
 				break;
@@ -18654,7 +18744,7 @@ void ship_page_in()
 			}
 		} else {
 			// Model not loaded, so load it
-			sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+			sip->model_num = model_load(sip->pof_file, &*sip);
 
 			Assert( sip->model_num >= 0 );
 
