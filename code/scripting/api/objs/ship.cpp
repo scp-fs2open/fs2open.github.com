@@ -1583,21 +1583,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_WAYPOINTS:
-		{
-			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
-			{
-				ai_mode = AI_GOAL_WAYPOINTS;
-				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp()->instance);
-				if(wp_list != NULL)
-					ai_shipname = wp_list->get_name();
-			}
-			break;
-		}
 		case LE_ORDER_WAYPOINTS_ONCE:
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
 			{
-				ai_mode = AI_GOAL_WAYPOINTS_ONCE;
+				ai_mode = (eh->index == LE_ORDER_WAYPOINTS_ONCE) ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
 				waypoint_list *wp_list = find_waypoint_list_with_instance(tgh->objp()->instance);
 				if(wp_list != NULL)
 					ai_shipname = wp_list->get_name();
@@ -1611,10 +1601,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_FORM_ON_WING:
+		case LE_ORDER_FORM_ON_WING_NEW:
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_FORM_ON_WING;
+				ai_mode = (eh->index == LE_ORDER_FORM_ON_WING) ? AI_GOAL_FORM_ON_WING : AI_GOAL_FORM_ON_WING_NEW;
 				ai_shipname = Ships[tgh->objp()->instance].ship_name;
 				ai_submode = 0;
 			}
@@ -1720,8 +1711,9 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_STAY_STILL:
+		case LE_ORDER_STAY_STILL_NEW:
 		{
-			ai_mode = AI_GOAL_STAY_STILL;
+			ai_mode = (eh->index == LE_ORDER_STAY_STILL) ? AI_GOAL_STAY_STILL : AI_GOAL_STAY_STILL_NEW;
 			if(tgh_valid && tgh->objp()->type == OBJ_SHIP)
 			{
 				ai_shipname = Ships[tgh->objp()->instance].ship_name;
