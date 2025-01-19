@@ -12438,27 +12438,39 @@ bool is_implicit_argument_provider_op(const int op_const)
 // Goober5000
 int sexp_functional_if_then_else(int node)
 {
-	int num1, num2, n;
-	bool is_nan, is_nan_forever;
+	int num1, num2, n = node;
+	bool is_nan1, is_nan_forever1, is_nan2, is_nan_forever2;
 
-	Assertion(CAR(node) >= 0, "The condition in functional-if-then-else must be an operator!");
+	Assertion(CAR(n) >= 0, "The condition in functional-if-then-else must be an operator!");
 
 	// decision time
-	int condition = eval_sexp(CAR(node));
+	int condition = eval_sexp(CAR(n));
+	n = CDR(n);
 
 	// we need to evaluate both numbers regardless of which one we pick
-	n = CDR(node);
-	eval_nums(n, is_nan, is_nan_forever, num1, num2);
-	if (is_nan)
-		return SEXP_NAN;
-	if (is_nan_forever)
-		return SEXP_NAN_FOREVER;
+	num1 = eval_num(n, is_nan1, is_nan_forever1);
+	n = CDR(n);
+	num2 = eval_num(n, is_nan2, is_nan_forever2);
 
 	// pick one
 	if (condition == SEXP_TRUE || condition == SEXP_KNOWN_TRUE)
-		return num1;
+	{
+		if (is_nan1)
+			return SEXP_NAN;
+		else if (is_nan_forever1)
+			return SEXP_NAN_FOREVER;
+		else
+			return num1;
+	}
 	else
-		return num2;
+	{
+		if (is_nan2)
+			return SEXP_NAN;
+		else if (is_nan_forever2)
+			return SEXP_NAN_FOREVER;
+		else
+			return num2;
+	}
 }
 
 // Goober5000
@@ -38052,9 +38064,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
 
 	{ OP_HITS_LEFT, "Hits left (Status operator)\r\n"
-		"\tReturns the current level of the specified ship's hull as a percentage.\r\n\r\n"
+		"\tReturns the current level of the specified ship's hull as a percentage.  Note: for ships that have not arrived yet, or have departed, "
+		" or have been destroyed (even if the ship is 'in-mission' but doing a death roll) this returns NaN.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
+		"\t1:\tName of ship to check (evaluation returns NAN unless ship is in-mission and alive)." },
 
 	{ OP_HITS_LEFT_SUBSYSTEM, "Hits left subsystem (status operator, deprecated)\r\n"
 		"\tReturns the current level of the specified ship's subsystem integrity as a percentage of the damage done to *all "
@@ -38064,7 +38077,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"this operator is deprecated.  Mission designers are strongly encouraged to use hits-left-subsystem-specific rather than "
 		"the optional boolean parameter.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 or 3 arguments...\r\n"
-		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission).\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN unless ship is in-mission and alive).\r\n"
 		"\t2:\tName of subsystem on ship to check.\r\n"
 		"\t3:\t(Optional) True/False. When set to true only the subsystem supplied will be tested; when set to false (the default), "
 		"all subsystems of that type will be tested." },
@@ -38076,7 +38089,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"example, if the integrity of all engine subsystems (that is, the combined strength of all engines divided by the maximum "
 		"total strength of all engines) is less than 30%, the player cannot warp out.\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN unless ship is in-mission and alive)\r\n"
 		"\t2:\tName of subsystem type to check\r\n" },
 
 	{ OP_HITS_LEFT_SUBSYSTEM_SPECIFIC, "hits-left-subsystem-specific (status operator)\r\n"
@@ -38086,13 +38099,14 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"and will not appear in the operator list; it can only be used if you type it in manually.  Old missions using hits-left-subsystem "
 		"will still work, but mission designers are strongly encouraged to use the new operators instead.)\r\n\r\n"
 		"Returns a numeric value.  Takes 2 arguments...\r\n"
-		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)\r\n"
+		"\t1:\tName of ship to check (evaluation returns NAN unless ship is in-mission and alive)\r\n"
 		"\t2:\tName of subsystem to check\r\n" },
 
 	{ OP_SIM_HITS_LEFT, "Simulated Hits left (Status operator)\r\n"
-		"\tReturns the current level of the specified ship's simulated hull as a percentage.\r\n\r\n"
+		"\tReturns the current level of the specified ship's simulated hull as a percentage.  Note: for ships that have not arrived yet, or have departed, "
+		" or have been destroyed (even if the ship is 'in-mission' but doing a death roll) this returns NaN.\r\n\r\n"
 		"Returns a numeric value.  Takes 1 argument...\r\n"
-		"\t1:\tName of ship to check (evaluation returns NAN until ship is in-mission)." },
+		"\t1:\tName of ship to check (evaluation returns NAN unless ship is in-mission and alive)." },
 
 	{ OP_DISTANCE, "Distance (Status operator)\r\n"
 		"\tReturns the distance between two objects.  These can be ships, wings, or waypoints.  "
