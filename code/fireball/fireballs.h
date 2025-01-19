@@ -39,6 +39,14 @@ class asteroid_info;
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
+// Gamma39er: Flare animation enum. Add new animation types here.
+enum class warp_style
+{
+	CLASSIC,
+	ENHANCED,
+	CINEMATIC
+};
+
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
 	char	filename[MAX_FILENAME_LEN];
@@ -55,6 +63,18 @@ typedef struct fireball_info {
 
 	bool	use_3d_warp;
 	bool	fireball_used;
+	// bool    bobboau_anim;
+
+	warp_style warp_flare_style;
+	warp_style warp_model_style;
+
+	// Customize how large the warp and it's flare are.
+	float warp_size_ratio;
+	float flare_size_ratio;
+
+	// Cinematic Warp stuff
+	float   rot_anim[3];
+	float   frame_anim[3];
 
 	char	warp_glow[NAME_LENGTH];
 	int		warp_glow_bitmap;
@@ -137,8 +157,17 @@ int fireball_ship_explosion_type(ship_info *sip);
 // returns the index of the fireball bitmap for this asteroid. -1 if there is none.
 int fireball_asteroid_explosion_type(asteroid_info *aip);
 
+// Gamma39er cinematic wormhole function
+float cutscene_wormhole(float t);
+
 // returns the intensity of a wormhole
 float fireball_wormhole_intensity( fireball *fb );
+
+// Gamma39er flare radius function
+float fireball_wormhole_flare_radius(fireball* fb);
+
+// Gamma39er exponential velocity to linear velocity function
+float exp_to_line(float t, float start_slope, float end_slope, float scale);
 
 // Goober5000
 extern bool Knossos_warp_ani_used;
