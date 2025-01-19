@@ -1009,7 +1009,7 @@ typedef struct ship_type_info {
 	float fog_complete_dist;
 
 	//AI
-	int	ai_valid_goals;
+	SCP_set<ai_goal_mode> ai_valid_goals;
 	std::set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
@@ -1030,7 +1030,7 @@ typedef struct ship_type_info {
 		: debris_max_speed( 0.f ),
 		  ff_multiplier( 0.f ), emp_multiplier( 0.f ), warp_sound_range_multiplier( 1.f ),
 		  fog_start_dist( 0.f ), fog_complete_dist( 0.f ),
-		  ai_valid_goals( 0 ), ai_active_dock( 0 ), ai_passive_dock( 0 ),
+		  ai_active_dock( 0 ), ai_passive_dock( 0 ),
 		  skip_deathroll_chance( 0.f )
 
 	{

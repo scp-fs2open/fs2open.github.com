@@ -32,6 +32,7 @@
 #include "object/objectdock.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
+#include "scripting/api/objs/message.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
@@ -831,7 +832,7 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	return ade_set_args(L, "o", l_Team.Set(shipp->team));
 }
 
-ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set")
+ADE_VIRTVAR_DEPRECATED(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set", gameversion::version(25, 0), "Deprecated in favor of Persona")
 {
 	object_h *objh;
 	int p_index = -1;
@@ -849,6 +850,28 @@ ADE_VIRTVAR(PersonaIndex, l_Ship, "number", "Persona index", "number", "The inde
 	return ade_set_args(L, "i", shipp->persona_index + 1);
 }
 
+ADE_VIRTVAR(Persona, l_Ship, "persona", "The persona of the ship, if any", "persona", "Persona handle or invalid handle on error")
+{
+	object_h* objh;
+	int idx = -1;
+	if (!ade_get_args(L, "o|o", l_Ship.GetPtr(&objh), l_Persona.Get(&idx)))
+		return ade_set_error(L, "o", l_Persona.Set(-1));
+
+	if (!objh->isValid())
+		return ade_set_error(L, "o", l_Persona.Set(-1));
+
+	ship* shipp = &Ships[objh->objp()->instance];
+
+	if (ADE_SETTING_VAR && idx > -1) {
+		shipp->persona_index = idx;
+	}
+
+	if (!SCP_vector_inbounds(Personas, shipp->persona_index))
+		return ade_set_args(L, "o", l_Persona.Set(-1));
+	else
+		return ade_set_args(L, "o", l_Persona.Set(shipp->persona_index));
+}
+
 ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "modelinstancetextures", "Ship textures, or invalid shiptextures handle if ship handle is invalid")
 {
 	object_h *sh = nullptr;
@@ -862,12 +885,8 @@ ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "mo
 	polymodel_instance *dest = model_get_instance(Ships[dh->objp()->instance].model_instance_num);
 
 	if(ADE_SETTING_VAR && sh && sh->isValid()) {
-		polymodel_instance *src = model_get_instance(Ships[sh->objp()->instance].model_instance_num);
-
-		if (src->texture_replace != nullptr)
-		{
-			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
-		}
+		dest->texture_replace = model_get_instance(Ships[sh->objp()->instance].model_instance_num)->texture_replace;
+		
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
@@ -1530,7 +1549,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 
 	bool tgh_valid = tgh && tgh->isValid();
 	bool tgsh_valid = tgsh && tgsh->isValid();
-	int ai_mode = AI_GOAL_NONE;
+	ai_goal_mode ai_mode = AI_GOAL_NONE;
 	int ai_submode = -1234567;
 	const char *ai_shipname = NULL;
 	switch(eh->index)

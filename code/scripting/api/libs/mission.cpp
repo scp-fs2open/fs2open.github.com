@@ -2329,7 +2329,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist, &intersecting_obj);
 
 	if (returnDist_and_Obj)
-		return ade_set_args(L, "bfo", hasLoS, *dist, l_Object.Set(object_h(intersecting_obj)));
+		return ade_set_args(L, "bfo", hasLoS, *dist, ade_object_to_odata(OBJ_INDEX(intersecting_obj)));
 	else
 		return ade_set_args(L, "b", hasLoS);
 }

@@ -1694,9 +1694,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
-				if ( pm->rad <= 0.1f )
+				if ( pm->rad <= 0.00001f )
 				{
-					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
+					Warning(LOCATION, "Model <%s> has a radius <= 0.00001f\n", filename);
 				}
 
 				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
@@ -1881,8 +1881,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( sm->rad <= 0.1f ) {
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", sm->name, filename);
+				if ( sm->rad <= 0.00001f ) {
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.00001f\n", sm->name, filename);
 				}
 				
 				// sanity first!
@@ -5134,7 +5134,7 @@ void model_do_intrinsic_motions(object *objp)
 	// we are handling a specific object
 	if (objp)
 	{
-		int model_instance_num = object_get_model_instance(objp);
+		int model_instance_num = object_get_model_instance_num(objp);
 		if (model_instance_num >= 0)
 		{
 			auto obj_it = Intrinsic_motions.find(model_instance_num);

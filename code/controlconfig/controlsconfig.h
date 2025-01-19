@@ -845,7 +845,7 @@ bool control_config_delete_preset(CC_preset preset);
  * @returns TRUE if successful
  * @returns FALSE if the preset already exists with that name
  */
-bool control_config_clone_preset(CC_preset preset, SCP_string name);
+bool control_config_clone_preset(const CC_preset& preset, const SCP_string& name, bool overwrite);
 
 /*!
  * @brief Saves a preset with the current controls
@@ -853,7 +853,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string name);
  * @returns TRUE if successful
  * @returns FALSE if the preset already exists with that name
  */
-bool control_config_create_new_preset(SCP_string name);
+bool control_config_create_new_preset(const SCP_string& name, bool overwrite);
 
 /*!
  * Returns the IoActionId (index within Control_config[]) of a control bound to the given key

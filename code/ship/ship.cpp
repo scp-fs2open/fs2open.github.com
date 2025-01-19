@@ -8146,7 +8146,9 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool hasCockpitModel = sip->cockpit_model_num >= 0;
 
 	const bool renderCockpitModel = (Viewer_mode != VM_TOPDOWN) && hasCockpitModel && !Disable_cockpits;
-	const bool renderShipModel = (sip->flags[Ship::Info_Flags::Show_ship_model])
+	const bool renderShipModel = ( 
+		sip->flags[Ship::Info_Flags::Show_ship_model])
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
 		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
 			|| !(Viewer_mode & VM_EXTERNAL));
 	Cockpit_active = renderCockpitModel;
@@ -17388,9 +17390,6 @@ SCP_string ship_return_orders(ship* sp)
 	// The active goal is always in the first element of aip->goals[]
 	aigp = &aip->goals[0];
 
-	if (aigp->ai_mode < 0)
-		return SCP_string();
-
 	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
 		return SCP_string();
@@ -18835,7 +18834,7 @@ void ship_page_in()
 		// is this a valid ship?
 		if (Ships[i].objnum >= 0)
 		{
-			polymodel_instance* pmi = model_get_instance(object_get_model_instance(&Objects[Ships[i].objnum]));
+			polymodel_instance* pmi = object_get_model_instance(&Objects[Ships[i].objnum]);
 			// do we have any textures?
 			if (pmi->texture_replace != nullptr)
 			{

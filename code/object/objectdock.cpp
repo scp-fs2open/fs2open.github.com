@@ -633,13 +633,11 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 
 void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop)
 {
-	polymodel *pm;
 	vec3d parent_relative_mins, parent_relative_maxs;
 
 	// find the model used by this object
-	int modelnum = object_get_model(objp);
-	Assert(modelnum >= 0);
-	pm = model_get(modelnum);
+	auto pm = object_get_model(objp);
+	Assert(pm);
 
 	// special case: we are already in the correct frame of reference
 	if (objp == infop->parameter_variables.objp_value)

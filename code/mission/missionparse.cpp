@@ -1518,6 +1518,14 @@ void parse_briefing(mission * /*pm*/, int flags)
 			if (optional_string("$no_grid"))
 				bs->draw_grid = false;
 
+			if (optional_string("$grid_color:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&bs->grid_color, rgba[0], rgba[1], rgba[2], rgba[3]);
+			} else {
+				bs->grid_color = Color_briefing_grid;
+			}
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 
@@ -2256,7 +2264,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		// set up the ai goals for this object.
 		for (sexp = CDR(p_objp->ai_goals); sexp != -1; sexp = CDR(sexp))
-			ai_add_ship_goal_sexp(sexp, AIG_TYPE_EVENT_SHIP, aip);
+			ai_add_ship_goal_sexp(sexp, ai_goal_type::EVENT_SHIP, aip);
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
@@ -4842,7 +4850,7 @@ void parse_wing(mission *pm)
 		// this will assign the goals to the wings as well as to any ships in the wing that have been
 		// already created.
 		for ( sexp = CDR(wing_goals); sexp != -1; sexp = CDR(sexp) )
-			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingp);  // used by Fred
+			ai_add_wing_goal_sexp(sexp, ai_goal_type::EVENT_WING, wingp);  // used by Fred
 
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
@@ -9049,9 +9057,18 @@ bool check_for_24_1_data()
 		}
 	}
 
-	if ((Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
-		(Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty()))
-		return true;
+	return (Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
+		   (Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty());
+}
 
+bool check_for_24_3_data()
+{
+	for (int i = 0; i < Num_teams; i++) {
+		for (int j = 0; j < Briefings[i].num_stages; j++) {
+			if (!gr_compare_color_values(Briefings[i].stages[j].grid_color, Color_briefing_grid)) {
+				return true;
+			}
+		}
+	}
 	return false;
 }

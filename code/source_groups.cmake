@@ -1034,6 +1034,8 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/default_settings_table.cpp
+	options/default_settings_table.h
 	options/Ingame_Options.cpp
 	options/Ingame_Options.h
 	options/Ingame_Options_internal.h
@@ -1305,6 +1307,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/controls.h
 	scripting/api/libs/engine.cpp
 	scripting/api/libs/engine.h
+	scripting/api/libs/globals.cpp
+	scripting/api/libs/globals.h
 	scripting/api/libs/graphics.cpp
 	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp

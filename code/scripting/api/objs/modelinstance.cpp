@@ -203,13 +203,7 @@ ADE_VIRTVAR(Textures, l_ModelInstance, "modelinstancetextures", "Gets model inst
 		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
 
 	if(ADE_SETTING_VAR && sh && sh->isValid()) {
-		polymodel_instance *src = sh->Get();
-		polymodel_instance *dest = dh->Get();
-
-		if (src->texture_replace != nullptr)
-		{
-			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
-		}
+		dh->Get()->texture_replace = sh->Get()->texture_replace;
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dh->Get())));

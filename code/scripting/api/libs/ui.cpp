@@ -301,8 +301,10 @@ ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the Pilot Select UI.",
               l_UserInterface);
 
-ADE_VIRTVAR(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
-            "The maximum number of pilots")
+ADE_VIRTVAR_DEPRECATED(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
+	"The maximum number of pilots",
+	gameversion::version(25, 0, 0, 0),
+	"This variable has moved to the GlobalVariabls library.")
 {
 	return ade_set_args(L, "i", MAX_PILOTS);
 }
@@ -483,6 +485,32 @@ ADE_FUNC(toggleHelp,
 
 	main_hall_toggle_help(toggle);
 
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setMainhall, l_UserInterface_MainHall, "string mainhall, boolean enforce", "The name of the mainhall to try to set. Will immediately change if the player is currently in the mainhall menu. "
+	"Use enforce to set this as the mainhall on next mainhall load if setting from outside the mainhall menu. NOTE: If enforce is true then the player will always return back to this mainhall forever. "
+	"Call this with a blank string and enforce false to unset enforce without changing the current mainhall that is loaded.", nullptr, "nothing")
+{
+	const char* name = nullptr;
+	bool enforce = false;
+	if (!ade_get_args(L, "s|b", &name, &enforce)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (enforce) {
+		Enforced_main_hall = name;
+	} else {
+		Enforced_main_hall.clear();
+	}
+
+	if (gameseq_get_state() == GS_STATE_MAIN_MENU) {
+		if (name[0] != '\0') {
+			main_hall_close();
+			main_hall_init(name);
+		}
+	}
 
 	return ADE_RETURN_NIL;
 }
@@ -2229,17 +2257,18 @@ ADE_FUNC(usePreset,
 
 ADE_FUNC(createPreset,
 	l_UserInterface_ControlConfig,
-	"string Name",
+	"string Name, [boolean overwrite]",
 	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
 	"boolean",
 	"The return status")
 {
 	const char* preset;
-	ade_get_args(L, "s", &preset);
+	bool overwrite = false;
+	ade_get_args(L, "s|b", &preset, &overwrite);
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name, overwrite)));
 }
 
 ADE_FUNC(undoLastChange,

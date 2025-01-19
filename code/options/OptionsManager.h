@@ -19,6 +19,9 @@ class OptionsManager {
 
 	SCP_unordered_map<SCP_string, const OptionBase*> _optionsMapping;
 
+	// Enforced options are hidden from the player and do not load values from user settings
+	SCP_unordered_set<SCP_string> _enforcedOptions;
+
 	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
@@ -38,6 +41,12 @@ class OptionsManager {
 	void removeOption(const std::shared_ptr<const OptionBase>& option);
 
 	const OptionBase* getOptionByKey(SCP_string name);
+
+	void enforceOption(const SCP_string& key);
+
+	void unenforceOption(const SCP_string& key);
+
+	bool isOptionEnforced(const SCP_string& key) const;
 
 	const SCP_vector<std::shared_ptr<const options::OptionBase>>& getOptions();
 

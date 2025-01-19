@@ -377,7 +377,7 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				if (optional_string("$Detail Distance Multiplier:"))
-					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_LEVEL + 1);
+					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_VALUE + 1);
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
@@ -655,6 +655,20 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix avoid-shockwave bugs:", AI::Profile_Flags::Fix_avoid_shockwave_bugs);
 
+				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
+
+				if (optional_string("$standard strafe triggers under this speed:")) {
+					stuff_float(&profile->standard_strafe_when_below_speed);
+				}
+
+				if (optional_string("$strafe distance from target bounding box:")) {
+					stuff_float(&profile->strafe_retreat_box_dist);
+				}
+
+				if (optional_string("$strafe stops after time unhit:")) {
+					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -747,6 +761,10 @@ void ai_profile_t::reset()
 	turret_target_recheck_time = 2000.0f;
 	rot_fac_multiplier_ply_collisions = 0.0f;
 
+	standard_strafe_when_below_speed = 3.0f;
+	strafe_retreat_box_dist = 300.0f;
+	strafe_max_unhit_time = 20.0f;
+
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
         max_allowed_player_homers[i] = 0;
@@ -804,7 +822,7 @@ void ai_profile_t::reset()
         player_autoaim_fov[i] = 0;
     }
 
-    for (int i = 0; i <= MAX_DETAIL_LEVEL; ++i) {
+    for (int i = 0; i <= MAX_DETAIL_VALUE; ++i) {
         detail_distance_mult[i] = 0;
     }
 

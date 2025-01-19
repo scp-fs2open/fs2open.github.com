@@ -908,7 +908,7 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			hud_target_lod		= homing_sip->hud_target_lod;
 		}
 
-		int pmi_id = object_get_model_instance(viewed_obj);
+		int pmi_id = object_get_model_instance_num(viewed_obj);
 		if (pmi_id >= 0)
 			replacement_textures = model_get_instance(pmi_id)->texture_replace;
 

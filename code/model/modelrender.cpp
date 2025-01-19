@@ -945,9 +945,8 @@ int model_render_determine_detail(float depth, int model_num, int detail_level_l
 			i = detail_level_locked+1;
 		} else {
 
-#if MAX_DETAIL_LEVEL != 4
-#error Code in modelrender.cpp assumes MAX_DETAIL_LEVEL == 4
-#endif
+			static_assert(MAX_DETAIL_VALUE == 4, "MAX_DETAIL_VALUE is assumed to be 4 in SystemVars.cpp");
+
 			for ( i = 0; i < pm->n_detail_levels; i++ )	{
 				if ( depth <= pm->detail_depth[i] ) {
 					break;
@@ -2720,7 +2719,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {
@@ -3022,7 +3021,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {

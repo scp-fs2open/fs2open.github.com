@@ -6458,7 +6458,7 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 
 			// Goober5000 - if we're going bonkers, pretend we're not targeting our own team
 			ai_info *parent_aip = &Ai_info[Ships[parent_objp->instance].ai_index];
-			if (parent_aip->active_goal != AI_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
+			if (parent_aip->active_goal != AI_ACTIVE_GOAL_NONE && parent_aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) {
 				if (parent_aip->goals[parent_aip->active_goal].flags[AI::Goal_Flags::Target_own_team]) {
 					targeting_same = 0;
 				}
@@ -7525,7 +7525,6 @@ int weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_ra
 void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, const vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
-	polymodel		*pm;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships, asteroids, or debris");
 	if (!(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS))
@@ -7542,8 +7541,7 @@ void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, co
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	int model_num = object_get_model(objp);
-	pm = model_get(model_num);
+	auto pm = object_get_model(objp);
 	Assert ( pm != NULL );
 	if (!pm)
 		return;
@@ -7976,7 +7974,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 			set_target_objnum(aip, -1);
 			//	If this ship had a dynamic goal of chasing this weapon, clear the dynamic goal.
 			if (aip->resume_goal_time != -1)
-				aip->active_goal = AI_GOAL_NONE;
+				aip->active_goal = AI_ACTIVE_GOAL_NONE;
 		}
         
 		if (aip->goal_objnum == objnum) {

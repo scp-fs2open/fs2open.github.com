@@ -5146,10 +5146,10 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 
 		// for orders, we only need to send a little bit of information here.  Be sure that the
 		// first order for this ship is active
-		Assert( (aip->active_goal != AI_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) );
+		Assert( (aip->active_goal != AI_ACTIVE_GOAL_NONE) && (aip->active_goal != AI_ACTIVE_GOAL_DYNAMIC) );
 		aigp = &aip->goals[aip->active_goal];
 
-		ADD_INT( aigp->ai_mode );
+		ADD_INT( static_cast<int>(aigp->ai_mode) );
 		ADD_INT( aigp->ai_submode );
 
 		shipnum = -1;
@@ -5167,7 +5167,7 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 		ADD_USHORT( other_signature );
 
 		// for docking, add the dock and dockee index
-		if (aigp->ai_mode & (AI_GOAL_DOCK | AI_GOAL_REARM_REPAIR)) {
+		if (aigp->ai_mode == AI_GOAL_DOCK || aigp->ai_mode == AI_GOAL_REARM_REPAIR) {
 			Assert(aigp->flags[AI::Goal_Flags::Dockee_index_valid] && aigp->flags[AI::Goal_Flags::Docker_index_valid]);
 			Assert( (aigp->docker.index >= 0) && (aigp->docker.index < UCHAR_MAX) );
 			Assert( (aigp->dockee.index >= 0) && (aigp->dockee.index < UCHAR_MAX) );
@@ -5192,7 +5192,8 @@ void send_ai_info_update_packet( object *objp, char what, object * other_objp )
 void process_ai_info_update_packet( ubyte *data, header *hinfo)
 {
 	int offset = HEADER_LENGTH;
-	int mode, submode;
+	ai_goal_mode mode;
+	int int_mode, submode;
 	ushort net_signature, other_net_signature;
 	object *objp, *other_objp;
 	ai_info *aip;
@@ -5237,10 +5238,12 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		break;
 
 	case AI_UPDATE_ORDERS:
-		GET_INT( mode );
+		GET_INT( int_mode );
+		mode = int_to_ai_goal_mode(int_mode);
 		GET_INT( submode );
 		GET_USHORT( other_net_signature );
-		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
+
+		if ( mode == AI_GOAL_DOCK || mode == AI_GOAL_REARM_REPAIR ) {
 			GET_DATA(docker_index);
 			GET_DATA(dockee_index);
 		}
@@ -5257,7 +5260,7 @@ void process_ai_info_update_packet( ubyte *data, header *hinfo)
 		aigp->ai_submode = submode;
 
 		// for docking, add the docker and dockee index to the active goal
-		if ( mode & (AI_GOAL_DOCK|AI_GOAL_REARM_REPAIR) ) {
+		if ( mode == AI_GOAL_DOCK || mode == AI_GOAL_REARM_REPAIR ) {
 			aigp->docker.index = docker_index;
 			aigp->dockee.index = dockee_index;
 			aigp->flags.set(AI::Goal_Flags::Dockee_index_valid);
@@ -8076,8 +8079,8 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 	if (animation != animation::ModelAnimationSet::s_animationById.end()) {
 		if (special_mode == 0) {
 			//with the above exit condition, this guarantees a non-null objp
-			int model_instance_num = object_get_model_instance(objp);
-			if(model_instance_num > -1)
+			int model_instance_num = object_get_model_instance_num(objp);
+			if (model_instance_num >= 0)
 				animation->second->start(model_get_instance(model_instance_num), direction, forced, instant, pause, &delay);
 		}
 		else {

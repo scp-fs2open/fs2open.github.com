@@ -9,23 +9,6 @@
 
 #include <limits>
 
-float Font_Scale_Factor = 1.0;
-
-static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontScaleFactor",
-										   std::pair<const char*, int>{"Font Scale Factor", 1862},
-										   std::pair<const char*, int>{"Sets a multipler to scale fonts by. Only works on fonts the mod has explicitely allowed", 1863})
-										   .category(std::make_pair("Game", 1824))
-										   .range(0.2f, 4.0f) // Upper limit is somewhat arbitrary
-										   .level(options::ExpertLevel::Advanced)
-										   .default_val(1.0)
-										   .bind_to(&Font_Scale_Factor)
-										   .importance(55)
-										   .finish();
-
-void removeFontMultiplierOption() {
-	options::OptionsManager::instance()->removeOption(FontScaleFactor);
-}
-
 namespace
 {
 	const char* const TOKEN_SEPARATORS = "\n\t\r";
@@ -129,7 +112,7 @@ namespace font
 	}
 
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
-	void NVGFont::getStringSize(const char *text, size_t textLen, int resize_mode, float *width, float *height) const
+	void NVGFont::getStringSize(const char *text, size_t textLen, int resize_mode, float *width, float *height, float scaleMultiplier) const
 	{
 		using namespace graphics::paths;
 
@@ -138,10 +121,8 @@ namespace font
 		path->saveState();
 		path->resetState();
 
-		float scale_factor = Font_Scale_Factor;
-		if (!canScale) {
-			scale_factor = 1.0f;
-		}
+		float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
+		scale_factor *= scaleMultiplier;
 
 		path->fontFaceId(m_handle);
 		path->fontSize(m_size * scale_factor);

@@ -1335,11 +1335,11 @@ bool control_config_accept(bool API_Access)
 				cfclose(fp);
 				int n = popup(flags,
 					2,
-					POPUP_OK,
 					POPUP_CANCEL,
+					POPUP_OK,
 					"'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name",
 					str.c_str());
-				if ((n == 1) || (n == -1)) {
+				if ((n == 0) || (n == -1)) {
 					// If Cancel button was pressed, or popup dismissed:
 					// retry
 					gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1758,7 +1758,7 @@ bool control_config_delete_preset(CC_preset preset) {
 	return delete_preset_file(preset);
 }
 
-bool control_config_create_new_preset(SCP_string newName)
+bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
@@ -1771,7 +1771,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 
@@ -1806,7 +1806,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	return false; //should be unreachable, but just in case
 }
 
-bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
+bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newName, bool overwrite) {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
@@ -1818,7 +1818,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 

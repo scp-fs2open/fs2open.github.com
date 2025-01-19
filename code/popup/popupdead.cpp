@@ -491,6 +491,7 @@ int popupdead_do_frame(float  /*frametime*/)
 				popupdead_resolve_scripting(L, choice, resolveVals);
 				return luacpp::LuaValueList{};
 				})),
+			scripting::hook_param("Text", 's', ""), // Don't send a nil string
 			scripting::hook_param("IsDeathPopup", 'b', true),
 			scripting::hook_param("Freeze", 'b', static_cast<bool>(popup_active())));
 
