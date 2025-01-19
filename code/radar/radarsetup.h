@@ -126,7 +126,7 @@ public:
 	void initInfinityIcon();
 
 	void drawRange();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initialize() override;
 	void pageIn() override;
 };

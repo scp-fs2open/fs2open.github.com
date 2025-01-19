@@ -69,7 +69,7 @@ public:
 	void initTextHeight(int h);
 	void initMaxLineWidth(int w);
 	void initKeyLineXOffset(int offset);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	bool canRender() const override;
 };
@@ -79,7 +79,7 @@ class HudGaugeTrainingMessages: public HudGauge
 protected:
 public:
 	HudGaugeTrainingMessages();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	bool canRender() const override;
 };

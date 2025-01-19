@@ -103,7 +103,7 @@ void emp_process_local();
 int emp_should_blit_gauge();
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode);
+void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode, float scale = 1.0f);
 
 // throw some jitter into HUD x and y coords
 void emp_hud_jitter(int *x, int *y);
