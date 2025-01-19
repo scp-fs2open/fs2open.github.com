@@ -314,6 +314,24 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 		matrix orient_buf;
 		matrix *orient = nullptr;
 
+		if (Use_model_eyepoint_for_set_camera_facing) {
+			if (object_host.isValid()) {
+				object* host = object_host.objp();
+
+				if (host->type == OBJ_SHIP) {
+					ship_info* sip;
+					polymodel* pm;
+
+					ship* shipmodel = &Ships[host->instance];
+					sip = &Ship_info[shipmodel->ship_info_index];
+					pm = model_get(sip->model_num);
+					const eye& eyepoint = pm->view_positions[shipmodel->current_viewpoint];
+
+					model_instance_local_to_global_point(&position, &eyepoint.pnt, shipmodel->model_instance_num, eyepoint.parent, &host->orient, &host->pos);
+				}
+			}
+		}
+
 		if (Use_host_orientation_for_set_camera_facing)
 		{
 			// we want to retrieve the camera's orientation, so provide a buffer for it

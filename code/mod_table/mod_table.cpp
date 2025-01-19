@@ -34,6 +34,7 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_model_eyepoint_for_set_camera_facing;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
@@ -500,6 +501,12 @@ void parse_mod_table(const char *filename)
 				} else {
 					mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 				}
+			}
+
+			if (optional_string("$Use model eyepoint for set-camera-facing:")) {
+				stuff_boolean(&Use_model_eyepoint_for_set_camera_facing);
+				if (Use_model_eyepoint_for_set_camera_facing) {
+					mprintf(("Game Settings Table: Using model eyepoint for set-camera-facing\n"));
 			}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
@@ -1527,6 +1534,7 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Use_model_eyepoint_for_set_camera_facing = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_overhead_ship_style = OH_TOP_VIEW;
@@ -1667,6 +1675,7 @@ void mod_table_set_version_flags()
 		Shockwaves_damage_all_obj_types_once = true;
 		Framerate_independent_turning = true;					// this is already true, but let's re-emphasize it
 		Use_host_orientation_for_set_camera_facing = true;		// this is essentially a bugfix
+		Use_model_eyepoint_for_set_camera_facing = true;
 	}
 	if (mod_supports_version(23, 0, 0)) {
 		Shockwaves_inherit_parent_damage_type = true;	// people intuitively expect shockwaves to default to the damage type of the weapon that spawned them
