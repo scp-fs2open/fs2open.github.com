@@ -695,7 +695,7 @@ void main_hall_exit_game()
 	// stop music first
 	main_hall_stop_music(true);
 	main_hall_stop_ambient();
-	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
+	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG | PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
 	if (choice == 1) {
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 	} else {
