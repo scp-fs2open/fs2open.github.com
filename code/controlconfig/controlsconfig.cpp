@@ -1320,7 +1320,7 @@ bool control_config_accept(bool API_Access)
 			});
 
 			if (it != Control_config_presets.end()) {
-				popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+				popup(flags | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
 				goto retry;
 			}
 
