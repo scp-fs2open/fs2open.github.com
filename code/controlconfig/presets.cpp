@@ -136,7 +136,7 @@ void load_preset_files(SCP_string clone) {
 
 		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {
 			if (gameseq_get_state() == GS_STATE_CONTROL_CONFIG) {
-				popup(PF_TITLE_WHITE, 1, POPUP_OK, "Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+				popup(PF_TITLE_WHITE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
 			} else {
 				// Complain and ignore if the preset names or the type differs
 				Warning(LOCATION, "PST => Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
