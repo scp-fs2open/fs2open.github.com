@@ -949,11 +949,15 @@ int get_dynamic_parameter_index(const std::string& op_name, int param)
 	if (it != Dynamic_parameters.end()) {
 		for (const auto& param_pair : it->parameter_map) {
 			if (param == param_pair.first) {
+				// If it's a pos number return it, else return the previous param inde
 				return param_pair.second >= 0 ? param_pair.second : param - 1;
 			}
 		}
 
+		// If we don't have an exact match then we're probably in $Repeat territory so let's return the last parent
+		// parameter in the list.
 		const auto& last_param_pair = it->parameter_map.back();
+		// If it's a pos number return it, else return the previous param inde
 		return last_param_pair.second >= 0 ? last_param_pair.second : param - 1;
 	}
 
