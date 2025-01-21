@@ -940,37 +940,21 @@ SCP_vector<dynamic_sexp_parameter_list> Dynamic_parameters;
 
 SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
 
-int get_dynamic_parameter_index(const SCP_string &op_name, int param)
+int get_dynamic_parameter_index(const std::string& op_name, int param)
 {
-	for (int i = 0; i < (int)Dynamic_parameters.size(); i++) {
-		if (lcase_equal(Dynamic_parameters[i].operator_name, op_name)) {
+	auto it = std::find_if(Dynamic_parameters.begin(), Dynamic_parameters.end(), [&op_name](const auto& param) {
+		return lcase_equal(param.operator_name, op_name);
+	});
 
-			// Make sure there are actually parameters for this operator
-			if (!Dynamic_parameters[i].parameter_map.empty()) {
-				
-				// Now we know what sexp we're working with, let's find the parameter
-				for (int j = 0; j < (int)Dynamic_parameters[i].parameter_map.size(); j++) {
-
-					// If we have an exact parameter match
-					if (param == Dynamic_parameters[i].parameter_map[j].first) {
-
-						// If it's a pos number return it, else return the previous param index
-						if (Dynamic_parameters[i].parameter_map[j].second >= 0) {
-							return Dynamic_parameters[i].parameter_map[j].second;
-						} else {
-							return param - 1;
-						}
-					}
-				}
-
-				// If we don't have an exact match then we're probably in $Repeat territory so let's return
-				// the last parent parameter in the list.
-				// This does prevent complex repeat patterns that might use multiple parent objects but
-				// I can't think of a better way to do this right now. -Mjn
-				int last_param = (int)Dynamic_parameters[i].parameter_map.size() - 1;
-				return Dynamic_parameters[i].parameter_map[last_param].second;
+	if (it != Dynamic_parameters.end()) {
+		for (const auto& param_pair : it->parameter_map) {
+			if (param == param_pair.first) {
+				return param_pair.second >= 0 ? param_pair.second : param - 1;
 			}
 		}
+
+		const auto& last_param_pair = it->parameter_map.back();
+		return last_param_pair.second >= 0 ? last_param_pair.second : param - 1;
 	}
 
 	// Didn't find anything.
