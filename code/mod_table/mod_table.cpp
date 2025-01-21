@@ -158,6 +158,10 @@ bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 
+// 25.0.0 Additions
+bool Use_model_eyepoint_for_set_camera_host;
+
+
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
                      std::pair<const char*, int>{"Discord Presence", 1754},
@@ -501,6 +505,9 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 				}
 			}
+			if (optional_string("$Use model eyepoint for set-camera-host:")) {
+				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
+				if (Use_model_eyepoint_for_set_camera_host) {
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
 				stuff_boolean(&Show_subtitle_uses_pixels);
@@ -1527,6 +1534,7 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Use_model_eyepoint_for_set_camera_host = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_overhead_ship_style = OH_TOP_VIEW;
@@ -1677,5 +1685,8 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(24, 2, 0)) {
 		Fix_scripted_velocity = true;		// more sensical behavior
+	}
+	if (mod_supports_version(25, 0, 0)) {
+		Use_model_eyepoint_for_set_camera_host = true;
 	}
 }

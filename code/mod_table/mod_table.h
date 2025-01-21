@@ -167,6 +167,9 @@ extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 
+// 25.0.0 Additions
+extern bool Use_model_eyepoint_for_set_camera_host;
+
 void mod_table_init();
 void mod_table_post_process();
 
