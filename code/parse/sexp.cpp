@@ -942,8 +942,8 @@ SCP_vector<dynamic_sexp_child_enum_suffixes> Dynamic_enum_suffixes;
 
 int get_dynamic_parameter_index(const std::string& op_name, int param)
 {
-	auto it = std::find_if(Dynamic_parameters.begin(), Dynamic_parameters.end(), [&op_name](const auto& param) {
-		return lcase_equal(param.operator_name, op_name);
+	auto it = std::find_if(Dynamic_parameters.begin(), Dynamic_parameters.end(), [&op_name](const auto& this_param) {
+		return lcase_equal(this_param.operator_name, op_name);
 	});
 
 	if (it != Dynamic_parameters.end()) {
