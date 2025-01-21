@@ -338,57 +338,81 @@ int free_object_slots(int target_num_used)
 }
 
 // Goober5000
-float get_hull_pct(const object *objp)
+// This helper function does not check the object type and is not intended as a public API.
+float get_hull_or_sim_hull_pct_helper(const object *objp, const float object::*strength_field, const ship *shipp, bool allow_negative)
 {
-	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
+	Assert(objp && shipp);
+	if (!objp || !shipp)
+		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_max_hull_strength;
-
+	float total_strength = shipp->ship_max_hull_strength;
 	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
-
 	if (total_strength == 0.0f)
 		return 0.0f;
 
-	if (objp->hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+	if (!allow_negative && objp->*strength_field < 0.0f)	// this sometimes happens when a ship is being destroyed
 		return 0.0f;
 
-	return objp->hull_strength / total_strength;
+	return objp->*strength_field / total_strength;
 }
 
-float get_sim_hull_pct(const object *objp)
+float get_hull_pct(const object *objp, bool allow_negative)
 {
-	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
-
-	float total_strength = Ships[objp->instance].ship_max_hull_strength;
-
-	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
-
-	if (total_strength == 0.0f)
+	Assert(objp && objp->type == OBJ_SHIP);
+	if (!objp || objp->type != OBJ_SHIP)
 		return 0.0f;
+	return get_hull_or_sim_hull_pct_helper(objp, &object::hull_strength, &Ships[objp->instance], allow_negative);
+}
 
-	if (objp->sim_hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+float get_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative)
+{
+	return get_hull_or_sim_hull_pct_helper(ship_entry->objp(), &object::hull_strength, ship_entry->shipp(), allow_negative);
+}
+
+float get_sim_hull_pct(const object *objp, bool allow_negative)
+{
+	Assert(objp && objp->type == OBJ_SHIP);
+	if (!objp || objp->type != OBJ_SHIP)
 		return 0.0f;
+	return get_hull_or_sim_hull_pct_helper(objp, &object::sim_hull_strength, &Ships[objp->instance], allow_negative);
+}
 
-	return objp->sim_hull_strength / total_strength;
+float get_sim_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative)
+{
+	return get_hull_or_sim_hull_pct_helper(ship_entry->objp(), &object::sim_hull_strength, ship_entry->shipp(), allow_negative);
 }
 
 // Goober5000
+// This helper function does not check the object type and is not intended as a public API.
+float get_shield_pct_helper(const object *objp, const ship *shipp)
+{
+	Assert(objp && shipp);
+	if (!objp || !shipp)
+		return 0.0f;
+
+	float total_strength = shield_get_max_strength(shipp);
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	return shield_get_strength(objp) / total_strength;
+}
+
 float get_shield_pct(const object *objp)
 {
 	Assert(objp);
+	if (!objp)
+		return 0.0f;
 
 	// bah - we might have asteroids
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = shield_get_max_strength(objp);
+	return get_shield_pct_helper(objp, &Ships[objp->instance]);
+}
 
-	if (total_strength == 0.0f)
-		return 0.0f;
-
-	return shield_get_strength(objp) / total_strength;
+float get_shield_pct(const ship_registry_entry *ship_entry)
+{
+	return get_shield_pct_helper(ship_entry->objp(), ship_entry->shipp());
 }
 
 static void on_script_state_destroy(lua_State*) {

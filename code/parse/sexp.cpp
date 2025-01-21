@@ -8202,7 +8202,7 @@ void sexp_set_energy_pct (int node, int op_num)
 					continue;
 				}	
 
-				shield_set_strength(&Objects[shipp->objnum], (shield_get_max_strength(&Objects[shipp->objnum]) * new_pct));
+				shield_set_strength(ship_entry->objp(), (shield_get_max_strength(shipp) * new_pct));
 				break;
 		}
 
@@ -8238,7 +8238,7 @@ void multi_sexp_set_energy_pct()
 				break; 
 
 			case OP_SET_SHIELD_ENERGY:
-				shield_set_strength(&Objects[shipp->objnum], (shield_get_max_strength(&Objects[shipp->objnum]) * new_pct));
+				shield_set_strength(&Objects[shipp->objnum], (shield_get_max_strength(shipp) * new_pct));
 				break;
 		}
 	}
@@ -8295,7 +8295,7 @@ int sexp_shields_left(int node)
 	}
 
 	// now return the amount of shields left as a percentage of the whole.
-	int percent = (int)std::lround(get_shield_pct(ship_entry->objp()) * 100.0f);
+	int percent = (int)std::lround(get_shield_pct(ship_entry) * 100.0f);
 	return percent;
 }
 
@@ -8313,8 +8313,7 @@ int sexp_hits_left(int node, bool sim_hull)
 	if (ship_entry->status == ShipStatus::DEATH_ROLL || ship_entry->status == ShipStatus::EXITED)
 		return SEXP_NAN_FOREVER;
 
-	auto objp = ship_entry->objp();
-	float hull_pct = sim_hull ? get_sim_hull_pct(objp) : get_hull_pct(objp);
+	float hull_pct = sim_hull ? get_sim_hull_pct(ship_entry) : get_hull_pct(ship_entry);
 
 	// now return the amount of hits left as a percentage of the whole.
 	int percent = (int)std::lround(hull_pct * 100.0f);
@@ -8442,7 +8441,8 @@ int sexp_hits_left_subsystem(int n)
 
 			// we reached end of ship subsys list without finding subsys_name
 			if (ship_class_unchanged(ship_entry)) {
-				Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+				auto problem = (Game_mode & GM_IN_MISSION) ? "subsystem was not found" : "subsystem information is not available when not in-mission";
+				Warning(LOCATION, "Attempted to check subsystem '%s' on ship '%s' in hits-left-subsystem -- %s", subsys_name, ship_entry->name, problem);
 			}
 			return SEXP_NAN;
 
@@ -8509,7 +8509,8 @@ int sexp_hits_left_subsystem_specific(int node)
 
 	// we reached end of ship subsys list without finding subsys_name
 	if (ship_class_unchanged(ship_entry)) {
-		Warning(LOCATION, "Invalid subsystem '%s' passed to hits-left-subsystem", subsys_name);
+		auto problem = (Game_mode & GM_IN_MISSION) ? "subsystem was not found" : "subsystem information is not available when not in-mission";
+		Warning(LOCATION, "Attempted to check subsystem '%s' on ship '%s' in hits-left-subsystem-specific -- %s", subsys_name, ship_entry->name, problem);
 	}
 	return SEXP_NAN;
 }
@@ -21210,13 +21211,12 @@ void multi_sexp_change_ship_class()
 }
 
 // Goober5000
-void ship_copy_damage(ship *target_shipp, ship *source_shipp)
+void ship_copy_damage(const ship_registry_entry *target, const ship_registry_entry *source)
 {
-	int i;
-	object *target_objp = &Objects[target_shipp->objnum];
-	object *source_objp = &Objects[source_shipp->objnum];
-	ship_subsys *source_ss;
-	ship_subsys *target_ss;
+	auto target_shipp = target->shipp();
+	auto target_objp = target->objp();
+	auto source_shipp = source->shipp();
+	auto source_objp = source->objp();
 
 	if (target_shipp->ship_info_index != source_shipp->ship_info_index)
 	{
@@ -21232,15 +21232,15 @@ void ship_copy_damage(ship *target_shipp, ship *source_shipp)
 	// ...and shields
 	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
+	for (int i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
 		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
 
 
 	// search through all subsystems on source ship and map them onto target ship
-	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
+	for (auto source_ss: list_range(&source_shipp->subsys_list))
 	{
 		// find subsystem to configure
-		target_ss = ship_get_subsys(target_shipp, source_ss->system_info->subobj_name);
+		auto target_ss = ship_get_subsys(target_shipp, source_ss->system_info->subobj_name);
 		if (target_ss == nullptr)
 			continue;
 
@@ -21434,33 +21434,33 @@ void sexp_set_alphamult(int n)
 extern int insert_subsys_status(p_object *pobjp);
 
 // Goober5000
-void parse_copy_damage(p_object *target_pobjp, ship *source_shipp)
+void parse_copy_damage(const ship_registry_entry *target, const ship_registry_entry *source_entry)
 {
-	object *source_objp = &Objects[source_shipp->objnum];
-	ship_subsys *source_ss;
-	subsys_status *target_sssp;
+	auto target_pobjp = target->p_objp();
+	auto source_shipp = source_entry->shipp();
 
 	if (target_pobjp->ship_class != source_shipp->ship_info_index)
 	{
 		nprintf(("SEXP", "Copying damage of ship %s to ship %s which has a different ship class.  Strange results might occur.\n", source_shipp->ship_name, target_pobjp->name));
 	}
 
+
 	// copy hull...
 	target_pobjp->special_hitpoints = source_shipp->special_hitpoints;
 	target_pobjp->ship_max_hull_strength = source_shipp->ship_max_hull_strength;
-	target_pobjp->initial_hull = fl2i(get_hull_pct(source_objp) * 100.0f);
+	target_pobjp->initial_hull = fl2i(get_hull_pct(source_entry) * 100.0f);
 
 	// ...and shields
 	target_pobjp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	target_pobjp->initial_shields = fl2i(get_shield_pct(source_objp) * 100.0f);
+	target_pobjp->initial_shields = fl2i(get_shield_pct(source_entry) * 100.0f);
 	target_pobjp->max_shield_recharge = source_shipp->max_shield_recharge;
 
 
 	// search through all subsystems on source ship and map them onto target ship
-	for (source_ss = GET_FIRST(&source_shipp->subsys_list); source_ss != GET_LAST(&source_shipp->subsys_list); source_ss = GET_NEXT(source_ss))
+	for (auto source_ss: list_range(&source_shipp->subsys_list))
 	{
 		// find subsystem to configure
-		target_sssp = parse_get_subsys_status(target_pobjp, source_ss->system_info->subobj_name);
+		auto target_sssp = parse_get_subsys_status(target_pobjp, source_ss->system_info->subobj_name);
 
 		// gak... none allocated; we need to allocate one!
 		if (target_sssp == nullptr)
@@ -21504,14 +21504,14 @@ void sexp_ship_copy_damage(int node)
 		// maybe it's present in-mission
 		if (target->has_shipp())
 		{
-			ship_copy_damage(target->shipp(), source->shipp());
+			ship_copy_damage(target, source);
 			continue;
 		}
 
 		// maybe it's on the arrival list
 		if (target->status == ShipStatus::NOT_YET_PRESENT)
 		{
-			parse_copy_damage(target->p_objp(), source->shipp());
+			parse_copy_damage(target, source);
 			continue;
 		}
 
@@ -23220,7 +23220,7 @@ void sexp_damage_escort_list(int node)
 			continue;
 
 		//calc hull integrity and compare
-		current_hull_pct = get_hull_pct(ship_entry->objp());
+		current_hull_pct = get_hull_pct(ship_entry);
 
 		if (current_hull_pct < smallest_hull_pct)
 		{

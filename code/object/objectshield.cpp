@@ -8,8 +8,11 @@
 
 
 
+#include "globalincs/globals.h"
+#include "globalincs/pstypes.h"
 #include "math/staticrand.h"
 #include "network/multi.h"
+#include "object/object.h"
 #include "object/objectshield.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
@@ -273,10 +276,16 @@ float shield_get_max_strength(const object *objp, bool no_msr) {
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return 0.0f;
 
-	if (no_msr == true)
-		return Ships[objp->instance].ship_max_shield_strength;
+	return shield_get_max_strength(&Ships[objp->instance], no_msr);
+}
+
+float shield_get_max_strength(const ship *shipp, bool no_msr) {
+	Assert(shipp);
+
+	if (no_msr)
+		return shipp->ship_max_shield_strength;
 	else
-		return Ships[objp->instance].ship_max_shield_strength * Ships[objp->instance].max_shield_recharge;
+		return shipp->ship_max_shield_strength * shipp->max_shield_recharge;
 }
 
 float shield_get_quad(const object *objp, int quadrant_num) {
