@@ -6450,7 +6450,7 @@ int rand_sexp(int node, bool multiple)
 		return SEXP_NAN_FOREVER;
 
 	if (low > high) {
-		Warning(LOCATION, "rand%s was passed an invalid range (%d ... %d)!", multiple ? "-multiple" : "", low, high);
+		Warning(LOCATION, "rand%s was passed an invalid range [%d, %d]!", multiple ? "-multiple" : "", low, high);
 		// preserve old behavior from before Random class was introduced
 		return low;
 	}
@@ -37295,16 +37295,16 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_RAND, "Rand (Arithmetic operator)\r\n"
 		"\tGets a random number.  This number will not change on successive calls to this sexp.\r\n\r\n"
 		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
-		"\t1:\tLow range of random number.\r\n"
-		"\t2:\tHigh range of random number.\r\n" 
+		"\t1:\tLower bound, inclusive, of the random number.\r\n"
+		"\t2:\tUpper bound, inclusive, of the random number.\r\n"
 		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// Goober5000
 	{ OP_RAND_MULTIPLE, "Rand-multiple (Arithmetic operator)\r\n"
 		"\tGets a random number.  This number can and will change between successive calls to this sexp.\r\n\r\n"
 		"Returns a number.  Takes 2 or 3 numeric arguments...\r\n"
-		"\t1:\tLow range of random number.\r\n"
-		"\t2:\tHigh range of random number.\r\n" 
+		"\t1:\tLower bound, inclusive, of the random number.\r\n"
+		"\t2:\tUpper bound, inclusive, of the random number.\r\n"
 		"\t3:\t(optional) A seed to use when generating numbers. (Setting this to 0 is the same as having no seed at all)" },
 
 	// -------------------------- Nav Points --- Kazan -------------------------- 
@@ -39740,17 +39740,20 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
 		"expression should be used to indicate that a ship has no pilot and cannot respond "
 		"to any enemy threats.  A ship playing dead will not respond to any attack.\r\n\r\n"
-		"Do note that the ship's goal list is cleared, which means that if it receives any other goal in any way, "
-		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this from happening.\r\n\r\n"
+		"Do note that the ship's goal list is cleared, which means both that it forgets "
+		"this goal and all previous goals, and that if it receives any other goal in any way, "
+		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this "
+		"from happening.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
 	{ OP_AI_PLAY_DEAD_PERSISTENT, "Ai-play-dead-persistent (Ship goal)\r\n"
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
-		"goal behaves exactly like ai-play-dead, with the important difference that the ship "
-		"will not immediately come back to life whenever it is given an order or a new goal "
-		"of any priority.  The only ways this goal can be removed are via remove-goal, "
-		"clear-goals, or a new goal of a *higher* priority.\r\n\r\n"
+		"goal behaves like ai-play-dead, with the important differences that the goal 'persists' "
+		"until it is removed, and the existing goal list is not cleared.  The ship will not "
+		"come back to life whenever it is given an order or a new goal, so the only ways the "
+		"ship will stop playing dead are if this goal is removed, or a new goal of a higher "
+		"priority is assigned.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
@@ -40559,9 +40562,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SUBSYS_SET_RANDOM, "subsys-set-random\r\n"
 		"\tSets ship subsystem strength in a given range\r\n"
 		"\t1: Ship name (ship must be in-mission)\r\n"
-		"\t2: Low range\r\n"
-		"\t3: High range\r\n"
-		"\t4: List of subsys names not to be randomized\r\n"},
+		"\t2: Lower bound, inclusive, of the subsystem strength\r\n"
+		"\t3: Upper bound, inclusive, of the subsystem strength\r\n"
+		"\t4: List of subsystem names not to be randomized\r\n"},
 
 	{ OP_SUPERNOVA_START, "supernova-start\r\n"
 		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " SCP_TOKEN_TO_STR(SUPERNOVA_HIT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
