@@ -1296,7 +1296,7 @@ bool control_config_accept(bool API_Access)
 		retry:;
 			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
-				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
+				"Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to "
 				"abort to config menu.",
 				32 - 6,
 				default_string.c_str());
