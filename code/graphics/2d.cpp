@@ -232,7 +232,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
-/*static void parse_window_mode_func()
+static void parse_window_mode_func()
 {
 	SCP_string value;
 	stuff_string(value, F_NAME);
@@ -245,11 +245,8 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	} else {
 		error_display(0, "%s is an invalide window mode", value.c_str());
 	}
-}*/
+}
 
-// Window mode can support default settings but I'm not sure if there would
-// ever be a reason to and this should probably remain a user-only setting
-// similar to other graphics hardware settings
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
@@ -261,7 +258,7 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .importance(98)
                      .default_func([]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
-                     //.parser(parse_window_mode_func)
+                     .parser(parse_window_mode_func)
                      .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
@@ -603,7 +600,7 @@ static void parse_msaa_func()
 		{"off", 0},
 		{"4 samples", 4},
 		{"8 samples", 8},
-		{"16 samples", 16},
+		//{"16 samples", 16},
 	};
 
 	// Look up the value in the map
@@ -622,8 +619,7 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
-                              {8, {"8 Samples", 1695}},
-                              {16, {"16 Samples", 1696}}})
+                              {8, {"8 Samples", 1695}}})
                      .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
