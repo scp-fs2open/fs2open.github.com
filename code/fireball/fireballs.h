@@ -70,6 +70,7 @@ typedef struct fireball_info {
 	// Customize how large the warp and it's flare are.
 	float warp_size_ratio;
 	float flare_size_ratio;
+	float flicker_magnitude;
 
 	// Cinematic Warp stuff
 	float   rot_anim[3];

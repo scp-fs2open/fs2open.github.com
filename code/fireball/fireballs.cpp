@@ -395,6 +395,12 @@ static void parse_fireball_tbl(const char *table_filename)
 				fi->flare_size_ratio = 1.0f;
 			}
 
+			if (optional_string("$Flicker magnitude:")) {
+				stuff_float(&fi->flicker_magnitude);
+			} else if (first_time) {
+				fi->flicker_magnitude = 0.10f;
+			}
+
 			if (optional_string("$Warp flare style:")) {
 				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
 				case 0:
@@ -416,7 +422,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				} else if (fi->warp_flare_style == warp_style::CLASSIC) {
 					fi->flare_size_ratio = 1.0f;
 				} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
-					fi->flare_size_ratio = 5.3f;
+					fi->flare_size_ratio = 2.12f;
 				}
 
 			} else if (first_time) {
@@ -1180,7 +1186,7 @@ static float fireball_wormhole_flare_radius(fireball* fb) {
 	return rad;
 }
 
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
+extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float flicker_magnitude, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
 
 void fireball_render(object* obj, model_draw_list *scene)
 {
@@ -1263,6 +1269,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 				rad,
 				percent_life,
 				flare_rad,
+				fi->flicker_magnitude,
 				obj->radius,
 				fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0,
 				fi->warp_glow_bitmap,
