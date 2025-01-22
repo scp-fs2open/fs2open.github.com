@@ -3,8 +3,6 @@
 #include "globalincs/pstypes.h"
 #include "graphics/software/FSFont.h"
 
-extern float Font_Scale_Factor;
-
 namespace font
 {
 	struct font;
@@ -41,7 +39,7 @@ namespace font
 		float getTextHeight() const override;
 
 		void getStringSize(const char *text, size_t textLen, int resize_mode,
-			float *width, float *height) const override;
+			float *width, float *height, float scaleMultiplier = 1.0f) const override;
 
 		void computeFontMetrics() override;
 

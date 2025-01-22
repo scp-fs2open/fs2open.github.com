@@ -32,25 +32,28 @@ void gr_aabitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = f
  * @brief Draws a grey-scale bitmap multiplied with the current color
  * @param x The x-coordinate of the draw call
  * @param y The y-coordinate of the draw call
- * @param w
- * @param h
- * @param sx
- * @param sy
+ * @param w Resolves to the x axis right clip plane, usually <= bitmap width
+ * @param h Resolves to the y axis right clip plane, usually <= bitmap height
+ * @param sx The bitmap source x coordinate to start rendering from at the x 0 coordinate
+ * @param sy The bitmap source y coordinate to start rendering from at the y 0 coordinate
  * @param resize_mode The resize mode for translating the coordinated
  * @param mirror @c true to mirror the image
+ * @param scale_factor a multipler for the width and height of the bitmap. Note that w, h, sx, and sy should be unscaled source bitmap values
  */
-void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false);
+void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 /**
  * @brief Draws a normal-colored bitmap to the screen
  * @param x The x-coordinate of the draw call
  * @param y The y-coordinate of the draw call
- * @param w
- * @param h
- * @param sx
- * @param sy
+ *@param w Resolves to the x axis right clip plane, usually <= bitmap width
+ * @param h Resolves to the y axis right clip plane, usually <= bitmap height
+ * @param sx The bitmap source x coordinate to start rendering from at the x 0 coordinate
+ * @param sy The bitmap source y coordinate to start rendering from at the y 0 coordinate
  * @param resize_mode The resize mode for translating the coordinated
+ * @param mirror @c true to mirror the image
+ * @param scale_factor a multipler for the width and height of the bitmap. Note that w, h, sx, and sy should be unscaled source bitmap values
  */
-void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL);
+void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 
 /**
  * @brief Renders the specified string to the screen using the current font and color
@@ -58,20 +61,22 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode = 
  * @param y The y-coordinate
  * @param string The string to draw to the screen
  * @param resize_mode The mode for translating the screen positions
+ * @param scaleMultiplier The scale to use to apply scaling in addition to user settings
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos);
+void gr_string(float x, float y, const char* string, int resize_mode = GR_RESIZE_FULL, float scaleMultiplier = 1.0f, size_t length = std::string::npos);
 /**
  * @brief Renders the specified string to the screen using the current font and color
  * @param x The x-coordinate
  * @param y The y-coordinate
  * @param string The string to draw to the screen
  * @param resize_mode The mode for translating the screen positions
+ * @param scaleMultiplier The scale to use to apply scaling in addition to user settings
  * @param length The number of bytes in the string to render. -1 will render the whole string.
  */
-inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, size_t length = std::string::npos)
+inline void gr_string(int x, int y, const char* string, int resize_mode = GR_RESIZE_FULL, float scaleMultiplier = 1.0f, size_t length = std::string::npos)
 {
-	gr_string(i2fl(x), i2fl(y), string, resize_mode, length);
+	gr_string(i2fl(x), i2fl(y), string, resize_mode, scaleMultiplier, length);
 }
 
 /**

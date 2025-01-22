@@ -23,6 +23,17 @@ ADE_VIRTVAR(MAX_PILOTS,
 	return ade_set_args(L, "i", MAX_PILOTS);
 }
 
+ADE_VIRTVAR(MAX_SHIPS_PER_WING,
+	l_GlobalVariables,
+	nullptr,
+	"The maximum ships that can be in a wing",
+	"number",
+	"A maximum number of ships")
+{
+
+	return ade_set_args(L, "i", MAX_SHIPS_PER_WING);
+}
+
 ADE_VIRTVAR(MAX_WING_SLOTS,
 	l_GlobalVariables,
 	nullptr,

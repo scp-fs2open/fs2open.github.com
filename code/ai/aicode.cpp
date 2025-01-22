@@ -8687,10 +8687,17 @@ void ai_cruiser_chase()
 
 	// kamikaze - ram and explode
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
-		ai_turn_towards_vector(&En_objp->pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
+		// point toward the subsystem if we're targeting one; otherwise point toward the center
+		if (aip->targeted_subsys) {
+			get_subsystem_pos(&goal_pos, En_objp, aip->targeted_subsys);
+		} else {
+			goal_pos = En_objp->pos;
+		}
+
+		ai_turn_towards_vector(&goal_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 
-		float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &En_objp->pos);
+		float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &goal_pos);
 		if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f)
 			ai_afterburn_hard(Pl_objp, aip);
 	} 

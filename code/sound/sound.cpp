@@ -116,23 +116,21 @@ static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Vo
 
 unsigned int SND_ENV_DEFAULT = 0;
 
-struct LoopingSoundInfo {
-	sound_handle m_dsHandle;
+struct LoopingSoundInfo
+{
 	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
 	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
 
-	LoopingSoundInfo(sound_handle dsHandle, float defaultVolume, float dynamicVolume)
-	    : m_dsHandle(dsHandle), m_defaultVolume(defaultVolume), m_dynamicVolume(dynamicVolume)
-	{
-	}
+	LoopingSoundInfo(float defaultVolume, float dynamicVolume)
+	    : m_defaultVolume(defaultVolume), m_dynamicVolume(dynamicVolume)
+	{}
     
-    LoopingSoundInfo() : m_dsHandle(-1), m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
-    {
-    }
+    LoopingSoundInfo() : m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
+    {}
 };
 
-SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
-SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
+SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> currentlyLoopingSoundInfos;
+SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> currentlyLooping3dSoundInfos;
 
 //For the adjust-audio-volume sexp
 float aav_music_volume = 1.0f;
@@ -794,7 +792,7 @@ sound_handle snd_play_3d(game_snd* gs, const vec3d* source_pos, const vec3d* lis
 
 	if (handle.isValid()) {
 		if (looping) {
-			currentlyLooping3dSoundInfos.emplace_back(handle, default_volume, vol_scale);
+			currentlyLooping3dSoundInfos[handle] = { default_volume, vol_scale };
 		}
 
 		snd_set_pitch(handle, gs->pitch_range.next());
@@ -960,7 +958,7 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 
 		if (handle.isValid()) {
 			if (scriptingUpdateVolume) {
-				currentlyLoopingSoundInfos.emplace_back(handle, default_volume, vol_scale);
+				currentlyLoopingSoundInfos[handle] = { default_volume, vol_scale };
 			}
 
 			snd_set_pitch(handle, gs->pitch_range.next());
@@ -968,14 +966,6 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	}
 
 	return handle;
-}
-
-void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
-{
-	// the cast to void avoids warnings about unused return value
-	(void)std::remove_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
-		return ls_info.m_dsHandle == sig;
-	});
 }
 
 /**
@@ -995,8 +985,8 @@ void snd_stop(sound_handle sig)
 	if ( channel == -1 )
 		return;
 	
-	remove_looping_sound(currentlyLoopingSoundInfos, sig);
-	remove_looping_sound(currentlyLooping3dSoundInfos, sig);
+	currentlyLoopingSoundInfos.erase(sig);
+	currentlyLooping3dSoundInfos.erase(sig);
 
 	ds_stop_channel(channel);
 }
@@ -1055,13 +1045,6 @@ void snd_stop_all()
 	ds_stop_channel_all();
 }
 
-SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
-{
-	return std::find_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
-		return ls_info.m_dsHandle == sig;
-	});
-}
-
 /**
  * Set the volume of a currently playing sound
  *
@@ -1085,30 +1068,22 @@ void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 		return;
 	}
 
-	bool isLoopingSound = false;
-
-
-	auto iter = find_looping_sound(currentlyLoopingSoundInfos, sig);
+	auto iter = currentlyLoopingSoundInfos.find(sig);
 	if (iter != currentlyLoopingSoundInfos.end()) {
-		iter->m_dynamicVolume = volume;
-		isLoopingSound = true;
+		iter->second.m_dynamicVolume = volume;
 	} else {
-		iter = find_looping_sound(currentlyLooping3dSoundInfos, sig);
+		iter = currentlyLooping3dSoundInfos.find(sig);
 		if (iter != currentlyLooping3dSoundInfos.end()) {
-			iter->m_dynamicVolume = volume;
-			isLoopingSound = true;
+			iter->second.m_dynamicVolume = volume;
 		}
 	}
 
-	//looping sound volumes are updated in snd_do_frame
-	if(!isLoopingSound) {
-		if (is_voice) {
-			new_volume = volume * (Master_voice_volume * aav_voice_volume);
-		} else {
-			new_volume = volume * (Master_sound_volume * aav_effect_volume);
-		}
-		ds_set_volume( channel, new_volume );
+	if (is_voice) {
+		new_volume = volume * (Master_voice_volume * aav_voice_volume);
+	} else {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
 	}
+	ds_set_volume( channel, new_volume );
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1582,12 +1557,15 @@ void snd_do_frame()
 	ds_do_frame();
 }
 
-void update_looping_sound_volumes(SCP_list<LoopingSoundInfo> &looping_sounds)
+void update_looping_sound_volumes(SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> &looping_sounds)
 {
-	for (auto &looping_sound : looping_sounds) {
+	for (const auto &looping_sound_pair : looping_sounds) {
+		const auto& dsHandle = looping_sound_pair.first;
+		const auto& looping_sound = looping_sound_pair.second;
+
 		const float new_volume =
 			looping_sound.m_defaultVolume * looping_sound.m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
-		ds_set_volume(ds_get_channel(looping_sound.m_dsHandle), new_volume);
+		ds_set_volume(ds_get_channel(dsHandle), new_volume);
 	}
 }
 

@@ -26,10 +26,8 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 	// The calling code should ensure that this never happens
 	Assertion(locals.hostSubobject >= 0, "Did not have a valid host subobject.");
 
-	auto instance = object_get_model_instance(locals.host.objp());
-	Assertion(instance != -1, "Model instances are required if a host subobject is specified.");
-
-	auto pmi = model_get_instance(instance);
+	auto pmi = object_get_model_instance(locals.host.objp());
+	Assertion(pmi != nullptr, "Model instances are required if a host subobject is specified.");
 	auto pm = model_get(pmi->model_num);
 
 	const auto destinationSubObject = m_subObjectExpression.execute(locals.variables);

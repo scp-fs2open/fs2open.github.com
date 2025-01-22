@@ -78,7 +78,7 @@ static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graph
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(TextureFilteringValues)
-                     .default_func([]() {return 0;})
+                     .default_func([]() {return GL_mipmap_filter;})
                      .bind_to_once(&GL_mipmap_filter)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
                      .parser(parse_texture_filtering_func)

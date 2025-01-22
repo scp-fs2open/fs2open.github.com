@@ -56,7 +56,7 @@ const char *fs2_open_credit_text =
 	"Hassan \"Karajorma\" Kazmi\n"
 	"Derek \"Kazan\" Meek\n"
 	"Nick \"phreak\" Iannetta\n"
-	"David \"EatThePath\" Gibson\n"
+	"Zoe \"EatThePath\" Gibson\n"
 	"Mike \"MjnMixael\" Nelson\n"
 	"argv[-1], Backslash, Baezon\n"
 	"CommanderDJ, Cyborg, DTP\n"
@@ -654,7 +654,7 @@ void credits_init()
 
 	for (iter = Credit_text_parts.begin(); iter != Credit_text_parts.end(); ++iter)
 	{
-		gr_get_string_size(NULL, &temp_h, iter->c_str(), iter->length());
+		gr_get_string_size(nullptr, &temp_h, iter->c_str(), 1.0f, iter->length());
 
 		h = h + temp_h;
 	}
@@ -870,12 +870,12 @@ void credits_do_frame(float  /*frametime*/)
 				length = std::numeric_limits<size_t>::max();
 			}
 
-			gr_get_string_size(&width, &height, iter->c_str() + currentPos, length);
+			gr_get_string_size(&width, &height, iter->c_str() + currentPos, 1.0f, length);
 			// Check if the text part is actually visible
 			if (Credit_position + y_offset + height > 0.0f)
 			{
 				float x = static_cast<float>((gr_screen.clip_width_unscaled - width) / 2);
-				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, length);
+				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, 1.0f, length);
 			}
 
 			y_offset += height;

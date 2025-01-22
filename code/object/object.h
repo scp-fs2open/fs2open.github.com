@@ -15,7 +15,6 @@
 #include "globalincs/globals.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
-#include "object/object.h"
 #include "object/object_flags.h"
 #include "physics/physics.h"
 #include "physics/physics_state.h"
@@ -122,6 +121,8 @@ extern const int Num_object_flag_names;
 
 struct dock_instance;
 class model_draw_list;
+class polymodel;
+struct polymodel_instance;
 
 class object
 {
@@ -288,9 +289,18 @@ int objects_will_collide(object *A, object *B, float duration, float radius_scal
 void obj_init_all_ships_physics();
 
 // Goober5000
-float get_hull_pct(const object *objp);
-float get_sim_hull_pct(const object *objp);
+float get_hull_pct(const object *objp, bool allow_negative = false);
+float get_sim_hull_pct(const object *objp, bool allow_negative = false);
 float get_shield_pct(const object *objp);
+
+struct ship_registry_entry;
+
+// SEXPs evaluated during debriefing are susceptible to a "use-after-free" problem where the object and ship have been deleted but still
+// contain information useful for debriefing.  Since the ship registry still contains object and ship indexes, use this rather than the
+// instance and objnum indexes in the object and ship structures themselves.
+float get_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative = false);
+float get_sim_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative = false);
+float get_shield_pct(const ship_registry_entry *ship_entry);
 
 // returns the average 3-space position of all ships.  useful to find "center" of battle (sort of)
 void obj_get_average_ship_pos(vec3d *pos);
@@ -356,8 +366,11 @@ void object_set_gliding(object *objp, bool enable=true, bool force = false);
 bool object_get_gliding(object *objp);
 bool object_glide_forced(object* objp);
 int obj_get_by_signature(int sig);
-int object_get_model(const object *objp);
-int object_get_model_instance(const object *objp);
+
+int object_get_model_num(const object *objp);
+polymodel *object_get_model(const object *objp);
+int object_get_model_instance_num(const object *objp);
+polymodel_instance *object_get_model_instance(const object *objp);
 
 void obj_render_queue_all();
 

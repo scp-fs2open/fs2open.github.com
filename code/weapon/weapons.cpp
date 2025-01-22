@@ -7440,7 +7440,6 @@ int weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_ra
 void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, const vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
-	polymodel		*pm;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships, asteroids, or debris");
 	if (!(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS))
@@ -7457,8 +7456,7 @@ void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, co
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	int model_num = object_get_model(objp);
-	pm = model_get(model_num);
+	auto pm = object_get_model(objp);
 	Assert ( pm != NULL );
 	if (!pm)
 		return;

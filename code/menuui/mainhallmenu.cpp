@@ -72,6 +72,8 @@ bool Main_hall_poll_key = true;
 
 SCP_string Main_hall_cheat = "";
 
+SCP_string Enforced_main_hall;
+
 // ----------------------------------------------------------------------------
 // MISC interface data
 //
@@ -472,6 +474,11 @@ void main_hall_init(const SCP_string &main_hall_name)
 		return;
 	}
 
+	SCP_string requested_hall = main_hall_name;
+	if (!Enforced_main_hall.empty()) {
+		requested_hall = Enforced_main_hall;
+	}
+
 	extern bool Campaign_room_no_campaigns;
 
 	// Log if we don't have a campaign set yet.
@@ -492,14 +499,14 @@ void main_hall_init(const SCP_string &main_hall_name)
 	// sanity checks
 	if (Main_hall_defines.empty()) {
 		Error(LOCATION, "No main halls were loaded to initialize.");
-	} else if (main_hall_name == "") {
+	} else if (requested_hall.empty()) {
 		// we were passed a blank main hall name, so load the first available main hall
 		main_hall_get_name(main_hall_to_load, 0);
-	} else if (main_hall_get_pointer(main_hall_name) == nullptr) {
-		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", main_hall_name.c_str());
+	} else if (main_hall_get_pointer(requested_hall) == nullptr) {
+		Warning(LOCATION, "Tried to load a main hall called '%s', but it does not exist; loading first available main hall.", requested_hall.c_str());
 		main_hall_get_name(main_hall_to_load, 0);
 	} else {
-		main_hall_to_load = main_hall_name;
+		main_hall_to_load = requested_hall;
 	}
 
 	// if we're switching to a different mainhall, stop the ambient (it will be started again promptly)
@@ -688,7 +695,7 @@ void main_hall_exit_game()
 	// stop music first
 	main_hall_stop_music(true);
 	main_hall_stop_ambient();
-	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
+	choice = popup( PF_NO_NETWORKING | PF_BODY_BIG | PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON, 2, POPUP_NO, POPUP_YES, XSTR( "Exit Game?", 365));
 	if (choice == 1) {
 		gameseq_post_event(GS_EVENT_QUIT_GAME);
 	} else {

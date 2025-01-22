@@ -1,7 +1,9 @@
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
+#include "gamesequence/gamesequence.h"
 #include "libs/jansson.h"
 #include "parse/parselo.h"
+#include "popup/popup.h"
 
 #include <jansson.h>
 
@@ -133,8 +135,12 @@ void load_preset_files(SCP_string clone) {
 			Control_config_presets.push_back(preset);
 
 		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {
-			// Complain and ignore if the preset names or the type differs
-			Warning(LOCATION, "PST => Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			if (gameseq_get_state() == GS_STATE_CONTROL_CONFIG) {
+				popup(PF_TITLE_WHITE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			} else {
+				// Complain and ignore if the preset names or the type differs
+				Warning(LOCATION, "PST => Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			}
 		
 		} // else, silent ignore
 	}

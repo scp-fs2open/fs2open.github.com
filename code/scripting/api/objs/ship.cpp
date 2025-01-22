@@ -885,12 +885,8 @@ ADE_VIRTVAR(Textures, l_Ship, "modelinstancetextures", "Gets ship textures", "mo
 	polymodel_instance *dest = model_get_instance(Ships[dh->objp()->instance].model_instance_num);
 
 	if(ADE_SETTING_VAR && sh && sh->isValid()) {
-		polymodel_instance *src = model_get_instance(Ships[sh->objp()->instance].model_instance_num);
-
-		if (src->texture_replace != nullptr)
-		{
-			dest->texture_replace = std::make_shared<model_texture_replace>(*src->texture_replace);
-		}
+		dest->texture_replace = model_get_instance(Ships[sh->objp()->instance].model_instance_num)->texture_replace;
+		
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
@@ -1316,7 +1312,9 @@ ADE_FUNC(kill, l_Ship, "[object Killer, vector Hitpos]", "Kills the ship. Set \"
 
 	// use the current hull percentage for damage-after-death purposes
 	// (note that this does not actually affect scoring)
-	float percent_killed = get_hull_pct(victim->objp());
+	float percent_killed = -get_hull_pct(victim->objp(), true);
+	if (percent_killed > 1.0f)
+		percent_killed = 1.0f;
 
 	ship_hit_kill(victim->objp(), killer ? killer->objp() : nullptr, hitpos, percent_killed, (killer && victim->sig == killer->sig), true);
 

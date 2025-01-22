@@ -429,16 +429,8 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 		if(object_host.isValid())
 		{
 			object *objp = object_host.objp();
-			int model_num = object_get_model(objp);
-			polymodel *pm = nullptr;
-			polymodel_instance *pmi = nullptr;
-			
-			if(model_num >= 0)
-			{
-				pm = model_get(model_num);
-				if (objp->type == OBJ_SHIP)
-					pmi = model_get_instance(Ships[objp->instance].model_instance_num);
-			}
+			polymodel *pm = object_get_model(objp);
+			polymodel_instance *pmi = object_get_model_instance(objp);
 
 			if(object_host_submodel < 0 || pm == NULL)
 			{
@@ -493,18 +485,9 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 			if(object_target.isValid())
 			{
 				object *target_objp = object_target.objp();
-				int model_num = object_get_model(target_objp);
-				polymodel *target_pm = nullptr;
-				polymodel_instance *target_pmi = nullptr;
+				polymodel *target_pm = object_get_model(target_objp);
+				polymodel_instance *target_pmi = object_get_model_instance(target_objp);
 				vec3d target_pos = vmd_zero_vector;
-				
-				//See if we can get the model
-				if(model_num >= 0)
-				{
-					target_pm = model_get(model_num);
-					if (target_objp->type == OBJ_SHIP)
-						target_pmi = model_get_instance(Ships[target_objp->instance].model_instance_num);
-				}
 
 				//If we don't have a submodel or don't have the model use object pos
 				//Otherwise, find the submodel pos as it is rotated
@@ -798,7 +781,7 @@ subtitle::subtitle(int in_x_pos, int in_y_pos, const char* in_text, const char* 
 		//Get text size
 		for(int i = 0; i < num_text_lines; i++)
 		{
-			gr_get_string_size(&w, &h, text_line_ptrs[i], static_cast<size_t>(text_line_lens[i]));
+			gr_get_string_size(&w, &h, text_line_ptrs[i], 1.0f, static_cast<size_t>(text_line_lens[i]));
 
 			if(w > tw)
 				tw = w;
@@ -1307,8 +1290,7 @@ float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, cons
 	if (preferred_distance > (viewer_obj->radius * EXTERN_CAM_BBOX_MULTIPLIER_PADDING + EXTERN_CAM_BBOX_CONSTANT_PADDING) * 1.5f) 
 		return preferred_distance;
 	
-	int modelnum = object_get_model(viewer_obj);
-	polymodel* pm = model_get(modelnum);
+	polymodel* pm = object_get_model(viewer_obj);
 	vec3d adjusted_bbox;
 	const vec3d* cam_vec = &cam_orient->vec.fvec;
 

@@ -10,14 +10,13 @@
 #ifndef _OBJECTSHIELD_H
 #define _OBJECTSHIELD_H
 
-#include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
-#include "object/object.h"
-
 #define	FRONT_QUAD	1
 #define	REAR_QUAD	2
 #define	LEFT_QUAD	3
 #define	RIGHT_QUAD	0
+
+class object;
+class ship;
 
 /**
  * @brief Balances/Equalizes the shield
@@ -104,6 +103,15 @@ void shield_add_quad(object *objp, int quadrant_num, float strength);
  * @author Goober5000
  */
 float shield_get_max_strength(const object *objp, bool no_msr = false);
+
+/**
+ * @brief Gets the max shield HP of the given ship
+ *
+ * @note $Max Shield Recharge is not intended to affect max strength of individual shield segments
+ *
+ * @author Goober5000
+ */
+float shield_get_max_strength(const ship *shipp, bool no_msr = false);
 
 /**
  * @brief Sets the max shield HP of the given object. Use this to init or override a ship's default shield HP
