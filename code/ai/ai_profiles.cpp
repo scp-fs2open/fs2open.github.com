@@ -582,7 +582,17 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ships playing dead don't manage ETS:", AI::Profile_Flags::Ships_playing_dead_dont_manage_ets);
 
-				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_collision_avoidance);
+				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_combat_collision_avoidance);
+
+				if (optional_string("$combat collision avoidance aggression for fightercraft:")) {
+					stuff_float(&profile->better_collision_avoid_aggression_combat);
+				}
+
+				if (optional_string("guard collision avoidance aggression for fightercraft:")) {
+					stuff_float(&profile->better_collision_avoid_aggression_guard);
+				}
+
+				set_flag(profile, "$better guard collision avoidance for fightercraft:", AI::Profile_Flags::Better_guard_collision_avoidance);
 
 				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
@@ -667,6 +677,20 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$strafe stops after time unhit:")) {
 					stuff_float(&profile->strafe_max_unhit_time);
+				}
+
+				if (optional_string("$guard uses big-orbit for target radius above:")) {
+					stuff_float(&profile->guard_big_orbit_above_target_radius);
+				}
+
+				if (optional_string("$guard with big-orbit uses max speed percent:")) {
+					float max_percent;
+					stuff_float(&max_percent);
+					if (max_percent > 0.0f && max_percent <= 1.0f) {
+						profile->guard_big_orbit_max_speed_percent = max_percent;
+					} else {
+						mprintf(("Warning: \"$guard with big-orbit uses max speed percent:\" should be > 0 and <= 1 (read %d). Value will not be used.\n", max_percent));
+					}
 				}
 
 				// end of options ----------------------------------------
@@ -761,9 +785,15 @@ void ai_profile_t::reset()
 	turret_target_recheck_time = 2000.0f;
 	rot_fac_multiplier_ply_collisions = 0.0f;
 
+	better_collision_avoid_aggression_combat = 3.5f;
+	better_collision_avoid_aggression_guard = 3.5f;
+
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
 	strafe_max_unhit_time = 20.0f;
+
+	guard_big_orbit_above_target_radius = 500.0f;
+	guard_big_orbit_max_speed_percent = 1.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
