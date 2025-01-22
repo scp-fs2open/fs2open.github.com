@@ -584,15 +584,15 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$better combat collision avoidance for fightercraft:", AI::Profile_Flags::Better_combat_collision_avoidance);
 
-				if (optional_string("$combat collision avoidance aggression for fightercraft:")) {
+				if (optional_string("+combat collision avoidance aggression for fightercraft:")) {
 					stuff_float(&profile->better_collision_avoid_aggression_combat);
 				}
 
-				if (optional_string("guard collision avoidance aggression for fightercraft:")) {
+				set_flag(profile, "$better guard collision avoidance for fightercraft:", AI::Profile_Flags::Better_guard_collision_avoidance);
+
+				if (optional_string("+guard collision avoidance aggression for fightercraft:")) {
 					stuff_float(&profile->better_collision_avoid_aggression_guard);
 				}
-
-				set_flag(profile, "$better guard collision avoidance for fightercraft:", AI::Profile_Flags::Better_guard_collision_avoidance);
 
 				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
