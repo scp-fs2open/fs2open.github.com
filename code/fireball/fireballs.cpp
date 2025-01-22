@@ -54,6 +54,11 @@ static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp"
                      .importance(65)
                      .finish();
 
+static float exp_to_line(float t, float start_value, float end_slope, float scale)
+{
+	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
+}
+
 /**
  * Play warp in sound for warp effect
  */
@@ -377,13 +382,17 @@ static void parse_fireball_tbl(const char *table_filename)
 			if (optional_string("$Warp size ratio:")) {
 				stuff_float(&fi->warp_size_ratio);
 			} else if (first_time) {
-				fi->warp_size_ratio = 1.0f;
+				if (fi->use_3d_warp) {
+					fi->warp_size_ratio = 1 / 25.0f;
+				} else {
+					fi->warp_size_ratio = 1.0f;
+				}
 			}
 
 			if (optional_string("$Flare size ratio:")) {
 				stuff_float(&fi->flare_size_ratio);
 			} else if (first_time) {
-				fi->flare_size_ratio = 1.5f;
+				fi->flare_size_ratio = 1.0f;
 			}
 
 			if (optional_string("$Warp flare style:")) {
@@ -397,11 +406,15 @@ static void parse_fireball_tbl(const char *table_filename)
 				case 2:
 					fi->warp_flare_style = warp_style::CINEMATIC;
 					break;
+				default:
+					error_display(0, "Invalid warp flare style. Must be classic, enhanced, or cinematic.");
 				}
 
 				// Set warp flare option
 				if (optional_string("+Flare size ratio:")) {
 					stuff_float(&fi->flare_size_ratio);
+				} else if (fi->warp_flare_style == warp_style::CLASSIC) {
+					fi->flare_size_ratio = 1.0f;
 				} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
 					fi->flare_size_ratio = 5.3f;
 				}
@@ -411,16 +424,15 @@ static void parse_fireball_tbl(const char *table_filename)
 			}
 
 			if (optional_string("$Warp model style:")) {
-				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
+				switch (optional_string_one_of(2, "classic", "cinematic")) {
 				case 0:
 					fi->warp_model_style = warp_style::CLASSIC;
 					break;
 				case 1:
-					fi->warp_model_style = warp_style::ENHANCED; // There is no warp model animation for enhanced.
-					break;
-				case 2:
 					fi->warp_model_style = warp_style::CINEMATIC;
 					break;
+				default:
+					error_display(0, "Invalid warp model style. Must be classic or cinematic.");
 				}
 			} else if (first_time) {
 				fi->warp_model_style = warp_style::CLASSIC;
@@ -1127,7 +1139,7 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	return index;
 }
 
-float cutscene_wormhole(float t) {
+static float cutscene_wormhole(float t) {
 	float a = 25.0f * powf(t, 4.0f);
 	return a / (a + 1.0f);
 }
@@ -1157,7 +1169,7 @@ float fireball_wormhole_intensity(fireball *fb)
 	return rad;
 }
 
-float fireball_wormhole_flare_radius(fireball* fb) {
+static float fireball_wormhole_flare_radius(fireball* fb) {
 	float t = fb->time_elapsed;
 	float d1 = fb->warp_open_duration;
 	float d2 = fb->warp_close_duration;
@@ -1166,10 +1178,6 @@ float fireball_wormhole_flare_radius(fireball* fb) {
 	rad *= (1.0f - exp(-2.0f * (fb->total_time - t) / d2));
 
 	return rad;
-}
-
-float exp_to_line(float t, float start_value, float end_slope, float scale) {
-	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
 }
 
 extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
@@ -1232,8 +1240,12 @@ void fireball_render(object* obj, model_draw_list *scene)
 			}
 
 			if (fi->warp_model_style == warp_style::CINEMATIC) {
-				matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-				matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+				//matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+				
+				//matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+
+				matrix m = ZERO_MATRIX;
+				matrix dest = ZERO_MATRIX;
 
 				float duration_ratio = 2.0f / fb->warp_open_duration;
 
