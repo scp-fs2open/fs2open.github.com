@@ -126,7 +126,7 @@ public:
 	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
 	float rot_fac_multiplier_ply_collisions; 
 
-	// Collision avoidance options  --developed by asteroth, explosed by wookieejedi
+	// Collision avoidance options  --developed by asteroth, exposed by wookieejedi
 	//   Velocity / turn rate gives us a vector which represents the minimum 'bug out' distance.
 	//   However this will be a significant underestimate, it doesn't take into account acceleration
 	//   with regards to its turn speed, nor already existing rotvel, nor the angular distance
