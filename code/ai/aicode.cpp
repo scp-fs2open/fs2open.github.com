@@ -15006,8 +15006,8 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 	float	dot, dist;
 	vec3d	v2g;
 
-	bool better_collision_avoid_and_fighting = The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance] && aip->mode == AIM_CHASE
-		|| The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance] && aip->mode == AIM_GUARD;
+	bool better_collision_avoid_and_fighting = (The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance] && aip->mode == AIM_CHASE)
+		|| (The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance] && aip->mode == AIM_GUARD);
 
 	// if this guy's in battle he doesn't have the time to spend up to 35 seconds recovering!
 	int phase1_time = better_collision_avoid_and_fighting ? 2 : 5;
