@@ -422,7 +422,7 @@ static void parse_fireball_tbl(const char *table_filename)
 				} else if (fi->warp_flare_style == warp_style::CLASSIC) {
 					fi->flare_size_ratio = 1.0f;
 				} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
-					fi->flare_size_ratio = 2.12f;
+					fi->flare_size_ratio = 5.3f;
 				}
 
 			} else if (first_time) {
