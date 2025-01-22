@@ -1240,10 +1240,6 @@ void fireball_render(object* obj, model_draw_list *scene)
 			}
 
 			if (fi->warp_model_style == warp_style::CINEMATIC) {
-				//matrix m = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-				
-				//matrix dest = vm_matrix_new(0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
-
 				matrix m = ZERO_MATRIX;
 				matrix dest = ZERO_MATRIX;
 
