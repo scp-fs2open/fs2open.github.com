@@ -689,7 +689,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					if (max_percent > 0.0f && max_percent <= 1.0f) {
 						profile->guard_big_orbit_max_speed_percent = max_percent;
 					} else {
-						mprintf(("Warning: \"$guard with big-orbit uses max speed percent:\" should be > 0 and <= 1 (read %d). Value will not be used.\n", max_percent));
+						mprintf(("Warning: \"$guard with big-orbit uses max speed percent:\" should be > 0 and <= 1 (read %f). Value will not be used.\n", max_percent));
 					}
 				}
 
