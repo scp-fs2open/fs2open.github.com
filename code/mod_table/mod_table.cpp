@@ -507,7 +507,8 @@ void parse_mod_table(const char *filename)
 			}
 			if (optional_string("$Use model eyepoint for set-camera-host:")) {
 				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
-				if (Use_model_eyepoint_for_set_camera_host) {
+				if (Use_model_eyepoint_for_set_camera_host)
+					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
 				stuff_boolean(&Show_subtitle_uses_pixels);
