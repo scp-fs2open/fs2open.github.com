@@ -95,11 +95,13 @@ namespace
 			}
 		}
 
+		// This must happen before the font is loaded to set the size
+		bool autoSize = false;
 		if (optional_string("+Auto Size:")) {
 			bool autoSize;
 			stuff_boolean(&autoSize);
 
-			if (autoSize) {
+			if (autoSize && !Fred_running) {
 				// Lambda to calculate font size based on screen resolution
 				auto calculateAutoSize = [size]() -> float {
 					int vmin = std::min(gr_screen.max_w, gr_screen.max_h);
@@ -144,6 +146,9 @@ namespace
 
 		auto nvgPair = FontManager::loadNVGFont(fontFilename, size);
 		auto nvgFont = nvgPair.first;
+
+		// Now we can set the auto size behavior which is used for special character rendering
+		nvgFont->setAutoScaleBehavior(autoSize);
 
 		if (nvgFont == NULL)
 		{
@@ -393,6 +398,14 @@ namespace
 
 				Lcl_languages[lang_idx].special_char_indexes[font_id] = (ubyte)special_char_index;
 			}
+		}
+
+		if (optional_string("+Auto Size")) {
+			bool temp;
+
+			stuff_boolean(&temp);
+
+			font->setAutoScaleBehavior(temp);
 		}
 
 		if (optional_string("+Can Scale:")) {

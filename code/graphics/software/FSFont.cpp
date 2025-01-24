@@ -29,6 +29,11 @@ float get_font_scale_factor()
 namespace font
 {
 
+	void FSFont::setAutoScaleBehavior(bool autoScale)
+	{
+		this->autoScale = autoScale;
+	}
+
 	void FSFont::setScaleBehavior(bool scale)
 	{
 		this->canScale = scale;
@@ -52,6 +57,11 @@ namespace font
 	void FSFont::setFilename(const SCP_string& newName) 
 	{
 		this->filename = newName;
+	}
+
+	[[nodiscard]] bool FSFont::getAutoScaleBehavior() const
+	{
+		return this->autoScale;
 	}
 
 	[[nodiscard]] bool FSFont::getScaleBehavior() const
