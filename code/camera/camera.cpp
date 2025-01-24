@@ -218,28 +218,34 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 				ssp = GET_NEXT( ssp );
 			}
 		}
-	} else if (Use_model_eyepoint_for_set_camera_host && object_host.isValid()) 
+	} 
+	else if (Use_model_eyepoint_for_set_camera_host && object_host.isValid()) 
 	{
 		const object* host = object_host.objp();
-		vec3d c_norm;
-		int viewpoint;
-
-		if (host->type == OBJ_SHIP) 
-		{
-			viewpoint = Ships[host->instance].current_viewpoint;
-		} 
-		else 
-		{
-			viewpoint = 0;	
-		}
-
 		const polymodel* pm = object_get_model(host);
-		const eye& eyepoint = pm->view_positions[viewpoint];
-		const polymodel_instance* pmi = object_get_model_instance(host);
-
-		model_instance_local_to_global_point_dir(&c_pos, &c_norm, &eyepoint.pnt, &eyepoint.norm, pm, pmi, eyepoint.parent);
-		vm_vector_2_matrix(&c_ori, &c_norm); 
 		
+		if (pm->n_view_positions > 0) 
+		{
+			vec3d c_norm;
+			int viewpoint;
+
+			if (host->type == OBJ_SHIP)
+				viewpoint = Ships[host->instance].current_viewpoint;
+			else
+				viewpoint = 0;
+
+			const eye& eyepoint = pm->view_positions[viewpoint];
+			const polymodel_instance* pmi = object_get_model_instance(host);
+
+			model_instance_local_to_global_point_dir(&c_pos,
+				&c_norm,
+				&eyepoint.pnt,
+				&eyepoint.norm,
+				pm,
+				pmi,
+				eyepoint.parent);
+			vm_vector_2_matrix(&c_ori, &c_norm); 
+		}
 	}
 }
 
