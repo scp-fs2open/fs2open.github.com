@@ -29,9 +29,9 @@ float get_font_scale_factor()
 namespace font
 {
 
-	void FSFont::setAutoScaleBehavior(bool autoScale)
+	void FSFont::setAutoScaleBehavior(bool auto)
 	{
-		this->autoScale = autoScale;
+		this->autoScale = auto;
 	}
 
 	void FSFont::setScaleBehavior(bool scale)
