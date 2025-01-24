@@ -98,7 +98,6 @@ namespace
 		// This must happen before the font is loaded to set the size
 		bool autoSize = false;
 		if (optional_string("+Auto Size:")) {
-			bool autoSize;
 			stuff_boolean(&autoSize);
 
 			if (autoSize && !Fred_running) {
