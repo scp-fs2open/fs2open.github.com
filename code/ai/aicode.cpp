@@ -185,9 +185,9 @@ object *En_objp;
 #define	REARM_SOUND_DELAY		(3*F1_0)		//	Amount of time to delay rearm/repair after mode start
 #define	REARM_BREAKOFF_DELAY	(3*F1_0)		//	Amount of time to wait after fully rearmed to breakoff.
 
+// Select guard options are now exposed to modders  --wookieejedi
 #define	MIN_DIST_TO_WAYPOINT_GOAL	5.0f
 #define	MAX_GUARD_DIST					250.0f
-#define	BIG_GUARD_RADIUS				500.0f
 
 #define	MAX_EVADE_TIME			(15 * 1000)	//	Max time to evade a weapon.
 
@@ -8916,15 +8916,8 @@ void ai_chase()
 		return;
 	}
 
-	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance]) && sip->is_small_ship()) {
-		// velocity / turn rate gives us a vector which represents the minimum 'bug out' distance
-		// however this will be a significant underestimate, it doesn't take into account acceleration 
-		// with regards to its turn speed, nor already existing rotvel, nor the angular distance 
-		// to the particular avoidance vector it comes up with
-		// These would significantly complicate the calculation, so for now, it is all bundled into this magic number
-		const float collision_avoidance_aggression = 3.5f;
-
-		vec3d collide_vec = Pl_objp->phys_info.vel * (collision_avoidance_aggression / (PI2 / sip->srotation_time));
+	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance]) && sip->is_small_ship()) {
+		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_combat / (PI2 / sip->srotation_time));
 		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
 		collide_vec *= radius_contribution;
 
@@ -10759,7 +10752,7 @@ void ai_big_guard()
 
 		// got the point, now let's go there
 		ai_turn_towards_vector(&goal_pt, Pl_objp, nullptr, nullptr, 0.0f, 0);
-		accelerate_ship(aip, 1.0f);
+		accelerate_ship(aip, The_mission.ai_profile->guard_big_orbit_max_speed_percent);
 
 
 		bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
@@ -10844,8 +10837,20 @@ void ai_guard()
 		return;
 	}
 
-	// handler for gurad object with BIG radius
-	if (guard_objp->radius > BIG_GUARD_RADIUS) {
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance]) && sip->is_small_ship()) {
+
+		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_guard / (PI2 / sip->srotation_time));
+		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
+		collide_vec *= radius_contribution;
+
+		collide_vec += Pl_objp->pos;
+		if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &collide_vec, 0.f, 0.1f))
+			return;
+	}
+
+	// handler for guard object with BIG radius
+	if (guard_objp->radius > The_mission.ai_profile->guard_big_orbit_above_target_radius) {
 		ai_big_guard();
 		return;
 	}
@@ -15001,7 +15006,8 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 	float	dot, dist;
 	vec3d	v2g;
 
-	bool better_collision_avoid_and_fighting = The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance] && aip->mode == AIM_CHASE;
+	bool better_collision_avoid_and_fighting = (The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance] && aip->mode == AIM_CHASE)
+		|| (The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance] && aip->mode == AIM_GUARD);
 
 	// if this guy's in battle he doesn't have the time to spend up to 35 seconds recovering!
 	int phase1_time = better_collision_avoid_and_fighting ? 2 : 5;
