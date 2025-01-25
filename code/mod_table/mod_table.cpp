@@ -34,6 +34,7 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_model_eyepoint_for_set_camera_host;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
@@ -157,9 +158,6 @@ bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
-
-// 25.0.0 Additions
-bool Use_model_eyepoint_for_set_camera_host;
 
 
 #ifdef WITH_DISCORD
@@ -505,10 +503,12 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 				}
 			}
-			if (optional_string("$Use model eyepoint for set-camera-host:")) {
+			if (optional_string("$Use model eyepoint for set-camera-host:")) 
+			{
 				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
 				if (Use_model_eyepoint_for_set_camera_host)
-					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));}
+					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));
+			}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
 				stuff_boolean(&Show_subtitle_uses_pixels);

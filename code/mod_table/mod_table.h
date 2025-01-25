@@ -42,6 +42,7 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
+extern bool Use_model_eyepoint_for_set_camera_host;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
 extern bool Use_3d_ship_icons;
@@ -166,9 +167,6 @@ extern bool Lua_API_returns_nil_instead_of_invalid_object;
 extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
-
-// 25.0.0 Additions
-extern bool Use_model_eyepoint_for_set_camera_host;
 
 void mod_table_init();
 void mod_table_post_process();

@@ -237,13 +237,7 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 			const eye& eyepoint = pm->view_positions[viewpoint];
 			const polymodel_instance* pmi = object_get_model_instance(host);
 
-			model_instance_local_to_global_point_dir(&c_pos,
-				&c_norm,
-				&eyepoint.pnt,
-				&eyepoint.norm,
-				pm,
-				pmi,
-				eyepoint.parent);
+			model_instance_local_to_global_point_dir(---, ---, &eyepoint.pnt, &eyepoint.norm, pm, pmi, eyepoint.parent);
 			vm_vector_2_matrix(&c_ori, &c_norm); 
 		}
 	}
