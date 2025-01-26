@@ -13,9 +13,8 @@ std::pair<vec3d, matrix> EffectHostSubmodel::getPositionAndOrientation(bool rela
 		pos += *tabled_offset;
 	}
 
-	const ship& shipp = Ships[Objects[m_objnum].instance];
-	const polymodel* pm = model_get(Ship_info[shipp.ship_info_index].model_num);
-	const polymodel_instance* pmi = model_get_instance(shipp.model_instance_num);
+	const polymodel* pm = object_get_model(&Objects[m_objnum]);
+	const polymodel_instance* pmi = object_get_model_instance(&Objects[m_objnum]);
 
 	matrix orientation;
 	if (!relativeToParent) {
@@ -66,5 +65,5 @@ float EffectHostSubmodel::getHostRadius() const {
 }
 
 bool EffectHostSubmodel::isValid() const {
-	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && Objects[m_objnum].type == OBJ_SHIP;
+	return m_objnum >= 0 && m_submodel >= 0 && Objects[m_objnum].signature == m_objsig && object_get_model_num(&Objects[m_objnum]) >= 0 && object_get_model_instance_num(&Objects[m_objnum]) >= 0;
 }
