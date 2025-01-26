@@ -90,7 +90,7 @@ namespace {
 			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		}
 #endif
-		map_data.emplace(key, data);
+		map_data[key] = data;
 	}
 
 	// Containers should not be modified if the game is simply checking the syntax. 
@@ -1321,7 +1321,7 @@ void sexp_remove_from_map(int node)
 		if (container.map_data.erase(key_to_remove) == 0) {
 			const SCP_string msg =
 				"Remove-from-map couldn't find key " + key_to_remove + " inside map container " + container_name;
-			Warning(LOCATION, "%s", msg.c_str());
+			mprintf(("%s\n", msg.c_str()));
 			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		}
 
