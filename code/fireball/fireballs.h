@@ -163,8 +163,6 @@ float fireball_wormhole_intensity( fireball *fb );
 // Goober5000
 extern bool Knossos_warp_ani_used;
 
-extern bool Fireball_use_3d_warp;
-
 extern bool Fireball_warp_flash;
 
 // Cyborg - get a count of how many valid fireballs are in the mission.

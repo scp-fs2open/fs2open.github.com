@@ -42,18 +42,6 @@ SCP_vector<fireball_info> Fireball_info;
 bool fireballs_inited = false;
 bool fireballs_parsed = false;
 
-bool Fireball_use_3d_warp = false;
-
-static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp",
-                     std::pair<const char*, int>{"3D Warp", 1770},
-                     std::pair<const char*, int>{"Use a 3D model for warp effects", 1771})
-                     .category(std::make_pair("Graphics", 1825))
-                     .default_val(true)
-                     .level(options::ExpertLevel::Advanced)
-                     .bind_to(&Fireball_use_3d_warp)
-                     .importance(65)
-                     .finish();
-
 static float exp_to_line(float t, float start_value, float end_slope, float scale)
 {
 	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
@@ -210,9 +198,6 @@ static void fireball_set_default_warp_attributes(int idx)
 			strcpy_s(Fireball_info[idx].warp_glow, "warpglow01");
 			strcpy_s(Fireball_info[idx].warp_ball, "warpball01");
 			strcpy_s(Fireball_info[idx].warp_model, "warp.pof");
-
-			if (Fireball_use_3d_warp)
-				Fireball_info[idx].use_3d_warp = true;
 
 			break;
 	}
@@ -377,6 +362,10 @@ static void parse_fireball_tbl(const char *table_filename)
 				// if we are explicitly specifying a model, then we'll want to use it,
 				// rather than just having the default model that might or might not be used
 				fi->use_3d_warp = true;
+			}
+
+			if (optional_string("$Force 3D Warp:")) {
+				stuff_boolean(&fi->use_3d_warp);
 			}
 
 			if (optional_string("$Warp size ratio:")) {
