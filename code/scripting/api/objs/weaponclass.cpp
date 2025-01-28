@@ -822,7 +822,7 @@ ADE_VIRTVAR(heatEffectiveness,
 	"The heat effectiveness or -1 on error")
 {
 	int idx;
-	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_args(L, "f", -1.0f);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -830,7 +830,7 @@ ADE_VIRTVAR(heatEffectiveness,
 
 	weapon_info* info = &Weapon_info[idx];
 
-	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+	if (!info->wi_flags[Weapon::Info_Flags::Cmeasure])
 		return ade_set_args(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR) {
@@ -848,7 +848,7 @@ ADE_VIRTVAR(aspectEffectiveness,
 	"The aspect effectiveness or -1 on error")
 {
 	int idx;
-	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_args(L, "f", -1.0f);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -856,7 +856,7 @@ ADE_VIRTVAR(aspectEffectiveness,
 
 	weapon_info* info = &Weapon_info[idx];
 
-	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+	if (!info->wi_flags[Weapon::Info_Flags::Cmeasure])
 		return ade_set_args(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR) {
@@ -874,7 +874,7 @@ ADE_VIRTVAR(effectiveRange,
 	"The effective range or -1 on error")
 {
 	int idx;
-	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_args(L, "f", -1.0f);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -882,7 +882,7 @@ ADE_VIRTVAR(effectiveRange,
 
 	weapon_info* info = &Weapon_info[idx];
 
-	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+	if (!info->wi_flags[Weapon::Info_Flags::Cmeasure])
 		return ade_set_args(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR) {
@@ -900,7 +900,7 @@ ADE_VIRTVAR(pulseInterval,
 	"The pulse interval or -1 on error")
 {
 	int idx;
-	if (!ade_get_args(L, "o|f", l_Weaponclass.Get(&idx)))
+	if (!ade_get_args(L, "o", l_Weaponclass.Get(&idx)))
 		return ade_set_args(L, "f", -1.0f);
 
 	if (idx < 0 || idx >= weapon_info_size())
@@ -908,7 +908,7 @@ ADE_VIRTVAR(pulseInterval,
 
 	weapon_info* info = &Weapon_info[idx];
 
-	if (info->wi_flags[Weapon::Info_Flags::Cmeasure])
+	if (!info->wi_flags[Weapon::Info_Flags::Cmeasure])
 		return ade_set_args(L, "f", -1.0f);
 
 	if (ADE_SETTING_VAR) {
