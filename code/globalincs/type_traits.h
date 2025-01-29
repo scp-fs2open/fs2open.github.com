@@ -32,22 +32,22 @@ constexpr bool has_member_impl(...) { return false; }
 #define has_member(T, member) has_member_impl<T>( [](auto&& obj)->decltype(obj.member){ return obj.member; } )
 
 template<typename T, typename Enable = void>
-struct is_dereferencable_pointer : std::false_type {};
+struct is_dereferenceable_pointer : std::false_type {};
 
 template<typename T>
-struct is_dereferencable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::unique_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
+struct is_dereferenceable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::unique_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
 
 template<typename T>
-struct is_dereferencable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::shared_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
+struct is_dereferenceable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::shared_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
 
 template<typename T>
-struct is_dereferencable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::weak_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
+struct is_dereferenceable_pointer<T, typename std::enable_if_t<std::is_same_v<typename std::decay_t<T>, std::weak_ptr<typename std::decay_t<T>::element_type>>>> : std::true_type {};
 
 template<typename T>
-struct is_dereferencable_pointer<T, typename std::enable_if_t<std::is_pointer_v<typename std::decay_t<T>>>> : std::true_type {};
+struct is_dereferenceable_pointer<T, typename std::enable_if_t<std::is_pointer_v<typename std::decay_t<T>>>> : std::true_type {};
 
 template<typename T>
-inline constexpr bool is_dereferencable_pointer_v = is_dereferencable_pointer<T>::value;
+inline constexpr bool is_dereferenceable_pointer_v = is_dereferenceable_pointer<T>::value;
 
 template<class T, template<class...> class U>
 inline constexpr bool is_instance_of_v = std::false_type{};

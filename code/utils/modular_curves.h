@@ -25,14 +25,14 @@ struct modular_curves_submember_input {
 	static inline auto grab_part(const input_type& input) {
 		//Pointer to member function
 		if constexpr (std::is_member_function_pointer_v<decltype(grabber)>) {
-			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
 				return ((*input).*grabber)();
 			else
 				return (input.*grabber)();
 		}
 		//Pointer to member type, i.e. for submember access
 		else if constexpr (std::is_member_object_pointer_v<decltype(grabber)>) {
-			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(input->*grabber);
 			else
 				return std::cref(input.*grabber);
@@ -48,7 +48,7 @@ struct modular_curves_submember_input {
 		}
 		//Integer, used to index into tuples. Should be rarely used by actual users, but is required to do child-types.
 		else if constexpr (std::is_integral_v<decltype(grabber)>) {
-			if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>)
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(std::get<grabber>(*input));
 			else
 				return std::cref(std::get<grabber>(input));
@@ -150,7 +150,7 @@ struct modular_curves_functional_input {
   public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>){
 			return grabber_fnc(*grab_from_tuple<tuple_idx, input_type>(input));
 		}
 		else {
@@ -214,7 +214,7 @@ private:
 public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (is_dereferencable_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>){
 			return *grab_from_tuple<tuple_idx, input_type>(input);
 		}
 		else {
