@@ -141,6 +141,12 @@ void pilotfile::csg_read_info()
 	Campaign.prev_mission = cfread_int(cfp);
 	Campaign.next_mission = cfread_int(cfp);
 
+	// check that the next mission won't be greater than the total number of missions
+	if (Campaign.next_mission >= Campaign.num_missions) {
+		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
+		m_data_invalid = true; // Causes a warning popup to be displayed
+	}
+
 	// loop state
 	Campaign.loop_reentry = cfread_int(cfp);
 	Campaign.loop_enabled = cfread_int(cfp);

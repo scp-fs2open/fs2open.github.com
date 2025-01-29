@@ -152,7 +152,7 @@ class pilotfile {
 		bool m_have_info;
 
 		// set in case data appears wrong, so we can avoid loading/saving campaign savefile
-		bool m_data_invalid;	// z64: Not used currently
+		bool m_data_invalid;
 
 		// overall content list, can include reference to more than current
 		// mod/campaign provides
