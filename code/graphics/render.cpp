@@ -590,22 +590,10 @@ static void gr_string_old(float sx,
 	float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
 
 	if (canAutoScale && !Fred_running) {
-		// Lambda to calculate font size based on screen resolution
-		auto calculateAutoSize = [height]() -> float {
-			int vmin = std::min(gr_screen.max_w, gr_screen.max_h);
-
-			// Base size calculation (similar to ~Npx font at 1080p)
-			// Use 1080p because that's generally what font sizes have been targeting for years
-			// And should provide a fairly close out-of-the-box solution
-			float baseSize = vmin * (height / 1080.0f);
-			return std::round(baseSize);
-		};
+		float autoSizedFont = calculate_auto_font_size(height);
 
 		// Calculate the auto scale factor
-		float autoSizedFont = calculateAutoSize();
 		float auto_scale_factor = autoSizedFont / height;
-
-		// Incorporate the auto_scale_factor
 		scale_factor *= auto_scale_factor;
 	}
 

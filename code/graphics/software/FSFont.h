@@ -10,6 +10,8 @@ void removeFontMultiplierOption();
 
 float get_font_scale_factor();
 
+float calculate_auto_font_size(float current_size);
+
 namespace font
 {
 	/**
