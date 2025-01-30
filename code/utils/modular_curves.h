@@ -412,10 +412,10 @@ public:
 		return modular_curves_definition<
 				new_input_type,
 				output_enum,
-				0,
+				output_names,
 				new_input_tuple_index,
 				input_grabbers..., additional_input_grabbers...>(
-				std::array<std::pair<const char*, output_enum>, 0> {}, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
+				outputs, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
 		);
 	}
 
