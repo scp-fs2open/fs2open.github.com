@@ -11,6 +11,7 @@
 
 
 #include "gamesnd/gamesnd.h"
+#include "hud/hudconfig.h"
 #include "hud/hudreticle.h"
 #include "hud/hudtargetbox.h"
 #include "io/timer.h"
@@ -249,7 +250,7 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 	firepoint_size = size;
 }
 
-void HudGaugeReticle::render(float  /*frametime*/)
+void HudGaugeReticle::render(float  /*frametime*/, bool /*config*/)
 {
 	if (crosshair.first_frame < 0) {
 		return;
@@ -631,7 +632,7 @@ void HudGaugeThrottle::pageIn()
 	bm_page_in_aabitmap( throttle_frames.first_frame, throttle_frames.num_frames);
 }
 
-void HudGaugeThrottle::render(float  /*frametime*/)
+void HudGaugeThrottle::render(float  /*frametime*/, bool /*config*/)
 {
 	if (throttle_frames.first_frame < 0) {
 		return;
@@ -736,11 +737,11 @@ void HudGaugeThrottle::render(float  /*frametime*/)
 	renderThrottleForeground(y_end);
 
 	if ( Show_max_speed ) {
-		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], "%d", (int)std::lround(max_displayed_speed));
+		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], 1.0f, false, "%d", (int)std::lround(max_displayed_speed));
 	}
 	
 	if ( Show_min_speed ) {
-		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], "%s", XSTR( "0", 292));
+		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], 1.0f, false, "%s", XSTR( "0", 292));
 	}
 }
 
@@ -769,7 +770,7 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 		sy = position[1] + Orbit_center_offsets[1];
 	}
 	
-	renderPrintf(sx, sy, "%s", buf);
+	renderPrintf(sx, sy, 1.0f, false, "%s", buf);
 
 	if ( object_get_gliding(Player_obj) ) { 
 		auto glide_str = XSTR("GLIDE", 1668);
@@ -850,13 +851,13 @@ void HudGaugeThrottle::renderMatchSpeedIcon(int x, int y)
 		renderRect(x, y, Match_speed_icon_width + 2, gr_get_font_height() + 2);
 		
 		gr_set_color_fast(&Color_black);
-		renderPrintf(x + 1, y + 1, "%c", Match_speed_icon);
+		renderPrintf(x + 1, y + 1, 1.0f, false, "%c", Match_speed_icon);
 
 		setGaugeColor();
 	}
 	else
 	{
-		renderPrintf(x, y, "%c", Match_speed_icon);
+		renderPrintf(x, y, 1.0f, false, "%c", Match_speed_icon);
 	}
 }
 
@@ -913,7 +914,7 @@ void HudGaugeThreatIndicator::pageIn()
 	bm_page_in_aabitmap(lock_warn.first_frame, lock_warn.num_frames);
 }
 
-void HudGaugeThreatIndicator::render(float  /*frametime*/)
+void HudGaugeThreatIndicator::render(float  /*frametime*/, bool /*config*/)
 {
 	setGaugeColor();
 
@@ -1067,7 +1068,7 @@ void HudGaugeWeaponLinking::pageIn()
 	}
 }
 
-void HudGaugeWeaponLinking::render(float  /*frametime*/)
+void HudGaugeWeaponLinking::render(float  /*frametime*/, bool /*config*/)
 {
 	int			gauge_index=0, frame_offset=0;
 	ship_weapon	*swp;

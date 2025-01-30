@@ -279,7 +279,7 @@ void HudGaugeLock::renderOld(float frametime)
 // lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
 // necessary locking calculations are done for this frame, this function will compute 
 // where the indicator should be relative to the player's viewpoint and will render accordingly.
-void HudGaugeLock::render(float frametime)
+void HudGaugeLock::render(float frametime, bool /*config*/)
 {
 	size_t i;
 	lock_info *current_lock;

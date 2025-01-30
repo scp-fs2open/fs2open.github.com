@@ -222,7 +222,7 @@ public:
 	void initBitmaps(char *fname);
 	void initOnColor(int r, int g, int b, int a);
 	void initOffColor(int r, int g, int b, int a);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -245,7 +245,7 @@ public:
 	void initBitmaps(char *fname);
 	void initOnColor(int r, int g, int b, int a);
 	void initOffColor(int r, int g, int b, int a);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -261,7 +261,7 @@ public:
 	void initBitmaps(char *fname);
 	void initCountTextOffsets(int x, int y);
 	void initCountValueOffsets(int x, int y);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -275,7 +275,7 @@ public:
 	HudGaugeAfterburner();
 	void initEnergyHeight(int h);
 	void initBitmaps(char *fname);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -306,7 +306,7 @@ public:
 	void initShowBallistics(bool show_ballistics);
 	void initAlignments(HudAlignment text_align, HudAlignment armed_align);
 	void initArmedOffsets(int x, int y, int h, bool show);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -366,7 +366,7 @@ public:
 	void initSecondaryHeights(int top_h, int text_h);
 	void initLinkIcon();
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void maybeFlashWeapon(int index);
 };
@@ -407,7 +407,7 @@ public:
 	void initEntryHeight(int h);
 	void initLinkIcon();
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void maybeFlashWeapon(int index);
 };
@@ -424,7 +424,7 @@ public:
 	void initPrimaryNameOffsetX(int x);
 	void initPrimaryAmmoOffsetX(int x);
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeSecondaryWeapons: public HudGaugeWeaponList
@@ -443,7 +443,7 @@ public:
 	void initSecondaryLinkedOffsetX(int x);
 	void initSecondaryUnlinkedOffsetX(int x);
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeHardpoints: public HudGauge
@@ -463,7 +463,7 @@ public:
 	void initDrawOptions(bool primary_models, bool secondary_models);
 
 	HudGaugeHardpoints();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeWarheadCount: public HudGauge
@@ -486,7 +486,7 @@ public:
 	void initMaxSymbols(int count);
 	void initMaxColumns(int count);
 	void initTextAlign(HudAlignment align);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -497,8 +497,8 @@ protected:
 public:
 	HudGaugeOrientationTee();
 	void initRadius(int length);
-	void render(float frametime) override;
 	void renderOrientation(object *from_objp, object *to_objp, matrix *from_orientp);
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -514,9 +514,9 @@ public:
 	void initRadius(int length);
 	void initTriBase(float length);
 	void initTriHeight(float h);
-	void render(float frametime) override;
 	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
 	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
@@ -524,7 +524,7 @@ class HudGaugeHostileTriangle: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeHostileTriangle();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
@@ -532,7 +532,7 @@ class HudGaugeTargetTriangle: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeTargetTriangle();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
@@ -540,7 +540,7 @@ class HudGaugeMissileTriangles: public HudGaugeReticleTriangle
 protected:
 public:
 	HudGaugeMissileTriangles();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeOffscreen: public HudGauge3DAnchor
@@ -556,7 +556,7 @@ public:
 	void initMaxFrontSeperation(float length);
 	void initTriBase(float length);
 	void initTriHeight(float length);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
 	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true);
 	void pageIn() override;
@@ -571,10 +571,10 @@ public:
 	HudGaugeLeadIndicator();
 	void initHalfSize(float w, float h);
 	void initBitmaps(char *fname);
-	void render(float frametime) override;
 	void renderIndicator(int frame_offset, object *targetp, vec3d *lead_target_pos);
 	void renderLeadCurrentTarget();
 	void renderLeadQuick(vec3d *target_pos, object *targetp);
+	void render(float frametime, bool config = false) override;
 	int pickFrame(float prange, float srange, float dist_to_target);
 	void pageIn() override;
 };
@@ -587,7 +587,7 @@ protected:
 public:
 	HudGaugeLeadSight();
 	void initBitmaps(char *fname);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void renderSight(int indicator_frame, vec3d *target_pos, vec3d *lead_target_pos);
 	void pageIn() override;
 };

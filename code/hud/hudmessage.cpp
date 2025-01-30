@@ -437,7 +437,7 @@ void HudGaugeMessages::preprocess()
  * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
  * the messages up when a new message arrives.
  */
-void HudGaugeMessages::render(float  /*frametime*/)
+void HudGaugeMessages::render(float  /*frametime*/, bool /*config*/)
 {
 	hud_set_default_color();
 
@@ -459,7 +459,7 @@ void HudGaugeMessages::render(float  /*frametime*/)
 				}
 
 				// print the message out
-				renderPrintf(m->msg.x, m->y, "%s", m->msg.text.c_str());
+				renderPrintf(m->msg.x, m->y, 1.0f, false, "%s", m->msg.text.c_str());
 			}
 		}
 	}
@@ -1176,7 +1176,7 @@ void HudGaugeTalkingHead::initBitmaps(const char *fname)
  * Renders everything for a head animation
  * Also checks for when new head ani's need to start playing
  */
-void HudGaugeTalkingHead::render(float frametime)
+void HudGaugeTalkingHead::render(float frametime, bool /*config*/)
 {
 	if ( Head_frame.first_frame == -1 ){
 		return;
@@ -1336,7 +1336,7 @@ void HudGaugeFixedMessages::initCenterText(bool center) {
 	center_text = center;
 }
 
-void HudGaugeFixedMessages::render(float  /*frametime*/) {
+void HudGaugeFixedMessages::render(float  /*frametime*/, bool /*config*/) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];
