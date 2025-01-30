@@ -6658,7 +6658,7 @@ bool post_process_mission(mission *pm)
 		for (i = 0; i < Briefings[team].num_stages; i++) {
 			auto stage = br[i];
 			for (int j = 0; j < stage.num_icons; j++) {
-				stage.icons[j].modelnum = model_load(Ship_info[stage.icons[j].ship_class].pof_file, 0, nullptr);
+				stage.icons[j].modelnum = model_load(Ship_info[stage.icons[j].ship_class].pof_file);
 			}
 		}
 	}
