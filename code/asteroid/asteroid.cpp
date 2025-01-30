@@ -547,7 +547,7 @@ static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 		return;
 
-	asip->subtypes[asteroid_subtype].model_number = model_load( asip->subtypes[asteroid_subtype].pof_filename, 0, nullptr );
+	asip->subtypes[asteroid_subtype].model_number = model_load( asip->subtypes[asteroid_subtype].pof_filename );
 
 	if (asip->subtypes[asteroid_subtype].model_number >= 0)
 	{
@@ -1690,7 +1690,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
 			if (!wip->impact_weapon_expl_effect.isValid()) {
-				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, particle::PARTICLE_BITMAP, Asteroid_impact_explosion_ani );
+				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, Asteroid_impact_explosion_ani );
 			}
 		}
 	}

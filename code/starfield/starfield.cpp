@@ -1612,12 +1612,12 @@ void subspace_render()
 	}
 
 	if ( Subspace_model_inner < 0 )	{
-		Subspace_model_inner = model_load( "subspace_small.pof", 0, nullptr );
+		Subspace_model_inner = model_load( "subspace_small.pof" );
 		Assert(Subspace_model_inner >= 0);
 	}
 
 	if ( Subspace_model_outer < 0 )	{
-		Subspace_model_outer = model_load( "subspace_big.pof", 0, nullptr );
+		Subspace_model_outer = model_load( "subspace_big.pof" );
 		Assert(Subspace_model_outer >= 0);
 	}
 
@@ -2056,10 +2056,10 @@ void stars_page_in()
 	// Initialize the subspace stuff
 
 	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
-		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
+		Subspace_model_inner = model_load("subspace_small.pof");
 		Assert(Subspace_model_inner >= 0);
 
-		Subspace_model_outer = model_load("subspace_big.pof", 0, nullptr);
+		Subspace_model_outer = model_load("subspace_big.pof");
 		Assert(Subspace_model_outer >= 0);
 
 		polymodel *pm;
@@ -2372,7 +2372,7 @@ void stars_set_background_model(const char* model_name, const char* texture_name
 	}
 
 	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
-		new_model = model_load(model_name, 0, nullptr, -1);
+		new_model = model_load(model_name, nullptr, -1);
 
 		if (texture_name != nullptr && *texture_name != '\0') {
 			new_bitmap = bm_load(texture_name);
