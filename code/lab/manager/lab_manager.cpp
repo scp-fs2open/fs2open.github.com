@@ -85,6 +85,7 @@ LabManager::LabManager() {
 	graphicsSettings.exposure_level = ltp::current_exposure();
 	graphicsSettings.tonemapper = ltp::current_tonemapper();
 	graphicsSettings.bloom_level = gr_bloom_intensity();
+	graphicsSettings.bloom_width = gr_bloom_width();
 	graphicsSettings.aa_mode = Gr_aa_mode;
 }
 
