@@ -4,13 +4,12 @@
 #include "scripting/ade.h"
 #include "mission/missiongoals.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api
+{
+//**********HANDLE: mission event
+ADE_OBJ(l_Event, int, "mission_event", "Mission event handle");
 
-//**********HANDLE: event
-ADE_OBJ(l_Event, int, "event", "Mission event handle");
-
-ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
+ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", nullptr)
 {
 	int idx;
 	const char* s = nullptr;
@@ -29,7 +28,7 @@ ADE_VIRTVAR(Name, l_Event, "string", "Mission event name", "string", NULL)
 	return ade_set_args(L, "s", mep->name.c_str());
 }
 
-ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", NULL)
+ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", nullptr)
 {
 	int idx;
 	const char* s = nullptr;
@@ -48,7 +47,7 @@ ADE_VIRTVAR(DirectiveText, l_Event, "string", "Directive text", "string", NULL)
 	return ade_set_args(L, "s", mep->objective_text.c_str());
 }
 
-ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.", "string", NULL)
+ADE_VIRTVAR(DirectiveKeypressText, l_Event, "string", "Raw directive keypress text, as seen in FRED.", "string", nullptr)
 {
 	int idx;
 	const char* s = nullptr;
@@ -143,7 +142,7 @@ ADE_VIRTVAR(Score, l_Event, "number", "Event score", "number", "Event score, or 
 	return ade_set_args(L, "i", mep->score);
 }
 
-ADE_FUNC(isValid, l_Event, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+ADE_FUNC(isValid, l_Event, nullptr, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	int idx;
 	if (!ade_get_args(L, "o", l_Event.Get(&idx)))
@@ -155,7 +154,4 @@ ADE_FUNC(isValid, l_Event, NULL, "Detects whether handle is valid", "boolean", "
 	return ADE_RETURN_TRUE;
 }
 
-
 }
-}
-
