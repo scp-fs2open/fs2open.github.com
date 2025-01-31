@@ -74,7 +74,7 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
 	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
-	DDX_Text(pDX, IDC_MISSISON_LOOP_DESC, m_branch_desc);
+	DDX_Text(pDX, IDC_MISSION_LOOP_DESC, m_branch_desc);
 	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_SOUND, m_branch_brief_sound);
@@ -362,7 +362,7 @@ void campaign_editor::load_tree(int save_first)
 	GetDlgItem(IDC_BRIEFING_CUTSCENE)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MAIN_HALL)->EnableWindow(TRUE);
 
-	GetDlgItem(IDC_MISSISON_LOOP_DESC)->EnableWindow(FALSE);	
+	GetDlgItem(IDC_MISSION_LOOP_DESC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_ANIM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(FALSE);
@@ -725,7 +725,7 @@ void campaign_editor::update_loop_desc_window()
 	}
 
 	// maybe enable description window
-	GetDlgItem(IDC_MISSISON_LOOP_DESC)->EnableWindow(enable_branch_desc_window);
+	GetDlgItem(IDC_MISSION_LOOP_DESC)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_ANIM)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(enable_branch_desc_window);

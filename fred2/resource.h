@@ -959,7 +959,7 @@
 #define IDC_SUBSPACE                    1493
 #define IDC_UPDATE                      1494
 #define IDC_DESC                        1495
-#define IDC_MISSISON_LOOP_DESC          1495
+#define IDC_MISSION_LOOP_DESC           1495
 #define IDC_NO_PROMOTION                1496
 #define IDC_DESC2                       1496
 #define ID_CANCEL                       1497
@@ -1039,7 +1039,7 @@
 #define IDC_BEAM_FREE_ALL_BY_DEFAULT    1544
 #define IDC_NEB2_TOGGLE_TRAILS          1544
 #define IDC_ST_OVERRIDE_NEB             1545
-#define IDC_MAINHALL_LABEL              1545
+#define IDC_SUBSTITUTE_MAIN_HALL        1545
 #define IDC_3D_WARP_EFFECT              1545
 #define IDC_NEB2_FOG_R                  1545
 #define IDC_MISSION_OPTIONS             1546
