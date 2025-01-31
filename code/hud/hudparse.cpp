@@ -5520,7 +5520,13 @@ void load_gauge_scripting(gauge_settings* settings) {
 	SCP_string name;
 	stuff_string(name, F_NAME);
 
+	bool active_by_default = true;
+	if (optional_string("Active by default:")) {
+		stuff_boolean(&active_by_default);
+	}
+
 	hud_gauge->initName(std::move(name));
+	hud_gauge->initRenderStatus(active_by_default);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
