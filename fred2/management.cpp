@@ -73,6 +73,7 @@
 #include "scripting/scripting.h"
 #include "scripting/global_hooks.h"
 #include "utils/Random.h"
+#include "utils/string_utils.h"
 
 #include <direct.h>
 #include "cmdline/cmdline.h"
@@ -192,7 +193,7 @@ void convert_multiline_string(CString &dest, const SCP_string &src)
 // string (newlines changed to '\r\n').
 void convert_multiline_string(CString &dest, const char *src)
 {
-	dest = src;
+	dest = src ? src : "";
 	dest.Replace("\n", "\r\n");
 }
 
@@ -204,6 +205,14 @@ void deconvert_multiline_string(char *dest, const CString &str, size_t max_len)
 	strncpy(dest, (LPCTSTR) str, max_len);
 
 	replace_all(dest, "\r\n", "\n", max_len);
+}
+
+// ditto for unique_ptr<char[]>
+void deconvert_multiline_string(std::unique_ptr<char[]> &dest, const CString &str)
+{
+	dest = util::unique_copy((LPCTSTR) str, true);
+	if (dest)
+		replace_all(dest.get(), "\r\n", "\n", strlen(dest.get()));
 }
 
 // ditto for SCP_string
@@ -421,7 +430,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	strcpy_s(Voice_abbrev_message, "");
 	strcpy_s(Voice_abbrev_mission, "");
 	Voice_no_replace_filenames = false;
-	strcpy_s(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
+	Voice_script_entry_format = "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message";
 	Voice_export_selection = 0;
 
 	Show_waypoints = TRUE;
@@ -826,8 +835,8 @@ void clear_mission(bool fast_reload)
 	The_mission.author = str;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
-	strcpy_s(The_mission.mission_desc, "Put mission description here");
+	The_mission.notes = util::unique_copy("This is a FRED2_OPEN created mission.", true);
+	The_mission.mission_desc = util::unique_copy("Put mission description here", true);
 
 	apply_default_custom_data(&The_mission);
 

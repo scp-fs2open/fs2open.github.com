@@ -1112,7 +1112,7 @@ void game_level_init()
 	Last_view_target = nullptr;
 
 	// campaign wasn't ended
-	Campaign_ending_via_supernova = 0;
+	Campaign_ending_via_supernova = false;
 
 	load_gl_init = (time(nullptr) - load_gl_init);
 	mprintf(("Game_level_init took %ld seconds\n", load_gl_init));

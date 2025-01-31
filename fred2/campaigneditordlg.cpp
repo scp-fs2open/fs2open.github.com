@@ -73,9 +73,7 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_CAMPAIGN_TYPE, m_type);
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
-	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_MISSION_LOOP_DESC, m_branch_desc);
-	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_SOUND, m_branch_brief_sound);
 	DDX_Check(pDX, IDC_CUSTOM_TECH_DB, m_custom_tech_db);
@@ -288,8 +286,8 @@ void campaign_editor::mission_selected(int num)
 
 	// clear out the text for the briefing cutscene, and put in new text if specified
 	bc_dialog->SetWindowText("");
-	if ( strlen(Campaign.missions[num].briefing_cutscene) )
-		bc_dialog->SetWindowText(Campaign.missions[num].briefing_cutscene);
+	if ( Campaign.missions[num].briefing_cutscene )
+		bc_dialog->SetWindowText(Campaign.missions[num].briefing_cutscene.get());
 
 	// new main hall stuff
 	bc_hall->SetWindowText(Campaign.missions[num].main_hall.c_str());
@@ -302,7 +300,7 @@ void campaign_editor::mission_selected(int num)
 
 void campaign_editor::update()
 {
-	char buf[MISSION_DESC_LENGTH];
+	SCP_string buf;
 
 	// get data from dlog box
 	UpdateData(TRUE);
@@ -316,14 +314,14 @@ void campaign_editor::update()
 	Campaign.type = m_type;
 
 	// update campaign desc
-	deconvert_multiline_string(buf, m_desc, MISSION_DESC_LENGTH - 1);
+	deconvert_multiline_string(buf, m_desc);
 	if (Campaign.desc) {
 		free(Campaign.desc);
 	}
 
 	Campaign.desc = NULL;
-	if (strlen(buf)) {
-		Campaign.desc = strdup(buf);
+	if (!buf.empty()) {
+		Campaign.desc = strdup(buf.c_str());
 	}
 
 	// update flags
@@ -532,7 +530,6 @@ void campaign_editor::OnSelchangedSexpTree(NMHDR* pNMHDR, LRESULT* pResult)
 void campaign_editor::OnMoveUp() 
 {
 	int i, last = -1;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
@@ -553,9 +550,7 @@ void campaign_editor::OnMoveUp()
 			m_tree.move_root(h1, h2, true);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[last];
-			Links[last] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[last], Links[i]);
 			Cur_campaign_link = last;
 		}
 	}
@@ -566,7 +561,6 @@ void campaign_editor::OnMoveUp()
 void campaign_editor::OnMoveDown() 
 {
 	int i, j;
-	campaign_tree_link temp;
 	HTREEITEM h1, h2;
 
 	if (Cur_campaign_link >= 0) {
@@ -586,9 +580,7 @@ void campaign_editor::OnMoveDown()
 			m_tree.move_root(h1, h2, false);
 			m_tree.SelectItem(m_tree.GetParentItem(m_tree.handle(Links[i].node)));
 
-			temp = Links[j];
-			Links[j] = Links[i];
-			Links[i] = temp;
+			std::swap(Links[j], Links[i]);
 			Cur_campaign_link = j;
 		}
 	}
@@ -615,20 +607,20 @@ void campaign_editor::move_handler(int node1, int node2, bool insert_before)
 	}
 	Assert(index2 < Total_links);
 
-	temp = Links[index1];
+	temp = std::move(Links[index1]);
 
 	int offset = insert_before ? -1 : 0;
 
 	while (index1 < index2 + offset) {
-		Links[index1] = Links[index1 + 1];
+		Links[index1] = std::move(Links[index1 + 1]);
 		index1++;
 	}
 	while (index1 > index2 + offset + 1) {
-		Links[index1] = Links[index1 - 1];
+		Links[index1] = std::move(Links[index1 - 1]);
 		index1--;
 	}
 
-	Links[index1] = temp;
+	Links[index1] = std::move(temp);
 
 	// update Cur_campaign_link
 	Cur_campaign_link = index2;

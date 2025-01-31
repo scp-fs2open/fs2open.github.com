@@ -560,10 +560,10 @@ void parse_mission_info(mission *pm, bool basic = false)
 	stuff_string(pm->modified, F_DATE, DATE_TIME_LENGTH);
 
 	required_string("$Notes:");
-	stuff_string(pm->notes, F_NOTES, NOTES_LENGTH);
+	stuff_string(pm->notes, F_NOTES, true);
 
 	if (optional_string("$Mission Desc:"))
-		stuff_string(pm->mission_desc, F_MULTITEXT, MISSION_DESC_LENGTH);		
+		stuff_string(pm->mission_desc, F_MULTITEXT, true);
 
 	if ( optional_string("+Game Type:")) {
 		// HACK HACK HACK -- stuff_string was changed to *not* ignore carriage returns.  Since the
@@ -6734,8 +6734,8 @@ void mission::Reset()
 	required_fso_version = LEGACY_MISSION_VERSION;
 	created[ 0 ] = '\0';
 	modified[ 0 ] = '\0';
-	notes[ 0 ] = '\0';
-	mission_desc[ 0 ] = '\0';
+	notes.reset();
+	mission_desc.reset();
 	game_type = MISSION_TYPE_SINGLE;				// default to single player only
 	flags.reset();
 

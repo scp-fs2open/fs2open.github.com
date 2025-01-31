@@ -969,8 +969,8 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-	cm->notes = NULL;
-	cm->briefing_cutscene[0] = 0;
+	cm->notes.reset();
+	cm->briefing_cutscene.reset();
 	for (i=0; i<Campaign.num_missions - 1; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
@@ -1067,8 +1067,8 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-	cm->notes = NULL;
-	cm->briefing_cutscene[0] = 0;
+	cm->notes.reset();
+	cm->briefing_cutscene.reset();
 	for (i=0; i<Campaign.num_missions - 1; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
