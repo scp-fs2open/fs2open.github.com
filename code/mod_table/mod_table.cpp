@@ -157,6 +157,7 @@ bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
+bool Preload_briefing_icon_models;
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -1436,6 +1437,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Fix_scripted_velocity);
 			}
 
+			if (optional_string("$Preload briefing icon models:")) {
+				stuff_boolean(&Preload_briefing_icon_models);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1657,6 +1662,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[1], 192, 128, 64, 255);
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
+	Preload_briefing_icon_models = false;
 }
 
 void mod_table_set_version_flags()

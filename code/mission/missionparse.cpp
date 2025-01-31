@@ -6649,6 +6649,20 @@ bool post_process_mission(mission *pm)
 
 	apply_default_custom_data(pm);
 
+	if (Preload_briefing_icon_models) {
+		int team = 0;
+		if (MULTI_TEAM) {
+			team = Net_player->p_info.team;
+		}
+		auto br = Briefings[team].stages;
+		for (i = 0; i < Briefings[team].num_stages; i++) {
+			auto stage = br[i];
+			for (int j = 0; j < stage.num_icons; j++) {
+				stage.icons[j].modelnum = model_load(Ship_info[stage.icons[j].ship_class].pof_file);
+			}
+		}
+	}
+
 	// success
 	return true;
 }
