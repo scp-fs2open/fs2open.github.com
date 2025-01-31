@@ -26,8 +26,24 @@ float get_font_scale_factor()
 	return FontScaleFactor->getValue();
 }
 
+// Calculate the font size based on the current screen resolution to provide a similar size on all resolutions
+// The returned size will be roughly similar to the size of the font at 1080p
+// Use 1080p because that's generally what font sizes have been targeting for years
+// And should provide a fairly close out-of-the-box solution
+float calculate_auto_font_size(float current_size)
+{
+	int vmin = std::min(gr_screen.max_w, gr_screen.max_h);
+	float baseSize = vmin * (current_size / 1080.0f);
+	return std::round(baseSize);
+}
+
 namespace font
 {
+
+	void FSFont::setAutoScaleBehavior(bool auto_scale)
+	{
+		this->autoScale = auto_scale;
+	}
 
 	void FSFont::setScaleBehavior(bool scale)
 	{
@@ -52,6 +68,11 @@ namespace font
 	void FSFont::setFilename(const SCP_string& newName) 
 	{
 		this->filename = newName;
+	}
+
+	[[nodiscard]] bool FSFont::getAutoScaleBehavior() const
+	{
+		return this->autoScale;
 	}
 
 	[[nodiscard]] bool FSFont::getScaleBehavior() const

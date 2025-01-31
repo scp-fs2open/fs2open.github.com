@@ -538,6 +538,7 @@ static void gr_string_old(float sx,
 	const char* end,
 	font::font* fontData,
 	float height,
+	bool canAutoScale,
 	bool canScale,
 	int resize_mode,
 	float scaleMultiplier)
@@ -587,6 +588,15 @@ static void gr_string_old(float sx,
 	gr_set_2d_matrix();
 
 	float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
+
+	if (canAutoScale && !Fred_running) {
+		float autoSizedFont = calculate_auto_font_size(height);
+
+		// Calculate the auto scale factor
+		float auto_scale_factor = autoSizedFont / height;
+		scale_factor *= auto_scale_factor;
+	}
+
 	scale_factor *= scaleMultiplier;
 
 	int letter;
@@ -784,7 +794,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
 		fo::font* fontData = fnt->getFontData();
 
-		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), currentFont->getScaleBehavior(), resize_mode, scaleMultiplier);
+		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), currentFont->getAutoScaleBehavior(), currentFont->getScaleBehavior(), resize_mode, scaleMultiplier);
 	} else if (currentFont->getType() == NVG_FONT) {
 		GR_DEBUG_SCOPE("Render TTF string");
 
@@ -882,6 +892,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 									  text + 1,
 									  nvgFont->getSpecialCharacterFont(),
 									  nvgFont->getHeight(),
+							          nvgFont->getAutoScaleBehavior(),
 									  nvgFont->getScaleBehavior(),
 									  resize_mode,
 									  scaleMultiplier);
