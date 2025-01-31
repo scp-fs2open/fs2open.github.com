@@ -16806,7 +16806,8 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
+bool test_line_of_sight(const vec3d* from, const vec3d* to, SCP_unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj)
+{
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16814,7 +16815,7 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& exclud
 			continue;
 
 		//Don't collision check against excluded objects
-		if (excluded_object_ids.count(OBJ_INDEX(objp)) > 0)
+		if (excluded_object_ids.contains(OBJ_INDEX(objp)))
 			continue;
 
 		int model_num = 0;

@@ -552,7 +552,7 @@ void event_editor::OnButtonOk()
 			SCP_string buf = "<" + event.name + ">";
 
 			// force it to not be too long
-			if (SCP_truncate(buf, NAME_LENGTH))
+			if (SCP_truncate(buf, NAME_LENGTH - 1))
 				buf.back() = '>';
 
 			names.emplace_back(event.name, buf);
