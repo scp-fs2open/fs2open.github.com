@@ -574,6 +574,23 @@ int check_for_string_raw(const char *pstr)
 	return 0;
 }
 
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+{
+	return string_lookup(SCP_string(str1), strlist, description, say_errors);
+}
+
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+{
+	for (size_t i = 0; i < strlist.size(); i++)
+		if (lcase_equal(str1, strlist[i]))
+			return static_cast<int>(i);
+
+	if (say_errors)
+		error_display(0, "Unable to find [%s] in %s list.\n", str1.c_str(), description ? description : "unnamed");
+
+	return -1;
+}
+
 // Find an optional string.
 //	If found, return 1, else return 0.
 //	If found, point past string, else don't update pointer.
