@@ -33,7 +33,7 @@ void debrief_handle_player_drop();
 
 void debrief_maybe_auto_accept();
 void debrief_disable_accept();
-void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_loop_desc);
+void debrief_assemble_optional_mission_popup_text(char *buffer, const char *mission_loop_desc);
 
 int debrief_select_music();
 void debrief_choose_medal_variant(char* buf, int medal_earned, int zero_based_version_index);

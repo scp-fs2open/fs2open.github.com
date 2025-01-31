@@ -1932,7 +1932,7 @@ main_hall_defines* main_hall_get_pointer(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
+		if (lcase_equal(Main_hall_defines.at(i).at(0).name, name_to_find)) {
 			return &Main_hall_defines.at(i).at(main_hall_get_resolution_index(i));
 		}
 	}
@@ -1952,7 +1952,7 @@ int main_hall_get_index(const SCP_string &name_to_find)
 	unsigned int i;
 
 	for (i = 0; i < Main_hall_defines.size(); i++) {
-		if (!stricmp(Main_hall_defines.at(i).at(0).name.c_str(), name_to_find.c_str())) {
+		if (lcase_equal(Main_hall_defines.at(i).at(0).name, name_to_find)) {
 			return i;
 		}
 	}

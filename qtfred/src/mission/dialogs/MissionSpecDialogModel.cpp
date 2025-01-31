@@ -13,6 +13,7 @@
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
+#include "utils/string_utils.h"
 
 #include <QtWidgets>
 
@@ -30,8 +31,8 @@ void MissionSpecDialogModel::initializeData() {
 	_m_designer_name = The_mission.author;
 	_m_created = The_mission.created;
 	_m_modified = The_mission.modified;
-	_m_mission_notes = The_mission.notes;
-	_m_mission_desc = The_mission.mission_desc;
+	_m_mission_notes = coalesce(The_mission.notes.get(), "");
+	_m_mission_desc = coalesce(The_mission.mission_desc.get(), "");
 
 	_m_full_war = Mission_all_attack;
 	_m_disallow_support = (The_mission.support_ships.max_support_ships == 0);
@@ -112,14 +113,14 @@ bool MissionSpecDialogModel::apply() {
 	lcl_fred_replace_stuff(_m_squad_name);
 
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
-	Editor::pad_with_newline(_m_mission_notes, NOTES_LENGTH - 1);
+	Editor::pad_with_newline(_m_mission_notes);
 
 	strncpy(The_mission.name, _m_mission_title.c_str(), NAME_LENGTH-1);
 	The_mission.author = _m_designer_name;
 	strncpy(The_mission.loading_screen[GR_640], _m_loading_640.c_str(), NAME_LENGTH-1);
 	strncpy(The_mission.loading_screen[GR_1024], _m_loading_1024.c_str(), NAME_LENGTH-1);
-	strncpy(The_mission.notes, _m_mission_notes.c_str(), NOTES_LENGTH);
-	strncpy(The_mission.mission_desc, _m_mission_desc.c_str(), MISSION_DESC_LENGTH);
+	The_mission.notes = util::unique_copy(_m_mission_notes.c_str(), true);
+	The_mission.mission_desc = util::unique_copy(_m_mission_desc.c_str(), true);
 
 	// copy squad stuff
 	if (_m_squad_name == NO_SQUAD) {
@@ -352,7 +353,7 @@ int MissionSpecDialogModel::getAIProfileIndex() const {
 }
 
 void MissionSpecDialogModel::setMissionDescText(const SCP_string& m_mission_desc) {
-	modify(_m_mission_desc, m_mission_desc.substr(0, MIN(static_cast<size_t>(MISSION_DESC_LENGTH), m_mission_desc.length())));
+	modify(_m_mission_desc, m_mission_desc);
 }
 
 SCP_string MissionSpecDialogModel::getMissionDescText() {
@@ -360,7 +361,7 @@ SCP_string MissionSpecDialogModel::getMissionDescText() {
 }
 
 void MissionSpecDialogModel::setDesignerNoteText(const SCP_string& m_mission_notes) {
-	modify(_m_mission_notes, m_mission_notes.substr(0, MIN(static_cast<size_t>(NOTES_LENGTH), m_mission_notes.length())));
+	modify(_m_mission_notes, m_mission_notes);
 }
 
 SCP_string MissionSpecDialogModel::getDesignerNoteText() {

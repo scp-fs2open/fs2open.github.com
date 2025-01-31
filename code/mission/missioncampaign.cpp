@@ -53,7 +53,7 @@
 #include "weapon/weapon.h"
 
 // campaign wasn't ended
-int Campaign_ending_via_supernova = 0;
+bool Campaign_ending_via_supernova = false;
 
 // stuff for selecting campaigns.  We need to keep both arrays around since we display the
 // list of campaigns by name, but must load campaigns by filename
@@ -516,11 +516,13 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			cm = &Campaign.missions[Campaign.num_missions];
 			cm->name = vm_strdup(name);
 
-			cm->notes = NULL;
+			cm->notes.reset();
 
-			cm->briefing_cutscene[0] = 0;
-			if ( optional_string("+Briefing Cutscene:") )
-				stuff_string( cm->briefing_cutscene, F_NAME, NAME_LENGTH );
+			cm->briefing_cutscene.reset();
+			if ( optional_string("+Briefing Cutscene:") ) {
+				stuff_string(temp, F_NAME, NAME_LENGTH);
+				cm->briefing_cutscene = util::unique_copy(temp, true);
+			}
 
 			cm->flags = 0;
 			if (optional_string("+Flags:"))
@@ -535,14 +537,14 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			// Goober5000 - new main hall stuff!
 			// Updated by CommanderDJ
 			if (optional_string("+Main Hall:")) {
-				stuff_string(temp, F_RAW, 32);
+				stuff_string(temp, F_RAW, NAME_LENGTH);
 				cm->main_hall = temp;
 			}
 
 			// Goober5000 - substitute main hall (like substitute music)
 			cm->substitute_main_hall = "";
 			if (optional_string("+Substitute Main Hall:")) {
-				stuff_string(temp, F_RAW, 32);
+				stuff_string(temp, F_RAW, NAME_LENGTH);
 				cm->substitute_main_hall = temp;
 
 				// if we're running FRED, keep the halls separate (so we can save the campaign file),
@@ -585,19 +587,19 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 				cm->flags |= CMISSION_FLAG_HAS_FORK;
 			}
 
-			cm->mission_branch_desc = NULL;
+			cm->mission_branch_desc.reset();
 			if ( optional_string("+Mission Loop Text:") || optional_string("+Mission Fork Text:") ) {
-				cm->mission_branch_desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				stuff_string(cm->mission_branch_desc, F_MULTITEXT, true, nullptr);
 			}
 
-			cm->mission_branch_brief_anim = NULL;
+			cm->mission_branch_brief_anim.reset();
 			if ( optional_string("+Mission Loop Brief Anim:") || optional_string("+Mission Fork Brief Anim:") ) {
-				cm->mission_branch_brief_anim = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				stuff_string(cm->mission_branch_brief_anim, F_MULTITEXT, true, nullptr);
 			}
 
-			cm->mission_branch_brief_sound = NULL;
+			cm->mission_branch_brief_sound.reset();
 			if ( optional_string("+Mission Loop Brief Sound:") || optional_string("+Mission Fork Brief Sound:") ) {
-				cm->mission_branch_brief_sound = stuff_and_malloc_string(F_MULTITEXT, NULL);
+				stuff_string(cm->mission_branch_brief_sound, F_MULTITEXT, true, nullptr);
 			}
 
 			cm->mission_loop_formula = -1;
@@ -1197,38 +1199,23 @@ void mission_campaign_clear()
 			Campaign.missions[i].name = NULL;
 		}
 
-		if (Campaign.missions[i].notes != NULL) {
-			vm_free(Campaign.missions[i].notes);
-			Campaign.missions[i].notes = NULL;
-		}
+		Campaign.missions[i].notes.reset();
+		Campaign.missions[i].briefing_cutscene.reset();
 
 		Campaign.missions[i].goals.clear();
 		Campaign.missions[i].events.clear();
 		Campaign.missions[i].variables.clear();
 
-		// the next three are strdup'd return values from parselo.cpp - taylor
-		if (Campaign.missions[i].mission_branch_desc != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_desc);
-			Campaign.missions[i].mission_branch_desc = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_anim != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_anim);
-			Campaign.missions[i].mission_branch_brief_anim = NULL;
-		}
-
-		if (Campaign.missions[i].mission_branch_brief_sound != NULL) {
-			vm_free(Campaign.missions[i].mission_branch_brief_sound);
-			Campaign.missions[i].mission_branch_brief_sound = NULL;
-		}
+		Campaign.missions[i].mission_branch_desc.reset();
+		Campaign.missions[i].mission_branch_brief_anim.reset();
+		Campaign.missions[i].mission_branch_brief_sound.reset();
 
 		if ( !Fred_running ){
 			sexp_unmark_persistent(Campaign.missions[i].formula);		// free any sexpression nodes used by campaign.
 		}
 
-		memset(Campaign.missions[i].briefing_cutscene, 0, NAME_LENGTH);
 		Campaign.missions[i].formula = 0;
-		Campaign.missions[i].completed = 0;
+		Campaign.missions[i].completed = false;
 		Campaign.missions[i].mission_loop_formula = 0;
 		Campaign.missions[i].level = 0;
 		Campaign.missions[i].pos = 0;
@@ -1332,16 +1319,13 @@ SCP_string mission_campaign_get_name(const char* filename)
  */
 void read_mission_goal_list(int num)
 {
-	char *filename, notes[NOTES_LENGTH];
+	const char *filename;
 	int z;
 
 	Assertion(num >= 0 && num < Campaign.num_missions, "mission number out of range!");
 	filename = Campaign.missions[num].name;
 
-	if (Campaign.missions[num].notes) {
-		vm_free(Campaign.missions[num].notes);
-		Campaign.missions[num].notes = nullptr;
-	}
+	Campaign.missions[num].notes.reset();
 	Campaign.missions[num].events.clear();
 	Campaign.missions[num].goals.clear();
 	Campaign.missions[num].variables.clear();
@@ -1355,9 +1339,7 @@ void read_mission_goal_list(int num)
 		// first, read the mission notes for this mission.  Used in campaign editor
 		if (skip_to_string("#Mission Info")) {
 			if (skip_to_string("$Notes:")) {
-				stuff_string(notes, F_NOTES, NOTES_LENGTH);
-				Campaign.missions[num].notes = (char *)vm_malloc(strlen(notes) + 1);
-				strcpy(Campaign.missions[num].notes, notes);
+				stuff_string(Campaign.missions[num].notes, F_NOTES, true);
 			}
 		}
 
@@ -1464,8 +1446,7 @@ void mission_campaign_maybe_play_movie(int type)
 	filename = NULL;
 	switch( type ) {
 	case CAMPAIGN_MOVIE_PRE_MISSION:
-		if ( strlen(Campaign.missions[mission_idx].briefing_cutscene) )
-			filename = Campaign.missions[mission_idx].briefing_cutscene;
+		filename = Campaign.missions[mission_idx].briefing_cutscene.get();
 		break;
 
 	default:

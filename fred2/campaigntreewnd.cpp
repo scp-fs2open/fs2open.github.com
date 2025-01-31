@@ -21,6 +21,7 @@
 #include "InitialShips.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
+#include "utils/string_utils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE

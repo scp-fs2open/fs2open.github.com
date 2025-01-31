@@ -1363,25 +1363,26 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 	fred_parse_flag = 0;
 	for (i = 0; i < Campaign.num_missions; i++) {
 		m = Sorted[i];
+		cmission &cm = Campaign.missions[m];
 		required_string_either_fred("$Mission:", "#End");
 		required_string_fred("$Mission:");
 		parse_comments(2);
-		fout(" %s", Campaign.missions[m].name);
+		fout(" %s", cm.name);
 
-		if (strlen(Campaign.missions[i].briefing_cutscene)) {
+		if (cm.briefing_cutscene) {
 			if (optional_string_fred("+Briefing Cutscene:", "$Mission"))
 				parse_comments();
 			else
 				fout("\n+Briefing Cutscene:");
 
-			fout(" %s", Campaign.missions[i].briefing_cutscene);
+			fout(" %s", cm.briefing_cutscene.get());
 		}
 
 		required_string_fred("+Flags:", "$Mission:");
 		parse_comments();
 
 		// don't save any internal flags
-		auto flags_to_save = Campaign.missions[m].flags & CMISSION_EXTERNAL_FLAG_MASK;
+		auto flags_to_save = cm.flags & CMISSION_EXTERNAL_FLAG_MASK;
 
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
@@ -1394,32 +1395,32 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			else
 				fout("\n+Main Hall:");
 
-			fout(" %s", Campaign.missions[m].main_hall.c_str());
+			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", flags_to_save | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | (!cm.main_hall.empty() ? CMISSION_FLAG_BASTION : 0));
 		}
 
-		if (!Campaign.missions[m].substitute_main_hall.empty()) {
+		if (!cm.substitute_main_hall.empty()) {
 			fso_comment_push(";;FSO 3.7.2;;");
 			if (optional_string_fred("+Substitute Main Hall:")) {
 				parse_comments(1);
-				fout(" %s", Campaign.missions[m].substitute_main_hall.c_str());
+				fout(" %s", cm.substitute_main_hall.c_str());
 			} else {
-				fout_version("\n+Substitute Main Hall: %s", Campaign.missions[m].substitute_main_hall.c_str());
+				fout_version("\n+Substitute Main Hall: %s", cm.substitute_main_hall.c_str());
 			}
 			fso_comment_pop();
 		} else {
 			bypass_comment(";;FSO 3.7.2;; +Substitute Main Hall:");
 		}
 
-		if (Campaign.missions[m].debrief_persona_index > 0) {
+		if (cm.debrief_persona_index > 0) {
 			fso_comment_push(";;FSO 3.6.8;;");
 			if (optional_string_fred("+Debriefing Persona Index:")) {
 				parse_comments(1);
-				fout(" %d", Campaign.missions[m].debrief_persona_index);
+				fout(" %d", cm.debrief_persona_index);
 			} else {
-				fout_version("\n+Debriefing Persona Index: %d", Campaign.missions[m].debrief_persona_index);
+				fout_version("\n+Debriefing Persona Index: %d", cm.debrief_persona_index);
 			}
 			fso_comment_pop();
 		} else {
@@ -1477,7 +1478,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 						else
 							required_string_fred("+Mission Fork Text:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_branch_txt);
+						fout_ext("\n", "%s", Links[j].mission_branch_txt.get());
 						fout("\n$end_multi_text");
 					}
 
@@ -1487,7 +1488,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 						else
 							required_string_fred("+Mission Fork Brief Anim:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_branch_brief_anim);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_anim.get());
 						fout("\n$end_multi_text");
 					}
 
@@ -1497,7 +1498,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 						else
 							required_string_fred("+Mission Fork Brief Sound:");
 						parse_comments();
-						fout_ext("\n", "%s", Links[j].mission_branch_brief_sound);
+						fout_ext("\n", "%s", Links[j].mission_branch_brief_sound.get());
 						fout("\n$end_multi_text");
 					}
 
@@ -2706,7 +2707,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Notes:");
 	parse_comments();
-	fout("\n%s", The_mission.notes);
+	fout("\n%s", coalesce(The_mission.notes.get(), ""));
 
 	required_string_fred("$End Notes:");
 	parse_comments(0);
@@ -2714,7 +2715,7 @@ int CFred_mission_save::save_mission_info()
 	// XSTR
 	required_string_fred("$Mission Desc:");
 	parse_comments(2);
-	fout_ext("\n", "%s", The_mission.mission_desc);
+	fout_ext("\n", "%s", coalesce(The_mission.mission_desc.get(), ""));
 	fout("\n");
 
 	required_string_fred("$end_multi_text");

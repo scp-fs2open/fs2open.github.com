@@ -1258,7 +1258,7 @@ void debrief_kick_selected_player()
 
 
 // get optional mission popup text 
-void debrief_assemble_optional_mission_popup_text(char *buffer, char *mission_loop_desc)
+void debrief_assemble_optional_mission_popup_text(char *buffer, const char *mission_loop_desc)
 {
 	Assert(buffer != NULL);
 	// base message
@@ -1340,7 +1340,7 @@ void debrief_accept(int ok_to_post_start_game_event, bool API_Access)
 				if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 					/*
 					char buffer[512];
-					debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_loop_desc);
+					debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_loop_desc.get());
 
 					int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 					if (choice == 1) {
