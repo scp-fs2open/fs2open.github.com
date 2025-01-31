@@ -6,7 +6,7 @@ local chunck_cache = {}
 -- cfile will try to find filename in all accesible locations and load it only if it hasnt done so already
 -- if cacheonly flag is set, code will be cached but not executed, good for inits. however it is ignored when calling an already cached chunk.
 -- returns true on success or nil on failure to find/load file
-function execute_lua_file(filename, cacheonly)
+local function execute_lua_file(filename, cacheonly)
     --dont reload chunks from file if they have already been loaded. because faster == better
     if (type(chunck_cache[filename]) == "table" and type(chunck_cache[filename][1]) == "function") then
         if (not chunck_cache[filename][2] and not chunck_cache[filename][3]) then
