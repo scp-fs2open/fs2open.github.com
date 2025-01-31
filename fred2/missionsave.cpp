@@ -1400,6 +1400,19 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %d", flags_to_save | ((Campaign.missions[m].main_hall != "") ? CMISSION_FLAG_BASTION : 0));
 		}
 
+		if (!Campaign.missions[m].substitute_main_hall.empty()) {
+			fso_comment_push(";;FSO 3.7.2;;");
+			if (optional_string_fred("+Substitute Main Hall:")) {
+				parse_comments(1);
+				fout(" %s", Campaign.missions[m].substitute_main_hall.c_str());
+			} else {
+				fout_version("\n+Substitute Main Hall: %s", Campaign.missions[m].substitute_main_hall.c_str());
+			}
+			fso_comment_pop();
+		} else {
+			bypass_comment(";;FSO 3.7.2;; +Substitute Main Hall:");
+		}
+
 		if (Campaign.missions[m].debrief_persona_index > 0) {
 			fso_comment_push(";;FSO 3.6.8;;");
 			if (optional_string_fred("+Debriefing Persona Index:")) {
