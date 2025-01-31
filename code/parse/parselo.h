@@ -285,7 +285,7 @@ int string_lookup(const char* str1, const T& strlist, size_t max, const char* de
 		Assert(strlen(strlist[i]) != 0); //-V805
 
 		if (!stricmp(str1, strlist[i]))
-			return (int)i;
+			return static_cast<int>(i);
 	}
 
 	if (say_errors)
@@ -293,6 +293,9 @@ int string_lookup(const char* str1, const T& strlist, size_t max, const char* de
 
 	return -1;
 }
+
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
