@@ -177,7 +177,7 @@ void supernova_do_particles()
 
 // call once per frame
 float sn_shudder = 0.45f;
-DCF_FLOAT2(sn_shud, sn_shudder, 0.0, FLT_MAX, "Sets camera shudder rate for being in supernova shockwave (default is 0.45)");
+DCF_FLOAT2(sn_shud, sn_shudder, 0.0f, FLT_MAX, "Sets camera shudder rate for being in supernova shockwave (default is 0.45)");
 
 void supernova_process()
 {
@@ -293,10 +293,10 @@ bool supernova_camera_cut()
 // get view params from supernova
 float sn_distance = 300.0f;				// shockwave moving at 1000/ms ?
 float sn_cam_distance = 25.0f;
-DCF_FLOAT2(sn_dist, sn_distance, 0.0, FLT_MAX, "Sets supernova shockwave distance (default is 300.0f)");
+DCF_FLOAT2(sn_dist, sn_distance, 0.0f, FLT_MAX, "Sets supernova shockwave distance (default is 300.0f)");
 
 
-DCF_FLOAT2(sn_cam_dist, sn_cam_distance, 0.0, FLT_MAX, "Sets supernova camera distance (default is 25.0f)");
+DCF_FLOAT2(sn_cam_dist, sn_cam_distance, 0.0f, FLT_MAX, "Sets supernova camera distance (default is 25.0f)");
 
 void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 {

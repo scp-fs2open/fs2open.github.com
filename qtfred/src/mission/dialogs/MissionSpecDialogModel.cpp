@@ -352,7 +352,7 @@ int MissionSpecDialogModel::getAIProfileIndex() const {
 }
 
 void MissionSpecDialogModel::setMissionDescText(const SCP_string& m_mission_desc) {
-	modify(_m_mission_desc, m_mission_desc.substr(0, MIN(MISSION_DESC_LENGTH, m_mission_desc.length())));
+	modify(_m_mission_desc, m_mission_desc.substr(0, MIN(static_cast<size_t>(MISSION_DESC_LENGTH), m_mission_desc.length())));
 }
 
 SCP_string MissionSpecDialogModel::getMissionDescText() {
@@ -360,7 +360,7 @@ SCP_string MissionSpecDialogModel::getMissionDescText() {
 }
 
 void MissionSpecDialogModel::setDesignerNoteText(const SCP_string& m_mission_notes) {
-	modify(_m_mission_notes, m_mission_notes.substr(0, MIN(NOTES_LENGTH, m_mission_notes.length())));
+	modify(_m_mission_notes, m_mission_notes.substr(0, MIN(static_cast<size_t>(NOTES_LENGTH), m_mission_notes.length())));
 }
 
 SCP_string MissionSpecDialogModel::getDesignerNoteText() {

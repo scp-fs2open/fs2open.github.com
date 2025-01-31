@@ -4428,7 +4428,7 @@ float ai_path()
 	}
 }
 
-// Only needed because CLAMP() doesn't handle pointers
+// NOTE: this is not the same thing as CLAMP()!  CLAMP() adjusts the value, while this adjusts the bounds.
 void update_min_max(float val, float *min, float *max)
 {
 	if (val < *min)
@@ -7666,7 +7666,7 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
 			aip->ai_flags.set(AI::AI_Flags::Avoiding_big_ship);
 			mabs_pick_goal_point(objp, &Objects[ship_num], &collision_point, &aip->avoid_goal_point);
 			float dist = vm_vec_dist_quick(&aip->avoid_goal_point, &objp->pos);
-			next_check_time = (int) (2000 + MIN(1000, (dist * 2.0f)) * time_scale); // Delay until check again is based on distance to avoid point.
+			next_check_time = fl2i(2000.0f + MIN(1000.0f, (dist * 2.0f)) * time_scale); // Delay until check again is based on distance to avoid point.
 			aip->avoid_check_timestamp = timestamp(next_check_time);	
 			aip->avoid_ship_num = ship_num;
 		} else {
@@ -15917,7 +15917,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 			pp->damage_this_burst += accredited_damage;
 
 			// Done with adjustments to damage.  Evaluate based on current friendly_damage
-			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
+			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %.1f\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
 			
 			if (is_instructor(objp_hit)) {
 				// it's not nice to hit your instructor

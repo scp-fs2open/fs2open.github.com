@@ -491,9 +491,8 @@ static int calculate_next_multiplayer_client_collision_time(float impulse_magnit
 		return 0;
 	}
 
-	// caculate the percentage of the max we are going to use. (CLAMP macro works best as a separate line)
-	float factor = powf(impulse_magnitude, 3.0f) * IMPULSE_RANGE_FACTOR;
-	CLAMP(factor, 0.0f, 1.0f);
+	// calculate the percentage of the max we are going to use
+	float factor = std::clamp(powf(impulse_magnitude, 3.0f) * IMPULSE_RANGE_FACTOR, 0.0f, 1.0f);
 
 	// then multiply times the longest interval we could want.
 	factor *= LONGEST_COLLISION_INTERVAL;

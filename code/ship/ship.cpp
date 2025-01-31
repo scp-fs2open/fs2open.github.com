@@ -11991,7 +11991,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	delete [] subsys_names;
 	delete [] subsys_pcts;
 
-	sp->afterburner_fuel = MAX(0, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
+	sp->afterburner_fuel = MAX(0.0f, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 
 	// handle countermeasure counts
 	if (Countermeasures_use_capacity) {
@@ -16438,7 +16438,7 @@ DCF(set_subsys, "Set the strength of a particular subsystem on player ship" )
 		// Set the subsystem strength
 		dc_stuff_float(&val_f);
 
-		CLAMP(val_f, 0.0, 1.0);
+		CLAMP(val_f, 0.0f, 1.0f);
 		ship_set_subsystem_strength( Player_ship, subsystem, val_f );
 		
 		if (subsystem == SUBSYSTEM_ENGINE) {
@@ -17526,7 +17526,7 @@ int ship_return_seconds_to_goal(ship *sp)
 
 	// Goober5000 - handle cap
 	if (aip->waypoint_speed_cap > 0)
-		max_speed = MIN(objp->phys_info.max_vel.xyz.z, aip->waypoint_speed_cap);
+		max_speed = MIN(objp->phys_info.max_vel.xyz.z, i2fl(aip->waypoint_speed_cap));
 	else
 		max_speed = objp->phys_info.max_vel.xyz.z;
 
