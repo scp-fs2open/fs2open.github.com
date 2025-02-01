@@ -6,7 +6,7 @@
 SCP_vector<Curve> Curves;
 
 int curve_get_by_name(const SCP_string& in_name) {
-	return find_item_with_name(Curves, in_name);
+	return find_item_with_field(Curves, &Curve::name, in_name);
 }
 
 void parse_curve_table(const char* filename) {

@@ -263,7 +263,7 @@ ADE_VIRTVAR(ImpactDamageClass, l_Ship, "string", "Current Impact Damage class", 
 	int damage_index;
 
 	if (ADE_SETTING_VAR && s != nullptr) {
-		damage_index = find_item_with_name(Damage_types, s);
+		damage_index = find_item_with_string(Damage_types, &DamageTypeStruct::name, s);
 		shipp->collision_damage_type_idx = damage_index;
 	} else {
 		damage_index = shipp->collision_damage_type_idx;
