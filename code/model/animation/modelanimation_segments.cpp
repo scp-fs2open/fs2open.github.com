@@ -1224,7 +1224,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position) :
-		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
+		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(position), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
