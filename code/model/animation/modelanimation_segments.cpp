@@ -1,5 +1,7 @@
 #include "model/animation/modelanimation_segments.h"
 
+#include <utility>
+
 #include "render/3d.h"
 
 namespace animation {
@@ -1222,7 +1224,7 @@ namespace animation {
 
 
 	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position) :
-		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
+		m_segment(std::move(segment)), m_submodel(std::move(submodel)), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
 		auto newCopy = new ModelAnimationSegmentSoundDuring(*this);
@@ -1466,9 +1468,9 @@ namespace animation {
 				}
 			}
 			else
-				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
+				constraint = std::make_shared<ik_constraint>();
 			
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, std::optional<angles>({0,0,0}), std::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(submodel, std::optional<angles>({0,0,0}), std::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 			parallel->addSegment(rotation);
 			segment->m_chain.push_back({submodel, constraint, rotation});
 		}

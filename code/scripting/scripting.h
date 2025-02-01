@@ -209,8 +209,8 @@ public:
 	int RunBytecode(const script_function& hd, char format = '\0', T* data = nullptr);
 	int RunBytecode(const script_function& hd);
 	bool IsOverride(const script_hook &hd);
-	int RunCondition(int action_type, std::any local_condition_data);
-	bool IsConditionOverride(int action_type, std::any local_condition_data);
+	int RunCondition(int action_type, const std::any& local_condition_data);
+	bool IsConditionOverride(int action_type, const std::any& local_condition_data);
 
 	void RunInitFunctions();
 

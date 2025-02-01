@@ -1761,7 +1761,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(std::move(subsys), target, velocity, std::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(std::move(subsys), target, velocity, std::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;

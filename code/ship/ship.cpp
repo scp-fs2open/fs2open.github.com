@@ -9482,9 +9482,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 					auto source = particle::ParticleManager::get()->createSource(sip->regular_end_particles);
 
 					// Use the position since the ship is going to be invalid soon
-					auto host = make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel);
-					host->setRadiusOverride(objp->radius);
-					source->setHost(std::move(host));
+					source->setHost(make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel));
 					source->setNormal(objp->orient.vec.uvec);
 					source->finishCreation();
 				}

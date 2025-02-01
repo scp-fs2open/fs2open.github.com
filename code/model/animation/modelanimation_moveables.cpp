@@ -370,12 +370,12 @@ namespace animation {
 			startPos += parentSet->getSubmodel(m_chain[i].submodel)->findSubmodel(pmi).second->offset;
 		}
 		
-		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(startPos, std::nullopt));
+		auto segment = std::make_shared<ModelAnimationSegmentIK>(startPos, std::nullopt);
 		segment->m_segment = parallelIK;
 		
 		for(const auto& link : m_chain) {
 			auto submodel = parentSet->getSubmodel(link.submodel);
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, std::optional<angles>({0,0,0}), std::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(submodel, std::optional<angles>({0,0,0}), std::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 			parallelIK->addSegment(rotation);
 			segment->m_chain.push_back({submodel, link.constraint, rotation});
 		}
