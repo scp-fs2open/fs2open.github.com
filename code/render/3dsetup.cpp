@@ -129,10 +129,10 @@ void g3_set_fov(fov_t zoom) {
 }
 
 float g3_get_hfov(const fov_t& fov) {
-	if (mpark::holds_alternative<float>(fov))
-		return mpark::get<float>(fov);
+	if (std::holds_alternative<float>(fov))
+		return std::get<float>(fov);
 	else {
-		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		const auto& afov = std::get<asymmetric_fov>(fov);
 		return afov.right - afov.left;
 	}
 }

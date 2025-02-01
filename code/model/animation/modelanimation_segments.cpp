@@ -374,7 +374,7 @@ namespace animation {
 
 	static constexpr float angles::*pbh[] = { &angles::p, &angles::b, &angles::h };
 
-	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType) :
+	ModelAnimationSegmentRotation::ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<angles> targetAngle, std::optional<angles> velocity, std::optional<float> time, std::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType) :
 		m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_relationType(relationType) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentRotation::copy() const {
@@ -610,8 +610,8 @@ namespace animation {
 	}
 	
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentRotation::parser(ModelAnimationParseHelper* data) {
-		tl::optional<angles> angle, velocity, acceleration;
-		tl::optional<float> time;
+		std::optional<angles> angle, velocity, acceleration;
+		std::optional<float> time;
 		ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
 		if (optional_string("+Angle:")) {
@@ -657,7 +657,7 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentAxisRotation::ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<float> targetAngle, tl::optional<float> velocity, tl::optional<float> time, tl::optional<float> acceleration, const vec3d& axis) :
+	ModelAnimationSegmentAxisRotation::ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<float> targetAngle, std::optional<float> velocity, std::optional<float> time, std::optional<float> acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_targetAngle(targetAngle), m_velocity(velocity), m_time(time), m_acceleration(acceleration) {
 		vm_vec_copy_normalize(&m_axis, &axis);
 	}
@@ -858,7 +858,7 @@ namespace animation {
 	}
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentAxisRotation::parser(ModelAnimationParseHelper* data) {
-		tl::optional<float> angle, velocity, acceleration, time;
+		std::optional<float> angle, velocity, acceleration, time;
 		vec3d axis;
 
 		required_string("+Axis:");
@@ -906,7 +906,7 @@ namespace animation {
 	}
 	
 
-	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType, ModelAnimationCoordinateRelation relationType) :
+	ModelAnimationSegmentTranslation::ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> target, std::optional<vec3d> velocity, std::optional<float> time, std::optional<vec3d> acceleration, CoordinateSystem coordType, ModelAnimationCoordinateRelation relationType) :
 		m_submodel(std::move(submodel)), m_target(target), m_velocity(velocity), m_time(time), m_acceleration(acceleration), m_coordType(coordType), m_relationType(relationType) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentTranslation::copy() const {
@@ -1156,8 +1156,8 @@ namespace animation {
 	}
 
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentTranslation::parser(ModelAnimationParseHelper* data) {
-		tl::optional<vec3d> offset, velocity, acceleration;
-		tl::optional<float> time;
+		std::optional<vec3d> offset, velocity, acceleration;
+		std::optional<float> time;
 		CoordinateSystem coordSystem = CoordinateSystem::COORDS_PARENT;
 		ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS;
 
@@ -1221,7 +1221,7 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> position) :
+	ModelAnimationSegmentSoundDuring::ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed, bool abortPlayingSounds, float radius, std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> position) :
 		m_segment(std::move(segment)), m_submodel(submodel), m_position(std::move(position)), m_radius(radius), m_start(start), m_end(end), m_during(during), m_flipIfReversed(flipIfReversed), m_abortSoundIfRunning(abortPlayingSounds) { }
 
 	ModelAnimationSegment* ModelAnimationSegmentSoundDuring::copy() const {
@@ -1321,7 +1321,7 @@ namespace animation {
 			stuff_float(&snd_rad);
 		}
 
-		tl::optional<vec3d> position = tl::nullopt;
+		std::optional<vec3d> position = std::nullopt;
 		if (optional_string("+Position:")) {
 			if (!submodel)
 				error_display(1, "Supplied sound position for animation but no parent submodel. Cannot play sound as 3D without attachment to submodel.");
@@ -1340,7 +1340,7 @@ namespace animation {
 	}
 
 
-	ModelAnimationSegmentIK::ModelAnimationSegmentIK(const vec3d& targetPosition, const tl::optional<matrix>& targetRotation)
+	ModelAnimationSegmentIK::ModelAnimationSegmentIK(const vec3d& targetPosition, const std::optional<matrix>& targetRotation)
 		: m_targetPosition(targetPosition), m_targetRotation(targetRotation) { }
 	
 	ModelAnimationSegment* ModelAnimationSegmentIK::copy() const {
@@ -1400,7 +1400,7 @@ namespace animation {
 	std::shared_ptr<ModelAnimationSegment> ModelAnimationSegmentIK::parser(ModelAnimationParseHelper* data) {		
 		
 		vec3d targetPosition;
-		tl::optional<matrix> targetRotation;
+		std::optional<matrix> targetRotation;
 		
 		required_string("+Target Position:");
 		stuff_vec3d(&targetPosition);
@@ -1432,7 +1432,7 @@ namespace animation {
 					error_display(1, "IK chain link has no target submodel!");
 			}
 
-			tl::optional<angles> acceleration;
+			std::optional<angles> acceleration;
 			if(optional_string("+Acceleration:")){
 				angles accel;
 				stuff_angles_deg_phb(&accel);
@@ -1468,7 +1468,7 @@ namespace animation {
 			else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 			
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, std::optional<angles>({0,0,0}), std::optional<angles>(), time, acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
 			parallel->addSegment(rotation);
 			segment->m_chain.push_back({submodel, constraint, rotation});
 		}

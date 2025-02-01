@@ -9,7 +9,7 @@
 #include "utils/id.h"
 #include "utils/modular_curves.h"
 
-#include <tl/optional.hpp>
+#include <optional>
 
 class EffectHost;
 
@@ -102,13 +102,13 @@ public:
 	::util::ParsedRandomFloatRange m_vel_inherit;
 	::util::ParsedRandomFloatRange m_velocity_scaling;
 
-	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
-	tl::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
+	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
+	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
 
 	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
 
-	tl::optional<vec3d> m_manual_offset;
+	std::optional<vec3d> m_manual_offset;
 
 	ParticleEffectHandle m_particleTrail;
 
@@ -118,7 +118,7 @@ public:
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
-	matrix getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const;
+	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
  public:
 	/**
 	 * @brief Initializes the base ParticleEffect
@@ -138,8 +138,8 @@ public:
 							std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 							::util::ParsedRandomFloatRange velocity_scaling,
 							VelocityScaling velocity_directional_scaling,
-							tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
-							tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
+							std::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
+							std::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
 							std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 							ParticleEffectHandle particleTrail,
 							float particleChance,

@@ -48,7 +48,7 @@ struct apply_##name##_to_fov { \
 	} \
 }; \
 fov_t operator op (const fov_t& zoom, const float& scale) { \
-	return mpark::visit(apply_##name##_to_fov{scale}, zoom); \
+	return std::visit(apply_##name##_to_fov{scale}, zoom); \
 }
 APPLY_TO_FOV_T(*, mul)
 APPLY_TO_FOV_T(+, add)

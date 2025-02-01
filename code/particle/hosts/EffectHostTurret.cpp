@@ -7,7 +7,7 @@
 EffectHostTurret::EffectHostTurret(object* objp, int submodel, int fire_pnt, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel), m_fire_pnt(fire_pnt) {}
 
-std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const {
+std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	ship& shipp = Ships[Objects[m_objnum].instance];
 	const polymodel* pm = model_get(Ship_info[shipp.ship_info_index].model_num);
 	const polymodel_instance* pmi = model_get_instance(shipp.model_instance_num);

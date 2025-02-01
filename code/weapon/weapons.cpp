@@ -2226,8 +2226,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					nullptr, //Velocity volume
 					::util::UniformFloatRange(0.f), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-					tl::nullopt, //Orientation-based velocity
-					tl::nullopt, //Position-based velocity
+					std::nullopt, //Orientation-based velocity
+					std::nullopt, //Position-based velocity
 					nullptr, //Position volume
 					ParticleEffectHandle::invalid(), //Trail
 					1.f, //Chance
@@ -2307,8 +2307,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						nullptr, //Velocity volume
 						::util::UniformFloatRange(0.f), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-						tl::nullopt, //Orientation-based velocity
-						tl::nullopt, //Position-based velocity
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
 						1.f, //Chance
@@ -2397,8 +2397,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
 					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-					tl::nullopt, //Orientation-based velocity
-					tl::nullopt, //Position-based velocity
+					std::nullopt, //Orientation-based velocity
+					std::nullopt, //Position-based velocity
 					nullptr, //Position volume
 					ParticleEffectHandle::invalid(), //Trail
 					1.f, //Chance
@@ -2420,8 +2420,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-						tl::nullopt, //Orientation-based velocity
-						tl::nullopt, //Position-based velocity
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
 						1.f, //Chance
@@ -3091,8 +3091,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						nullptr, //Velocity volume
 						::util::UniformFloatRange(0.f), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-						tl::nullopt, //Orientation-based velocity
-						tl::nullopt, //Position-based velocity
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
 						1.f, //Chance
@@ -3165,7 +3165,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Orientation-based velocity
-						tl::nullopt, //Position-based velocity
+						std::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
 						1.f, //Chance
@@ -3187,7 +3187,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
 						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Orientation-based velocity
-						tl::nullopt, //Position-based velocity
+						std::nullopt, //Position-based velocity
 						nullptr, //Position volume
 						ParticleEffectHandle::invalid(), //Trail
 						1.f, //Chance

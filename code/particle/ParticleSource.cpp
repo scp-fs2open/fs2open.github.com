@@ -6,7 +6,7 @@
 
 namespace particle {
 
-ParticleSource::ParticleSource() : m_normal(tl::nullopt), m_effect(ParticleEffectHandle::invalid()) {
+ParticleSource::ParticleSource() : m_normal(std::nullopt), m_effect(ParticleEffectHandle::invalid()) {
 	for (size_t i = 0; i < 64; i++) {
 		m_effect_is_running[i] = true;
 	}

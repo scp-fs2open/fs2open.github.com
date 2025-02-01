@@ -2423,7 +2423,7 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 		return ADE_RETURN_NIL;
 	}
 
-	SCP_vector<linb::any> valuesMoveable;
+	SCP_vector<std::any> valuesMoveable;
 
 	if (values.isValid()) {
 		for (const auto& object : values) {

@@ -74,12 +74,6 @@ ENDIF(FSO_USE_SPEECH)
 
 TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
-target_link_libraries(code PUBLIC variant)
-
-target_link_libraries(code PUBLIC any)
-
-target_link_libraries(code PUBLIC optional)
-
 target_link_libraries(code PUBLIC anl)
 
 target_link_libraries(code PUBLIC hidapi::hidapi)

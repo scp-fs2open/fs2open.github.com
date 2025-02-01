@@ -97,5 +97,5 @@ class LabUi {
 	bool show_weapons = false;
 	bool show_emissive_lighting = false;
 	
-	tl::optional<vec3d> volumetrics_pos_backup = tl::nullopt;
+	std::optional<vec3d> volumetrics_pos_backup = std::nullopt;
 };

@@ -50,8 +50,8 @@ class EvaluatableConditionImpl : public EvaluatableCondition {
 public:
 	EvaluatableConditionImpl(const ParseableConditionImpl<conditions_t, operating_t, cache_t>& _condition, const SCP_string& input) : condition(_condition), cached(condition.cache(input)) { }
 
-	bool evaluate(const linb::any& conditionContext) const override {
-		const conditions_t& conditions = linb::any_cast<conditions_t>(conditionContext);
+	bool evaluate(const std::any& conditionContext) const override {
+		const conditions_t& conditions = std::any_cast<conditions_t>(conditionContext);
 		return condition.evaluate(conditions.*(condition.object), cached);
 	}
 };

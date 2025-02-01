@@ -32,11 +32,11 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_length(::util::UniformFloatRange(0.0f)),
 	  m_vel_inherit(::util::UniformFloatRange(0.0f)),
 	  m_velocity_scaling(::util::UniformFloatRange(0.0f)),
-	  m_vel_inherit_from_orientation(tl::nullopt),
-	  m_vel_inherit_from_position(tl::nullopt),
+	  m_vel_inherit_from_orientation(std::nullopt),
+	  m_vel_inherit_from_position(std::nullopt),
 	  m_velocityVolume(nullptr),
 	  m_spawnVolume(nullptr),
-	  m_manual_offset (tl::nullopt),
+	  m_manual_offset (std::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
 	  m_size_lifetime_curve(-1),
 	  m_vel_lifetime_curve (-1),
@@ -52,8 +52,8 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	std::shared_ptr<::particle::ParticleVolume> velocityVolume,
 	::util::ParsedRandomFloatRange velocity_scaling,
 	VelocityScaling velocity_directional_scaling,
-	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
-	tl::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
+	std::optional<::util::ParsedRandomFloatRange> vel_inherit_from_orientation,
+	std::optional<::util::ParsedRandomFloatRange> vel_inherit_from_position,
 	std::shared_ptr<::particle::ParticleVolume> spawnVolume,
 	ParticleEffectHandle particleTrail,
 	float particleChance,
@@ -91,14 +91,14 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_vel_inherit_from_position(vel_inherit_from_position),
 	  m_velocityVolume(std::move(velocityVolume)),
 	  m_spawnVolume(std::move(spawnVolume)),
-	  m_manual_offset (tl::nullopt),
+	  m_manual_offset (std::nullopt),
 	  m_particleTrail(particleTrail),
 	  m_size_lifetime_curve(-1),
 	  m_vel_lifetime_curve (-1),
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}
 
-matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const tl::optional<vec3d>& normal) const {
+matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const {
 	switch (m_direction) {
 		case ShapeDirection::ALIGNED:
 			return hostOrientation;

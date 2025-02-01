@@ -74,8 +74,8 @@ namespace animation {
 		//configurables:
 	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-		tl::optional<angles> m_targetAngle;
-		tl::optional<matrix> m_targetOrientation;
+		std::optional<angles> m_targetAngle;
+		std::optional<matrix> m_targetOrientation;
 		ModelAnimationCoordinateRelation m_relationType;
 
 	private:
@@ -145,8 +145,8 @@ namespace animation {
 			angles m_actualVelocity;
 			angles m_actualTarget; //Usually won't be needed, but if vel + angle is specified, not all angles necessarily end simultaneously.
 			angles m_actualTime;
-			tl::optional<angles> m_actualAccel;
-			tl::optional<angles> m_accelTime;
+			std::optional<angles> m_actualAccel;
+			std::optional<angles> m_accelTime;
 		};
 
 		//PMI ID -> Instance Data
@@ -155,10 +155,10 @@ namespace animation {
 		//configurables:
 	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-		tl::optional<angles> m_targetAngle;
-		tl::optional<angles> m_velocity;
-		tl::optional<float> m_time;
-		tl::optional<angles> m_acceleration;
+		std::optional<angles> m_targetAngle;
+		std::optional<angles> m_velocity;
+		std::optional<float> m_time;
+		std::optional<angles> m_acceleration;
 		ModelAnimationCoordinateRelation m_relationType;
 
 	private:
@@ -170,7 +170,7 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<angles> targetAngle, tl::optional<angles> velocity, tl::optional<float> time, tl::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
+		ModelAnimationSegmentRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<angles> targetAngle, std::optional<angles> velocity, std::optional<float> time, std::optional<angles> acceleration, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 
@@ -181,8 +181,8 @@ namespace animation {
 			float m_actualVelocity;
 			float m_actualTarget;
 			float m_actualTime;
-			tl::optional<float> m_actualAccel;
-			tl::optional<float> m_accelTime;
+			std::optional<float> m_actualAccel;
+			std::optional<float> m_accelTime;
 		};
 
 		//PMI ID -> Instance Data
@@ -191,10 +191,10 @@ namespace animation {
 		//configurables:
 	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-		tl::optional<float> m_targetAngle;
-		tl::optional<float> m_velocity;
-		tl::optional<float> m_time;
-		tl::optional<float> m_acceleration;
+		std::optional<float> m_targetAngle;
+		std::optional<float> m_velocity;
+		std::optional<float> m_time;
+		std::optional<float> m_acceleration;
 		vec3d m_axis;
 
 	private:
@@ -206,7 +206,7 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<float> targetAngle, tl::optional<float> velocity, tl::optional<float> time, tl::optional<float> acceleration, const vec3d& axis);
+		ModelAnimationSegmentAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<float> targetAngle, std::optional<float> velocity, std::optional<float> time, std::optional<float> acceleration, const vec3d& axis);
 
 	};
 
@@ -215,8 +215,8 @@ namespace animation {
 			vec3d m_actualVelocity;
 			vec3d m_actualTarget;
 			vec3d m_actualTime;
-			tl::optional<vec3d> m_actualAccel;
-			tl::optional<vec3d> m_accelTime;
+			std::optional<vec3d> m_actualAccel;
+			std::optional<vec3d> m_accelTime;
 			matrix m_rotationAtStart = vmd_identity_matrix;
 		};
 
@@ -226,10 +226,10 @@ namespace animation {
 		//configurables:
 	public:
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-		tl::optional<vec3d> m_target;
-		tl::optional<vec3d> m_velocity;
-		tl::optional<float> m_time;
-		tl::optional<vec3d> m_acceleration;
+		std::optional<vec3d> m_target;
+		std::optional<vec3d> m_velocity;
+		std::optional<float> m_time;
+		std::optional<vec3d> m_acceleration;
 		enum class CoordinateSystem { COORDS_PARENT, COORDS_LOCAL_AT_START, COORDS_LOCAL_CURRENT } m_coordType;
 		ModelAnimationCoordinateRelation m_relationType;
 
@@ -242,7 +242,7 @@ namespace animation {
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, tl::optional<vec3d> target, tl::optional<vec3d> velocity, tl::optional<float> time, tl::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
+		ModelAnimationSegmentTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, std::optional<vec3d> target, std::optional<vec3d> velocity, std::optional<float> time, std::optional<vec3d> acceleration, CoordinateSystem coordType = CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation relationType = ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 	};
 
@@ -257,7 +257,7 @@ namespace animation {
 		std::map<int, instance_data> m_instances;
 
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
-		tl::optional<vec3d> m_position;
+		std::optional<vec3d> m_position;
 
 		//configurables:
 	public:
@@ -281,7 +281,7 @@ namespace animation {
 
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false, bool abortPlayingSounds = false, float radius = 0.0f, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, tl::optional<vec3d> position = tl::nullopt);
+		ModelAnimationSegmentSoundDuring(std::shared_ptr<ModelAnimationSegment> segment, gamesnd_id start, gamesnd_id end, gamesnd_id during, bool flipIfReversed = false, bool abortPlayingSounds = false, float radius = 0.0f, std::shared_ptr<ModelAnimationSubmodel> submodel = nullptr, std::optional<vec3d> position = std::nullopt);
 
 	};
 	
@@ -303,7 +303,7 @@ namespace animation {
 		std::vector<chainlink_data> m_chain;
 		std::shared_ptr<ModelAnimationSegmentParallel> m_segment;
 		vec3d m_targetPosition;
-		tl::optional<matrix> m_targetRotation;
+		std::optional<matrix> m_targetRotation;
 	private:
 		ModelAnimationSegment* copy() const override;
 		void recalculate(ModelAnimationSubmodelBuffer& base, ModelAnimationSubmodelBuffer& /*currentAnimDelta*/, polymodel_instance* pmi) override;
@@ -312,7 +312,7 @@ namespace animation {
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
 	public:
 		static std::shared_ptr<ModelAnimationSegment> parser(ModelAnimationParseHelper* data);
-		ModelAnimationSegmentIK(const vec3d& targetPosition, const tl::optional<matrix>& targetRotation);
+		ModelAnimationSegmentIK(const vec3d& targetPosition, const std::optional<matrix>& targetRotation);
 
 	};
 

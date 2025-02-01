@@ -7,7 +7,7 @@
 #include "globalincs/pstypes.h"
 #include "scripting/ade_api.h"
 
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace scripting {
 namespace api {
@@ -211,8 +211,8 @@ enum lua_enum : int32_t {
 };
 
 struct lua_enum_def_list : public flag_def_list_new<lua_enum> {
-	tl::optional<int32_t> value;
-	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(tl::nullopt) {}
+	std::optional<int32_t> value;
+	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(std::nullopt) {}
 	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, int32_t val, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(val) {}
 };
 
@@ -222,13 +222,13 @@ extern const size_t Num_enumerations;
 struct enum_h {
 private:
 	enum class last_combine_op { NATIVE, AND, OR };
-	tl::optional<SCP_string> name;
+	std::optional<SCP_string> name;
 	last_combine_op last_op = last_combine_op::NATIVE;
 
 public:
 	lua_enum index;
 	bool is_constant;
-	tl::optional<int32_t> value;
+	std::optional<int32_t> value;
 
 	enum_h();
 

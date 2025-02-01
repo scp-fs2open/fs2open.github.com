@@ -262,7 +262,7 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, std::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;

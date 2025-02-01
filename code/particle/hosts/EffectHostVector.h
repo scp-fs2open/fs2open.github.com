@@ -15,7 +15,7 @@ class EffectHostVector : public EffectHost {
 public:
 	EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
-	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const override;
+	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const override;
 
 	vec3d getVelocity() const override;
 

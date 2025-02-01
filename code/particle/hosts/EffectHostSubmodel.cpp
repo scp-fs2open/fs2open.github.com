@@ -7,7 +7,7 @@
 EffectHostSubmodel::EffectHostSubmodel(object* objp, int submodel, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel) {}
 
-std::pair<vec3d, matrix> EffectHostSubmodel::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const {
+std::pair<vec3d, matrix> EffectHostSubmodel::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	vec3d pos = m_offset;
 	if (tabled_offset) {
 		pos += *tabled_offset;

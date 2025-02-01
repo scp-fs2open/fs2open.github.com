@@ -54,8 +54,8 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 			make_unique<particle::LegacyAACuboidVolume>(0.75f, 1.f, true), //Velocity volume
 			::util::UniformFloatRange(25.f, 50.f), //Velocity volume multiplier
 			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-			tl::nullopt, //Orientation-based velocity
-			tl::nullopt, //Position-based velocity
+			std::nullopt, //Orientation-based velocity
+			std::nullopt, //Position-based velocity
 			nullptr, //Position volume
 			particle::ParticleEffectHandle::invalid(), //Trail
 			1.f, //Chance

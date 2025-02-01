@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <mpark/variant.hpp>
+#include <variant>
 
 #define CAM_STATIONARY_FOV			(1<<0)
 #define CAM_STATIONARY_ORI			(1<<1)
@@ -28,7 +28,7 @@ struct asymmetric_fov {
 	friend asymmetric_fov operator+ (const asymmetric_fov&, const float&);
 	friend asymmetric_fov operator- (const asymmetric_fov&, const float&);
 };
-using fov_t = mpark::variant<float, asymmetric_fov>;
+using fov_t = std::variant<float, asymmetric_fov>;
 fov_t operator* (const fov_t&, const float&);
 fov_t operator+ (const fov_t&, const float&);
 fov_t operator- (const fov_t&, const float&);
