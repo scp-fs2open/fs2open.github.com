@@ -21,7 +21,7 @@
 #include "mod_table/mod_table.h"
 #include "options/Option.h"
 
-
+#include <optional>
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS

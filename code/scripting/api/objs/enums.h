@@ -7,7 +7,7 @@
 #include "globalincs/pstypes.h"
 #include "scripting/ade_api.h"
 
-
+#include <optional>
 
 namespace scripting {
 namespace api {

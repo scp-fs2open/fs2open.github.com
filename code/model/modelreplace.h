@@ -4,8 +4,7 @@
 #include "model/model.h"
 
 #include <memory>
-
-
+#include <optional>
 #include <variant>
 
 bool model_exists(const SCP_string& filename);

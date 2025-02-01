@@ -9,7 +9,7 @@
 #include "utils/tuples.h"
 
 #include <utility>
-
+#include <optional>
 
 namespace scripting {
 

@@ -5,7 +5,7 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
-
+#include <optional>
 
 namespace {
 

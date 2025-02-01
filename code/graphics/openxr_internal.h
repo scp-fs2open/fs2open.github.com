@@ -5,7 +5,7 @@
 #include "openxr.h"
 
 #include <type_traits>
-
+#include <optional>
 
 #ifdef FS_OPENXR
 

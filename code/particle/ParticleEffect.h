@@ -9,7 +9,7 @@
 #include "utils/id.h"
 #include "utils/modular_curves.h"
 
-
+#include <optional>
 
 class EffectHost;
 

@@ -8,7 +8,7 @@
 #include "io/timer.h"
 #include "particle/EffectHost.h"
 
-
+#include <optional>
 
 struct weapon;
 
