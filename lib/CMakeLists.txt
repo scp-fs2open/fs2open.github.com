@@ -47,10 +47,6 @@ include(vulkan.cmake)
 
 add_subdirectory(mdns)
 
-add_subdirectory(variant)
-
-add_subdirectory(any)
-
 add_subdirectory(accidental-noise)
 
 ADD_SUBDIRECTORY(lz4)

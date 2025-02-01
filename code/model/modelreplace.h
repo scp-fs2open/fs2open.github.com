@@ -6,7 +6,7 @@
 #include <memory>
 
 
-#include <mpark/variant.hpp>
+#include <variant>
 
 bool model_exists(const SCP_string& filename);
 bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks);
@@ -62,7 +62,7 @@ public:
 };
 
 class VirtualPOFOperationAddEngine : public VirtualPOFOperation {
-	mpark::variant<SCP_string, int> sourceId;
+	std::variant<SCP_string, int> sourceId;
 	std::optional<SCP_string> renameSubsystem;
 	std::optional<vec3d> moveEngine;
 	SCP_string appendingPOF;

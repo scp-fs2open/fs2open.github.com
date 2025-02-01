@@ -167,7 +167,7 @@ class HookImpl : public HookBase {
 			});
 #endif
 
-		const auto num_run = Script_system.RunCondition(this->_hookId, linb::any(std::move(condition)));
+		const auto num_run = Script_system.RunCondition(this->_hookId, std::any(std::move(condition)));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -201,7 +201,7 @@ class HookImpl<void> : public HookBase {
 			});
 #endif
 
-		const auto num_run = Script_system.RunCondition(this->_hookId, linb::any{});
+		const auto num_run = Script_system.RunCondition(this->_hookId, std::any{});
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -260,7 +260,7 @@ class OverridableHookImpl : public Hook<condition_t> {
 			});
 #endif
 
-		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, linb::any(std::move(condition)));
+		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, std::any(std::move(condition)));
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());
@@ -294,7 +294,7 @@ protected:
 			});
 #endif
 
-		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, linb::any{});
+		const auto ret_val = Script_system.IsConditionOverride(this->_hookId, std::any{});
 
 		for (const auto& param : paramNames) {
 			Script_system.RemHookVar(param.c_str());

@@ -1032,7 +1032,7 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<linb::any>& args) const {
+	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<std::any>& args) const {
 		SCP_string lowername = name;
 		SCP_tolower(lowername);
 		auto moveable = m_moveableSet.find(lowername);

@@ -2089,7 +2089,7 @@ ADE_FUNC(updateSubmodelMoveable, l_Ship, "string name, table values",
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	SCP_vector<linb::any> valuesMoveable;
+	SCP_vector<std::any> valuesMoveable;
 
 	if (values.isValid()) {
 		for (const auto& object : values) {
