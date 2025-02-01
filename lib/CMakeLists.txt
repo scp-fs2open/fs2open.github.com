@@ -53,8 +53,6 @@ add_subdirectory(any)
 
 add_subdirectory(accidental-noise)
 
-add_subdirectory(optional)
-
 ADD_SUBDIRECTORY(lz4)
 
 set(HIDAPI_WITH_LIBUSB OFF)

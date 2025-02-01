@@ -78,8 +78,6 @@ target_link_libraries(code PUBLIC variant)
 
 target_link_libraries(code PUBLIC any)
 
-target_link_libraries(code PUBLIC optional)
-
 target_link_libraries(code PUBLIC anl)
 
 target_link_libraries(code PUBLIC hidapi::hidapi)

@@ -10,7 +10,7 @@
 #include <functional>
 #include <utility>
 #include <mpark/variant.hpp>
-#include <tl/optional.hpp>
+
 
 namespace options {
 
@@ -81,7 +81,7 @@ class OptionBase {
 
 	flagset<OptionFlags> _flags;
 
-	tl::optional<std::unique_ptr<json_t>> getConfigValue() const;
+	std::optional<std::unique_ptr<json_t>> getConfigValue() const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
 
@@ -266,7 +266,7 @@ class Option : public OptionBase {
 	T getValue() const
 	{
 		try {
-			tl::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
+			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
 			//missing keys are signalled via the optional
 			if (!config_value.has_value()) {
 				return _defaultValueFunc();

@@ -5,7 +5,7 @@
 #include "Option.h"
 #include "mod_table/mod_table.h"
 #include "osapi/osregistry.h"
-#include <tl/optional.hpp>
+
 
 namespace {
 
@@ -37,7 +37,7 @@ OptionsManager* options::OptionsManager::instance()
 }
 
 //Gets the value of an option from the Config using the option key
-tl::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
+std::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const SCP_string& key) const
 {
 	auto override_iter = _config_overrides.find(key);
 	if (override_iter != _config_overrides.end()) {
@@ -64,7 +64,7 @@ tl::optional<std::unique_ptr<json_t>> OptionsManager::getValueFromConfig(const S
 
 	if (value == nullptr) {
 		// Signal that there is no value for this key
-		return tl::nullopt;
+		return std::nullopt;
 	}
 
 	json_error_t err;

@@ -21,7 +21,7 @@
 #include "mod_table/mod_table.h"
 #include "options/Option.h"
 
-#include <tl/optional.hpp>
+
 
 // ------------------------------------------------------------------------------------------------------------
 // LOCALIZE DEFINES/VARS
@@ -561,7 +561,7 @@ struct xstr_delayed_order {
 	int xstr;
 };
 
-static void lcl_delayed_xstr_internal(tl::optional<xstr_delayed_order> to_init) {
+static void lcl_delayed_xstr_internal(std::optional<xstr_delayed_order> to_init) {
 	static SCP_vector<xstr_delayed_order> delayed_init;
 
 	if (to_init) {
@@ -653,7 +653,7 @@ void lcl_xstr_init()
 
 	Xstr_inited = true;
 
-	lcl_delayed_xstr_internal(tl::nullopt);
+	lcl_delayed_xstr_internal(std::nullopt);
 }
 
 

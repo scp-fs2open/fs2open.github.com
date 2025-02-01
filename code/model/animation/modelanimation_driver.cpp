@@ -141,7 +141,7 @@ namespace animation {
 				"Time" //Is dangerous as a property driver target, but makes sense as a startup driver
 				)){
 			case 0:
-				return {&ModelAnimation::instance_data::speed, tl::nullopt};
+				return {&ModelAnimation::instance_data::speed, std::nullopt};
 			case 1:
 				return {&ModelAnimation::instance_data::time, &ModelAnimation::instance_data::duration};
 			default:

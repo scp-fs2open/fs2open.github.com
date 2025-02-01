@@ -11,7 +11,7 @@ EffectHostParticle::EffectHostParticle(particle::WeakParticlePtr particle, matri
 	EffectHost(orientationOverride, orientationOverrideRelative), m_particle(std::move(particle)) {}
 
 //Particle hosts can never have a parent, so it'll always return global space
-std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const tl::optional<vec3d>& tabled_offset) const {
+std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*relativeToParent*/, float interp, const std::optional<vec3d>& tabled_offset) const {
 	const auto& particle = m_particle.lock();
 
 	vec3d pos;

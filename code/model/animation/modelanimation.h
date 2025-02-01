@@ -12,7 +12,7 @@
 #include <memory>
 #include <map>
 
-#include <tl/optional.hpp>
+
 #include <linb/any.hpp>
 
 class ship;
@@ -77,7 +77,7 @@ namespace animation {
 	struct ModelAnimationData {
 	private:
 		template<typename T>
-		using maybe_optional = typename std::conditional<is_optional, tl::optional<T>, T>::type;
+		using maybe_optional = typename std::conditional<is_optional, std::optional<T>, T>::type;
 
 	public:
 		ModelAnimationData() = default;
@@ -85,7 +85,7 @@ namespace animation {
 		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
 			position(copy_position),
 			orientation(copy_orientation) {};
-		ModelAnimationData(const tl::optional<vec3d>& copy_position, const tl::optional<matrix>& copy_orientation) :
+		ModelAnimationData(const std::optional<vec3d>& copy_position, const std::optional<matrix>& copy_orientation) :
 			position(*copy_position),
 			orientation(*copy_orientation) {};
 		ModelAnimationData(const ModelAnimationData<!is_optional>& other) : ModelAnimationData(other.position, other.orientation) {};
@@ -128,7 +128,7 @@ namespace animation {
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
-		tl::optional<int> m_submodel;
+		std::optional<int> m_submodel;
 		bool is_turret = false;
 
 	private:

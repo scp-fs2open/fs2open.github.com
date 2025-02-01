@@ -599,7 +599,7 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	const auto& engineSubsysMap = appendingPM->deferred().engine_subsystems;
 
 	int engineNumber;
-	tl::optional<SCP_string> subsystemName = tl::nullopt;
+	std::optional<SCP_string> subsystemName = std::nullopt;
 	typename std::remove_reference<decltype(engineSubsysMap)>::type::const_iterator it = engineSubsysMap.cend();
 
 	if (mpark::holds_alternative<int>(sourceId)) {

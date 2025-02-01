@@ -5,7 +5,7 @@
 
 #include <memory>
 
-#include <tl/optional.hpp>
+
 #include <mpark/variant.hpp>
 
 bool model_exists(const SCP_string& filename);
@@ -53,7 +53,7 @@ public:
 
 class VirtualPOFOperationAddTurret : public VirtualPOFOperation {
 	SCP_string baseNameSrc, baseNameDest;
-	tl::optional<SCP_string> barrelNameDest;
+	std::optional<SCP_string> barrelNameDest;
 	SCP_string appendingPOF;
 	std::unique_ptr<VirtualPOFOperationRenameSubobjects> rename = nullptr;
 public:
@@ -63,8 +63,8 @@ public:
 
 class VirtualPOFOperationAddEngine : public VirtualPOFOperation {
 	mpark::variant<SCP_string, int> sourceId;
-	tl::optional<SCP_string> renameSubsystem;
-	tl::optional<vec3d> moveEngine;
+	std::optional<SCP_string> renameSubsystem;
+	std::optional<vec3d> moveEngine;
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddEngine();
@@ -74,7 +74,7 @@ public:
 class VirtualPOFOperationAddGlowpoint : public VirtualPOFOperation {
 	int sourceId;
 	SCP_string renameSubmodel;
-	tl::optional<vec3d> moveGlowpoint;
+	std::optional<vec3d> moveGlowpoint;
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddGlowpoint();
@@ -83,7 +83,7 @@ public:
 
 class VirtualPOFOperationAddSpecialSubsystem : public VirtualPOFOperation {
 	SCP_string sourceSubsystem;
-	tl::optional<SCP_string> renameSubsystem;
+	std::optional<SCP_string> renameSubsystem;
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddSpecialSubsystem();
@@ -101,9 +101,9 @@ public:
 
 class VirtualPOFOperationAddDockPoint : public VirtualPOFOperation {
 	SCP_string sourcedock;
-	tl::optional<SCP_string> renameDock;
+	std::optional<SCP_string> renameDock;
 	SCP_unordered_map<SCP_string, SCP_string> renamePaths;
-	tl::optional<SCP_string> targetParentSubsystem;
+	std::optional<SCP_string> targetParentSubsystem;
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddDockPoint();
@@ -112,8 +112,8 @@ public:
 
 class VirtualPOFOperationAddPath : public VirtualPOFOperation {
 	SCP_string sourcepath;
-	tl::optional<SCP_string> renamePath;
-	tl::optional<SCP_string> targetParentSubsystem;
+	std::optional<SCP_string> renamePath;
+	std::optional<SCP_string> targetParentSubsystem;
 	SCP_string appendingPOF;
 public:
 	VirtualPOFOperationAddPath();
@@ -122,7 +122,7 @@ public:
 
 class VirtualPOFOperationChangeData : public VirtualPOFOperation {
 	SCP_string submodel;
-	tl::optional<vec3d> setOffset = tl::nullopt;
+	std::optional<vec3d> setOffset = std::nullopt;
 public:
 	VirtualPOFOperationChangeData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;
@@ -130,9 +130,9 @@ public:
 
 class VirtualPOFOperationChangeSubsystemData : public VirtualPOFOperation {
 	SCP_string subsystem;
-	tl::optional<vec3d> setPosition = tl::nullopt;
-	tl::optional<float> setRadius = tl::nullopt;
-	tl::optional<SCP_string> setProperties = tl::nullopt;
+	std::optional<vec3d> setPosition = std::nullopt;
+	std::optional<float> setRadius = std::nullopt;
+	std::optional<SCP_string> setProperties = std::nullopt;
 	bool propertyReplace = true;
 public:
 	VirtualPOFOperationChangeSubsystemData();
@@ -140,8 +140,8 @@ public:
 };
 
 class VirtualPOFOperationHeaderData : public VirtualPOFOperation {
-	tl::optional<float> radius = tl::nullopt;
-	tl::optional<std::pair<vec3d, vec3d>> boundingbox = tl::nullopt;
+	std::optional<float> radius = std::nullopt;
+	std::optional<std::pair<vec3d, vec3d>> boundingbox = std::nullopt;
 public:
 	VirtualPOFOperationHeaderData();
 	void process(polymodel* pm, model_read_deferred_tasks& deferredTasks, model_parse_depth depth, const VirtualPOFDefinition& virtualPof) const override;

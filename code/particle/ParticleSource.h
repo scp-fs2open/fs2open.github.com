@@ -8,7 +8,7 @@
 #include "io/timer.h"
 #include "particle/EffectHost.h"
 
-#include <tl/optional.hpp>
+
 
 struct weapon;
 
@@ -71,7 +71,7 @@ class ParticleSource {
  private:
 	std::unique_ptr<EffectHost> m_host;
 
-	tl::optional<vec3d> m_normal;
+	std::optional<vec3d> m_normal;
 
 	SCP_vector<SourceTiming> m_timing; //!< The time informations of the particle source
 
