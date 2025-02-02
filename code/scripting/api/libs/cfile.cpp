@@ -58,7 +58,7 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
          "Lists all the files in the specified directory matching a filter. The filter must have the format "
          "\"*<rest>\" (the wildcard has to appear at the start), \"<subfolder>/*<rest>\" (to check subfolder(s)) "
          "or \"*/*<rest>\" (for a glob search).",
-         "string[]", "A table with all matching files or nil on error")
+         "table", "A table with all matching files or nil on error")
 {
 	using namespace luacpp;
 
