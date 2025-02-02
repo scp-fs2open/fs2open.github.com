@@ -4718,7 +4718,7 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4771,7 +4771,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 	constexpr int preallocatedStackDepth = 5;
 	const matrix* preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4810,7 +4810,7 @@ void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorien
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
