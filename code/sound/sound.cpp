@@ -62,15 +62,24 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_effect_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_sound_volume = volume;
+}
+
 static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Effects",
                      std::pair<const char*, int>{"Effects", 1370},
                      std::pair<const char*, int>{"Volume used for playing in-game effects", 1734})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_sound_volume)
+                     .default_func([](){ return Default_sound_volume; })
                      .range(0.0f, 1.0f)
                      .change_listener(effects_volume_change_listener)
                      .importance(2)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_effect_volume_func)
                      .finish();
 
 float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
@@ -85,15 +94,24 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_voice_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_voice_volume = volume;
+}
+
 static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Voice",
                      std::pair<const char*, int>{"Voice", 1372},
                      std::pair<const char*, int>{"Volume used for playing voice audio", 1735})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_voice_volume)
+                     .default_func([]() { return Default_voice_volume; })
                      .range(0.0f, 1.0f)
                      .change_listener(voice_volume_change_listener)
                      .importance(0)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_voice_volume_func)
                      .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;

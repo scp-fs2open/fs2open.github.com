@@ -135,18 +135,34 @@ const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues 
                                                                                    { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
+static void parse_nebula_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NebulaDetail, value[i]);
+		}
+	}
+}
+
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
                      std::pair<const char*, int>{"Nebula Detail", 1361},
                      std::pair<const char*, int>{"Detail level of nebulas", 1697})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([]() { return Detail.nebula_detail; })
                      .importance(7)
                      .change_listener([](int val, bool) {
                           Detail.nebula_detail = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_nebula_detail_func)
                      .finish();
 
 // --------------------------------------------------------------------------------------------------------
