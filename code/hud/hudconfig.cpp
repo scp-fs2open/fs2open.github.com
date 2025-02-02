@@ -863,38 +863,46 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
 }
 
-void hud_config_convert_coords(int x, int y, float scale, int& outX, int& outY)
+std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
 {
-	outX = HC_gauge_coordinates[0] + static_cast<int>(x * scale);
-	outY = HC_gauge_coordinates[2] + static_cast<int>(y * scale);
+	int outX = HC_gauge_coordinates[0] + static_cast<int>(x * scale);
+	int outY = HC_gauge_coordinates[2] + static_cast<int>(y * scale);
+
+	return std::make_pair(outX, outY);
 }
 
-void hud_config_convert_coords(float x, float y, float scale, float& outX, float& outY)
+std::pair<float, float> hud_config_convert_coords(float x, float y, float scale)
 {
-	outX = HC_gauge_coordinates[0] + x * scale;
-	outY = HC_gauge_coordinates[2] + y * scale;
+	float outX = HC_gauge_coordinates[0] + x * scale;
+	float outY = HC_gauge_coordinates[2] + y * scale;
+
+	return std::make_pair(outX, outY);
 }
 
-void hud_config_get_scale(int baseW, int baseH, float& outScale)
+float hud_config_get_scale(int baseW, int baseH)
 {
 	// Determine the scaling factor
 	float scaleX = static_cast<float>(HC_gauge_coordinates[4]) / baseW;
 	float scaleY = static_cast<float>(HC_gauge_coordinates[5]) / baseH;
 
 	// Use the smallest scale factor
-	outScale = std::min(scaleX, scaleY);
+	return std::min(scaleX, scaleY);
 }
 
-void hud_config_convert_coord_sys(int x, int y, int baseW, int baseH, int& outX, int& outY, float& outScale)
+std::tuple<int, int, float> hud_config_convert_coord_sys(int x, int y, int baseW, int baseH)
 {
-	hud_config_get_scale(baseW, baseH, outScale);
-	hud_config_convert_coords(x, y, outScale, outX, outY);
+	float scale = hud_config_get_scale(baseW, baseH);
+	auto coords = hud_config_convert_coords(x, y, scale);
+
+	return std::make_tuple(coords.first, coords.second, scale);
 }
 
-void hud_config_convert_coord_sys(float x, float y, int baseW, int baseH, float& outX, float& outY, float& outScale)
+std::tuple<float, float, float> hud_config_convert_coord_sys(float x, float y, int baseW, int baseH)
 {
-	hud_config_get_scale(baseW, baseH, outScale);
-	hud_config_convert_coords(x, y, outScale, outX, outY);
+	float scale = hud_config_get_scale(baseW, baseH);
+	auto coords = hud_config_convert_coords(x, y, scale);
+
+	return std::make_tuple(coords.first, coords.second, scale);
 }
 
 /*!
