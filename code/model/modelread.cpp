@@ -1574,7 +1574,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
+modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1585,9 +1585,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	fp = cfopen(filename,"rb");
 
 	if (!fp) {
-		if (ferror == 1) {
+		if (error_type == ErrorType::FATAL_ERROR) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else if (ferror == 0) {
+		} else if (error_type == ErrorType::WARNING) {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
@@ -3019,25 +3019,25 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	return modelread_status::SUCCESS_REAL;
 }
 
-modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
 	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
+	if (read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks)) {
 		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {
-		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
+		status = read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
 	}
 
 	return status;
 }
 
 //reads a binary file containing a 3d model
-modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, ErrorType error_type, model_read_deferred_tasks& deferredTasks)
 {
-	modelread_status status = read_model_file(pm, filename, ferror, deferredTasks);
+	modelread_status status = read_model_file(pm, filename, error_type, deferredTasks);
 
 	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
 	//This is now a tradeoff between speed and memory usage. To further accelerate loading, the cache can be kept until all models are loaded, but there is a risk that this cache will be very big.
@@ -3277,7 +3277,7 @@ int model_load(ship_info* sip, bool prefer_tech_model)
 }
 
 //returns the number of this model
-int model_load(const  char* filename, ship_info* sip, int ferror, int duplicate)
+int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool allow_redundant_load)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3297,7 +3297,7 @@ int model_load(const  char* filename, ship_info* sip, int ferror, int duplicate)
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
+			if (!stricmp(filename , Polygon_models[i]->filename) && !allow_redundant_load) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3356,7 +3356,7 @@ int model_load(const  char* filename, ship_info* sip, int ferror, int duplicate)
 
 	model_read_deferred_tasks deferredTasks;
 
-	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) == modelread_status::FAIL)	{
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, error_type, deferredTasks) == modelread_status::FAIL)	{
 		if (pm != NULL) {
 			delete pm;
 		}

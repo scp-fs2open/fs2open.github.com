@@ -280,7 +280,7 @@ void volumetric_nebula::renderVolumeBitmap() {
 	int nSample = (n << (oversampling - 1)) + 1;
 	auto volumeSampleCache = make_unique<bool[]>(nSample * nSample * nSample);
 
-	int modelnum = model_load(hullPof.c_str(), nullptr, -1);
+	int modelnum = model_load(hullPof.c_str(), nullptr, ErrorType::NONE);
 	if (modelnum < 0) {
 		Warning(LOCATION, "Could not load model '%s'.  Unable to render volume bitmap!", hullPof.c_str());
 		return;
