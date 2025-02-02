@@ -2499,18 +2499,18 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 
 		if (particle_num.max() <= 1.f) {
 			particle_num = ::util::UniformFloatRange(20.f, 50.f);
-			part_number_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		part_number_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 
 		if (normal_variance <= 0.f) {
 			normal_variance = 0.2f;
-			variance_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		variance_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 
 		if (lifetime.max() <= 0.f) {
 			lifetime = ::util::UniformFloatRange(0.7f, 1.5f);
-			lifetime_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		lifetime_curve.emplace(modular_curves_entry{damage_spew_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 
 		break;
 	}
@@ -2539,18 +2539,20 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 
 		if (lifetime.max() <= 0.f) {
 			lifetime = ::util::UniformFloatRange(0.5f, 6.f);
-			lifetime_curve.emplace(modular_curves_entry{split_particles_lifetime_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		lifetime_curve.emplace(modular_curves_entry{split_particles_lifetime_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 
 		if (radius.max() <= 0.f) {
 			radius = ::util::UniformFloatRange(0.5f, 1.5f);
-			radius_curve.emplace(modular_curves_entry{split_particles_radius_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		radius_curve.emplace(modular_curves_entry{split_particles_radius_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 
 		if (velocity.max() <= 0.f) {
 			velocity = ::util::UniformFloatRange(0.f, 1.f);
-			velocity_curve.emplace(modular_curves_entry{split_particles_velocity_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
 		}
+		velocity_curve.emplace(modular_curves_entry{split_particles_velocity_curve, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false});
+
+		break;
 	}
 	default:
 		break;
