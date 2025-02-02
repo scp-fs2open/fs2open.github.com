@@ -19,7 +19,7 @@ EffectHostObject::EffectHostObject(object* objp, vec3d offset, matrix orientatio
 	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)),
 	m_objsig(objp->signature), m_weaponState(getWeaponStateOrInvalid(objp)) {}
 
-std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const {
+std::pair<vec3d, matrix> EffectHostObject::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {
 	vec3d pos = m_offset;
 	if (tabled_offset) {
 		pos += *tabled_offset;

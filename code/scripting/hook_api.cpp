@@ -71,7 +71,7 @@ HookBase::HookBase(SCP_string hookName,
 				   SCP_string description,
 				   SCP_vector<HookVariableDocumentation> parameters,
 				   const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions,
-				   tl::optional<HookDeprecationOptions> deprecation,
+				   std::optional<HookDeprecationOptions> deprecation,
 				   int32_t hookId)
 	: _conditions(conditions), _hookName(std::move(hookName)), _description(std::move(description)), _parameters(std::move(parameters)), _deprecation(std::move(deprecation))
 {
@@ -87,7 +87,7 @@ HookBase::HookBase(SCP_string hookName,
 const SCP_string& HookBase::getHookName() const { return _hookName; }
 const SCP_string& HookBase::getDescription() const { return _description; }
 const SCP_vector<HookVariableDocumentation>& HookBase::getParameters() const { return _parameters; }
-const tl::optional<HookDeprecationOptions>& HookBase::getDeprecation() const { return _deprecation; }
+const std::optional<HookDeprecationOptions>& HookBase::getDeprecation() const { return _deprecation; }
 int32_t HookBase::getHookId() const { return _hookId; }
 HookBase::~HookBase() = default;
 

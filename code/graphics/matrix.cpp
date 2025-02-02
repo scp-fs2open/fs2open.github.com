@@ -127,9 +127,9 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 
 	gr_last_projection_matrix = gr_projection_matrix;
 
-	if (mpark::holds_alternative<float>(fov)) {
+	if (std::holds_alternative<float>(fov)) {
 		float clip_width, clip_height;
-		clip_height = tan(mpark::get<float>(fov) * 0.5f) * z_near;
+		clip_height = tan(std::get<float>(fov) * 0.5f) * z_near;
 		clip_width = clip_height * aspect;
 		if (gr_screen.rendering_to_texture != -1) {
 			create_perspective_projection_matrix(&gr_projection_matrix, -clip_width, clip_width, clip_height, -clip_height, z_near, z_far);
@@ -138,7 +138,7 @@ void gr_set_proj_matrix(fov_t fov, float aspect, float z_near, float z_far) {
 		}
 	}
 	else {
-		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		const auto& afov = std::get<asymmetric_fov>(fov);
 		float clip_l = tanf(afov.left) * z_near;
 		float clip_r = tanf(afov.right) * z_near;
 		float clip_u = tanf(afov.up) * z_near;

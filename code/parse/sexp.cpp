@@ -23131,7 +23131,7 @@ void sexp_update_moveable_animation(int node)
 	node = CDR(node);
 
 	//For now this only contains integers. It is very much feasible though that certain moveables might be updateable with strings and other non-numbers. For this, the C-side of the moveable code already supports other types
-	std::vector<linb::any> args;
+	std::vector<std::any> args;
 
 	while(node >= 0) {
 		args.emplace_back(eval_num(node, is_nan, is_nan_forever));

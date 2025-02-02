@@ -2570,8 +2570,8 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		std::move(velocity_volume), //Velocity volume
 		velocity, //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-		tl::nullopt, //Orientation-based velocity
-		tl::nullopt, //Position-based velocity
+		std::nullopt, //Orientation-based velocity
+		std::nullopt, //Position-based velocity
 		nullptr, //Position volume
 		particle::ParticleEffectHandle::invalid(), //Trail
 		1.f, //Chance
@@ -4877,8 +4877,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 				::util::UniformFloatRange(0.75f, 1.25f), //Velocity volume multiplier
 				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
-				tl::nullopt, //Orientation-based velocity
-				tl::nullopt, //Position-based velocity
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
 				nullptr, //Position volume
 				particle::ParticleEffectHandle::invalid(), //Trail
 				1.f, //Chance

@@ -3,7 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
 #include <memory>
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace options {
 
@@ -30,7 +30,7 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	tl::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 

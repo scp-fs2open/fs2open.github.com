@@ -3127,7 +3127,7 @@ camid game_render_frame_setup()
 	static int last_Game_mode = 0;
 	static fov_t last_FOV = Sexp_fov;
 
-	bool fov_changed = ((Sexp_fov > 0.0f) && (!mpark::holds_alternative<float>(last_FOV) || mpark::get<float>(last_FOV) != Sexp_fov));
+	bool fov_changed = ((Sexp_fov > 0.0f) && (!std::holds_alternative<float>(last_FOV) || std::get<float>(last_FOV) != Sexp_fov));
 
 	//First, make sure we take into account 2D Missions.
 	//These replace the normal player in-cockpit view with a topdown view.

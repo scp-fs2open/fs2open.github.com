@@ -4,7 +4,7 @@
 #include "math/vecmat.h"
 
 #include <memory>
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace fso {
 	namespace fred {
@@ -63,7 +63,7 @@ class volumetric_nebula {
 	//The size of the noise's two levels, in meters. The fraction of the two levels should have a large denominator to avoid visible harmonics
 	std::tuple<float, float> noiseScale = std::make_tuple(1.0f, 1.0f);
 	//Noise functions. ANL's DSL for noise. Leave empty to use default noise. Default is representable by: translate(bias(scale(valueBasis(3,0),3),scale(valueBasis(3,1),8)),scale(simplexBasis(2),4)*0.6)
-	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
+	std::optional<SCP_string> noiseColorFunc1 = std::nullopt, noiseColorFunc2 = std::nullopt;
 	//Noise color
 	std::tuple<float, float, float> noiseColor = std::make_tuple(0.0f, 0.0f, 0.0f);
 	//Noise Intensity

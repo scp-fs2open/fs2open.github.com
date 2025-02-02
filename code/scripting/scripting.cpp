@@ -482,7 +482,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action_type, linb::any local_condition_data)
+int script_state::RunCondition(int action_type, const std::any& local_condition_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -508,7 +508,7 @@ int script_state::RunCondition(int action_type, linb::any local_condition_data)
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action_type, linb::any local_condition_data)
+bool script_state::IsConditionOverride(int action_type, const std::any& local_condition_data)
 {
 	auto action_it = ConditionalHooks.find(action_type);
 	if (action_it == ConditionalHooks.end())
@@ -833,7 +833,7 @@ ConditionalType scripting_string_to_condition(const char* condition)
 	return CHC_NONE;
 }
 
-bool script_action::ConditionsValid(const linb::any& local_condition_data) const {
+bool script_action::ConditionsValid(const std::any& local_condition_data) const {
 	for (const auto& global_condition : global_conditions) {
 		if (!global_condition_valid(global_condition))
 			return false;

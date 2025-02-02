@@ -3,7 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 
-#include <tl/optional.hpp>
+#include <optional>
 
 class EffectHost {
 
@@ -16,7 +16,7 @@ protected:
 public:
 	virtual ~EffectHost() = default;
 
-	virtual std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const tl::optional<vec3d>& tabled_offset) const = 0;
+	virtual std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const = 0;
 
 	virtual vec3d getVelocity() const = 0;
 
