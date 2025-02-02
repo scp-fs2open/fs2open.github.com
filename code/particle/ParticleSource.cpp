@@ -58,7 +58,7 @@ bool ParticleSource::process() {
 		if (m_effect_is_running[i]) {
 			bool needs_to_continue_running = true;
 
-			while(timestamp_elapsed(timing.m_nextCreation)) {
+			while(timestamp_elapsed(timing.m_nextCreation) && needs_to_continue_running) {
 				//Find "time" in last frame where particle spawned
 				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
 
