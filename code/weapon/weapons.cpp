@@ -7844,6 +7844,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
 					particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
 					particleSource->setTriggerRadius(weapon_obj->radius);
+					particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
@@ -7863,6 +7864,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 
 		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
 		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
@@ -7873,6 +7875,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
 		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
 		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
@@ -7915,6 +7918,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
 				primarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
 				primarySource->setTriggerRadius(weapon_obj->radius);
+				primarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 				if (hitnormal)
 				{
@@ -7926,6 +7930,7 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
 					secondarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
 					secondarySource->setTriggerRadius(weapon_obj->radius);
+					secondarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
