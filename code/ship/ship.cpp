@@ -4900,7 +4900,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			}();
 
 			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
-			particle.m_modular_curves.add_curve("Host Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
 
 			tpart.particle_handle = particle::ParticleManager::get()->addEffect(std::move(particle));
 		}

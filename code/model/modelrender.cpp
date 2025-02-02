@@ -2422,8 +2422,8 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					vm_vector_2_matrix_norm(&orientParticle, &normal);
 
 					auto host = std::make_unique<EffectHostVector>(npnt, orientParticle, Objects[shipp->objnum].phys_info.desired_vel);
-					host->setRadiusOverride(gpt->radius);
 					source->setHost(std::move(host));
+					source->setTriggerRadius(gpt->radius);
 					source->finishCreation();
 				}
 			}

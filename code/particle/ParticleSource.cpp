@@ -86,6 +86,10 @@ void ParticleSource::setNormal(const vec3d& normal) {
 	m_normal = normal;
 }
 
+void ParticleSource::setTriggerRadius(float radius) {
+	m_triggerRadius = radius;
+}
+
 void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
 	m_host = std::move(host);
 }
