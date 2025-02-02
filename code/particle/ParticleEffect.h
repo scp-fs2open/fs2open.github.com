@@ -176,6 +176,7 @@ public:
 			std::pair {"Velocity Orientation Inherit Mult", ParticleCurvesOutput::ORIENTATION_INHERIT_VELOCITY_MULT}
 		},
 		std::pair {"Trigger Radius", modular_curves_submember_input<&ParticleSource::m_triggerRadius>{}},
+		std::pair {"Trigger Velocity", modular_curves_submember_input<&ParticleSource::m_triggerVelocity>{}},
 		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
 		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}},
 		//TODO Long term, this should have access to a lot of interesting host properties, especially also those that change during gameplay like current hitpoints

@@ -172,7 +172,7 @@ static void ship_add_ship_type_kill_count(int ship_info_index);
 static int ship_info_lookup_sub(const char *token);
 
 enum class LegacyShipParticleType : uint8_t {DAMAGE_SPEW, SPLIT_PARTICLES, OTHER};
-static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, bool useNormal = false);
+static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, float velocityInherit, bool useNormal = false);
 
 void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -1815,20 +1815,20 @@ ship_info::ship_info()
 	skip_deathroll_chance = 0.0f;
 
 	// default values from shipfx.cpp
-	static auto default_impact_spew = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire);
+	static auto default_impact_spew = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 25, 0.5f, 0.2f, 0.55f, 0.05f, 12.0f, 2.0f, 1.0f, 1.0f, particle::Anim_bitmap_id_fire, 0.7f);
 	impact_spew = default_impact_spew;
 
 	// default values from shipfx.cpp
-	static auto default_damage_spew = default_ship_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, 1, 0, 1.3f, 0.7f, 1.0f, 1.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke);
+	static auto default_damage_spew = default_ship_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, 1, 0, 1.3f, 0.7f, 1.0f, 1.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke, 0.7f);
 	damage_spew = default_damage_spew;
 
-	static auto default_split_particles = default_ship_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, 80, 40, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2);
+	static auto default_split_particles = default_ship_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, 80, 40, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f);
 	split_particles = default_split_particles;
 
-	static auto default_knossos_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2);
+	static auto default_knossos_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 30, 15, 100.0f, 30.0f, 12.0f, 2.0f, 350.0f, 50.0f, 2.0f, 50.0f, particle::Anim_bitmap_id_smoke2, 1.f);
 	knossos_end_particles = default_knossos_end_particles;
 
-	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, true);
+	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	regular_end_particles = default_regular_end_particles;
 
 	debris_min_lifetime = -1.0f;
@@ -2479,7 +2479,7 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 		return ::util::UniformRange<T_range>(static_cast<T_range>(min_value), static_cast<T_range>(max_value));
 }
 
-particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal)
+particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal, float velocityInherit)
 {
 	//Unfortunately legacy ship effects did a lot of ad-hoc computation of effect parameters.
 	//To mimic this in the modern system, these ad-hoc parameters are represented as hard-coded modular curves applied to various parts of the effect
@@ -2567,7 +2567,7 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		"", //Name
 		particle_num, //Particle num
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-		::util::UniformFloatRange(1.f), //Velocity Inherit
+		::util::UniformFloatRange(velocityInherit), //Velocity Inherit
 		false, //Velocity Inherit absolute?
 		std::move(velocity_volume), //Velocity volume
 		velocity, //Velocity volume multiplier
@@ -2597,13 +2597,13 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	}
 
 	if (velocity_curve) {
-		effect.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, *radius_curve);
+		effect.m_modular_curves.add_curve("Trigger Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, *radius_curve);
 	}
 
 	return particle::ParticleManager::get()->addEffect(std::move(effect));
 }
 
-static particle::ParticleEffectHandle parse_ship_legacy_particle_effect(LegacyShipParticleType type, ship_info* sip, const char *id_string, float range, int bitmap, bool useNormal = false)
+static particle::ParticleEffectHandle parse_ship_legacy_particle_effect(LegacyShipParticleType type, ship_info* sip, const char *id_string, float range, int bitmap, float velocityInherit, bool useNormal = false)
 {
 	auto particle_num = parse_ship_particle_random_range<int, float>("+Min particles:", "+Max particles:", id_string, "number", sip->name, true);
 	auto radius = parse_ship_particle_random_range<float>("+Min Radius:", "+Max Radius:", id_string, "radius", sip->name, true);
@@ -2620,17 +2620,17 @@ static particle::ParticleEffectHandle parse_ship_legacy_particle_effect(LegacySh
 		}
 	}
 
-	return create_ship_legacy_particle_effect(type, range, bitmap, particle_num, radius, lifetime, velocity, normal_variance, useNormal);
+	return create_ship_legacy_particle_effect(type, range, bitmap, particle_num, radius, lifetime, velocity, normal_variance, useNormal, velocityInherit);
 }
 
-static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, bool useNormal) {
+static particle::ParticleEffectHandle default_ship_particle_effect(LegacyShipParticleType type, int n_high, int n_low, float max_rad, float min_rad, float max_life, float min_life, float max_vel, float min_vel, float variance, float range, int bitmap, float velocityInherit, bool useNormal) {
 	return create_ship_legacy_particle_effect(
 		type, range, bitmap,
 		::util::UniformFloatRange(i2fl(n_low), i2fl(n_high)),
 		::util::UniformFloatRange(min_rad, max_rad),
 		::util::UniformFloatRange(min_life, max_life),
 		::util::UniformFloatRange(min_vel, max_vel),
-		variance, useNormal);
+		variance, useNormal, velocityInherit);
 }
 
 static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const bool is_dogfight, const bool first_time)
@@ -3330,7 +3330,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Impact Spew:"))
 	{
-		sip->impact_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "impact spew", 1.f, particle::Anim_bitmap_id_fire);
+		sip->impact_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "impact spew", 1.f, particle::Anim_bitmap_id_fire, 0.7f);
 	}
 	if(optional_string("$Damage Spew Effect:"))
 	{
@@ -3338,7 +3338,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Damage Spew:"))
 	{
-		sip->damage_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, sip, "damage spew", 1.f, particle::Anim_bitmap_id_smoke);
+		sip->damage_spew = parse_ship_legacy_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, sip, "damage spew", 1.f, particle::Anim_bitmap_id_smoke, 0.7f);
 	}
 
 	if(optional_string("$Collision Physics:"))
@@ -3848,7 +3848,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Ship Splitting Particles:"))
 	{
-		sip->split_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, sip, "ship split spew", 1.f, particle::Anim_bitmap_id_smoke2);
+		sip->split_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, sip, "ship split spew", 1.f, particle::Anim_bitmap_id_smoke2, 1.f);
 	}
 
 	if (optional_string("$Ship Death Effect:"))
@@ -3857,7 +3857,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Ship Death Particles:"))
 	{
-		sip->regular_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2);
+		sip->regular_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "normal death spew", 1.f, particle::Anim_bitmap_id_smoke2, 1.f);
 	}
 
 	if(optional_string("$Alternate Death Effect:"))
@@ -3866,7 +3866,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 	else if(optional_string("$Alternate Death Particles:"))
 	{
-		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, true);
+		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
@@ -4875,7 +4875,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
-				false, //Velocity Inherit absolute?
+				true, //Velocity Inherit absolute?
 				make_unique<particle::LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
 				::util::UniformFloatRange(0.75f, 1.25f), //Velocity volume multiplier
 				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
@@ -4899,7 +4899,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				return curve_id;
 			}();
 
-			particle.m_modular_curves.add_curve("Host Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Trigger Velocity", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
+			particle.m_modular_curves.add_curve("Trigger Velocity", particle::ParticleEffect::ParticleCurvesOutput::INHERIT_VELOCITY_MULT, modular_curves_entry{thruster_particle_curve});
 			particle.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
 
 			tpart.particle_handle = particle::ParticleManager::get()->addEffect(std::move(particle));
@@ -9374,7 +9375,9 @@ static void ship_dying_frame(object *objp, int ship_num)
 				newOrient.vec.uvec = objp->orient.vec.fvec * -1.f;
 				newOrient.vec.rvec = objp->orient.vec.rvec;
 
-				source->setHost(make_unique<EffectHostVector>(outpnt, newOrient, objp->phys_info.vel));
+				auto host = std::make_unique<EffectHostVector>(outpnt, newOrient, objp->phys_info.vel);
+				host->setRadius(objp->radius);
+				source->setHost(std::move(host));
 				source->finishCreation();
 
 				// do sound - maybe start a random sound, if it has played far enough.
@@ -9484,7 +9487,9 @@ static void ship_dying_frame(object *objp, int ship_num)
 					auto source = particle::ParticleManager::get()->createSource(sip->regular_end_particles);
 
 					// Use the position since the ship is going to be invalid soon
-					source->setHost(make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel));
+					auto host = std::make_unique<EffectHostVector>(objp->pos, objp->orient, objp->phys_info.vel);
+					host->setRadius(objp->radius);
+					source->setHost(std::move(host));
 					source->setNormal(objp->orient.vec.uvec);
 					source->finishCreation();
 				}

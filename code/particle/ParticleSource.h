@@ -74,6 +74,7 @@ class ParticleSource {
 	std::optional<vec3d> m_normal;
 
 	std::optional<float> m_triggerRadius;
+	std::optional<float> m_triggerVelocity;
 
 	SCP_vector<SourceTiming> m_timing; //!< The time informations of the particle source
 
@@ -120,6 +121,7 @@ class ParticleSource {
 	void setNormal(const vec3d& normal);
 
 	void setTriggerRadius(float radius);
+	void setTriggerVelocity(float velocity);
 
 	void setHost(std::unique_ptr<EffectHost> host);
 };

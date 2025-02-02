@@ -90,6 +90,10 @@ void ParticleSource::setTriggerRadius(float radius) {
 	m_triggerRadius = radius;
 }
 
+void ParticleSource::setTriggerVelocity(float velocity) {
+	m_triggerVelocity = velocity;
+}
+
 void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
 	m_host = std::move(host);
 }
