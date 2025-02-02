@@ -2232,7 +2232,7 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 			glow_point *gpt = &bank->points[j];
 			vec3d loc_offset = gpt->pnt;
 			vec3d loc_norm = gpt->norm;
-			vec3d world_pnt;
+			vec3d world_pnt = loc_offset;
 			vec3d world_norm;
 
 			if ( submodel_rotation ) {
