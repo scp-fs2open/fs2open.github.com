@@ -236,12 +236,15 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
+	case OPF_POINT: {
+		auto wpt = find_matching_waypoint(CTEXT(node));
+		return LuaValue::createValue(_action.getLuaState(), l_Waypoint.Set(object_h(wpt->get_objnum())));
+	}
 	case OPF_SHIP_POINT:
 	case OPF_SHIP_WING:
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
-	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
