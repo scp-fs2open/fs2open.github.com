@@ -92,6 +92,19 @@ ADE_FUNC(__len, l_WaypointList,
 	return ade_set_args(L, "i", wlh->getList()->get_waypoints().size());
 }
 
+ADE_FUNC(__tostring, l_WaypointList, nullptr, "Returns name of waypoint list (if any)", "string", "Waypoint list name, or empty string if handle is invalid")
+{
+	waypointlist_h* wlh = nullptr;
+	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
+		return ade_set_error(L, "s", "");
+	}
+	if (!wlh || !wlh->isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	return ade_set_args(L, "s", wlh->getList()->get_name());
+}
+
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")
 {
 	waypointlist_h* wlh = NULL;
