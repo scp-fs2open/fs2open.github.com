@@ -899,81 +899,87 @@ void HudGaugeEts::pageIn()
 /**
  * Draw one ETS bar to screen
  */
-void HudGaugeEts::blitGauge(int index)
+void HudGaugeEts::blitGauge(int index, int ix, int iy, float scale, bool config)
 {
 	if (Ets_bar.first_frame < 0) {
 		return;
 	}
 
-	int y_start, y_end, clip_h, w, h, x, y;
+	int clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
 
-	clip_h = fl2i( (1 - Energy_levels[index]) * ETS_bar_h );
-
+	int w, h;
 	bm_get_info(Ets_bar.first_frame,&w,&h);
 
+	int x, y;
 	if (HUD_shadows) {
 		// These act more as a backing black layer.
 
 		gr_set_color_fast(&Color_black);
 		// draw the top portion
-		x = position[0] + Top_offsets[0];
-		y = position[1] + Top_offsets[1];
+		x = ix + fl2i(Top_offsets[0] * scale);
+		y = iy + fl2i(Top_offsets[1] * scale);
 		
-		renderBitmapEx(Ets_bar.first_frame,x,y,w,ETS_bar_h,0,0);
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,ETS_bar_h,0,0, scale, config);
 
 		// draw the bottom portion
-		x = position[0] + Bottom_offsets[0];
-		y = position[1] + Bottom_offsets[1];
+		x = ix + fl2i(Bottom_offsets[0] * scale);
+		y = iy + fl2i(Bottom_offsets[1] * scale);
 
-		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0);
-		gr_set_color_fast(&gauge_color);
+		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0, scale, config);
+
+		if (!config) {
+			gr_set_color_fast(&gauge_color);
+		} else {
+			setGaugeColor(HUD_C_NONE, config);
+		}
 	}
 
+	int y_start, y_end;
 	if ( index < NUM_ENERGY_LEVELS-1 ) {
 		// some portion of dark needs to be drawn
 
-		setGaugeColor();
+		setGaugeColor(HUD_C_NONE, config);
 
 		// draw the top portion
-		x = position[0] + Top_offsets[0];
-		y = position[1] + Top_offsets[1];
+		x = ix + fl2i(Top_offsets[0] * scale);
+		y = iy + fl2i(Top_offsets[1] * scale);
 		
-		renderBitmapEx(Ets_bar.first_frame,x,y,w,clip_h,0,0);			
+		renderBitmapEx(Ets_bar.first_frame,x,y,w,clip_h,0,0, scale, config);			
 
 		// draw the bottom portion
-		x = position[0] + Bottom_offsets[0];
-		y = position[1] + Bottom_offsets[1];
+		x = ix + fl2i(Bottom_offsets[0] * scale);
+		y = iy + fl2i(Bottom_offsets[1] * scale);
 
-		y_start = y + (ETS_bar_h - clip_h);
+		y_start = y + fl2i((ETS_bar_h - clip_h) * scale);
 		y_end = y + ETS_bar_h;
 		
-		renderBitmapEx(Ets_bar.first_frame, x, y_start, w, y_end-y_start, 0, ETS_bar_h-clip_h);			
+		renderBitmapEx(Ets_bar.first_frame, x, y_start, w, y_end-y_start, 0, ETS_bar_h-clip_h, scale, config);			
 	}
 
 	if ( index > 0 ) {
-		if ( maybeFlashSexp() == 1 ) {
-			setGaugeColor(HUD_C_DIM);
+		if (!config && maybeFlashSexp() == 1 ) {
+			setGaugeColor(HUD_C_DIM, config);
 			// hud_set_dim_color();
 		} else {
-			setGaugeColor(HUD_C_BRIGHT);
+			setGaugeColor(HUD_C_BRIGHT, config);
 			// hud_set_bright_color();
 		}
 		// some portion of recharge needs to be drawn
 
 		// draw the top portion
-		x = position[0] + Top_offsets[0];
-		y = position[1] + Top_offsets[1];
+		x = ix + fl2i(Top_offsets[0] * scale);
+		y = iy + fl2i(Top_offsets[1] * scale);
 
-		y_start = y + clip_h;
+		y_start = y + fl2i(clip_h * scale);
 		y_end = y + ETS_bar_h;
 		
-		renderBitmapEx(Ets_bar.first_frame+1, x, y_start, w, y_end-y_start, 0, clip_h);			
+		renderBitmapEx(Ets_bar.first_frame+1, x, y_start, w, y_end-y_start, 0, clip_h, scale, config);			
 
 		// draw the bottom portion
-		x = position[0] + Bottom_offsets[0];
-		y = position[1] + Bottom_offsets[1];
+		x = ix + fl2i(Bottom_offsets[0] * scale);
+		y = iy + fl2i(Bottom_offsets[1] * scale);
 		
-		renderBitmapEx(Ets_bar.first_frame+2, x,y,w,ETS_bar_h-clip_h,0,0);			
+		renderBitmapEx(Ets_bar.first_frame+2, x,y,w,ETS_bar_h-clip_h,0,0, scale, config);			
 	}
 }
 
@@ -989,61 +995,112 @@ HudGaugeEts(HUD_OBJECT_ETS_RETAIL, 0)
 /**
  * Render the ETS retail gauge to the screen (weapon+shield+engine)
  */
-void HudGaugeEtsRetail::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeEtsRetail::render(float  /*frametime*/, bool config)
 {
-	int i;
-	int initial_position;
-
-	ship* ship_p = &Ships[Player_obj->instance];
+	ship* ship_p = nullptr;
+	if (!config) {
+		ship_p = &Ships[Player_obj->instance];
+	}
 
 	if ( Ets_bar.first_frame < 0 ) {
 		return;
 	}
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
 
 	// if at least two gauges are not shown, don't show any
-	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
+	if (!config) {
+		int i = 0;
+		if (!ship_has_energy_weapons(ship_p))
+			i++;
+		if (Player_obj->flags[Object::Object_Flags::No_shields])
+			i++;
+		if (!ship_has_engine_power(ship_p))
+			i++;
+		if (i >= 2)
+			return;
+	}
 
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the letters for the gauges first, before any clipping occurs
 	// skip letter for any missing gauges (max one, see check above)
-	initial_position = 0;
-	if (ship_has_energy_weapons(ship_p)) {
+	int initial_position = 0;
+	if (config || ship_has_energy_weapons(ship_p)) {
 		Letter = Letters[0];
-		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+		int rx = Gauge_positions[initial_position++] + Letter_offsets[0];
+		int ry = position[1] + Letter_offsets[1]; // Explicitely use unconverted y here
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 	}
-	if (!(Player_obj->flags[Object::Object_Flags::No_shields])) {
+	if (config || !(Player_obj->flags[Object::Object_Flags::No_shields])) {
 		Letter = Letters[1];
-		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+		int rx = Gauge_positions[initial_position++] + Letter_offsets[0];
+		int ry = position[1] + Letter_offsets[1]; // Explicitely use unconverted y here
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 	}
-	if (ship_has_engine_power(ship_p)) {
+	if (config || ship_has_engine_power(ship_p)) {
 		Letter = Letters[2];
-		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+		int rx = Gauge_positions[initial_position++] + Letter_offsets[0];
+		int ry = position[1] + Letter_offsets[1]; // Explicitely use unconverted y here
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 	}
 
 	// draw gauges, skipping any gauge that is missing
 	initial_position = 0;
-	if (ship_has_energy_weapons(ship_p)) {
+	if (config || ship_has_energy_weapons(ship_p)) {
 		Letter = Letters[0];
-		position[0] = Gauge_positions[initial_position++];
-		blitGauge(ship_p->weapon_recharge_index);
+		int level = config ? 4 : ship_p->weapon_recharge_index;
+		int rx = Gauge_positions[initial_position++];
+		int ry = position[1];
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		blitGauge(level, rx, ry, scale, config);
 	}
-	if (!(Player_obj->flags[Object::Object_Flags::No_shields])) {
+	if (config || !(Player_obj->flags[Object::Object_Flags::No_shields])) {
 		Letter = Letters[1];
-		position[0] = Gauge_positions[initial_position++];
-		blitGauge(ship_p->shield_recharge_index);
+		int level = config ? 4 : ship_p->shield_recharge_index;
+		int rx = Gauge_positions[initial_position++];
+		int ry = position[1];
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		blitGauge(level, rx, ry, scale, config);
 	}
-	if (ship_has_engine_power(ship_p)) {
+	if (config || ship_has_engine_power(ship_p)) {
 		Letter = Letters[2];
-		position[0] = Gauge_positions[initial_position++];
-		blitGauge(ship_p->engine_recharge_index);
+		int level = config ? 4 : ship_p->engine_recharge_index;
+		int rx = Gauge_positions[initial_position++];
+		int ry = position[1];
+		if (config) {
+			std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+		}
+		blitGauge(level, rx, ry, scale, config);
+	}
+
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
+
+		auto coords1 = hud_config_convert_coords(Gauge_positions[0], position[1], scale);
+		auto coords2 = hud_config_convert_coords(Gauge_positions[initial_position - 1] + bmw, position[1] + (bmh * 2) + 10, scale);
+
+		hud_config_set_mouse_coords(gauge_config, coords1.first, coords2.first, coords1.second, coords2.second);
 	}
 }
 
@@ -1073,36 +1130,69 @@ HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
 {
 }
 
-void HudGaugeEtsWeapons::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeEtsWeapons::render(float  /*frametime*/, bool config)
 {
-	int i;
-
-	ship* ship_p = &Ships[Player_obj->instance];	
+	ship* ship_p = nullptr;
+	if (!config) {
+		ship_p = &Ships[Player_obj->instance];
+	}	
 
 	if ( Ets_bar.first_frame < 0 ) {
 		return;
 	}
 
-	// if at least two gauges are not shown, don't show any
-	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	// no weapon energy, no weapon gauge
-	if (!ship_has_energy_weapons(ship_p))
-	{
-		return;
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
-	setGaugeColor();
+
+	// if at least two gauges are not shown, don't show any
+	if (!config) {
+		int i = 0;
+		if (!ship_has_energy_weapons(ship_p))
+			i++;
+		if (Player_obj->flags[Object::Object_Flags::No_shields])
+			i++;
+		if (!ship_has_engine_power(ship_p))
+			i++;
+		if (i >= 2)
+			return;
+
+		// no weapon energy, no weapon gauge
+		if (!ship_has_energy_weapons(ship_p)) {
+			return;
+		}
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+	int rx = position[0] + Letter_offsets[0];
+	int ry = position[1] + Letter_offsets[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 
 	// draw the gauges for the weapon system
-	blitGauge(ship_p->weapon_recharge_index);
+	int level = config ? 4 : ship_p->weapon_recharge_index;
+	rx = position[0];
+	ry = position[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	blitGauge(level, rx, ry, scale, config);
+
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
+
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+	}
 }
 
 HudGaugeEtsShields::HudGaugeEtsShields():
@@ -1110,35 +1200,69 @@ HudGaugeEts(HUD_OBJECT_ETS_SHIELDS, (int)SHIELDS)
 {
 }
 
-void HudGaugeEtsShields::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeEtsShields::render(float  /*frametime*/, bool config)
 {
-	int i;
-
-	ship* ship_p = &Ships[Player_obj->instance];	
+	ship* ship_p = nullptr;
+	if (!config) {
+		ship_p = &Ships[Player_obj->instance];
+	}
 
 	if ( Ets_bar.first_frame < 0 ) {
 		return;
 	}
 
-	// if at least two gauges are not shown, don't show any
-	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	// no shields, no shields gauge
-	if (Player_obj->flags[Object::Object_Flags::No_shields]) {
-		return;
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
-	setGaugeColor();
+
+	// if at least two gauges are not shown, don't show any
+	if (!config) {
+		int i = 0;
+		if (!ship_has_energy_weapons(ship_p))
+			i++;
+		if (Player_obj->flags[Object::Object_Flags::No_shields])
+			i++;
+		if (!ship_has_engine_power(ship_p))
+			i++;
+		if (i >= 2)
+			return;
+
+		// no shields, no shields gauge
+		if (Player_obj->flags[Object::Object_Flags::No_shields]) {
+			return;
+		}
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+	int rx = position[0] + Letter_offsets[0];
+	int ry = position[1] + Letter_offsets[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 
 	// draw the gauge for the shield system
-	blitGauge(ship_p->shield_recharge_index);
+	int level = config ? 4 : ship_p->weapon_recharge_index;
+	rx = position[0];
+	ry = position[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	blitGauge(level, rx, ry, scale, config);
+
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
+
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+	}
 }
 
 HudGaugeEtsEngines::HudGaugeEtsEngines():
@@ -1146,33 +1270,67 @@ HudGaugeEts(HUD_OBJECT_ETS_ENGINES, (int)ENGINES)
 {
 }
 
-void HudGaugeEtsEngines::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeEtsEngines::render(float  /*frametime*/, bool config)
 {
-	int i;
-
-	ship* ship_p = &Ships[Player_obj->instance];	
+	ship* ship_p = nullptr;
+	if (!config) {
+		ship_p = &Ships[Player_obj->instance];
+	}	
 
 	if ( Ets_bar.first_frame < 0 ) {
 		return;
 	}
 
-	// if at least two gauges are not shown, don't show any
-	i = 0;
-	if (!ship_has_energy_weapons(ship_p)) i++;
-	if (Player_obj->flags[Object::Object_Flags::No_shields]) i++;
-	if (!ship_has_engine_power(ship_p)) i++;
-	if (i >= 2) return;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	// no engines, no engine gauge
-	if (!ship_has_engine_power(ship_p)) {
-		return;
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
-	setGaugeColor();
+
+	// if at least two gauges are not shown, don't show any
+	if (!config) {
+		int i = 0;
+		if (!ship_has_energy_weapons(ship_p))
+			i++;
+		if (Player_obj->flags[Object::Object_Flags::No_shields])
+			i++;
+		if (!ship_has_engine_power(ship_p))
+			i++;
+		if (i >= 2)
+			return;
+
+		// no engines, no engine gauge
+		if (!ship_has_engine_power(ship_p)) {
+			return;
+		}
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
+	int rx = position[0] + Letter_offsets[0];
+	int ry = position[1] + Letter_offsets[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 
 	// draw the gauge for the engine system
-	blitGauge(ship_p->engine_recharge_index);
+	int level = config ? 4 : ship_p->weapon_recharge_index;
+	rx = position[0];
+	ry = position[1];
+	if (config) {
+		std::tie(rx, ry) = hud_config_convert_coords(rx, ry, scale);
+	}
+	blitGauge(level, rx, ry, scale, config);
+
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
+
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+	}
 }
