@@ -36,10 +36,9 @@
 #include "ui/uidefs.h"
 
 
+constexpr int NUM_CBRIEF_LAYOUTS = 2;
 
-#define NUM_CMD_SETTINGS	2
-
-const char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_fname[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief",
@@ -52,7 +51,7 @@ const char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 };
 
 
-const char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_mask[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief-m",
@@ -71,7 +70,7 @@ const char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 #define CMD_W_COORD 2
 #define CMD_H_COORD 3
 
-int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+int Cmd_text_wnd_coords[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS][4] =
 {
 	// original
 	{
