@@ -380,7 +380,7 @@ void HudGaugeTargetBox::initFlashTimer(int index)
 	flash_flags &= ~(1<<index);
 }
 
-void HudGaugeTargetBox::render(float frametime)
+void HudGaugeTargetBox::render(float frametime, bool /*config*/)
 {
 	object	*target_objp;
 
@@ -1261,7 +1261,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	
 
 	if ( time_to_impact >= 0.0f ) {
-		renderPrintf(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, XSTR("impact: %.1f sec", 1596), time_to_impact);	
+		renderPrintfWithGauge(position[0] + Class_offsets[0], position[1] + Class_offsets[1], EG_TBOX_CLASS, 1.0f, false, XSTR("impact: %.1f sec", 1596), time_to_impact);	
 	}
 }
 
@@ -1341,7 +1341,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 		hud_num_make_mono(outstr, font_num);
 		gr_get_string_size(&w,&h,outstr);
 	
-		renderPrintf(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, "%s", outstr);
+		renderPrintfWithGauge(position[0] + Dist_offsets[0]+hx, position[1] + Dist_offsets[1]+hy, EG_TBOX_DIST, 1.0f, false, "%s", outstr);
 	}
 }
 
@@ -1495,7 +1495,7 @@ void HudGaugeExtraTargetData::pageIn()
 /**
  * @note Formerly hud_targetbox_show_extra_ship_info(target_shipp, target_objp) (Swifty)
  */
-void HudGaugeExtraTargetData::render(float  /*frametime*/)
+void HudGaugeExtraTargetData::render(float  /*frametime*/, bool /*config*/)
 {
 	char tmpbuf[256];
 	int has_orders = 0;
@@ -1713,7 +1713,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		maybeFlashElement(TBOX_FLASH_HULL);
 	}
 
-	renderPrintf(position[0] + Hull_offsets[0]-w, position[1] + Hull_offsets[1], EG_TBOX_HULL, "%s", outstr);	
+	renderPrintfWithGauge(position[0] + Hull_offsets[0]-w, position[1] + Hull_offsets[1], EG_TBOX_HULL, 1.0f, false, "%s", outstr);	
 	setGaugeColor();
 
 	// print out the targeted sub-system and % integrity
@@ -1761,13 +1761,13 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		if (n_linebreaks) {
 			p_line = strtok(outstr,linebreak);
 			while (p_line != NULL) {
-				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), "%s", p_line);
+				renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h-((h+1)*n_linebreaks), 1.0f, false, "%s", p_line);
 				p_line = strtok(NULL,linebreak);
 				n_linebreaks--;
 			}
 		} else {
 			hud_targetbox_truncate_subsys_name(outstr);
-			renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h, "%s", outstr);
+			renderPrintf(subsys_name_pos_x, subsys_name_pos_y-h, 1.0f, false, "%s", outstr);
 		}
 
 		int subsys_integrity_pos_x;
@@ -1789,7 +1789,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 		{
 			sprintf(outstr,XSTR( "%d%%", 341),screen_integrity);
 			gr_get_string_size(&w,&h,outstr);
-			renderPrintf(subsys_integrity_pos_x - w, subsys_integrity_pos_y - h, "%s", outstr);
+			renderPrintf(subsys_integrity_pos_x - w, subsys_integrity_pos_y - h, 1.0f, false, "%s", outstr);
 		}
 
 		setGaugeColor();
@@ -1815,7 +1815,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp)
 			disabled_status_pos_y = position[1] + Viewport_offsets[1] + Viewport_h - 2*h;
 		}
 
-		renderPrintf(disabled_status_pos_x, disabled_status_pos_y, "%s", outstr);
+		renderPrintf(disabled_status_pos_x, disabled_status_pos_y, 1.0f, false, "%s", outstr);
 	}
 }
 

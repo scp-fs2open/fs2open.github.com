@@ -47,7 +47,7 @@ protected:
 	int flight_cursor_frame_offset;
 public:
 	HudGaugeReticle();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initBitmaps(char *fname);
 	void pageIn() override;
 	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
@@ -106,12 +106,12 @@ public:
 	void showBackground(bool show);
 	void initBitmaps(char *fname);
 
-	void render(float frametime) override;
 	void renderThrottleSpeed(float current_speed, int y_end);
 	void renderThrottleLine(int y);
 	void renderThrottleForeground(int y_end);
 	void renderThrottleBackground(int y_end);
 	void renderMatchSpeedIcon(int x, int y);
+	void render(float frametime, bool config = false) override;
 
 	void pageIn() override;
 };
@@ -137,7 +137,7 @@ public:
 	void initBitmaps(char *fname_arc, char *fname_laser, char *fname_lock);
 	void initLaserWarnOffsets(int x, int y);
 	void initLockWarnOffsets(int x, int y);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initialize() override;
 	void pageIn() override;
 	void renderLaserThreat();
@@ -164,7 +164,7 @@ public:
 		char *fname_secondary_link_1, 
 		char *fname_secondary_link_2, 
 		char *fname_secondary_link_3);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
