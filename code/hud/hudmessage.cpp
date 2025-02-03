@@ -437,29 +437,45 @@ void HudGaugeMessages::preprocess()
  * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
  * the messages up when a new message arrives.
  */
-void HudGaugeMessages::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeMessages::render(float  /*frametime*/, bool config)
 {
 	hud_set_default_color();
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+        int bmw, bmh;
+		SCP_string msg = XSTR("Terran Fighter: HUD Message Display", 1864);
+		gr_get_string_size(&bmw, &bmh, msg.c_str(), scale);
+		hud_config_set_mouse_coords(gauge_config, x, x + bmw, y, y + bmh);
+		setGaugeColor(HUD_C_NONE, config);
+		renderPrintf(x, y, scale, config, "%s", msg.c_str());
+
+		// Config version doesn't need to do anything else
+		return;
+	}
+
 	// dependant on max_width, max_lines, and line_height
-	setClip(position[0], position[1], Window_width, Window_height+2);
+	setClip(x, y, fl2i(Window_width * scale), fl2i(Window_height * scale) + 2);
 
 	//Since setClip already sets makes drawing local, further renderings mustn't additionally slew
 	bool doSlew = reticle_follow;
 	reticle_follow = false;
 
-	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
-		if ( !timestamp_elapsed(m->total_life) ) {
-			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
-				// set the appropriate color					
-				if ( m->msg.source ) {
+	for (auto& active_message : active_messages) {
+		if (!timestamp_elapsed(active_message.total_life)) {
+			if (!(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
+				// set the appropriate color
+				if (active_message.msg.source) {
 					setGaugeColor(HUD_C_BRIGHT);
 				} else {
 					setGaugeColor();
 				}
-
 				// print the message out
-				renderPrintf(m->msg.x, m->y, 1.0f, false, "%s", m->msg.text.c_str());
+				renderString(x + active_message.msg.x, y + active_message.y, active_message.msg.text.c_str(), scale);
 			}
 		}
 	}
@@ -1176,9 +1192,38 @@ void HudGaugeTalkingHead::initBitmaps(const char *fname)
  * Renders everything for a head animation
  * Also checks for when new head ani's need to start playing
  */
-void HudGaugeTalkingHead::render(float frametime, bool /*config*/)
+void HudGaugeTalkingHead::render(float frametime, bool config)
 {
 	if ( Head_frame.first_frame == -1 ){
+		return;
+	}
+
+	if (config) {
+		int x = position[0];
+		int y = position[1];
+		float scale = 1.0;
+
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Head_frame.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+
+		// Talking head is complex enough that we can do all the config rendering right here and exit early
+		setGaugeColor(HUD_C_NONE, config);
+		renderBitmap(Head_frame.first_frame, x, y, scale, config); // head ani border
+		renderString(x + fl2i(Header_offsets[0] * scale), y + fl2i(Header_offsets[1] * scale), XSTR("message", 217), scale, config); // title
+		// Ideally this would be defined somewhere, maybe in hud_gauges.tbl?
+		SCP_string head_fname = HC_head_anim_filename.empty() ? "head-cm4b.ani" : HC_head_anim_filename;
+		HC_talking_head_frame = bm_load_animation(head_fname.c_str());
+		bm_page_in_aabitmap(HC_talking_head_frame);
+		if (HC_talking_head_frame != -1) {
+			// This isn't *exactly* how heads are drawn on the HUD, but it's close enough for the Config UI
+			renderBitmap(HC_talking_head_frame,
+				x + fl2i(Anim_offsets[0] * scale),
+				y + fl2i(Anim_offsets[1] * scale),
+				scale,
+				config);
+		}
 		return;
 	}
 
@@ -1336,22 +1381,37 @@ void HudGaugeFixedMessages::initCenterText(bool center) {
 	center_text = center;
 }
 
-void HudGaugeFixedMessages::render(float  /*frametime*/, bool /*config*/) {
+void HudGaugeFixedMessages::render(float  /*frametime*/, bool config) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];
+	const char* message = config ? XSTR("This is a fixed message", 1865) : hp->text;
 
-	if (!timestamp_elapsed(hp->end_time)) {
-		gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
-		
-		if (center_text) {
-			int w = 0;
-			gr_get_string_size(&w, nullptr, hp->text);
-			renderString(position[0] - (w / 2), position[1], hp->text);
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	int w, h;
+	gr_get_string_size(&w, &h, message, scale);
+
+	// This gauge uses the same settings as the message output gauge right now.
+	// That may change in the future, in which case the code below can be restored.
+	if (config) {
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		hud_config_set_mouse_coords(gauge_config, x - fl2i(w * scale), x + fl2i(w * scale), y, y + fl2i(h * scale));*/
+		return;
+	}
+
+	if (config || !timestamp_elapsed(hp->end_time)) {
+		if (!config) {
+			gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
 		} else {
-			renderString(position[0], position[1], hp->text);
+			setGaugeColor(HUD_C_NONE, config);
 		}
-		//renderString(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
+
+		int render_x = center_text ? x - (w / 2) : x;
+		
+		renderString(render_x, y, message, scale, config);
 	}
 }
 
