@@ -82,7 +82,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 	model_instance_local_to_global_dir(&worldNormal, hit_dir, pm, pmi, submodel_num, &pship_obj->orient);
 
 	// Apply hit & damage & stuff to weapon
-	weapon_hit(weapon_obj, pship_obj,  world_hitpos, quadrant_num, &worldNormal);
+	weapon_hit(weapon_obj, pship_obj, world_hitpos, quadrant_num, &worldNormal, hitpos, submodel_num); //NOLINT(readability-suspicious-call-argument)
 
 	if (wip->damage_time >= 0.0f && wp->lifeleft <= wip->damage_time) {
 		if (wip->atten_damage >= 0.0f) {

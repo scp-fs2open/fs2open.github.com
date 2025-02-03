@@ -11,7 +11,7 @@ class EffectHostVector : public EffectHost {
 	matrix m_orientation;
 	vec3d m_velocity;
   	std::optional<float> m_velocityMagnitudeOverride;
-	std::optional<float> m_radiusOverride;
+	std::optional<float> m_radius;
 public:
 	EffectHostVector(vec3d position, matrix orientation, vec3d velocity, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
@@ -25,5 +25,5 @@ public:
 
 	void setVelocityMagnitudeOverride(float velocityMagnitudeOverride);
 
-	void setRadiusOverride(float velocityMagnitudeOverride);
+	void setRadius(float radius);
 };

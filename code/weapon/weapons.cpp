@@ -6116,8 +6116,7 @@ void weapon_process_post(object * obj, float frame_time)
 				// do the spawn effect
 				if (wip->spawn_info[i].spawn_effect.isValid()) {
 					auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
-
-					particleSource->setHost(make_unique<EffectHostVector>(obj->pos, obj->orient, obj->phys_info.vel));
+					particleSource->setHost(std::make_unique<EffectHostObject>(obj, vmd_zero_vector));
 					particleSource->finishCreation();
 				}
 
@@ -7720,12 +7719,36 @@ bool weapon_armed(weapon *wp, bool hit_target)
 	return true;
 }
 
+static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* weapon_obj, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
+	if (impacted_obj == nullptr || impacted_obj->type != OBJ_SHIP || local_hitpos == nullptr) {
+		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
+		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel);
+		vector_host->setRadius(impacted_obj == nullptr ? weapon_obj->radius : impacted_obj->radius);
+		return vector_host;
+	}
+	else {
+		vec3d local_norm;
+		model_instance_global_to_local_dir(&local_norm, &weapon_obj->last_orient.vec.fvec, object_get_model(impacted_obj), object_get_model_instance(impacted_obj), impacted_submodel, &impacted_obj->orient);
+
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &local_norm);
+
+		if (impacted_submodel < 0) {
+			//Fall back to object
+			return std::make_unique<EffectHostObject>(impacted_obj, *local_hitpos, orient);
+		}
+		else {
+			//Full subobject
+			return std::make_unique<EffectHostSubmodel>(impacted_obj, impacted_submodel, *local_hitpos, orient);
+		}
+	}
+}
 
 /**
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal )
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal, const vec3d* local_hitpos, int submodel)
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -7819,7 +7842,9 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 					&& hit_angle <= fl_radians(ci.max_angle_threshold)
 				) {
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-					particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
+					particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+					particleSource->setTriggerRadius(weapon_obj->radius);
+					particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
@@ -7837,7 +7862,9 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
               		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 
-		particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
+		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
@@ -7846,7 +7873,9 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 		particleSource->finishCreation();
 	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
-		particleSource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
+		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
@@ -7887,7 +7916,9 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 				using namespace particle;
 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
-				primarySource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
+				primarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+				primarySource->setTriggerRadius(weapon_obj->radius);
+				primarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 				if (hitnormal)
 				{
@@ -7897,7 +7928,9 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 
 				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
-					secondarySource->setHost(make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel));
+					secondarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+					secondarySource->setTriggerRadius(weapon_obj->radius);
+					secondarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{

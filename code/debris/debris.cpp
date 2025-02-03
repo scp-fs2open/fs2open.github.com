@@ -813,8 +813,9 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 		vm_vector_2_matrix_norm(&orient, &tmp_norm);
 
 		auto source = particle::ParticleManager::get()->createSource(Debris_hit_particle);
-
-		source->setHost(make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel));
+		auto host = std::make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel);
+		host->setRadius(debris_obj->radius);
+		source->setHost(std::move(host));
 		source->finishCreation();
 	}
 

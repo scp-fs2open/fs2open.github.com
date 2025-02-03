@@ -9,7 +9,7 @@ class EffectHostSubmodel : public EffectHost {
 
 	int m_objnum, m_objsig, m_submodel;
 public:
-	EffectHostSubmodel(object* objp, int submodel, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
+	EffectHostSubmodel(const object* objp, int submodel, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
 	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const override;
 
