@@ -1035,7 +1035,7 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
 	return {screenX, screenY};
 }
 
-void hud_config_find_valid_angle(int gauge_index, float& initial_angle, int centerX, int centerY, float radius)
+float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius)
 {
 	const int max_iterations = 360; // Prevent infinite loops
 	float angle = initial_angle;
@@ -1054,11 +1054,10 @@ void hud_config_find_valid_angle(int gauge_index, float& initial_angle, int cent
 
 		// Check for overlap
 		if (!BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_index)) {
-			initial_angle = angle;
-			return;
+			return angle;
 		}
 
-		// Increment or decrement angle (adjust step size as needed)
+		// Increment angle and try again
 		angle += 10.0f; // Increment by 10 degrees
 		if (angle >= 360.0f) {
 			angle -= 360.0f;

@@ -304,7 +304,7 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
 /*!
  * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
  */
-void hud_config_find_valid_angle(int gauge_index, float& initial_angle, int centerX, int centerY, float radius);
+float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius);
 
 /*!
  * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge

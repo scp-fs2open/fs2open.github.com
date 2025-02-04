@@ -2776,7 +2776,7 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 		// Rotate the angle so that 0 is on top
 		angle -= 180.0f;
 
-		hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		// Convert angle to radians
 		float angle_radians = angle * static_cast<float>(M_PI) / 180.0f;
@@ -3255,7 +3255,7 @@ void HudGaugeMissileTriangles::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
@@ -3797,7 +3797,7 @@ void HudGaugeHostileTriangle::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
@@ -4847,7 +4847,7 @@ void HudGaugeTargetTriangle::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
