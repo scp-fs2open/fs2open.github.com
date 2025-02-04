@@ -1191,7 +1191,7 @@ void HudGaugeEtsWeapons::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + bmh);
 	}
 }
 
@@ -1261,7 +1261,7 @@ void HudGaugeEtsShields::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + bmh);
 	}
 }
 
@@ -1331,6 +1331,6 @@ void HudGaugeEtsEngines::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + bmh);
 	}
 }

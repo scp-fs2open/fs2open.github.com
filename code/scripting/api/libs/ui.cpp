@@ -2458,6 +2458,22 @@ ADE_FUNC(drawHudConfig,
 	}
 }
 
+ADE_FUNC(getCurrentHudName,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Returns the name of the current HUD configuration.",
+	"string",
+	"The name of the current HUD configuration.")
+{
+	SCP_UNUSED(L);
+
+	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+		return ade_set_args(L, "s", HC_available_huds[HC_chosen_hud].second.c_str());
+	} else {
+		return ade_set_args(L, "s", "Default Hud");
+	}
+}
+
 ADE_FUNC(selectAllGauges,
 	l_UserInterface_HUDConfig,
 	"boolean Toggle",

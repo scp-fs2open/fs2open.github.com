@@ -323,6 +323,8 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 int HC_talking_head_frame = -1;
 SCP_string HC_head_anim_filename;
 SCP_string HC_shield_gauge_ship;
+bool HC_show_default_hud = true;
+std::unordered_set<SCP_string> HC_ignored_huds;
 
 int HC_resize_mode = GR_RESIZE_MENU;
 
@@ -632,7 +634,12 @@ void hud_config_get_unique_huds()
 	for (const auto& pair : Hud_parsed_ships) {
 		const auto& hudName = pair.first; // Extract the HUD name
 		if (seenHuds.find(hudName) == seenHuds.end()) {
-			// If this HUD hasn't been encountered, add it to the result
+			// If this HUD hasn't been encountered, maybe add it to the result
+			if (HC_ignored_huds.find(hudName) != HC_ignored_huds.end()) {
+				// Skip ignored HUDs
+				continue;
+			}
+
 			std::pair<size_t, SCP_string> newPair;
 			newPair.second = hudName;
 
@@ -672,6 +679,19 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	}
 
 	hud_config_get_unique_huds();
+
+	if (!HC_show_default_hud) {
+		if (HC_available_huds.empty()) {
+			HC_show_default_hud = true;
+			HC_chosen_hud = -1;
+		} else {
+			HC_chosen_hud = 0;
+		}
+	}
+
+	if (!HC_show_default_hud && HC_available_huds.empty()) {
+		HC_show_default_hud = true;
+	}
 
 	if (w < 0 || h < 0) {
 		HC_gauge_scale = 1.0f; // Unused after this big upgrade?
@@ -939,8 +959,25 @@ void hud_config_popup_flag_clear(int i)
 	}
 }
 
+
+void hud_config_draw_box(int x1, int x2, int y1, int y2)
+{
+	//gr_line(x1, y1, x1, y2, HC_resize_mode); // Left vertical line
+	//gr_line(x1, y1, x2, y1, HC_resize_mode); // Top horizontal line
+	//gr_line(x2, y1, x2, y2, HC_resize_mode); // Right vertical line
+	//gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
+}
+
 void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2) {
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
+
+	// temporary stuff to show boxes
+	color clr = gr_screen.current_color;
+	color thisColor;
+	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
+	gr_set_color_fast(&thisColor);
+	hud_config_draw_box(x1, x2, y1, y2);
+	gr_set_color_fast(&clr);
 }
 
 bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, int y1, int y2)
@@ -953,6 +990,14 @@ bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, in
 		HC_gauge_mouse_coords[gauge_config] = newBox;
 		return true;
 	}
+
+	// temporary stuff to show boxes
+	color clr = gr_screen.current_color;
+	color thisColor;
+	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
+	gr_set_color_fast(&thisColor);
+	hud_config_draw_box(newBox.x1, newBox.x2, newBox.y1, newBox.y2);
+	gr_set_color_fast(&clr);
 }
 
 // ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
@@ -960,17 +1005,35 @@ bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, in
 // mouse box inclues all the relevant areas
 void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2)
 {
-	HC_gauge_mouse_coords[gauge_config].x1 = std::min(HC_gauge_mouse_coords[gauge_config].x1, x1);
-	HC_gauge_mouse_coords[gauge_config].x2 = std::max(HC_gauge_mouse_coords[gauge_config].x2, x2);
-	HC_gauge_mouse_coords[gauge_config].y1 = std::min(HC_gauge_mouse_coords[gauge_config].y1, y1);
-	HC_gauge_mouse_coords[gauge_config].y2 = std::max(HC_gauge_mouse_coords[gauge_config].y2, y2);
+	auto& coords = HC_gauge_mouse_coords[gauge_config];
+
+	// Ensure we don't let -1 interfere with min calculations
+	if (coords.x1 < 0)
+		coords.x1 = x1;
+	else
+		coords.x1 = std::min(coords.x1, x1);
+
+	if (coords.x2 < 0)
+		coords.x2 = x2;
+	else
+		coords.x2 = std::max(coords.x2, x2);
+
+	if (coords.y1 < 0)
+		coords.y1 = y1;
+	else
+		coords.y1 = std::min(coords.y1, y1);
+
+	if (coords.y2 < 0)
+		coords.y2 = y2;
+	else
+		coords.y2 = std::max(coords.y2, y2);
 
 	// temporary stuff to show boxes
 	color clr = gr_screen.current_color;
 	color thisColor;
 	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
 	gr_set_color_fast(&thisColor);
-	// hud_config_draw_box(x1, x2, y1, y2);
+	hud_config_draw_box(x1, x2, y1, y2);
 	gr_set_color_fast(&clr);
 }
 
@@ -1083,52 +1146,26 @@ void hud_config_render_gauges(bool API_Access)
 
 		for (int j = 0; j < num_gauges; j++) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-
-			// only preprocess gauges if we're not rendering to cockpit
-			// if (cockpit_display_num < 0) {
-			// sip->hud_gauges[j]->preprocess();
-			//}
-
-			// sip->hud_gauges[j]->onFrame(0);
-
-			// if (!sip->hud_gauges[j]->setupRenderCanvas(render_target)) {
-			// continue;
-			//}
-
-			// if (!sip->hud_gauges[j]->canRender()) {
-			// continue;
-			//}
-
-			// TRACE_SCOPE(tracing::RenderHUDGauge);
-
-			// sip->hud_gauges[j]->resetClip();
 			sip->hud_gauges[j]->setFont();
 			sip->hud_gauges[j]->render(0, true);
 		}
 	} else {
 		int num_gauges = static_cast<int>(default_hud_gauges.size());
-		hud_name = "Retail default hud";
+		hud_name = "Default HUD"; // Do not pass review if this is not XSTR'd!
 
 		for (int j = 0; j < num_gauges; j++) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-
-			// default_hud_gauges[j]->preprocess();
-
-			// default_hud_gauges[j]->onFrame(0);
-
-			// if (!default_hud_gauges[j]->canRender()) {
-			// continue;
-			//}
-
-			// TRACE_SCOPE(tracing::RenderHUDGauge);
-
-			// default_hud_gauges[j]->resetClip();
 			default_hud_gauges[j]->setFont();
 			default_hud_gauges[j]->render(0, true);
 		}
 	}
 
-	gr_string(HC_gauge_coordinates[0], HC_gauge_coordinates[3] + 10, hud_name.c_str());
+	// Render the name of the HUD
+	gr_set_color_fast(&Color_normal);
+	int w;
+	gr_get_string_size(&w, nullptr, hud_name.c_str());
+	int x = HC_gauge_coordinates[0] + ((HC_gauge_coordinates[4] / 2) - (w / 2));
+	//gr_string(x, HC_gauge_coordinates[3] + 10, hud_name.c_str(), GR_RESIZE_MENU);
 }
 
 void hud_config_init(bool API_Access, int x, int y, int w, int h)
@@ -1387,18 +1424,10 @@ void hud_config_handle_keypresses(int k)
 		hud_cycle_gauge_status();
 		break;
 	case KEY_RIGHT:
-		HC_chosen_hud++;
-		if (HC_chosen_hud >= HC_available_huds.size()) {
-			// Eventually a table setting will allow setting this to 0 or -1 depending
-			// on if the mod wants to display the default hud ever
-			HC_chosen_hud = -1;
-		}
+		hud_config_select_hud(true);
 		break;
 	case KEY_LEFT:
-		HC_chosen_hud--;
-		if (HC_chosen_hud < -1) {
-			HC_chosen_hud = static_cast<int>(HC_available_huds.size()) - 1;
-		}
+		hud_config_select_hud(false);
 		break;
 	}
 }
@@ -2179,13 +2208,11 @@ void hud_config_select_hud(bool next)
 	if (next) {
 		HC_chosen_hud++;
 		if (HC_chosen_hud >= HC_available_huds.size()) {
-			// Eventually a table setting will allow setting this to 0 or -1 depending
-			// on if the mod wants to display the default hud ever
-			HC_chosen_hud = -1;
+			HC_chosen_hud = HC_show_default_hud ? -1 : 0;
 		}
 	} else {
 		HC_chosen_hud--;
-		if (HC_chosen_hud < -1) {
+		if (HC_chosen_hud < (HC_show_default_hud ? -1 : 0)) {
 			HC_chosen_hud = static_cast<int>(HC_available_huds.size()) - 1;
 		}
 	}

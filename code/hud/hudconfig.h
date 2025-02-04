@@ -144,6 +144,8 @@ extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGE
 
 extern int HC_gauge_hot;
 extern int HC_gauge_selected;
+extern SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
+extern int HC_chosen_hud;
 extern bool HC_select_all;
 extern float HC_gauge_scale;
 extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
@@ -154,6 +156,8 @@ const char* HC_gauge_descriptions(int n);
 extern int HC_talking_head_frame;
 extern SCP_string HC_head_anim_filename;
 extern SCP_string HC_shield_gauge_ship;
+extern bool HC_show_default_hud;
+extern std::unordered_set<SCP_string> HC_ignored_huds;
 
 /*!
  * @brief init hud config screen, setting up the hud preview display
