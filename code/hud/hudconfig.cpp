@@ -962,7 +962,7 @@ float hud_config_find_valid_angle(int gauge_index, float initial_angle, int cent
 void hud_config_render_gauges(bool API_Access)
 {
 	// Check if this ship has its own HUD gauges.
-	SCP_string hud_name = "";
+	SCP_string hud_name;
 	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
 		ship_info* sip = &Ship_info[HC_available_huds[HC_chosen_hud].first];
 		hud_name = HC_available_huds[HC_chosen_hud].second;
@@ -1071,7 +1071,7 @@ void hud_config_check_regions(int mx, int my)
 		HC_gauge_selected = HC_gauge_hot;
 
 		// turn off select all
-		hud_config_select_all_toggle(0);
+		hud_config_select_all_toggle(false);
 
 		// maybe setup rgb sliders
 		if (HC_gauge_settings[HC_gauge_selected].use_iff_color) {
