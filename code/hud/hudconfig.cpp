@@ -1063,6 +1063,8 @@ float hud_config_find_valid_angle(int gauge_index, float initial_angle, int cent
 			angle -= 360.0f;
 		}
 	}
+
+	return initial_angle; // No valid angle found
 }
 
 /*!
