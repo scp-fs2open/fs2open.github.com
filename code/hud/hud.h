@@ -241,6 +241,12 @@ protected:
 	bool message_gauge;
 	int disabled_views;
 
+	// Config stuff
+	SCP_string config_name;
+	bool can_popup;
+	bool use_iff_color;
+	bool use_tag_color;
+
 	int flash_duration;
 	int flash_next;
 	bool flash_status;
@@ -294,6 +300,13 @@ public:
 	void getPosition(int *x, int *y) const;
 	bool isOffbyDefault() const;
 	bool isActive() const;
+
+	// Config getters
+	SCP_string getConfigName() const;
+	int getConfigId() const;
+	bool getConfigUseIffColor() const;
+	bool getConfigCanPopup() const;
+	bool getConfigUseTagColor() const;
 
 	int getFont() const;
 	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const;

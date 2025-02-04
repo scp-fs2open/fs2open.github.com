@@ -238,6 +238,9 @@ void parse_hud_gauges_tbl(const char *filename)
 		reset_parse();
 
 		if (optional_string("#HUD Config Settings")) {
+			if (optional_string("$Show Default HUD:")) {
+				stuff_boolean(&HC_show_default_hud);
+			}
 			if (optional_string("$Head Animation:")) {
 				stuff_string(HC_head_anim_filename, F_NAME);
 			}
@@ -459,6 +462,15 @@ void parse_hud_gauges_tbl(const char *filename)
 			case 2:
 				stuff_string(name, F_NAME);
 
+				if (optional_string("$Show in HUD Config:")) {
+					bool show = true;
+					stuff_boolean(&show);
+
+					if (!show) {
+						HC_ignored_huds.insert(name);
+					}
+				}
+
 				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
 				}
@@ -648,8 +660,6 @@ void hud_positions_init()
 
 	// load missing retail gauges for the default and ship-specific HUDs
 	load_missing_retail_gauges();
-
-	Hud_parsed_ships.clear();
 }
 
 void load_missing_retail_gauges()
