@@ -783,25 +783,25 @@ void hud_config_popup_flag_clear(int i)
 	}
 }
 
-
-void hud_config_draw_box(int x1, int x2, int y1, int y2)
+// Used for debugging. Remove before merge!
+/*void hud_config_draw_box(int x1, int x2, int y1, int y2)
 {
-	//gr_line(x1, y1, x1, y2, HC_resize_mode); // Left vertical line
-	//gr_line(x1, y1, x2, y1, HC_resize_mode); // Top horizontal line
-	//gr_line(x2, y1, x2, y2, HC_resize_mode); // Right vertical line
-	//gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
-}
+	gr_line(x1, y1, x1, y2, HC_resize_mode); // Left vertical line
+	gr_line(x1, y1, x2, y1, HC_resize_mode); // Top horizontal line
+	gr_line(x2, y1, x2, y2, HC_resize_mode); // Right vertical line
+	gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
+}*/
 
 void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2) {
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
 
 	// temporary stuff to show boxes
-	color clr = gr_screen.current_color;
+	/*color clr = gr_screen.current_color;
 	color thisColor;
 	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
 	gr_set_color_fast(&thisColor);
 	hud_config_draw_box(x1, x2, y1, y2);
-	gr_set_color_fast(&clr);
+	gr_set_color_fast(&clr);*/
 }
 
 bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, int y1, int y2)
@@ -816,12 +816,12 @@ bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, in
 	}
 
 	// temporary stuff to show boxes
-	color clr = gr_screen.current_color;
+	/*color clr = gr_screen.current_color;
 	color thisColor;
 	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
 	gr_set_color_fast(&thisColor);
 	hud_config_draw_box(newBox.x1, newBox.x2, newBox.y1, newBox.y2);
-	gr_set_color_fast(&clr);
+	gr_set_color_fast(&clr);*/
 }
 
 // ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
@@ -853,12 +853,12 @@ void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, i
 		coords.y2 = std::max(coords.y2, y2);
 
 	// temporary stuff to show boxes
-	color clr = gr_screen.current_color;
+	/*color clr = gr_screen.current_color;
 	color thisColor;
 	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
 	gr_set_color_fast(&thisColor);
 	hud_config_draw_box(x1, x2, y1, y2);
-	gr_set_color_fast(&clr);
+	gr_set_color_fast(&clr);*/
 }
 
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
@@ -965,7 +965,6 @@ void hud_config_render_gauges(bool API_Access)
 	SCP_string hud_name = "";
 	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
 		ship_info* sip = &Ship_info[HC_available_huds[HC_chosen_hud].first];
-		size_t num_gauges = sip->hud_gauges.size();
 		hud_name = HC_available_huds[HC_chosen_hud].second;
 
 		for (const auto& gauge : sip->hud_gauges) {
@@ -974,7 +973,6 @@ void hud_config_render_gauges(bool API_Access)
 			gauge->render(0, true);
 		}
 	} else {
-		int num_gauges = static_cast<int>(default_hud_gauges.size());
 		hud_name = "Default HUD"; // Do not pass review if this is not XSTR'd!
 
 		for (const auto& gauge : default_hud_gauges) {
@@ -985,11 +983,13 @@ void hud_config_render_gauges(bool API_Access)
 	}
 
 	// Render the name of the HUD
-	gr_set_color_fast(&Color_normal);
-	int w;
-	gr_get_string_size(&w, nullptr, hud_name.c_str());
-	int x = HC_gauge_coordinates[0] + ((HC_gauge_coordinates[4] / 2) - (w / 2));
-	//gr_string(x, HC_gauge_coordinates[3] + 10, hud_name.c_str(), GR_RESIZE_MENU);
+	if (!API_Access) {
+		gr_set_color_fast(&Color_normal);
+		int w;
+		gr_get_string_size(&w, nullptr, hud_name.c_str());
+		int x = HC_gauge_coordinates[0] + ((HC_gauge_coordinates[4] / 2) - (w / 2));
+		gr_string(x, HC_gauge_coordinates[3] + 10, hud_name.c_str(), GR_RESIZE_MENU);
+	}
 }
 
 void hud_config_init(bool API_Access, int x, int y, int w, int h)
