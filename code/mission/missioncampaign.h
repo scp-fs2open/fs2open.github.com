@@ -106,6 +106,7 @@ public:
 	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
 	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
+	SCP_string		substitute_main_hall;	// really only needed for FRED
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 };
