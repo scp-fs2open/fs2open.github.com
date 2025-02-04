@@ -19,6 +19,7 @@
 #include "hud/hudobserver.h"
 #include "iff_defs/iff_defs.h"
 #include "io/key.h"
+#include "io/mouse.h"
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
@@ -184,12 +185,17 @@ int HUD_default_popup_mask2 =
 // wing names?
 char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon"};
 
-int HC_select_all = 0;
+bool HC_select_all = false;
 
 //////////////////////////////////////////////////////////////////////////////
 // Module Globals
 //////////////////////////////////////////////////////////////////////////////
 
+// Coordinates for the new HUD configuration menu
+const int HC_gauge_config_coords[GR_NUM_RESOLUTIONS][4] = {
+	{121, 615, 6, 371}, // Coordinates for 640x480
+	{195, 985, 10, 595} // Coordinates for 1024x768
+};
 
 const char *Hud_config_fname[GR_NUM_RESOLUTIONS] = {
 	"HUDConfig",
@@ -319,6 +325,10 @@ SCP_string HC_head_anim_filename;
 SCP_string HC_shield_gauge_ship;
 
 int HC_resize_mode = GR_RESIZE_MENU;
+
+SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
+int HC_chosen_hud = -1;
+
 const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
@@ -601,6 +611,45 @@ void hud_config_synch_ui(bool API_Access)
 	}
 }
 
+void hud_config_init_dimensions(int x1, int x2, int y1, int y2)
+{
+	// Calculate the menu width and height
+	int menuWidth = x2 - x1;
+	int menuHeight = y2 - y1;
+
+	HC_gauge_coordinates[0] = x1;
+	HC_gauge_coordinates[1] = x2;
+	HC_gauge_coordinates[2] = y1;
+	HC_gauge_coordinates[3] = y2;
+	HC_gauge_coordinates[4] = menuWidth;
+	HC_gauge_coordinates[5] = menuHeight;
+}
+
+void hud_config_get_unique_huds()
+{
+	std::unordered_set<SCP_string> seenHuds; // Tracks HUDs we've already encountered
+
+	for (const auto& pair : Hud_parsed_ships) {
+		const auto& hudName = pair.first; // Extract the HUD name
+		if (seenHuds.find(hudName) == seenHuds.end()) {
+			// If this HUD hasn't been encountered, add it to the result
+			std::pair<size_t, SCP_string> newPair;
+			newPair.second = hudName;
+
+			// Get the ship index associated
+			for (size_t i = 0; i < Ship_info.size(); i++) {
+				if (!stricmp(Ship_info[i].name, pair.second.c_str())) {
+					newPair.first = i;
+					break;
+				}
+			}
+
+			HC_available_huds.push_back(newPair);
+			seenHuds.insert(hudName);
+		}
+	}
+}
+
 /*!
  * @brief init the UI components
  *
@@ -609,7 +658,7 @@ void hud_config_synch_ui(bool API_Access)
  * param[in] y				the y coord to render the preview display
  * param[in] w				the width of the preview display
  */
-void hud_config_init_ui(bool API_Access, int x, int y, int w)
+void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 {
 	int i;
 	struct ui_button_info			*hb;
@@ -622,9 +671,21 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 		coord = {-1, -1, -1, -1};
 	}
 
-	if (w < 0) {
-		HC_gauge_scale = 1.0f;
+	hud_config_get_unique_huds();
+
+	if (w < 0 || h < 0) {
+		HC_gauge_scale = 1.0f; // Unused after this big upgrade?
+		hud_config_init_dimensions(HC_gauge_config_coords[gr_screen.res][0],
+			HC_gauge_config_coords[gr_screen.res][1],
+			HC_gauge_config_coords[gr_screen.res][2],
+			HC_gauge_config_coords[gr_screen.res][3]);
+		HC_resize_mode = GR_RESIZE_MENU;
 	} else {
+
+		hud_config_init_dimensions(x, x + w, y, y + h);
+		if (API_Access) {
+			HC_resize_mode = GR_RESIZE_NONE;
+		}
 
 		float sw = 0; // will be highest w value
 
@@ -750,7 +811,18 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 											255, HC_slider_fname[gr_screen.res], hud_config_blue_slider, hud_config_blue_slider, hud_config_blue_slider);
 
 		HC_color_sliders[HCS_ALPHA].create(&HC_ui_window, HC_slider_coords[gr_screen.res][HCS_ALPHA][0], HC_slider_coords[gr_screen.res][HCS_ALPHA][1], HC_slider_coords[gr_screen.res][HCS_ALPHA][2], HC_slider_coords[gr_screen.res][HCS_ALPHA][3],
-											255, HC_slider_fname[gr_screen.res], hud_config_alpha_slider_up, hud_config_alpha_slider_down, NULL);
+											255, HC_slider_fname[gr_screen.res], hud_config_alpha_slider_up, hud_config_alpha_slider_down, nullptr);
+
+		// now disable them until the player clicks on something
+		HC_color_sliders[HCS_RED].hide();
+		HC_color_sliders[HCS_GREEN].hide();
+		HC_color_sliders[HCS_BLUE].hide();
+		HC_color_sliders[HCS_ALPHA].hide();
+
+		HC_color_sliders[HCS_RED].disable();
+		HC_color_sliders[HCS_GREEN].disable();
+		HC_color_sliders[HCS_BLUE].disable();
+		HC_color_sliders[HCS_ALPHA].disable();
 	}
 	
 	hud_config_preset_init();
@@ -799,7 +871,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w)
 		HC_gauge_hot = -1;
 		HC_gauge_selected = -1;
 
-		HC_select_all = 0;
+		HC_select_all = false;
 
 		strcpy_s(HC_fname, "");
 	}
@@ -1001,140 +1073,168 @@ void hud_config_find_valid_angle(int gauge_index, float& initial_angle, int cent
  */
 void hud_config_render_gauges(bool API_Access)
 {
-	int i;
+	// Check if this ship has its own HUD gauges.
+	SCP_string hud_name = "";
+	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+		ship_info* sip = &Ship_info[HC_available_huds[HC_chosen_hud].first];
+		size_t num_gauges = sip->hud_gauges.size();
+		hud_name = HC_available_huds[HC_chosen_hud].second;
 
-	for ( i=0; i<NUM_HUD_GAUGES; i++ ) {
-		color *use_color;
-		int alpha;
-		if ( (hud_config_show_flag_is_set(i)) ) {
-			// set the correct color
-			if(!HC_gauge_regions[gr_screen.res][i].use_iff){
-				use_color = &HUD_config.clr[i];			
-			} else {
-				if(HC_gauge_regions[gr_screen.res][i].color == 1){
-					use_color = iff_get_color(IFF_COLOR_TAGGED, 0);
-				} else {
-					use_color = &Color_bright_red;
-				}
-			}
+		for (int j = 0; j < num_gauges; j++) {
+			GR_DEBUG_SCOPE("Render HUD gauge");
 
-			if ( (HC_gauge_selected == i) || HC_select_all ) {
-				alpha = 255;				
-			} else if ( HC_gauge_hot == i ) {
-				alpha = 200;				
-			} else {			
-				alpha = 150;				
-			}
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
-			gr_set_color_fast(use_color);			
-		} else {
-			// if its off, make it dark gray
-			use_color = &HUD_config.clr[i];
-			gr_init_alphacolor(use_color, 127, 127, 127, 64);
-			gr_set_color_fast(use_color);			
+			// only preprocess gauges if we're not rendering to cockpit
+			// if (cockpit_display_num < 0) {
+			// sip->hud_gauges[j]->preprocess();
+			//}
+
+			// sip->hud_gauges[j]->onFrame(0);
+
+			// if (!sip->hud_gauges[j]->setupRenderCanvas(render_target)) {
+			// continue;
+			//}
+
+			// if (!sip->hud_gauges[j]->canRender()) {
+			// continue;
+			//}
+
+			// TRACE_SCOPE(tracing::RenderHUDGauge);
+
+			// sip->hud_gauges[j]->resetClip();
+			sip->hud_gauges[j]->setFont();
+			sip->hud_gauges[j]->render(0, true);
 		}
+	} else {
+		int num_gauges = static_cast<int>(default_hud_gauges.size());
+		hud_name = "Retail default hud";
 
-		// draw
-		if ( HC_gauge_regions[gr_screen.res][i].bitmap >= 0 ) {
-			gr_set_bitmap(HC_gauge_regions[gr_screen.res][i].bitmap);
+		for (int j = 0; j < num_gauges; j++) {
+			GR_DEBUG_SCOPE("Render HUD gauge");
 
-			int resize = GR_RESIZE_MENU;
-			if (API_Access) {
-				resize = GR_RESIZE_NONE;
-			}
+			// default_hud_gauges[j]->preprocess();
 
-			gr_aabitmap(HC_gauge_coords[i].x, HC_gauge_coords[i].y, resize, false, HC_gauge_scale);
+			// default_hud_gauges[j]->onFrame(0);
+
+			// if (!default_hud_gauges[j]->canRender()) {
+			// continue;
+			//}
+
+			// TRACE_SCOPE(tracing::RenderHUDGauge);
+
+			// default_hud_gauges[j]->resetClip();
+			default_hud_gauges[j]->setFont();
+			default_hud_gauges[j]->render(0, true);
 		}
-		
-		/*
-		else {
-
-			int offset=0;
-				// set correct frame if using iff
-			if ( HC_gauge_regions[i].use_iff ) {
-				if ( HC_gauge_selected == i ) {
-					offset=2;
-				} else if ( HC_gauge_hot == i ) {
-					offset=1;
-				}
-
-				// If gauge is disabled, then draw disabled frame
-				if ( !(hud_config_show_flag_is_set(i)) ) {
-					offset=3;
-				}
-			}
-
-			if ( HC_gauge_regions[i].bitmap >= 0 ) {
-				Assert(offset < HC_gauge_regions[i].nframes);
-				gr_set_bitmap(HC_gauge_regions[i].bitmap+offset);
-				gr_bitmap(HC_gauge_regions[i].x, HC_gauge_regions[i].y, GR_RESIZE_MENU);
-			}
-		}
-		*/
 	}
+
+	gr_string(HC_gauge_coordinates[0], HC_gauge_coordinates[3] + 10, hud_name.c_str());
 }
 
-void hud_config_init(bool API_Access, int x, int y, int w)
+void hud_config_init(bool API_Access, int x, int y, int w, int h)
 {
-	hud_config_init_ui(API_Access, x, y, w);
+	hud_config_init_ui(API_Access, x, y, w, h);
 	hud_config_backup(); // save the HUD configuration in case the player decides to cancel changes
 	HUD_config_inited = 1;
+}
+
+bool hud_config_check_mouse_in_hud_area(int mx, int my)
+{
+	if (mx < HC_gauge_config_coords[gr_screen.res][0]) {
+		return false;
+	}
+	if (mx > HC_gauge_config_coords[gr_screen.res][1]) {
+		return false;
+	}
+	if (my < HC_gauge_config_coords[gr_screen.res][2]) {
+		return false;
+	}
+	if (my > HC_gauge_config_coords[gr_screen.res][3]) {
+		return false;
+	}
+
+	return true;
 }
 
 /*!
  * @brief check mouse position against all ui buttons using the ui mask
  *
  */
-void hud_config_check_regions()
+void hud_config_check_regions(int mx, int my)
 {
-	int			i;
-	UI_BUTTON	*b;
+	UI_BUTTON* b;
 
-	for ( i=0; i<NUM_HUD_GAUGES; i++ ) {
-		b = &HC_gauge_regions[gr_screen.res][i].button;
+	if (hud_config_check_mouse_in_hud_area(mx, my)) {
+		HC_gauge_hot = -2;
+	}
 
-		// check for mouse over gauges
-		if ( b->button_hilighted() ) {
+	if (HC_gauge_hot == -2 && mouse_down(MOUSE_LEFT_BUTTON)) {
+		HC_gauge_selected = -1;
+		HC_color_sliders[HCS_RED].hide();
+		HC_color_sliders[HCS_GREEN].hide();
+		HC_color_sliders[HCS_BLUE].hide();
+		HC_color_sliders[HCS_ALPHA].hide();
+
+		HC_color_sliders[HCS_RED].disable();
+		HC_color_sliders[HCS_GREEN].disable();
+		HC_color_sliders[HCS_BLUE].disable();
+		HC_color_sliders[HCS_ALPHA].disable();
+	}
+
+	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
+		// Eventually we can just always check by mouse region.. but for now let's add this here for testing
+		if (HC_gauge_mouse_coords[i].x1 >= 0) {
+			// Add checks here for the new mouse coords
+			if (mx < HC_gauge_mouse_coords[i].x1)
+				continue;
+			if (mx > HC_gauge_mouse_coords[i].x2)
+				continue;
+			if (my < HC_gauge_mouse_coords[i].y1)
+				continue;
+			if (my > HC_gauge_mouse_coords[i].y2)
+				continue;
+			// if we've got here, must be a hit
 			HC_gauge_hot = i;
-		}
 
-		if ( b->pressed() ) {
-			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			HC_gauge_selected = i;
+			if (HC_gauge_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
+				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+				HC_gauge_selected = i;
 
-			// turn off select all
-			hud_config_select_all_toggle(0);			
-			
-			// maybe setup rgb sliders
-			if(HC_gauge_regions[gr_screen.res][i].use_iff){
-				HC_color_sliders[HCS_RED].hide();
-				HC_color_sliders[HCS_GREEN].hide();
-				HC_color_sliders[HCS_BLUE].hide();
-				HC_color_sliders[HCS_ALPHA].hide();
+				// turn off select all
+				hud_config_select_all_toggle(0);
 
-				HC_color_sliders[HCS_RED].disable();
-				HC_color_sliders[HCS_GREEN].disable();
-				HC_color_sliders[HCS_BLUE].disable();
-				HC_color_sliders[HCS_ALPHA].disable();
-			} else {
-				HC_color_sliders[HCS_RED].enable();
-				HC_color_sliders[HCS_GREEN].enable();
-				HC_color_sliders[HCS_BLUE].enable();
-				HC_color_sliders[HCS_ALPHA].enable();			
+				// maybe setup rgb sliders
+				if (HC_gauge_regions[gr_screen.res][i].use_iff) {
+					HC_color_sliders[HCS_RED].hide();
+					HC_color_sliders[HCS_GREEN].hide();
+					HC_color_sliders[HCS_BLUE].hide();
+					HC_color_sliders[HCS_ALPHA].hide();
 
-				HC_color_sliders[HCS_RED].unhide();
-				HC_color_sliders[HCS_GREEN].unhide();
-				HC_color_sliders[HCS_BLUE].unhide();
-				HC_color_sliders[HCS_ALPHA].unhide();				
+					HC_color_sliders[HCS_RED].disable();
+					HC_color_sliders[HCS_GREEN].disable();
+					HC_color_sliders[HCS_BLUE].disable();
+					HC_color_sliders[HCS_ALPHA].disable();
+				} else {
+					HC_color_sliders[HCS_RED].enable();
+					HC_color_sliders[HCS_GREEN].enable();
+					HC_color_sliders[HCS_BLUE].enable();
+					HC_color_sliders[HCS_ALPHA].enable();
 
-				HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV(HUD_config.clr[i].red) );
-				HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HUD_config.clr[i].green) );
-				HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HUD_config.clr[i].blue) );
-				HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV(HUD_config.clr[i].alpha) );
+					HC_color_sliders[HCS_RED].unhide();
+					HC_color_sliders[HCS_GREEN].unhide();
+					HC_color_sliders[HCS_BLUE].unhide();
+					HC_color_sliders[HCS_ALPHA].unhide();
+
+					HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(HUD_config.clr[i].red));
+					HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(HUD_config.clr[i].green));
+					HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(HUD_config.clr[i].blue));
+					HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(HUD_config.clr[i].alpha));
+				}
+
+				// recalc alpha slider
+				hud_config_recalc_alpha_slider();
+				mouse_flush();
 			}
-
-			// recalc alpha slider
-			hud_config_recalc_alpha_slider();
+			break;
 		}
 	}
 }
@@ -1145,11 +1245,25 @@ void hud_config_check_regions()
  */
 void hud_config_check_regions_by_mouse(int mx, int my)
 {
-	for (int i = 0; i < NUM_HUD_GAUGES; i++) {
+	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
 		HC_gauge_region *bi = &HC_gauge_regions[gr_screen.res][i];
 		int iw = 0;
 		int ih = 0;
-		if (bi->bitmap > 0) {
+		// Need a better test for this but for now this works
+		if (HC_gauge_mouse_coords[i].x1 >= 0) {
+			// Add checks here for the new mouse coords
+			if (mx < HC_gauge_mouse_coords[i].x1)
+				continue;
+			if (mx > HC_gauge_mouse_coords[i].x2)
+				continue;
+			if (my < HC_gauge_mouse_coords[i].y1)
+				continue;
+			if (my > HC_gauge_mouse_coords[i].y2)
+				continue;
+			// if we've got here, must be a hit
+			HC_gauge_hot = i;
+			break;
+		} else if (bi->bitmap > 0) {
 			bm_get_info(bi->bitmap, &iw, &ih, nullptr);
 			iw = (int)(iw * HC_gauge_scale);
 			ih = (int)(ih * HC_gauge_scale);
@@ -1272,6 +1386,20 @@ void hud_config_handle_keypresses(int k)
 	case KEY_TAB:
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		hud_cycle_gauge_status();
+		break;
+	case KEY_RIGHT:
+		HC_chosen_hud++;
+		if (HC_chosen_hud >= HC_available_huds.size()) {
+			// Eventually a table setting will allow setting this to 0 or -1 depending
+			// on if the mod wants to display the default hud ever
+			HC_chosen_hud = -1;
+		}
+		break;
+	case KEY_LEFT:
+		HC_chosen_hud--;
+		if (HC_chosen_hud < -1) {
+			HC_chosen_hud = static_cast<int>(HC_available_huds.size()) - 1;
+		}
 		break;
 	}
 }
@@ -1490,10 +1618,9 @@ void hud_config_button_do(int n)
 // Check if any buttons have been pressed
 void hud_config_check_buttons()
 {
-	int			i;
 	UI_BUTTON	*b;
 
-	for ( i=0; i<NUM_HUD_BUTTONS; i++ ) {
+	for (int i=0; i<NUM_HUD_BUTTONS; i++ ) {
 		b = &HC_buttons[gr_screen.res][i].button;
 		if ( b->pressed() ) {
 			hud_config_button_do(i);
@@ -1661,8 +1788,10 @@ void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 
 		k = HC_ui_window.process();
 
+		mouse_get_pos_unscaled(&mx, &my);
+
 		hud_config_handle_keypresses(k);
-		hud_config_check_regions();
+		hud_config_check_regions(mx, my);
 		hud_config_check_buttons();
 		hud_config_update_brightness();
 
@@ -1681,15 +1810,6 @@ void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 
 		hud_config_draw_gauge_status();
 		hud_config_draw_color_status();
-
-		/*
-		if (HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap >= 0) {
-			hud_set_default_color();
-			gr_set_bitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].bitmap);
-			gr_aabitmap(HC_special_bitmaps[HC_SPECIAL_RETICLE].x, HC_special_bitmaps[HC_SPECIAL_RETICLE].y,
-		GR_RESIZE_MENU);
-		}
-		*/
 
 		// maybe force draw the select all button
 		if (HC_select_all) {
@@ -1746,6 +1866,9 @@ void hud_config_close(bool API_Access)
 			bm_release(HC_background_bitmap_mask);
 		}
 	}
+
+	bm_unload(HC_talking_head_frame);
+	HC_talking_head_frame = -1;
 
 	HUD_config_inited = 0;
 }
@@ -2014,6 +2137,16 @@ void hud_config_blue_slider()
 	hud_config_recalc_alpha_slider();
 }
 
+void hud_config_get_sliders_color(color & clr)
+{
+	int r = HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem());
+	int g = HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem());
+	int b = HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem());
+	int a = HCS_CONV(HC_color_sliders[HCS_ALPHA].get_currentItem());
+
+	gr_init_alphacolor(&clr, r, g, b, a);
+}
+
 void hud_config_process_colors()
 {	
 }
@@ -2036,7 +2169,30 @@ void hud_config_delete_preset(SCP_string filename)
 	hud_config_preset_init();
 }
 
-void hud_config_select_all_toggle(int toggle, bool API_Access)
+void hud_config_select_none()
+{
+	HC_select_all = false;
+	HC_gauge_selected = -1;
+}
+
+void hud_config_select_hud(bool next)
+{
+	if (next) {
+		HC_chosen_hud++;
+		if (HC_chosen_hud >= HC_available_huds.size()) {
+			// Eventually a table setting will allow setting this to 0 or -1 depending
+			// on if the mod wants to display the default hud ever
+			HC_chosen_hud = -1;
+		}
+	} else {
+		HC_chosen_hud--;
+		if (HC_chosen_hud < -1) {
+			HC_chosen_hud = static_cast<int>(HC_available_huds.size()) - 1;
+		}
+	}
+}
+
+void hud_config_select_all_toggle(bool toggle, bool API_Access)
 {	
 	int r, g, b, a;
 
@@ -2047,7 +2203,7 @@ void hud_config_select_all_toggle(int toggle, bool API_Access)
 			hud_config_set_button_state();
 		}
 
-		HC_select_all = 0;
+		HC_select_all = false;
 	} else {
 		// synch stuff up
 		hud_config_synch_ui(API_Access);
@@ -2093,6 +2249,6 @@ void hud_config_select_all_toggle(int toggle, bool API_Access)
 			hud_config_button_disable(HCB_POPUP);
 		}
 
-		HC_select_all = 1;
+		HC_select_all = true;
 	}
 }

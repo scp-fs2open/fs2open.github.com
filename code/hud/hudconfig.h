@@ -144,7 +144,7 @@ extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGE
 
 extern int HC_gauge_hot;
 extern int HC_gauge_selected;
-extern int HC_select_all;
+extern bool HC_select_all;
 extern float HC_gauge_scale;
 extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
 extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
@@ -162,8 +162,9 @@ extern SCP_string HC_shield_gauge_ship;
  * param[in] x				the x coord to render the preview display
  * param[in] y				the y coord to render the preview display
  * param[in] w				the width to render the preview display
+ * param[in] h				the height to render the preview display
  */
-void hud_config_init(bool API_Access = false, int x = 0, int y = 0, int w = -1);
+void hud_config_init(bool API_Access = false, int x = 0, int y = 0, int w = -1, int h = -1);
 
 /*!
  * @brief do a hud config frame, including rendering the preview display and checking for button presses
@@ -185,10 +186,20 @@ void hud_config_close(bool API_Access = false);
 /*!
  * @brief toggles selecting of all gauges for color modification
  * 
- * param[in] toggle			1 to toggle on, 0 for off
+ * param[bool]              toggle true to toggle on, false for off
  * param[in] API_Access		whether or not this method has been called from the lua api
  */
-void hud_config_select_all_toggle(int toggle, bool API_Access = false);
+void hud_config_select_all_toggle(bool toggle, bool API_Access = false);
+
+/*!
+ * @brief sets no gauges as selected
+ */
+void hud_config_select_none();
+
+/*!
+ * @brief sets no gauges as selected
+ */
+void hud_config_select_hud(bool next);
 
 /*!
  * @brief init the list of preset files found by cfile
