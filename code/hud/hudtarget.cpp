@@ -2798,22 +2798,22 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 		}
 	}
 
-	int y1 = sinf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE) * scale);
-	int x1 = cosf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE) * scale);
+	float y1 = sinf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE) * scale);
+	float x1 = cosf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE) * scale);
 
 	y1 += y;
 	x1 += x;
 
-	int y2 = sinf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH) * scale);
-	int x2 = cosf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH) * scale);
+	float y2 = sinf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH) * scale);
+	float x2 = cosf(dot_product) * fl2i((Radius - T_OFFSET_FROM_CIRCLE - T_LENGTH) * scale);
 
 	y2 += y;
 	x2 += x;
 
-	int x3 = x1 - (T_BASE_LENGTH * scale) * sinf(dot_product);
-	int y3 = y1 + (T_BASE_LENGTH * scale) * cosf(dot_product);
-	int x4 = x1 + (T_BASE_LENGTH * scale) * sinf(dot_product);
-	int y4 = y1 - (T_BASE_LENGTH * scale) * cosf(dot_product);
+	float x3 = x1 - (T_BASE_LENGTH * scale) * sinf(dot_product);
+	float y3 = y1 + (T_BASE_LENGTH * scale) * cosf(dot_product);
+	float x4 = x1 + (T_BASE_LENGTH * scale) * sinf(dot_product);
+	float y4 = y1 - (T_BASE_LENGTH * scale) * cosf(dot_product);
 
 	if (config) {
 		float x_min = std::min({x1, x2, x3, x4});
@@ -2891,7 +2891,7 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3, bool config)
 	verts[2].b = (ubyte)gr_screen.current_color.blue;
 	verts[2].a = (ubyte)gr_screen.current_color.alpha;
 
-	for (auto vert : verts) {
+	for (auto& vert : verts) {
 		gr_resize_screen_posf(&vert.screen.xyw.x, &vert.screen.xyw.y, nullptr, nullptr, config ? HC_resize_mode : GR_RESIZE_FULL);
 	}
 
