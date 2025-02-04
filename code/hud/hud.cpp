@@ -198,6 +198,134 @@ void hud_maybe_display_subspace_notify();
 int hud_maybe_render_emp_icon();
 void hud_init_emp_icon();
 
+static bool hud_config_use_iff_color(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_LEAD_INDICATOR:
+	case HUD_ORIENTATION_TEE:
+	case HUD_HOSTILE_TRIANGLE:
+	case HUD_TARGET_TRIANGLE:
+	case HUD_OFFSCREEN_INDICATOR:
+	case HUD_MISSILE_WARNING_ARROW:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool hud_config_can_popup(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_ETS_GAUGE:
+	case HUD_AUTO_TARGET:
+	case HUD_AUTO_SPEED:
+	case HUD_WEAPONS_GAUGE:
+	case HUD_ESCORT_VIEW:
+	case HUD_TARGET_MINI_ICON:
+	case HUD_DAMAGE_GAUGE:
+	case HUD_CMEASURE_GAUGE:
+	case HUD_KILLS_GAUGE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool hud_config_use_tag_color(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_MISSILE_WARNING_ARROW:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static SCP_string hud_gauge_config_name(int n)
+{
+	switch (n) {
+	case HUD_LEAD_INDICATOR:
+		return XSTR("lead indicator", 249);
+	case HUD_ORIENTATION_TEE:
+		return XSTR("target orientation", 250);
+	case HUD_HOSTILE_TRIANGLE:
+		return XSTR("closest attacking hostile", 251);
+	case HUD_TARGET_TRIANGLE:
+		return XSTR("current target direction", 252);
+	case HUD_MISSION_TIME:
+		return XSTR("mission time", 253);
+	case HUD_RETICLE_CIRCLE:
+		return XSTR("reticle", 254);
+	case HUD_THROTTLE_GAUGE:
+		return XSTR("throttle", 255);
+	case HUD_RADAR:
+		return XSTR("radar", 256);
+	case HUD_TARGET_MONITOR:
+		return XSTR("target monitor", 257);
+	case HUD_CENTER_RETICLE:
+		return XSTR("center of reticle", 258);
+	case HUD_TARGET_MONITOR_EXTRA_DATA:
+		return XSTR("extra target info", 259);
+	case HUD_TARGET_SHIELD_ICON:
+		return XSTR("target shield", 260);
+	case HUD_PLAYER_SHIELD_ICON:
+		return XSTR("player shield", 261);
+	case HUD_ETS_GAUGE:
+		return XSTR("power management", 262);
+	case HUD_AUTO_TARGET:
+		return XSTR("auto-target icon", 263);
+	case HUD_AUTO_SPEED:
+		return XSTR("auto-speed-match icon", 264);
+	case HUD_WEAPONS_GAUGE:
+		return XSTR("weapons display", 265);
+	case HUD_ESCORT_VIEW:
+		return XSTR("monitoring view", 266);
+	case HUD_DIRECTIVES_VIEW:
+		return XSTR("directives view", 267);
+	case HUD_THREAT_GAUGE:
+		return XSTR("threat gauge", 268);
+	case HUD_AFTERBURNER_ENERGY:
+		return XSTR("afterburner energy", 269);
+	case HUD_WEAPONS_ENERGY:
+		return XSTR("weapons energy", 270);
+	case HUD_WEAPON_LINKING_GAUGE:
+		return XSTR("weapon linking", 271);
+	case HUD_TARGET_MINI_ICON:
+		return XSTR("target hull/shield icon", 272);
+	case HUD_OFFSCREEN_INDICATOR:
+		return XSTR("offscreen indicator", 273);
+	case HUD_TALKING_HEAD:
+		return XSTR("comm video", 274);
+	case HUD_DAMAGE_GAUGE:
+		return XSTR("damage display", 275);
+	case HUD_MESSAGE_LINES:
+		return XSTR("message output", 276);
+	case HUD_MISSILE_WARNING_ARROW:
+		return XSTR("locked missile direction", 277);
+	case HUD_CMEASURE_GAUGE:
+		return XSTR("countermeasures", 278);
+	case HUD_OBJECTIVES_NOTIFY_GAUGE:
+		return XSTR("objective notify", 279);
+	case HUD_WINGMEN_STATUS:
+		return XSTR("wingmen status", 280);
+	case HUD_OFFSCREEN_RANGE:
+		return XSTR("offscreen range", 281);
+	case HUD_KILLS_GAUGE:
+		return XSTR("kills gauge", 282);
+	case HUD_ATTACKING_TARGET_COUNT:
+		return XSTR("attacking target count", 283);
+	case HUD_TEXT_FLASH:
+		return XSTR("warning flash", 1459);
+	case HUD_MESSAGE_BOX:
+		return XSTR("comm menu", 1460);
+	case HUD_SUPPORT_GAUGE:
+		return XSTR("support gauge", 1461);
+	case HUD_LAG_GAUGE:
+		return XSTR("lag gauge", 1462);
+	}
+	return "";
+}
+
 //	Saturate a value in minv..maxv.
 void saturate(int *i, int minv, int maxv)
 {
@@ -297,6 +425,11 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 	texture_target_fname[0] = '\0';
 
+	config_name = hud_gauge_config_name(gauge_config);
+	can_popup = hud_config_can_popup(gauge_config);
+	use_iff_color = hud_config_use_iff_color(gauge_config);
+	use_tag_color = hud_config_use_tag_color(gauge_config);
+
 	custom_name[0] = '\0';
 	custom_text = "";
 	default_text = "";
@@ -309,8 +442,8 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x),
-textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
+render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -334,6 +467,8 @@ textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), targe
 	} else {
 		custom_name[0] = '\0';
 	}
+
+	config_name = custom_name;
 
 	if(_custom_text) {
 		custom_text = _custom_text;
@@ -388,6 +523,31 @@ void HudGauge::initFont(int input_font_num)
 	if (input_font_num >= 0 && input_font_num < font::FontManager::numberOfFonts()) {
 		font_num = input_font_num;
 	}
+}
+
+SCP_string HudGauge::getConfigName() const
+{
+	return config_name;
+}
+
+int HudGauge::getConfigId() const
+{
+	return gauge_config;
+}
+
+bool HudGauge::getConfigUseIffColor() const
+{
+	return use_iff_color;
+}
+
+bool HudGauge::getConfigCanPopup() const
+{
+	return can_popup;
+}
+
+bool HudGauge::getConfigUseTagColor() const
+{
+	return use_tag_color;
 }
 
 int HudGauge::getFont() const
@@ -491,9 +651,9 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 		if (hud_config_show_flag_is_set(gauge_config)) {
 			// Eventually we should allow custom gauges to use IFF colors maybe? Then we can unhardcode this
 			// and rely on the gauge data itself. But for now only specific gauges use iff and that's hard coded here
-			if (HC_gauge_regions[gr_screen.res][gauge_config].use_iff) {
+			if (use_iff_color) {
 				// Ditto for target tagging color
-				if (HC_gauge_regions[gr_screen.res][gauge_config].color == 1) {
+				if (use_tag_color) {
 					use_color = iff_get_color(IFF_COLOR_TAGGED, 0);
 				} else {
 					use_color = &Color_bright_red;

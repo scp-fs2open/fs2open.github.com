@@ -2399,19 +2399,20 @@ ADE_LIB_DERIV(l_UserInterface_HUDConfig,
 
 ADE_FUNC(initHudConfig,
 	l_UserInterface_HUDConfig,
-	"[number X, number Y, number Width]",
+	"[number X, number Y, number Width, number height]",
 	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
 	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
-	"Width is the pixel width to draw the gauges preview.",
+	"Width is the pixel width to draw the gauges preview. Height is hte pixel height to draw the gauges preview.",
 	nullptr,
 	nullptr)
 {
 	int x = 0;
 	int y = 0;
 	int w = 0;
-	ade_get_args(L, "|iii", &x, &y, &w);
+	int h = 0;
+	ade_get_args(L, "|iiii", &x, &y, &w, &h);
 
-	hud_config_init(true, x, y, w);
+	hud_config_init(true, x, y, w, h);
 
 	return ADE_RETURN_NIL;
 }
@@ -2457,6 +2458,22 @@ ADE_FUNC(drawHudConfig,
 	}
 }
 
+ADE_FUNC(getCurrentHudName,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Returns the name of the current HUD configuration.",
+	"string",
+	"The name of the current HUD configuration.")
+{
+	SCP_UNUSED(L);
+
+	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+		return ade_set_args(L, "s", HC_available_huds[HC_chosen_hud].second.c_str());
+	} else {
+		return ade_set_args(L, "s", "Default Hud");
+	}
+}
+
 ADE_FUNC(selectAllGauges,
 	l_UserInterface_HUDConfig,
 	"boolean Toggle",
@@ -2468,6 +2485,33 @@ ADE_FUNC(selectAllGauges,
 	ade_get_args(L, "|b", &toggle);
 
 	hud_config_select_all_toggle(toggle, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectNoGauges, l_UserInterface_HUDConfig, nullptr, "Sets no gauges as selected.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_none();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectNextHud, l_UserInterface_HUDConfig, nullptr, "Selects the next available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectPrevHud, l_UserInterface_HUDConfig, nullptr, "Selects the previous available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(false);
 
 	return ADE_RETURN_NIL;
 }

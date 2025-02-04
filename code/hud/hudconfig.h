@@ -77,22 +77,16 @@ typedef struct HUD_CONFIG_TYPE {
 extern HUD_CONFIG_TYPE HUD_config;
 
 /**
- * @struct HC_gauge_region
+ * @struct HC_gauge_setting
  * @brief Contains core HUD configuration data
  */
-struct HC_gauge_region
+struct HC_gauge_setting
 {
-	const char		*filename;	// filename for the gauge
-	int			x,y;			// x, y coords
-	int			hotspot;		// ??
-	int			use_iff;		// if the gauge uses target IFF color for its color
-	int			can_popup;		// if the gauge can use the popup method
-	int			bitmap;			// bitmap handle
-	int			nframes;		// ??
-	int			color;			// If the gauge color respects target tagging?
-	UI_BUTTON	button;			// button handle for retail UI hud config
+	bool use_iff_color;  // if the gauge uses target IFF color for its color
+	bool can_popup;      // if the gauge can use the popup method
+	bool use_tag_color;  // If the gauge color respects target tagging?
 
-	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
+	HC_gauge_setting(bool iff, bool cp, bool cl) : use_iff_color(iff), can_popup(cp), use_tag_color(cl){}
 };
 
 class BoundingBox {
@@ -120,14 +114,17 @@ class BoundingBox {
 	}
 
 	// Static function to check if any bounding box in an array overlaps with a new one
-	static bool isOverlappingAny(const BoundingBox mouse_coords[NUM_HUD_GAUGES], const BoundingBox& newBox, int self_index)
+	static bool isOverlappingAny(const SCP_vector<std::pair<int, BoundingBox>>& mouse_coords, const BoundingBox& newBox, int self_index)
 	{
-		for (int i = 0; i < NUM_HUD_GAUGES; i++) {
-			if (i == self_index) {
-				continue;
+		for (const auto& [gauge_id, bbox_list] : mouse_coords) {
+			if (gauge_id == self_index) {
+				continue; // Skip checking against itself
 			}
-			if (mouse_coords[i].isValid() && mouse_coords[i].isOverlapping(newBox)) {
-				return true;
+
+			for (const auto& bbox : mouse_coords) { // Check each bounding box for the gauge
+				if (bbox.second.isValid() && bbox.second.isOverlapping(newBox)) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -136,24 +133,26 @@ class BoundingBox {
 
 extern char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32];
 
-/*!
- * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
- * @note main definition in hudconfig.cpp
- */
-extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES];
-
 extern int HC_gauge_hot;
 extern int HC_gauge_selected;
-extern int HC_select_all;
-extern float HC_gauge_scale;
+extern SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
+extern int HC_chosen_hud;
+extern bool HC_select_all;
 extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
-extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
+extern SCP_vector<std::pair<int, BoundingBox>> HC_gauge_mouse_coords;
 
 const char* HC_gauge_descriptions(int n);
 
 extern int HC_talking_head_frame;
 extern SCP_string HC_head_anim_filename;
 extern SCP_string HC_shield_gauge_ship;
+extern bool HC_show_default_hud;
+extern std::unordered_set<SCP_string> HC_ignored_huds;
+
+/*!
+ * @brief get the gauge pointer for the given gauge index
+ */
+HudGauge* hud_config_get_gauge_pointer(int gauge_index);
 
 /*!
  * @brief init hud config screen, setting up the hud preview display
@@ -162,8 +161,9 @@ extern SCP_string HC_shield_gauge_ship;
  * param[in] x				the x coord to render the preview display
  * param[in] y				the y coord to render the preview display
  * param[in] w				the width to render the preview display
+ * param[in] h				the height to render the preview display
  */
-void hud_config_init(bool API_Access = false, int x = 0, int y = 0, int w = -1);
+void hud_config_init(bool API_Access = false, int x = 0, int y = 0, int w = -1, int h = -1);
 
 /*!
  * @brief do a hud config frame, including rendering the preview display and checking for button presses
@@ -185,10 +185,20 @@ void hud_config_close(bool API_Access = false);
 /*!
  * @brief toggles selecting of all gauges for color modification
  * 
- * param[in] toggle			1 to toggle on, 0 for off
+ * param[bool]              toggle true to toggle on, false for off
  * param[in] API_Access		whether or not this method has been called from the lua api
  */
-void hud_config_select_all_toggle(int toggle, bool API_Access = false);
+void hud_config_select_all_toggle(bool toggle, bool API_Access = false);
+
+/*!
+ * @brief sets no gauges as selected
+ */
+void hud_config_select_none();
+
+/*!
+ * @brief sets no gauges as selected
+ */
+void hud_config_select_hud(bool next);
 
 /*!
  * @brief init the list of preset files found by cfile
@@ -294,12 +304,6 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
  * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
  */
 float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius);
-
-/*!
- * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
- * @brief this one is specific to the ETS gauge's individual rendering method
- */
-void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2);
 
 #endif
 
