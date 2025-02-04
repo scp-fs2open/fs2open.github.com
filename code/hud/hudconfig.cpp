@@ -968,19 +968,19 @@ void hud_config_render_gauges(bool API_Access)
 		size_t num_gauges = sip->hud_gauges.size();
 		hud_name = HC_available_huds[HC_chosen_hud].second;
 
-		for (int j = 0; j < num_gauges; j++) {
+		for (const auto& gauge : sip->hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-			sip->hud_gauges[j]->setFont();
-			sip->hud_gauges[j]->render(0, true);
+			gauge->setFont();
+			gauge->render(0, true);
 		}
 	} else {
 		int num_gauges = static_cast<int>(default_hud_gauges.size());
 		hud_name = "Default HUD"; // Do not pass review if this is not XSTR'd!
 
-		for (int j = 0; j < num_gauges; j++) {
+		for (const auto& gauge : default_hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-			default_hud_gauges[j]->setFont();
-			default_hud_gauges[j]->render(0, true);
+			gauge->setFont();
+			gauge->render(0, true);
 		}
 	}
 
@@ -1976,7 +1976,7 @@ void hud_config_select_hud(bool next)
 {
 	if (next) {
 		HC_chosen_hud++;
-		if (HC_chosen_hud >= HC_available_huds.size()) {
+		if (HC_chosen_hud >= static_cast<int>(HC_available_huds.size())) {
 			HC_chosen_hud = HC_show_default_hud ? -1 : 0;
 		}
 	} else {
