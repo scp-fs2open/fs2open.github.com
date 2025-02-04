@@ -1543,11 +1543,15 @@ void Editor::update_texture_replacements(const char* old_name, const char* new_n
 			strcpy_s(ii->ship_name, new_name);
 	}
 }
-int Editor::rename_ship(int ship, char* name) {
+int Editor::rename_ship(int ship, const char* name) {
 	int i;
 
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
+
+	// we may not need to rename it
+	if (strcmp(Ships[ship].ship_name, name) == 0)
+		return 0;
 
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
