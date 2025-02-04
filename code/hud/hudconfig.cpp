@@ -1160,8 +1160,6 @@ bool hud_config_check_mouse_in_hud_area(int mx, int my)
  */
 void hud_config_check_regions(int mx, int my)
 {
-	UI_BUTTON* b;
-
 	if (hud_config_check_mouse_in_hud_area(mx, my)) {
 		HC_gauge_hot = -2;
 	}
