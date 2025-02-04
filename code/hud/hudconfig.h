@@ -147,7 +147,6 @@ extern int HC_gauge_selected;
 extern SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
 extern int HC_chosen_hud;
 extern bool HC_select_all;
-extern float HC_gauge_scale;
 extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
 extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 

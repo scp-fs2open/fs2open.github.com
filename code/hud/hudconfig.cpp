@@ -308,8 +308,6 @@ struct gauge_coords {
 	int y; // y coordinate position
 };
 
-SCP_vector<gauge_coords> HC_gauge_coords;
-
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -532,7 +530,6 @@ static UI_WINDOW					HC_ui_window;
 
 int							HC_gauge_hot;			// mouse is over this gauge
 int							HC_gauge_selected;	// gauge is selected
-float						HC_gauge_scale; // scale used for drawing the hud gauges
 int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
 BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 
@@ -670,9 +667,6 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	int i;
 	struct ui_button_info			*hb;
 
-	HC_gauge_coords.clear();
-	HC_gauge_coords.resize(NUM_HUD_GAUGES);
-
 	// Clear the mouse coords array
 	for (auto& coord : HC_gauge_mouse_coords) {
 		coord = {-1, -1, -1, -1};
@@ -694,7 +688,6 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	}
 
 	if (w < 0 || h < 0) {
-		HC_gauge_scale = 1.0f; // Unused after this big upgrade?
 		hud_config_init_dimensions(HC_gauge_config_coords[gr_screen.res][0],
 			HC_gauge_config_coords[gr_screen.res][1],
 			HC_gauge_config_coords[gr_screen.res][2],
@@ -705,38 +698,6 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 		hud_config_init_dimensions(x, x + w, y, y + h);
 		if (API_Access) {
 			HC_resize_mode = GR_RESIZE_NONE;
-		}
-
-		float sw = 0; // will be highest w value
-
-		// this is probably not the most efficient way to do this, but I
-		// can't find a better one. Need to get the furthest right and bottom
-		// pixels to be rendered to calculate the percent change. That is then
-		// used to rescale each gauge correctly for the rendering size and position. - Mjn
-		for (const auto& gauge : HC_gauge_regions[gr_screen.res]) {
-			if (!stricmp(gauge.filename, NOX("none"))) {
-				continue;
-			}
-
-			int bm = bm_load(gauge.filename);
-
-			int bw;
-			bm_get_info(bm, &bw);
-			bm_release(bm);
-
-			bw += gauge.x;
-
-			if (bw > sw) {
-				sw = (float)bw;
-			}
-		}
-
-		// calculate the percent change
-		HC_gauge_scale = (float)w / sw;
-
-		// we don't work with negative scales here, so reverse if it is
-		if (HC_gauge_scale < 0) {
-			HC_gauge_scale *= -1;
 		}
 	}
 
@@ -757,61 +718,6 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 		} else {
 			HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
 		}
-	}
-
-	// this is kinda dumb, but the retail gauge coords are hardcoded to
-	// to offset from the left and top of the screen. This exists
-	// for the api to render the gauge view at 0,0 without having to compensate
-	// for this dumb hardcoded way of doing things.
-	int x_offset = 0 + x;
-	int y_offset = 0 + y;
-	if (API_Access) {
-		int sx = HC_gauge_regions[gr_screen.res][0].x; // will be lowest x value
-		int sy = HC_gauge_regions[gr_screen.res][0].y; // will be lowest y value
-		for (auto gauge : HC_gauge_regions[gr_screen.res]) {
-			if (!stricmp(gauge.filename, NOX("none"))) {
-				continue;
-			}
-			if (gauge.x < sx) {
-				sx = gauge.x;
-			}
-			if (gauge.y < sy) {
-				sy = gauge.y;
-			}
-		}
-
-		// now add the offsets with the correct scaling
-		x_offset += ((int)(sx * HC_gauge_scale) * -1); // the furthest left gauge
-		y_offset += ((int)(sy * HC_gauge_scale) * -1); // the furthest top gauge
-	}
-
-	for (i=0; i<NUM_HUD_GAUGES; i++) {
-		struct HC_gauge_region* hg;
-		hg = &HC_gauge_regions[gr_screen.res][i];
-		if (!stricmp(hg->filename, NOX("none"))) {
-			continue;
-		}
-
-		// scale the x/y coords
-		int gx = (int)(hg->x * HC_gauge_scale);
-		int gy = (int)(hg->y * HC_gauge_scale);
-
-		// apply the offset
-		gx += x_offset;
-		gy += y_offset;
-
-		// save the values and drop the decimals
-		HC_gauge_coords[i] = {gx, gy};
-
-		hg->button.create(&HC_ui_window, "", gx, gy, 60, 30, 0, 1);
-		// set up callback for when a mouse first goes over a button
-		//		hg->button.set_highlight_action(common_play_highlight_sound);
-		hg->button.hide();
-		hg->button.link_hotspot(hg->hotspot);
-
-		hg->bitmap = bm_load(hg->filename);
-		hg->nframes = 1;
-
 	}
 
 	if (!API_Access){
@@ -1194,6 +1100,30 @@ bool hud_config_check_mouse_in_hud_area(int mx, int my)
 }
 
 /*!
+ * @brief check mouse position against all hud gauge preview display using mouse coordinates instead of a mask
+ *
+ */
+void hud_config_check_regions_by_mouse(int mx, int my)
+{
+	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
+		if (HC_gauge_mouse_coords[i].x1 >= 0) {
+			// Add checks here for the new mouse coords
+			if (mx < HC_gauge_mouse_coords[i].x1)
+				continue;
+			if (mx > HC_gauge_mouse_coords[i].x2)
+				continue;
+			if (my < HC_gauge_mouse_coords[i].y1)
+				continue;
+			if (my > HC_gauge_mouse_coords[i].y2)
+				continue;
+			// if we've got here, must be a hit
+			HC_gauge_hot = i;
+			break;
+		}
+	}
+}
+
+/*!
  * @brief check mouse position against all ui buttons using the ui mask
  *
  */
@@ -1216,105 +1146,46 @@ void hud_config_check_regions(int mx, int my)
 		HC_color_sliders[HCS_ALPHA].disable();
 	}
 
-	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
-		// Eventually we can just always check by mouse region.. but for now let's add this here for testing
-		if (HC_gauge_mouse_coords[i].x1 >= 0) {
-			// Add checks here for the new mouse coords
-			if (mx < HC_gauge_mouse_coords[i].x1)
-				continue;
-			if (mx > HC_gauge_mouse_coords[i].x2)
-				continue;
-			if (my < HC_gauge_mouse_coords[i].y1)
-				continue;
-			if (my > HC_gauge_mouse_coords[i].y2)
-				continue;
-			// if we've got here, must be a hit
-			HC_gauge_hot = i;
+	hud_config_check_regions_by_mouse(mx, my);
 
-			if (HC_gauge_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
-				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-				HC_gauge_selected = i;
+	if (HC_gauge_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+		HC_gauge_selected = HC_gauge_hot;
 
-				// turn off select all
-				hud_config_select_all_toggle(0);
+		// turn off select all
+		hud_config_select_all_toggle(0);
 
-				// maybe setup rgb sliders
-				if (HC_gauge_regions[gr_screen.res][i].use_iff) {
-					HC_color_sliders[HCS_RED].hide();
-					HC_color_sliders[HCS_GREEN].hide();
-					HC_color_sliders[HCS_BLUE].hide();
-					HC_color_sliders[HCS_ALPHA].hide();
+		// maybe setup rgb sliders
+		if (HC_gauge_regions[gr_screen.res][HC_gauge_selected].use_iff) {
+			HC_color_sliders[HCS_RED].hide();
+			HC_color_sliders[HCS_GREEN].hide();
+			HC_color_sliders[HCS_BLUE].hide();
+			HC_color_sliders[HCS_ALPHA].hide();
 
-					HC_color_sliders[HCS_RED].disable();
-					HC_color_sliders[HCS_GREEN].disable();
-					HC_color_sliders[HCS_BLUE].disable();
-					HC_color_sliders[HCS_ALPHA].disable();
-				} else {
-					HC_color_sliders[HCS_RED].enable();
-					HC_color_sliders[HCS_GREEN].enable();
-					HC_color_sliders[HCS_BLUE].enable();
-					HC_color_sliders[HCS_ALPHA].enable();
+			HC_color_sliders[HCS_RED].disable();
+			HC_color_sliders[HCS_GREEN].disable();
+			HC_color_sliders[HCS_BLUE].disable();
+			HC_color_sliders[HCS_ALPHA].disable();
+		} else {
+			HC_color_sliders[HCS_RED].enable();
+			HC_color_sliders[HCS_GREEN].enable();
+			HC_color_sliders[HCS_BLUE].enable();
+			HC_color_sliders[HCS_ALPHA].enable();
 
-					HC_color_sliders[HCS_RED].unhide();
-					HC_color_sliders[HCS_GREEN].unhide();
-					HC_color_sliders[HCS_BLUE].unhide();
-					HC_color_sliders[HCS_ALPHA].unhide();
+			HC_color_sliders[HCS_RED].unhide();
+			HC_color_sliders[HCS_GREEN].unhide();
+			HC_color_sliders[HCS_BLUE].unhide();
+			HC_color_sliders[HCS_ALPHA].unhide();
 
-					HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(HUD_config.clr[i].red));
-					HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(HUD_config.clr[i].green));
-					HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(HUD_config.clr[i].blue));
-					HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(HUD_config.clr[i].alpha));
-				}
-
-				// recalc alpha slider
-				hud_config_recalc_alpha_slider();
-				mouse_flush();
-			}
-			break;
+			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].red));
+			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].green));
+			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].blue));
+			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].alpha));
 		}
-	}
-}
 
-/*!
- * @brief check mouse position against all hud gauge preview display using mouse coordinates instead of a mask
- *
- */
-void hud_config_check_regions_by_mouse(int mx, int my)
-{
-	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
-		HC_gauge_region *bi = &HC_gauge_regions[gr_screen.res][i];
-		int iw = 0;
-		int ih = 0;
-		// Need a better test for this but for now this works
-		if (HC_gauge_mouse_coords[i].x1 >= 0) {
-			// Add checks here for the new mouse coords
-			if (mx < HC_gauge_mouse_coords[i].x1)
-				continue;
-			if (mx > HC_gauge_mouse_coords[i].x2)
-				continue;
-			if (my < HC_gauge_mouse_coords[i].y1)
-				continue;
-			if (my > HC_gauge_mouse_coords[i].y2)
-				continue;
-			// if we've got here, must be a hit
-			HC_gauge_hot = i;
-			break;
-		} else if (bi->bitmap > 0) {
-			bm_get_info(bi->bitmap, &iw, &ih, nullptr);
-			iw = (int)(iw * HC_gauge_scale);
-			ih = (int)(ih * HC_gauge_scale);
-			if (mx < HC_gauge_coords[i].x)
-				continue;
-			if (mx > (HC_gauge_coords[i].x + iw))
-				continue;
-			if (my < HC_gauge_coords[i].y)
-				continue;
-			if (my > (HC_gauge_coords[i].y + ih))
-				continue;
-			// if we've got here, must be a hit
-			HC_gauge_hot = i;
-			break;
-		}
+		// recalc alpha slider
+		hud_config_recalc_alpha_slider();
+		mouse_flush();
 	}
 }
 
