@@ -1213,7 +1213,7 @@ void HudGaugeTalkingHead::render(float frametime, bool config)
 		renderBitmap(Head_frame.first_frame, x, y, scale, config); // head ani border
 		renderString(x + fl2i(Header_offsets[0] * scale), y + fl2i(Header_offsets[1] * scale), XSTR("message", 217), scale, config); // title
 		// Ideally this would be defined somewhere, maybe in hud_gauges.tbl?
-		SCP_string head_fname = HC_head_anim_filename.empty() ? "head-cm4.ani" : HC_head_anim_filename;
+		SCP_string head_fname = HC_head_anim_filename.empty() ? "head-cm4b.ani" : HC_head_anim_filename;
 		HC_talking_head_frame = bm_load_animation(head_fname.c_str());
 		bm_page_in_aabitmap(HC_talking_head_frame);
 		if (HC_talking_head_frame != -1) {
