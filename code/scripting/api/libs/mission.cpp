@@ -2301,7 +2301,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 		return ADE_RETURN_TRUE;
 	}
 
-	std::unordered_set<int> excludedObjectIDs;
+	SCP_unordered_set<int> excludedObjectIDs;
 
 	if (excludedObjects.isValid()) {
 		for (const auto& object : excludedObjects) {

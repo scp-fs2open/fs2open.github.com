@@ -13,7 +13,7 @@ namespace fso {
 
 			bool PlayerOrdersDialogModel::apply()
 			{
-				std::set<size_t> orders_accepted;
+				SCP_set<size_t> orders_accepted;
 				object* objp;
 
 				if (!m_multi) {
@@ -76,7 +76,7 @@ namespace fso {
 			}
 
 			void PlayerOrdersDialogModel::initialiseData(bool multi) {
-				std::set<size_t> default_orders;
+				SCP_set<size_t> default_orders;
 
 				object* objp;
 				m_multi = multi;
@@ -87,7 +87,7 @@ namespace fso {
 				else {
 					for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 						if (((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) && (objp->flags[Object::Object_Flags::Marked])) {
-							const std::set<size_t>& these_orders = ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
+							const SCP_set<size_t>& these_orders = ship_get_default_orders_accepted(&Ship_info[Ships[objp->instance].ship_info_index]);
 							
 							if (default_orders.empty()) {
 								default_orders = these_orders;
@@ -108,9 +108,9 @@ namespace fso {
 
 				currentOrders.resize(m_num_checks_active);
 				if (!m_multi) {
-					const std::set<size_t>& orders_accepted = Ships[_editor->cur_ship].orders_accepted;
+					const SCP_set<size_t>& orders_accepted = Ships[_editor->cur_ship].orders_accepted;
 					for (int i = 0; i < m_num_checks_active; i++) {
-						if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end())
+						if (orders_accepted.contains(acceptedOrders[i]))
 							currentOrders[i] = 1;
 					}
 				}
@@ -118,7 +118,7 @@ namespace fso {
 					int first_time;
 
 					first_time = 1;
-					std::set<size_t> orders_accepted;
+					SCP_set<size_t> orders_accepted;
 					for (objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 						if (((objp->type == OBJ_START) || (objp->type == OBJ_SHIP)) && (objp->flags[Object::Object_Flags::Marked])) {
 
@@ -126,7 +126,7 @@ namespace fso {
 							orders_accepted = Ships[objp->instance].orders_accepted;
 							if (first_time) {
 								for (int i = 0; i < m_num_checks_active; i++) {
-									if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end())
+									if (orders_accepted.contains(acceptedOrders[i]))
 										currentOrders[i] = 1;
 								}
 								first_time = 0;
@@ -134,7 +134,7 @@ namespace fso {
 							else {
 								for (int i = 0; i < m_num_checks_active; i++) {
 									// see if the order matches the check box order
-									if (orders_accepted.find(acceptedOrders[i]) != orders_accepted.end()) {
+									if (orders_accepted.contains(acceptedOrders[i])) {
 										// if it matches, if it is not already set, then it is indeterminate.
 										if (!(currentOrders[i] == 1))
 											currentOrders[i] = 2;;

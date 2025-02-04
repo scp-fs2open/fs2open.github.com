@@ -6833,26 +6833,26 @@ int ship_get_type(char* output, ship_info *sip)
 }
 
 /**
- * Set the orders allowed for a ship -- based on ship type.  
+ * Get the orders allowed for a ship -- based on ship type.
  *
  * This value might get overridden by a value in the mission file.
  */
-const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
+const SCP_set<size_t>& ship_get_default_orders_accepted( ship_info *sip )
 {
 	if(sip->class_type >= 0) {
 		return Ship_types[sip->class_type].ai_player_orders;
 	} else {
-		static std::set<size_t> inv_class_set;
+		static SCP_set<size_t> inv_class_set;
 		return inv_class_set;
 	}
 }
 
 /**
- * Set the orders allowed against a ship -- all allowed by default
+ * Get the orders allowed against a ship -- all allowed by default
  *
  * This value might get overridden by a value in the mission file.
  */
-const std::set<size_t> ship_set_default_orders_against()
+SCP_set<size_t> ship_get_default_orders_against()
 {
 	SCP_set<size_t> orders;
 	
@@ -11148,7 +11148,7 @@ int ship_create(matrix* orient, vec3d* pos, int ship_type, const char* ship_name
 	sip = &(Ship_info[ship_type]);
 	shipp = &Ships[shipnum];
 	shipp->clear();
-	shipp->orders_allowed_against = ship_set_default_orders_against();
+	shipp->orders_allowed_against = ship_get_default_orders_against();
 
 	if (!VALID_FNAME(sip->pof_file))
 	{
@@ -12166,8 +12166,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	// (this avoids wiping the orders if we're e.g. changing between fighter classes)
 	if (Fred_running)
 	{
-		const std::set<size_t>& old_defaults = ship_get_default_orders_accepted(sip_orig);
-		const std::set<size_t>& new_defaults = ship_get_default_orders_accepted(sip);
+		const auto& old_defaults = ship_get_default_orders_accepted(sip_orig);
+		const auto& new_defaults = ship_get_default_orders_accepted(sip);
 
 		if (old_defaults != new_defaults)
 			sp->orders_accepted = new_defaults;
