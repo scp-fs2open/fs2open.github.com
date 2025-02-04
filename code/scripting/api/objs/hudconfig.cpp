@@ -12,13 +12,13 @@ namespace api {
 gauge_config_h::gauge_config_h() : gauge(-1) {}
 gauge_config_h::gauge_config_h(int l_gauge) : gauge(l_gauge) {}
 
-HC_gauge_region* gauge_config_h::getGauge() const
+HC_gauge_setting* gauge_config_h::getGauge() const
 {
 	if (!isValid()) {
 		return nullptr;
 	}
 
-	return &HC_gauge_regions[GR_1024][gauge];
+	return &HC_gauge_settings[gauge];
 }
 
 int gauge_config_h::getIndex() const
@@ -147,17 +147,17 @@ ADE_VIRTVAR(CurrentColor,
 	}
 
 	if (ADE_SETTING_VAR) {
-		if (!current.getGauge()->use_iff) {
+		if (!current.getGauge()->use_iff_color) {
 			HUD_config.clr[current.getIndex()] = newColor;
 		}
 	}
 
 	const color *thisColor;
 	
-	if (!current.getGauge()->use_iff) {
+	if (!current.getGauge()->use_iff_color) {
 		thisColor = &HUD_config.clr[current.getIndex()];
 	} else {
-		if (current.getGauge()->color == 1) {
+		if (current.getGauge()->use_tag_color) {
 			thisColor = iff_get_color(IFF_COLOR_TAGGED, 0);
 		} else {
 			thisColor = &Color_bright_red;
@@ -274,7 +274,7 @@ ADE_VIRTVAR(UsesIffForColor,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (current.getGauge()->use_iff == 0) {
+	if (current.getGauge()->use_iff_color == 0) {
 		return ADE_RETURN_FALSE;
 	}
 

@@ -77,22 +77,16 @@ typedef struct HUD_CONFIG_TYPE {
 extern HUD_CONFIG_TYPE HUD_config;
 
 /**
- * @struct HC_gauge_region
+ * @struct HC_gauge_setting
  * @brief Contains core HUD configuration data
  */
-struct HC_gauge_region
+struct HC_gauge_setting
 {
-	const char		*filename;	// filename for the gauge
-	int			x,y;			// x, y coords
-	int			hotspot;		// ??
-	int			use_iff;		// if the gauge uses target IFF color for its color
-	int			can_popup;		// if the gauge can use the popup method
-	int			bitmap;			// bitmap handle
-	int			nframes;		// ??
-	int			color;			// If the gauge color respects target tagging?
-	UI_BUTTON	button;			// button handle for retail UI hud config
+	bool use_iff_color;  // if the gauge uses target IFF color for its color
+	bool can_popup;      // if the gauge can use the popup method
+	bool use_tag_color;  // If the gauge color respects target tagging?
 
-	HC_gauge_region(const char *name, int x1, int y1, int h, int iff, int cp, int b, int nf, int cl) : filename(name), x(x1), y(y1), hotspot(h), use_iff(iff), can_popup(cp), bitmap(b), nframes(nf), color(cl){}
+	HC_gauge_setting(bool iff, bool cp, bool cl) : use_iff_color(iff), can_popup(cp), use_tag_color(cl){}
 };
 
 class BoundingBox {
@@ -140,7 +134,7 @@ extern char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32];
  * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
  * @note main definition in hudconfig.cpp
  */
-extern struct HC_gauge_region HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES];
+extern struct HC_gauge_setting HC_gauge_settings[NUM_HUD_GAUGES];
 
 extern int HC_gauge_hot;
 extern int HC_gauge_selected;

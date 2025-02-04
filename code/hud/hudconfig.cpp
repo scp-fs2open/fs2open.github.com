@@ -34,7 +34,6 @@
 int HC_current_file = -1;					// current hcf file
 SCP_vector<SCP_string> HC_preset_filenames;
 
-char HC_fname[MAX_FILENAME_LEN+1] = "";
 UI_INPUTBOX HC_fname_input;
 int HC_fname_coords[GR_NUM_RESOLUTIONS][4] = {
 	{ // GR_640
@@ -166,7 +165,7 @@ int HUD_default_popup_mask =
 	0	|											//	(1<<HUD_WEAPON_LINKING_GAUGE) |
 	0	|											//	(1<<HUD_TARGET_MINI_ICON) |
 	0	|											//(1<<HUD_OFFSCREEN_INDICATOR)
-	0  |											// talking head
+	0   |											// talking head
 	0	|											// damage gauge
 	0	|											// message lines				
 	0	|											// missile warning arrow
@@ -176,7 +175,7 @@ int HUD_default_popup_mask =
 
 int HUD_default_popup_mask2 =
 {
-	0  |											// offscreen indicator range //-V578
+	0   |											// offscreen indicator range //-V578
 	0	|
 	0											// kills gauge
 };
@@ -207,107 +206,49 @@ const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"2_HUDConfig-m"
 };
 
-// hud config gauges
-struct HC_gauge_region	HC_gauge_regions[GR_NUM_RESOLUTIONS][NUM_HUD_GAUGES] =
+// hud config gauge settings
+struct HC_gauge_setting	HC_gauge_settings[NUM_HUD_GAUGES] =
 {
-	{ // GR_640
-	//XSTR:OFF
-		HC_gauge_region("HCB_35",	407,	69,	35,	1,	0,	-1, 0,	2),			// lead indicator
-		HC_gauge_region("HCB_36",	305,	119,	36,	1,	0,	-1, 0,	2),			// orientation tee
-		HC_gauge_region("none",		1,		1,		-1,	1,	0,	-1, 0,	0),			// hostile triangle
-		HC_gauge_region("HCB_37",	391,	107,	37,	1,	0,	-1, 0,	2),			// target triangle
-		HC_gauge_region("HCB_63",	575,	352,	63,	0,	0,	-1, 0,	0),			// mission time
-		HC_gauge_region("none",		1,		1,		1,		0,	0,	-1, 0,	0),			// reticle circle?
-		HC_gauge_region("HCB_40",	285,	146,	40,	0,	0,	-1, 0,	0),			// throttle gauge
-		HC_gauge_region("HCB_50",	317,	291,	50,	0,	0,	-1, 0,	0),			// radar
-		HC_gauge_region("HCB_31",	123,	249,	31,	0,	0,	-1, 0,	0),			// target monitor
-		HC_gauge_region("HCB_41",	361,	188,	41,	0,	0,	-1, 0,	0),			// center of reticle
-		HC_gauge_region("HCB_30",	123,	221,	30,	0,	0,	-1, 0,	0),			// extra target data
-		HC_gauge_region("HCB_49",	237,	303,	49,	0,	0,	-1, 0,	0),			// target shield icon
-		HC_gauge_region("HCB_51",	435,	304,	51,	0,	0,	-1, 0,	0),			// player shield icon
-		HC_gauge_region("HCB_58",	524,	299,	58,	0,	1, -1, 0,	0),			// ets gauge
-		HC_gauge_region("HCB_61",	566,	299,	61,	0,	1, -1, 0,	0),			// auto target
-		HC_gauge_region("HCB_62",	566,	317,	62,	0,	1, -1, 0,	0),			// auto speed
-		HC_gauge_region("HCB_55",	504,	216,	55,	0,	1, -1, 0,	0),			// weapons gauge
-		HC_gauge_region("HCB_54",	496,	166,	54,	0,	1, -1, 0,	0),			// escort view
-		HC_gauge_region("HCB_29",	123,	142,	29,	0,	0, -1, 0,	0),			// directives view
-		HC_gauge_region("HCB_43",	398,	147,	43,	0,	0, -1, 0,	0),			// threat gauge
-		HC_gauge_region("HCB_39",	250,	212,	39,	0,	0, -1, 0,	0),			// afterburner energy
-		HC_gauge_region("HCB_44",	449,	212,	44,	0,	0, -1, 0,	0),			// weapons energy
-		HC_gauge_region("none",		1,		1,		-1,	0,	0, -1, 0,	0),			// weapon linking
-		HC_gauge_region("HCB_42",	356,	232,	42,	0,	1, -1, 0,	0),			// target mini icon (shield)
-		HC_gauge_region("HCB_34",	438,	5,		34,	1,	0, -1, 0,	2),			// offscreen indicator
-		HC_gauge_region("HCB_28",	123,	31,	28,	0,	0, -1, 0,	0),			// talking head
-		HC_gauge_region("HCB_32",	309,	33,	32,	0,	1, -1, 0,	0),			// damage gauge
-		HC_gauge_region("HCB_27",	124,	19,	27,	0,	0, -1, 0,	0),			// message lines
-		HC_gauge_region("HCB_45",	307,	249,	45,	1,	0, -1, 0,	1),			// missile warnings
-		HC_gauge_region("HCB_56",	505,	271,	56,	0,	1,	-1, 0,	0),			// cmeasure gauge
-		HC_gauge_region("HCB_33",	309,	87,	33,	0,	0,	-1, 0,	0),			// objectives notify gauge
-		HC_gauge_region("HCB_53",	546,	117,	53,	0,	0,	-1, 0,	0),			// wingman status gauge
-		HC_gauge_region("none",		1,		1,		-1,	0,	0,	-1, 0,	0),			// offscreen indicator range
-		HC_gauge_region("HCB_57",	505,	285,	57,	0,	1,	-1, 0,	0),			// kills gauge
-		HC_gauge_region("none",		1,		1,		-1,	0,	0,	-1, 0,	0),			// attacking target count
-		HC_gauge_region("HCB_38",	342,	138,	38,	0,	0,	-1, 0,	0),			// text flash gauge
-		HC_gauge_region("HCB_52",	465,	8,		52,	0,	0,	-1, 0,	0),			// comm menu
-		HC_gauge_region("HCB_46",	324,	264,	46,	0,	0,	-1, 0,	0),			// support view gauge
-		HC_gauge_region("HCB_47",	418,	262,	47,	0,	0,	-1, 0,	0),			// netlag icon gauge
-	//XSTR:ON
-	},
-	{ // GR_1024
-	//XSTR:OFF
-		HC_gauge_region("2_HCB_35",	652,	112,	35,	1,	0,	-1, 0,	2),			// lead indicator
-		HC_gauge_region("2_HCB_36",	489,	191,	36,	1,	0,	-1, 0,	2),			// orientation tee
-		HC_gauge_region("none",			1,		1,		-1,	1,	0,	-1, 0,	0),			// hostile triangle
-		HC_gauge_region("2_HCB_37",	626,	173,	37,	1,	0,	-1, 0,	2),			// target triangle
-		HC_gauge_region("2_HCB_63",	920,	564,	63,	0,	0,	-1, 0,	0),			// mission time
-		HC_gauge_region("none",			1,		1,		1,		0,	0,	-1, 0,	0),			// reticle circle?
-		HC_gauge_region("2_HCB_40",	456,	235,	40,	0,	0,	-1, 0,	0),			// throttle gauge
-		HC_gauge_region("2_HCB_50",	508,	466,	50,	0,	0,	-1, 0,	0),			// radar
-		HC_gauge_region("2_HCB_31",	198,	399,	31,	0,	0,	-1, 0,	0),			// target monitor
-		HC_gauge_region("2_HCB_41",	578,	302,	41,	0,	0,	-1, 0,	0),			// center of reticle
-		HC_gauge_region("2_HCB_30",	198,	354,	30,	0,	0,	-1, 0,	0),			// extra target data
-		HC_gauge_region("2_HCB_49",	380,	485,	49,	0,	0,	-1, 0,	0),			// target shield icon
-		HC_gauge_region("2_HCB_51",	696,	486,	51,	0,	0,	-1, 0,	0),			// player shield icon
-		HC_gauge_region("2_HCB_58",	839,	479,	58,	0,	1, -1, 0,	0),			// ets gauge
-		HC_gauge_region("2_HCB_61",	906,	479,	61,	0,	1, -1, 0,	0),			// auto target
-		HC_gauge_region("2_HCB_62",	906,	508,	62,	0,	1, -1, 0,	0),			// auto speed
-		HC_gauge_region("2_HCB_55",	807,	346,	55,	0,	1, -1, 0,	0),			// weapons gauge
-		HC_gauge_region("2_HCB_54",	794,	265,	54,	0,	1, -1, 0,	0),			// escort view
-		HC_gauge_region("2_HCB_29",	198,	228,	29,	0,	0, -1, 0,	0),			// directives view
-		HC_gauge_region("2_HCB_43",	637,	237,	43,	0,	0, -1, 0,	0),			// threat gauge
-		HC_gauge_region("2_HCB_39",	403,	339,	39,	0,	0, -1, 0,	0),			// afterburner energy
-		HC_gauge_region("2_HCB_44",	719,	339,	44,	0,	0, -1, 0,	0),			// weapons energy
-		HC_gauge_region("none",			1,		1,		-1,	0,	0, -1, 0,	0),			// weapon linking
-		HC_gauge_region("2_HCB_42",	569,	371,	42,	0,	1, -1, 0,	0),			// target mini icon (shield)
-		HC_gauge_region("2_HCB_34",	701,	9,		34,	1,	0, -1, 0,	2),			// offscreen indicator
-		HC_gauge_region("2_HCB_28",	198,	50,	28,	0,	0, -1, 0,	0),			// talking head
-		HC_gauge_region("2_HCB_32",	495,	55,	32,	0,	1, -1, 0,	0),			// damage gauge
-		HC_gauge_region("2_HCB_27",	199,	30,	27,	0,	0, -1, 0,	0),			// message lines
-		HC_gauge_region("2_HCB_45",	491,	399,	45,	1,	0, -1, 0,	1),			// missile warnings
-		HC_gauge_region("2_HCB_56",	808,	433,	56,	0,	1,	-1, 0,	0),			// cmeasure gauge
-		HC_gauge_region("2_HCB_33",	495,	141,	33,	0,	0,	-1, 0,	0),			// objectives notify gauge
-		HC_gauge_region("2_HCB_53",	873,	188,	53,	0,	0,	-1, 0,	0),			// wingman status gauge
-		HC_gauge_region("none",			1,		1,		-1,	0,	0,	-1, 0,	0),			// offscreen indicator range
-		HC_gauge_region("2_HCB_57",	808,	456,	57,	0,	1,	-1, 0,	0),			// kills gauge
-		HC_gauge_region("none",			1,		1,		-1,	0,	0,	-1, 0,	0),			// attacking target count
-		HC_gauge_region("2_HCB_38",	548,	222,	38,	0,	0,	-1, 0,	0),			// text flash gauge
-		HC_gauge_region("2_HCB_52",	744,	14,	52,	0,	0,	-1, 0,	0),			// comm menu
-		HC_gauge_region("2_HCB_46",	520,	422,	46,	0,	0,	-1, 0,	0),			// support view gauge
-		HC_gauge_region("2_HCB_47",	670,	419,	47,	0,	0,	-1, 0,	0),			// netlag icon gauge
-	//XSTR:ON
-	}
+	HC_gauge_setting(true, false, false), // lead indicator
+	HC_gauge_setting(true, false, false), // orientation tee
+	HC_gauge_setting(true, false, false), // hostile triangle
+	HC_gauge_setting(true, false, false), // target triangle
+	HC_gauge_setting(false, false, false), // mission time
+	HC_gauge_setting(false, false, false), // reticle circle?
+	HC_gauge_setting(false, false, false), // throttle gauge
+	HC_gauge_setting(false, false, false), // radar
+	HC_gauge_setting(false, false, false), // target monitor
+	HC_gauge_setting(false, false, false), // center of reticle
+	HC_gauge_setting(false, false, false), // extra target data
+	HC_gauge_setting(false, false, false), // target shield icon
+	HC_gauge_setting(false, false, false), // player shield icon
+	HC_gauge_setting(false, true, false),  // ets gauge
+	HC_gauge_setting(false, true, false),  // auto target
+	HC_gauge_setting(false, true, false),  // auto speed
+	HC_gauge_setting(false, true, false),  // weapons gauge
+	HC_gauge_setting(false, true, false),  // escort view
+	HC_gauge_setting(false, false, false), // directives view
+	HC_gauge_setting(false, false, false), // threat gauge
+	HC_gauge_setting(false, false, false), // afterburner energy
+	HC_gauge_setting(false, false, false), // weapons energy
+	HC_gauge_setting(false, false, false), // weapon linking
+	HC_gauge_setting(false, true, false),  // target mini icon (shield)
+	HC_gauge_setting(true, false, false),  // offscreen indicator
+	HC_gauge_setting(false, false, false), // talking head
+	HC_gauge_setting(false, true, false),  // damage gauge
+	HC_gauge_setting(false, false, false), // message lines
+	HC_gauge_setting(true, false, true),   // missile warnings
+	HC_gauge_setting(false, true, false),  // cmeasure gauge
+	HC_gauge_setting(false, false, false), // objectives notify gauge
+	HC_gauge_setting(false, false, false), // wingman status gauge
+	HC_gauge_setting(false, false, false), // offscreen indicator range
+	HC_gauge_setting(false, true, false),  // kills gauge
+	HC_gauge_setting(false, false, false), // attacking target count
+	HC_gauge_setting(false, false, false), // text flash gauge
+	HC_gauge_setting(false, false, false), // comm menu
+	HC_gauge_setting(false, false, false), // support view gauge
+	HC_gauge_setting(false, false, false), // netlag icon gauge
 };
-
-/**
- * @brief x y coordinates of gauges for hud preview display
- * 
- * @note used for scaling the positions properly when the preview display is scaled
- */
-struct gauge_coords {
-	int x; // x coordinate position
-	int y; // y coordinate position
-};
-
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -773,33 +714,10 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 			UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_FOC);
 		HC_fname_input.set_text("");
 
-		/*
-		for (i=0; i<NUM_HC_SPECIAL_BITMAPS; i++) {
-			HC_special_bitmaps[i].bitmap = bm_load(HC_special_bitmaps[i].filename);
-		}
-		*/
-
-		// create sliders
-		/*
-		for(i=0; i<HC_NUM_SLIDERS; i++){
-			HC_sliders[gr_screen.res][i].slider.create(&HC_ui_window, HC_sliders[gr_screen.res][i].x,
-		HC_sliders[gr_screen.res][i].y, HC_sliders[gr_screen.res][i].dots, HC_sliders[gr_screen.res][i].filename,
-																			HC_sliders[gr_screen.res][i].hotspot,
-		HC_sliders[gr_screen.res][i].right_filename, HC_sliders[gr_screen.res][i].right_mask,
-		HC_sliders[gr_screen.res][i].right_x, HC_sliders[gr_screen.res][i].right_y,
-																			HC_sliders[gr_screen.res][i].left_filename,
-		HC_sliders[gr_screen.res][i].left_mask, HC_sliders[gr_screen.res][i].left_x,
-		HC_sliders[gr_screen.res][i].left_y, HC_sliders[gr_screen.res][i].dot_w);
-		}
-		HC_sliders[gr_screen.res][HC_BRIGHTNESS_SLIDER].slider.pos = HUD_color_alpha - 3;
-		*/
-
 		HC_gauge_hot = -1;
 		HC_gauge_selected = -1;
 
 		HC_select_all = false;
-
-		strcpy_s(HC_fname, "");
 	}
 }
 
@@ -1156,7 +1074,7 @@ void hud_config_check_regions(int mx, int my)
 		hud_config_select_all_toggle(0);
 
 		// maybe setup rgb sliders
-		if (HC_gauge_regions[gr_screen.res][HC_gauge_selected].use_iff) {
+		if (HC_gauge_settings[HC_gauge_selected].use_iff_color) {
 			HC_color_sliders[HCS_RED].hide();
 			HC_color_sliders[HCS_GREEN].hide();
 			HC_color_sliders[HCS_BLUE].hide();
@@ -1262,7 +1180,7 @@ void hud_cycle_gauge_status()
 
 	// gauge is off, move to popup
 	if ( !(hud_config_show_flag_is_set(HC_gauge_selected)) ) {
-		if ( HC_gauge_regions[gr_screen.res][HC_gauge_selected].can_popup ) {
+		if ( HC_gauge_settings[HC_gauge_selected].can_popup ) {
 			hud_config_set_gauge_flags(HC_gauge_selected, 1, 1);	
 		} else {
 			hud_config_set_gauge_flags(HC_gauge_selected, 1, 0);	
@@ -1608,7 +1526,7 @@ void hud_config_set_button_state()
 	hud_config_button_enable(HCB_OFF);
 
 	// popup is maybe available
-	if ( HC_gauge_regions[gr_screen.res][HC_gauge_selected].can_popup ) {
+	if ( HC_gauge_settings[HC_gauge_selected].can_popup ) {
 		hud_config_button_enable(HCB_POPUP);
 	} else {
 		hud_config_button_disable(HCB_POPUP);
@@ -1728,30 +1646,10 @@ void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 	}
 }
 
-void hud_config_unload_gauges()
-{
-	int					i;
-	HC_gauge_region	*hg;
-
-	for (i=0; i<NUM_HUD_GAUGES; i++) {
-		hg = &HC_gauge_regions[gr_screen.res][i];
-
-		if ( hg->bitmap >= 0 ) {
-			bm_release(hg->bitmap);
-		}
-
-		hg->bitmap=-1;
-		hg->nframes=0;
-	}
-}
-
 // hud_config_close() is called when the player leaves the hud configuration screen
 //
 void hud_config_close(bool API_Access)
 {
-//	common_free_interface_palette();		// restore game palette
-	hud_config_unload_gauges();
-
 	HC_preset_filenames.clear();
 
 	if (!API_Access) {

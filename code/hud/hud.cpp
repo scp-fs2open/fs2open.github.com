@@ -491,9 +491,9 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 		if (hud_config_show_flag_is_set(gauge_config)) {
 			// Eventually we should allow custom gauges to use IFF colors maybe? Then we can unhardcode this
 			// and rely on the gauge data itself. But for now only specific gauges use iff and that's hard coded here
-			if (HC_gauge_regions[gr_screen.res][gauge_config].use_iff) {
+			if (HC_gauge_settings[gauge_config].use_iff_color) {
 				// Ditto for target tagging color
-				if (HC_gauge_regions[gr_screen.res][gauge_config].color == 1) {
+				if (HC_gauge_settings[gauge_config].use_tag_color) {
 					use_color = iff_get_color(IFF_COLOR_TAGGED, 0);
 				} else {
 					use_color = &Color_bright_red;
