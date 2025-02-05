@@ -114,14 +114,17 @@ class BoundingBox {
 	}
 
 	// Static function to check if any bounding box in an array overlaps with a new one
-	static bool isOverlappingAny(const BoundingBox mouse_coords[NUM_HUD_GAUGES], const BoundingBox& newBox, int self_index)
+	static bool isOverlappingAny(const SCP_vector<std::pair<int, BoundingBox>>& mouse_coords, const BoundingBox& newBox, int self_index)
 	{
-		for (int i = 0; i < NUM_HUD_GAUGES; i++) {
-			if (i == self_index) {
-				continue;
+		for (const auto& [gauge_id, bbox_list] : mouse_coords) {
+			if (gauge_id == self_index) {
+				continue; // Skip checking against itself
 			}
-			if (mouse_coords[i].isValid() && mouse_coords[i].isOverlapping(newBox)) {
-				return true;
+
+			for (const auto& bbox : mouse_coords) { // Check each bounding box for the gauge
+				if (bbox.second.isValid() && bbox.second.isOverlapping(newBox)) {
+					return true;
+				}
 			}
 		}
 		return false;
@@ -130,19 +133,13 @@ class BoundingBox {
 
 extern char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32];
 
-/*!
- * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
- * @note main definition in hudconfig.cpp
- */
-extern struct HC_gauge_setting HC_gauge_settings[NUM_HUD_GAUGES];
-
 extern int HC_gauge_hot;
 extern int HC_gauge_selected;
 extern SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
 extern int HC_chosen_hud;
 extern bool HC_select_all;
 extern int HC_gauge_coordinates[6]; // x1, x2, y1, y2, w, h for gauge rendering
-extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
+extern SCP_vector<std::pair<int, BoundingBox>> HC_gauge_mouse_coords;
 
 const char* HC_gauge_descriptions(int n);
 
@@ -151,6 +148,11 @@ extern SCP_string HC_head_anim_filename;
 extern SCP_string HC_shield_gauge_ship;
 extern bool HC_show_default_hud;
 extern std::unordered_set<SCP_string> HC_ignored_huds;
+
+/*!
+ * @brief get the gauge pointer for the given gauge index
+ */
+HudGauge* hud_config_get_gauge_pointer(int gauge_index);
 
 /*!
  * @brief init hud config screen, setting up the hud preview display
@@ -302,12 +304,6 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
  * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
  */
 float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius);
-
-/*!
- * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
- * @brief this one is specific to the ETS gauge's individual rendering method
- */
-void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2);
 
 #endif
 

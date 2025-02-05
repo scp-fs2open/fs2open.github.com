@@ -206,49 +206,9 @@ const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 	"2_HUDConfig-m"
 };
 
-// hud config gauge settings
-struct HC_gauge_setting	HC_gauge_settings[NUM_HUD_GAUGES] =
-{
-	HC_gauge_setting(true, false, false), // lead indicator
-	HC_gauge_setting(true, false, false), // orientation tee
-	HC_gauge_setting(true, false, false), // hostile triangle
-	HC_gauge_setting(true, false, false), // target triangle
-	HC_gauge_setting(false, false, false), // mission time
-	HC_gauge_setting(false, false, false), // reticle circle?
-	HC_gauge_setting(false, false, false), // throttle gauge
-	HC_gauge_setting(false, false, false), // radar
-	HC_gauge_setting(false, false, false), // target monitor
-	HC_gauge_setting(false, false, false), // center of reticle
-	HC_gauge_setting(false, false, false), // extra target data
-	HC_gauge_setting(false, false, false), // target shield icon
-	HC_gauge_setting(false, false, false), // player shield icon
-	HC_gauge_setting(false, true, false),  // ets gauge
-	HC_gauge_setting(false, true, false),  // auto target
-	HC_gauge_setting(false, true, false),  // auto speed
-	HC_gauge_setting(false, true, false),  // weapons gauge
-	HC_gauge_setting(false, true, false),  // escort view
-	HC_gauge_setting(false, false, false), // directives view
-	HC_gauge_setting(false, false, false), // threat gauge
-	HC_gauge_setting(false, false, false), // afterburner energy
-	HC_gauge_setting(false, false, false), // weapons energy
-	HC_gauge_setting(false, false, false), // weapon linking
-	HC_gauge_setting(false, true, false),  // target mini icon (shield)
-	HC_gauge_setting(true, false, false),  // offscreen indicator
-	HC_gauge_setting(false, false, false), // talking head
-	HC_gauge_setting(false, true, false),  // damage gauge
-	HC_gauge_setting(false, false, false), // message lines
-	HC_gauge_setting(true, false, true),   // missile warnings
-	HC_gauge_setting(false, true, false),  // cmeasure gauge
-	HC_gauge_setting(false, false, false), // objectives notify gauge
-	HC_gauge_setting(false, false, false), // wingman status gauge
-	HC_gauge_setting(false, false, false), // offscreen indicator range
-	HC_gauge_setting(false, true, false),  // kills gauge
-	HC_gauge_setting(false, false, false), // attacking target count
-	HC_gauge_setting(false, false, false), // text flash gauge
-	HC_gauge_setting(false, false, false), // comm menu
-	HC_gauge_setting(false, false, false), // support view gauge
-	HC_gauge_setting(false, false, false), // netlag icon gauge
-};
+// keep a list of gauge pointers so we can easily get information from them
+std::unordered_map<int, HudGauge*> HC_gauge_map;
+bool HC_gauge_list_clear = true;
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	{	// GR_640
@@ -270,6 +230,7 @@ int HC_resize_mode = GR_RESIZE_MENU;
 SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
 int HC_chosen_hud = -1;
 
+// This is here for the short term. The next upgrade will remove the hud preset file saving/loading's reliance on this switch statement.
 const char *HC_gauge_descriptions(int n)
 {
 	switch(n)	{
@@ -472,7 +433,7 @@ static UI_WINDOW					HC_ui_window;
 int							HC_gauge_hot;			// mouse is over this gauge
 int							HC_gauge_selected;	// gauge is selected
 int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
-BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
+SCP_vector<std::pair<int, BoundingBox>> HC_gauge_mouse_coords;
 
 // HUD colors
 typedef struct hc_col {
@@ -523,6 +484,12 @@ const char *HC_slider_fname[GR_NUM_RESOLUTIONS] = {
 	"slider",
 	"2_slider"
 };
+
+HudGauge* hud_config_get_gauge_pointer(int gauge_index)
+{
+	auto it = HC_gauge_map.find(gauge_index);
+	return (it != HC_gauge_map.end()) ? it->second : nullptr;
+}
 
 // sync sliders
 void hud_config_synch_sliders(int i)
@@ -608,10 +575,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	int i;
 	struct ui_button_info			*hb;
 
-	// Clear the mouse coords array
-	for (auto& coord : HC_gauge_mouse_coords) {
-		coord = {-1, -1, -1, -1};
-	}
+	HC_gauge_mouse_coords.clear();
 
 	hud_config_get_unique_huds();
 
@@ -784,81 +748,21 @@ void hud_config_popup_flag_clear(int i)
 }
 
 // Used for debugging. Remove before merge!
-/*void hud_config_draw_box(int x1, int x2, int y1, int y2)
+void hud_config_draw_box(int x1, int x2, int y1, int y2)
 {
 	gr_line(x1, y1, x1, y2, HC_resize_mode); // Left vertical line
 	gr_line(x1, y1, x2, y1, HC_resize_mode); // Top horizontal line
 	gr_line(x2, y1, x2, y2, HC_resize_mode); // Right vertical line
 	gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
-}*/
+}
 
 void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2) {
-	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
-
-	// temporary stuff to show boxes
-	/*color clr = gr_screen.current_color;
-	color thisColor;
-	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
-	gr_set_color_fast(&thisColor);
-	hud_config_draw_box(x1, x2, y1, y2);
-	gr_set_color_fast(&clr);*/
-}
-
-bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, int y1, int y2)
-{
-	BoundingBox newBox(x1, x2, y1, y2);
-
-	if (BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_config)) {
-		return false;
-	} else {
-		HC_gauge_mouse_coords[gauge_config] = newBox;
-		return true;
+	// List is built on first frame only
+	if (!HC_gauge_list_clear) {
+		return;
 	}
-
-	// temporary stuff to show boxes
-	/*color clr = gr_screen.current_color;
-	color thisColor;
-	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
-	gr_set_color_fast(&thisColor);
-	hud_config_draw_box(newBox.x1, newBox.x2, newBox.y1, newBox.y2);
-	gr_set_color_fast(&clr);*/
-}
-
-// ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
-// So this function provides a way to min/max the coords to make sure no matter what method is used, the
-// mouse box inclues all the relevant areas
-void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2)
-{
-	auto& coords = HC_gauge_mouse_coords[gauge_config];
-
-	// Ensure we don't let -1 interfere with min calculations
-	if (coords.x1 < 0)
-		coords.x1 = x1;
-	else
-		coords.x1 = std::min(coords.x1, x1);
-
-	if (coords.x2 < 0)
-		coords.x2 = x2;
-	else
-		coords.x2 = std::max(coords.x2, x2);
-
-	if (coords.y1 < 0)
-		coords.y1 = y1;
-	else
-		coords.y1 = std::min(coords.y1, y1);
-
-	if (coords.y2 < 0)
-		coords.y2 = y2;
-	else
-		coords.y2 = std::max(coords.y2, y2);
-
-	// temporary stuff to show boxes
-	/*color clr = gr_screen.current_color;
-	color thisColor;
-	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
-	gr_set_color_fast(&thisColor);
-	hud_config_draw_box(x1, x2, y1, y2);
-	gr_set_color_fast(&clr);*/
+	BoundingBox newBox(x1, x2, y1, y2);
+	HC_gauge_mouse_coords.push_back(std::make_pair(gauge_config, newBox));
 }
 
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
@@ -967,20 +871,28 @@ void hud_config_render_gauges(bool API_Access)
 		ship_info* sip = &Ship_info[HC_available_huds[HC_chosen_hud].first];
 		hud_name = HC_available_huds[HC_chosen_hud].second;
 
-		for (const auto& gauge : sip->hud_gauges) {
+		for (const std::unique_ptr<HudGauge>& gauge : sip->hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
 			gauge->setFont();
 			gauge->render(0, true);
+			if (HC_gauge_list_clear) {
+				HC_gauge_map[gauge->getConfigId()] = gauge.get();
+			}
 		}
 	} else {
 		hud_name = "Default HUD"; // Do not pass review if this is not XSTR'd!
 
-		for (const auto& gauge : default_hud_gauges) {
+		for (const std::unique_ptr<HudGauge>& gauge : default_hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
 			gauge->setFont();
 			gauge->render(0, true);
+			if (HC_gauge_list_clear) {
+				HC_gauge_map[gauge->getConfigId()] = gauge.get();
+			}
 		}
 	}
+
+	HC_gauge_list_clear = false;
 
 	// Render the name of the HUD
 	if (!API_Access) {
@@ -990,6 +902,8 @@ void hud_config_render_gauges(bool API_Access)
 		int x = HC_gauge_coordinates[0] + ((HC_gauge_coordinates[4] / 2) - (w / 2));
 		gr_string(x, HC_gauge_coordinates[3] + 10, hud_name.c_str(), GR_RESIZE_MENU);
 	}
+
+	hud_name.clear();
 }
 
 void hud_config_init(bool API_Access, int x, int y, int w, int h)
@@ -1023,21 +937,17 @@ bool hud_config_check_mouse_in_hud_area(int mx, int my)
  */
 void hud_config_check_regions_by_mouse(int mx, int my)
 {
-	for (int i = NUM_HUD_GAUGES - 1; i >= 0; i--) {
-		if (HC_gauge_mouse_coords[i].x1 >= 0) {
-			// Add checks here for the new mouse coords
-			if (mx < HC_gauge_mouse_coords[i].x1)
-				continue;
-			if (mx > HC_gauge_mouse_coords[i].x2)
-				continue;
-			if (my < HC_gauge_mouse_coords[i].y1)
-				continue;
-			if (my > HC_gauge_mouse_coords[i].y2)
-				continue;
-			// if we've got here, must be a hit
-			HC_gauge_hot = i;
-			break;
+	for (const auto& coords : HC_gauge_mouse_coords) {
+		if (coords.second.x1 < 0)
+			continue;
+
+		if (mx < coords.second.x1 || mx > coords.second.x2 || my < coords.second.y1 || my > coords.second.y2) {
+			continue;
 		}
+
+		// If we've got here, it's a hit
+		HC_gauge_hot = coords.first;
+		return; // Stop checking once we find the first match
 	}
 }
 
@@ -1073,8 +983,10 @@ void hud_config_check_regions(int mx, int my)
 		// turn off select all
 		hud_config_select_all_toggle(false);
 
+		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
+
 		// maybe setup rgb sliders
-		if (HC_gauge_settings[HC_gauge_selected].use_iff_color) {
+		if (gauge != nullptr && gauge->getConfigUseIffColor()) {
 			HC_color_sliders[HCS_RED].hide();
 			HC_color_sliders[HCS_GREEN].hide();
 			HC_color_sliders[HCS_BLUE].hide();
@@ -1180,7 +1092,8 @@ void hud_cycle_gauge_status()
 
 	// gauge is off, move to popup
 	if ( !(hud_config_show_flag_is_set(HC_gauge_selected)) ) {
-		if ( HC_gauge_settings[HC_gauge_selected].can_popup ) {
+		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
+		if (gauge != nullptr && gauge->getConfigCanPopup()) {
 			hud_config_set_gauge_flags(HC_gauge_selected, 1, 1);	
 		} else {
 			hud_config_set_gauge_flags(HC_gauge_selected, 1, 0);	
@@ -1525,8 +1438,10 @@ void hud_config_set_button_state()
 	hud_config_button_enable(HCB_ON);
 	hud_config_button_enable(HCB_OFF);
 
+	const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
+
 	// popup is maybe available
-	if ( HC_gauge_settings[HC_gauge_selected].can_popup ) {
+	if (gauge != nullptr && gauge->getConfigCanPopup()) {
 		hud_config_button_enable(HCB_POPUP);
 	} else {
 		hud_config_button_disable(HCB_POPUP);
@@ -1538,12 +1453,16 @@ void hud_config_render_description()
 	int w,h,sx,sy;
 
 	if ( HC_gauge_selected >= 0 ) {
-		gr_set_color_fast(&Color_normal);
+		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
 
-		gr_get_string_size(&w, &h, HC_gauge_descriptions(HC_gauge_selected));
-		sx = fl2i(HC_gauge_description_coords[gr_screen.res][0] + (HC_gauge_description_coords[gr_screen.res][2] - w)/2.0f);
-		sy = HC_gauge_description_coords[gr_screen.res][1];
-		gr_string(sx, sy, HC_gauge_descriptions(HC_gauge_selected), GR_RESIZE_MENU);
+		if (gauge != nullptr) {
+			gr_set_color_fast(&Color_normal);
+
+			gr_get_string_size(&w, &h, gauge->getConfigName().c_str());
+			sx = fl2i(HC_gauge_description_coords[gr_screen.res][0] + (HC_gauge_description_coords[gr_screen.res][2] - w) / 2.0f);
+			sy = HC_gauge_description_coords[gr_screen.res][1];
+			gr_string(sx, sy, gauge->getConfigName().c_str(), GR_RESIZE_MENU);
+		}
 	}
 }
 
@@ -1745,12 +1664,12 @@ void hud_config_color_save(const char *name)
 	if(out == NULL){
 		Int3();
 		return;
-	}	
+	}
 
 	// write out all gauges
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
 		cfputs("+Gauge: ", out);
-		cfputs(HC_gauge_descriptions(idx), out);		
+		cfputs(HC_gauge_descriptions(idx), out);	
 		cfputs("\n", out);
 		cfputs("+RGBA: ", out);
 		sprintf(vals, "%d %d %d %d\n\n", HUD_config.clr[idx].red, HUD_config.clr[idx].green, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
@@ -1985,6 +1904,9 @@ void hud_config_select_hud(bool next)
 			HC_chosen_hud = static_cast<int>(HC_available_huds.size()) - 1;
 		}
 	}
+	HC_gauge_map.clear();
+	HC_gauge_mouse_coords.clear();
+	HC_gauge_list_clear = true;
 }
 
 void hud_config_select_all_toggle(bool toggle, bool API_Access)
