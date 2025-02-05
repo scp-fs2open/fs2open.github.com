@@ -762,7 +762,7 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 		return;
 	}
 	BoundingBox newBox(x1, x2, y1, y2);
-	HC_gauge_mouse_coords.push_back(std::make_pair(gauge_config, newBox));
+	HC_gauge_mouse_coords.emplace_back(std::make_pair(gauge_config, newBox));
 }
 
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
