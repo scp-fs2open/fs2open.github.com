@@ -147,58 +147,151 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
     return cost;
 }
 
-template <typename T>
-int count_items_with_name(const char* name, const T* item_array, int num_items)
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
 {
-	if (!name || !item_array)
+	int count = 0;
+	for (const ITEM_T& item : item_vector)
+	{
+		if (str == nullptr && item.*field == nullptr)
+			++count;
+		else if (str == nullptr || item.*field == nullptr)
+			;
+		else if (!stricmp(item.*field, str))
+			++count;
+	}
+
+	return count;
+}
+
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int count_items_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+{
+	int count = 0;
+	for (const ITEM_T& item : item_vector)
+	{
+		if (str == nullptr && (item.*field).get() == nullptr)
+			++count;
+		else if (str == nullptr || (item.*field).get() == nullptr)
+			;
+		else if (!stricmp((item.*field).get(), str))
+			++count;
+	}
+
+	return count;
+}
+
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str)
+{
+	int count = 0;
+	for (const ITEM_T& item : item_vector)
+	{
+		if (lcase_equal(item.*field, str))
+			++count;
+	}
+
+	return count;
+}
+
+template <typename VECTOR_T, typename ITEM_T>
+int count_items_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str)
+{
+	if (str == nullptr)
 		return 0;
 
+	return count_items_with_string(item_vector, field, SCP_string(str));
+}
+
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const FIELD_T& search)
+{
+	int count = 0;
+	for (const ITEM_T& item : item_vector)
+	{
+		if (item.*field == search)
+			++count;
+	}
+
+	return count;
+}
+
+template <typename ITEM_T, typename FIELD_T>
+int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+{
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
-		if (!stricmp(name, item_array[i].name))
+	{
+		if (str == nullptr && item_array[i].*field == nullptr)
+			++count;
+		else if (str == nullptr || item_array[i].*field == nullptr)
+			;
+		else if (!stricmp(item_array[i].*field, str))
+			++count;
+	}
+
+	return count;
+}
+
+template <typename ITEM_T, typename FIELD_T>
+int count_items_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+{
+	int count = 0;
+	for (int i = 0; i < num_items; ++i)
+	{
+		if (str == nullptr && (item_array[i].*field).get() == nullptr)
+			++count;
+		else if (str == nullptr || (item_array[i].*field).get() == nullptr)
+			;
+		else if (!stricmp((item_array[i].*field).get(), str))
+			++count;
+	}
+
+	return count;
+}
+
+template <typename ITEM_T, typename FIELD_T>
+int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
+{
+	int count = 0;
+	for (int i = 0; i < num_items; ++i)
+		if (lcase_equal(item_array[i].*field, str))
 			++count;
 
 	return count;
 }
 
-template <typename T>
-int count_items_with_name(const char* name, const T& item_vector)
+template <typename ITEM_T>
+int count_items_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
 {
-	if (!name)
+	if (str == nullptr)
 		return 0;
 
-	int count = 0;
-	for (const auto& item : item_vector)
-		if (!stricmp(name, item.name))
-			++count;
-
-	return count;
+	return count_items_with_string(item_array, num_items, field, SCP_string(str));
 }
 
-template <typename T>
-int count_items_with_scp_string_name(const char* name, const T& item_vector)
+template <typename ITEM_T, typename FIELD_T>
+int count_items_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
 {
-	if (!name)
-		return 0;
-
 	int count = 0;
-	for (const auto& item : item_vector)
-		if (!stricmp(name, item.name.c_str()))
+	for (int i = 0; i < num_items; ++i)
+		if (item_array[i].*field == search)
 			++count;
 
 	return count;
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
 {
-	if (!str)
-		return -1;
-
 	int index = 0;
 	for (const ITEM_T& item : item_vector)
 	{
-		if (!stricmp(item.*field, str))
+		if (str == nullptr && item.*field == nullptr)
+			return index;
+		else if (str == nullptr || item.*field == nullptr)
+			++index;
+		else if (!stricmp(item.*field, str))
 			return index;
 		else
 			++index;
@@ -208,7 +301,26 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str)
+int find_item_with_ptr_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+{
+	int index = 0;
+	for (const ITEM_T& item : item_vector)
+	{
+		if (str == nullptr && (item.*field).get() == nullptr)
+			return index;
+		else if (str == nullptr || (item.*field).get() == nullptr)
+			++index;
+		else if (!stricmp((item.*field).get(), str))
+			return index;
+		else
+			++index;
+	}
+
+	return -1;
+}
+
+template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
+int find_item_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const SCP_string& str)
 {
 	int index = 0;
 	for (const ITEM_T& item : item_vector)
@@ -220,6 +332,15 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 	}
 
 	return -1;
+}
+
+template <typename VECTOR_T, typename ITEM_T>
+int find_item_with_string(const VECTOR_T& item_vector, SCP_string ITEM_T::* field, const char* str)
+{
+	if (str == nullptr)
+		return -1;
+
+	return find_item_with_string(item_vector, field, SCP_string(str));
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
@@ -238,20 +359,39 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
-	if (!str)
-		return -1;
-
 	for (int i = 0; i < num_items; ++i)
-		if (!stricmp(item_array[i].*field, str))
+	{
+		if (str == nullptr && item_array[i].*field == nullptr)
 			return i;
+		else if (str == nullptr || item_array[i].*field == nullptr)
+			;
+		else if (!stricmp(item_array[i].*field, str))
+			return i;
+	}
 
 	return -1;
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
+int find_item_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+{
+	for (int i = 0; i < num_items; ++i)
+	{
+		if (str == nullptr && (item_array[i].*field).get() == nullptr)
+			return i;
+		else if (str == nullptr || (item_array[i].*field).get() == nullptr)
+			;
+		else if (!stricmp((item_array[i].*field).get(), str))
+			return i;
+	}
+
+	return -1;
+}
+
+template <typename ITEM_T, typename FIELD_T>
+int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
 {
 	for (int i = 0; i < num_items; ++i)
 		if (lcase_equal(item_array[i].*field, str))
@@ -260,51 +400,21 @@ int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T
 	return -1;
 }
 
+template <typename ITEM_T>
+int find_item_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
+{
+	if (str == nullptr)
+		return -1;
+
+	return find_item_with_string(item_array, num_items, field, str);
+}
+
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
 {
 	for (int i = 0; i < num_items; ++i)
 		if (item_array[i].*field == search)
 			return i;
-
-	return -1;
-}
-
-template <typename VECTOR_T>
-int find_item_with_name(const VECTOR_T& item_vector, const char* str)
-{
-	if (!str)
-		return -1;
-
-	int index = 0;
-	for (const auto& item : item_vector)
-	{
-		if (!stricmp(item.name, str))
-			return index;
-		else
-			++index;
-	}
-
-	return -1;
-}
-
-template <typename ITEM_T>
-int find_item_with_name(const ITEM_T* item_array, int num_items, const char* str)
-{
-	return find_item_with_field(item_array, num_items, &ITEM_T::name, str);
-}
-
-template <typename VECTOR_T>
-int find_item_with_name(const VECTOR_T& item_vector, const SCP_string& str)
-{
-	int index = 0;
-	for (const auto& item : item_vector)
-	{
-		if (lcase_equal(item.name, str))
-			return index;
-		else
-			++index;
-	}
 
 	return -1;
 }
