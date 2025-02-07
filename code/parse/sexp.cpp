@@ -34621,7 +34621,7 @@ int sexp_match_closest_operator(const SCP_string &str, int opf)
 
 		if (sexp_query_type_match(opf, opr))
 		{
-			size_t cost = stringcost(op_text, str, Max_operator_length);
+			size_t cost = stringcost(op_text, str, Max_operator_length, stringcost_tolower_equal);
 			if (best < 0 || cost < min)
 			{
 				min = cost;

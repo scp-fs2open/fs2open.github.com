@@ -104,9 +104,23 @@ typename T::size_type GeneralizedLevenshteinDistance(const T &source,
 	return lev_dist[min_size];
 }
 
-// Lafiel
 template<typename T>
-typename T::size_type stringcost(const T& op, const T& input, typename T::size_type max_expected_length = NAME_LENGTH) {
+bool stringcost_equal(const T& a, const T& b)
+{
+	return a == b;
+}
+
+template<typename charT>
+bool stringcost_tolower_equal(const charT& a, const charT& b)
+{
+	return SCP_tolower(a) == SCP_tolower(b);
+}
+
+// Lafiel
+template<typename T, typename charT = typename T::value_type>
+typename T::size_type stringcost(const T& op, const T& input, typename T::size_type max_expected_length = NAME_LENGTH,
+	bool (*equal_check)(const charT&a, const charT&b) = stringcost_equal<charT>)
+{
 	using TSizeType = typename T::size_type;
 
     if(input.empty())
@@ -123,7 +137,7 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
     for (TSizeType i = 0; i < op.length(); i++) {
 		std::vector<string_search_it> insert;
         for (auto& it : iterators) {
-            if (it.count < input.length() && op[i] == input[it.count]) {
+            if (it.count < input.length() && equal_check(op[i], input[it.count])) {
                 //We found something. There may be a better match for this later, so only make a copy.
                 insert.emplace_back(string_search_it{it.count + 1, i, i - it.lastpos <= 1 ? it.cost : max_expected_length + i - it.lastpos - 1});
             }
@@ -131,7 +145,7 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
 
         iterators.insert(iterators.end(), insert.begin(), insert.end());
 
-        if (op[i] == input[0])
+        if (equal_check(op[i], input[0]))
             iterators.emplace_back(string_search_it{1, i, i});
     }
 
