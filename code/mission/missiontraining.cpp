@@ -235,51 +235,76 @@ void HudGaugeDirectives::pageIn()
 	bm_page_in_aabitmap(directives_bottom.first_frame, directives_bottom.num_frames);
 }
 
-void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 {
-	char buf[256], *second_line;
-	int i, x, y, z, end, offset, bx, by;
-	TIMESTAMP t;
-	color *c;
-
 	Training_obj_num_display_lines = 0;
 
-	if (!Training_obj_num_lines){
+	if (!config && !Training_obj_num_lines){
 		return;
 	}
 
-	offset = 0;
-	end = Training_obj_num_lines;
+	int offset = 0;
+	int end = config ? 4 : Training_obj_num_lines;
 	if (end > Max_directives) {
 		end = Max_directives;
 		offset = Training_obj_num_lines - end;
 	}
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
 	// draw top of objective display
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
 	if (directives_top.first_frame >= 0)
-		renderBitmap(directives_top.first_frame, position[0], position[1]);
+		renderBitmap(directives_top.first_frame, x, y, scale, config);
 
 	// print out title
-	renderPrintfWithGauge(position[0] + header_offsets[0], position[1] + header_offsets[1], EG_OBJ_TITLE, 1.0f, false, "%s", XSTR( "directives", 422));
+	renderPrintfWithGauge(x + fl2i(header_offsets[0] * scale), y + fl2i(header_offsets[1] * scale), EG_OBJ_TITLE, scale, config, "%s", XSTR( "directives", 422));
 
-	bx = position[0];
-	by = position[1] + middle_frame_offset_y;
+	int bx = x;
+	int by = y + fl2i(middle_frame_offset_y * scale);
 
-	for (i=0; i<end; i++) {
-		x = position[0] + text_start_offsets[0];
-		y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
-		z = TRAINING_OBJ_LINES_MASK(i + offset);
+	char* second_line;
+	for (int i=0; i<end; i++) {
+		int ox = x + fl2i(text_start_offsets[0] * scale);
+		int oy = y + fl2i(text_start_offsets[1] * scale) + Training_obj_num_display_lines * fl2i(text_h * scale);
+		int z = TRAINING_OBJ_LINES_MASK(i + offset);
 
 		int line_x_offset = 0;
 
-		c = &Color_normal;
-		if (Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
-			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str());  // remap keys
+		color* c = &Color_normal;
+		char buf[256];
+		if (!config && Training_obj_lines[i + offset] & TRAINING_OBJ_LINES_KEY) {
+			SCP_string temp_buf = message_translate_tokens(Mission_events[z].objective_key_text.c_str()); // remap keys
 			strcpy_s(buf, temp_buf.c_str());
 			c = &Color_bright_green;
-			line_x_offset = key_line_x_offset;
+			line_x_offset = fl2i(key_line_x_offset * scale);
+		} else if (config){
+			switch (i) {
+			case 0:
+				strcpy_s(buf, "Destroy Enemies");
+				c = &Color_bright_white;
+				break;
+			case 1:
+				strcpy_s(buf, "Target hostile fighters");
+				c = &Color_bright_green;
+				line_x_offset = fl2i(key_line_x_offset * scale);
+				break;
+			case 2:
+				strcpy_s(buf, "Protect Friendlies");
+				c = &Color_bright_red;
+				break;
+			case 3:
+				strcpy_s(buf, "Escort Cruiser");
+				c = &Color_bright_blue;
+				break;
+			}
 		} else {
 			strcpy_s(buf, Mission_events[z].objective_text.c_str());
 			if (Mission_events[z].count){
@@ -287,7 +312,7 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 			}
 
 			// if this is a multiplayer tvt game, and this is event is not for my team, don't display it
-			if((MULTI_TEAM) && (Net_player != NULL)){
+			if((MULTI_TEAM) && (Net_player != nullptr)){
 				if((Mission_events[z].team != -1) && (Net_player->p_info.team != Mission_events[z].team)){
 					continue;
 				}
@@ -302,11 +327,11 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 				c = &Color_bright_red;
 				break;
 
-			case EventStatus::SATISFIED:
-				t = Mission_events[z].satisfied_time;
+			case EventStatus::SATISFIED: {
+				TIMESTAMP t = Mission_events[z].satisfied_time;
 				Assertion(t.isValid(), "Since event %s was satisfied, satisfied_time must be valid here", Mission_events[z].name.c_str());
 				if (timestamp_since(t) < 2 * MILLISECONDS_PER_SECOND) {
-					if (Missiontime % fl2f(.4f) < fl2f(.2f)){
+					if (Missiontime % fl2f(.4f) < fl2f(.2f)) {
 						c = &Color_bright_blue;
 					} else {
 						c = &Color_bright_white;
@@ -315,6 +340,7 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 					c = &Color_bright_blue;
 				}
 				break;
+			}
 
 			default:
 				// stick with Color_normal
@@ -323,7 +349,7 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 		}
 
 		// maybe split the directives line
-		second_line = split_str_once(buf, max_line_width);
+		second_line = split_str_once(buf, fl2i(max_line_width * scale), scale);
 
 		// if we are unable to split the line, just print it once
 		if (second_line == buf) {
@@ -331,42 +357,48 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool /*config*/)
 		}
 
 		// blit the background frames
-		setGaugeColor();
+		setGaugeColor(HUD_C_NONE, config);
 
 		if (directives_middle.first_frame >= 0)
-			renderBitmap(directives_middle.first_frame, bx, by);
+			renderBitmap(directives_middle.first_frame, bx, by, scale, config);
 		
-		by += text_h;
+		by += fl2i(text_h * scale);
 
 		if ( second_line ) {
 
 			if (directives_middle.first_frame >= 0)
-				renderBitmap(directives_middle.first_frame, bx, by);
+				renderBitmap(directives_middle.first_frame, bx, by, scale, config);
 			
-			by += text_h;
+			by += fl2i(text_h * scale);
 		}
 
 		// blit the text
 		gr_set_color_fast(c);
 		
-		renderString(x + line_x_offset, y, EG_OBJ1 + i, buf);
+		renderString(ox + line_x_offset, oy, EG_OBJ1 + i, buf, scale, config);
 		
 		Training_obj_num_display_lines++;
 
 		if ( second_line ) {
-			y = position[1] + text_start_offsets[1] + Training_obj_num_display_lines * text_h;
+			oy = y + fl2i(text_start_offsets[1] * scale) + Training_obj_num_display_lines * fl2i(text_h * scale);
 			
-			renderString(x+12, y, EG_OBJ1 + i + 1, second_line);
+			renderString(ox+12, oy, EG_OBJ1 + i + 1, second_line, scale, config);
 			
 			Training_obj_num_display_lines++;
 		}
 	}
 
 	// draw the bottom of objective display
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
 	if (directives_bottom.first_frame >= 0)
-		renderBitmap(directives_bottom.first_frame, bx, by + bottom_bg_offset);
+		renderBitmap(directives_bottom.first_frame, bx, by + fl2i(bottom_bg_offset * scale), scale, config);
+
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(directives_bottom.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, bx + fl2i(bmw * scale), y, by + fl2i(bmh * scale));
+	}
 }
 
 /**
@@ -1093,13 +1125,14 @@ void HudGaugeTrainingMessages::pageIn()
 /**
  * Displays (renders) the training message to the screen
  */
-void HudGaugeTrainingMessages::render(float /*frametime*/, bool /*config*/)
+void HudGaugeTrainingMessages::render(float /*frametime*/, bool config)
 {
-	const char *str;
-	char buf[256];
-	int i, z, x, y, height, mode, count;
+	if (Training_failure) {
+		return;
+	}
 
-	if (Training_failure){
+	// Training messages don't get rendered in Config (for now?)
+	if (config){
 		return;
 	}
 
@@ -1112,7 +1145,7 @@ void HudGaugeTrainingMessages::render(float /*frametime*/, bool /*config*/)
 	}
 
 	gr_set_screen_scale(base_w, base_h);
-	height = gr_get_font_height();
+	int height = gr_get_font_height();
 	gr_set_shader(&Training_msg_glass);
 
 	int nx = 0;
@@ -1132,17 +1165,18 @@ void HudGaugeTrainingMessages::render(float /*frametime*/, bool /*config*/)
 	gr_reset_screen_scale();
 
 	gr_set_color_fast(&Color_bright_blue);
-	mode = count = 0;
-	for (i=0; i<Training_num_lines; i++) {  // loop through all lines of message
-		str = Training_lines[i];
-		z = 0;
-		x = position[0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
-		y = position[1] + i * height + height / 2 + 1;
+	int mode = 0, count = 0;
+	for (int i=0; i<Training_num_lines; i++) {  // loop through all lines of message
+		const char* str = Training_lines[i];
+		int z = 0;
+		int x = position[0] + (TRAINING_MESSAGE_WINDOW_WIDTH - TRAINING_LINE_WIDTH) / 2;
+		int y = position[1] + i * height + height / 2 + 1;
 
+		char buf[256];
 		while ((str - Training_lines[i]) < Training_line_lengths[i]) {  // loop through each character of each line
 			if ((count < MAX_TRAINING_MESSAGE_MODS) && (static_cast<size_t>(str - Training_lines[i]) == Training_message_mods[count].pos)) {
 				buf[z] = 0;
-				renderPrintf(x, y, 1.0f, false, "%s", buf);
+				renderPrintf(x, y, 1.0, config, "%s", buf);
 				gr_get_string_size(&z, NULL, buf);
 				x += z;
 				z = 0;
@@ -1164,7 +1198,7 @@ void HudGaugeTrainingMessages::render(float /*frametime*/, bool /*config*/)
 
 		if (z) {
 			buf[z] = 0;
-			renderPrintf(x, y, 1.0f, false, "%s", buf);
+			renderPrintf(x, y, 1.0, config, "%s", buf);
 		}
 	}
 }
