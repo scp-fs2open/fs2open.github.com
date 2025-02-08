@@ -177,6 +177,7 @@ void ShipGoalsDialog::updateUI()
 
 				break;
 			case AI_GOAL_STAY_STILL:
+			case AI_GOAL_STAY_STILL_NEW:
 				object* ptr;
 				ptr = GET_FIRST(&obj_used_list);
 				while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -228,6 +229,7 @@ void ShipGoalsDialog::updateUI()
 			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_STAY_NEAR_SHIP:
 			case AI_GOAL_STAY_STILL:
+			case AI_GOAL_STAY_STILL_NEW:
 				object* ptr;
 				int inst, t;
 				ptr = GET_FIRST(&obj_used_list);
