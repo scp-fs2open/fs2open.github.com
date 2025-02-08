@@ -1434,8 +1434,10 @@ void player_tips_popup()
 
 	// pick which tip to start at
 	if (Game_tips_always_begin_at_first) {
+		// mod specified to always start with first entry
 		tip = 0;
 	} else {
+		// default is to randomly pick one
 		tip = Random::next((int)Player_tips.size());
 	}
 
