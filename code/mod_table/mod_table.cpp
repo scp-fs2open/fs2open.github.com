@@ -34,6 +34,7 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Always_show_directive_value_count;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
@@ -539,6 +540,13 @@ void parse_mod_table(const char *filename)
 					}
 				} else {
 					Warning(LOCATION, "$HUD-set-coords base resolution: must specify two arguments");
+				}
+			}
+
+			if (optional_string("$Always Show Directive Value Count:")) {
+				stuff_boolean(&Always_show_directive_value_count);
+				if (Always_show_directive_value_count) {
+					mprintf(("Game Settings Table: Using Always Show Directive Value Count\n"));
 				}
 			}
 
@@ -1532,6 +1540,7 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_overhead_ship_style = OH_TOP_VIEW;
