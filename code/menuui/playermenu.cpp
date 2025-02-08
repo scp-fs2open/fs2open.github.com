@@ -1376,7 +1376,7 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 }
 
 SCP_vector<SCP_string> Player_tips;
-int Player_tips_shown = 0;
+bool Player_tips_shown = false;
 
 // tooltips
 void parse_tips_table(const char* filename)
@@ -1427,13 +1427,17 @@ void player_tips_popup()
 	}
 
 	// only show tips once per instance of FreeSpace
-	if(Player_tips_shown == 1) {
+	if(Player_tips_shown) {
 		return;
 	}
-	Player_tips_shown = 1;
+	Player_tips_shown = true;
 
-	// randomly pick one
-	tip = Random::next((int)Player_tips.size());
+	// pick which tip to start at
+	if (Game_tips_always_begin_at_first) {
+		tip = 0;
+	} else {
+		tip = Random::next((int)Player_tips.size());
+	}
 
 	SCP_string all_txt;
 
