@@ -1415,8 +1415,8 @@ void player_tips_init()
 	parse_modular_table("*-tip.tbm", parse_tips_table);
 
 	// check optional starting index --wookieejedi
-	if (Player_tips_start_index >= (int)Player_tips.size()) {
-		mprintf(("Warning, Player Tips Start Index of %i is larger than the maxium index of %d. Using default behavior instead.\n", Player_tips_start_index, (int)Player_tips.size()));
+	if (Player_tips_start_index >= static_cast<int>(Player_tips.size())) {
+		mprintf(("Warning, Player Tips Start Index of %i is larger than the maximum index of " SIZE_T_ARG ". Using default behavior instead.\n", Player_tips_start_index, Player_tips.size()));
 		Player_tips_start_index = -1;
 	}
 }
@@ -1442,7 +1442,7 @@ void player_tips_popup()
 	Player_tips_shown = true;
 
 	// pick which tip to start at
-	if (Player_tips_start_index >= 0 && Player_tips_start_index < (int)Player_tips.size()) {
+	if (Player_tips_start_index >= 0 && Player_tips_start_index < static_cast<int>(Player_tips.size())) {
 		// mod specified which entry to start with --wookieejedi
 		tip = Player_tips_start_index;
 	} else {
