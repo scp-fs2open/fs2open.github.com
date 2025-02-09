@@ -1386,6 +1386,9 @@ void parse_tips_table(const char* filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		if (optional_string("$Start Tips at Index:"))
+			stuff_int(&Player_tips_start_index);
+
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
 
@@ -1410,6 +1413,12 @@ void player_tips_init()
 
 	// parse any modular tables
 	parse_modular_table("*-tip.tbm", parse_tips_table);
+
+	// check optional starting index --wookieejedi
+	if (Player_tips_start_index >= (int)Player_tips.size()) {
+		mprintf(("Warning, Player Tips Start Index of %i is larger than the maxium index of %d. Using default behavior instead.\n", Player_tips_start_index, (int)Player_tips.size()));
+		Player_tips_start_index = -1;
+	}
 }
 
 void player_tips_popup()
@@ -1433,13 +1442,9 @@ void player_tips_popup()
 	Player_tips_shown = true;
 
 	// pick which tip to start at
-	if (Game_tips_start_index >= (int)Player_tips.size()) {
-		mprintf(("Warning, Game Tip Start Index of %i is larger than the maxium index of %d. Using default behavior instead.\n", Game_tips_start_index, (int)Player_tips.size()));
-		Game_tips_start_index = -1;
-	}
-	if (Game_tips_start_index >= 0) {
-		// mod specified which entry to start with
-		tip = Game_tips_start_index;
+	if (Player_tips_start_index >= 0 && Player_tips_start_index < (int)Player_tips.size()) {
+		// mod specified which entry to start with --wookieejedi
+		tip = Player_tips_start_index;
 	} else {
 		// default is to randomly pick one
 		tip = Random::next((int)Player_tips.size());

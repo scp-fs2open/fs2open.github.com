@@ -42,6 +42,7 @@ int player_select_get_last_pilot();
 void player_tips_init();
 void player_tips_popup();
 bool player_tips_controls();
+int Player_tips_start_index = -1; // index of -1 results in default behavior to pick a random starting index
 
 // quick check to make sure we always load default campaign savefile values when loading from the pilot
 // select screen but let us not overwrite current values with defaults when we aren't - taylor
