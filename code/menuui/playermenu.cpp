@@ -1447,7 +1447,7 @@ void player_tips_popup()
 		tip = Player_tips_start_index;
 	} else {
 		// default is to randomly pick one
-		tip = Random::next((int)Player_tips.size());
+		tip = Random::next(static_cast<int>(Player_tips.size()));
 	}
 
 	SCP_string all_txt;
