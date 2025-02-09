@@ -546,7 +546,7 @@ void parse_mod_table(const char *filename)
 			if (optional_string("$Always Show Directive Value Count:")) {
 				stuff_boolean(&Always_show_directive_value_count);
 				if (Always_show_directive_value_count) {
-					mprintf(("Game Settings Table: Using Always Show Directive Value Count\n"));
+					mprintf(("Game Settings Table: Always Showing Directive Value Count\n"));
 				}
 			}
 
