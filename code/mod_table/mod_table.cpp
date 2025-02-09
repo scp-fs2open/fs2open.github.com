@@ -158,7 +158,7 @@ bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
-bool Game_tips_always_begin_at_first;
+int Game_tips_start_index; // -1 is for random start index --exposed by wookieejedi
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -1442,8 +1442,8 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Preload_briefing_icon_models);
 			}
 
-			if (optional_string("$Game tips always begin at first entry:")) {
-				stuff_boolean(&Game_tips_always_begin_at_first);
+			if (optional_string("$Game tips start at this index:")) {
+				stuff_int(&Game_tips_start_index);
 			}
 
 			// end of options ----------------------------------------
@@ -1668,7 +1668,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
-	Game_tips_always_begin_at_first = false;
+	Game_tips_start_index = -1;
 }
 
 void mod_table_set_version_flags()

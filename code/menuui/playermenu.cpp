@@ -1433,9 +1433,13 @@ void player_tips_popup()
 	Player_tips_shown = true;
 
 	// pick which tip to start at
-	if (Game_tips_always_begin_at_first) {
-		// mod specified to always start with first entry
-		tip = 0;
+	if (Game_tips_start_index >= (int)Player_tips.size()) {
+		mprintf(("Warning, Game Tip Start Index of %i is larger than the maxium index of %d. Using default behavior instead.\n", Game_tips_start_index, (int)Player_tips.size()));
+		Game_tips_start_index = -1;
+	}
+	if (Game_tips_start_index >= 0) {
+		// mod specified which entry to start with
+		tip = Game_tips_start_index;
 	} else {
 		// default is to randomly pick one
 		tip = Random::next((int)Player_tips.size());
