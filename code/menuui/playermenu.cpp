@@ -1376,7 +1376,7 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 }
 
 SCP_vector<SCP_string> Player_tips;
-int Player_tips_shown = 0;
+bool Player_tips_shown = false;
 
 // tooltips
 void parse_tips_table(const char* filename)
@@ -1385,6 +1385,9 @@ void parse_tips_table(const char* filename)
 	{
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
+
+		if (optional_string("$Start Tips at Index:"))
+			stuff_int(&Player_tips_start_index);
 
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
@@ -1403,6 +1406,8 @@ void parse_tips_table(const char* filename)
 	}
 }
 
+int Player_tips_start_index = -1; // index of -1 results in default behavior to pick a random starting index
+
 void player_tips_init()
 {
 	// first parse the default table
@@ -1410,6 +1415,12 @@ void player_tips_init()
 
 	// parse any modular tables
 	parse_modular_table("*-tip.tbm", parse_tips_table);
+
+	// check optional starting index --wookieejedi
+	if (Player_tips_start_index >= static_cast<int>(Player_tips.size())) {
+		Warning(LOCATION, "Player Tips Start Index of %i is larger than the maximum index of " SIZE_T_ARG ". Using default behavior instead.\n", Player_tips_start_index, Player_tips.size());
+		Player_tips_start_index = -1;
+	}
 }
 
 void player_tips_popup()
@@ -1427,13 +1438,19 @@ void player_tips_popup()
 	}
 
 	// only show tips once per instance of FreeSpace
-	if(Player_tips_shown == 1) {
+	if(Player_tips_shown) {
 		return;
 	}
-	Player_tips_shown = 1;
+	Player_tips_shown = true;
 
-	// randomly pick one
-	tip = Random::next((int)Player_tips.size());
+	// pick which tip to start at
+	if (Player_tips_start_index >= 0 && Player_tips_start_index < static_cast<int>(Player_tips.size())) {
+		// mod specified which entry to start with --wookieejedi
+		tip = Player_tips_start_index;
+	} else {
+		// default is to randomly pick one
+		tip = Random::next(static_cast<int>(Player_tips.size()));
+	}
 
 	SCP_string all_txt;
 
