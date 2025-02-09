@@ -1416,7 +1416,7 @@ void player_tips_init()
 
 	// check optional starting index --wookieejedi
 	if (Player_tips_start_index >= static_cast<int>(Player_tips.size())) {
-		mprintf(("Warning, Player Tips Start Index of %i is larger than the maximum index of " SIZE_T_ARG ". Using default behavior instead.\n", Player_tips_start_index, Player_tips.size()));
+		Warning(LOCATION, "Player Tips Start Index of %i is larger than the maximum index of " SIZE_T_ARG ". Using default behavior instead.\n", Player_tips_start_index, Player_tips.size());
 		Player_tips_start_index = -1;
 	}
 }
