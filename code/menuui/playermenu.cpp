@@ -1406,6 +1406,8 @@ void parse_tips_table(const char* filename)
 	}
 }
 
+int Player_tips_start_index = -1; // index of -1 results in default behavior to pick a random starting index
+
 void player_tips_init()
 {
 	// first parse the default table
