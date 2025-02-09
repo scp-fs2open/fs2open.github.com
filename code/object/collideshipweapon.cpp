@@ -546,12 +546,13 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 	}
-	else if ((Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
+	// when the $Fixed Missile Detonation: flag is active, skip this whole block, as it's redundant to a similar check in weapon_home()
+	else if (!Fixed_missile_detonation && (Missiontime - wp->creation_time > F1_0/2) && (wip->is_homing()) && (wp->homing_object == ship_objp)) {
 		if (dist < wip->shockwave.inner_rad) {
 			vec3d	vec_to_ship;
-
 			vm_vec_normalized_dir(&vec_to_ship, &ship_objp->pos, &weapon_objp->pos);
 
+			// this causes the weapon to detonate if it has flown past the center of the ship
 			if (vm_vec_dot(&vec_to_ship, &weapon_objp->orient.vec.fvec) < 0.0f) {
 				// check if we're colliding against "invisible" ship
 				if (!(shipp->flags[Ship::Ship_Flags::Dont_collide_invis])) {
@@ -563,7 +564,6 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 					valid_hit_occurred = 1;
 				}
 			}
-
 		}
 	}
 
