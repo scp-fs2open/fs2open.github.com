@@ -1824,7 +1824,7 @@ extern void ship_assign_sound(ship *sp);
 extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 
-extern int ship_get_type(char* output, ship_info* sip);
+extern const char *ship_get_type(const ship_info *sip);
 extern const SCP_set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
 extern SCP_set<size_t> ship_get_default_orders_against();
 extern int ship_query_general_type(int ship);

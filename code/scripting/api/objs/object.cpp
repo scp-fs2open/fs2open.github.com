@@ -14,6 +14,7 @@
 
 #include "asteroid/asteroid.h"
 #include "debris/debris.h"
+#include "jumpnode/jumpnode.h"
 #include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
@@ -70,7 +71,8 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 	if(!objh->isValid())
 		return ade_set_error(L, "s", "");
 
-	char buf[512];
+	SCP_string buf;
+	int wp_list, wp_index;
 
 	switch(objh->objp()->type)
 	{
@@ -78,13 +80,37 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s", Ships[objh->objp()->instance].ship_name);
 			break;
 		case OBJ_WEAPON:
-			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp()->instance].weapon_info_index].get_display_name());
+			sprintf(buf, "%s projectile", Weapon_info[Weapons[objh->objp()->instance].weapon_info_index].name);
+			break;
+		case OBJ_FIREBALL:
+			sprintf(buf, "%s fireball", Fireball_info[Fireballs[objh->objp()->instance].fireball_info_index].unique_id);
+			break;
+		case OBJ_WAYPOINT:
+			calc_waypoint_indexes(objh->objp()->instance, wp_list, wp_index);
+			sprintf(buf, "waypoint %d of list %s", wp_index + 1, Waypoint_lists[wp_list].get_name());
+			break;
+		case OBJ_DEBRIS:
+			wp_index = Debris[objh->objp()->instance].ship_info_index;
+			if (wp_index >= 0)
+				sprintf(buf, "debris from %s", Ship_info[wp_index].name);
+			else
+				sprintf(buf, "debris fragment");
+			break;
+		case OBJ_ASTEROID:
+			sprintf(buf, "asteroid type=%d subtype=%d", Asteroids[objh->objp()->instance].asteroid_type, Asteroids[objh->objp()->instance].asteroid_subtype);
+			break;
+		case OBJ_JUMP_NODE:
+			sprintf(buf, "%s jump node", jumpnode_get_by_objnum(objh->objnum)->GetName());
+			break;
+		case OBJ_BEAM:
+			sprintf(buf, "%s beam", Weapon_info[Beams[objh->objp()->instance].weapon_info_index].name);
 			break;
 		default:
-			sprintf(buf, "Object %d [%d]", objh->objnum, objh->sig);
+			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
+			break;
 	}
 
-	return ade_set_args(L, "s", buf);
+	return ade_set_args(L, "s", buf.c_str());
 }
 
 ADE_VIRTVAR(Parent, l_Object, "object", "Parent of the object. Value may also be a deriviative of the 'object' class, such as 'ship'.", "object", "Parent handle, or invalid handle if object is invalid")

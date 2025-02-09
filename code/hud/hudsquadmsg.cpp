@@ -182,7 +182,6 @@ void hud_init_comm_orders()
 	std::sort(Player_orders.begin(), Player_orders.end(), [](const player_order& o1, const player_order& o2) {
 		return o1.legacy_id < o2.legacy_id;
 	});
-
 }
 
 // Text to display on the messaging menu when using the shortcut keys
