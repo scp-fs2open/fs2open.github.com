@@ -223,19 +223,19 @@ void shadows_construct_light_frustum(light_frustum_info *shadow_data, matrix *li
 	// find the widths and heights of the near plane and far plane to determine the points of this frustum
 	float near_l, near_r, near_u, near_d;
 	float far_l, far_r, far_u, far_d;
-	if (mpark::holds_alternative<float>(fov)) {
-		near_d = tanf(mpark::get<float>(fov) * 0.5f) * z_near;
+	if (std::holds_alternative<float>(fov)) {
+		near_d = tanf(std::get<float>(fov) * 0.5f) * z_near;
 		near_u = -near_d;
 		near_r = near_d * aspect;
 		near_l = -near_r;
 
-		far_d = tanf(mpark::get<float>(fov) * 0.5f) * z_far;
+		far_d = tanf(std::get<float>(fov) * 0.5f) * z_far;
 		far_u = -far_d;
 		far_r = far_d * aspect;
 		far_l = -far_r;
 	}
 	else {
-		const auto& afov = mpark::get<asymmetric_fov>(fov);
+		const auto& afov = std::get<asymmetric_fov>(fov);
 		near_d = tanf(-afov.down) * z_near;
 		near_u = -tanf(afov.up) * z_near;
 		near_r = tanf(-afov.left) * z_near;

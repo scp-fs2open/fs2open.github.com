@@ -212,7 +212,7 @@ public:
 	void initPgUpOffsets(int x, int y);
 	void initPgDnOffsets(int x, int y);
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	bool canRender() const override;
 	void pageIn() override;
 	void initialize() override;

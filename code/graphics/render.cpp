@@ -245,25 +245,36 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   &gr_screen.current_color,
 					   scale_factor);
 }
-void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror) {
+void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
-
 
 	int reclip;
 #ifndef NDEBUG
 	int count = 0;
 #endif
 
+	int bw, bh, do_resize;
+
+	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
+
+	if (scale_factor != 1.0f) {
+		bw = fl2i(bw * scale_factor);
+		bh = fl2i(bh * scale_factor);
+
+		// If we're scaling then we need to scale these to make sure the right and bottom clip planes are scaled as well
+		w = fl2i(w * scale_factor);
+		h = fl2i(h * scale_factor);
+
+		sx = fl2i(sx * scale_factor);
+		sy = fl2i(sy * scale_factor);
+	}
+
 	int dx1 = x;
 	int dx2 = x + w - 1;
 	int dy1 = y;
 	int dy2 = y + h - 1;
-
-	int bw, bh, do_resize;
-
-	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
 
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = 1;
@@ -312,7 +323,6 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		if (dy2 > clip_bottom) {
 			dy2 = clip_bottom;
 		}
-
 
 		if (sx < 0) {
 			dx1 -= sx;
@@ -365,18 +375,19 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
 	bitmap_ex_internal(dx1,
-					   dy1,
-					   (dx2 - dx1 + 1),
-					   (dy2 - dy1 + 1),
-					   sx,
-					   sy,
-					   resize_mode,
-					   true,
-					   mirror,
-					   &gr_screen.current_color);
+		dy1,
+		(dx2 - dx1 + 1),
+		(dy2 - dy1 + 1),
+		sx,
+		sy,
+		resize_mode,
+		true,
+		mirror,
+		&gr_screen.current_color,
+		scale_factor);
 }
 //these are penguins bitmap functions
-void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
+void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
@@ -386,14 +397,26 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
 	int count = 0;
 #endif
 
+	int bw, bh, do_resize;
+
+	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
+
+	if (scale_factor != 1.0f) {
+		bw = fl2i(bw * scale_factor);
+		bh = fl2i(bh * scale_factor);
+
+		// If we're scaling then we need to scale these to make sure the right and bottom clip planes are scaled as well
+		w = fl2i(w * scale_factor);
+		h = fl2i(h * scale_factor);
+
+		sx = fl2i(sx * scale_factor);
+		sy = fl2i(sy * scale_factor);
+	}
+
 	int dx1 = x;
 	int dx2 = x + w - 1;
 	int dy1 = y;
 	int dy2 = y + h - 1;
-
-	int bw, bh, do_resize;
-
-	bm_get_info(gr_screen.current_bitmap, &bw, &bh);
 
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = 1;
@@ -496,7 +519,7 @@ void gr_bitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode) {
 	gr_init_alphacolor(&clr, 255, 255, 255, fl2i(gr_screen.current_alpha * 255.0f));
 
 	// We now have dx1,dy1 and dx2,dy2 and sx, sy all set validly within clip regions.
-	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, false, false, &clr);
+	bitmap_ex_internal(dx1, dy1, (dx2 - dx1 + 1), (dy2 - dy1 + 1), sx, sy, resize_mode, false, mirror, &clr, scale_factor);
 }
 
 #define MAX_VERTS_PER_DRAW 300
@@ -510,29 +533,29 @@ extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int* width, int* sp
 }
 
 static void gr_string_old(float sx,
-						  float sy,
-						  const char* s,
-						  const char* end,
-						  font::font* fontData,
-						  float height,
-						  int resize_mode) {
+	float sy,
+	const char* s,
+	const char* end,
+	font::font* fontData,
+	float height,
+	bool canAutoScale,
+	bool canScale,
+	int resize_mode,
+	float scaleMultiplier)
+{
 	GR_DEBUG_SCOPE("Render VFNT string");
 
-	int width, spacing, letter;
-	float x, y;
-	bool do_resize;
-	float bw, bh;
-	float u0, u1, v0, v1;
-	float x1, x2, y1, y2;
+	float x = sx;
+	float y = sy;
 
 	material render_mat;
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	render_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
 	render_mat.set_texture_map(TM_BASE_TYPE, fontData->bitmap_id);
 	render_mat.set_color(gr_screen.current_color.red,
-						 gr_screen.current_color.green,
-						 gr_screen.current_color.blue,
-						 gr_screen.current_color.alpha);
+		gr_screen.current_color.green,
+		gr_screen.current_color.blue,
+		gr_screen.current_color.alpha);
 	render_mat.set_cull_mode(false);
 	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
 
@@ -542,10 +565,10 @@ static void gr_string_old(float sx,
 
 	bm_get_info(fontData->bitmap_id, &ibw, &ibh);
 
-	bw = i2fl(ibw);
-	bh = i2fl(ibh);
+	float bw = i2fl(ibw);
+	float bh = i2fl(ibh);
 
-	//	if ( (gr_screen.custom_size && resize) || (gr_screen.rendering_to_texture != -1) ) {
+	bool do_resize;
 	if (resize_mode != GR_RESIZE_NONE && (gr_screen.custom_size || (gr_screen.rendering_to_texture != -1))) {
 		do_resize = true;
 	} else {
@@ -557,25 +580,31 @@ static void gr_string_old(float sx,
 	int clip_top = ((do_resize) ? gr_screen.clip_top_unscaled : gr_screen.clip_top);
 	int clip_bottom = ((do_resize) ? gr_screen.clip_bottom_unscaled : gr_screen.clip_bottom);
 
-	x = sx;
-	y = sy;
-
-	spacing = 0;
-
 	vertex_layout vert_def;
 
-	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(v4), (int) offsetof(v4, x));
-	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(v4), (int) offsetof(v4, u));
+	vert_def.add_vertex_component(vertex_format_data::POSITION2, sizeof(v4), (int)offsetof(v4, x));
+	vert_def.add_vertex_component(vertex_format_data::TEX_COORD2, sizeof(v4), (int)offsetof(v4, u));
 
 	gr_set_2d_matrix();
 
-	// pick out letter coords, draw it, goto next letter and do the same
-	while (s < end) {
-		x += spacing;
+	float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
 
+	if (canAutoScale && !Fred_running) {
+		float autoSizedFont = calculate_auto_font_size(height);
+
+		// Calculate the auto scale factor
+		float auto_scale_factor = autoSizedFont / height;
+		scale_factor *= auto_scale_factor;
+	}
+
+	scale_factor *= scaleMultiplier;
+
+	int letter;
+	while (s < end) {
+		// Handle line breaks
 		while (*s == '\n') {
 			s++;
-			y += height;
+			y += height * scale_factor;
 			x = sx;
 		}
 
@@ -583,139 +612,94 @@ static void gr_string_old(float sx,
 			break;
 		}
 
-		letter = font::get_char_width_old(fontData, (ubyte)s[0], (ubyte)s[1], &width, &spacing);
+		// Get character width and spacing
+		int raw_width = 0, raw_spacing = 0;
+		letter = font::get_char_width_old(fontData,
+			(ubyte)s[0],
+			(ubyte)s[1],
+			&raw_width,
+			&raw_spacing);
 		s++;
 
-		// not in font, draw as space
+		// Not in font, draw as space
 		if (letter < 0) {
+			x += raw_spacing * scale_factor;
 			continue;
 		}
 
-		float xd, yd, xc, yc;
-		float wc, hc;
-
-		// Check if this character is totally clipped
-		if ((x + width) < clip_left) {
-			continue;
-		}
-
-		if ((y + height) < clip_top) {
-			continue;
-		}
-
-		if (x > clip_right) {
-			continue;
-		}
-
-		if (y > clip_bottom) {
-			continue;
-		}
-
-		xd = yd = 0;
-
-		if (x < clip_left) {
-			xd = clip_left - x;
-		}
-
-		if (y < clip_top) {
-			yd = clip_top - y;
-		}
-
-		xc = x + xd;
-		yc = y + yd;
-
-		wc = width - xd;
-		hc = height - yd;
-
-		if ((xc + wc) > clip_right) {
-			wc = clip_right - xc;
-		}
-
-		if ((yc + hc) > clip_bottom) {
-			hc = clip_bottom - yc;
-		}
-
-		if ((wc < 1) || (hc < 1)) {
-			continue;
-		}
-
+		// UV coordinates
 		int u = fontData->bm_u[letter];
 		int v = fontData->bm_v[letter];
+		float char_width = i2fl(raw_width);
+		float char_height = i2fl(height);
 
-		x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
-		y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
-		x2 = x1 + wc;
-		y2 = y1 + hc;
+		// Scale output dimensions and positions
+		float xc = x; // Keep the X position unscaled
+		float yc = y; // Keep the Y position unscaled
+		float wc = char_width * scale_factor; // Scale width
+		float hc = char_height * scale_factor; // Scale height
 
+		// Check if the character is completely out of bounds. This uses scaled width and height
+		if ((xc > clip_right) || ((xc + wc) < clip_left) || (yc > clip_bottom) || ((yc + hc) < clip_top)) {
+			x += raw_spacing * scale_factor;
+			continue;
+		}
+
+		// Apply offsets
+		float x1 = xc + ((do_resize) ? gr_screen.offset_x_unscaled : gr_screen.offset_x);
+		float y1 = yc + ((do_resize) ? gr_screen.offset_y_unscaled : gr_screen.offset_y);
+		float x2 = x1 + wc;
+		float y2 = y1 + hc;
+
+		// Resize screen positions
 		if (do_resize) {
 			gr_resize_screen_posf(&x1, &y1, NULL, NULL, resize_mode);
 			gr_resize_screen_posf(&x2, &y2, NULL, NULL, resize_mode);
 		}
 
-		u0 = (i2fl(u + xd) / bw);
-		v0 = (i2fl(v + yd) / bh);
+		// Get the character from the UV
+		float u0 = u / bw;
+		float v0 = v / bh;
+		float u1 = (u + char_width) / bw;
+		float v1 = (v + char_height) / bh;
 
-		u1 = (i2fl((u + xd) + wc) / bw);
-		v1 = (i2fl((v + yd) + hc) / bh);
+		// Add vertices for the character
+		String_render_buff[buffer_offset++] = {x1, y1, u0, v0};
+		String_render_buff[buffer_offset++] = {x1, y2, u0, v1};
+		String_render_buff[buffer_offset++] = {x2, y1, u1, v0};
+		String_render_buff[buffer_offset++] = {x1, y2, u0, v1};
+		String_render_buff[buffer_offset++] = {x2, y1, u1, v0};
+		String_render_buff[buffer_offset++] = {x2, y2, u1, v1};
 
+		// If the buffer is full, render it now
 		if (buffer_offset == MAX_VERTS_PER_DRAW) {
 			gr_render_primitives_immediate(&render_mat,
-										   PRIM_TYPE_TRIS,
-										   &vert_def,
-										   buffer_offset,
-										   String_render_buff,
-										   sizeof(v4) * buffer_offset);
+				PRIM_TYPE_TRIS,
+				&vert_def,
+				buffer_offset,
+				String_render_buff,
+				sizeof(v4) * buffer_offset);
 			buffer_offset = 0;
 		}
 
-		String_render_buff[buffer_offset].x = x1;
-		String_render_buff[buffer_offset].y = y1;
-		String_render_buff[buffer_offset].u = u0;
-		String_render_buff[buffer_offset].v = v0;
-		buffer_offset++;
-
-		String_render_buff[buffer_offset].x = x1;
-		String_render_buff[buffer_offset].y = y2;
-		String_render_buff[buffer_offset].u = u0;
-		String_render_buff[buffer_offset].v = v1;
-		buffer_offset++;
-
-		String_render_buff[buffer_offset].x = x2;
-		String_render_buff[buffer_offset].y = y1;
-		String_render_buff[buffer_offset].u = u1;
-		String_render_buff[buffer_offset].v = v0;
-		buffer_offset++;
-
-		String_render_buff[buffer_offset].x = x1;
-		String_render_buff[buffer_offset].y = y2;
-		String_render_buff[buffer_offset].u = u0;
-		String_render_buff[buffer_offset].v = v1;
-		buffer_offset++;
-
-		String_render_buff[buffer_offset].x = x2;
-		String_render_buff[buffer_offset].y = y1;
-		String_render_buff[buffer_offset].u = u1;
-		String_render_buff[buffer_offset].v = v0;
-		buffer_offset++;
-
-		String_render_buff[buffer_offset].x = x2;
-		String_render_buff[buffer_offset].y = y2;
-		String_render_buff[buffer_offset].u = u1;
-		String_render_buff[buffer_offset].v = v1;
-		buffer_offset++;
+		// Advance x for the next character
+		x += raw_spacing * scale_factor;
 	}
 
+	// Render remaining vertices in the buffer
 	if (buffer_offset) {
 		gr_render_primitives_immediate(&render_mat,
-									   PRIM_TYPE_TRIS,
-									   &vert_def,
-									   buffer_offset,
-									   String_render_buff,
-									   sizeof(v4) * buffer_offset);
+			PRIM_TYPE_TRIS,
+			&vert_def,
+			buffer_offset,
+			String_render_buff,
+			sizeof(v4) * buffer_offset);
 	}
 
 	gr_end_2d_matrix();
 }
+
+
 
 namespace {
 bool buffering_nanovg = false; //!< flag for when NanoVG buffering is enabled
@@ -779,7 +763,8 @@ void endDrawing(graphics::paths::PathRenderer* path) {
 }
 }
 
-void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_length) {
+void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMultiplier, size_t in_length)
+{
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
@@ -809,7 +794,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_len
 		VFNTFont* fnt = static_cast<VFNTFont*>(currentFont);
 		fo::font* fontData = fnt->getFontData();
 
-		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), resize_mode);
+		gr_string_old(sx, sy, s, s + length, fontData, fnt->getHeight(), currentFont->getAutoScaleBehavior(), currentFont->getScaleBehavior(), resize_mode, scaleMultiplier);
 	} else if (currentFont->getType() == NVG_FONT) {
 		GR_DEBUG_SCOPE("Render TTF string");
 
@@ -817,10 +802,8 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_len
 
 		auto nvgFont = static_cast<NVGFont*>(currentFont);
 
-		float scale_factor = Font_Scale_Factor;
-		if (!nvgFont->getScaleBehavior()) {
-			scale_factor = 1.0f;
-		}
+		float scale_factor = (nvgFont->getScaleBehavior() && !Fred_running) ? get_font_scale_factor() : 1.0f;
+		scale_factor *= scaleMultiplier;
 
 		float originalSize = nvgFont->getSize();
 		float scaledSize = originalSize * scale_factor;
@@ -909,7 +892,10 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, size_t in_len
 									  text + 1,
 									  nvgFont->getSpecialCharacterFont(),
 									  nvgFont->getHeight(),
-									  resize_mode);
+							          nvgFont->getAutoScaleBehavior(),
+									  nvgFont->getScaleBehavior(),
+									  resize_mode,
+									  scaleMultiplier);
 					}
 
 					int width;
@@ -1202,7 +1188,7 @@ void gr_2d_stop_buffer() {
 gr_buffer_handle gr_immediate_buffer_handle;
 static size_t immediate_buffer_offset = 0;
 static size_t immediate_buffer_size = 0;
-static const int IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
+static const size_t IMMEDIATE_BUFFER_RESIZE_BLOCK_SIZE = 2048;
 
 size_t gr_add_to_immediate_buffer(size_t size, void* data) {
 	if (gr_screen.mode == GR_STUB) {

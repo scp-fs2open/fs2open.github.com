@@ -1145,7 +1145,7 @@ DCF(stars,"Set parameters for starfield")
 	
 	} else if (arg == "tail") {
 		dc_stuff_float(&val_f);
-		CLAMP(val_f, 0.0, 1.0);
+		CLAMP(val_f, 0.0f, 1.0f);
 		Star_amount = val_f;
 		
 		dc_printf("Star_amount set to %f\n", Star_amount);
@@ -1163,7 +1163,7 @@ DCF(stars,"Set parameters for starfield")
 	
 	} else if (arg == "cap") {
 		dc_stuff_float(&val_f);
-		CLAMP(val_f, 0.0, 255);
+		CLAMP(val_f, 0.0f, 255.0f);
 		Star_cap = val_f;
 		
 		dc_printf("Star_cap set to %f\n", Star_cap);
@@ -1612,12 +1612,12 @@ void subspace_render()
 	}
 
 	if ( Subspace_model_inner < 0 )	{
-		Subspace_model_inner = model_load( "subspace_small.pof", 0, nullptr );
+		Subspace_model_inner = model_load( "subspace_small.pof" );
 		Assert(Subspace_model_inner >= 0);
 	}
 
 	if ( Subspace_model_outer < 0 )	{
-		Subspace_model_outer = model_load( "subspace_big.pof", 0, nullptr );
+		Subspace_model_outer = model_load( "subspace_big.pof" );
 		Assert(Subspace_model_outer >= 0);
 	}
 
@@ -2056,10 +2056,10 @@ void stars_page_in()
 	// Initialize the subspace stuff
 
 	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
-		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
+		Subspace_model_inner = model_load("subspace_small.pof");
 		Assert(Subspace_model_inner >= 0);
 
-		Subspace_model_outer = model_load("subspace_big.pof", 0, nullptr);
+		Subspace_model_outer = model_load("subspace_big.pof");
 		Assert(Subspace_model_outer >= 0);
 
 		polymodel *pm;
@@ -2372,7 +2372,7 @@ void stars_set_background_model(const char* model_name, const char* texture_name
 	}
 
 	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
-		new_model = model_load(model_name, 0, nullptr, -1);
+		new_model = model_load(model_name, nullptr, ErrorType::NONE);
 
 		if (texture_name != nullptr && *texture_name != '\0') {
 			new_bitmap = bm_load(texture_name);

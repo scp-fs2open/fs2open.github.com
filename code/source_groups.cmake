@@ -391,12 +391,14 @@ add_file_folder("GlobalIncs"
 	globalincs/alphacolors.h
 	globalincs/crashdump.cpp
 	globalincs/crashdump.h
+	globalincs/flagset.h
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
 	globalincs/pstypes.h
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
+	globalincs/scp_defines.h
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
@@ -406,9 +408,8 @@ add_file_folder("GlobalIncs"
 	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
+	globalincs/vmallocator.cpp
 	globalincs/vmallocator.h
-	globalincs/scp_defines.h
-	globalincs/flagset.h
 )
 
 IF (WIN32)
@@ -1102,38 +1103,41 @@ add_file_folder("Parse\\\\SEXP"
 
 # Particle files
 add_file_folder("Particle"
+	particle/EffectHost.h
 	particle/particle.cpp
 	particle/particle.h
+	particle/ParticleEffect.cpp
 	particle/ParticleEffect.h
 	particle/ParticleManager.cpp
 	particle/ParticleManager.h
+	particle/ParticleParse.cpp
 	particle/ParticleSource.cpp
 	particle/ParticleSource.h
-	particle/ParticleSourceWrapper.cpp
-	particle/ParticleSourceWrapper.h
+	particle/ParticleVolume.h
 )
 
-add_file_folder("Particle\\\\Effects"
-	particle/effects/BeamPiercingEffect.cpp
-	particle/effects/BeamPiercingEffect.h
-	particle/effects/CompositeEffect.cpp
-	particle/effects/CompositeEffect.h
-	particle/effects/ConeShape.h
-	particle/effects/GenericShapeEffect.h
-	particle/effects/ParticleEmitterEffect.cpp
-	particle/effects/ParticleEmitterEffect.h
-	particle/effects/SingleParticleEffect.cpp
-	particle/effects/SingleParticleEffect.h
-	particle/effects/SphereShape.h
-	particle/effects/VolumeEffect.cpp
-	particle/effects/VolumeEffect.h
+add_file_folder("Particle\\\\Hosts"
+	particle/hosts/EffectHostBeam.cpp
+	particle/hosts/EffectHostBeam.h
+	particle/hosts/EffectHostObject.cpp
+	particle/hosts/EffectHostObject.h
+	particle/hosts/EffectHostParticle.cpp
+	particle/hosts/EffectHostParticle.h
+	particle/hosts/EffectHostSubmodel.cpp
+	particle/hosts/EffectHostSubmodel.h
+	particle/hosts/EffectHostTurret.cpp
+	particle/hosts/EffectHostTurret.h
+	particle/hosts/EffectHostVector.cpp
+	particle/hosts/EffectHostVector.h
 )
 
-add_file_folder("Particle\\\\Util"
-	particle/util/EffectTiming.cpp
-	particle/util/EffectTiming.h
-	particle/util/ParticleProperties.cpp
-	particle/util/ParticleProperties.h
+add_file_folder("Particle\\\\Volumes"
+	particle/volumes/ConeVolume.cpp
+	particle/volumes/ConeVolume.h
+	particle/volumes/LegacyAACuboidVolume.cpp
+	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/SpheroidVolume.cpp
+	particle/volumes/SpheroidVolume.h
 )
 
 # PcxUtils files
@@ -1397,6 +1401,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
+	scripting/api/objs/goal.cpp
+	scripting/api/objs/goal.h
 	scripting/api/objs/hudconfig.cpp
 	scripting/api/objs/hudconfig.h
 	scripting/api/objs/hudgauge.cpp

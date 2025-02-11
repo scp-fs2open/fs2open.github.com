@@ -984,24 +984,8 @@ typedef struct ship_passive_arc_info {
 
 typedef struct thruster_particles {
 	generic_anim thruster_bitmap;
-	float		min_rad;
-	float		max_rad;
-	int			n_high;
-	int			n_low;
-	float		variance;
+	particle::ParticleEffectHandle particle_handle;
 } thruster_particles;
-
-typedef struct particle_effect {
-	int				n_low;
-	int				n_high;
-	float			min_rad;
-	float			max_rad;
-	float			min_life;
-	float			max_life;
-	float			min_vel;
-	float			max_vel;
-	float			variance;
-} particle_effect;
 
 typedef struct ship_type_info {
 	char name[NAME_LENGTH];
@@ -1026,7 +1010,7 @@ typedef struct ship_type_info {
 
 	//AI
 	SCP_set<ai_goal_mode> ai_valid_goals;
-	std::set<size_t> ai_player_orders;
+	SCP_set<size_t> ai_player_orders;
 	int ai_active_dock;
 	int ai_passive_dock;
 	SCP_vector<int> ai_actively_pursues;
@@ -1237,13 +1221,11 @@ public:
 	SCP_vector<int> explosion_bitmap_anims;
 	float skip_deathroll_chance;					
 
-	particle_effect		impact_spew;
-	particle_effect		damage_spew;
-	particle_effect		split_particles;
-	particle_effect		knossos_end_particles;
-	particle_effect		regular_end_particles;
-
-	particle::ParticleEffectHandle death_effect;
+	particle::ParticleEffectHandle		impact_spew;
+	particle::ParticleEffectHandle		damage_spew;
+	particle::ParticleEffectHandle		split_particles;
+	particle::ParticleEffectHandle		knossos_end_particles;
+	particle::ParticleEffectHandle		regular_end_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1842,9 +1824,9 @@ extern void ship_assign_sound(ship *sp);
 extern void ship_clear_ship_type_counts();
 extern void ship_add_ship_type_count( int ship_info_index, int num );
 
-extern int ship_get_type(char* output, ship_info* sip);
-extern const std::set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
-extern const std::set<size_t> ship_set_default_orders_against();
+extern const char *ship_get_type(const ship_info *sip);
+extern const SCP_set<size_t>& ship_get_default_orders_accepted( ship_info *sip );
+extern SCP_set<size_t> ship_get_default_orders_against();
 extern int ship_query_general_type(int ship);
 extern int ship_class_query_general_type(int ship_class);
 extern int ship_query_general_type(ship *shipp);

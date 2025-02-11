@@ -666,7 +666,7 @@ namespace animation {
 
 		for (const auto& submodel : other.m_submodels) {
 			auto newSubmodel = std::shared_ptr<ModelAnimationSubmodel>(submodel->copy());
-			newSubmodel->m_submodel = tl::nullopt;
+			newSubmodel->m_submodel = std::nullopt;
 			m_submodels.push_back(newSubmodel);
 		}
 
@@ -1032,7 +1032,7 @@ namespace animation {
 		}
 	}
 
-	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<linb::any>& args) const {
+	bool ModelAnimationSet::updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<std::any>& args) const {
 		SCP_string lowername = name;
 		SCP_tolower(lowername);
 		auto moveable = m_moveableSet.find(lowername);
@@ -1357,7 +1357,7 @@ namespace animation {
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
 		volatile ModelAnimationMoveableOrientation o = ModelAnimationMoveableOrientation(nullptr, angles{ 0,0,0 });
-		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, tl::nullopt);
+		volatile ModelAnimationMoveableRotation r = ModelAnimationMoveableRotation(nullptr, angles{ 0,0,0 }, angles{0,0,0}, std::nullopt);
 		
 		required_string("$Name:");
 		char animID[NAME_LENGTH];
@@ -1464,7 +1464,7 @@ namespace animation {
 					continue;
 				}
 
-				tl::optional<Curve> curve = tl::nullopt;
+				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
@@ -1478,7 +1478,7 @@ namespace animation {
 				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
-					CLAMP(instance.time, 0, instance.duration);
+					CLAMP(instance.time, 0.0f, instance.duration);
 					instance.canonicalDirection = oldFrametime < instance.time ? ModelAnimationDirection::FWD : ModelAnimationDirection::RWD;
 				};
 			}
@@ -1493,7 +1493,7 @@ namespace animation {
 				required_string("+Target:");
 				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
 
-				tl::optional<Curve> curve = tl::nullopt;
+				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
@@ -1508,7 +1508,7 @@ namespace animation {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {
-						CLAMP(property, 0, instance.*(*target.clamp));
+						CLAMP(property, 0.0f, instance.*(*target.clamp));
 					}
 				});
 			}
@@ -1523,7 +1523,7 @@ namespace animation {
 				required_string("+Target:");
 				ModelAnimationPropertyDriverTarget target = parse_property_driver_target();
 
-				tl::optional<Curve> curve = tl::nullopt;
+				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
 					SCP_string curve_name;
 					stuff_string(curve_name, F_NAME);
@@ -1538,7 +1538,7 @@ namespace animation {
 					float& property = instance.*(target.target);
 					property = curve ? curve->GetValue(driver_source(pmi)) : driver_source(pmi);
 					if(target.clamp) {
-						CLAMP(property, 0, instance.*(*target.clamp));
+						CLAMP(property, 0.0f, instance.*(*target.clamp));
 					}
 				});
 			}
@@ -1741,7 +1741,7 @@ namespace animation {
 			required_string("+velocity:");
 			stuff_angles_deg_phb(&velocity);
 
-			tl::optional<angles> acceleration;
+			std::optional<angles> acceleration;
 
 			if (optional_string("+acceleration:")) {
 				angles accel{ 0,0,0 };
@@ -1761,7 +1761,7 @@ namespace animation {
 				//Hence, throw time away, and let the segment handle calculating how long it actually takes
 			}
 
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(std::move(subsys), target, velocity, tl::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS));
+			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(std::move(subsys), target, velocity, std::nullopt, acceleration, absolute ? ModelAnimationCoordinateRelation::ABSOLUTE_COORDS : ModelAnimationCoordinateRelation::RELATIVE_COORDS);
 
 			if (optional_string("$Sound:")) {
 				gamesnd_id start_sound;

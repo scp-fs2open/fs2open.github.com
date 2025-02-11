@@ -98,7 +98,7 @@ void update_ets(object* objp, float fl_frametime)
 	}
 
 	float shield_delta;
-	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(objp, true); // recharge rate is unaffected by $Max Shield Recharge
+	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(ship_p, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
 		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
@@ -111,7 +111,7 @@ void update_ets(object* objp, float fl_frametime)
 	shield_add_strength(objp, shield_delta);
 
 	// if strength now exceeds max, scale back segments proportionally
-	float max_shield = shield_get_max_strength(objp);
+	float max_shield = shield_get_max_strength(ship_p);
 	if ( (_ss = shield_get_strength(objp)) > max_shield ){
 		for (int i=0; i<objp->n_quadrants; i++){
 			objp->shield_quadrant[i] *= max_shield / _ss;
@@ -679,7 +679,7 @@ void transfer_energy_to_shields(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, sinfo_p->max_weapon_reserve, shield_get_max_strength(obj), sinfo_p->weap_shield_amount, sinfo_p->weap_shield_efficiency);
+	transfer_energy_weapon_common(obj, ship_p->weapon_energy, shield_get_strength(obj), &ship_p->target_weapon_energy_delta, &ship_p->target_shields_delta, sinfo_p->max_weapon_reserve, shield_get_max_strength(ship_p), sinfo_p->weap_shield_amount, sinfo_p->weap_shield_efficiency);
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -704,7 +704,7 @@ void transfer_energy_to_weapons(object* obj)
 		return;
 	}
 
-	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, shield_get_max_strength(obj), sinfo_p->max_weapon_reserve, sinfo_p->shield_weap_amount, sinfo_p->shield_weap_efficiency);
+	transfer_energy_weapon_common(obj, shield_get_strength(obj), ship_p->weapon_energy, &ship_p->target_shields_delta, &ship_p->target_weapon_energy_delta, shield_get_max_strength(ship_p), sinfo_p->max_weapon_reserve, sinfo_p->shield_weap_amount, sinfo_p->shield_weap_efficiency);
 }
 
 /**
@@ -887,7 +887,7 @@ void HudGaugeEts::initBitmaps(char *fname)
 	}
 }
 
-void HudGaugeEts::render(float  /*frametime*/)
+void HudGaugeEts::render(float  /*frametime*/, bool /*config*/)
 {
 }
 
@@ -989,7 +989,7 @@ HudGaugeEts(HUD_OBJECT_ETS_RETAIL, 0)
 /**
  * Render the ETS retail gauge to the screen (weapon+shield+engine)
  */
-void HudGaugeEtsRetail::render(float  /*frametime*/)
+void HudGaugeEtsRetail::render(float  /*frametime*/, bool /*config*/)
 {
 	int i;
 	int initial_position;
@@ -1015,17 +1015,17 @@ void HudGaugeEtsRetail::render(float  /*frametime*/)
 	if (ship_has_energy_weapons(ship_p)) {
 		Letter = Letters[0];
 		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 	}
 	if (!(Player_obj->flags[Object::Object_Flags::No_shields])) {
 		Letter = Letters[1];
 		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 	}
 	if (ship_has_engine_power(ship_p)) {
 		Letter = Letters[2];
 		position[0] = Gauge_positions[initial_position++];
-		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+		renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 	}
 
 	// draw gauges, skipping any gauge that is missing
@@ -1073,7 +1073,7 @@ HudGaugeEts(HUD_OBJECT_ETS_WEAPONS, (int)WEAPONS)
 {
 }
 
-void HudGaugeEtsWeapons::render(float  /*frametime*/)
+void HudGaugeEtsWeapons::render(float  /*frametime*/, bool /*config*/)
 {
 	int i;
 
@@ -1099,7 +1099,7 @@ void HudGaugeEtsWeapons::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 
 	// draw the gauges for the weapon system
 	blitGauge(ship_p->weapon_recharge_index);
@@ -1110,7 +1110,7 @@ HudGaugeEts(HUD_OBJECT_ETS_SHIELDS, (int)SHIELDS)
 {
 }
 
-void HudGaugeEtsShields::render(float  /*frametime*/)
+void HudGaugeEtsShields::render(float  /*frametime*/, bool /*config*/)
 {
 	int i;
 
@@ -1135,7 +1135,7 @@ void HudGaugeEtsShields::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 
 	// draw the gauge for the shield system
 	blitGauge(ship_p->shield_recharge_index);
@@ -1146,7 +1146,7 @@ HudGaugeEts(HUD_OBJECT_ETS_ENGINES, (int)ENGINES)
 {
 }
 
-void HudGaugeEtsEngines::render(float  /*frametime*/)
+void HudGaugeEtsEngines::render(float  /*frametime*/, bool /*config*/)
 {
 	int i;
 
@@ -1171,7 +1171,7 @@ void HudGaugeEtsEngines::render(float  /*frametime*/)
 	setGaugeColor();
 
 	// draw the letters for the gauge first, before any clipping occurs
-	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], NOX("%c"), Letter);
+	renderPrintf(position[0] + Letter_offsets[0], position[1] + Letter_offsets[1], 1.0f, false, NOX("%c"), Letter);
 
 	// draw the gauge for the engine system
 	blitGauge(ship_p->engine_recharge_index);

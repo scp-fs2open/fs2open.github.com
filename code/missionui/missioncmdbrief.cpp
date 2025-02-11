@@ -36,10 +36,9 @@
 #include "ui/uidefs.h"
 
 
+constexpr int NUM_CBRIEF_LAYOUTS = 2;
 
-#define NUM_CMD_SETTINGS	2
-
-const char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_fname[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief",
@@ -52,7 +51,7 @@ const char *Cmd_brief_fname[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 };
 
 
-const char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
+const char *Cmd_brief_mask[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS] =
 {
 	{
 		"CommandBrief-m",
@@ -71,7 +70,7 @@ const char *Cmd_brief_mask[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS] =
 #define CMD_W_COORD 2
 #define CMD_H_COORD 3
 
-int Cmd_text_wnd_coords[NUM_CMD_SETTINGS][GR_NUM_RESOLUTIONS][4] =
+int Cmd_text_wnd_coords[NUM_CBRIEF_LAYOUTS][GR_NUM_RESOLUTIONS][4] =
 {
 	// original
 	{
@@ -763,7 +762,7 @@ void cmd_brief_do_frame(float frametime)
 		int more_txt_x = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_X_COORD] + (Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_W_COORD]/2) - 10;
 		int more_txt_y = Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_Y_COORD] + Cmd_text_wnd_coords[Uses_scroll_buttons][gr_screen.res][CMD_H_COORD] - 2;				// located below brief text, centered
 
-		gr_get_string_size(&w, &h, XSTR("more", 1469), static_cast<int>(strlen(XSTR("more", 1469))));
+		gr_get_string_size(&w, &h, XSTR("more", 1469), 1.0f, static_cast<int>(strlen(XSTR("more", 1469))));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_more_indicator);

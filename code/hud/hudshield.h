@@ -57,8 +57,8 @@ protected:
 public:
 	HudGaugeShield();
 	HudGaugeShield(int _gauge_object, int _gauge_config);
-	void render(float frametime) override;
 	void showShields(const object *objp, int mode);
+	void render(float frametime, bool config = false) override;
 	int maybeFlashShield(int target_index, int shield_offset);
 	void renderShieldIcon(coord2d coords[6]);
 };
@@ -68,7 +68,7 @@ class HudGaugeShieldPlayer: public HudGaugeShield
 protected:
 public:
 	HudGaugeShieldPlayer();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeShieldTarget: public HudGaugeShield
@@ -76,7 +76,7 @@ class HudGaugeShieldTarget: public HudGaugeShield
 protected:
 public:
 	HudGaugeShieldTarget();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeShieldMini: public HudGauge
@@ -96,7 +96,7 @@ public:
 	int maybeFlashShield(int target_index, int shield_offset);
 	void showMiniShields(const object *objp);
 	void showIntegrity(float p_target_integrity);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 #endif /* __FREESPACE_HUDSHIELDBOX_H__ */

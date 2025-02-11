@@ -182,7 +182,6 @@ void hud_init_comm_orders()
 	std::sort(Player_orders.begin(), Player_orders.end(), [](const player_order& o1, const player_order& o2) {
 		return o1.legacy_id < o2.legacy_id;
 	});
-
 }
 
 // Text to display on the messaging menu when using the shortcut keys
@@ -326,7 +325,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 
 	// if a messaging shortcut, be sure this ship can process the order
 	if ( Msg_shortcut_command != -1 ) {
-		if (shipp->orders_accepted.count((size_t) Msg_shortcut_command) == 0)
+		if (!shipp->orders_accepted.contains(Msg_shortcut_command))
 			return false;
 		
 		else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
@@ -902,7 +901,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
 		// the set of orders accepted for the wing leader
-		if (shipp->orders_accepted.count((size_t)command) == 0)
+		if (!shipp->orders_accepted.contains(command))
 			continue;
 
 		// send the command to the wing
@@ -940,8 +939,8 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 		if ( shipp->is_dying_or_departing() )
 			continue;
 
-		// don't send command if ship won't accept if
-		if (shipp->orders_accepted.count((size_t)command) == 0)
+		// don't send command if ship won't accept it
+		if (!shipp->orders_accepted.contains(command))
 			continue;
 
 		if (send_message) {
@@ -2013,7 +2012,7 @@ void hud_squadmsg_ship_command()
 				if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
 					continue;
 
-				bool local_accepted = shipp->orders_accepted.count(order_id) > 0;
+				bool local_accepted = shipp->orders_accepted.contains(order_id);
 				all_accept &= local_accepted;        // 'and'ing will either keep this bit set or zero it properly
 				partial_accept |= local_accepted;    // 'or'ing will tell us if at least one accepts
 			}
@@ -2307,7 +2306,7 @@ int hud_squadmsg_hotkey_select( int k )
 			continue;
 
 		// be sure that this ship can accept this command
-		if ( Ships[objp->instance].orders_accepted.count(Msg_shortcut_command) == 0)
+		if (!Ships[objp->instance].orders_accepted.contains(Msg_shortcut_command))
 			continue;
 
 		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message, SQUADMSG_HISTORY_ADD_ENTRY );
@@ -2662,7 +2661,7 @@ bool HudGaugeSquadMessage::canRender() const
 	return true;
 }
 
-void HudGaugeSquadMessage::render(float  /*frametime*/)
+void HudGaugeSquadMessage::render(float  /*frametime*/, bool /*config*/)
 {
 	char *title;
 	int bx, by, sx, sy, i, nitems, none_valid, messaging_allowed;
@@ -2740,7 +2739,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/)
 
 		// first do the number
 		item_num = (i+1) % MAX_MENU_DISPLAY;
-		renderPrintf(sx, sy, EG_SQ1 + i, NOX("%1d."), item_num);
+		renderPrintfWithGauge(sx, sy, EG_SQ1 + i, 1.0f, false, NOX("%1d."), item_num);
 
 		// then the text
 		renderString(sx + Item_offset_x, sy, EG_SQ1 + i, text);
@@ -2777,22 +2776,22 @@ void HudGaugeSquadMessage::render(float  /*frametime*/)
 	startFlashPageScroll();
 	maybeFlashPageScroll();
 	if ( First_menu_item > 0 ) {
-		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], "%s", XSTR( "[pgup]", 312) );
+		renderPrintf(position[0] + Pgup_offsets[0], position[1] + Pgup_offsets[1], 1.0f, false, "%s", XSTR( "[pgup]", 312) );
 	}
 
 	if ( (First_menu_item + nitems) < Num_menu_items ) {
-		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], "%s", XSTR( "[pgdn]", 313));
+		renderPrintf(position[0] + Pgdn_offsets[0], position[1] + Pgdn_offsets[1], 1.0f, false, "%s", XSTR( "[pgdn]", 313));
 	}
 
 	if ( messaging_allowed ) {
 		if ( none_valid ){
-			renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "No valid items", 314));
+			renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", XSTR("No valid items", 314));
 		} else if (Msg_shortcut_command != -1){
-			renderPrintf( sx, by - Item_h + 2, "%s", comm_order_get_text(Msg_shortcut_command));
+			renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", comm_order_get_text(Msg_shortcut_command));
 		}
 	} else {
 		// if this player is not allowed to message, then display message saying so
-		renderPrintf( sx, by - Item_h + 2, "%s", XSTR( "Not allowed to message", 315));
+		renderPrintf(sx, by - Item_h + 2, 1.0f, false, "%s", XSTR("Not allowed to message", 315));
 	}
 
 }

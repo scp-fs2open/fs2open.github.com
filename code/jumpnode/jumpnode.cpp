@@ -44,7 +44,7 @@ CJumpNode::CJumpNode(const vec3d* position)
 	m_display[0] = '\0';
 	
 	// Set m_modelnum and m_radius
-	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), 0, NULL, 0);
+	m_modelnum = model_load(NOX(JN_DEFAULT_MODEL), nullptr, ErrorType::WARNING);
 	if (m_modelnum == -1) {
 		Warning(LOCATION, "Could not load default model for %s", m_name);
 	} else {
@@ -238,7 +238,7 @@ void CJumpNode::SetModel(const char *model_name, bool show_polys)
 	Assert(model_name != NULL);
 	
 	//Try to load the new model; if we can't, then we can't set it
-	int new_model = model_load(model_name, 0, NULL, 0);
+	int new_model = model_load(model_name, nullptr, ErrorType::WARNING);
 	
 	if(new_model == -1)
 	{

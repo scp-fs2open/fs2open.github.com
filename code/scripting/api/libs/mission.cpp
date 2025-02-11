@@ -48,6 +48,7 @@
 #include "scripting/api/objs/event.h"
 #include "scripting/api/objs/fireball.h"
 #include "scripting/api/objs/fireballclass.h"
+#include "scripting/api/objs/goal.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/modelinstance.h"
@@ -303,36 +304,62 @@ ADE_FUNC(__len, l_Mission_EscortShips, NULL, "Current number of escort ships", "
 }
 
 //****SUBLIBRARY: Mission/Events
-ADE_LIB_DERIV(l_Mission_Events, "Events", NULL, "Events", l_Mission);
+ADE_LIB_DERIV(l_Mission_Events, "Events", nullptr, "Events", l_Mission);
 
-ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes events list", "event", "Event handle, or invalid event handle if index was invalid")
+ADE_INDEXER(l_Mission_Events, "number/string IndexOrName", "Indexes mission events list", "mission_event", "Event handle, or invalid event handle if index was invalid")
 {
 	const char* s;
 	if(!ade_get_args(L, "*s", &s))
 		return ade_set_error(L, "o", l_Event.Set(-1));
 
-	int i;
-	for(i = 0; i < (int)Mission_events.size(); i++)
-	{
-		if(!stricmp(Mission_events[i].name.c_str(), s))
-			return ade_set_args(L, "o", l_Event.Set(i));
-	}
+	int i = mission_event_lookup(s);
+	if (i >= 0)
+		return ade_set_args(L, "o", l_Event.Set(i));
 
 	//Now try as a number
 	i = atoi(s);
 	//Lua-->FS2
 	i--;
 
-	if(i < 0 || i >= (int)Mission_events.size())
+	if(!SCP_vector_inbounds(Mission_events, i))
 		return ade_set_error(L, "o", l_Event.Set(-1));
-
 
 	return ade_set_args(L, "o", l_Event.Set(i));
 }
 
-ADE_FUNC(__len, l_Mission_Events, NULL, "Number of events in mission", "number", "Number of events in mission")
+ADE_FUNC(__len, l_Mission_Events, nullptr, "Number of events in mission", "number", "Number of events in mission")
 {
-	return ade_set_args(L, "i", (int)Mission_events.size());
+	return ade_set_args(L, "i", static_cast<int>(Mission_events.size()));
+}
+
+//****SUBLIBRARY: Mission/Goals
+ADE_LIB_DERIV(l_Mission_Goals, "Goals", nullptr, "Goals", l_Mission);
+
+ADE_INDEXER(l_Mission_Goals, "number/string IndexOrName", "Indexes mission goals list", "mission_goal", "Goal handle, or invalid goal handle if index was invalid")
+{
+	const char* s;
+	if(!ade_get_args(L, "*s", &s))
+		return ade_set_error(L, "o", l_Goal.Set(-1));
+
+	int i = mission_goal_lookup(s);
+	if (i >= 0)
+		return ade_set_args(L, "o", l_Goal.Set(i));
+
+	//Now try as a number
+	i = atoi(s);
+	//Lua-->FS2
+	i--;
+
+	if(!SCP_vector_inbounds(Mission_goals, i))
+		return ade_set_error(L, "o", l_Goal.Set(-1));
+
+
+	return ade_set_args(L, "o", l_Goal.Set(i));
+}
+
+ADE_FUNC(__len, l_Mission_Goals, nullptr, "Number of goals in mission", "number", "Number of goals in mission")
+{
+	return ade_set_args(L, "i", static_cast<int>(Mission_goals.size()));
 }
 
 //****SUBLIBRARY: Mission/SEXPVariables
@@ -2301,7 +2328,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 		return ADE_RETURN_TRUE;
 	}
 
-	std::unordered_set<int> excludedObjectIDs;
+	SCP_unordered_set<int> excludedObjectIDs;
 
 	if (excludedObjects.isValid()) {
 		for (const auto& object : excludedObjects) {
@@ -2329,7 +2356,7 @@ int testLineOfSight_internal(lua_State* L, bool returnDist_and_Obj) {
 	bool hasLoS = test_line_of_sight(&from, &to, std::move(excludedObjectIDs), threshold, testForShields, testForHull, dist, &intersecting_obj);
 
 	if (returnDist_and_Obj)
-		return ade_set_args(L, "bfo", hasLoS, *dist, l_Object.Set(object_h(intersecting_obj)));
+		return ade_set_args(L, "bfo", hasLoS, *dist, ade_object_to_odata(OBJ_INDEX(intersecting_obj)));
 	else
 		return ade_set_args(L, "b", hasLoS);
 }
@@ -2423,7 +2450,7 @@ ADE_FUNC(updateSpecialSubmodelMoveable, l_Mission, "string target, string name, 
 		return ADE_RETURN_NIL;
 	}
 
-	SCP_vector<linb::any> valuesMoveable;
+	SCP_vector<std::any> valuesMoveable;
 
 	if (values.isValid()) {
 		for (const auto& object : values) {

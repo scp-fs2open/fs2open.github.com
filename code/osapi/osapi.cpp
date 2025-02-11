@@ -531,7 +531,7 @@ bool os_is_legacy_mode()
 					<< "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
-		tl::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
+		std::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
 		time_t old_config_time = 0;
 
 		//Check if the registry key exists

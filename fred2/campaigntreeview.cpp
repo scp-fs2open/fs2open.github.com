@@ -175,7 +175,7 @@ void campaign_tree_view::OnDraw(CDC* pDC)
 		f = Links[i].from;
 		t = Links[i].to;
 
-		if (t == -1) {
+		if (f == -1 || t == -1) {
 			continue;
 		}
 		Links[i].p1.x = Elements[f].box.left + Links[i].from_pos * Bx / (Elements[f].from_links + 1);
@@ -238,6 +238,8 @@ void campaign_tree_view::OnInitialUpdate()
 void stuff_link_with_formula(int *link_idx, int formula, int mission_num)
 {
 	int j, node, node2, node3;
+	Assert(mission_num >= 0 && mission_num < Campaign.num_missions);
+
 	if (formula >= 0) {
 		if (!stricmp(CTEXT(formula), "cond")) {
 			// sexp is valid
@@ -521,7 +523,7 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 			// HACK!!  UPDATE mission loop/fork desc before changing selections
 			// save mission loop/fork desc
 			char buffer[MISSION_DESC_LENGTH];
-			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSISON_LOOP_DESC);
+			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSION_LOOP_DESC);
 			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
 			if (strlen(buffer)) {
 				if (Links[Cur_campaign_link].mission_branch_txt) {
@@ -761,8 +763,10 @@ int campaign_tree_view::add_link(int from, int to)
 	Links[Total_links].mission_branch_brief_sound = NULL;
 	Total_links++;
 	if (from != to) {
-		Elements[from].from_links++;
-		Elements[to].to_links++;
+		if (from >= 0)
+			Elements[from].from_links++;
+		if (to >= 0)
+			Elements[to].to_links++;
 	}
 
 	sort_links();
@@ -1171,9 +1175,14 @@ void campaign_tree_view::horizontally_align_mission(int num, int dir)
 void campaign_tree_view::delete_link(int num)
 {
 	Assert((num >= 0) && (num < Total_links));
-	if (Links[num].from != Links[num].to) {
-		Elements[Links[num].from].from_links--;
-		Elements[Links[num].to].to_links--;
+
+	int from = Links[num].from;
+	int to = Links[num].to;
+	if (from != to) {
+		if (from >= 0)
+			Elements[from].from_links--;
+		if (to >= 0)
+			Elements[to].to_links--;
 	}
 
 	sexp_unmark_persistent(Links[num].sexp);

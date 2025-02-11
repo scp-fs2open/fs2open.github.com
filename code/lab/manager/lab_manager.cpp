@@ -6,6 +6,7 @@
 #include "missionui/missionscreencommon.h"
 #include "debris/debris.h"
 #include "ship/shipfx.h"
+#include "particle/particle.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
 

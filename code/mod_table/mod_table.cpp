@@ -34,6 +34,7 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Always_show_directive_value_count;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
@@ -123,6 +124,7 @@ std::tuple<float, float, float, float> Shadow_distances;
 std::tuple<float, float, float, float> Shadow_distances_cockpit;
 bool Show_ship_casts_shadow;
 bool Cockpit_shares_coordinate_space;
+bool Show_ship_only_if_cockpits_enabled;
 bool Custom_briefing_icons_always_override_standard_icons;
 float Min_pixel_size_thruster;
 float Min_pixel_size_beam;
@@ -156,6 +158,7 @@ bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
+bool Preload_briefing_icon_models;
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -540,6 +543,13 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			if (optional_string("$Always Show Directive Value Count:")) {
+				stuff_boolean(&Always_show_directive_value_count);
+				if (Always_show_directive_value_count) {
+					mprintf(("Game Settings Table: Always Showing Directive Value Count\n"));
+				}
+			}
+
 			optional_string("#GRAPHICS SETTINGS");
 
 			if (optional_string("$Enable External Shaders:")) {
@@ -870,6 +880,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Ship Model And Cockpit Share Coordinate Space:")) {
 				stuff_boolean(&Cockpit_shares_coordinate_space);
+			}
+
+			if (optional_string("$Show Ship enabled only if Cockpits enabled:")) {
+				stuff_boolean(&Show_ship_only_if_cockpits_enabled);
 			}
 
 			if (optional_string("$Minimum Pixel Size Thrusters:")) {
@@ -1431,6 +1445,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Fix_scripted_velocity);
 			}
 
+			if (optional_string("$Preload briefing icon models:")) {
+				stuff_boolean(&Preload_briefing_icon_models);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1522,6 +1540,7 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_overhead_ship_style = OH_TOP_VIEW;
@@ -1604,6 +1623,7 @@ void mod_table_reset()
 	Shadow_distances_cockpit = std::make_tuple(0.25f, 0.75f, 1.5f, 3.0f); // Default values tuned by wookieejedi and added here by Lafiel
 	Show_ship_casts_shadow = false;
 	Cockpit_shares_coordinate_space = false;
+	Show_ship_only_if_cockpits_enabled = false;
 	Custom_briefing_icons_always_override_standard_icons = false;
 	Min_pixel_size_thruster = 0.0f;
 	Min_pixel_size_beam = 0.0f;
@@ -1651,6 +1671,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[1], 192, 128, 64, 255);
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
+	Preload_briefing_icon_models = false;
 }
 
 void mod_table_set_version_flags()

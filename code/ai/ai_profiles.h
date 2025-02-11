@@ -126,10 +126,23 @@ public:
 	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
 	float rot_fac_multiplier_ply_collisions; 
 
-	// Strafing options  --wookieejedi
+	// Collision avoidance options  --developed by asteroth, exposed by wookieejedi
+	//   Velocity / turn rate gives us a vector which represents the minimum 'bug out' distance.
+	//   However this will be a significant underestimate, it doesn't take into account acceleration
+	//   with regards to its turn speed, nor already existing rotvel, nor the angular distance
+	//   to the particular avoidance vector it comes up with.
+	//   These would significantly complicate the calculation, so for now, it is all bundled into these magic numbers.
+	float better_collision_avoid_aggression_combat;
+	float better_collision_avoid_aggression_guard;
+
+	// AI strafing options  --wookieejedi
 	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
 	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
 	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
+
+	// AI guard options  --wookieejedi
+	float guard_big_orbit_above_target_radius; // Radius of guardee that triggers ai_big_guard() 
+	float guard_big_orbit_max_speed_percent;   // Max percent of forward speed that is used in ai_big_guard() 
 
     void reset();
 };

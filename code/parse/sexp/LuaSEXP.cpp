@@ -11,10 +11,11 @@
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/event.h"
+#include "scripting/api/objs/goal.h"
 #include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
-#include "scripting/api/objs/event.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -27,6 +28,7 @@
 #include "scripting/api/objs/wing.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 using namespace luacpp;
@@ -36,9 +38,9 @@ namespace sexp {
 static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "boolean",      OPF_BOOL },
 														  { "number",       OPF_NUMBER },
+														  { "string",       OPF_STRING },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
-														  { "string",       OPF_STRING },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
 														  { "waypoint",     OPF_POINT },
@@ -55,15 +57,17 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "ship+wing+waypoint",   OPF_SHIP_WING_POINT },
 														  { "ship+wing+waypoint+none",   OPF_SHIP_WING_POINT_OR_NONE },
 														  { "subsystem",    OPF_SUBSYSTEM },
+														  { "subsystemname",    OPF_SUBSYSTEM },
 														  { "dockpoint",    OPF_DOCKER_POINT },
 														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
 														  { "event",        OPF_EVENT_NAME },
+														  { "goal",         OPF_GOAL_NAME },
 														  { "child_enum",   OPF_CHILD_LUA_ENUM },
                                                           { "custom_string",OPF_MISSION_CUSTOM_STRING },
 														  { "enum",         First_available_opf_id } };
 
 // If a parameter requires a parent parameter then it must be listed here!
-static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "dockpoint", "child_enum"};
+static SCP_vector<SCP_string> parent_parameter_required{"subsystem", "subsystemname", "dockpoint", "child_enum"};
 
 std::pair<SCP_string, int> LuaSEXP::get_parameter_type(const SCP_string& name)
 {
@@ -232,12 +236,15 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
+	case OPF_POINT: {
+		auto wpt = find_matching_waypoint(CTEXT(node));
+		return LuaValue::createValue(_action.getLuaState(), l_Waypoint.Set(object_h(wpt->get_objnum())));
+	}
 	case OPF_SHIP_POINT:
 	case OPF_SHIP_WING:
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
-	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
@@ -246,14 +253,16 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_SUBSYSTEM: {
 		auto name = CTEXT(node);
 
+		// if this is a subsystemname type, we want the name of a valid subsystem but not the subsystem itself
+		if (argtype.first == "subsystemname") {
+			return LuaValue::createValue(_action.getLuaState(), name);
+		}
+
 		//Use the parent node to get the index of the parameter we should
 		//look at to find the parent object
 		int index = get_dynamic_parameter_index(_name, argnum);
-
 		if (index < 0)
-			error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!",
-				argnum,
-				_name.c_str());
+			error_display(1, "Expected to find a dynamic lua parent parameter for node %i in operator %s but found nothing!", argnum, _name.c_str());
 
 		int this_node = parent_node;
 		for (int i = 0; i <= index; i++) {
@@ -306,13 +315,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	}
 	case OPF_EVENT_NAME: {
 		auto name = CTEXT(node);
-
-		int i;
-		for (i = 0; i < (int)Mission_events.size(); i++) {
-			if (!stricmp(Mission_events[i].name.c_str(), name))
-				break;
-			}
+		int i = mission_event_lookup(name);
 		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
+	}
+	case OPF_GOAL_NAME: {
+		auto name = CTEXT(node);
+		int i = mission_goal_lookup(name);
+		return LuaValue::createValue(_action.getLuaState(), l_Goal.Set(i));
 	}
 	case OPF_CHILD_LUA_ENUM: {
 		auto text = CTEXT(node);
@@ -733,31 +742,25 @@ void LuaSEXP::parseTable() {
 			}
 
 		}
-		bool parent_required = false;
-		for (int i = 0; i < (int)parent_parameter_required.size(); i++) {
-			if (type.first == parent_parameter_required[i]) {
-				parent_required = true;
-				break;
-			}
 
+		bool parent_required = util::isStringOneOf(type.first, parent_parameter_required);
+
+		// parse this even if this parameter doesn't need a parent, and we'll validate that next
+		int parent_param_index = -1;
+		if (optional_string("+Parent Parameter Index:")) {
+			stuff_int(&parent_param_index);
+			parent_param_index--;
 		}
+		if (parent_param_index >= (param_index + 1)) {
+			error_display(1,
+				"Parent Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
+				parent_param_index,
+				param_index + 1);
+		}
+
 		if (parent_required)
 		{
-			int this_index = -1;
-			
-			if (optional_string("+Parent Parameter Index:")) {
-				stuff_int(&this_index);
-				this_index--;
-			}
-
-			if (this_index >= (param_index + 1)) {
-				error_display(1,
-					"Parent Parameter Index '%i' cannot be greater or equal to %i (the current parameter index)!\n",
-					this_index,
-					param_index + 1);
-			}
-			
-			std::pair<int, int> param_map(param_index, this_index);
+			std::pair<int, int> param_map(param_index, parent_param_index);
 
 			// check if this operator already has an entry for dynamic parameters
 			int dyn_index = -1;
@@ -776,7 +779,20 @@ void LuaSEXP::parseTable() {
 
 				Dynamic_parameters.push_back(dyn_param);
 			}
-
+		}
+		else if (parent_param_index >= 0)
+		{
+			SCP_string msg = "Parent Parameter Index field was specified in SEXP '";
+			msg += _name;
+			msg += "' for a parameter type '";
+			msg += type.first;
+			msg += "' that does not need a parent!  Parameter types requiring parents are:";
+			for (const auto &param: parent_parameter_required)
+			{
+				msg += "\n\t";
+				msg += param;
+			}
+			error_display(1, "%s", msg.c_str());
 		}
 
 		if (type_str == "child_enum") {

@@ -1994,9 +1994,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					if (wip->muzzle_effect.isValid()) {
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
-						particleSource.moveToTurret(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos);
-						particleSource.setVelocity(&Objects[parent_ship->objnum].phys_info.vel);
-						particleSource.finish();
+						particleSource->setHost(make_unique<EffectHostTurret>(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos));
+						particleSource->finishCreation();
 					}
 					else if (wip->muzzle_flash >= 0) {
 						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
@@ -2111,9 +2110,8 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 		if (Weapon_info[tsi->weapon_class].muzzle_effect.isValid()) {
 			//spawn particle effect
 			auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[tsi->weapon_class].muzzle_effect);
-			particleSource.moveToTurret(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1);
-			particleSource.setVelocity(&Objects[tsi->parent_objnum].phys_info.vel);
-			particleSource.finish();
+			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1));
+			particleSource->finishCreation();
 		}
 		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
 			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
@@ -2270,9 +2268,9 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	float dist_to_enemy = 0.0f;
 	if (lep) {
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius])
-			dist_to_enemy = MAX(0, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos));
+			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos));
 		else
-			dist_to_enemy = MAX(0, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos) - lep->radius);
+			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos) - lep->radius);
 	}
 
 	// count the number of enemies, in case we have a spawning weapon

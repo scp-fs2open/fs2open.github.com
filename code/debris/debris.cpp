@@ -22,7 +22,8 @@
 #include "object/objcollide.h"
 #include "object/objectsnd.h"
 #include "particle/particle.h"
-#include "radar/radar.h"
+#include "particle/ParticleEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
 #include "scripting/global_hooks.h"
@@ -53,6 +54,8 @@ int Debris_inited = 0;
 int Debris_model = -1;
 int Debris_vaporize_model = -1;
 int Debris_num_submodels = 0;
+
+particle::ParticleEffectHandle Debris_hit_particle;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
@@ -112,6 +115,27 @@ void debris_init()
 	Debris.reserve(SOFT_LIMIT_DEBRIS_PIECES);
 
 	Num_hull_pieces = 0;
+
+	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+		"", //Name
+		::util::UniformFloatRange(10.f), //Particle num
+		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+		::util::UniformFloatRange(1.f), //Velocity Inherit
+		false, //Velocity Inherit absolute?
+		make_unique<particle::LegacyAACuboidVolume>(0.3f, 1.f, true), //Velocity volume
+		::util::UniformFloatRange(0.f, 10.f), //Velocity volume multiplier
+		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+		std::nullopt, //Orientation-based velocity
+		std::nullopt, //Position-based velocity
+		nullptr, //Position volume
+		particle::ParticleEffectHandle::invalid(), //Trail
+		1.f, //Chance
+		true, //Affected by detail
+		1.f, //Culling range multiplier
+		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		::util::UniformFloatRange(0.25f, 0.75f), //Lifetime
+		::util::UniformFloatRange(0.2f, 0.4f), //Radius
+		particle::Anim_bitmap_id_fire)); //Bitmap
 }
 
 /**
@@ -121,14 +145,14 @@ void debris_page_in()
 {
 	uint i;
 
-	Debris_model = model_load( NOX("debris01.pof"), 0, NULL );
+	Debris_model = model_load( NOX("debris01.pof") );
 	if (Debris_model >= 0)	{
 		polymodel * pm;
 		pm = model_get(Debris_model);
 		Debris_num_submodels = pm->n_models;
 	}
 
-	Debris_vaporize_model = model_load( NOX("debris02.pof"), 0, NULL );
+	Debris_vaporize_model = model_load( NOX("debris02.pof") );
 
 	for (i=0; i<Species_info.size(); i++ )
 	{
@@ -610,6 +634,11 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 
 	db->model_instance_num = hull_flag ? model_create_instance(objnum, db->model_num) : -1;
 
+	// ensure that any texture replace on parent ship gets copied to debris --wookieejedi
+	int parent_model_instance_num;
+	if ((db->model_instance_num >= 0) && (parent_objnum >= 0) && ((parent_model_instance_num = object_get_model_instance_num(&Objects[parent_objnum])) >= 0))
+		model_get_instance(db->model_instance_num)->texture_replace = model_get_instance(parent_model_instance_num)->texture_replace;
+
 	// assign the network signature.  The signature will be 0 for non-hull pieces, but since that
 	// is our invalid signature, it should be okay.
 	obj->net_signature = 0;
@@ -776,30 +805,18 @@ void debris_hit(object *debris_obj, object * /*other_obj*/, vec3d *hitpos, float
 	debris	*debris_p = &Debris[debris_obj->instance];
 
 	// Do a little particle spark shower to show we hit
-	{
-		particle::particle_emitter pe;
-
-		pe.pos = *hitpos;								// Where the particles emit from
-		pe.vel = debris_obj->phys_info.vel;		// Initial velocity of all the particles
-
+	if (Debris_hit_particle.isValid()){			// Where the particles emit from
 		vec3d tmp_norm;
 		vm_vec_sub( &tmp_norm, hitpos, &debris_obj->pos );
 		vm_vec_normalize_safe(&tmp_norm);
-			
-		pe.normal = tmp_norm;			// What normal the particle emit around
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_rad = 0.20f;				// Min radius
-		pe.max_rad = 0.40f;				// Max radius
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &tmp_norm);
 
-		// Sparks for first time at this spot
-		pe.num_low = 10;				// Lowest number of particles to create
-		pe.num_high = 10;			// Highest number of particles to create
-		pe.normal_variance = 0.3f;		//	How close they stick to that normal 0=good, 1=360 degree
-		pe.min_vel = 0.0f;				// How fast the slowest particle can move
-		pe.max_vel = 10.0f;				// How fast the fastest particle can move
-		pe.min_life = 0.25f;			// How long the particles live
-		pe.max_life = 0.75f;			// How long the particles live
-		particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
+		auto source = particle::ParticleManager::get()->createSource(Debris_hit_particle);
+		auto host = std::make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel);
+		host->setRadius(debris_obj->radius);
+		source->setHost(std::move(host));
+		source->finishCreation();
 	}
 
 	// multiplayer clients bail here

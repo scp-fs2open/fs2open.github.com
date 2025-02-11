@@ -965,7 +965,7 @@ float do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3
 					damage_to_apply = subsystem->current_hits - min_subsys_strength;
 
 					// make sure damage is positive
-					damage_to_apply = MAX(0, damage_to_apply);
+					damage_to_apply = MAX(0.0f, damage_to_apply);
 				}
 			}
 
@@ -2506,7 +2506,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 					damage = ship_objp->hull_strength - min_hull_strength;
 
 					// make sure damage is positive
-					damage = MAX(0, damage);
+					damage = MAX(0.0f, damage);
 				}
 			}
 
@@ -2518,7 +2518,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 					if (Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Training]) {
 //						diag_printf2("Simulated Hull for Ship %s hit, dropping from %.32f to %d.\n", shipp->ship_name, (int) ( ship_objp->sim_hull_strength * 100 ), (int) ( ( ship_objp->sim_hull_strength - damage ) * 100 ) );
 						ship_objp->sim_hull_strength -= damage;
-						ship_objp->sim_hull_strength = MAX( 0, ship_objp->sim_hull_strength );
+						ship_objp->sim_hull_strength = MAX(0.0f, ship_objp->sim_hull_strength);
 						return;
 					}
 				}
@@ -2610,7 +2610,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 					shipp->wash_killed = 1;
 				}
 
-				float percent_killed = -get_hull_pct(ship_objp);
+				float percent_killed = -get_hull_pct(ship_objp, true);
 				if (percent_killed > 1.0f){
 					percent_killed = 1.0f;
 				}

@@ -185,9 +185,9 @@ object *En_objp;
 #define	REARM_SOUND_DELAY		(3*F1_0)		//	Amount of time to delay rearm/repair after mode start
 #define	REARM_BREAKOFF_DELAY	(3*F1_0)		//	Amount of time to wait after fully rearmed to breakoff.
 
+// Select guard options are now exposed to modders  --wookieejedi
 #define	MIN_DIST_TO_WAYPOINT_GOAL	5.0f
 #define	MAX_GUARD_DIST					250.0f
-#define	BIG_GUARD_RADIUS				500.0f
 
 #define	MAX_EVADE_TIME			(15 * 1000)	//	Max time to evade a weapon.
 
@@ -3515,7 +3515,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 //	flags tells:
 //		WPF_REPEAT		Set -> repeat waypoints.
 //		WPF_BACKTRACK	Go in reverse.
-void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index)
+void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index, bool force)
 {
 	auto aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -3541,7 +3541,7 @@ void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start
 		start_index = (wp_flags & WPF_BACKTRACK) ? (int)wp_list->get_waypoints().size() - 1 : 0;
 	}
 
-	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) )
+	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) && !force )
 	{
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
@@ -4428,7 +4428,7 @@ float ai_path()
 	}
 }
 
-// Only needed because CLAMP() doesn't handle pointers
+// NOTE: this is not the same thing as CLAMP()!  CLAMP() adjusts the value, while this adjusts the bounds.
 void update_min_max(float val, float *min, float *max)
 {
 	if (val < *min)
@@ -7666,7 +7666,7 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
 			aip->ai_flags.set(AI::AI_Flags::Avoiding_big_ship);
 			mabs_pick_goal_point(objp, &Objects[ship_num], &collision_point, &aip->avoid_goal_point);
 			float dist = vm_vec_dist_quick(&aip->avoid_goal_point, &objp->pos);
-			next_check_time = (int) (2000 + MIN(1000, (dist * 2.0f)) * time_scale); // Delay until check again is based on distance to avoid point.
+			next_check_time = fl2i(2000.0f + MIN(1000.0f, (dist * 2.0f)) * time_scale); // Delay until check again is based on distance to avoid point.
 			aip->avoid_check_timestamp = timestamp(next_check_time);	
 			aip->avoid_ship_num = ship_num;
 		} else {
@@ -8687,10 +8687,17 @@ void ai_cruiser_chase()
 
 	// kamikaze - ram and explode
 	if (aip->ai_flags[AI::AI_Flags::Kamikaze]) {
-		ai_turn_towards_vector(&En_objp->pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
+		// point toward the subsystem if we're targeting one; otherwise point toward the center
+		if (aip->targeted_subsys) {
+			get_subsystem_pos(&goal_pos, En_objp, aip->targeted_subsys);
+		} else {
+			goal_pos = En_objp->pos;
+		}
+
+		ai_turn_towards_vector(&goal_pos, Pl_objp, nullptr, nullptr, 0.0f, 0);
 		accelerate_ship(aip, 1.0f);
 
-		float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &En_objp->pos);
+		float dot = vm_vec_dot_to_point(&Pl_objp->orient.vec.fvec, &Pl_objp->pos, &goal_pos);
 		if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f)
 			ai_afterburn_hard(Pl_objp, aip);
 	} 
@@ -8909,15 +8916,8 @@ void ai_chase()
 		return;
 	}
 
-	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance]) && sip->is_small_ship()) {
-		// velocity / turn rate gives us a vector which represents the minimum 'bug out' distance
-		// however this will be a significant underestimate, it doesn't take into account acceleration 
-		// with regards to its turn speed, nor already existing rotvel, nor the angular distance 
-		// to the particular avoidance vector it comes up with
-		// These would significantly complicate the calculation, so for now, it is all bundled into this magic number
-		const float collision_avoidance_aggression = 3.5f;
-
-		vec3d collide_vec = Pl_objp->phys_info.vel * (collision_avoidance_aggression / (PI2 / sip->srotation_time));
+	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance]) && sip->is_small_ship()) {
+		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_combat / (PI2 / sip->srotation_time));
 		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
 		collide_vec *= radius_contribution;
 
@@ -10752,7 +10752,7 @@ void ai_big_guard()
 
 		// got the point, now let's go there
 		ai_turn_towards_vector(&goal_pt, Pl_objp, nullptr, nullptr, 0.0f, 0);
-		accelerate_ship(aip, 1.0f);
+		accelerate_ship(aip, The_mission.ai_profile->guard_big_orbit_max_speed_percent);
 
 
 		bool free_ab_use = aip->ai_flags[AI::AI_Flags::Free_afterburner_use] || aip->ai_profile_flags[AI::Profile_Flags::Free_afterburner_use];
@@ -10837,8 +10837,20 @@ void ai_guard()
 		return;
 	}
 
-	// handler for gurad object with BIG radius
-	if (guard_objp->radius > BIG_GUARD_RADIUS) {
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance]) && sip->is_small_ship()) {
+
+		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_guard / (PI2 / sip->srotation_time));
+		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
+		collide_vec *= radius_contribution;
+
+		collide_vec += Pl_objp->pos;
+		if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &collide_vec, 0.f, 0.1f))
+			return;
+	}
+
+	// handler for guard object with BIG radius
+	if (guard_objp->radius > The_mission.ai_profile->guard_big_orbit_above_target_radius) {
 		ai_big_guard();
 		return;
 	}
@@ -14994,7 +15006,8 @@ int maybe_big_ship_collide_recover_frame(object *objp, ai_info *aip)
 	float	dot, dist;
 	vec3d	v2g;
 
-	bool better_collision_avoid_and_fighting = The_mission.ai_profile->flags[AI::Profile_Flags::Better_collision_avoidance] && aip->mode == AIM_CHASE;
+	bool better_collision_avoid_and_fighting = (The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance] && aip->mode == AIM_CHASE)
+		|| (The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance] && aip->mode == AIM_GUARD);
 
 	// if this guy's in battle he doesn't have the time to spend up to 35 seconds recovering!
 	int phase1_time = better_collision_avoid_and_fighting ? 2 : 5;
@@ -15904,7 +15917,7 @@ void maybe_process_friendly_hit(object *objp_hitter, object *objp_hit, object *o
 			pp->damage_this_burst += accredited_damage;
 
 			// Done with adjustments to damage.  Evaluate based on current friendly_damage
-			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %d\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
+			nprintf(("AI", "Friendly damage: %.1f, threshold: %.1f, inc damage: %.1f, max burst: %.1f\n", pp->friendly_damage, FRIENDLY_DAMAGE_THRESHOLD * (1.0f + (float) (NUM_SKILL_LEVELS + 1 - Game_skill_level)/3.0f), pp->damage_this_burst, MAX_BURST_DAMAGE ));
 			
 			if (is_instructor(objp_hit)) {
 				// it's not nice to hit your instructor
@@ -16793,7 +16806,8 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
+bool test_line_of_sight(const vec3d* from, const vec3d* to, SCP_unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj)
+{
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16801,7 +16815,7 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& exclud
 			continue;
 
 		//Don't collision check against excluded objects
-		if (excluded_object_ids.count(OBJ_INDEX(objp)) > 0)
+		if (excluded_object_ids.contains(OBJ_INDEX(objp)))
 			continue;
 
 		int model_num = 0;

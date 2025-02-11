@@ -485,7 +485,7 @@ typedef struct {
 #define SUBSYS_PATH_DIST	500.0f
 
 // Friendly damage defines
-#define MAX_BURST_DAMAGE	20		// max damage that can be done in BURST_DURATION
+#define MAX_BURST_DAMAGE	20.0f		// max damage that can be done in BURST_DURATION
 #define BURST_DURATION		500	// decay time over which Player->damage_this_burst falls from MAX_BURST_DAMAGE to 0
 
 extern int Mission_all_attack;	//	!0 means all teams attack all teams.
@@ -534,7 +534,7 @@ extern void ai_ignore_wing(object *ignorer, int wingnum);
 extern void ai_dock_with_object(object *docker, int docker_index, object *dockee, int dockee_index, int dock_type);
 extern void ai_stay_still(object *still_objp, vec3d *view_pos);
 extern void ai_do_default_behavior(object *obj);
-extern void ai_start_waypoints(object *objp, int wl_index, int wp_flags, int start_index);
+extern void ai_start_waypoints(object *objp, int wl_index, int wp_flags, int start_index, bool force = false);
 extern void ai_ship_hit(object *objp_ship, object *hit_objp, const vec3d *hit_normal);
 extern void ai_ship_destroy(int shipnum);
 extern vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp);
@@ -636,6 +636,6 @@ void do_random_sidethrust(ai_info *aip, ship_info *sip);
 void ai_formation_object_recalculate_slotnums(int form_objnum, int exiting_objnum = -1);
 
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& excluded_object_ids = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, object** first_intersect_obj = nullptr);
+bool test_line_of_sight(const vec3d* from, const vec3d* to, SCP_unordered_set<int>&& excluded_object_ids = {}, float threshold = 10.0f, bool test_for_shields = false, bool test_for_hull = true, float* first_intersect_dist = nullptr, object** first_intersect_obj = nullptr);
 
 #endif

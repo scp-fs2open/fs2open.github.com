@@ -278,14 +278,14 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
-int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false)
 {
 	for (size_t i=0; i<max; i++)
 	{
 		Assert(strlen(strlist[i]) != 0); //-V805
 
 		if (!stricmp(str1, strlist[i]))
-			return (int)i;
+			return static_cast<int>(i);
 	}
 
 	if (say_errors)
@@ -293,6 +293,9 @@ int string_lookup(const char* str1, T strlist, size_t max, const char* descripti
 
 	return -1;
 }
+
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
@@ -337,7 +340,7 @@ extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool a
 extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
-char *split_str_once(char *src, int max_pixel_w);
+char *split_str_once(char *src, int max_pixel_w, float scale = 1.0f);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  int* n_chars,

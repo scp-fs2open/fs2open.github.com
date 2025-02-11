@@ -9,7 +9,7 @@ namespace hooks {
 const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	"Executed at the start of the engine after all game data has been loaded.",
 	{},
-	tl::nullopt,
+	std::nullopt,
 	CHA_GAMEINIT);
 
 const std::shared_ptr<Hook<>> OnSplashEnd = Hook<>::Factory("On Splash End",
@@ -382,7 +382,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = Overrid
 		{"Self", "object", "The object from which the scene is viewed."},
 		{"Player", "object", "The player object."} 
 	},
-	tl::nullopt,
+	std::nullopt,
 	CHA_HUDDRAW);
 
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = OverridableHook<ObjectDrawConditions>::Factory("On Object Render",
@@ -394,7 +394,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = Ov
 const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	"Invoked every time that FSO processes physics and AI.",
 	{},
-	tl::nullopt,
+	std::nullopt,
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
@@ -421,7 +421,8 @@ const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Fact
 	{
 		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."},
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
-		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."}
+		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."},
+		{"Text", "string", "The dialog text as it may have been updated this frame"}
 	});
 
 const std::shared_ptr<Hook<>> OnDialogClose = Hook<>::Factory("On Dialog Close",
@@ -434,6 +435,15 @@ const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
 	"Called when a cheat is used",
 	{
 		{ "Cheat", "string", "The cheat code the user typed" },
+	});
+
+const std::shared_ptr<OverridableHook<>> OnMissionGoalStatusChanged = scripting::OverridableHook<>::Factory(
+	"On Mission Goal Status Changed", "Called when a goal is marked as failed or completed.",
+	{
+		{"Name", "string", "The name of the goal."},
+		{"Description", "string", "The description of the goal."},
+		{"Type", "number", "The goal type. 1 for Primary, 2 for secondary, 3 for bonus."},
+		{"State", "boolean", "True if the goal was completed, false if it was failed."},
 	});
 
 const std::shared_ptr<Hook<>> OnMissionAboutToEndHook = Hook<>::Factory("On Mission About To End",

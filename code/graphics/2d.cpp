@@ -232,7 +232,7 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
-/*static void parse_window_mode_func()
+static void parse_window_mode_func()
 {
 	SCP_string value;
 	stuff_string(value, F_NAME);
@@ -245,11 +245,8 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	} else {
 		error_display(0, "%s is an invalide window mode", value.c_str());
 	}
-}*/
+}
 
-// Window mode can support default settings but I'm not sure if there would
-// ever be a reason to and this should probably remain a user-only setting
-// similar to other graphics hardware settings
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
@@ -261,11 +258,11 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .importance(98)
                      .default_func([]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
-                     //.parser(parse_window_mode_func)
+                     .parser(parse_window_mode_func)
                      .finish();
 
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, std::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;
@@ -501,7 +498,7 @@ static void parse_framebuffer_func() {
 	stuff_string(value, F_NAME);
 
 	// Convert to lowercase once
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    SCP_tolower(value);
 
     // Use a map to associate strings with their respective actions
     static const std::unordered_map<std::string, std::function<void()>> effectActions = {
@@ -545,7 +542,7 @@ static void parse_anti_aliasing_func() {
 	SCP_string value;
 	stuff_string(value, F_NAME);
 
-	std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+	SCP_tolower(value);
 
 	// Map of valid values to AntiAliasMode
 	static const std::unordered_map<std::string, AntiAliasMode> aaModeMap = {
@@ -596,14 +593,14 @@ static void parse_msaa_func()
 
 	// Convert to lowercase
 	SCP_string lowercase_value = value;
-	std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+	SCP_tolower(lowercase_value);
 
 	// Map valid values to MSAA settings
 	static const std::unordered_map<std::string, int> msaaMap = {
 		{"off", 0},
 		{"4 samples", 4},
 		{"8 samples", 8},
-		{"16 samples", 16},
+		//{"16 samples", 16},
 	};
 
 	// Look up the value in the map
@@ -622,8 +619,7 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
-                              {8, {"8 Samples", 1695}},
-                              {16, {"16 Samples", 1696}}})
+                              {8, {"8 Samples", 1695}}})
                      .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
@@ -2091,7 +2087,7 @@ void gr_set_shader(shader *shade)
 }
 
 // new bitmap functions
-void gr_bitmap(int _x, int _y, int resize_mode)
+void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 {
 	GR_DEBUG_SCOPE("2D Bitmap");
 
@@ -2104,6 +2100,11 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	}
 
 	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
+
+	if (scale_factor != 1.0f) {
+		_w = static_cast<int>(_w * scale_factor);
+		_h = static_cast<int>(_h * scale_factor);
+	}
 
 	x = i2fl(_x);
 	y = i2fl(_y);
@@ -2119,22 +2120,22 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 	verts[0].screen.xyw.x = x;
 	verts[0].screen.xyw.y = y;
-	verts[0].texture_position.u = 0.0f;
+	verts[0].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[0].texture_position.v = 0.0f;
 
 	verts[1].screen.xyw.x = x + w;
 	verts[1].screen.xyw.y = y;
-	verts[1].texture_position.u = 1.0f;
+	verts[1].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[1].texture_position.v = 0.0f;
 
 	verts[2].screen.xyw.x = x + w;
 	verts[2].screen.xyw.y = y + h;
-	verts[2].texture_position.u = 1.0f;
+	verts[2].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[2].texture_position.v = 1.0f;
 
 	verts[3].screen.xyw.x = x;
 	verts[3].screen.xyw.y = y + h;
-	verts[3].texture_position.u = 0.0f;
+	verts[3].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[3].texture_position.v = 1.0f;
 
 	// turn off zbuffering
@@ -3122,7 +3123,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 
 		for (x = 0; x < 256; x++) {
 			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0, 65535);
+			CLAMP(val, 0., 65535.);
 
 			base_ramp[x] = (ushort)val;
 		}
@@ -3130,7 +3131,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 		for (y = 0; y < 3; y++) {
 			for (x = 0; x < 256; x++) {
 				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0, 65535);
+				CLAMP(val, 0., 65535.);
 
 				ramp[x + y * 256] = (ushort)val;
 			}

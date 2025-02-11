@@ -31,7 +31,7 @@ namespace font
 	* @param max_width number of pixels to limit string to (less than or equal to).
 	* @return			The width of the string
 	*/
-	int force_fit_string(char *str, int max_str, int max_width);
+	int force_fit_string(char *str, int max_str, int max_width, float scale = 1.0f);
 
 	/**
 	* @brief Inites the font system

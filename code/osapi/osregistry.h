@@ -12,7 +12,8 @@
 
 
 #include <cstdlib>
-#include <tl/optional.hpp>
+#include <optional>
+
 // ------------------------------------------------------------------------------------------------------------
 // REGISTRY DEFINES/VARS
 //
@@ -32,7 +33,7 @@ extern bool Ingame_options_save_found;
 //
 
 #ifdef WIN32
-tl::optional<time_t> os_registry_get_last_modification_time();
+std::optional<time_t> os_registry_get_last_modification_time();
 #endif
 
 // initialize the registry. setup default keys to use

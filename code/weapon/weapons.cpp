@@ -55,9 +55,9 @@
 #include "weapon/flak.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
-#include "particle/effects/SingleParticleEffect.h"
-#include "particle/effects/BeamPiercingEffect.h"
-#include "particle/effects/ParticleEmitterEffect.h"
+#include "particle/ParticleEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
+#include "particle/volumes/SpheroidVolume.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "weapon.h"
@@ -2214,19 +2214,29 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		{
 			using namespace particle;
 
-			// Only beams do this randomization
-			// NOTE: in practice, most beams are WP_LASER and do not do this
-			if (subtype == WP_BEAM)
-			{
-				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
-				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
-				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-			}
-			else
-			{
-				auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size, size);
-				wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-			}
+			// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+			// NOTE: in practice, most beams are WP_LASER
+			auto&& radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+					"", //Name
+					::util::UniformFloatRange(1.f), //Particle num
+					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+					::util::UniformFloatRange(0.f), //Velocity Inherit
+					false, //Velocity Inherit absolute?
+					nullptr, //Velocity volume
+					::util::UniformFloatRange(0.f), //Velocity volume multiplier
+					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					std::nullopt, //Orientation-based velocity
+					std::nullopt, //Position-based velocity
+					nullptr, //Position volume
+					ParticleEffectHandle::invalid(), //Trail
+					1.f, //Chance
+					false, //Affected by detail
+					-1.f, //Culling range multiplier
+					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+					::util::UniformFloatRange(-1.f), //Lifetime
+					radius, //Radius
+					bitmapIndex)); //Bitmap
 		}
 	}
 
@@ -2235,16 +2245,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	} else if (first_time) {
 		using namespace particle;
 
-		// Default value
-		wip->shield_impact_explosion_radius = 1.0f;
 		if (wip->impact_weapon_expl_effect.isValid()) {
-			auto singleEffect = dynamic_cast<effects::SingleParticleEffect*>(ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect));
-
-			if (singleEffect)
-			{
-				// Initialize with value of the previously created single particle effect
-				wip->shield_impact_explosion_radius = singleEffect->getProperties().m_radius.next();
+			// Initialize with value of the previously created single particle effect
+			wip->shield_impact_explosion_radius = 0.0f;
+			const auto particle_effect = ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect);
+			for (const auto& particle_def : particle_effect) {
+				wip->shield_impact_explosion_radius += particle_def.m_radius.avg();
 			}
+			wip->shield_impact_explosion_radius /= static_cast<float>(particle_effect.size());
+		}
+		else {
+			// Default value
+			wip->shield_impact_explosion_radius = 1.0f;
 		}
 	}
 
@@ -2283,19 +2295,29 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				using namespace particle;
 
-				// Only beams do this randomization
-				// NOTE: in practice, most beams are WP_LASER and do not do this
-				if (subtype == WP_BEAM)
-				{
-					// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size * 1.2f, size * 1.9f);
-					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-				}
-				else
-				{
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapID, size, size);
-					wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(singleEffect);
-				}
+				// The original formula is (1.2f + 0.007f * (float)(rand() % 100)) which generates values within [1.2, 1.9)
+				// NOTE: in practice, most beams are WP_LASER
+				auto&& radius = subtype == WP_BEAM ? ::util::UniformFloatRange(size * 1.2f, size * 1.9f) : ::util::UniformFloatRange(size);
+				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						"", //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						nullptr, //Velocity volume
+						::util::UniformFloatRange(0.f), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						::util::UniformFloatRange(-1.f), //Lifetime
+						radius, //Radius
+						bitmapID)); //Bitmap
 			}
 		}
 		else if (first_time) {
@@ -2325,7 +2347,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// Do not add features here!
 
 		using namespace particle;
-		using namespace effects;
 
 		int effectIndex = -1;
 		float radius = 0.0f;
@@ -2334,9 +2355,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		float velocity = 0.0f;
 		float back_velocity = 0.0f;
 		float variance = 0.0f;
-
-		particle_emitter emitter;
-		memset(&emitter, 0, sizeof(emitter));
 
 		if (optional_string("$Piercing Impact Explosion:"))
 		{
@@ -2370,31 +2388,49 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 		if (effectIndex >= 0 && radius != 0.0f)
 		{
-			emitter.max_vel = 2.0f * velocity;
-			emitter.min_vel = 0.5f * velocity;
-			emitter.max_life = 2.0f * life;
-			emitter.min_life = 0.25f * life;
-			emitter.num_high = 2 * count;
-			emitter.num_low = count / 2;
-			emitter.normal_variance = variance;
-			emitter.max_rad = 2.0f * radius;
-			emitter.min_rad = 0.5f * radius;
-			emitter.vel = vmd_zero_vector;
-
-			auto emitterEffect = new ParticleEmitterEffect();
-			emitterEffect->setValues(emitter, effectIndex, 10.0f);
-			wip->piercing_impact_effect = ParticleManager::get()->addEffect(emitterEffect);
+			wip->piercing_impact_effect = ParticleManager::get()->addEffect(ParticleEffect(
+					"", //Name
+					::util::UniformFloatRange(count / 2.f, 2.f * count), //Particle num
+					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+					::util::UniformFloatRange(1.f), //Velocity Inherit
+					false, //Velocity Inherit absolute?
+					make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+					::util::UniformFloatRange(MIN(0.5f * velocity, 2.0f * velocity), MAX(0.5f * velocity, 2.0f * velocity)), //Velocity volume multiplier
+					ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					std::nullopt, //Orientation-based velocity
+					std::nullopt, //Position-based velocity
+					nullptr, //Position volume
+					ParticleEffectHandle::invalid(), //Trail
+					1.f, //Chance
+					true, //Affected by detail
+					10.f, //Culling range multiplier
+					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
+					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
+					effectIndex)); //Bitmap
 
 			if (back_velocity != 0.0f)
 			{
-				emitter.max_vel = 2.0f * back_velocity;
-				emitter.min_vel = 0.5f * back_velocity;
-				emitter.num_high /= 2;
-				emitter.num_low /= 2;
-
-				auto secondaryEffect = new ParticleEmitterEffect();
-				secondaryEffect->setValues(emitter, effectIndex, 10.0f);
-				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(secondaryEffect);
+				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						"", //Name
+						::util::UniformFloatRange(count / 4.f, i2fl(count)), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(1.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						make_unique<LegacyAACuboidVolume>(variance, 1.f, true), //Velocity volume
+						::util::UniformFloatRange(MIN(0.5f * back_velocity, 2.0f * back_velocity), MAX(0.5f * back_velocity, 2.0f * back_velocity)), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						true, //Affected by detail
+						10.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
+						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
+						effectIndex)); //Bitmap
 			}
 		}
 	}
@@ -3041,21 +3077,31 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			{
 				using namespace particle;
 
-				if (defaultEffect)
-				{
-					// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
-					// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
-					// seriously, who though that would be a good idea?
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f, size * 1.5f * 0.005f);
-					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
-						addEffect(singleEffect);
-				}
-				else
-				{
-					auto singleEffect = effects::SingleParticleEffect::createInstance(bitmapIndex, size * 1.2f, size * 1.9f);
-					wip->flash_impact_weapon_expl_effect = ParticleManager::get()->
-						addEffect(singleEffect);
-				}
+				// 'size * 1.5f * 0.005f' is another weird thing, the original code scales the lifetime of the flash particles based on size
+				// so the new effects have to simulate that, but that onyl applies to the default effect, not a custom effect
+				// seriously, who though that would be a good idea?
+				auto&& lifetime = defaultEffect ? ::util::UniformFloatRange(size * 1.5f * 0.005f) : ::util::UniformFloatRange(-1.f);
+
+				wip->flash_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
+						"", //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						nullptr, //Velocity volume
+						::util::UniformFloatRange(0.f), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						lifetime, //Lifetime
+						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
+						bitmapIndex)); //Bitmap
 			}
 		}
 
@@ -3101,13 +3147,58 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (bitmapIndex >= 0 && radius > 0.0f)
 			{
 				using namespace particle;
-				using namespace effects;
 
-				auto piercingEffect = new BeamPiercingEffect();
-				piercingEffect->setValues(bitmapIndex, radius, velocity, back_velocity, variance);
+				SCP_string particle_effect_name = "__internal_wip_beampiercing_" + SCP_string(wip->name);
+				SCP_vector<ParticleEffect> piercingEffect;
 
-				wip->piercing_impact_effect = ParticleManager::get()->
-					addEffect(piercingEffect);
+				float baseVelocity = velocity == 0.f ? radius : velocity;
+				float backVelocity = back_velocity == 0.f ? baseVelocity * -0.2f : back_velocity;
+
+				//Primary particle
+				piercingEffect.emplace_back(
+						particle_effect_name, //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						::util::UniformFloatRange(baseVelocity * variance), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						::util::UniformFloatRange(MIN(baseVelocity, 2.0f * baseVelocity), MAX(baseVelocity, 2.0f * baseVelocity)), //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						::util::UniformFloatRange(-1.f), //Lifetime
+						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
+						bitmapIndex);
+
+				//Splash particle
+				piercingEffect.emplace_back(
+						"", //Name, empty as it's a non-findable part of a composite
+						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(0.f), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						make_unique<SpheroidVolume>(1.f, 1.f, 1.f), //Velocity volume
+						::util::UniformFloatRange(backVelocity * variance), //Velocity volume multiplier
+						ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						::util::UniformFloatRange(MIN(backVelocity, 2.0f * backVelocity), MAX(backVelocity, 2.0f * backVelocity)), //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						::util::UniformFloatRange(-1.f), //Lifetime
+						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
+						bitmapIndex);
+
+				wip->piercing_impact_effect = ParticleManager::get()->addEffect(std::move(piercingEffect));
 			}
 		}
 
@@ -5934,13 +6025,8 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-
-		object* objp = &Objects[wp->objnum];
-		source.moveToObject(objp, &vmd_zero_vector);
-		source.setWeaponState(wp->weapon_state);
-		source.setVelocity(&objp->phys_info.vel);
-
-		source.finish();
+		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
+		source->finishCreation();
 	}
 }
 
@@ -6030,10 +6116,8 @@ void weapon_process_post(object * obj, float frame_time)
 				// do the spawn effect
 				if (wip->spawn_info[i].spawn_effect.isValid()) {
 					auto particleSource = particle::ParticleManager::get()->createSource(wip->spawn_info[i].spawn_effect);
-
-					particleSource.moveTo(&obj->pos, &obj->orient);
-					particleSource.setVelocity(&obj->phys_info.vel);
-					particleSource.finish();
+					particleSource->setHost(std::make_unique<EffectHostObject>(obj, vmd_zero_vector));
+					particleSource->finishCreation();
 				}
 
 				// update next_spawn_time
@@ -6562,7 +6646,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 			return -1;
 		}
 
-		wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+		wip->model_num = model_load(wip->pofbitmap_name);
 
 		if (wip->model_num < 0) {
 			Error(LOCATION, "Cannot create weapon %s; model file %s could not be loaded", wip->name, wip->pofbitmap_name);
@@ -7440,7 +7524,6 @@ int weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_ra
 void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, const vec3d *blast_pos, float blast, bool make_shockwave)
 {
 	vec3d		force, vec_blast_to_ship, vec_ship_to_impact;
-	polymodel		*pm;
 
 	Assertion(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS, "weapon_area_apply_blast can only be called on ships, asteroids, or debris");
 	if (!(objp->type == OBJ_SHIP || objp->type == OBJ_ASTEROID || objp->type == OBJ_DEBRIS))
@@ -7457,8 +7540,7 @@ void weapon_area_apply_blast(const vec3d * /*force_apply_pos*/, object *objp, co
 
 	vm_vec_sub(&vec_ship_to_impact, blast_pos, &objp->pos);
 
-	int model_num = object_get_model(objp);
-	pm = model_get(model_num);
+	auto pm = object_get_model(objp);
 	Assert ( pm != NULL );
 	if (!pm)
 		return;
@@ -7637,12 +7719,36 @@ bool weapon_armed(weapon *wp, bool hit_target)
 	return true;
 }
 
+static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* weapon_obj, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
+	if (impacted_obj == nullptr || impacted_obj->type != OBJ_SHIP || local_hitpos == nullptr) {
+		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
+		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel);
+		vector_host->setRadius(impacted_obj == nullptr ? weapon_obj->radius : impacted_obj->radius);
+		return vector_host;
+	}
+	else {
+		vec3d local_norm;
+		model_instance_global_to_local_dir(&local_norm, &weapon_obj->last_orient.vec.fvec, object_get_model(impacted_obj), object_get_model_instance(impacted_obj), impacted_submodel, &impacted_obj->orient);
+
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &local_norm);
+
+		if (impacted_submodel < 0) {
+			//Fall back to object
+			return std::make_unique<EffectHostObject>(impacted_obj, *local_hitpos, orient);
+		}
+		else {
+			//Full subobject
+			return std::make_unique<EffectHostSubmodel>(impacted_obj, impacted_submodel, *local_hitpos, orient);
+		}
+	}
+}
 
 /**
  * Called when a weapon hits something (or, in the case of
  * missiles explodes for any particular reason)
  */
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal )
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant, const vec3d* hitnormal, const vec3d* local_hitpos, int submodel)
 {
 	Assert(weapon_obj != NULL);
 	if(weapon_obj == NULL){
@@ -7736,15 +7842,15 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 					&& hit_angle <= fl_radians(ci.max_angle_threshold)
 				) {
 					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-					particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-					particleSource.setVelocity(&weapon_obj->phys_info.vel);
+					particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+					particleSource->setTriggerRadius(weapon_obj->radius);
+					particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
-						particleSource.setOrientationNormal(hitnormal);
+						particleSource->setNormal(*hitnormal);
 					}
-
-					particleSource.finish();
+					particleSource->finishCreation();
 
 					valid_conditional_impact = true;
 				}
@@ -7755,26 +7861,27 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
               		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-		particleSource.setVelocity(&weapon_obj->phys_info.vel);
+
+		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
-			particleSource.setOrientationNormal(hitnormal);
+			particleSource->setNormal(*hitnormal);
 		}
-
-		particleSource.finish();
+		particleSource->finishCreation();
 	} else if (!valid_conditional_impact && wip->dinky_impact_weapon_expl_effect.isValid() && !armed_weapon) {
 		auto particleSource = particle::ParticleManager::get()->createSource(wip->dinky_impact_weapon_expl_effect);
-		particleSource.moveTo(hitpos, &weapon_obj->last_orient);
-		particleSource.setVelocity(&weapon_obj->phys_info.vel);
+		particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+		particleSource->setTriggerRadius(weapon_obj->radius);
+		particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 		if (hitnormal)
 		{
-			particleSource.setOrientationNormal(hitnormal);
+			particleSource->setNormal(*hitnormal);
 		}
-
-		particleSource.finish();
+		particleSource->finishCreation();
 	}
 
 	if ((impacted_obj != nullptr) && (quadrant == -1) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
@@ -7809,27 +7916,27 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 				using namespace particle;
 
 				auto primarySource = ParticleManager::get()->createSource(wip->piercing_impact_effect);
-				primarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
-				primarySource.setVelocity(&weapon_obj->phys_info.vel);
+				primarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+				primarySource->setTriggerRadius(weapon_obj->radius);
+				primarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 				if (hitnormal)
 				{
-					primarySource.setOrientationNormal(hitnormal);
+					primarySource->setNormal(*hitnormal);
 				}
-
-				primarySource.finish();
+				primarySource->finishCreation();
 
 				if (wip->piercing_impact_secondary_effect.isValid()) {
 					auto secondarySource = ParticleManager::get()->createSource(wip->piercing_impact_secondary_effect);
-					secondarySource.moveTo(&weapon_obj->pos, &weapon_obj->last_orient);
-					secondarySource.setVelocity(&weapon_obj->phys_info.vel);
+					secondarySource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+					secondarySource->setTriggerRadius(weapon_obj->radius);
+					secondarySource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
 					if (hitnormal)
 					{
-						secondarySource.setOrientationNormal(hitnormal);
+						secondarySource->setNormal(*hitnormal);
 					}
-
-					secondarySource.finish();
+					secondarySource->finishCreation();
 				}
 			}
 		}
@@ -8054,7 +8161,7 @@ void weapons_page_in()
 		{
 			case WRT_POF:
 			{
-				wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+				wip->model_num = model_load( wip->pofbitmap_name );
 
 				polymodel *pm = model_get( wip->model_num );
 
@@ -8087,7 +8194,7 @@ void weapons_page_in()
 		wip->external_model_num = -1;
 
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+			wip->external_model_num = model_load( wip->external_model_name );
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
@@ -8166,7 +8273,7 @@ void weapons_page_in_cheats()
         wip->wi_flags.remove(Weapon::Info_Flags::Thruster);		// Assume no thrusters
 
 		if ( wip->render_type == WRT_POF ) {
-			wip->model_num = model_load( wip->pofbitmap_name, 0, NULL );
+			wip->model_num = model_load( wip->pofbitmap_name );
 				
 			polymodel *pm = model_get( wip->model_num );
 				
@@ -8180,7 +8287,7 @@ void weapons_page_in_cheats()
 		wip->external_model_num = -1;
 		
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load( wip->external_model_name, 0, NULL );
+			wip->external_model_num = model_load( wip->external_model_name );
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
@@ -8245,7 +8352,7 @@ bool weapon_page_in(int weapon_type)
 		{
 		case WRT_POF:
 		{
-			wip->model_num = model_load(wip->pofbitmap_name, 0, NULL);
+			wip->model_num = model_load(wip->pofbitmap_name);
 
 			polymodel *pm = model_get(wip->model_num);
 
@@ -8278,7 +8385,7 @@ bool weapon_page_in(int weapon_type)
 		wip->external_model_num = -1;
 
 		if (VALID_FNAME(wip->external_model_name))
-			wip->external_model_num = model_load(wip->external_model_name, 0, NULL);
+			wip->external_model_num = model_load(wip->external_model_name);
 
 		if (wip->external_model_num == -1)
 			wip->external_model_num = wip->model_num;
@@ -8485,17 +8592,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit the particle
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&particle_pos,
-											 &vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = particle_pos;
+							pi.vel = vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&particle_pos,
 											 &vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8529,17 +8639,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8572,17 +8685,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8607,17 +8723,18 @@ void weapon_maybe_spew_particle(object *obj)
 
 						// emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8652,17 +8769,20 @@ void weapon_maybe_spew_particle(object *obj)
 
 						//emit particles
 						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_SMOKE);
+							particle::particle_info pi;
+							pi.bitmap = particle::Anim_bitmap_id_smoke;
+							pi.nframes = particle::Anim_num_frames_smoke;
+							pi.pos = output_pos;
+							pi.vel = output_vel;
+							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
+							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
+
+							particle::create(&pi);
 						} else {
 							particle::create(&output_pos,
 											 &output_vel,
 											 wip->particle_spewers[psi].particle_spew_lifetime,
 											 wip->particle_spewers[psi].particle_spew_radius,
-											 particle::PARTICLE_BITMAP,
 											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
 						}
 					}
@@ -8942,7 +9062,6 @@ void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radi
 					 &vmd_zero_vector,
 					 0.0f,
 					 radius,
-					 particle::PARTICLE_BITMAP_PERSISTENT,
 					 expl_ani_handle,
 					 objp);
 }
@@ -9077,7 +9196,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			if (laser_length < 0.0001f)
 				return;
-			
+
 			if (head_radius <= 0.0001f) {
 				head_radius = 0.0001f;
 			}

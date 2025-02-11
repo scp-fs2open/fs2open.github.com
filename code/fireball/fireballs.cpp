@@ -54,6 +54,11 @@ static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp"
                      .importance(65)
                      .finish();
 
+static float exp_to_line(float t, float start_value, float end_slope, float scale)
+{
+	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
+}
+
 /**
  * Play warp in sound for warp effect
  */
@@ -373,6 +378,110 @@ static void parse_fireball_tbl(const char *table_filename)
 				// rather than just having the default model that might or might not be used
 				fi->use_3d_warp = true;
 			}
+
+			if (optional_string("$Warp size ratio:")) {
+				stuff_float(&fi->warp_size_ratio);
+			} else if (first_time) {
+				if (fi->use_3d_warp) {
+					fi->warp_size_ratio = 1 / 25.0f;
+				} else {
+					fi->warp_size_ratio = 1.0f;
+				}
+			}
+
+			if (optional_string("$Flare size ratio:")) {
+				stuff_float(&fi->flare_size_ratio);
+			} else if (first_time) {
+				fi->flare_size_ratio = 1.0f;
+			}
+
+			if (optional_string("$Flicker magnitude:")) {
+				stuff_float(&fi->flicker_magnitude);
+			} else if (first_time) {
+				fi->flicker_magnitude = 0.10f;
+			}
+
+			if (optional_string("$Warp flare style:")) {
+				switch (optional_string_one_of(3, "classic", "enhanced", "cinematic")) {
+				case 0:
+					fi->warp_flare_style = warp_style::CLASSIC;
+					break;
+				case 1:
+					fi->warp_flare_style = warp_style::ENHANCED;
+					break;
+				case 2:
+					fi->warp_flare_style = warp_style::CINEMATIC;
+					break;
+				default:
+					error_display(0, "Invalid warp flare style. Must be classic, enhanced, or cinematic.");
+				}
+
+				// Set warp flare option
+				if (optional_string("+Flare size ratio:")) {
+					stuff_float(&fi->flare_size_ratio);
+				} else if (fi->warp_flare_style == warp_style::CLASSIC) {
+					fi->flare_size_ratio = 1.0f;
+				} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
+					fi->flare_size_ratio = 5.3f;
+				}
+
+			} else if (first_time) {
+				fi->warp_flare_style = warp_style::CLASSIC;
+			}
+
+			if (optional_string("$Warp model style:")) {
+				switch (optional_string_one_of(2, "classic", "cinematic")) {
+				case 0:
+					fi->warp_model_style = warp_style::CLASSIC;
+					break;
+				case 1:
+					fi->warp_model_style = warp_style::CINEMATIC;
+					break;
+				default:
+					error_display(0, "Invalid warp model style. Must be classic or cinematic.");
+				}
+			} else if (first_time) {
+				fi->warp_model_style = warp_style::CLASSIC;
+			}
+			
+			// Set warp_model_style options if cinematic style is chosen
+			if (fi->warp_model_style == warp_style::CINEMATIC) {
+				if (optional_string("+Warp size ratio:")) {
+					stuff_float(&fi->warp_size_ratio);
+				} else {
+					fi->warp_size_ratio = 1.6f;
+				}
+
+				// The first two values need to be implied multiples of PI
+				// for convenience. These shouldn't need to be faster than a full
+				// rotation per second, which is already ridiculous.
+				if (optional_string("+Rotation anim:")) {
+					stuff_float_list(fi->rot_anim, 3);
+
+					CLAMP(fi->rot_anim[0], 0.0f, 2.0f);
+					CLAMP(fi->rot_anim[1], 0.0f, 2.0f);
+					fi->rot_anim[2] = MAX(0.0f, fi->rot_anim[2]);
+				} else {
+					// PI / 2.75f, PI / 10.0f, 2.0f
+					fi->rot_anim[0] = 0.365f;
+					fi->rot_anim[1] = 0.083f;
+					fi->rot_anim[2] = 2.0f;
+				}
+
+				// Variable frame rate for faster propagation of ripples
+				if (optional_string("+Frame anim:")) {
+					stuff_float_list(fi->frame_anim, 3);
+
+					// A frame rate that is 4 times the normal speed is ridiculous
+					CLAMP(fi->frame_anim[0], 0.0f, 4.0f);
+					CLAMP(fi->frame_anim[1], 1.0f, 4.0f);
+					fi->frame_anim[2] = MAX(0.0f, fi->frame_anim[2]);
+				} else {
+					fi->frame_anim[0] = 1.0f;
+					fi->frame_anim[1] = 1.0f;
+					fi->frame_anim[2] = 3.0f;
+				}
+			}
 		}
 
 		required_string("#End");
@@ -539,7 +648,13 @@ void fireball_set_framenum(int num)
 	}
 
 	if ( fb->fireball_render_type == FIREBALL_WARP_EFFECT )	{
-		framenum = bm_get_anim_frame(fl->bitmap_id, fb->time_elapsed, 0.0f, true);
+		float new_time = fb->time_elapsed;
+		if (fd->warp_model_style == warp_style::CINEMATIC) {
+			float duration_ratio = 2.0f / fb->warp_open_duration;
+			new_time = exp_to_line(fb->time_elapsed, fd->frame_anim[0] * duration_ratio, fd->frame_anim[1], fd->frame_anim[2] * duration_ratio);
+		}
+
+		framenum = bm_get_anim_frame(fl->bitmap_id, new_time, 0.0f, true);
 
 		if ( fb->orient )	{
 			// warp out effect plays backwards
@@ -964,7 +1079,7 @@ void fireballs_page_in()
 		// load the warp model, if we have one
 		if (strlen(fd->warp_model) > 0 && cf_exists_full(fd->warp_model, CF_TYPE_MODELS)) {
 			mprintf(("Loading warp model '%s'\n", fd->warp_model));
-			fd->warp_model_id = model_load(fd->warp_model, 0, nullptr, 0);
+			fd->warp_model_id = model_load(fd->warp_model, nullptr, ErrorType::WARNING);
 		} else {
 			fd->warp_model_id = -1;
 		}
@@ -1030,22 +1145,48 @@ int fireball_asteroid_explosion_type(asteroid_info *aip)
 	return index;
 }
 
+static float cutscene_wormhole(float t) {
+	float a = 25.0f * powf(t, 4.0f);
+	return a / (a + 1.0f);
+}
+
 float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
-	float rad;
 
-	if ( t < fb->warp_open_duration )	{
-		rad = (float)pow(t / fb->warp_open_duration, 0.4f);
-	} else if ( t < fb->total_time - fb->warp_close_duration )	{
-		rad = 1.0f;
+	float rad = cutscene_wormhole(t / fb->warp_open_duration);
+
+	fireball_info* fi = &Fireball_info[fb->fireball_info_index];
+
+	if (fi->warp_model_style == warp_style::CINEMATIC) {
+		rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
+		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
+		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
 	} else {
-		rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
+		if (t < fb->warp_open_duration) {
+			rad = (float)pow(t / fb->warp_open_duration, 0.4f);
+		} else if (t < fb->total_time - fb->warp_close_duration) {
+			rad = 1.0f;
+		} else {
+			rad = (float)pow((fb->total_time - t) / fb->warp_close_duration, 0.4f);
+		}
 	}
+
 	return rad;
 }
 
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
+static float fireball_wormhole_flare_radius(fireball* fb) {
+	float t = fb->time_elapsed;
+	float d1 = fb->warp_open_duration;
+	float d2 = fb->warp_close_duration;
+
+	float rad = 2 * (1.0f - exp(-4.0f * powf(1.7f * t/d1, 3.0f))) - (1.0f - exp(-2.0f * powf(1.7f * t/d1, 3.0f)));
+	rad *= (1.0f - exp(-2.0f * (fb->total_time - t) / d2));
+
+	return rad;
+}
+
+extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float flicker_magnitude, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
 
 void fireball_render(object* obj, model_draw_list *scene)
 {
@@ -1087,11 +1228,53 @@ void fireball_render(object* obj, model_draw_list *scene)
 		break;
 
 		case FIREBALL_WARP_EFFECT: {
+			fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 			float percent_life = fb->time_elapsed / fb->total_time;
-			float rad = obj->radius * fireball_wormhole_intensity(fb);
+			float rad = obj->radius * fireball_wormhole_intensity(fb) * fi->warp_size_ratio;
 
-			fireball_info *fi = &Fireball_info[fb->fireball_info_index];
-			warpin_queue_render(scene, obj, &obj->orient, &obj->pos, fb->current_bitmap, rad, percent_life, obj->radius, fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0, fi->warp_glow_bitmap, fi->warp_ball_bitmap, fi->warp_model_id);
+			float flare_rad = obj->radius * fi->flare_size_ratio;
+
+			matrix* warp_orientation;
+
+			// Flare animation selection
+			if (fi->warp_flare_style == warp_style::ENHANCED) {
+				flare_rad += powf((2.0f * percent_life) - 1.0f, 24.0f) * obj->radius * 1.5f * fi->flare_size_ratio;
+			} else if (fi->warp_flare_style == warp_style::CINEMATIC) {
+				flare_rad *= fireball_wormhole_flare_radius(fb);
+			} else {
+				flare_rad *= fireball_wormhole_intensity(fb);
+			}
+
+			if (fi->warp_model_style == warp_style::CINEMATIC) {
+				matrix m = ZERO_MATRIX;
+				matrix dest = ZERO_MATRIX;
+
+				float duration_ratio = 2.0f / fb->warp_open_duration;
+
+				float angle = exp_to_line(fb->time_elapsed, PI * fi->rot_anim[0] * duration_ratio, 
+					PI * fi->rot_anim[1], 
+					fi->rot_anim[2] * duration_ratio);
+
+				matrix* bank_angle = vm_angle_2_matrix(&m, angle, 1);
+				warp_orientation = vm_matrix_x_matrix(&dest, &obj->orient, bank_angle);
+			} else {
+				warp_orientation = &obj->orient;
+			}
+
+			warpin_queue_render(scene,
+				obj,
+				warp_orientation,
+				&obj->pos,
+				fb->current_bitmap,
+				rad,
+				percent_life,
+				flare_rad,
+				fi->flicker_magnitude,
+				obj->radius,
+				fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0,
+				fi->warp_glow_bitmap,
+				fi->warp_ball_bitmap,
+				fi->warp_model_id);
 		}
 		break;
 

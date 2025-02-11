@@ -1000,7 +1000,7 @@ void model_instance_free_all();
 int model_load(ship_info* sip, bool prefer_tech_model);
 
 // Loads a model from disk and returns the model number it loaded into.
-int model_load(const char *filename, int n_subsystems, model_subsystem *subsystems, int ferror = 1, int duplicate = 0);
+int model_load(const char *filename, ship_info* sip = nullptr, ErrorType error_type = ErrorType::FATAL_ERROR, bool allow_redundant_load = false);
 
 int model_create_instance(int objnum, int model_num);
 void model_delete_instance(int model_instance_num);

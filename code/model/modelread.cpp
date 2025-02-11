@@ -1574,7 +1574,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
+modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1585,9 +1585,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	fp = cfopen(filename,"rb");
 
 	if (!fp) {
-		if (ferror == 1) {
+		if (error_type == ErrorType::FATAL_ERROR) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else if (ferror == 0) {
+		} else if (error_type == ErrorType::WARNING) {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
@@ -1694,9 +1694,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
-				if ( pm->rad <= 0.1f )
+				if ( pm->rad <= 0.00001f )
 				{
-					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
+					Warning(LOCATION, "Model <%s> has a radius <= 0.00001f\n", filename);
 				}
 
 				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
@@ -1881,8 +1881,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( sm->rad <= 0.1f ) {
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", sm->name, filename);
+				if ( sm->rad <= 0.00001f ) {
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.00001f\n", sm->name, filename);
 				}
 				
 				// sanity first!
@@ -3019,25 +3019,25 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	return modelread_status::SUCCESS_REAL;
 }
 
-modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
 	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
+	if (read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks)) {
 		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {
-		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
+		status = read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
 	}
 
 	return status;
 }
 
 //reads a binary file containing a 3d model
-modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, ErrorType error_type, model_read_deferred_tasks& deferredTasks)
 {
-	modelread_status status = read_model_file(pm, filename, ferror, deferredTasks);
+	modelread_status status = read_model_file(pm, filename, error_type, deferredTasks);
 
 	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
 	//This is now a tradeoff between speed and memory usage. To further accelerate loading, the cache can be kept until all models are loaded, but there is a risk that this cache will be very big.
@@ -3270,14 +3270,14 @@ int model_load(ship_info* sip, bool prefer_tech_model)
 	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
 		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
 		// techroom model, which is decidedly wrong for the mission itself.
-		return model_load(sip->pof_file_tech, 0, nullptr);
+		return model_load(sip->pof_file_tech);
 	} else {
-		return model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		return model_load(sip->pof_file, sip);
 	}
 }
 
 //returns the number of this model
-int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
+int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool allow_redundant_load)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3285,11 +3285,19 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	if ( !model_initted )
 		model_init();
 
+	int n_subsystems = 0;
+	model_subsystem* subsystems = nullptr;
+
+	if (sip != nullptr) {
+		n_subsystems = sip->n_subsystems;
+		subsystems = sip->subsystems;
+	}
+
 	num = -1;
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
+			if (!stricmp(filename , Polygon_models[i]->filename) && !allow_redundant_load) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3348,7 +3356,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	model_read_deferred_tasks deferredTasks;
 
-	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) == modelread_status::FAIL)	{
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, error_type, deferredTasks) == modelread_status::FAIL)	{
 		if (pm != NULL) {
 			delete pm;
 		}
@@ -4710,7 +4718,7 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4747,7 +4755,7 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 
 	*outpnt = resultPnt;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -4763,7 +4771,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 	constexpr int preallocatedStackDepth = 5;
 	const matrix* preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4792,7 +4800,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 
 	*out_dir = resultDir;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -4802,7 +4810,7 @@ void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorien
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4837,7 +4845,7 @@ void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorien
 	*outpnt = resultPnt;
 	*outorient = resultMat;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -5126,7 +5134,7 @@ void model_do_intrinsic_motions(object *objp)
 	// we are handling a specific object
 	if (objp)
 	{
-		int model_instance_num = object_get_model_instance(objp);
+		int model_instance_num = object_get_model_instance_num(objp);
 		if (model_instance_num >= 0)
 		{
 			auto obj_it = Intrinsic_motions.find(model_instance_num);

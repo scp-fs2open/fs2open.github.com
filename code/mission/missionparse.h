@@ -170,7 +170,7 @@ typedef struct mission {
 	int		ambient_light_level;
 	float	neb_far_multi;
 	float	neb_near_multi;
-	tl::optional<volumetric_nebula> volumetrics;
+	std::optional<volumetric_nebula> volumetrics;
 	sound_env	sound_environment;
 	vec3d   gravity;
 	int     HUD_timer_padding;

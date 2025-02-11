@@ -1296,7 +1296,7 @@ bool control_config_accept(bool API_Access)
 		retry:;
 			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
-				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
+				"Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to "
 				"abort to config menu.",
 				32 - 6,
 				default_string.c_str());
@@ -1320,7 +1320,7 @@ bool control_config_accept(bool API_Access)
 			});
 
 			if (it != Control_config_presets.end()) {
-				popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+				popup(flags | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
 				goto retry;
 			}
 
@@ -1758,7 +1758,7 @@ bool control_config_delete_preset(CC_preset preset) {
 	return delete_preset_file(preset);
 }
 
-bool control_config_create_new_preset(SCP_string newName)
+bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
@@ -1771,7 +1771,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 
@@ -1806,7 +1806,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	return false; //should be unreachable, but just in case
 }
 
-bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
+bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newName, bool overwrite) {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
@@ -1818,7 +1818,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 

@@ -6,6 +6,12 @@
 
 #include <limits>
 
+void removeFontMultiplierOption();
+
+float get_font_scale_factor();
+
+float calculate_auto_font_size(float current_size);
+
 namespace font
 {
 	/**
@@ -35,6 +41,7 @@ namespace font
 		SCP_string filename;			//!< The file name used to retrieve this font
 
 	protected:
+		bool autoScale = false;			//!< If the font is allowed to auto scale. Only used for VFNT fonts as NVG fonts do the auto scale calculation during parse time
 		bool canScale = false;			//!< If the font is allowed to scale with the user font multiplier
 		float offsetTop = 0.0f;			//!< The offset at the top of a line of text
 		float offsetBottom = 0.0f;		//!< The offset at the bottom of a line of text
@@ -139,9 +146,19 @@ namespace font
 		* @param textLen		Length of the text. Use -1 if the string should be checked until the next \0 character.
 		* @param [out]	width 	If non-null, the width.
 		* @param [out]	height	If non-null, the height.
+		* @param scaleMultiplier The scale to use to apply scaling in addition to user settings
 		*/
 		virtual void getStringSize(const char *text, size_t textLen = std::numeric_limits<size_t>::max(),
-								   int resize_mode = -1, float *width = NULL, float *height = NULL) const = 0;
+								   int resize_mode = -1, float *width = nullptr, float *height = nullptr, float scaleMultiplier = 1.0f) const = 0;
+
+		/**
+		* @brief    Gets the auto scaling behavior of this font
+		*
+		* @date     24.1.2025
+		*
+		* @return   The auto scaling behavior
+		*/
+		[[nodiscard]] bool getAutoScaleBehavior() const;
 
 		/**
 		 * @brief	Gets the scaling behavior of this font
@@ -169,6 +186,15 @@ namespace font
 		* @return	The bottom offset.
 		*/
 		float getBottomOffset() const;
+
+		/**
+		* @brief    Sets the auto scaling behavior for VFNTs
+		*
+		* @date     24.1.2025
+		*
+		* @param    autoScale whether or not this font can auto scale with screen resolution
+		*/
+		void setAutoScaleBehavior(bool autoScale);
 
 		/**
 		 * @brief	Sets the scaling behavior

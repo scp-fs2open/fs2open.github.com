@@ -25,6 +25,19 @@ ADE_FUNC(getList, l_Waypoint, NULL, "Returns the waypoint list", "waypointlist",
 	return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
 }
 
+ADE_FUNC(getIndex, l_Waypoint, nullptr, "Returns the index of this waypoint in its list", "number", "waypoint index or 0 if waypoint was invalid")
+{
+	object_h *oh = nullptr;
+	if(!ade_get_args(L, "o", l_Waypoint.GetPtr(&oh)))
+		return ade_set_error(L, "i", 0);
+
+	if(!oh->isValid() || oh->objp()->type != OBJ_WAYPOINT)
+		return ade_set_error(L, "i", 0);
+
+	int wp_index = calc_waypoint_index(oh->objp()->instance);
+	return ade_set_args(L, "i", wp_index + 1);
+}
+
 waypointlist_h::waypointlist_h()
 	: wl_index(-1)
 {}
@@ -90,6 +103,19 @@ ADE_FUNC(__len, l_WaypointList,
 	}
 
 	return ade_set_args(L, "i", wlh->getList()->get_waypoints().size());
+}
+
+ADE_FUNC(__tostring, l_WaypointList, nullptr, "Returns name of waypoint list (if any)", "string", "Waypoint list name, or empty string if handle is invalid")
+{
+	waypointlist_h* wlh = nullptr;
+	if ( !ade_get_args(L, "o", l_WaypointList.GetPtr(&wlh)) ) {
+		return ade_set_error(L, "s", "");
+	}
+	if (!wlh || !wlh->isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	return ade_set_args(L, "s", wlh->getList()->get_name());
 }
 
 ADE_VIRTVAR(Name, l_WaypointList, "string", "Name of WaypointList", "string", "Waypointlist name, or empty string if handle is invalid")

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <linb/any.hpp>
+#include <any>
 
 class object;
 class ship;
@@ -14,7 +14,7 @@ namespace scripting {
 
 class EvaluatableCondition {
 public:
-	virtual bool evaluate(const linb::any& /*conditionContext*/) const {
+	virtual bool evaluate(const std::any& /*conditionContext*/) const {
 		return false;
 	};
 

@@ -9,8 +9,8 @@
 
 #include <functional>
 #include <utility>
-#include <mpark/variant.hpp>
-#include <tl/optional.hpp>
+#include <variant>
+#include <optional>
 
 namespace options {
 
@@ -81,7 +81,7 @@ class OptionBase {
 
 	flagset<OptionFlags> _flags;
 
-	tl::optional<std::unique_ptr<json_t>> getConfigValue() const;
+	std::optional<std::unique_ptr<json_t>> getConfigValue() const;
 
 	OptionBase(SCP_string config_key, SCP_string title, SCP_string description);
 
@@ -266,7 +266,7 @@ class Option : public OptionBase {
 	T getValue() const
 	{
 		try {
-			tl::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
+			std::optional<std::unique_ptr<json_t>> config_value = getConfigValue();
 			//missing keys are signalled via the optional
 			if (!config_value.has_value()) {
 				return _defaultValueFunc();
@@ -447,14 +447,14 @@ class OptionBuilder {
 	Option<T> _instance;
 
 	SCP_unordered_map<PresetKind, T> _preset_values;
-	const mpark::variant<SCP_string, std::pair<const char*, int>>&_title, &_description;
+	const std::variant<SCP_string, std::pair<const char*, int>>&_title, &_description;
 
   public:
-	  OptionBuilder(const SCP_string& config_key, const mpark::variant<SCP_string, std::pair<const char*, int>>& title, const mpark::variant<SCP_string, std::pair<const char*, int>>& description)
+	  OptionBuilder(const SCP_string& config_key, const std::variant<SCP_string, std::pair<const char*, int>>& title, const std::variant<SCP_string, std::pair<const char*, int>>& description)
 		  : _instance(
 			  config_key,
-			  mpark::holds_alternative<SCP_string>(title) ? mpark::get<SCP_string>(title) : mpark::get<std::pair<const char*, int>>(title).first,
-			  mpark::holds_alternative<SCP_string>(description) ? mpark::get<SCP_string>(description) : mpark::get<std::pair<const char*, int>>(description).first),
+			  std::holds_alternative<SCP_string>(title) ? std::get<SCP_string>(title) : std::get<std::pair<const char*, int>>(title).first,
+			  std::holds_alternative<SCP_string>(description) ? std::get<SCP_string>(description) : std::get<std::pair<const char*, int>>(description).first),
 		    _title(title),
 		    _description(description)
 	{
@@ -599,13 +599,13 @@ class OptionBuilder {
 		}
 		auto opt_ptr = make_shared<Option<T>>(_instance);
 
-		if (mpark::holds_alternative<std::pair<const char*, int>>(_title)) {
-			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_title);
+		if (std::holds_alternative<std::pair<const char*, int>>(_title)) {
+			const auto& xstr_info = std::get<std::pair<const char*, int>>(_title);
 			lcl_delayed_xstr(opt_ptr->_title, xstr_info.first, xstr_info.second);
 		}
 
-		if (mpark::holds_alternative<std::pair<const char*, int>>(_description)) {
-			const auto& xstr_info = mpark::get<std::pair<const char*, int>>(_description);
+		if (std::holds_alternative<std::pair<const char*, int>>(_description)) {
+			const auto& xstr_info = std::get<std::pair<const char*, int>>(_description);
 			lcl_delayed_xstr(opt_ptr->_description, xstr_info.first, xstr_info.second);
 		}
 

@@ -305,7 +305,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, nullptr, msg, (ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, 1.0f, (ptr + 2 - msg));
 			offset = sw;
 		}
 
@@ -437,7 +437,7 @@ void HudGaugeMessages::preprocess()
  * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
  * the messages up when a new message arrives.
  */
-void HudGaugeMessages::render(float  /*frametime*/)
+void HudGaugeMessages::render(float  /*frametime*/, bool /*config*/)
 {
 	hud_set_default_color();
 
@@ -459,7 +459,7 @@ void HudGaugeMessages::render(float  /*frametime*/)
 				}
 
 				// print the message out
-				renderPrintf(m->msg.x, m->y, "%s", m->msg.text.c_str());
+				renderPrintf(m->msg.x, m->y, 1.0f, false, "%s", m->msg.text.c_str());
 			}
 		}
 	}
@@ -641,7 +641,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 
 	// determine the length of the sender's name for underlining
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, (ptr - buf));
+		gr_get_string_size(&w, nullptr, buf, 1.0f, (ptr - buf));
 	}
 
 	// create the new node for the vector
@@ -843,7 +843,7 @@ void hud_initialize_scrollback_lines()
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), node_msg.text.length());
+			gr_get_string_size(&width, &height, node_msg.text.c_str(), 1.0f, node_msg.text.length());
 
 			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 			if (width > max_width) {
@@ -1176,7 +1176,7 @@ void HudGaugeTalkingHead::initBitmaps(const char *fname)
  * Renders everything for a head animation
  * Also checks for when new head ani's need to start playing
  */
-void HudGaugeTalkingHead::render(float frametime)
+void HudGaugeTalkingHead::render(float frametime, bool /*config*/)
 {
 	if ( Head_frame.first_frame == -1 ){
 		return;
@@ -1336,7 +1336,7 @@ void HudGaugeFixedMessages::initCenterText(bool center) {
 	center_text = center;
 }
 
-void HudGaugeFixedMessages::render(float  /*frametime*/) {
+void HudGaugeFixedMessages::render(float  /*frametime*/, bool /*config*/) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];

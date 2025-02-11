@@ -2232,7 +2232,7 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 			glow_point *gpt = &bank->points[j];
 			vec3d loc_offset = gpt->pnt;
 			vec3d loc_norm = gpt->norm;
-			vec3d world_pnt;
+			vec3d world_pnt = loc_offset;
 			vec3d world_norm;
 
 			if ( submodel_rotation ) {
@@ -2241,16 +2241,17 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 				if (pmi == nullptr)
 					pmi = model_get_instance(shipp->model_instance_num);
 
-				tempv = loc_offset;
+
 				if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-					model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point(&world_pnt, &loc_offset, pm, pmi, bank->submodel_num);
 				} else {
 					vec3d tempn = loc_norm;
-					model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point_dir(&world_pnt, &loc_norm, &loc_offset, &tempn, pm, pmi, bank->submodel_num);
 				}
 			}
 
-			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
+			tempv = world_pnt;
+			vm_vec_unrotate(&world_pnt, &tempv, orient);
 			vm_vec_add2(&world_pnt, pos);
 
 			if (shipp) {
@@ -2395,7 +2396,6 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 			// begin particles
 			if (shipp) {
 				ship_info *sip = &Ship_info[shipp->ship_info_index];
-				particle::particle_emitter pe;
 				thruster_particles *tp;
 				size_t num_particles = 0;
 
@@ -2410,33 +2410,20 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					else
 						tp = &sip->normal_thruster_particles[k];
 
-					float v = vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel);
+					auto source = particle::ParticleManager::get()->createSource(tp->particle_handle);
 
-					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
-					vm_vec_add2(&npnt, pos);
+					//This is a 180° flip around y matrix
+					matrix orientParticle = { { { { { { -1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, -1.0f } } } } } };
 
-					// Where the particles emit from
-					pe.pos = npnt;
-					// Initial velocity of all the particles
-					pe.vel = Objects[shipp->objnum].phys_info.desired_vel;
-					pe.min_vel = v * 0.75f;
-					pe.max_vel =  v * 1.25f;
-					// What normal the particle emit around
-					pe.normal = orient->vec.fvec;
-					vm_vec_negate(&pe.normal);
-
-					// Lowest number of particles to create
-					pe.num_low = tp->n_low;
-					// Highest number of particles to create
-					pe.num_high = tp->n_high;
-					pe.min_rad = gpt->radius * tp->min_rad;
-					pe.max_rad = gpt->radius * tp->max_rad;
-					// How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-					pe.normal_variance = tp->variance;
-					pe.min_life = 0.0f;
-					pe.max_life = 1.0f;
-
-					particle::emit( &pe, particle::PARTICLE_BITMAP, tp->thruster_bitmap.first_frame);
+					std::unique_ptr<EffectHost> host;
+					if (bank->submodel_num < 0)
+						host = std::make_unique<EffectHostObject>(&Objects[shipp->objnum], loc_offset, orientParticle);
+					else
+						host = std::make_unique<EffectHostSubmodel>(&Objects[shipp->objnum], bank->submodel_num, loc_offset, orientParticle);
+					source->setHost(std::move(host));
+					source->setTriggerRadius(gpt->radius);
+					source->setTriggerVelocity(vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel));
+					source->finishCreation();
 				}
 			}
 		}
@@ -2731,7 +2718,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {
@@ -3033,7 +3020,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 			tentative_num = shipp->model_instance_num;
 		}
 		else {
-			tentative_num = object_get_model_instance(objp);
+			tentative_num = object_get_model_instance_num(objp);
 		}
 
 		if (tentative_num >= 0) {
@@ -3137,9 +3124,9 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			if (VALID_FNAME(sip->pof_file_tech)) {
-				model_num = model_load(sip->pof_file_tech, sip->n_subsystems, &sip->subsystems[0], 0);
+				model_num = model_load(sip->pof_file_tech, sip, ErrorType::WARNING);
 			} else {
-				model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0], 0);
+				model_num = model_load(sip->pof_file, sip, ErrorType::WARNING);
 			}
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
 
@@ -3158,7 +3145,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 
 			// Make sure model is loaded
 			if (VALID_FNAME(wip->tech_model)) {
-				model_num = model_load(wip->tech_model, 0, nullptr, 0);
+				model_num = model_load(wip->tech_model, nullptr, ErrorType::WARNING);
 			} else {
 				// no tech model!!
 				return false;
@@ -3169,14 +3156,14 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 		case TECH_POF:
 			closeup_pos = close_pos;
 			closeup_zoom = close_zoom;
-			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+			model_num = model_load(pof_filename.c_str());
 
 			break;
 
 		case TECH_JUMP_NODE:
 			closeup_pos = close_pos;
 			closeup_zoom = close_zoom;
-			model_num = model_load(pof_filename.c_str(), 0, nullptr);
+			model_num = model_load(pof_filename.c_str());
 			render_info.set_color(HUD_color_red, HUD_color_green, HUD_color_blue);
 			render_flags |= MR_NO_POLYS | MR_SHOW_OUTLINE_HTL | MR_NO_TEXTURING;
 			model_lighting = false;

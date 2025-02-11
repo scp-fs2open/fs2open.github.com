@@ -8079,8 +8079,8 @@ void process_animation_triggered_packet(ubyte* data, header* hinfo) {
 	if (animation != animation::ModelAnimationSet::s_animationById.end()) {
 		if (special_mode == 0) {
 			//with the above exit condition, this guarantees a non-null objp
-			int model_instance_num = object_get_model_instance(objp);
-			if(model_instance_num > -1)
+			int model_instance_num = object_get_model_instance_num(objp);
+			if (model_instance_num >= 0)
 				animation->second->start(model_get_instance(model_instance_num), direction, forced, instant, pause, &delay);
 		}
 		else {

@@ -18,7 +18,6 @@
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missionmessage.h"
-#include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
 #include "missionui/fictionviewer.h"
@@ -49,25 +48,26 @@
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
-#include "scripting/api/objs/control_config.h"
-#include "scripting/api/objs/techroom.h"
-#include "scripting/api/objs/loop_brief.h"
-#include "scripting/api/objs/redalert.h"
-#include "scripting/api/objs/fictionviewer.h"
-#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
-#include "scripting/api/objs/debriefing.h"
-#include "scripting/api/objs/shipwepselect.h"
-#include "scripting/api/objs/missionhotkey.h"
-#include "scripting/api/objs/gamehelp.h"
-#include "scripting/api/objs/missionlog.h"
-#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
+#include "scripting/api/objs/control_config.h"
+#include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/player.h"
+#include "scripting/api/objs/fictionviewer.h"
+#include "scripting/api/objs/gamehelp.h"
+#include "scripting/api/objs/goal.h"
+#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/missionlog.h"
 #include "scripting/api/objs/multi_objects.h"
+#include "scripting/api/objs/player.h"
 #include "scripting/api/objs/rank.h"
+#include "scripting/api/objs/redalert.h"
+#include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
@@ -487,6 +487,32 @@ ADE_FUNC(toggleHelp,
 
 	main_hall_toggle_help(toggle);
 
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setMainhall, l_UserInterface_MainHall, "string mainhall, boolean enforce", "The name of the mainhall to try to set. Will immediately change if the player is currently in the mainhall menu. "
+	"Use enforce to set this as the mainhall on next mainhall load if setting from outside the mainhall menu. NOTE: If enforce is true then the player will always return back to this mainhall forever. "
+	"Call this with a blank string and enforce false to unset enforce without changing the current mainhall that is loaded.", nullptr, "nothing")
+{
+	const char* name = nullptr;
+	bool enforce = false;
+	if (!ade_get_args(L, "s|b", &name, &enforce)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (enforce) {
+		Enforced_main_hall = name;
+	} else {
+		Enforced_main_hall.clear();
+	}
+
+	if (gameseq_get_state() == GS_STATE_MAIN_MENU) {
+		if (name[0] != '\0') {
+			main_hall_close();
+			main_hall_init(name);
+		}
+	}
 
 	return ADE_RETURN_NIL;
 }
@@ -1031,9 +1057,9 @@ ADE_INDEXER(l_Briefing_Goals,
 	idx--;
 
 	if ((idx < 0) || idx >= (int)Mission_goals.size())
-		return ade_set_args(L, "o", l_Goals.Set(-1));
+		return ade_set_args(L, "o", l_Goal.Set(-1));
 
-	return ade_set_args(L, "o", l_Goals.Set(idx));
+	return ade_set_args(L, "o", l_Goal.Set(idx));
 }
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
@@ -2233,17 +2259,18 @@ ADE_FUNC(usePreset,
 
 ADE_FUNC(createPreset,
 	l_UserInterface_ControlConfig,
-	"string Name",
+	"string Name, [boolean overwrite]",
 	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
 	"boolean",
 	"The return status")
 {
 	const char* preset;
-	ade_get_args(L, "s", &preset);
+	bool overwrite = false;
+	ade_get_args(L, "s|b", &preset, &overwrite);
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name, overwrite)));
 }
 
 ADE_FUNC(undoLastChange,

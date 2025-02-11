@@ -52,18 +52,19 @@ ADE_VIRTVAR(Name, l_Preset, nullptr, "The name of the preset", "string", "The na
 
 ADE_FUNC(clonePreset,
 	l_Preset,
-	"string Name",
+	"string Name, [boolean overwrite]",
 	"Clones the preset into a new preset with the specified name. Sets it as the active preset",
 	"boolean",
 	"Returns true if successful, false otherwise")
 {
 	preset_h current;
 	const char* newName;
-	if (!ade_get_args(L, "os", l_Preset.Get(&current), &newName)) {
+	bool overwrite = false;
+	if (!ade_get_args(L, "os|b", l_Preset.Get(&current), &newName, &overwrite)) {
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", control_config_clone_preset(*current.getPreset(), newName));
+	return ade_set_args(L, "b", control_config_clone_preset(*current.getPreset(), newName, overwrite));
 }
 
 ADE_FUNC(deletePreset,

@@ -1387,7 +1387,7 @@ ADE_FUNC(renderSelectModel,
 		rev_rate *= 3.0f;
 	}
 
-	int modelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	int modelNum = model_load(sip->pof_file, sip);
 	static float ShipRot = 0.0f;
 
 	model_render_params render_info;
@@ -1573,7 +1573,7 @@ ADE_FUNC(renderOverheadModel,
 
 	ship_info* sip = &Ship_info[idx];
 
-	int modelNum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+	int modelNum = model_load(sip->pof_file, sip);
 	model_page_in_textures(modelNum, idx);
 	static float ShipRot = 0.0f;
 
@@ -1624,7 +1624,7 @@ ADE_FUNC(isModelLoaded, l_Shipclass, "[boolean Load = false]", "Checks if the mo
 		return ADE_RETURN_FALSE;
 
 	if(load_check){
-		sip->model_num = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		sip->model_num = model_load(sip->pof_file, sip);
 	}
 
 	if (sip->model_num > -1)

@@ -1887,7 +1887,7 @@ void ai_big_strafe()
 	{
 		//Re-roll for random sidethrust every 2 seconds
 		if (static_randf((Missiontime + static_rand(aip->shipnum)) >> 17) < aip->ai_random_sidethrust_percent) {
-			do_random_sidethrust(aip, &Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index]);
+			do_random_sidethrust(aip, &Ship_info[Ships[aip->shipnum].ship_info_index]);
 		}
 	}
 }

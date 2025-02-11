@@ -1404,7 +1404,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		for(const auto &line: lines)
 		{
 			//Draw the string
-			gr_string(x, curr_y, s + line.first, resize_mode, line.second);
+			gr_string(x, curr_y, s + line.first, resize_mode, 1.0f, line.second);
 
 			//Increment line height
 			curr_y += line_ht;
@@ -1954,7 +1954,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	if (s[0] == '\0')
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
-	model_num = model_load(s, 0, NULL);
+	model_num = model_load(s);
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
@@ -2121,8 +2121,7 @@ ADE_FUNC(createPersistentParticle,
 	"Handle to the created particle")
 {
 	particle::particle_info pi;
-	pi.type            = particle::PARTICLE_DEBUG;
-	pi.optional_data   = -1;
+	pi.bitmap   = -1;
 	pi.attached_objnum = -1;
 	pi.attached_sig    = -1;
 	pi.reverse         = false;
@@ -2141,24 +2140,26 @@ ADE_FUNC(createPersistentParticle,
 	if (type != nullptr) {
 		switch (type->index) {
 		case LE_PARTICLE_DEBUG:
-			pi.type = particle::PARTICLE_DEBUG;
-			break;
+				LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
+				return ADE_RETURN_NIL;
 		case LE_PARTICLE_FIRE:
-			pi.type = particle::PARTICLE_FIRE;
-			break;
+				pi.bitmap = particle::Anim_bitmap_id_fire;
+				pi.nframes = particle::Anim_num_frames_fire;
+				break;
 		case LE_PARTICLE_SMOKE:
-			pi.type = particle::PARTICLE_SMOKE;
-			break;
+				pi.bitmap = particle::Anim_bitmap_id_smoke;
+				pi.nframes = particle::Anim_num_frames_smoke;
+				break;
 		case LE_PARTICLE_SMOKE2:
-			pi.type = particle::PARTICLE_SMOKE2;
-			break;
+				pi.bitmap = particle::Anim_bitmap_id_smoke2;
+				pi.nframes = particle::Anim_num_frames_smoke2;
+				break;
 		case LE_PARTICLE_BITMAP:
 			if (texture == nullptr || !texture->isValid()) {
 				LuaError(L, "Invalid texture specified for createParticle()!");
 				return ADE_RETURN_NIL;
 			} else {
-				pi.optional_data = texture->handle;
-				pi.type          = particle::PARTICLE_BITMAP;
+				pi.bitmap = texture->handle;
 			}
 			break;
 		default:
@@ -2194,8 +2195,7 @@ ADE_FUNC(createParticle,
 	"true if particle was created, false otherwise")
 {
 	particle::particle_info pi;
-	pi.type            = particle::PARTICLE_DEBUG;
-	pi.optional_data   = -1;
+	pi.bitmap   = -1;
 	pi.attached_objnum = -1;
 	pi.attached_sig    = -1;
 	pi.reverse         = false;
@@ -2214,24 +2214,26 @@ ADE_FUNC(createParticle,
 	if (type != nullptr) {
 		switch (type->index) {
 		case LE_PARTICLE_DEBUG:
-			pi.type = particle::PARTICLE_DEBUG;
-			break;
+			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
+			return ADE_RETURN_NIL;
 		case LE_PARTICLE_FIRE:
-			pi.type = particle::PARTICLE_FIRE;
+			pi.bitmap = particle::Anim_bitmap_id_fire;
+			pi.nframes = particle::Anim_num_frames_fire;
 			break;
 		case LE_PARTICLE_SMOKE:
-			pi.type = particle::PARTICLE_SMOKE;
+			pi.bitmap = particle::Anim_bitmap_id_smoke;
+			pi.nframes = particle::Anim_num_frames_smoke;
 			break;
 		case LE_PARTICLE_SMOKE2:
-			pi.type = particle::PARTICLE_SMOKE2;
+			pi.bitmap = particle::Anim_bitmap_id_smoke2;
+			pi.nframes = particle::Anim_num_frames_smoke2;
 			break;
 		case LE_PARTICLE_BITMAP:
 			if (texture == nullptr || !texture->isValid()) {
 				LuaError(L, "Invalid texture specified for createParticle()!");
 				return ADE_RETURN_NIL;
 			} else {
-				pi.optional_data = texture->handle;
-				pi.type          = particle::PARTICLE_BITMAP;
+				pi.bitmap = texture->handle;
 			}
 			break;
 		default:

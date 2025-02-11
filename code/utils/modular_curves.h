@@ -23,9 +23,16 @@ struct modular_curves_submember_input {
   private:
 	template<typename input_type, auto grabber>
 	static inline auto grab_part(const input_type& input) {
+		//Pointer to member function
+		if constexpr (std::is_member_function_pointer_v<decltype(grabber)>) {
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
+				return ((*input).*grabber)();
+			else
+				return (input.*grabber)();
+		}
 		//Pointer to member type, i.e. for submember access
-		if constexpr (std::is_member_object_pointer_v<decltype(grabber)>) {
-			if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>)
+		else if constexpr (std::is_member_object_pointer_v<decltype(grabber)>) {
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(input->*grabber);
 			else
 				return std::cref(input.*grabber);
@@ -41,7 +48,7 @@ struct modular_curves_submember_input {
 		}
 		//Integer, used to index into tuples. Should be rarely used by actual users, but is required to do child-types.
 		else if constexpr (std::is_integral_v<decltype(grabber)>) {
-			if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>)
+			if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>)
 				return std::cref(std::get<grabber>(*input));
 			else
 				return std::cref(std::get<grabber>(input));
@@ -78,8 +85,11 @@ struct modular_curves_submember_input {
 				    return return_type(std::nullopt);
 			}
 			//Otherwise just send it on to the next grabber
-			else {
+			else if constexpr (is_instance_of_v<std::decay_t<decltype(current_access)>, std::reference_wrapper>) {
 				return grab_internal<std::decay_t<decltype(current_access.get())>, other_grabbers...>(current_access.get());
+			}
+			else {
+				return grab_internal<std::decay_t<decltype(current_access)>, other_grabbers...>(current_access);
 			}
 		}
 	}
@@ -117,8 +127,20 @@ struct modular_curves_submember_input {
 			else
 				return 1.0f;
 		}
+		else if constexpr (is_instance_of_v<std::decay_t<decltype(result)>, std::reference_wrapper>) {
+			//We could also be returned not a temporary optional from a check, but a true optional stored somewhere, so check for this here
+			if constexpr (is_optional_v<typename std::decay_t<typename std::decay_t<decltype(result)>::type>>) {
+				const auto& inner_result = result.get();
+				if (inner_result.has_value())
+					return number_to_float(*inner_result);
+				else
+					return 1.0f;
+			}
+			else
+				return number_to_float(result.get());
+		}
 		else {
-			return number_to_float(result.get());
+			return number_to_float(result);
 		}
 	}
 };
@@ -137,12 +159,21 @@ struct modular_curves_functional_input {
   public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>){
 			return grabber_fnc(*grab_from_tuple<tuple_idx, input_type>(input));
 		}
 		else {
 			return grabber_fnc(grab_from_tuple<tuple_idx, input_type>(input));
 		}
+	}
+};
+
+template<auto grabber_fnc>
+struct modular_curves_functional_full_input {
+public:
+	template<int /*tuple_idx*/, typename input_type>
+	static inline float grab(const input_type& input) {
+		return grabber_fnc(input);
 	}
 };
 
@@ -192,7 +223,7 @@ private:
 public:
 	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		if constexpr (std::is_pointer_v<std::remove_reference_t<input_type>>){
+		if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>>){
 			return *grab_from_tuple<tuple_idx, input_type>(input);
 		}
 		else {
@@ -390,11 +421,21 @@ public:
 		return modular_curves_definition<
 				new_input_type,
 				output_enum,
-				0,
+				output_names,
 				new_input_tuple_index,
 				input_grabbers..., additional_input_grabbers...>(
-				std::array<std::pair<const char*, output_enum>, 0> {}, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
+				outputs, std::tuple_cat(inputs, std::make_tuple(std::move(additional_inputs)...))
 		);
+	}
+
+	template<typename new_output_enum, size_t new_output_size>
+	constexpr auto derive_modular_curves_output_only_subset(std::array<std::pair<const char*, new_output_enum>, new_output_size> new_outputs) const {
+		return modular_curves_definition<
+			input_type,
+			new_output_enum,
+			new_output_size,
+			input_tuple_index,
+			input_grabbers...>(std::move(new_outputs), inputs);
 	}
 };
 

@@ -34,7 +34,7 @@ namespace font
 	}
 
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
-	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1) const
+	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1, float scaleMultiplier) const
 	{
 		int longest_width;
 		int width, spacing;
@@ -94,11 +94,14 @@ namespace font
 			}
 		}
 
+		float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
+		scale_factor *= scaleMultiplier;
+
 		if (h1)
-			*h1 = i2fl(h);
+			*h1 = i2fl(h) * scale_factor;
 
 		if (w1)
-			*w1 = i2fl(longest_width);
+			*w1 = i2fl(longest_width) * scale_factor;
 	}
 
 	font::font() : kern_data(NULL),

@@ -28,7 +28,7 @@ static SCP_unordered_map<SCP_string, std::function<std::unique_ptr<VirtualPOFOpe
 /*
 * forward declares for internal modelread functions
 */
-extern modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
+extern modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {});
 extern void create_family_tree(polymodel* obj);
 extern void model_calc_bound_box(vec3d* box, const vec3d* big_mn, const vec3d* big_mx);
 
@@ -53,7 +53,7 @@ public:
 
 	public:
 		polymodel_holder(const SCP_string& pof_name, const model_parse_depth& depth) : _pm(new polymodel()), _deferred() {
-			auto status = read_model_file(_pm, pof_name.c_str(), 0, _deferred, depth);
+			auto status = read_model_file(_pm, pof_name.c_str(), ErrorType::WARNING, _deferred, depth);
 			create_family_tree(_pm);
 			if (status == modelread_status::SUCCESS_REAL)
 				needs_emplace = true;
@@ -111,7 +111,7 @@ bool model_exists(const SCP_string& filename) {
 	return cf_exists_full(filename.c_str(), CF_TYPE_MODELS);
 }
 
-bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, int ferror, model_read_deferred_tasks& deferredTasks) {
+bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_parse_depth depth, ErrorType error_type, model_read_deferred_tasks& deferredTasks) {
 	auto virtual_pof_it = virtual_pofs.find(filename);
 
 	//We don't have a virtual pof
@@ -127,7 +127,7 @@ bool read_virtual_model_file(polymodel* pm, const SCP_string& filename, model_pa
 	const auto& virtual_pof = virtual_pof_it->second[depthLocal];
 	depthLocal++;
 
-	read_model_file(pm, virtual_pof.basePOF.c_str(), ferror, deferredTasks, depth);
+	read_model_file(pm, virtual_pof.basePOF.c_str(), error_type, deferredTasks, depth);
 
 	for (const auto& operation : virtual_pof.operationList)
 		operation->process(pm, deferredTasks, depth, virtual_pof);
@@ -599,18 +599,18 @@ void VirtualPOFOperationAddEngine::process(polymodel* pm, model_read_deferred_ta
 	const auto& engineSubsysMap = appendingPM->deferred().engine_subsystems;
 
 	int engineNumber;
-	tl::optional<SCP_string> subsystemName = tl::nullopt;
+	std::optional<SCP_string> subsystemName = std::nullopt;
 	typename std::remove_reference<decltype(engineSubsysMap)>::type::const_iterator it = engineSubsysMap.cend();
 
-	if (mpark::holds_alternative<int>(sourceId)) {
-		engineNumber = mpark::get<int>(sourceId);
+	if (std::holds_alternative<int>(sourceId)) {
+		engineNumber = std::get<int>(sourceId);
 
 		it = engineSubsysMap.find(engineNumber);
 		if (it != engineSubsysMap.cend())
 			subsystemName = it->second.subsystem_name;
 	}
 	else {
-		subsystemName = mpark::get<SCP_string>(sourceId);
+		subsystemName = std::get<SCP_string>(sourceId);
 
 		auto localit = engineSubsysMap.cbegin();
 		do {

@@ -246,7 +246,7 @@ struct Decal {
 			auto shipp = &Ships[objp->instance];
 			auto model_instance = model_get_instance(shipp->model_instance_num);
 
-			Assertion(submodel >= 0 && submodel < model_get(object_get_model(objp))->n_models,
+			Assertion(submodel >= 0 && submodel < object_get_model(objp)->n_models,
 					  "Invalid submodel number detected!");
 			auto smi = &model_instance->submodel[submodel];
 

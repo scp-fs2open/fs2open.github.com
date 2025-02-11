@@ -80,7 +80,7 @@ public:
 	void initBarHeight(int _ets_bar_h);
 	void initBitmaps(char *fname);
 	void blitGauge(int index);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -88,21 +88,21 @@ class HudGaugeEtsWeapons: public HudGaugeEts
 {
 public:
 	HudGaugeEtsWeapons();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsShields: public HudGaugeEts
 {
 public:
 	HudGaugeEtsShields();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsEngines: public HudGaugeEts
 {
 public:
 	HudGaugeEtsEngines();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsRetail: public HudGaugeEts
@@ -112,7 +112,7 @@ protected:
 	int Gauge_positions[num_retail_ets_gauges];
 public:
 	HudGaugeEtsRetail();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initLetters(char *_letters);
 	void initGaugePositions(int *_gauge_positions);
 };
