@@ -3677,6 +3677,14 @@ void ai_form_on_wing(object *objp, object *goal_objp)
 	aip->ai_flags.remove(AI::AI_Flags::Formation_wing);
 	aip->ai_flags.set(AI::AI_Flags::Formation_object);
 
+	// if this goal is going to stick around for a while, change the mode
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing])
+	{
+		aip->mode = AIM_NONE;
+		aip->submode = -1;
+		aip->submode_start_time = Missiontime;
+	}
+
 	aip->goal_objnum = OBJ_INDEX(goal_objp);
 
 	ai_formation_object_recalculate_slotnums(aip->goal_objnum);

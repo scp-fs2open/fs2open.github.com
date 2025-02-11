@@ -721,6 +721,21 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$don't issue form-on-wing goals at mission start:", AI::Profile_Flags::Dont_form_on_wing_at_mission_start);
 
+				if (optional_string("$default form-on-wing priority:")) {
+					int priority;
+					stuff_int(&priority);
+					if (priority > 0) {
+						profile->default_form_on_wing_priority = priority;
+					} else {
+						mprintf(("Warning: $default form-on-wing priority: should be > 0 (read %d).  Value will not be used.\n", priority));
+					}
+				}
+
+				set_flag(profile, "$do not clear goals when running form-on-wing:", AI::Profile_Flags::Do_not_clear_goals_when_running_form_on_wing);
+
+				set_flag(profile, "$do not clear goals when running stay-still:", AI::Profile_Flags::Do_not_clear_goals_when_running_stay_still);
+
+				set_flag(profile, "$do not set override when assigning form-on-wing:", AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing);
 
 				// end of options ----------------------------------------
 
@@ -824,6 +839,8 @@ void ai_profile_t::reset()
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;
 	attack_any_idle_circle_distance = 100.0f;
+
+	default_form_on_wing_priority = 99;	// as originally assigned in ai_add_goal_sub_sexp()
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
