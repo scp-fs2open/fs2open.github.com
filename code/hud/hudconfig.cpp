@@ -863,6 +863,25 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
 }
 
+// ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
+// So this function provides a way to min/max the coords to make sure no matter what method is used, the
+// mouse box inclues all the relevant areas
+void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2)
+{
+	HC_gauge_mouse_coords[gauge_config].x1 = std::min(HC_gauge_mouse_coords[gauge_config].x1, x1);
+	HC_gauge_mouse_coords[gauge_config].x2 = std::max(HC_gauge_mouse_coords[gauge_config].x2, x2);
+	HC_gauge_mouse_coords[gauge_config].y1 = std::min(HC_gauge_mouse_coords[gauge_config].y1, y1);
+	HC_gauge_mouse_coords[gauge_config].y2 = std::max(HC_gauge_mouse_coords[gauge_config].y2, y2);
+
+	// temporary stuff to show boxes
+	color clr = gr_screen.current_color;
+	color thisColor;
+	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
+	gr_set_color_fast(&thisColor);
+	// hud_config_draw_box(x1, x2, y1, y2);
+	gr_set_color_fast(&clr);
+}
+
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
 {
 	int outX = HC_gauge_coordinates[0] + static_cast<int>(x * scale);
