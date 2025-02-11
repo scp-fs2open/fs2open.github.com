@@ -3515,7 +3515,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 //	flags tells:
 //		WPF_REPEAT		Set -> repeat waypoints.
 //		WPF_BACKTRACK	Go in reverse.
-void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index)
+void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index, bool force)
 {
 	auto aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -3541,7 +3541,7 @@ void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start
 		start_index = (wp_flags & WPF_BACKTRACK) ? (int)wp_list->get_waypoints().size() - 1 : 0;
 	}
 
-	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) )
+	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) && !force )
 	{
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
