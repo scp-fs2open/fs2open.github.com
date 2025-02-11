@@ -693,6 +693,8 @@ void parse_ai_profiles_tbl(const char *filename)
 					}
 				}
 
+				set_flag(profile, "$unify usage of AI Shield Manage Delay:", AI::Profile_Flags::Unify_usage_ai_shield_manage_delay);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move

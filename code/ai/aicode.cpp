@@ -13262,7 +13262,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Unify_usage_ai_shield_manage_delay] || iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
 		{
 			delay = aip->ai_shield_manage_delay;
 		} 
