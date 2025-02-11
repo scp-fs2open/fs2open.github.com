@@ -144,6 +144,8 @@ public:
 	float guard_big_orbit_above_target_radius; // Radius of guardee that triggers ai_big_guard() 
 	float guard_big_orbit_max_speed_percent;   // Max percent of forward speed that is used in ai_big_guard() 
 
+	int default_form_on_wing_priority;	// the priority used if not specified in the sexp
+
     void reset();
 };
 

@@ -44,6 +44,7 @@ namespace AI {
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
 		Subsys_needs_fixup,	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
 		Goal_override,		// paired with ai_goal_type::DYNAMIC to mean this goal overrides any other goal
+		Want_override,		// a goal should set this flag if Goal_override should be assigned when the goal is achievable
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged (because it is something like ai-disarm that renders other goals invalid)
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
@@ -174,6 +175,9 @@ namespace AI {
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Disable_ai_transferring_energy,
+		Do_not_clear_goals_when_assigning_form_on_wing,
+		Do_not_clear_goals_when_assigning_stay_still,
+		Do_not_set_override_when_assigning_form_on_wing,
 
 		NUM_VALUES
 	};
