@@ -526,6 +526,22 @@ ADE_VIRTVAR(WaypointsInReverse, l_Order, "boolean", "Waypoint-reverse flag of th
 	return ade_set_args(L, "b", ohp->aigp->flags[AI::Goal_Flags::Waypoints_in_reverse]);
 }
 
+ADE_VIRTVAR(OverridesWhenAchievable, l_Order, "boolean", "Whether this goal pre-empts all other goals when it is achievable", "boolean", "OverridesWhenAchievable flag, or invalid false if order handle is invalid")
+{
+	order_h* ohp = nullptr;
+	bool want_override = false;
+	if (!ade_get_args(L, "o|b", l_Order.GetPtr(&ohp), &want_override))
+		return ade_set_error(L, "b", false);
+
+	if (!ohp->isValid())
+		return ade_set_error(L, "b", false);
+
+	if (ADE_SETTING_VAR)
+		ohp->aigp->flags.set(AI::Goal_Flags::Want_override, want_override);
+
+	return ade_set_args(L, "b", ohp->aigp->flags[AI::Goal_Flags::Want_override]);
+}
+
 ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
 {
 	order_h *ohp = NULL;
