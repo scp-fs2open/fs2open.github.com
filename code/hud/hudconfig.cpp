@@ -316,114 +316,114 @@ const char *HC_gauge_descriptions(int n)
 	return NULL;
 }
 
-#define NUM_HUD_BUTTONS			20
+#define NUM_HUD_BUTTONS   20
 
-#define HCB_RED_UP				0
-#define HCB_GREEN_UP				1
-#define HCB_BLUE_UP				2
-#define HCB_I_UP					3
-#define HCB_RED_DOWN				4
-#define HCB_GREEN_DOWN			5
-#define HCB_BLUE_DOWN			6
-#define HCB_I_DOWN				7
-#define HCB_ON						8
-#define HCB_OFF					9
-#define HCB_POPUP					10
-#define HCB_SAVE_HCF				11
-#define HCB_PREV_HCF				12
-#define HCB_NEXT_HCF				13
-#define HCB_AMBER					14
-#define HCB_BLUE					15
-#define HCB_GREEN					16
-#define HCB_SELECT_ALL			17
-#define HCB_RESET					18
-#define HCB_ACCEPT				19
+#define HCB_RED_UP        0
+#define HCB_GREEN_UP      1
+#define HCB_BLUE_UP       2
+#define HCB_I_UP          3
+#define HCB_RED_DOWN      4
+#define HCB_GREEN_DOWN    5
+#define HCB_BLUE_DOWN     6
+#define HCB_I_DOWN        7
+#define HCB_ON            8
+#define HCB_OFF           9
+#define HCB_POPUP         10
+#define HCB_SAVE_HCF      11
+#define HCB_PREV_HCF      12
+#define HCB_NEXT_HCF      13
+#define HCB_AMBER         14
+#define HCB_BLUE          15
+#define HCB_GREEN         16
+#define HCB_SELECT_ALL    17
+#define HCB_RESET         18
+#define HCB_ACCEPT        19
 
 
 ui_button_info HC_buttons[GR_NUM_RESOLUTIONS][NUM_HUD_BUTTONS] = {
-	{ // GR_640
-		ui_button_info("HCB_00",		6,		27,	-1,	-1,	0),
-		ui_button_info("HCB_01",		30,	27,	-1,	-1,	1),
-		ui_button_info("HCB_02",		55,	27,	-1,	-1,	2),
-		ui_button_info("HCB_03",		80,	27,	-1,	-1,	3),
-		ui_button_info("HCB_08",		6,		291,	-1,	-1,	8),
-		ui_button_info("HCB_09",		30,	291,	-1,	-1,	9),
-		ui_button_info("HCB_10",		55,	291,	-1,	-1,	10),
-		ui_button_info("HCB_11",		80,	291,	-1,	-1,	11),
-		ui_button_info("HCB_12",		4,		329,	-1,	-1,	12),
-		ui_button_info("HCB_13",		4,		348,	-1,	-1,	13),
-		ui_button_info("HCB_14",		4,		367,	-1,	-1,	14),
-		ui_button_info("HCB_15",		2,		439,	-1,	-1,	15),
-		ui_button_info("HCB_16",		266,	456,	-1,	-1,	16),
-		ui_button_info("HCB_17",		292,	456,	-1,	-1,	17),
-		ui_button_info("HCB_18",		327,	421,	-1,	-1,	18),
-		ui_button_info("HCB_19",		327,	440,	-1,	-1,	19),
-		ui_button_info("HCB_20",		327,	459,	-1,	-1,	20),
-		ui_button_info("HCB_24",		472,	436,	-1,	-1,	24),
-		ui_button_info("HCB_25",		523,	433,	-1,	-1,	25),
-		ui_button_info("HCB_26",		576,	434,	-1,	-1,	26),
-	},
-	{ // GR_1024
-		ui_button_info("2_HCB_00",		9,		44,	-1,	-1,	0),
-		ui_button_info("2_HCB_01",		48,	44,	-1,	-1,	1),
-		ui_button_info("2_HCB_02",		88,	44,	-1,	-1,	2),
-		ui_button_info("2_HCB_03",		127,	44,	-1,	-1,	3),
-		ui_button_info("2_HCB_08",		9,		466,	-1,	-1,	8),
-		ui_button_info("2_HCB_09",		48,	466,	-1,	-1,	9),
-		ui_button_info("2_HCB_10",		88,	466,	-1,	-1,	10),
-		ui_button_info("2_HCB_11",		127,	466,	-1,	-1,	11),
-		ui_button_info("2_HCB_12",		6,		526,	-1,	-1,	12),
-		ui_button_info("2_HCB_13",		6,		556,	-1,	-1,	13),
-		ui_button_info("2_HCB_14",		6,		586,	-1,	-1,	14),
-		ui_button_info("2_HCB_15",		3,		703,	-1,	-1,	15),
-		ui_button_info("2_HCB_16",		426,	730,	-1,	-1,	16),
-		ui_button_info("2_HCB_17",		467,	730,	-1,	-1,	17),
-		ui_button_info("2_HCB_18",		524,	674,	-1,	-1,	18),
-		ui_button_info("2_HCB_19",		524,	704,	-1,	-1,	19),
-		ui_button_info("2_HCB_20",		524,	734,	-1,	-1,	20),
-		ui_button_info("2_HCB_24",		755,	698,	-1,	-1,	24),
-		ui_button_info("2_HCB_25",		837,	693,	-1,	-1,	25),
-		ui_button_info("2_HCB_26",		922,	695,	-1,	-1,	26),
-	},
+    { // GR_640
+        ui_button_info("HCB_00",    6,    27,   -1, -1, 0),
+        ui_button_info("HCB_01",    30,   27,   -1, -1, 1),
+        ui_button_info("HCB_02",    55,   27,   -1, -1, 2),
+        ui_button_info("HCB_03",    80,   27,   -1, -1, 3),
+        ui_button_info("HCB_08",    6,    291,  -1, -1, 8),
+        ui_button_info("HCB_09",    30,   291,  -1, -1, 9),
+        ui_button_info("HCB_10",    55,   291,  -1, -1, 10),
+        ui_button_info("HCB_11",    80,   291,  -1, -1, 11),
+        ui_button_info("HCB_12",    4,    329,  -1, -1, 12),
+        ui_button_info("HCB_13",    4,    348,  -1, -1, 13),
+        ui_button_info("HCB_14",    4,    367,  -1, -1, 14),
+        ui_button_info("HCB_15",    2,    439,  -1, -1, 15),
+        ui_button_info("HCB_16",    266,  456,  -1, -1, 16),
+        ui_button_info("HCB_17",    292,  456,  -1, -1, 17),
+        ui_button_info("HCB_18",    327,  421,  -1, -1, 18),
+        ui_button_info("HCB_19",    327,  440,  -1, -1, 19),
+        ui_button_info("HCB_20",    327,  459,  -1, -1, 20),
+        ui_button_info("HCB_24",    472,  436,  -1, -1, 24),
+        ui_button_info("HCB_25",    523,  433,  -1, -1, 25),
+        ui_button_info("HCB_26",    576,  434,  -1, -1, 26),
+    },
+    { // GR_1024
+        ui_button_info("2_HCB_00",  9,    44,   -1, -1, 0),
+        ui_button_info("2_HCB_01",  48,   44,   -1, -1, 1),
+        ui_button_info("2_HCB_02",  88,   44,   -1, -1, 2),
+        ui_button_info("2_HCB_03",  127,  44,   -1, -1, 3),
+        ui_button_info("2_HCB_08",  9,    466,  -1, -1, 8),
+        ui_button_info("2_HCB_09",  48,   466,  -1, -1, 9),
+        ui_button_info("2_HCB_10",  88,   466,  -1, -1, 10),
+        ui_button_info("2_HCB_11",  127,  466,  -1, -1, 11),
+        ui_button_info("2_HCB_12",  6,    526,  -1, -1, 12),
+        ui_button_info("2_HCB_13",  6,    556,  -1, -1, 13),
+        ui_button_info("2_HCB_14",  6,    586,  -1, -1, 14),
+        ui_button_info("2_HCB_15",  3,    703,  -1, -1, 15),
+        ui_button_info("2_HCB_16",  426,  730,  -1, -1, 16),
+        ui_button_info("2_HCB_17",  467,  730,  -1, -1, 17),
+        ui_button_info("2_HCB_18",  524,  674,  -1, -1, 18),
+        ui_button_info("2_HCB_19",  524,  704,  -1, -1, 19),
+        ui_button_info("2_HCB_20",  524,  734,  -1, -1, 20),
+        ui_button_info("2_HCB_24",  755,  698,  -1, -1, 24),
+        ui_button_info("2_HCB_25",  837,  693,  -1, -1, 25),
+        ui_button_info("2_HCB_26",  922,  695,  -1, -1, 26),
+    },
 };
 
 // text
 #define NUM_HUD_TEXT					15
 UI_XSTR HC_text[GR_NUM_RESOLUTIONS][NUM_HUD_TEXT] = {
-	{ // GR_640
-		{ "R",				1512,	14,	8,		UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "G",				1513,	37,	8,		UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "B",				1514,	62,	8,		UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "I",				1515,	90,	8,		UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "On",				1285,	36,	334,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_ON].button },
-		{ "Off",				1286,	36,	353,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_OFF].button },
-		{ "Popup",			1453,	36,	372,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_POPUP].button },
-		{ "Save",			1454,	51,	428,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_SAVE_HCF].button },
-		{ "Amber",			1455,	364,	426,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_AMBER].button },
-		{ "Blue",			1456,	364,	445,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_BLUE].button },
-		{ "Green",			1457,	364,	464,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_GREEN].button },		
-		{ "Select",			1550,	442,	413,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_SELECT_ALL].button },
-		{ "All",				1551,	442,	424,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_SELECT_ALL].button },
-		{ "Reset",			1337,	515,	413,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[0][HCB_RESET].button },
-		{ "Accept",			1035,	573,	413,	UI_XSTR_COLOR_PINK,	-1, &HC_buttons[0][HCB_ACCEPT].button },
-	},
-	{ // GR_1024
-		{ "R",				1512,	23,	14,	UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "G",				1513,	60,	14,	UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "B",				1514,	100,	14,	UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "I",				1515,	144,	14,	UI_XSTR_COLOR_GREEN,	-1, NULL },
-		{ "On",				1285,	58,	536,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_ON].button },
-		{ "Off",				1286,	58,	566,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_OFF].button },
-		{ "Popup",			1453,	58,	596,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_POPUP].button },
-		{ "Save",			1454,	82,	688,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_SAVE_HCF].button },
-		{ "Amber",			1455,	582,	685,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_AMBER].button },
-		{ "Blue",			1456,	582,	715,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_BLUE].button },
-		{ "Green",			1457,	582,	745,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_GREEN].button },		
-		{ "Select",			1550,	760,	671,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_SELECT_ALL].button },
-		{ "All",				1551,	760,	682,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_SELECT_ALL].button },
-		{ "Reset",			1337,	850,	669,	UI_XSTR_COLOR_GREEN,	-1, &HC_buttons[1][HCB_RESET].button },
-		{ "Accept",			1035,	930,	670,	UI_XSTR_COLOR_PINK,	-1, &HC_buttons[1][HCB_ACCEPT].button },
-	}
+    { // GR_640
+        { "R",              1512,   14,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "G",              1513,   37,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "B",              1514,   62,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "I",              1515,   90,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "On",             1285,   36,     334,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_ON].button },
+        { "Off",            1286,   36,     353,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_OFF].button },
+        { "Popup",          1453,   36,     372,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_POPUP].button },
+        { "Save",           1454,   51,     428,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_SAVE_HCF].button },
+        { "Amber",          1455,   364,    426,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_AMBER].button },
+        { "Blue",           1456,   364,    445,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_BLUE].button },
+        { "Green",          1457,   364,    464,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_GREEN].button },     
+        { "Select",         1550,   442,    413,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_SELECT_ALL].button },
+        { "All",            1551,   442,    424,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_SELECT_ALL].button },
+        { "Reset",          1337,   515,    413,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_RESET].button },
+        { "Accept",         1035,   573,    413,    UI_XSTR_COLOR_PINK,     -1, &HC_buttons[0][HCB_ACCEPT].button },
+    },
+    { // GR_1024
+        { "R",              1512,   23,     14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "G",              1513,   60,     14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "B",              1514,   100,    14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "I",              1515,   144,    14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "On",             1285,   58,     536,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_ON].button },
+        { "Off",            1286,   58,     566,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_OFF].button },
+        { "Popup",          1453,   58,     596,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_POPUP].button },
+        { "Save",           1454,   82,     688,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_SAVE_HCF].button },
+        { "Amber",          1455,   582,    685,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_AMBER].button },
+        { "Blue",           1456,   582,    715,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_BLUE].button },
+        { "Green",          1457,   582,    745,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_GREEN].button },     
+        { "Select",         1550,   760,    671,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_SELECT_ALL].button },
+        { "All",            1551,   760,    682,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_SELECT_ALL].button },
+        { "Reset",          1337,   850,    669,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_RESET].button },
+        { "Accept",         1035,   930,    670,    UI_XSTR_COLOR_PINK,     -1, &HC_buttons[1][HCB_ACCEPT].button },
+    }
 };
 
 static int							HC_background_bitmap;
@@ -448,7 +448,7 @@ hc_col HC_colors[HUD_COLOR_SIZE] =
 };
 
 static HUD_CONFIG_TYPE	HUD_config_backup;		// backup HUD config, used to restore old config if changes not applied
-static int					HUD_config_inited = 0;
+static int				HUD_config_inited = 0;
 
 // rgba slider stuff
 void hud_config_red_slider();
@@ -466,10 +466,10 @@ void hud_config_process_colors();
 UI_SLIDER2 HC_color_sliders[NUM_HC_SLIDERS];
 int HC_slider_coords[GR_NUM_RESOLUTIONS][NUM_HC_SLIDERS][4] = {
 	{ // GR_640
-		{ 8,	53,	15, 225 },
-		{ 33, 53,	15, 225 },
-		{ 58, 53,	15, 225 },
-		{ 83, 53,	15, 225 },
+		{ 8,    53,	15, 225 },
+		{ 33,   53,	15, 225 },
+		{ 58,   53,	15, 225 },
+		{ 83,   53,	15, 225 },
 	},
 	{ // GR_1024
 		{ 13,	85, 32, 350 },
