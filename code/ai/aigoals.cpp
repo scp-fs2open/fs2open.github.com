@@ -769,6 +769,10 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 	if ( target_name != NULL )
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
 
+	// set up the clear-goals flag for certain goals
+	if (mode == AI_GOAL_STAY_STILL || mode == AI_GOAL_FORM_ON_WING || mode == AI_GOAL_PLAY_DEAD)
+		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
+
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
 		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 
@@ -849,6 +853,10 @@ void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode
 
 	if ( target_name != NULL )
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
+
+	// set up the clear-goals flag for certain goals
+	if (mode == AI_GOAL_STAY_STILL || mode == AI_GOAL_FORM_ON_WING || mode == AI_GOAL_PLAY_DEAD)
+		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 
 	aigp->priority = priority;
 	aigp->int_data = int_data;
@@ -1036,6 +1044,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		aigp->ai_mode = AI_GOAL_STAY_STILL;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
+		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 		break;
 
 	case OP_AI_DOCK:
@@ -1054,6 +1063,9 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		break;
 
 	case OP_AI_PLAY_DEAD:
+		// we don't clear out ship goals for the "persistent" goal variant
+		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
+		FALLTHROUGH;
 	case OP_AI_PLAY_DEAD_PERSISTENT:
 		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = (op == OP_AI_PLAY_DEAD) ? AI_GOAL_PLAY_DEAD : AI_GOAL_PLAY_DEAD_PERSISTENT;
@@ -1095,6 +1107,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		aigp->priority = 99;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);
 		aigp->ai_mode = AI_GOAL_FORM_ON_WING;
+		aigp->flags.set(AI::Goal_Flags::Clear_all_goals_first);
 		break;
 
 	case OP_AI_CHASE:
@@ -1951,7 +1964,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 			ai_goal_purge_invalid_goals(aigp, aip->goals, aip, -1);
 			aigp->flags.set(AI::Goal_Flags::Goals_purged);
 		}
-	}	
+	}
 
 	// if we are docking, validate the docking indices on both ships.  We might have to change names to indices.
 	// only enter this calculation if the ship we are docking with has arrived.  If the ship is gone, then
@@ -2375,14 +2388,32 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}	
 
 
+	// save the current goal (if any) first, in case it's wiped out by the next action
+	int current_goal_ai_mode = current_goal->ai_mode;
+	auto current_goal_target_name = current_goal->target_name;
+	auto current_goal_target_ship = current_goal_target_name ? ship_registry_get(current_goal_target_name) : nullptr;
 
-	switch ( current_goal->ai_mode ) {
+	if (current_goal->flags[AI::Goal_Flags::Clear_all_goals_first]) {
+		// stay-still, form-on-wing, and play-dead all clear their goals here...
+		// 
+		// clear out the object's goals.  Seems to me that if a ship is staying still for a purpose
+		// then we need to clear everything out since there is not a real way to get rid of this goal
+		// 
+		// for form on wing, we need to clear out all goals for this ship, and then call the form on wing AI code
+		// 
+		// if a ship is playing dead, MWA says that it shouldn't try to do anything else.
+		// 
+		// clearing out goals is okay here since we are now what mode to set this AI object to.
+
+		ai_clear_ship_goals(aip);
+	}
+
+	switch ( current_goal_ai_mode ) {
 
 	case AI_GOAL_CHASE:
-		if ( current_goal->target_name ) {
-			shipnum = ship_name_lookup( current_goal->target_name );
-			Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
-			other_obj = &Objects[Ships[shipnum].objnum];
+		if (current_goal_target_name) {
+			Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+			other_obj = current_goal_target_ship->objp();
 		} else
 			other_obj = NULL;						// we get this case when we tell ship to engage enemy!
 
@@ -2399,9 +2430,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_GUARD:
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 		// shipnum and other_obj are the shipnumber and object pointer of the object that you should
 		// guard.
 		if (objp != other_obj) {
@@ -2414,7 +2444,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_GUARD_WING:
-		wingnum = wing_name_lookup( current_goal->target_name );
+		wingnum = wing_name_lookup( current_goal_target_name );
 		Assert (wingnum != -1 );			// shouldn't get here if this is false!!!!
 		ai_set_guard_wing(objp, wingnum);
 		aip->submode_start_time = Missiontime;
@@ -2423,7 +2453,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_WAYPOINTS:				// do nothing for waypoints
 	case AI_GOAL_WAYPOINTS_ONCE: {
 		int flags = 0;
-		if (current_goal->ai_mode == AI_GOAL_WAYPOINTS)
+		if (current_goal_ai_mode == AI_GOAL_WAYPOINTS)
 			flags |= WPF_REPEAT;
 		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
 			flags |= WPF_BACKTRACK;
@@ -2432,9 +2462,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}
 
 	case AI_GOAL_DOCK: {
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert (shipnum != -1 );			// shouldn't get here if this is false!!!!
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 
 		// be sure that we have indices for docking points here!  If we ever had names, they should
 		// get fixed up in goal_achievable so that the points can be checked there for validity
@@ -2444,24 +2473,22 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}
 
 	case AI_GOAL_UNDOCK:
-		// try to find the object which which this object is docked with.  Use that object as the
+		// try to find the object with which this object is docked.  Use that object as the
 		// "other object" for the undocking proceedure.  If "other object" isn't found, then the undock
 		// goal cannot continue.  Spit out a warning and remove the goal.
 
 		// Goober5000 - do we have a specific ship to undock from?
-		if ( current_goal->target_name != NULL )
+		if (current_goal_target_name)
 		{
-			shipnum = ship_name_lookup( current_goal->target_name );
-
 			// hmm, perhaps he was destroyed
-			if (shipnum == -1)
+			if (!current_goal_target_ship || !current_goal_target_ship->has_objp())
 			{
 				other_obj = NULL;
 			}
 			// he exists... let's undock from him
 			else
 			{
-				other_obj = &Objects[Ships[shipnum].objnum];
+				other_obj = current_goal_target_ship->objp();
 			}
 		}
 		// no specific ship
@@ -2514,16 +2541,15 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_DISABLE_SHIP_TACTICAL:
 	case AI_GOAL_DISARM_SHIP:
 	case AI_GOAL_DISARM_SHIP_TACTICAL: {
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());
+		other_obj = current_goal_target_ship->objp();
 		ai_attack_object( objp, other_obj);
 		ai_set_attack_subsystem( objp, current_goal->ai_submode );		// submode stored the subsystem type
 
 		// don't protect-ship for tactical goals
-		if (current_goal->ai_mode != AI_GOAL_DESTROY_SUBSYSTEM && current_goal->ai_mode != AI_GOAL_DISABLE_SHIP_TACTICAL && current_goal->ai_mode != AI_GOAL_DISARM_SHIP_TACTICAL) {
+		if (current_goal_ai_mode != AI_GOAL_DESTROY_SUBSYSTEM && current_goal_ai_mode != AI_GOAL_DISABLE_SHIP_TACTICAL && current_goal_ai_mode != AI_GOAL_DISARM_SHIP_TACTICAL) {
 			if (aip->target_objnum != -1) {
-				int class_type = Ship_info[Ships[shipnum].ship_info_index].class_type;
+				int class_type = Ship_info[current_goal_target_ship->shipp()->ship_info_index].class_type;
 				//	Only protect if _not_ a capital ship.  We don't want the Lucifer accidentally getting protected.
 				if (class_type >= 0 && Ship_types[class_type].flags[Ship::Type_Info_Flags::AI_protected_on_cripple])
 					Objects[aip->target_objnum].flags.set(Object::Object_Flags::Protected);
@@ -2536,7 +2562,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}
 
 	case AI_GOAL_CHASE_WING:
-		wingnum = wing_name_lookup( current_goal->target_name );
+		wingnum = wing_name_lookup( current_goal_target_name );
 		Assertion( wingnum >= 0, "The target of AI_GOAL_CHASE_WING must refer to a valid wing!" );
 		ai_attack_wing(objp, wingnum);
 		break;
@@ -2548,7 +2574,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
 	{
-		int ship_info_index = ship_info_lookup(current_goal->target_name);
+		int ship_info_index = ship_info_lookup(current_goal_target_name);
 		Assertion(ship_info_index >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!");
 		ai_attack_object(objp, nullptr, ship_info_index);
 		break;
@@ -2568,44 +2594,29 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	}
 
 	case AI_GOAL_EVADE_SHIP:
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 		ai_evade_object( objp, other_obj);
 		break;
 
 	case AI_GOAL_STAY_STILL:
+		// NOTE: goal clearing moved above this enclosing switch block
 		// for now, ignore any other parameters!!!!
-		// clear out the object's goals.  Seems to me that if a ship is staying still for a purpose
-		// then we need to clear everything out since there is not a real way to get rid of this goal
-		// clearing out goals is okay here since we are now what mode to set this AI object to.
-		ai_clear_ship_goals( aip );
 		ai_stay_still( objp, NULL );
 		break;
 
 	case AI_GOAL_PLAY_DEAD:
 	case AI_GOAL_PLAY_DEAD_PERSISTENT:
-		// we don't clear out ship goals for the "persistent" goal variant
-		if (current_goal->ai_mode == AI_GOAL_PLAY_DEAD)
-		{
-			// if a ship is playing dead, MWA says that it shouldn't try to do anything else.
-			// clearing out goals is okay here since we are now what mode to set this AI object to.
-			ai_clear_ship_goals(aip);
-		}
+		// NOTE: goal clearing moved above this enclosing switch block
 		aip->mode = AIM_PLAY_DEAD;
 		aip->submode = -1;
 		aip->submode_start_time = Missiontime;
 		break;
 
 	case AI_GOAL_FORM_ON_WING:
-		// get the ship first, since we're going to wipe it out next
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
-		// for form on wing, we need to clear out all goals for this ship, and then call the form
-		// on wing AI code
-		// clearing out goals is okay here since we are now what mode to set this AI object to.
-		ai_clear_ship_goals( aip );
+		// NOTE: goal clearing moved above this enclosing switch block
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 		ai_form_on_wing( objp, other_obj );
 		break;
 
@@ -2614,9 +2625,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 	case AI_GOAL_STAY_NEAR_SHIP:
 	case AI_GOAL_FLY_TO_SHIP:
 	{
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 		float dist = current_goal->float_data;	//	How far away to stay from ship.  Should be set in SEXP?
 		int additional_data = current_goal->int_data;	// Whether to target a particular point as if escorting
 		ai_do_stay_near(objp, other_obj, dist, additional_data);
@@ -2631,9 +2641,8 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	case AI_GOAL_REARM_REPAIR:
-		shipnum = ship_name_lookup( current_goal->target_name );
-		Assert( shipnum >= 0 );
-		other_obj = &Objects[Ships[shipnum].objnum];
+		Assert(current_goal_target_ship && current_goal_target_ship->has_objp());                        // shouldn't get here if this is false!!!!
+		other_obj = current_goal_target_ship->objp();
 		ai_rearm_repair( objp, current_goal->docker.index, other_obj, current_goal->dockee.index );
 		break;
 		
@@ -2642,7 +2651,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		break;
 
 	default:
-		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal->ai_mode);
+		UNREACHABLE("unsupported goal of %d found in ai_process_mission_orders. Please report to the SCP", current_goal_ai_mode);
 		break;
 	}
 
