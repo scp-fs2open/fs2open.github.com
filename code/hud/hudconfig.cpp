@@ -391,10 +391,10 @@ ui_button_info HC_buttons[GR_NUM_RESOLUTIONS][NUM_HUD_BUTTONS] = {
 #define NUM_HUD_TEXT					15
 UI_XSTR HC_text[GR_NUM_RESOLUTIONS][NUM_HUD_TEXT] = {
     { // GR_640
-        { "R",              1512,   14,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "G",              1513,   37,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "B",              1514,   62,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "I",              1515,   90,     8,      UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "R",              1512,   14,     8,      UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "G",              1513,   37,     8,      UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "B",              1514,   62,     8,      UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "I",              1515,   90,     8,      UI_XSTR_COLOR_GREEN,    -1, nullptr },
         { "On",             1285,   36,     334,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_ON].button },
         { "Off",            1286,   36,     353,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_OFF].button },
         { "Popup",          1453,   36,     372,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[0][HCB_POPUP].button },
@@ -408,10 +408,10 @@ UI_XSTR HC_text[GR_NUM_RESOLUTIONS][NUM_HUD_TEXT] = {
         { "Accept",         1035,   573,    413,    UI_XSTR_COLOR_PINK,     -1, &HC_buttons[0][HCB_ACCEPT].button },
     },
     { // GR_1024
-        { "R",              1512,   23,     14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "G",              1513,   60,     14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "B",              1514,   100,    14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
-        { "I",              1515,   144,    14,     UI_XSTR_COLOR_GREEN,    -1, NULL },
+        { "R",              1512,   23,     14,     UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "G",              1513,   60,     14,     UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "B",              1514,   100,    14,     UI_XSTR_COLOR_GREEN,    -1, nullptr },
+        { "I",              1515,   144,    14,     UI_XSTR_COLOR_GREEN,    -1, nullptr },
         { "On",             1285,   58,     536,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_ON].button },
         { "Off",            1286,   58,     566,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_OFF].button },
         { "Popup",          1453,   58,     596,    UI_XSTR_COLOR_GREEN,    -1, &HC_buttons[1][HCB_POPUP].button },
