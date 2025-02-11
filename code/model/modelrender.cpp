@@ -2243,10 +2243,10 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 
 
 				if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-					model_instance_local_to_global_point(&world_pnt, &tempv, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point(&world_pnt, &loc_offset, pm, pmi, bank->submodel_num);
 				} else {
 					vec3d tempn = loc_norm;
-					model_instance_local_to_global_point_dir(&world_pnt, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point_dir(&world_pnt, &loc_norm, &loc_offset, &tempn, pm, pmi, bank->submodel_num);
 				}
 			}
 
