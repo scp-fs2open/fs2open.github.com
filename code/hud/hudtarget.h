@@ -162,9 +162,9 @@ void			hud_prune_hotkeys();
 void			hud_keyed_targets_clear();
 
 // Code to draw filled triangles
-void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3);
+void hud_tri(float x1, float y1, float x2, float y2, float x3, float y3, bool config = false);
 // Code to draw empty triangles.
-void hud_tri_empty(float x1,float y1,float x2,float y2,float x3,float y3);
+void hud_tri_empty(float x1, float y1, float x2, float y2, float x3, float y3, bool config = false);
 
 float hud_find_target_distance( object *targetee, object *targeter );
 float hud_find_target_distance( object *targetee, const vec3d *targeter_pos );
@@ -497,7 +497,7 @@ protected:
 public:
 	HudGaugeOrientationTee();
 	void initRadius(int length);
-	void renderOrientation(object *from_objp, object *to_objp, matrix *from_orientp);
+	void renderOrientation(object* from_objp, object* to_objp, matrix* from_orientp, bool config = false);
 	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
@@ -514,8 +514,8 @@ public:
 	void initRadius(int length);
 	void initTriBase(float length);
 	void initTriHeight(float h);
-	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri);
-	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside);
+	void renderTriangle(vec3d *hostile_pos, int aspect_flag, int show_interior, int split_tri, bool config);
+	void renderTriangleMissileTail(float ang, float xpos, float ypos, float cur_dist, int draw_solid, int draw_inside, bool config);
 	void render(float frametime, bool config = false) override;
 };
 
@@ -558,7 +558,7 @@ public:
 	void initTriHeight(float length);
 	void render(float frametime, bool config = false) override;
 	void calculatePosition(vertex* target_point, vec3d *tpos, vec2d *outcoords, int *dir, float *half_triangle_sep);
-	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true);
+	void renderOffscreenIndicator(vec2d *coords, int dir, float distance, float half_triangle_sep, bool draw_solid = true, bool config = false);
 	void pageIn() override;
 };
 
@@ -571,9 +571,9 @@ public:
 	HudGaugeLeadIndicator();
 	void initHalfSize(float w, float h);
 	void initBitmaps(char *fname);
-	void renderIndicator(int frame_offset, object *targetp, vec3d *lead_target_pos);
-	void renderLeadCurrentTarget();
-	void renderLeadQuick(vec3d *target_pos, object *targetp);
+	void renderIndicator(int frame_offset, object* targetp, vec3d* lead_target_pos, bool config);
+	void renderLeadCurrentTarget(bool config);
+	void renderLeadQuick(vec3d* target_pos, object* targetp, bool config);
 	void render(float frametime, bool config = false) override;
 	int pickFrame(float prange, float srange, float dist_to_target);
 	void pageIn() override;
