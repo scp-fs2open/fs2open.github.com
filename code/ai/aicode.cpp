@@ -13111,10 +13111,11 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			//	For ships on player's team, check if modder wants default constant chance to fire or value from specific AI class profile.
 			//	For enemies, use value from specific AI class profile (usually increasing chance with higher skill level).
-			if ( (shipp->team == Player_ship->team) && !(aip->ai_profile_flags[AI::Profile_Flags::Friendlies_use_countermeasure_firechance]) ) {
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
-			} else {
+			//  Or use unifying behavior if specified. --wookieejedi
+			if ( (aip->ai_profile_flags[AI::Profile_Flags::Unify_usage_countermeasure_firechance]) || (shipp->team != Player_ship->team) ) {
 				fire_chance = aip->ai_cmeasure_fire_chance;
+			} else {
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			}
 
 			//	Decrease chance to fire at lower ai class (SUSHI: Only if autoscale is on)
@@ -13262,7 +13263,8 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Unify_usage_ai_shield_manage_delay] || iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
+		//  Or use unifying behavior if specified. --wookieejedi
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Unify_usage_ai_shield_manage_delay] || (Player_ship->team != Ships[objp->instance].team))
 		{
 			delay = aip->ai_shield_manage_delay;
 		} 

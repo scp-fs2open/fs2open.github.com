@@ -596,7 +596,11 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
-				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
+				if (optional_string_either("$friendly ships use AI profile countermeasure chance:", "$unify usage of AI profile countermeasure chance:", true) >= 0) {
+					bool val;
+					stuff_boolean(&val);
+					profile->flags.set(AI::Profile_Flags::Unify_usage_countermeasure_firechance, val);
+				}
 
 				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
 

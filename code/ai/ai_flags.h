@@ -145,7 +145,7 @@ namespace AI {
 		Better_guard_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,
-		Friendlies_use_countermeasure_firechance,
+		Unify_usage_countermeasure_firechance,
 		Improved_subsystem_attack_pathing,
 		Fixed_ship_weapon_collision,
 		No_shield_damage_from_ship_collisions,
