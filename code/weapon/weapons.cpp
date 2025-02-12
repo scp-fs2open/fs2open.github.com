@@ -1345,7 +1345,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_float(&wip->damage_time);
 		if(optional_string("+Attenuation Damage:")){
 			stuff_float(&wip->atten_damage);
-		} else if (optional_string_either("+Min Damage:", "+Max Damage:")) {
+		} else if (optional_string_either("+Min Damage:", "+Max Damage:") >= 0) {
 			Warning(LOCATION, "+Min Damage: and +Max Damage: in %s are deprecated, please change to +Attenuation Damage:.", wip->name);
 			stuff_float(&wip->atten_damage);
 		}
@@ -2831,7 +2831,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		// This was originally coded with the colon which implies a boolean input but that was not needed
-		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait")) {
+		if (optional_string_either("+Use Fire Wait:", "+Use Fire Wait") >= 0) {
 			wip->cmeasure_firewait = (int)(wip->fire_wait * 1000.0f);
 		}
 
