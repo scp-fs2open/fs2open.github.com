@@ -1659,10 +1659,11 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_FORM_ON_WING:
+		case LE_ORDER_FORM_ON_WING_NEW:
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_SHIP)
 			{
-				ai_mode = AI_GOAL_FORM_ON_WING;
+				ai_mode = (eh->index == LE_ORDER_FORM_ON_WING) ? AI_GOAL_FORM_ON_WING : AI_GOAL_FORM_ON_WING_NEW;
 				ai_shipname = Ships[tgh->objp()->instance].ship_name;
 				ai_submode = 0;
 			}
@@ -1768,8 +1769,9 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			break;
 		}
 		case LE_ORDER_STAY_STILL:
+		case LE_ORDER_STAY_STILL_NEW:
 		{
-			ai_mode = AI_GOAL_STAY_STILL;
+			ai_mode = (eh->index == LE_ORDER_STAY_STILL) ? AI_GOAL_STAY_STILL : AI_GOAL_STAY_STILL_NEW;
 			if(tgh_valid && tgh->objp()->type == OBJ_SHIP)
 			{
 				ai_shipname = Ships[tgh->objp()->instance].ship_name;
