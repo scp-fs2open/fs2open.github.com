@@ -240,19 +240,50 @@ const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues 
                                                                                    { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
+static void parse_model_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::DetailDistance, value[i]);
+		}
+	}
+}
+
 const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",
                      std::pair<const char*, int>{"Model Detail", 1739},
                      std::pair<const char*, int>{"Detail level of models", 1740})
                      .importance(8)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.detail_distance;})
                      .change_listener([](int val, bool) {
                           Detail.detail_distance = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_model_detail_func)
                      .finish();
+
+static void parse_texture_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::HardwareTextures, value[i]);
+		}
+	}
+}
 
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                      std::pair<const char*, int>{"3D Hardware Textures", 1362},
@@ -260,13 +291,29 @@ const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Textu
                      .importance(6)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.hardware_textures;})
                      .change_listener([](int val, bool) {
                           Detail.hardware_textures = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_texture_detail_func)
                      .finish();
+
+static void parse_particles_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumParticles, value[i]);
+		}
+	}
+}
 
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                      std::pair<const char*, int>{"Particles", 1363},
@@ -274,27 +321,59 @@ const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Part
                      .importance(5)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.num_particles;})
                      .change_listener([](int val, bool) {
                           Detail.num_particles = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_particles_detail_func)
                      .finish();
+
+static void parse_debris_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumSmallDebris, value[i]);
+		}
+	}
+}
 
 const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
                      std::pair<const char*, int>{"Impact Effects", 1364}, 
                      std::pair<const char*, int>{"Level of detail of impact effects", 1743})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.num_small_debris;})
                      .importance(4)
                      .change_listener([](int val,bool) {
                           Detail.num_small_debris = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_debris_detail_func)
                      .finish();
+
+static void parse_shield_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::ShieldEffects, value[i]);
+		}
+	}
+}
 
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                      std::pair<const char*, int>{"Shield Hit Effects", 1718},
@@ -302,13 +381,29 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
                      .importance(3)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.shield_effects;})
                      .change_listener([](int val, bool) {
                           Detail.shield_effects = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_shield_detail_func)
                      .finish();
+
+static void parse_stars_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumStars, value[i]);
+		}
+	}
+}
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
                      std::pair<const char*, int>{"Stars", 1366}, 
@@ -316,12 +411,13 @@ const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
                      .importance(2)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([](){return Detail.num_stars;})
                      .change_listener([](int val, bool) {
                           Detail.num_stars = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_stars_detail_func)
                      .finish();
 
 // Call this with:
