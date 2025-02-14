@@ -28,7 +28,7 @@ const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>:
 	});
 
 const std::shared_ptr<Hook<>> OnOptionsTabChanged = Hook<>::Factory("On Options Menu Tab Changed",
-	"Executed whenever a the tab is changed within the Options Menu.",
+	"Executed whenever a tab is changed within the Options Menu.",
 	{
 		{"TabNumber", "number", "The number of the tab that has been changed to, with 0 = Options Tab, 1 = Multi Tab, and 2 = Details Tab. "},
 	});
