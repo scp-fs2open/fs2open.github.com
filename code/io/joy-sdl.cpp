@@ -186,7 +186,12 @@ Joystick* joystick_deserialize(const json_t* value)
 
 	json_error_t err;
 	if (json_unpack_ex((json_t*)value, &err, 0, "{s:s, s:i}", "guid", &guid, "id", &id) != 0) {
-		throw json_exception(err);
+		// throw json_exception(err);
+		// Changed by wookieejedi.
+		// If errors detected then return nullptr (ie, no joystick),
+		// because if we throw errors instead of returning nullptr
+		// then the listening functions short circuits and does not run.
+		return nullptr;
 	}
 
 	for (auto& test_stick : joysticks) {
