@@ -1053,10 +1053,10 @@ namespace joystick
 		if (Using_in_game_options)
 		{
 			// The new options system is in use
-			setPlayerJoystick(JoystickOption->getValue(), 0);
-			setPlayerJoystick(JoystickOption1->getValue(), 1);
-			setPlayerJoystick(JoystickOption2->getValue(), 2);
-			setPlayerJoystick(JoystickOption3->getValue(), 3);
+			setPlayerJoystick(JoystickOption->getValue(), CID_JOY0);
+			setPlayerJoystick(JoystickOption1->getValue(), CID_JOY1);
+			setPlayerJoystick(JoystickOption2->getValue(), CID_JOY2);
+			setPlayerJoystick(JoystickOption3->getValue(), CID_JOY3);
 		}
 		else
 		{
