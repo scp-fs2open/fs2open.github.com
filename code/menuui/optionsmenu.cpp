@@ -35,6 +35,7 @@
 #include "pilotfile/pilotfile.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "scripting/global_hooks.h"
 #include "sound/audiostr.h"
 #include "weapon/weapon.h"
 
@@ -660,6 +661,11 @@ void options_change_tab(int n)
 	Tab = n;
 	options_tab_setup(1);
 	gamesnd_play_iface(InterfaceSounds::SCREEN_MODE_PRESSED);
+
+	// adds scripting hook for 'On Options Tab Changed' --wookieejedi
+	if (scripting::hooks::OnOptionsTabChanged->isActive()) {
+		scripting::hooks::OnOptionsTabChanged->run(scripting::hook_param_list(scripting::hook_param("TabNumber", 'i', Tab)));
+	}
 }
 
 void options_cancel_exit()
