@@ -211,6 +211,30 @@ json_t* joystick_serializer(Joystick* joystick)
 }
 
 /**
+ * Assigns the given cid to the given stick
+ *
+ * @param[in] stick  The stick that is being assigned
+ * @param[in] cid    The cid being assigned, must be a valid short between CID_JOY0 and CID_JOY_MAX
+ */
+void setPlayerJoystick(Joystick* stick, short cid)
+{
+	Assert((cid >= CID_JOY0) && (cid < CID_JOY_MAX));
+	pJoystick[cid] = stick;
+
+	if (pJoystick[cid] != nullptr) {
+		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
+		mprintf(("\n"));
+		mprintf(("  Number of axes: %d\n", pJoystick[cid]->numAxes()));
+		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
+		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
+		mprintf(("  Number of trackballs: %d\n", pJoystick[cid]->numBalls()));
+		mprintf(("\n"));
+	} else {
+		mprintf((" Joystick %i removed\n", cid));
+	}
+}
+
+/**
  * Scripting callback for displaying the given joystick's name
  */
 SCP_string joystick_display(Joystick* stick)
@@ -250,6 +274,10 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
                      .default_val(nullptr)                 // initial/default value for this option
                      .flags({options::OptionFlags::ForceMultiValueSelection})
                      .importance(3)
+                     .change_listener([](Joystick* joy, bool) {
+                         setPlayerJoystick(joy, CID_JOY0);
+                         return true;
+                     })
                      .finish();
 
 auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
@@ -264,6 +292,10 @@ auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
                      .importance(3)
+                     .change_listener([](Joystick* joy, bool) {
+                         setPlayerJoystick(joy, CID_JOY1);
+                         return true;
+                     })
                      .finish();
 
 auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
@@ -278,6 +310,10 @@ auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
                      .importance(3)
+                     .change_listener([](Joystick* joy, bool) {
+                         setPlayerJoystick(joy, CID_JOY2);
+                         return true;
+                     })
                      .finish();
 
 auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
@@ -292,6 +328,10 @@ auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
                      .importance(3)
+                     .change_listener([](Joystick* joy, bool) {
+                         setPlayerJoystick(joy, CID_JOY3);
+                         return true;
+                     })
                      .finish();
 
 HatPosition convertSDLHat(int val)
@@ -344,33 +384,6 @@ void enumerateJoysticks(SCP_vector<JoystickPtr>& outVec)
 				mprintf(("    %s\n", SDL_GetError()));
 				SDL_ClearError();
 			}
-	}
-}
-
-/**
- * Assigns the given cid to the given stick
- *
- * @param[in] stick  The stick that is being assigned
- * @param[in] cid    The cid being assigned, must be a valid short between CID_JOY0 and CID_JOY_MAX
- */
-void setPlayerJoystick(Joystick *stick, short cid)
-{
-	Assert((cid >= CID_JOY0) && (cid < CID_JOY_MAX));
-	pJoystick[cid] = stick;
-
-	if (pJoystick[cid] != nullptr)
-	{
-		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
-		mprintf(("\n"));
-		mprintf(("  Number of axes: %d\n", pJoystick[cid]->numAxes()));
-		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
-		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
-		mprintf(("  Number of trackballs: %d\n", pJoystick[cid]->numBalls()));
-		mprintf(("\n"));
-	}
-	else
-	{
-		mprintf((" Joystick %i removed\n", cid));
 	}
 }
 
