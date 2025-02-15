@@ -301,7 +301,7 @@ ADE_VIRTVAR(Conflicted,
 	l_Control,
 	nullptr,
 	"Whether or not the bound control has a conflict.",
-	"boolean",
+	"string",
 	"Returns the conflict string if true, nil otherwise")
 {
 	control_h current;
