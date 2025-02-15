@@ -166,6 +166,7 @@ namespace AI {
 		Dynamic_goals_afterburn_hard,
 		Player_orders_afterburn_hard,
 		Hudsquadmsg_tactical_disarm_disable,
+		Hudsquadmsg_new_form_on_wing,
 		Align_to_target_when_guarding_still,
 		Debris_respects_big_damage,
 		Dont_limit_change_in_speed_due_to_physics_whack,

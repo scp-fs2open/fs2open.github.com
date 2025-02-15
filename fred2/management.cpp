@@ -142,6 +142,7 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,		0 },
 	{ "Keep safe distance",		AI_GOAL_KEEP_SAFE_DISTANCE,	0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,			0 },
+	{ "Stay still (new)",		AI_GOAL_STAY_STILL_NEW,		0 },
 	{ "Play dead",				AI_GOAL_PLAY_DEAD,			0 },
 	{ "Play dead (persistent)",	AI_GOAL_PLAY_DEAD_PERSISTENT,		0 }
 };
