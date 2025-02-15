@@ -10,7 +10,7 @@ struct gauge_config_h {
 	int gauge;
 	gauge_config_h();
 	explicit gauge_config_h(int l_gauge);
-	HC_gauge_region* getGauge() const;
+	HudGauge* getGauge() const;
 	int getIndex() const;
 	const char* getName() const;
 	bool isValid() const;

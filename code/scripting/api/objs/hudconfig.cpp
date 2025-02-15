@@ -12,27 +12,18 @@ namespace api {
 gauge_config_h::gauge_config_h() : gauge(-1) {}
 gauge_config_h::gauge_config_h(int l_gauge) : gauge(l_gauge) {}
 
-HC_gauge_region* gauge_config_h::getGauge() const
+HudGauge* gauge_config_h::getGauge() const
 {
 	if (!isValid()) {
 		return nullptr;
 	}
 
-	return &HC_gauge_regions[GR_1024][gauge];
+	return hud_config_get_gauge_pointer(gauge);
 }
 
 int gauge_config_h::getIndex() const
 {
 	return gauge;
-}
-
-const char* gauge_config_h::getName() const
-{
-	if (!isValid()) {
-		return nullptr;
-	}
-
-	return HC_gauge_descriptions(gauge);
 }
 
 bool gauge_config_h::isValid() const
@@ -126,7 +117,7 @@ ADE_VIRTVAR(Name, l_Gauge_Config, nullptr, "The name of this gauge", "string", "
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getName());
+	return ade_set_args(L, "s", current.getGauge()->getConfigName().c_str());
 }
 
 ADE_VIRTVAR(CurrentColor,
@@ -147,17 +138,17 @@ ADE_VIRTVAR(CurrentColor,
 	}
 
 	if (ADE_SETTING_VAR) {
-		if (!current.getGauge()->use_iff) {
+		if (!current.getGauge()->getConfigUseIffColor()) {
 			HUD_config.clr[current.getIndex()] = newColor;
 		}
 	}
 
 	const color *thisColor;
 	
-	if (!current.getGauge()->use_iff) {
+	if (!current.getGauge()->getConfigUseIffColor()) {
 		thisColor = &HUD_config.clr[current.getIndex()];
 	} else {
-		if (current.getGauge()->color == 1) {
+		if (current.getGauge()->getConfigUseTagColor()) {
 			thisColor = iff_get_color(IFF_COLOR_TAGGED, 0);
 		} else {
 			thisColor = &Color_bright_red;
@@ -220,7 +211,7 @@ ADE_VIRTVAR(PopupGaugeFlag,
 		}
 	}
 
-	if (current.getGauge()->can_popup == 0) {
+	if (!current.getGauge()->getConfigCanPopup()) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -247,7 +238,7 @@ ADE_VIRTVAR(CanPopup,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (current.getGauge()->can_popup == 0) {
+	if (!current.getGauge()->getConfigCanPopup()) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -274,7 +265,7 @@ ADE_VIRTVAR(UsesIffForColor,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (current.getGauge()->use_iff == 0) {
+	if (!current.getGauge()->getConfigUseIffColor()) {
 		return ADE_RETURN_FALSE;
 	}
 
