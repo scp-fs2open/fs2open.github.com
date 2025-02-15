@@ -149,6 +149,10 @@ extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 
 const char* HC_gauge_descriptions(int n);
 
+extern int HC_talking_head_frame;
+extern SCP_string HC_head_anim_filename;
+extern SCP_string HC_shield_gauge_ship;
+
 /*!
  * @brief init hud config screen, setting up the hud preview display
  * 
