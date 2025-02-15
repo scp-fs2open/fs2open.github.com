@@ -452,8 +452,13 @@ void HudGaugeRadarDradis::drawBlipsSorted(int distort)
 }
 
 
-void HudGaugeRadarDradis::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeRadarDradis::render(float  /*frametime*/, bool config)
 {
+	// Not yet supported in config
+	if (config) {
+		return;
+	}
+	
 	float sensors_str;
 	int   ok_to_blit_radar;
 	
