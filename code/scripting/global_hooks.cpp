@@ -27,6 +27,12 @@ const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>:
 		{"ViaTechRoom", "boolean", "Whether the movie player was invoked through the tech room."},
 	});
 
+const std::shared_ptr<Hook<>> OnOptionsTabChanged = Hook<>::Factory("On Options Menu Tab Changed",
+	"Executed whenever a tab is changed within the Options Menu.",
+	{
+		{"TabNumber", "number", "The number of the tab that has been changed to, with 0 = Options Tab, 1 = Multi Tab, and 2 = Details Tab. "},
+	});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{
