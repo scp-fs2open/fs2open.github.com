@@ -1,0 +1,27 @@
+//? #version 150
+#include "filter-tent.sdr"
+
+// This shader performs upsampling on a texture,
+// as taken from Call Of Duty method, presented at ACM Siggraph 2014.
+
+// Remember to add bilinear minification filter for this texture!
+// Remember to use a floating-point texture format (for HDR)!
+// Remember to use edge clamping for this texture!
+
+uniform sampler2D srcTexture;
+layout (std140) uniform genericData {
+	float xSize;
+	float ySize;
+	float mip;
+	float intensity;
+};
+
+in vec4 fragTexCoord;
+
+out vec4 fragOut0;
+
+void main()
+{
+	fragOut0.rgb = intensity * blur(xSize, ySize, srcTexture, mip, fragTexCoord.xy);
+	fragOut0.a = 1.0;
+}

@@ -180,6 +180,9 @@ bool graphics_options_changed()
 	if (stored_settings.bloom_level != gr_bloom_intensity())
 		return true;
 
+	if (stored_settings.bloom_width != gr_bloom_width())
+		return true;
+
 	if (stored_settings.aa_mode != Gr_aa_mode)
 		return true;
 

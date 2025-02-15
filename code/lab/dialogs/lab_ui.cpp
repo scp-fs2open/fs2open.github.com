@@ -328,6 +328,7 @@ void LabUi::show_render_options()
 {
 	auto profile_list = ltp::list_profiles();
 	int bloom_level = gr_bloom_intensity();
+	float bloom_width = gr_bloom_width();
 	float ambient_factor = ltp::lab_get_ambient();
 	float light_factor = ltp::lab_get_light();
 	float emissive_factor = ltp::lab_get_emissive();
@@ -379,7 +380,8 @@ void LabUi::show_render_options()
 			SliderFloat("Ambient factor", &ambient_factor, 0.0f, 10.0f);
 			SliderFloat("Emissive amount", &emissive_factor, 0.0f, 10.0f);
 			SliderFloat("Exposure", &exposure_level, 0.0f, 8.0f);
-			SliderInt("Bloom level", &bloom_level, 0, 200);
+			SliderInt("Bloom level", &bloom_level, 0, 100);
+			SliderFloat("Bloom width", &bloom_width, 0.0f, 1.0f);
 
 			build_antialiasing_combobox();
 
@@ -491,6 +493,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);
 		getLabManager()->Renderer->setBloomLevel(bloom_level);
+		getLabManager()->Renderer->setBloomWidth(bloom_width);
 		getLabManager()->Renderer->setExposureLevel(exposure_level);
 		getLabManager()->Renderer->setPPCValues(ppcv);
 	}
