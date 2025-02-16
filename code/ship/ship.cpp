@@ -10520,7 +10520,9 @@ void update_firing_sounds(object* objp, ship* shipp)
 
 			vec3d pos = model_get(Ship_info[shipp->ship_info_index].model_num)->view_positions[0].pnt;
 
-			if (wip->loop_firing_snd.isValid())
+			if (wip->linked_loop_firing_snd.isValid() && shipp->flags[Ship::Ship_Flags::Primary_linked])
+				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->linked_loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
+			else if (wip->loop_firing_snd.isValid())
 				swp->firing_loop_sounds[i] = obj_snd_assign(shipp->objnum, wip->loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
 			else
 				swp->firing_loop_sounds[i] = -2;
@@ -18236,6 +18238,21 @@ void ship_primary_changed(ship *sp)
 					swp->primary_animation_position[i] = MA_POS_READY;
 				}
 			}
+
+			if (swp->primary_bank_weapons[i] >= 0) {
+				weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+				// for starting the linked loop sound if there is one
+				if (swp->firing_loop_sounds[i] != -1 && wip->linked_loop_firing_snd.isValid()) {
+					// there was a valid loop sound before, end it
+					if (swp->firing_loop_sounds[i] >= 0) {
+						obj_snd_delete(&Objects[sp->objnum], swp->firing_loop_sounds[i]);
+					}
+					vec3d pos = model_get(Ship_info[sp->ship_info_index].model_num)->view_positions[0].pnt;
+
+					swp->firing_loop_sounds[i] = obj_snd_assign(sp->objnum, wip->linked_loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
+				}
+			}
 		}
 	} else {
 		// find anything that is up that shouldn't be
@@ -18249,6 +18266,22 @@ void ship_primary_changed(ship *sp)
 						swp->primary_animation_position[i] = MA_POS_SET;
 					} else {
 						swp->primary_animation_position[i] = MA_POS_READY;
+					}
+				}
+
+				if (swp->primary_bank_weapons[i] >= 0) {
+					weapon_info* wip = &Weapon_info[swp->primary_bank_weapons[i]];
+
+					// for stopping a linked_loop_firing_snd, and starting up the loop_firing_snd again
+					// if this weapon doesn't have a linked_loop_firing_snd, there is no reason to do this
+					if (swp->firing_loop_sounds[i] != -1 && wip->linked_loop_firing_snd.isValid()) {
+						// there was a valid linked loop sound before, end it
+						if (swp->firing_loop_sounds[i] >= 0) {
+							obj_snd_delete(&Objects[sp->objnum], swp->firing_loop_sounds[i]);
+						}
+						vec3d pos = model_get(Ship_info[sp->ship_info_index].model_num)->view_positions[0].pnt;
+
+						swp->firing_loop_sounds[i] = obj_snd_assign(sp->objnum, wip->loop_firing_snd, &pos, OS_PLAY_ON_PLAYER);
 					}
 				}
 			} else {
