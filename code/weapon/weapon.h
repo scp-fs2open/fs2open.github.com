@@ -513,6 +513,7 @@ struct weapon_info
 	gamesnd_id	ambient_snd;
 	gamesnd_id  start_firing_snd;
 	gamesnd_id  loop_firing_snd;
+	gamesnd_id  linked_loop_firing_snd;
 	gamesnd_id  end_firing_snd;
 	
 	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
