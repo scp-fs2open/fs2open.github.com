@@ -8275,7 +8275,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	Shadow_view_matrix_render = gr_view_matrix;
 
-	if (Cmdline_deferred_lighting_cockpit) {
+	if (light_deferredcockpit_enabled()) {
 		gr_deferred_lighting_begin(true);
 
 		//When MSAA is enabled, we've just switched to the MS buffer. These still have the Z-Buffer we saved earlier, so clear that too
@@ -8316,7 +8316,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_OPAQUE);
 	}
 
-	if (Cmdline_deferred_lighting_cockpit) {
+	if (light_deferredcockpit_enabled()) {
 
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
@@ -8348,7 +8348,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 		model_render_immediate(&cockpit_render_info, sip->cockpit_model_num, shipp->cockpit_model_instance, &objp->orient, &cockpit_offset, MODEL_RENDER_TRANS);
 	}
 
-	if (Cmdline_deferred_lighting_cockpit) {
+	if (light_deferredcockpit_enabled()) {
 		gr_set_lighting();
 	}
 
