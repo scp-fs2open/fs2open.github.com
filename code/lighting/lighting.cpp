@@ -133,7 +133,7 @@ static void parse_deferredcockpit_lighting_func()
 
 static auto DeferredCockpitLightingOption = options::OptionBuilder<bool>("Graphics.DeferredCockpitLighting",
                   std::pair<const char*, int>{"Deferred Cockpit Lighting", 1864},
-                  std::pair<const char*, int>{"Enables or disables deferred lighting in cockpits", 1865})
+                  std::pair<const char*, int>{"Enables or disables deferred lighting in cockpits (requires Deferred Lighting to be enabled)", 1865})
                   .category(std::make_pair("Graphics", 1825))
                   .default_func([]() { return DeferredCockpitLightingEnabled;})
                   .level(options::ExpertLevel::Advanced)
@@ -142,16 +142,15 @@ static auto DeferredCockpitLightingOption = options::OptionBuilder<bool>("Graphi
                   .parser(parse_deferredcockpit_lighting_func)
                   .finish();
 
-
-// These deferred enabled functions used to get the value of the option object itself,
-// however that is not a free operation and changing it requires a restart anyway.
-// If the restart requirement is lifted, then care should be taken to cache this value
-// and never look it up more than once a frame;
-// otherwise the performance footprint is measurable enough to worry about.
 bool light_deferred_enabled()
 {
 	if (Using_in_game_options) {
 		static bool isToggledOn = DeferredLightingOption->getValue();
+		// This used to get the value of the option object itself,
+		// however that is not a free operation and changing it requires a restart anyway
+		// if the restart requirement is lifted care should be taken to cache this value
+		// and never look it up more than once a frame
+		// otherwise the performance footprint is measurable enough to worry about.
 		return isToggledOn;
 	} else {
 		return !Cmdline_no_deferred_lighting;
@@ -162,6 +161,8 @@ bool light_deferredcockpit_enabled()
 {
 	if (Using_in_game_options) {
 		static bool isToggledOn = DeferredCockpitLightingOption->getValue();
+		// Note, the above comment within light_deferred_enabled()
+		// about caching the value also applies here.
 		return isToggledOn;
 	} else {
 		return Cmdline_deferred_lighting_cockpit;
