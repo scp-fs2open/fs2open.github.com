@@ -1239,7 +1239,11 @@ void options_menu_do_frame(float  /*frametime*/)
 			break;
 
 		case KEY_ESC:
-			options_cancel_exit();
+			if (Escape_saves_options) {
+				options_accept();
+			} else {
+				options_cancel_exit();
+			}
 			break;
 
 		case KEY_CTRLED | KEY_ENTER:

@@ -168,6 +168,7 @@ extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 extern bool Preload_briefing_icon_models;
+extern bool Escape_saves_options;
 
 void mod_table_init();
 void mod_table_post_process();
