@@ -1260,6 +1260,8 @@ void options_menu_do_frame(float  /*frametime*/)
 			if (Using_in_game_options) {
 				// Going into F3 Options needs to either discard or save the changes made here. 
 				// There's an argument to be made for both but I feel like saving is the better choice - Mjn
+				options_detail_sliders_in_game_update(); //also account for detail sliders --wookieejedi
+
 				options::OptionsManager::instance()->persistChanges();
 
 				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
