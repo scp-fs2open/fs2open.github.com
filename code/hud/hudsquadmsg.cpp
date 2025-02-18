@@ -1171,7 +1171,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		case FORMATION_ITEM:
 			message = MESSAGE_FORM_ON_MY_WING;
 			target_shipname = ordering_shipp->ship_name;
-			ai_mode = AI_GOAL_FORM_ON_WING;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_new_form_on_wing]) ? AI_GOAL_FORM_ON_WING_NEW : AI_GOAL_FORM_ON_WING;
 			ai_submode = 0;
 			break;
 		
@@ -1429,7 +1429,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		case FORMATION_ITEM:
 			message = MESSAGE_FORM_ON_MY_WING;
 			target_shipname = ordering_shipp->ship_name;
-			ai_mode = AI_GOAL_FORM_ON_WING;
+			ai_mode = (The_mission.ai_profile->flags[AI::Profile_Flags::Hudsquadmsg_new_form_on_wing]) ? AI_GOAL_FORM_ON_WING_NEW : AI_GOAL_FORM_ON_WING;
 			ai_submode = 0;
 			break;
 
