@@ -779,6 +779,10 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 	if (mode == AI_GOAL_FORM_ON_WING && !The_mission.ai_profile->flags[AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing])
 		aigp->flags.set(AI::Goal_Flags::Want_override);
 
+	// generally, players want ships to form-on-wing only until they need to do something else
+	if (mode == AI_GOAL_FORM_ON_WING && The_mission.ai_profile->flags[AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order])
+		aigp->flags.set(AI::Goal_Flags::Purge_when_new_goal_added);
+
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Player_orders_afterburn_hard])
 		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
 
@@ -808,14 +812,19 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 // my new docking code. :)
 int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 {
-	int gindex, oldest_index;
+	int oldest_index = -1, empty_index = -1;
 
-	oldest_index = -1;
-	for ( gindex = 0; gindex < MAX_AI_GOALS; gindex++ )
+	for ( int gindex = 0; gindex < MAX_AI_GOALS; gindex++ )
 	{
 		// get the index for the first unused goal
 		if (goals[gindex].ai_mode == AI_GOAL_NONE)
-			return gindex;
+		{
+			if (empty_index < 0)
+				empty_index = gindex;
+		}
+		// if any goal needs to be purged when we add a goal, set the flag
+		else if (goals[gindex].flags[AI::Goal_Flags::Purge_when_new_goal_added])
+			goals[gindex].flags.set(AI::Goal_Flags::Purge);
 
 		// if this is the active goal, don't consider it for pre-emption!!
 		if (gindex == active_goal)
@@ -827,6 +836,10 @@ int ai_goal_find_empty_slot( ai_goal *goals, int active_goal )
 		else if (goals[gindex].time < goals[oldest_index].time)
 			oldest_index = gindex;
 	}
+
+	// try to use the first empty slot
+	if (empty_index >= 0)
+		return empty_index;
 
 	// if we didn't find an empty slot, use the oldest goal's slot
 	return oldest_index;
@@ -1163,6 +1176,13 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 		}
 		if (set_override)
 			aigp->flags.set(AI::Goal_Flags::Want_override);
+
+		if (n >= 0)
+		{
+			if (is_sexp_true(n))
+				aigp->flags.set(AI::Goal_Flags::Purge_when_new_goal_added);
+			n = CDR(n);
+		}
 
 		aigp->ai_mode = AI_GOAL_FORM_ON_WING;
 		break;
