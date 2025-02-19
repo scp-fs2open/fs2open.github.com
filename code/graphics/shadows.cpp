@@ -434,7 +434,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float
 	matrix light_matrix;
 
 	vm_vec_copy_normalize(&light_dir, &lp.vec);
-	vm_vector_2_matrix(&light_matrix, &light_dir, &eye_orient->vec.uvec, NULL);
+	vm_vector_2_matrix_norm(&light_matrix, &light_dir, &eye_orient->vec.uvec, nullptr);
 
 	shadows_construct_light_frustum(&Shadow_frustums[0], &light_matrix, eye_orient, eye_pos, fov, aspect, 0.0f, veryneardist);
 	shadows_construct_light_frustum(&Shadow_frustums[1], &light_matrix, eye_orient, eye_pos, fov, aspect, veryneardist - (veryneardist - 0.0f)* 0.2f, neardist);

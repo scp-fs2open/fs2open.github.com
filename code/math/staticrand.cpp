@@ -142,7 +142,7 @@ void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angl
 	if(orient != nullptr){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, nullptr, nullptr);
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 	
@@ -173,7 +173,7 @@ void static_rand_cone(int num, vec3d* out, const vec3d* const in, float min_angl
 		rot = orient;
 	}
 	else {
-		vm_vector_2_matrix(&m, in, nullptr, nullptr);
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 

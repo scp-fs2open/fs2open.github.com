@@ -357,7 +357,7 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 		if (Use_host_orientation_for_set_camera_facing)
 		{
 			// point along the target vector, but using the host orient's roll
-			vm_vector_2_matrix(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
+			vm_vector_2_matrix_norm(&temp_matrix, &targetvec, &orient->vec.uvec, nullptr);
 
 			// if we have a host, we need the difference between the camera's current orient and the orient we want
 			// if not, we will later set the absolute orientation, rather than the orientation relative to the host
@@ -370,7 +370,7 @@ void camera::set_rotation_facing(vec3d *in_target, float in_rotation_time, float
 		else
 		{
 			// point directly along the target vector
-			vm_vector_2_matrix(&temp_matrix, &targetvec, nullptr, nullptr);
+			vm_vector_2_matrix_norm(&temp_matrix, &targetvec, nullptr, nullptr);
 		}
 	}
 
@@ -515,14 +515,14 @@ void camera::get_info(vec3d *position, matrix *orientation, bool apply_camera_or
 
 				vec3d targetvec;
 				vm_vec_normalized_dir(&targetvec, &target_pos, &c_pos);
-				vm_vector_2_matrix(&c_ori, &targetvec, NULL, NULL);
+				vm_vector_2_matrix_norm(&c_ori, &targetvec, nullptr, nullptr);
 				target_set = true;
 			}
 			else if(object_host.isValid())
 			{
 				if(eyep)
 				{
-					vm_vector_2_matrix(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp()->orient.vec.uvec)?NULL:&object_host.objp()->orient.vec.uvec, NULL);
+					vm_vector_2_matrix_norm(&c_ori, &host_normal, vm_vec_same(&host_normal, &object_host.objp()->orient.vec.uvec) ? nullptr : &object_host.objp()->orient.vec.uvec, nullptr);
 					target_set = true;
 				}
 				else if (use_host_orient)
@@ -1263,7 +1263,7 @@ void get_turret_cam_orient(camera *cam, matrix *ori)
 	object_h obj(cam->get_object_host());
 	if(!obj.isValid())
 		return;
-	vm_vector_2_matrix(ori, &normal_cache, vm_vec_same(&normal_cache, &cam->get_object_host()->orient.vec.uvec)?NULL:&cam->get_object_host()->orient.vec.uvec, NULL);
+	vm_vector_2_matrix_norm(ori, &normal_cache, vm_vec_same(&normal_cache, &cam->get_object_host()->orient.vec.uvec) ? nullptr : &cam->get_object_host()->orient.vec.uvec, nullptr);
 }
 
 eye* get_submodel_eye(polymodel *pm, int submodel_num)

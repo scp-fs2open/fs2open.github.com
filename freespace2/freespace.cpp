@@ -3147,9 +3147,8 @@ camid game_render_frame_setup()
 		return camid();
 	}
 
-	vec3d	eye_pos;
+	vec3d	eye_pos, eye_fvec;
 	matrix	eye_orient = vmd_identity_matrix;
-	vec3d	eye_vec;
 
 	static int last_Viewer_mode = 0;
 	static int last_Game_mode = 0;
@@ -3215,8 +3214,8 @@ camid game_render_frame_setup()
 				//	View target from player ship.
 				Viewer_obj = nullptr;
 				eye_pos = Player_obj->pos;
-				vm_vec_normalized_dir(&eye_vec, &Objects[Player_ai->target_objnum].pos, &eye_pos);
-				vm_vector_2_matrix(&eye_orient, &eye_vec, nullptr, nullptr);
+				vm_vec_normalized_dir(&eye_fvec, &Objects[Player_ai->target_objnum].pos, &eye_pos);
+				vm_vector_2_matrix_norm(&eye_orient, &eye_fvec, nullptr, nullptr);
 				//rtn_cid = ship_get_followtarget_eye( Player_obj );
 			}
 		} else {
@@ -3247,9 +3246,8 @@ camid game_render_frame_setup()
 
 			eye_pos = Dead_camera_pos;
 
-			vm_vec_normalized_dir(&eye_vec, &Player_obj->pos, &eye_pos);
-
-			vm_vector_2_matrix(&eye_orient, &eye_vec, nullptr, nullptr);
+			vm_vec_normalized_dir(&eye_fvec, &Player_obj->pos, &eye_pos);
+			vm_vector_2_matrix_norm(&eye_orient, &eye_fvec, nullptr, nullptr);
 			Viewer_obj = nullptr;
 		}
 	} 
@@ -3300,9 +3298,8 @@ camid game_render_frame_setup()
 
 				vm_vec_scale_add(&eye_pos, &Viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
-				vm_vec_sub(&eye_vec, &Viewer_obj->pos, &eye_pos);
-				vm_vec_normalize(&eye_vec);
-				vm_vector_2_matrix(&eye_orient, &eye_vec, &Viewer_obj->orient.vec.uvec, nullptr);
+				vm_vec_normalized_dir(&eye_fvec, &Viewer_obj->pos, &eye_pos);
+				vm_vector_2_matrix_norm(&eye_orient, &eye_fvec, &Viewer_obj->orient.vec.uvec, nullptr);
 				Viewer_obj = nullptr;
 
 				//	Modify the orientation based on head orientation.
@@ -3354,8 +3351,7 @@ camid game_render_frame_setup()
 					eye_mov *= exp(-Ship_info[Ships[Viewer_obj->instance].ship_info_index].chase_view_rigidity * flFrametime);
 					eye_pos -= eye_mov;
 
-					vm_vec_sub(&eye_vec, &aim_pt, &eye_pos);
-					vm_vec_normalize(&eye_vec);
+					vm_vec_normalized_dir(&eye_fvec, &aim_pt, &eye_pos);
 
 					// JAS: I added the following code because if you slew up using
 					// Descent-style physics, tmp_dir and Viewer_obj->orient.vec.uvec are
@@ -3366,7 +3362,7 @@ camid game_render_frame_setup()
 					tmp_up = eyemat.vec.uvec;
 					vm_vec_scale_add2(&tmp_up, &eyemat.vec.rvec, 0.00001f);
 
-					vm_vector_2_matrix(&eye_orient, &eye_vec, &tmp_up, nullptr);
+					vm_vector_2_matrix(&eye_orient, &eye_fvec, &tmp_up, nullptr);
 					Viewer_obj = nullptr;
 
 					//	Modify the orientation based on head orientation.
@@ -3379,9 +3375,8 @@ camid game_render_frame_setup()
 
 					vec3d warp_pos = Player_obj->pos;
 					shipp->warpout_effect->getWarpPosition(&warp_pos);
-					vm_vec_sub(&eye_vec, &warp_pos, &eye_pos);
-					vm_vec_normalize(&eye_vec);
-					vm_vector_2_matrix(&eye_orient, &eye_vec, &Player_obj->orient.vec.uvec, nullptr);
+					vm_vec_normalized_dir(&eye_fvec, &warp_pos, &eye_pos);
+					vm_vector_2_matrix_norm(&eye_orient, &eye_fvec, &Player_obj->orient.vec.uvec, nullptr);
 					Viewer_obj = nullptr;
 			} else if (Viewer_mode & VM_TOPDOWN) {
 					angles rot_angles = { PI_2, 0.0f, 0.0f };
@@ -7302,9 +7297,9 @@ void Time_model( int modelnum )
 		ubyte pal[768];
 		texture_map *tmap = &pm->maps[i];
 
-		for(int j = 0; j < TM_NUM_TYPES; j++)
+		for (auto &texture : tmap->textures)
 		{
-			int bmp_num = tmap->textures[j].GetOriginalTexture();
+			int bmp_num = texture.GetOriginalTexture();
 			if ( bmp_num > -1 )	{
 				bm_get_palette(bmp_num, pal, filename );		
 				int w,h;
@@ -7330,8 +7325,8 @@ void Time_model( int modelnum )
 
 	vec3d eye_to_model;
 
-	vm_vec_sub( &eye_to_model, &model_pos, &eye_pos );
-	vm_vector_2_matrix( &eye_orient, &eye_to_model, nullptr, nullptr );
+	vm_vec_normalized_dir( &eye_to_model, &model_pos, &eye_pos );
+	vm_vector_2_matrix_norm( &eye_orient, &eye_to_model, nullptr, nullptr );
 
 	fix t1 = timer_get_fixed_seconds();
 

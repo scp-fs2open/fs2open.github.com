@@ -1001,7 +1001,7 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turr
 	model_subsystem *tp = sso->ss->system_info;
 
 	// we have to fake a turret matrix because that field is no longer part of model_subsystem
-	vm_vector_2_matrix(&m, &tp->turret_norm, nullptr, nullptr);
+	vm_vector_2_matrix_norm(&m, &tp->turret_norm, nullptr, nullptr);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }

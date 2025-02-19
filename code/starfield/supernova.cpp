@@ -341,9 +341,8 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		float pct = ((SUPERNOVA_HIT_TIME - Supernova_time_left) / SUPERNOVA_CAMERA_MOVE_DURATION);
 		vm_vec_scale_add2(&at, &move, sn_distance * pct);
 
-		vm_vec_sub(&view, &at, &Supernova_camera_pos);
-		vm_vec_normalize(&view);
-		vm_vector_2_matrix(&Supernova_camera_orient, &view, NULL, NULL);
+		vm_vec_normalized_dir(&view, &at, &Supernova_camera_pos);
+		vm_vector_2_matrix_norm(&Supernova_camera_orient, &view, nullptr, nullptr);
 		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
 	}

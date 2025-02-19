@@ -317,7 +317,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
  *
  * @sa vm_vector_2_matrix
  */
-matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
+matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 //rotates a vector through a matrix. returns ptr to dest vector
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);

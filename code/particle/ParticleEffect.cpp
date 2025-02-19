@@ -108,7 +108,7 @@ matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const std:
 			}
 
 			matrix normalOrient;
-			vm_vector_2_matrix(&normalOrient, &*normal);
+			vm_vector_2_matrix_norm(&normalOrient, &*normal);
 
 			return normalOrient;
 		}

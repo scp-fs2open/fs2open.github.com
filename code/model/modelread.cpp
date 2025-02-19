@@ -2370,8 +2370,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						for (j = 0; j < bay->num_slots; j++) {
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
-							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
-								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+
+							if (vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
+								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal.  Generating a normal in the forward Z direction.", filename, bay->name);
+								bay->norm[j] = vmd_z_vector;
+							} else if (!vm_vec_is_normalized(&(bay->norm[j]))) {
+								vm_vec_normalize(&(bay->norm[j]));
 							}
 						}
 

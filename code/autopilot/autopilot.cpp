@@ -300,15 +300,16 @@ bool StartAutopilot()
 	autopilot_wings.clear();
 
 	// vars for usage w/ cinematic
-	vec3d pos, norm1, perp, tpos, rpos = Player_obj->pos, zero;
+	vec3d pos, perp, tpos, rpos = Player_obj->pos, zero;
 	memset(&zero, 0, sizeof(vec3d));
 
 
 	// instantly turn player toward tpos
 	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{
-		vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-		vm_vector_2_matrix(&Player_obj->orient, &norm1, NULL, NULL);
+		vec3d norm1;
+		vm_vec_normalized_dir(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+		vm_vector_2_matrix_norm(&Player_obj->orient, &norm1, nullptr, nullptr);
 	}
 
 	for (i = 0; i < MAX_SHIPS; i++)
@@ -395,10 +396,12 @@ bool StartAutopilot()
 				radius = Objects[Ships[i].objnum].radius;
 			}
 
+			// instantly turn the ship to match the direction player is looking
 			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
-			{// instantly turn the ship to match the direction player is looking
-				//vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-				vm_vector_2_matrix(&Objects[Ships[i].objnum].orient, &norm1, NULL, NULL);
+			{
+				vec3d norm1;
+				vm_vec_normalized_dir(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix_norm(&Objects[Ships[i].objnum].orient, &norm1, nullptr, nullptr);
 			}
 
 			// snap wings into formation

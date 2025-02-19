@@ -6314,8 +6314,8 @@ void weapon_process_post(object * obj, float frame_time)
 			vm_vec_random_in_circle(&warpin, &wp->lssm_target_pos, &target_objp->orient, wip->lssm_warpin_radius + target_objp->radius, true);
 	
 			//orient the missile properly
-			vm_vec_sub(&fvec,&wp->lssm_target_pos, &warpin);
-			vm_vector_2_matrix(&orient,&fvec,NULL,NULL);
+			vm_vec_normalized_dir(&fvec, &wp->lssm_target_pos, &warpin);
+			vm_vector_2_matrix_norm(&orient, &fvec, nullptr, nullptr);
 
 			//get the size of the warp, directly using the model if possible
 			float warp_size = obj->radius;
@@ -6682,8 +6682,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	if(combined_fof > 0.0f){
 		vec3d f;
 		vm_vec_random_cone(&f, &orient->vec.fvec, combined_fof);
-		vm_vec_normalize(&f);
-		vm_vector_2_matrix( orient, &f, NULL, NULL);
+		vm_vector_2_matrix_norm(orient, &f, nullptr, nullptr);
 	}
 
 	Weapons_created++;
@@ -7204,7 +7203,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				// fire the beam
 				beam_fire(&fire_info);
 			} else {
-				vm_vector_2_matrix(&orient, &tvec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&orient, &tvec, nullptr, nullptr);
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with

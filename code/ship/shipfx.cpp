@@ -1060,7 +1060,7 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 			// if there's a muzzle effect entry, we use that
 			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
 				matrix gunOrient;
-				vm_vector_2_matrix(&gunOrient, gun_dir);
+				vm_vector_2_matrix_norm(&gunOrient, gun_dir);
 
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
@@ -3619,11 +3619,11 @@ int WE_Default::getWarpOrientation(matrix* output) const
 	auto objp = &Objects[m_objnum];
 
 	if (this->m_direction == WarpDirection::WARP_IN)
-		vm_vector_2_matrix(output, &objp->orient.vec.fvec, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, nullptr, nullptr);
 	}
     return 1;
 }
@@ -4007,7 +4007,7 @@ int WE_BSG::getWarpOrientation(matrix* output) const
 
 	auto objp = &Objects[m_objnum];
 
-	vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	return 1;
 }
 
@@ -4296,7 +4296,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output) const
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, &objp->orient.vec.uvec, nullptr);
 	}
 
 	return 1;

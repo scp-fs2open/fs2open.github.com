@@ -1758,7 +1758,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 			firing_vec = &firing_vec_buf;
 		}
 
-		vm_vector_2_matrix(&firing_orient, firing_vec, nullptr, nullptr);
+		vm_vector_2_matrix_norm(&firing_orient, firing_vec, nullptr, nullptr);
 
 		// grab and set some burst data before turret_set_next_fire_timestamp wipes it
 		int old_burst_seed = swp->burst_seed[weapon_num];
@@ -2078,7 +2078,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	}
 
 	// make firing_orient from turret_fvec -- turret->turret_last_fire_direction
-	vm_vector_2_matrix(&firing_orient, &turret_fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(&firing_orient, &turret_fvec, nullptr, nullptr);
 
 	// create weapon and homing info
 	weapon_objnum = weapon_create(&turret_pos, &firing_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1, 0, 0.0f, tsi->turret);
@@ -2618,8 +2618,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 			// Fire in the direction the turret is facing, not right at the target regardless of turret dir.
 			// [Yet this retail comment precedes the calculation of vector-to-enemy...]
-			vm_vec_sub(&v2e, &predicted_enemy_pos, &global_gun_pos);
-			dist_to_enemy = vm_vec_normalize(&v2e);
+			dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
 			float dot = vm_vec_dot(&v2e, &global_gun_vec);
 
 			// (flak jitter moved to after we obtain shoot_vector below)
