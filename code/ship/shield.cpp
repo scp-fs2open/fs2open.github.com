@@ -738,7 +738,7 @@ void create_shield_low_detail(int objnum, int  /*model_num*/, matrix * /*orient*
 		Shield_hits[shnum].rgb[2] = sip->shield_color[2];
 	}
 
-	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&tom, &shieldp->tris[tr0].norm, nullptr, nullptr);
 
 	create_low_detail_poly(gi, tcp, &tom.vec.rvec, &tom.vec.uvec);
 }
@@ -792,7 +792,7 @@ void create_shield_explosion(int objnum, int model_num, vec3d *tcp, int tr0, flo
 	//	normals from the vertices to get a smoothly changing normal across the face.
 	//	I had tried using the vector from the impact point to the center, which
 	//	changes smoothly, but this looked surprisingly bad.
-	vm_vector_2_matrix(&tom, &shieldp->tris[tr0].norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&tom, &shieldp->tris[tr0].norm, nullptr, nullptr);
 
 	//	Create the shield from the current triangle, as well as its neighbors.
 	create_shield_from_triangle(tr0, &objp->orient, shieldp, tcp, &objp->pos, objp->radius, &tom.vec.rvec, &tom.vec.uvec);

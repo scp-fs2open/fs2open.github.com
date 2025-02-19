@@ -7594,8 +7594,8 @@ int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist,
 		//
 		// calculate the new fvec of the ship arriving and use only that to get the matrix.  isn't a big
 		// deal not getting bank.
-		vm_vec_sub(&new_fvec, &anchor_pos, &Objects[objnum].pos );
-		vm_vector_2_matrix( &orient, &new_fvec, NULL, NULL );
+		vm_vec_normalized_dir(&new_fvec, &anchor_pos, &Objects[objnum].pos );
+		vm_vector_2_matrix_norm( &orient, &new_fvec, nullptr, nullptr );
 		Objects[objnum].orient = orient;
 	}
 

@@ -341,10 +341,8 @@ void ssm_create(object *target, const vec3d *start, size_t ssm_index, const ssm_
 		// forward orientation
 		vec3d temp;
 
-		vm_vec_sub(&temp, &target->pos, start);
-		vm_vec_normalize(&temp);
-
-		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
+		vm_vec_normalized_dir(&temp, &target->pos, start);
+		vm_vector_2_matrix_norm(&dir, &temp, nullptr, nullptr);
 
 		// stuff info
 		ssm.sinfo.count = count;
@@ -431,9 +429,8 @@ void ssm_process()
 						vec3d temp;
 						matrix orient;
 
-						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-						vm_vec_normalize(&temp);
-						vm_vector_2_matrix(&orient, &temp, nullptr, nullptr);
+						vm_vec_normalized_dir(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+						vm_vector_2_matrix_norm(&orient, &temp, nullptr, nullptr);
 
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -485,9 +482,8 @@ void ssm_process()
 					vec3d temp;
 					matrix orient;
 
-                    vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-					vm_vec_normalize(&temp);
-					vm_vector_2_matrix(&orient, &temp, NULL, NULL);
+                    vm_vec_normalized_dir(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+					vm_vector_2_matrix_norm(&orient, &temp, nullptr, nullptr);
 					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], si->fireball_type, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
 				}
 			}

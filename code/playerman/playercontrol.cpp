@@ -2278,7 +2278,7 @@ camid player_get_cam()
 				eye_pos = Player_obj->pos;
 
 				vm_vec_normalized_dir(&tmp_dir, &Objects[Player_ai->target_objnum].pos, &eye_pos);
-				vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
+				vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, nullptr, nullptr);
 			}
 		} else {
 			dist = vm_vec_normalized_dir(&vec_to_deader, &Player_obj->pos, &Dead_camera_pos);
@@ -2305,7 +2305,7 @@ camid player_get_cam()
 
 			vm_vec_normalized_dir(&tmp_dir, &Player_obj->pos, &eye_pos);
 
-			vm_vector_2_matrix(&eye_orient, &tmp_dir, NULL, NULL);
+			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, nullptr, nullptr);
 			viewer_obj = NULL;
 		}
 	} 
@@ -2334,9 +2334,8 @@ camid player_get_cam()
 
 			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
-			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
-			vm_vec_normalize(&tmp_dir);
-			vm_vector_2_matrix(&eye_orient, &tmp_dir, &viewer_obj->orient.vec.uvec, NULL);
+			vm_vec_normalized_dir(&tmp_dir, &viewer_obj->pos, &eye_pos);
+			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &viewer_obj->orient.vec.uvec, nullptr);
  			viewer_obj = NULL;
 
 			//	Modify the orientation based on head orientation.
@@ -2353,8 +2352,7 @@ camid player_get_cam()
 
 			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &move_dir, -3.0f * viewer_obj->radius - Viewer_chase_info.distance);
 			vm_vec_scale_add2(&eye_pos, &viewer_obj->orient.vec.uvec, 0.75f * viewer_obj->radius);
-			vm_vec_sub(&tmp_dir, &viewer_obj->pos, &eye_pos);
-			vm_vec_normalize(&tmp_dir);
+			vm_vec_normalized_dir(&tmp_dir, &viewer_obj->pos, &eye_pos);
 
 			// JAS: I added the following code because if you slew up using
 			// Descent-style physics, eye_dir and Viewer_obj->orient.vec.uvec are
@@ -2378,9 +2376,8 @@ camid player_get_cam()
 
 			vec3d warp_pos = Player_obj->pos;
 			shipp->warpout_effect->getWarpPosition(&warp_pos);
-			vm_vec_sub(&tmp_dir, &warp_pos, &eye_pos);
-			vm_vec_normalize(&tmp_dir);
-			vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, NULL);
+			vm_vec_normalized_dir(&tmp_dir, &warp_pos, &eye_pos);
+			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, nullptr);
 			viewer_obj = NULL;
 		} else {
 			// get an eye position for the player object
