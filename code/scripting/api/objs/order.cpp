@@ -526,20 +526,30 @@ ADE_VIRTVAR(WaypointsInReverse, l_Order, "boolean", "Waypoint-reverse flag of th
 	return ade_set_args(L, "b", ohp->aigp->flags[AI::Goal_Flags::Waypoints_in_reverse]);
 }
 
-ADE_VIRTVAR(OverridesWhenAchievable, l_Order, "boolean", "Whether this goal pre-empts all other goals when it is achievable", "boolean", "OverridesWhenAchievable flag, or invalid false if order handle is invalid")
+int goal_flag_helper(lua_State* L, AI::Goal_Flags flag)
 {
 	order_h* ohp = nullptr;
-	bool want_override = false;
-	if (!ade_get_args(L, "o|b", l_Order.GetPtr(&ohp), &want_override))
+	bool set_it = false;
+	if (!ade_get_args(L, "o|b", l_Order.GetPtr(&ohp), &set_it))
 		return ade_set_error(L, "b", false);
 
 	if (!ohp->isValid())
 		return ade_set_error(L, "b", false);
 
 	if (ADE_SETTING_VAR)
-		ohp->aigp->flags.set(AI::Goal_Flags::Want_override, want_override);
+		ohp->aigp->flags.set(flag, set_it);
 
-	return ade_set_args(L, "b", ohp->aigp->flags[AI::Goal_Flags::Want_override]);
+	return ade_set_args(L, "b", ohp->aigp->flags[flag]);
+}
+
+ADE_VIRTVAR(OverridesWhenAchievable, l_Order, "boolean", "Whether this goal pre-empts all other goals when it is achievable", "boolean", "OverridesWhenAchievable flag, or invalid false if order handle is invalid")
+{
+	return goal_flag_helper(L, AI::Goal_Flags::Want_override);
+}
+
+ADE_VIRTVAR(PurgeWhenNewGoalAdded, l_Order, "boolean", "Whether this goal should be purged (removed) when another goal is assigned", "boolean", "PurgeWhenNewGoalAdded flag, or invalid false if order handle is invalid")
+{
+	return goal_flag_helper(L, AI::Goal_Flags::Purge_when_new_goal_added);
 }
 
 ADE_FUNC(isValid, l_Order, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")

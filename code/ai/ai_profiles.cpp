@@ -733,6 +733,9 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$do not set override when assigning form-on-wing:", AI::Profile_Flags::Do_not_set_override_when_assigning_form_on_wing);
 
+				set_flag(profile, "$purge player-issued form-on-wing after subsequent order:", AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order);
+
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
@@ -951,5 +954,6 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(25, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
+		flags.set(AI::Profile_Flags::Purge_player_issued_form_on_wing_after_subsequent_order);
 	}
 }

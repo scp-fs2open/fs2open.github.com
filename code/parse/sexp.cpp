@@ -867,7 +867,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	4,			SEXP_GOAL_OPERATOR, },
+	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	5,			SEXP_GOAL_OPERATOR, },
 	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	5,			SEXP_GOAL_OPERATOR, },
 	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
@@ -40007,11 +40007,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
 		"player order, and by default will cause all goals on the ship's goal list to be cleared when this goal runs. "
 		"By default it will also take priority over all other goals.\r\n\r\n"
-		"Takes 1 to 4 arguments...\r\n"
+		"Takes 1 to 5 arguments...\r\n"
 		"\t1:\tShip to form on.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89, optional).  If not specified this will be 99, or the number defined in ai_profiles.\r\n"
 		"\t3:\tWhether to clear all goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
 		"\t4:\tWhether this goal should override all other goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
+		"\t5:\tWhether this goal should be cleared if any other goal is assigned (optional).  If not specified this will be false.\r\n"
 	},
 
 	{ OP_FLASH_HUD_GAUGE, "Ai-flash hud gauge (Training goal)\r\n"
