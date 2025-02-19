@@ -4196,7 +4196,7 @@ void HudGaugeLeadIndicator::renderLeadQuick(vec3d *target_world_pos, object *tar
 	}
 //							vec3d firing_vec;
 //							vm_vec_unrotate(&firing_vec, &po->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-//							vm_vector_2_matrix(&firing_orient, &firing_vec, NULL, NULL);
+//							vm_vector_2_matrix_norm(&firing_orient, &firing_vec, NULL, NULL);
 
 	// source_pos will contain the world coordinate of where to base the lead indicator prediction
 	// from.  Normally, this will be the world pos of the gun turret of the currently selected primary

@@ -458,7 +458,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 bool vm_vec_is_normalized(const vec3d *v)
 {
 	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
-	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+	float mag = vm_vec_mag(v);
+	return mag > 0.999f && mag < 1.001f;
 }
 
 //normalize a vector. returns mag of source vec (always greater than zero)
@@ -827,6 +828,11 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
+	// sanity
+	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
+	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
+	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
+
 	matrix temp = vmd_identity_matrix;
 
 	vec3d *xvec=&temp.vec.rvec;
@@ -2315,7 +2321,7 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matr
 	if(orient != NULL){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 
@@ -2342,7 +2348,7 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 	if(orient != NULL){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 	

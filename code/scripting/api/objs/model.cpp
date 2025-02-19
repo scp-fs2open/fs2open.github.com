@@ -1267,10 +1267,10 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 	vm_vec_avg(&docker_dock_pos_local, &docker_bay->pnt[0], &docker_bay->pnt[1]);
 
 	// Get the up-vector of the docking bay
-	vm_vec_sub(&dock_up_dir, &dockee_bay->pnt[1], &dockee_bay->pnt[0]);
+	vm_vec_normalized_dir(&dock_up_dir, &dockee_bay->pnt[1], &dockee_bay->pnt[0]);
 
 	// Compute the orientation
-	vm_vector_2_matrix(&final_orient, &dockee_bay->norm[0], &dock_up_dir, NULL);
+	vm_vector_2_matrix_norm(&final_orient, &dockee_bay->norm[0], &dock_up_dir, nullptr);
 
 	// Rotate the docker position into the right orientation
 	vm_vec_unrotate(&docker_dock_pos, &docker_dock_pos_local, &final_orient);

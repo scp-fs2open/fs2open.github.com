@@ -501,7 +501,7 @@ void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float 
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height)
 {
 	matrix m;
-	vm_vector_2_matrix(&m, norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, norm, nullptr, nullptr);
 
 	g3_render_rect_oriented_internal(mat_info, pos, &m, width, height);
 }

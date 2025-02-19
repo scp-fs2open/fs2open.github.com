@@ -241,9 +241,8 @@ void cscrew_process_post(object *objp)
 	
 		// compute a "fake" orient and store the old one for safekeeping
 		ci->real_orient = objp->orient;
-		vm_vec_sub(&dir, &objp->pos, &ci->last_corkscrew_pos);
-		vm_vec_normalize(&dir);
-		vm_vector_2_matrix(&objp->orient, &dir, NULL, NULL);	
+		vm_vec_normalized_dir(&dir, &objp->pos, &ci->last_corkscrew_pos);
+		vm_vector_2_matrix_norm(&objp->orient, &dir, nullptr, nullptr);
 		
 		// mark down this position so we can orient nicely _next_ frame
 		ci->last_corkscrew_pos = objp->pos;

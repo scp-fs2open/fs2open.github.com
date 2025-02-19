@@ -91,7 +91,7 @@ void flak_jitter_aim(vec3d *dir, float dist_to_target, float weapon_subsys_stren
 	float error_val;
 	
 	// get the matrix needed to rotate the base direction to the actual direction		
-	vm_vector_2_matrix(&temp, dir, NULL, NULL);
+	vm_vector_2_matrix_norm(&temp, dir, nullptr, nullptr);
 
 	// error value	
 	error_val = wip->flak_targeting_accuracy + (wip->flak_targeting_accuracy * 0.65f * (1.0f - weapon_subsys_strength));
