@@ -24,7 +24,7 @@ typedef enum {
 typedef enum {
 	DEFAULT,
 	SAVE
-} EscapeKeyBehavior;
+} EscapeKeyBehaviorInOptions;
 
 // And one for splash screens
 struct splash_screen {
@@ -174,7 +174,7 @@ extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 extern bool Preload_briefing_icon_models;
-extern EscapeKeyBehavior Escape_key_behavior;
+extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 
 void mod_table_init();
 void mod_table_post_process();

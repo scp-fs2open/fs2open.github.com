@@ -1239,7 +1239,7 @@ void options_menu_do_frame(float  /*frametime*/)
 			break;
 
 		case KEY_ESC:
-			if (Escape_key_behavior == EscapeKeyBehavior::SAVE) {
+			if (escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
 				options_accept();
 			} else {
 				options_cancel_exit();
