@@ -239,6 +239,11 @@ static float Backup_sound_volume;
 static float Backup_music_volume;
 static float Backup_voice_volume;
 
+static int Backup_mouse_sensitivity;
+static int Backup_joy_sensitivity;
+static int Backup_joy_deadzone;
+static float Backup_gamma;
+
 static bool Backup_briefing_voice_enabled;
 static bool Backup_use_mouse_to_fly;
 
@@ -674,6 +679,11 @@ void options_cancel_exit()
 	event_music_set_volume(Backup_music_volume);
 	snd_set_voice_volume(Backup_voice_volume);
 
+	Mouse_sensitivity = Backup_mouse_sensitivity ;
+	Joy_sensitivity = Backup_joy_sensitivity ;
+	Joy_dead_zone_size = Backup_joy_deadzone * 5;
+	gr_set_gamma(Backup_gamma);
+
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		Game_skill_level = Backup_skill_level;
 	}
@@ -1049,6 +1059,11 @@ void options_menu_init()
 	Backup_voice_volume = Master_voice_volume;
 	Backup_briefing_voice_enabled = Briefing_voice_enabled;
 	Backup_use_mouse_to_fly = Use_mouse_to_fly;
+
+	Backup_mouse_sensitivity = Mouse_sensitivity;
+	Backup_joy_sensitivity = Joy_sensitivity;
+	Backup_joy_deadzone = Joy_dead_zone_size / 5;
+	Backup_gamma = Gr_gamma;
 	
 	// create slider	
 	for ( i = 0; i < NUM_OPTIONS_SLIDERS; i++ ) {
@@ -1226,6 +1241,7 @@ void options_menu_do_frame(float  /*frametime*/)
 			if (Tab == OPTIONS_TAB) {
 				gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 				gameseq_post_event(GS_EVENT_CONTROL_CONFIG);
+				return;
 			}
 
 			break;
@@ -1234,6 +1250,7 @@ void options_menu_do_frame(float  /*frametime*/)
 			if (Tab == OPTIONS_TAB) {
 				gamesnd_play_iface(InterfaceSounds::SWITCH_SCREENS);
 				gameseq_post_event(GS_EVENT_HUD_CONFIG);
+				return;
 			}
 
 			break;
@@ -1241,13 +1258,16 @@ void options_menu_do_frame(float  /*frametime*/)
 		case KEY_ESC:
 			if (escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
 				options_accept();
+				return;
 			} else {
 				options_cancel_exit();
+				return;
 			}
 			break;
 
 		case KEY_CTRLED | KEY_ENTER:
 			options_accept();
+			return;
 			break;
 
 		case KEY_DELETE:
@@ -1266,6 +1286,7 @@ void options_menu_do_frame(float  /*frametime*/)
 
 				gamesnd_play_iface(InterfaceSounds::IFACE_MOUSE_CLICK);
 				gameseq_post_event(GS_EVENT_INGAME_OPTIONS);
+				return;
 			}
 			break;
 	}	
