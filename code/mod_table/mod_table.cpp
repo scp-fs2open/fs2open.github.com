@@ -159,7 +159,7 @@ bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
-bool Escape_saves_options;
+EscapeKeyBehavior Escape_saves_options;
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -1450,8 +1450,24 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Preload_briefing_icon_models);
 			}
 
-			if (optional_string("$Escape Key saves options:")) {
-				stuff_boolean(&Escape_saves_options);
+			if (optional_string("$Behavior for pressing Escape key in options menu:")) {
+				SCP_string temp;
+				stuff_string(temp, F_RAW);
+				SCP_tolower(temp);
+
+				if (temp == "default")
+				{
+					Escape_key_behavior = EscapeKeyBehavior::DEFAULT;
+				}
+				else if (temp == "save")
+				{
+					Escape_key_behavior = EscapeKeyBehavior::SAVE;
+				}
+				else
+				{
+					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be default or save. Reverting to default.");
+					Escape_key_behavior = EscapeKeyBehavior::DEFAULT;
+				}
 			}
 
 			// end of options ----------------------------------------
@@ -1677,7 +1693,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
-	Escape_saves_options = false;
+	Escape_key_behavior = EscapeKeyBehavior::DEFAULT;
 }
 
 void mod_table_set_version_flags()
