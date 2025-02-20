@@ -1465,7 +1465,7 @@ void parse_mod_table(const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be value of 'default' or 'save'. Reverting to default.");
+					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be value of 'default' or 'save'. Reverting to 'default' value.");
 					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
 				}
 			}
