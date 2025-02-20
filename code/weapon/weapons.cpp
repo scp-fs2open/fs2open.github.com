@@ -1939,6 +1939,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	parse_game_sound("$LoopFiringSnd:", &wip->loop_firing_snd);
 
+	parse_game_sound("$LinkedLoopFiringSnd:", &wip->linked_loop_firing_snd);
+
 	parse_game_sound("$EndFiringSnd:", &wip->end_firing_snd);
 
 	parse_game_sound("$TrackingSnd:", &wip->hud_tracking_snd);
