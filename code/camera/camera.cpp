@@ -222,30 +222,15 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 	else if (Use_model_eyepoint_for_set_camera_host && object_host.isValid()) 
 	{
 		const object* host = object_host.objp();
-		const polymodel* pm = object_get_model(host);
-		const polymodel_instance* pmi = object_get_model_instance(host);
 		
 		vec3d eye_pos;
 		matrix eye_orient;
 
 		// ship_get_eye can now be called for any object type, not just ships
 		ship_get_eye(&eye_pos, &eye_orient, host, false, true);
-		
-		if (pm->n_view_positions > 0) 
-		{
-			vec3d c_norm;
-			int viewpoint;
 
-			if (host->type == OBJ_SHIP)
-				viewpoint = Ships[host->instance].current_viewpoint;
-			else
-				viewpoint = 0;
-
-			const eye& eyepoint = pm->view_positions[viewpoint];
-
-			model_instance_local_to_global_point_dir(&eye_pos, , &eyepoint.pnt, &eyepoint.norm, pm, pmi, eyepoint.parent);
-			vm_vector_2_matrix(&c_ori, &c_norm); 
-		}
+		set_position(&eye_pos);
+		set_rotation(&eye_orient);
 	}
 }
 
