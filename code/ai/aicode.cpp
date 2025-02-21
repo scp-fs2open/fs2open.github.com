@@ -1482,7 +1482,7 @@ void ai_turn_towards_vector(const vec3d* dest, object* objp, const vec3d* slide_
 	if (rvec != NULL) {
 		matrix	goal_orient;
 
-		vm_vector_2_matrix(&goal_orient, &desired_fvec, NULL, rvec);
+		vm_vector_2_matrix_norm(&goal_orient, &desired_fvec, nullptr, rvec);
 		vm_angular_move_matrix(&goal_orient, &curr_orient, &vel_in, delta_time,
 			&out_orient, &vel_out, &vel_limit, &acc_limit, The_mission.ai_profile->flags[AI::Profile_Flags::No_turning_directional_bias]);
 	} else {
@@ -4652,7 +4652,7 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 	// this needs to be done for ALL SHIPS not just capships STOP CHANGING THIS
 	// ----------------------------------------------
 
-	vec3d perp, goal_point;
+	vec3d goal_point;
 
 	bool carry_flag = ((shipp->flags[Ship::Ship_Flags::Navpoint_carry]) || ((shipp->wingnum >= 0) && (Wings[shipp->wingnum].flags[Ship::Wing_Flags::Nav_carry])));
 
@@ -4675,6 +4675,7 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 		&& carry_flag
 		&& ((The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) || (Pl_objp != Autopilot_flight_leader)) )
 	{
+		vec3d perp;
 		Assertion( Autopilot_flight_leader != NULL, "When under autopilot there must be a flight leader" );
 		// snap wings into formation
 		if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics]) {
@@ -4709,8 +4710,8 @@ void ai_fly_to_target_position(const vec3d* target_pos, bool* pl_done_p=NULL, bo
 				Pl_objp->pos = goal_point;
 			}
 
-			vm_vec_sub(&perp, Navs[CurrentNav].GetPosition(), &Autopilot_flight_leader->pos);
-			vm_vector_2_matrix(&Pl_objp->orient, &perp, NULL, NULL);
+			vm_vec_normalized_dir(&perp, Navs[CurrentNav].GetPosition(), &Autopilot_flight_leader->pos);
+			vm_vector_2_matrix_norm(&Pl_objp->orient, &perp, nullptr, nullptr);
 		} else {
 			vm_vec_scale_add(&perp, &Pl_objp->pos, &Autopilot_flight_leader->phys_info.vel, 1000.0f);
 			ai_turn_towards_vector(&perp, Pl_objp, slop_vec, nullptr, 0.0f, 0, nullptr, &turnrate_mod);
@@ -6265,7 +6266,7 @@ int ai_fire_primary_weapon(object *objp)
 			vm_vec_normalized_dir(&v2t, &G_predicted_pos, &G_fire_pos);
 			dot = vm_vec_dot(&v2t, &objp->orient.vec.fvec);
 			if (dot > .998629534f){	//	if within 3.0 degrees of desired heading, bash
-				vm_vector_2_matrix(&objp->orient, &v2t, &objp->orient.vec.uvec, NULL);
+				vm_vector_2_matrix_norm(&objp->orient, &v2t, &objp->orient.vec.uvec, nullptr);
 			}
 		}
 	}
@@ -7596,7 +7597,7 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 	vec3d	v2b;
 
 	vm_vec_normalized_dir(&v2b, collision_point, &objp->pos);
-	vm_vector_2_matrix(&mat1, &v2b, NULL, NULL);
+	vm_vector_2_matrix_norm(&mat1, &v2b, nullptr, nullptr);
 
 	int	found = 0;
 
@@ -7710,6 +7711,8 @@ void compute_desired_rvec(vec3d *rvec, const vec3d *goal_pos, const vec3d *cur_p
 	rvec->xyz.z = -v2e.xyz.x;
 	if (vm_vec_mag_squared(rvec) < 0.001f)
 		rvec->xyz.y = 1.0f;
+
+	vm_vec_normalize_safe(rvec);	// since messing with the bank will make it un-normalized
 }
 
 /**
@@ -9726,7 +9729,7 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 	vm_vec_rotate(&uvec, &dockee_dock_orient->vec.uvec, dockee_orient);
 
 	// create a rotation matrix
-	vm_vector_2_matrix(&m1, &fvec, &uvec, NULL);
+	vm_vector_2_matrix_norm(&m1, &fvec, &uvec, nullptr);
 
 	// get the global orientation
 	vm_matrix_x_matrix(&m3, dockee_orient, &m1);
@@ -9740,7 +9743,7 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 	vm_vec_rotate(&uvec, &docker_dock_orient->vec.uvec, docker_orient);
 
 	// create a rotation matrix
-	vm_vector_2_matrix(&m2, &fvec, &uvec, NULL);
+	vm_vector_2_matrix_norm(&m2, &fvec, &uvec, nullptr);
 
 	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
 	//	of the docking bay's orientation, ie unrotate the source object's matrix.
@@ -9823,7 +9826,7 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 		// find the normal of the first dockpoint
 		model_instance_local_to_global_dir(&fvec, &pm->docking_bays[dock_index].norm[0], pm, pmi, submodel, &objp->orient);
 
-		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
+		vm_vector_2_matrix_norm(global_dock_orient, &fvec, &uvec);
 	}
 	// use the static dockpoints
 	else
@@ -9838,7 +9841,7 @@ void find_adjusted_dockpoint_info(vec3d *global_dock_point, matrix *global_dock_
 		vm_vec_unrotate(&fvec, &local_fvec, &objp->orient);
 
 		vm_vec_add2(global_dock_point, &objp->pos);
-		vm_vector_2_matrix(global_dock_orient, &fvec, &uvec);
+		vm_vector_2_matrix_norm(global_dock_orient, &fvec, &uvec);
 	}
 }
 
@@ -13746,7 +13749,7 @@ int ai_acquire_emerge_path(object *pl_objp, int parent_objnum, int allowed_path_
 		rvec = parent_objp->orient.vec.rvec;
 	}
 
-	vm_vector_2_matrix(&pl_objp->orient, &fvec, IS_VEC_NULL(&uvec) ? nullptr : &uvec, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
+	vm_vector_2_matrix_norm(&pl_objp->orient, &fvec, IS_VEC_NULL(&uvec) ? nullptr : &uvec, IS_VEC_NULL(&rvec) ? nullptr : &rvec);
 
 	return 0;	
 }

@@ -1015,7 +1015,7 @@ void neb2_render_poofs()
 
 			vm_vec_normalize(&view_pos);
 
-			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);
+			vm_vector_2_matrix_norm(&orient, &view_pos, &pf.up_vec, nullptr);
 		}
 
 		// update the poof's up vector to be perpindicular to the camera and also rotated by however much its rotating
