@@ -64,7 +64,7 @@ typedef struct spark_pair {
 	float dist;
 } spark_pair;
 
-#define MAX_SPARK_PAIRS		((MAX_SHIP_HITS * MAX_SHIP_HITS - MAX_SHIP_HITS) / 2)
+#define MAX_SPARK_PAIRS		((MAX_SHIP_SPARKS * MAX_SHIP_SPARKS - MAX_SHIP_SPARKS) / 2)
 
 #define	BIG_SHIP_MIN_RADIUS	80.0f	//	ship radius above which death rolls can't be shortened by excessive damage
 
@@ -1297,11 +1297,11 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 {
 	ship		*ship_p = &Ships[ship_objp->instance];
 
-	int n = ship_p->num_hits;
-	if (n >= MAX_SHIP_HITS)	{
-		n = Random::next(MAX_SHIP_HITS);
+	int n = ship_p->num_sparks;
+	if (n >= MAX_SHIP_SPARKS)	{
+		n = Random::next(MAX_SHIP_SPARKS);
 	} else {
-		ship_p->num_hits++;
+		ship_p->num_sparks++;
 	}
 
 	// No rotation.  Just make the spark
@@ -1341,11 +1341,11 @@ int get_max_sparks(const object* ship_objp)
 			return 3;
 		}
 	} else {
-		int num_sparks = (int) (ship_objp->radius * 0.08f);
-		if (num_sparks < 3) {
+		int num_sparks = fl2i(ship_objp->radius * 0.08f);
+		if (num_sparks > MAX_SHIP_SPARKS) {
+			return MAX_SHIP_SPARKS;
+		} else if (num_sparks < 3) {
 			return 3;
-		} else if (num_sparks > MAX_SHIP_HITS) {
-			return MAX_SHIP_HITS;
 		} else {
 			return num_sparks;
 		}
@@ -1366,20 +1366,20 @@ static int spark_compare(const spark_pair &pair1, const spark_pair &pair2)
 static int choose_next_spark(const object *ship_objp, const vec3d *hitpos)
 {
 	int i, j, count, num_sparks, num_spark_pairs, spark_num;
-	vec3d world_hitpos[MAX_SHIP_HITS];
+	vec3d world_hitpos[MAX_SHIP_SPARKS];
 	spark_pair spark_pairs[MAX_SPARK_PAIRS];
 	ship *shipp = &Ships[ship_objp->instance];
 	auto pmi = model_get_instance(shipp->model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
 	// only choose next spark when all slots are full
-	Assert(get_max_sparks(ship_objp) == Ships[ship_objp->instance].num_hits);
+	Assert(get_max_sparks(ship_objp) == Ships[ship_objp->instance].num_sparks);
 
 	// get num_sparks
-	num_sparks = shipp->num_hits;
-	Assert(num_sparks <= MAX_SHIP_HITS);
+	num_sparks = shipp->num_sparks;
+	Assert(num_sparks <= MAX_SHIP_SPARKS);
 
-	// get num_spark_paris -- only sort these
+	// get num_spark_pairs -- only sort these
 	num_spark_pairs = (num_sparks * num_sparks - num_sparks) / 2;
 
 	// get the world hitpos for all sparks
@@ -1407,7 +1407,8 @@ static int choose_next_spark(const object *ship_objp, const vec3d *hitpos)
 	}
 
 	// initialize spark pairs
-	for (i=0; i<num_spark_pairs; i++) {
+	// (we must always initialize at least one, because the default is the pair at index 0)
+	for (i=0; i<std::max(1,num_spark_pairs); i++) {
 		spark_pairs[i].index1 = 0;
 		spark_pairs[i].index2 = 0;
 		spark_pairs[i].dist = FLT_MAX;
@@ -1434,7 +1435,7 @@ static int choose_next_spark(const object *ship_objp, const vec3d *hitpos)
 	int count1 = 0;
 	int count2 = 0;
 
-	for (i=1; i<6; i++) {
+	for (i=1; i<num_spark_pairs; i++) {
 		if (spark_pairs[i].index1 == index1) {
 			count1++;
 		}
@@ -1469,7 +1470,7 @@ static void ship_hit_create_sparks(const object *ship_objp, const vec3d *hitpos,
 
 	int n, max_sparks;
 
-	n = shipp->num_hits;
+	n = shipp->num_sparks;
 	max_sparks = get_max_sparks(ship_objp);
 
 	if (n >= max_sparks)	{
@@ -1481,7 +1482,7 @@ static void ship_hit_create_sparks(const object *ship_objp, const vec3d *hitpos,
 			n = Random::next(max_sparks);
 		}
 	} else {
-		shipp->num_hits++;
+		shipp->num_sparks++;
 	}
 
 	bool instancing = false;
@@ -2722,7 +2723,7 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 	// fix up the ship's sparks :)
 	// turn off a random spark, if its a beam, do this on average twice a second
 	if(!other_obj_is_beam || frand() > flFrametime * 2.0f )
-		shipp->sparks[Random::next(MAX_SHIP_HITS)].end_time = timestamp(0);
+		shipp->sparks[Random::next(MAX_SHIP_SPARKS)].end_time = timestamp(0);
 
 	// if we brought it to full health, fix ALL sparks
 	if (ship_objp->hull_strength == shipp->ship_max_hull_strength) {

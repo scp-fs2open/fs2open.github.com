@@ -57,8 +57,7 @@ extern vec3d	Original_vec_to_deader;
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
 #define SUBSYS_MAX_HITS_THRESHOLD		0.01f	// max_hits threshold where subsys is considered to take damage
 
-#define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
-#define	MAX_SHIP_HITS				8				// hits to kill a ship
+#define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
 #define	MAX_REINFORCEMENTS		32
 
@@ -594,8 +593,8 @@ public:
 	int	next_fireball;
 
 	int	next_hit_spark;
-	int	num_hits;			//	Note, this is the number of spark emitter positions!
-	ship_spark	sparks[MAX_SHIP_HITS];
+	int	num_sparks;			//	Note, this is the number of spark emitter positions!
+	ship_spark	sparks[MAX_SHIP_SPARKS];
 	
 	bool use_special_explosion; 
 	int special_exp_damage;					// new special explosion/hitpoints system
