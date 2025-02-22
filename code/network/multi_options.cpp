@@ -56,7 +56,7 @@ auto TogglePXOOption __UNUSED = options::OptionBuilder<bool>("Multi.TogglePXO",
 									std::pair<const char*, int>{"Whether or not to play games on the local network or on PXO", 1809})
 									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
-									.default_val(true)
+									.default_val(false)  // false to match FSO defaults, will set to default when loading new pilots anyway
 									.bind_to(&Multi_options_g.pxo)
 									.importance(10)
 									.flags({options::OptionFlags::RetailBuiltinOption})
@@ -83,7 +83,7 @@ static bool local_broadcast_change(bool val, bool initial)
 		} else {
 			Player->m_local_options.flags |= MLO_FLAG_LOCAL_BROADCAST;
 		}
-		BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
+		BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST);
 		return true;
 	}
 }
@@ -93,7 +93,7 @@ auto LocalBroadcastOption __UNUSED = options::OptionBuilder<bool>("Multi.LocalBr
 									std::pair<const char*, int>{"Whether or not to broadcast games on the local network", 1808})
 									.category(std::make_pair("Multi", 1828))
 									.level(options::ExpertLevel::Beginner)
-									.default_val(false)
+									.default_val(true) // true to match FSO defaults, will set to default when loading new pilots anyway
                                     .bind_to(&BroadcastGamesLocally)
 									.change_listener(local_broadcast_change)
 									.importance(10)
@@ -112,12 +112,12 @@ static bool flush_cache_change(bool val, bool initial)
 		} else {
 			Player->m_local_options.flags |= MLO_FLAG_FLUSH_CACHE;
 		}
-		AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE) ? 1 : 0;
+		AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE);
 		return true;
 	}
 }
 
-static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Never", 1400) : XSTR("Before Game", 1401); }
+static SCP_string flush_cache_display(bool mode) { return mode ? XSTR("Before Game", 1401) : XSTR("Never", 1400); }
 
 auto FlushCacheOption __UNUSED = options::OptionBuilder<bool>("Multi.FlushCache",
 									std::pair<const char*, int>{"Flush Cache", 1399},
@@ -144,7 +144,7 @@ static bool transfer_missions_change(bool val, bool initial)
 		} else {
 			Player->m_local_options.flags |= MLO_FLAG_XFER_MULTIDATA;
 		}
-		CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA) ? 1 : 0;
+		CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA);
 		return true;
 	}
 }
@@ -486,9 +486,9 @@ void multi_options_local_load(multi_local_options *options, net_player *pxo_pl)
 // fill out the in-game options local globals using the player data
 void multi_options_init_globals()
 {
-	BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
-	AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE) ? 1 : 0;
-	CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA) ? 1 : 0;
+	BroadcastGamesLocally = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST);
+	AlwaysFlushCache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE);
+	CacheMissionsToMultidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA);
 }
 
 // add data from a multi_server_options struct
