@@ -944,17 +944,15 @@ void options_multi_protocol_accept()
 	Multi_options_g.pxo = Om_tracker_flag;
 	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", Om_tracker_flag);
 
-	if (Multi_options_g.pxo) {
-		// copy the VMT login, password and PXO squad name data
-		Om_tracker_login.get_text(Multi_tracker_login);
-		Om_tracker_passwd.get_text(Multi_tracker_passwd);
-		Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
+	// copy the VMT login, password and PXO squad name data
+	Om_tracker_login.get_text(Multi_tracker_login);
+	Om_tracker_passwd.get_text(Multi_tracker_passwd);
+	Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
 
-		// write out the tracker login, passwd, and PXO squad name values to the registry
-		os_config_write_string( "PXO", "Login", Multi_tracker_login );
-		os_config_write_string( "PXO", "Password", Multi_tracker_passwd );
-		os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
-	}
+	// write out the tracker login, passwd, and PXO squad name values to the registry
+	os_config_write_string( "PXO", "Login", Multi_tracker_login );
+	os_config_write_string( "PXO", "Password", Multi_tracker_passwd );
+	os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
 
 	// save the ip address list
 	options_multi_protocol_save_ip_file();
