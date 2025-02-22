@@ -568,7 +568,7 @@ warp_camera::warp_camera(object *objp)
 
 	vec3d object_pos = objp->pos;
 	matrix tmp;
-	ship_get_eye(&object_pos, &tmp, objp);
+	object_get_eye(&object_pos, &tmp, objp);
 
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.rvec, 0.0f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.uvec, 0.952f );

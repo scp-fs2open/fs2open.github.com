@@ -8169,7 +8169,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	vec3d eye_pos, eye_offset, leaning_backup = leaning_position;
 	matrix eye_orient;
-	ship_get_eye(&eye_pos, &eye_orient, objp, true, true);
+	object_get_eye(&eye_pos, &eye_orient, objp, true, true, false);
 	if (cam_offset != nullptr) {
 		vec3d offset_local;
 		vm_vec_unrotate(&offset_local, cam_offset, &eye_orient);
@@ -15203,7 +15203,7 @@ static void ship_set_eye( object *obj, int eye_index)
 // The position of the eye is returned in the parameter 'eye_pos'.  The orientation of the
 // eye is returned in 'eye_orient'.  (NOTE: this is kind of bogus for now since non 0th element
 // eyes have no defined up vector)
-void ship_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew, bool local_pos, bool local_orient)
+void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew, bool local_pos, bool local_orient)
 {
 	auto pmi = object_get_model_instance(obj);
 	auto pm = object_get_model(obj);

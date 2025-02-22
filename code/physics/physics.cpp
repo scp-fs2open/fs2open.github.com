@@ -492,7 +492,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 
 	// If Framerate_independent_turning is on, AI don't use CI to turn
 	if (!Framerate_independent_turning || IS_MAT_NULL(&pi->ai_desired_orient)){
-		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == nullptr) || (Player_obj->type != OBJ_SHIP)) {
+		if (!Flight_controls_follow_eyepoint_orientation || (Player_obj == nullptr)) {
 			// Default behavior; eyepoint orientation has no effect on controls
 			pi->desired_rotvel.xyz.x = ci->pitch * pi->max_rotvel.xyz.x;
 			pi->desired_rotvel.xyz.y = ci->heading * pi->max_rotvel.xyz.y;
@@ -502,7 +502,7 @@ void physics_read_flying_controls( matrix * orient, physics_info * pi, control_i
 			vec3d tmp_vec, new_rotvel;
 			matrix tmp_mat, eyemat, rotvelmat;
 
-			ship_get_eye(&tmp_vec, &eyemat, Player_obj, false);
+			object_get_eye(&tmp_vec, &eyemat, Player_obj, false);
 
 			vm_copy_transpose(&tmp_mat, &Player_obj->orient);
 			vm_matrix_x_matrix(&rotvelmat, &tmp_mat, &eyemat);

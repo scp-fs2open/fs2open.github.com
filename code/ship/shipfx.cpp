@@ -862,7 +862,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
 				vec3d pos,eye_posi;
 				matrix eye_ori;
-				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
 
