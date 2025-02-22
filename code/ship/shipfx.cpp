@@ -72,11 +72,11 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	Assert(submodel_num != -1);
 
 	// maybe no active sparks on submodel
-	if (shipp->num_hits == 0) {
+	if (shipp->num_sparks == 0) {
 		return;
 	}
 
-	for (int spark_num = 0; spark_num < shipp->num_hits; spark_num++) {
+	for (int spark_num = 0; spark_num < shipp->num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num == submodel_num) {
 			shipp->sparks[spark_num].end_time = timestamp(1);
 		}
@@ -1179,7 +1179,7 @@ void shipfx_emit_spark( int n, int sn )
 	if(sn < 0 && !sip->damage_spew.isValid())
 		return;
 	
-	if ( shipp->num_hits <= 0 )
+	if ( shipp->num_sparks <= 0 )
 		return;
 
 	obj = &Objects[shipp->objnum];
@@ -1195,7 +1195,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = Random::next(shipp->num_hits);
+		spark_num = Random::next(shipp->num_sparks);
 	} else {
 		spark_num = sn;
 	}

@@ -6920,8 +6920,8 @@ void ship::clear()
 
 	next_fireball = timestamp(-1);
 	next_hit_spark = timestamp(-1);
-	num_hits = 0;
-	memset(sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
+	num_sparks = 0;
+	memset(sparks, 0, MAX_SHIP_SPARKS * sizeof(ship_spark));
 
 	use_special_explosion = false;
 	special_exp_damage = -1;
@@ -11589,8 +11589,8 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	if (!(Fred_running) && (Game_mode & GM_IN_MISSION)) {	// Doing this effort only makes sense in the middle of a mission.
 		// Delete ship sparks if the model changed
 		if (sip_orig->model_num != sip->model_num) {
-			memset(sp->sparks, 0, MAX_SHIP_HITS * sizeof(ship_spark));
-			sp->num_hits = 0;
+			memset(sp->sparks, 0, MAX_SHIP_SPARKS * sizeof(ship_spark));
+			sp->num_sparks = 0;
 		}
 
 		for (i = 0; i < MAX_AI_INFO; i++) {
