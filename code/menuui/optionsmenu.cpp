@@ -257,7 +257,7 @@ char Options_notify_string[200];
 
 // Called whenever the options menu state is accepted, either via 
 // clicking the accept button or when navigating to the Controls or HUD screen.
-// The reasoning is thta clicking a button means 'accept and move on' if it leads to a new state.
+// The reasoning is that clicking a button means 'accept and move on' if it leads to a new state.
 // This behavior has always been the case for the main options and detail tabs, 
 // and now it is the same for the multi tab, too. --wookieejedi 
 void options_accept();
@@ -956,17 +956,19 @@ void options_detail_sliders_in_game_update()
 void options_accept()
 {
 	// apply the selected multiplayer options
-	// commenting out, as we are using the new streamlined method
-	// --wookieejedi and confirmed with taylor
-	//if ( Options_multi_inited ) {
-		// if we've failed to provide a PXO password or username but have turned on PXO, we don't want to quit
+	if ( Options_multi_inited ) {
+		// commenting out old method, as we are using the new streamlined method
+		// which is justified via comment in the function itself
+		// --wookieejedi and confirmed with taylor
+
 		//if (!options_multi_accept()) {
 			//gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 			//popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "PXO is selected but password or username is missing");
 			//return false;
 		//}
-	//}
-	options_multi_accept();
+
+		options_multi_accept();
+	}
 
 	// We have to save in game options here
 	if (Using_in_game_options) {

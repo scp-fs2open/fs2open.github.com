@@ -865,7 +865,7 @@ void options_multi_protocol_do(int key)
 		// otherwise quit the options screen altogether
 		else {
 			// reaching this section is unlikely because
-			// escape key detection is already exectued 
+			// escape key detection is already executed 
 			// within options_menu_do_frame(),
 			// which runs before options_multi_do()
 			// --wookieejedi
@@ -951,15 +951,9 @@ void options_multi_protocol_accept()
 		Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
 
 		// write out the tracker login, passwd, and PXO squad name values to the registry
-		if (strlen(Multi_tracker_login) > 0) {
-			os_config_write_string( "PXO", "Login", Multi_tracker_login );
-		}
-		if (strlen(Multi_tracker_passwd) > 0) {
-			os_config_write_string( "PXO", "Password", Multi_tracker_passwd );
-		}
-		if (strlen(Multi_tracker_squad_name) > 0) {
-			os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
-		}
+		os_config_write_string( "PXO", "Login", Multi_tracker_login );
+		os_config_write_string( "PXO", "Password", Multi_tracker_passwd );
+		os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
 	}
 
 	// save the ip address list
@@ -2214,12 +2208,12 @@ bool options_multi_ok_to_accept()
 
 /**
 * Called if the accept button on the main options screen was hit. 
-* Returns false if the multi option screen is not in a legal state
+* Also allows saving PXO credentials as "".
 **/
 void options_multi_accept()
 {	
 	// is it legal to leave this screen?
-	// The folowing check has been commented out for the following reasons:
+	// The following check has been commented out for the following reasons:
 	//   1) Retail never had such a check,
 	//   2) when starting PXO in multiplayer, the PXO lobby screen 
 	//      displays a warning if the login values are actually valid or not,
