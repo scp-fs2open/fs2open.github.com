@@ -3202,11 +3202,8 @@ camid game_render_frame_setup()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				//	View from target.
 				Viewer_obj = &Objects[Player_ai->target_objnum];
-
-				if ( Viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
-					view_from_player = 0;
-				}
+				object_get_eye( &eye_pos, &eye_orient, Viewer_obj );
+				view_from_player = 0;
 			}
 
 			if(Viewer_obj)
@@ -3313,13 +3310,13 @@ camid game_render_frame_setup()
 
 			} else if ( Viewer_mode & VM_CHASE ) {
 				if (Viewer_obj->type != OBJ_SHIP)
-					observer_get_eye(&eye_pos, &eye_orient, Viewer_obj);
+					object_get_eye(&eye_pos, &eye_orient, Viewer_obj);
 				else {
 					vec3d aim_pt;
 
 					vec3d tmp_up;
 					matrix eyemat;
-					ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
+					object_get_eye(&tmp_up, &eyemat, Viewer_obj, false);	// slew is computed at the bottom of the block
 
 					eye_pos = Viewer_obj->pos;
 
@@ -3406,19 +3403,8 @@ camid game_render_frame_setup()
 					vm_angles_2_matrix(&eye_orient, &rot_angles);
 					Viewer_obj = nullptr;
 			} else {
-				// get an eye position based upon the correct type of object
-				switch(Viewer_obj->type){
-				case OBJ_SHIP:
-					// make a call to get the eye point for the player object
-					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
-					break;
-				case OBJ_OBSERVER:
-					// make a call to get the eye point for the player object
-					observer_get_eye( &eye_pos, &eye_orient, Viewer_obj );					
-					break;
-				default :
-					Error(LOCATION, "Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type);
-				}
+				// get an eye position for the player object
+				object_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 			}
 		}
 	}

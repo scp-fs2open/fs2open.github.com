@@ -578,13 +578,9 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp)
 
 		factor = -target_sip->closeup_pos_targetbox.xyz.z;
 
-		// use the player's up vector, and construct the viewers orientation matrix
-		if (Player_obj->type == OBJ_SHIP) {
-			vec3d tempv;
-			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
-		} else {
-			camera_orient = Player_obj->orient;
-		}
+		// use the player's up vector, and construct the viewer's orientation matrix
+		vec3d tempv;
+		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
 		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
@@ -757,13 +753,9 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 		factor = 2*target_objp->radius;
 
-		// use the player's up vector, and construct the viewers orientation matrix
-		if (Player_obj->type == OBJ_SHIP) {
-			vec3d tempv;
-			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
-		} else {
-			camera_orient = Player_obj->orient;
-		}
+		// use the player's up vector, and construct the viewer's orientation matrix
+		vec3d tempv;
+		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
 		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
@@ -921,13 +913,9 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			vm_vec_normalize(&projection_vec);
 		}
 
-		// use the viewer's up vector, and construct the viewers orientation matrix
-		if (viewer_obj == Player_obj && Player_obj->type == OBJ_SHIP) {
-			vec3d tempv;
-			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
-		} else {
-			camera_orient = viewer_obj->orient;
-		}
+		// use the viewer's up vector, and construct the viewer's orientation matrix
+		vec3d tempv;
+		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
 		up_vector = camera_orient.vec.uvec;
 
@@ -1155,13 +1143,9 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 
 		factor = 2*target_objp->radius;
 
-		// use the player's up vector, and construct the viewers orientation matrix
-		if (Player_obj->type == OBJ_SHIP) {
-			vec3d tempv;
-			ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
-		} else {
-			camera_orient = Player_obj->orient;
-		}
+		// use the player's up vector, and construct the viewer's orientation matrix
+		vec3d tempv;
+		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
 		up_vector = camera_orient.vec.uvec;
 		vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
@@ -1296,13 +1280,9 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 
 			factor = target_objp->radius*4.0f;
 
-			// use the player's up vector, and construct the viewers orientation matrix
-			if (Player_obj->type == OBJ_SHIP) {
-				vec3d tempv;
-				ship_get_eye(&tempv, &camera_orient, Player_obj, false, false);
-			} else {
-				camera_orient = Player_obj->orient;
-			}
+			// use the player's up vector, and construct the viewer's orientation matrix
+			vec3d tempv;
+			object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
 			up_vector = camera_orient.vec.uvec;
 			vm_vector_2_matrix(&camera_orient,&orient_vec,&up_vector,NULL);
