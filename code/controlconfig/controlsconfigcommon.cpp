@@ -272,6 +272,13 @@ void control_config_common_init_bindings() {
 	(CUSTOM_CONTROL_3,                  KEY_ALTED | KEY_SHIFTED | KEY_3, -1, COMPUTER_TAB, 1786, "Custom Control 3", CC_TYPE_TRIGGER, true)
 	(CUSTOM_CONTROL_4,                  KEY_ALTED | KEY_SHIFTED | KEY_4, -1, COMPUTER_TAB, 1787, "Custom Control 4", CC_TYPE_TRIGGER, true)
 	(CUSTOM_CONTROL_5,                  KEY_ALTED | KEY_SHIFTED | KEY_5, -1, COMPUTER_TAB, 1788, "Custom Control 5", CC_TYPE_TRIGGER, true)
+
+
+	//Comms Controls
+	(COMMS_MENU_MOVE_UP,                                             -1, -1, COMPUTER_TAB, 1789, "Communication Menu Move Up",   CC_TYPE_TRIGGER)
+	(COMMS_MENU_MOVE_DOWN,                                           -1, -1, COMPUTER_TAB, 1790, "Communication Menu Move Down", CC_TYPE_TRIGGER)
+	(COMMS_MENU_SELECT,                                              -1, -1, COMPUTER_TAB, 1791, "Communication Menu Select",    CC_TYPE_TRIGGER)
+
 	.end();	// Builder
 
 	// init default preset
@@ -438,6 +445,9 @@ SCP_unordered_map<SCP_string, IoActionId> old_text = {
 	{"Custom Control 3",                        CUSTOM_CONTROL_3},
 	{"Custom Control 4",                        CUSTOM_CONTROL_4},
 	{"Custom Control 5",                        CUSTOM_CONTROL_5},
+	{"Communication Menu Move Up",              COMMS_MENU_MOVE_UP},
+	{"Communication Menu Move Down",            COMMS_MENU_MOVE_DOWN},
+	{"Communication Menu Select",               COMMS_MENU_SELECT},
 };
 
 // Localization strings for hat positions. Back[0], Forward[1], Left[2], Right[3]
@@ -1163,6 +1173,10 @@ void LoadEnumsIntoActionMap() {
 	ADD_ENUM_TO_ACTION_MAP(JOY_BANK_AXIS)
 	ADD_ENUM_TO_ACTION_MAP(JOY_ABS_THROTTLE_AXIS)
 	ADD_ENUM_TO_ACTION_MAP(JOY_REL_THROTTLE_AXIS)
+
+	ADD_ENUM_TO_ACTION_MAP(COMMS_MENU_MOVE_UP)
+	ADD_ENUM_TO_ACTION_MAP(COMMS_MENU_MOVE_DOWN)
+	ADD_ENUM_TO_ACTION_MAP(COMMS_MENU_SELECT)
 
 
 #undef ADD_ENUM_TO_ACTION_MAP
