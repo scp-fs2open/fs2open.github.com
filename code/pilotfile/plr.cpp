@@ -416,8 +416,10 @@ void pilotfile::plr_read_multiplayer()
 	p->m_local_options.flags = handler->readInt("local_flags");
 	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
 
-	//Make sure the local games multi option is reflected by the OptionsManager
-	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) != 0);
+	// Make sure multi options from player file are reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", (p->m_local_options.flags & MLO_FLAG_FLUSH_CACHE));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", (p->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA));
 
 	// netgame protocol
 	Multi_options_g.protocol = handler->readInt("protocol");
@@ -425,6 +427,8 @@ void pilotfile::plr_read_multiplayer()
 	if (Multi_options_g.protocol == NET_VMT) {
 		Multi_options_g.protocol = NET_TCP;
 		Multi_options_g.pxo = true;
+		// also update PXO in-game value
+		options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", Multi_options_g.pxo);
 	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
