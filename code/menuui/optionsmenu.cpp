@@ -703,6 +703,11 @@ void options_cancel_exit()
 		options::OptionsManager::instance()->discardChanges();
 	}
 
+	// adds scripting hook for 'On Options Menu Closed' --wookieejedi
+	if (scripting::hooks::OnOptionsMenuClosed->isActive()) {
+		scripting::hooks::OnOptionsMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', false)));
+	}
+
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
 
@@ -990,6 +995,11 @@ void options_accept()
 
 	// run posting events outside this function, 
 	// since they will vary depending on what button was clicked --wookieejedi
+
+	// adds scripting hook for 'On Options Menu Closed' --wookieejedi
+	if (scripting::hooks::OnOptionsMenuClosed->isActive()) {
+		scripting::hooks::OnOptionsMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', true)));
+	}
 }
 
 void options_load_background_and_mask(int tab)
