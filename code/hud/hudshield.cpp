@@ -550,38 +550,67 @@ void HudGaugeShield::render(float  /*frametime*/, bool /*config*/)
 {
 }
 
-void HudGaugeShield::showShields(const object *objp, int mode)
+void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 {
-//	static int fod_model = -1;
-	float			max_shield;
-	int			hud_color_index, range;
-	int			sx, sy, i;
-	ship			*sp;
-	ship_info	*sip;
-	hud_frames	*sgp=NULL;
-
-	if ( objp->type != OBJ_SHIP )
+	if (!config && objp->type != OBJ_SHIP )
 		return;
 
 	// Goober5000 - don't show if primitive sensors
-	if ( Ships[Player_obj->instance].flags[Ship::Ship_Flags::Primitive_sensors] )
+	if (!config && Ships[Player_obj->instance].flags[Ship::Ship_Flags::Primitive_sensors] )
 		return;
 
-	sp = &Ships[objp->instance];
-	sip = &Ship_info[sp->ship_info_index];
+	ship* sp = nullptr;
+	ship_info* sip = nullptr;
+	if (!config) {
+		sp = &Ships[objp->instance];
+		sip = &Ship_info[sp->ship_info_index];
+	} else {
+		SCP_string ship_name = HC_shield_gauge_ship.empty() ? "gtf myrmidon" : HC_shield_gauge_ship;
 
-//	bool digitus_improbus = (fod_model != -2 && strstr(sp->ship_name, "Sathanas") != NULL);
-	if ( sip->shield_icon_index == 255 && !(sip->flags[Ship::Info_Flags::Generate_hud_icon]) /*&& !digitus_improbus*/) {
+		// Try to find the ship with the name specified in the config
+		for (ship_info& ship : Ship_info) {
+			if (!stricmp(ship.name, ship_name.c_str()) &&
+				(ship.shield_icon_index != 255 || (ship.flags[Ship::Info_Flags::Generate_hud_icon]))) {
+				sip = &ship;
+				break;
+			}
+		}
+		// Couldn't find it so just get the first ship with shields
+		if (sip == nullptr) {
+			for (ship_info& ship : Ship_info) {
+				if (ship.shield_icon_index != 255 || (ship.flags[Ship::Info_Flags::Generate_hud_icon])) {
+					sip = &ship;
+					break;
+				}
+			}
+		}
+	}
+
+	// If we still don't have a ship to display, bail
+	if (sip == nullptr) {
 		return;
 	}
 
-	setGaugeColor();
+	if (sip->shield_icon_index == 255 && !(sip->flags[Ship::Info_Flags::Generate_hud_icon]) /*&& !digitus_improbus*/) {
+		return;
+	}
 
+	setGaugeColor(HUD_C_NONE, config);
+
+	std::shared_ptr<hud_frames> sgp = nullptr;
 	// load in shield frames if not already loaded
 	if (sip->shield_icon_index != 255) {
-		sgp = &Shield_gauges.at(sip->shield_icon_index);
+		if (!config) {
+			sgp = std::shared_ptr<hud_frames>(&Shield_gauges.at(sip->shield_icon_index), [](hud_frames*) {
+				/* Do nothing, managed externally */
+			});
+		} else {
+			sgp = std::make_unique<hud_frames>();
+			sgp->first_frame = -1;
+			sgp->num_frames = 0;
+		}
 
-		if ( (sgp->first_frame < 0) && (sip->shield_icon_index < Hud_shield_filenames.size()) ) {
+		if (config || (sgp != nullptr && (sgp->first_frame < 0) && (sip->shield_icon_index < Hud_shield_filenames.size())) ) {
 			sgp->first_frame = bm_load_animation(Hud_shield_filenames.at(sip->shield_icon_index).c_str(), &sgp->num_frames);
 			if (sgp->first_frame == -1) {
 				if (!shield_ani_warning_displayed_already) {
@@ -593,15 +622,26 @@ void HudGaugeShield::showShields(const object *objp, int mode)
 		}
 	}
 
-	sx = position[0];
-	sy = position[1];
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	// Make copies so we can modify them
+	int sx = x;
+	int sy = y;
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
+	if (!config) {
+		maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
+	}
 
 	if(sip->shield_icon_index != 255)
 	{
-		renderBitmap(sgp->first_frame, sx, sy);
+		renderBitmap(sgp->first_frame, sx, sy, scale, config);
 	}
 	else
 	{
@@ -613,8 +653,8 @@ void HudGaugeShield::showShields(const object *objp, int mode)
 
 		vm_angles_2_matrix(&object_orient, &rot_angles);
 
-		const int CLIP_WIDTH = 112;
-		const int CLIP_HEIGHT = 93;
+		const int CLIP_WIDTH = fl2i(112 * scale);
+		const int CLIP_HEIGHT = fl2i(93 * scale);
 		gr_screen.clip_width = CLIP_WIDTH;
 		gr_screen.clip_height = CLIP_HEIGHT;
 
@@ -624,42 +664,30 @@ void HudGaugeShield::showShields(const object *objp, int mode)
 		hud_save_restore_camera_data(1);
 		setClip(sx, sy, CLIP_WIDTH, CLIP_HEIGHT);
 
-		//if(!digitus_improbus)
-			g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
-		/*else
-		{
-			vec3d finger_vec = {0.0f, 0.0f, 176.0f};
-			g3_set_view_matrix( &finger_vec, &vmd_identity_matrix, 1.0f);
-		}*/
+		g3_set_view_matrix( &sip->closeup_pos, &vmd_identity_matrix, sip->closeup_zoom * 2.5f);
 
 			gr_set_proj_matrix(Proj_fov * 0.5f, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
 		//We're ready to show stuff
-		//if(!digitus_improbus)
 		{
 			model_render_params render_info;
 
+			// If this comment is here then I have not tested this
+			int mi = -1;
+			if (!config) {
+				mi = sp->model_instance_num;
+			}else{
+				mi = model_load(sip, false);
+			}
+
 			render_info.set_flags(MR_NO_LIGHTING | MR_AUTOCENTER | MR_NO_FOGGING);
-			render_info.set_replacement_textures(model_get_instance(sp->model_instance_num)->texture_replace);
+			render_info.set_replacement_textures(model_get_instance(mi)->texture_replace);
 			render_info.set_detail_level_lock(1);
 			render_info.set_object_number(OBJ_INDEX(objp));
 
 			model_render_immediate( &render_info, sip->model_num, &object_orient, &vmd_zero_vector );
 		}
-		/*else
-		{
-			if(fod_model == -1)
-			{
-				fod_model = model_load(NOX("FoD.pof"), 0, NULL);
-				if(fod_model == -1)
-				{
-					fod_model = -2;
-					return;
-				}
-			}
-			model_render(fod_model, &object_orient, &vmd_zero_vector, MR_NO_LIGHTING | MR_LOCK_DETAIL | MR_AUTOCENTER | MR_NO_FOGGING, -1, -1);
-		}*/
 
 		//We're done
 		gr_end_view_matrix();
@@ -674,67 +702,85 @@ void HudGaugeShield::showShields(const object *objp, int mode)
 	if(!sip->max_shield_strength)
 		return;
 
-	// draw the quadrants
-	//
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = shield_get_max_quad(objp);
+	float max_shield = config ? 100.0f : shield_get_max_quad(objp);
 
 	coord2d shield_icon_coords[6];
 
-	for ( i = 0; i < objp->n_quadrants; i++ ) {
+	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : objp->n_quadrants;
 
-		if ( objp->flags[Object::Object_Flags::No_shields] ) {
+	for (int i = 0; i < n_quadrants; i++) {
+
+		if (!config && objp->flags[Object::Object_Flags::No_shields]) {
 			break;
 		}
 
-		if ( !(sip->flags[Ship::Info_Flags::Model_point_shields]) ) {
-			if ( objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f )
-				continue;
-		} else {
-			if ( objp->shield_quadrant[i] < 0.1f )
-				continue;
+		if (!config) {
+			if (!(sip->flags[Ship::Info_Flags::Model_point_shields])) {
+				if (objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f)
+					continue;
+			} else {
+				if (objp->shield_quadrant[i] < 0.1f)
+					continue;
+			}
 		}
 		GR_DEBUG_SCOPE("Render shield quadrant");
 
-		range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + objp->n_quadrants);
+		int range = MAX(HUD_COLOR_ALPHA_MAX, HUD_color_alpha + n_quadrants);
 
-		if ( !(sip->flags[Ship::Info_Flags::Model_point_shields]) )
-			hud_color_index = fl2i( (objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
-		else
-			hud_color_index = fl2i( (objp->shield_quadrant[i] / max_shield) * range);
+		int hud_color_index = HUD_C_NONE;
+		if (!config) {
+			if (!(sip->flags[Ship::Info_Flags::Model_point_shields]))
+				hud_color_index = fl2i((objp->shield_quadrant[Quadrant_xlate[i]] / max_shield) * range);
+			else
+				hud_color_index = fl2i((objp->shield_quadrant[i] / max_shield) * range);
 
-		Assert(hud_color_index >= 0 && hud_color_index <= range);
+			Assert(hud_color_index >= 0 && hud_color_index <= range);
 
-		if ( hud_color_index < 0 ) {
-			hud_color_index = 0;
-		}
-		if ( hud_color_index >= HUD_NUM_COLOR_LEVELS ) {
-			hud_color_index = HUD_NUM_COLOR_LEVELS - 1;
+			if (hud_color_index < 0) {
+				hud_color_index = 0;
+			}
+			if (hud_color_index >= HUD_NUM_COLOR_LEVELS) {
+				hud_color_index = HUD_NUM_COLOR_LEVELS - 1;
+			}
 		}
 
 		int flash=0;
-		flash = maybeFlashShield(mode, i);
-		
+		if (!config) {
+			flash = maybeFlashShield(mode, i);
+		}
 				
 		if ( !flash ) {
 			// gr_set_color_fast(&HUD_color_defaults[hud_color_index]);
-			setGaugeColor(hud_color_index);
+			setGaugeColor(hud_color_index, config);
 			
 
 			if(sip->shield_icon_index != 255)
 			{
 				int framenum = sgp->first_frame+i+1;
-				if (framenum < sgp->first_frame+sgp->num_frames)
-					renderBitmap(framenum, sx, sy);
+				if (framenum < sgp->first_frame + sgp->num_frames) {
+					renderBitmap(framenum, sx, sy, scale, config);
+				}
+				if (config) {
+					int bmw, bmh;
+					bm_get_info(sgp->first_frame, &bmw, &bmh);
+					hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+				}
+
 			}
 			else
 			{
 				//Ugh, draw four shield quadrants
-				static const int TRI_EDGE = 6;
-				static const int BAR_LENGTH = 112;
-				static const int BAR_HEIGHT = 63;
-				static const int BAR_WIDTH = 6;
-				static const int SHIELD_OFFSET = BAR_WIDTH + TRI_EDGE + 3;
+				static const int TRI_EDGE = fl2i(6 * scale);
+				static const int BAR_LENGTH = fl2i(112 * scale);
+				static const int BAR_HEIGHT = fl2i(63 * scale);
+				static const int BAR_WIDTH = fl2i(6 * scale);
+				static const int SHIELD_OFFSET = fl2i(BAR_WIDTH + TRI_EDGE + 3 * scale);
+
+				// If this comment is here then I have not tested this
+				if (config) {
+					hud_config_set_mouse_coords(gauge_config, x, x + BAR_LENGTH, y, y + BAR_HEIGHT);
+				}
 
 				switch(i)
 				{
@@ -872,9 +918,13 @@ HudGaugeShield(HUD_OBJECT_PLAYER_SHIELD, HUD_PLAYER_SHIELD_ICON)
 {
 }
 
-void HudGaugeShieldPlayer::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeShieldPlayer::render(float  /*frametime*/, bool config)
 {
-	showShields(Player_obj, SHIELD_HIT_PLAYER);
+	object* player = nullptr;
+	if (!config) {
+		player = Player_obj;
+	}
+	showShields(player, SHIELD_HIT_PLAYER, config);
 }
 
 HudGaugeShieldTarget::HudGaugeShieldTarget():
@@ -883,22 +933,26 @@ HudGaugeShield(HUD_OBJECT_TARGET_SHIELD, HUD_TARGET_SHIELD_ICON)
 
 }
 
-void HudGaugeShieldTarget::render(float /*frametime*/, bool /*config*/)
+void HudGaugeShieldTarget::render(float  /*frametime*/, bool config)
 {
-	if (Player_ai->target_objnum == -1)
-		return;
+	object* targetp = nullptr;
 
-	object *targetp = &Objects[Player_ai->target_objnum];
-	
-	// check to see if there is even a current target
-	if ( targetp == &obj_used_list ) {
-		return;
+	if (!config) {
+		if (Player_ai->target_objnum == -1)
+			return;
+
+		targetp = &Objects[Player_ai->target_objnum];
+
+		// check to see if there is even a current target
+		if (targetp == &obj_used_list) {
+			return;
+		}
+
+		if (targetp == Player_obj)
+			return;
 	}
 
-	if ( targetp == Player_obj)
-		return;
-
-	showShields(targetp, SHIELD_HIT_TARGET);
+	showShields(targetp, SHIELD_HIT_TARGET, config);
 }
 
 HudGaugeShieldMini::HudGaugeShieldMini(): // HUD_TARGET_MINI_ICON
@@ -932,19 +986,23 @@ void HudGaugeShieldMini::initBitmaps(const char *fname)
 	}
 }
 
-void HudGaugeShieldMini::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeShieldMini::render(float  /*frametime*/, bool config)
 {
-	if (Player_ai->target_objnum == -1)
-		return;
+	object* targetp = nullptr;
 
-	object *targetp = &Objects[Player_ai->target_objnum];
-	
-	// check to see if there is even a current target
-	if ( targetp == &obj_used_list ) {
-		return;
+	if (!config) {
+		if (Player_ai->target_objnum == -1)
+			return;
+
+		targetp = &Objects[Player_ai->target_objnum];
+
+		// check to see if there is even a current target
+		if (targetp == &obj_used_list) {
+			return;
+		}
 	}
 
-	showMiniShields(targetp);
+	showMiniShields(targetp, config);
 }
 
 void HudGaugeShieldMini::pageIn()
@@ -953,93 +1011,107 @@ void HudGaugeShieldMini::pageIn()
 }
 
 // Draw the miniature shield icon that is drawn near the reticle
-void HudGaugeShieldMini::showMiniShields(const object *objp)
+void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 {
 	if (Shield_mini_gauge.first_frame < 0)
 		return;
 
-	float			max_shield;
-	int			hud_color_index, range, frame_offset;
-	int			sx, sy, i;
-
-	if ( objp->type != OBJ_SHIP ) {
+	if (!config && objp->type != OBJ_SHIP ) {
 		return;
 	}
 
-	setGaugeColor();
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	sx = position[0];
-	sy = position[1];
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Shield_mini_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the ship first
-	maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
-	showIntegrity(get_hull_pct(objp));
+	if (!config) {
+		maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
+	}
+	showIntegrity(config ? 1.0f : get_hull_pct(objp), config);
 
 	// draw the four quadrants
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
-	max_shield = shield_get_max_quad(objp);
+	float max_shield;
+	if (!config) {
+		max_shield = shield_get_max_quad(objp);
+	} else {
+		max_shield = 100.0f;
+	}
 
-	for ( i = 0; i < objp->n_quadrants; i++ ) {
+	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : objp->n_quadrants;
 
-		if ( objp->flags[Object::Object_Flags::No_shields] ) {
+	for (int i = 0; i < n_quadrants; i++) {
+
+		if (!config && objp->flags[Object::Object_Flags::No_shields] ) {
 			break;
 		}
 
 		int num;
-		if (!(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]))
+		if (!config && !(Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Model_point_shields]))
 			num = Quadrant_xlate[i];
 		else
 			num = i;
 
-		if (objp->shield_quadrant[num] < 0.1f ) {
+		if (!config && objp->shield_quadrant[num] < 0.1f ) {
 			continue;
 		}
 
-		if ( maybeFlashShield(SHIELD_HIT_TARGET, i) ) {
+		int frame_offset;
+		if (!config && maybeFlashShield(SHIELD_HIT_TARGET, i) ) {
 			frame_offset = i+objp->n_quadrants;
 		} else {
 			frame_offset = i;
 		}
-				
-		range = HUD_color_alpha;
-		hud_color_index = (int)std::lround((objp->shield_quadrant[num] / max_shield) * range);
-		Assert(hud_color_index >= 0 && hud_color_index <= range);
-	
-		if ( hud_color_index < 0 ) {
-			hud_color_index = 0;
-		}
-		if ( hud_color_index >= HUD_NUM_COLOR_LEVELS ) {
-			hud_color_index = HUD_NUM_COLOR_LEVELS - 1;
+		
+		int hud_color_index = HUD_C_NONE;
+		if (!config) {
+			int range = HUD_color_alpha;
+			hud_color_index = (int)std::lround((objp->shield_quadrant[num] / max_shield) * range);
+			Assert(hud_color_index >= 0 && hud_color_index <= range);
+
+			if (hud_color_index < 0) {
+				hud_color_index = 0;
+			}
+			if (hud_color_index >= HUD_NUM_COLOR_LEVELS) {
+				hud_color_index = HUD_NUM_COLOR_LEVELS - 1;
+			}
 		}
 
-		if ( maybeFlashSexp() == 1) {
+		if (!config && maybeFlashSexp() == 1) {
 			// hud_set_bright_color();
 			setGaugeColor(HUD_C_BRIGHT);
 		} else {
 			// gr_set_color_fast(&HUD_color_defaults[hud_color_index]);
-			setGaugeColor(hud_color_index);
-		}					 
+			setGaugeColor(hud_color_index, config);
+		}	 
 
 		if (frame_offset < Shield_mini_gauge.num_frames)
-			renderBitmap(Shield_mini_gauge.first_frame + frame_offset, sx, sy);		
+			renderBitmap(Shield_mini_gauge.first_frame + frame_offset, x, y, scale, config);		
 	}
 	
 	// hud_set_default_color();
 }
 
-void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
+void HudGaugeShieldMini::showIntegrity(float p_target_integrity, bool config)
 {
-	char	text_integrity[64];
-	int	numeric_integrity;
-	int	final_pos[2];
-
-	numeric_integrity = (int)std::lround(p_target_integrity * 100);
+	int numeric_integrity = (int)std::lround(p_target_integrity * 100);
 	if(numeric_integrity > 100){
 		numeric_integrity = 100;
 	}
 	// Assert(numeric_integrity <= 100);
 
 	// 3 digit hull strength
+	int final_pos[2];
 	if ( numeric_integrity == 100 ) {
 		memcpy(final_pos, Mini_3digit_offsets, sizeof(final_pos));
 	} 
@@ -1058,15 +1130,27 @@ void HudGaugeShieldMini::showIntegrity(float p_target_integrity)
 		}
 	}
 
-	final_pos[0] += position[0];
-	final_pos[1] += position[1];
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	final_pos[0] = static_cast<int>(final_pos[0] * scale);
+	final_pos[1] = static_cast<int>(final_pos[1] * scale);
+
+	final_pos[0] += x;
+	final_pos[1] += y;
+
+	char text_integrity[64];
 	sprintf(text_integrity, "%d", numeric_integrity);
 	if ( numeric_integrity < 100 ) {
 		hud_num_make_mono(text_integrity, font_num);
 	}	
 
-	renderString(final_pos[0], final_pos[1], text_integrity);
+	renderString(final_pos[0], final_pos[1], text_integrity, scale, config);
 }
 
 int HudGaugeShieldMini::maybeFlashShield(int target_index, int shield_offset)
