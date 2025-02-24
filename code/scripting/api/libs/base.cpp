@@ -220,11 +220,11 @@ ADE_FUNC(createRandomOrientation, l_Base, nullptr, "Creates a random orientation
 	matrix fvec_orient, final_orient;
 
 	vm_vec_random_in_sphere(&fvec, &vmd_zero_vector, 1.0f, true);
-	vm_vector_2_matrix(&fvec_orient, &fvec, nullptr, nullptr);
+	vm_vector_2_matrix_norm(&fvec_orient, &fvec, nullptr, nullptr);
 
 	vm_vec_random_in_circle(&uvec, &vmd_zero_vector, &fvec_orient, 1.0f, true);
 
-	vm_vector_2_matrix(&final_orient, &fvec, &uvec);
+	vm_vector_2_matrix_norm(&final_orient, &fvec, &uvec);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final_orient)));
 }

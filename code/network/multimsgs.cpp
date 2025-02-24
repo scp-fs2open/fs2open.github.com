@@ -3425,7 +3425,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix(&orient, &o_fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
@@ -8718,7 +8718,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix(&orient, &o_fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.

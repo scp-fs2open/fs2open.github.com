@@ -2373,8 +2373,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						for (j = 0; j < bay->num_slots; j++) {
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
-							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
-								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+							if(!vm_vec_is_normalized(&(bay->norm[j]))) {
+								Warning(LOCATION, "Model '%s' dock point '%s' normal %d is not normalized!", filename, bay->name, j);
+								vm_vec_rand_vec(&(bay->norm[j]));
 							}
 						}
 
