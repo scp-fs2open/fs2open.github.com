@@ -523,7 +523,7 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 			// HACK!!  UPDATE mission loop/fork desc before changing selections
 			// save mission loop/fork desc
 			char buffer[MISSION_DESC_LENGTH];
-			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSISON_LOOP_DESC);
+			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSION_LOOP_DESC);
 			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
 			if (strlen(buffer)) {
 				if (Links[Cur_campaign_link].mission_branch_txt) {

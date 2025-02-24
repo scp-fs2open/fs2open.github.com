@@ -154,7 +154,7 @@ void OperatorComboBox::filter_popup_operators(const SCP_string &filter_string)
 	for (int op_index : Sorted_operator_indexes)
 	{
 		const auto &op_text = Operators[op_index].text;
-		size_t cost = stringcost(op_text, filter_string, Max_operator_length);
+		size_t cost = stringcost(op_text, filter_string, Max_operator_length, stringcost_tolower_equal);
 		if (cost < threshold)
 			filtered_operators.emplace_back(op_index, cost);
 	}

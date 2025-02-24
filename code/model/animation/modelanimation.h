@@ -363,9 +363,9 @@ namespace animation {
 		SCP_vector<RegisteredTrigger> getRegisteredTriggers() const;
 		SCP_set<SCP_string> getRegisteredAnimNames() const;
 
-		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<std::any>& args) const;
+		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<std::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);
-		std::vector<SCP_string> getRegisteredMoveables() const;
+		SCP_vector<SCP_string> getRegisteredMoveables() const;
 
 		bool isEmpty() const;
 

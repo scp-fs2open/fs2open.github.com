@@ -45,15 +45,24 @@ static bool music_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_music_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_music_volume = volume;
+}
+
 static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music",
                      std::pair<const char*, int>{"Music", 1371},
                      std::pair<const char*, int>{"Volume used for playing music", 1760})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_music_volume)
+                     .default_func([]() { return Default_music_volume;})
                      .range(0.0f, 1.0f)
                      .change_listener(music_volume_change_listener)
                      .importance(1)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_music_volume_func)
                      .finish();
 
 typedef struct tagSNDPATTERN {

@@ -182,7 +182,6 @@ void hud_init_comm_orders()
 	std::sort(Player_orders.begin(), Player_orders.end(), [](const player_order& o1, const player_order& o2) {
 		return o1.legacy_id < o2.legacy_id;
 	});
-
 }
 
 // Text to display on the messaging menu when using the shortcut keys
@@ -326,7 +325,7 @@ bool hud_squadmsg_ship_valid(ship *shipp, object *objp)
 
 	// if a messaging shortcut, be sure this ship can process the order
 	if ( Msg_shortcut_command != -1 ) {
-		if (shipp->orders_accepted.count((size_t) Msg_shortcut_command) == 0)
+		if (!shipp->orders_accepted.contains(Msg_shortcut_command))
 			return false;
 		
 		else if ( !hud_squadmsg_ship_order_valid(objp->instance, Msg_shortcut_command) )
@@ -902,7 +901,7 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 
 		// don't send the command if the "wing" won't accept the command.  We do this by looking at
 		// the set of orders accepted for the wing leader
-		if (shipp->orders_accepted.count((size_t)command) == 0)
+		if (!shipp->orders_accepted.contains(command))
 			continue;
 
 		// send the command to the wing
@@ -940,8 +939,8 @@ void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 		if ( shipp->is_dying_or_departing() )
 			continue;
 
-		// don't send command if ship won't accept if
-		if (shipp->orders_accepted.count((size_t)command) == 0)
+		// don't send command if ship won't accept it
+		if (!shipp->orders_accepted.contains(command))
 			continue;
 
 		if (send_message) {
@@ -2013,7 +2012,7 @@ void hud_squadmsg_ship_command()
 				if (!(Ship_info[shipp->ship_info_index].is_fighter_bomber()))
 					continue;
 
-				bool local_accepted = shipp->orders_accepted.count(order_id) > 0;
+				bool local_accepted = shipp->orders_accepted.contains(order_id);
 				all_accept &= local_accepted;        // 'and'ing will either keep this bit set or zero it properly
 				partial_accept |= local_accepted;    // 'or'ing will tell us if at least one accepts
 			}
@@ -2307,7 +2306,7 @@ int hud_squadmsg_hotkey_select( int k )
 			continue;
 
 		// be sure that this ship can accept this command
-		if ( Ships[objp->instance].orders_accepted.count(Msg_shortcut_command) == 0)
+		if (!Ships[objp->instance].orders_accepted.contains(Msg_shortcut_command))
 			continue;
 
 		hud_squadmsg_send_ship_command( objp->instance, Msg_shortcut_command, send_message, SQUADMSG_HISTORY_ADD_ENTRY );

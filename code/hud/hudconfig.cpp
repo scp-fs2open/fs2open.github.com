@@ -1175,7 +1175,11 @@ void hud_config_handle_keypresses(int k)
 {
 	switch(k) {
 	case KEY_ESC:
-		hud_config_cancel();
+		if (escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
+			hud_config_commit();
+		} else {
+			hud_config_cancel();
+		}
 		break;
 	case KEY_CTRLED+KEY_ENTER:
 		hud_config_commit();

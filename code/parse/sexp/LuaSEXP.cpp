@@ -11,10 +11,11 @@
 #include "parse/sexp.h"
 #include "parse/sexp/sexp_lookup.h"
 #include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/event.h"
+#include "scripting/api/objs/goal.h"
 #include "scripting/api/objs/hudgauge.h"
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
-#include "scripting/api/objs/event.h"
 #include "scripting/api/objs/oswpt.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
@@ -60,6 +61,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "dockpoint",    OPF_DOCKER_POINT },
 														  { "hudgauge",     OPF_ANY_HUD_GAUGE },
 														  { "event",        OPF_EVENT_NAME },
+														  { "goal",         OPF_GOAL_NAME },
 														  { "child_enum",   OPF_CHILD_LUA_ENUM },
                                                           { "custom_string",OPF_MISSION_CUSTOM_STRING },
 														  { "enum",         First_available_opf_id } };
@@ -234,12 +236,15 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 		auto text = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), text);
 	}
+	case OPF_POINT: {
+		auto wpt = find_matching_waypoint(CTEXT(node));
+		return LuaValue::createValue(_action.getLuaState(), l_Waypoint.Set(object_h(wpt->get_objnum())));
+	}
 	case OPF_SHIP_POINT:
 	case OPF_SHIP_WING:
 	case OPF_SHIP_WING_WHOLETEAM:
 	case OPF_SHIP_WING_SHIPONTEAM_POINT:
 	case OPF_SHIP_WING_POINT:
-	case OPF_POINT:
 	case OPF_SHIP_WING_POINT_OR_NONE: {
 		object_ship_wing_point_team oswpt;
 		eval_object_ship_wing_point_team(&oswpt, node);
@@ -310,13 +315,13 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	}
 	case OPF_EVENT_NAME: {
 		auto name = CTEXT(node);
-
-		int i;
-		for (i = 0; i < (int)Mission_events.size(); i++) {
-			if (!stricmp(Mission_events[i].name.c_str(), name))
-				break;
-			}
+		int i = mission_event_lookup(name);
 		return LuaValue::createValue(_action.getLuaState(), l_Event.Set(i));
+	}
+	case OPF_GOAL_NAME: {
+		auto name = CTEXT(node);
+		int i = mission_goal_lookup(name);
+		return LuaValue::createValue(_action.getLuaState(), l_Goal.Set(i));
 	}
 	case OPF_CHILD_LUA_ENUM: {
 		auto text = CTEXT(node);
