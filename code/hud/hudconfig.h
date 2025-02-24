@@ -134,6 +134,8 @@ class BoundingBox {
 	}
 };
 
+extern char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32];
+
 /*!
  * @brief Array of hud gauges to be displayed in the hud config ui and configured by the player
  * @note main definition in hudconfig.cpp
