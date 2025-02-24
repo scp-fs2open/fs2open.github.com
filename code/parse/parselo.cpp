@@ -28,6 +28,7 @@
 
 #include "utils/encoding.h"
 #include "utils/unicode.h"
+#include "utils/string_utils.h"
 
 #include <utf8.h>
 
@@ -1287,6 +1288,13 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 			advance_to_eoln(terminators);
 			break;
 
+		case F_TRIMMED:
+			ignore_white_space();
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
 		case F_NOTES:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
@@ -1364,6 +1372,13 @@ void stuff_string(SCP_string &outstr, int type, const char *terminators)
 		case F_PATHNAME:
 		case F_MESSAGE:
 			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_TRIMMED:
+			ignore_white_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1504,6 +1519,22 @@ void stuff_malloc_string(char **dest, int type, const char *terminators)
 
 		(*dest) = new_val;
 	}
+}
+
+// Like stuff_and_malloc_string but for std::unique_ptr<char[]>
+void stuff_string(std::unique_ptr<char[]> &outstr, int type, bool null_if_empty, const char *terminators)
+{
+	SCP_string tmp_result;
+	stuff_string(tmp_result, type, terminators);
+	outstr = util::unique_copy(tmp_result.c_str(), null_if_empty);
+}
+
+// Like stuff_and_malloc_string but for SCP_vm_unique_ptr<char>
+void stuff_string(SCP_vm_unique_ptr<char> &outstr, int type, bool null_if_empty, const char *terminators)
+{
+	SCP_string tmp_result;
+	stuff_string(tmp_result, type, terminators);
+	outstr = util::vm_unique_copy(tmp_result.c_str(), null_if_empty);
 }
 
 // After reading a multitext string, you can call this function to convert any newlines into

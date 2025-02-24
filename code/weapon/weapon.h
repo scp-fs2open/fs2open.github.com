@@ -357,7 +357,7 @@ struct weapon_info
 	char	name[NAME_LENGTH];				// name of this weapon
 	char	display_name[NAME_LENGTH];		// display name of this weapon
 	char	title[WEAPON_TITLE_LEN];		// official title of weapon (used by tooltips)
-	char	*desc;								// weapon's description (used by tooltips)
+	std::unique_ptr<char[]> desc;				// weapon's description (used by tooltips)
 	char	altSubsysName[NAME_LENGTH];        // rename turret to this if this is the turrets first weapon
 
 	char	pofbitmap_name[MAX_FILENAME_LEN];	// Name of the pof representing this if POF, or bitmap filename if bitmap
@@ -365,7 +365,7 @@ struct weapon_info
 	char	external_model_name[MAX_FILENAME_LEN];					//the model rendered on the weapon points of a ship
 	int		external_model_num;					//the model rendered on the weapon points of a ship
 
-	char	*tech_desc;								// weapon's description (in tech database)
+	std::unique_ptr<char[]> tech_desc;		// weapon's description (in tech database)
 	char	tech_anim_filename[MAX_FILENAME_LEN];	// weapon's tech room animation
 	char	tech_title[NAME_LENGTH];			// weapon's name (in tech database)
 	char	tech_model[MAX_FILENAME_LEN];		//Image to display in the techroom (TODO) or the weapon selection screen if the ANI isn't specified/missing
@@ -656,7 +656,7 @@ struct weapon_info
 
 	// Optional weapon failures
 	float failure_rate;
-	SCP_string failure_sub_name;
+	std::unique_ptr<char[]> failure_sub_name;
 	int failure_sub;
 
 	// the optional pattern of weapons that this weapon will fire

@@ -1148,17 +1148,17 @@ public:
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
 
-	char		*type_str;							// type string used by tooltips
-	char		*maneuverability_str;			// string used by tooltips
-	char		*armor_str;							// string used by tooltips
-	char		*manufacturer_str;				// string used by tooltips
-	char		*desc;								// string used by tooltips
-	char		*tech_desc;							// string used by tech database
+	std::unique_ptr<char[]> type_str;							// type string used by tooltips
+	std::unique_ptr<char[]> maneuverability_str;			// string used by tooltips
+	std::unique_ptr<char[]> armor_str;							// string used by tooltips
+	std::unique_ptr<char[]> manufacturer_str;				// string used by tooltips
+	std::unique_ptr<char[]> desc;								// string used by tooltips
+	std::unique_ptr<char[]> tech_desc;							// string used by tech database
 	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
-	char     *ship_length;						// string used by multiplayer ship desc
-	char     *gun_mounts;			         // string used by multiplayer ship desc
-	char     *missile_banks;					// string used by multiplayer ship desc
+	std::unique_ptr<char[]> ship_length;						// string used by multiplayer ship desc
+	std::unique_ptr<char[]> gun_mounts;			         // string used by multiplayer ship desc
+	std::unique_ptr<char[]> missile_banks;					// string used by multiplayer ship desc
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
@@ -1494,8 +1494,6 @@ public:
 	ship_info(ship_info&& other) noexcept;
 
 	ship_info &operator=(ship_info&& other) noexcept;
-
-	void free_strings();
 
     //Helper functions
     

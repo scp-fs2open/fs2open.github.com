@@ -848,7 +848,7 @@ void techroom_change_tab(int num)
 						// this ship should be displayed, fill out the entry struct
 						temp_entry.index = (int)std::distance(Ship_info.begin(), it);
 						temp_entry.name = *it->tech_title ? it->tech_title : it->get_display_name();
-						temp_entry.desc = it->tech_desc;
+						temp_entry.desc = it->tech_desc.get();
 
                         Ship_list.push_back(temp_entry);
                     }
@@ -890,7 +890,7 @@ void techroom_change_tab(int num)
 					{ 
 						// we have a weapon that should be in the tech db, so fill out specific info
 						temp_entry.index = i;
-						temp_entry.desc = wi.tech_desc;
+						temp_entry.desc = wi.tech_desc.get();
 						temp_entry.name = wi.tech_title[0] ? wi.tech_title : wi.get_display_name();
 						// copy the weapon animation filename
 						strncpy(temp_entry.tech_anim_filename, wi.tech_anim_filename, MAX_FILENAME_LEN - 1);

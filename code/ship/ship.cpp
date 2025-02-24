@@ -90,6 +90,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
+#include "utils/string_utils.h"
 #include "weapon/beam.h"
 #include "weapon/corkscrew.h"
 #include "weapon/emp.h"
@@ -982,11 +983,7 @@ const float DEFAULT_ASK_HELP_HULL_PERCENT = 0.3f;   // percent hull at which shi
 const float AWACS_HELP_HULL_HI = 0.75f;     // percent hull at which ship will ask for help
 const float AWACS_HELP_HULL_LOW = 0.25f;    // percent hull at which ship will ask for help
 
-#define CHECK_THEN_COPY(attribute) \
-do {\
-	if (other.attribute != NULL)\
-		attribute = vm_strdup( other.attribute );\
-} while(false)
+#define CLONE_UNIQUE_PTR(attribute) attribute = util::unique_copy(other.attribute.get(), true)
 
 void ship_info::clone(const ship_info& other)
 {
@@ -996,18 +993,18 @@ void ship_info::clone(const ship_info& other)
 	species = other.species;
 	class_type = other.class_type;
 
-	CHECK_THEN_COPY(type_str);
-	CHECK_THEN_COPY(maneuverability_str);
-	CHECK_THEN_COPY(armor_str);
-	CHECK_THEN_COPY(manufacturer_str);
-	CHECK_THEN_COPY(desc);
-	CHECK_THEN_COPY(tech_desc);
+	CLONE_UNIQUE_PTR(type_str);
+	CLONE_UNIQUE_PTR(maneuverability_str);
+	CLONE_UNIQUE_PTR(armor_str);
+	CLONE_UNIQUE_PTR(manufacturer_str);
+	CLONE_UNIQUE_PTR(desc);
+	CLONE_UNIQUE_PTR(tech_desc);
 
 	strcpy_s(tech_title, other.tech_title);
 
-	CHECK_THEN_COPY(ship_length);
-	CHECK_THEN_COPY(gun_mounts);
-	CHECK_THEN_COPY(missile_banks);
+	CLONE_UNIQUE_PTR(ship_length);
+	CLONE_UNIQUE_PTR(gun_mounts);
+	CLONE_UNIQUE_PTR(missile_banks);
 
 	strcpy_s(cockpit_pof_file, other.cockpit_pof_file);
 	cockpit_offset = other.cockpit_offset;
@@ -1679,27 +1676,6 @@ void ship_info::move(ship_info&& other)
 	cockpit_animations = std::move(other.cockpit_animations);
 }
 
-#define CHECK_THEN_FREE(attribute) \
-do {\
-	if (attribute != NULL) {\
-		vm_free(attribute);\
-		attribute = NULL;\
-	}\
-} while(false)
-
-void ship_info::free_strings()
-{
-	CHECK_THEN_FREE(type_str);
-	CHECK_THEN_FREE(maneuverability_str);
-	CHECK_THEN_FREE(armor_str);
-	CHECK_THEN_FREE(manufacturer_str);
-	CHECK_THEN_FREE(desc);
-	CHECK_THEN_FREE(tech_desc);
-	CHECK_THEN_FREE(ship_length);
-	CHECK_THEN_FREE(gun_mounts);
-	CHECK_THEN_FREE(missile_banks);
-}
-
 ship_info &ship_info::operator= (ship_info&& other) noexcept
 {
 	if (this != &other) {
@@ -1711,15 +1687,6 @@ ship_info &ship_info::operator= (ship_info&& other) noexcept
 ship_info::ship_info(ship_info&& other) noexcept
 {
 	// MageKing17 - Initialize these pointers to NULL because otherwise move() will leave them uninitialized.
-	type_str = NULL;
-	maneuverability_str = NULL;
-	armor_str = NULL;
-	manufacturer_str = NULL;
-	desc = NULL;
-	tech_desc = NULL;
-	ship_length = NULL;
-	gun_mounts = NULL;
-	missile_banks = NULL;
 	subsystems = NULL;
 	n_subsystems = 0;
 
@@ -1735,13 +1702,7 @@ ship_info::ship_info()
 	species = 0;
 	class_type = -1;
 
-	type_str = maneuverability_str = armor_str = manufacturer_str = NULL;
-	desc = tech_desc = NULL;
 	tech_title[0] = 0;
-
-	ship_length = NULL;
-	gun_mounts = NULL;
-	missile_banks = NULL;
 
 	cockpit_pof_file[0] = '\0';
 	vm_vec_zero(&cockpit_offset);
@@ -2101,8 +2062,6 @@ ship_info::~ship_info()
 		delete[] subsystems;
 		subsystems = nullptr;
 	}
-
-	free_strings();
 }
 
 const char* ship_info::get_display_name() const
@@ -3002,23 +2961,23 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	diag_printf ("Ship species -- %s\n", Species_info[sip->species].species_name);
 
 	if (optional_string("+Type:")) {
-		stuff_malloc_string(&sip->type_str, F_MESSAGE);
+		stuff_string(sip->type_str, F_TRIMMED, true);
 	}
 
 	if (optional_string("+Maneuverability:")) {
-		stuff_malloc_string(&sip->maneuverability_str, F_MESSAGE);
+		stuff_string(sip->maneuverability_str, F_TRIMMED, true);
 	}
 
 	if (optional_string("+Armor:")) {
-		stuff_malloc_string(&sip->armor_str, F_MESSAGE);
+		stuff_string(sip->armor_str, F_TRIMMED, true);
 	}
 
 	if (optional_string("+Manufacturer:")) {
-		stuff_malloc_string(&sip->manufacturer_str, F_MESSAGE);
+		stuff_string(sip->manufacturer_str, F_TRIMMED, true);
 	}
 
 	if (optional_string("+Description:")) {
-		stuff_malloc_string(&sip->desc, F_MULTITEXT, NULL);
+		stuff_string(sip->desc, F_MULTITEXT, true);
 	}
 	
 	if (optional_string("+Tech Title:")) {
@@ -3026,19 +2985,19 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if (optional_string("+Tech Description:")) {
-		stuff_malloc_string(&sip->tech_desc, F_MULTITEXT, NULL);
+		stuff_string(sip->tech_desc, F_MULTITEXT, true);
 	}
 
 	if (optional_string("+Length:")) {
-		stuff_malloc_string(&sip->ship_length, F_MESSAGE);
+		stuff_string(sip->ship_length, F_TRIMMED, true);
 	}
 	
 	if (optional_string("+Gun Mounts:")) {
-		stuff_malloc_string(&sip->gun_mounts, F_MESSAGE);
+		stuff_string(sip->gun_mounts, F_TRIMMED, true);
 	}
 	
 	if (optional_string("+Missile Banks:")) {
-		stuff_malloc_string(&sip->missile_banks, F_MESSAGE);
+		stuff_string(sip->missile_banks, F_TRIMMED, true);
 	}
 
 	// Ship fadein effect, used when no ani is specified or ship_select_3d is active

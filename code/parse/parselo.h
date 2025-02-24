@@ -49,7 +49,8 @@ extern int Token_found_flag;
 #define	F_MESSAGE				9	// this is now obsolete for mission messages - all messages in missions should now use $MessageNew and stuff strings as F_MULTITEXT
 #define	F_MULTITEXT				10
 #define F_RAW					11	// for any internal parsing use. Just strips whitespace and copies the text.
-#define F_LNAME					12	//Filenames
+#define F_LNAME					12	// Filenames
+#define F_TRIMMED				13	// Like F_NAME etc., but without leading and trailing whitespace
 
 #define PARSE_BUF_SIZE			4096
 
@@ -152,6 +153,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern void stuff_string(std::unique_ptr<char[]> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
+extern void stuff_string(SCP_vm_unique_ptr<char> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
 extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
