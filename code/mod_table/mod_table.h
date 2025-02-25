@@ -48,6 +48,7 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
+extern bool Use_model_eyepoint_for_set_camera_host;
 extern bool Always_show_directive_value_count;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
