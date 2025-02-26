@@ -2268,10 +2268,8 @@ camid player_get_cam()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				//	View from target.
 				viewer_obj = &Objects[Player_ai->target_objnum];
-				if ( viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
-					view_from_player = 0;
-				}
+				object_get_eye( &eye_pos, &eye_orient, viewer_obj );
+				view_from_player = 0;
 			}
 
 			if ( view_from_player ) {
@@ -2385,20 +2383,8 @@ camid player_get_cam()
 			vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
 		} else {
-			// get an eye position based upon the correct type of object
-			switch(viewer_obj->type)
-			{
-				case OBJ_SHIP:
-					// make a call to get the eye point for the player object
-					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
-					break;
-				case OBJ_OBSERVER:
-					// make a call to get the eye point for the player object
-					observer_get_eye( &eye_pos, &eye_orient, viewer_obj );				
-					break;
-				default :
-					Int3();
-			}			
+			// get an eye position for the player object
+			object_get_eye( &eye_pos, &eye_orient, viewer_obj );
 		}
 	}
 

@@ -57,8 +57,7 @@ extern vec3d	Original_vec_to_deader;
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
 #define SUBSYS_MAX_HITS_THRESHOLD		0.01f	// max_hits threshold where subsys is considered to take damage
 
-#define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
-#define	MAX_SHIP_HITS				8				// hits to kill a ship
+#define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
 #define	MAX_REINFORCEMENTS		32
 
@@ -594,8 +593,8 @@ public:
 	int	next_fireball;
 
 	int	next_hit_spark;
-	int	num_hits;			//	Note, this is the number of spark emitter positions!
-	ship_spark	sparks[MAX_SHIP_HITS];
+	int	num_sparks;			//	Note, this is the number of spark emitter positions!
+	ship_spark	sparks[MAX_SHIP_SPARKS];
 	
 	bool use_special_explosion; 
 	int special_exp_damage;					// new special explosion/hitpoints system
@@ -1784,8 +1783,7 @@ extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
-extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
-extern void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew = true);		// returns the eye data, local to the ship
+extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship
