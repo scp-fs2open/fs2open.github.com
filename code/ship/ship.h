@@ -467,7 +467,7 @@ typedef struct ship_flag_name {
 
 typedef struct ship_flag_description {
 	Ship::Ship_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } ship_flag_description;
 
 extern ship_flag_name Ship_flag_names[];
@@ -481,7 +481,7 @@ typedef struct wing_flag_name {
 
 typedef struct wing_flag_description {
 	Ship::Wing_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } wing_flag_description;
 
 extern wing_flag_name Wing_flag_names[];

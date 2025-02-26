@@ -141,7 +141,7 @@ typedef struct custom_string {
 template <class T>
 struct parse_object_flag_description {
 	T def;
-	SCP_string flag_desc;
+	const char *flag_desc;
 };
 
 typedef struct mission {

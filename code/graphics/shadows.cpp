@@ -40,7 +40,7 @@ static void parse_shadow_quality_func()
 	stuff_string(mode, F_NAME);
 
 	// Convert to lowercase once
-	std::transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
+	SCP_tolower(mode);
 
 	// Use a map to associate strings with their respective actions
 	static const std::unordered_map<std::string, std::function<void()>> effectActions = {

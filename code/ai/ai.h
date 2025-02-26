@@ -36,7 +36,7 @@ typedef struct ai_flag_name {
 
 typedef struct ai_flag_description {
 	AI::AI_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } ai_flag_description;
 
 extern ai_flag_name Ai_flag_names[];

@@ -112,7 +112,7 @@ typedef struct obj_flag_name {
 
 typedef struct obj_flag_description {
 	Object::Object_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } obj_flag_description;
 
 extern obj_flag_name Object_flag_names[];
