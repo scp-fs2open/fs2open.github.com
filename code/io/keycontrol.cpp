@@ -2849,18 +2849,17 @@ int button_function(int n)
 		case SQUADMSG_MENU:
 			hud_squadmsg_toggle();				// leave the details to the messaging code!!!
 			break;
-
+			 
 		case COMMS_MENU_MOVE_DOWN:
-			void hud_squadmsg_selection_move_down();
-
+			hud_squadmsg_selection_move_down();
 			break;
 
 		case COMMS_MENU_MOVE_UP:
-			void hud_squadmsg_selection_move_up();
+			hud_squadmsg_selection_move_up();
 			break;
 
 		case COMMS_MENU_SELECT:
-			void hud_squadmsg_selection_select();
+			hud_squadmsg_selection_select();
 			break;
 
 		// show the mission goals screen

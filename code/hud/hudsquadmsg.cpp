@@ -498,9 +498,19 @@ void hud_squadmsg_selection_move_down() {
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
 
+		//Move to next page if we went outside of current one
+		if (Selected_menu_item == MAX_MENU_DISPLAY 
+			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+		{
+			hud_squadmsg_page_down();
+			Selected_menu_item = 0;
+		}
+
 		//Select the first menu item if we went outside items range, so we can loop around
-		if (Selected_menu_item >= Num_menu_items) {
-			Selected_menu_item = First_menu_item; 
+		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
+		{
+			First_menu_item = 0;
+			Selected_menu_item = First_menu_item;
 		}
 	}
 }
@@ -517,9 +527,18 @@ void hud_squadmsg_selection_move_up() {
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
 		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
 
+		//Move to previous page if it exists
+		if (Selected_menu_item < 0 && First_menu_item > 0)
+		{
+			hud_squadmsg_page_up();
+			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
+		}
+
 		//Select the last menu item if we went outside items range, so we can loop around
-		if (Selected_menu_item < 0) {
-			Selected_menu_item = Num_menu_items - 1;
+		else if (Selected_menu_item < 0) 
+		{
+			First_menu_item = ((Num_menu_items - 1) / 10) * 10; 
+			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
 		}
 	}
 }
@@ -531,10 +550,16 @@ void hud_squadmsg_selection_select() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		Msg_key_used = 1;
-		Msg_key = Selected_menu_item + 2;	  //+1 because menu items start from 1, not 0
-											  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
-		Selected_menu_item = First_menu_item; //Reset this value, so the position will reset at the next window
+		//Check if selected option is even active
+		if (!(MsgItems[Selected_menu_item + First_menu_item].active)) {
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
+		else {
+			Msg_key_used = 1;
+			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
+												  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
+			Selected_menu_item = 0; //Reset this value, so the position will reset at the next window
+		}
 	}
 }
 
@@ -2766,7 +2791,6 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool /*config*/)
 
 	for ( i = 0; i < nitems; i++ ) {
 		int item_num;
-		int isSelected = 0;
 		bool isSelectedItem = First_menu_item + i == First_menu_item + Selected_menu_item;
 		const char *text = MsgItems[First_menu_item+i].text.c_str();
 
