@@ -113,8 +113,8 @@ void update_ets(object* objp, float fl_frametime)
 	// if strength now exceeds max, scale back segments proportionally
 	float max_shield = shield_get_max_strength(ship_p);
 	if ( (_ss = shield_get_strength(objp)) > max_shield ){
-		for (int i=0; i<objp->n_quadrants; i++){
-			objp->shield_quadrant[i] *= max_shield / _ss;
+		for (auto &quad: objp->shield_quadrant) {
+			quad *= max_shield / _ss;
 		}
 	}
 

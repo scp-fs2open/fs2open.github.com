@@ -376,7 +376,8 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 	// Draw shield quadrants at one of NUM_SHIELD_LEVELS
 	max_shield = shield_get_max_quad(objp);
 
-	for ( i = 0; i < objp->n_quadrants; i++ ) {
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for ( i = 0; i < n_quadrants; i++ ) {
 
 		if ( objp->flags[Object::Object_Flags::No_shields] || i >= DEFAULT_SHIELD_SECTIONS) {
 			break;
@@ -393,13 +394,13 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 		}
 
 		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+objp->n_quadrants;
+			frame_offset = i+n_quadrants;
 		} else {
 			frame_offset = i;
 		}
 				
 		range = HUD_color_alpha;
-		hud_color_index = (int)std::lround((objp->shield_quadrant[num] / max_shield) * range);
+		hud_color_index = static_cast<int>(std::lround((objp->shield_quadrant[num] / max_shield) * range));
 		Assert(hud_color_index >= 0 && hud_color_index <= range);
 	
 		if ( hud_color_index < 0 ) {
@@ -428,7 +429,7 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 // associated ship
 void shield_info_reset(const object *objp, shield_hit_info *shi)
 {
-	int n_quadrants = (objp != NULL) ? objp->n_quadrants : 0;
+	int n_quadrants = (objp != nullptr) ? static_cast<int>(objp->shield_quadrant.size()) : 0;
 
 	shi->members = n_quadrants + 1;
 	shi->hull_hit_index = n_quadrants;
@@ -707,7 +708,7 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 
 	coord2d shield_icon_coords[6];
 
-	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : objp->n_quadrants;
+	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : static_cast<int>(objp->shield_quadrant.size());
 
 	for (int i = 0; i < n_quadrants; i++) {
 
@@ -1048,7 +1049,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 		max_shield = 100.0f;
 	}
 
-	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : objp->n_quadrants;
+	int n_quadrants = config ? DEFAULT_SHIELD_SECTIONS : static_cast<int>(objp->shield_quadrant.size());
 
 	for (int i = 0; i < n_quadrants; i++) {
 
@@ -1068,7 +1069,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 
 		int frame_offset;
 		if (!config && maybeFlashShield(SHIELD_HIT_TARGET, i) ) {
-			frame_offset = i+objp->n_quadrants;
+			frame_offset = i+n_quadrants;
 		} else {
 			frame_offset = i;
 		}

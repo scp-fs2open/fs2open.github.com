@@ -9,7 +9,7 @@ namespace api {
 //**********HANDLE: Shields
 ADE_OBJ(l_Shields, object_h, "shields", "Shields handle");
 
-ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number of shield segments or 0 if handle is invalid")
+ADE_FUNC(__len, l_Shields, nullptr, "Number of shield segments", "number", "Number of shield segments or -1 if handle is invalid")
 {
 	object_h *objh;
 
@@ -19,7 +19,7 @@ ADE_FUNC(__len, l_Shields, NULL, "Number of shield segments", "number", "Number 
 	if(!objh->isValid())
 		return ade_set_error(L, "i", -1);
 
-	return ade_set_args(L, "i", objh->objp()->n_quadrants);
+	return ade_set_args(L, "i", static_cast<int>(objh->objp()->shield_quadrant.size()));
 }
 
 ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment strength. Use \"SHIELD_*\" enumerations (for standard 4-quadrant shields) or index of a specific segment, or NONE for the entire shield", "number", "Segment/shield strength, or 0 if handle is invalid")
@@ -45,7 +45,7 @@ ADE_INDEXER(l_Shields, "enumeration/number", "Gets or sets shield segment streng
 		int qdi;
 		if(qd == NULL)
 			qdx = -1;
-		else if((qdi = atoi(qd)) > 0 && qdi <= objp->n_quadrants)
+		else if((qdi = atoi(qd)) > 0 && qdi <= static_cast<int>(objp->shield_quadrant.size()))
 			qdx = qdi-1;	//LUA->FS2
 		else
 			return ade_set_error(L, "f", 0.0f);

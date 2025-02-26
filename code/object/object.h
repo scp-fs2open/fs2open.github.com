@@ -140,7 +140,6 @@ public:
 	vec3d			last_pos;		// where object was last frame
 	matrix			last_orient;	// how the object was oriented last frame
 	physics_info	phys_info;		// a physics object
-	int				n_quadrants;	// how many shield quadrants the ship has
 	SCP_vector<float>	shield_quadrant;	//	Shield is broken into components, quadrants by default.
 	float			hull_strength;	//	Remaining hull strength.
 	float			sim_hull_strength;	// Simulated hull strength - used with training weapons.
