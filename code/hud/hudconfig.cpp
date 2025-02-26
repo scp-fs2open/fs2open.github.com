@@ -22,6 +22,8 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "ship/ship.h"
 #include "ui/ui.h"
 
@@ -1132,6 +1134,11 @@ void hud_config_cancel(bool change_state)
 {
 	hud_config_restore();
 
+	// adds scripting hook for 'On HUD Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnHUDConfigMenuClosed->isActive()) {
+		scripting::hooks::OnHUDConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', false)));
+	}
+
 	if (change_state) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
@@ -1139,6 +1146,11 @@ void hud_config_cancel(bool change_state)
 
 void hud_config_commit()
 {
+	// adds scripting hook for 'On HUD Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnHUDConfigMenuClosed->isActive()) {
+		scripting::hooks::OnHUDConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', true)));
+	}
+
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
