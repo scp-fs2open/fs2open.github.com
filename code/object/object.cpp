@@ -195,8 +195,6 @@ object::object()
 
 object::~object()
 {
-	objsnd_num.clear();
-
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
 }
@@ -213,7 +211,7 @@ void object::clear()
 	radius = hull_strength = sim_hull_strength = 0.0f;
 	physics_init( &phys_info );
 	shield_quadrant.clear();
-	objsnd_num.clear();
+	objsnd_num.reset();
 	net_signature = 0;
 
 	pre_move_event.clear();

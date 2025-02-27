@@ -671,7 +671,7 @@ ADE_FUNC(removeSoundByIndex, l_Object, "number index", "Removes an assigned soun
 	auto objp = objh->objp();
 	snd_idx--;	// Lua -> C++
 
-	if (snd_idx < 0 || snd_idx >= (int)objp->objsnd_num.size())
+	if (!objp->objsnd_num || !SCP_vector_inbounds(*objp->objsnd_num, snd_idx))
 	{
 		LuaError(L, "Sound index is out of range for object %d!", OBJ_INDEX(objp));
 		return ADE_RETURN_NIL;
@@ -696,7 +696,7 @@ ADE_FUNC(getNumAssignedSounds,
 
 	auto objp = objh->objp();
 
-	return ade_set_args(L, "i", static_cast<int>(objp->objsnd_num.size()));
+	return ade_set_args(L, "i", !objp->objsnd_num ? 0 : static_cast<int>(objp->objsnd_num->size()));
 }
 
 ADE_FUNC(removeSound, l_Object, "soundentry GameSnd, [subsystem Subsys=nil]",

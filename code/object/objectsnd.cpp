@@ -85,8 +85,11 @@ void obj_snd_source_pos(vec3d *sound_pos, obj_snd *osp)
 // determine what index in this guy the sound is
 int obj_snd_find(object *objp, obj_snd *osp)
 {
+	if (!objp->objsnd_num)
+		return -1;
+
 	int idx = 0;
-	for (auto iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx) {
+	for (auto iter = objp->objsnd_num->begin(); iter != objp->objsnd_num->end(); ++iter, ++idx) {
 		if (*iter == (osp - Objsnds)) {
 			return idx;
 		}
@@ -235,16 +238,22 @@ void obj_snd_stop(object *objp, int index)
 {
 	obj_snd	*osp;
 
+	// if we're stopping all sounds but there are no sounds, just skip
+	if (index < 0 && !objp->objsnd_num) {
+		return;
+	}
+
 	// sanity
-	if(index >= (int) objp->objsnd_num.size()){
-		Error(LOCATION, "Object sound index %d is bigger than the actual size %d!", index, (int) objp->objsnd_num.size());
+	auto num_sounds = objp->objsnd_num ? objp->objsnd_num->size() : 0;
+	if (index >= static_cast<int>(num_sounds)) {
+		Error(LOCATION, "Object sound index %d is bigger than the actual size " SIZE_T_ARG "!", index, num_sounds);
 		return;
 	}
 
 	// if index is -1, kill all sounds for this guy
 	if(index == -1){
 		// kill all sounds for this guy
-		for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter){
+		for(auto iter = objp->objsnd_num->begin(); iter != objp->objsnd_num->end(); ++iter){
 			if ( *iter == -1 ){
 				continue;
 			}
@@ -271,11 +280,11 @@ void obj_snd_stop(object *objp, int index)
 			}		
 		}
 	} else {		
-		if ( objp->objsnd_num[index] == -1 ){
+		if ( (*objp->objsnd_num)[index] == -1 ){
 			return;
 		}
 
-		osp = &Objsnds[objp->objsnd_num[index]];
+		osp = &Objsnds[(*objp->objsnd_num)[index]];
 
 		if (osp->instance.isValid()) {
 			snd_stop(osp->instance);
@@ -347,7 +356,7 @@ bool obj_snd_stop_lowest_vol(float new_vol)
 	if ( (lowest_vol < new_vol) && (objp != NULL) ) {
 		obj_snd_index = obj_snd_find(objp, lowest_vol_osp);
 
-		if((obj_snd_index == -1) || (obj_snd_index >= (int) objp->objsnd_num.size())){
+		if (!objp->objsnd_num || !SCP_vector_inbounds(*objp->objsnd_num, obj_snd_index)) {
 			Int3();		// get dave
 		} else {
 			obj_snd_stop(objp, obj_snd_index);
@@ -727,26 +736,31 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 	int idx = 0;
 
 	// try and find a valid objsound index
-	sound_index = -1;
-	for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
-		if(*iter == -1){
-			sound_index = idx;
-			break;
+	if (!objp->objsnd_num) {
+		sound_index = 0;
+		objp->objsnd_num = std::make_unique<SCP_vector<int>>(1);
+	} else {
+		sound_index = -1;
+		for(auto iter = objp->objsnd_num->begin(); iter != objp->objsnd_num->end(); ++iter, ++idx){
+			if(*iter == -1){
+				sound_index = idx;
+				break;
+			}
 		}
 	}
 	
 	// no sound slot free, make a new one!
 	if ( sound_index == -1 ){
-		sound_index = (int) objp->objsnd_num.size();
-		objp->objsnd_num.push_back(-1);
+		sound_index = static_cast<int>(objp->objsnd_num->size());
+		objp->objsnd_num->push_back(-1);
 	}
 
-	objp->objsnd_num[sound_index] = obj_snd_get_slot();
-	if ( objp->objsnd_num[sound_index] == -1 ) {
+	(*objp->objsnd_num)[sound_index] = obj_snd_get_slot();
+	if ( (*objp->objsnd_num)[sound_index] == -1 ) {
 		nprintf(("Sound", "SOUND ==> No free object-linked sounds left\n"));
 		return -1;
 	}
-	snd = &Objsnds[objp->objsnd_num[sound_index]];
+	snd = &Objsnds[(*objp->objsnd_num)[sound_index]];
 	snd->flags = OS_IN_USE;
 
 	if(flags > 0){
@@ -779,9 +793,9 @@ int obj_snd_assign(int objnum, gamesnd_id sndnum, const vec3d *pos, int flags, c
 //
 void obj_snd_delete(object *objp, int index)
 {
-	Assert(index > -1 && index < (int) objp->objsnd_num.size());
+	Assert(objp->objsnd_num && SCP_vector_inbounds(*objp->objsnd_num, index));
 
-	obj_snd *osp = &Objsnds[objp->objsnd_num[index]];
+	obj_snd *osp = &Objsnds[(*objp->objsnd_num)[index]];
 
 	//Stop the sound
 	obj_snd_stop(objp, index);
@@ -791,7 +805,7 @@ void obj_snd_delete(object *objp, int index)
 	osp->objnum = -1;
 	osp->flags = 0;
 	osp = NULL;
-	objp->objsnd_num[index] = -1;
+	(*objp->objsnd_num)[index] = -1;
 }
 
 // ---------------------------------------------------------------------------------------
@@ -813,10 +827,12 @@ void	obj_snd_delete_type(int objnum, gamesnd_id sndnum, ship_subsys *ss)
 		return;
 
 	objp = &Objects[objnum];
+	if (!objp->objsnd_num)
+		return;
 
 	int idx = 0;
 	//Go through the list and get sounds that match criteria
-	for(SCP_vector<int>::iterator iter = objp->objsnd_num.begin(); iter != objp->objsnd_num.end(); ++iter, ++idx){
+	for(auto iter = objp->objsnd_num->begin(); iter != objp->objsnd_num->end(); ++iter, ++idx){
 		// no sound
 		if ( *iter == -1 ){
 			continue;
