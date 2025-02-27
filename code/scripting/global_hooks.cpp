@@ -34,7 +34,19 @@ const std::shared_ptr<Hook<>> OnOptionsTabChanged = Hook<>::Factory("On Options 
 	});
 
 const std::shared_ptr<Hook<>> OnOptionsMenuClosed = Hook<>::Factory("On Options Menu Closed",
-	"Executed whenever a tab Options Menu is closed.",
+	"Executed whenever the Options Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnHUDConfigMenuClosed = Hook<>::Factory("On HUD Config Menu Closed",
+	"Executed whenever the HUD Config Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnControlConfigMenuClosed = Hook<>::Factory("On Controls Config Menu Closed",
+	"Executed whenever the Control Config Menu is closed.",
 	{
 		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
 	});
