@@ -278,7 +278,7 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
-int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false, bool print_list = false)
 {
 	for (size_t i=0; i<max; i++)
 	{
@@ -289,13 +289,32 @@ int string_lookup(const char* str1, const T& strlist, size_t max, const char* de
 	}
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description ? description : "unnamed");
+	{
+		const char* suffix;
+		SCP_string list;
+
+		if (print_list)
+		{
+			list = ":\n";
+			for (size_t i=0; i<max; i++)
+			{
+				list += "    ";
+				list += strlist[i];
+				list += "\n";
+			}
+			suffix = list.c_str();
+		}
+		else
+			suffix = ".\n";
+
+		error_display(0, "Unable to find \"%s\" in %s list%s", str1, description ? description : "unnamed", suffix);
+	}
 
 	return -1;
 }
 
-int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
-int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)

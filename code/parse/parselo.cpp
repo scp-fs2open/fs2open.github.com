@@ -574,19 +574,38 @@ int check_for_string_raw(const char *pstr)
 	return 0;
 }
 
-int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors, bool print_list)
 {
-	return string_lookup(SCP_string(str1), strlist, description, say_errors);
+	return string_lookup(SCP_string(str1), strlist, description, say_errors, print_list);
 }
 
-int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors, bool print_list)
 {
 	for (size_t i = 0; i < strlist.size(); i++)
 		if (lcase_equal(str1, strlist[i]))
 			return static_cast<int>(i);
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1.c_str(), description ? description : "unnamed");
+	{
+		const char* suffix;
+		SCP_string list;
+
+		if (print_list)
+		{
+			list = ":\n";
+			for (const auto &item: list)
+			{
+				list += "    ";
+				list += item;
+				list += "\n";
+			}
+			suffix = list.c_str();
+		}
+		else
+			suffix = ".\n";
+
+		error_display(0, "Unable to find \"%s\" in %s list%s", str1.c_str(), description ? description : "unnamed", suffix);
+	}
 
 	return -1;
 }
@@ -3355,30 +3374,6 @@ void stuff_matrix(matrix *mp)
 	stuff_vec3d(&mp->vec.rvec);
 	stuff_vec3d(&mp->vec.uvec);
 	stuff_vec3d(&mp->vec.fvec);
-}
-
-/**
- * @brief Given a string, find it in a string array.
- *
- * @param str1 is the string to be found.
- * @param strlist is the list of strings to search.
- * @param max is the number of entries in *strlist to scan.
- * @param description is only used for diagnostics in case it can't be found.
- * @param say_errors @c true if errors should be reported
- * @return
- */
-int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description, bool say_errors) {
-	for (size_t i=0; i<max; i++) {
-		Assert(strlen(strlist[i]) != 0); //-V805
-
-		if (!stricmp(str1, strlist[i]))
-			return (int)i;
-	}
-
-	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
-
-	return -1;
 }
 
 //	Find a required string (*id), then stuff the text of type f_type that
