@@ -79,7 +79,7 @@ public:
 	void initLetter(char _letter);	// obligatory PC Load Letter joke. (Swifty)
 	void initBarHeight(int _ets_bar_h);
 	void initBitmaps(char *fname);
-	void blitGauge(int index);
+	void blitGauge(int index, int ix, int iy, float scale, bool config);
 	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
