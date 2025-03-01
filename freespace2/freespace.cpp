@@ -5693,6 +5693,13 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_LAB:
 			lab_close();
+			// restore default cursor and enable it --wookieejedi
+			if (!Is_standalone) {
+				io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
+				if (cursor) {
+					io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+				}
+			}
 			break;
 
 		case GS_STATE_SCRIPTING:
@@ -5710,6 +5717,13 @@ void game_leave_state( int old_state, int new_state )
 
 		case GS_STATE_INGAME_OPTIONS:
 			ingame_options_close();
+			// restore default cursor and enable it --wookieejedi
+			if (!Is_standalone) {
+				io::mouse::Cursor* cursor = io::mouse::CursorManager::get()->loadCursor("cursor", true);
+				if (cursor) {
+					io::mouse::CursorManager::get()->setCurrentCursor(cursor);
+				}
+			}
 			break;
 	}
 
