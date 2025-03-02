@@ -491,12 +491,13 @@ void get_user_prop_value(char *buf, char *value)
 	while ( isspace(*p) || (*p == '=') )		// skip white space and equal sign
 		p++;
 	p1 = p;
-	while ( !iscntrl(*p1) )
+	while ( !iscntrl(*p1) )						// copy until we get to a control character
 		p1++;
 	c = *p1;
 	*p1 = '\0';
 	strcpy(value, p);
 	*p1 = c;
+	drop_trailing_white_space(value);			// trim ending whitespace, just as we trimmed leading whitespace
 }
 
 // routine to parse out a vec3d from a user property field of an object
@@ -1113,19 +1114,17 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 	}
 #ifndef NDEBUG
-	char bname[FILESPEC_LENGTH];
-
 	if ( !ss_warning_shown_mismatch) {
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 		ss_warning_shown_mismatch = true;
-	} else
+	}
 #endif
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
+	mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{
+		char bname[FILESPEC_LENGTH];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
 		char tmp_buffer[128];
@@ -1133,7 +1132,6 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		cfputs(tmp_buffer, ss_fp);
 	}
 #endif
-
 }
 
 void print_family_tree(polymodel *obj)
@@ -1933,19 +1931,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 				if (in(p, props, "$special")) {
 					char type[64];
+					SCP_string type_desc;
+					sprintf(type_desc, "$special property (for submodel %s) allowed token", sm->name);
 
 					get_user_prop_value(p+9, type);
-					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+					const char* type_list[] = { "subsystem", "no_movement", "no_rotate", "no_translate" };
+					int type_index = string_lookup(type, type_list, 4, type_desc.c_str(), true, true);
+
+					if (type_index == 0) {	// if we have a subsystem, put it into the list!
 						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
-						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 2 || type_index == 1) {	// this doesn't rotate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->rotation_type = MOVEMENT_TYPE_NONE;
 						} else {
 							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 							Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
 						}
-						if ( !stricmp(type, "no_translate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 3 || type_index == 1) {	// this doesn't translate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->translation_type = MOVEMENT_TYPE_NONE;
 						} else {
@@ -2313,12 +2316,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						if (in(p, props, "$name")) {
 							get_user_prop_value(p+5, bay->name);
-
-							auto length = strlen(bay->name);
-							if ((length > 0) && is_white_space(bay->name[length-1])) {
-								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
-								drop_trailing_white_space(bay->name);
-							}
 							if (strlen(bay->name) == 0) {
 								nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
 							}
@@ -2630,11 +2627,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
 					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
+						SCP_string type_desc;
+						sprintf(type_desc, "$special property (for special point %s) allowed token", name);
 
 						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+						const char *type_list[] = { "subsystem", "shieldpoint" };
+						int type_index = string_lookup(type, type_list, 2, type_desc.c_str(), true, true);
+
+						if (type_index == 0) {	// if we have a subsystem, put it into the list!
 							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
-						} else if ( !stricmp(type, "shieldpoint") ) {
+						} else if (type_index == 1) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
@@ -3318,6 +3320,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
+	pause_parse();
+	Mp = Parse_text;
+	strcpy_s(Current_filename, filename);
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
@@ -3360,8 +3365,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		if (pm != NULL) {
 			delete pm;
 		}
-
 		Polygon_models[num] = NULL;
+
+		unpause_parse();
 		return -1;
 	}
 
@@ -3428,6 +3434,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	//==============================
 	// Find all the lower detail versions of the hires model
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> lower_to_higher_detail_submodels;
 	for (i=0; i<pm->n_models; i++ )	{
 		int j;
 		size_t l1;
@@ -3505,6 +3512,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}
 		}
@@ -3514,8 +3522,23 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				sm1->num_details = 0;
 			}
 		}
-
 	}
+
+#ifndef NDEBUG
+	// make sure no lower detail submodels were actually made subsystems
+	for (const auto& pair : lower_to_higher_detail_submodels) {
+		auto lower_ss = deferredTasks.model_subsystems.find(pair.first);
+		if (lower_ss != deferredTasks.model_subsystems.end()) {
+			auto higher_ss = deferredTasks.model_subsystems.find(pair.second);
+			if (higher_ss != deferredTasks.model_subsystems.end()) {
+				auto lower_ss_name = lower_ss->first.c_str();
+				auto higher_ss_name = higher_ss->first.c_str();
+				Warning(LOCATION, "%s is a lower-detail submodel of %s, but both are configured as subsystems.  Subsystem properties should be removed from lower-detail "
+					"submodels, as this causes them to be recognized as extra subsystems.", lower_ss_name, higher_ss_name);
+			}
+		}
+	}
+#endif
 
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
@@ -3549,6 +3572,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
 	model_set_bay_path_nums(pm);
 
+	unpause_parse();
 	return pm->id;
 }
 
