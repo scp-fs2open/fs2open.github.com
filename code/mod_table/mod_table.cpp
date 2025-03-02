@@ -34,6 +34,7 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Always_show_directive_value_count;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
 bool Use_3d_weapon_select;
@@ -158,6 +159,7 @@ bool Dont_show_callsigns_in_escort_list;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
+EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -539,6 +541,13 @@ void parse_mod_table(const char *filename)
 					}
 				} else {
 					Warning(LOCATION, "$HUD-set-coords base resolution: must specify two arguments");
+				}
+			}
+
+			if (optional_string("$Always Show Directive Value Count:")) {
+				stuff_boolean(&Always_show_directive_value_count);
+				if (Always_show_directive_value_count) {
+					mprintf(("Game Settings Table: Always Showing Directive Value Count\n"));
 				}
 			}
 
@@ -1441,6 +1450,26 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Preload_briefing_icon_models);
 			}
 
+			if (optional_string("$Behavior for pressing Escape key in options menu:")) {
+				SCP_string temp;
+				stuff_string(temp, F_RAW);
+				SCP_tolower(temp);
+
+				if (temp == "default")
+				{
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+				}
+				else if (temp == "save")
+				{
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::SAVE;
+				}
+				else
+				{
+					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be value of 'default' or 'save'. Reverting to 'default' value.");
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+				}
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1532,6 +1561,7 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
 	Default_overhead_ship_style = OH_TOP_VIEW;
@@ -1663,6 +1693,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
+	escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
 }
 
 void mod_table_set_version_flags()

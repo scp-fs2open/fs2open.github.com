@@ -540,15 +540,21 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			}
 
 			// Goober5000 - substitute main hall (like substitute music)
+			cm->substitute_main_hall = "";
 			if (optional_string("+Substitute Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
+				cm->substitute_main_hall = temp;
 
-				// see if this main hall exists
-				main_hall_defines *mhd = main_hall_get_pointer(temp);
-				if (mhd != NULL) {
-					cm->main_hall = temp;
-				} else {
-					mprintf(("Substitute main hall '%s' not found\n", temp));
+				// if we're running FRED, keep the halls separate (so we can save the campaign file),
+				// but if we're running FS, replace the main hall with the substitute right now
+				if (!Fred_running) {
+					// see if this main hall exists
+					main_hall_defines* mhd = main_hall_get_pointer(temp);
+					if (mhd != nullptr) {
+						cm->main_hall = temp;
+					} else {
+						mprintf(("Substitute main hall '%s' not found\n", temp));
+					}
 				}
 			}
 
@@ -1228,6 +1234,7 @@ void mission_campaign_clear()
 		Campaign.missions[i].pos = 0;
 		Campaign.missions[i].flags = 0;
 		Campaign.missions[i].main_hall = "";
+		Campaign.missions[i].substitute_main_hall = "";
 		Campaign.missions[i].debrief_persona_index = 0;
 
 		Campaign.missions[i].stats.init();

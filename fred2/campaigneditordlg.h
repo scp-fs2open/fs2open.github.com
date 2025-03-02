@@ -78,6 +78,7 @@ public:
 	//{{AFX_VIRTUAL(campaign_editor)
 	public:
 	virtual BOOL Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWORD dwStyle, const RECT& rect, CWnd* pParentWnd, UINT nID, CCreateContext* pContext = NULL);
+	virtual BOOL PreTranslateMessage(MSG* pMsg);
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	virtual void OnUpdate(CView* pSender, LPARAM lHint, CObject* pHint);
@@ -90,6 +91,8 @@ protected:
 	virtual void AssertValid() const;
 	virtual void Dump(CDumpContext& dc) const;
 #endif
+
+	CToolTipCtrl* m_SubstituteMainHallToolTip;
 
 	// Generated message map functions
 	//{{AFX_MSG(campaign_editor)
@@ -109,6 +112,7 @@ protected:
 	afx_msg void OnBrowseLoopAni();
 	afx_msg void OnBrowseLoopSound();
 	afx_msg void OnChangeMainHall();
+	afx_msg void OnChangeSubstituteMainHall();
 	afx_msg void OnChangeDebriefingPersona();
 	afx_msg void OnCustomTechDB();
 	//}}AFX_MSG

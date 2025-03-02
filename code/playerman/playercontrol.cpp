@@ -67,6 +67,29 @@ FlightMode Player_flight_mode = FlightMode::ShipLocked;
 bool Perspective_locked = false;
 bool Slew_locked = false;
 
+static void parse_flight_mode_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	std::transform(mode.begin(), mode.end(), mode.begin(), ::tolower);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions =
+	{ 
+		{"ship locked", []() { Player_flight_mode = FlightMode::ShipLocked; }},
+		{"flight cursor", []() { Player_flight_mode = FlightMode::FlightCursor; }}
+	};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid flight mode setting", mode.c_str());
+	}
+}
+
 auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	std::pair<const char*, int>{"Flight Mode", 1842},
 	std::pair<const char*, int>{"Choose the flying style to use during gameplay.", 1843})
@@ -74,10 +97,11 @@ auto FlightModeOption = options::OptionBuilder<FlightMode>("Game.FlightMode",
 	.level(options::ExpertLevel::Beginner)
 	.values({ {FlightMode::ShipLocked, {"Ship Locked", 1844}},
 			{FlightMode::FlightCursor, {"Flight Cursor", 1845}} })
-	.default_val(FlightMode::ShipLocked)
+		.default_func([]() { return FlightMode::ShipLocked; })
 	.bind_to(&Player_flight_mode)
 	.flags({ options::OptionFlags::ForceMultiValueSelection })
 	.importance(45)
+	.parser(parse_flight_mode_func)
 	.finish();
 
 static SCP_string degrees_display(float val)
@@ -90,19 +114,36 @@ static SCP_string degrees_display(float val)
 
 float Flight_cursor_extent;
 
+static void parse_flight_cursor_extent_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.0f, 0.698f);
+	Flight_cursor_extent = value;
+}
+
 auto FlightCursorExtentOption = options::OptionBuilder<float>("Game.FlightCursorExtent",
 	std::pair<const char*, int>{"Flight Cursor Extent", 1846},
 	std::pair<const char*, int>{"How far from the center the cursor can go.", 1847})
 	.category(std::make_pair("Game", 1824))
 	.range(0.0f, 0.698f)
 	.display(degrees_display)
-	.default_val(0.348f)
+	.default_func([]() { return 0.348f; })
 	.level(options::ExpertLevel::Beginner)
 	.bind_to(&Flight_cursor_extent)
 	.importance(44)
+	.parser(parse_flight_cursor_extent_func)
 	.finish();
 
 float Flight_cursor_deadzone;
+
+static void parse_cursor_deadzone_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.0f, 0.349f);
+	Flight_cursor_deadzone = value;
+}
 
 auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCursorDeadzone",
 	std::pair<const char*, int>{"Flight Cursor Deadzone", 1848},
@@ -110,10 +151,11 @@ auto FlightCursorDeadzoneOption = options::OptionBuilder<float>("Game.FlightCurs
 	.category(std::make_pair("Game", 1824))
 	.range(0.0f, 0.349f)
 	.display(degrees_display)
-	.default_val(0.02f)
+	.default_func([]() { return 0.02f; })
 	.level(options::ExpertLevel::Beginner)
 	.bind_to(&Flight_cursor_deadzone)
 	.importance(43)
+	.parser(parse_cursor_deadzone_func)
 	.finish();
 
 int toggle_glide = 0;
@@ -2226,10 +2268,8 @@ camid player_get_cam()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				//	View from target.
 				viewer_obj = &Objects[Player_ai->target_objnum];
-				if ( viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
-					view_from_player = 0;
-				}
+				object_get_eye( &eye_pos, &eye_orient, viewer_obj );
+				view_from_player = 0;
 			}
 
 			if ( view_from_player ) {
@@ -2343,20 +2383,8 @@ camid player_get_cam()
 			vm_vector_2_matrix(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, NULL);
 			viewer_obj = NULL;
 		} else {
-			// get an eye position based upon the correct type of object
-			switch(viewer_obj->type)
-			{
-				case OBJ_SHIP:
-					// make a call to get the eye point for the player object
-					ship_get_eye( &eye_pos, &eye_orient, viewer_obj );
-					break;
-				case OBJ_OBSERVER:
-					// make a call to get the eye point for the player object
-					observer_get_eye( &eye_pos, &eye_orient, viewer_obj );				
-					break;
-				default :
-					Int3();
-			}			
+			// get an eye position for the player object
+			object_get_eye( &eye_pos, &eye_orient, viewer_obj );
 		}
 	}
 

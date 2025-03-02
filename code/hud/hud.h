@@ -463,9 +463,9 @@ public:
 	void render(float frametime, bool config = false) override;
 	void startFlashNotify(int duration = 1400);
 	bool maybeFlashNotify(bool flash_fast = false);
-	void renderObjective();
-	void renderRedAlert();
-	void renderSubspace();
+	void renderObjective(bool config);
+	void renderRedAlert(bool config);
+	void renderSubspace(bool config);
 	void pageIn() override;
 	void initialize() override;
 };

@@ -822,7 +822,7 @@ int ai_goal_num(ai_goal *goals)
 }
 
 
-void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp, int int_data, float float_data)
 {
 	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
@@ -837,16 +837,18 @@ void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
 
 	aigp->priority = priority;
+	aigp->int_data = int_data;
+	aigp->float_data = float_data;
 }
 
-void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip)
+void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data)
 {
 	int empty_index;
 	ai_goal *aigp;
 
 	empty_index = ai_goal_find_empty_slot(aip->goals, aip->active_goal);
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_scripting(ai_goal_type::PLAYER_SHIP, mode, submode, priority, shipname, aigp);
+	ai_add_goal_sub_scripting(ai_goal_type::PLAYER_SHIP, mode, submode, priority, shipname, aigp, int_data, float_data);
 
 	//WMC - hack to get docking setup correctly
 	if ( mode == AI_GOAL_DOCK ) {

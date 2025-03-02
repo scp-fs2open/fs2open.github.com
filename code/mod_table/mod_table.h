@@ -20,6 +20,12 @@ typedef enum {
 	OH_ROTATING
 } overhead_style;
 
+// Typedef for Escape key behavior --wookieejedi
+typedef enum {
+	DEFAULT,
+	SAVE
+} EscapeKeyBehaviorInOptions;
+
 // And one for splash screens
 struct splash_screen {
 	SCP_string filename;
@@ -42,6 +48,7 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
+extern bool Always_show_directive_value_count;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
 extern bool Use_3d_ship_icons;
@@ -167,6 +174,7 @@ extern bool Dont_show_callsigns_in_escort_list;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 extern bool Preload_briefing_icon_models;
+extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 
 void mod_table_init();
 void mod_table_post_process();

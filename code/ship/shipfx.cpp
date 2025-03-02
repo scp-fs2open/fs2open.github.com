@@ -72,11 +72,11 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	Assert(submodel_num != -1);
 
 	// maybe no active sparks on submodel
-	if (shipp->num_hits == 0) {
+	if (shipp->num_sparks == 0) {
 		return;
 	}
 
-	for (int spark_num = 0; spark_num < shipp->num_hits; spark_num++) {
+	for (int spark_num = 0; spark_num < shipp->num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num == submodel_num) {
 			shipp->sparks[spark_num].end_time = timestamp(1);
 		}
@@ -862,7 +862,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
 				vec3d pos,eye_posi;
 				matrix eye_ori;
-				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
 
@@ -1179,7 +1179,7 @@ void shipfx_emit_spark( int n, int sn )
 	if(sn < 0 && !sip->damage_spew.isValid())
 		return;
 	
-	if ( shipp->num_hits <= 0 )
+	if ( shipp->num_sparks <= 0 )
 		return;
 
 	obj = &Objects[shipp->objnum];
@@ -1195,7 +1195,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = Random::next(shipp->num_hits);
+		spark_num = Random::next(shipp->num_sparks);
 	} else {
 		spark_num = sn;
 	}
@@ -1205,10 +1205,11 @@ void shipfx_emit_spark( int n, int sn )
 		return;
 	}
 
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
 	// get spark position
 	if (shipp->sparks[spark_num].submodel_num != -1) {
-		auto pmi = model_get_instance(shipp->model_instance_num);
-		auto pm = model_get(pmi->model_num);
 		model_instance_local_to_global_point(&outpnt, &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
 	} else {
 		// rotate sparks correctly with current ship orient
@@ -1228,17 +1229,6 @@ void shipfx_emit_spark( int n, int sn )
 		return;
 
 	if ( create_spark )	{
-		vec3d vel;
-        if (shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
-			// No velocity if going through warp.
-			vel = vmd_zero_vector;
-		} else {
-			// Initial velocity of all the particles.
-			// 0.0f = 0% of parent's.
-			// 1.0f = 100% of parent's.
-			vm_vec_copy_scale( &vel, &obj->phys_info.vel, 0.7f );
-		}
-
 		// TODO: add velocity from rotation if submodel is rotating
 		// v_rot = w x r
 
@@ -1257,8 +1247,19 @@ void shipfx_emit_spark( int n, int sn )
 			vm_vec_normalize_safe(&tmp_norm);
 		}
 
+		vec3d local_norm;
+		model_instance_global_to_local_dir(&local_norm, &tmp_norm, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient);
+
 		matrix orient;
-		vm_vector_2_matrix_norm(&orient, &tmp_norm);
+		vm_vector_2_matrix_norm(&orient, &local_norm);
+
+		std::unique_ptr<EffectHost> particleHost;
+		if (shipp->sparks[spark_num].submodel_num != -1) {
+			particleHost = std::make_unique<EffectHostSubmodel>(obj, shipp->sparks[spark_num].submodel_num, shipp->sparks[spark_num].pos, orient);
+		}
+		else {
+			particleHost = std::make_unique<EffectHostObject>(obj, shipp->sparks[spark_num].pos, orient);
+		}
 
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
@@ -1275,11 +1276,11 @@ void shipfx_emit_spark( int n, int sn )
 			}
 
 			auto source = particle::ParticleManager::get()->createSource(sip->impact_spew);
-			source->setHost(make_unique<EffectHostVector>(outpnt, orient, vel));
+			source->setHost(std::move(particleHost));
 			source->finishCreation();
 		} else {
 			auto source = particle::ParticleManager::get()->createSource(sip->damage_spew);
-			source->setHost(make_unique<EffectHostVector>(outpnt, orient, vel));
+			source->setHost(std::move(particleHost));
 			source->finishCreation();
 		}
 	}
@@ -1887,8 +1888,9 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			vm_vector_2_matrix_norm(&orient, &normal);
 
 			auto host = std::make_unique<EffectHostVector>(model_clip_plane_pt, orient, half_ship->phys_info.vel, vmd_identity_matrix, true);
-			host->setVelocityMagnitudeOverride(half_ship->explosion_vel);
+			host->setRadius(half_ship->parent_obj->radius);
 			source->setHost(std::move(host));
+			source->setTriggerVelocity(half_ship->explosion_vel);
 			source->finishCreation();
 
 			if (sip->generic_debris_model_num >= 0) {

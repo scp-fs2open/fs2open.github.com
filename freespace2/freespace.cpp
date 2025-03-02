@@ -260,44 +260,72 @@ static SCP_string skill_level_display(int value)
 	return SCP_string(Skill_level_names(value, true));
 }
 
+static void parse_skill_func()
+{
+	int value;
+	stuff_int(&value);
+
+	value -= 1; // Parse 1-5 for the skill levels but convert to our internal 0-4
+	CLAMP(value, 0, 4);
+
+	Game_skill_level = value;
+}
+
 static auto GameSkillOption __UNUSED = options::OptionBuilder<int>("Game.SkillLevel",
                      std::pair<const char*, int>{"Skill Level", 1284},
                      std::pair<const char*, int>{"The skill level for the game.", 1700})
                      .category(std::make_pair("Game", 1824))
                      .range(0, 4)
                      .level(options::ExpertLevel::Beginner)
-                     .default_val(DEFAULT_SKILL_LEVEL)
+                     .default_func([]() { return DEFAULT_SKILL_LEVEL; })
                      .bind_to(&Game_skill_level)
                      .display(skill_level_display)
                      .importance(1)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_skill_func)
                      .finish();
 
 bool Screenshake_enabled = true;
+
+static void parse_screenshake_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Screenshake_enabled = enabled;
+}
 
 auto ScreenShakeOption = options::OptionBuilder<bool>("Graphics.ScreenShake",
                      std::pair<const char*, int>{"Screen Shudder Effect", 1812}, // do xstr
                      std::pair<const char*, int>{"Toggles the screen shake effect for weapons, afterburners, and shockwaves", 1813})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(Screenshake_enabled)
+                     .default_func([]() { return Screenshake_enabled; })
                      .level(options::ExpertLevel::Advanced)
                      .importance(55)
                      .bind_to(&Screenshake_enabled)
+                     .parser(parse_screenshake_func)
                      .finish();
 
 bool Allow_unfocused_pause = true;
 
 static SCP_string unfocused_pause_display(bool mode) { return mode ? XSTR("Yes", 1394) : XSTR("No", 1395); }
 
+static void parse_unfocused_pause_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Allow_unfocused_pause = enabled;
+}
+
 auto UnfocusedPauseOption = options::OptionBuilder<bool>("Game.UnfocusedPause",
                      std::pair<const char*, int>{"Pause If Unfocused", 1814}, // do xstr
                      std::pair<const char*, int>{"Whether or not the game automatically pauses if it loses focus", 1815})
                      .category(std::make_pair("Game", 1824))
-                     .default_val(Allow_unfocused_pause)
+                     .default_func([]() { return Allow_unfocused_pause; })
                      .level(options::ExpertLevel::Advanced)
                      .display(unfocused_pause_display) 
                      .importance(55)
                      .bind_to(&Allow_unfocused_pause)
+                     .parser(parse_unfocused_pause_func)
                      .finish();
 
 #define EXE_FNAME			("fs2.exe")
@@ -3174,11 +3202,8 @@ camid game_render_frame_setup()
 			if (Viewer_mode & VM_OTHER_SHIP) {
 				//	View from target.
 				Viewer_obj = &Objects[Player_ai->target_objnum];
-
-				if ( Viewer_obj->type == OBJ_SHIP ) {
-					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
-					view_from_player = 0;
-				}
+				object_get_eye( &eye_pos, &eye_orient, Viewer_obj );
+				view_from_player = 0;
 			}
 
 			if(Viewer_obj)
@@ -3285,13 +3310,13 @@ camid game_render_frame_setup()
 
 			} else if ( Viewer_mode & VM_CHASE ) {
 				if (Viewer_obj->type != OBJ_SHIP)
-					observer_get_eye(&eye_pos, &eye_orient, Viewer_obj);
+					object_get_eye(&eye_pos, &eye_orient, Viewer_obj);
 				else {
 					vec3d aim_pt;
 
 					vec3d tmp_up;
 					matrix eyemat;
-					ship_get_eye(&tmp_up, &eyemat, Viewer_obj, false, false);
+					object_get_eye(&tmp_up, &eyemat, Viewer_obj, false);	// slew is computed at the bottom of the block
 
 					eye_pos = Viewer_obj->pos;
 
@@ -3378,19 +3403,8 @@ camid game_render_frame_setup()
 					vm_angles_2_matrix(&eye_orient, &rot_angles);
 					Viewer_obj = nullptr;
 			} else {
-				// get an eye position based upon the correct type of object
-				switch(Viewer_obj->type){
-				case OBJ_SHIP:
-					// make a call to get the eye point for the player object
-					ship_get_eye( &eye_pos, &eye_orient, Viewer_obj );
-					break;
-				case OBJ_OBSERVER:
-					// make a call to get the eye point for the player object
-					observer_get_eye( &eye_pos, &eye_orient, Viewer_obj );					
-					break;
-				default :
-					Error(LOCATION, "Invalid Value for Viewer_obj->type. Expected values are OBJ_SHIP (1) and OBJ_OBSERVER (12), we encountered %d. Please tell a coder.\n", Viewer_obj->type);
-				}
+				// get an eye position for the player object
+				object_get_eye( &eye_pos, &eye_orient, Viewer_obj );
 			}
 		}
 	}

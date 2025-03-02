@@ -498,7 +498,7 @@ static void parse_framebuffer_func() {
 	stuff_string(value, F_NAME);
 
 	// Convert to lowercase once
-    std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+    SCP_tolower(value);
 
     // Use a map to associate strings with their respective actions
     static const std::unordered_map<std::string, std::function<void()>> effectActions = {
@@ -542,7 +542,7 @@ static void parse_anti_aliasing_func() {
 	SCP_string value;
 	stuff_string(value, F_NAME);
 
-	std::transform(value.begin(), value.end(), value.begin(), ::tolower);
+	SCP_tolower(value);
 
 	// Map of valid values to AntiAliasMode
 	static const std::unordered_map<std::string, AntiAliasMode> aaModeMap = {
@@ -593,7 +593,7 @@ static void parse_msaa_func()
 
 	// Convert to lowercase
 	SCP_string lowercase_value = value;
-	std::transform(lowercase_value.begin(), lowercase_value.end(), lowercase_value.begin(), ::tolower);
+	SCP_tolower(lowercase_value);
 
 	// Map valid values to MSAA settings
 	static const std::unordered_map<std::string, int> msaaMap = {

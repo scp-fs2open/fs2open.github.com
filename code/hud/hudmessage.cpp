@@ -448,7 +448,7 @@ void HudGaugeMessages::render(float  /*frametime*/, bool config)
 	if (config) {
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
         int bmw, bmh;
-		SCP_string msg = XSTR("Terran Fighter: HUD Message Display", 1864);
+		SCP_string msg = XSTR("Terran Fighter: HUD Message Display", 1874);
 		gr_get_string_size(&bmw, &bmh, msg.c_str(), scale);
 		hud_config_set_mouse_coords(gauge_config, x, x + bmw, y, y + bmh);
 		setGaugeColor(HUD_C_NONE, config);
@@ -1385,7 +1385,7 @@ void HudGaugeFixedMessages::render(float  /*frametime*/, bool config) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];
-	const char* message = config ? XSTR("This is a fixed message", 1865) : hp->text;
+	const char* message = config ? XSTR("This is a fixed message", 1875) : hp->text;
 
 	int x = position[0];
 	int y = position[1];

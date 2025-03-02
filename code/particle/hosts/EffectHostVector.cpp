@@ -32,8 +32,8 @@ float EffectHostVector::getVelocityMagnitude() const {
 }
 
 float EffectHostVector::getHostRadius() const {
-	if (m_radiusOverride)
-		return *m_radiusOverride;
+	if (m_radius)
+		return *m_radius;
 	else
 		return EffectHost::getHostRadius();
 };
@@ -42,6 +42,6 @@ void EffectHostVector::setVelocityMagnitudeOverride(float velocityMagnitudeOverr
 	m_velocityMagnitudeOverride.emplace(velocityMagnitudeOverride);
 }
 
-void EffectHostVector::setRadiusOverride(float radiusOverride) {
-	m_radiusOverride.emplace(radiusOverride);
+void EffectHostVector::setRadius(float radius) {
+	m_radius.emplace(radius);
 }

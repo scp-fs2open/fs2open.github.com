@@ -22,6 +22,8 @@
 #include "parse/parselo.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
+#include "scripting/scripting.h"
+#include "scripting/global_hooks.h"
 #include "ship/ship.h"
 #include "ui/ui.h"
 
@@ -867,6 +869,25 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
 }
 
+// ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
+// So this function provides a way to min/max the coords to make sure no matter what method is used, the
+// mouse box inclues all the relevant areas
+void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2)
+{
+	HC_gauge_mouse_coords[gauge_config].x1 = std::min(HC_gauge_mouse_coords[gauge_config].x1, x1);
+	HC_gauge_mouse_coords[gauge_config].x2 = std::max(HC_gauge_mouse_coords[gauge_config].x2, x2);
+	HC_gauge_mouse_coords[gauge_config].y1 = std::min(HC_gauge_mouse_coords[gauge_config].y1, y1);
+	HC_gauge_mouse_coords[gauge_config].y2 = std::max(HC_gauge_mouse_coords[gauge_config].y2, y2);
+
+	// temporary stuff to show boxes
+	color clr = gr_screen.current_color;
+	color thisColor;
+	gr_init_alphacolor(&thisColor, 255, 255, 255, 80);
+	gr_set_color_fast(&thisColor);
+	// hud_config_draw_box(x1, x2, y1, y2);
+	gr_set_color_fast(&clr);
+}
+
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
 {
 	int outX = HC_gauge_coordinates[0] + static_cast<int>(x * scale);
@@ -1136,6 +1157,11 @@ void hud_config_cancel(bool change_state)
 {
 	hud_config_restore();
 
+	// adds scripting hook for 'On HUD Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnHUDConfigMenuClosed->isActive()) {
+		scripting::hooks::OnHUDConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', false)));
+	}
+
 	if (change_state) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
@@ -1143,6 +1169,11 @@ void hud_config_cancel(bool change_state)
 
 void hud_config_commit()
 {
+	// adds scripting hook for 'On HUD Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnHUDConfigMenuClosed->isActive()) {
+		scripting::hooks::OnHUDConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', true)));
+	}
+
 	gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 	gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 }
@@ -1179,7 +1210,11 @@ void hud_config_handle_keypresses(int k)
 {
 	switch(k) {
 	case KEY_ESC:
-		hud_config_cancel();
+		if (escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
+			hud_config_commit();
+		} else {
+			hud_config_cancel();
+		}
 		break;
 	case KEY_CTRLED+KEY_ENTER:
 		hud_config_commit();
