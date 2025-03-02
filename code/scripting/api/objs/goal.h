@@ -5,5 +5,5 @@
 
 namespace scripting::api
 {
-	DECLARE_ADE_OBJ(l_Event, int);
+	DECLARE_ADE_OBJ(l_Goal, int);
 }

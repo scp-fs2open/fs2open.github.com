@@ -122,21 +122,21 @@ public:
 
 	void initialize() override;
 	void pageIn() override;
-	void renderTargetShip(object *target_objp);
 	void render(float frametime, bool config = false) override;
+	void renderTargetShip(object* target_objp, bool config = false);
 	void renderTargetWeapon(object *target_objp);
 	void renderTargetDebris(object *target_objp);
 	void renderTargetAsteroid(object *target_objp);
 	void renderTargetJumpNode(object *target_objp);
 	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom);
 	void renderTargetClose();
-	void renderTargetForeground();
-	void renderTargetIntegrity(int disabled, int force_obj_num = -1);
+	void renderTargetForeground(bool config = false);
+	void renderTargetIntegrity(int disabled, int force_obj_num = -1, bool config = false);
 	int maybeFlashElement(int index, int flash_fast=0);
-	void renderTargetShipInfo(object *target_objp);
+	void renderTargetShipInfo(object* target_objp, bool config = false);
 	void maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys);
 	void initFlashTimer(int index);
-	void showTargetData(float frametime);
+	void showTargetData(float frametime, bool config);
 };
 
 class HudGaugeExtraTargetData: public HudGauge // HUD_TARGET_MONITOR_EXTRA_DATA

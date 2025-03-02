@@ -1700,12 +1700,16 @@ int get_docking_list(int model_index)
 }
 
 // DA 1/7/99 These ship names are not variables
-int rename_ship(int ship, char *name)
+int rename_ship(int ship, const char *name)
 {
 	int i;
 
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
+
+	// we may not need to rename it
+	if (strcmp(Ships[ship].ship_name, name) == 0)
+		return 0;
 
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);

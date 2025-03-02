@@ -4,7 +4,7 @@
 #include "model/model.h"
 #include "ship/ship.h"
 
-EffectHostSubmodel::EffectHostSubmodel(object* objp, int submodel, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
+EffectHostSubmodel::EffectHostSubmodel(const object* objp, int submodel, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)), m_objsig(objp->signature), m_submodel(submodel) {}
 
 std::pair<vec3d, matrix> EffectHostSubmodel::getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const {

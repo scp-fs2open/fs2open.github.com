@@ -37,6 +37,7 @@
 #include "io/timer.h"
 #include "inetfile/inetgetfile.h"
 #include "cfile/cfilesystem.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
 #include "stats/scoring.h"
@@ -1350,8 +1351,14 @@ void multi_pxo_do_normal(bool api_access)
 					case 0:
 						nprintf(("Network","PXO CANCEL\n"));
 
-						// flip his "pxo" bit temporarily and push him to the join game screen
+						// flip player "pxo" off and push to the join game screen,
+						// they will have to follow the instructions above to toggle PXO back on
+						// and since player is accepting, we need to persist changes
 						Multi_options_g.pxo = false;
+						options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", false);
+						if (Using_in_game_options) {
+							options::OptionsManager::instance()->persistChanges();
+						}
 						// Net_game_tcp_mode = NET_TCP;
 						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 						break;

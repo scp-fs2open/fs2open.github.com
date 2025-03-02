@@ -19,7 +19,5 @@ DECLARE_ADE_OBJ(l_BriefStage, brief_stage_h);
 
 DECLARE_ADE_OBJ(l_Brief, int);
 
-DECLARE_ADE_OBJ(l_Goals, int);
-
 } // namespace api
 } // namespace scripting

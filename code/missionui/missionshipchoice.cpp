@@ -945,8 +945,7 @@ void ship_select_blit_ship_info()
 	}
 	else
 	{
-		ship_get_type(str, sip);
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, str, GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, ship_get_type(sip), GR_RESIZE_MENU);
 	}
 	y_start+=line_height;
 

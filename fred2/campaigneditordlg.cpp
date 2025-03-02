@@ -74,7 +74,7 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
 	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
-	DDX_Text(pDX, IDC_MISSISON_LOOP_DESC, m_branch_desc);
+	DDX_Text(pDX, IDC_MISSION_LOOP_DESC, m_branch_desc);
 	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_SOUND, m_branch_brief_sound);
@@ -100,6 +100,7 @@ BEGIN_MESSAGE_MAP(campaign_editor, CFormView)
 	ON_BN_CLICKED(IDC_LOOP_BRIEF_BROWSE, OnBrowseLoopAni)
 	ON_BN_CLICKED(IDC_LOOP_BRIEF_SOUND_BROWSE, OnBrowseLoopSound)
 	ON_EN_CHANGE(IDC_MAIN_HALL, OnChangeMainHall)
+	ON_EN_CHANGE(IDC_SUBSTITUTE_MAIN_HALL, OnChangeSubstituteMainHall)
 	ON_EN_CHANGE(IDC_DEBRIEFING_PERSONA, OnChangeDebriefingPersona)
 	ON_BN_CLICKED(IDC_CUSTOM_TECH_DB, OnCustomTechDB)
 	//}}AFX_MSG_MAP
@@ -169,7 +170,21 @@ BOOL campaign_editor::Create(LPCTSTR lpszClassName, LPCTSTR lpszWindowName, DWOR
 		}
 	}
 
+	//create tool tip controls
+	m_SubstituteMainHallToolTip = new CToolTipCtrl();
+	m_SubstituteMainHallToolTip->Create(this);
+
+	CWnd* pWnd = GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL);
+	m_SubstituteMainHallToolTip->AddTool(pWnd, "Main hall to be used if optional main hall pack is present");
+	m_SubstituteMainHallToolTip->Activate(TRUE);
+
 	return r;
+}
+
+BOOL campaign_editor::PreTranslateMessage(MSG* pMsg)
+{
+	m_SubstituteMainHallToolTip->RelayEvent(pMsg);
+	return CFormView::PreTranslateMessage(pMsg);
 }
 
 void campaign_editor::load_campaign(const char *filename, const char *full_path)
@@ -263,11 +278,12 @@ void campaign_editor::initialize( bool init_files, bool clear_path )
 
 void campaign_editor::mission_selected(int num)
 {
-	CEdit *bc_dialog, *bc_hall, *bc_persona;
+	CEdit *bc_dialog, *bc_hall, *bc_substitute_hall, *bc_persona;
 	char personatext[10];
 
 	bc_dialog = (CEdit *) GetDlgItem(IDC_BRIEFING_CUTSCENE);
 	bc_hall = (CEdit *) GetDlgItem(IDC_MAIN_HALL);
+	bc_substitute_hall = (CEdit *) GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL);
 	bc_persona = (CEdit *) GetDlgItem(IDC_DEBRIEFING_PERSONA);
 
 	// clear out the text for the briefing cutscene, and put in new text if specified
@@ -277,6 +293,7 @@ void campaign_editor::mission_selected(int num)
 
 	// new main hall stuff
 	bc_hall->SetWindowText(Campaign.missions[num].main_hall.c_str());
+	bc_substitute_hall->SetWindowText(Campaign.missions[num].substitute_main_hall.c_str());
 
 	// new debriefing persona stuff
 	sprintf(personatext, "%d", Campaign.missions[num].debrief_persona_index);
@@ -355,14 +372,16 @@ void campaign_editor::load_tree(int save_first)
 		GetDlgItem(IDC_SEXP_TREE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_BRIEFING_CUTSCENE)->EnableWindow(FALSE);
 		GetDlgItem(IDC_MAIN_HALL)->EnableWindow(FALSE);
+		GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL)->EnableWindow(FALSE);
 		return;
 	}
 
 	GetDlgItem(IDC_SEXP_TREE)->EnableWindow(TRUE);
 	GetDlgItem(IDC_BRIEFING_CUTSCENE)->EnableWindow(TRUE);
 	GetDlgItem(IDC_MAIN_HALL)->EnableWindow(TRUE);
+	GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL)->EnableWindow(TRUE);
 
-	GetDlgItem(IDC_MISSISON_LOOP_DESC)->EnableWindow(FALSE);	
+	GetDlgItem(IDC_MISSION_LOOP_DESC)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_ANIM)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND)->EnableWindow(FALSE);
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(FALSE);
@@ -725,7 +744,7 @@ void campaign_editor::update_loop_desc_window()
 	}
 
 	// maybe enable description window
-	GetDlgItem(IDC_MISSISON_LOOP_DESC)->EnableWindow(enable_branch_desc_window);
+	GetDlgItem(IDC_MISSION_LOOP_DESC)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_ANIM)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_SOUND)->EnableWindow(enable_branch_desc_window);
 	GetDlgItem(IDC_LOOP_BRIEF_BROWSE)->EnableWindow(enable_branch_desc_window);
@@ -879,7 +898,7 @@ void campaign_editor::OnBrowseLoopSound()
 	}
 }
 
-void campaign_editor::OnChangeMainHall() 
+void campaign_editor::OnChangeMainHall()
 {
 	CString str;
 	UpdateData(TRUE);
@@ -888,6 +907,18 @@ void campaign_editor::OnChangeMainHall()
 	{
 		GetDlgItem(IDC_MAIN_HALL)->GetWindowText(str);
 		Campaign.missions[Cur_campaign_mission].main_hall = SCP_string((LPCTSTR)(str));
+	}
+}
+
+void campaign_editor::OnChangeSubstituteMainHall()
+{
+	CString str;
+	UpdateData(TRUE);
+
+	if (Cur_campaign_mission >= 0)
+	{
+		GetDlgItem(IDC_SUBSTITUTE_MAIN_HALL)->GetWindowText(str);
+		Campaign.missions[Cur_campaign_mission].substitute_main_hall = SCP_string((LPCTSTR)(str));
 	}
 }
 

@@ -15,7 +15,7 @@ static inline WeaponState getWeaponStateOrInvalid(const object* objp) {
 	}
 }
 
-EffectHostObject::EffectHostObject(object* objp, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
+EffectHostObject::EffectHostObject(const object* objp, vec3d offset, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_offset(offset), m_objnum(OBJ_INDEX(objp)),
 	m_objsig(objp->signature), m_weaponState(getWeaponStateOrInvalid(objp)) {}
 

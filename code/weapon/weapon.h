@@ -513,6 +513,7 @@ struct weapon_info
 	gamesnd_id	ambient_snd;
 	gamesnd_id  start_firing_snd;
 	gamesnd_id  loop_firing_snd;
+	gamesnd_id  linked_loop_firing_snd;
 	gamesnd_id  end_firing_snd;
 	
 	gamesnd_id hud_tracking_snd; // Sound played when the player is tracking a target with this weapon
@@ -975,7 +976,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr );
+void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr, const vec3d* local_hitpos = nullptr, int submodel = -1 );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer

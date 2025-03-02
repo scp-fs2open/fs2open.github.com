@@ -2232,7 +2232,7 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 			glow_point *gpt = &bank->points[j];
 			vec3d loc_offset = gpt->pnt;
 			vec3d loc_norm = gpt->norm;
-			vec3d world_pnt;
+			vec3d world_pnt = loc_offset;
 			vec3d world_norm;
 
 			if ( submodel_rotation ) {
@@ -2241,16 +2241,17 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 				if (pmi == nullptr)
 					pmi = model_get_instance(shipp->model_instance_num);
 
-				tempv = loc_offset;
+
 				if (IS_VEC_NULL(&loc_norm)) {	// zero vectors are allowed for glowpoint norms
-					model_instance_local_to_global_point(&loc_offset, &tempv, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point(&world_pnt, &loc_offset, pm, pmi, bank->submodel_num);
 				} else {
 					vec3d tempn = loc_norm;
-					model_instance_local_to_global_point_dir(&loc_offset, &loc_norm, &tempv, &tempn, pm, pmi, bank->submodel_num);
+					model_instance_local_to_global_point_dir(&world_pnt, &loc_norm, &loc_offset, &tempn, pm, pmi, bank->submodel_num);
 				}
 			}
 
-			vm_vec_unrotate(&world_pnt, &loc_offset, orient);
+			tempv = world_pnt;
+			vm_vec_unrotate(&world_pnt, &tempv, orient);
 			vm_vec_add2(&world_pnt, pos);
 
 			if (shipp) {
@@ -2409,21 +2410,19 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 					else
 						tp = &sip->normal_thruster_particles[k];
 
-					vm_vec_unrotate(&npnt, &gpt->pnt, orient);
-					vm_vec_add2(&npnt, pos);
-
-					// What normal the particle emit around
-					vec3d normal = orient->vec.fvec;
-					vm_vec_negate(&normal);
-
 					auto source = particle::ParticleManager::get()->createSource(tp->particle_handle);
 
-					matrix orientParticle;
-					vm_vector_2_matrix_norm(&orientParticle, &normal);
+					//This is a 180° flip around y matrix
+					matrix orientParticle = { { { { { { -1.0f, 0.0f, 0.0f } } }, { { { 0.0f, 1.0f, 0.0f } } }, { { { 0.0f, 0.0f, -1.0f } } } } } };
 
-					auto host = std::make_unique<EffectHostVector>(npnt, orientParticle, Objects[shipp->objnum].phys_info.desired_vel);
-					host->setRadiusOverride(gpt->radius);
+					std::unique_ptr<EffectHost> host;
+					if (bank->submodel_num < 0)
+						host = std::make_unique<EffectHostObject>(&Objects[shipp->objnum], loc_offset, orientParticle);
+					else
+						host = std::make_unique<EffectHostSubmodel>(&Objects[shipp->objnum], bank->submodel_num, loc_offset, orientParticle);
 					source->setHost(std::move(host));
+					source->setTriggerRadius(gpt->radius);
+					source->setTriggerVelocity(vm_vec_mag_quick(&Objects[shipp->objnum].phys_info.desired_vel));
 					source->finishCreation();
 				}
 			}

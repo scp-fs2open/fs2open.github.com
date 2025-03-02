@@ -3515,7 +3515,7 @@ void ai_dock_with_object(object *docker, int docker_index, object *dockee, int d
 //	flags tells:
 //		WPF_REPEAT		Set -> repeat waypoints.
 //		WPF_BACKTRACK	Go in reverse.
-void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index)
+void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start_index, bool force)
 {
 	auto aip = &Ai_info[Ships[objp->instance].ai_index];
 
@@ -3541,7 +3541,7 @@ void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start
 		start_index = (wp_flags & WPF_BACKTRACK) ? (int)wp_list->get_waypoints().size() - 1 : 0;
 	}
 
-	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) )
+	if ( (aip->mode == AIM_WAYPOINTS) && (aip->wp_list_index == wp_list_index) && !force )
 	{
 		if (aip->wp_index == INVALID_WAYPOINT_POSITION)
 		{
@@ -13111,10 +13111,11 @@ void ai_maybe_launch_cmeasure(object *objp, ai_info *aip)
 
 			//	For ships on player's team, check if modder wants default constant chance to fire or value from specific AI class profile.
 			//	For enemies, use value from specific AI class profile (usually increasing chance with higher skill level).
-			if ( (shipp->team == Player_ship->team) && !(aip->ai_profile_flags[AI::Profile_Flags::Friendlies_use_countermeasure_firechance]) ) {
-				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
-			} else {
+			//  Or use unifying behavior if specified. --wookieejedi
+			if ( (aip->ai_profile_flags[AI::Profile_Flags::Unify_usage_countermeasure_firechance]) || (shipp->team != Player_ship->team) ) {
 				fire_chance = aip->ai_cmeasure_fire_chance;
+			} else {
+				fire_chance = The_mission.ai_profile->cmeasure_fire_chance[NUM_SKILL_LEVELS/2];
 			}
 
 			//	Decrease chance to fire at lower ai class (SUSHI: Only if autoscale is on)
@@ -13262,7 +13263,8 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		//	Scale time until next manage shield based on Skill_level.
 		//	Ships on player's team are treated as if Skill_level is average.
-		if (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team))
+		//  Or use unifying behavior if specified. --wookieejedi
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Unify_usage_ai_shield_manage_delay] || (iff_x_attacks_y(Player_ship->team, Ships[objp->instance].team)))
 		{
 			delay = aip->ai_shield_manage_delay;
 		} 
@@ -16806,7 +16808,8 @@ void maybe_cheat_fire_synaptic(object *objp)
 	}
 }
 
-bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj) {
+bool test_line_of_sight(const vec3d* from, const vec3d* to, SCP_unordered_set<int>&& excluded_object_ids, float threshold, bool test_for_shields, bool test_for_hull, float* first_intersect_dist, object** first_intersect_obj)
+{
 	bool collides = false;
 
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
@@ -16814,7 +16817,7 @@ bool test_line_of_sight(vec3d* from, vec3d* to, std::unordered_set<int>&& exclud
 			continue;
 
 		//Don't collision check against excluded objects
-		if (excluded_object_ids.count(OBJ_INDEX(objp)) > 0)
+		if (excluded_object_ids.contains(OBJ_INDEX(objp)))
 			continue;
 
 		int model_num = 0;

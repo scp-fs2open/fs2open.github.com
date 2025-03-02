@@ -55,7 +55,7 @@ APPLY_TO_FOV_T(+, add)
 APPLY_TO_FOV_T(-, sub)
 
 // Used to set the default value for in-game options
-static constexpr float fov_default = DEFAULT_FOV;
+static float fov_default = DEFAULT_FOV;
 
 static SCP_string fov_display(float val)
 {
@@ -64,6 +64,15 @@ static SCP_string fov_display(float val)
 	sprintf(out, u8"%.1f\u00B0", degrees);
 	return out;
 }
+
+static void parse_fov_func()
+{
+	float value;
+	stuff_float(&value);
+	CLAMP(value, 0.436332f, 1.5708f);
+	fov_default = value;
+}
+
 auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					 std::pair<const char*, int>{"Field Of View", 1703},
 					 std::pair<const char*, int>{"The vertical field of view", 1704})
@@ -74,9 +83,10 @@ auto FovOption = options::OptionBuilder<float>("Graphics.FOV",
 					      return true;
 					 })
 					 .display(fov_display)
-					 .default_val(fov_default)
+					 .default_func([]() { return fov_default; })
 					 .level(options::ExpertLevel::Advanced)
 					 .importance(60)
+					 .parser(parse_fov_func)
 					 .finish();
 
 bool Use_cockpit_fov = false;
@@ -200,24 +210,34 @@ void camera::set_object_host(object *objp, int n_object_host_submodel)
 	object_host_submodel = n_object_host_submodel;
 	set_custom_position_function(NULL);
 	set_custom_orientation_function(NULL);
-	if(n_object_host_submodel > 0)
+
+	if (n_object_host_submodel >= 0 && objp != nullptr && objp->type == OBJ_SHIP) 
 	{
-		if(objp != nullptr && objp->type == OBJ_SHIP)
+		ship_subsys* ssp = GET_FIRST(&Ships[objp->instance].subsys_list);
+		while (ssp != END_OF_LIST(&Ships[objp->instance].subsys_list)) 
 		{
-			ship_subsys* ssp = GET_FIRST(&Ships[objp->instance].subsys_list);
-			while ( ssp != END_OF_LIST( &Ships[objp->instance].subsys_list ) )
+			if (ssp->system_info->subobj_num == n_object_host_submodel) 
 			{
-				if(ssp->system_info->subobj_num == n_object_host_submodel)
+				if (ssp->system_info->type == SUBSYSTEM_TURRET) 
 				{
-					if(ssp->system_info->type == SUBSYSTEM_TURRET)
-					{
-						set_custom_position_function(get_turret_cam_pos);
-						set_custom_orientation_function(get_turret_cam_orient);
-					}
+					set_custom_position_function(get_turret_cam_pos);
+					set_custom_orientation_function(get_turret_cam_orient);
 				}
-				ssp = GET_NEXT( ssp );
 			}
+			ssp = GET_NEXT(ssp);
 		}
+	}
+	else if (Use_model_eyepoint_for_set_camera_host && object_host.isValid()) 
+	{
+		const object* host = object_host.objp();
+
+		vec3d eye_pos;
+		matrix eye_orient;
+
+		object_get_eye(&eye_pos, &eye_orient, host, false, true, true);
+
+		set_position(&eye_pos);
+		set_rotation(&eye_orient);
 	}
 }
 
@@ -558,7 +578,7 @@ warp_camera::warp_camera(object *objp)
 
 	vec3d object_pos = objp->pos;
 	matrix tmp;
-	ship_get_eye(&object_pos, &tmp, objp);
+	object_get_eye(&object_pos, &tmp, objp);
 
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.rvec, 0.0f );
 	vm_vec_scale_add2( &object_pos, &Player_obj->orient.vec.uvec, 0.952f );

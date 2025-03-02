@@ -57,7 +57,7 @@ protected:
 public:
 	HudGaugeShield();
 	HudGaugeShield(int _gauge_object, int _gauge_config);
-	void showShields(const object *objp, int mode);
+	void showShields(const object* objp, int mode, bool config);
 	void render(float frametime, bool config = false) override;
 	int maybeFlashShield(int target_index, int shield_offset);
 	void renderShieldIcon(coord2d coords[6]);
@@ -94,8 +94,8 @@ public:
 	void init1DigitOffsets(int x, int y);
 	void init2DigitOffsets(int x, int y);
 	int maybeFlashShield(int target_index, int shield_offset);
-	void showMiniShields(const object *objp);
-	void showIntegrity(float p_target_integrity);
+	void showMiniShields(const object* objp, bool config);
+	void showIntegrity(float p_target_integrity, bool config);
 	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
