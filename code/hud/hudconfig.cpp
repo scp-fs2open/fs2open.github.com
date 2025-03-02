@@ -312,6 +312,10 @@ int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
 	}
 };
 
+int HC_talking_head_frame = -1;
+SCP_string HC_head_anim_filename;
+SCP_string HC_shield_gauge_ship;
+
 int HC_resize_mode = GR_RESIZE_MENU;
 const char *HC_gauge_descriptions(int n)
 {
