@@ -38,6 +38,8 @@ extern int Token_found_flag;
 #define	EOLN			(char)0x0a
 #define CARRIAGE_RETURN (char)0x0d
 
+enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
+
 #define	F_NAME					1
 #define	F_DATE					2
 #define	F_NOTES					3

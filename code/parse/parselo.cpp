@@ -278,7 +278,7 @@ int get_line_num()
 			incomment = false;
 		}
 
-		if (*p++ == EOLN) {
+		if (*p++ == EOLN) {	// in the process of parsing, all line endings are normalized to single-character EOLN
 			if ( !multiline && incomment )
 				incomment = false;
 			count++;
@@ -2106,32 +2106,86 @@ void strip_comments(char *line, bool &in_quote, bool &in_multiline_comment_a, bo
 	}
 }
 
-int parse_get_line(char *lineout, int max_line_len, const char *start, int max_size, const char *cur)
+// Reads one line of text from the input, returning the number of input chars read. Also sets the line ending type if found;
+// and if there is a mismatch, displays a warning.
+int parse_get_line(char *lineout, int max_line_len, const char *textin, int input_len, int line_num, LineEndingType &file_line_ending_type, bool &warned_for_this_file)
 {
-	char * t = lineout;
-	int i, num_chars_read=0;
-	char c;
+	auto found_line_ending = LineEndingType::UNKNOWN;
+	char prev_c = '\0';
+	int num_chars_written = 0;
 
-	for ( i = 0; i < max_line_len-1; i++ ) {
-		do {
-			if ( (cur - start) >= max_size ) {
-				*lineout = 0;
-				if ( lineout > t ) {
-					return num_chars_read;
-				} else {
-					return 0;
-				}
+	for (int num_chars_read = 1; num_chars_read <= input_len; ++num_chars_read)
+	{
+		char c = *textin++;
+
+		if (c == '\0' || c == EOF)	// hard stop
+		{
+			input_len = num_chars_read;
+			break;
+		}
+		else if (c == EOLN)
+		{
+			if (prev_c == CARRIAGE_RETURN)
+				found_line_ending = LineEndingType::CRLF;
+			else
+				found_line_ending = LineEndingType::LF;
+		}
+		else if (c == CARRIAGE_RETURN)
+		{
+			if (*textin != EOLN)
+				found_line_ending = LineEndingType::CR;
+		}
+		else
+		{
+			if (num_chars_written == max_line_len)
+			{
+				num_chars_read--;	// back out the character we just read, since we can't write it
+
+				// terminate the string and return
+				*lineout = '\0';
+				return num_chars_read;
 			}
-			c = *cur++;
-			num_chars_read++;
-		} while ( c == 13 );
 
-		*lineout++ = c;
-		if ( c=='\n' ) break;
+			*lineout++ = c;
+			num_chars_written++;
+		}
+
+		if (found_line_ending != LineEndingType::UNKNOWN)
+		{
+			if (file_line_ending_type == LineEndingType::UNKNOWN)
+				file_line_ending_type = found_line_ending;
+			else if (found_line_ending != file_line_ending_type && !warned_for_this_file)
+			{
+				// we can't use error_display() here because we're in the middle of reading the file
+				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename_sub, line_num);
+				warned_for_this_file = true;
+			}
+
+			// ugh, if we're at the max length, we can't write the newline, so back out the newline we read
+			if (num_chars_written == max_line_len)
+			{
+				if (found_line_ending == LineEndingType::CRLF)
+					num_chars_read -= 2;
+				else
+					num_chars_read--;
+			}
+			else
+			{
+				*lineout++ = EOLN;	// normalize line endings to single-character EOLN
+				num_chars_written++;
+			}
+
+			// terminate the string and return
+			*lineout = '\0';
+			return num_chars_read;
+		}
+
+		prev_c = c;
 	}
 
-	*lineout++ = 0;
-	return  num_chars_read;
+	// we read the entire input without reaching a newline
+	*lineout = 0;
+	return input_len;
 }
 
 //	Read mission text, stripping comments.
@@ -2169,7 +2223,8 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 void read_file_text_from_default(const default_file& file, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy_s(Current_filename_sub, "internal default file");
+	strcpy_s(Current_filename_sub, "internal default file ");
+	strcat_s(Current_filename_sub, file.filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2416,7 +2471,7 @@ void process_raw_file_text(char* processed_text, char* raw_text)
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
-	int raw_text_len = (int)strlen(raw_text);
+	int raw_text_len = static_cast<int>(strlen(raw_text));
 
 	if (processed_text == NULL)
 		processed_text = Parse_text;
@@ -2432,8 +2487,14 @@ void process_raw_file_text(char* processed_text, char* raw_text)
 
 	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0) {
+	int remaining_raw_len = raw_text_len;
+	int parsed_line_num = 1;
+	auto file_line_ending_type = LineEndingType::UNKNOWN;
+	bool warned_for_this_file = false;
+	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE-1, mp_raw, remaining_raw_len, parsed_line_num, file_line_ending_type, warned_for_this_file)) != 0) {
 		mp_raw += num_chars_read;
+		remaining_raw_len -= num_chars_read;
+		parsed_line_num++;
 
 		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
 		if (!strcmp(outbuf, parse_exception_1402.c_str())) {
