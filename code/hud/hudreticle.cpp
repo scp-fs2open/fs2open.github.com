@@ -250,17 +250,32 @@ void HudGaugeReticle::initFirepointDisplay(bool firepoint, int scaleX, int scale
 	firepoint_size = size;
 }
 
-void HudGaugeReticle::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeReticle::render(float  /*frametime*/, bool config)
 {
 	if (crosshair.first_frame < 0) {
 		return;
 	}
 
-	ship_info *sip = &Ship_info[Player_ship->ship_info_index];
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(crosshair.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	ship_info* sip = nullptr;
+	if (!config) {
+		sip = &Ship_info[Player_ship->ship_info_index];
+	}
+
 	int bitmap_size_x, bitmap_size_y;
 	bm_get_info(crosshair.first_frame, &bitmap_size_x, &bitmap_size_y);
 
-	if (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid()) {
+	if (!config && (autoaim_frame_offset > 0 || sip->autoaim_lock_snd.isValid() || sip->autoaim_lost_snd.isValid())) {
 		ship *shipp = &Ships[Objects[Player->objnum].instance];
 		ship_weapon *swp = &shipp->weapons;
 		ai_info *aip = &Ai_info[shipp->ai_index];
@@ -286,7 +301,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool /*config*/)
 		}
 	}
 
-	setGaugeColor(HUD_C_BRIGHT);
+	setGaugeColor(HUD_C_BRIGHT, config);
 
 	// the typical reticle indicating the direction of shooting
 	int shoot_reticle = 0;
@@ -296,54 +311,54 @@ void HudGaugeReticle::render(float  /*frametime*/, bool /*config*/)
 		shoot_reticle = crosshair.first_frame;
 
 	// a secondary 'reticle' for distinguishing the flight cursor from the above
-	int flight_reticle = flight_cursor_frame_offset >= 0 ? crosshair.first_frame + flight_cursor_frame_offset : -1;
+	int flight_reticle = fl2i(flight_cursor_frame_offset * scale) >= 0 ? crosshair.first_frame + fl2i(flight_cursor_frame_offset * scale) : -1;
 
 	int mobile_reticle = flight_reticle;
 	int fixed_reticle = shoot_reticle;
 	// depending on the parameters of the ship the 'mobile' reticle may be the one indicating the shoot direction
-	if (sip->aims_at_flight_cursor) {
+	if (!config && sip->aims_at_flight_cursor) {
 		mobile_reticle = shoot_reticle;
 		fixed_reticle = flight_reticle;
 	}
 
 
 	if (fixed_reticle == shoot_reticle)
-		setGaugeColor(HUD_C_BRIGHT);
+		setGaugeColor(HUD_C_BRIGHT, config);
 	else
-		setGaugeColor(HUD_C_NORMAL);
+		setGaugeColor(HUD_C_NORMAL, config);
 
 	if (fixed_reticle >= 0) {
 		if (HUD_shadows) {
 			gr_set_color_fast(&Color_black);
 
 			// Render the shadow twice to increase visibility
-			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
-			renderBitmap(fixed_reticle, position[0] + 1, position[1] + 1);
+			renderBitmap(fixed_reticle, x + 1, y + 1, scale, config);
+			renderBitmap(fixed_reticle, x + 1, y + 1, scale, config);
 			gr_set_color_fast(&gauge_color);
 		}
 
-		renderBitmap(fixed_reticle, position[0], position[1]);
+		renderBitmap(fixed_reticle, x, y, scale, config);
 	} else {
-		renderCircle(fl2i(base_w * 0.5f), fl2i(base_h * 0.5f), fl2i(base_h * 0.03f), false);
+		renderCircle(fl2i(base_w * 0.5f), fl2i(base_h * 0.5f), fl2i(base_h * 0.03f), false, config);
 	}
 
-	if (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor) {
+	if (!config && (Player_flight_mode == FlightMode::FlightCursor || sip->aims_at_flight_cursor)) {
 		if (mobile_reticle == shoot_reticle)
-			setGaugeColor(HUD_C_BRIGHT);
+			setGaugeColor(HUD_C_BRIGHT, config);
 		else
-			setGaugeColor(HUD_C_NORMAL);
+			setGaugeColor(HUD_C_NORMAL, config);
 
-		int x = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
-		int y = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
+		int cx = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
+		int cy = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
 		unsize(&x, &y);
 		if (mobile_reticle >= 0)
-			renderBitmap(mobile_reticle, fl2i(x - base_w * 0.5f) + position[0], fl2i(y - base_h * 0.5f) + position[1]);
+			renderBitmap(mobile_reticle, fl2i(cx - base_w * 0.5f) + x, fl2i(cy - base_h * 0.5f) + y, scale, config);
 		else {
-			renderCircle(x, y, fl2i(base_h * 0.03f), false);
+			renderCircle(cx, cy, fl2i(base_h * 0.03f), false, config);
 		}
 	}
 
-	if (firepoint_display) {
+	if (!config && firepoint_display) {
 		fp.clear();
 		getFirepointStatus();
 		
@@ -351,15 +366,15 @@ void HudGaugeReticle::render(float  /*frametime*/, bool /*config*/)
 
 			for (SCP_vector<firepoint>::iterator fpi = fp.begin(); fpi != fp.end(); ++fpi) {
 				if (fpi->active == 2)
-					setGaugeColor(HUD_C_BRIGHT);
+					setGaugeColor(HUD_C_BRIGHT, config);
 				else if (fpi->active == 1)
-					setGaugeColor(HUD_C_NORMAL);
+					setGaugeColor(HUD_C_NORMAL, config);
 				else
-					setGaugeColor(HUD_C_DIM);
+					setGaugeColor(HUD_C_DIM, config);
 
-				int centerX = position[0] + (bitmap_size_x / 2);
-				int centerY = position[1] + (bitmap_size_y / 2);
-				renderCircle((int) (centerX + (fpi->xy.x * firepoint_scale_x)), (int) (centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size);
+				int centerX = x + (bitmap_size_x / 2);
+				int centerY = y + (bitmap_size_y / 2);
+				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, config);
 			}
 		}
 	}
@@ -632,48 +647,58 @@ void HudGaugeThrottle::pageIn()
 	bm_page_in_aabitmap( throttle_frames.first_frame, throttle_frames.num_frames);
 }
 
-void HudGaugeThrottle::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeThrottle::render(float  /*frametime*/, bool config)
 {
 	if (throttle_frames.first_frame < 0) {
 		return;
 	}
 
-	float	desired_speed, max_speed, current_speed, absolute_speed, absolute_displayed_speed, max_displayed_speed, percent_max, percent_aburn_max;
-	int	desired_y_pos, y_end;
+	ship_info	*sip = nullptr;
+	if (!config) {
+		sip = &Ship_info[Player_ship->ship_info_index];
+	}
 
-	ship_info	*sip;
-	sip = &Ship_info[Player_ship->ship_info_index];
-
-	current_speed = Player_obj->phys_info.fspeed;
+	float current_speed = config ? 50 : Player_obj->phys_info.fspeed;
 	if ( current_speed < 0.0f){
 		current_speed = 0.0f;
 	}
 
-	max_speed = Player_obj->phys_info.max_vel.xyz.z;
+	float max_speed = config ? 100 : Player_obj->phys_info.max_vel.xyz.z;
 	if ( max_speed <= 0 ) {
 		max_speed = sip->max_vel.xyz.z;
 	}
 
-	absolute_speed = Player_obj->phys_info.speed;
+	float absolute_speed = config ? 50 : Player_obj->phys_info.speed;
 
 	// scale by distance modifier from hud_guages.tbl for display purposes
-	absolute_displayed_speed = absolute_speed * Hud_speed_multiplier;
-	max_displayed_speed = max_speed * Hud_speed_multiplier;
+	float absolute_displayed_speed = absolute_speed * Hud_speed_multiplier;
+	float max_displayed_speed = max_speed * Hud_speed_multiplier;
 
-	desired_speed = Player->ci.forward * max_speed;
+	float desired_speed = config ? 100 : Player->ci.forward * max_speed;
 	if ( desired_speed < 0.0f ){		// so ships that go backwards don't force the indicators below where they can go
 		desired_speed = 0.0f;
 	}
 
-	desired_y_pos = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*desired_speed/max_speed) - 1;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	if (max_speed <= 0) {
-		percent_max = 0.0f;
-	} else {
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(throttle_frames.first_frame + 1, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	int desired_y_pos = y + fl2i(Bottom_offset_y * scale) - fl2i(std::lround(fl2i(throttle_h * scale) * desired_speed / max_speed)) - 1;
+	int desired_y_pos_unscaled = position[1] + Bottom_offset_y - fl2i(std::lround(throttle_h * desired_speed / max_speed)) - 1;
+
+	float percent_max = 0.0f;
+	if (max_speed > 0) {
 		percent_max = current_speed / max_speed;
 	}
 
-	percent_aburn_max = 0.0f;
+	float percent_aburn_max = 0.0f;
 	if ( percent_max > 1 ) {
 		percent_max = 1.0f;
 		percent_aburn_max = (current_speed - max_speed) / (Player_obj->phys_info.afterburner_max_vel.xyz.z - max_speed);
@@ -685,37 +710,38 @@ void HudGaugeThrottle::render(float  /*frametime*/, bool /*config*/)
 		}
 	}
 
-	y_end = position[1] + Bottom_offset_y - (int)std::lround(throttle_h*percent_max);
+	int y_end = y + fl2i(Bottom_offset_y * scale) - fl2i(std::lround(fl2i(throttle_h * scale) * percent_max));
+	int y_end_unscaled = position[1] + Bottom_offset_y - fl2i(std::lround(throttle_h * percent_max));
 	if ( percent_aburn_max > 0 ) {
-		y_end -= (int)std::lround(percent_aburn_max * throttle_aburn_h);
+		y_end -= fl2i(std::lround(percent_aburn_max * fl2i(throttle_aburn_h * scale)));
+		y_end_unscaled -= fl2i(std::lround(percent_aburn_max * throttle_aburn_h));
 	}
 
-	if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
+	if ( !config && Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
 		// default value is 240 when afterburner is on. 
 		//I'm assuming that this value is basically Bottom_offset_y - throttle_aburn_h - throttle_h
-		desired_y_pos = position[1] + Bottom_offset_y - throttle_aburn_h - throttle_h; 
+		desired_y_pos = y + fl2i(Bottom_offset_y * scale) - fl2i(throttle_aburn_h * scale) - fl2i(throttle_h * scale);
+		desired_y_pos_unscaled = position[1] + Bottom_offset_y - throttle_aburn_h - throttle_h;
 	}
 
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 	
 	if(Show_background) {
-		renderThrottleBackground(y_end);
+		renderThrottleBackground(y_end_unscaled, config);
 	} else {
-		renderBitmap(throttle_frames.first_frame, position[0], position[1]);			
+		renderBitmap(throttle_frames.first_frame, x, y, scale, config);			
 	}
 
-	// draw throttle speed number
-	//hud_render_throttle_speed(current_speed, y_end);
 	// Absolute speed, not forward speed, for hud speed reticle - fixes the guage for sliding -- kazan
-	renderThrottleSpeed(absolute_displayed_speed, y_end);
+	renderThrottleSpeed(absolute_displayed_speed, y_end, config);
 
 	// draw target speed if necessary
-	if ( Show_target_speed ) {
+	if (!config && Show_target_speed ) {
 		char buf[32];
 		int w, h;
 
 		if ( Show_percent ) {
-			if ( Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
+			if ( !config && Player_obj->phys_info.flags & PF_AFTERBURNER_ON ) {
 				strcpy_s(buf, XSTR( "A/B", 1669 ));
 			} else {
 				sprintf(buf, XSTR( "%d%%", 326), (int)std::lround( (desired_speed/max_speed)*100 ));
@@ -725,58 +751,63 @@ void HudGaugeThrottle::render(float  /*frametime*/, bool /*config*/)
 		}
 
 		hud_num_make_mono(buf, font_num);
-		gr_get_string_size(&w, &h, buf);
+		gr_get_string_size(&w, &h, buf, scale);
 
-		renderString(position[0] + Target_speed_offsets[0] - w, position[1] + Target_speed_offsets[1], buf);
+		renderString(x + fl2i(Target_speed_offsets[0] * scale) - w, y + fl2i(Target_speed_offsets[1] * scale), buf, scale, config);
 	}
 
 	// draw the "desired speed" bar on the throttle
-	renderThrottleLine(desired_y_pos);
+	renderThrottleLine(desired_y_pos_unscaled, desired_y_pos, config);
 
 	// draw left arc (the bright portion of the throttle gauge)
-	renderThrottleForeground(y_end);
+	renderThrottleForeground(y_end_unscaled, y_end, config);
 
-	if ( Show_max_speed ) {
-		renderPrintf(position[0] + Max_speed_offsets[0], position[1] + Max_speed_offsets[1], 1.0f, false, "%d", (int)std::lround(max_displayed_speed));
+	if (Show_max_speed ) {
+		renderPrintf(x + fl2i(Max_speed_offsets[0] * scale), y + fl2i(Max_speed_offsets[1] * scale), scale, config, "%d", (int)std::lround(max_displayed_speed));
 	}
 	
-	if ( Show_min_speed ) {
-		renderPrintf(position[0] + Zero_speed_offsets[0], position[1] + Zero_speed_offsets[1], 1.0f, false, "%s", XSTR( "0", 292));
+	if (Show_min_speed ) {
+		renderPrintf(x + fl2i(Zero_speed_offsets[0] * scale), y + fl2i(Zero_speed_offsets[1] * scale), scale, config, "%s", XSTR("0", 292));
 	}
 }
 
-void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
+void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_scaled, bool config)
 {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
 	char buf[32];
-	int sx, sy, x_pos, y_pos, w, h;
-
-	//setGaugeColor();
-	sprintf(buf, "%d", (int)std::lround(current_speed));
+	sprintf(buf, "%d", fl2i(std::lround(current_speed)));
 	hud_num_make_mono(buf, font_num);
-	gr_get_string_size(&w, &h, buf);
 
-	if ( orbit ) {
-		// y_end is the y-coordinate of the current throttle setting, calc x-coordinate for edge of 
-		// circle (x^2 + y^2 = r^2)
-		y_pos = position[1] + Orbit_center_offsets[1] - y_end;
-		x_pos = (int)sqrt(double(orbit_radius * orbit_radius - y_pos * y_pos) );
-		x_pos = position[0] + Orbit_center_offsets[0] - x_pos;
+	int w, h;
+	gr_get_string_size(&w, &h, buf, scale);
 
-		// draw current speed at (x_pos, y_end);
+	int sx, sy, x_pos, y_pos;
+	if (orbit ) {
+		y_pos = y + fl2i(Orbit_center_offsets[1] * scale) - y_scaled;
+		x_pos = static_cast<int>(sqrt(double(fl2i(orbit_radius * scale) * fl2i(orbit_radius * scale) - y_pos * y_pos)));
+		x_pos = x + fl2i(Orbit_center_offsets[0] * scale) - x_pos;
+
 		sx = x_pos - w - 2;
-		sy = fl2i(y_end - h/2.0f + 1.5);
+		sy = fl2i(y_scaled - h / 2.0f + 1.5);
 	} else {
-		sx = position[0] + Orbit_center_offsets[0] - w;
-		sy = position[1] + Orbit_center_offsets[1];
+		sx = y + fl2i(Orbit_center_offsets[0] * scale) - w;
+		sy = x + fl2i(Orbit_center_offsets[1] * scale);
 	}
 	
-	renderPrintf(sx, sy, 1.0f, false, "%s", buf);
+	renderPrintf(sx, sy, scale, config, "%s", buf);
 
-	if ( object_get_gliding(Player_obj) ) { 
+	if (!config &&  object_get_gliding(Player_obj) ) { 
 		auto glide_str = XSTR("GLIDE", 1668);
 
 		if ( Use_custom_glide ) {
-			renderString(position[0] + Glide_offsets[0], position[1] + Glide_offsets[1], glide_str);
+			renderString(x + fl2i(Glide_offsets[0] * scale), y + fl2i(Glide_offsets[1] * scale), glide_str, scale, config);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -787,11 +818,11 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = -13;
 			}
 
-			renderString(sx+offset, sy + h, glide_str);
+			renderString(sx+offset, sy + h, glide_str, scale, config);
 		}
-	} else if ( Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
+	} else if (config || Players[Player_num].flags & PLAYER_FLAGS_MATCH_TARGET ) {
 		if ( Use_custom_match_speed ) {
-			renderMatchSpeedIcon(position[0] + Match_speed_offsets[0], position[1] + Match_speed_offsets[1]);
+			renderMatchSpeedIcon(x + fl2i(Match_speed_offsets[0] * scale), y + fl2i(Match_speed_offsets[1] * scale), scale, config);
 		} else {
 			int offset;
 			if ( current_speed <= 9.5 ) {
@@ -800,64 +831,107 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_end)
 				offset = 3;
 			}
 
-			renderMatchSpeedIcon(sx+offset, sy + h);
+			renderMatchSpeedIcon(sx+offset, sy + h, scale, config);
 		}
 	}
 }
 
-void HudGaugeThrottle::renderThrottleLine(int y_line)
+void HudGaugeThrottle::renderThrottleLine(int y_unscaled, int y_scaled, bool config)
 {
-	// hud_set_bright_color();
-	//setGaugeColor(HUD_C_BRIGHT);
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	int height = 1;
+
+	// If we scale down then the line can become invisible
+	// so let's proportionally scale up the line height
+	if (scale < 1.0f) {
+		float min_height = 1.0f / scale;
+		height = fl2i(min_height / scale);
+	}
 
 	renderBitmapEx(throttle_frames.first_frame+3, 
-		position[0], y_line, 
-		throttle_w, 1, 
+		x, y_scaled, 
+		throttle_w,
+		height, 
 		0, 
-		y_line-position[1]);
+		y_unscaled - position[1], //Explicitly unscaled
+		scale,
+		config);
 }
 
-void HudGaugeThrottle::renderThrottleForeground(int y_end)
+void HudGaugeThrottle::renderThrottleForeground(int y_unscaled, int y_scaled, bool config)
 {
-	int w,h;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	//setGaugeColor();
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
 
+	int w, h;
 	bm_get_info(throttle_frames.first_frame+1,&w,&h);
 
-	if ( y_end < (position[1] + h - 1) ) {		
-		renderBitmapEx(throttle_frames.first_frame + 2, position[0], y_end, w, h - (y_end - position[1]), 0, y_end - position[1]);
+	if (y_unscaled < (x + static_cast<int>(h * scale) - 1)) {		
+		renderBitmapEx(throttle_frames.first_frame + 2,
+			x,
+			y_scaled,
+			w,
+			h - (y_unscaled - position[1]), // Explicitly unscaled
+			0,
+			y_unscaled - position[1], // Explicitly unscaled
+			scale,
+			config);
 	}
 }
 
-void HudGaugeThrottle::renderThrottleBackground(int y_end)
+void HudGaugeThrottle::renderThrottleBackground(int y_unscaled, bool config)
 {
-	int w,h;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	//setGaugeColor();
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
 
+	int w, h;
 	bm_get_info( throttle_frames.first_frame+1,&w,&h);
 
-	if ( y_end > position[1] ) {
-		renderBitmapEx(throttle_frames.first_frame+1, position[0], position[1], w, y_end-position[1]+1, 0, 0);		
+	if (y_unscaled > position[1]) {
+		renderBitmapEx(throttle_frames.first_frame + 1,
+			x,
+			y,
+			w,
+			y_unscaled - position[1] + 1, // Explicitly unscaled
+			0,
+			0,
+			scale,
+			config);	
 	}
 }
 
-void HudGaugeThrottle::renderMatchSpeedIcon(int x, int y)
+void HudGaugeThrottle::renderMatchSpeedIcon(int x, int y, float scale, bool config)
 {
 	if (Match_speed_draw_background)
 	{
 		// One pixel boundary
-		renderRect(x, y, Match_speed_icon_width + 2, gr_get_font_height() + 2);
+		renderRect(x, y, static_cast<int>(Match_speed_icon_width * scale) + 2, static_cast<int>(gr_get_font_height() * scale) + 2, config);
 		
 		gr_set_color_fast(&Color_black);
-		renderPrintf(x + 1, y + 1, 1.0f, false, "%c", Match_speed_icon);
+		renderPrintf(x + 1, y + 1, scale, config, "%c", Match_speed_icon);
 
-		setGaugeColor();
+		setGaugeColor(HUD_C_NONE, config);
 	}
 	else
 	{
-		renderPrintf(x, y, 1.0f, false, "%c", Match_speed_icon);
+		renderPrintf(x, y, scale, config, "%c", Match_speed_icon);
 	}
 }
 
@@ -914,29 +988,48 @@ void HudGaugeThreatIndicator::pageIn()
 	bm_page_in_aabitmap(lock_warn.first_frame, lock_warn.num_frames);
 }
 
-void HudGaugeThreatIndicator::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeThreatIndicator::render(float  /*frametime*/, bool config)
 {
-	setGaugeColor();
+
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0f;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+        int bmw, bmh;
+		bm_get_info(threat_arc.first_frame + 1, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	if (threat_arc.first_frame >= 0)
-		renderBitmap(threat_arc.first_frame+1, position[0], position[1]);
+		renderBitmap(threat_arc.first_frame+1, x, y, scale, config);
 
-	renderLaserThreat();
-	renderLockThreat();
+	renderLaserThreat(config);
+	renderLockThreat(config);
 }
 
-void HudGaugeThreatIndicator::renderLaserThreat()
+void HudGaugeThreatIndicator::renderLaserThreat(bool config)
 {
 	if (laser_warn.first_frame < 0)
 		return;
 
-	int frame_offset, num_frames;
-
 	//Check how many frames the ani actually has
-	num_frames = laser_warn.num_frames;
+	int num_frames = laser_warn.num_frames;
 	//We need at least two frames here
 	Assert( num_frames >= 2 );
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0f;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	int frame_offset;
 	if ( Player->threat_flags & THREAT_DUMBFIRE ) {
 		if ( timestamp_elapsed(laser_warn_timer) ) {
 			laser_warn_timer = timestamp(THREAT_DUMBFIRE_FLASH);
@@ -950,21 +1043,28 @@ void HudGaugeThreatIndicator::renderLaserThreat()
 		frame_offset = 0;
 	}
 
-	renderBitmap(laser_warn.first_frame + frame_offset, position[0] + Laser_warn_offsets[0], position[1] + Laser_warn_offsets[1]);	
+	renderBitmap(laser_warn.first_frame + frame_offset, x + static_cast<int>(Laser_warn_offsets[0] * scale), y + static_cast<int>(Laser_warn_offsets[1] * scale), scale, config);
 }
 
-void HudGaugeThreatIndicator::renderLockThreat()
+void HudGaugeThreatIndicator::renderLockThreat(bool config)
 {
 	if (lock_warn.first_frame < 0)
 		return;
 
-	int frame_offset, num_frames;
-
 	//Let's find out how many frames our ani has, and adjust accordingly
-	num_frames = lock_warn.num_frames;
+	int num_frames = lock_warn.num_frames;
 	//We need at least two frames here
 	Assert( num_frames >= 2 );
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0f;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	int frame_offset;
 	if ( Player->threat_flags & (THREAT_LOCK | THREAT_ATTEMPT_LOCK) ) {
 		if ( timestamp_elapsed(lock_warn_timer) ) {
 			if ( Player->threat_flags & THREAT_LOCK )  {
@@ -982,7 +1082,7 @@ void HudGaugeThreatIndicator::renderLockThreat()
 		frame_offset = 0;
 	}
 
-	renderBitmap(lock_warn.first_frame+frame_offset, position[0] + Lock_warn_offsets[0], position[1] + Lock_warn_offsets[1]);
+	renderBitmap(lock_warn.first_frame+frame_offset, x + static_cast<int>(Lock_warn_offsets[0] * scale), y + static_cast<int>(Lock_warn_offsets[1] * scale), scale, config);
 }
 
 HudGaugeWeaponLinking::HudGaugeWeaponLinking():
@@ -1068,27 +1168,38 @@ void HudGaugeWeaponLinking::pageIn()
 	}
 }
 
-void HudGaugeWeaponLinking::render(float  /*frametime*/, bool /*config*/)
+void HudGaugeWeaponLinking::render(float  /*frametime*/, bool config)
 {
-	int			gauge_index=0, frame_offset=0;
-	ship_weapon	*swp;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	setGaugeColor();
-
-	if (arc.first_frame >= 0) {
-		renderBitmap(arc.first_frame+1, position[0], position[1]);
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(arc.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
-	swp = &Player_ship->weapons;
+	setGaugeColor(HUD_C_NONE, config);
 
-	switch( swp->num_primary_banks ) {
+	if (arc.first_frame >= 0) {
+		renderBitmap(arc.first_frame + 1, x, y, scale, config);
+	}
+
+	ship_weapon* swp = &Player_ship->weapons;
+
+	int num_primary_banks = config ? 2 : swp->num_primary_banks;
+	
+	int gauge_index = 0, frame_offset = 0;
+	switch (num_primary_banks) {
 		case 0:
 			gauge_index = -1;
 			break;
 
 		case 1:
 			gauge_index = LINK_ONE_PRIMARY;
-			if ( Player_ship->weapons.current_primary_bank == -1 ) {
+			if (!config && Player_ship->weapons.current_primary_bank == -1 ) {
 				frame_offset = 0;	
 			} else {
 				frame_offset = 1;	
@@ -1097,10 +1208,10 @@ void HudGaugeWeaponLinking::render(float  /*frametime*/, bool /*config*/)
 
 		case 2:
 			gauge_index = LINK_TWO_PRIMARY;
-			if ( swp->current_primary_bank == -1 ) {
+			if (!config && swp->current_primary_bank == -1 ) {
 				frame_offset = 0;	
 			} else {
-				if ( Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
+				if (config || Player_ship->flags[Ship::Ship_Flags::Primary_linked] ) {
 					frame_offset = 3;
 				} else {
 					if ( swp->current_primary_bank == 0 ) {
@@ -1120,11 +1231,11 @@ void HudGaugeWeaponLinking::render(float  /*frametime*/, bool /*config*/)
 	
 	if ( gauge_index != -1 ) {
 		if (weapon_linking_modes[gauge_index].first_frame >= 0) {
-			renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0], position[1] + Weapon_link_offsets[gauge_index][1]);
+			renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, x + fl2i(Weapon_link_offsets[gauge_index][0] * scale), y + fl2i(Weapon_link_offsets[gauge_index][1] * scale), scale, config);
 		}
 	}
 
-	int num_banks = swp->num_secondary_banks;
+	int num_banks = config ? 3 : swp->num_secondary_banks;
 	if ( num_banks <= 0 ) {
 		num_banks = Ship_info[Player_ship->ship_info_index].num_secondary_banks;
 	}
@@ -1153,13 +1264,13 @@ void HudGaugeWeaponLinking::render(float  /*frametime*/, bool /*config*/)
 	}
 	
 	if ( gauge_index != -1 ) {
-		if ( swp->num_secondary_banks <= 0 ) {
+		if (config || swp->num_secondary_banks <= 0 ) {
 			frame_offset = 0;
 		} else {
 			frame_offset = swp->current_secondary_bank+1;
 		}
 		if (weapon_linking_modes[gauge_index].first_frame >= 0) {
-			renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, position[0] + Weapon_link_offsets[gauge_index][0],  position[1] + Weapon_link_offsets[gauge_index][1]);
+			renderBitmap(weapon_linking_modes[gauge_index].first_frame+frame_offset, x + fl2i(Weapon_link_offsets[gauge_index][0] * scale),  y + fl2i(Weapon_link_offsets[gauge_index][1] * scale), scale, config);
 		}
 	}
 }
