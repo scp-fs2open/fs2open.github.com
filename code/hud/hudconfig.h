@@ -284,6 +284,16 @@ std::tuple<float, float, float> hud_config_convert_coord_sys(float x, float y, i
 void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2);
 
 /*!
+ * @brief Function to calculate screen coordinates based on angle. Used for radial positioning gauges
+ */
+std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, int centerX, int centerY, float radius);
+
+/*!
+ * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
+ */
+float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius);
+
+/*!
  * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
  * @brief this one is specific to the ETS gauge's individual rendering method
  */

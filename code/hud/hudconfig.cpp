@@ -869,6 +869,18 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 	HC_gauge_mouse_coords[gauge_config] = {x1, x2, y1, y2};
 }
 
+bool hud_config_set_mouse_coords_no_overlap(int gauge_config, int x1, int x2, int y1, int y2)
+{
+	BoundingBox newBox(x1, x2, y1, y2);
+
+	if (BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_config)) {
+		return false;
+	} else {
+		HC_gauge_mouse_coords[gauge_config] = newBox;
+		return true;
+	}
+}
+
 // ETS gauge can render as one unified gauge or as three separate gauges using separate drawing functions
 // So this function provides a way to min/max the coords to make sure no matter what method is used, the
 // mouse box inclues all the relevant areas
@@ -928,6 +940,57 @@ std::tuple<float, float, float> hud_config_convert_coord_sys(float x, float y, i
 	auto coords = hud_config_convert_coords(x, y, scale);
 
 	return std::make_tuple(coords.first, coords.second, scale);
+}
+
+std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, int centerX, int centerY, float radius)
+{
+	// Convert angle to radians, adjust so 0 degrees is at the top (12 o'clock)
+	float angle_radians = (angle_degrees + 90.0f) * static_cast<float>(M_PI) / 180.0f;
+
+	// Offset to ensure the arrow points outward
+	float adjusted_radius = radius + 4.0f;
+
+	// Calculate offsets based on the adjusted radius and angle
+	float xOffset = -cos(angle_radians) * adjusted_radius; // Negate to mirror direction
+	float yOffset = sin(angle_radians) * adjusted_radius;
+
+	// Map to screen coordinates (centerX and centerY represent the center of the circle)
+	float screenX = centerX + xOffset;
+	float screenY = centerY - yOffset;
+
+	return {screenX, screenY};
+}
+
+float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius)
+{
+	const int max_iterations = 360; // Prevent infinite loops
+	float angle = initial_angle;
+	int x1, x2, y1, y2;
+
+	for (int i = 0; i < max_iterations; ++i) {
+		// Calculate coordinates for the current angle
+		auto [screenX, screenY] = hud_config_calc_coords_from_angle(angle, centerX, centerY, radius);
+		int boundingBoxSize = 10; // Guestimate
+		x1 = fl2i(screenX - boundingBoxSize);
+		x2 = fl2i(screenX + boundingBoxSize);
+		y1 = fl2i(screenY - boundingBoxSize);
+		y2 = fl2i(screenY + boundingBoxSize);
+
+		BoundingBox newBox = {x1, x2, y1, y2};
+
+		// Check for overlap
+		if (!BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_index)) {
+			return angle;
+		}
+
+		// Increment angle and try again
+		angle += 10.0f; // Increment by 10 degrees
+		if (angle >= 360.0f) {
+			angle -= 360.0f;
+		}
+	}
+
+	return initial_angle; // No valid angle found
 }
 
 /*!
