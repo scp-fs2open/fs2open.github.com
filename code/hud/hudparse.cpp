@@ -237,6 +237,10 @@ void parse_hud_gauges_tbl(const char *filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		if (optional_string("$Example Wing Names:")) {
+			stuff_string_list(HC_wingam_gauge_status_names, MAX_SQUADRON_WINGS);
+		}
+
 		if (optional_string("$Load Retail Configuration:")) {
 			stuff_boolean(&Hud_retail);
 		}
