@@ -18,7 +18,6 @@
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missionmessage.h"
-#include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
 #include "missionui/fictionviewer.h"
@@ -49,25 +48,26 @@
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
-#include "scripting/api/objs/control_config.h"
-#include "scripting/api/objs/techroom.h"
-#include "scripting/api/objs/loop_brief.h"
-#include "scripting/api/objs/redalert.h"
-#include "scripting/api/objs/fictionviewer.h"
-#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
-#include "scripting/api/objs/debriefing.h"
-#include "scripting/api/objs/shipwepselect.h"
-#include "scripting/api/objs/missionhotkey.h"
-#include "scripting/api/objs/gamehelp.h"
-#include "scripting/api/objs/missionlog.h"
-#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
+#include "scripting/api/objs/control_config.h"
+#include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/player.h"
+#include "scripting/api/objs/fictionviewer.h"
+#include "scripting/api/objs/gamehelp.h"
+#include "scripting/api/objs/goal.h"
+#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/missionlog.h"
 #include "scripting/api/objs/multi_objects.h"
+#include "scripting/api/objs/player.h"
 #include "scripting/api/objs/rank.h"
+#include "scripting/api/objs/redalert.h"
+#include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
@@ -1055,9 +1055,9 @@ ADE_INDEXER(l_Briefing_Goals,
 	idx--;
 
 	if ((idx < 0) || idx >= (int)Mission_goals.size())
-		return ade_set_args(L, "o", l_Goals.Set(-1));
+		return ade_set_args(L, "o", l_Goal.Set(-1));
 
-	return ade_set_args(L, "o", l_Goals.Set(idx));
+	return ade_set_args(L, "o", l_Goal.Set(idx));
 }
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")

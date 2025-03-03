@@ -3287,7 +3287,7 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					}
 
 					// look for mission
-					count = count_items_with_name(CTEXT(z), Campaign.missions, Campaign.num_missions);
+					count = count_items_with_string(Campaign.missions, Campaign.num_missions, &cmission::name, CTEXT(z));
 
 					// only check for a missing mission -- it's ok if the same mission appears multiple times in the campaign
 					if (count == 0) {
@@ -3305,9 +3305,9 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					}
 
 					if (type == OPF_GOAL_NAME) {
-						count = count_items_with_name(CTEXT(node), Campaign.missions[i].goals);
+						count = count_items_with_string(Campaign.missions[i].goals, &mgoal::name, CTEXT(node));
 					} else if (type == OPF_EVENT_NAME) {
-						count = count_items_with_name(CTEXT(node), Campaign.missions[i].events);
+						count = count_items_with_string(Campaign.missions[i].events, &mevent::name, CTEXT(node));
 					} else {
 						UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 					}
@@ -3316,13 +3316,13 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					if ((Operators[op].value == OP_PREVIOUS_GOAL_TRUE) || (Operators[op].value == OP_PREVIOUS_GOAL_FALSE) || (Operators[op].value == OP_PREVIOUS_GOAL_INCOMPLETE))
 						break;
 
-					count = count_items_with_scp_string_name(CTEXT(node), Mission_goals);
+					count = count_items_with_string(Mission_goals, &mission_goal::name, CTEXT(node));
 				} else if (type == OPF_EVENT_NAME) {
 					// neither the previous mission nor the previous event is guaranteed to exist (missions can be developed out of sequence), so we don't need to check them
 					if ((Operators[op].value == OP_PREVIOUS_EVENT_TRUE) || (Operators[op].value == OP_PREVIOUS_EVENT_FALSE) || (Operators[op].value == OP_PREVIOUS_EVENT_INCOMPLETE))
 						break;
 
-					count = count_items_with_scp_string_name(CTEXT(node), Mission_events);
+					count = count_items_with_string(Mission_events, &mission_event::name, CTEXT(node));
 				} else {
 					UNREACHABLE("type == %d; expected OPF_GOAL_NAME or OPF_EVENT_NAME", type);
 				}
@@ -13799,7 +13799,7 @@ void sexp_allow_treason (int n)
 void sexp_set_player_orders(int n) 
 {
 	bool allow_order;
-	std::set<size_t> orders;
+	SCP_set<size_t> orders;
 
 	auto ship_entry = eval_ship(n);
 	if (!ship_entry || !ship_entry->has_shipp()) {
@@ -13808,7 +13808,7 @@ void sexp_set_player_orders(int n)
 	auto shipp = ship_entry->shipp();
 
 	// we need to know which orders this ship class can accept.
-	const std::set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
+	const SCP_set<size_t> &default_orders = ship_get_default_orders_accepted(&Ship_info[shipp->ship_info_index]);
 	n = CDR(n);
 	allow_order = is_sexp_true(n);
 	n = CDR(n);
@@ -13834,7 +13834,7 @@ void sexp_set_player_orders(int n)
 		shipp->orders_accepted.insert(orders.begin(), orders.end());
 	}
 	else {
-		std::set<size_t> diff;
+		SCP_set<size_t> diff;
 		std::set_difference(shipp->orders_accepted.begin(), shipp->orders_accepted.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
 		shipp->orders_accepted = std::move(diff);
@@ -13850,11 +13850,11 @@ void sexp_set_order_allowed_for_target(int n)
 	}
 	auto shipp = ship_entry->shipp();
 
-	const std::set<size_t>& default_orders = ship_set_default_orders_against();
+	const auto default_orders = ship_get_default_orders_against();
 	n = CDR(n);
 	bool allow_order = is_sexp_true(n);
 	n = CDR(n);
-	std::set<size_t> orders;
+	SCP_set<size_t> orders;
 	do {
 		for( size_t order : default_orders){
 			//Once we exceed the number of valid orders, break and warn
@@ -13877,7 +13877,7 @@ void sexp_set_order_allowed_for_target(int n)
 		shipp->orders_allowed_against.insert(orders.begin(), orders.end());
 	}
 	else {
-		std::set<size_t> diff;
+		SCP_set<size_t> diff;
 		std::set_difference(shipp->orders_allowed_against.begin(), shipp->orders_allowed_against.end(), orders.begin(), orders.end(),
 							std::inserter(diff, diff.end()));
 		shipp->orders_allowed_against = std::move(diff);
@@ -23131,7 +23131,7 @@ void sexp_update_moveable_animation(int node)
 	node = CDR(node);
 
 	//For now this only contains integers. It is very much feasible though that certain moveables might be updateable with strings and other non-numbers. For this, the C-side of the moveable code already supports other types
-	std::vector<std::any> args;
+	SCP_vector<std::any> args;
 
 	while(node >= 0) {
 		args.emplace_back(eval_num(node, is_nan, is_nan_forever));
@@ -34621,7 +34621,7 @@ int sexp_match_closest_operator(const SCP_string &str, int opf)
 
 		if (sexp_query_type_match(opf, opr))
 		{
-			size_t cost = stringcost(op_text, str, Max_operator_length);
+			size_t cost = stringcost(op_text, str, Max_operator_length, stringcost_tolower_equal);
 			if (best < 0 || cost < min)
 			{
 				min = cost;

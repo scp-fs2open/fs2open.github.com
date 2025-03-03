@@ -1296,8 +1296,7 @@ bool control_config_accept(bool API_Access)
 		retry:;
 			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
-				"Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to "
-				"abort to config menu.",
+				XSTR( "Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to abort to config menu.", 1867),
 				32 - 6,
 				default_string.c_str());
 			if (cstr == nullptr) {
@@ -1366,6 +1365,11 @@ bool control_config_accept(bool API_Access)
 		}
 	}
 	
+	// adds scripting hook for 'On Control Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnControlConfigMenuClosed->isActive()) {
+		scripting::hooks::OnControlConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', true)));
+	}
+
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1381,8 +1385,8 @@ void control_config_cancel_exit(bool API_Access)
 	// Check if any changes were made
 	if (!API_Access && (control_config_get_current_preset() == Control_config_presets.end())) {
 		// Changes were made, prompt the user first.
-		int flags = PF_TITLE_WHITE;
-		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, "You have unsaved changes.\n\n\n Do you wish to continue without saving?");
+		int flags = PF_TITLE_WHITE | PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON;
+		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, XSTR( "You have unsaved changes.\n\n\n Do you wish to continue without saving?", 1866));
 
 		switch (choice) {
 			case -1:	// Aborted
@@ -1402,6 +1406,11 @@ void control_config_cancel_exit(bool API_Access)
 
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
+
+	// adds scripting hook for 'On Control Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnControlConfigMenuClosed->isActive()) {
+		scripting::hooks::OnControlConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', false)));
+	}
 
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);

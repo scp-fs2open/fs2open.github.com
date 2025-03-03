@@ -151,6 +151,10 @@ extern BoundingBox HC_gauge_mouse_coords[NUM_HUD_GAUGES];
 
 const char* HC_gauge_descriptions(int n);
 
+extern int HC_talking_head_frame;
+extern SCP_string HC_head_anim_filename;
+extern SCP_string HC_shield_gauge_ship;
+
 /*!
  * @brief init hud config screen, setting up the hud preview display
  * 
@@ -280,6 +284,22 @@ std::tuple<float, float, float> hud_config_convert_coord_sys(float x, float y, i
  * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
  */
 void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2);
+
+/*!
+ * @brief Function to calculate screen coordinates based on angle. Used for radial positioning gauges
+ */
+std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, int centerX, int centerY, float radius);
+
+/*!
+ * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
+ */
+float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius);
+
+/*!
+ * @brief save gauge coords during rendering time so hud config can check if the mouse is hovering over the gauge
+ * @brief this one is specific to the ETS gauge's individual rendering method
+ */
+void hud_config_set_mouse_coords_ets(int gauge_config, int x1, int x2, int y1, int y2);
 
 #endif
 

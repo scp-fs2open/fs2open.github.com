@@ -245,11 +245,7 @@ void radar_plot_object( object *objp )
 
 	// Retrieve the eye orientation so we can position the blips relative to it
 	matrix eye_orient;
-
-	if (Player_obj->type == OBJ_SHIP) 
-		ship_get_eye(&tempv, &eye_orient, Player_obj, false , false);
-	else
-		eye_orient = Player_obj->orient;
+	object_get_eye(&tempv, &eye_orient, Player_obj, false);
 
 	// JAS -- new way of getting the rotated point that doesn't require this to be
 	// in a g3_start_frame/end_frame block.

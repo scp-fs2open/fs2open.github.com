@@ -128,7 +128,16 @@ struct modular_curves_submember_input {
 				return 1.0f;
 		}
 		else if constexpr (is_instance_of_v<std::decay_t<decltype(result)>, std::reference_wrapper>) {
-			return number_to_float(result.get());
+			//We could also be returned not a temporary optional from a check, but a true optional stored somewhere, so check for this here
+			if constexpr (is_optional_v<typename std::decay_t<typename std::decay_t<decltype(result)>::type>>) {
+				const auto& inner_result = result.get();
+				if (inner_result.has_value())
+					return number_to_float(*inner_result);
+				else
+					return 1.0f;
+			}
+			else
+				return number_to_float(result.get());
 		}
 		else {
 			return number_to_float(result);

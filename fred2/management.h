@@ -105,7 +105,7 @@ int query_initial_orders_conflict(int wing);
 int query_initial_orders_empty(ai_goal* ai_goals);
 int set_reinforcement(char* name, int state);
 int get_docking_list(int model_index);
-int rename_ship(int ship, char* name);
+int rename_ship(int ship, const char* name);
 void fix_ship_name(int ship);
 int internal_integrity_check();
 void correct_marking();

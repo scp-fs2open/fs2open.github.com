@@ -95,11 +95,3 @@ void observer_delete(object *obj)
 	Observers[num].target_objnum = -1;
 	Observers[num].flags = 0;           // mark it as being free
 }
-
-// get the eye position and orientation for the passed observer object
-void observer_get_eye(vec3d *eye_pos, matrix *eye_orient, object *obj)
-{
-	// copy in the observer position and orientation
-	memcpy(eye_pos,&obj->pos,sizeof(vec3d));
-	memcpy(eye_orient,&obj->orient,sizeof(matrix));
-}

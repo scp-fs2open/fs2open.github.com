@@ -2649,22 +2649,21 @@ SCP_string CC_bind::textify() const {
 	SCP_string prefix;
 	SCP_string retval;
 
-	// TODO: XSTR the Mouse/Joy prefix
 	switch (cid) {
 	case CID_MOUSE:
-		prefix = "Mouse ";
+		prefix = XSTR("Mouse ", 1868);
 		break;
 	case CID_JOY0:
-		prefix = "Joy-0 ";
+		prefix = XSTR("Joy-0 ", 1869);
 		break;
 	case CID_JOY1:
-		prefix = "Joy-1 ";
+		prefix = XSTR("Joy-1 ", 1870);
 		break;
 	case CID_JOY2:
-		prefix = "Joy-2 ";
+		prefix = XSTR("Joy-2 ", 1871);
 		break;
 	case CID_JOY3:
-		prefix = "Joy-3 ";
+		prefix = XSTR("Joy-3 ", 1872);
 		break;
 	case CID_NONE:
 	case CID_KEYBOARD:
@@ -2676,7 +2675,7 @@ SCP_string CC_bind::textify() const {
 	if (flags & CCF_AXIS) {
 		// Is Axis
 		if (cid == CID_NONE) {
-			retval = "None";
+			retval = XSTR("None", 1873);
 		} else {
 			Assert((btn >= 0) && (btn < NUM_AXIS_TEXT));
 			retval = SCP_string(Axis_text[btn]);
@@ -2704,7 +2703,7 @@ SCP_string CC_bind::textify() const {
 
 		case CID_NONE:
 		default:
-			retval = "None";
+			retval = XSTR("None", 1873);
 		break;
 		}
 	}

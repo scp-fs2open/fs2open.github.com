@@ -11,7 +11,7 @@ class EffectHostObject : public EffectHost {
 
 	WeaponState m_weaponState;
 public:
-	EffectHostObject(object* objp, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
+	EffectHostObject(const object* objp, vec3d offset, matrix orientationOverride = vmd_identity_matrix, bool orientationOverrideRelative = true);
 
 	std::pair<vec3d, matrix> getPositionAndOrientation(bool relativeToParent, float interp, const std::optional<vec3d>& tabled_offset) const override;
 

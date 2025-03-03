@@ -31,9 +31,9 @@ void	hud_escort_ship_hit(const object *objp, int quadrant);
 void	hud_escort_target_next();
 void	hud_escort_cull_list();
 void	hud_add_ship_to_escort(int objnum, int supress_feedback);
-void  hud_remove_ship_from_escort(int objnum);
-int	hud_escort_num_ships_on_list();
-int	hud_escort_return_objnum(int index);
+void    hud_remove_ship_from_escort(int objnum);
+int     hud_escort_num_ships_on_list();
+int     hud_escort_return_objnum(int index);
 void	hud_escort_add_player(short id);
 void	hud_escort_remove_player(short id);
 
@@ -70,7 +70,7 @@ public:
 	int setGaugeColorEscort(int index, int team);
 	void render(float frametime, bool config = false) override;
 	void pageIn() override;
-	void renderIcon(int x, int y, int index);
+	void renderIcon(int x, int y, int index, float scale, bool config);
 	void renderIconDogfight(int x, int y, int index);
 };
 

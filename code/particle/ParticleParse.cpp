@@ -378,7 +378,12 @@ namespace particle {
 					error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
 				}
 
-				return ParticleManager::get()->getEffect(index);
+				auto effect = ParticleManager::get()->getEffect(index);
+				if (!effect.empty()) {
+					effect.front().m_name = name;
+				}
+
+				return effect;
 			}
 
 			ParticleEffectLegacyType type = parseLegacyEffectType();

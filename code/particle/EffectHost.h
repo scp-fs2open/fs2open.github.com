@@ -1,5 +1,6 @@
 #pragma once
 
+#include "object/object.h"
 #include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 
@@ -38,5 +39,4 @@ public:
 	virtual bool isValid() const { return true; }
 
 	virtual void setupProcessing() {}
-
 };
