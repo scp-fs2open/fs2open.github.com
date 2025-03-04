@@ -1586,7 +1586,7 @@ void beam_generate_muzzle_particles(beam *b)
 	}
 
 	// randomly perturb a vector within a cone around the normal
-	vm_vector_2_matrix(&m, &turret_norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, &turret_norm, nullptr, nullptr);
 	for(idx=0; idx<particle_count; idx++){
 		// get a random point in the cone
 		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
@@ -2546,12 +2546,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				target_pos = b->target_pos1;
 			else
 				UNREACHABLE("Turret beam fired without a target or target coordinates?");
-			vm_vec_sub(&fvec, &target_pos, &turret_point);
+			vm_vec_normalized_dir(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
-			vm_vector_2_matrix(&orient, &fvec, &uvec);
+			vm_vector_2_matrix_norm(&orient, &fvec, &uvec);
 		} else if (b->flags & BF_TARGETING_COORDS) {
 			// targeting coords already set up turret_norm with target_pos above
-			vm_vector_2_matrix(&orient, &turret_norm);
+			vm_vector_2_matrix_norm(&orient, &turret_norm);
 		} 
 
 		vec3d rand1_on = vm_vec_new(0.f, 0.f, 0.f); 
@@ -3036,11 +3036,10 @@ void beam_jitter_aim(beam *b, float aim)
 
 	// shot aim is a direct linear factor of the target model's radius.
 	// so, pick a random point on the circle
-	vm_vec_sub(&forward, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&forward);
+	vm_vec_normalized_dir(&forward, &b->last_shot, &b->last_start);
 	
 	// vector
-	vm_vector_2_matrix(&m, &forward, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, &forward, nullptr, nullptr);
 
 	// get a random vector on the circle, but somewhat biased towards the center
 	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false, true);
@@ -3810,13 +3809,12 @@ bool beam_sort_collisions_func(const beam_collision &b1, const beam_collision &b
 
 static std::unique_ptr<EffectHost> beam_hit_make_effect_host(const beam* b, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
 	vec3d beam_dir;
-	vm_vec_sub(&beam_dir, &b->last_shot, &b->last_start);
-	vm_vec_normalize_safe(&beam_dir);
+	vm_vec_normalized_dir(&beam_dir, &b->last_shot, &b->last_start);
 
 	if (impacted_obj->type != OBJ_SHIP) {
 		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
 		matrix beamOrientation;
-		vm_vector_2_matrix(&beamOrientation, &beam_dir);
+		vm_vector_2_matrix_norm(&beamOrientation, &beam_dir);
 
 		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, beamOrientation, vmd_zero_vector);
 		vector_host->setRadius(impacted_obj->radius);

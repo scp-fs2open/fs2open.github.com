@@ -473,7 +473,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 			// non-hull debris has no relation to its parent orientation
 			vec3d rand;
 			vm_vec_rand_vec(&rand);
-			vm_vector_2_matrix(&orient_buf, &rand);
+			vm_vector_2_matrix_norm(&orient_buf, &rand);
 			orient = &orient_buf;
 		}
 	}

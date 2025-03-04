@@ -402,12 +402,11 @@ void gr_opengl_deferred_lighting_finish()
 			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
 			vec3d dir, newPos;
 			matrix orient;
-			vm_vec_sub(&dir, &l.vec, &l.vec2);
-			vm_vector_2_matrix(&orient, &dir, nullptr, nullptr);
+			vm_vec_normalized_dir(&dir, &l.vec, &l.vec2);
+			vm_vector_2_matrix_norm(&orient, &dir, nullptr, nullptr);
 			// Tube light volumes must be extended past the length of their requested light vector
 			// to allow smooth fall-off from all angles. Since the light volume starts at the mesh
 			// origin we must extend it, which has been done above, and then move it backwards one radius.
-			vm_vec_normalize(&dir);
 			vm_vec_scale_sub(&newPos, &l.vec2, &dir, l.radb);
 
 			g3_start_instance_matrix(&newPos, &orient, true);
