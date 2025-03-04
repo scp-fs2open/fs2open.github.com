@@ -44,7 +44,7 @@ public:
 
 	void blipDrawDistorted(blip *b, vec3d *pos);
 	void blipDrawFlicker(blip *b, vec3d *pos);
-	void blitGauge();
+	void blitGauge(bool config);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContact(vec3d *pnt, int rad);

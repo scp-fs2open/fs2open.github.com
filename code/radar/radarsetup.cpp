@@ -459,27 +459,37 @@ void HudGaugeRadar::initialize()
 	HudGauge::initialize();
 }
 
-void HudGaugeRadar::drawRange()
+void HudGaugeRadar::drawRange(bool config)
 {
 	// hud_set_bright_color();
-	setGaugeColor(HUD_C_BRIGHT);
+	setGaugeColor(HUD_C_BRIGHT, config);
 
-	switch ( HUD_config.rp_dist ) {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	int range = config ? RR_INFINITY : HUD_config.rp_dist;
+
+	switch ( range ) {
 
 	case RR_SHORT:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], 1.0f, false, "%s", XSTR( "2k", 467));
+		renderPrintf(x + fl2i(Radar_dist_offsets[RR_SHORT][0] * scale), y + fl2i(Radar_dist_offsets[RR_SHORT][1] * scale), scale, config, "%s", XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], 1.0f, false, "%s", XSTR( "10k", 468));
+		renderPrintf(x + fl2i(Radar_dist_offsets[RR_LONG][0] * scale), y + fl2i(Radar_dist_offsets[RR_LONG][1] * scale), scale, config, "%s", XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:
 		if (Unicode_text_mode) {
 			// This escape sequence is the UTF-8 encoding of the infinity symbol. We can't use u8 yet since VS2013 doesn't support it
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], 1.0f, false, "\xE2\x88\x9E");
+			renderPrintf(x + fl2i(Radar_dist_offsets[RR_INFINITY][0] * scale), y + fl2i(Radar_dist_offsets[RR_INFINITY][1] * scale), scale, config, "\xE2\x88\x9E");
 		} else {
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], 1.0f, false, "%c", Radar_infinity_icon);
+			renderPrintf(x + fl2i(Radar_dist_offsets[RR_INFINITY][0] * scale), y + fl2i(Radar_dist_offsets[RR_INFINITY][1] * scale), scale, config, "%c", Radar_infinity_icon);
 		}
 		break;
 

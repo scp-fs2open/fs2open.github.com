@@ -125,7 +125,7 @@ public:
 	void initDistanceInfinityOffsets(int x, int y);
 	void initInfinityIcon();
 
-	void drawRange();
+	void drawRange(bool config);
 	void render(float frametime, bool config = false) override;
 	void initialize() override;
 	void pageIn() override;

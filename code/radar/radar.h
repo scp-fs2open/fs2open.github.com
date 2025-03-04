@@ -58,7 +58,7 @@ public:
 
 	void blipDrawDistorted(blip *b, int x, int y);
 	void blipDrawFlicker(blip *b, int x, int y);
-	void blitGauge();
+	void blitGauge(bool config);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContactCircle( int x, int y, int rad );
