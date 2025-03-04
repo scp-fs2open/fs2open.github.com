@@ -260,6 +260,10 @@ void parse_hud_gauges_tbl(const char *filename)
 					Warning(LOCATION, "Shield gauge ship \"%s\" not found in ships.tbl!", temp.c_str());
 				}
 			}
+
+			if (optional_string("$Example Wing Names:")) {
+				stuff_string_list(HC_wingam_gauge_status_names, MAX_SQUADRON_WINGS);
+			}
 		}
 
 		optional_string("#HUD Global Settings");

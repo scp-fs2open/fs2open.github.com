@@ -182,6 +182,9 @@ int HUD_default_popup_mask2 =
 	0											// kills gauge
 };
 
+// Can be customized in hud_gauges.tbl
+char HC_wingam_gauge_status_names[MAX_SQUADRON_WINGS][32] = {"Alpha", "Beta", "Gamma", "Delta", "Epsilon"};
+
 int HC_select_all = 0;
 
 //////////////////////////////////////////////////////////////////////////////
