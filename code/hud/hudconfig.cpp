@@ -748,7 +748,7 @@ void hud_config_popup_flag_clear(int i)
 	}
 }
 
-// Used for debugging. Remove before merge!
+// Used for debugging only
 void hud_config_draw_box(int x1, int x2, int y1, int y2)
 {
 	gr_line(x1, y1, x1, y2, HC_resize_mode); // Left vertical line
@@ -757,12 +757,38 @@ void hud_config_draw_box(int x1, int x2, int y1, int y2)
 	gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
 }
 
-void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2) {
-	// List is built on first frame only
-	if (!HC_gauge_list_clear) {
+void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2)
+{
+	BoundingBox newBox(x1, x2, y1, y2);
+
+	// There is a complicated issue here that I have not yet solved.
+	// Gauges like the missile warning will search each frame to find a position in HUD Config
+	// that does not overlap with other gauges so they can be clicked on. This may take a few frames
+	// for each auto-positioned gauge to get sorted out and they need to be able to update their mouse coords
+	// for each of those frames.
+	// 
+	// However, the newer ETS gauge can have up to 3 distinct sets of mouse coordinates. It's an unfortunate
+	// side-effect of splitting each system of the ETS into a distinct gauge that shares the same gauge ID.
+	// There is the possibility of a newer gauge type added in the future at has multiple gauges like ETS and
+	// also needs to auto-position. If that's the case then this code will cause bugs. As it is now there are
+	// no gauges that fit that description.
+	// 
+	// I think the long term solution can happen when HUD Config support is added to custom gauges. The 3 distinct 
+	// ETS gauges at that point can be given unique IDs matching however custom gauges are handled with care taken
+	// in regards to backwards compatibility for that special case. When that happens, HC_gauge_mouse_coords can be
+	// changed to enforce only 1 set of mouse coords per gauge. - Mjn
+	auto it = std::find_if(HC_gauge_mouse_coords.begin(),
+		HC_gauge_mouse_coords.end(),
+		[gauge_config](const std::pair<int, BoundingBox>& item) { return item.first == gauge_config; });
+
+	if (it != HC_gauge_mouse_coords.end()) {
+		if (it->second == newBox) {
+			return; // No change, early exit
+		}
+		it->second = newBox; // Replace existing
 		return;
 	}
-	BoundingBox newBox(x1, x2, y1, y2);
+
 	HC_gauge_mouse_coords.emplace_back(std::make_pair(gauge_config, newBox));
 }
 
@@ -881,7 +907,7 @@ void hud_config_render_gauges(bool API_Access)
 			}
 		}
 	} else {
-		hud_name = "Default HUD"; // Do not pass review if this is not XSTR'd!
+		hud_name = XSTR("Default HUD", 1876);
 
 		for (const std::unique_ptr<HudGauge>& gauge : default_hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
@@ -892,6 +918,12 @@ void hud_config_render_gauges(bool API_Access)
 			}
 		}
 	}
+
+	// DEBUGGING ONLY
+	/*gr_set_color_fast(&Color_normal);
+	for (auto& box : HC_gauge_mouse_coords) {
+		hud_config_draw_box(box.second.x1, box.second.x2, box.second.y1, box.second.y2);
+	}*/
 
 	HC_gauge_list_clear = false;
 

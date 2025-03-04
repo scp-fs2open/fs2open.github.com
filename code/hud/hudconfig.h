@@ -99,6 +99,12 @@ class BoundingBox {
 	// Constructor
 	constexpr BoundingBox(int nx1, int nx2, int ny1, int ny2) : x1(nx1), x2(nx2), y1(ny1), y2(ny2) {}
 
+	// Equality operator
+	bool operator==(const BoundingBox& other) const
+	{
+		return x1 == other.x1 && x2 == other.x2 && y1 == other.y1 && y2 == other.y2;
+	}
+
 	bool isOverlapping(const BoundingBox& other) const
 	{
 		return (x2 >= other.x1 && // Not completely to the left
@@ -116,18 +122,13 @@ class BoundingBox {
 	// Static function to check if any bounding box in an array overlaps with a new one
 	static bool isOverlappingAny(const SCP_vector<std::pair<int, BoundingBox>>& mouse_coords, const BoundingBox& newBox, int self_index)
 	{
-		for (const auto& [gauge_id, bbox_list] : mouse_coords) {
+		return std::any_of(mouse_coords.begin(), mouse_coords.end(), [&](const std::pair<int, BoundingBox>& item) {
+			const auto& [gauge_id, bbox] = item;
 			if (gauge_id == self_index) {
-				continue; // Skip checking against itself
+				return false; // Skip checking against itself
 			}
-
-			for (const auto& bbox : mouse_coords) { // Check each bounding box for the gauge
-				if (bbox.second.isValid() && bbox.second.isOverlapping(newBox)) {
-					return true;
-				}
-			}
-		}
-		return false;
+			return bbox.isValid() && bbox.isOverlapping(newBox);
+		});
 	}
 };
 
