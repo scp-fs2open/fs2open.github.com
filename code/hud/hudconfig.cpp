@@ -231,6 +231,23 @@ int HC_resize_mode = GR_RESIZE_MENU;
 SCP_vector<std::pair<size_t, SCP_string>> HC_available_huds;
 int HC_chosen_hud = -1;
 
+SCP_string HC_arrow_bitmaps[2][2][2] = {
+	{{"BAB_030001", "BAB_030002"}, {"BAB_040001", "BAB_040002"}},
+	{{"2_BAB_030001", "2_BAB_030002"}, {"2_BAB_040001", "2_BAB_040002"}}
+};
+int HC_arrow_bm_handles[2][2] = {{-1, -1}, {-1, -1}};
+std::pair<int, int> HC_arrow_coords[2][2] = {
+	{
+		{566, 368},
+		{603, 368},
+	},
+	{
+		{911, 581},
+		{967, 581},
+	}
+};
+int HC_arrow_hot = -1;
+
 // This is here for the short term. The next upgrade will remove the hud preset file saving/loading's reliance on this switch statement.
 const char *HC_gauge_descriptions(int n)
 {
@@ -624,6 +641,11 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 		} else {
 			HC_ui_window.set_mask_bmap(Hud_config_mask_fname[gr_screen.res]);
 		}
+
+		HC_arrow_bm_handles[0][0] = bm_load(HC_arrow_bitmaps[gr_screen.res][0][0]);
+		HC_arrow_bm_handles[0][1] = bm_load(HC_arrow_bitmaps[gr_screen.res][0][1]);
+		HC_arrow_bm_handles[1][0] = bm_load(HC_arrow_bitmaps[gr_screen.res][1][0]);
+		HC_arrow_bm_handles[1][1] = bm_load(HC_arrow_bitmaps[gr_screen.res][1][1]);
 	}
 
 	if (!API_Access){
@@ -1005,6 +1027,17 @@ void hud_config_check_regions(int mx, int my)
 		HC_color_sliders[HCS_GREEN].disable();
 		HC_color_sliders[HCS_BLUE].disable();
 		HC_color_sliders[HCS_ALPHA].disable();
+	}
+
+	if (HC_arrow_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
+		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+		if (HC_arrow_hot == 0) {
+			hud_config_select_hud(false);
+		} else {
+			hud_config_select_hud(true);
+		}
+		mouse_flush();
+		return;
 	}
 
 	hud_config_check_regions_by_mouse(mx, my);
@@ -1549,6 +1582,47 @@ void hud_config_redraw_pressed_buttons()
 	}
 }
 
+void hud_config_draw_hud_select_arrow_buttons(int mx, int my)
+{
+	int w1, h1;
+	bm_get_info(HC_arrow_bm_handles[gr_screen.res][0], &w1, &h1);
+	int w2, h2;
+	bm_get_info(HC_arrow_bm_handles[gr_screen.res][0], &w2, &h2);
+
+
+	BoundingBox l_box(HC_arrow_coords[gr_screen.res][0].first,
+		HC_arrow_coords[gr_screen.res][0].first + w1,
+		HC_arrow_coords[gr_screen.res][0].second,
+		HC_arrow_coords[gr_screen.res][0].second + h1);
+	BoundingBox r_box(HC_arrow_coords[gr_screen.res][1].first,
+		HC_arrow_coords[gr_screen.res][1].first + w1,
+		HC_arrow_coords[gr_screen.res][1].second,
+		HC_arrow_coords[gr_screen.res][1].second + h1);
+	
+	int hot = -1;
+	if (mx >= l_box.x1 && mx <= l_box.x2 && my >= l_box.y1 && my <= l_box.y2) {
+		hot = 0;
+	}
+
+	if (mx >= r_box.x1 && mx <= r_box.x2 && my >= r_box.y1 && my <= r_box.y2) {
+		hot = 1;
+
+	}
+
+	if (hot != HC_arrow_hot) {
+		HC_arrow_hot = hot;
+		if (HC_arrow_hot >= 0) {
+			gamesnd_play_iface(InterfaceSounds::USER_OVER);
+		}
+	}
+
+	for (int i = 0; i < 2; ++i) {
+		int on = (i == HC_arrow_hot) ? 1 : 0;
+		gr_set_bitmap(HC_arrow_bm_handles[i][on]);
+		gr_bitmap(HC_arrow_coords[gr_screen.res][i].first, HC_arrow_coords[gr_screen.res][i].second, GR_RESIZE_MENU);
+	}
+}
+
 void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 {
 	int k;
@@ -1608,6 +1682,10 @@ void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 		hud_config_render_special_bitmaps();
 		hud_config_render_description();
 
+		if (HC_available_huds.size() + (HC_show_default_hud ? 1 : 0) > 1) {
+			hud_config_draw_hud_select_arrow_buttons(mx, my);
+		}
+
 		gr_flip();
 	}
 }
@@ -1628,6 +1706,11 @@ void hud_config_close(bool API_Access)
 		if (HC_background_bitmap_mask != -1) {
 			bm_release(HC_background_bitmap_mask);
 		}
+	}
+
+	for (const auto& handle : HC_arrow_bm_handles) {
+		bm_unload(handle[0]);
+		bm_unload(handle[1]);
 	}
 
 	bm_unload(HC_talking_head_frame);
