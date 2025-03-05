@@ -657,7 +657,7 @@ void HudGaugeWingmanStatus::render(float  /*frametime*/, bool config)
 
 	int count = 0;
 	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		if (!config && ((HUD_wingman_status[i].used) || (HUD_wingman_status[i].ignore)) ) {
+		if (!config && !((HUD_wingman_status[i].used) || (HUD_wingman_status[i].ignore)) ) {
 			continue;
 		}
 
