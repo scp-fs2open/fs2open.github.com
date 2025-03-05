@@ -1789,7 +1789,7 @@ void HudGaugeTargetBox::renderTargetShipInfo(object *target_objp, bool config)
 		}
 	}
 
-	renderPrintfWithGauge(x + fl2i(Hull_offsets[0] * scale)-w, y + fl2i(Hull_offsets[1] * scale), EG_TBOX_HULL, scale, true, "%s", outstr);	
+	renderPrintfWithGauge(x + fl2i(Hull_offsets[0] * scale)-w, y + fl2i(Hull_offsets[1] * scale), EG_TBOX_HULL, scale, config, "%s", outstr);	
 	setGaugeColor(HUD_C_NONE, config);
 
 	// Config version doesn't do any of the stuff below
