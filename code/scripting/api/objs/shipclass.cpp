@@ -18,6 +18,7 @@
 #include "missionui/missionscreencommon.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "model/modelrender.h"
+#include "utils/string_utils.h"
 
 namespace scripting {
 namespace api {
@@ -177,182 +178,58 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 	return ade_set_args(L, "s", Ship_info[idx].short_name);
 }
 
-ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string", "Type string, or empty string if handle is invalid")
+int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[]> ship_info::*optional_string_field)
 {
 	int idx;
 	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
+	if (!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(idx < 0 || idx >= ship_info_size())
+	if (!SCP_vector_inbounds(Ship_info, idx))
 		return ade_set_error(L, "s", "");
 
-	ship_info *sip = &Ship_info[idx];
+	auto sip = &Ship_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		vm_free(sip->type_str);
-		if(s != NULL) {
-			sip->type_str = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->type_str, s);
-		} else {
-			sip->type_str = NULL;
-		}
+		sip->*optional_string_field = util::unique_copy(s, true);
 	}
 
-	if(sip->type_str != NULL)
-		return ade_set_args(L, "s", sip->type_str);
-	else
-		return ade_set_args(L, "s", "");
+	return ade_set_args(L, "s", coalesce(sip->type_str.get(), ""));
+}
+
+ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string", "Type string, or empty string if handle is invalid")
+{
+	return handle_ship_class_optional_string(L, &ship_info::type_str);
 }
 
 ADE_VIRTVAR(ManeuverabilityString, l_Shipclass, "string", "Ship class maneuverability string", "string", "Maneuverability string, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if(ADE_SETTING_VAR) {
-		vm_free(sip->maneuverability_str);
-		if(s != NULL) {
-			sip->maneuverability_str = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->maneuverability_str, s);
-		} else {
-			sip->maneuverability_str = NULL;
-		}
-	}
-
-	if(sip->maneuverability_str != NULL)
-		return ade_set_args(L, "s", sip->maneuverability_str);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::maneuverability_str);
 }
 
 ADE_VIRTVAR(ArmorString, l_Shipclass, "string", "Ship class armor string", "string", "Armor string, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if(ADE_SETTING_VAR) {
-		vm_free(sip->armor_str);
-		if(s != NULL) {
-			sip->armor_str = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->armor_str, s);
-		} else {
-			sip->armor_str = NULL;
-		}
-	}
-
-	if(sip->armor_str != NULL)
-		return ade_set_args(L, "s", sip->armor_str);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::armor_str);
 }
 
 ADE_VIRTVAR(ManufacturerString, l_Shipclass, "string", "Ship class manufacturer", "string", "Manufacturer, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if(ADE_SETTING_VAR) {
-		vm_free(sip->manufacturer_str);
-		if(s != NULL) {
-			sip->manufacturer_str = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->manufacturer_str, s);
-		} else {
-			sip->manufacturer_str = NULL;
-		}
-	}
-
-	if(sip->manufacturer_str != NULL)
-		return ade_set_args(L, "s", sip->manufacturer_str);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::manufacturer_str);
 }
 
 ADE_VIRTVAR(LengthString, l_Shipclass, "string", "Ship class length", "string", "Length, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "Setting Length is not supported");
-	}
-
-	if (sip->ship_length != nullptr)
-		return ade_set_args(L, "s", sip->ship_length);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::ship_length);
 }
 
 ADE_VIRTVAR(GunMountsString, l_Shipclass, "string", "Ship class gun mounts", "string", "Gun mounts, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "Setting Gun mounts is not supported");
-	}
-
-	if (sip->gun_mounts != nullptr)
-		return ade_set_args(L, "s", sip->gun_mounts);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::gun_mounts);
 }
 
 ADE_VIRTVAR(MissileBanksString, l_Shipclass, "string", "Ship class missile banks", "string", "Missile banks, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if (ADE_SETTING_VAR) {
-		LuaError(L, "Setting Missile banks is not supported");
-	}
-
-	if (sip->missile_banks != nullptr)
-		return ade_set_args(L, "s", sip->missile_banks);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::missile_banks);
 }
 
 ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "string", "velocity, or empty string if handle is invalid")
@@ -368,7 +245,7 @@ ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "strin
 	ship_info *sip = &Ship_info[idx];
 
 	if (ADE_SETTING_VAR) {
-		LuaError(L, "Setting Missile banks is not supported");
+		LuaError(L, "Setting Velocity is not supported");
 	}
 
 	char str[100];
@@ -377,33 +254,9 @@ ADE_VIRTVAR(VelocityString, l_Shipclass, "string", "Ship class velocity", "strin
 	return ade_set_args(L, "s", str);
 }
 
-
 ADE_VIRTVAR(Description, l_Shipclass, "string", "Ship class description", "string", "Description, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if(ADE_SETTING_VAR) {
-		vm_free(sip->desc);
-		if(s != NULL) {
-			sip->desc = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->desc, s);
-		} else {
-			sip->desc = NULL;
-		}
-	}
-
-	if(sip->desc != NULL)
-		return ade_set_args(L, "s", sip->desc);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::desc);
 }
 
 ADE_VIRTVAR(SelectIconFilename, l_Shipclass, "string", "Ship class select icon filename", "string", "Filename, or empty string if handle is invalid")
@@ -459,30 +312,7 @@ ADE_VIRTVAR(SelectOverheadFilename, l_Shipclass, "string", "Ship class select ov
 
 ADE_VIRTVAR(TechDescription, l_Shipclass, "string", "Ship class tech description", "string", "Tech description, or empty string if handle is invalid")
 {
-	int idx;
-	const char* s = nullptr;
-	if(!ade_get_args(L, "o|s", l_Shipclass.Get(&idx), &s))
-		return ade_set_error(L, "s", "");
-
-	if(idx < 0 || idx >= ship_info_size())
-		return ade_set_error(L, "s", "");
-
-	ship_info *sip = &Ship_info[idx];
-
-	if(ADE_SETTING_VAR) {
-		vm_free(sip->tech_desc);
-		if(s != NULL) {
-			sip->tech_desc = (char*)vm_malloc(strlen(s)+1);
-			strcpy(sip->tech_desc, s);
-		} else {
-			sip->tech_desc = NULL;
-		}
-	}
-
-	if(sip->tech_desc != NULL)
-		return ade_set_args(L, "s", sip->tech_desc);
-	else
-		return ade_set_args(L, "s", "");
+	return handle_ship_class_optional_string(L, &ship_info::tech_desc);
 }
 
 ADE_VIRTVAR(numPrimaryBanks,

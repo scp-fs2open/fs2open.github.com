@@ -1025,15 +1025,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("+Description:")) {
-		if (wip->desc != NULL) {
-			vm_free(wip->desc);
-			wip->desc = NULL;
-		}
-
-		stuff_malloc_string(&wip->desc, F_MULTITEXT);
+		stuff_string(wip->desc, F_MULTITEXT, true);
 
 		// Check if the text exceeds the limits
-		auto current_line = wip->desc;
+		auto current_line = wip->desc.get();
 		size_t num_lines = 0;
 		while (current_line != nullptr) {
 			auto line_end = strchr(current_line, '\n');
@@ -1063,12 +1058,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("+Tech Description:")) {
-		if (wip->tech_desc != NULL) {
-			vm_free(wip->tech_desc);
-			wip->tech_desc = NULL;
-		}
-
-		stuff_malloc_string(&wip->tech_desc, F_MULTITEXT);
+		stuff_string(wip->tech_desc, F_MULTITEXT, true);
 	}
 
 	if (optional_string("$Turret Name:")) {
@@ -3865,7 +3855,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	if (optional_string("$Failure Rate:")) {
 		stuff_float(&wip->failure_rate);
 		if (optional_string("+Failure Substitute:")) {
-			stuff_string(wip->failure_sub_name, F_NAME);
+			stuff_string(wip->failure_sub_name, F_NAME, true);
 		}
 	}
 
@@ -4661,25 +4651,25 @@ void weapon_generate_indexes_for_substitution() {
 		}
 
 		if (wip->failure_rate > 0.0f) {
-			if (VALID_FNAME(wip->failure_sub_name)) {
-				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.c_str());
+			if (VALID_FNAME(wip->failure_sub_name.get())) {
+				wip->failure_sub = weapon_info_lookup(wip->failure_sub_name.get());
 
 				if (wip->failure_sub == -1) { // invalid sub weapon
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which does not seem to exist",
-						wip->name, wip->failure_sub_name.c_str());
+						wip->name, wip->failure_sub_name.get());
 					wip->failure_rate = 0.0f;
 				}
 
 				if (Weapon_info[wip->failure_sub].subtype != wip->subtype) {
 					// Check to make sure secondaries can't be launched by primaries and vice versa
 					Warning(LOCATION, "Weapon '%s' requests substitution with '%s' which is of a different subtype.",
-						wip->name, wip->failure_sub_name.c_str());
+						wip->name, wip->failure_sub_name.get());
 					wip->failure_sub = -1;
 					wip->failure_rate = 0.0f;
 				}
 			}
 
-			wip->failure_sub_name.clear();
+			wip->failure_sub_name.reset();
 		}
 	}
 }
@@ -4873,15 +4863,8 @@ void weapon_close()
 	int i;
 
 	for (i = 0; i < weapon_info_size(); i++) {
-		if (Weapon_info[i].desc) {
-			vm_free(Weapon_info[i].desc);
-			Weapon_info[i].desc = NULL;
-		}
-
-		if (Weapon_info[i].tech_desc) {
-			vm_free(Weapon_info[i].tech_desc);
-			Weapon_info[i].tech_desc = NULL;
-		}
+		Weapon_info[i].desc.reset();
+		Weapon_info[i].tech_desc.reset();
 	}
 
 	if (used_weapons != NULL) {
@@ -9944,7 +9927,7 @@ void weapon_info::reset()
 		this->targeting_priorities[i] = -1;
 
 	this->failure_rate = 0.0f;
-	this->failure_sub_name.clear();
+	this->failure_sub_name.reset();
 	this->failure_sub = -1;
 
 	this->num_substitution_patterns = 0;

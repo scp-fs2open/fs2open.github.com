@@ -433,8 +433,8 @@ int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T
 	return -1;
 }
 
-template <typename NULLISH_T>
-NULLISH_T coalesce(NULLISH_T possibly_null, NULLISH_T value_if_null)
+template <typename T>
+const T* coalesce(const T* possibly_null, const T* value_if_null)
 {
 	Assertion(value_if_null != nullptr, "value_if_null can never be null itself!");
 

@@ -344,22 +344,22 @@ const char *ss_tooltip_handler(const char *str)
 		return Ship_info[Selected_ss_class].name;
 
 	} else if (!stricmp(str, NOX("@ship_type"))) {
-		return Ship_info[Selected_ss_class].type_str;
+		return Ship_info[Selected_ss_class].type_str.get();
 
 	} else if (!stricmp(str, NOX("@ship_maneuverability"))) {
-		return Ship_info[Selected_ss_class].maneuverability_str;
+		return Ship_info[Selected_ss_class].maneuverability_str.get();
 
 	} else if (!stricmp(str, NOX("@ship_armor"))) {
-		return Ship_info[Selected_ss_class].armor_str;
+		return Ship_info[Selected_ss_class].armor_str.get();
 
 	} else if (!stricmp(str, NOX("@ship_manufacturer"))) {
-		return Ship_info[Selected_ss_class].manufacturer_str;
+		return Ship_info[Selected_ss_class].manufacturer_str.get();
 
 	} else if (!stricmp(str, NOX("@ship_desc"))) {
 		char *str2;
 		int x, y, w, h;
 
-		str2 = Ship_info[Selected_ss_class].desc;
+		str2 = Ship_info[Selected_ss_class].desc.get();
 		if (str2 == NULL)
 			return NULL;
 
@@ -940,8 +940,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->type_str != NULL) && strlen(sip->type_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str, GR_RESIZE_MENU);
+	if(sip->type_str){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->type_str.get(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -954,15 +954,15 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
+	if(sip->ship_length){
 		if (Lcl_gr || Lcl_pl) {
 			// in german and polish, drop the s from Meters and make sure M is caps
-			char *sp = strstr(sip->ship_length, "Meters");
+			char *sp = strstr(sip->ship_length.get(), "Meters");
 			if (sp) {
 				sp[5] = ' ';		// make the old s a space now
 			}
 		}
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length, GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->ship_length.get(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -991,8 +991,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
+	if(sip->maneuverability_str){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->maneuverability_str.get(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -1025,8 +1025,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str, GR_RESIZE_MENU);
+	if(sip->armor_str){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->armor_str.get(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -1061,12 +1061,12 @@ void ship_select_blit_ship_info()
 
 	// blit the gun mounts 
 	gr_set_color_fast(header_clr);
-	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts))
+	if(sip->gun_mounts)
 	{
 		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
 		y_start += line_height;
 		gr_set_color_fast(text);
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts, GR_RESIZE_MENU);
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->gun_mounts.get(), GR_RESIZE_MENU);
 	}
 	else if(ShipSelectModelNum >= 0)
 	{
@@ -1109,8 +1109,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks, GR_RESIZE_MENU);
+	if(sip->missile_banks){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->missile_banks.get(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -1174,8 +1174,8 @@ void ship_select_blit_ship_info()
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
 	y_start += line_height;
 	gr_set_color_fast(text);
-	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
-		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
+	if(sip->manufacturer_str){
+		gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD]+4, y_start, sip->manufacturer_str.get(), GR_RESIZE_MENU);
 	}
 	else
 	{
@@ -1186,14 +1186,12 @@ void ship_select_blit_ship_info()
 	// blit the _short_ text description, if it exists
 	// split the text info up	
 	
-	if (sip->desc == NULL)
+	if (!sip->desc || !sip->desc[0])
 		return;
 
 	gr_set_color_fast(header_clr);
 	gr_string(Ship_info_coords[gr_screen.res][SHIP_SELECT_X_COORD], y_start, XSTR("Description",1571), GR_RESIZE_MENU);
 	y_start += line_height;
-
-	Assert(strlen(sip->desc));
 
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
@@ -1202,7 +1200,7 @@ void ship_select_blit_ship_info()
 	char Ship_select_ship_info_lines[MAX_NUM_SHIP_DESC_LINES][SHIP_SELECT_SHIP_INFO_MAX_LINE_LEN];
 	int Ship_select_ship_info_line_count;
 
-	strcpy_s(Ship_select_ship_info_text, sip->desc);
+	strcpy_s(Ship_select_ship_info_text, sip->desc.get());
 	
 	if(Ship_select_ship_info_text[0] != '\0'){
 		// split the string into multiple lines

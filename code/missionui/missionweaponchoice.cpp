@@ -15,6 +15,7 @@
 #include "gamehelp/contexthelp.h"
 #include "gamesnd/gamesnd.h"
 #include "globalincs/alphacolors.h"
+#include "globalincs/utility.h"
 #include "graphics/shadows.h"
 #include "graphics/matrix.h"
 #include "hud/hudbrackets.h"
@@ -486,10 +487,10 @@ const char *wl_tooltip_handler(const char *str)
 		return NULL;
 
 	if (!stricmp(str, "@weapon_desc")) {
-		char *str2;
+		const char *str2;
 		int x, y, w, h;
 
-		str2 = Weapon_info[Selected_wl_class].desc;
+		str2 = coalesce(Weapon_info[Selected_wl_class].desc.get(), "");
 		gr_get_string_size(&w, &h, str2);
 		x = Wl_weapon_desc_coords[gr_screen.res][0] - w / 2;
 		y = Wl_weapon_desc_coords[gr_screen.res][1] - h / 2;
@@ -2526,9 +2527,10 @@ void wl_weapon_desc_start_wipe()
 	
 	// break current description into lines (break at the /n's)
 	currchar_src = 0;
-	if (Weapon_info[Selected_wl_class].desc != NULL) {
-		while (Weapon_info[Selected_wl_class].desc[currchar_src] != '\0') {
-			if (Weapon_info[Selected_wl_class].desc[currchar_src] == '\n') {
+	if (Weapon_info[Selected_wl_class].desc) {
+		auto desc = Weapon_info[Selected_wl_class].desc.get();
+		while (desc[currchar_src] != '\0') {
+			if (desc[currchar_src] == '\n') {
 				// break here
 				if (currchar_src != 0) {					// protect against leading /n's
 					Weapon_desc_lines[currline_dest][currchar_dest] = '\0';
@@ -2537,7 +2539,7 @@ void wl_weapon_desc_start_wipe()
 				}
 			} else {
 				// straight copy
-				Weapon_desc_lines[currline_dest][currchar_dest] = Weapon_info[Selected_wl_class].desc[currchar_src];
+				Weapon_desc_lines[currline_dest][currchar_dest] = desc[currchar_src];
 				currchar_dest++;
 			}
 
