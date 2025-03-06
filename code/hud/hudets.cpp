@@ -1249,7 +1249,7 @@ void HudGaugeEtsShields::render(float  /*frametime*/, bool config)
 	renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 
 	// draw the gauge for the shield system
-	int level = config ? 4 : ship_p->weapon_recharge_index;
+	int level = config ? 4 : ship_p->shield_recharge_index;
 	rx = position[0];
 	ry = position[1];
 	if (config) {
@@ -1319,7 +1319,7 @@ void HudGaugeEtsEngines::render(float  /*frametime*/, bool config)
 	renderPrintf(rx, ry, scale, config, NOX("%c"), Letter);
 
 	// draw the gauge for the engine system
-	int level = config ? 4 : ship_p->weapon_recharge_index;
+	int level = config ? 4 : ship_p->engine_recharge_index;
 	rx = position[0];
 	ry = position[1];
 	if (config) {
