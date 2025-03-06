@@ -1314,6 +1314,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 	int display_size[2] = {0, 0};
 	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
+	bool visible_in_config = true;
 
 	if(check_base_res(settings->base_res)) {
 		if (settings->set_position) {
@@ -1445,6 +1446,10 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		}
 	}
 
+	if (optional_string("Config:")) {
+		stuff_boolean(&visible_in_config);
+	}
+
 	std::unique_ptr<T> instance(preAllocated);
 
 	if (instance == NULL)
@@ -1473,6 +1478,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 		//In this case, we must always slew every hud gauge, no matter what.
 		instance->initSlew(true);
 	}
+	instance->initVisible_in_config(visible_in_config);
 
 	return instance;
 }
@@ -1510,6 +1516,7 @@ void load_gauge_custom(gauge_settings* settings)
 	int display_size[2] = {0, 0};
 	int display_offset[2] = {0, 0};
 	int canvas_size[2] = {0, 0};
+	bool visible_in_config = true;
 
 	if(check_base_res(settings->base_res)) {
 		if(optional_string("Position:")) {
@@ -1636,6 +1643,10 @@ void load_gauge_custom(gauge_settings* settings)
 			stuff_boolean(&settings->slew);
 		}
 
+		if (optional_string("Config:")) {
+			stuff_boolean(&visible_in_config);
+		}
+
 		if(optional_string("Active by default:")) {
 			stuff_boolean(&active_by_default);
 		}
@@ -1665,6 +1676,7 @@ void load_gauge_custom(gauge_settings* settings)
 	hud_gauge->initCockpitTarget(display_name, display_offset[0], display_offset[1], display_size[0], display_size[1], canvas_size[0], canvas_size[1]);
 	hud_gauge->initChase_view_only(settings->chase_view_only);
 	hud_gauge->initCockpit_view_choice(settings->cockpit_view_choice);
+	hud_gauge->initVisible_in_config(visible_in_config);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
