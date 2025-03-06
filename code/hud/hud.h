@@ -246,6 +246,7 @@ protected:
 	bool can_popup;
 	bool use_iff_color;
 	bool use_tag_color;
+	bool visible_in_config;
 
 	int flash_duration;
 	int flash_next;
@@ -307,6 +308,7 @@ public:
 	bool getConfigUseIffColor() const;
 	bool getConfigCanPopup() const;
 	bool getConfigUseTagColor() const;
+	bool getVisibleInConfig() const;
 
 	int getFont() const;
 	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const;
@@ -321,6 +323,7 @@ public:
 	void updateSexpOverride(bool sexp);
 	void initChase_view_only(bool chase_view_only);
 	void initCockpit_view_choice(int cockpit_view_choice);
+	void initVisible_in_config(bool visible);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions

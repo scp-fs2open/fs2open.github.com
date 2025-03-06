@@ -550,6 +550,11 @@ bool HudGauge::getConfigUseTagColor() const
 	return use_tag_color;
 }
 
+bool HudGauge::getVisibleInConfig() const
+{
+	return visible_in_config;
+}
+
 int HudGauge::getFont() const
 {
 	return font_num;
@@ -812,6 +817,11 @@ void HudGauge::initChase_view_only(bool chase_view_only)
 void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
 {
 	render_for_cockpit_toggle = cockpit_view_choice;
+}
+
+void HudGauge::initVisible_in_config(bool visible)
+{
+	visible_in_config = visible;
 }
 
 bool HudGauge::isOffbyDefault() const

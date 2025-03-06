@@ -922,8 +922,10 @@ void hud_config_render_gauges(bool API_Access)
 
 		for (const std::unique_ptr<HudGauge>& gauge : sip->hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-			gauge->setFont();
-			gauge->render(0, true);
+			if (gauge->getVisibleInConfig()) {
+				gauge->setFont();
+				gauge->render(0, true);
+			}
 			if (HC_gauge_list_clear) {
 				HC_gauge_map[gauge->getConfigId()] = gauge.get();
 			}
@@ -933,8 +935,10 @@ void hud_config_render_gauges(bool API_Access)
 
 		for (const std::unique_ptr<HudGauge>& gauge : default_hud_gauges) {
 			GR_DEBUG_SCOPE("Render HUD gauge");
-			gauge->setFont();
-			gauge->render(0, true);
+			if (gauge->getVisibleInConfig()) {
+				gauge->setFont();
+				gauge->render(0, true);
+			}
 			if (HC_gauge_list_clear) {
 				HC_gauge_map[gauge->getConfigId()] = gauge.get();
 			}
