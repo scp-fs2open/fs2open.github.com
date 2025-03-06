@@ -2776,7 +2776,7 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 		// Rotate the angle so that 0 is on top
 		angle -= 180.0f;
 
-		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config_id, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		// Convert angle to radians
 		float angle_radians = angle * static_cast<float>(M_PI) / 180.0f;
@@ -2821,7 +2821,7 @@ void HudGaugeOrientationTee::renderOrientation(object *from_objp, object *to_obj
 		float y_min = std::min({y1, y2, y3, y4});
 		float y_max = std::max({y1, y2, y3, y4});
 
-		hud_config_set_mouse_coords(gauge_config, fl2i(x_min), fl2i(x_max), fl2i(y_min), fl2i(y_max));
+		hud_config_set_mouse_coords(gauge_config_id, fl2i(x_min), fl2i(x_max), fl2i(y_min), fl2i(y_max));
 	}
 
 	// HACK! Should be antialiased!
@@ -3025,7 +3025,7 @@ void HudGaugeReticleTriangle::renderTriangleMissileTail(float ang, float xpos, f
 		float min_y = std::min({ypos, y1, y2, ytail});
 		float max_y = std::max({ypos, y1, y2, ytail});
 
-		hud_config_set_mouse_coords(gauge_config, fl2i(min_x), fl2i(max_x), fl2i(min_y), fl2i(max_y));
+		hud_config_set_mouse_coords(gauge_config_id, fl2i(min_x), fl2i(max_x), fl2i(min_y), fl2i(max_y));
 	}
 	gr_reset_screen_scale();
 }
@@ -3175,7 +3175,7 @@ void HudGaugeReticleTriangle::renderTriangle(vec3d *hostile_pos, int aspect_flag
 			float min_y = std::min({ypos, y1, y2});
 			float max_y = std::max({ypos, y1, y2});
 
-			hud_config_set_mouse_coords(gauge_config, fl2i(min_x), fl2i(max_x), fl2i(min_y), fl2i(max_y));
+			hud_config_set_mouse_coords(gauge_config_id, fl2i(min_x), fl2i(max_x), fl2i(min_y), fl2i(max_y));
 		}
 	}
 }
@@ -3255,7 +3255,7 @@ void HudGaugeMissileTriangles::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config_id, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
@@ -3797,7 +3797,7 @@ void HudGaugeHostileTriangle::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config_id, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
@@ -4113,7 +4113,7 @@ void HudGaugeLeadIndicator::renderIndicator(int frame_offset, object *targetp, v
 					int max_attempts = 100; // Limit to avoid infinite loops
 					int attempts = 0;
 
-					while (BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_config)) {
+					while (BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_config_id)) {
 						if (++attempts > max_attempts) {
 							break; // Safety net
 						}
@@ -4141,7 +4141,7 @@ void HudGaugeLeadIndicator::renderIndicator(int frame_offset, object *targetp, v
 					int mx = fl2i(x - i2fl(Lead_indicator_half[0] * scale));
 					int my = fl2i(y - i2fl(Lead_indicator_half[1] * scale));
 
-					hud_config_set_mouse_coords(gauge_config, mx, mx + fl2i(bmw * scale), my, my + fl2i(bmh * scale));
+					hud_config_set_mouse_coords(gauge_config_id, mx, mx + fl2i(bmw * scale), my, my + fl2i(bmh * scale));
 				} else {
 					unsize(&x, &y);
 				}
@@ -4847,7 +4847,7 @@ void HudGaugeTargetTriangle::render(float /*frametime*/, bool config)
 		float scale;
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 
-		angle = hud_config_find_valid_angle(gauge_config, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
+		angle = hud_config_find_valid_angle(gauge_config_id, angle, x + fl2i(HUD_nose_x * scale), y + fl2i(HUD_nose_y * scale), Radius * scale);
 
 		auto pair = hud_config_calc_coords_from_angle(angle,
 			x + fl2i(HUD_nose_x * scale),
@@ -5104,7 +5104,7 @@ void HudGaugeAutoTarget::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Toggle_frame.first_frame + frame_offset, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	// draw the box background
@@ -5202,7 +5202,7 @@ void HudGaugeAutoSpeed::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Toggle_frame.first_frame + frame_offset, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
@@ -5818,7 +5818,7 @@ void HudGaugeCmeasures::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Cmeasure_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	// hud_set_default_color();
@@ -5885,7 +5885,7 @@ void HudGaugeAfterburner::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Energy_bar.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	clip_h = fl2i(std::lround((1.0f - percent_left) * Energy_h));
@@ -6001,7 +6001,7 @@ void HudGaugeWeaponEnergy::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Energy_bar.first_frame+2, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	if(use_new_gauge)
@@ -6750,7 +6750,7 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 	if (config) {
 		int bmw, bmh;
 		bm_get_info(secondary_bottom[ballistic_hud_index].first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i((bmw + frame_offset_x[ballistic_hud_index]) * scale), y, ty + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i((bmw + frame_offset_x[ballistic_hud_index]) * scale), y, ty + fl2i(bmh * scale));
 	}
 }
 
@@ -7200,7 +7200,7 @@ void HudGaugeOffscreen::renderOffscreenIndicator(vec2d *coords, int dir, float d
 	}
 
 	if (config) {
-		hud_config_set_mouse_coords(gauge_config, fl2i(xpos - w), fl2i(xpos + w), fl2i(ypos), fl2i(ypos + h * 2.0f));
+		hud_config_set_mouse_coords(gauge_config_id, fl2i(xpos - w), fl2i(xpos + w), fl2i(ypos), fl2i(ypos + h * 2.0f));
 	}
 
 	gr_reset_screen_scale();

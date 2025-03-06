@@ -75,111 +75,58 @@ const char *Radar_range_text(int n)
 	return NULL;
 }
 
-// default flags for observer HUD
-int HUD_observer_default_flags = 
-{
-	(1<<HUD_CENTER_RETICLE)			|	
-	(1<<HUD_OFFSCREEN_INDICATOR)	|
-	(1<<HUD_MESSAGE_LINES)			|
-	(1<<HUD_HOSTILE_TRIANGLE)		|
-	(1<<HUD_TARGET_TRIANGLE)		|
-	(1<<HUD_TARGET_MINI_ICON)		|
-	(1<<HUD_TARGET_MONITOR)			 	
+// Default enabled HUD gauges (Observer Mode)
+SCP_vector<SCP_string> observer_visible_gauges = {
+	"Builtin::CenterOfReticle",
+	"Builtin::OffscreenIndicator",
+	"Builtin::MessageOutput",
+	"Builtin::ClosestAttackingHostile",
+	"Builtin::CurrentTargetDirection",
+	"Builtin::TargetHullShieldIcon",
+	"Builtin::TargetMonitor",
+	"Builtin::OffscreenRange"
 };
 
-int HUD_observer_default_flags2 = {
-	(1<<(HUD_OFFSCREEN_RANGE - 32))
-};
-
-// default flags for regular HUD
-int HUD_config_default_flags = 
-{
-	(1<<HUD_LEAD_INDICATOR) |
-	(1<<HUD_ORIENTATION_TEE) |
-	(1<<HUD_HOSTILE_TRIANGLE) |
-	(1<<HUD_TARGET_TRIANGLE) |
-	(1<<HUD_MISSION_TIME) |
-	(1<<HUD_RETICLE_CIRCLE) |
-	(1<<HUD_THROTTLE_GAUGE) |
-	(1<<HUD_RADAR) |
-	(1<<HUD_TARGET_MONITOR) |
-	(1<<HUD_CENTER_RETICLE) |
-	(1<<HUD_TARGET_MONITOR_EXTRA_DATA) |
-	(1<<HUD_TARGET_SHIELD_ICON) |
-	(1<<HUD_PLAYER_SHIELD_ICON) |
-	(1<<HUD_ETS_GAUGE) |
-	(1<<HUD_AUTO_TARGET) |
-	(1<<HUD_AUTO_SPEED) |
-	(1<<HUD_WEAPONS_GAUGE) |
-	(1<<HUD_ESCORT_VIEW) |
-	(1<<HUD_DIRECTIVES_VIEW) |
-	(1<<HUD_THREAT_GAUGE) |
-	(1<<HUD_AFTERBURNER_ENERGY) |
-	(1<<HUD_WEAPONS_ENERGY) |
-	(1<<HUD_WEAPON_LINKING_GAUGE) |
-	(1<<HUD_TARGET_MINI_ICON) |
-	(1<<HUD_OFFSCREEN_INDICATOR) |
-	(1<<HUD_TALKING_HEAD) |
-	(1<<HUD_DAMAGE_GAUGE) |
-	(1<<HUD_MESSAGE_LINES) |
-	(1<<HUD_MISSILE_WARNING_ARROW) |
-	(1<<HUD_CMEASURE_GAUGE) |
-	(1<<HUD_OBJECTIVES_NOTIFY_GAUGE) |
-	(1<<HUD_WINGMEN_STATUS)
-};
-
-int HUD_config_default_flags2 = 
-{
-	(1<<(HUD_OFFSCREEN_RANGE-32)) |
-	(1<<(HUD_KILLS_GAUGE-32)) |
-	(1<<(HUD_ATTACKING_TARGET_COUNT-32)) | 
-	(1<<(HUD_SUPPORT_GAUGE-32)) | 
-	(1<<(HUD_LAG_GAUGE-32)) |
-	(1<<(HUD_TEXT_FLASH-32)) |
-	(1<<(HUD_MESSAGE_BOX-32))
-};
-
-// bits to tell whether a given gauge should be treated as pop-up or not
-int HUD_default_popup_mask =
-{
-	0	|											// (1<<HUD_LEAD_INDICATOR) | //-V578
-	0	|											// (1<<HUD_ORIENTATION_TEE) |
-	0	|											//	(1<<HUD_HOSTILE_TRIANGLE) |
-	0	|											// (1<<HUD_TARGET_TRIANGLE) |
-	0	|											//	(1<<HUD_MISSION_TIME) |
-	0	|											//	(1<<HUD_RETICLE_CIRCLE) |
-	0	|											//	(1<<HUD_THROTTLE_GAUGE) |
-	0	|											//	(1<<HUD_RADAR) |
-	0	|											//	(1<<HUD_TARGET_MONITOR) |
-	0	|											//	(1<<HUD_CENTER_RETICLE) |
-	0	|											//	(1<<HUD_TARGET_MONITOR_EXTRA_DATA) |
-	0	|											//	(1<<HUD_TARGET_SHIELD_ICON) |
-	0	|											//	(1<<HUD_PLAYER_SHIELD_ICON) |
-	0	|											//	(1<<HUD_ETS_GAUGE) |
-	0	|											//	(1<<HUD_AUTO_TARGET) |
-	0	|											//	(1<<HUD_AUTO_SPEED) |
-	0	|											//	(1<<HUD_WEAPONS_GAUGE) |
-	0	|											//	(1<<HUD_ESCORT_VIEW) |
-	0	|											//	(1<<HUD_DIRECTIVES_VIEW) |
-	0	|											//	(1<<HUD_THREAT_GAUGE) |
-	0	|											//	(1<<HUD_AFTERBURNER_ENERGY) |
-	0	|											//	(1<<HUD_WEAPONS_ENERGY) |
-	0	|											//	(1<<HUD_WEAPON_LINKING_GAUGE) |
-	0	|											//	(1<<HUD_TARGET_MINI_ICON) |
-	0	|											//(1<<HUD_OFFSCREEN_INDICATOR)
-	0   |											// talking head
-	0	|											// damage gauge
-	0	|											// message lines				
-	0	|											// missile warning arrow
-	0	|											// countermeasures
-	0												// wingman status
-};
-
-int HUD_default_popup_mask2 =
-{
-	0   |											// offscreen indicator range //-V578
-	0	|
-	0											// kills gauge
+SCP_vector<SCP_string> default_visible_gauges = {
+    "Builtin::LeadIndicator",
+    "Builtin::TargetOrientation",
+    "Builtin::ClosestAttackingHostile",
+    "Builtin::CurrentTargetDirection",
+    "Builtin::MissionTime",
+    "Builtin::Reticle",
+    "Builtin::Throttle",
+    "Builtin::Radar",
+    "Builtin::TargetMonitor",
+    "Builtin::CenterOfReticle",
+    "Builtin::ExtraTargetInfo",
+    "Builtin::TargetShield",
+    "Builtin::PlayerShield",
+    "Builtin::PowerManagement",
+    "Builtin::AutoTargetIcon",
+    "Builtin::AutoSpeedMatchIcon",
+    "Builtin::WeaponsDisplay",
+    "Builtin::MonitoringView",
+    "Builtin::DirectivesView",
+    "Builtin::ThreatGauge",
+    "Builtin::AfterburnerEnergy",
+    "Builtin::WeaponsEnergy",
+    "Builtin::WeaponLinking",
+    "Builtin::TargetHullShieldIcon",
+    "Builtin::OffscreenIndicator",
+    "Builtin::CommVideo",
+    "Builtin::DamageDisplay",
+    "Builtin::MessageOutput",
+    "Builtin::LockedMissileDirection",
+    "Builtin::Countermeasures",
+    "Builtin::ObjectiveNotify",
+    "Builtin::WingmenStatus",
+    "Builtin::OffscreenRange",
+    "Builtin::KillsGauge",
+    "Builtin::AttackingTargetCount",
+    "Builtin::SupportGauge",
+    "Builtin::LagGauge",
+    "Builtin::WarningFlash",
+    "Builtin::CommMenu"
 };
 
 // Can be customized in hud_gauges.tbl
@@ -208,7 +155,7 @@ const char *Hud_config_mask_fname[GR_NUM_RESOLUTIONS] = {
 };
 
 // keep a list of gauge pointers so we can easily get information from them
-std::unordered_map<int, HudGauge*> HC_gauge_map;
+SCP_vector<std::pair<SCP_string, HudGauge*>> HC_gauge_map;
 bool HC_gauge_list_clear = true;
 
 int HC_gauge_description_coords[GR_NUM_RESOLUTIONS][3] = {
@@ -247,92 +194,6 @@ std::pair<int, int> HC_arrow_coords[2][2] = {
 	}
 };
 int HC_arrow_hot = -1;
-
-// This is here for the short term. The next upgrade will remove the hud preset file saving/loading's reliance on this switch statement.
-const char *HC_gauge_descriptions(int n)
-{
-	switch(n)	{
-	case 0:
-		return XSTR( "lead indicator", 249);
-	case 1:
-		return XSTR( "target orientation", 250);
-	case 2:
-		return XSTR( "closest attacking hostile", 251);
-	case 3:
-		return XSTR( "current target direction", 252);
-	case 4:
-		return XSTR( "mission time", 253);
-	case 5:
-		return XSTR( "reticle", 254);
-	case 6:
-		return XSTR( "throttle", 255);
-	case 7:
-		return XSTR( "radar", 256);
-	case 8:
-		return XSTR( "target monitor", 257);
-	case 9:
-		return XSTR( "center of reticle", 258);
-	case 10:
-		return XSTR( "extra target info", 259);
-	case 11:
-		return XSTR( "target shield", 260);
-	case 12:
-		return XSTR( "player shield", 261);
-	case 13:
-		return XSTR( "power management", 262);
-	case 14:
-		return XSTR( "auto-target icon", 263);
-	case 15:
-		return XSTR( "auto-speed-match icon", 264);
-	case 16:
-		return XSTR( "weapons display", 265);
-	case 17:
-		return XSTR( "monitoring view", 266);
-	case 18:
-		return XSTR( "directives view", 267);
-	case 19:
-		return XSTR( "threat gauge", 268);
-	case 20:
-		return XSTR( "afterburner energy", 269);
-	case 21:
-		return XSTR( "weapons energy", 270);
-	case 22:
-		return XSTR( "weapon linking", 271);
-	case 23:
-		return XSTR( "target hull/shield icon", 272);
-	case 24:
-		return XSTR( "offscreen indicator", 273);
-	case 25:
-		return XSTR( "comm video", 274);
-	case 26:
-		return XSTR( "damage display", 275);
-	case 27:
-		return XSTR( "message output", 276);
-	case 28:
-		return XSTR( "locked missile direction", 277);
-	case 29:
-		return XSTR( "countermeasures", 278);
-	case 30:
-		return XSTR( "objective notify", 279);
-	case 31:
-		return XSTR( "wingmen status", 280);
-	case 32:
-		return XSTR( "offscreen range", 281);
-	case 33:
-		return XSTR( "kills gauge", 282);
-	case 34:
-		return XSTR( "attacking target count", 283);
-	case 35: 
-		return XSTR("warning flash", 1459);
-	case 36:
-		return XSTR("comm menu", 1460);
-	case 37: 
-		return XSTR("support gauge", 1461);
-	case 38:
-		return XSTR("lag gauge", 1462);
-	}
-	return NULL;
-}
 
 #define NUM_HUD_BUTTONS   20
 
@@ -448,10 +309,10 @@ static int							HC_background_bitmap;
 static int							HC_background_bitmap_mask;
 static UI_WINDOW					HC_ui_window;
 
-int							HC_gauge_hot;			// mouse is over this gauge
-int							HC_gauge_selected;	// gauge is selected
+SCP_string							HC_gauge_hot;			// mouse is over this gauge
+SCP_string							HC_gauge_selected;	// gauge is selected
 int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
-SCP_vector<std::pair<int, BoundingBox>> HC_gauge_mouse_coords;
+SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 
 // HUD colors
 typedef struct hc_col {
@@ -503,20 +364,28 @@ const char *HC_slider_fname[GR_NUM_RESOLUTIONS] = {
 	"2_slider"
 };
 
-HudGauge* hud_config_get_gauge_pointer(int gauge_index)
+// Used throughout this file to map from retail gauge ids (numeric or HCF) to the newer internal string format
+const auto& gauge_map = HC_gauge_mappings::get_instance();
+
+HudGauge* hud_config_get_gauge_pointer(const SCP_string& gauge_id)
 {
-	auto it = HC_gauge_map.find(gauge_index);
-	return (it != HC_gauge_map.end()) ? it->second : nullptr;
+	for (auto& pair : HC_gauge_map) {
+		if (pair.first == gauge_id) {
+			return pair.second;
+		}
+	}
+	return nullptr;
 }
 
 // sync sliders
-void hud_config_synch_sliders(int i)
+void hud_config_synch_sliders(const SCP_string& gauge)
 {
-	if(i >= 0){
-		HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV(HUD_config.clr[i].red) );
-		HC_color_sliders[HCS_GREEN].force_currentItem( HCS_CONV(HUD_config.clr[i].green) );
-		HC_color_sliders[HCS_BLUE].force_currentItem( HCS_CONV(HUD_config.clr[i].blue) );
-		HC_color_sliders[HCS_ALPHA].force_currentItem( HCS_CONV(HUD_config.clr[i].alpha) );
+	if(!gauge.empty()){
+		color clr = HUD_config.get_gauge_color(gauge);
+		HC_color_sliders[HCS_RED].force_currentItem( HCS_CONV(clr.red) );
+		HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(clr.green));
+		HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(clr.blue));
+		HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(clr.alpha));
 	}
 }
 
@@ -701,72 +570,10 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 			UI_INPUTBOX_FLAG_INVIS | UI_INPUTBOX_FLAG_ESC_FOC);
 		HC_fname_input.set_text("");
 
-		HC_gauge_hot = -1;
-		HC_gauge_selected = -1;
+		HC_gauge_hot.clear();
+		HC_gauge_selected.clear();
 
 		HC_select_all = false;
-	}
-}
-
-int hud_config_show_flag_is_set(int i)
-{
-	int show_flag_set;
-
-	if ( i < 32 ) {
-		show_flag_set = HUD_config.show_flags & (1<<i);
-	} else {
-		show_flag_set = HUD_config.show_flags2 & (1<<(i-32));
-	}
-
-	return show_flag_set;
-}
-
-void hud_config_show_flag_set(int i)
-{
-	if ( i < 32 ) {
-		HUD_config.show_flags |= (1<<i);
-	} else {
-		HUD_config.show_flags2 |= (1<<(i-32));
-	}
-}
-
-void hud_config_show_flag_clear(int i)
-{
-	if ( i < 32 ) {
-		HUD_config.show_flags &= ~(1<<i);
-	} else {
-		HUD_config.show_flags2 &= ~(1<<(i-32));
-	}
-}
-
-int hud_config_popup_flag_is_set(int i)
-{
-	int popup_flag_set;
-
-	if ( i < 32 ) {
-		popup_flag_set = HUD_config.popup_flags & (1<<i);
-	} else {
-		popup_flag_set = HUD_config.popup_flags2 & (1<<(i-32));
-	}
-
-	return popup_flag_set;
-}
-
-void hud_config_popup_flag_set(int i)
-{
-	if ( i < 32 ) {
-		HUD_config.popup_flags |= (1<<i);
-	} else {
-		HUD_config.popup_flags2 |= (1<<(i-32));
-	}
-}
-
-void hud_config_popup_flag_clear(int i)
-{
-	if ( i < 32 ) {
-		HUD_config.popup_flags &= ~(1<<i);
-	} else {
-		HUD_config.popup_flags2 &= ~(1<<(i-32));
 	}
 }
 
@@ -779,7 +586,7 @@ void hud_config_draw_box(int x1, int x2, int y1, int y2)
 	gr_line(x1, y2, x2, y2, HC_resize_mode); // Bottom horizontal line
 }
 
-void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y2)
+void hud_config_set_mouse_coords(const SCP_string& gauge_id, int x1, int x2, int y1, int y2)
 {
 	BoundingBox newBox(x1, x2, y1, y2);
 
@@ -801,7 +608,7 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 	// changed to enforce only 1 set of mouse coords per gauge. - Mjn
 	auto it = std::find_if(HC_gauge_mouse_coords.begin(),
 		HC_gauge_mouse_coords.end(),
-		[gauge_config](const std::pair<int, BoundingBox>& item) { return item.first == gauge_config; });
+		[gauge_id](const std::pair<SCP_string, BoundingBox>& item) { return item.first == gauge_id; });
 
 	if (it != HC_gauge_mouse_coords.end()) {
 		if (it->second == newBox) {
@@ -811,7 +618,7 @@ void hud_config_set_mouse_coords(int gauge_config, int x1, int x2, int y1, int y
 		return;
 	}
 
-	HC_gauge_mouse_coords.emplace_back(std::make_pair(gauge_config, newBox));
+	HC_gauge_mouse_coords.emplace_back(std::make_pair(gauge_id, newBox));
 }
 
 std::pair<int, int> hud_config_convert_coords(int x, int y, float scale)
@@ -875,7 +682,7 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
 	return {screenX, screenY};
 }
 
-float hud_config_find_valid_angle(int gauge_index, float initial_angle, int centerX, int centerY, float radius)
+float hud_config_find_valid_angle(SCP_string gauge, float initial_angle, int centerX, int centerY, float radius)
 {
 	const int max_iterations = 360; // Prevent infinite loops
 	float angle = initial_angle;
@@ -893,7 +700,7 @@ float hud_config_find_valid_angle(int gauge_index, float initial_angle, int cent
 		BoundingBox newBox = {x1, x2, y1, y2};
 
 		// Check for overlap
-		if (!BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge_index)) {
+		if (!BoundingBox::isOverlappingAny(HC_gauge_mouse_coords, newBox, gauge)) {
 			return angle;
 		}
 
@@ -927,7 +734,7 @@ void hud_config_render_gauges(bool API_Access)
 				gauge->render(0, true);
 			}
 			if (HC_gauge_list_clear) {
-				HC_gauge_map[gauge->getConfigId()] = gauge.get();
+				HC_gauge_map.emplace_back(std::make_pair(gauge->getConfigId(), gauge.get()));
 			}
 		}
 	} else {
@@ -940,7 +747,7 @@ void hud_config_render_gauges(bool API_Access)
 				gauge->render(0, true);
 			}
 			if (HC_gauge_list_clear) {
-				HC_gauge_map[gauge->getConfigId()] = gauge.get();
+				HC_gauge_map.emplace_back(std::make_pair(gauge->getConfigId(), gauge.get()));
 			}
 		}
 	}
@@ -1017,11 +824,11 @@ void hud_config_check_regions_by_mouse(int mx, int my)
 void hud_config_check_regions(int mx, int my)
 {
 	if (hud_config_check_mouse_in_hud_area(mx, my)) {
-		HC_gauge_hot = -2;
+		HC_gauge_hot = "-2";
 	}
 
-	if (HC_gauge_hot == -2 && mouse_down(MOUSE_LEFT_BUTTON)) {
-		HC_gauge_selected = -1;
+	if (HC_gauge_hot == "-2" && mouse_down(MOUSE_LEFT_BUTTON)) {
+		HC_gauge_selected.clear();
 		HC_color_sliders[HCS_RED].hide();
 		HC_color_sliders[HCS_GREEN].hide();
 		HC_color_sliders[HCS_BLUE].hide();
@@ -1046,7 +853,7 @@ void hud_config_check_regions(int mx, int my)
 
 	hud_config_check_regions_by_mouse(mx, my);
 
-	if (HC_gauge_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
+	if (!HC_gauge_hot.empty() && mouse_down(MOUSE_LEFT_BUTTON)) {
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		HC_gauge_selected = HC_gauge_hot;
 
@@ -1077,10 +884,12 @@ void hud_config_check_regions(int mx, int my)
 			HC_color_sliders[HCS_BLUE].unhide();
 			HC_color_sliders[HCS_ALPHA].unhide();
 
-			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].red));
-			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].green));
-			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].blue));
-			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(HUD_config.clr[HC_gauge_selected].alpha));
+			color clr = HUD_config.get_gauge_color(HC_gauge_selected);
+
+			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(clr.red));
+			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(clr.green));
+			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(clr.blue));
+			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(clr.alpha));
 		}
 
 		// recalc alpha slider
@@ -1090,19 +899,10 @@ void hud_config_check_regions(int mx, int my)
 }
 
 // set the display flags for a HUD gauge
-void hud_config_set_gauge_flags(int gauge_index, int on_flag, int popup_flag)
+void hud_config_set_gauge_flags(SCP_string gauge, bool on_flag, bool popup_flag)
 {
-	if ( on_flag ) {
-		hud_config_show_flag_set(gauge_index);
-	} else {
-		hud_config_show_flag_clear(gauge_index);
-	}
-
-	if ( popup_flag ) {
-		hud_config_popup_flag_set(gauge_index);
-	} else {
-		hud_config_popup_flag_clear(gauge_index);
-	}
+	HUD_config.set_gauge_visibility(gauge, on_flag);
+	HUD_config.set_gauge_popup(gauge, popup_flag);
 }
 
 void hud_config_record_color(int in_color)
@@ -1116,25 +916,28 @@ void hud_config_record_color(int in_color)
 // Set the HUD color
 void hud_config_set_color(int in_color)
 {
-	int idx;	
-
 	hud_config_record_color(in_color);
 
 	HUD_init_hud_color_array();
 
 	// apply the color to all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
+	for(int idx=0; idx<NUM_HUD_GAUGES; idx++){
+		color clr;
+		gr_init_alphacolor(&clr, HC_colors[in_color].r, HC_colors[in_color].g, HC_colors[in_color].b, (HUD_color_alpha+1)*16);
+		SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+		HUD_config.set_gauge_color(gauge, clr);
 	}
 }
 
 void hud_config_stuff_colors(int r, int g, int b)
 {
-	int idx;
+	color clr;
+	gr_init_alphacolor(&clr, r, g, b, 255);
 
 	// apply the color to all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, 255);
+	for(int idx=0; idx<NUM_HUD_GAUGES; idx++){
+		SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+		HUD_config.set_gauge_color(gauge, clr);
 	}
 }
 
@@ -1166,29 +969,29 @@ void hud_config_commit()
 // move gauge state from on->off->popup
 void hud_cycle_gauge_status()
 {
-	if ( HC_gauge_selected < 0 ) {
+	if ( !HC_gauge_selected.empty() ) {
 		return;
 	}
 
 	// gauge is off, move to popup
-	if ( !(hud_config_show_flag_is_set(HC_gauge_selected)) ) {
+	if ( !(HUD_config.is_gauge_visible(HC_gauge_selected)) ) {
 		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
 		if (gauge != nullptr && gauge->getConfigCanPopup()) {
-			hud_config_set_gauge_flags(HC_gauge_selected, 1, 1);	
+			hud_config_set_gauge_flags(HC_gauge_selected, true, true);	
 		} else {
-			hud_config_set_gauge_flags(HC_gauge_selected, 1, 0);	
+			hud_config_set_gauge_flags(HC_gauge_selected, true, false);	
 		}
 		return;
 	}
 
 	// if gauge is popup, move to on
-	if ( hud_config_popup_flag_is_set(HC_gauge_selected) ) {
-		hud_config_set_gauge_flags(HC_gauge_selected, 1, 0);
+	if ( HUD_config.is_gauge_popup(HC_gauge_selected) ) {
+		hud_config_set_gauge_flags(HC_gauge_selected, true, false);
 		return;
 	}
 	
 	// gauge must be on, move to off
-	hud_config_set_gauge_flags(HC_gauge_selected, 0, 0);
+	hud_config_set_gauge_flags(HC_gauge_selected, false, false);
 }
 
 // handle keyboard input while in hud config
@@ -1238,25 +1041,25 @@ void hud_config_button_do(int n)
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_ON:
-		if ( HC_gauge_selected < 0 ) {
+		if (HC_gauge_selected.empty()) {
 			break;
 		}
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		hud_config_set_gauge_flags(HC_gauge_selected,1,0);
+		hud_config_set_gauge_flags(HC_gauge_selected,true,false);
 		break;
 	case HCB_OFF:
-		if ( HC_gauge_selected < 0 ) {
+		if (HC_gauge_selected.empty()) {
 			break;
 		}
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		hud_config_set_gauge_flags(HC_gauge_selected,0,0);
+		hud_config_set_gauge_flags(HC_gauge_selected,false,false);
 		break;
 	case HCB_POPUP:
-		if ( HC_gauge_selected < 0 ) {
+		if (HC_gauge_selected.empty()) {
 			break;
 		}
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		hud_config_set_gauge_flags(HC_gauge_selected,1,1);
+		hud_config_set_gauge_flags(HC_gauge_selected,true,true);
 		break;
 	case HCB_RESET:
 		gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
@@ -1465,7 +1268,7 @@ void hud_config_draw_color_status()
 // set the status (on/off/popup) for the selected gauge
 void hud_config_draw_gauge_status()
 {
-	if ( HC_gauge_selected < 0 ) {
+	if (HC_gauge_selected.empty()) {
 		return;
 	}
 
@@ -1474,19 +1277,19 @@ void hud_config_draw_gauge_status()
 	}
 
 	// check if off
-	if ( !(hud_config_show_flag_is_set(HC_gauge_selected)) ) {
+	if (!(HUD_config.is_gauge_visible(HC_gauge_selected))) {
 		HC_buttons[gr_screen.res][HCB_OFF].button.draw_forced(2);
 		return;
 	}
 
 	// check if popup
-	if ( hud_config_popup_flag_is_set(HC_gauge_selected) ) {
+	if (HUD_config.is_gauge_popup(HC_gauge_selected)) {
 		HC_buttons[gr_screen.res][HCB_POPUP].button.draw_forced(2);
 		return;
 	}
 
 	// check if on
-	if ( hud_config_show_flag_is_set(HC_gauge_selected) ) {
+	if (HUD_config.is_gauge_visible(HC_gauge_selected)) {
 		HC_buttons[gr_screen.res][HCB_ON].button.draw_forced(2);
 		return;
 	}
@@ -1511,7 +1314,7 @@ void hud_config_button_enable(int index)
 // determine if on/off/popup buttons should be shown
 void hud_config_set_button_state()
 {
-	if ( HC_gauge_selected < 0 ) {
+	if (HC_gauge_selected.empty()) {
 		hud_config_button_disable(HCB_ON);
 		hud_config_button_disable(HCB_OFF);
 		hud_config_button_disable(HCB_POPUP);
@@ -1536,7 +1339,7 @@ void hud_config_render_description()
 {
 	int w,h,sx,sy;
 
-	if ( HC_gauge_selected >= 0 ) {
+	if (!HC_gauge_selected.empty()) {
 		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
 
 		if (gauge != nullptr) {
@@ -1642,7 +1445,7 @@ void hud_config_do_frame(float /*frametime*/, bool API_Access, int mx, int my)
 		return;
 	}
 
-	HC_gauge_hot = -1;
+	HC_gauge_hot.clear();
 
 	if (!API_Access) {
 		hud_config_set_button_state();
@@ -1734,16 +1537,21 @@ void hud_set_default_hud_config(player * /*p*/, const char* filename)
 	HUD_color_green = HC_colors[HUD_config.main_color].g;
 	HUD_color_blue = HC_colors[HUD_config.main_color].b;
 
+	color clr;
+	gr_init_alphacolor(&clr, HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha + 1) * 16);
+
 	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha+1)*16);
+		SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+		HUD_config.set_gauge_color(gauge, clr);
 	}
 
-	HUD_config.show_flags = HUD_config_default_flags;
-	HUD_config.show_flags2 = HUD_config_default_flags2;
-	HUD_config.popup_flags = HUD_default_popup_mask;
-	HUD_config.popup_flags2 = HUD_default_popup_mask2;
-	HUD_config.num_msg_window_lines			= 4;	// one more than is actually visible
-	HUD_config.rp_flags = RP_DEFAULT;
+	HUD_config.show_flags_map.clear();
+	HUD_config.popup_flags_map.clear();
+
+	for (const auto& gauge_id : default_visible_gauges) {
+		HUD_config.show_flags_map[gauge_id] = true;
+	}
+
 	HUD_config.rp_dist = RR_INFINITY;
 	HUD_config.is_observer = 0;
 
@@ -1787,27 +1595,61 @@ void hud_config_as_player()
 // RGB color stuff
 //
 
-void hud_config_color_save(const char *name)
+void hud_config_color_save(const char *name, int version)
 {
-	int idx;
 	CFILE* out     = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
                         CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
-	char vals[255] = "";
 
-	// bad
-	if(out == NULL){
-		Int3();
+	try {
+
+		if (out == nullptr) {
+			char message[256];
+			sprintf(message, "Unable to open file: %s", name);
+			throw parse::ParseException(message);
+		}
+
+		switch (version) {
+			case 1: {
+				for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+					// Get the gauge string ID from numeric ID
+					SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+					// If the gauge isn't found, default to white
+					color clr = HUD_config.get_gauge_color(gauge_id);
+
+					cfputs("+Gauge: ", out);
+					cfputs(gauge_map.get_hcf_name_from_string_id(gauge_id).c_str(), out);
+					cfputs("\n", out);
+					cfputs("+RGBA: ", out);
+					char vals[255] = "";
+					sprintf(vals, "%d %d %d %d\n\n", clr.red, clr.green, clr.blue, clr.alpha);
+					cfputs(vals, out);
+				}
+				break;
+			}
+			case 2: {
+				cfputs("+VERSION 2\n\n", out);
+				for (const auto& gauge : HUD_config.gauge_colors) {
+					if (gauge.first.empty()) {
+						continue;
+					}
+					cfputs("+Gauge: ", out);
+					cfputs(gauge.first.c_str(), out);
+					cfputs("\n", out);
+					cfputs("+RGBA: ", out);
+					char vals[255] = "";
+					sprintf(vals, "%d %d %d %d\n\n", gauge.second.red, gauge.second.green, gauge.second.blue, gauge.second.alpha);
+					cfputs(vals, out);
+				}
+				break;
+			}
+			default: {
+				throw parse::ParseException("Unknown HUD config version: " + std::to_string(version));
+			}
+		}
+	
+	} catch (const parse::ParseException& e) {
+		mprintf(("HUDCONFIG: Unable to save '%s'!  Error message = %s.\n", name, e.what()));
 		return;
-	}
-
-	// write out all gauges
-	for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-		cfputs("+Gauge: ", out);
-		cfputs(HC_gauge_descriptions(idx), out);	
-		cfputs("\n", out);
-		cfputs("+RGBA: ", out);
-		sprintf(vals, "%d %d %d %d\n\n", HUD_config.clr[idx].red, HUD_config.clr[idx].green, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
-		cfputs(vals, out);
 	}
 	
 	// close the file
@@ -1816,10 +1658,6 @@ void hud_config_color_save(const char *name)
 
 void hud_config_color_load(const char *name)
 {
-	int idx;
-	char str[1024];
-	ubyte r, g, b, a;
-
 	const char *fname = cf_add_ext(name, ".hcf");
 
 	try
@@ -1827,28 +1665,46 @@ void hud_config_color_load(const char *name)
 		read_file_text(fname);
 		reset_parse();
 
-		// First, set all gauges to the current main color
-		for (idx = 0; idx < NUM_HUD_GAUGES; idx++){
-			gr_init_alphacolor(&HUD_config.clr[idx], HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha + 1) * 16);
+		HUD_config.gauge_colors.clear();
+		for (const auto& gauge : HC_gauge_map) {
+			color clr;
+			gr_init_alphacolor(&clr, HUD_color_red, HUD_color_green, HUD_color_blue, (HUD_color_alpha + 1) * 16);
+			HUD_config.set_gauge_color(gauge.first, clr);
 		}
 
 		// Now read in the color values for the gauges
+		int version = 1;
+		if (optional_string("+VERSION 2")) {
+			version = 2;
+		}
 		while (optional_string("+Gauge:")) {
-			stuff_string(str, F_NAME, sizeof(str));
+			SCP_string str;
+			stuff_string(str, F_NAME);
 
 			required_string("+RGBA:");
+			ubyte r, g, b, a;
 			stuff_ubyte(&r);
 			stuff_ubyte(&g);
 			stuff_ubyte(&b);
 			stuff_ubyte(&a);
 
-			for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-				if (!stricmp(str, HC_gauge_descriptions(idx))) {
-					HUD_config.clr[idx].red = r;
-					HUD_config.clr[idx].green = g;
-					HUD_config.clr[idx].blue = b;
-					HUD_config.clr[idx].alpha = a;
+			color clr;
+			gr_init_alphacolor(&clr, r, g, b, a);
+
+			switch (version) {
+				case 1: {
+					SCP_string gauge = gauge_map.get_string_id_from_hcf_id(str);
+					if (!gauge.empty()) {
+						HUD_config.set_gauge_color(gauge, clr);
+					}
 					break;
+				}
+				case 2: {
+					HUD_config.set_gauge_color(str, clr);
+					break;
+				}
+				default: {
+					throw parse::ParseException("Unknown HUD config version: " + std::to_string(version));
 				}
 			}
 		}
@@ -1879,8 +1735,10 @@ void hud_config_alpha_slider_up()
 	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else if (HC_gauge_selected >= 0) {
-		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
+	} else if (!HC_gauge_selected.empty()) {
+		color clr;
+		gr_init_alphacolor(&clr, HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
+		HUD_config.set_gauge_color(HC_gauge_selected, clr);
 	}
 }
 
@@ -1903,8 +1761,10 @@ void hud_config_alpha_slider_down()
 	// apply -- Cyborg17 -- Unless you have nothing to apply it to!
 	if(HC_select_all){
 		hud_config_stuff_colors( HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()) );
-	} else if (HC_gauge_selected >= 0) {
-		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
+	} else if (!HC_gauge_selected.empty()) {
+		color clr;
+		gr_init_alphacolor(&clr, HCS_CONV(HC_color_sliders[HCS_RED].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_GREEN].get_currentItem()), HCS_CONV(HC_color_sliders[HCS_BLUE].get_currentItem()), 255);
+		HUD_config.set_gauge_color(HC_gauge_selected, clr);
 	}
 }
 
@@ -1923,17 +1783,18 @@ void hud_config_red_slider()
 	// select all ?
 	if(HC_select_all){
 		for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-			gr_init_alphacolor(&HUD_config.clr[idx], pos, HUD_config.clr[idx].green, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
+			SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+			gr_init_alphacolor(&HUD_config.gauge_colors[gauge], pos, HUD_config.gauge_colors[gauge].green, HUD_config.gauge_colors[gauge].blue, HUD_config.gauge_colors[gauge].alpha);
 		}
 	}
 	// individual gauge
 	else {
-		if(HC_gauge_selected < 0){
+		if(HC_gauge_selected.empty()){
 			return;
 		}
 
 		// get slider position	
-		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], pos, HUD_config.clr[HC_gauge_selected].green, HUD_config.clr[HC_gauge_selected].blue, HUD_config.clr[HC_gauge_selected].alpha);
+		gr_init_alphacolor(&HUD_config.gauge_colors[HC_gauge_selected], pos, HUD_config.gauge_colors[HC_gauge_selected].green, HUD_config.gauge_colors[HC_gauge_selected].blue, HUD_config.gauge_colors[HC_gauge_selected].alpha);
 	}	
 
 	hud_config_recalc_alpha_slider();
@@ -1947,17 +1808,18 @@ void hud_config_green_slider()
 	// select all ?
 	if(HC_select_all){
 		for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-			gr_init_alphacolor(&HUD_config.clr[idx], HUD_config.clr[idx].red, pos, HUD_config.clr[idx].blue, HUD_config.clr[idx].alpha);
+			SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+			gr_init_alphacolor(&HUD_config.gauge_colors[gauge], HUD_config.gauge_colors[gauge].red, pos, HUD_config.gauge_colors[gauge].blue, HUD_config.gauge_colors[gauge].alpha);
 		}
 	}
 	// individual gauge
 	else {
-		if(HC_gauge_selected < 0){
+		if(HC_gauge_selected.empty()){
 			return;
 		}
 
 		// get slider position	
-		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HUD_config.clr[HC_gauge_selected].red, pos, HUD_config.clr[HC_gauge_selected].blue, HUD_config.clr[HC_gauge_selected].alpha);
+		gr_init_alphacolor(&HUD_config.gauge_colors[HC_gauge_selected], HUD_config.gauge_colors[HC_gauge_selected].red, pos, HUD_config.gauge_colors[HC_gauge_selected].blue, HUD_config.gauge_colors[HC_gauge_selected].alpha);
 	}	
 
 	hud_config_recalc_alpha_slider();
@@ -1971,17 +1833,18 @@ void hud_config_blue_slider()
 	// select all ?
 	if(HC_select_all){
 		for(idx=0; idx<NUM_HUD_GAUGES; idx++){
-			gr_init_alphacolor(&HUD_config.clr[idx], HUD_config.clr[idx].red, HUD_config.clr[idx].green, pos, HUD_config.clr[idx].alpha);
+			SCP_string gauge = gauge_map.get_string_id_from_numeric_id(idx);
+			gr_init_alphacolor(&HUD_config.gauge_colors[gauge], HUD_config.gauge_colors[gauge].red, HUD_config.gauge_colors[gauge].green, pos, HUD_config.gauge_colors[gauge].alpha);
 		}
 	}
 	// individual gauge
 	else {
-		if(HC_gauge_selected < 0){
+		if(HC_gauge_selected.empty()){
 			return;
 		}
 
 		// get slider position	
-		gr_init_alphacolor(&HUD_config.clr[HC_gauge_selected], HUD_config.clr[HC_gauge_selected].red, HUD_config.clr[HC_gauge_selected].green, pos, HUD_config.clr[HC_gauge_selected].alpha);
+		gr_init_alphacolor(&HUD_config.gauge_colors[HC_gauge_selected], HUD_config.gauge_colors[HC_gauge_selected].red, HUD_config.gauge_colors[HC_gauge_selected].green, pos, HUD_config.gauge_colors[HC_gauge_selected].alpha);
 	}	
 
 	hud_config_recalc_alpha_slider();
@@ -2022,7 +1885,7 @@ void hud_config_delete_preset(SCP_string filename)
 void hud_config_select_none()
 {
 	HC_select_all = false;
-	HC_gauge_selected = -1;
+	HC_gauge_selected.clear();
 }
 
 void hud_config_select_hud(bool next)
@@ -2060,21 +1923,22 @@ void hud_config_select_all_toggle(bool toggle, bool API_Access)
 		hud_config_synch_ui(API_Access);
 		
 		// if we had a gauge previously selected, use its color everywhere
-		if(HC_gauge_selected < 0){
-			r = HUD_config.clr[HUD_RADAR].red;
-			g = HUD_config.clr[HUD_RADAR].green;
-			b = HUD_config.clr[HUD_RADAR].blue;			
-			a = HUD_config.clr[HUD_RADAR].alpha;
+		if(HC_gauge_selected.empty()){
+			SCP_string gauge = gauge_map.get_string_id_from_numeric_id(HUD_RADAR);
+			r = HUD_config.gauge_colors[gauge].red;
+			g = HUD_config.gauge_colors[gauge].green;
+			b = HUD_config.gauge_colors[gauge].blue;			
+			a = HUD_config.gauge_colors[gauge].alpha;
 		} else {
-			r = HUD_config.clr[HC_gauge_selected].red;
-			g = HUD_config.clr[HC_gauge_selected].green;
-			b = HUD_config.clr[HC_gauge_selected].blue;			
-			a = HUD_config.clr[HC_gauge_selected].alpha;
+			r = HUD_config.gauge_colors[HC_gauge_selected].red;
+			g = HUD_config.gauge_colors[HC_gauge_selected].green;
+			b = HUD_config.gauge_colors[HC_gauge_selected].blue;			
+			a = HUD_config.gauge_colors[HC_gauge_selected].alpha;
 		}
 		hud_config_stuff_colors(r, g, b);
 
 		// no gauge selected
-		HC_gauge_selected = -1;		
+		HC_gauge_selected.clear();		
 
 		// enable all sliders
 		if (!API_Access) {

@@ -217,8 +217,9 @@ protected:
 	int position[2];
 	int base_w, base_h;
 	color gauge_color;
-	int gauge_config;
+	int gauge_type; // Used to be the gauge_config numeric ID but now more accurately is used as the type. Will be one of the HUD_ defines from hudgauges.h
 	int gauge_object;
+	SCP_string gauge_config_id;
 
 	int font_num;
 
@@ -304,7 +305,7 @@ public:
 
 	// Config getters
 	SCP_string getConfigName() const;
-	int getConfigId() const;
+	SCP_string getConfigId() const;
 	bool getConfigUseIffColor() const;
 	bool getConfigCanPopup() const;
 	bool getConfigUseTagColor() const;

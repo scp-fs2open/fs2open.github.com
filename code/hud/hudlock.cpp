@@ -293,7 +293,7 @@ void HudGaugeLock::render(float frametime, bool config)
 		int w;
 		int h;
 		// Will need actual coords for the below if we activate this gauge in config
-		hud_config_set_mouse_coords(gauge_config, x, x + w, y, y + h);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
 
 		setGaugeColor(HUD_C_NONE, config);*/
 
