@@ -241,91 +241,6 @@ static bool hud_config_use_tag_color(int gauge_index)
 	}
 }
 
-static SCP_string hud_gauge_config_name(int n)
-{
-	switch (n) {
-	case HUD_LEAD_INDICATOR:
-		return XSTR("lead indicator", 249);
-	case HUD_ORIENTATION_TEE:
-		return XSTR("target orientation", 250);
-	case HUD_HOSTILE_TRIANGLE:
-		return XSTR("closest attacking hostile", 251);
-	case HUD_TARGET_TRIANGLE:
-		return XSTR("current target direction", 252);
-	case HUD_MISSION_TIME:
-		return XSTR("mission time", 253);
-	case HUD_RETICLE_CIRCLE:
-		return XSTR("reticle", 254);
-	case HUD_THROTTLE_GAUGE:
-		return XSTR("throttle", 255);
-	case HUD_RADAR:
-		return XSTR("radar", 256);
-	case HUD_TARGET_MONITOR:
-		return XSTR("target monitor", 257);
-	case HUD_CENTER_RETICLE:
-		return XSTR("center of reticle", 258);
-	case HUD_TARGET_MONITOR_EXTRA_DATA:
-		return XSTR("extra target info", 259);
-	case HUD_TARGET_SHIELD_ICON:
-		return XSTR("target shield", 260);
-	case HUD_PLAYER_SHIELD_ICON:
-		return XSTR("player shield", 261);
-	case HUD_ETS_GAUGE:
-		return XSTR("power management", 262);
-	case HUD_AUTO_TARGET:
-		return XSTR("auto-target icon", 263);
-	case HUD_AUTO_SPEED:
-		return XSTR("auto-speed-match icon", 264);
-	case HUD_WEAPONS_GAUGE:
-		return XSTR("weapons display", 265);
-	case HUD_ESCORT_VIEW:
-		return XSTR("monitoring view", 266);
-	case HUD_DIRECTIVES_VIEW:
-		return XSTR("directives view", 267);
-	case HUD_THREAT_GAUGE:
-		return XSTR("threat gauge", 268);
-	case HUD_AFTERBURNER_ENERGY:
-		return XSTR("afterburner energy", 269);
-	case HUD_WEAPONS_ENERGY:
-		return XSTR("weapons energy", 270);
-	case HUD_WEAPON_LINKING_GAUGE:
-		return XSTR("weapon linking", 271);
-	case HUD_TARGET_MINI_ICON:
-		return XSTR("target hull/shield icon", 272);
-	case HUD_OFFSCREEN_INDICATOR:
-		return XSTR("offscreen indicator", 273);
-	case HUD_TALKING_HEAD:
-		return XSTR("comm video", 274);
-	case HUD_DAMAGE_GAUGE:
-		return XSTR("damage display", 275);
-	case HUD_MESSAGE_LINES:
-		return XSTR("message output", 276);
-	case HUD_MISSILE_WARNING_ARROW:
-		return XSTR("locked missile direction", 277);
-	case HUD_CMEASURE_GAUGE:
-		return XSTR("countermeasures", 278);
-	case HUD_OBJECTIVES_NOTIFY_GAUGE:
-		return XSTR("objective notify", 279);
-	case HUD_WINGMEN_STATUS:
-		return XSTR("wingmen status", 280);
-	case HUD_OFFSCREEN_RANGE:
-		return XSTR("offscreen range", 281);
-	case HUD_KILLS_GAUGE:
-		return XSTR("kills gauge", 282);
-	case HUD_ATTACKING_TARGET_COUNT:
-		return XSTR("attacking target count", 283);
-	case HUD_TEXT_FLASH:
-		return XSTR("warning flash", 1459);
-	case HUD_MESSAGE_BOX:
-		return XSTR("comm menu", 1460);
-	case HUD_SUPPORT_GAUGE:
-		return XSTR("support gauge", 1461);
-	case HUD_LAG_GAUGE:
-		return XSTR("lag gauge", 1462);
-	}
-	return "";
-}
-
 //	Saturate a value in minv..maxv.
 void saturate(int *i, int minv, int maxv)
 {
@@ -375,7 +290,7 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
+base_w(0), base_h(0), gauge_type(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
 active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
@@ -386,6 +301,13 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	flash_duration = timestamp(1);
 	flash_next = timestamp(1);
 	flash_status = false;
+
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = ""; //gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 
 	popup_timer = timestamp(1);
 
@@ -399,12 +321,12 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 }
 
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
+base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
 disabled_views(_disabled_views), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
-	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
+	Assertion(_gauge_config <= NUM_HUD_GAUGES && _gauge_config >= 0, "Gauge has an invalid config ID!");
 
 	position[0] = 0;
 	position[1] = 0;
@@ -425,10 +347,13 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 	texture_target_fname[0] = '\0';
 
-	config_name = hud_gauge_config_name(gauge_config);
-	can_popup = hud_config_can_popup(gauge_config);
-	use_iff_color = hud_config_use_iff_color(gauge_config);
-	use_tag_color = hud_config_use_tag_color(gauge_config);
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	config_name = gauge_map.get_hcf_name_from_string_id(gauge_config_id);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 
 	custom_name[0] = '\0';
 	custom_text = "";
@@ -440,7 +365,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
+base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
 disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
 render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
@@ -457,6 +382,13 @@ render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), tex
 	flash_duration = timestamp(1);
 	flash_next = timestamp(1);
 	flash_status = false;
+
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = ""; // gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 
 	popup_timer = timestamp(1);
 
@@ -530,9 +462,9 @@ SCP_string HudGauge::getConfigName() const
 	return config_name;
 }
 
-int HudGauge::getConfigId() const
+SCP_string HudGauge::getConfigId() const
 {
-	return gauge_config;
+	return gauge_config_id;
 }
 
 bool HudGauge::getConfigUseIffColor() const
@@ -650,34 +582,43 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 	int alpha;
 
 	if (config) {
-		color* use_color;
-		use_color = &HUD_config.clr[gauge_config];
+		color use_color;
+		if (custom_gauge) {
+			// Custom gauges currently use the color based on their gauge type
+			HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+			use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_type));
+		} else {
+			use_color = HUD_config.get_gauge_color(gauge_config_id);
+		}
 		
-		if (hud_config_show_flag_is_set(gauge_config)) {
-			// Eventually we should allow custom gauges to use IFF colors maybe? Then we can unhardcode this
-			// and rely on the gauge data itself. But for now only specific gauges use iff and that's hard coded here
+		if (!custom_gauge && HUD_config.is_gauge_visible(gauge_config_id)) {
 			if (use_iff_color) {
 				// Ditto for target tagging color
 				if (use_tag_color) {
-					use_color = iff_get_color(IFF_COLOR_TAGGED, 0);
+					use_color = *iff_get_color(IFF_COLOR_TAGGED, 0);
 				} else {
-					use_color = &Color_bright_red;
+					use_color = Color_bright_red;
 				}
 			}
 
-			if ((HC_gauge_selected == gauge_config) || HC_select_all) {
+			if ((HC_gauge_selected == gauge_config_id) || HC_select_all) {
 				alpha = 255;
-			} else if (HC_gauge_hot == gauge_config) {
+			} else if (HC_gauge_hot == gauge_config_id) {
 				alpha = 200;
 			} else {
 				alpha = 150;
 			}
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
-			gr_set_color_fast(use_color);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_set_color_fast(&use_color);
+		} else if (custom_gauge) {
+			// Custom gauges currently use the current color but alpha dimmed since they are not selectable
+			alpha = MAX(use_color.alpha - 50, 25);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_set_color_fast(&use_color);
 		} else {
 			// if its off, make it dark gray
-			gr_init_alphacolor(use_color, 127, 127, 127, 64);
-			gr_set_color_fast(use_color);
+			gr_init_alphacolor(&use_color, 127, 127, 127, 64);
+			gr_set_color_fast(&use_color);
 		}
 	} else {
 		// if we're drawing it as bright
@@ -768,7 +709,7 @@ float HudGauge::getAspectQuotient() const
 
 int HudGauge::getConfigType() const
 {
-	return gauge_config;
+	return gauge_type;
 }
 
 int HudGauge::getObjectType() const
@@ -933,7 +874,7 @@ void HudGauge::render(float /*frametime*/, bool config)
 		// The following code will be used to allow custom coloring of custom HUD gauges. This will be implemented in the future.
 		/*int bmw, bmh;
 		bm_get_info(custom_frame.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
@@ -1465,7 +1406,7 @@ bool HudGauge::canRender() const
 		}
 	}
 
-	if (gauge_config == HUD_ETS_GAUGE) {
+	if (gauge_type == HUD_ETS_GAUGE) {
 		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
@@ -2063,7 +2004,7 @@ void HudGaugeMissionTime::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(time_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
@@ -2664,7 +2605,7 @@ void HudGaugeDamage::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(damage_top.first_frame, &bmw, nullptr);
 		bm_get_info(damage_bottom.first_frame, nullptr, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, last_by + fl2i((bottom_bg_offset + bmh) * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, last_by + fl2i((bottom_bg_offset + bmh) * scale));
 	}
 }
 
@@ -2874,7 +2815,7 @@ void HudGaugeTextWarnings::render(float  /*frametime*/, bool config)
 	gr_get_string_size(&w, &h, config ? XSTR("Collision", 1431) : Hud_text_flash, scale);
 
 	if (config) {
-		hud_config_set_mouse_coords(gauge_config, fl2i(i2fl(x) - (i2fl(w) / 2.0f) - 1.0f), x + fl2i(i2fl(w) / 2.0f) + 2, y - 1, y + h + 1);
+		hud_config_set_mouse_coords(gauge_config_id, fl2i(i2fl(x) - (i2fl(w) / 2.0f) - 1.0f), x + fl2i(i2fl(w) / 2.0f) + 2, y - 1, y + h + 1);
 	}
 
 	// set color
@@ -2937,7 +2878,7 @@ void HudGaugeKills::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Kills_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
@@ -3025,7 +2966,7 @@ void HudGaugeLag::render(float /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Netlag_icon.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	int lag_status = config ? 0 : multi_query_lag_status();
@@ -3340,7 +3281,7 @@ void HudGaugeSupport::render(float /*frametime*/, bool config)
 
 	if (config) {
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(w * scale), y, y + fl2i(h * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(w * scale), y, y + fl2i(h * scale));
 	}
 
 	// Set hud color
@@ -3591,7 +3532,9 @@ int hud_gauge_active(int gauge_index)
 		return 0;
 	}
 
-	return hud_config_show_flag_is_set(gauge_index);
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	return HUD_config.is_gauge_visible(gauge_map.get_string_id_from_numeric_id(gauge_index));
 }
 
 /**
@@ -3600,7 +3543,9 @@ int hud_gauge_active(int gauge_index)
 int hud_gauge_is_popup(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
-	return hud_config_popup_flag_is_set(gauge_index);
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	SCP_string gauge = gauge_map.get_string_id_from_numeric_id(gauge_index);
+	return HUD_config.is_gauge_popup(gauge);
 }
 
 /**
@@ -3668,8 +3613,10 @@ void hud_gauge_start_flash(int gauge_index)
  */
 void hud_set_gauge_color(int gauge_index, int bright_index)
 {
+	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
 	int flash_status = hud_gauge_maybe_flash(gauge_index);
-	color *use_color = &HUD_config.clr[gauge_index];
+	color use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_index));
 	int alpha;
 
 	// If we're drawing it as bright
@@ -3677,17 +3624,17 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 		switch(bright_index){
 		case HUD_C_DIM:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		// Intensity
@@ -3710,27 +3657,27 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 			if(alpha < 0){
 				alpha = 0;
 			}
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		}
 	} else {
 		switch(flash_status) {
 		case 0:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		case 1:			
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		default:			
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		}
 	}
 
-	gr_set_color_fast(use_color);	
+	gr_set_color_fast(&use_color);	
 }
 
 /**
@@ -3931,7 +3878,7 @@ void HudGaugeObjectiveNotify::renderSubspace(bool config)
 		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
 	}
 
 	bool warp_aborted = false;
@@ -3988,7 +3935,7 @@ void HudGaugeObjectiveNotify::renderRedAlert(bool config)
 		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
 	}
 
 	if (!config && !red_alert_in_progress() ) {
@@ -4040,10 +3987,10 @@ void HudGaugeObjectiveNotify::renderObjective(bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
-	if ( timestamp_elapsed(Objective_display.display_timer) ) {
+	if (!config && timestamp_elapsed(Objective_display.display_timer) ) {
 		return;
 	}
 
@@ -4434,7 +4381,7 @@ void HudGaugeMultiMsg::render(float /*frametime*/, bool config)
 			/*strcpy(txt, "This is a multiplayer message");
 			int w, h;
 			gr_get_string_size(&w, &h, txt, scale);
-			hud_config_set_mouse_coords(gauge_config, x, x + w, y, y + h);
+			hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
 
 			setGaugeColor(HUD_C_NONE, config);*/
 			return;
@@ -4462,7 +4409,7 @@ void HudGaugeVoiceStatus::render(float /*frametime*/, bool config)
 
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("[playing voice]", 245), scale);
-		hud_config_set_mouse_coords(gauge_config, x, x + w, y, y + h);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
 
 		setGaugeColor(HUD_C_NONE, config);
 
@@ -4522,7 +4469,7 @@ void HudGaugePing::render(float /*frametime*/, bool config)
 
 		int w, h;
 		gr_get_string_size(&w, &h, XSTR("> 1 sec",628), scale);
-		hud_config_set_mouse_coords(gauge_config, x, x + w, y, y + h);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
 
 		setGaugeColor(HUD_C_NONE, config);
 
@@ -4581,7 +4528,7 @@ void HudGaugeSupernova::render(float /*frametime*/, bool config)
 
 		int w, h;
 		gr_get_string_size(&w, &h, txt.c_str(), 245), scale);
-		hud_config_set_mouse_coords(gauge_config, x, x + w, y, y + h);*/
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);*/
 	}
 
 	if (!config && !supernova_active()) {

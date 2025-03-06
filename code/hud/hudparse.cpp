@@ -786,38 +786,44 @@ void init_hud() {
 
 		for(i = 0; i < num_gauges; i++) {
 			config_type = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigType();
+			SCP_string config_id = Ship_info[Player_ship->ship_info_index].hud_gauges[i]->getConfigId();
 
-			if ( !Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type) )
+			if ( !Ship_info[Player_ship->ship_info_index].hud_gauges[i]->isOffbyDefault() && HUD_config.is_gauge_visible(config_id) )
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(true);
 			else
 				Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateActive(false);
 
-			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
-			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateColor(
-				HUD_config.clr[config_type].red, 
-				HUD_config.clr[config_type].green, 
-				HUD_config.clr[config_type].blue, 
-				HUD_config.clr[config_type].alpha
-				);
+			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			color clr;
+			if (config_id.empty()) {
+				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
+			} else {
+				clr = HUD_config.get_gauge_color(config_id);
+			}
+			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updateColor(clr.red, clr.green, clr.blue, clr.alpha);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
 			config_type = default_hud_gauges[i]->getConfigType();
+			SCP_string config_id = default_hud_gauges[i]->getConfigId();
 
-			if ( !default_hud_gauges[i]->isOffbyDefault() && hud_config_show_flag_is_set(config_type) )
+			if ( !default_hud_gauges[i]->isOffbyDefault() && HUD_config.is_gauge_visible(config_id) )
 				default_hud_gauges[i]->updateActive(true);
 			else
 				default_hud_gauges[i]->updateActive(false);
 
-			default_hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
-			default_hud_gauges[i]->updateColor(
-				HUD_config.clr[config_type].red, 
-				HUD_config.clr[config_type].green, 
-				HUD_config.clr[config_type].blue, 
-				HUD_config.clr[config_type].alpha
-				);
+			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			color clr;
+			if (config_id.empty()) {
+				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
+			} else {
+				clr = HUD_config.get_gauge_color(config_id);
+			}
+			default_hud_gauges[i]->updateColor(clr.red, clr.green, clr.blue, clr.alpha);
 		}
 	}
 }
@@ -839,40 +845,46 @@ void set_current_hud()
 		for(i = 0; i < num_gauges; i++) {
 			HudGauge* hgp = Ship_info[Player_ship->ship_info_index].hud_gauges[i].get();
 			config_type = hgp->getConfigType();
+			SCP_string config_id = hgp->getConfigId();
 
-			if ( ( (!hgp->isOffbyDefault() || hgp->isActive()) && hud_config_show_flag_is_set(config_type)) )
+			if ( ( (!hgp->isOffbyDefault() || hgp->isActive()) && HUD_config.is_gauge_visible(config_id)) )
 				hgp->updateActive(true);
 			else
 				hgp->updateActive(false);
 
 			//hgp->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
-			hgp->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
-			hgp->updateColor(
-				HUD_config.clr[config_type].red, 
-				HUD_config.clr[config_type].green, 
-				HUD_config.clr[config_type].blue, 
-				HUD_config.clr[config_type].alpha
-				);
+			hgp->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			color clr;
+			if (config_id.empty()) {
+				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
+			} else {
+				clr = HUD_config.get_gauge_color(config_id);
+			}
+			hgp->updateColor(clr.red, clr.green, clr.blue, clr.alpha);
 		}
 	} else {
 		num_gauges = default_hud_gauges.size();
 
 		for(i = 0; i < num_gauges; i++) {
 			config_type = default_hud_gauges[i]->getConfigType();
+			SCP_string config_id = default_hud_gauges[i]->getConfigId();
 
-			if ( ( (!default_hud_gauges[i]->isOffbyDefault() || default_hud_gauges[i]->isActive()) && hud_config_show_flag_is_set(config_type)) )
+			if ( ( (!default_hud_gauges[i]->isOffbyDefault() || default_hud_gauges[i]->isActive()) &&HUD_config.is_gauge_visible(config_id)) )
 				default_hud_gauges[i]->updateActive(true);
 			else
 				default_hud_gauges[i]->updateActive(false);
 
 			//default_hud_gauges[i]->updateActive(hud_config_show_flag_is_set(config_type) ? true : false);
-			default_hud_gauges[i]->updatePopUp(hud_config_popup_flag_is_set(config_type) ? true : false);
-			default_hud_gauges[i]->updateColor(
-				HUD_config.clr[config_type].red, 
-				HUD_config.clr[config_type].green, 
-				HUD_config.clr[config_type].blue, 
-				HUD_config.clr[config_type].alpha
-				);
+			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
+			color clr;
+			if (config_id.empty()) {
+				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
+			} else {
+				clr = HUD_config.get_gauge_color(config_id);
+			}
+			default_hud_gauges[i]->updateColor(clr.red, clr.green, clr.blue, clr.alpha);
 		}
 	}
 }

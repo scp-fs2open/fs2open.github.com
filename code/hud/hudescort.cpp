@@ -286,7 +286,7 @@ void HudGaugeEscort::render(float  /*frametime*/, bool config)
 	if (config) {
 		int bmw, bmh;
 		bm_get_info(Escort_gauges[2].first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, lx + fl2i(bmw * scale), y, ly + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, lx + fl2i(bmw * scale), y, ly + fl2i(bmh * scale));
 	}
 }
 

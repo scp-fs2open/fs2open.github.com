@@ -2402,7 +2402,7 @@ ADE_FUNC(initHudConfig,
 	"[number X, number Y, number Width, number height]",
 	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
 	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
-	"Width is the pixel width to draw the gauges preview. Height is hte pixel height to draw the gauges preview.",
+	"Width is the pixel width to draw the gauges preview. Height is the pixel height to draw the gauges preview.",
 	nullptr,
 	nullptr)
 {
@@ -2451,7 +2451,7 @@ ADE_FUNC(drawHudConfig,
 
 	hud_config_do_frame(0.0f, true, mx, my);
 
-	if (HC_gauge_hot >= 0) {
+	if (!HC_gauge_hot.empty()) {
 		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
 	} else {
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
@@ -2589,15 +2589,15 @@ ADE_INDEXER(l_HUD_Gauges,
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert from Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= static_cast<int>(HC_gauge_map.size())))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 
-	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_map[idx].first)));
 }
 
 ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
 {
-	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+	return ade_set_args(L, "i", static_cast<int>(HC_gauge_map.size()));
 }
 
 ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
