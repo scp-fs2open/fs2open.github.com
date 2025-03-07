@@ -82,8 +82,8 @@ CJumpNode::CJumpNode(CJumpNode&& other) noexcept
 	m_display_color = other.m_display_color;
 	m_pos = other.m_pos;
 
-	strcpy_s(m_name, other.m_name);
-	strcpy_s(m_display, other.m_display);
+	std::memmove(m_name, other.m_name, NAME_LENGTH);
+	std::memmove(m_display, other.m_display, NAME_LENGTH);
 }
 
 CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
@@ -105,8 +105,8 @@ CJumpNode& CJumpNode::operator=(CJumpNode&& other) noexcept
 		m_display_color = other.m_display_color;
 		m_pos = other.m_pos;
 
-		strcpy_s(m_name, other.m_name);
-		strcpy_s(m_display, other.m_display);
+		std::memmove(m_name, other.m_name, NAME_LENGTH);
+		std::memmove(m_display, other.m_display, NAME_LENGTH);
 	}
 
 	return *this;

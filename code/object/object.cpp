@@ -187,18 +187,74 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
-	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
+	: next(nullptr), prev(nullptr), signature(0), type(OBJ_NONE), parent(-1), parent_sig(0), instance(-1), pos(vmd_zero_vector), orient(vmd_identity_matrix),
+	radius(0.0f), last_pos(vmd_zero_vector), last_orient(vmd_identity_matrix), n_quadrants(0), hull_strength(0.0f), sim_hull_strength(0.0f), net_signature(0),
+	num_pairs(0), dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
 
 object::~object()
 {
-	objsnd_num.clear();
-
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
+}
+
+object::object(object&& other) noexcept
+	: next(other.next), prev(other.prev), signature(other.signature), type(other.type), parent(other.parent), parent_sig(other.parent_sig), instance(other.instance),
+	flags(other.flags), pos(other.pos), orient(other.orient), radius(other.radius), last_pos(other.last_pos), last_orient(other.last_orient), phys_info(other.phys_info),
+	n_quadrants(other.n_quadrants), shield_quadrant(std::move(other.shield_quadrant)), hull_strength(other.hull_strength), sim_hull_strength(other.sim_hull_strength),
+	objsnd_num(std::move(other.objsnd_num)), net_signature(other.net_signature), num_pairs(other.num_pairs), dock_list(other.dock_list),
+	dead_dock_list(other.dead_dock_list), collision_group_id(other.collision_group_id),
+	pre_move_event(std::move(other.pre_move_event)), post_move_event(std::move(other.post_move_event))
+{
+	// to prevent freeing memory repeatedly
+	other.dock_list = nullptr;
+	other.dead_dock_list = nullptr;
+}
+
+object& object::operator=(object&& other) noexcept
+{
+	if (this == &other)
+		return *this;
+
+	// free what we have
+	dock_free_dock_list(this);
+	dock_free_dead_dock_list(this);
+
+	// move everything
+	next = other.next;
+	prev = other.prev;
+	signature = other.signature;
+	type = other.type;
+	parent = other.parent;
+	parent_sig = other.parent_sig;
+	instance = other.instance;
+	flags = other.flags;
+	pos = other.pos;
+	orient = other.orient;
+	radius = other.radius;
+	last_pos = other.last_pos;
+	last_orient = other.last_orient;
+	phys_info = other.phys_info;
+	n_quadrants = other.n_quadrants;
+	shield_quadrant = std::move(other.shield_quadrant);
+	hull_strength = other.hull_strength;
+	sim_hull_strength = other.sim_hull_strength;
+	objsnd_num = std::move(other.objsnd_num);
+	net_signature = other.net_signature;
+	num_pairs = other.num_pairs;
+	dock_list = other.dock_list;
+	dead_dock_list = other.dead_dock_list;
+	collision_group_id = other.collision_group_id;
+	pre_move_event = std::move(other.pre_move_event);
+	post_move_event = std::move(other.post_move_event);
+
+	// to prevent freeing memory repeatedly
+	other.dock_list = nullptr;
+	other.dead_dock_list = nullptr;
+
+	return *this;
 }
 
 // DO NOT set next and prev to NULL because they keep the object on the free and used lists
