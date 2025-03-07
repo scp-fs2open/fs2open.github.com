@@ -73,6 +73,9 @@ namespace io
 		
 		Cursor& Cursor::operator=(Cursor&& other) noexcept
 		{
+			if (this == &other)
+				return *this;
+
 			std::swap(this->mAnimationFrames, other.mAnimationFrames);
 			
 			this->mBitmapHandle = other.mBitmapHandle;

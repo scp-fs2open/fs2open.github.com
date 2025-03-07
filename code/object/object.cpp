@@ -187,16 +187,15 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(nullptr), prev(nullptr), type(OBJ_NONE), parent(-1), instance(-1), hull_strength(0.0), sim_hull_strength(0.0),
-	net_signature(0), num_pairs(0), dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
+	: next(nullptr), prev(nullptr), signature(0), type(OBJ_NONE), parent(-1), parent_sig(0), instance(-1), pos(vmd_zero_vector), orient(vmd_identity_matrix),
+	radius(0.0f), last_pos(vmd_zero_vector), last_orient(vmd_identity_matrix), hull_strength(0.0f), sim_hull_strength(0.0f), net_signature(0), num_pairs(0),
+	dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
 
 object::~object()
 {
-	objsnd_num.clear();
-
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
 }

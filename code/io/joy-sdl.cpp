@@ -599,6 +599,9 @@ namespace joystick
 
 	Joystick &Joystick::operator=(Joystick &&other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);
 

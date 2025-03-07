@@ -641,7 +641,14 @@ namespace animation {
 		operator=(other);
 	}
 
+	ModelAnimationSet::ModelAnimationSet(ModelAnimationSet&& other) noexcept {
+		*this = std::move(other);
+	}
+
 	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) noexcept {
+		if (this == &other)
+			return *this;
+
 		std::swap(m_submodels, other.m_submodels);
 		std::swap(m_animationSet, other.m_animationSet);
 		std::swap(m_moveableSet, other.m_moveableSet);
@@ -655,8 +662,6 @@ namespace animation {
 				}
 			}
 		}
-
-
 
 		return *this;
 	}

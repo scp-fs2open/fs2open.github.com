@@ -321,6 +321,7 @@ namespace animation {
 	public:
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);
+		ModelAnimationSet(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
