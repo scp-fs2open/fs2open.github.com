@@ -161,6 +161,7 @@ bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
 EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
+bool Fix_asteroid_bounding_box_check;
 
 
 #ifdef WITH_DISCORD
@@ -1479,6 +1480,10 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			if (optional_string("$Fix asteroid/debris field bounding box checks:")) {
+				stuff_boolean(&Fix_asteroid_bounding_box_check);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1704,6 +1709,7 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
 	escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+	Fix_asteroid_bounding_box_check = false;
 }
 
 void mod_table_set_version_flags()
@@ -1727,5 +1733,6 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(25, 0, 0)) {
 		Use_model_eyepoint_for_set_camera_host = true;
+		Fix_asteroid_bounding_box_check = true;
 	}
 }
