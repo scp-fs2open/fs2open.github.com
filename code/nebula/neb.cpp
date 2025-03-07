@@ -68,7 +68,7 @@ const float UPKEEP_DIST_MULT = 1.2f;
 const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 
 // bit array of neb2 poofs
-std::unique_ptr<ubyte> Neb2_poof_flags;
+std::unique_ptr<ubyte[]> Neb2_poof_flags;
 
 // array of neb2 bitmaps
 SCP_vector<SCP_string> Neb2_bitmap_filenames;
@@ -359,7 +359,7 @@ void neb2_init()
 	Poof_accum.resize(Poof_info.size());
 
 	// set up bit string
-	Neb2_poof_flags.reset(new ubyte[calculate_num_bytes(Poof_info.size())]);
+	Neb2_poof_flags = std::make_unique<ubyte[]>(calculate_num_bytes(Poof_info.size()));
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 }
 
