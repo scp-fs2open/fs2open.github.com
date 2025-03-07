@@ -355,7 +355,7 @@ void hud_config_delete_preset(SCP_string filename);
  * param[in] on_flag		if the gauge is on or off, 1 for on, 0 for off
  * param[in] popup_flag		if the gauge is set to popup, 1 for popup, 0 otherwise
  */
-void hud_config_set_gauge_flags(SCP_string gauge, bool on_flag, bool popup_flag);
+void hud_config_set_gauge_flags(const SCP_string& gauge, bool on_flag, bool popup_flag);
 
 void hud_config_restore();
 void hud_config_backup();
@@ -426,7 +426,7 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
 /*!
  * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
  */
-float hud_config_find_valid_angle(SCP_string gauge, float initial_angle, int centerX, int centerY, float radius);
+float hud_config_find_valid_angle(const SCP_string& gauge, float initial_angle, int centerX, int centerY, float radius);
 
 #endif
 

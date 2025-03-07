@@ -796,7 +796,7 @@ void init_hud() {
 			Ship_info[Player_ship->ship_info_index].hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
-				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
 			} else {
 				clr = HUD_config.get_gauge_color(config_id);
@@ -818,7 +818,7 @@ void init_hud() {
 			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
-				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
 			} else {
 				clr = HUD_config.get_gauge_color(config_id);
@@ -856,7 +856,7 @@ void set_current_hud()
 			hgp->updatePopUp(HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
-				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
 			} else {
 				clr = HUD_config.get_gauge_color(config_id);
@@ -879,7 +879,7 @@ void set_current_hud()
 			default_hud_gauges[i]->updatePopUp(HUD_config.is_gauge_popup(config_id));
 			color clr;
 			if (config_id.empty()) {
-				HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+				const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 				clr = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(config_type)];
 			} else {
 				clr = HUD_config.get_gauge_color(config_id);

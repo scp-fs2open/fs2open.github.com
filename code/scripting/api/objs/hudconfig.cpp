@@ -9,8 +9,7 @@
 namespace scripting {
 namespace api {
 
-gauge_config_h::gauge_config_h() : gauge() {}
-gauge_config_h::gauge_config_h(SCP_string l_gauge) : gauge(l_gauge) {}
+gauge_config_h::gauge_config_h(SCP_string l_gauge) : gauge(std::move(l_gauge)) {}
 
 HudGauge* gauge_config_h::getGauge() const
 {

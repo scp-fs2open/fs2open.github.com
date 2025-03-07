@@ -682,7 +682,7 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
 	return {screenX, screenY};
 }
 
-float hud_config_find_valid_angle(SCP_string gauge, float initial_angle, int centerX, int centerY, float radius)
+float hud_config_find_valid_angle(const SCP_string& gauge, float initial_angle, int centerX, int centerY, float radius)
 {
 	const int max_iterations = 360; // Prevent infinite loops
 	float angle = initial_angle;
@@ -899,7 +899,7 @@ void hud_config_check_regions(int mx, int my)
 }
 
 // set the display flags for a HUD gauge
-void hud_config_set_gauge_flags(SCP_string gauge, bool on_flag, bool popup_flag)
+void hud_config_set_gauge_flags(const SCP_string& gauge, bool on_flag, bool popup_flag)
 {
 	HUD_config.set_gauge_visibility(gauge, on_flag);
 	HUD_config.set_gauge_popup(gauge, popup_flag);
