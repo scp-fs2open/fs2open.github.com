@@ -2214,6 +2214,7 @@ typedef struct eval_nearest_objnum {
 	object *trial_objp;
 	int	enemy_team_mask;
 	int enemy_ship_info_index;
+	int enemy_class_type;
 	int	enemy_wing;
 	float	range;
 	int	max_attackers;
@@ -2245,6 +2246,10 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
 
 			//	If only supposed to attack ships of a certain ship class, don't attack other ships.
 			if ((eno->enemy_ship_info_index >= 0) && (shipp->ship_info_index != eno->enemy_ship_info_index))
+				return;
+
+			//	If only supposed to attack ships of a certain ship type, don't attack other ships.
+			if ((eno->enemy_class_type >= 0) && (Ship_info[shipp->ship_info_index].class_type != eno->enemy_class_type))
 				return;
 
 			//	Don't keep firing at a ship that is in its death throes.
@@ -2335,8 +2340,9 @@ void evaluate_object_as_nearest_objnum(eval_nearest_objnum *eno)
  * @param range				Ship must be within range "range".
  * @param max_attackers		Don't attack a ship that already has at least max_attackers attacking it.
  * @param ship_info_index	If >=0, the enemy object must be of the specified ship class
+ * @param class_type		If >=0, the enemy object must be of the specified ship type
  */
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index)
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index, int class_type)
 {
 	object	*danger_weapon_objp;
 	ai_info	*aip;
@@ -2346,6 +2352,7 @@ int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float ra
 	eval_nearest_objnum eno;
 	eno.enemy_team_mask = enemy_team_mask;
 	eno.enemy_ship_info_index = ship_info_index;
+	eno.enemy_class_type = class_type;
 	eno.enemy_wing = enemy_wing;
 	eno.max_attackers = max_attackers;
 	eno.objnum = objnum;
@@ -2498,8 +2505,10 @@ int get_enemy_timestamp()
  * @param objnum		Object number
  * @param range			Range within which to look
  * @param max_attackers Don't attack a ship that already has at least max_attackers attacking it.
+ * @param ship_info_index  If specified, restrict the search to enemies with this ship class
+ * @param class_type     If specified, restrict the search to enemies with this ship type
  */
-int find_enemy(int objnum, float range, int max_attackers, int ship_info_index)
+int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, int class_type)
 {
 	int	enemy_team_mask;
 
@@ -2514,12 +2523,16 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index)
 		aip->choose_enemy_timestamp = timestamp(get_enemy_timestamp());
 		if (aip->target_objnum != -1) {
 			int	target_objnum = aip->target_objnum;
+			ship* target_shipp = &Ships[Objects[target_objnum].instance];
 
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves our of nebula range.  (BAD)
 			if ( Objects[target_objnum].signature == aip->target_signature ) {
-				if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-					if (ship_info_index < 0 || ship_info_index == Ships[Objects[target_objnum].instance].ship_info_index) {
+				if (iff_matches_mask(target_shipp->team, enemy_team_mask)) {
+					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
+						if (class_type < 0 || class_type == Ship_info[target_shipp->ship_info_index].class_type) {
+						
+						}
 						if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) {
 							return target_objnum;
 						}
@@ -2573,7 +2586,7 @@ void force_avoid_player_check(object *objp, ai_info *aip)
  * If attacked == NULL, then attack any enemy object.
  * Attack point *rel_pos on object.  This is for supporting attacking subsystems.
  */
-void ai_attack_object(object* attacker, object* attacked, int ship_info_index)
+void ai_attack_object(object* attacker, object* attacked, int ship_info_index, int class_type)
 {
 	int temp;
 	ai_info* aip;
