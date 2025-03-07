@@ -1733,5 +1733,6 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(25, 0, 0)) {
 		Use_model_eyepoint_for_set_camera_host = true;
+		Fix_asteroid_bounding_box_check = true;
 	}
 }
