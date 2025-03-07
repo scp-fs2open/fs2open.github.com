@@ -8,11 +8,10 @@ namespace api {
 
 struct gauge_config_h {
 	SCP_string gauge;
-	gauge_config_h();
+	gauge_config_h() = default;
 	explicit gauge_config_h(SCP_string l_gauge);
 	HudGauge* getGauge() const;
 	SCP_string getId() const;
-	const char* getName() const;
 	bool isValid() const;
 };
 

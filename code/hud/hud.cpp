@@ -302,7 +302,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	flash_next = timestamp(1);
 	flash_status = false;
 
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	gauge_config_id = ""; //gauge_map.get_string_id_from_numeric_id(_gauge_config);
 	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
@@ -347,7 +347,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 	texture_target_fname[0] = '\0';
 
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	gauge_config_id = gauge_map.get_string_id_from_numeric_id(_gauge_config);
 	config_name = gauge_map.get_hcf_name_from_string_id(gauge_config_id);
@@ -383,7 +383,7 @@ render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), tex
 	flash_next = timestamp(1);
 	flash_status = false;
 
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	gauge_config_id = ""; // gauge_map.get_string_id_from_numeric_id(_gauge_config);
 	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
@@ -585,7 +585,7 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 		color use_color;
 		if (custom_gauge) {
 			// Custom gauges currently use the color based on their gauge type
-			HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+			const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 			use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_type));
 		} else {
 			use_color = HUD_config.get_gauge_color(gauge_config_id);
@@ -3532,7 +3532,7 @@ int hud_gauge_active(int gauge_index)
 		return 0;
 	}
 
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	return HUD_config.is_gauge_visible(gauge_map.get_string_id_from_numeric_id(gauge_index));
 }
@@ -3543,7 +3543,7 @@ int hud_gauge_active(int gauge_index)
 int hud_gauge_is_popup(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 	SCP_string gauge = gauge_map.get_string_id_from_numeric_id(gauge_index);
 	return HUD_config.is_gauge_popup(gauge);
 }
@@ -3613,7 +3613,7 @@ void hud_gauge_start_flash(int gauge_index)
  */
 void hud_set_gauge_color(int gauge_index, int bright_index)
 {
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	int flash_status = hud_gauge_maybe_flash(gauge_index);
 	color use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_index));

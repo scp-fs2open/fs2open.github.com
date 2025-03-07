@@ -1013,7 +1013,7 @@ void pilotfile::csg_write_redalert()
 
 void pilotfile::csg_read_hud()
 {
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 	
 	int strikes = 0;
 
@@ -1103,7 +1103,7 @@ void pilotfile::csg_write_hud()
 	startSection(Section::HUD);
 
 	// Get gauge mappings instance
-	HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 	// Initialize bitfields
 	int show_flags = 0, show_flags2 = 0;
