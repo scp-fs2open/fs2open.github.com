@@ -6186,7 +6186,7 @@ void HudGaugeWeaponEnergy::render(float /*frametime*/, bool config)
 			}
 
 			if ( Moving_text ) {
-				delta_y = clip_h;
+				delta_y = fl2i(clip_h * scale);
 			}
 
 			hud_num_make_mono(buf, font_num);
@@ -6196,7 +6196,7 @@ void HudGaugeWeaponEnergy::render(float /*frametime*/, bool config)
 				delta_x = -w;
 			}
 
-			renderString(x + fl2i(Wenergy_text_offsets[0] + delta_x * scale), y + fl2i(Wenergy_text_offsets[1] + delta_y * scale), buf, scale, config);
+			renderString(x + fl2i(Wenergy_text_offsets[0] * scale) + delta_x, y + fl2i(Wenergy_text_offsets[1] * scale) + delta_y, buf, scale, config);
 		}
 
 		setGaugeColor(HUD_C_NONE, config);
