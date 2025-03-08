@@ -136,9 +136,12 @@ void hud_shield_level_init()
 		Hud_shield_inited = 1;
 	}
 
-	Shield_mini_gauge.first_frame = bm_load_animation("targhit1", &Shield_mini_gauge.num_frames);
+	// the shield mini gauge is loaded in HudGaugeShieldMini::pageIn()
+	// though it wouldn't hurt to keep this old failsafe code here
+	// since we are setting the status of if the mini shield was loaded
+	// --wookieejedi
 	if ( Shield_mini_gauge.first_frame == -1 ) {
-		Warning(LOCATION, "Could not load in the HUD shield ani: targhit1\n");
+		Warning(LOCATION, "Could not load in the HUD shield ani \n");
 		return;
 	}
 	Shield_mini_loaded = 1;
