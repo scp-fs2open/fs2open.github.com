@@ -291,12 +291,14 @@ void ai_manage_ets(object* obj)
 	// emergency check for ships with shields
 	if (!(obj->flags[Object::Object_Flags::No_shields])) {
 		float shield_left_percent = get_shield_pct(obj);
-		if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
-			if (ship_p->target_shields_delta == 0.0f)
-				transfer_energy_to_shields(obj);
-		} else if ( weapon_left_percent < WEAPONS_EMERG_LEVEL_PERCENT ) {
-			if ( shield_left_percent > SHIELDS_MIN_LEVEL_PERCENT || weapon_left_percent <= 0.01 )	// dampen ai enthusiasm for sucking energy to weapons
-				transfer_energy_to_weapons(obj);
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Disable_ai_transferring_energy])) {
+			if ( shield_left_percent < SHIELDS_EMERG_LEVEL_PERCENT ) {
+				if (ship_p->target_shields_delta == 0.0f)
+					transfer_energy_to_shields(obj);
+			} else if ( weapon_left_percent < WEAPONS_EMERG_LEVEL_PERCENT ) {
+				if ( shield_left_percent > SHIELDS_MIN_LEVEL_PERCENT || weapon_left_percent <= 0.01 )	// dampen ai enthusiasm for sucking energy to weapons
+					transfer_energy_to_weapons(obj);
+			}
 		}
 	
 		// check for return to normal values
