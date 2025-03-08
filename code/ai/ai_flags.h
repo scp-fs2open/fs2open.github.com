@@ -172,6 +172,7 @@ namespace AI {
 		Guards_ignore_protected_attackers,
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
+		Disable_ai_transferring_energy,
 
 		NUM_VALUES
 	};
