@@ -2726,7 +2726,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		const char *text;
 
 		if (!config) {
-			text = MsgItems[First_menu_item + 1].text.c_str();
+			text = MsgItems[First_menu_item + i].text.c_str();
 		} else {
 			const char* temp_comm_order_types[] = {XSTR("Ships", 293),
 				XSTR("Wings", 294),
