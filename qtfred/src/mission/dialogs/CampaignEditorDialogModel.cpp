@@ -5,6 +5,7 @@
 #include "stats/scoring.h"
 #include "mission/missiongoals.h"
 #include "mission/missionsave.h"
+#include "utils/string_utils.h"
 
 #include <QMessageBox>
 #include <QPlainTextDocumentLayout>
@@ -509,7 +510,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 				cmission &cm = Campaign.missions[i++];
 
 				cm.name = vm_strdup(qPrintable(*mnName));
-				strncpy(cm.briefing_cutscene, qPrintable(mn->briefingCutscene), NAME_LENGTH);
+				cm.briefing_cutscene = util::unique_copy(qPrintable(mn->briefingCutscene), true);
 				cm.main_hall = mn->mainhall.toStdString();
 
 				//Bastion flag unsupported in missionLoad
@@ -556,20 +557,9 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 
 						QString descr = br.loopDescr->toPlainText();
 						_viewport->editor->lcl_fred_replace_stuff(descr);
-						if (descr.isEmpty())
-							cm.mission_branch_desc = nullptr;
-						else
-							cm.mission_branch_desc = vm_strdup(qPrintable(descr));
-
-						if (br.loopAnim.isEmpty())
-							cm.mission_branch_brief_anim = nullptr;
-						else
-							cm.mission_branch_brief_anim = vm_strdup(qPrintable(br.loopAnim));
-
-						if (br.loopVoice.isEmpty())
-							cm.mission_branch_brief_sound = nullptr;
-						else
-							cm.mission_branch_brief_sound = vm_strdup(qPrintable(br.loopVoice));
+						cm.mission_branch_desc = util::unique_copy(qPrintable(descr), true);
+						cm.mission_branch_brief_anim = util::unique_copy(qPrintable(br.loopAnim), true);
+						cm.mission_branch_brief_sound = util::unique_copy(qPrintable(br.loopVoice), true);
 
 						int nextsexp =
 								alloc_sexp("next-mission", SEXP_ATOM, SEXP_ATOM_OPERATOR, -1,
@@ -697,10 +687,10 @@ CampaignEditorDialogModel::CampaignMissionData::CampaignMissionData(QString file
 	filename(std::move(file)),
 	fredable(loaded),
 	nPlayers(loaded ? fsoMn->num_players : 0),
-	notes(loaded ? fsoMn->notes : ""),
+	notes(loaded ? coalesce(fsoMn->notes.get(), "") : ""),
 	events(loaded ? getParsedEvts() : QStringList{}),
 	goals(loaded ? getParsedGoals() : QStringList{}),
-	briefingCutscene(cm ? cm->briefing_cutscene : ""),
+	briefingCutscene(cm ? coalesce(cm->briefing_cutscene.get(), "") : ""),
 	mainhall(cm ? cm->main_hall.c_str() : ""),
 	debriefingPersona(cm ? QString::number(cm->debrief_persona_index) : "")
 {
@@ -750,7 +740,7 @@ void CampaignEditorDialogModel::CampaignMissionData::branchesFromFormula(Campaig
 CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditorDialogModel *model, int sexp_branch, const QString &from, const cmission *_loop) :
 	sexp(CAR(sexp_branch)),
 	loop(_loop),
-	loopDescr(new AssociatedPlainTextDocument(_loop ? _loop->mission_branch_desc : "", model))
+	loopDescr(new AssociatedPlainTextDocument(_loop ? coalesce(_loop->mission_branch_desc.get(), "") : "", model))
 {
 		int node_next = CADR(sexp_branch);
 	if (!stricmp(CTEXT(node_next), "end-of-campaign")) {
@@ -768,8 +758,8 @@ CampaignEditorDialogModel::CampaignBranchData::CampaignBranchData(CampaignEditor
 
 	QObject::connect(loopDescr, &QTextDocument::contentsChanged, model, &CampaignEditorDialogModel::flagModified);
 	if (loop) {
-		loopAnim = _loop->mission_branch_brief_anim;
-		loopVoice = _loop->mission_branch_brief_sound;
+		loopAnim = coalesce(_loop->mission_branch_brief_anim.get(), "");
+		loopVoice = coalesce(_loop->mission_branch_brief_sound.get(), "");
 	}
 
 }

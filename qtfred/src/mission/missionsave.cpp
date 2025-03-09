@@ -2375,14 +2375,14 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		parse_comments(2);
 		fout(" %s", cm.name);
 
-		if (strlen(cm.briefing_cutscene)) {
+		if (cm.briefing_cutscene) {
 			if (optional_string_fred("+Briefing Cutscene:", "$Mission")) {
 				parse_comments();
 			} else {
 				fout("\n+Briefing Cutscene:");
 			}
 
-			fout(" %s", cm.briefing_cutscene);
+			fout(" %s", coalesce(cm.briefing_cutscene.get(), ""));
 		}
 
 		required_string_fred("+Flags:", "$Mission:");
@@ -2406,7 +2406,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", flags_to_save | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | (!cm.main_hall.empty() ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (!cm.substitute_main_hall.empty()) {
@@ -2459,21 +2459,21 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 			if (cm.mission_branch_desc) {
 				required_string_fred("+Mission Loop Text:");
 				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_desc);
+				fout_ext("\n", "%s", cm.mission_branch_desc.get());
 				fout("\n$end_multi_text");
 			}
 
 			if (cm.mission_branch_brief_anim) {
 				required_string_fred("+Mission Loop Brief Anim:");
 				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_brief_anim);
+				fout_ext("\n", "%s", cm.mission_branch_brief_anim.get());
 				fout("\n$end_multi_text");
 			}
 
 			if (cm.mission_branch_brief_sound) {
 				required_string_fred("+Mission Loop Brief Sound:");
 				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_brief_sound);
+				fout_ext("\n", "%s", cm.mission_branch_brief_sound.get());
 				fout("\n$end_multi_text");
 			}
 
@@ -2601,7 +2601,7 @@ int CFred_mission_save::save_mission_info()
 
 	required_string_fred("$Notes:");
 	parse_comments();
-	fout("\n%s", The_mission.notes);
+	fout("\n%s", coalesce(The_mission.notes.get(), ""));
 
 	required_string_fred("$End Notes:");
 	parse_comments(0);
@@ -2609,7 +2609,7 @@ int CFred_mission_save::save_mission_info()
 	// XSTR
 	required_string_fred("$Mission Desc:");
 	parse_comments(2);
-	fout_ext("\n", "%s", The_mission.mission_desc);
+	fout_ext("\n", "%s", coalesce(The_mission.mission_desc.get(), ""));
 	fout("\n");
 
 	required_string_fred("$end_multi_text");

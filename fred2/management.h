@@ -51,7 +51,7 @@ extern char Voice_abbrev_debriefing[NAME_LENGTH];
 extern char Voice_abbrev_message[NAME_LENGTH];
 extern char Voice_abbrev_mission[NAME_LENGTH];
 extern bool Voice_no_replace_filenames;
-extern char Voice_script_entry_format[NOTES_LENGTH];
+extern SCP_string Voice_script_entry_format;
 extern int Voice_export_selection;
 
 // Goober5000
@@ -64,9 +64,10 @@ void string_copy(SCP_string& dest, const CString& src, bool modify = false);
 void convert_multiline_string(CString& dest, const SCP_string& src);
 void convert_multiline_string(CString& dest, const char* src);
 void deconvert_multiline_string(char* dest, const CString& str, size_t max_len);
+void deconvert_multiline_string(std::unique_ptr<char[]> &dest, const CString &str);
 void deconvert_multiline_string(SCP_string& dest, const CString& str);
 void strip_quotation_marks(CString& str);
-void pad_with_newline(CString& str, int max_size);
+void pad_with_newline(CString& str, size_t max_size = std::numeric_limits<size_t>::max());
 void lcl_fred_replace_stuff(CString& text);
 
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
