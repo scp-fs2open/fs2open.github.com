@@ -797,8 +797,8 @@ void HudGaugeThrottle::renderThrottleSpeed(float current_speed, int y_scaled, bo
 		sx = x_pos - w - 2;
 		sy = fl2i(y_scaled - h / 2.0f + 1.5);
 	} else {
-		sx = y + fl2i(Orbit_center_offsets[0] * scale) - w;
-		sy = x + fl2i(Orbit_center_offsets[1] * scale);
+		sx = x + fl2i(Orbit_center_offsets[0] * scale) - w;
+		sy = y + fl2i(Orbit_center_offsets[1] * scale);
 	}
 	
 	renderPrintf(sx, sy, scale, config, "%s", buf);
