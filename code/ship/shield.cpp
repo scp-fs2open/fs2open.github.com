@@ -910,9 +910,9 @@ void create_shield_explosion_all(object *objp)
  */
 int ship_is_shield_up( const object *obj, int quadrant )
 {
-	if ( (quadrant >= 0) && (quadrant < obj->n_quadrants))	{
+	if ( (quadrant >= 0) && (quadrant < static_cast<int>(obj->shield_quadrant.size())))	{
 		// Just check one quadrant
-		if (obj->shield_quadrant[quadrant] > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
+		if (shield_get_quad(obj, quadrant) > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
 			return 1;
 		}
 	} else {

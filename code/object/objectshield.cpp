@@ -36,7 +36,8 @@ static const float shield_scale_factor = static_cast<float>(1.0 / (log(50.0) - l
 float scale_quad(float generator_fraction, float quad_strength);
 
 // Function definitions
-float scale_quad(float generator_fraction, float quad_strength) {
+float scale_quad(float generator_fraction, float quad_strength)
+{
 	// the following formula makes a nice logarithmic curve between 1 and 50,
 	// when x goes from 0 to 100:
 	//
@@ -54,7 +55,8 @@ float scale_quad(float generator_fraction, float quad_strength) {
 		return effective_strength;
 }
 
-void shield_add_quad(object *objp, int quadrant_num, float delta) {
+void shield_add_quad(object *objp, int quadrant_num, float delta)
+{
 	Assert(objp);
 
 	// if we aren't going to change anything anyway then just bail
@@ -62,8 +64,8 @@ void shield_add_quad(object *objp, int quadrant_num, float delta) {
 		return;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_quadrants);
-	if (quadrant_num < 0 || quadrant_num >= objp->n_quadrants)
+	Assert(SCP_vector_inbounds(objp->shield_quadrant, quadrant_num));
+	if (!SCP_vector_inbounds(objp->shield_quadrant, quadrant_num))
 		return;
 
 	// important: don't use shield_get_quad here
@@ -79,7 +81,8 @@ void shield_add_quad(object *objp, int quadrant_num, float delta) {
 	objp->shield_quadrant[quadrant_num] = strength;
 }
 
-void shield_add_strength(object *objp, float delta) {
+void shield_add_strength(object *objp, float delta)
+{
 	Assert(objp);
 
 	// if we aren't going to change anything anyway then just bail
@@ -92,15 +95,17 @@ void shield_add_strength(object *objp, float delta) {
 	if ((delta > 0.0f) && (shield_str >= shield_recharge_limit))
 		return;
 
-	if (!(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
+	if (objp->type != OBJ_SHIP
+		|| !(Ai_info[Ships[objp->instance].ai_index].ai_profile_flags[AI::Profile_Flags::Smart_shield_management])
 		|| delta <= 0.0f) //SUSHI: We don't want smart shield management for negative delta
 	{
 		// set the limit for the shield recharge
 		if ((delta > 0.0f) && ((shield_str + delta) > shield_recharge_limit))
 			delta = shield_recharge_limit - shield_str;
 
-		for (int i = 0; i < objp->n_quadrants; i++)
-			shield_add_quad(objp, i, delta / objp->n_quadrants);
+		int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+		for (int i = 0; i < n_quadrants; i++)
+			shield_add_quad(objp, i, delta / n_quadrants);
 	}
 	else
 	{
@@ -114,9 +119,10 @@ void shield_add_strength(object *objp, float delta) {
 			int weakest_idx = -1;
 
 			// find weakest shield quadrant
-			for (int i = 0; i < objp->n_quadrants; i++)
+			int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+			for (int i = 0; i < n_quadrants; i++)
 			{
-				float quad = shield_get_quad(objp, i);
+				float quad = objp->shield_quadrant[i];
 				if (weakest_idx < 0 || quad < weakest)
 				{
 					weakest = quad;
@@ -147,7 +153,8 @@ void shield_add_strength(object *objp, float delta) {
 }
 
 // strengthens the weakest quadrant first, then spreads it out equally
-void shield_apply_healing(object* objp, float healing) {
+void shield_apply_healing(object* objp, float healing)
+{
 	Assert(objp);
 	if (objp == nullptr)
 		return;
@@ -155,14 +162,13 @@ void shield_apply_healing(object* objp, float healing) {
 	if (MULTIPLAYER_CLIENT)
 		return;
 
-	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
-		return;
-
 	// find the current strongest and weakest shield quads
-	float min_shield = objp->shield_quadrant[0];
+	float min_shield, max_shield;
+	min_shield = max_shield = objp->shield_quadrant[0];
 	int min_shield_index = 0;
-	float max_shield = objp->shield_quadrant[0];
-	for (int i = 0; i < objp->n_quadrants; i++) {
+
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for (int i = 0; i < n_quadrants; i++) {
 		if (objp->shield_quadrant[i] < min_shield) {
 			min_shield = objp->shield_quadrant[i];
 			min_shield_index = i;
@@ -173,14 +179,15 @@ void shield_apply_healing(object* objp, float healing) {
 
 	// if the shields are approximately equal give to all quads equally
 	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
-		for (int i = 0; i < objp->n_quadrants; i++)
-			shield_add_quad(objp, i, healing / objp->n_quadrants);
+		for (int i = 0; i < n_quadrants; i++)
+			shield_add_quad(objp, i, healing / n_quadrants);
 	} else { // else give to weakest
 		shield_add_quad(objp, min_shield_index, healing);
 	}
 }
 
-float shield_apply_damage(object *objp, int quadrant_num, float damage) {
+float shield_apply_damage(object *objp, int quadrant_num, float damage)
+{
 	float remaining_damage;
 
 	Assert(objp);
@@ -191,16 +198,15 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 		return damage;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_quadrants);
-	if ((quadrant_num < 0) || (quadrant_num >= objp->n_quadrants))
+	Assert(SCP_vector_inbounds(objp->shield_quadrant, quadrant_num));
+	if (!SCP_vector_inbounds(objp->shield_quadrant, quadrant_num))
 		return damage;
 
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return damage;
-
 	Ai_info[Ships[objp->instance].ai_index].last_hit_quadrant = quadrant_num;
 
-	remaining_damage = damage - shield_get_quad(objp, quadrant_num);
+	remaining_damage = damage - objp->shield_quadrant[quadrant_num];
 	if (remaining_damage > 0.0f) {
 		shield_set_quad(objp, quadrant_num, 0.0f);
 		return remaining_damage;
@@ -210,7 +216,8 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage) {
 	}
 }
 
-void shield_balance(object *objp, float rate, float penalty) {
+void shield_balance(object *objp, float rate, float penalty)
+{
 	Assert(objp);
 	if (objp->flags[Object::Object_Flags::No_shields]) {
 		// No shields, bail
@@ -230,7 +237,8 @@ void shield_balance(object *objp, float rate, float penalty) {
 
 	// Are all quadrants equal?
 	bool all_equal = true;
-	for (int idx = 0; idx < objp->n_quadrants - 1; idx++) {
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for (int idx = 0; idx < n_quadrants - 1; idx++) {
 		if (objp->shield_quadrant[idx] != objp->shield_quadrant[idx + 1]) {
 			all_equal = false;
 			break;
@@ -245,10 +253,10 @@ void shield_balance(object *objp, float rate, float penalty) {
 	Assert((rate > 0.0f) && (rate <= 1.0f));
 	Assert((penalty >= 0.0f) && (penalty <= 1.0f));
 
-	float shield_hp_avg = shield_hp / objp->n_quadrants;
+	float shield_hp_avg = shield_hp / n_quadrants;
 	shield_hp_avg *= 1 - penalty;
 
-	for (int i = 0; i < objp->n_quadrants; ++i) {
+	for (int i = 0; i < n_quadrants; ++i) {
 		if (fabsf(objp->shield_quadrant[i] - shield_hp_avg) < 0.01f) {
 			// Very close, so clamp
 			objp->shield_quadrant[i] = shield_hp_avg;
@@ -260,17 +268,15 @@ void shield_balance(object *objp, float rate, float penalty) {
 	}
 }
 
-float shield_get_max_quad(const object *objp) {
+float shield_get_max_quad(const object *objp)
+{
 	Assert(objp);
 
-	if (objp->type != OBJ_SHIP) {
-		return 0.0f;
-	}
-
-	return shield_get_max_strength(objp, true) / objp->n_quadrants;
+	return shield_get_max_strength(objp, true) / static_cast<int>(objp->shield_quadrant.size());
 }
 
-float shield_get_max_strength(const object *objp, bool no_msr) {
+float shield_get_max_strength(const object *objp, bool no_msr)
+{
 	Assert(objp);
 
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
@@ -279,7 +285,8 @@ float shield_get_max_strength(const object *objp, bool no_msr) {
 	return shield_get_max_strength(&Ships[objp->instance], no_msr);
 }
 
-float shield_get_max_strength(const ship *shipp, bool no_msr) {
+float shield_get_max_strength(const ship *shipp, bool no_msr)
+{
 	Assert(shipp);
 
 	if (no_msr)
@@ -288,7 +295,8 @@ float shield_get_max_strength(const ship *shipp, bool no_msr) {
 		return shipp->ship_max_shield_strength * shipp->max_shield_recharge;
 }
 
-float shield_get_quad(const object *objp, int quadrant_num) {
+float shield_get_quad(const object *objp, int quadrant_num)
+{
 	Assert(objp);
 
 	// no shield system, no strength!
@@ -296,21 +304,18 @@ float shield_get_quad(const object *objp, int quadrant_num) {
 		return 0.0f;
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_quadrants);
-	if (quadrant_num < 0 || quadrant_num >= objp->n_quadrants)
-		return 0.0f;
-
-	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
+	Assert(SCP_vector_inbounds(objp->shield_quadrant, quadrant_num));
+	if (!SCP_vector_inbounds(objp->shield_quadrant, quadrant_num))
 		return 0.0f;
 
 	//WMC -	I removed SUBSYSTEM_SHIELD_GENERATOR to prevent pilot file
 	//		corruption, so comment all this out...
 	/*
 	// yarr!
-	ship_subsys_info *ssip = &Ships[objp->instance].subsys_info[SUBSYSTEM_SHIELD_GENERATOR];
+	ship_subsys_info *ssip;
 
 	// do we have a shield generator?
-	if (ssip->num > 0 && !Fred_running)
+	if (objp->type == OBJ_SHIP && ((ssip = &Ships[objp->instance].subsys_info[SUBSYSTEM_SHIELD_GENERATOR]), ssip->num > 0) && !Fred_running)
 	{
 		// rules for shield generator affecting coverage:
 		//	1. if generator above 50%, effective strength = actual strength
@@ -356,16 +361,16 @@ float shield_get_strength(const object *objp)
 	if (objp->flags[Object::Object_Flags::No_shields])
 		return 0.0f;
 
-	int	i;
 	float strength = 0.0f;
-
-	for (i = 0; i < objp->n_quadrants; i++)
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for (int i = 0; i < n_quadrants; i++)
 		strength += shield_get_quad(objp, i);
 
 	return strength;
 }
 
-void shield_set_max_strength(object *objp, float newmax) {
+void shield_set_max_strength(object *objp, float newmax)
+{
 	Assert(objp);
 
 	if (objp->type != OBJ_SHIP)
@@ -374,12 +379,13 @@ void shield_set_max_strength(object *objp, float newmax) {
 	Ships[objp->instance].ship_max_shield_strength = newmax;
 }
 
-void shield_set_quad(object *objp, int quadrant_num, float strength) {
+void shield_set_quad(object *objp, int quadrant_num, float strength)
+{
 	Assert(objp);
 
 	// check array bounds
-	Assert(quadrant_num >= 0 && quadrant_num < objp->n_quadrants);
-	if (quadrant_num < 0 || quadrant_num >= objp->n_quadrants)
+	Assert(SCP_vector_inbounds(objp->shield_quadrant, quadrant_num));
+	if (!SCP_vector_inbounds(objp->shield_quadrant, quadrant_num))
 		return;
 
 	// check range
@@ -394,19 +400,18 @@ void shield_set_quad(object *objp, int quadrant_num, float strength) {
 
 void shield_set_strength(object *objp, float strength)
 {
-	int i;
-
 	Assert(objp);
 
-	for (i = 0; i < objp->n_quadrants; i++)
-		shield_set_quad(objp, i, strength / objp->n_quadrants);
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for (int i = 0; i < n_quadrants; i++)
+		shield_set_quad(objp, i, strength / n_quadrants);
 }
 
-void shield_transfer(object *objp, int quadrant, float rate) {
+void shield_transfer(object *objp, int quadrant, float rate)
+{
 	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
 
-	Assert(quadrant >= 0 && quadrant < objp->n_quadrants);
+	Assert(SCP_vector_inbounds(objp->shield_quadrant, quadrant));
 	Assert((0.0f < rate) && (rate <= 1.0f));
 
 	// The energy to Xfer to the quadrant
@@ -415,7 +420,7 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 	// The max amount of energy a quad can have
 	float max_quadrant_val = shield_get_max_quad(objp);
 
-	if ((objp->shield_quadrant[quadrant] + xfer_amount) > max_quadrant_val) {
+	if (objp->shield_quadrant[quadrant] + xfer_amount > max_quadrant_val) {
 		xfer_amount = max_quadrant_val - objp->shield_quadrant[quadrant];
 	}
 
@@ -430,7 +435,8 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 
 	float energy_avail = 0.0f;	// Energy available from the other quadrants that we can transfer
 
-	for (int i = 0; i < objp->n_quadrants; i++) {
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	for (int i = 0; i < n_quadrants; i++) {
 		if (i == quadrant)
 			continue;
 		energy_avail += objp->shield_quadrant[i];
@@ -443,7 +449,7 @@ void shield_transfer(object *objp, int quadrant, float rate) {
 		percent_to_take = 1.0f;
 	}
 
-	for (int i = 0; i < objp->n_quadrants; i++) {
+	for (int i = 0; i < n_quadrants; i++) {
 		float delta;
 
 		if (i == quadrant) {

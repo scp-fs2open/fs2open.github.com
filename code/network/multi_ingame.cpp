@@ -1906,11 +1906,12 @@ void send_ingame_ship_update_packet(net_player *p,ship *sp)
 		ADD_DATA(entry);
 	}
 
-	ADD_INT(objp->n_quadrants);
+	int n_quadrants = static_cast<int>(objp->shield_quadrant.size());
+	ADD_INT(n_quadrants);
 	ADD_FLOAT(objp->hull_strength);
 	
 	// shield percentages
-	for(idx=0; idx<objp->n_quadrants; idx++){
+	for(idx=0; idx<n_quadrants; idx++){
 		f_tmp = objp->shield_quadrant[idx];
 		ADD_FLOAT(f_tmp);
 	}
@@ -1960,8 +1961,8 @@ void process_ingame_ship_update_packet(ubyte *data, header *hinfo)
 
 	// otherwise read in the ship values
 	lookup->flags.set_from_vector(flags_final);
-	lookup->n_quadrants = n_quadrants;
  	GET_FLOAT(lookup->hull_strength);
+
 	for(idx=0;idx<n_quadrants;idx++){
 		GET_FLOAT(f_tmp);
 		lookup->shield_quadrant[idx] = f_tmp;
