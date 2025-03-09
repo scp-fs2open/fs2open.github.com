@@ -243,7 +243,7 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 
 	if(ADE_SETTING_VAR)
 	{
-		sso->ss->max_hits = MIN(0.0f, f);
+		sso->ss->max_hits = MAX(0.0f, f);
 
 		ship_recalc_subsys_strength(&Ships[sso->objh.objp()->instance]);
 	}
