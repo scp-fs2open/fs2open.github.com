@@ -19597,17 +19597,23 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name_or_callsign(ship* shipp, int alt_index, int op_num)
+void sexp_ingame_ship_alt_name_or_display_name_or_callsign(ship *shipp, bool clear_it, int alt_index, const char *display_name, int op_num)
 {
 	// we might be clearing it
-	if (alt_index < 0)
+	if (clear_it)
 	{
 		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 			shipp->alt_type_index = -1;
-		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 			shipp->callsign_index = -1;
-		else 
+		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		{
+			shipp->display_name = "";
+			shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
+		}
+		else
 			UNREACHABLE("Unhandled op_num %d!", op_num);
+
 		return;
 	}
 
@@ -19623,24 +19629,35 @@ void sexp_ingame_ship_alt_name_or_callsign(ship* shipp, int alt_index, int op_nu
 
 	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		shipp->alt_type_index = alt_index;
-	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		shipp->callsign_index = alt_index;
-	else 
+	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	{
+		shipp->display_name = display_name;
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+	else
 		UNREACHABLE("Unhandled op_num %d!", op_num);
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, int op_num)
+void sexp_parse_ship_alt_name_or_display_name_or_callsign(p_object *parse_obj, bool clear_it, int alt_index, const char *display_name, int op_num)
 {
 	// we might be clearing it
-	if (alt_index < 0)
+	if (clear_it)
 	{
 		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 			parse_obj->alt_type_index = -1;
-		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 			parse_obj->callsign_index = -1;
-		else 
+		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		{
+			parse_obj->display_name = "";
+			parse_obj->flags.remove(Mission::Parse_Object_Flags::SF_Has_display_name);
+		}
+		else
 			UNREACHABLE("Unhandled op_num %d!", op_num);
+
 		return;
 	}
 
@@ -19656,9 +19673,14 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, in
 
 	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		parse_obj->alt_type_index = alt_index;
-	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		parse_obj->callsign_index = alt_index;
-	else 
+	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	{
+		parse_obj->display_name = display_name;
+		parse_obj->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+	}
+	else
 		UNREACHABLE("Unhandled op_num %d!", op_num);
 }
 
@@ -19666,8 +19688,8 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, in
 void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 {
 	char new_string[TOKEN_LENGTH];
-	int n = node, new_index;
-	bool string_was_empty;
+	int n = node, new_index = -1;
+	bool string_was_empty = false, clear_it = false;
 
 	// get the string
 	strcpy_s(new_string, CTEXT(n));
@@ -19683,8 +19705,7 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 	// if the hash is at the beginning, the string might be truncated to empty, so check this first
 	string_was_empty = (*new_string == '\0');
 
-	if (op_num == OP_SHIP_CHANGE_ALT_NAME || op_num == OP_SHIP_CHANGE_CALLSIGN ||
-		op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME || op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
 	{
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(new_string, true);
@@ -19693,27 +19714,25 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 		consolidate_double_characters(new_string, '#');
 	}
 
-	// get the string's index 
+	// get the string's index
 	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
-		new_index = -1;
+		clear_it = true;
 	}
 	else
 	{
-		
 		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		{
 			new_index = mission_parse_lookup_alt(new_string);
 			if (new_index < 0)
 				new_index = mission_parse_add_alt(new_string);
-		} 
-		else if (op_num == OP_SHIP_CHANGE_CALLSIGN || op_num == OP_SHIP_CHANGE_DISPLAY_NAME) 
+		}
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		{
 			new_index = mission_parse_lookup_callsign(new_string);
 			if (new_index < 0)
 				new_index = mission_parse_add_callsign(new_string);
-		} 
-
+		}
 	}
 
 	for ( ; n != -1; n = CDR(n) )
@@ -19729,7 +19748,7 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 			// change ingame ship
 			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_alt_name_or_callsign(oswpt.shipp(), new_index, op_num);
+				sexp_ingame_ship_alt_name_or_display_name_or_callsign(oswpt.shipp(), clear_it, new_index, new_string, op_num);
 				if (MULTIPLAYER_MASTER)
 					Current_sexp_network_packet.send_ship(oswpt.shipp());
 				break;
@@ -19738,7 +19757,7 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 			// change ship yet to arrive
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				sexp_parse_ship_alt_name_or_callsign(oswpt.p_objp(), new_index, op_num);
+				sexp_parse_ship_alt_name_or_display_name_or_callsign(oswpt.p_objp(), clear_it, new_index, new_string, op_num);
 				if (MULTIPLAYER_MASTER)
 					Current_sexp_network_packet.send_parse_object(oswpt.p_objp());
 				break;
@@ -19750,13 +19769,13 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 			{
 				// current ships
 				for (int i = 0; i < oswpt.wingp()->current_count; i++)
-					sexp_ingame_ship_alt_name_or_callsign(&Ships[oswpt.wingp()->ship_index[i]], new_index, op_num);
+					sexp_ingame_ship_alt_name_or_display_name_or_callsign(&Ships[oswpt.wingp()->ship_index[i]], clear_it, new_index, new_string, op_num);
 	
 				// ships yet to arrive
 				for (auto p_objp: list_range(&Ship_arrival_list))
 				{
 					if (p_objp->wingnum == oswpt.wingnum)
-						sexp_parse_ship_alt_name_or_callsign(p_objp, new_index, op_num);
+						sexp_parse_ship_alt_name_or_display_name_or_callsign(p_objp, clear_it, new_index, new_string, op_num);
 				}
 
 				if (MULTIPLAYER_MASTER)
@@ -19776,15 +19795,15 @@ void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 {
 	char new_string[TOKEN_LENGTH];
-	int type, new_index;
-	bool string_was_empty;
+	int type, new_index = -1;
+	bool string_was_empty = false, clear_it = false;
 
 	Current_sexp_network_packet.get_string(new_string);
 
 	// if the hash is at the beginning, the string might be truncated to empty, so check this first
 	string_was_empty = (*new_string == '\0');
 
-	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME || op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
 	{
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(new_string, true);
@@ -19795,7 +19814,7 @@ void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 
 	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
-		new_index = -1;
+		clear_it = true;
 	}
 	else
 	{
@@ -19804,8 +19823,8 @@ void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 			new_index = mission_parse_lookup_alt(new_string);
 			if (new_index < 0)
 				new_index = mission_parse_add_alt(new_string);
-		} 
-		else if (op_num == OP_SHIP_CHANGE_CALLSIGN || op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		}
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		{
 			new_index = mission_parse_lookup_callsign(new_string);
 			if (new_index < 0)
@@ -19821,7 +19840,7 @@ void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 			{
 				ship *shipp;
 				if (Current_sexp_network_packet.get_ship(shipp))
-					sexp_ingame_ship_alt_name_or_callsign(shipp, new_index, op_num);
+					sexp_ingame_ship_alt_name_or_display_name_or_callsign(shipp, clear_it, new_index, new_string, op_num);
 				break;
 			}
 
@@ -19829,7 +19848,7 @@ void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 			{
 				p_object *pobjp;
 				if (Current_sexp_network_packet.get_parse_object(pobjp))
-					sexp_parse_ship_alt_name_or_callsign(pobjp, new_index, op_num);
+					sexp_parse_ship_alt_name_or_display_name_or_callsign(pobjp, clear_it, new_index, new_string, op_num);
 				break;
 			}
 
@@ -19841,13 +19860,13 @@ void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 				{
 					// current ships
 					for (int i = 0; i < wingp->current_count; i++)
-						sexp_ingame_ship_alt_name_or_callsign(&Ships[wingp->ship_index[i]], new_index, op_num);
+						sexp_ingame_ship_alt_name_or_display_name_or_callsign(&Ships[wingp->ship_index[i]], clear_it, new_index, new_string, op_num);
 
 					// ships yet to arrive
 					for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 					{
 						if (p_objp->wingnum == WING_INDEX(wingp))
-							sexp_parse_ship_alt_name_or_callsign(p_objp, new_index, op_num);
+							sexp_parse_ship_alt_name_or_display_name_or_callsign(p_objp, clear_it, new_index, new_string, op_num);
 					}
 				}
 				break;
@@ -28420,9 +28439,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SHIP_CHANGE_ALT_NAME:
-			case OP_SHIP_CHANGE_CALLSIGN:
 			case OP_SHIP_CHANGE_DISPLAY_NAME:
-				sexp_ship_change_alt_name_or_display_name_or_callsign(node, op_num == OP_SHIP_CHANGE_ALT_NAME);
+			case OP_SHIP_CHANGE_CALLSIGN:
+				sexp_ship_change_alt_name_or_display_name_or_callsign(node, op_num);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30295,7 +30314,7 @@ void multi_sexp_eval()
 			case OP_SHIP_CHANGE_ALT_NAME:
 			case OP_SHIP_CHANGE_CALLSIGN:
 			case OP_SHIP_CHANGE_DISPLAY_NAME:
-				multi_sexp_ship_change_alt_name_or_display_name_or_callsign(op_num == OP_SHIP_CHANGE_ALT_NAME);
+				multi_sexp_ship_change_alt_name_or_display_name_or_callsign(op_num);
 				break;
 
 			case OP_SET_RESPAWNS:
