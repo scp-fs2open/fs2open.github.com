@@ -486,7 +486,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 	int i, j;
 	ai_goal *purge_goal;
 	const char *name;
-	int mode, ship_index, wingnum;
+	int mode, ship_index, wingnum, ship_type;
 
 	// get locals for easer access
 	name = aigp->target_name;
@@ -515,13 +515,26 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		if ( purge_goal->target_name == NULL )
 			continue;
 
-		// goals operating on ship classes are handled slightly differently
+		// goals operating on ship classes and ship types are handled slightly differently
 		if ( purge_ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
 			// if the target of the purge goal is the same class of ship we are concerned about, then we have a match;
 			// if it is not, then we can continue (see standard ship check below)
 			if ( stricmp(purge_goal->target_name, Ship_info[Ships[ship_index].ship_info_index].name) != 0 )
 				continue;
 		}
+		else if (purge_ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
+			// Get the ship type of the ship we're concerned about
+			ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
+
+			// If the ship type is invalid, we can't match it, so continue
+			if (ship_type < 0)
+				continue;
+
+			// Check if the target name of the purge goal matches the ship type name
+			if (stricmp(purge_goal->target_name, Ship_types[ship_type].name) != 0)
+				continue;
+		}
+
 		// standard goals operating on either wings or ships
 		else {
 			// determine if the purge goal is acting either on the ship or the ship's wing.
@@ -1094,6 +1107,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	case OP_AI_CHASE:
 	case OP_AI_CHASE_WING:
 	case OP_AI_CHASE_SHIP_CLASS:
+	case OP_AI_CHASE_SHIP_TYPE:
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
 	case OP_AI_EVADE_SHIP:

@@ -847,6 +847,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-chase",						OP_AI_CHASE,							2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-ship-class",			OP_AI_CHASE_SHIP_CLASS,					2,	4,			SEXP_GOAL_OPERATOR, },
+	{ "ai-chase-ship-type",				OP_AI_CHASE_SHIP_TYPE,                  2,  4,          SEXP_GOAL_OPERATOR, },
 	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard",						OP_AI_GUARD,							2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
@@ -907,6 +908,7 @@ sexp_ai_goal_link Sexp_ai_goal_links[] = {
 	{ AI_GOAL_CHASE, OP_AI_CHASE },
 	{ AI_GOAL_CHASE_WING, OP_AI_CHASE_WING },
 	{ AI_GOAL_CHASE_SHIP_CLASS, OP_AI_CHASE_SHIP_CLASS },
+	{ AI_GOAL_CHASE_SHIP_TYPE, OP_AI_CHASE_SHIP_TYPE},
 	{ AI_GOAL_CHASE_ANY, OP_AI_CHASE_ANY },
 	{ AI_GOAL_DOCK, OP_AI_DOCK },
 	{ AI_GOAL_UNDOCK, OP_AI_UNDOCK },
@@ -31418,6 +31420,7 @@ int query_operator_return_type(int op)
 		case OP_AI_CHASE:
 		case OP_AI_CHASE_WING:
 		case OP_AI_CHASE_SHIP_CLASS:
+		case OP_AI_CHASE_SHIP_TYPE:
 		case OP_AI_CHASE_ANY:
 		case OP_AI_DOCK:
 		case OP_AI_UNDOCK:
@@ -32423,6 +32426,14 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_AI_CHASE_SHIP_CLASS:
 			if (argnum == 0)
 				return OPF_SHIP_CLASS_NAME;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
+
+		case OP_AI_CHASE_SHIP_TYPE:
+			if (argnum == 0)
+				return OPF_SHIP_TYPE;
 			else if (argnum == 1)
 				return OPF_POSITIVE;
 			else
@@ -36590,6 +36601,7 @@ int get_category(int op_id)
 		case OP_AI_IGNORE_NEW:
 		case OP_AI_FORM_ON_WING:
 		case OP_AI_CHASE_SHIP_CLASS:
+		case OP_AI_CHASE_SHIP_TYPE:
 		case OP_AI_PLAY_DEAD_PERSISTENT:
 		case OP_AI_FLY_TO_SHIP:
 		case OP_AI_REARM_REPAIR:
@@ -39064,6 +39076,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tCauses the specified ship to chase and attack the specified target ship class.\r\n\r\n"
 		"Takes 2 to 4 arguments...\r\n"
 		"\t1:\tName of ship class to chase.\r\n"
+		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
+		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
+		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
+	},
+
+	{ OP_AI_CHASE_SHIP_TYPE, "Ai-chase ship type (Ship goal)\r\n"
+		"\tCauses the specified ship to chase and attack a target ship type.\r\n\r\n"
+		"Takes 2 to 4 arguments...\r\n"
+		"\t1:\tName of ship type to chase.\r\n"
 		"\t2:\tGoal priority (number between 0 and 200. Player orders have a priority of 90-100).\r\n"
 		"\t3 (optional):\tWhether to attack the target even if it is on the same team; defaults to false.\r\n"
 		"\t4 (optional):\tWhether to afterburn as hard as possible to the target; defaults to false."
