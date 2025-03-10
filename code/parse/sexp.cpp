@@ -13560,7 +13560,8 @@ void sexp_hud_reset_color(int n)
 				WarningEx(LOCATION, "HUD gauge %s does not have a built-in configured color!", gaugename);
 			} else {
 				// use the color as specified in the HUD config
-				auto& c = HUD_config.clr[std::distance(std::begin(Legacy_HUD_gauges), ii)];
+				auto id = hg->getConfigId();
+				auto& c = HUD_config.gauge_colors[id];
 
 				hg->sexpLockConfigColor(false);
 				hg->updateColor(c.red, c.green, c.blue, (HUD_color_alpha + 1) * 16);

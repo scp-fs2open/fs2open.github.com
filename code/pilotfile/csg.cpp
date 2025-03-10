@@ -1013,20 +1013,41 @@ void pilotfile::csg_write_redalert()
 
 void pilotfile::csg_read_hud()
 {
-	int idx;
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	
 	int strikes = 0;
 
 	// flags
-	HUD_config.show_flags = cfread_int(cfp);
-	HUD_config.show_flags2 = cfread_int(cfp);
+	int show_flags = cfread_int(cfp);
+	int show_flags2 = cfread_int(cfp);
 
-	HUD_config.popup_flags = cfread_int(cfp);
-	HUD_config.popup_flags2 = cfread_int(cfp);
+	int popup_flags = cfread_int(cfp);
+	int popup_flags2 = cfread_int(cfp);
+
+	// Convert show_flags (0-31) and show_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (show_flags & (1 << i)) : (show_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_visibility(gauge_id, is_set);
+		}
+	}
+
+	// Convert popup_flags (0-31) and popup_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (popup_flags & (1 << i)) : (popup_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_popup(gauge_id, is_set);
+		}
+	}
 
 	// settings
-	HUD_config.num_msg_window_lines = cfread_ubyte(cfp);
+	SCP_UNUSED(cfread_ubyte(cfp));// Deprecated but still read for file compatibility 3/7/2025
+	SCP_UNUSED(cfread_int(cfp));// Deprecated but still read for file compatibility 3/7/2025
 
-	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
 		ReleaseWarning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
@@ -1058,7 +1079,7 @@ void pilotfile::csg_read_hud()
 	// gauge-specific colors
 	int num_gauges = cfread_int(cfp);
 
-	for (idx = 0; idx < num_gauges; idx++) {
+	for (int idx = 0; idx < num_gauges; idx++) {
 		ubyte red = cfread_ubyte(cfp);
 		ubyte green = cfread_ubyte(cfp);
 		ubyte blue = cfread_ubyte(cfp);
@@ -1068,30 +1089,61 @@ void pilotfile::csg_read_hud()
 			continue;
 		}
 
-		HUD_config.clr[idx].red = red;
-		HUD_config.clr[idx].green = green;
-		HUD_config.clr[idx].blue = blue;
-		HUD_config.clr[idx].alpha = alpha;
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		if (!gauge_id.empty()) {
+			color clr;
+			gr_init_alphacolor(&clr, red, green, blue, alpha);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 	}
 }
 
 void pilotfile::csg_write_hud()
 {
-	int idx;
-
 	startSection(Section::HUD);
 
-	// flags
-	cfwrite_int(HUD_config.show_flags, cfp);
-	cfwrite_int(HUD_config.show_flags2, cfp);
+	// Get gauge mappings instance
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	cfwrite_int(HUD_config.popup_flags, cfp);
-	cfwrite_int(HUD_config.popup_flags2, cfp);
+	// Initialize bitfields
+	int show_flags = 0, show_flags2 = 0;
+	int popup_flags = 0, popup_flags2 = 0;
+
+	// Convert show_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_visible(gauge_id)) {
+			if (i < 32) {
+				show_flags |= (1 << i);
+			} else {
+				show_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Convert popup_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_popup(gauge_id)) {
+			if (i < 32) {
+				popup_flags |= (1 << i);
+			} else {
+				popup_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// flags
+	cfwrite_int(show_flags, cfp);
+	cfwrite_int(show_flags2, cfp);
+
+	cfwrite_int(popup_flags, cfp);
+	cfwrite_int(popup_flags2, cfp);
 
 	// settings
-	cfwrite_ubyte(HUD_config.num_msg_window_lines, cfp);
+	cfwrite_ubyte(0, cfp);// Deprecated but still written for file compatibility 3/7/2025
+	cfwrite_int(0, cfp);// Deprecated but still written for file compatibility 3/7/2025
 
-	cfwrite_int(HUD_config.rp_flags, cfp);
 	cfwrite_int(HUD_config.rp_dist, cfp);
 
 	// basic colors
@@ -1101,11 +1153,15 @@ void pilotfile::csg_write_hud()
 	// gauge-specific colors
 	cfwrite_int(NUM_HUD_GAUGES, cfp);
 
-	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-		cfwrite_ubyte(HUD_config.clr[idx].red, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].green, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].blue, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].alpha, cfp);
+	for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+		// Get the gauge string ID from numeric ID
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		color clr = HUD_config.get_gauge_color(gauge_id);
+
+		cfwrite_ubyte(clr.red, cfp);
+		cfwrite_ubyte(clr.green, cfp);
+		cfwrite_ubyte(clr.blue, cfp);
+		cfwrite_ubyte(clr.alpha, cfp);
 	}
 
 	endSection();

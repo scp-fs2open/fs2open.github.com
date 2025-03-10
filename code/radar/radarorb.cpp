@@ -478,7 +478,7 @@ void HudGaugeRadarOrb::blitGauge(bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Radar_gauge.first_frame + 1, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
 	}
 	
 	if (Radar_gauge.first_frame + 1 >= 0)
