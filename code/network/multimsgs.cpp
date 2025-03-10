@@ -7191,11 +7191,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		n_quadrants = (ubyte)objp->n_quadrants;
+		n_quadrants = static_cast<ubyte>(objp->shield_quadrant.size());
 		ADD_DATA( n_quadrants );
-		for (i = 0; i < n_quadrants; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / shield_get_max_quad(objp) * 100.0f);
-
+		float max_quad = shield_get_max_quad(objp);
+		for (float quadrant: objp->shield_quadrant) {
+			percent = static_cast<ubyte>(quadrant / max_quad * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7327,11 +7327,10 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
+			float max_quad = shield_get_max_quad(objp);
 			for ( i = 0; i < n_quadrants; i++ ) {
-				if (i < objp->n_quadrants) {
-					fl_val = (shield_percent[i] * shield_get_max_quad(objp) / 100.0f);
-					objp->shield_quadrant[i] = fl_val;
-				}
+				fl_val = (shield_percent[i] * max_quad / 100.0f);
+				objp->shield_quadrant[i] = fl_val;
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,

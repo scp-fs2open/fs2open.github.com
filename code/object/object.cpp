@@ -187,8 +187,8 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
-	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
+	: next(nullptr), prev(nullptr), type(OBJ_NONE), parent(-1), instance(-1), hull_strength(0.0), sim_hull_strength(0.0),
+	net_signature(0), num_pairs(0), dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
@@ -614,8 +614,7 @@ int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
 	}
 	obj->radius 				= radius;
 
-	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
-	obj->shield_quadrant.resize(obj->n_quadrants);
+	obj->shield_quadrant.resize(DEFAULT_SHIELD_SECTIONS);	// Might be changed by the ship creation code
 
 	return objnum;
 }

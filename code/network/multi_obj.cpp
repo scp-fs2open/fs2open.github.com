@@ -1352,8 +1352,8 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 
 		float quad = shield_get_max_quad(objp);
 
-		for (int i = 0; i < objp->n_quadrants; i++) {
-			temp_float = (objp->shield_quadrant[i] / quad);
+		for (float temp_quadrant: objp->shield_quadrant) {
+			temp_float = temp_quadrant / quad;
 			PACK_PERCENT(temp_float);
 		}
 				
@@ -1364,7 +1364,7 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 			oo_flags &= ~OO_SHIELDS_NEW;
 		}
 		else {
-			multi_rate_add(NET_PLAYER_NUM(pl), "shl", objp->n_quadrants);	
+			multi_rate_add(NET_PLAYER_NUM(pl), "shl", static_cast<int>(objp->shield_quadrant.size()));
 		}
 	}	
 
@@ -1893,17 +1893,18 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 	// update shields
 	if (oo_flags & OO_SHIELDS_NEW) {
 		float quad = shield_get_max_quad(pobjp);
+		int n_quadrants = static_cast<int>(pobjp->shield_quadrant.size());
 
 		// check before unpacking here so we don't have to recheck for each quadrant.
 		if (seq_num > Interp_info[objnum].get_shields_comparison_frame()) {
-			for (int i = 0; i < pobjp->n_quadrants; i++) {
+			for (int i = 0; i < n_quadrants; i++) {
 				UNPACK_PERCENT(fpct);
 				pobjp->shield_quadrant[i] = fpct * quad;
 			}
 			Interp_info[objnum].set_shields_comparison_frame(seq_num);
 		}
 		else {
-			for (int i = 0; i < pobjp->n_quadrants; i++) {
+			for (int i = 0; i < n_quadrants; i++) {
 				UNPACK_PERCENT(fpct);
 			}
 		}

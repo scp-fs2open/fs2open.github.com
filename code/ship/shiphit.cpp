@@ -2949,8 +2949,9 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 		// radius of the object.   
 		vm_vec_scale_add( &world_hitpos, &ship_objp->pos, &ship_objp->orient.vec.fvec, ship_objp->radius );
 
-		for (int i=0; i<ship_objp->n_quadrants; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/ship_objp->n_quadrants, i, -1, damage_type_idx );
+		int n_quadrants = static_cast<int>(ship_objp->shield_quadrant.size());
+		for (int i=0; i<n_quadrants; i++){
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx );
 		}
 	}
 
@@ -3008,7 +3009,7 @@ void ship_hit_pain(float damage, int quadrant)
 		int pain_type;
 		if (Shield_pain_flash_factor != 0.0f && quadrant >= 0)
 		{
-			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * Player_obj->n_quadrants) / shield_get_max_strength(Player_obj);
+			float effect = (Shield_pain_flash_factor * Player_obj->shield_quadrant[quadrant] * static_cast<int>(Player_obj->shield_quadrant.size())) / shield_get_max_strength(Player_obj);
 
 			if (Shield_pain_flash_factor < 0.0f)
 				effect -= Shield_pain_flash_factor;

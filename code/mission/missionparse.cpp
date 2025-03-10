@@ -2468,9 +2468,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// with
 	if (Fred_running)
 	{
-		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
-		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
+		Objects[objnum].phys_info.speed = i2fl(p_objp->initial_velocity);
+		Objects[objnum].hull_strength = i2fl(p_objp->initial_hull);
+		Objects[objnum].shield_quadrant[0] = i2fl(p_objp->initial_shields);
 
 	}
 	else
@@ -2478,10 +2478,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		int max_allowed_sparks, num_sparks, iLoop;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
-		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f);
-		}
+		float quad_strength = shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f;
+		for (auto &quadrant : Objects[objnum].shield_quadrant)
+			quadrant = quad_strength;
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		// WMC - Make it apply for ships with IN_PLACE_ANIM type

@@ -20583,21 +20583,21 @@ int sexp_shield_quad_low(int node)
 		return SEXP_NAN_FOREVER;
 
 	auto sip = &Ship_info[ship_entry->shipp()->ship_info_index];
-	if(!(sip->is_small_ship())){
+	if (!sip->is_small_ship()) {
 		return SEXP_KNOWN_FALSE;
 	}
 	max_quad = shield_get_max_quad(ship_entry->objp());	
 
 	// shield pct
-	check = (float)eval_num(CDR(node), is_nan, is_nan_forever);
+	check = i2fl(eval_num(CDR(node), is_nan, is_nan_forever));
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
 	// check his quadrants
-	for (int idx = 0; idx < ship_entry->objp()->n_quadrants; ++idx) {
-		if (((ship_entry->objp()->shield_quadrant[idx] / max_quad) * 100.0f) <= check) {
+	for (float quadrant: ship_entry->objp()->shield_quadrant) {
+		if ((quadrant / max_quad * 100.0f) <= check) {
 			return SEXP_TRUE;
 		}
 	}
@@ -21232,8 +21232,18 @@ void ship_copy_damage(const ship_registry_entry *target, const ship_registry_ent
 	// ...and shields
 	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (int i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
-		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
+	int n_quadrants = static_cast<int>(target_objp->shield_quadrant.size());
+	if (source_objp->shield_quadrant.size() == target_objp->shield_quadrant.size())
+	{
+		for (int i = 0; i < n_quadrants; i++)
+			target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
+	}
+	else
+	{
+		float quad_strength = target_shipp->ship_max_shield_strength / n_quadrants;
+		for (int i = 0; i < n_quadrants; i++)
+			target_objp->shield_quadrant[i] = quad_strength;
+	}
 
 
 	// search through all subsystems on source ship and map them onto target ship
@@ -24476,11 +24486,12 @@ int sexp_is_weapon_selected(int node, bool primary)
 //	Return SEXP_TRUE if quadrant quadnum is near max.
 int shield_quad_near_max(int quadnum)
 {
-	if (quadnum >= Player_obj->n_quadrants)
+	int n_quadrants = static_cast<int>(Player_obj->shield_quadrant.size());
+	if (quadnum < 0 || quadnum >= n_quadrants)
 		return SEXP_FALSE;
 
 	float	remaining = 0.0f;
-	for (int i=0; i<Player_obj->n_quadrants; i++) {
+	for (int i=0; i<n_quadrants; i++) {
 		if (i == quadnum){
 			continue;
 		}
@@ -24573,7 +24584,7 @@ int process_special_sexps(int index)
 			shield_apply_damage(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > shield_get_max_quad(Player_obj))
-			Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
+				Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%DEFAULT_SHIELD_SECTIONS] - 2.0f)
 				return SEXP_TRUE;
