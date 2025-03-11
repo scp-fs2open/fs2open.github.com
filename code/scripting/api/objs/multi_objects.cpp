@@ -1686,8 +1686,9 @@ ADE_FUNC(getStatus,
 	float max_shield = shield_get_max_quad(current.getObject());
 
 	luacpp::LuaTable shields = luacpp::LuaTable::create(L);
-	for (int i = 0; i < current.getObject()->n_quadrants; i++) {
-		float temp_float = (current.getObject()->shield_quadrant[i] / max_shield);
+	int n_quadrants = static_cast<int>(current.getObject()->shield_quadrant.size());
+	for (int i = 0; i < n_quadrants; i++) {
+		float temp_float = current.getObject()->shield_quadrant[i] / max_shield;
 		shields.addValue(i + 1, temp_float);
 	}
 

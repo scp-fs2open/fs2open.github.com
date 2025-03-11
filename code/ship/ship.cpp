@@ -7333,9 +7333,8 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->max_shield_recharge = sip->max_shield_recharge;
 
 	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = (int)pm->shield_points.size();
 		shipp->shield_points = pm->shield_points;
-		objp->shield_quadrant.resize(objp->n_quadrants);
+		objp->shield_quadrant.resize(pm->shield_points.size());
 	}
 
 	if (Fred_running) {
@@ -11423,12 +11422,11 @@ static void ship_model_change(int n, int ship_type)
 		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
 
 	if (sip->flags[Ship::Info_Flags::Model_point_shields]) {
-		objp->n_quadrants = (int)pm->shield_points.size();
+		objp->shield_quadrant.resize(pm->shield_points.size());
 		sp->shield_points = pm->shield_points;
 	} else {
-		objp->n_quadrants = DEFAULT_SHIELD_SECTIONS;
+		objp->shield_quadrant.resize(DEFAULT_SHIELD_SECTIONS);
 	}
-	objp->shield_quadrant.resize(objp->n_quadrants);
 
 	// reset texture animations
 	sp->base_texture_anim_timestamp = _timestamp();
@@ -16212,7 +16210,7 @@ void ship_assign_sound_all()
 {
 	object *objp;
 	size_t idx;
-	int has_sounds;
+	bool has_sounds;
 
 	if ( !Sound_enabled )
 		return;
@@ -16222,13 +16220,13 @@ void ship_assign_sound_all()
 			continue;
 
 		if ( objp->type == OBJ_SHIP && Player_obj != objp) {
-			has_sounds = 0;
+			has_sounds = false;
 
 			// check to make sure this guy hasn't got sounds already assigned to him
 			for(idx=0; idx<objp->objsnd_num.size(); idx++){
 				if(objp->objsnd_num[idx] != -1){
 					// skip
-					has_sounds = 1;
+					has_sounds = true;
 					break;
 				}
 			}
@@ -17118,7 +17116,7 @@ float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num)
 		return 0.0f;
 	}
 
-	Assertion(quadrant_num < hit_objp->n_quadrants, "ship_quadrant_shield_strength() called with a quadrant of %d on a ship with %d quadrants; get a coder!\n", quadrant_num, hit_objp->n_quadrants);
+	Assertion(quadrant_num < static_cast<int>(hit_objp->shield_quadrant.size()), "ship_quadrant_shield_strength() called with a quadrant of %d on a ship with " SIZE_T_ARG " quadrants; get a coder!\n", quadrant_num, hit_objp->shield_quadrant.size());
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
 		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
