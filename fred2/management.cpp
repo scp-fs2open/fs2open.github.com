@@ -126,6 +126,7 @@ ai_goal_list Ai_goal_list[] = {
 	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
+	{ "Attack ship type",		AI_GOAL_CHASE_SHIP_TYPE,	0 },
 	{ "Guard",					AI_GOAL_GUARD,				0 },
 	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
