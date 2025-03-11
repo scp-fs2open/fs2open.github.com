@@ -182,18 +182,40 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
 	int strikes = 0;
 	// flags
-	HUD_config.show_flags = handler->readInt("show_flags");
-	HUD_config.show_flags2 = handler->readInt("show_flags2");
+	int show_flags = handler->readInt("show_flags");
+	int show_flags2 = handler->readInt("show_flags2");
 
-	HUD_config.popup_flags = handler->readInt("popup_flags");
-	HUD_config.popup_flags2 = handler->readInt("popup_flags2");
+	int popup_flags = handler->readInt("popup_flags");
+	int popup_flags2 = handler->readInt("popup_flags2");
+
+	// Convert show_flags (0-31) and show_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (show_flags & (1 << i)) : (show_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_visibility(gauge_id, is_set);
+		}
+	}
+
+	// Convert popup_flags (0-31) and popup_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (popup_flags & (1 << i)) : (popup_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_popup(gauge_id, is_set);
+		}
+	}
 
 	// settings
-	HUD_config.num_msg_window_lines = handler->readUByte("num_msg_window_lines");
+	SCP_UNUSED(handler->readUByte("num_msg_window_lines"));// Deprecated but still read for file compatibility 3/7/2025
+	SCP_UNUSED(handler->readInt("rp_flags"));// Deprecated but still read for file compatibility 3/7/2025
 
-	HUD_config.rp_flags = handler->readInt("rp_flags");
 	HUD_config.rp_dist = handler->readInt("rp_dist");
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
 		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
@@ -224,7 +246,7 @@ void pilotfile::plr_read_hud()
 
 	// gauge-specific colors
 	auto num_gauges = handler->startArrayRead("hud_gauges");
-	for (size_t idx = 0; idx < num_gauges; idx++, handler->nextArraySection()) {
+	for (int idx = 0; idx < static_cast<int>(num_gauges); idx++, handler->nextArraySection()) {
 		ubyte red = handler->readUByte("red");
 		ubyte green = handler->readUByte("green");
 		ubyte blue = handler->readUByte("blue");
@@ -235,31 +257,62 @@ void pilotfile::plr_read_hud()
 			continue;
 		}
 
-		HUD_config.clr[idx].red = red;
-		HUD_config.clr[idx].green = green;
-		HUD_config.clr[idx].blue = blue;
-		HUD_config.clr[idx].alpha = alpha;
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		if (!gauge_id.empty()) {
+			color clr;
+			gr_init_alphacolor(&clr, red, green, blue, alpha);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 	}
 	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_hud()
 {
-	int idx;
-
 	handler->startSectionWrite(Section::HUD);
 
-	// flags
-	handler->writeInt("show_flags", HUD_config.show_flags);
-	handler->writeInt("show_flags2", HUD_config.show_flags2);
+	// Get gauge mappings instance
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	handler->writeInt("popup_flags", HUD_config.popup_flags);
-	handler->writeInt("popup_flags2", HUD_config.popup_flags2);
+	// Initialize bitfields
+	int show_flags = 0, show_flags2 = 0;
+	int popup_flags = 0, popup_flags2 = 0;
+
+	// Convert show_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_visible(gauge_id)) {
+			if (i < 32) {
+				show_flags |= (1 << i);
+			} else {
+				show_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Convert popup_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_popup(gauge_id)) {
+			if (i < 32) {
+				popup_flags |= (1 << i);
+			} else {
+				popup_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Write converted bitfields
+	handler->writeInt("show_flags", show_flags);
+	handler->writeInt("show_flags2", show_flags2);
+
+	handler->writeInt("popup_flags", popup_flags);
+	handler->writeInt("popup_flags2", popup_flags2);
 
 	// settings
-	handler->writeUByte("num_msg_window_lines", HUD_config.num_msg_window_lines);
+	handler->writeUByte("num_msg_window_lines", 0);// Deprecated but still written for file compatibility 3/7/2025
+	handler->writeInt("rp_flags", 0);// Deprecated but still written for file compatibility 3/7/2025
 
-	handler->writeInt("rp_flags", HUD_config.rp_flags);
 	handler->writeInt("rp_dist", HUD_config.rp_dist);
 
 	// basic colors
@@ -268,13 +321,17 @@ void pilotfile::plr_write_hud()
 
 	// gauge-specific colors
 	handler->startArrayWrite("hud_gauges", NUM_HUD_GAUGES);
-	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+	for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeUByte("red", HUD_config.clr[idx].red);
-		handler->writeUByte("green", HUD_config.clr[idx].green);
-		handler->writeUByte("blue", HUD_config.clr[idx].blue);
-		handler->writeUByte("alpha", HUD_config.clr[idx].alpha);
+		// Get the gauge string ID from numeric ID
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		color clr = HUD_config.get_gauge_color(gauge_id);
+
+		handler->writeUByte("red", clr.red);
+		handler->writeUByte("green", clr.green);
+		handler->writeUByte("blue", clr.blue);
+		handler->writeUByte("alpha", clr.alpha);
 
 		handler->endSectionWrite();
 	}

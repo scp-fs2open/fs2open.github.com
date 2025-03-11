@@ -219,7 +219,7 @@ bool HudGaugeDirectives::canRender() const
 		}
 	}
 
-	if (gauge_config == HUD_ETS_GAUGE) {
+	if (gauge_type == HUD_ETS_GAUGE) {
 		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
@@ -397,7 +397,7 @@ void HudGaugeDirectives::render(float  /*frametime*/, bool config)
 	if (config) {
 		int bmw, bmh;
 		bm_get_info(directives_bottom.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, bx + fl2i(bmw * scale), y, by + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, bx + fl2i(bmw * scale), y, by + fl2i(bmh * scale));
 	}
 }
 

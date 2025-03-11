@@ -2812,7 +2812,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 	if (config) {
 		int bmw, bmh;
 		bm_get_info(Mbox_gauge[2].first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, bx + fl2i(bmw * scale), y, by + fl2i((bmh + bottom_bg_offset) * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, bx + fl2i(bmw * scale), y, by + fl2i((bmh + bottom_bg_offset) * scale));
 	}
 
 }
