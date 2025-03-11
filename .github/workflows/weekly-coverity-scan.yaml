@@ -66,4 +66,4 @@ jobs:
       - name: Upload to Coverity
         run: |
           cd build
-          curl --form token=${{ env.coverity_token }} --form email=${{ env.coverity_email }} --form file=@cov-scan.tgz --form version="$(git rev-parse HEAD)" --form description="Automatic GHA scan" 'https://scan.coverity.com/builds?project=scp-fs2open/fs2open.github.com'
+          curl --form token=${{ env.coverity_token }} --form email=${{ env.coverity_email }} --form file=@cov-scan.tgz --form version=${{ github.ref }} --form description="Automatic GHA scan" 'https://scan.coverity.com/builds?project=scp-fs2open/fs2open.github.com'
