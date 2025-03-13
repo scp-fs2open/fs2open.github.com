@@ -827,7 +827,8 @@ void ShipEditorDialog::on_deleteButton_clicked()
 }
 void ShipEditorDialog::on_weaponsButton_clicked()
 {
-		//TODO
+		auto weaponsDialog = new dialogs::ShipWeaponsDialog(this, _viewport, getIfMultipleShips());
+		weaponsDialog->show();
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 	{
