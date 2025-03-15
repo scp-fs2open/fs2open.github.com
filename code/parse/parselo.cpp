@@ -3466,6 +3466,9 @@ void stuff_matrix(matrix *mp)
 	stuff_vec3d(&mp->vec.rvec);
 	stuff_vec3d(&mp->vec.uvec);
 	stuff_vec3d(&mp->vec.fvec);
+
+	// Make sure this matrix is well-behaved.
+	vm_fix_matrix(mp);
 }
 
 //	Find a required string (*id), then stuff the text of type f_type that
