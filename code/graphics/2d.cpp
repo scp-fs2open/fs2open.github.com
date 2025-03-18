@@ -514,7 +514,7 @@ static auto ResolutionVROption = options::OptionBuilder<ResolutionInfo>("Graphic
 								   .display(resolution_display)
 								   .default_func(resolution_vr_default)
 								   .change_listener(resolution_vr_change)
-								   .importance(100)
+								   .importance(101)
 								   .finish();
 
 void removeResolutionVROption()
