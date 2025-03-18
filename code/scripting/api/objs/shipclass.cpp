@@ -178,7 +178,7 @@ ADE_VIRTVAR(ShortName, l_Shipclass, "string", "Ship class short name", "string",
 	return ade_set_args(L, "s", Ship_info[idx].short_name);
 }
 
-int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[]> ship_info::*optional_string_field)
+static int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[]> ship_info::*optional_string_field)
 {
 	int idx;
 	const char* s = nullptr;
@@ -194,7 +194,7 @@ int handle_ship_class_optional_string(lua_State *L, std::unique_ptr<char[]> ship
 		sip->*optional_string_field = util::unique_copy(s, true);
 	}
 
-	return ade_set_args(L, "s", coalesce(sip->type_str.get(), ""));
+	return ade_set_args(L, "s", coalesce((sip->*optional_string_field).get(), ""));
 }
 
 ADE_VIRTVAR(TypeString, l_Shipclass, "string", "Ship class type string", "string", "Type string, or empty string if handle is invalid")
