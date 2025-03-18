@@ -7,12 +7,11 @@ namespace scripting {
 namespace api {
 
 struct gauge_config_h {
-	int gauge;
-	gauge_config_h();
-	explicit gauge_config_h(int l_gauge);
-	HC_gauge_region* getGauge() const;
-	int getIndex() const;
-	const char* getName() const;
+	SCP_string gauge;
+	gauge_config_h() = default;
+	explicit gauge_config_h(SCP_string l_gauge);
+	HudGauge* getGauge() const;
+	SCP_string getId() const;
 	bool isValid() const;
 };
 
