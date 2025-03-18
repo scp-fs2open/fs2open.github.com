@@ -403,7 +403,7 @@ static SCP_vector<ResolutionInfo> resolution_enumerator()
 
 		auto res = ResolutionInfo(mode.w, mode.h);
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
-			out.push_back(res);
+			out.emplace_back(res);
 		}
 	}
 
@@ -414,7 +414,7 @@ static SCP_vector<ResolutionInfo> resolution_vr_enumerator()
 	SCP_vector<ResolutionInfo> out;
 
 	for (int i = 1000; i <= 6000; i += 500) {
-		out.push_back(ResolutionInfo(i, i));
+		out.emplace_back(ResolutionInfo(i, i));
 	}
 
 	return out;
