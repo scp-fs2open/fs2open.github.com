@@ -70,6 +70,7 @@
 #include "menuui/mainhallmenu.h"
 #include "debugconsole/console.h"
 #include "network/multi_mdns.h"
+#include "globalincs/utility.h"
 
 #include <algorithm>
 
@@ -4787,7 +4788,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 			strcpy_s(ng->title, The_mission.name);
 
 			// set the information area text
-			Multi_netgame_common_description = The_mission.mission_desc;
+			Multi_netgame_common_description = coalesce(The_mission.mission_desc.get(), "");
 			multi_common_set_text(Multi_netgame_common_description.c_str());
 		}
 		// if we're on the standalone, send a request for the description
@@ -4854,8 +4855,8 @@ void multi_create_list_set_item(int abs_index, int mode) {
 
 			int rc = get_mission_info(first_mission, mp, true);
 
-			if (!rc && strlen(mp->mission_desc)) {
-				Multi_netgame_common_description += mp->mission_desc;
+			if (!rc && mp->mission_desc) {
+				Multi_netgame_common_description += mp->mission_desc.get();
 			} else {
 				Multi_netgame_common_description += "No description available.";
 			}
@@ -8709,7 +8710,7 @@ void multi_maybe_set_mission_loop()
 	if ( (Campaign.missions[cur].flags & CMISSION_FLAG_HAS_LOOP) && (Campaign.loop_mission != -1) && !require_repeat_mission ) {
 
 		char buffer[512];
-		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc);
+		debrief_assemble_optional_mission_popup_text(buffer, Campaign.missions[cur].mission_branch_desc.get());
 
 		int choice = popup(0 , 2, POPUP_NO, POPUP_YES, buffer);
 		if (choice == 1) {
