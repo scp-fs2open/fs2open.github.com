@@ -1934,12 +1934,11 @@ bool SetCmdlineParams()
 		}
 
 		// enable other settings to allow VR to work more seamlessly  
-		mprintf(("VR-Mode enabled, so forcing on the following settings: capture_mouse, stretch_menu, window_res 1000x1000, window, no_vsync \n"));
+		mprintf(("VR-Mode enabled, so forcing on the following settings: capture_mouse, window_res 1000x1000, window, no_vsync \n"));
 
 		// ensure ingame resolution is set to sensible values in VR mode, 
 		// which will exceed the resolution otherwise shown and is not dependent on the monitor resolution
 		Cmdline_capture_mouse = true;
-		Cmdline_stretch_menu = true;
 		Cmdline_window_res.emplace(static_cast<uint16_t>(1000), static_cast<uint16_t>(1000));
 
 		Cmdline_fullscreen_window = false;
