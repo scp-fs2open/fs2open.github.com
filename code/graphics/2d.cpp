@@ -1742,17 +1742,17 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		if (Cmdline_enable_vr) {
 			// in VR mode, so set resolution using VR values 
 			// and hide/disable the default resolution option
-			removeResolutionOption();
 			auto res = ResolutionVROption->getValue();
 			width = res.width;
 			height = res.height;
+			removeResolutionOption();
 		} else {
 			// in non-VR mode, so set resolution using default values
 			// and hide/disable the VR resolution option
-			removeResolutionVROption();
 			auto res = ResolutionOption->getValue();
 			width = res.width;
 			height = res.height;
+			removeResolutionVROption();
 		}
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
