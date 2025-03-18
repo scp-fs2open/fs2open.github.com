@@ -510,7 +510,7 @@ static auto ResolutionVROption = options::OptionBuilder<ResolutionInfo>("Graphic
 								   .level(options::ExpertLevel::Beginner)
 								   .deserializer(resolution_deserializer)
 								   .serializer(resolution_serializer)
-								   .enumerator(resolution_enumerator)
+								   .enumerator(resolution_vr_enumerator)
 								   .display(resolution_display)
 								   .default_func(resolution_vr_default)
 								   .change_listener(resolution_vr_change)
