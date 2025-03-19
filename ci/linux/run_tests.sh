@@ -12,7 +12,7 @@ if [ "$RUNNER_OS" = "macOS" ] && [ "$ARCH" != "$(uname -m)" ]; then
     exit 0
 fi
 
-if [ "$CONFIGURATION" = "Debug"] && [[ "$RUNNER_OS" != "macOS" ]] ; then
+if [ "$CONFIGURATION" = "Debug" ] && [[ "$RUNNER_OS" != "macOS" ]] ; then
     valgrind --leak-check=full --error-exitcode=1 --gen-suppressions=all \
         --suppressions="$HERE/valgrind.supp" ./bin/unittests --gtest_shuffle
 else
