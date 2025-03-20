@@ -347,9 +347,8 @@ void set_default_recharge_rates(object* obj)
 	if (ship_has_energy_weapons(ship_p))
 		ship_properties |= HAS_WEAPONS;
 	
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && !ship_info_p->flags[Ship::Info_Flags::Intrinsic_no_shields]) {
+	if (!(obj->flags[Object::Object_Flags::No_shields]) && !ship_info_p->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		ship_properties |= HAS_SHIELDS;
-	}
 
 	if (ship_has_engine_power(ship_p))
 		ship_properties |= HAS_ENGINES;
