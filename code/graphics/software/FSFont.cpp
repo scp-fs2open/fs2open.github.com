@@ -18,7 +18,7 @@ static auto FontScaleFactor __UNUSED = options::OptionBuilder<float>("Game.FontS
 
 void removeFontMultiplierOption()
 {
-	//options::OptionsManager::instance()->removeOption(FontScaleFactor);
+	options::OptionsManager::instance()->removeOption(FontScaleFactor);
 }
 
 float get_font_scale_factor()
