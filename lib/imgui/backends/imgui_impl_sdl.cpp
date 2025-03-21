@@ -531,7 +531,7 @@ static void ImGui_ImplSDL2_UpdateGamepads()
     #undef MAP_ANALOG
 }
 
-void ImGui_ImplSDL2_NewFrame()
+void ImGui_ImplSDL2_NewFrame(int display_w, int display_h)
 {
     ImGui_ImplSDL2_Data* bd = ImGui_ImplSDL2_GetBackendData();
     IM_ASSERT(bd != nullptr && "Did you call ImGui_ImplSDL2_Init()?");
@@ -539,14 +539,9 @@ void ImGui_ImplSDL2_NewFrame()
 
     // Setup display size (every frame to accommodate for window resizing)
     int w, h;
-    int display_w, display_h;
     SDL_GetWindowSize(bd->Window, &w, &h);
     if (SDL_GetWindowFlags(bd->Window) & SDL_WINDOW_MINIMIZED)
         w = h = 0;
-    if (bd->Renderer != nullptr)
-        SDL_GetRendererOutputSize(bd->Renderer, &display_w, &display_h);
-    else
-        SDL_GL_GetDrawableSize(bd->Window, &display_w, &display_h);
     io.DisplaySize = ImVec2((float)w, (float)h);
     if (w > 0 && h > 0)
         io.DisplayFramebufferScale = ImVec2((float)display_w / w, (float)display_h / h);

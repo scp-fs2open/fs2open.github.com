@@ -381,7 +381,7 @@ cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NO
 cmdline_parm no_vsync_arg("-no_vsync", NULL, AT_NONE);		// Cmdline_no_vsync
 
 int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
-int Cmdline_no_vsync = 0;
+bool Cmdline_no_vsync = false;
 
 // HUD related
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, AT_NONE);	// Cmdline_ballistic_gauge
@@ -404,7 +404,7 @@ cmdline_parm deadzone("-deadzone",
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
 int Cmdline_autopilot_interruptable = 1;
-int Cmdline_stretch_menu = 0;
+bool Cmdline_stretch_menu = false;
 bool Cmdline_capture_mouse = false;
 int Cmdline_deadzone = -1;
 bool Cmdline_enable_vr = false;
@@ -547,8 +547,8 @@ int Cmdline_bmpman_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
-int Cmdline_window = 0;
-int Cmdline_fullscreen_window = 0;
+bool Cmdline_window = false;
+bool Cmdline_fullscreen_window = false;
 std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
@@ -1774,14 +1774,14 @@ bool SetCmdlineParams()
 	if(window_arg.found()) {
 		// We need to set both values since we don't know if we are going to use the new config system
 		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
-		Cmdline_window = 1;
+		Cmdline_window = true;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
 		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
-		Cmdline_fullscreen_window = 1;
-		Cmdline_window = 0; /* Make sure no-one sets both */
+		Cmdline_fullscreen_window = true;
+		Cmdline_window = false; /* Make sure no-one sets both */
 	}
 
 	if(render_res_arg.found() || deprecated_res_arg.found()){
@@ -1932,6 +1932,25 @@ bool SetCmdlineParams()
 		if (fov_arg.found() || fov_cockpit_arg.found()) {
 			Warning(LOCATION, "FoV Command line settings found. VR-Mode will override these with the HMD's native FoV...");
 		}
+
+		// enable other settings to allow VR to work more seamlessly  
+		mprintf(("VR-Mode enabled, so forcing on the following settings: capture_mouse, window_res 1000x1000, window, no_vsync \n"));
+
+		// ensure ingame resolution is set to sensible values in VR mode, 
+		// which will exceed the resolution otherwise shown and is not dependent on the monitor resolution
+		Cmdline_capture_mouse = true;
+		Cmdline_window_res.emplace(static_cast<uint16_t>(1000), static_cast<uint16_t>(1000));
+
+		Cmdline_fullscreen_window = false;
+		Cmdline_window = true; /* Make sure no-one sets both */
+		removeWindowModeOption();
+
+		// Turn off VSync, since we definitely don't want to be capped by the main monitor
+		// the OpenXR runtime should have a buffered wait which will behave, effectively,
+		// as a VSync to VR goggle driver
+		Gr_enable_vsync = false;
+		removeVSyncOption();
+
 		openxr_prepare();
 	}
 
@@ -1949,7 +1968,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( stretch_menu.found() )	{
-		Cmdline_stretch_menu = 1;
+		Cmdline_stretch_menu = true;
 	}
 
 	if ( capture_mouse.found() ) {

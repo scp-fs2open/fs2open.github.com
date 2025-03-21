@@ -100,7 +100,7 @@ void LabManager::resetGraphicsSettings() {
 void LabManager::onFrame(float frametime) {
 	if (gr_screen.mode == GR_OPENGL)
 		ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
+	ImGui_ImplSDL2_NewFrame(gr_screen.max_w, gr_screen.max_h);
 	ImGui::NewFrame();
 
 	Renderer->onFrame(frametime);
