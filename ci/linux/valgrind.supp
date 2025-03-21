@@ -161,3 +161,11 @@
    fun:_dlerror_run
    fun:dlopen@@GLIBC_2.2.5
 }
+{
+  SDL2_InitSuppression
+  Memcheck:Leak
+  match-leak-kinds: definite
+  fun:SDL_InitSubSystem
+  fun:SDL_Init
+  obj:*libSDL2*
+}
