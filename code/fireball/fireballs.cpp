@@ -42,18 +42,6 @@ SCP_vector<fireball_info> Fireball_info;
 bool fireballs_inited = false;
 bool fireballs_parsed = false;
 
-bool Fireball_use_3d_warp = false;
-
-static auto WarpOption __UNUSED = options::OptionBuilder<bool>("Graphics.3dWarp",
-                     std::pair<const char*, int>{"3D Warp", 1770},
-                     std::pair<const char*, int>{"Use a 3D model for warp effects", 1771})
-                     .category(std::make_pair("Graphics", 1825))
-                     .default_val(true)
-                     .level(options::ExpertLevel::Advanced)
-                     .bind_to(&Fireball_use_3d_warp)
-                     .importance(65)
-                     .finish();
-
 static float exp_to_line(float t, float start_value, float end_slope, float scale)
 {
 	return -scale * expf(-start_value / scale * t) + end_slope * t + scale;
@@ -211,9 +199,6 @@ static void fireball_set_default_warp_attributes(int idx)
 			strcpy_s(Fireball_info[idx].warp_ball, "warpball01");
 			strcpy_s(Fireball_info[idx].warp_model, "warp.pof");
 
-			if (Fireball_use_3d_warp)
-				Fireball_info[idx].use_3d_warp = true;
-
 			break;
 	}
 }
@@ -366,8 +351,16 @@ static void parse_fireball_tbl(const char *table_filename)
 				stuff_string(fi->warp_glow, F_NAME, NAME_LENGTH);
 
 			// check for custom warp ball
-			if (optional_string("$Warp ball:"))
+			if (optional_string("$Warp ball:")) {
 				stuff_string(fi->warp_ball, F_NAME, NAME_LENGTH);
+
+				// if we are explicitly specifying a ball, then we'll want to use it,
+				// rather than just having the default ball that might or might not be used
+				fi->warp_flash = true;
+			}
+
+			if (optional_string("$Force warp flash:"))
+				stuff_boolean(&fi->warp_flash);
 
 			// check for custom warp model
 			if (optional_string("$Warp model:"))
@@ -377,6 +370,10 @@ static void parse_fireball_tbl(const char *table_filename)
 				// if we are explicitly specifying a model, then we'll want to use it,
 				// rather than just having the default model that might or might not be used
 				fi->use_3d_warp = true;
+			}
+
+			if (optional_string("$Force 3D Warp:")) {
+				stuff_boolean(&fi->use_3d_warp);
 			}
 
 			if (optional_string("$Warp size ratio:")) {
@@ -1186,7 +1183,7 @@ static float fireball_wormhole_flare_radius(fireball* fb) {
 	return rad;
 }
 
-extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float flicker_magnitude, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id);
+extern void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float flicker_magnitude, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id, bool warp_flash);
 
 void fireball_render(object* obj, model_draw_list *scene)
 {
@@ -1274,7 +1271,8 @@ void fireball_render(object* obj, model_draw_list *scene)
 				fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0,
 				fi->warp_glow_bitmap,
 				fi->warp_ball_bitmap,
-				fi->warp_model_id);
+				fi->warp_model_id,
+				fi->warp_flash);
 		}
 		break;
 
