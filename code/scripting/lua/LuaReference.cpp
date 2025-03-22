@@ -45,8 +45,10 @@ UniqueLuaReference::UniqueLuaReference(UniqueLuaReference&& other) noexcept : _l
 	*this = std::move(other);
 }
 UniqueLuaReference& UniqueLuaReference::operator=(UniqueLuaReference&& other) noexcept {
-	std::swap(_luaState, other._luaState);
-	std::swap(_reference, other._reference);
+	if (this != &other) {
+		std::swap(_luaState, other._luaState);
+		std::swap(_reference, other._reference);
+	}
 	return *this;
 }
 

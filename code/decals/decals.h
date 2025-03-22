@@ -33,8 +33,8 @@ class DecalDefinition {
 	DecalDefinition& operator=(const DecalDefinition&) = delete;
 
 	// Move constructor and operator
-	DecalDefinition(DecalDefinition&& other) noexcept;
-	DecalDefinition& operator=(DecalDefinition&& other) noexcept;
+	DecalDefinition(DecalDefinition&& other) noexcept = default;
+	DecalDefinition& operator=(DecalDefinition&& other) noexcept = default;
 
 	void parse();
 	void loadBitmaps();

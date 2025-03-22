@@ -31,14 +31,16 @@ streaminganim_h::~streaminganim_h() {
 	// generic_anim_unload has safety checks
 	generic_anim_unload(&ga);
 }
-streaminganim_h::streaminganim_h(streaminganim_h&& other) noexcept {
-	// Copy the other data over to us
-	ga = other.ga;
-
+streaminganim_h::streaminganim_h(streaminganim_h&& other) noexcept
+	: ga(other.ga)
+{
 	// Reset the other instance so that we own the only instance
 	generic_anim_init(&other.ga, nullptr);
 }
 streaminganim_h& streaminganim_h::operator=(streaminganim_h&& other) noexcept {
+	if (this == &other)
+		return *this;
+
 	generic_anim_unload(&ga);
 
 	ga = other.ga;

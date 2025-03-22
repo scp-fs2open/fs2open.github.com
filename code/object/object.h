@@ -155,14 +155,19 @@ public:
 	util::event<void, object*> pre_move_event;
 	util::event<void, object*> post_move_event;
 
-	object();
-	~object();
 	void clear();
 
-private:
+
+	object();
+	~object();
+
 	// An object should never be copied; there are allocated pointers, and linked list shenanigans.
-	object(const object& other); // no implementation
-	object& operator= (const object & other); // no implementation
+	object(const object& other) = delete;
+	object& operator=(const object& other) = delete;
+
+	// Eventually we want to allow an object to be moved, especially when we get around to making Objects[] dynamic
+	object(object&& other) noexcept = delete;
+	object& operator=(object&& other) noexcept = delete;
 };
 
 struct lua_State;
