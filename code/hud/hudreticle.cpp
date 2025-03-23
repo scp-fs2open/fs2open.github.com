@@ -350,7 +350,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 		int cx = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
 		int cy = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
-		unsize(&x, &y);
+		unsize(&cx, &cy);
 		if (mobile_reticle >= 0)
 			renderBitmap(mobile_reticle, fl2i(cx - base_w * 0.5f) + x, fl2i(cy - base_h * 0.5f) + y, scale, config);
 		else {
@@ -374,7 +374,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 				int centerX = x + (bitmap_size_x / 2);
 				int centerY = y + (bitmap_size_y / 2);
-				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, config);
+				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, false, config);
 			}
 		}
 	}
