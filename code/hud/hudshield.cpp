@@ -768,7 +768,7 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 				if (config) {
 					int bmw, bmh;
 					bm_get_info(sgp->first_frame, &bmw, &bmh);
-					hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+					hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 				}
 
 			}
@@ -783,7 +783,7 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 
 				// If this comment is here then I have not tested this
 				if (config) {
-					hud_config_set_mouse_coords(gauge_config, x, x + BAR_LENGTH, y, y + BAR_HEIGHT);
+					hud_config_set_mouse_coords(gauge_config_id, x, x + BAR_LENGTH, y, y + BAR_HEIGHT);
 				}
 
 				switch(i)
@@ -1032,7 +1032,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Shield_mini_gauge.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);

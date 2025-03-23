@@ -413,7 +413,7 @@ void HudGaugeWingmanStatus::renderBackground(int num_wings_to_draw, bool config)
 	if (config) {
 		int bmw, bmh;
 		bm_get_info(Wingman_status_right.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, actual_origin[0], sx + fl2i(bmw * scale), actual_origin[1], sy + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, actual_origin[0], sx + fl2i(bmw * scale), actual_origin[1], sy + fl2i(bmh * scale));
 	}
 }
 

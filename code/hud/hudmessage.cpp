@@ -450,7 +450,7 @@ void HudGaugeMessages::render(float  /*frametime*/, bool config)
         int bmw, bmh;
 		SCP_string msg = XSTR("Terran Fighter: HUD Message Display", 1874);
 		gr_get_string_size(&bmw, &bmh, msg.c_str(), scale);
-		hud_config_set_mouse_coords(gauge_config, x, x + bmw, y, y + bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + bmw, y, y + bmh);
 		setGaugeColor(HUD_C_NONE, config);
 		renderPrintf(x, y, scale, config, "%s", msg.c_str());
 
@@ -1206,7 +1206,7 @@ void HudGaugeTalkingHead::render(float frametime, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(Head_frame.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 
 		// Talking head is complex enough that we can do all the config rendering right here and exit early
 		setGaugeColor(HUD_C_NONE, config);
@@ -1398,7 +1398,7 @@ void HudGaugeFixedMessages::render(float  /*frametime*/, bool config) {
 	// That may change in the future, in which case the code below can be restored.
 	if (config) {
 		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
-		hud_config_set_mouse_coords(gauge_config, x - fl2i(w * scale), x + fl2i(w * scale), y, y + fl2i(h * scale));*/
+		hud_config_set_mouse_coords(gauge_config_id, x - fl2i(w * scale), x + fl2i(w * scale), y, y + fl2i(h * scale));*/
 		return;
 	}
 
