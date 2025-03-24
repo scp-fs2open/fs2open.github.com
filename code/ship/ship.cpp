@@ -11618,6 +11618,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			shield_pct = shield_get_strength(objp) / shield_get_max_strength(sp);
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = shield_get_strength(objp) / (sip_orig->max_shield_strength * sip_orig->max_shield_recharge);
+		} else if (sip_orig->flags[Info_Flags::Intrinsic_no_shields]) {
+			// Recall, this flag is used to allow switching between both shielded and unshielded craft in loadout,
+			// so if that flag is on, then treat shield percent as full instead of empty.
+			// This ensures that switching to a ship with shields in loadout
+			// will begin the mission with full shield strength (instead of 0).
+			shield_pct = 1.0f;
 		} else {
 			shield_pct = 0.0f;
 		}
