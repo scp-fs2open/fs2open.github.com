@@ -1246,7 +1246,7 @@ char *popup_input(int flags, const char *caption, int max_output_len, const char
 	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
 
 	// set input text length
-	if((max_output_len > POPUP_INPUT_MAX_CHARS) || (max_output_len == -1)){
+	if((max_output_len >= POPUP_INPUT_MAX_CHARS) || (max_output_len == -1)){
 		Popup_info.max_input_text_len = POPUP_INPUT_MAX_CHARS - 1;
 	} else {
 		Popup_info.max_input_text_len = max_output_len;

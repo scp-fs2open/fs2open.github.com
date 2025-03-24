@@ -246,7 +246,7 @@ void mission_campaign_skip_to_next();
 void mission_campaign_exit_loop();
 
 // jump to specified mission
-void mission_campaign_jump_to_mission(const char* name, bool no_skip = false);
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip = false);
 
 // stuff for the end of the campaign of the single player game
 void mission_campaign_end_init();
