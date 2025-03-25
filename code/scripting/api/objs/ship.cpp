@@ -13,6 +13,7 @@
 #include "ship.h"
 #include "ship_bank.h"
 #include "shipclass.h"
+#include "shiptype.h"
 #include "subsystem.h"
 #include "team.h"
 #include "texture.h"
@@ -1578,15 +1579,16 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil], shiptype TargetShiptype=nil],", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
 	float priority = 1.0f;
 	int sclass = -1;
+	int stype = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-	if(!ade_get_args(L, "oo|oofo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass)))
+	if(!ade_get_args(L, "oo|oofo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype)))
 		return ADE_RETURN_NIL;
 
 	if(!objh->isValid() || !eh->isValid())
@@ -1830,6 +1832,16 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			{
 				ai_mode = AI_GOAL_CHASE_SHIP_CLASS;
 				ai_shipname = Ship_info[sclass].name;
+				ai_submode = SM_ATTACK;
+			}
+			break;
+		}
+		case LE_ORDER_ATTACK_SHIP_TYPE: 
+		{
+			if (stype >= 0) 
+			{
+				ai_mode = AI_GOAL_CHASE_SHIP_TYPE;
+				ai_shipname = Ship_info[stype].name;
 				ai_submode = SM_ATTACK;
 			}
 			break;
