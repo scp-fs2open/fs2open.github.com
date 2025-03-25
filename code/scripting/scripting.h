@@ -351,6 +351,7 @@ void script_init();
 extern class script_state Script_system;
 extern bool Output_scripting_meta;
 extern bool Output_scripting_json;
+extern bool Output_scripting_luastub;
 extern bool Scripting_game_init_run;
 
 //*************************Conditional scripting*************************
