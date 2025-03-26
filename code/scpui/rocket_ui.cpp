@@ -529,14 +529,14 @@ bool text_input_handler(const SDL_Event& evt)
 	const char *tocode = "UCS-2LE";
 #endif
 
-	auto text = (uint16_t *)SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1);
+	auto text = (char16_t *)SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1);
 
 	if ( !text ) {
 		// encoding failed
 		return false;
 	}
 
-	auto ucs2String = std::basic_string<unsigned short>(text);
+	auto ucs2String = std::u16string(text);
 
 	SDL_free(text);
 
