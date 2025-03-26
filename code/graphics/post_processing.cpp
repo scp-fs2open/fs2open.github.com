@@ -42,9 +42,7 @@ bool Post_processing_enable_lightshafts = true;
 
 void parse_lightshafts_func()
 {
-	bool enabled;
-	stuff_boolean(&enabled);
-	Post_processing_enable_lightshafts = enabled;
+	stuff_boolean(&Post_processing_enable_lightshafts);
 }
 
 // used by In-Game Options menu
@@ -52,9 +50,7 @@ bool Post_processing_enable_sunglare = true;
 
 void parse_sunglare_func()
 {
-	bool enabled;
-	stuff_boolean(&enabled);
-	Post_processing_enable_sunglare = enabled;
+	stuff_boolean(&Post_processing_enable_sunglare);
 }
 
 auto LightshaftsOption = options::OptionBuilder<bool>("Graphics.Lightshafts",
@@ -254,6 +250,7 @@ bool gr_lightshafts_enabled()
 	}
 
 	// supernova glare should switch to legacy lightshafts
+	// See GitHub Issue #4152, as this may be a fairly abrupt shift that could cause visual confusion.
 	if (supernova_stage() >= SUPERNOVA_STAGE::CLOSE) {
 		return false;
 	}
