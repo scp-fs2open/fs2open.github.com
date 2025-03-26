@@ -34,6 +34,11 @@ if(IS_X86)
 
 	set(C_BASE_FLAGS "${C_BASE_FLAGS} ${GCC_EXTENSIONS}")
 	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} ${GCC_EXTENSIONS}")
+
+	if (IS_64BIT)
+		set(C_BASE_FLAGS "${C_BASE_FLAGS} -m64")
+		set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -m64")
+	endif()
 elseif(IS_ARM)
 	if(FORCED_NATIVE_SIMD_INSTRUCTIONS)
 		set(C_BASE_FLAGS "${C_BASE_FLAGS} -march=native")
@@ -45,11 +50,6 @@ elseif(IS_RISCV)
     # Example for vectors: -march=rv64gcv
     # https://gcc.gnu.org/onlinedocs/gcc/RISC-V-Options.html
     # As such, default C/CXX_BASE_FLAGS are sufficient.
-endif()
-
-if (IS_64BIT)
-	set(C_BASE_FLAGS "${C_BASE_FLAGS} -m64")
-	set(CXX_BASE_FLAGS "${CXX_BASE_FLAGS} -m64")
 endif()
 
 if (USE_STATIC_LIBCXX)
