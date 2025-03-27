@@ -107,9 +107,9 @@ jobs:
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@523828e49cd4afabce369c39c7ee6543a2b7a735   # update this to @v1.2.1 when the official release is published
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake
@@ -202,9 +202,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}-${{ matrix.arch }}
           save: false # Caches are created by a separate job and only restored for PRs
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@523828e49cd4afabce369c39c7ee6543a2b7a735   # update this to @v1.2.1 when the official release is published
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake
