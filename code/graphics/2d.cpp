@@ -504,8 +504,8 @@ void removeResolutionOption()
 }
 
 static auto ResolutionVROption = options::OptionBuilder<ResolutionInfo>("Graphics.ResolutionVR",
-	std::pair<const char*, int>{"VR Resolution", 1876},
-	std::pair<const char*, int>{"The rendering resolution when in VR mode", 1877})
+	std::pair<const char*, int>{"VR Resolution", 1878},
+	std::pair<const char*, int>{"The rendering resolution when in VR mode", 1879})
 								   .category(std::make_pair("Graphics", 1825))
 								   .level(options::ExpertLevel::Beginner)
 								   .deserializer(resolution_deserializer)
