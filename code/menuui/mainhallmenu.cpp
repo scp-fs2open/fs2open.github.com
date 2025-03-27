@@ -407,11 +407,16 @@ void main_hall_blit_table_status()
  */
 void main_hall_campaign_cheat()
 {
-	char *ret = popup_input(0, XSTR("Enter mission name.\n\n* This will destroy all legitimate progress in this campaign. *", 1605));
+	const char *filename = popup_input(0, XSTR("Enter mission filename.\n\n* This will destroy all legitimate progress in this campaign. *", 1605), -1, "", POPUP_DEFAULT_PLUS_SPACE);
 
 	// yay
-	if (ret != nullptr) {
-		mission_campaign_jump_to_mission(ret);
+	if (filename != nullptr) {
+		bool success = mission_campaign_jump_to_mission(filename);
+
+		// noo
+		if (!success) {
+			popup(PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("Could not find the mission filename in the current campaign.", 1877));
+		}
 	}
 }
 

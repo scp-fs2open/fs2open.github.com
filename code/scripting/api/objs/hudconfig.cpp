@@ -9,35 +9,25 @@
 namespace scripting {
 namespace api {
 
-gauge_config_h::gauge_config_h() : gauge(-1) {}
-gauge_config_h::gauge_config_h(int l_gauge) : gauge(l_gauge) {}
+gauge_config_h::gauge_config_h(SCP_string l_gauge) : gauge(std::move(l_gauge)) {}
 
-HC_gauge_region* gauge_config_h::getGauge() const
+HudGauge* gauge_config_h::getGauge() const
 {
 	if (!isValid()) {
 		return nullptr;
 	}
 
-	return &HC_gauge_regions[GR_1024][gauge];
+	return hud_config_get_gauge_pointer(gauge);
 }
 
-int gauge_config_h::getIndex() const
+SCP_string gauge_config_h::getId() const
 {
 	return gauge;
 }
 
-const char* gauge_config_h::getName() const
-{
-	if (!isValid()) {
-		return nullptr;
-	}
-
-	return HC_gauge_descriptions(gauge);
-}
-
 bool gauge_config_h::isValid() const
 {
-	return gauge >= 0 && gauge < NUM_HUD_GAUGES;
+	return hud_config_get_gauge_pointer(gauge) != nullptr;
 }
 
 hud_preset_h::hud_preset_h() : preset(-1) {}
@@ -126,7 +116,7 @@ ADE_VIRTVAR(Name, l_Gauge_Config, nullptr, "The name of this gauge", "string", "
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getName());
+	return ade_set_args(L, "s", current.getGauge()->getConfigName().c_str());
 }
 
 ADE_VIRTVAR(CurrentColor,
@@ -147,24 +137,24 @@ ADE_VIRTVAR(CurrentColor,
 	}
 
 	if (ADE_SETTING_VAR) {
-		if (!current.getGauge()->use_iff) {
-			HUD_config.clr[current.getIndex()] = newColor;
+		if (!current.getGauge()->getConfigUseIffColor()) {
+			HUD_config.set_gauge_color(current.getId(), newColor);
 		}
 	}
 
-	const color *thisColor;
+	color thisColor;
 	
-	if (!current.getGauge()->use_iff) {
-		thisColor = &HUD_config.clr[current.getIndex()];
+	if (!current.getGauge()->getConfigUseIffColor()) {
+		thisColor = HUD_config.get_gauge_color(current.getId());
 	} else {
-		if (current.getGauge()->color == 1) {
-			thisColor = iff_get_color(IFF_COLOR_TAGGED, 0);
+		if (current.getGauge()->getConfigUseTagColor()) {
+			thisColor = *iff_get_color(IFF_COLOR_TAGGED, 0);
 		} else {
-			thisColor = &Color_bright_red;
+			thisColor = Color_bright_red;
 		}
 	}
 
-	return ade_set_args(L, "o", l_Color.Set(*thisColor));
+	return ade_set_args(L, "o", l_Color.Set(thisColor));
 }
 
 ADE_VIRTVAR(ShowGaugeFlag,
@@ -185,14 +175,10 @@ ADE_VIRTVAR(ShowGaugeFlag,
 	}
 
 	if (ADE_SETTING_VAR) {
-		if (show) {
-			hud_config_show_flag_set(current.getIndex());
-		} else {
-			hud_config_show_flag_clear(current.getIndex());
-		}
+		HUD_config.set_gauge_visibility(current.getId(), show);
 	}
 
-	return ade_set_args(L, "b", (bool)hud_config_show_flag_is_set(current.getIndex()));
+	return ade_set_args(L, "b", HUD_config.is_gauge_visible(current.getId()));
 }
 
 ADE_VIRTVAR(PopupGaugeFlag,
@@ -213,18 +199,14 @@ ADE_VIRTVAR(PopupGaugeFlag,
 	}
 
 	if (ADE_SETTING_VAR) {
-		if (popup) {
-			hud_config_popup_flag_set(current.getIndex());
-		} else {
-			hud_config_popup_flag_clear(current.getIndex());
-		}
+		HUD_config.set_gauge_popup(current.getId(), popup);
 	}
 
-	if (current.getGauge()->can_popup == 0) {
+	if (!current.getGauge()->getConfigCanPopup()) {
 		return ADE_RETURN_FALSE;
 	}
 
-	return ade_set_args(L, "b", (bool)hud_config_popup_flag_is_set(current.getIndex()));
+	return ade_set_args(L, "b", HUD_config.is_gauge_popup(current.getId()));
 }
 
 ADE_VIRTVAR(CanPopup,
@@ -247,7 +229,7 @@ ADE_VIRTVAR(CanPopup,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (current.getGauge()->can_popup == 0) {
+	if (!current.getGauge()->getConfigCanPopup()) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -274,7 +256,7 @@ ADE_VIRTVAR(UsesIffForColor,
 		LuaError(L, "This property is read only.");
 	}
 
-	if (current.getGauge()->use_iff == 0) {
+	if (!current.getGauge()->getConfigUseIffColor()) {
 		return ADE_RETURN_FALSE;
 	}
 
@@ -294,7 +276,7 @@ ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the curre
 	}
 
 	if (select) {
-		HC_gauge_selected = current.getIndex();
+		HC_gauge_selected = current.getId();
 	}
 
 	return ADE_RETURN_NIL;

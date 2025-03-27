@@ -347,7 +347,7 @@ void set_default_recharge_rates(object* obj)
 	if (ship_has_energy_weapons(ship_p))
 		ship_properties |= HAS_WEAPONS;
 	
-	if (!(obj->flags[Object::Object_Flags::No_shields]))
+	if (!(obj->flags[Object::Object_Flags::No_shields]) && !ship_info_p->flags[Ship::Info_Flags::Intrinsic_no_shields])
 		ship_properties |= HAS_SHIELDS;
 
 	if (ship_has_engine_power(ship_p))
@@ -1100,9 +1100,9 @@ void HudGaugeEtsRetail::render(float  /*frametime*/, bool config)
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
 		auto coords1 = hud_config_convert_coords(Gauge_positions[0], position[1], scale);
-		auto coords2 = hud_config_convert_coords(Gauge_positions[initial_position - 1] + bmw, position[1] + (bmh * 2) + 10, scale);
+		auto coords2 = hud_config_convert_coords(Gauge_positions[initial_position - 1] + bmw, position[1] + (bmh * 2), scale);
 
-		hud_config_set_mouse_coords(gauge_config, coords1.first, coords2.first, coords1.second, coords2.second);
+		hud_config_set_mouse_coords(gauge_config_id, coords1.first, coords2.first, coords1.second, coords2.second);
 	}
 }
 
@@ -1193,7 +1193,7 @@ void HudGaugeEtsWeapons::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords(gauge_config_id, rx, rx + bmw, ry, ry + (bmh * 2));
 	}
 }
 
@@ -1263,7 +1263,7 @@ void HudGaugeEtsShields::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords(gauge_config_id, rx, rx + bmw, ry, ry + (bmh * 2));
 	}
 }
 
@@ -1333,6 +1333,6 @@ void HudGaugeEtsEngines::render(float  /*frametime*/, bool config)
 		int bmw, bmh;
 		bm_get_info(Ets_bar.first_frame, &bmw, &bmh);
 
-		hud_config_set_mouse_coords_ets(gauge_config, rx, rx + bmw, ry, ry + (bmh * 2) + 10);
+		hud_config_set_mouse_coords(gauge_config_id, rx, rx + bmw, ry, ry + (bmh * 2));
 	}
 }

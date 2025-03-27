@@ -111,7 +111,9 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number|string gaugeNameOrIndex", "Gets 
 	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
-	if (hud_config_show_flag_is_set(idx))
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	if (HUD_config.is_gauge_visible(gauge_map.get_string_id_from_numeric_id(idx)))
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -149,7 +151,9 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_FALSE;
 
-	gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, a);
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gr_init_alphacolor(&HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(idx)], r, g, b, a);
 
 	return ADE_RETURN_TRUE;
 }
@@ -169,7 +173,9 @@ ADE_FUNC(getHUDGaugeColor,
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_NIL;
 
-	color cur = HUD_config.clr[idx];
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	color cur = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(idx)];
 
 	if (!rc) {
 		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);

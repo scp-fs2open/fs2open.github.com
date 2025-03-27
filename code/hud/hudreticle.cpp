@@ -264,7 +264,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(crosshair.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	ship_info* sip = nullptr;
@@ -350,7 +350,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 		int cx = fl2i(Player_flight_cursor_offset.screen.xyw.x + 0.5f);
 		int cy = fl2i(Player_flight_cursor_offset.screen.xyw.y + 0.5f);
-		unsize(&x, &y);
+		unsize(&cx, &cy);
 		if (mobile_reticle >= 0)
 			renderBitmap(mobile_reticle, fl2i(cx - base_w * 0.5f) + x, fl2i(cy - base_h * 0.5f) + y, scale, config);
 		else {
@@ -374,7 +374,7 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 				int centerX = x + (bitmap_size_x / 2);
 				int centerY = y + (bitmap_size_y / 2);
-				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, config);
+				renderCircle(fl2i(centerX + (fpi->xy.x * firepoint_scale_x)), fl2i(centerY + (fpi->xy.y * firepoint_scale_y)), firepoint_size, false, config);
 			}
 		}
 	}
@@ -687,7 +687,7 @@ void HudGaugeThrottle::render(float  /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(throttle_frames.first_frame + 1, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	int desired_y_pos = y + fl2i(Bottom_offset_y * scale) - fl2i(std::lround(fl2i(throttle_h * scale) * desired_speed / max_speed)) - 1;
@@ -999,7 +999,11 @@ void HudGaugeThreatIndicator::render(float  /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
         int bmw, bmh;
 		bm_get_info(threat_arc.first_frame + 1, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id,
+			x,
+			x + static_cast<int>(bmw * scale),
+			y,
+			y + static_cast<int>(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
@@ -1178,7 +1182,7 @@ void HudGaugeWeaponLinking::render(float  /*frametime*/, bool config)
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 		int bmw, bmh;
 		bm_get_info(arc.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);
