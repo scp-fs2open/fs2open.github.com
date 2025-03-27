@@ -14,6 +14,14 @@ class event final {
 	event()  = default;
 	~event() = default;
 
+	// no copies
+	event(const event<Ret, Args...>& other) = delete;
+	event<Ret, Args...>& operator=(const event<Ret, Args...>& other) = delete;
+
+	// moves allowed
+	event(event<Ret, Args...>&& other) noexcept = default;
+	event<Ret, Args...>& operator=(event<Ret, Args...>&& other) noexcept = default;
+
 	void add(callback_type func) { _listeners.push_back(func); }
 
 	void clear() { _listeners.clear(); }
