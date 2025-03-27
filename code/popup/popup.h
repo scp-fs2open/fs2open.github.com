@@ -19,7 +19,8 @@
 #define POPUP_YES						XSTR("&Yes", 505)
 #define POPUP_NO						XSTR("&No", 506)
 
-#define POPUP_DEFAULT_VALID_CHARS "_.-"	// Default string of valid non-alphanumeric characters that popup_input may accept
+#define POPUP_DEFAULT_VALID_CHARS "_.-"		// Default string of valid non-alphanumeric characters that popup_input may accept
+#define POPUP_DEFAULT_PLUS_SPACE  "_.- "	// The above, plus a space
 
 ///////////////////////////////////////////////////
 // flags

@@ -2786,16 +2786,15 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 }
 
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
-ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, or returns nil.")
+ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, returning true if successful, false if unsuccessful (e.g. the mission could not be found in the campaign), or nil if no mission was specified.")
 {
 	const char* filename = nullptr;
 	bool hub = false;
 	if (!ade_get_args(L, "s|b", &filename, &hub))
 		return ADE_RETURN_NIL;
 
-	mission_campaign_jump_to_mission(filename, hub);
-
-	return ADE_RETURN_TRUE;
+	bool success = mission_campaign_jump_to_mission(filename, hub);
+	return ade_set_args(L, "b", success);
 }
 
 // TODO: add a proper indexer type that returns a handle
