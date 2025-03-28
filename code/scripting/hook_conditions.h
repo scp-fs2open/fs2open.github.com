@@ -53,7 +53,7 @@ struct ShipSourceConditions {
 struct CollisionConditions {
 	HOOK_DEFINE_CONDITIONS;
 	struct ParticipatingObjects {
-		const object* objp_a, * objp_b;
+		const object *objp_a, *objp_b;
 	} participating_objects;
 };
 
@@ -87,7 +87,7 @@ struct ShipArriveConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* spawned_shipp;
 	ArrivalLocation arrival_location; // As of yet unused
-	const object* spawn_anchor_objp; // As of yet unused
+	const object* spawn_anchor_objp;  // As of yet unused
 };
 
 struct WeaponCreatedConditions {
@@ -134,7 +134,14 @@ struct KeyPressConditions {
 	int keycode;
 };
 
-}
+struct CommOrderConditions {
+	HOOK_DEFINE_CONDITIONS;
+	const ship* source;
+	const object* target;
+	const object_ship_wing_point_team* reciever; // As of yet unused
+};
+
+} // namespace hooks
 }
 
 #undef HOOK_DEFINE_CONDITIONS
