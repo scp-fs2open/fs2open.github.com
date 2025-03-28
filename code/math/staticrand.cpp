@@ -142,6 +142,7 @@ void static_rand_cone(int num, vec3d *out, const vec3d* const in, float max_angl
 	if(orient != nullptr){
 		rot = orient;
 	} else {
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
 		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
@@ -171,8 +172,8 @@ void static_rand_cone(int num, vec3d* out, const vec3d* const in, float min_angl
 	// get an orientation matrix
 	if (orient != nullptr) {
 		rot = orient;
-	}
-	else {
+	} else {
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
 		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}

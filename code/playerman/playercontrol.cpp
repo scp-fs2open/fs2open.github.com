@@ -2326,6 +2326,7 @@ camid player_get_cam()
 		} else if (Viewer_mode & VM_EXTERNAL) {
 			Assert(viewer_obj != NULL);
 			matrix	tm, tm2;
+			vec3d uvec;
 
 			vm_angles_2_matrix(&tm2, &Viewer_external_info.angles);
 			vm_matrix_x_matrix(&tm, &viewer_obj->orient, &tm2);
@@ -2335,7 +2336,8 @@ camid player_get_cam()
 			vm_vec_scale_add(&eye_pos, &viewer_obj->pos, &tm.vec.fvec, Viewer_external_info.current_distance);
 
 			vm_vec_normalized_dir(&tmp_dir, &viewer_obj->pos, &eye_pos);
-			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &viewer_obj->orient.vec.uvec, nullptr);
+			vm_vec_copy_normalize(&uvec, &viewer_obj->orient.vec.uvec);	// out of an abundance of caution
+			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &uvec, nullptr);
  			viewer_obj = NULL;
 
 			//	Modify the orientation based on head orientation.
@@ -2372,12 +2374,12 @@ camid player_get_cam()
 			Warp_camera.get_info(&eye_pos, NULL);
 
 			ship * shipp = &Ships[Player_obj->instance];
-
-
-			vec3d warp_pos = Player_obj->pos;
+			vec3d uvec, warp_pos = Player_obj->pos;
 			shipp->warpout_effect->getWarpPosition(&warp_pos);
+
 			vm_vec_normalized_dir(&tmp_dir, &warp_pos, &eye_pos);
-			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &Player_obj->orient.vec.uvec, nullptr);
+			vm_vec_copy_normalize(&uvec, &Player_obj->orient.vec.uvec);	// out of an abundance of caution
+			vm_vector_2_matrix_norm(&eye_orient, &tmp_dir, &uvec, nullptr);
 			viewer_obj = NULL;
 		} else {
 			// get an eye position for the player object

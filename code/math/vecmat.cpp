@@ -1378,6 +1378,8 @@ void vm_vec_rand_vec(vec3d *rvec)
 // Returns the rotated point in "out".
 void vm_rot_point_around_line(vec3d *out, const vec3d *in, float angle, const vec3d *line_point, const vec3d *line_dir)
 {
+	Assertion(line_dir != nullptr && vm_vec_is_normalized(line_dir), "line_dir vector must be normalized!");
+
 	vec3d tmp, tmp1;
 	matrix m, r;
 	angles ta;
@@ -2321,6 +2323,7 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matr
 	if(orient != NULL){
 		rot = orient;
 	} else {
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
 		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
@@ -2348,6 +2351,7 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 	if(orient != NULL){
 		rot = orient;
 	} else {
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
 		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}

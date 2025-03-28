@@ -59,7 +59,7 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 
 	auto direction = locals.variables.getValue({"locals", "direction"}).getVector();
 	matrix orientation;
-	vm_vector_2_matrix_norm(&orientation, &direction);
+	vm_vector_2_matrix_norm(&orientation, &direction);	// direction is normalized in SetDirectionAction::execute
 
 	source->setHost(make_unique<EffectHostObject>(locals.host.objp(), local_pos, orientation, true));
 	source->finishCreation();

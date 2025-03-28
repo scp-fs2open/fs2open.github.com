@@ -637,8 +637,8 @@ void HudGaugeTargetBox::renderTargetShip(object *target_objp, bool config)
 			vec3d tempv;
 			object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
-			vec3d up_vector = camera_orient.vec.uvec;
-			vm_vector_2_matrix_norm(&camera_orient, &orient_vec, &up_vector, nullptr);
+			auto up_vector = &camera_orient.vec.uvec;
+			vm_vector_2_matrix_norm(&camera_orient, &orient_vec, up_vector, nullptr);
 
 			// normalize the vector from the player to the current target, and scale by a factor to calculate
 			// the objects position
@@ -807,7 +807,6 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 	vec3d	camera_eye = ZERO_VECTOR;
 	matrix	camera_orient = IDENTITY_MATRIX;
 	debris	*debrisp;
-	vec3d	orient_vec, up_vector;
 	float		factor;	
 	uint64_t flags = 0;
 
@@ -815,6 +814,7 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
+		vec3d orient_vec;
 		vm_vec_normalized_dir(&orient_vec, &target_objp->pos, &Player_obj->pos);
 
 		factor = 2*target_objp->radius;
@@ -823,8 +823,8 @@ void HudGaugeTargetBox::renderTargetDebris(object *target_objp)
 		vec3d tempv;
 		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
-		up_vector = camera_orient.vec.uvec;
-		vm_vector_2_matrix_norm(&camera_orient, &orient_vec, &up_vector, nullptr);
+		auto up_vector = &camera_orient.vec.uvec;
+		vm_vector_2_matrix_norm(&camera_orient, &orient_vec, up_vector, nullptr);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
 		// the objects position
@@ -919,8 +919,6 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 	vec3d		obj_pos = ZERO_VECTOR;
 	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
-	vec3d		orient_vec, up_vector;
-	vec3d		projection_vec;
 	weapon_info	*target_wip = NULL;
 	weapon		*wp = NULL;
 	object		*viewer_obj, *viewed_obj;
@@ -971,22 +969,18 @@ void HudGaugeTargetBox::renderTargetWeapon(object *target_objp)
 			replacement_textures = model_get_instance(pmi_id)->texture_replace;
 
 		// take the forward orientation to be the vector from the player to the current target
-		vm_vec_normalized_dir(&orient_vec, &viewed_obj->pos, &viewer_obj->pos);
-
-		if (missile_view == TRUE) {
-			vm_vec_normalized_dir(&projection_vec, &wp->homing_pos, &viewer_obj->pos);
-		}
+		vec3d orient_vec;
+		if (missile_view == FALSE)
+			vm_vec_normalized_dir(&orient_vec, &viewed_obj->pos, &viewer_obj->pos);
+		else
+			vm_vec_normalized_dir(&orient_vec, &wp->homing_pos, &viewer_obj->pos);
 
 		// use the viewer's up vector, and construct the viewer's orientation matrix
 		vec3d tempv;
 		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
-		up_vector = camera_orient.vec.uvec;
-
-		if (missile_view == FALSE)
-			vm_vector_2_matrix_norm(&camera_orient, &orient_vec, &up_vector, nullptr);
-		else
-			vm_vector_2_matrix_norm(&camera_orient, &projection_vec, &up_vector, nullptr);
+		auto up_vector = &camera_orient.vec.uvec;
+		vm_vector_2_matrix_norm(&camera_orient, &orient_vec, up_vector, nullptr);
 
 		// normalize the vector from the viewer to the viwed target, and scale by a factor to calculate
 		// the objects position
@@ -1189,7 +1183,6 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
 	asteroid		*asteroidp;
-	vec3d		orient_vec, up_vector;
 	float			time_to_impact, factor;	
 	int			pof;
 
@@ -1202,6 +1195,7 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 
 	if ( Detail.targetview_model )	{
 		// take the forward orientation to be the vector from the player to the current target
+		vec3d orient_vec;
 		vm_vec_normalized_dir(&orient_vec, &target_objp->pos, &Player_obj->pos);
 
 		factor = 2*target_objp->radius;
@@ -1210,8 +1204,8 @@ void HudGaugeTargetBox::renderTargetAsteroid(object *target_objp)
 		vec3d tempv;
 		object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
-		up_vector = camera_orient.vec.uvec;
-		vm_vector_2_matrix_norm(&camera_orient, &orient_vec, &up_vector, nullptr);
+		auto up_vector = &camera_orient.vec.uvec;
+		vm_vector_2_matrix_norm(&camera_orient, &orient_vec, up_vector, nullptr);
 
 		// normalize the vector from the player to the current target, and scale by a factor to calculate
 		// the objects position
@@ -1322,7 +1316,6 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 	vec3d		obj_pos = ZERO_VECTOR;
 	vec3d		camera_eye = ZERO_VECTOR;
 	matrix		camera_orient = IDENTITY_MATRIX;
-	vec3d		orient_vec, up_vector;
 	float			factor, dist;
 	int			hx = 0, hy = 0, w, h;
 	SCP_list<CJumpNode>::iterator jnp;
@@ -1338,6 +1331,7 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 
 		if ( Detail.targetview_model )	{
 			// take the forward orientation to be the vector from the player to the current target
+			vec3d orient_vec;
 			vm_vec_normalized_dir(&orient_vec, &target_objp->pos, &Player_obj->pos);
 
 			factor = target_objp->radius*4.0f;
@@ -1346,8 +1340,8 @@ void HudGaugeTargetBox::renderTargetJumpNode(object *target_objp)
 			vec3d tempv;
 			object_get_eye(&tempv, &camera_orient, Player_obj, false);
 
-			up_vector = camera_orient.vec.uvec;
-			vm_vector_2_matrix_norm(&camera_orient, &orient_vec, &up_vector, nullptr);
+			auto up_vector = &camera_orient.vec.uvec;
+			vm_vector_2_matrix_norm(&camera_orient, &orient_vec, up_vector, nullptr);
 
 			// normalize the vector from the player to the current target, and scale by a factor to calculate
 			// the objects position

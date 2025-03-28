@@ -179,7 +179,6 @@ void cam_init();
 void cam_close();
 void cam_do_frame(float frametime);
 camid cam_create(const char *n_name=NULL, vec3d *n_pos=NULL, matrix *n_ori=NULL, object *n_object=NULL, int n_submodel_parent=-1);
-camid cam_create(const char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object=NULL, int n_submodel_parent=-1);
 void cam_delete(camid cid);
 bool cam_set_camera(camid cid);
 void cam_reset_camera();

@@ -9729,7 +9729,7 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 	vm_vec_rotate(&uvec, &dockee_dock_orient->vec.uvec, dockee_orient);
 
 	// create a rotation matrix
-	vm_vector_2_matrix_norm(&m1, &fvec, &uvec, nullptr);
+	vm_vector_2_matrix(&m1, &fvec, &uvec, nullptr);	// we need to normalize the input vectors here to prevent floating point errors from compounding
 
 	// get the global orientation
 	vm_matrix_x_matrix(&m3, dockee_orient, &m1);
@@ -9743,7 +9743,7 @@ void set_goal_dock_orient(matrix *dom, matrix *docker_dock_orient, matrix *docke
 	vm_vec_rotate(&uvec, &docker_dock_orient->vec.uvec, docker_orient);
 
 	// create a rotation matrix
-	vm_vector_2_matrix_norm(&m2, &fvec, &uvec, nullptr);
+	vm_vector_2_matrix(&m2, &fvec, &uvec, nullptr);	// we need to normalize the input vectors here to prevent floating point errors from compounding
 
 	//	Pre-multiply the orientation of the source object (docker_orient) by the transpose
 	//	of the docking bay's orientation, ie unrotate the source object's matrix.
