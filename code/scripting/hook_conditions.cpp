@@ -4,6 +4,7 @@
 #include <utility>
 
 #include "gamesequence/gamesequence.h"
+#include "parse/sexp.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "io/key.h"
