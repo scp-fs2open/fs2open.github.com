@@ -261,6 +261,11 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                      .parser(parse_window_mode_func)
                      .finish();
 
+void removeWindowModeOption()
+{
+	options::OptionsManager::instance()->removeOption(WindowModeOption);
+}
+
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
 	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, std::nullopt, CHA_ONFRAME);
 
@@ -398,8 +403,18 @@ static SCP_vector<ResolutionInfo> resolution_enumerator()
 
 		auto res = ResolutionInfo(mode.w, mode.h);
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
-			out.push_back(res);
+			out.emplace_back(res);
 		}
+	}
+
+	return out;
+}
+static SCP_vector<ResolutionInfo> resolution_vr_enumerator()
+{
+	SCP_vector<ResolutionInfo> out;
+
+	for (int i = 1000; i <= 6000; i += 500) {
+		out.emplace_back(ResolutionInfo(i, i));
 	}
 
 	return out;
@@ -417,6 +432,10 @@ static ResolutionInfo resolution_default()
 		return {};
 	}
 	return {(uint32_t)mode.w, (uint32_t)mode.h};
+}
+static ResolutionInfo resolution_vr_default()
+{
+	return {(uint32_t)2500, (uint32_t)2500};
 }
 static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 {
@@ -454,6 +473,14 @@ static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 	 */
 }
 
+static bool resolution_vr_change(const ResolutionInfo& /*info*/, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	return false;
+}
+
 // Resolution cannot support default settings because graphics have not been
 // initialized so we can't validate the setting. But also, this should probably
 // only ever be a user setting
@@ -470,6 +497,30 @@ static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.
                      .change_listener(resolution_change)
                      .importance(100)
                      .finish();
+
+void removeResolutionOption()
+{
+	options::OptionsManager::instance()->removeOption(ResolutionOption);
+}
+
+static auto ResolutionVROption = options::OptionBuilder<ResolutionInfo>("Graphics.ResolutionVR",
+	std::pair<const char*, int>{"VR Resolution", 1878},
+	std::pair<const char*, int>{"The rendering resolution when in VR mode", 1879})
+								   .category(std::make_pair("Graphics", 1825))
+								   .level(options::ExpertLevel::Beginner)
+								   .deserializer(resolution_deserializer)
+								   .serializer(resolution_serializer)
+								   .enumerator(resolution_vr_enumerator)
+								   .display(resolution_display)
+								   .default_func(resolution_vr_default)
+								   .change_listener(resolution_vr_change)
+								   .importance(101)
+								   .finish();
+
+void removeResolutionVROption()
+{
+	options::OptionsManager::instance()->removeOption(ResolutionVROption);
+}
 
 bool Gr_enable_soft_particles = true;
 
@@ -675,6 +726,11 @@ static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync"
                      .importance(70)
                      .parser(parse_vsync_func)  
                      .finish();
+
+void removeVSyncOption()
+{
+	options::OptionsManager::instance()->removeOption(VSyncOption);
+}
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
@@ -1683,9 +1739,21 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	}
 
 	if (Using_in_game_options) {
-		auto res = ResolutionOption->getValue();
-		width = res.width;
-		height = res.height;
+		if (Cmdline_enable_vr) {
+			// in VR mode, so set resolution using VR values 
+			// and hide/disable the default resolution option
+			auto res = ResolutionVROption->getValue();
+			width = res.width;
+			height = res.height;
+			removeResolutionOption();
+		} else {
+			// in non-VR mode, so set resolution using default values
+			// and hide/disable the VR resolution option
+			auto res = ResolutionOption->getValue();
+			width = res.width;
+			height = res.height;
+			removeResolutionVROption();
+		}
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
@@ -1851,19 +1919,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	height = 800;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #elif defined(_FORCE_DEBUG_1024)
 	width = 1024;
 	height = 768;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #elif defined(_FORCE_DEBUG_640)
 	width = 640;
 	height = 480;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #endif
 #endif
 
@@ -3199,7 +3267,9 @@ bool gr_is_viewport_window()
 		return true;
 	}
 	
-	if (Using_in_game_options) {
+	if (Cmdline_enable_vr) {
+		return true;
+	} else if (Using_in_game_options) {
 		switch (Gr_configured_window_state)
 		{
 		case os::ViewportState::Windowed:
