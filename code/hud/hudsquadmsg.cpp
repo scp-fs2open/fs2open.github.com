@@ -126,7 +126,7 @@ SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
 int player_order::orderingCounter = 0;
 
-std::vector<player_order> Player_orders = {
+SCP_vector<player_order> Player_orders = {
 	player_order("no order",   "No Order",  -1, -1, NO_ORDER_ITEM), //Required to keep defines in sync with array indices
 	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
 	player_order("disable ship",  "Disable my target",	300, -1, DISABLE_TARGET_ITEM),
@@ -146,11 +146,11 @@ std::vector<player_order> Player_orders = {
 	player_order("keep safe dist", "Keep safe distance", -1, -1, KEEP_SAFE_DIST_ITEM)
 };
 
-const std::set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const std::set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const std::set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
-const std::set<size_t> target_messages = []() {
-	std::set<size_t> setunion;
+const SCP_set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const SCP_set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
+const SCP_set<size_t> target_messages = []() {
+	SCP_set<size_t> setunion;
 	std::set_union(enemy_target_messages.cbegin(), enemy_target_messages.cend(), friendly_target_messages.cbegin(), friendly_target_messages.cend(), std::inserter(setunion, setunion.end()));
 	return setunion;
 }();

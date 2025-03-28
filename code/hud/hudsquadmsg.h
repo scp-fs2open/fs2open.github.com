@@ -103,7 +103,7 @@ public:
 	inline void localize() { localized_name = XSTR(hud_name.c_str(), hud_xstr); }
 } player_order;
 
-extern std::vector<player_order> Player_orders;
+extern SCP_vector<player_order> Player_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
