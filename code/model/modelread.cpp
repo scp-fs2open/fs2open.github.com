@@ -2374,7 +2374,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 							if (vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
 								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal.  Generating a normal in the forward Z direction.", filename, bay->name);
 								bay->norm[j] = vmd_z_vector;
-							} else if (!vm_vec_is_normalized(&(bay->norm[j]))) {
+							} else {
 								vm_vec_normalize(&(bay->norm[j]));
 							}
 						}

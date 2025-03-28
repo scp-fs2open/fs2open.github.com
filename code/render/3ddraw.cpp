@@ -500,6 +500,8 @@ void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float 
 
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height)
 {
+	Assertion(norm != nullptr && vm_vec_is_normalized(norm), "input vector must be normalized!");
+
 	matrix m;
 	vm_vector_2_matrix_norm(&m, norm, nullptr, nullptr);
 

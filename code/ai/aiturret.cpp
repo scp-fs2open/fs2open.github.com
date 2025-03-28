@@ -1223,6 +1223,7 @@ void ship_get_global_turret_gun_info(const object *objp, const ship_subsys *ssp,
 
 	if (use_angles) {
 		model_instance_local_to_global_dir(gvec, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj, &objp->orient);
+		vm_vec_normalize(gvec);
 	} else {
 		Assertion(targetp != nullptr, "The targetp parameter must not be null here!");
 		vm_vec_normalized_dir(gvec, targetp, gpos);
