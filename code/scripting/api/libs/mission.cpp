@@ -1050,7 +1050,7 @@ ADE_FUNC(sendPlainMessage,
 }
 
 // Map from the Lua enums to the message type enums
-int getBuiltinMessageType(enum_h* enumValue)
+int getBuiltinMessageType(const enum_h* enumValue)
 {
 	switch (enumValue->index) {
 	case LE_BUILTIN_MESSAGE_ATTACK_TARGET:
@@ -1168,6 +1168,13 @@ ADE_FUNC(sendBuiltinMessage,
 
 	if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
 		return ADE_RETURN_FALSE;
+
+	// I don't love this method of error checking the enums becuase if someone inserts an enum accidentally in this range it could fail
+	// but the way we do all our LUA Enums is prone to that kind of mess at a foundational level...
+	if (ehp == nullptr || ehp->index < LE_BUILTIN_MESSAGE_ATTACK_TARGET || ehp->index > LE_BUILTIN_MESSAGE_STRAY) {
+		Warning(LOCATION, "Invalid message type %d passed to sendBuiltinMessage!\n", (ehp != nullptr) ? ehp->index : -1);
+		return ADE_RETURN_FALSE;
+	}
 
 	if (sender_ship_h == nullptr || !sender_ship_h->isValid())
 		return ADE_RETURN_FALSE;
