@@ -1150,10 +1150,10 @@ int getBuiltinMessageType(const enum_h* enumValue)
 
 ADE_FUNC(sendBuiltinMessage,
 	l_Mission,
-	"ship sender, ship subject, enumeration type",
+	"ship sender, ship subject, enumeration|string type_or_type_name",
 	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
 	"The subject can be nil or it can be the target of the message like a response to a destroy order."
-	"The type must be one of the BUILTIN_MESSAGE enumerations.",
+	"The type must be one of the BUILTIN_MESSAGE enumerations or a string matching a custom built-in message defined in messages.tbl.",
 	"boolean",
 	"true if successful, false otherwise")
 {
@@ -1166,14 +1166,27 @@ ADE_FUNC(sendBuiltinMessage,
 	object_h* sender_ship_h = nullptr;
 	object_h* subject_ship_h = nullptr;
 
-	if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
-		return ADE_RETURN_FALSE;
+	if (lua_isstring(L, 3)) {
+		// If the type is a string, it could be a custom message type defined in messages.tbl.
+		const char* type_str = nullptr;
+		if (!ade_get_args(L, "oos", &sender_ship_h, &subject_ship_h, &type_str))
+			return ADE_RETURN_FALSE;
+		
+		// Get the builtin message type from the string.
+		messageType = get_builtin_message_type(type_str);
+	} else {
+		if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
+			return ADE_RETURN_FALSE;
 
-	// I don't love this method of error checking the enums becuase if someone inserts an enum accidentally in this range it could fail
-	// but the way we do all our LUA Enums is prone to that kind of mess at a foundational level...
-	if (ehp == nullptr || ehp->index < LE_BUILTIN_MESSAGE_ATTACK_TARGET || ehp->index > LE_BUILTIN_MESSAGE_STRAY) {
-		Warning(LOCATION, "Invalid message type %d passed to sendBuiltinMessage!\n", (ehp != nullptr) ? ehp->index : -1);
-		return ADE_RETURN_FALSE;
+		// I don't love this method of error checking the enums becuase if someone inserts an enum accidentally in this
+		// range it could fail but the way we do all our LUA Enums is prone to that kind of mess at a foundational
+		// level...
+		if (ehp == nullptr || ehp->index < LE_BUILTIN_MESSAGE_ATTACK_TARGET || ehp->index > LE_BUILTIN_MESSAGE_STRAY) {
+			Warning(LOCATION, "Invalid message type %d passed to sendBuiltinMessage!\n", (ehp != nullptr) ? ehp->index : -1);
+			return ADE_RETURN_FALSE;
+		}
+
+		messageType = getBuiltinMessageType(ehp);
 	}
 
 	if (sender_ship_h == nullptr || !sender_ship_h->isValid())
@@ -1181,12 +1194,10 @@ ADE_FUNC(sendBuiltinMessage,
 
 	sender = &Ships[sender_ship_h->objp()->instance];
 
-	if (subject_ship_h != nullptr || subject_ship_h->isValid())
+	if (subject_ship_h != nullptr && subject_ship_h->isValid())
 		subject = &Ships[subject_ship_h->objp()->instance];
 
-	messageType = getBuiltinMessageType(ehp);
-
-	if (messageType == -1 || messageType >= Num_Message_Types) {
+	if (messageType < 0 || messageType >= static_cast<int>(Builtin_messages.size())) {
 		LuaError(L, "Message type is invalid!");
 		return ADE_RETURN_FALSE;
 	}
