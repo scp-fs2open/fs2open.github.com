@@ -97,9 +97,15 @@ function(handle_embedded_files _target)
         set(INCLUDE_LIST "${INCLUDE_LIST}\n#include \"${HEADER_FILE}\"")
         set(ARRAY_ELEMENTS "${ARRAY_ELEMENTS}\n\t{ \"${_pathType}\", \"${FILE_NAME}\" , ${FIELD_NAME} , ${FIELD_NAME}_size },")
 
+        IF(CMAKE_CROSSCOMPILING)
+            SET(EMBEDFILE_PATH "EMBEDFILE-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to an embedfile of a cmake build for the host OS")
+        ELSE(CMAKE_CROSSCOMPILING)
+            SET(EMBEDFILE_PATH "embedfile")
+        ENDIF(CMAKE_CROSSCOMPILING)
+
         add_custom_command(
             OUTPUT ${ALL_OUTPUTS}
-            COMMAND embedfile "${_filePath}" "${_outputBasePath}" "${FIELD_NAME}"
+            COMMAND ${EMBEDFILE_PATH} "${_filePath}" "${_outputBasePath}" "${FIELD_NAME}"
             MAIN_DEPENDENCY "${_filePath}"
             COMMENT "Generating string file for ${_filePath}"
         )

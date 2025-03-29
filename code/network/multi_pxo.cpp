@@ -1560,7 +1560,7 @@ static int open_url(const char *url)
 	}
 
 #ifdef _WIN32
-	int rval = (int) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
+	intptr_t rval = (intptr_t) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
 
 	if (rval <= 32) {
 		return -1;
