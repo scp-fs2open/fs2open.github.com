@@ -74,7 +74,7 @@ typedef struct builtin_message {
 	int         fallback;
 } builtin_message;
 
-// If these are changed or updated be sure to update the map in scripting/api/libs/mission.cpp!
+// If these are changed or updated be sure to update the map in scripting/api/libs/mission.cpp and the connected lua enumerations!
 #define BUILTIN_MESSAGE_TYPES                                                                    \
 /* Orders */                                                                                     \
 X(ATTACK_TARGET,       "Attack Target",        100, -1,  0,     NORMAL, ANYTIME, YESSIR),        \

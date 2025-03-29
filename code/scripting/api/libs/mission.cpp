@@ -1169,7 +1169,7 @@ ADE_FUNC(sendBuiltinMessage,
 	if (lua_isstring(L, 3)) {
 		// If the type is a string, it could be a custom message type defined in messages.tbl.
 		const char* type_str = nullptr;
-		if (!ade_get_args(L, "oos", &sender_ship_h, &subject_ship_h, &type_str))
+		if (!ade_get_args(L, "oos", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), &type_str))
 			return ADE_RETURN_FALSE;
 		
 		// Get the builtin message type from the string.

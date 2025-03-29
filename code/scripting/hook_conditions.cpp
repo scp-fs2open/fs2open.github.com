@@ -164,8 +164,8 @@ static int conditionParseRawControl(const SCP_string& name) {
 	HOOK_CONDITION(classname, prefix "Ship class", "Specifies the class of the ship " documentationAddendum, shipp, conditionParseShipClass, conditionCompareShipClass); \
 	HOOK_CONDITION(classname, prefix "Ship type", "Specifies the type of the ship " documentationAddendum, shipp, conditionParseShipType, conditionCompareShipType); 
 
-#define HOOK_CONDITION_SHIP_OBJP(classname, documentationAddendum, objp_) \
-	HOOK_CONDITION(classname, "Ship", "Specifies the name of the ship " documentationAddendum, objp_, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool { \
+#define HOOK_CONDITION_SHIP_OBJP(classname, prefix, documentationAddendum, objp_) \
+	HOOK_CONDITION(classname, prefix "Ship", "Specifies the name of the ship " documentationAddendum, objp_, conditionParseString, [](const object* objp, const SCP_string& shipname) -> bool { \
 		return conditionObjectIsShipDo(&conditionCompareShip, objp, shipname); \
 	}); \
 	HOOK_CONDITION(classname, "Ship class", "Specifies the class of the ship " documentationAddendum, objp_, conditionParseShipClass, [](const object* objp, const int& shipclass) -> bool { \
@@ -245,7 +245,7 @@ HOOK_CONDITIONS_START(WeaponDeathConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(ObjectDeathConditions)
-	HOOK_CONDITION_SHIP_OBJP(ObjectDeathConditions, "that died.", dying_objp);
+	HOOK_CONDITION_SHIP_OBJP(ObjectDeathConditions, "", "that died.", dying_objp);
 	HOOK_CONDITION(ObjectDeathConditions, "Weapon class", "Specifies the class of the weapon that died.", dying_objp, conditionParseWeaponClass, [](const object* objp, const int& weaponclass) -> bool {
 		return conditionObjectIsWeaponDo(&conditionCompareWeaponClass, objp, weaponclass);
 	});
@@ -257,7 +257,7 @@ HOOK_CONDITIONS_START(ShipArriveConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(WeaponCreatedConditions)
-	HOOK_CONDITION_SHIP_OBJP(WeaponCreatedConditions, "that fired the weapon.", parent_objp);
+	HOOK_CONDITION_SHIP_OBJP(WeaponCreatedConditions, "", "that fired the weapon.", parent_objp);
 	HOOK_CONDITION(WeaponCreatedConditions, "Object type", "Specifies the type of the object that is the parent of this weapon.", parent_objp, conditionParseObjectType, conditionIsObjecttype);
 	HOOK_CONDITION(WeaponCreatedConditions, "Weapon class", "Specifies the class of the weapon that was fired.", spawned_wep, conditionParseWeaponClass, conditionCompareWeaponClass);
 HOOK_CONDITIONS_END
@@ -295,7 +295,7 @@ HOOK_CONDITIONS_START(WeaponDeselectedConditions)
 HOOK_CONDITIONS_END
 
 HOOK_CONDITIONS_START(ObjectDrawConditions)
-	HOOK_CONDITION_SHIP_OBJP(ObjectDrawConditions, "that was drawn / drawn from.", drawn_from_objp);
+	HOOK_CONDITION_SHIP_OBJP(ObjectDrawConditions, "", "that was drawn / drawn from.", drawn_from_objp);
 	HOOK_CONDITION(ObjectDrawConditions, "Weapon class", "Specifies the class of the weapon that was drawn / drawn from.", drawn_from_objp, conditionParseWeaponClass, [](const object* objp, const int& weaponclass) -> bool {
 		return conditionObjectIsWeaponDo(&conditionCompareWeaponClass, objp, weaponclass);
 	});
@@ -309,6 +309,7 @@ HOOK_CONDITIONS_END
 HOOK_CONDITIONS_START(CommOrderConditions)
 	HOOK_CONDITION_SHIPP(CommOrderConditions, "", "that sent the order.", source);
 	HOOK_CONDITION(CommOrderConditions, "Object type", "Specifies the type of object that is the target of the order.", target, conditionParseObjectType, conditionIsObjecttype);
+	HOOK_CONDITION_SHIP_OBJP(CommOrderConditions, "Target ", "that is being targeted.", target);
 HOOK_CONDITIONS_END
 
 }
