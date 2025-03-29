@@ -253,7 +253,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				for (auto& ship : Ship_info) {
 					if (!stricmp(ship.name, temp.c_str())) {
-						HC_shield_gauge_ship = ship.name;
+						HC_hud_ships["default"] = ship.name;
 						found = true;
 						break;
 					}
@@ -262,6 +262,14 @@ void parse_hud_gauges_tbl(const char *filename)
 				if (!found) {
 					Warning(LOCATION, "Shield gauge ship \"%s\" not found in ships.tbl!", temp.c_str());
 				}
+			}
+
+			if (optional_string("$Primary Weapons:")) {
+				stuff_string_list(HC_hud_primary_weapons["default"]);
+			}
+
+			if (optional_string("$Secondary Weapons:")) {
+				stuff_string_list(HC_hud_secondary_weapons["default"]);
 			}
 
 			if (optional_string("$Example Wing Names:")) {
@@ -469,6 +477,21 @@ void parse_hud_gauges_tbl(const char *filename)
 					if (!show) {
 						HC_ignored_huds.insert(name);
 					}
+				}
+
+				if (optional_string("$Shield Gauge Ship:")) {
+					SCP_string ship;
+					stuff_string(ship, F_NAME);
+
+					HC_hud_ships[name] = ship;
+				}
+
+				if (optional_string("$Primary Weapons:")) {
+					stuff_string_list(HC_hud_primary_weapons[name]);
+				}
+
+				if (optional_string("$Secondary Weapons:")) {
+					stuff_string_list(HC_hud_secondary_weapons[name]);
 				}
 
 				if (optional_string("$Load Retail Configuration:")) {
