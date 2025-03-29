@@ -236,7 +236,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad);
 
 void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient, float rad, float depth = 0.0f);
-void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad);
+void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad, bool isFaraway = false);
 
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float width, float height);
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height);
