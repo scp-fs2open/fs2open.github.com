@@ -73,6 +73,7 @@ extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamWarmdown;
 
 extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuOpened;
 extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuClosed;
+extern const std::shared_ptr<OverridableHook<CommOrderConditions>> OnHudCommOrderIssued;
 
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnHudDraw;
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnObjectRender;
