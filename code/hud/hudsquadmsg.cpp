@@ -40,18 +40,18 @@
 #define MSG_KEY_EAT_TIME			(300)
 
 int Squad_msg_mode;							// current mode that the messaging system is in
-LOCAL int Msg_key_used;								// local variable which tells if the key being processed
+static int Msg_key_used;								// local variable which tells if the key being processed
 															// with the messaging system was actually used
-LOCAL int Msg_key;									// global which indicates which key was currently pressed
-LOCAL bool Msg_key_set_from_scripting;      // is true if the key was set from scripting and not from a player keypress
-LOCAL int Msg_mode_timestamp;
+static int Msg_key;                         // global which indicates which key was currently pressed
+static bool Msg_key_set_from_scripting; // is true if the key was set from scripting and not from a player keypress
+static int Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
-LOCAL int Msg_target_objnum;				// id of the current target of the player
-LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
-LOCAL	int Msg_enemies;						// tells us whether or not to message enemy ships or friendlies
+static int Msg_target_objnum;           // id of the current target of the player
+static ship_subsys* Msg_targeted_subsys; // pointer to current subsystem which is targeted
+static int Msg_enemies;                  // tells us whether or not to message enemy ships or friendlies
 
-LOCAL int Msg_eat_key_timestamp;			// used to temporarily "eat" keys
+static int Msg_eat_key_timestamp; // used to temporarily "eat" keys
 
 // defined to position the messaging box
 int Mbox_item_h[GR_NUM_RESOLUTIONS] = {
@@ -921,6 +921,8 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 		scripting::hooks::OnHudCommOrderIssued->run(
 			scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], recipient},
 			paramList);
+
+		delete recipient;
 	}
 
 	return isOverride;
