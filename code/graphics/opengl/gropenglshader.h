@@ -129,8 +129,8 @@ typedef struct opengl_shader_t {
 
 	opengl_shader_t();
 
-	opengl_shader_t(opengl_shader_t&& other) noexcept;
-	opengl_shader_t& operator=(opengl_shader_t&& other) noexcept;
+	opengl_shader_t(opengl_shader_t&& other) noexcept = default;
+	opengl_shader_t& operator=(opengl_shader_t&& other) noexcept = default;
 
 	opengl_shader_t(const opengl_shader_t&) = delete;
 	opengl_shader_t& operator=(const opengl_shader_t&) = delete;
