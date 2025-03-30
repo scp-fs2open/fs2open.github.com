@@ -674,7 +674,7 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 
 // adapted from g3_draw_bitmap()
 //void render_oriented_bitmap_2d(int texture, float alpha, bool blending, vertex *pnt, int orient, float rad)
-void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad)
+void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad, bool isFaraway)
 {
 	vertex va, vb;
 	float t, w, h;
@@ -705,14 +705,18 @@ void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int ori
 	if ( pnt->flags & PF_OVERFLOW )
 		return;
 
-	t = (width * gr_screen.clip_width * 0.5f) / pnt->world.xyz.z;
+	t = width * gr_screen.clip_width * 0.5f;
+	if (!isFaraway)
+		t /= pnt->world.xyz.z;
 	w = t*Matrix_scale.xyz.x;
 
-	t = (height * gr_screen.clip_height * 0.5f) / pnt->world.xyz.z;
+	t = height * gr_screen.clip_height * 0.5f;
+	if (!isFaraway)
+		t /= pnt->world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
 	float z, sw;
-	z = pnt->world.xyz.z - rad / 2.0f;
+	z = isFaraway ? 100000 : pnt->world.xyz.z - rad / 2.0f;
 	if ( z <= 0.0f ) {
 		z = 0.0f;
 		sw = 0.0f;
