@@ -280,9 +280,9 @@ void parse_hud_gauges_tbl(const char *filename)
 					required_string("+Color:");
 					int rgb[3] = {255, 255, 255};
 					stuff_int_list(rgb, 3);
-					
-					for (int c = 0; c < 3; c++) {
-						CLAMP(rgb[c], 0, 255);
+
+					for (auto& c : rgb) {
+						CLAMP(c, 0, 255);
 					}
 
 					preset.r = rgb[0];

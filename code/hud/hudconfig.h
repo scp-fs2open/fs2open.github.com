@@ -110,7 +110,7 @@ extern HUD_CONFIG_TYPE HUD_config;
 // HUD Color presets
 typedef struct hc_col {
 	int r, g, b;
-	SCP_string name = "";
+	SCP_string name;
 	int xstr = -1;
 } hc_col;
 
