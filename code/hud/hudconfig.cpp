@@ -314,11 +314,12 @@ SCP_string							HC_gauge_selected;	// gauge is selected
 int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
 SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 
+// Names and XSTR IDs for these come from HC_text above
 hc_col HC_colors[NUM_HUD_COLOR_PRESETS] =
 {
-	{0, 255, 0},      // Green
-	{67, 123, 203},   // Blue
-	{255, 197, 0},    // Amber
+	{0, 255, 0, "", -1},    // Green
+	{67, 123, 203, "", -1}, // Blue
+	{255, 197, 0, "", -1},  // Amber
 };
 
 int HC_default_color = HUD_COLOR_PRESET_1;
