@@ -15,6 +15,7 @@
 #include "options/OptionsManager.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
+#include "pilotfile/plr_hudprefs.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
@@ -1824,6 +1825,9 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 		}
 	}
 
+	mprintf(("HUDPREFS => Loading extended player HUD preferences...\n"));
+	hud_config_load_player_prefs(p->callsign); 
+
 	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these campaign options set
 	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
 	//options::OptionsManager::instance()->persistChanges();
@@ -1922,6 +1926,9 @@ bool pilotfile::save_savefile()
 	csg_write_lastmissions();
 	mprintf(("CSG => Saving:  Containers...\n"));
 	csg_write_containers();
+
+	mprintf(("HUDPREFS => Saving player HUD preferences (testing)...\n"));
+	hud_config_save_player_prefs(p->callsign);
 
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));

@@ -343,6 +343,33 @@ ADE_VIRTVAR(UsesIffForColor,
 	return ADE_RETURN_TRUE;
 }
 
+ADE_VIRTVAR(isCustomGauge,
+	l_Gauge_Config,
+	nullptr,
+	"Gets whether or not the gauge is a custom gauge.",
+	"boolean",
+	"True if custom, false otherwise")
+{
+	gauge_config_h current;
+	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "b", false);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	if (!current.getGauge()->isCustom()) {
+		return ADE_RETURN_FALSE;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
 ADE_FUNC(setSelected, l_Gauge_Config, "boolean", "Sets if the gauge is the currently selected gauge for drawing as selected.", nullptr, nullptr)
 {
 	gauge_config_h current;

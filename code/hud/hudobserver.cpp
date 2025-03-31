@@ -43,7 +43,7 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
 	Hud_obs_ship.weapons = shipp->weapons;
 
-	HUD_config.is_observer = 1;
+	HUD_config.is_observer = true;
 	HUD_config.show_flags_map.clear();
 	HUD_config.popup_flags_map.clear();
 
