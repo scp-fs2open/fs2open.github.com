@@ -33,7 +33,9 @@ void parse_default_settings_table(const char* filename)
 				const options::OptionBase* thisOpt = options::OptionsManager::instance()->getOptionByKey(name);
 
 				if (thisOpt == nullptr) {
-					error_display(0, "%s is not a valid option!", name.c_str());
+					// keep this just a debug print, as options may be removed but still valid for the table
+					// such as VR mode removing the Window option --Mjn and wookieejedi 
+					mprintf(("Warning: %s is not a valid option for the default_settings table!\n", name.c_str()));
 					skip_to_start_of_string_either("$Option Key:", "#END");
 					continue;
 				}
