@@ -19,10 +19,10 @@ class player;
 class ship;
 struct ai_info;
 
-#define HUD_COLOR_GREEN		0
-#define HUD_COLOR_BLUE		1
-#define HUD_COLOR_AMBER		2
-#define HUD_COLOR_SIZE		3	// Number of default colors.  Keep this up to date.
+#define HUD_COLOR_PRESET_1		0
+#define HUD_COLOR_PRESET_2		1
+#define HUD_COLOR_PRESET_3		2
+#define NUM_HUD_COLOR_PRESETS		3	// Number of default colors.  Keep this up to date.
 
 // specify the max distance that the radar should detect objects
 // Index in Radar_ranges[] array to get values
@@ -106,6 +106,19 @@ typedef struct HUD_CONFIG_TYPE {
 } HUD_CONFIG_TYPE;
 
 extern HUD_CONFIG_TYPE HUD_config;
+
+// HUD Color presets
+typedef struct hc_col {
+	int r, g, b;
+	SCP_string name = "";
+	int xstr = -1;
+} hc_col;
+
+extern hc_col HC_colors[NUM_HUD_COLOR_PRESETS];
+
+extern int HC_default_color;
+extern SCP_string HC_default_preset_file;
+
 
 /**
  * @struct HC_gauge_setting
@@ -341,7 +354,7 @@ void hud_config_preset_init();
  * 
  * param[in] filename	the preset filename to use as the default
  */
-void hud_set_default_hud_config(player* p, const char* filename = "hud_3.hcf");
+void hud_set_default_hud_config(player* p, const SCP_string& filename);
 
 /*!
  * @brief delete a preset file and remove it from the preset vector

@@ -52,6 +52,86 @@ bool hud_preset_h::isValid() const
 	return preset >= 0 && preset < (int)HC_preset_filenames.size();
 }
 
+hud_color_preset_h::hud_color_preset_h() : preset(-1) {}
+hud_color_preset_h::hud_color_preset_h(int l_preset) : preset(l_preset) {}
+
+int hud_color_preset_h::getIndex() const
+{
+	return preset;
+}
+
+SCP_string hud_color_preset_h::getName() const
+{
+	if (!isValid()) {
+		return "";
+	}
+
+	return XSTR(HC_colors[preset].name.c_str(), HC_colors[preset].xstr);
+}
+
+bool hud_color_preset_h::isValid() const
+{
+	return preset >= 0 && preset < (int)HC_preset_filenames.size();
+}
+
+//**********HANDLE: hud color preset
+ADE_OBJ(l_HUD_Color_Preset, hud_color_preset_h, "hud_color_preset", "Hud preset handle");
+
+ADE_VIRTVAR(Name, l_HUD_Color_Preset, nullptr, "The name of this preset", "string", "The name")
+{
+	hud_color_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Color_Preset.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", current.getName().c_str());
+}
+
+ADE_VIRTVAR(Color, l_HUD_Color_Preset, nullptr, "The name of this preset", "color", "color")
+{
+	hud_color_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Color_Preset.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "s", "");
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	auto preset = HC_colors[current.getIndex()];
+
+	color c;
+	gr_init_color(&c, preset.r, preset.g, preset.b);
+
+	return ade_set_args(L, "o", l_Color.Set(c));
+}
+
+ADE_FUNC(isValid,
+	l_HUD_Color_Preset,
+	nullptr,
+	"Detects whether handle is valid",
+	"boolean",
+	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
+{
+	hud_color_preset_h current;
+	if (!ade_get_args(L, "o", l_HUD_Color_Preset.Get(&current)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", current.isValid());
+}
+
 //**********HANDLE: hud preset
 ADE_OBJ(l_HUD_Preset, hud_preset_h, "hud_preset", "Hud preset handle");
 

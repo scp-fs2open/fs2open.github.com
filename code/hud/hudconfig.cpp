@@ -314,17 +314,15 @@ SCP_string							HC_gauge_selected;	// gauge is selected
 int HC_gauge_coordinates[6]; // x1, x2, y1, y1, w, h of the example HUD render area. Used for calculating new gauge coordinates
 SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 
-// HUD colors
-typedef struct hc_col {
-	ubyte	r, g, b;
-} hc_col;
-
-hc_col HC_colors[HUD_COLOR_SIZE] =
+hc_col HC_colors[NUM_HUD_COLOR_PRESETS] =
 {
-	{0, 255, 0},		// Green - get RGB from Adam so it matches palette?-??.pcx
-	{67, 123, 203},	// Blue - get RGB from Adam so it matches palette?-??.pcx
-	{255, 197, 0},		// Amber - get RGB from Adam so it matches palette?-??.pcx
+	{0, 255, 0},      // Green
+	{67, 123, 203},   // Blue
+	{255, 197, 0},    // Amber
 };
+
+int HC_default_color = HUD_COLOR_PRESET_1;
+SCP_string HC_default_preset_file = "hud_3.hcf";
 
 static HUD_CONFIG_TYPE	HUD_config_backup;		// backup HUD config, used to restore old config if changes not applied
 static int				HUD_config_inited = 0;
@@ -459,7 +457,6 @@ void hud_config_get_unique_huds()
  */
 void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 {
-	int i;
 	struct ui_button_info			*hb;
 
 	HC_gauge_mouse_coords.clear();
@@ -518,9 +515,32 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	}
 
 	if (!API_Access){
-		// add text
-		for(i=0; i<NUM_HUD_TEXT; i++){
-			HC_ui_window.add_XSTR(&HC_text[gr_screen.res][i]);
+		// Get our custom color names ready and add text
+		for (int i = 0; i < NUM_HUD_TEXT; i++) {
+			if (i >= 8 && i <= 10) {    // Check if it's a color index which are hardcoded to 8, 9, 10.
+				int colorIndex = 10 - i; // Calculate the index for HC_colors
+				if (!HC_colors[colorIndex].name.empty()) {
+
+					// UI_XSTR holds strings as const char so without making huge changes to the codebase
+					// we instead create a temp UI_XSTR with the new name
+					UI_XSTR temp = {
+						HC_colors[colorIndex].name.c_str(),
+						HC_colors[colorIndex].xstr,
+						HC_text[gr_screen.res][i].x,
+						HC_text[gr_screen.res][i].y,
+						HC_text[gr_screen.res][i].clr,
+						HC_text[gr_screen.res][i].font_id,
+						HC_text[gr_screen.res][i].assoc,
+					};
+					HC_ui_window.add_XSTR(&temp);
+				} else {
+					// Add the original string
+					HC_ui_window.add_XSTR(&HC_text[gr_screen.res][i]);
+				}
+			} else {
+				// Add the original string
+				HC_ui_window.add_XSTR(&HC_text[gr_screen.res][i]);
+			}
 		}
 
 		// initialize sliders
@@ -551,7 +571,7 @@ void hud_config_init_ui(bool API_Access, int x, int y, int w, int h)
 	hud_config_preset_init();
 
 	if (!API_Access) {
-		for (i = 0; i < NUM_HUD_BUTTONS; i++) {
+		for (int i = 0; i < NUM_HUD_BUTTONS; i++) {
 			hb = &HC_buttons[gr_screen.res][i];
 			hb->button.create(&HC_ui_window, "", hb->x, hb->y, 60, 30, 0, 1);
 			// set up callback for when a mouse first goes over a button
@@ -1029,15 +1049,15 @@ void hud_config_button_do(int n)
 
 	switch (n) {
 	case HCB_AMBER:
-		hud_config_set_color(HUD_COLOR_AMBER);
+		hud_config_set_color(HUD_COLOR_PRESET_3);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_BLUE:
-		hud_config_set_color(HUD_COLOR_BLUE);
+		hud_config_set_color(HUD_COLOR_PRESET_2);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_GREEN:
-		hud_config_set_color(HUD_COLOR_GREEN);
+		hud_config_set_color(HUD_COLOR_PRESET_1);
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
 	case HCB_ON:
@@ -1064,7 +1084,7 @@ void hud_config_button_do(int n)
 	case HCB_RESET:
 		gamesnd_play_iface(InterfaceSounds::RESET_PRESSED);
 		hud_config_select_all_toggle(0);
-		hud_set_default_hud_config(Player);
+		hud_set_default_hud_config(Player, HC_default_preset_file);
 		hud_config_synch_ui(false);
 		break;
 	case HCB_ACCEPT:
@@ -1253,13 +1273,13 @@ void hud_config_draw_color_status()
 	}
 
 	switch(HUD_config.main_color) {
-	case HUD_COLOR_AMBER:
+	case HUD_COLOR_PRESET_3:
 		HC_buttons[gr_screen.res][HCB_AMBER].button.draw_forced(2);
 		break;
-	case HUD_COLOR_GREEN:
+	case HUD_COLOR_PRESET_1:
 		HC_buttons[gr_screen.res][HCB_GREEN].button.draw_forced(2);
 		break;
-	case HUD_COLOR_BLUE:
+	case HUD_COLOR_PRESET_2:
 		HC_buttons[gr_screen.res][HCB_BLUE].button.draw_forced(2);
 		break;
 	}
@@ -1527,12 +1547,12 @@ void hud_config_close(bool API_Access)
 }
 
 // hud_set_default_hud_config() will set the hud configuration to default values
-void hud_set_default_hud_config(player * /*p*/, const char* filename)
+void hud_set_default_hud_config(player * /*p*/, const SCP_string& filename)
 {
 	int idx;
 
 	HUD_color_alpha = HUD_COLOR_ALPHA_DEFAULT;
-	HUD_config.main_color = HUD_COLOR_GREEN;
+	HUD_config.main_color = HC_default_color;
 	HUD_color_red = HC_colors[HUD_config.main_color].r;
 	HUD_color_green = HC_colors[HUD_config.main_color].g;
 	HUD_color_blue = HC_colors[HUD_config.main_color].b;
@@ -1556,7 +1576,7 @@ void hud_set_default_hud_config(player * /*p*/, const char* filename)
 	HUD_config.is_observer = 0;
 
 	// load up the default colors
-	hud_config_color_load(filename);
+	hud_config_color_load(filename.c_str());
 }
 
 // hud_config_restore() will restore the hud configuration the player started with when the 

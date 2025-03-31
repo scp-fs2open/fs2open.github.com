@@ -220,7 +220,6 @@ SCP_vector<std::pair<SCP_string, SCP_string>> Hud_parsed_ships;
 
 void parse_hud_gauges_tbl(const char *filename)
 {
-	int i;
 	char *saved_Mp = NULL;
 
 	int colors[3] = {255, 255, 255};
@@ -266,6 +265,39 @@ void parse_hud_gauges_tbl(const char *filename)
 
 			if (optional_string("$Example Wing Names:")) {
 				stuff_string_list(HC_wingam_gauge_status_names, MAX_SQUADRON_WINGS);
+			}
+
+			for (int i = 0; i < NUM_HUD_COLOR_PRESETS; i++) {
+				SCP_string colorPresetString = "$Color Preset " + std::to_string(i + 1) + ":";
+				if (optional_string(colorPresetString.c_str())) {
+					hc_col preset;
+					required_string("+Name:");
+					stuff_string(preset.name, F_NAME);
+
+					required_string("+XSTR ID:");
+					stuff_int(&preset.xstr);
+
+					required_string("+Color:");
+					int rgb[3] = {255, 255, 255};
+					stuff_int_list(rgb, 3);
+					
+					for (int c = 0; c < 3; c++) {
+						CLAMP(rgb[c], 0, 255);
+					}
+
+					preset.r = rgb[0];
+					preset.g = rgb[1];
+					preset.b = rgb[2];
+
+					HC_colors[i] = preset;
+					if (optional_string("+Default")) {
+						HC_default_color = i;
+					}
+				}
+			}
+
+			if (optional_string("$Default Preset File:")) {
+				stuff_string(HC_default_preset_file, F_NAME);
 			}
 		}
 
@@ -438,7 +470,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					stuff_boolean(&retail_config);
 				}
 
-				for (i = 0; i < n_ships; ++i) {
+				for (int i = 0; i < n_ships; ++i) {
 					ship_classes.push_back(shiparray[i]);
 					Ship_info[shiparray[i]].hud_enabled = true;
 					Ship_info[shiparray[i]].hud_retail = retail_config;
