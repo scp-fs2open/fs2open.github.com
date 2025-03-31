@@ -29,6 +29,7 @@
 #include "starfield/starfield.h" // stars_init, stars_pre_level_init, stars_post_level_init
 #include "hud/hudsquadmsg.h"
 #include "globalincs/linklist.h"
+#include "utils/string_utils.h"
 
 #include "ui/QtGraphicsOperations.h"
 
@@ -509,8 +510,8 @@ void Editor::clearMission(bool fast_reload) {
 	The_mission.author = userName;
 	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
-	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
-	strcpy_s(The_mission.mission_desc, "Put mission description here");
+	The_mission.notes = util::unique_copy("This is a FRED2_OPEN created mission.", true);
+	The_mission.mission_desc = util::unique_copy("Put mission description here", true);
 
 	// reset alternate name & callsign stuff
 	for (auto i = 0; i < MAX_SHIPS; i++) {

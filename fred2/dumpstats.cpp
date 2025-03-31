@@ -141,10 +141,10 @@ void DumpStats::get_mission_stats(CString &buffer)
 	temp.Format("Author: %s\r\n", The_mission.author.c_str());
 	buffer += temp;
 
-	temp.Format("Description: %s\r\n", The_mission.mission_desc);
+	temp.Format("Description: %s\r\n", coalesce(The_mission.mission_desc.get(), ""));
 	buffer += temp;
 
-	temp.Format("Notes: %s\r\n", The_mission.notes);
+	temp.Format("Notes: %s\r\n", coalesce(The_mission.notes.get(), ""));
 	buffer += temp;
 
 	if (The_mission.game_type & MISSION_TYPE_SINGLE) {

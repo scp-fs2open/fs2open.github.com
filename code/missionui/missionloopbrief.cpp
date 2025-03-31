@@ -150,13 +150,8 @@ void loop_brief_init()
 		Loop_brief_window.add_XSTR(&Loop_text[gr_screen.res][idx]);
 	}
 
-	const char* anim_name;
 	// load animation if any
-	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim != NULL){
-		anim_name = Campaign.missions[Campaign.current_mission].mission_branch_brief_anim;
-	} else {
-		anim_name = "CB_default";
-	}
+	auto anim_name = coalesce(Campaign.missions[Campaign.current_mission].mission_branch_brief_anim.get(), "CB_default");
 
 	int stream_result = generic_anim_init_and_stream(&Loop_anim, anim_name, bm_get_type(Loop_brief_bitmap), true);
 	// we've failed to load any animation
@@ -169,16 +164,15 @@ void loop_brief_init()
 	}
 
 	// init brief text
-	if(Campaign.missions[Campaign.current_mission].mission_branch_desc != NULL){
-		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc, Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
+	if (Campaign.missions[Campaign.current_mission].mission_branch_desc) {
+		brief_color_text_init(Campaign.missions[Campaign.current_mission].mission_branch_desc.get(), Loop_brief_text_coords[gr_screen.res][2], default_loop_briefing_color);
 	}
 
 	bool sound_played = false;
 
-
 	// open sound
-	if(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound != NULL){
-		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound, ASF_VOICE);
+	if (Campaign.missions[Campaign.current_mission].mission_branch_brief_sound) {
+		Loop_sound = audiostream_open(Campaign.missions[Campaign.current_mission].mission_branch_brief_sound.get(), ASF_VOICE);
 
 		if(Loop_sound != -1){
 			audiostream_play(Loop_sound, Master_voice_volume, 0);
@@ -186,10 +180,8 @@ void loop_brief_init()
 		}
 	}
 
-	if(sound_played == false) {
-		fsspeech_play(FSSPEECH_FROM_BRIEFING, 
-			Campaign.missions[Campaign.current_mission].mission_branch_desc);
-
+	if (!sound_played) {
+		fsspeech_play(FSSPEECH_FROM_BRIEFING, coalesce(Campaign.missions[Campaign.current_mission].mission_branch_desc.get(), ""));
 	}
 
 	// music
