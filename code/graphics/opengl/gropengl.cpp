@@ -875,7 +875,9 @@ int opengl_init_display_device()
 		attrs.title = Window_title;
 	}
 
-	if (Using_in_game_options) {
+	if (Cmdline_enable_vr) {
+		// Force Windowed mode in VR
+	} else if (Using_in_game_options) {
 		switch (Gr_configured_window_state) {
 		case os::ViewportState::Windowed:
 			// That's the default

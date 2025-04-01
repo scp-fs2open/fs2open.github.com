@@ -357,7 +357,7 @@ ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interf
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", Cmdline_stretch_menu != 0);
+	return ade_set_args(L, "b", Cmdline_stretch_menu);
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")

@@ -43,8 +43,8 @@ extern int Cmdline_spew_pof_info;
 extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
-extern int Cmdline_window;
-extern int Cmdline_fullscreen_window;
+extern bool Cmdline_window;
+extern bool Cmdline_fullscreen_window;
 extern char *Cmdline_res;
 extern std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res;
 extern char *Cmdline_center_res;
@@ -71,7 +71,7 @@ extern int Cmdline_msaa_enabled;
 
 // Game Speed related
 extern int Cmdline_NoFPSCap;
-extern int Cmdline_no_vsync;
+extern bool Cmdline_no_vsync;
 
 // HUD related
 extern int Cmdline_ballistic_gauge;
@@ -81,7 +81,7 @@ extern int Cmdline_rearm_timer;
 
 // Gameplay related
 extern int Cmdline_autopilot_interruptable;
-extern int Cmdline_stretch_menu;
+extern bool Cmdline_stretch_menu;
 extern bool Cmdline_capture_mouse;
 extern int Cmdline_deadzone;
 extern bool Cmdline_enable_vr;
@@ -163,5 +163,9 @@ extern bool Cmdline_vulkan;
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;
 
+extern void removeVSyncOption();
+extern void removeWindowModeOption();
+extern void removeResolutionOption();
+extern void removeResolutionVROption();
 
 #endif
