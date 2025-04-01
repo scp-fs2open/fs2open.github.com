@@ -1118,7 +1118,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			}
 
-			if (detail_level < 2) {
+			if (detail_level < 2 || Detail.detail_distance > 2) {
 				// likewise, etc.
 				auto norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				auto height_map = &tmap->textures[TM_HEIGHT_TYPE];
