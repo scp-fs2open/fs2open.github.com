@@ -69,8 +69,8 @@ auto LightshaftsOption = options::OptionBuilder<bool>("Graphics.Lightshafts",
                      .finish();
 
 auto SunglareOption = options::OptionBuilder<bool>("Graphics.Sunglare",
-					std::pair<const char*, int>{"Sunglare", 1877},
-					std::pair<const char*, int>{"Enables or disables glare from suns", 1878})
+					std::pair<const char*, int>{"Sunglare", 1880},
+					std::pair<const char*, int>{"Enables or disables glare from suns", 1881})
 			.category(std::make_pair("Graphics", 1825))
 			.default_func([]() { return Post_processing_enable_sunglare;})
 			.level(options::ExpertLevel::Advanced)
