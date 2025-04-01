@@ -61,7 +61,7 @@ SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
 void allocate_parse_text(size_t size);
 static size_t Parse_text_size = 0;
 
-static SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
+static const SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
 	{"strings.tbl", "84ab6e5392d7c54752a61161aac9f9fd"},
 	{"weapons.tbl", "ca2c7f305b1f36988c2bb8c371ab2027"}
 };
