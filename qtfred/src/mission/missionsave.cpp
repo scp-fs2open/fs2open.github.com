@@ -1658,8 +1658,9 @@ int CFred_mission_save::save_cutscenes()
 			if (optional_string_fred("#Cutscenes")) {
 				parse_comments(2);
 			} else {
-				fout_version("\n\n#Cutscenes\n\n");
+				fout_version("\n\n#Cutscenes");
 			}
+			fout("\n");
 
 			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
 				if (strlen(The_mission.cutscenes[i].filename)) {
@@ -1695,13 +1696,13 @@ int CFred_mission_save::save_cutscenes()
 						parse_comments();
 						fout(" %s", The_mission.cutscenes[i].filename);
 					} else {
-						fout_version("%s %s\n", type, The_mission.cutscenes[i].filename);
+						fout_version("\n%s %s", type, The_mission.cutscenes[i].filename);
 					}
 
 					required_string_fred("+formula:");
 					parse_comments();
 					convert_sexp_to_string(sexp_out, The_mission.cutscenes[i].formula, SEXP_SAVE_MODE);
-					fout(" %s", sexp_out.c_str());
+					fout(" %s\n", sexp_out.c_str());
 				}
 			}
 			required_string_fred("#end");

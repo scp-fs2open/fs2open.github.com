@@ -749,6 +749,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "get-supernova-stage",			OP_GET_SUPERNOVA_STAGE,					0,	0,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "set-motion-debris-override",		OP_OVERRIDE_MOTION_DEBRIS,				1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
@@ -24476,6 +24477,11 @@ void sexp_supernova_stop(int  /*node*/)
 	supernova_stop();
 }
 
+int sexp_get_supernova_stage(int /*node*/)
+{
+	return static_cast<int>(supernova_stage());
+}
+
 int sexp_is_weapon_selected(int node, bool primary)
 {
 	int bank, num_banks;
@@ -29580,6 +29586,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
+			case OP_GET_SUPERNOVA_STAGE:
+				return sexp_get_supernova_stage(node);
+				break;
+
 			case OP_OVERRIDE_MOTION_DEBRIS:
 				sexp_val = SEXP_TRUE;
 				sexp_set_motion_debris(node);
@@ -31055,6 +31065,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
 		case OP_GET_POWER_OUTPUT:
+		case OP_GET_SUPERNOVA_STAGE:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -31574,6 +31585,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
+		case OP_GET_SUPERNOVA_STAGE:
 		case OP_NAV_UNSELECT:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_RESET_POST_EFFECTS:
@@ -35980,6 +35992,7 @@ int category_of_subcategory(int subcategory_id)
 			return OP_CATEGORY_CHANGE;
 
 		case STATUS_SUBCATEGORY_MISSION:
+		case STATUS_SUBCATEGORY_CUTSCENES:
 		case STATUS_SUBCATEGORY_PLAYER:
 		case STATUS_SUBCATEGORY_MULTIPLAYER:
 		case STATUS_SUBCATEGORY_SHIP_STATUS:
@@ -36207,6 +36220,8 @@ int get_category(int op_id)
 		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_USED_CHEAT:
+		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_SUPERNOVA_STAGE:
 			return OP_CATEGORY_STATUS;
 
 		case OP_WHEN:
@@ -36441,7 +36456,6 @@ int get_category(int op_id)
 		case OP_SET_PERSONA:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
-		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_SET_CAMERA_FOV:
 		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_HOST:
@@ -37027,7 +37041,6 @@ int get_subcategory(int op_id)
 		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_CAMERA_FOV:
 		case OP_CUTSCENES_SET_FOV:
-		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
@@ -37137,6 +37150,10 @@ int get_subcategory(int op_id)
 		case OP_DIRECTIVE_VALUE:
 		case OP_GET_HOTKEY:
 			return STATUS_SUBCATEGORY_MISSION;
+
+		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_SUPERNOVA_STAGE:
+			return STATUS_SUBCATEGORY_CUTSCENES;
 
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_WAS_MEDAL_GRANTED:
@@ -40631,8 +40648,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " SCP_TOKEN_TO_STR(SUPERNOVA_HIT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
-		"\t Stops a supernova in progress.\r\n"
-		"\t Note this only works if the camera hasn't cut to the player's death animation yet.\r\n"},
+		"\tStops a supernova in progress.  Note this only works if the camera hasn't cut to the player's death animation yet (is not yet at stage 3 as described in get-supernova-stage).\r\n"},
+
+	{ OP_GET_SUPERNOVA_STAGE, "get-supernova-stage\r\n"
+		"\tReturns the current stage of the active supernova, if any.  Takes no arguments.  Note that the game considers the player to be hit by the supernova at stage 3.\r\n"
+		"\tPossible return values:\r\n"
+		"\t0 = not active\r\n"
+		"\t1 = player still in control. shockwave approaching.\r\n"
+		"\t2 = shockwave still approaching, but very close. sound1 has started\r\n"
+		"\t3 = camera cut. player controls locked. letterbox. sound2 has started. particles start\r\n"
+		"\t4 = tooltime. lots of particles. camera stops moving\r\n"
+		"\t5 = player is effectively dead. fade to white. stop simulation\r\n"
+		"\t6 = dead popup\r\n"
+	},
 
 	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
@@ -42284,6 +42312,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{ "Containers",                     CHANGE_SUBCATEGORY_CONTAINERS                   },
 	{ "Other",                          CHANGE_SUBCATEGORY_OTHER                        },
 	{ "Mission",                        STATUS_SUBCATEGORY_MISSION                      },
+	{ "Cutscenes",                      STATUS_SUBCATEGORY_CUTSCENES                    },
 	{ "Player",                         STATUS_SUBCATEGORY_PLAYER                       },
 	{ "Multiplayer",                    STATUS_SUBCATEGORY_MULTIPLAYER                  },
 	{ "Ship Status",                    STATUS_SUBCATEGORY_SHIP_STATUS                  },
