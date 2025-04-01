@@ -1076,6 +1076,8 @@ add_file_folder("Parse"
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
+	parse/md5_hash.cpp
+	parse/md5_hash.h
 	parse/parsehi.cpp
 	parse/parsehi.h
 	parse/parselo.cpp
