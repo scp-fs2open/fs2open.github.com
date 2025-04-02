@@ -529,7 +529,7 @@ bool text_input_handler(const SDL_Event& evt)
 	const char *tocode = "UCS-2LE";
 #endif
 
-	auto text = (char16_t *)SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1);
+	auto text = reinterpret_cast<char16_t *>(SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1));
 
 	if ( !text ) {
 		// encoding failed
