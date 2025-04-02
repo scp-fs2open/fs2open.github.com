@@ -15,6 +15,7 @@
 #include "gamesnd/eventmusic.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
+#include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -43,6 +44,7 @@
 #include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/comm_order.h"
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
@@ -243,6 +245,38 @@ ADE_FUNC(__len, l_Mission_Asteroids, NULL,
 		return ade_set_args(L, "i", object_subclass_count(Asteroids, MAX_ASTEROIDS));
 	}
 	return ade_set_args(L, "i", 0);
+}
+
+//****SUBLIBRARY: Mission/Comm Items
+ADE_LIB_DERIV(l_Mission_Comm_Items, "CommItems", nullptr, "Comm Items in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_Comm_Items,
+	"number Index",
+	"Gets comm items",
+	"comm_item",
+	"Comm Item handle, or invalid handle if invalid index specified")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= MAX_MENU_ITEMS)
+		return ade_set_args(L, "o", l_Comm_Item.Set(-1));
+
+	return ade_set_args(L, "o", l_Comm_Item.Set(idx));
+}
+
+ADE_FUNC(__len,
+	l_Mission_Comm_Items,
+	nullptr,
+	"Number of comm orders in mission currently. Note that the value will change when an order is selected or the open/closed state of the comm menu is changed.",
+	"number",
+	"Number of comm orders in the mission. 0 if comm menu is closed")
+{
+	return ade_set_args(L, "i", Num_menu_items);
 }
 
 //****SUBLIBRARY: Mission/Debris
@@ -1013,6 +1047,162 @@ ADE_FUNC(sendPlainMessage,
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", message);
 
 	return ADE_RETURN_TRUE;
+}
+
+// Map from the Lua enums to the message type enums
+int getBuiltinMessageType(const enum_h* enumValue)
+{
+	switch (enumValue->index) {
+	case LE_BUILTIN_MESSAGE_ATTACK_TARGET:
+		return MESSAGE_ATTACK_TARGET;
+	case LE_BUILTIN_MESSAGE_DISABLE_TARGET:
+		return MESSAGE_DISABLE_TARGET;
+	case LE_BUILTIN_MESSAGE_DISARM_TARGET:
+		return MESSAGE_DISARM_TARGET;
+	case LE_BUILTIN_MESSAGE_ATTACK_SUBSYSTEM:
+		return MESSAGE_ATTACK_SUBSYSTEM;
+	case LE_BUILTIN_MESSAGE_PROTECT_TARGET:
+		return MESSAGE_PROTECT_TARGET;
+	case LE_BUILTIN_MESSAGE_FORM_ON_MY_WING:
+		return MESSAGE_FORM_ON_MY_WING;
+	case LE_BUILTIN_MESSAGE_COVER_ME:
+		return MESSAGE_COVER_ME;
+	case LE_BUILTIN_MESSAGE_IGNORE:
+		return MESSAGE_IGNORE;
+	case LE_BUILTIN_MESSAGE_ENGAGE:
+		return MESSAGE_ENGAGE;
+	case LE_BUILTIN_MESSAGE_WARP_OUT:
+		return MESSAGE_WARP_OUT;
+	case LE_BUILTIN_MESSAGE_DOCK_YES:
+		return MESSAGE_DOCK_YES;
+	case LE_BUILTIN_MESSAGE_YESSIR:
+		return MESSAGE_YESSIR;
+	case LE_BUILTIN_MESSAGE_NOSIR:
+		return MESSAGE_NOSIR;
+	case LE_BUILTIN_MESSAGE_NO_TARGET:
+		return MESSAGE_NO_TARGET;
+	case LE_BUILTIN_MESSAGE_CHECK_6:
+		return MESSAGE_CHECK_6;
+	case LE_BUILTIN_MESSAGE_PLAYER_DIED:
+		return MESSAGE_PLAYER_DIED;
+	case LE_BUILTIN_MESSAGE_PRAISE:
+		return MESSAGE_PRAISE;
+	case LE_BUILTIN_MESSAGE_HIGH_PRAISE:
+		return MESSAGE_HIGH_PRAISE;
+	case LE_BUILTIN_MESSAGE_BACKUP:
+		return MESSAGE_BACKUP;
+	case LE_BUILTIN_MESSAGE_HELP:
+		return MESSAGE_HELP;
+	case LE_BUILTIN_MESSAGE_WINGMAN_SCREAM:
+		return MESSAGE_WINGMAN_SCREAM;
+	case LE_BUILTIN_MESSAGE_PRAISE_SELF:
+		return MESSAGE_PRAISE_SELF;
+	case LE_BUILTIN_MESSAGE_REARM_REQUEST:
+		return MESSAGE_REARM_REQUEST;
+	case LE_BUILTIN_MESSAGE_REPAIR_REQUEST:
+		return MESSAGE_REPAIR_REQUEST;
+	case LE_BUILTIN_MESSAGE_PRIMARIES_LOW:
+		return MESSAGE_PRIMARIES_LOW;
+	case LE_BUILTIN_MESSAGE_REARM_PRIMARIES:
+		return MESSAGE_REARM_PRIMARIES;
+	case LE_BUILTIN_MESSAGE_REARM_WARP:
+		return MESSAGE_REARM_WARP;
+	case LE_BUILTIN_MESSAGE_ON_WAY:
+		return MESSAGE_ON_WAY;
+	case LE_BUILTIN_MESSAGE_ALREADY_ON_WAY:
+		return MESSAGE_ALREADY_ON_WAY;
+	case LE_BUILTIN_MESSAGE_REPAIR_DONE:
+		return MESSAGE_REPAIR_DONE;
+	case LE_BUILTIN_MESSAGE_REPAIR_ABORTED:
+		return MESSAGE_REPAIR_ABORTED;
+	case LE_BUILTIN_MESSAGE_SUPPORT_KILLED:
+		return MESSAGE_SUPPORT_KILLED;
+	case LE_BUILTIN_MESSAGE_ALL_ALONE:
+		return MESSAGE_ALL_ALONE;
+	case LE_BUILTIN_MESSAGE_ARRIVE_ENEMY:
+		return MESSAGE_ARRIVE_ENEMY;
+	case LE_BUILTIN_MESSAGE_OOPS:
+		return MESSAGE_OOPS;
+	case LE_BUILTIN_MESSAGE_HAMMER_SWINE:
+		return MESSAGE_HAMMER_SWINE;
+	case LE_BUILTIN_MESSAGE_AWACS_75:
+		return MESSAGE_AWACS_75;
+	case LE_BUILTIN_MESSAGE_AWACS_25:
+		return MESSAGE_AWACS_25;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING:
+		return MESSAGE_STRAY_WARNING;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING_FINAL:
+		return MESSAGE_STRAY_WARNING_FINAL;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_HIT:
+		return MESSAGE_INSTRUCTOR_HIT;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_ATTACK:
+		return MESSAGE_INSTRUCTOR_ATTACK;
+	case LE_BUILTIN_MESSAGE_ALL_CLEAR:
+		return MESSAGE_ALL_CLEAR;
+	case LE_BUILTIN_MESSAGE_PERMISSION:
+		return MESSAGE_PERMISSION;
+	case LE_BUILTIN_MESSAGE_STRAY:
+		return MESSAGE_STRAY;
+	default:
+		return -1;
+	}
+}
+
+ADE_FUNC(sendBuiltinMessage,
+	l_Mission,
+	"ship sender, ship subject, enumeration|string type_or_type_name",
+	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
+	"The subject can be nil or it can be the target of the message like a response to a destroy order."
+	"The type must be one of the BUILTIN_MESSAGE enumerations or a string matching a custom built-in message defined in messages.tbl.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	ship* sender = nullptr;
+	ship* subject = nullptr;
+	int messageType = -1;
+
+	enum_h* ehp = nullptr;
+
+	object_h* sender_ship_h = nullptr;
+	object_h* subject_ship_h = nullptr;
+
+	if (lua_isstring(L, 3)) {
+		// If the type is a string, it could be a custom message type defined in messages.tbl.
+		const char* type_str = nullptr;
+		if (!ade_get_args(L, "oos", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), &type_str))
+			return ADE_RETURN_FALSE;
+		
+		// Get the builtin message type from the string.
+		messageType = get_builtin_message_type(type_str);
+	} else {
+		if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
+			return ADE_RETURN_FALSE;
+
+		// I don't love this method of error checking the enums becuase if someone inserts an enum accidentally in this
+		// range it could fail but the way we do all our LUA Enums is prone to that kind of mess at a foundational
+		// level...
+		if (ehp == nullptr || ehp->index < LE_BUILTIN_MESSAGE_ATTACK_TARGET || ehp->index > LE_BUILTIN_MESSAGE_STRAY) {
+			Warning(LOCATION, "Invalid message type %d passed to sendBuiltinMessage!\n", (ehp != nullptr) ? ehp->index : -1);
+			return ADE_RETURN_FALSE;
+		}
+
+		messageType = getBuiltinMessageType(ehp);
+	}
+
+	if (sender_ship_h == nullptr || !sender_ship_h->isValid())
+		return ADE_RETURN_FALSE;
+
+	sender = &Ships[sender_ship_h->objp()->instance];
+
+	if (subject_ship_h != nullptr && subject_ship_h->isValid())
+		subject = &Ships[subject_ship_h->objp()->instance];
+
+	if (messageType < 0 || messageType >= static_cast<int>(Builtin_messages.size())) {
+		LuaError(L, "Message type is invalid!");
+		return ADE_RETURN_FALSE;
+	}
+
+	return message_send_builtin(messageType, sender, subject);
 }
 
 ADE_FUNC(addMessageToScrollback,

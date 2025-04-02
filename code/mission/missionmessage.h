@@ -74,6 +74,7 @@ typedef struct builtin_message {
 	int         fallback;
 } builtin_message;
 
+// If these are changed or updated be sure to update the map in scripting/api/libs/mission.cpp and the connected lua enumerations!
 #define BUILTIN_MESSAGE_TYPES                                                                    \
 /* Orders */                                                                                     \
 X(ATTACK_TARGET,       "Attack Target",        100, -1,  0,     NORMAL, ANYTIME, YESSIR),        \
@@ -136,8 +137,9 @@ X(STRAY,               "Stray",                100, -1,  0,     LOW, SOON, NONE)
 
 enum {
   #define X(NAME, ...) MESSAGE_ ## NAME
-	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES
+	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES,
 	#undef X
+	Num_Message_Types
 };
 
 extern SCP_vector<builtin_message> Builtin_messages;

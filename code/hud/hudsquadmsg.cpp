@@ -26,6 +26,9 @@
 #include "parse/sexp.h"
 #include "playerman/player.h"
 #include "scripting/global_hooks.h"
+#include "scripting/api/objs/enums.h"
+#include "scripting/api/objs/oswpt.h"
+#include "scripting/api/objs/subsystem.h"
 #include "ship/ship.h"
 #include "ship/subsysdamage.h"
 #include "weapon/emp.h"
@@ -37,17 +40,18 @@
 #define MSG_KEY_EAT_TIME			(300)
 
 int Squad_msg_mode;							// current mode that the messaging system is in
-LOCAL int Msg_key_used;								// local variable which tells if the key being processed
+static int Msg_key_used;								// local variable which tells if the key being processed
 															// with the messaging system was actually used
-LOCAL int Msg_key;									// global which indicates which key was currently pressed
-LOCAL int Msg_mode_timestamp;
+static int Msg_key;                         // global which indicates which key was currently pressed
+static bool Msg_key_set_from_scripting; // is true if the key was set from scripting and not from a player keypress
+static int Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
-LOCAL int Msg_target_objnum;				// id of the current target of the player
-LOCAL ship_subsys *Msg_targeted_subsys;// pointer to current subsystem which is targeted
-LOCAL	int Msg_enemies;						// tells us whether or not to message enemy ships or friendlies
+static int Msg_target_objnum;           // id of the current target of the player
+static ship_subsys* Msg_targeted_subsys; // pointer to current subsystem which is targeted
+static int Msg_enemies;                  // tells us whether or not to message enemy ships or friendlies
 
-LOCAL int Msg_eat_key_timestamp;			// used to temporarily "eat" keys
+static int Msg_eat_key_timestamp; // used to temporarily "eat" keys
 
 // defined to position the messaging box
 int Mbox_item_h[GR_NUM_RESOLUTIONS] = {
@@ -99,15 +103,10 @@ int Menu_pgdn_coords[GR_NUM_RESOLUTIONS][2] = {
 // -----------
 // following defines/vars are used to build menus that are used in messaging mode
 
-typedef struct mmode_item {
-	int	instance;					// instance in Ships/Wings array of this menu item
-	int	active;						// active items are in bold text -- inactive items greyed out
-	SCP_string	text;		// text to display on the menu
-} mmode_item;
-
 char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
-int Num_menu_items = -1;					// number of items for a message menu
+int Num_menu_items = -1; // number of items for a message menu
+
 int First_menu_item= -1;							// index of first item in the menu
 SCP_string Lua_sqd_msg_cat;
 
@@ -127,7 +126,7 @@ SCP_string  Comm_order_types[NUM_COMM_ORDER_TYPES];
 
 int player_order::orderingCounter = 0;
 
-std::vector<player_order> Player_orders = {
+SCP_vector<player_order> Player_orders = {
 	player_order("no order",   "No Order",  -1, -1, NO_ORDER_ITEM), //Required to keep defines in sync with array indices
 	player_order("attack ship",   "Destroy my target",  299, -1, ATTACK_TARGET_ITEM),
 	player_order("disable ship",  "Disable my target",	300, -1, DISABLE_TARGET_ITEM),
@@ -147,11 +146,11 @@ std::vector<player_order> Player_orders = {
 	player_order("keep safe dist", "Keep safe distance", -1, -1, KEEP_SAFE_DIST_ITEM)
 };
 
-const std::set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const std::set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const std::set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
-const std::set<size_t> target_messages = []() {
-	std::set<size_t> setunion;
+const SCP_set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const SCP_set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
+const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
+const SCP_set<size_t> target_messages = []() {
+	SCP_set<size_t> setunion;
 	std::set_union(enemy_target_messages.cbegin(), enemy_target_messages.cend(), friendly_target_messages.cbegin(), friendly_target_messages.cend(), std::inserter(setunion, setunion.end()));
 	return setunion;
 }();
@@ -214,6 +213,7 @@ void hud_squadmsg_start()
 	}
 
 	Msg_key = -1;
+	Msg_key_set_from_scripting = false;
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
@@ -256,6 +256,8 @@ void hud_squadmsg_end()
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
 		scripting::hooks::OnHudCommMenuClosed->run(std::move(paramList));
 	}
+
+	Squad_msg_title[0] = '\0';
 }
 
 // function which returns true if there are fighters/bombers on the players team in the mission
@@ -543,17 +545,24 @@ int hud_squadmsg_get_key()
 {
 	int k, i, num_keys_used;
 
-	if ( Msg_key == -1 )
+	if ( Msg_key == -1)
 		return -1;
 
+	bool lua_selected = Msg_key_set_from_scripting;
 	k = Msg_key;
+
 	Msg_key = -1;
+	Msg_key_set_from_scripting = false;
 
 	num_keys_used = hud_squadmsg_get_total_keys();
 
 	// if the emp effect is active, never accept keypresses
 	if(emp_active_local()){
 		return -1;
+	}
+
+	if (lua_selected) {
+		return k;
 	}
 
 	for ( i = 0; i < num_keys_used; i++ ) {
@@ -832,6 +841,91 @@ bool hud_squadmsg_is_target_order_valid(size_t order, ai_info *aip, bool isWing 
 	}
 }
 
+const SCP_string& hud_squadmsg_get_order_name(int command)
+{
+	Assertion(SCP_vector_inbounds(Player_orders, command), "Order does not exist! Get a coder!");
+
+	return Player_orders[command].hud_name;
+}
+
+scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
+{
+	Assertion(SCP_vector_inbounds(Player_orders, command), "Order does not exist! Get a coder!");
+
+	switch (command) {
+	case ATTACK_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ATTACK_TARGET;
+	case DISABLE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISABLE_TARGET;
+	case DISARM_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISARM_TARGET;
+	case PROTECT_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_PROTECT_TARGET;
+	case IGNORE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_IGNORE_TARGET;
+	case FORMATION_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_FORMATION;
+	case COVER_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_COVER_ME;
+	case ENGAGE_ENEMY_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ENGAGE_ENEMY;
+	case CAPTURE_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_CAPTURE_TARGET;
+	case REARM_REPAIR_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_REARM_REPAIR_ME;
+	case ABORT_REARM_REPAIR_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_ABORT_REARM_REPAIR;
+	case STAY_NEAR_ME_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_STAY_NEAR_ME;
+	case STAY_NEAR_TARGET_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_STAY_NEAR_TARGET;
+	case KEEP_SAFE_DIST_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_KEEP_SAFE_DIST;
+	case DEPART_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DEPART;
+	case DISABLE_SUBSYSTEM_ITEM:
+		return scripting::api::LE_SQUAD_MESSAGE_DISABLE_SUBSYSTEM;
+	default:
+		return scripting::api::LE_SQUAD_MESSAGE_LUA_AI;
+	}
+}
+
+// Run the order issued hook. When an order is issued we first check if we should override. If so, then we run the hook and return true
+// which will skip the rest of the order code.
+bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* target, ship_subsys* subsys)
+{
+	bool isOverride = false;
+
+	if (scripting::hooks::OnHudCommOrderIssued->isActive()) {
+		object_ship_wing_point_team recipient;
+
+		if (recipientShip != nullptr) {
+			recipient = recipientShip;
+		} else if (recipientWing != nullptr) {
+			recipient = recipientWing;
+		}
+
+		auto paramList = scripting::hook_param_list(
+				scripting::hook_param("Sender", 'o', &Objects[sendingShip->objnum]),
+				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(recipient)),
+				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
+				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),
+				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command)))),
+				scripting::hook_param("Name", 's', hud_squadmsg_get_order_name(command).c_str())
+			);
+		if (scripting::hooks::OnHudCommOrderIssued->isOverride(
+				scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+				paramList)) {
+			isOverride = true;
+		}
+		scripting::hooks::OnHudCommOrderIssued->run(
+			scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+			paramList);
+	}
+
+	return isOverride;
+}
+
 // function to send an order to all fighters/bombers.
 void hud_squadmsg_send_to_all_fighters( int command, int player_num )
 {
@@ -1057,6 +1151,10 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 					target_team = Ships[Objects[ainfo->target_objnum].instance].team;
 				}
 			}
+		}
+
+		if (hud_squadmsg_run_order_issued_hook(command, ordering_shipp, &Ships[shipnum], nullptr, target, ainfo->targeted_subsys)) {
+			return 0; // No message was sent
 		}
 
 		Assert ( ainfo->shipnum != -1 );
@@ -1354,6 +1452,10 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 		// get the team for the wing
 		Assert (Wings[wingnum].ship_index[0] != -1);
 		wing_team = Ships[Wings[wingnum].ship_index[0]].team;
+
+		if (hud_squadmsg_run_order_issued_hook(command, ordering_shipp, nullptr, &Wings[wingnum], target, ainfo->targeted_subsys)) {
+			return 0; // No message was sent
+		}
 
 		switch (command) {
 		case ATTACK_TARGET_ITEM:
@@ -2531,6 +2633,11 @@ int hud_query_order_issued(const char *to, const char *order_name, const char *t
 	}
 
 	return 0;
+}
+
+void Hud_set_lua_key(int selection) {
+	Msg_key = selection;
+	Msg_key_set_from_scripting = true;
 }
 
 HudGaugeSquadMessage::HudGaugeSquadMessage():
