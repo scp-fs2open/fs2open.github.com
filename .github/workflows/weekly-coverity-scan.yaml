@@ -66,4 +66,8 @@ jobs:
       - name: Upload to Coverity
         run: |
           cd build
-          curl --form token=${{ env.coverity_token }} --form email=${{ env.coverity_email }} --form file=@cov-scan.tgz --form version=${{ github.ref }} --form description="Automatic GHA scan" 'https://scan.coverity.com/builds?project=scp-fs2open/fs2open.github.com'
+          curl -X POST -d token=${{ env.coverity_token }} -d email=${{ env.coverity_email }} -d file_name="'cov-scan.tgz'" -d version=${{ github.ref }} -d description="Automatic GHA scan" 'https://scan.coverity.com/projects/870/builds/init' | tee response
+          upload_url=$(jq -r '.url' response)
+          build_id=$(jq -r '.build_id' response)
+          curl -X PUT --header 'Content-Type: application/json' --upload-file cov-scan.tgz $upload_url
+          curl -X PUT -d token=${{ env.coverity_token }} https://scan.coverity.com/projects/870/builds/$build_id/enqueue
