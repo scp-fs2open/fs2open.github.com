@@ -20,6 +20,7 @@
 #include "localization/localize.h"
 #include "mission/missionparse.h"
 #include "parse/encrypt.h"
+#include "parse/md5_hash.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "ship/ship.h"
@@ -59,6 +60,11 @@ SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
 // text allocation stuff
 void allocate_parse_text(size_t size);
 static size_t Parse_text_size = 0;
+
+static const SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
+	{"strings.tbl", "84ab6e5392d7c54752a61161aac9f9fd"},
+	{"weapons.tbl", "ca2c7f305b1f36988c2bb8c371ab2027"}
+};
 
 
 //	Return true if this character is white space, else false.
@@ -2418,12 +2424,35 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 			// We do the additional can_reallocate check here since we need control over raw_text to reencode the file
 			if (isLatin1 && can_reallocate) {
-				// Latin1 is the encoding of retail data and for legacy reasons we convert that to UTF-8.
-				// We still output a warning though...
-				Warning(LOCATION, "Found Latin-1 encoded file %s. This file will be automatically converted to UTF-8 but "
-						"it may cause parsing issues with retail FS2 files since those contained invalid data.\n"
-						"To silence this warning you must convert the files to UTF-8, e.g. by using a program like iconv.",
+
+				// Some retail files are known to be safe to convert to utf-8 so validate that here and only warn otherwise
+				bool downgrade_warning = false;
+
+				// Compare filename by lowercase string
+				SCP_string key = filename;
+				std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+
+				// Check for a hash
+				auto it = retail_hashes.find(key);
+				if (it != retail_hashes.end()) {
+					const auto hash = md5_hash(raw_text, strlen(raw_text));
+					if (it->second == hash) {
+						downgrade_warning = true;
+					} else {
+						mprintf(("Found Latin-1 encoded retail file %s with non-matching hash '%s'\n", filename, hash.c_str()));
+					}
+				}
+
+				// Log if a retail file was converted. Warn otherwise.
+				if (downgrade_warning) {
+					mprintf(("Found Latin-1 encoded retail file %s. The file will be automatically converted to UTF-8.\n", filename));
+				} else {
+					Warning(LOCATION, "Found Latin-1 encoded file %s. This file will be automatically converted to UTF-8 but "
+						"it may cause parsing issues with some files if they contained invalid data.\n"
+						"To silence this warning you must convert the files to UTF-8, e.g. by using a program like "
+						"iconv.",
 						filename);
+				}
 
 				// SDL2 has iconv functionality so we use that to convert from Latin1 to UTF-8
 
