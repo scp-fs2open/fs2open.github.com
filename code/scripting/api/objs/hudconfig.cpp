@@ -49,7 +49,7 @@ SCP_string hud_preset_h::getName() const
 
 bool hud_preset_h::isValid() const
 {
-	return preset >= 0 && preset < (int)HC_preset_filenames.size();
+	return preset >= 0 && preset < static_cast<int>(HC_preset_filenames.size());
 }
 
 hud_color_preset_h::hud_color_preset_h() : preset(-1) {}
@@ -71,7 +71,7 @@ SCP_string hud_color_preset_h::getName() const
 
 bool hud_color_preset_h::isValid() const
 {
-	return preset >= 0 && preset < (int)HC_preset_filenames.size();
+	return preset >= 0 && preset < static_cast<int>(HC_preset_filenames.size());
 }
 
 //**********HANDLE: hud color preset
