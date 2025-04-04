@@ -2523,7 +2523,7 @@ ADE_FUNC(setToDefault,
 	nullptr,
 	nullptr)
 {
-	const char* filename = "hud_3.hcf";
+	const char* filename = HC_default_preset_file.c_str();
 	ade_get_args(L, "|s", &filename);
 
 	hud_config_select_all_toggle(0, true);
@@ -2621,6 +2621,29 @@ ADE_INDEXER(l_HUD_Presets,
 ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
 {
 	return ade_set_args(L, "i", HC_preset_filenames.size());
+}
+
+ADE_LIB_DERIV(l_HUD_Color_Presets, "GaugeColorPresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Color_Presets,
+	"number Index",
+	"Array of HUD Color Presets",
+	"hud_color_preset",
+	"hud_color_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_COLOR_PRESETS))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Color_Presets, nullptr, "The number of hud color presets", "number", "The number of hud color presets.")
+{
+	return ade_set_args(L, "i", NUM_HUD_COLOR_PRESETS);
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen

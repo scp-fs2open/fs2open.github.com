@@ -1057,9 +1057,9 @@ void pilotfile::csg_read_hud()
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= NUM_HUD_COLOR_PRESETS) {
 		ReleaseWarning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
-		HUD_config.main_color = HUD_COLOR_GREEN;
+		HUD_config.main_color = HUD_COLOR_PRESET_1;
 		strikes++;
 	}
 
