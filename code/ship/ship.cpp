@@ -12513,6 +12513,8 @@ bool in_autoaim_fov(ship *shipp, int bank_to_fire, object *obj)
 
 	swp = &shipp->weapons;
 	int weapon_idx = swp->primary_bank_weapons[bank_to_fire];
+	if (weapon_idx < 0)
+		return false;
 	weapon_info* winfo_p = &Weapon_info[weapon_idx];
 
 	// First check our ship/weapon flags
