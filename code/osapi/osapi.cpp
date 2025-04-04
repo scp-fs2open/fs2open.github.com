@@ -13,6 +13,7 @@
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 #include "graphics/openxr.h"
+#include "io/joy_ff.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -133,6 +134,7 @@ namespace
 			{
 				if (fAppActive) {
 					game_pause();
+					joy_unacquire_ff();
 
 					fAppActive = false;
 				}
@@ -143,6 +145,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 			{
 				if (!fAppActive) {
+					joy_reacquire_ff();
 					game_unpause();
 
 					fAppActive = true;

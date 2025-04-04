@@ -94,6 +94,20 @@ namespace io
 			bool isAttached() const;
 
 			/**
+			 * @brief Determines if this joystick is considered a gamepad
+			 *
+			 * @return @c true if the joystick is a gamepad, @c false otherwise
+			 */
+			bool isGamepad() const;
+
+			/**
+			 * @brief Determines if this joystick has haptic features
+			 *
+			 * @return @c true if the joystick has hapic features, @c false otherwise
+			 */
+			bool isHaptic() const;
+
+			/**
 			 * @brief Gets the value of the specified axis
 			 *
 			 * @param index The index of the axis, must be in [0, numAxes())
@@ -262,6 +276,7 @@ namespace io
 			SCP_string _name;       //!< The joystick name
 			SDL_JoystickID _id;     //!< The instance ID
 			bool _isHaptic = false; //!< If this joystick supports haptic feedback
+			bool _isGamepad = false; //!< If this joystick is considered a gamepad
 
 			SCP_vector<Sint16> _axisValues; //!< The current axes values
 			SCP_vector<coord2d> _ballValues; //!< The ball values
