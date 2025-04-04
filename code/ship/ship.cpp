@@ -11512,6 +11512,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	swp = &sp->weapons;
 	sip = &(Ship_info[ship_type]);
 	sip_orig = &Ship_info[sp->ship_info_index];
+	float orig_sp_max_shield_strength = sp->ship_max_shield_strength;
 	objp = &Objects[objnum];
 	p_objp = ship_entry ? ship_entry->p_objp_or_null() : nullptr;
 	ph_inf = objp->phys_info;
@@ -11618,7 +11619,7 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			shield_pct = shield_get_strength(objp) / shield_get_max_strength(sp);
 		} else if (Ship_info[sp->ship_info_index].max_shield_strength > 0.0f) {
 			shield_pct = shield_get_strength(objp) / (sip_orig->max_shield_strength * sip_orig->max_shield_recharge);
-		} else if (sip_orig->flags[Info_Flags::Intrinsic_no_shields]) {
+		} else if (sip_orig->flags[Info_Flags::Intrinsic_no_shields] || orig_sp_max_shield_strength == 0.0f) {
 			// Recall, this flag is used to allow switching between both shielded and unshielded craft in loadout,
 			// so if that flag is on, then treat shield percent as full instead of empty.
 			// This ensures that switching to a ship with shields in loadout
@@ -11813,11 +11814,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			objp->flags.set(Object::Object_Flags::No_shields);
 		}
 		// Since there's not a mission flag set to be adjusting this, see if there was a change from a ship that normally has shields to one that doesn't, and vice versa
-		// But don't fiddle with this before the mission actually starts
-		else if ((Game_mode & GM_IN_MISSION) && !(sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && (sip->flags[Info_Flags::Intrinsic_no_shields])) {
+		else if (!(sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && (sip->flags[Info_Flags::Intrinsic_no_shields])) {
 			objp->flags.set(Object::Object_Flags::No_shields);
 		}
-		else if ((Game_mode & GM_IN_MISSION) && (sip_orig->flags[Info_Flags::Intrinsic_no_shields]) && !(sip->flags[Info_Flags::Intrinsic_no_shields]) && (sp->ship_max_shield_strength > 0.0f)) {
+		else if (((sip_orig->flags[Info_Flags::Intrinsic_no_shields]) || (orig_sp_max_shield_strength == 0.0f)) && !(sip->flags[Info_Flags::Intrinsic_no_shields]) && (sp->ship_max_shield_strength > 0.0f)) {
 			objp->flags.remove(Object::Object_Flags::No_shields);
 		}
 	}

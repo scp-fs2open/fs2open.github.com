@@ -2162,7 +2162,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
     else if (p_objp->flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
         Objects[objnum].flags.remove(Object::Object_Flags::No_shields);
     // intrinsic no-shields means we have them off in-game
-    else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) && (Game_mode & GM_IN_MISSION))
+    else if (!Fred_running && (sip->flags[Ship::Info_Flags::Intrinsic_no_shields]))
         Objects[objnum].flags.set(Object::Object_Flags::No_shields);
 
 	// don't set the flag if the mission is ongoing in a multiplayer situation. This will be set by the players in the

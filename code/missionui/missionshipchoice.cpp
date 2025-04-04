@@ -1977,22 +1977,6 @@ commit_pressed_status commit_pressed(bool API_Access)
 		return commit_pressed_status::BANK_GAP_ERROR;
 	}
 
-	// Goober5000 - do one pass through all ships in the mission to turn off shields if they have intrinsic-no-shields.
-	// Normally this is done in parse_create_object_sub(), but we skip it for pre-mission ships because things can get shuffled around in the loadout.
-	for (auto so: list_range(&Ship_obj_list))
-	{
-		auto objp = &Objects[so->objnum];
-		if (objp->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-		if (objp->type != OBJ_SHIP)
-			continue;
-		auto shipp = &Ships[objp->instance];
-		auto sip = &Ship_info[shipp->ship_info_index];
-
-		if (sip->flags[Ship::Info_Flags::Intrinsic_no_shields])
-			objp->flags.set(Object::Object_Flags::No_shields);
-	}
-
 	// Check to ensure that the hotkeys are still pointing to valid objects.  It is possible
 	// for the player to assign a ship to a hotkey, then go and delete that ship in the 
 	// ship selection, and then try to start the mission.  This function will detect those objects,
