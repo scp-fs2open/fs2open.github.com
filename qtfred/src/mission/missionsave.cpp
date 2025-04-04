@@ -3449,6 +3449,7 @@ int CFred_mission_save::save_objects()
 	int i, z;
 	object* objp;
 	ship* shipp;
+	ship_info* sip;
 
 	required_string_fred("#Objects");
 	parse_comments(2);
@@ -3466,6 +3467,7 @@ int CFred_mission_save::save_objects()
 
 		shipp = &Ships[i];
 		objp = &Objects[shipp->objnum];
+		sip = &Ship_info[shipp->ship_info_index];
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
@@ -3731,7 +3733,7 @@ int CFred_mission_save::save_objects()
 		if (shipp->flags[Ship::Ship_Flags::Reinforcement]) {
 			fout(" \"reinforcement\"");
 		}
-		if (objp->flags[Object::Object_Flags::No_shields]) {
+		if (objp->flags[Object::Object_Flags::No_shields] && !sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {	// don't save no-shields for intrinsic-no-shields ships
 			fout(" \"no-shields\"");
 		}
 		if (shipp->flags[Ship::Ship_Flags::Escort]) {

@@ -3805,7 +3805,7 @@ int CFred_mission_save::save_objects()
 			fout(" \"protect-ship\"");
 		if (shipp->flags[Ship::Ship_Flags::Reinforcement])
 			fout(" \"reinforcement\"");
-		if (objp->flags[Object::Object_Flags::No_shields])
+		if (objp->flags[Object::Object_Flags::No_shields] && !sip->flags[Ship::Info_Flags::Intrinsic_no_shields])	// don't save no-shields for intrinsic-no-shields ships
 			fout(" \"no-shields\"");
 		if (shipp->flags[Ship::Ship_Flags::Escort])
 			fout(" \"escort\"");
