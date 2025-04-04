@@ -620,7 +620,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 		}
 
 		if (flag & 0x20) { // data is a ship type
-			for (int i = 0; i <static_cast<int>(Ship_types.size()); i++) {
+			for (i = 0; i <static_cast<int>(Ship_types.size()); i++) {
 				if (!stricmp(goalp[item].target_name, Ship_types[i].name)) {
 					m_data[item] = i | TYPE_SHIP_TYPE;
 					break;
