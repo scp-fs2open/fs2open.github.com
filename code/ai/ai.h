@@ -559,7 +559,7 @@ extern void ai_set_guard_wing(object *objp, int wingnum);
 extern void ai_warp_out(object *objp, vec3d *vp);
 extern void ai_attack_wing(object *attacker, int wingnum);
 extern void ai_deathroll_start(object *ship_obj);
-extern int set_target_objnum(ai_info* aip, int objnum, int ship_info_index = -1, int class_type = -1);
+extern int set_target_objnum(ai_info* aip, int objnum, int ship_info_index = -1);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
 extern void ai_do_stay_near(object *objp, object *other_obj, float dist, int additional_data);
 extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int parent_objnum);

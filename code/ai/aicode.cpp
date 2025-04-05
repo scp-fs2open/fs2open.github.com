@@ -1552,7 +1552,7 @@ vec3d ai_get_acc_limit(vec3d* vel_limit, const object* objp) {
 //	Set aip->target_objnum to objnum
 //	Update aip->previous_target_objnum.
 //	If new target (objnum) is different than old target, reset target_time.
-int set_target_objnum(ai_info *aip, int objnum, int ship_info_index, int class_type)
+int set_target_objnum(ai_info *aip, int objnum, int ship_info_index)
 {
 	if ((aip != Player_ai) && (!timestamp_elapsed(aip->ok_to_target_timestamp))) {
 		return aip->target_objnum;
@@ -2530,7 +2530,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 			if (Objects[target_objnum].signature == aip->target_signature) {
 				if (iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
-						if (class_type < 0 || class_type == Ship_info[target_shipp->ship_info_index].class_type) {
+						if (class_type < 0 || (ship_info_index >= 0 && class_type == Ship_info[target_shipp->ship_info_index].class_type)) {
 							if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) {
 								return target_objnum;
 							}
@@ -2543,7 +2543,13 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 			}
 		}
 
-		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, ship_info_index, class_type);
+		return get_nearest_objnum(objnum,
+			enemy_team_mask,
+			aip->enemy_wing,
+			range,
+			max_attackers,
+			ship_info_index,
+			class_type);
 
 	} else {
 		aip->target_objnum = -1;
@@ -2551,6 +2557,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 		return -1;
 	}
 }
+
 
 /**
  * If issued an order to a ship that's awaiting repair, abort that process.
@@ -2618,7 +2625,7 @@ void ai_attack_object(object* attacker, object* attacked, int ship_info_index, i
 	if (attacked == nullptr) {
 		aip->choose_enemy_timestamp = timestamp(0);
 		// nebula safe
-		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, ship_info_index));
+		set_target_objnum(aip, find_enemy(OBJ_INDEX(attacker), 99999.9f, 4, ship_info_index, class_type));
 	} else {
 		// check if we can see attacked in nebula
 		if (aip->target_objnum != OBJ_INDEX(attacked)) {
