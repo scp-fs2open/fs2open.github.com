@@ -569,7 +569,20 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 		sp = &Ships[objp->instance];
 		sip = &Ship_info[sp->ship_info_index];
 	} else {
-		SCP_string ship_name = HC_shield_gauge_ship.empty() ? "gtf myrmidon" : HC_shield_gauge_ship;
+		SCP_string ship_name = "gtf myrmidon";
+
+		// Check if the mod specifies a differnt default
+		if (auto it = HC_hud_ships.find("default"); it != HC_hud_ships.end()) {
+			ship_name = it->second;
+		}
+
+		// Now check if the current HUD specifies a different ship
+		if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+			SCP_string hud = HC_available_huds[HC_chosen_hud].second;
+			if (auto it = HC_hud_ships.find(hud); it != HC_hud_ships.end()) {
+				ship_name = it->second;
+			}
+		}
 
 		// Try to find the ship with the name specified in the config
 		for (ship_info& ship : Ship_info) {

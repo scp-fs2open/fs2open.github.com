@@ -6510,6 +6510,9 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 	ship_weapon	*sw = nullptr;
 	int np, ns;		// np == num primary, ns == num secondary
 
+	std::optional<std::reference_wrapper<const SCP_vector<SCP_string>>> primary_list;
+	std::optional<std::reference_wrapper<const SCP_vector<SCP_string>>> secondary_list;
+
 	if(!config && Player_obj->type == OBJ_OBSERVER)
 		return;
 
@@ -6521,8 +6524,27 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 		np = sw->num_primary_banks;
 		ns = sw->num_secondary_banks;
 	} else {
-		np = MAX_SHIP_PRIMARY_BANKS;
-		ns = MAX_SHIP_SECONDARY_BANKS;
+		auto get_weapon_list = [](const SCP_map<SCP_string, SCP_vector<SCP_string>>& weapon_map)
+			-> std::optional<std::reference_wrapper<const SCP_vector<SCP_string>>> {
+			if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+				const SCP_string& hud = HC_available_huds[HC_chosen_hud].second;
+
+				if (auto it_spec = weapon_map.find(hud); it_spec != weapon_map.end()) {
+					return it_spec->second;
+				} else if (auto it_def = weapon_map.find("default"); it_def != weapon_map.end()) {
+					return it_def->second;
+				}
+			}
+			return std::nullopt;
+		};
+
+		primary_list = get_weapon_list(HC_hud_primary_weapons);
+		secondary_list = get_weapon_list(HC_hud_secondary_weapons);
+
+		// Get weapon counts
+		np = primary_list ? static_cast<int>(primary_list->get().size()) : MAX_SHIP_PRIMARY_BANKS;
+		ns = secondary_list ? static_cast<int>(secondary_list->get().size()) : MAX_SHIP_SECONDARY_BANKS;
+
 	}
 
 	int x = position[0];
@@ -6542,7 +6564,7 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 	// render the header of this gauge
 	renderString(x + fl2i(Weapon_header_offsets[ballistic_hud_index][0] * scale), y + fl2i(Weapon_header_offsets[ballistic_hud_index][1] * scale), EG_WEAPON_TITLE, XSTR( "weapons", 328), scale, config);
 
-	const char* weapon_name = "";
+	SCP_string weapon_name;
 	char	ammo_str[32];
 	int		i, w, h;
 	int ty = y + fl2i(top_primary_h * scale);
@@ -6570,21 +6592,39 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 		}
 
 		weapon_info* wip = nullptr;
+		weapon_name.clear();
 
 		if (!config) {
 			wip = &Weapon_info[sw->primary_bank_weapons[i]];
 			weapon_name = wip->get_display_name();
 		} else {
-			// In config mode let's get the first 3 player allowed primaries
-			int match_count = 0;
-			for (weapon_info &wep : Weapon_info) {
-				if (wep.subtype == WP_LASER && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
-					if (match_count == i) {
+			// Use the tabled config weapon
+			if (primary_list) {
+				const SCP_vector<SCP_string>& weapon_list = primary_list->get();
+				if (SCP_vector_inbounds(weapon_list, i)) {
+					weapon_name = weapon_list[i];
+				}
+
+				for (weapon_info& wep : Weapon_info) {
+					if (wep.name == weapon_name && wep.subtype == WP_LASER &&
+						wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
 						wip = &wep;
 						weapon_name = wip->get_display_name();
 						break;
 					}
-					match_count++;
+				}
+			} else {
+				// If we still don't have a name, try to get one from the weapon_info
+				int match_count = 0;
+				for (weapon_info& wep : Weapon_info) {
+					if (wep.subtype == WP_LASER && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
+						if (match_count == i) {
+							wip = &wep;
+							weapon_name = wip->get_display_name();
+							break;
+						}
+						match_count++;
+					}
 				}
 			}
 			// Just in case
@@ -6611,7 +6651,7 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 		if(wip != nullptr && wip->hud_image_index != -1) {
 			renderBitmap(wip->hud_image_index, x + fl2i(Weapon_pname_offset_x * scale), name_y, scale, config);
 		} else {
-			renderPrintfWithGauge(x + fl2i(Weapon_pname_offset_x * scale), name_y, EG_WEAPON_P2, scale, config, "%s", weapon_name);
+			renderPrintfWithGauge(x + fl2i(Weapon_pname_offset_x * scale), name_y, EG_WEAPON_P2, scale, config, "%s", weapon_name.c_str());
 		}
 
 		// if this is a ballistic primary with ammo, render the ammo count
@@ -6644,18 +6684,34 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 	{
 		setGaugeColor(HUD_C_NONE, config);
 		weapon_info* wip = nullptr;
+		weapon_name.clear();
 		if (!config) {
 			wip = &Weapon_info[sw->secondary_bank_weapons[i]];
 		} else {
-			// In config mode let's get the first 3 player allowed primaries
-			int match_count = 0;
-			for (weapon_info &wep : Weapon_info) {
-				if (wep.subtype == WP_MISSILE && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
-					if (match_count == i) {
+			//Use the tabled config weapon
+			if (secondary_list) {
+				const SCP_vector<SCP_string>& weapon_list = secondary_list->get();
+				if (SCP_vector_inbounds(weapon_list, i)) {
+					weapon_name = weapon_list[i];
+				}
+				for (weapon_info& wep : Weapon_info) {
+					if (wep.name == weapon_name && wep.subtype == WP_MISSILE &&
+						wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
 						wip = &wep;
 						break;
 					}
-					match_count++;
+				}
+			} else {
+				// If we still don't have a name, try to get one from the weapon_info
+				int match_count = 0;
+				for (weapon_info& wep : Weapon_info) {
+					if (wep.subtype == WP_MISSILE && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
+						if (match_count == i) {
+							wip = &wep;
+							break;
+						}
+						match_count++;
+					}
 				}
 			}
 		}
@@ -6701,7 +6757,7 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 			if(wip != nullptr && wip->hud_image_index != -1) {
 				renderBitmap(wip->hud_image_index, x + fl2i(Weapon_sname_offset_x * scale), name_y, scale, config);
 			} else {
-				renderString(x + fl2i(Weapon_sname_offset_x * scale), name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name, scale, config);
+				renderString(x + fl2i(Weapon_sname_offset_x * scale), name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name.c_str(), scale, config);
 			}
 
 			// show the cooldown time
@@ -6713,11 +6769,11 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 			}
 		} else {
 			// just print the weapon's name since this isn't armed
-			renderString(x + fl2i(Weapon_sname_offset_x * scale), name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name, scale, config);
+			renderString(x + fl2i(Weapon_sname_offset_x * scale), name_y, i ? EG_WEAPON_S1 : EG_WEAPON_S2, weapon_name.c_str(), scale, config);
 		}
 
-		if (!config && !Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
-			int ammo=sw->secondary_bank_ammo[i];
+		if (config || !Weapon_info[sw->secondary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::SecondaryNoAmmo]) {
+			int ammo = config ? 13 : sw->secondary_bank_ammo[i];
 
 			// print out the ammo right justified
 			sprintf(ammo_str, "%d", ammo);

@@ -176,9 +176,11 @@ extern SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 
 extern int HC_talking_head_frame;
 extern SCP_string HC_head_anim_filename;
-extern SCP_string HC_shield_gauge_ship;
 extern bool HC_show_default_hud;
 extern std::unordered_set<SCP_string> HC_ignored_huds;
+extern SCP_map<SCP_string, SCP_string> HC_hud_ships;
+extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_primary_weapons;
+extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_secondary_weapons;
 
 class HC_gauge_mappings {
 public:
