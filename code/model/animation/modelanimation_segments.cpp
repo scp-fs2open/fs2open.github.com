@@ -1281,7 +1281,8 @@ namespace animation {
 	void ModelAnimationSegmentSoundDuring::forceStopAnimation(int pmi_id) {
 		auto& instance = m_instances[pmi_id];
 
-		if (instance.currentlyPlaying.isValid() && snd_is_playing(instance.currentlyPlaying)) {
+		//If don't interrupt playing sounds is set, just do the stop here if it's looping, otherwise it'll finish soon anyways
+		if ((m_abortSoundIfRunning || instance.interruptableSound) && instance.currentlyPlaying.isValid() && snd_is_playing(instance.currentlyPlaying)) {
 			snd_stop(instance.currentlyPlaying);
 			instance.interruptableSound = false;
 			instance.currentlyPlaying = sound_handle::invalid();
