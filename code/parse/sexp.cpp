@@ -13749,11 +13749,12 @@ void sexp_set_squadron_wings(int node)
 /**
  * Trigger whether player uses the game AI for stuff
  */
-void sexp_player_use_ai(int flag)
+void sexp_player_use_ai(bool use_ai)
 {
-	Player_use_ai = flag ? 1 : 0;
+	Player_use_ai = use_ai;
 
-	if (!flag) {
+	if (!use_ai)
+	{
 		Player_ai->ai_override_flags.reset();
 		Player_obj->phys_info.flags &= ~PF_MANEUVER_NO_DAMP;
 	}

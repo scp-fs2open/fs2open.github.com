@@ -223,7 +223,7 @@ extern player Players[MAX_PLAYERS];
 extern int Player_num;								// player num of person playing on this machine
 extern player *Player;								// pointer to my information
 
-extern int Player_use_ai;
+extern bool Player_use_ai;
 extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
 
 extern angles Player_flight_cursor;
