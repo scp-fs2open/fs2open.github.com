@@ -3,6 +3,7 @@
 
 #include "hudgauge.h"
 #include "hud/hudscripting.h"
+#include "scripting/api/objs/color.h"
 #include "font.h"
 #include "texture.h"
 
@@ -190,38 +191,66 @@ ADE_FUNC(isHiRes, l_HudGauge, nullptr, "Returns whether this is a hi-res HUD gau
 	return ade_set_args(L, "b", gauge->isHiRes());
 }
 
-ADE_FUNC(getColor, l_HudGauge, nullptr, "Returns the current color used by this HUD gauge.",
-	"number, number, number, number", "The current color, in red, green, blue, and alpha components from 0 to 255")
+ADE_FUNC(getColor,
+	l_HudGauge,
+	nullptr,
+	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
+	"number, number, number, number | color",
+	"The current color, in red, green, blue, and alpha components from 0 to 255")
 {
 	HudGauge* gauge;
-	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+	bool rc = false;
+	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &rc))
 		return ADE_RETURN_NIL;
 
 	auto &c = gauge->getColor();
 
-	return ade_set_args(L, "iiii", static_cast<int>(c.red), static_cast<int>(c.green), static_cast<int>(c.blue), static_cast<int>(c.alpha));
+	if (rc) {
+		return ade_set_args(L, "o", l_Color.Set(c));
+	}else{
+		return ade_set_args(L, "iiii", static_cast<int>(c.red), static_cast<int>(c.green), static_cast<int>(c.blue), static_cast<int>(c.alpha));
+	}
 }
 
-ADE_FUNC(setColor, l_HudGauge, "number, number, number, [number]", "Sets the current color used by this HUD gauge.  Numbers must be 0-255 in red/green/blue/alpha components; alpha is optional.",
+ADE_FUNC(setColor,
+	l_HudGauge,
+	"number|color /* red value or color object */, [number Green, number Blue, number Alpha]",
+	"Sets the current color used by this HUD gauge.  Numbers must be 0-255 in red/green/blue/alpha components; alpha is optional.",
 	nullptr, nullptr)
 {
-	HudGauge* gauge;
-	int red, green, blue, alpha;
-	int args = ade_get_args(L, "oiii|i", l_HudGauge.Get(&gauge), &red, &green, &blue, &alpha);
-	if (args < 4)
+	HudGauge* gauge = nullptr;
+	int r, g, b, a = -1;
+
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "oiii|i", l_HudGauge.Get(&gauge) , &r, &g, &b, &a))
+			return ADE_RETURN_NIL;
+
+		if (a < 0)
+			a = (HUD_color_alpha + 1) * 16; // from sexp_hud_set_color()
+		else
+			CLAMP(a, 0, 255);
+
+		CLAMP(r, 0, 255);
+		CLAMP(g, 0, 255);
+		CLAMP(b, 0, 255);
+	} else {
+		color col;
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "oo", l_HudGauge.Get(&gauge), l_Color.Get(&col));
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
+
+	if (gauge == nullptr) {
 		return ADE_RETURN_NIL;
-
-	if (args < 5)
-		alpha = (HUD_color_alpha + 1) * 16;	// from sexp_hud_set_color()
-	else
-		CLAMP(alpha, 0, 255);
-
-	CLAMP(red, 0, 255);
-	CLAMP(green, 0, 255);
-	CLAMP(blue, 0, 255);
+	}
 
 	gauge->sexpLockConfigColor(false);
-	gauge->updateColor(static_cast<ubyte>(red), static_cast<ubyte>(green), static_cast<ubyte>(blue), static_cast<ubyte>(alpha));
+	gauge->updateColor(static_cast<ubyte>(r), static_cast<ubyte>(g), static_cast<ubyte>(b), static_cast<ubyte>(a));
 	gauge->sexpLockConfigColor(true);
 
 	return ADE_RETURN_NIL;
