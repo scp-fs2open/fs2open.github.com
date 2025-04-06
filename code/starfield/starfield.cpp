@@ -1724,7 +1724,7 @@ void subspace_render()
 
 	glow_pos.xyz.x = 0.0f;
 	glow_pos.xyz.y = 0.0f;
-	glow_pos.xyz.z = 100.0f;
+	glow_pos.xyz.z = 1.0f;
 
 	//gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 	material mat_params;
@@ -1732,13 +1732,13 @@ void subspace_render()
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum], true);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
-	glow_pos.xyz.z = -100.0f;
+	glow_pos.xyz.z = -1.0f;
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum], true);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
