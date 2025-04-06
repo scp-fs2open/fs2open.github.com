@@ -16,6 +16,7 @@ namespace animation {
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+		void forceStopAnimation(int pmi_id) override;
 
 	public:
 		ModelAnimationSegment* copy() const override;
@@ -35,6 +36,7 @@ namespace animation {
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+		void forceStopAnimation(int pmi_id) override;
 
 	public:
 		ModelAnimationSegment* copy() const override;
@@ -251,6 +253,7 @@ namespace animation {
 
 		struct instance_data {
 			sound_handle currentlyPlaying;
+			bool interruptableSound;
 		};
 
 		//PMI ID -> Instance Data
@@ -274,8 +277,10 @@ namespace animation {
 		void calculateAnimation(ModelAnimationSubmodelBuffer& base, float time, int pmi_id) const override;
 		void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) override;
 		void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) override;
+		void forceStopAnimation(int pmi_id) override;
 
 		sound_handle playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop);
+		void playLoopSnd(polymodel_instance* pmi);
 		void playStartSnd(polymodel_instance* pmi);
 		void playEndSnd(polymodel_instance* pmi);
 

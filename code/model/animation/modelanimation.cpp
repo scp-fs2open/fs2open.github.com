@@ -326,7 +326,7 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimation::stop(polymodel_instance* pmi, bool cleanup) {
+	void ModelAnimation::stop(polymodel_instance* pmi, bool cleanup, bool forceStop) {
 		//If inaccuracies occur, this needs to reset again, but only if no other animation is running on this submodel
 		/*for (const auto& animation : m_submodelAnimation) {
 			animation->reset(pmi);
@@ -334,6 +334,9 @@ namespace animation {
 
 		if (!pmi)
 			return;
+
+		if (forceStop)
+			m_animation->forceStopAnimation(pmi->id);
 
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
@@ -748,14 +751,14 @@ namespace animation {
 	void ModelAnimationSet::stopAnimations(polymodel_instance* pmi) {
 		if (pmi != nullptr) {
 			for (const auto& anim : s_runningAnimations[pmi->id].animationList) {
-				anim->stop(pmi, false);
+				anim->stop(pmi, false, true);
 			}
 			s_runningAnimations.erase(pmi->id);
 		}
 		else {
 			for (const auto& animList : s_runningAnimations) {
 				for (const auto& anim : animList.second.animationList) {
-					anim->stop(model_get_instance(animList.first), false);
+					anim->stop(model_get_instance(animList.first), false, true);
 				}
 			}
 
