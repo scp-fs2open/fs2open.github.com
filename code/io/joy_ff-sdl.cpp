@@ -115,7 +115,7 @@ int joy_ff_init()
 	bool ff_enabled;
 
 	if (Joy_ff_enabled) {
-		joy_ff_shutdown();
+		return 0;
 	}
 
 	auto Joy = io::joystick::getPlayerJoystick(CID_JOY0);
@@ -234,6 +234,15 @@ void joy_ff_shutdown()
 
 	Joy_ff_enabled = 0;
 	Joy_ff_acquired = 0;
+}
+
+int joy_ff_reinit()
+{
+	if (Joy_ff_enabled) {
+		joy_ff_shutdown();
+	}
+
+	return joy_ff_init();
 }
 
 static bool joy_ff_create_effects()

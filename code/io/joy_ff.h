@@ -16,6 +16,7 @@
 
 int joy_ff_init();
 void joy_ff_shutdown();
+int joy_ff_reinit();
 void joy_ff_stop_effects();
 void joy_ff_mission_init(vec3d v);
 void joy_reacquire_ff();
