@@ -114,7 +114,7 @@ void hud_config_load_player_prefs(const char* callsign)
 			ubyte r = 0, g = 0, b = 0, a = 255; // Default alpha to opaque
 
 			// Parse gauge ID
-			stuff_string(gauge_id, F_NAME, NULL);
+			stuff_string(gauge_id, F_NAME);
 
 			// Parse visibility
 			required_string("+Visible:");
