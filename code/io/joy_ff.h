@@ -16,8 +16,11 @@
 
 int joy_ff_init();
 void joy_ff_shutdown();
+int joy_ff_reinit();
 void joy_ff_stop_effects();
 void joy_ff_mission_init(vec3d v);
+void joy_reacquire_ff();
+void joy_unacquire_ff();
 void joy_ff_play_vector_effect(vec3d *v, float scaler);
 void joy_ff_play_dir_effect(float x, float y);
 void joy_ff_play_primary_shoot(int gain);
