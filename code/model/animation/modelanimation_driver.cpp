@@ -111,7 +111,7 @@ namespace animation {
 		int objnum = get_pmi_objnum(pmi);
 		Assertion(objnum >= 0, "Invalid object used in animation property driver!");
 		Assertion(Objects[objnum].type == OBJ_SHIP, "Non-ship object used in ship animation property driver!");
-		return Energy_levels[Ships[Objects[objnum].instance].*ets_property];
+		return ets_power_factor(&Objects[objnum], false) * Energy_levels[Ships[Objects[objnum].instance].*ets_property];
 	}
 
 	std::function<float(polymodel_instance*)> parse_ship_property_driver_source() {

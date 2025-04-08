@@ -20516,7 +20516,7 @@ int sexp_gse_recharge_pct(int node, int op_num)
 		return SEXP_NAN_FOREVER;
 
 	// recharge pct
-	return (int)(100.0f * Energy_levels[index]);
+	return (int)(100.0f * ets_power_factor(ship_entry->objp(), false) * Energy_levels[index]);
 }
 
 /*
