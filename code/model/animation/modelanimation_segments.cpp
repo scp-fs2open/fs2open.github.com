@@ -62,6 +62,11 @@ namespace animation {
 			segment->exchangeSubmodelPointers(replaceWith);
 	}
 
+	void ModelAnimationSegmentSerial::forceStopAnimation(int pmi_id) {
+		for (const auto& segment : m_segments)
+			segment->forceStopAnimation(pmi_id);
+	}
+
 	void ModelAnimationSegmentSerial::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
 		m_segments.push_back(std::move(segment));
 	}
@@ -129,6 +134,11 @@ namespace animation {
 	void ModelAnimationSegmentParallel::exchangeSubmodelPointers(ModelAnimationSet& replaceWith) {
 		for (const auto& segment : m_segments)
 			segment->exchangeSubmodelPointers(replaceWith);
+	}
+
+	void ModelAnimationSegmentParallel::forceStopAnimation(int pmi_id) {
+		for (const auto& segment : m_segments)
+			segment->forceStopAnimation(pmi_id);
 	}
 
 	void ModelAnimationSegmentParallel::addSegment(std::shared_ptr<ModelAnimationSegment> segment) {
@@ -1252,8 +1262,7 @@ namespace animation {
 		}
 
 		if (0.0f < timeboundLower && timeboundUpper < m_duration.at(pmi_id)) {
-			if (m_during.isValid() && (!m_instances[pmi_id].currentlyPlaying.isValid() || !snd_is_playing(m_instances[pmi_id].currentlyPlaying)))
-				m_instances[pmi_id].currentlyPlaying = playSnd(pmi, m_during, true);
+			playLoopSnd(pmi);
 		}
 
 		if (timeboundLower <= m_duration.at(pmi_id) && m_duration.at(pmi_id) <= timeboundUpper) {
@@ -1269,19 +1278,49 @@ namespace animation {
 		m_segment->exchangeSubmodelPointers(replaceWith);
 	}
 
-	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
-		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
-			snd_stop(m_instances[pmi->id].currentlyPlaying);
-		
-		if(m_start.isValid())
-			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_start, false);
-	}
-	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
-		if (m_abortSoundIfRunning && snd_is_playing(m_instances[pmi->id].currentlyPlaying))
-			snd_stop(m_instances[pmi->id].currentlyPlaying);
+	void ModelAnimationSegmentSoundDuring::forceStopAnimation(int pmi_id) {
+		auto& instance = m_instances[pmi_id];
 
-		if (m_end.isValid()) 
-			m_instances[pmi->id].currentlyPlaying = playSnd(pmi, m_end, false);
+		//If don't interrupt playing sounds is set, just do the stop here if it's looping, otherwise it'll finish soon anyways
+		if ((m_abortSoundIfRunning || instance.interruptableSound) && instance.currentlyPlaying.isValid() && snd_is_playing(instance.currentlyPlaying)) {
+			snd_stop(instance.currentlyPlaying);
+			instance.interruptableSound = false;
+			instance.currentlyPlaying = sound_handle::invalid();
+		}
+	}
+
+	void ModelAnimationSegmentSoundDuring::playLoopSnd(polymodel_instance* pmi) {
+		auto& instance = m_instances[pmi->id];
+
+		if (m_during.isValid() && (!instance.currentlyPlaying.isValid() || !snd_is_playing(instance.currentlyPlaying))) {
+			instance.currentlyPlaying = playSnd(pmi, m_during, true);
+			instance.interruptableSound = true;
+		}
+	}
+
+	//TODO: We stop interruptableSound here. Ideally, these should be set from looping to non-looping and then have the next sound queued, but the sound system currently seems to not allow that (even though snd_chg_loop_status exists, it's unimplemented)
+	void ModelAnimationSegmentSoundDuring::playStartSnd(polymodel_instance* pmi) {
+		auto& instance = m_instances[pmi->id];
+
+		if ((m_abortSoundIfRunning || instance.interruptableSound) && snd_is_playing(instance.currentlyPlaying))
+			snd_stop(instance.currentlyPlaying);
+
+		if (m_start.isValid()) {
+			instance.currentlyPlaying = playSnd(pmi, m_start, false);
+			instance.interruptableSound = false;
+		}
+	}
+
+	void ModelAnimationSegmentSoundDuring::playEndSnd(polymodel_instance* pmi) {
+		auto& instance = m_instances[pmi->id];
+
+		if ((m_abortSoundIfRunning || instance.interruptableSound) && snd_is_playing(instance.currentlyPlaying))
+			snd_stop(instance.currentlyPlaying);
+
+		if (m_end.isValid()) {
+			instance.currentlyPlaying = playSnd(pmi, m_end, false);
+			instance.interruptableSound = false;
+		}
 	}
 
 	sound_handle ModelAnimationSegmentSoundDuring::playSnd(polymodel_instance* pmi, const gamesnd_id& sound, bool loop) {
