@@ -522,7 +522,23 @@ bool text_input_handler(const SDL_Event& evt)
 	}
 
 	// libRocket expects UCS-2 so we first need to convert to that
-	auto ucs2String = std::basic_string<unsigned short>(SDL_iconv_utf8_ucs2(evt.text.text));
+	// NOTE: not using SDL_iconv_utf8_ucs2() macro here due to Linux compatiblity issue
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+	const char *tocode = "UCS-2BE";
+#else
+	const char *tocode = "UCS-2LE";
+#endif
+
+	auto text = reinterpret_cast<char16_t *>(SDL_iconv_string(tocode, "UTF-8", evt.text.text, SDL_strlen(evt.text.text)+1));
+
+	if ( !text ) {
+		// encoding failed
+		return false;
+	}
+
+	auto ucs2String = std::u16string(text);
+
+	SDL_free(text);
 
 	bool consumed = true;
 	for (auto& c : ucs2String) {
