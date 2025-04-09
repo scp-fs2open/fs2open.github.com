@@ -149,26 +149,6 @@ void hud_init_wingman_status_gauge()
 	hud_wingman_kill_multi_teams();
 	hud_wingman_status_update();
 
-	//  --wookieejedi
-	// page in optional wingmen dot animation
-	// and set the dot override for ships present at mission start
-	for (auto& p_obj : Parse_objects) {
-		int dot_override = Ship_info[p_obj.ship_class].wingmen_status_dot_override;
-		if (dot_override >= 0) {
-			// note, the wingmen_status_dot_override value will only have been set 
-			// during ship table parse if the number of frames was 2
-			bm_page_in_aabitmap(dot_override, 2);
-
-			// check and set the dot animation 
-			// note the wing_index and wing_pos is only set for ships present at start
-			// so the dot animations for delayed ships are set in hud_wingman_status_set_index()
-			int wing_index = p_obj.wing_status_wing_index;
-			int wing_pos = p_obj.wing_status_wing_pos;
-			if ( (wing_index >= 0) && (wing_pos >= 0) ) {
-				HUD_wingman_status[wing_index].dot_anim_override[wing_pos] = dot_override;
-			}
-		}
-	}
 }
 
 // Update the status of the wingman status
@@ -793,6 +773,10 @@ void hud_wingman_status_set_index(int squad_wing_index, wing *wingp, ship *shipp
 	if ( (squad_wing_index >= 0) && (wing_pos >= 0) ) {
 		int dot_override = Ship_info[shipp->ship_info_index].wingmen_status_dot_override;
 		if (dot_override >= 0) {
+			// note, the wingmen_status_dot_override value will only have been set
+			// during ship table parse if the number of frames was 2
+			bm_page_in_aabitmap(dot_override, 2);
+
 			HUD_wingman_status[squad_wing_index].dot_anim_override[wing_pos] = dot_override;
 		}
 	}

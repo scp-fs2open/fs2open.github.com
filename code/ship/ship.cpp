@@ -12145,6 +12145,11 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 			sp->team_name = sip->default_team_name;
 		}
 	}
+
+	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1) {
+		// set up wingman status index
+		hud_wingman_status_set_index(&Wings[p_objp->wingnum], sp, p_objp);
+	}
 }
 
 /**
