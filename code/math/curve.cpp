@@ -13,7 +13,7 @@ static int curve_inline_def(){
 	//The curve needs a unique identifier. Build this with semicolon + filename + semicolon + character in file
 	SCP_string curve_name = ';' + SCP_string(Current_filename) + ';' + std::to_string(Mp - Parse_text);
 
-	int resulting_curve = Curves.size();
+	int resulting_curve = static_cast<int>(Curves.size());
 	Curve& new_curve = Curves.emplace_back(curve_name);
 
 	do {
