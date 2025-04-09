@@ -811,11 +811,9 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 
 	sprintf(buf, "%sShockwave Radius Multiplier over Lifetime Curve:", pre_char);
 	if (optional_string(buf.c_str())) {
-		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
-		sci->radius_curve_idx = curve_get_by_name(curve_name);
+		sci->radius_curve_idx = curve_parse();
 		if (sci->radius_curve_idx < 0)
-			Warning(LOCATION, "Unrecognized shockwave radius curve '%s'", curve_name.c_str());
+			Warning(LOCATION, "Unrecognized shockwave radius curve");
 	}
 
 	sprintf(buf, "%sShockwave Speed:", pre_char);
@@ -1225,9 +1223,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("@Laser Length Multiplier over Lifetime Curve:")) {
-		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
-		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, modular_curves_entry{curve_parse()});
 	}
 	
 	if(optional_string("@Laser Head Radius:")) {
@@ -1239,9 +1235,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	if (optional_string("@Laser Radius Multiplier over Lifetime Curve:")) {
-		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
-		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, modular_curves_entry{curve_parse()});
 	}
 	if (optional_string("@Laser Glow Length Scale:")) {
 		stuff_float(&wip->laser_glow_length_scale);
@@ -1262,9 +1256,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
   parse_optional_float_into("@Laser Min Pixel Size:", &wip->laser_min_pixel_size);
 
 	if (optional_string("@Laser Opacity over Lifetime Curve:")) {
-		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
-		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+		wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, modular_curves_entry{curve_parse()});
 	}
 
 	if (parse_optional_color3i_into("$Light color:", &wip->light_color)) {
@@ -1355,11 +1347,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Damage Multiplier over Lifetime Curve:")) {
 		//Legacy table. Just populates the modular curve set!
-		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
-		int curve = curve_get_by_name(curve_name);
+		int curve = curve_parse();
 		if (curve < 0)
-			Warning(LOCATION, "Unrecognized damage curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+			Warning(LOCATION, "Unrecognized damage curve for weapon %s", wip->name);
 
 		damage_mult_curve.emplace(modular_curves_entry{curve});
 	}
@@ -1591,9 +1581,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
-				SCP_string curve_name;
-				stuff_string(curve_name, F_NAME);
-				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_parse()});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -1650,9 +1638,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 
 			if (optional_string("+Turn Rate Multiplier over Lifetime Curve:")) {
-				SCP_string curve_name;
-				stuff_string(curve_name, F_NAME);
-				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+				wip->weapon_curves.add_curve("Lifetime", weapon_info::WeaponCurveOutputs::TURN_RATE_MULT, modular_curves_entry{curve_parse()});
 			}
 
 			if(optional_string("+View Cone:")) {
@@ -2959,9 +2945,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 
 		if (optional_string("+Opacity over Lifetime Curve:")) {
-			SCP_string curve_name;
-			stuff_string(curve_name, F_NAME);
-			wip->beam_curves.add_curve("Beam Lifetime", weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, modular_curves_entry{curve_get_by_name(curve_name)});
+			wip->beam_curves.add_curve("Beam Lifetime", weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, modular_curves_entry{curve_parse()});
 		}
 
 		// # of shots (only used for type D beams)
@@ -3259,11 +3243,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 
 			if (optional_string("+Slash position over beam lifetime curve:")) {
-				SCP_string curve_name;
-				stuff_string(curve_name, F_NAME);
-				t5info->slash_pos_curve_idx = curve_get_by_name(curve_name);
+				t5info->slash_pos_curve_idx = curve_parse();
 				if (t5info->slash_pos_curve_idx < 0)
-					Warning(LOCATION, "Unrecognized slash position curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+					Warning(LOCATION, "Unrecognized slash position curve for weapon %s", wip->name);
 				if (t5info->no_translate)
 					Warning(LOCATION, "Beam weapon %s has a slash position curve defined, but doesn't slash!", wip->name);
 			}
@@ -3282,11 +3264,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 
 			if (optional_string("+Rotation over beam lifetime curve:")) {
-				SCP_string curve_name;
-				stuff_string(curve_name, F_NAME);
-				t5info->rot_curve_idx = curve_get_by_name(curve_name);
+				t5info->rot_curve_idx = curve_parse();
 				if (t5info->rot_curve_idx < 0)
-					Warning(LOCATION, "Unrecognized rotation curve '%s' for weapon %s", curve_name.c_str(), wip->name);
+					Warning(LOCATION, "Unrecognized rotation curve for weapon %s", wip->name);
 			}
 
 			if (optional_string("+Continuous Rotation Axis:")) {
