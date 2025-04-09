@@ -19,7 +19,6 @@ static int curve_inline_def(){
 	do {
 		curve_keyframe& new_keyframe = new_curve.keyframes.emplace_back();
 		stuff_float(&new_keyframe.pos.x);
-		required_string(",");
 		stuff_float(&new_keyframe.pos.y);
 		required_string(")");
 
