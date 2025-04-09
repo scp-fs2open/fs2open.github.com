@@ -12146,9 +12146,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 		}
 	}
 
-	if (!Fred_running && p_objp != nullptr && p_objp->wingnum > -1) {
-		// set up wingman status index
-		hud_wingman_status_set_index(&Wings[p_objp->wingnum], sp, p_objp);
+	if (!Fred_running) {
+		// wookieejedi - set up wingman status index
+		// note, p_objp is allowed to be nullptr in hud_wingman_status_set_index 
+		// specifically for the situation when there is no parse object, 
+		// such as when a ship is created via the create-ship sexp
+		hud_wingman_status_set_index(&Wings[sp->wingnum], sp, p_objp);
 	}
 }
 
