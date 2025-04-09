@@ -33,7 +33,9 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_lifetime(::util::UniformFloatRange(0.0f)),
 	  m_length(::util::UniformFloatRange(0.0f)),
 	  m_vel_inherit(::util::UniformFloatRange(0.0f)),
-	  m_velocity_scaling(::util::UniformFloatRange(0.0f)),
+	  m_velocity_scaling(::util::UniformFloatRange(1.0f)),
+	  m_velocity_noise_scaling(::util::UniformFloatRange(1.0f)),
+	  m_position_noise_scaling(::util::UniformFloatRange(1.0f)),
 	  m_vel_inherit_from_orientation(std::nullopt),
 	  m_vel_inherit_from_position(std::nullopt),
 	  m_velocityVolume(nullptr),
@@ -91,6 +93,8 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_length(::util::UniformFloatRange(0.0f)),
 	  m_vel_inherit(vel_inherit),
 	  m_velocity_scaling(velocity_scaling),
+	  m_velocity_noise_scaling(::util::UniformFloatRange(1.0f)),
+	  m_position_noise_scaling(::util::UniformFloatRange(1.0f)),
 	  m_vel_inherit_from_orientation(vel_inherit_from_orientation),
 	  m_vel_inherit_from_position(vel_inherit_from_position),
 	  m_velocityVolume(std::move(velocityVolume)),
@@ -187,11 +191,13 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 	vec3d velNoise = ZERO_VECTOR;
 	if (m_velocityNoise != nullptr) {
 		sampleNoise(velNoise, &orientation, *m_velocityNoise, modularCurvesInput, ParticleCurvesOutput::VELOCITY_NOISE_MULT, ParticleCurvesOutput::VELOCITY_NOISE_TIME_MULT, ParticleCurvesOutput::VELOCITY_NOISE_SEED);
+		velNoise *= m_velocity_noise_scaling.next();
 	}
 
 	vec3d posNoise = ZERO_VECTOR;
 	if (m_spawnNoise != nullptr) {
 		sampleNoise(posNoise, &orientation, *m_spawnNoise, modularCurvesInput, ParticleCurvesOutput::SPAWN_POSITION_NOISE_MULT, ParticleCurvesOutput::SPAWN_POSITION_NOISE_TIME_MULT, ParticleCurvesOutput::SPAWN_POSITION_NOISE_SEED);
+		posNoise *= m_position_noise_scaling.next();
 	}
 
 	float num = m_particleNum.next() * particle_percent;

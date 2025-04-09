@@ -112,6 +112,8 @@ public:
 	::util::ParsedRandomFloatRange m_length;
 	::util::ParsedRandomFloatRange m_vel_inherit;
 	::util::ParsedRandomFloatRange m_velocity_scaling;
+	::util::ParsedRandomFloatRange m_velocity_noise_scaling;
+	::util::ParsedRandomFloatRange m_position_noise_scaling;
 
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;

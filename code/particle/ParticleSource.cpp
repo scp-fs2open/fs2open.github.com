@@ -33,7 +33,7 @@ void ParticleSource::finishCreation() {
 
 	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
 		const auto& [begin, end] = effect.getEffectDuration();
-		m_timing.emplace_back(SourceTiming{begin, begin, end});
+		m_timing.emplace_back(SourceTiming{timestamp_delta(begin, 0), begin, end});
 	}
 }
 

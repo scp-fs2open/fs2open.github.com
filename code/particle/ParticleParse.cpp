@@ -152,11 +152,21 @@ namespace particle {
 				anl::CInstructionIndex instruction = builder.eval(func);
 				effect.m_velocityNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
 			}
+			if (optional_string("+Velocity Noise Scale:")) {
+				effect.m_velocity_noise_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
 		}
 
 		template<bool modern = true> static void parseVelocityVolumeScale(ParticleEffect &effect) {
-			if (internal::required_string_if_new(modern ? "+Velocity Volume Scale:" : "+Velocity:", false)) {
-				effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			if constexpr (modern) {
+				if (optional_string("+Velocity Volume Scale:")) {
+					effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+				}
+			}
+			else {
+				if (internal::required_string_if_new("+Velocity:", false)) {
+					effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+				}
 			}
 		}
 
@@ -191,6 +201,9 @@ namespace particle {
 				anl::CExpressionBuilder builder(kernel);
 				anl::CInstructionIndex instruction = builder.eval(func);
 				effect.m_spawnNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
+			}
+			if (optional_string("+Spawn Position Noise Scale:")) {
+				effect.m_position_noise_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 		}
 
