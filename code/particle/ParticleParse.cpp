@@ -3,6 +3,8 @@
 #include "particle/volumes/ConeVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
 
+#include <anl.h>
+
 namespace particle {
 
 	//
@@ -141,6 +143,17 @@ namespace particle {
 			}
 		}
 
+		static void parseVelocityNoise(ParticleEffect &effect) {
+			if (optional_string("+Velocity Noise:")) {
+				SCP_string func;
+				stuff_string(func, F_RAW);
+				anl::CKernel kernel;
+				anl::CExpressionBuilder builder(kernel);
+				anl::CInstructionIndex instruction = builder.eval(func);
+				effect.m_velocityNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
+			}
+		}
+
 		template<bool modern = true> static void parseVelocityVolumeScale(ParticleEffect &effect) {
 			if (internal::required_string_if_new(modern ? "+Velocity Volume Scale:" : "+Velocity:", false)) {
 				effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
@@ -167,6 +180,17 @@ namespace particle {
 		static void parsePositionVolume(ParticleEffect &effect) {
 			if (optional_string("+Spawn Position Volume:")) {
 				effect.m_spawnVolume = parseVolume();
+			}
+		}
+
+		static void parsePositionNoise(ParticleEffect &effect) {
+			if (optional_string("+Spawn Position Noise:")) {
+				SCP_string func;
+				stuff_string(func, F_RAW);
+				anl::CKernel kernel;
+				anl::CExpressionBuilder builder(kernel);
+				anl::CInstructionIndex instruction = builder.eval(func);
+				effect.m_spawnNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
 			}
 		}
 
@@ -283,8 +307,10 @@ namespace particle {
 			parseDirection(effect);
 			parseOffset(effect);
 			parsePositionVolume(effect);
+			parsePositionNoise(effect);
 			parseVelocityVolume(effect);
 			parseVelocityVolumeScale(effect);
+			parseVelocityNoise(effect);
 			parseVelocityDirectionScale(effect);
 			parseVelocityInheritFromPosition(effect);
 			parseVelocityInheritFromOrientation(effect);
