@@ -390,7 +390,7 @@ int Test_begin = 0;
 extern int	Player_attacking_enabled;
 int Show_net_stats;
 
-bool Pre_player_entry;
+bool Pre_player_entry = false;
 
 int	Fred_running = 0;
 bool running_unittests = false;
