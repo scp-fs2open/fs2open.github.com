@@ -53,7 +53,7 @@ int		Player_num;
 player	*Player = NULL;
 
 // Goober5000
-int		Player_use_ai = 0;
+bool	Player_use_ai = false;
 
 int		lua_game_control = 0;
 
@@ -1461,7 +1461,7 @@ void player_level_init()
 	Player_ship = NULL;
 	Player_ai = NULL;
 
-	Player_use_ai = 0;	// Goober5000
+	Player_use_ai = false;	// Goober5000
 
 	if(Player == NULL)
 		return;

@@ -30,7 +30,7 @@
 #include <map>
 
 // Extern functions/variables
-extern int		Player_use_ai;
+extern bool Player_use_ai;
 extern int get_wing_index(object *objp, int wingnum);
 extern object * get_wing_leader(int wingnum);
 extern int Cmdline_autopilot_interruptable;
@@ -270,7 +270,7 @@ bool StartAutopilot()
 		LockAPConv = _timestamp(); // lock convergence instantly
 	else
 		LockAPConv = _timestamp(3 * MILLISECONDS_PER_SECOND); // 3 seconds before we lock convergence
-	Player_use_ai = 1;
+	Player_use_ai = true;
 	set_time_compression(1);
 	lock_time_compression(true);
 
@@ -858,7 +858,7 @@ void EndAutoPilot()
 
 	set_time_compression(1);
 	lock_time_compression(false);
-	Player_use_ai = 0;
+	Player_use_ai = false;
 	//Clear AI Goals
 
 	if (CinematicStarted) // clear cinematic if we need to

@@ -6421,7 +6421,7 @@ bool post_process_mission(mission *pm)
 
 	// Kazan - player use AI at start?
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
-		Player_use_ai = 1;
+		Player_use_ai = true;
 
 	// Assign squadron information
 	if (!Fred_running && (Player != nullptr) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER)) {
