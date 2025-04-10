@@ -2843,7 +2843,7 @@ void main_hall_set_door_headz(bool init)
 	}
 
 	static SCP_string original_bitmap;
-	// Why is this a vector? There can only ever be one
+	// Vector for possible future expansion. For now there is only ever one entry in this vector
 	static SCP_vector<std::tuple<int, SCP_string, interface_snd_id, interface_snd_id>> original_door_info;
 
 	if (Enable_headz) {

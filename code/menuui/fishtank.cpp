@@ -251,8 +251,8 @@ void fishtank_process()
 
 		// Check if it's on screen still
 		bool onscreen = false;
-		if ((f.x < (float)gr_screen.max_w_unscaled_zoomed) && ((f.x + f.anim.width) >= 0.0f) &&
-			(f.y < (float)gr_screen.max_h_unscaled_zoomed) && ((f.y + f.anim.height) >= 0.0f)) {
+		if ((f.x < static_cast<float>(gr_screen.max_w_unscaled_zoomed)) && ((f.x + f.anim.width) >= 0.0f) &&
+			(f.y < static_cast<float>(gr_screen.max_h_unscaled_zoomed)) && ((f.y + f.anim.height) >= 0.0f)) {
 			onscreen = true;
 		}
 
