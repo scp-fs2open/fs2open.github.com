@@ -91,17 +91,17 @@ class cmission
 {
 public:
 	char				*name;					// name of the mission
-	char				*notes;					// mission notes for mission (used by Fred)
-	char				briefing_cutscene[NAME_LENGTH];	// name of the cutscene to be played before this mission
+	std::unique_ptr<char[]> notes;			// mission notes for mission (used by Fred)
+	std::unique_ptr<char[]> briefing_cutscene;	// name of the cutscene to be played before this mission
 	int				formula;					// sexpression used to determine mission branching.
-	int				completed;				// has the player completed this mission
+	bool			completed;				// has the player completed this mission
 	SCP_vector<mgoal> goals;				// vector of mgoals which has the goal completion status
 	SCP_vector<mevent> events;				// vector of mevents which has the event completion status
 	SCP_vector<sexp_variable> variables;	// vector of sexp_variables (of num_variables size) containing mission-persistent variables - Goober5000
 	int				mission_loop_formula;	// formula to determine whether to allow a side loop
-	char			*mission_branch_desc;	// message in popup
-	char			*mission_branch_brief_anim;
-	char			*mission_branch_brief_sound;
+	std::unique_ptr<char[]> mission_branch_desc;	// message in popup
+	std::unique_ptr<char[]> mission_branch_brief_anim;
+	std::unique_ptr<char[]> mission_branch_brief_sound;
 	int				level;					// what level of the tree it's on (Fred)
 	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
@@ -148,9 +148,9 @@ public:
 extern campaign Campaign;
 
 // campaign wasn't ended
-extern int Campaign_ending_via_supernova;
+extern bool Campaign_ending_via_supernova;
 
-// extern'ed so the mission loading can get a list of campains.  Only use this
+// extern'ed so the mission loading can get a list of campaigns.  Only use this
 // data after mission_campaign_build_list() is called
 #define MAX_CAMPAIGNS	128
 extern char *Campaign_names[MAX_CAMPAIGNS];

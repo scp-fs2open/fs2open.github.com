@@ -150,8 +150,8 @@ typedef struct mission {
 	gameversion::version	required_fso_version;
 	char	created[DATE_TIME_LENGTH];
 	char	modified[DATE_TIME_LENGTH];
-	char	notes[NOTES_LENGTH];
-	char	mission_desc[MISSION_DESC_LENGTH];
+	std::unique_ptr<char[]> notes;
+	std::unique_ptr<char[]> mission_desc;
 	int	game_type;
     flagset<Mission::Mission_Flags> flags;
 	int	num_players;									// valid in multiplayer missions -- number of players supported
