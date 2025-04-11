@@ -149,6 +149,24 @@ void hud_init_wingman_status_gauge()
 	hud_wingman_kill_multi_teams();
 	hud_wingman_status_update();
 
+	//  --wookieejedi
+	// also check the wingmen dot override animation and set if needed
+	// this section accounts for ships that are present at mission start
+	// the wingmen dot override for ships not present at mission start are set hud_wingman_status_set_index() 
+	for (auto& p_obj : Parse_objects) {
+		int dot_override = Ship_info[p_obj.ship_class].wingmen_status_dot_override;
+		if (dot_override >= 0) {
+			// note, the wingmen_status_dot_override value will only have been set
+			// during ship table parse if the number of frames was 2
+			bm_page_in_aabitmap(dot_override, 2);
+
+			int wing_index = p_obj.wing_status_wing_index;
+			int wing_pos = p_obj.wing_status_wing_pos;
+			if ((wing_index >= 0) && (wing_pos >= 0)) {
+				HUD_wingman_status[wing_index].dot_anim_override[wing_pos] = dot_override;
+			}
+		}
+	}
 }
 
 // Update the status of the wingman status
