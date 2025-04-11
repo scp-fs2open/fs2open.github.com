@@ -235,7 +235,7 @@ void afterburners_update(object *objp, float fl_frametime)
 
 			if ( shipp->afterburner_fuel < sip->afterburner_fuel_capacity ) {
 				float recharge_scale;
-				recharge_scale = Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
+				recharge_scale = ets_power_factor(objp) * Energy_levels[shipp->engine_recharge_index] * 2.0f * The_mission.ai_profile->afterburner_recharge_scale[Game_skill_level];
 				shipp->afterburner_fuel += (sip->afterburner_recover_rate * fl_frametime * recharge_scale);
 
 				if ( shipp->afterburner_fuel >  sip->afterburner_fuel_capacity){

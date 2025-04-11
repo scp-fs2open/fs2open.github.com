@@ -173,6 +173,8 @@ namespace AI {
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Disable_ai_transferring_energy,
+		ETS_uses_power_output,
+		ETS_energy_same_regardless_of_system_presence,
 
 		NUM_VALUES
 	};
