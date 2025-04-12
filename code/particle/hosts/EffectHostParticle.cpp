@@ -27,13 +27,9 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*re
 	}
 
 	// find the particle direction (normalized vector)
-	// note: this can't be computed for particles with 0 velocity, so arbitrarily pick the global Z vector
+	// note: this can't be computed for particles with 0 velocity, so use the safe version
 	vec3d particle_dir;
-	float mag = vm_vec_mag(&particle->velocity);
-	if (fl_near_zero(mag))
-		particle_dir = vmd_z_vector;
-	else
-		particle_dir = particle->velocity / mag;
+	vm_vec_copy_normalize_safe(&particle_dir, &particle->velocity);
 
 	if (tabled_offset)
 		pos += particle_dir * tabled_offset->xyz.z;
