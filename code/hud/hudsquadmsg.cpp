@@ -1727,8 +1727,8 @@ void hud_squadmsg_type_select( )
 		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
 	}
 
-	MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 1;
-	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 0;
+	MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
+	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 
 	for(const auto& cat : lua_cat_list){
 		if (ai_lua_get_general_orders(false, false, cat).size() == 0) {
@@ -1747,7 +1747,7 @@ void hud_squadmsg_type_select( )
 			MsgItems[i].active = 0;
 		}
 
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 1;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
 	}
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
@@ -1762,8 +1762,8 @@ void hud_squadmsg_type_select( )
 	}
 	// if no support available, can't call one in
 	else if ( !is_support_allowed(Player_obj) ) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 	}
 
 	// de-activate the rearm/repair item if the player has a full load of missiles and
@@ -1779,8 +1779,8 @@ void hud_squadmsg_type_select( )
 	// if using keyboard shortcut, these items are always inactive or hidden
 	if ( Msg_shortcut_command != -1 ) {
 		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_message_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 	}
 
 do_main_menu:
@@ -1800,9 +1800,9 @@ do_main_menu:
 			if ( k == TYPE_REINFORCEMENT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REINFORCEMENTS );
 				player_set_next_all_alone_msg_timestamp();
-			} else if (k == TYPE_REPAIR_REARM_ITEM && !Hide_main_rearm_items_in_message_gauge) {
+			} else if (k == TYPE_REPAIR_REARM_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
-			} else if (k == TYPE_REPAIR_REARM_ABORT_ITEM && !Hide_main_rearm_items_in_message_gauge) {
+			} else if (k == TYPE_REPAIR_REARM_ABORT_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
 			} else if (k >= NUM_COMM_ORDER_TYPES) {
 				Lua_sqd_msg_cat = lua_cat_list[k - NUM_COMM_ORDER_TYPES];
@@ -2843,7 +2843,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Abort Rearm", 298)
 			};
 			text = temp_comm_order_types[i];
-			if (Hide_main_rearm_items_in_message_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
+			if (Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
 				MsgItems[First_menu_item + i].active = -1;
 			}
 		}
