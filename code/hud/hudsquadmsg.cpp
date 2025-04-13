@@ -2869,7 +2869,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
 
 		// then the text
-		const int w = font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
+		font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
 
 		renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
 
