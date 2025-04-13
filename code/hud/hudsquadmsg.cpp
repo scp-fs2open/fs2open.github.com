@@ -2835,6 +2835,8 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		if (!config) {
 			text = MsgItems[First_menu_item + i].text.c_str();
 		} else {
+			// in config mode, so create just the first page of the Comms Menu
+			// as other functions, such as hud_squadmsg_type_select() will not be run in config mode
 			const char* temp_comm_order_types[] = {XSTR("Ships", 293),
 				XSTR("Wings", 294),
 				XSTR("All Fighters", 295),
