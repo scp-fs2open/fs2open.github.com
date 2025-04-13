@@ -77,7 +77,7 @@ class object;
 
 typedef struct mmode_item {
 	int instance;    // instance in Ships/Wings array of this menu item
-	int active;      // active items are in bold text -- inactive items greyed out
+	int active;      // active items are in bold text -- inactive items greyed out -- hidden objects not rendered
 	SCP_string text; // text to display on the menu
 } mmode_item;
 
