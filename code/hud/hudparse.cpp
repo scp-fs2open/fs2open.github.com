@@ -3521,6 +3521,7 @@ void load_gauge_squad_message(gauge_settings* settings)
 	char fname_top[MAX_FILENAME_LEN] = "message1";
 	char fname_middle[MAX_FILENAME_LEN] = "message2";
 	char fname_bottom[MAX_FILENAME_LEN] = "message3";
+	int ship_name_max_w = 200;
 	
 	settings->origin[0] = 1.0f;
 	settings->origin[1] = 0.0f;
@@ -3586,6 +3587,9 @@ void load_gauge_squad_message(gauge_settings* settings)
 	if(optional_string("Page Down Offsets:")) {
 		stuff_int_list(Pgdn_offsets, 2);
 	}
+	if (optional_string("Ship Name Max Width:")) {
+		stuff_int(&ship_name_max_w);
+	}
 
 	hud_gauge->initBitmaps(fname_top, fname_middle, fname_bottom);
 	hud_gauge->initHiRes(fname_top);
@@ -3597,6 +3601,7 @@ void load_gauge_squad_message(gauge_settings* settings)
 	hud_gauge->initItemOffsetX(Item_offset_x);
 	hud_gauge->initPgUpOffsets(Pgup_offsets[0], Pgup_offsets[1]);
 	hud_gauge->initPgDnOffsets(Pgdn_offsets[0], Pgdn_offsets[1]);
+	hud_gauge->initShipNameMaxWidth(ship_name_max_w);
 
 	gauge_assign_common(settings, std::move(hud_gauge));
 }
@@ -4268,12 +4273,20 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	}
 	
 	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
+	int wingname_align_mode = 0; //By default, center wingnames when rendering
 
 	if(optional_string("Expansion Mode:")) {
 		if(optional_string("Right")) 
 			grow_mode = 1;
 		else if(optional_string("Down"))
 			grow_mode = 2;
+	}
+
+	if (optional_string("Wingname Align Mode:")) {
+		if (optional_string("Left"))
+			wingname_align_mode = 1;
+		else if (optional_string("Right"))
+			wingname_align_mode = 2;
 	}
 
 	bool use_full_wingnames = false;
@@ -4303,6 +4316,7 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	hud_gauge->initWingWidth(wing_width);
 	hud_gauge->initRightBgOffset(right_bg_offset);
 	hud_gauge->initGrowMode(grow_mode);
+	hud_gauge->initWingnameAlignMode(wingname_align_mode);
 	hud_gauge->initUseFullWingnames(use_full_wingnames);
 	hud_gauge->initUseExpandedColors(use_expanded_colors);
 

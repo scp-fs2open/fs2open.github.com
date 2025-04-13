@@ -209,6 +209,7 @@ protected:
 
 	int Pgup_offsets[2];
 	int Pgdn_offsets[2];
+	int Ship_name_max_width;
 
 	int flash_timer[2];
 	bool flash_flag;
@@ -223,6 +224,7 @@ public:
 	void initItemOffsetX(int x);
 	void initPgUpOffsets(int x, int y);
 	void initPgDnOffsets(int x, int y);
+	void initShipNameMaxWidth(int w);
 
 	void render(float frametime, bool config = false) override;
 	bool canRender() const override;

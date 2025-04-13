@@ -2698,6 +2698,11 @@ void HudGaugeSquadMessage::initPgDnOffsets(int x, int y)
 	Pgdn_offsets[1] = y;
 }
 
+void HudGaugeSquadMessage::initShipNameMaxWidth(int w)
+{
+	Ship_name_max_width = w;
+}
+
 void HudGaugeSquadMessage::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
 {
 	Mbox_gauge[0].first_frame = bm_load_animation(fname_top, &Mbox_gauge[0].num_frames);
@@ -2830,10 +2835,10 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
-		const char *text;
+		char text[255];
 
 		if (!config) {
-			text = MsgItems[First_menu_item + i].text.c_str();
+			strcpy(text, MsgItems[First_menu_item + i].text.c_str());
 		} else {
 			const char* temp_comm_order_types[] = {XSTR("Ships", 293),
 				XSTR("Wings", 294),
@@ -2842,7 +2847,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Rearm/Repair Subsys", 297),
 				XSTR("Abort Rearm", 298)
 			};
-			text = temp_comm_order_types[i];
+			strcpy(text, temp_comm_order_types[i]);
 		}
 
 		// blit the background
@@ -2864,6 +2869,8 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
 
 		// then the text
+		const int w = font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
+
 		renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
 
 		sy += fl2i(Item_h * scale);
