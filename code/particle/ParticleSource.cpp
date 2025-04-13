@@ -33,7 +33,7 @@ void ParticleSource::finishCreation() {
 
 	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {
 		const auto& [begin, end] = effect.getEffectDuration();
-		m_timing.emplace_back(SourceTiming{begin, end});
+		m_timing.emplace_back(SourceTiming{begin, begin, end});
 	}
 }
 
@@ -100,5 +100,9 @@ void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
 
 float ParticleSource::getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
 	return i2fl(timestamp_until(std::get<0>(source).m_timing[std::get<1>(source)].m_endTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
+}
+
+float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
+	return i2fl(timestamp_since(std::get<0>(source).m_timing[std::get<1>(source)].m_startTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 }
