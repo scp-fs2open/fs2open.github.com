@@ -701,6 +701,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$disable AI transferring energy:", AI::Profile_Flags::Disable_ai_transferring_energy);
 
+				set_flag(profile, "$enable freespace 1 style missile behavior:", AI::Profile_Flags::Freespace_1_missile_behavior);
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move
