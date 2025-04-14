@@ -44,9 +44,10 @@ Linux:  [url=https://www.hard-light.net/forums/index.php/topic,53206.0.html]YAL[
 Don't want to deal with that? Use [url=https://knossosnet.github.io/Knossos-Release-Page/]Knossos.NET[/url] and it will download the best build specifically for your PC!
 [/hidden]
 
-[img]https://scp.indiegames.us/img/linux-icon.png[/img] [color=green][size=12pt]Linux 64-bit[/size][/color]
-[size=8pt]Compiled with Ubuntu 16.04 LTS 64-bit, GCC 5[/size]
-${build(groups["Linux"].mainFile)}
+[img]https://scp.indiegames.us/img/linux-icon.png[/img] [color=green][size=12pt]Linux[/size][/color]
+[size=8pt]Compiled with Ubuntu 20.04 LTS, GCC 9[/size]
+[b]x86_64:[/b] ${build(groups["Linux"].subFiles["x86_64"])}
+[b]arm64:[/b] ${build(groups["Linux"].subFiles["arm64"])}
 
 These builds use a mechanism called [url=https://appimage.org/]AppImage[/url] which should allow these builds to run on most Linux distributions. However, we recommend that you compile your own builds which will result in less issues.
 Alternatively, if there is a package in your software repository then you should use that. If you are the maintainer of such a package for a distribution then let us know and we will include that here.

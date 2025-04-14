@@ -7,7 +7,8 @@ import requests
 from file_list import ReleaseFile
 from util import retry_multi, GLOBAL_TIMEOUT
 
-LINUX_KEY = "Linux"
+LINUX_X64_KEY = "Linux-x86_64"
+LINUX_ARM64_KEY = "Linux-arm64"
 MACOSX_X64_KEY = "Mac-x86_64"
 MACOSX_ARM64_KEY = "Mac-arm64"
 WIN32_SSE2_KEY = "Win32-SSE2"
@@ -34,7 +35,8 @@ metadata = {
 }
 
 platforms = {
-    LINUX_KEY: 'linux',
+    LINUX_X64_KEY: 'linux',
+    LINUX_ARM64_KEY: 'linux',
     MACOSX_X64_KEY: 'macosx',
     MACOSX_ARM64_KEY: 'macosx',
     WIN32_SSE2_KEY: 'windows',
@@ -44,7 +46,8 @@ platforms = {
 }
 
 envs = {
-    LINUX_KEY: 'linux && x86_64',  # Linux only has 64bit builds
+    LINUX_X64_KEY: 'linux && x86_64',
+    LINUX_ARM64_KEY: 'linux && arm64',
     MACOSX_X64_KEY: 'macosx && x86_64',
     MACOSX_ARM64_KEY: 'macosx && arm64',
     WIN32_SSE2_KEY: 'windows',
@@ -113,7 +116,7 @@ def render_nebula_release(version, stability, files, config):
                 'filename': dest_fn
             })
 
-            if group == LINUX_KEY and fn.endswith('.AppImage'):
+            if group.startswith('Linux') and fn.endswith('.AppImage'):
                 if 'qtfred' in fn:
                     if '-FASTDBG' in fn:
                         label = 'QtFRED Debug'
@@ -127,7 +130,8 @@ def render_nebula_release(version, stability, files, config):
                         label = None
 
                 props = {
-                    "x64": True,  # All Linux builds are 64-bit
+                    "arm64": "arm64" in fn,
+                    "x64": "x64" in fn,
                     "sse2": True,  # Linux builds are forced to compile with SSE2 but not AVX
                     "avx": False,
                     "avx2": False,

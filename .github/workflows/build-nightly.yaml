@@ -13,8 +13,14 @@ jobs:
     strategy:
       matrix:
         configuration: [FastDebug, Release]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: arm64
     name: Linux
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     steps:
       - uses: actions/checkout@v1
@@ -47,13 +53,16 @@ jobs:
       - name: Upload build result
         uses: actions/upload-artifact@v4
         with:
-          name: linux-${{ matrix.configuration }}
+          name: linux-${{ matrix.configuration }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/build/install/*.AppImage
   linux_zip:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -63,15 +72,21 @@ jobs:
       - name: Download Release builds
         uses: actions/download-artifact@v4
         with:
-          name: linux-Release
+          name: linux-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
         uses: actions/download-artifact@v4
         with:
-          name: linux-FastDebug
+          name: linux-FastDebug-${{ matrix.arch }}
           path: builds
+      - name: Fix permissions
+        working-directory: ./builds
+        shell: bash
+        run: chmod 755 *.AppImage
       - name: Create Distribution package
         working-directory: ./builds
+        env:
+          ARCH: ${{ matrix.arch }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
         working-directory: ./builds
