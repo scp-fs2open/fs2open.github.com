@@ -527,7 +527,7 @@ const char *ai_get_goal_target_name(const char *name, int *index);
 void ai_clear_goal_target_names();
 
 extern void init_ai_system(void);
-extern void ai_attack_object(object *attacker, object *attacked, int ship_info_index = -1);
+extern void ai_attack_object(object *attacker, object *attacked, int ship_info_index = -1, int class_type = -1);
 extern void ai_evade_object(object *evader, object *evaded);
 extern void ai_ignore_object(object *ignorer, object *ignored, int ignore_new);
 extern void ai_ignore_wing(object *ignorer, int wingnum);
@@ -559,7 +559,7 @@ extern void ai_set_guard_wing(object *objp, int wingnum);
 extern void ai_warp_out(object *objp, vec3d *vp);
 extern void ai_attack_wing(object *attacker, int wingnum);
 extern void ai_deathroll_start(object *ship_obj);
-extern int set_target_objnum(ai_info *aip, int objnum);
+extern int set_target_objnum(ai_info* aip, int objnum);
 extern void ai_form_on_wing(object *objp, object *goal_objp);
 extern void ai_do_stay_near(object *objp, object *other_obj, float dist, int additional_data);
 extern ship_subsys *set_targeted_subsys(ai_info *aip, ship_subsys *new_subsys, int parent_objnum);
@@ -596,7 +596,7 @@ extern int ai_maybe_fire_afterburner(object *objp, ai_info *aip);
 extern void set_predicted_enemy_pos(vec3d *predicted_enemy_pos, object *pobjp, vec3d *enemy_pos, vec3d *enemy_vel, ai_info *aip);
 
 extern int is_instructor(object *objp);
-extern int find_enemy(int objnum, float range, int max_attackers, int ship_info_index = -1);
+extern int find_enemy(int objnum, float range, int max_attackers, int ship_info_index = -1, int class_type = -1);
 
 float ai_get_weapon_speed(const ship_weapon *swp);
 void set_predicted_enemy_pos_turret(vec3d *predicted_enemy_pos, const vec3d *gun_pos, const object *pobjp, const vec3d *enemy_pos, const vec3d *enemy_vel, float weapon_speed, float time_enemy_in_range);
@@ -617,7 +617,7 @@ extern float dock_orient_and_approach(object *docker_objp, int docker_index, obj
 void ai_set_mode_warp_out(object *objp, ai_info *aip);
 
 // prototyped by Goober5000
-int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index);
+int get_nearest_objnum(int objnum, int enemy_team_mask, int enemy_wing, float range, int max_attackers, int ship_info_index, int class_type = -1);
 
 // moved to header file by Goober5000
 void ai_announce_ship_dying(object *dying_objp);
