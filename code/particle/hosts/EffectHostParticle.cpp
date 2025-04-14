@@ -26,15 +26,17 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*re
 		pos = particle->pos;
 	}
 
-	if (tabled_offset){
-		vec3d particle_dir;
-		vm_vec_copy_normalize(&particle_dir, &particle->velocity);
+	// find the particle direction (normalized vector)
+	// note: this can't be computed for particles with 0 velocity, so use the safe version
+	vec3d particle_dir;
+	vm_vec_copy_normalize_safe(&particle_dir, &particle->velocity);
+
+	if (tabled_offset)
 		pos += particle_dir * tabled_offset->xyz.z;
-	}
 
 	matrix orientation;
 	//As there's no sensible uvec in this particle orientation, relative override orientation is not that sensible. Nonetheless, allow it for compatibility, or future orientation-aware particles
-	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix(&orientation, &particle->velocity) : m_orientationOverride;
+	orientation = m_orientationOverrideRelative ? m_orientationOverride * *vm_vector_2_matrix_norm(&orientation, &particle_dir) : m_orientationOverride;
 
 	return { pos, orientation };
 }

@@ -229,7 +229,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
 
 //	This version of vector normalize checks for the null vector before normalization.
-//	If it is detected, it generates a Warning() and returns the vector 1, 0, 0.
+//	If it is detected, it returns the vector 1, 0, 0.
+float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src);
 float vm_vec_normalize_safe(vec3d *v);
 
 //return the normalized direction vector between two points

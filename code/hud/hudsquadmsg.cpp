@@ -584,11 +584,11 @@ int hud_squadmsg_get_key()
 				return i;
 
 			// play general fail sound if inactive item hit.
-			else if ((i + First_menu_item < Num_menu_items) && !(MsgItems[i + First_menu_item].active)) {
+			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active == 0)) {
 				gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 			}
 
-			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active)) {	// only return keys that are associated with menu items
+			else if ((i + First_menu_item < Num_menu_items) && (MsgItems[i + First_menu_item].active > 0)) {	// only return keys that are associated with menu items
 				return i + First_menu_item;
 			}
 
@@ -1727,8 +1727,8 @@ void hud_squadmsg_type_select( )
 		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
 	}
 
-	MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;				// this item will always be available (I think)
-	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
+	MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
+	MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 
 	for(const auto& cat : lua_cat_list){
 		if (ai_lua_get_general_orders(false, false, cat).size() == 0) {
@@ -1747,7 +1747,7 @@ void hud_squadmsg_type_select( )
 			MsgItems[i].active = 0;
 		}
 
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 1;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 1;
 	}
 
 	// check to see if the player is awaiting repair or being repaired.  Active the abort and inactive the repair items
@@ -1762,25 +1762,25 @@ void hud_squadmsg_type_select( )
 	}
 	// if no support available, can't call one in
 	else if ( !is_support_allowed(Player_obj) ) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 	}
 
 	// de-activate the rearm/repair item if the player has a full load of missiles and
 	// all subsystems at full strength.  We will only check if this item hasn't been marked
 	// inactive because of some other reason
-	if ( MsgItems[TYPE_REPAIR_REARM_ITEM].active ) {
+	if ( MsgItems[TYPE_REPAIR_REARM_ITEM].active > 0 ) {
 
 		if ( !hud_squadmsg_can_rearm(Player_ship) ){
 			MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		}
 	}
 
-	// if using keyboard shortcut, these items are always inactive
+	// if using keyboard shortcut, these items are always inactive or hidden
 	if ( Msg_shortcut_command != -1 ) {
-		MsgItems[TYPE_REPAIR_REARM_ITEM].active = 0;
 		MsgItems[TYPE_REINFORCEMENT_ITEM].active = 0;
-		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = 0;
+		MsgItems[TYPE_REPAIR_REARM_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
+		MsgItems[TYPE_REPAIR_REARM_ABORT_ITEM].active = Hide_main_rearm_items_in_comms_gauge ? -1 : 0;
 	}
 
 do_main_menu:
@@ -1800,9 +1800,9 @@ do_main_menu:
 			if ( k == TYPE_REINFORCEMENT_ITEM ) {
 				hud_squadmsg_do_mode( SM_MODE_REINFORCEMENTS );
 				player_set_next_all_alone_msg_timestamp();
-			} else if ( k == TYPE_REPAIR_REARM_ITEM ){
+			} else if (k == TYPE_REPAIR_REARM_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM );
-			} else if ( k == TYPE_REPAIR_REARM_ABORT_ITEM ) {
+			} else if (k == TYPE_REPAIR_REARM_ABORT_ITEM && !Hide_main_rearm_items_in_comms_gauge) {
 				hud_squadmsg_do_mode( SM_MODE_REPAIR_REARM_ABORT );
 			} else if (k >= NUM_COMM_ORDER_TYPES) {
 				Lua_sqd_msg_cat = lua_cat_list[k - NUM_COMM_ORDER_TYPES];
@@ -2253,7 +2253,7 @@ void hud_squadmsg_wing_command()
 
 		// if no ship in the wing can depart then gray out the departure order
 		if (order_id == DEPART_ITEM) {
-			if (MsgItems[Num_menu_items].active) {
+			if (MsgItems[Num_menu_items].active > 0) {
 				int active = 0;
 				for (int i = 0; i < wingp->current_count; i++) {
 					if (hud_squadmsg_ship_order_valid(wingp->ship_index[i], (int)order_id)) {
@@ -2840,6 +2840,8 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		if (!config) {
 			strcpy(text, MsgItems[First_menu_item + i].text.c_str());
 		} else {
+			// in config mode, so create just the first page of the Comms Menu
+			// as other functions, such as hud_squadmsg_type_select() will not be run in config mode
 			const char* temp_comm_order_types[] = {XSTR("Ships", 293),
 				XSTR("Wings", 294),
 				XSTR("All Fighters", 295),
@@ -2848,6 +2850,9 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Abort Rearm", 298)
 			};
 			strcpy(text, temp_comm_order_types[i]);
+			if (Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
+				MsgItems[First_menu_item + i].active = -1;
+			}
 		}
 
 		// blit the background
@@ -2858,26 +2863,28 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		by += fl2i(Item_h * scale);
 
 		// set the text color
-		if (!config && MsgItems[First_menu_item+i].active ) {
+		if (!config && (MsgItems[First_menu_item+i].active > 0) ) {
 			setGaugeColor(HUD_C_BRIGHT, config);
 		} else {
 			setGaugeColor(HUD_C_DIM, config);
 		}
 
 		// first do the number
-		item_num = (i+1) % MAX_MENU_DISPLAY;
-		renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
+		if (MsgItems[First_menu_item + i].active >= 0) {
+			item_num = (i+1) % MAX_MENU_DISPLAY;
+			renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
 
-		// then the text
-		font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
+		  // then the text
+		  font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
+   
+			renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
 
-		renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
-
-		sy += fl2i(Item_h * scale);
+			sy += fl2i(Item_h * scale);
+		}
 
 		// if we have at least one item active, then set the variable so we don't display any
 		// message about no active items
-		if (config || MsgItems[First_menu_item+i].active )
+		if (config || (MsgItems[First_menu_item+i].active > 0) )
 			none_valid = false;
 	}
 

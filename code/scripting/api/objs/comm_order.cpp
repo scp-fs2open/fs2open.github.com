@@ -32,7 +32,7 @@ ADE_VIRTVAR(Active, l_Comm_Item, nullptr, "Whether or not the item is active", "
 		LuaError(L, "This property is read only.");
 	}
 
-	if (MsgItems[current].active) {
+	if (MsgItems[current].active > 0) {
 		return ADE_RETURN_TRUE;
 	}
 
