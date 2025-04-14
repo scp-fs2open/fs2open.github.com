@@ -157,6 +157,7 @@ bool Contrails_use_absolute_speed;
 bool Use_new_scanning_behavior;
 bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
+bool Hide_main_rearm_items_in_comms_gauge;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
@@ -465,6 +466,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Don't show callsigns in the escort list:")) {
 				stuff_boolean(&Dont_show_callsigns_in_escort_list);
+			}
+
+			if (optional_string("$Hide main Rearm/Repair items in Comms Gauge:")) {
+				stuff_boolean(&Hide_main_rearm_items_in_comms_gauge);
 			}
 
 			optional_string("#SEXP SETTINGS");
@@ -1700,6 +1705,7 @@ void mod_table_reset()
 	Use_new_scanning_behavior = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
 	Dont_show_callsigns_in_escort_list = false;
+	Hide_main_rearm_items_in_comms_gauge = false;
 	Fix_scripted_velocity = false;
 	// These colors were taken from missionscreencommon.cpp line 591 which
 	// were the original colors used by the overhead ship loadout lines
