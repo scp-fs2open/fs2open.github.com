@@ -4283,7 +4283,7 @@ void load_gauge_wingman_status(gauge_settings* settings)
 		else if (optional_string("Down"))
 			grow_mode = 2;
 		else
-			error_display(0, "\"Expansion Mode:\" is invalid!  Discarding and using default Left mode.");
+			error_display(0, "\"Expansion Mode:\" is invalid, must be either Left, Right, or Down!  Discarding value.");
 	}
 
 	if (optional_string("Wingname Align Mode:")) {
@@ -4294,7 +4294,7 @@ void load_gauge_wingman_status(gauge_settings* settings)
 		else if (optional_string("Right"))
 			wingname_align_mode = 2;
 		else
-			error_display(0, "\"Wingname Align Mode:\" is invalid!  Discarding and using default Center Alignment.");
+			error_display(0, "\"Wingname Align Mode:\" is invalid, must be either Center, Left, or Right!  Discarding value.");
 	}
 
 	bool use_full_wingnames = false;
