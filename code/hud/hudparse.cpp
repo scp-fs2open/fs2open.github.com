@@ -4275,18 +4275,26 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	int grow_mode = 0; //By default, expand the gauge to the left (in -x direction)
 	int wingname_align_mode = 0; //By default, center wingnames when rendering
 
-	if(optional_string("Expansion Mode:")) {
-		if(optional_string("Right")) 
+	if (optional_string("Expansion Mode:")) {
+		if (optional_string("Left"))
+			grow_mode = 0;
+		else if (optional_string("Right"))
 			grow_mode = 1;
-		else if(optional_string("Down"))
+		else if (optional_string("Down"))
 			grow_mode = 2;
+		else
+			error_display(0, "\"Expansion Mode:\" is invalid!  Discarding and using default Left mode.");
 	}
 
 	if (optional_string("Wingname Align Mode:")) {
-		if (optional_string("Left"))
+		if (optional_string("Center"))
+			wingname_align_mode = 0;
+		else if (optional_string("Left"))
 			wingname_align_mode = 1;
 		else if (optional_string("Right"))
 			wingname_align_mode = 2;
+		else
+			error_display(0, "\"Wingname Align Mode:\" is invalid!  Discarding and using default Center Alignment.");
 	}
 
 	bool use_full_wingnames = false;
