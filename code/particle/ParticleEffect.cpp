@@ -220,7 +220,7 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 			// info.vel and sourceDir) That should produce good looking directions where the maximum velocity is
 			// only achieved when the particle travels directly on the normal/reflect vector
 			vec3d normalizedVelocity;
-			vm_vec_copy_normalize(&normalizedVelocity, &velocity);
+			vm_vec_copy_normalize_safe(&normalizedVelocity, &velocity);
 			float dot = vm_vec_dot(&normalizedVelocity, &orientation.vec.fvec);
 			vm_vec_scale(&velocity,
 				m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));

@@ -470,7 +470,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
+	if (fl_near_zero(m)) {
+		// Since vectors are not expected to be null in this function, this really ought to be a Warning, as in the original release.
 		nprintf(("Network", "Null vec3d in vec3d normalize.\n"
 			"Trace out of vecmat.cpp and find offending code.\n"));
 		dest->xyz.x = 1.0f;
@@ -492,37 +493,43 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_normalize(vec3d *v)
 {
-	float t;
-	t = vm_vec_copy_normalize(v,v);
-	return t;
+	return vm_vec_copy_normalize(v,v);
 }
 
 // Normalize a vector.
-// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.  
+// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.
 // Otherwise return the magnitude.
-// No warning() generated for null vector.
-float vm_vec_normalize_safe(vec3d *v)
+// No warning() generated for null vector, as it is expected that some vectors may be null.
+float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src)
 {
 	float m;
 
-	m = vm_vec_mag(v);
+	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
-		v->xyz.x = 1.0f;
-		v->xyz.y = 0.0f;
-		v->xyz.z = 0.0f;
+	if (fl_near_zero(m)) {
+		dest->xyz.x = 1.0f;
+		dest->xyz.y = 0.0f;
+		dest->xyz.z = 0.0f;
 		return 1.0f;
 	}
 
 	float im = 1.0f / m;
 
-	v->xyz.x *= im;
-	v->xyz.y *= im;
-	v->xyz.z *= im;
+	dest->xyz.x = src->xyz.x * im;
+	dest->xyz.y = src->xyz.y * im;
+	dest->xyz.z = src->xyz.z * im;
 
 	return m;
+}
 
+// Normalize a vector.
+// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.
+// Otherwise return the magnitude.
+// No warning() generated for null vector.
+float vm_vec_normalize_safe(vec3d *v)
+{
+	return vm_vec_copy_normalize_safe(v,v);
 }
 
 //return the normalized direction vector between two points

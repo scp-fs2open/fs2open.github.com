@@ -41,9 +41,15 @@ jobs:
         # Run this job for each configuration
         # The current config running is accesible with `matrix.configuration`
         configuration: [FastDebug, Release]
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        include:
+          - os: ubuntu-latest
+            arch: x86_64
+          - os: ubuntu-24.04-arm
+            arch: arm64
     name: Linux
     needs: create_release   # Don't run this job until create_release is done and successful
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
     steps:
       - uses: actions/checkout@v1
@@ -87,13 +93,16 @@ jobs:
         #       0     Use default retention policy of the repo
         #       1~90  Min 1, Max 90 days to keep the artifact unless changed by repo settings page
         with:
-          name: linux-${{ matrix.configuration }}
+          name: linux-${{ matrix.configuration }}-${{ matrix.arch }}
           path: ${{ github.workspace }}/build/install/*.AppImage
   linux_zip:
     name: Build Linux distribution zip
     needs: build_linux
     runs-on: ubuntu-latest
     container: ghcr.io/scp-fs2open/sftp_upload:sha-748b19d
+    strategy:
+      matrix:
+        arch: [x86_64, arm64]
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -105,18 +114,24 @@ jobs:
         # Grab the release builds
         uses: actions/download-artifact@v4
         with:
-          name: linux-Release
+          name: linux-Release-${{ matrix.arch }}
           path: builds
       - name: Download FastDebug builds
         # Grab the debug builds
         uses: actions/download-artifact@v4
         with:
-          name: linux-FastDebug
+          name: linux-FastDebug-${{ matrix.arch }}
           path: builds
+      - name: Fix permissions
+        working-directory: ./builds
+        shell: bash
+        run: chmod 755 *.AppImage
       - name: Create Distribution package
         # Zip both builds together
         id: generate_package
         working-directory: ./builds
+        env:
+          ARCH: ${{ matrix.arch }}
         run: $GITHUB_WORKSPACE/ci/linux/create_dist_pack.sh Linux
       - name: Upload result package
         # Stash the result to artifact filespace
