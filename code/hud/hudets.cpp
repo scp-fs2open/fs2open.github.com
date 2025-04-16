@@ -914,6 +914,7 @@ void HudGaugeEts::blitGauge(int index, int ix, int iy, float scale, bool config)
 
 	int x, y;
 	if (HUD_shadows) {
+		color cur = gr_screen.current_color;
 		// These act more as a backing black layer.
 
 		gr_set_color_fast(&Color_black);
@@ -930,7 +931,7 @@ void HudGaugeEts::blitGauge(int index, int ix, int iy, float scale, bool config)
 		renderBitmapEx(Ets_bar.first_frame, x, y, w, y + ETS_bar_h, 0, 0, scale, config);
 
 		if (!config) {
-			gr_set_color_fast(&gauge_color);
+			gr_set_color_fast(&cur);
 		} else {
 			setGaugeColor(HUD_C_NONE, config);
 		}
