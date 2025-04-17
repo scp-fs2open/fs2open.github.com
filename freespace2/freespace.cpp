@@ -6874,7 +6874,7 @@ int game_main(int argc, char *argv[])
 		output_sexps("sexps.html");
 	}
 
-	bool skip_intro = false;
+	bool skip_intro = Disable_intro_movie;
 	if (scripting::hooks::OnIntroAboutToPlay->isActive()) {
 		skip_intro = scripting::hooks::OnIntroAboutToPlay->isOverride();
 		scripting::hooks::OnIntroAboutToPlay->run();
