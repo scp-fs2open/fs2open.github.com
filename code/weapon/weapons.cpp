@@ -5840,7 +5840,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		}
 
 		// (likely) fs1 code to early detonate if still nearby the target but not pointing at it
-		if (fs1_behavior && (old_dot < 0.0f) && (dist_to_target < 50.0f) && !wp->weapon_flags[Weapon::Weapon_Flags::Begun_detonation]) {
+		if (fs1_behavior && (old_dot < 0.0f) && (dist_to_target < 50.0f)) {
 			if (wp->lifeleft > 0.01f)
 				wp->lifeleft = 0.01f;
 			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
