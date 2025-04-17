@@ -616,7 +616,7 @@ int hud_query_scrollback_size()
 	int count = 0, y_add = 0;
 	int font_height = gr_get_font_height();
 
-	if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited)
+	if (Msg_scrollback_lines.empty() || !HUD_msg_inited)
 		return 0;
 
 	for (int i = 0; i < (int)Msg_scrollback_lines.size(); i++) {
@@ -677,7 +677,7 @@ int hud_get_scroll_max_pos()
 		// number of pixels in excess of what can be displayed
 		int excess = Scroll_max - Hud_mission_log_list_coords[gr_screen.res][3];
 
-		if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited) {
+		if (Msg_scrollback_lines.empty() || !HUD_msg_inited) {
 			max = 0;
 		} else {
 
@@ -746,7 +746,7 @@ void hud_goto_pos(int delta)
 	if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
 		int count = 0, y = 0;
 
-		if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited)
+		if (Msg_scrollback_lines.empty() || !HUD_msg_inited)
 			return;
 
 		for (int i = 0; i < (int)Msg_scrollback_lines.size(); i++) {
@@ -1068,7 +1068,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		Buttons[gr_screen.res][SHOW_MSGS_BUTTON].button.draw_forced(2);
 
 		int y = 0;
-		if (!(Msg_scrollback_lines.size() <= 1) && HUD_msg_inited) {
+		if (!Msg_scrollback_lines.empty() && HUD_msg_inited) {
 			int i = 0;
 			for (int j = 0; j < (int)Msg_scrollback_lines.size(); j++) {
 				line_node node_msg = Msg_scrollback_lines[j];
