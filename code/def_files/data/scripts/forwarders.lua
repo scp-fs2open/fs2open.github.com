@@ -1,4 +1,4 @@
--- Basic forwarders for common lua methods
+-- Basic forwarders for common Lua methods
 function error(str)
     ba.error(str)
 end
@@ -9,6 +9,13 @@ end
 
 function print(str)
     ba.print(str)
+end
+
+function println(str)
+    if (str) then
+        ba.print(str)
+    end
+    ba.print("\n")
 end
 
 function stackError(str, level)
@@ -37,6 +44,15 @@ function stackErrorf(str, ...)
     stackError(string.format(str, ...), 2)
 end
 
+function string.starts(str, start)
+    return string.sub(str, 1, string.len(start)) == start
+end
+
+function string.ends(str, e)
+    return (e == '') or (string.sub(str, -string.len(e)) == e)
+end
+
+
 -- Global table that can hold variables that should not be able to be changed
 Globals = {}
 Globals.values = {}
@@ -62,3 +78,9 @@ function mt.__index(t, index)
 end
 
 setmetatable(Globals, mt)
+
+
+-- Initial Values
+Globals.nullVec = ba.createVector(0, 0, 0)
+Globals.zeroVec = Globals.nullVec
+Globals.identityOrient = ba.createOrientationFromVectors(ba.createVector(0, 0, 1), ba.createVector(0, 1, 0), ba.createVector(1, 0, 0))
