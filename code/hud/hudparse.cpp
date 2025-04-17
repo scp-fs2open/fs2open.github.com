@@ -252,7 +252,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				for (auto& ship : Ship_info) {
 					if (!stricmp(ship.name, temp.c_str())) {
-						HC_hud_ships["default"] = ship.name;
+						HC_hud_shield_ships["default"][SHIELD_GAUGE_PLAYER] = ship.name;
 						found = true;
 						break;
 					}
@@ -260,6 +260,25 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				if (!found) {
 					Warning(LOCATION, "Shield gauge ship \"%s\" not found in ships.tbl!", temp.c_str());
+				}
+			}
+
+			if (optional_string("$Shield Gauge Target Ship:")) {
+				SCP_string temp;
+				stuff_string(temp, F_NAME);
+
+				bool found = false;
+
+				for (auto& ship : Ship_info) {
+					if (!stricmp(ship.name, temp.c_str())) {
+						HC_hud_shield_ships["default"][SHIELD_GAUGE_TARGET] = ship.name;
+						found = true;
+						break;
+					}
+				}
+
+				if (!found) {
+					Warning(LOCATION, "Shield gauge target ship \"%s\" not found in ships.tbl!", temp.c_str());
 				}
 			}
 
@@ -512,10 +531,41 @@ void parse_hud_gauges_tbl(const char *filename)
 				}
 
 				if (optional_string("$Shield Gauge Ship:")) {
-					SCP_string ship;
-					stuff_string(ship, F_NAME);
+					SCP_string temp;
+					stuff_string(temp, F_NAME);
 
-					HC_hud_ships[name] = ship;
+					bool found = false;
+
+					for (auto& ship : Ship_info) {
+						if (!stricmp(ship.name, temp.c_str())) {
+							HC_hud_shield_ships[name][SHIELD_GAUGE_PLAYER] = temp;
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						Warning(LOCATION, "Shield gauge ship \"%s\" not found in ships.tbl!", temp.c_str());
+					}
+				}
+
+				if (optional_string("$Shield Gauge Target Ship:")) {
+					SCP_string temp;
+					stuff_string(temp, F_NAME);
+
+					bool found = false;
+
+					for (auto& ship : Ship_info) {
+						if (!stricmp(ship.name, temp.c_str())) {
+							HC_hud_shield_ships[name][SHIELD_GAUGE_TARGET] = ship.name;
+							found = true;
+							break;
+						}
+					}
+
+					if (!found) {
+						Warning(LOCATION, "Shield gauge target ship \"%s\" not found in ships.tbl!", temp.c_str());
+					}
 				}
 
 				if (optional_string("$Primary Weapons:")) {

@@ -13,6 +13,7 @@
 #define _HUDCONFIG_H
 
 #include "hud/hud.h"
+#include "hud/hudshield.h"
 #include "ui/ui.h"
 
 class player;
@@ -191,7 +192,7 @@ extern int HC_talking_head_frame;
 extern SCP_string HC_head_anim_filename;
 extern bool HC_show_default_hud;
 extern std::unordered_set<SCP_string> HC_ignored_huds;
-extern SCP_map<SCP_string, SCP_string> HC_hud_ships;
+extern SCP_map<SCP_string, SCP_string[num_shield_gauge_types]> HC_hud_shield_ships;
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_primary_weapons;
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_secondary_weapons;
 
