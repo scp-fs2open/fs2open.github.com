@@ -329,12 +329,13 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 
 	if (fixed_reticle >= 0) {
 		if (HUD_shadows) {
+			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
 
 			// Render the shadow twice to increase visibility
 			renderBitmap(fixed_reticle, x + 1, y + 1, scale, config);
 			renderBitmap(fixed_reticle, x + 1, y + 1, scale, config);
-			gr_set_color_fast(&gauge_color);
+			gr_set_color_fast(&cur);
 		}
 
 		renderBitmap(fixed_reticle, x, y, scale, config);

@@ -915,9 +915,10 @@ void HudGauge::renderString(int x, int y, const char *str, float scale, bool con
 	}
 
 	if (HUD_shadows) {
+		color cur = gr_screen.current_color;
 		gr_set_color_fast(&Color_black);
 		gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
-		gr_set_color_fast(&gauge_color);
+		gr_set_color_fast(&cur);
 	}
 
 	gr_string(x + nx, y + ny, str, resize, scale);
@@ -951,16 +952,18 @@ void HudGauge::renderString(int x, int y, int gauge_id, const char *str, float s
 
 	if ( gauge_id > -2 ) {
 		if (HUD_shadows) {
+			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
 			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, resize, scale);
-			gr_set_color_fast(&gauge_color);
+			gr_set_color_fast(&cur);
 		}
 		emp_hud_string(x + nx, y + ny, gauge_id, str, resize, scale);
 	} else {
 		if (HUD_shadows) {
+			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
 			gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
-			gr_set_color_fast(&gauge_color);
+			gr_set_color_fast(&cur);
 		}
 		gr_string(x + nx, y + ny, str, resize, scale);
 	}
