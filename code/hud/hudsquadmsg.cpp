@@ -2838,7 +2838,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		char text[255];
 
 		if (!config) {
-			strcpy(text, MsgItems[First_menu_item + i].text.c_str());
+			strcpy_s(text, MsgItems[First_menu_item + i].text.c_str());
 		} else {
 			// in config mode, so create just the first page of the Comms Menu
 			// as other functions, such as hud_squadmsg_type_select() will not be run in config mode
@@ -2849,7 +2849,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 				XSTR("Rearm/Repair Subsys", 297),
 				XSTR("Abort Rearm", 298)
 			};
-			strcpy(text, temp_comm_order_types[i]);
+			strcpy_s(text, temp_comm_order_types[i]);
 			if (Hide_main_rearm_items_in_comms_gauge && (i == TYPE_REPAIR_REARM_ITEM || i == TYPE_REPAIR_REARM_ABORT_ITEM)) {
 				MsgItems[First_menu_item + i].active = -1;
 			}
