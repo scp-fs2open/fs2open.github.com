@@ -251,6 +251,12 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 	{ "no_fred",						Weapon::Info_Flags::No_fred,							true },
 	{ "detonate on expiration",			Weapon::Info_Flags::Detonate_on_expiration,				true },
 	{ "ignores countermeasures",		Weapon::Info_Flags::Ignores_countermeasures,			true },
+	{ "freespace 1 missile behavior",   Weapon::Info_Flags::Freespace_1_missile_behavior,       true, [](const SCP_string& /*spawn*/, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
+		if (!(weaponp->is_locked_homing())) {
+			Warning(LOCATION, "\"freespace 1 missile behavior\" only applies to aspect seekers.");
+			flags.remove(Weapon::Info_Flags::Freespace_1_missile_behavior);
+		}
+	}}, //special case
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -5404,14 +5410,16 @@ void weapon_home(object *obj, int num, float frame_time)
 	else
 		max_speed=wip->max_speed;
 
+	bool fs1_behavior = The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior] || wip->wi_flags[Weapon::Info_Flags::Freespace_1_missile_behavior];
+
 	float free_flight_time = wip->free_flight_time / 2.0f;
-	if (The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior]) {
+	if (fs1_behavior) {
 		free_flight_time = wip->free_flight_time;
 	}
 
 	//	If not [free-flight-time] gone by, don't home yet.
 	// Goober5000 - this has been fixed back to more closely follow the original logic.  Remember, the retail code
-	// had 0.5 second of free flight time, the first half of which was spent ramping up to full speed.
+	// had 0.5 second of free flight time, the first half of which was spent ramping up to full speed. (wip->free_flight_time / 2.0f in the above)
 	if ((hobjp == &obj_used_list) || ( f2fl(Missiontime - wp->creation_time) < free_flight_time)) {
 		if (f2fl(Missiontime - wp->creation_time) > wip->free_flight_time) {
 			// If this is a heat seeking homing missile and [free-flight-time] has elapsed since firing
@@ -5754,7 +5762,7 @@ void weapon_home(object *obj, int num, float frame_time)
 			return;
         }
 
-		float pure_pursuit_time = The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior] ? 1.0f : 0.1f;
+		float pure_pursuit_time = fs1_behavior ? 1.0f : 0.1f;
 		if ((old_dot > 0.1f)) {
 			if ((time_to_target > pure_pursuit_time)) {
 				if (wip->wi_flags[Weapon::Info_Flags::Variable_lead_homing]) {
@@ -5763,7 +5771,7 @@ void weapon_home(object *obj, int num, float frame_time)
 				else if (wip->is_locked_homing()) {
 					vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
 				} 
-			} else if (The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior]) {
+			} else if (fs1_behavior) {
 				vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f) * -1.0);
 			}
 		}
@@ -5789,7 +5797,7 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	at max speed, else move slower based on how far from ahead.
 		//	Asteroth - but not for homing primaries
 		if (old_dot < 0.90f && wip->subtype != WP_LASER) {
-			if (The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior]) {
+			if (fs1_behavior) {
 				obj->phys_info.speed = max_speed * MAX(0.2f, fabs(old_dot));
 				if (obj->phys_info.speed < max_speed * 0.25f)
 					obj->phys_info.speed = max_speed * 0.25f;
@@ -5831,9 +5839,11 @@ void weapon_home(object *obj, int num, float frame_time)
 			vm_vec_copy_scale(&obj->phys_info.desired_vel, &obj->orient.vec.fvec, vel);
 		}
 
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Freespace_1_missile_behavior] && (old_dot < 0.0f) && (dist_to_target < 50.0f)) {
+		// (likely) fs1 code to early detonate if still nearby the target but not pointing at it
+		if (fs1_behavior && (old_dot < 0.0f) && (dist_to_target < 50.0f) && !wp->weapon_flags[Weapon::Weapon_Flags::Begun_detonation]) {
 			if (wp->lifeleft > 0.01f)
 				wp->lifeleft = 0.01f;
+			wp->weapon_flags.set(Weapon::Weapon_Flags::Begun_detonation);
 		}
 	}
 }
