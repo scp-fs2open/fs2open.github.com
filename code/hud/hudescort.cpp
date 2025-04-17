@@ -963,7 +963,7 @@ void hud_escort_ship_hit(const object *objp, int  /*quadrant*/)
 	for (auto &es : Escort_ships) {
 		if (es.objnum == objnum) {
 			hud_gauge_popup_start(HUD_ESCORT_VIEW);
-			es.escort_hit_timer = timestamp(SHIELD_HIT_DURATION);
+			es.escort_hit_timer = timestamp(SHIELD_HIT_FLASH_DURATION);
 			es.escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
 			break;
 		}

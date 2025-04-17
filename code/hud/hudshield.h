@@ -15,7 +15,7 @@
 #include "globalincs/pstypes.h"
 #include "hud/hud.h"
 
-#define SHIELD_HIT_DURATION	1400	// time a shield quadrant flashes after being hit
+#define SHIELD_HIT_FLASH_DURATION	1400	// time a shield quadrant flashes after being hit
 #define SHIELD_FLASH_INTERVAL	200	// time between shield quadrant flashes
 
 enum ShieldGaugeType {
