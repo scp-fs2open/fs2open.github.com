@@ -25,7 +25,7 @@
 #include "weapon/weapon.h"
 #include "globalincs/alphacolors.h"
 
-float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  0.0833f, 0.167f, 0.25f, 0.333f, 0.417f, 0.5f, 0.583f, 0.667f, 0.75f, 0.833f, 0.9167f, 1.0f};
+float Energy_levels[NUM_ENERGY_LEVELS] = {0.0f,  1.0f/12, 2.0f/12, 3.0f/12, 4.0f/12, 5.0f/12, 6.0f/12, 7.0f/12, 8.0f/12, 9.0f/12, 10.0f/12, 11.0f/12, 1.0f};
 bool Weapon_energy_cheat = false;
 
 // -------------------------------------------------------------------------------------------------
@@ -52,6 +52,53 @@ void ets_init_ship(object* obj)
 		sp->next_manage_ets = -1;
 	}
 	set_default_recharge_rates(obj);
+}
+
+int ets_properties(object* objp)
+{
+	int properties = 0;
+	ship* ship_p = &Ships[objp->instance];
+	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
+
+	if (ship_has_energy_weapons(ship_p))
+		properties |= HAS_WEAPONS;
+
+	if (!(objp->flags[Object::Object_Flags::No_shields]) && !ship_info_p->flags[Ship::Info_Flags::Intrinsic_no_shields])
+		properties |= HAS_SHIELDS;
+
+	if (ship_has_engine_power(ship_p))
+		properties |= HAS_ENGINES;
+
+	return properties;
+}
+
+// returns the energy that should be dedicated towards a single ETS system
+// in retail, this is always 1.0
+float ets_power_factor(object *objp, bool include_power_output)
+{
+	auto shipp = &Ships[objp->instance];
+	int properties = ets_properties(objp);
+
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence] && (properties != (HAS_WEAPONS | HAS_SHIELDS | HAS_ENGINES)))
+	{
+		// in retail, the effect of having a missing system (e.g. an unshielded ship) is as if all that energy were redirected to other systems, so take the inverse of that
+		constexpr float missing_single_factor = 2.0f/3;
+		constexpr float missing_double_factor = 1.0f/3;
+
+		float missing_factor = (properties == HAS_WEAPONS || properties == HAS_SHIELDS || properties == HAS_ENGINES) ? missing_double_factor : missing_single_factor;
+
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
+			return Ship_info[shipp->ship_info_index].power_output * missing_factor;
+		else
+			return missing_factor;
+	}
+	else
+	{
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
+			return Ship_info[shipp->ship_info_index].power_output;
+		else
+			return 1.0f;
+	}
 }
 
 // -------------------------------------------------------------------------------------------------
@@ -83,14 +130,15 @@ void update_ets(object* objp, float fl_frametime)
 		return;
 	}
 
+	// See?  Volition did, at one point, intend for power output to affect ETS!
 	//	new_energy = fl_frametime * sinfo_p->power_output;
 
 	// update weapon energy
 	max_new_weapon_energy = fl_frametime * ship_p->max_weapon_regen_per_second * max_g;
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
-		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
+		ship_p->weapon_energy += ets_power_factor(objp) * Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy * The_mission.ai_profile->weapon_energy_scale[Game_skill_level];
 	} else {
-		ship_p->weapon_energy += Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy;
+		ship_p->weapon_energy += ets_power_factor(objp) * Energy_levels[ship_p->weapon_recharge_index] * max_new_weapon_energy;
 	}
 
 	if ( ship_p->weapon_energy > sinfo_p->max_weapon_reserve ){
@@ -100,9 +148,9 @@ void update_ets(object* objp, float fl_frametime)
 	float shield_delta;
 	max_new_shield_energy = fl_frametime * ship_p->max_shield_regen_per_second * shield_get_max_strength(ship_p, true); // recharge rate is unaffected by $Max Shield Recharge
 	if ( objp->flags[Object::Object_Flags::Player_ship] ) {
-		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
+		shield_delta = ets_power_factor(objp) * Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy * The_mission.ai_profile->shield_energy_scale[Game_skill_level];
 	} else {
-		shield_delta = Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
+		shield_delta = ets_power_factor(objp) * Energy_levels[ship_p->shield_recharge_index] * max_new_shield_energy;
 	}
 
 	if (Missiontime - Ai_info[ship_p->ai_index].last_hit_time < fl2f(sinfo_p->shield_regen_hit_delay))
@@ -170,16 +218,32 @@ void update_ets(object* objp, float fl_frametime)
 
 float ets_get_max_speed(object* objp, float engine_energy)
 {
+	// NOTE: ets_power_factor() doesn't need to be called in this function, because all the factors cancel out.  But
+	// the system presence does need to be checked since it affects the recharge indexes.
+
 	Assertion(objp != NULL, "Invalid object pointer passed!");
 	Assertion(objp->type == OBJ_SHIP, "Object needs to be a ship object!");
 	Assertion(engine_energy >= 0.0f && engine_energy <= 1.0f, "Invalid float passed, needs to be in [0, 1], was %f!", engine_energy);
 
 	ship* shipp = &Ships[objp->instance];
-
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
+	float initial_engine_recharge_energy_level;
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence])
+	{
+		int properties = ets_properties(objp);
+		if (properties == (HAS_WEAPONS | HAS_SHIELDS | HAS_ENGINES))
+			initial_engine_recharge_energy_level = Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX];
+		else if (properties == HAS_WEAPONS || properties == HAS_SHIELDS || properties == HAS_ENGINES)
+			initial_engine_recharge_energy_level = Energy_levels[ALL_INDEX];
+		else
+			initial_engine_recharge_energy_level = Energy_levels[ONE_HALF_INDEX];
+	}
+	else
+		initial_engine_recharge_energy_level = Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX];
+
 	// check for a shortcuts first before doing linear interpolation
-	if ( engine_energy == Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
+	if ( engine_energy == initial_engine_recharge_energy_level ){
 		return sip->max_speed;
 	} else if ( engine_energy == 0.0f ){
 		return 0.5f * sip->max_speed;
@@ -188,11 +252,11 @@ float ets_get_max_speed(object* objp, float engine_energy)
 	} else {
 		// do a linear interpolation to find the current max speed, using points (0,1/2 default_max_speed) (.333,default_max_speed)
 		// x = x1 + (y-y1) * (x2-x1) / (y2-y1);
-		if ( engine_energy < Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX] ){
-			return 0.5f*sip->max_speed + (engine_energy  * (0.5f*sip->max_speed) ) / Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX];
+		if ( engine_energy < initial_engine_recharge_energy_level ){
+			return 0.5f*sip->max_speed + (engine_energy  * (0.5f*sip->max_speed) ) / initial_engine_recharge_energy_level;
 		} else {
 			// do a linear interpolation to find the current max speed, using points (.333,default_max_speed) (1,max_overclock_speed)
-			return sip->max_speed + (engine_energy - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]) * (sip->max_overclocked_speed - sip->max_speed) / (1.0f - Energy_levels[INTIAL_ENGINE_RECHARGE_INDEX]);
+			return sip->max_speed + (engine_energy - initial_engine_recharge_energy_level) * (sip->max_overclocked_speed - sip->max_speed) / (1.0f - initial_engine_recharge_energy_level);
 		}
 	}
 }
@@ -203,6 +267,7 @@ void ets_update_max_speed(object* ship_objp)
 	Assertion(ship_objp->type == OBJ_SHIP, "Object needs to be a ship object!");
 
 	// calculate the top speed of the ship based on the energy flow to engines
+	// (note: this doesn't need the power factor; see comments in ets_get_max_speed())
 	float x = Energy_levels[Ships[ship_objp->instance].engine_recharge_index];
 	ship_objp->phys_info.max_vel.xyz.z = ets_get_max_speed(ship_objp, x);
 }
@@ -335,23 +400,13 @@ void set_recharge_rates(object* obj, int shields, int weapons, int engines) {
 // engines to their default levels
 void set_default_recharge_rates(object* obj)
 {
-	int ship_properties;
-
 	ship* ship_p = &Ships[obj->instance];
 	ship_info* ship_info_p = &Ship_info[ship_p->ship_info_index];
 
 	if ( ship_info_p->power_output == 0 )
 		return;
 
-	ship_properties = 0;	
-	if (ship_has_energy_weapons(ship_p))
-		ship_properties |= HAS_WEAPONS;
-	
-	if (!(obj->flags[Object::Object_Flags::No_shields]) && !ship_info_p->flags[Ship::Info_Flags::Intrinsic_no_shields])
-		ship_properties |= HAS_SHIELDS;
-
-	if (ship_has_engine_power(ship_p))
-		ship_properties |= HAS_ENGINES;
+	int ship_properties = ets_properties(obj);
 
 	// the default charge rate depends on what systems are on each ship
 	switch ( ship_properties ) {
