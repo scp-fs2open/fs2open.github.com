@@ -51,7 +51,9 @@ protected:
 	int wing_name_offsets[2];
 
 	enum {GROW_LEFT, GROW_RIGHT, GROW_DOWN};
+	enum {ALIGN_CENTER, ALIGN_LEFT, ALIGN_RIGHT};
 	int grow_mode;
+	int wingname_align_mode;
 	bool use_full_wingnames;
 	bool use_expanded_colors;
 
@@ -77,6 +79,7 @@ public:
 	void initWingmate5Offsets(int x, int y);
 	void initWingmate6Offsets(int x, int y);
 	void initGrowMode(int mode);
+	void initWingnameAlignMode(int mode);
 	void initUseFullWingnames(bool usefullname);
 	void initUseExpandedColors(bool useexpandedcolors);
 	void pageIn() override;

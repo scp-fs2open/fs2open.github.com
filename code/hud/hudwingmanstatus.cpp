@@ -320,6 +320,11 @@ void HudGaugeWingmanStatus::initGrowMode(int mode) {
 	grow_mode = mode;
 }
 
+void HudGaugeWingmanStatus::initWingnameAlignMode(int mode)
+{
+	wingname_align_mode = mode;
+}
+
 void HudGaugeWingmanStatus::initUseFullWingnames(bool usefullname)
 {
 	use_full_wingnames = usefullname;
@@ -591,10 +596,17 @@ void HudGaugeWingmanStatus::renderDots(int wing_index, int screen_index, int num
 		strncpy(wingstr, abbrev, 4);
 	}
 
-	// Goober5000 - center it (round the offset rather than truncate it)
 	int wingstr_width;
 	gr_get_string_size(&wingstr_width, nullptr, wingstr, scale);
-	renderString(sx - fl2i(std::lround((float)wingstr_width / 2.0f)), sy, wingstr, scale, config);
+
+	if (wingname_align_mode == ALIGN_LEFT) {
+		renderString(sx, sy, wingstr, scale, config);
+	} else if (wingname_align_mode == ALIGN_RIGHT) {
+		renderString(sx - wingstr_width, sy, wingstr, scale, config);
+	} else {
+		// Goober5000 - center it (round the offset rather than truncate it)
+		renderString(sx - fl2i(std::lround((float)wingstr_width / 2.0f)), sy, wingstr, scale, config);
+	}
 
 }
 
