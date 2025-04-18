@@ -173,6 +173,7 @@ namespace AI {
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
 		Disable_ai_transferring_energy,
+		Freespace_1_missile_behavior,
 
 		NUM_VALUES
 	};

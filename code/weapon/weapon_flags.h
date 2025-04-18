@@ -95,6 +95,7 @@ namespace Weapon {
 		No_fred,							// not available in fred
 		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
 		Ignores_countermeasures,			// The weapon will never be affected by countermeasures
+		Freespace_1_missile_behavior,		// Bundles several observed behaviors missiles had in the freespace 1 release
 
         NUM_VALUES
 	};
