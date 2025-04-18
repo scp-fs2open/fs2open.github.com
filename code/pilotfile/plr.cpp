@@ -16,6 +16,7 @@
 #include "pilotfile/pilotfile.h"
 #include "pilotfile/BinaryFileHandler.h"
 #include "pilotfile/JSONFileHandler.h"
+#include "pilotfile/plr_hudprefs.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "scripting/hook_api.h"
@@ -242,7 +243,11 @@ void pilotfile::plr_read_hud()
 		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
-	hud_config_set_color(HUD_config.main_color);
+	// This seemed to be previously used to ensure a valid color was set
+	// but under the new method we can rely on the getter to return a valid color
+	// in all cases. So comment this out to prevent forcing a default color on
+	// custom gauges that rely on color by their gauge type
+	//hud_config_set_color(HUD_config.main_color);
 
 	// gauge-specific colors
 	auto num_gauges = handler->startArrayRead("hud_gauges");
@@ -1215,6 +1220,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 	handler->endSectionRead();
 
+	mprintf(("HUDPREFS => Loading extended player HUD preferences...\n"));
+	hud_config_load_player_prefs(callsign); 
+
 	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
 	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
 	//options::OptionsManager::instance()->persistChanges();
@@ -1330,6 +1338,9 @@ bool pilotfile::save_player(player *_p)
 	handler->endWritingSections();
 
 	handler->flush();
+
+	mprintf(("HUDPREFS => Saving player HUD preferences (testing)...\n"));
+	hud_config_save_player_prefs(p->callsign);
 
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));
