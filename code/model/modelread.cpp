@@ -2795,6 +2795,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						pm->view_positions[i].parent = cfread_int( fp );
 						cfread_vector( &pm->view_positions[i].pnt, fp );
 						cfread_vector( &pm->view_positions[i].norm, fp );
+						// normalize, and just point it forward if this fails
+						if (!vm_maybe_normalize(&pm->view_positions[i].norm, &pm->view_positions[i].norm))
+							pm->view_positions[i].norm = vmd_z_vector;
 					}
 				}
 				break;			
@@ -2995,10 +2998,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
 	// but should at least head off potential crashes before they happen
 	for (i = 0; i < pm->n_view_positions; ++i) {
-		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+		if (pm->view_positions[i].parent >= pm->n_models) {
 			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
 			pm->view_positions[i].parent = 0;
-			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].norm = {{{0.0f, 0.0f, 1.0f}}};
 			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
