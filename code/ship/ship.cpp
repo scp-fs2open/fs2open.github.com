@@ -15195,9 +15195,15 @@ void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool 
 	// eye points are stored in an array -- the normal viewing position for a ship is the current_eye_index (now current_viewpoint) element.
 	auto &ep = pm->view_positions[current_viewpoint];
 
-	matrix eye_local_orient;
-	vm_vector_2_matrix_norm(&eye_local_orient, &ep.norm);
-	model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep.pnt, &eye_local_orient, pm, pmi, ep.parent, local_orient ? &vmd_identity_matrix : &obj->orient, local_pos ? &vmd_zero_vector : &obj->pos);
+	matrix eye_local_orient_buf;
+	const matrix *eye_local_orient;
+	if (Use_model_eyepoint_normals) {
+		vm_vector_2_matrix_norm(&eye_local_orient_buf, &ep.norm);
+		eye_local_orient = &eye_local_orient_buf;
+	} else {
+		eye_local_orient = &vmd_identity_matrix;
+	}
+	model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep.pnt, eye_local_orient, pm, pmi, ep.parent, local_orient ? &vmd_identity_matrix : &obj->orient, local_pos ? &vmd_zero_vector : &obj->pos);
 
 	//	Modify the orientation based on head orientation.
 	if (Viewer_obj == obj && do_slew) {

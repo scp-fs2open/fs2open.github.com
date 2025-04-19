@@ -35,6 +35,7 @@ bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
 bool Use_model_eyepoint_for_set_camera_host;
+bool Use_model_eyepoint_normals;
 bool Always_show_directive_value_count;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
@@ -519,6 +520,15 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
 				if (Use_model_eyepoint_for_set_camera_host)
 					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));
+			}
+
+			if (optional_string("$Use model eyepoint normals:"))
+			{
+				stuff_boolean(&Use_model_eyepoint_normals);
+				if (Use_model_eyepoint_normals)
+					mprintf(("Game Settings Table: Model eyepoints will respect eyepoint normals\n"));
+				else
+					mprintf(("Game Settings Table: Model eyepoints will use the model's orientation\n"));
 			}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
@@ -1586,6 +1596,7 @@ void mod_table_reset()
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
 	Use_model_eyepoint_for_set_camera_host = false;
+	Use_model_eyepoint_normals = false;
 	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
@@ -1745,6 +1756,7 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(25, 0, 0)) {
 		Use_model_eyepoint_for_set_camera_host = true;
+		Use_model_eyepoint_normals = true;
 		Fix_asteroid_bounding_box_check = true;
 	}
 }
