@@ -199,6 +199,24 @@ ADE_VIRTVAR(Name, l_Gauge_Config, nullptr, "The name of this gauge", "string", "
 	return ade_set_args(L, "s", current.getGauge()->getConfigName().c_str());
 }
 
+ADE_VIRTVAR(isCustom, l_Gauge_Config, nullptr, "If the gauge is custom or builtin", "boolean", "True if custom, false otherwise")
+{
+	gauge_config_h current;
+	if (!ade_get_args(L, "o", l_Gauge_Config.Get(&current))) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (!current.isValid()) {
+		return ade_set_error(L, "b", false);
+	}
+
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", current.getGauge()->isCustom());
+}
+
 ADE_VIRTVAR(CurrentColor,
 	l_Gauge_Config,
 	"color",

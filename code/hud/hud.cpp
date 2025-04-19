@@ -291,7 +291,7 @@ static int Damage_flash_timer;
 
 HudGauge::HudGauge():
 base_w(0), base_h(0), gauge_type(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), scripting_render_override(false), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -323,7 +323,7 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
 base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+disabled_views(_disabled_views), scripting_render_override(false), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	Assertion(_gauge_config <= NUM_HUD_GAUGES && _gauge_config >= 0, "Gauge has an invalid config ID!");
@@ -367,7 +367,7 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
 base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), scripting_render_override(false), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
 render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -778,6 +778,16 @@ bool HudGauge::isActive() const
 void HudGauge::updateSexpOverride(bool sexp)
 {
 	sexp_override = sexp;
+}
+
+bool HudGauge::getScriptingOverride() const
+{
+	return scripting_render_override;
+}
+
+void HudGauge::updateScriptingOverride(bool toggle)
+{
+	scripting_render_override = toggle;
 }
 
 void HudGauge::updatePopUp(bool pop_up_flag)
@@ -1413,6 +1423,10 @@ bool HudGauge::canRender() const
 		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
+	}
+
+	if (scripting_render_override) {
+		return false;
 	}
 
 	return true;
@@ -4341,6 +4355,21 @@ HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges)
 		int idx = hud_get_default_gauge_index(name);
 		if (idx >= 0 && idx < (int)default_hud_gauges.size())
 			gauge = default_hud_gauges[idx].get();
+	}
+
+	// If we still haven't found it then we might be using ship specific builtin gauges and not a default_hud_gauge
+	if (gauge == nullptr) {
+		ship_info* player_sip = nullptr;
+		if (Player_ship && Player_ship->ship_info_index >= 0)
+			player_sip = &Ship_info[Player_ship->ship_info_index];
+
+		if (player_sip != nullptr) {
+			for (auto& ship_gauge : player_sip->hud_gauges) {
+				if (!stricmp(name, ship_gauge->getConfigName().c_str())) {
+					gauge = ship_gauge.get();
+				}
+			}
+		}
 	}
 	return gauge;
 }

@@ -241,6 +241,7 @@ protected:
 	int popup_timer;
 	bool message_gauge;
 	int disabled_views;
+	bool scripting_render_override;
 
 	// Config stuff
 	SCP_string config_name;
@@ -322,6 +323,8 @@ public:
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
+	bool getScriptingOverride() const;
+	void updateScriptingOverride(bool toggle);
 	void initChase_view_only(bool chase_view_only);
 	void initCockpit_view_choice(int cockpit_view_choice);
 	void initVisible_in_config(bool visible);

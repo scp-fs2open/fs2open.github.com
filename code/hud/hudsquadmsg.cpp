@@ -2770,6 +2770,10 @@ bool HudGaugeSquadMessage::canRender() const
 		return false;
 	}
 
+	if (scripting_render_override) {
+		return false;
+	}
+
 	return true;
 }
 

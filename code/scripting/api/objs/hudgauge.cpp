@@ -256,6 +256,23 @@ ADE_FUNC(setColor,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(setRenderOverride,
+	l_HudGauge,
+	"boolean",
+	"Sets a rendering override to enable or disable rendering of this gauge. This takes precedence over all other gauge toggles!",
+	"boolean",
+	"True to enable the override and stop the gauge from rendering, false otherwise")
+{
+	HudGauge* gauge;
+	bool override = false;
+	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &override))
+		return ADE_RETURN_NIL;
+
+	gauge->updateScriptingOverride(override);
+
+	return ade_set_args(L, "b", gauge->getScriptingOverride());
+}
+
 ADE_VIRTVAR(RenderFunction,
             l_HudGauge,
             "function (HudGaugeDrawFunctions gauge_handle) => void",
