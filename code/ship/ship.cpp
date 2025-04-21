@@ -15198,6 +15198,7 @@ void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool 
 	matrix eye_local_orient;
 	vm_vector_2_matrix_norm(&eye_local_orient, &ep.norm);
 	model_instance_local_to_global_point_orient(eye_pos, eye_orient, &ep.pnt, &eye_local_orient, pm, pmi, ep.parent, local_orient ? &vmd_identity_matrix : &obj->orient, local_pos ? &vmd_zero_vector : &obj->pos);
+	*eye_orient = obj->orient;
 
 	//	Modify the orientation based on head orientation.
 	if (Viewer_obj == obj && do_slew) {
