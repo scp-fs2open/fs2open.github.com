@@ -579,8 +579,8 @@ ADE_FUNC(getOrientation,
 
 ADE_FUNC(getMagnitude,
 		 l_Vector,
-		 NULL,
-		 "Returns the magnitude of a vector (Total regardless of direction)",
+		 nullptr,
+		 "Returns the magnitude of a vector (Length regardless of direction)",
 		 "number",
 		 "Magnitude of vector, or 0 if handle is invalid") {
 	vec3d* v3;
@@ -589,6 +589,20 @@ ADE_FUNC(getMagnitude,
 	}
 
 	return ade_set_args(L, "f", vm_vec_mag(v3));
+}
+
+ADE_FUNC(getMagnitudeSquared,
+		 l_Vector,
+		 nullptr,
+		 "Returns the magnitude squared of a vector",
+		 "number",
+		 "Magnitude squared of vector, or 0 if handle is invalid") {
+	vec3d* v3;
+	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v3))) {
+		return ade_set_error(L, "f", 0.0f);
+	}
+
+	return ade_set_args(L, "f", vm_vec_mag_squared(v3));
 }
 
 ADE_FUNC(getDistance, l_Vector, "vector otherPos", "Distance", "number", "Returns distance from another vector") {
