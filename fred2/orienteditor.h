@@ -68,6 +68,8 @@ protected:
 	afx_msg void OnPointTo();
 	afx_msg void OnPointToObject();
 	afx_msg void OnPointToLocation();
+	afx_msg void OnSetAbsolute();
+	afx_msg void OnSetRelative();
 	afx_msg void OnClose();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
@@ -82,4 +84,6 @@ private:
 	int total;
 	int index[MAX_OBJECTS];
 	void actually_point_object(object *ptr);
+
+	bool set_relative;
 };
