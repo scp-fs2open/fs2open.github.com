@@ -3159,7 +3159,7 @@ camid game_render_frame_setup()
 	//These replace the normal player in-cockpit view with a topdown view.
 	if(The_mission.flags[Mission::Mission_Flags::Mission_2d])
 	{
-		if(!Viewer_mode)
+		if(!(Viewer_mode & ~VM_CAMERA_LOCKED))
 		{
 			Viewer_mode = VM_TOPDOWN;
 		}
