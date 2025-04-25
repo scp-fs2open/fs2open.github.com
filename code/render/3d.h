@@ -62,7 +62,7 @@ extern fov_t Proj_fov;					// Projection matrix fov (for HT&L)
  */
 void g3_set_fov(fov_t zoom);
 
-float g3_get_hfov(const fov_t& fov);
+float g3_get_hfov(const fov_t& fov, bool visible_fov = true);
 
 /**
  * Set view from camera

@@ -424,6 +424,26 @@ ADE_FUNC(getCurrentCamera, l_Graphics, "[boolean]", "Gets the current camera han
 	return ade_set_args(L, "o", l_Camera.Set(current));
 }
 
+ADE_FUNC(getEyePosition, l_Graphics, nullptr, "Where the viewer's eye is at in World coordinates", "vector", "a vector containing the eye position")
+{
+	return ade_set_args(L, "o", l_Vector.Set(Eye_position));
+}
+
+ADE_FUNC(getEyeOrientation, l_Graphics, nullptr, "Where the viewer's eye is pointing in World coordinates", "orientation", "a matrix containing the eye orientation")
+{
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&Eye_matrix)));
+}
+
+ADE_FUNC(getEyeFOV, l_Graphics, "[boolean visible_fov=true]", "What the viewer's FOV is, in radians.  If visible_fov is true, the visible field of view (for culling) "
+	"is returned; if false, the camera field of view (for rendering) is returned.  For non-VR setups, these two numbers are the same.",
+	"number", "a number containing the eye fov")
+{
+	bool visible_fov = true;
+	ade_get_args(L, "|b", &visible_fov);
+
+	return ade_set_args(L, "f", g3_get_hfov(Eye_fov, visible_fov));
+}
+
 ADE_FUNC(getVectorFromCoords, l_Graphics,
 		 "[number X=center, number Y=center, number Depth, boolean normalize = false]",
 		 "Returns a vector through screen coordinates x and y. "
