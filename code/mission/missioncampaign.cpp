@@ -1160,7 +1160,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		scripting::hooks::OnCampaignMissionAccept->run();
+		scripting::hooks::OnCampaignMissionAccept->run(
+			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name)
+		));
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact

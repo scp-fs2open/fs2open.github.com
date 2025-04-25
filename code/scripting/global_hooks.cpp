@@ -67,7 +67,9 @@ const std::shared_ptr<Hook<>> OnLoadComplete =
 
 const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
 	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
-	{});
+	{
+		{"Mission", "string", "The filename of the mission that was just accepted."}
+	});
 
 const std::shared_ptr<Hook<>> OnBriefStage = Hook<>::Factory("On Briefing Stage",
 	"Invoked for each briefing stage what it is shown.",
