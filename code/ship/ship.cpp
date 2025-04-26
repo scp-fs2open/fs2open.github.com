@@ -13734,6 +13734,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	if(Ships[n].objnum != OBJ_INDEX(obj)){
 		return 0;
 	}
+
+	bool in_lab = (gameseq_get_state() == GS_STATE_LAB);
 	
 	shipp = &Ships[n];
 	swp = &shipp->weapons;
@@ -13826,7 +13828,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	}
 
 	// Ensure if this is a "require-lock" missile, that a lock actually exists
-	if ( wip->wi_flags[Weapon::Info_Flags::No_dumbfire] ) {
+	if (wip->wi_flags[Weapon::Info_Flags::No_dumbfire] && !in_lab) {
 		if (!aip->current_target_is_locked && !ship_lock_present(shipp) && shipp->missile_locks_firing.empty() && aip->ai_missile_locks_firing.empty()) {
 			if (obj == Player_obj) {
 				if (!Weapon_energy_cheat) {
@@ -13858,7 +13860,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		}
 	}
 
-	if (wip->wi_flags[Weapon::Info_Flags::Tagged_only])
+	if (wip->wi_flags[Weapon::Info_Flags::Tagged_only] && !in_lab)
 	{
 		if (!ship_is_tagged(&Objects[aip->target_objnum]))
 		{
@@ -13890,10 +13892,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	if ( (wip->wi_flags[Weapon::Info_Flags::Swarm]) && !allow_swarm ) {
 		Assert(wip->swarm_count > 0);
 		if (wip->multi_lock) {
-			if(obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
-				shipp->num_swarm_missiles_to_fire = (int)shipp->missile_locks_firing.size();
-			else // AI ships
-				shipp->num_swarm_missiles_to_fire = (int)aip->ai_missile_locks_firing.size();
+			if (in_lab) {
+				shipp->num_swarm_missiles_to_fire = wip->max_seeking;
+			} else {
+				if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+					shipp->num_swarm_missiles_to_fire = static_cast<int>(shipp->missile_locks_firing.size());
+				else // AI ships
+					shipp->num_swarm_missiles_to_fire = static_cast<int>(aip->ai_missile_locks_firing.size());
+			}
 		} else if(wip->swarm_count <= 0){
 			shipp->num_swarm_missiles_to_fire = SWARM_DEFAULT_NUM_MISSILES_FIRED;
 		} else {
@@ -13909,10 +13915,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		//phreak 11-9-02 
 		//changed this from 4 to custom number defined in tables
 		if (wip->multi_lock) {
-			if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
-				shipp->num_corkscrew_to_fire = (ubyte)shipp->missile_locks_firing.size();
-			else // AI ships
-				shipp->num_corkscrew_to_fire = (ubyte)aip->ai_missile_locks_firing.size();
+			if (in_lab) {
+				shipp->num_corkscrew_to_fire = static_cast<ubyte>(wip->max_seeking);
+			} else {
+				if (obj == Player_obj || (MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship]))
+					shipp->num_corkscrew_to_fire = static_cast<ubyte>(shipp->missile_locks_firing.size());
+				else // AI ships
+					shipp->num_corkscrew_to_fire = static_cast<ubyte>(aip->ai_missile_locks_firing.size());
+			}
 		} else {
 			shipp->num_corkscrew_to_fire = (ubyte)(shipp->num_corkscrew_to_fire + (ubyte)wip->cs_num_fired);
 		}
@@ -14014,7 +14024,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		// and if I am a client in multiplayer
 		check_ammo = 1;
 
-		if ( MULTIPLAYER_CLIENT && (obj != Player_obj) ){
+		if (in_lab || (MULTIPLAYER_CLIENT && (obj != Player_obj))) {
 			check_ammo = 0;
 		}
 
@@ -14229,7 +14239,7 @@ done_secondary:
 
 	// if we are out of ammo in this bank then don't carry over firing swarm/corkscrew
 	// missiles to a new bank
-	if (!ship_secondary_has_ammo(swp, bank) || shipp->weapon_energy < wip->energy_consumed) {
+	if (!in_lab && (!ship_secondary_has_ammo(swp, bank) || shipp->weapon_energy < wip->energy_consumed)) {
 		// NOTE: these are set to 1 since they will get reduced by 1 in the
 		//       swarm/corkscrew code once this function returns
 
