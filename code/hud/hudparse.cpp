@@ -250,7 +250,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				bool found = false;
 
-				for (auto& ship : Ship_info) {
+				for (const auto& ship : Ship_info) {
 					if (!stricmp(ship.name, temp.c_str())) {
 						HC_hud_shield_ships["default"][SHIELD_GAUGE_PLAYER] = ship.name;
 						found = true;
@@ -269,7 +269,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				bool found = false;
 
-				for (auto& ship : Ship_info) {
+				for (const auto& ship : Ship_info) {
 					if (!stricmp(ship.name, temp.c_str())) {
 						HC_hud_shield_ships["default"][SHIELD_GAUGE_TARGET] = ship.name;
 						found = true;
@@ -536,7 +536,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 					bool found = false;
 
-					for (auto& ship : Ship_info) {
+					for (const auto& ship : Ship_info) {
 						if (!stricmp(ship.name, temp.c_str())) {
 							HC_hud_shield_ships[name][SHIELD_GAUGE_PLAYER] = temp;
 							found = true;
@@ -555,7 +555,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 					bool found = false;
 
-					for (auto& ship : Ship_info) {
+					for (const auto& ship : Ship_info) {
 						if (!stricmp(ship.name, temp.c_str())) {
 							HC_hud_shield_ships[name][SHIELD_GAUGE_TARGET] = ship.name;
 							found = true;
