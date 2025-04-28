@@ -3,8 +3,10 @@
 #include "lab/renderer/lab_renderer.h"
 #include "io/key.h"
 #include "asteroid/asteroid.h"
+#include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
 #include "debris/debris.h"
+#include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
@@ -15,6 +17,9 @@
 #include "extensions/ImGuizmo.h"
 #include "io/mouse.h"
 #include "weapon/weapon.h"
+
+//Turret firing forward declarations
+void ai_turret_execute_behavior(const ship* shipp, ship_subsys* ss);
 
 
 void lab_exit() {
@@ -247,6 +252,78 @@ void LabManager::onFrame(float frametime) {
 				ship_fire_secondary(obj);
 			}
 		}
+
+		ship_process_post(obj, frametime);
+		ai_process_subobjects(CurrentObject); // So that animations get reset
+
+		if (!getLabManager()->FireTurrets.empty()) {
+			for (auto& [subsys, mode, fire] : getLabManager()->FireTurrets) {
+				if (!fire || subsys == nullptr)
+					continue;
+
+				vec3d new_pos, new_vec;
+				ship_get_global_turret_info(&Objects[subsys->parent_objnum], subsys->system_info, &new_pos, &new_vec);
+
+				bool multipart = false;
+				// Turret is multipart
+				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
+					multipart = true;
+				}
+
+				switch (mode) {
+					case LabTurretAimType::UVEC: {
+						subsys->last_aim_enemy_pos = new_pos + new_vec * 500.0f;
+						break;
+					}
+					case LabTurretAimType::INITIAL: {
+						subsys->last_aim_enemy_pos = vmd_zero_vector;
+						break;
+					}
+					case LabTurretAimType::RANDOM: {
+						bool gen_new_vec = !multipart || subsys->points_to_target <= 0.010f;
+						if (gen_new_vec && timestamp_elapsed(subsys->turret_next_fire_stamp)) {
+							vec3d rand_vec;
+							const int MAX_ATTEMPTS = 100;
+							bool valid_vec_found = false;
+
+							// You get 100 tries to find a set of random coords to fire at
+							for (int attempt = 0; attempt < MAX_ATTEMPTS; ++attempt) {
+								float full_fov_degrees = 2.0f * acosf(subsys->system_info->turret_fov) * (180.0f / PI);
+								vm_vec_random_cone(&rand_vec, &new_vec, full_fov_degrees);
+
+								vec3d target_point;
+								vm_vec_scale_add(&target_point, &new_pos, &rand_vec, 1000.0f);
+
+								//  Create a vector from the turret to the random point.
+								vec3d turret_to_target;
+								vm_vec_sub(&turret_to_target, &target_point, &new_pos);
+								vm_vec_normalize(&turret_to_target);
+
+								// Test if the generated vector is within the FOV
+								if (turret_fov_test(subsys, &new_vec, &turret_to_target, 0.0f)) {
+									valid_vec_found = true;
+									rand_vec = target_point;
+									break;
+								}
+							}
+
+							if (valid_vec_found) {
+								subsys->last_aim_enemy_pos = rand_vec;
+							} else {
+								subsys->last_aim_enemy_pos = new_pos + new_vec * 500.0f;
+							}
+						}
+						break;
+					}
+					default:
+						Assertion(false, "Invalid Lab Turret Aim Type!");
+						break;
+				}
+
+				ai_turret_execute_behavior(&Ships[obj->instance], subsys);
+			}
+		}
+
 	}
 
 	// get correct revolution rate
@@ -290,6 +367,9 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	CurrentClass = info_index;
 
 	if (CurrentObject != -1) {
+		// Stop any firing turrets
+		FireTurrets.clear();
+
 		obj_delete_all();
 		CurrentObject = -1;
 	}

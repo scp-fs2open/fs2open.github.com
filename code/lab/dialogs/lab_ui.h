@@ -4,6 +4,12 @@
 #include "model/animation/modelanimation.h"
 #include "species_defs/species_defs.h"
 
+enum class LabTurretAimType {
+	RANDOM,
+	UVEC,
+	INITIAL,
+};
+
 class LabUi {
   public:
 	void create_ui();

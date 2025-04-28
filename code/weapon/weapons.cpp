@@ -6381,7 +6381,7 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 	}
 
-	if (wip->hud_in_flight_snd.isValid() && obj->parent_sig == Player_obj->signature)
+	if (Player_obj != nullptr && wip->hud_in_flight_snd.isValid() && obj->parent_sig == Player_obj->signature)
 	{
 		bool play_sound = false;
 		switch (wip->in_flight_play_type)
