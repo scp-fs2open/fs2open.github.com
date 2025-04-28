@@ -816,7 +816,7 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				int mode = 0; // Default to UVEC aligned
 				bool fire_now = false;
 
-				char* dropdown_options = "Random\0UVEC Aligned\0";
+				const char* dropdown_options = "Random\0UVEC Aligned\0";
 				bool multipart = false;
 				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
 					multipart = true;
