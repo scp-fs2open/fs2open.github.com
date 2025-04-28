@@ -867,11 +867,12 @@ void LabUi::build_weapon_options(ship* shipp) const {
 					// Set timestamps to allow turret to fire immediately
 					subsys->turret_next_fire_stamp = timestamp(0);
 					auto& weps = subsys->weapons;
-					for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
-						weps.next_primary_fire_stamp[i] = timestamp(0);
+					for (auto& stamp : weps.next_primary_fire_stamp) {
+						stamp = timestamp(0);
 					}
-					for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
-						weps.next_secondary_fire_stamp[i] = timestamp(0);
+
+					for (auto& stamp : weps.next_secondary_fire_stamp) {
+						stamp = timestamp(0);
 					}
 				} else {
 					std::get<1>(*it) = modeToAimType(mode);
