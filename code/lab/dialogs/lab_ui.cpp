@@ -816,12 +816,12 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				int mode = 0; // Default to UVEC aligned
 				bool fire_now = false;
 
-				const char* dropdown_options = "Random\0UVEC Aligned\0";
 				bool multipart = false;
 				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
 					multipart = true;
-					dropdown_options = "Random\0UVEC Aligned\0Initial\0";
 				}
+
+				const char* aiming_options[] = {"Random", "UVEC Aligned", "Initial"};
 
 				// In the lab we need to force fire on target because we're faking having an actual target
 				subsys->system_info->flags.set(Model::Subsystem_Flags::Fire_on_target);
@@ -841,10 +841,10 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				ImGui::TextUnformatted("Turret Aiming:");
 				ImGui::SameLine(150.0f); // Start combo box at 150px
 				ImGui::SetNextItemWidth(200.0f);
-				ImGui::Combo("##AimingMode", &mode, dropdown_options);
+				ImGui::Combo("##AimingMode", &mode, aiming_options, multipart ? 3 : 2);
 
-				auto modeToAimType = [multipart](int mode) -> LabTurretAimType {
-					switch (mode) {
+				auto modeToAimType = [multipart](int this_mode) -> LabTurretAimType {
+					switch (this_mode) {
 					case 0:
 						return LabTurretAimType::RANDOM;
 					case 1:
