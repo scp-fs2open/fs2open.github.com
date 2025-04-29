@@ -74,7 +74,10 @@ void LabRenderer::renderModel(float frametime) {
 
 	object* obj = &Objects[getLabManager()->CurrentObject];
 
-	obj->pos = getLabManager()->CurrentPosition;
+	// Ships stay put. Weapons are allowed to move so particle effects look correct
+	if (obj->type == OBJ_SHIP) {
+		obj->pos = getLabManager()->CurrentPosition;
+	}
 	obj->orient = getLabManager()->CurrentOrientation;
 
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
@@ -131,7 +134,25 @@ void LabRenderer::renderModel(float frametime) {
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
 	}
 
+	// Prevent weapons from destroying themselves
+	if (!getLabManager()->AllowWeaponDestruction) {
+		if (obj->type == OBJ_WEAPON) {
+			weapon* wep = &Weapons[obj->instance];
+			weapon_info* wip = &Weapon_info[wep->weapon_info_index];
+
+			if (wip != nullptr && !wip->wi_flags[Weapon::Info_Flags::Beam]) {
+				wep->lifeleft = wip->lifetime;
+			}
+		} else if (obj->type == OBJ_BEAM) {
+			beam* b = &Beams[obj->instance];
+			b->life_left = b->life_total;
+		}
+	}
+
 	obj_move_all(frametime);
+
+	// Force the camera to follow our current object
+	labCamera->updateCamera();
 
 	particle::move_all(frametime);
 	particle::ParticleManager::get()->doFrame(frametime);

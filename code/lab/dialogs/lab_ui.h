@@ -31,7 +31,8 @@ class LabUi {
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
 	void build_tone_mapper_combobox();
-	void build_table_info_txtbox(ship_info* sip) const;
+	void build_ship_table_info_txtbox(ship_info* sip) const;
+	void build_weapon_table_info_txtbox(weapon_info* wip) const;
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
 	void build_subsystem_list_entry(SCP_string& subsys_name,

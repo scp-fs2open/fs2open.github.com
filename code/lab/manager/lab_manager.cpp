@@ -20,6 +20,7 @@
 
 //Turret firing forward declarations
 void ai_turret_execute_behavior(const ship* shipp, ship_subsys* ss);
+extern void beam_delete(beam* b);
 
 
 void lab_exit() {
@@ -359,6 +360,23 @@ void LabManager::onFrame(float frametime) {
 	gr_flip();
 }
 
+void LabManager::cleanup() {
+	if (CurrentObject != -1) {
+
+		// Stop any firing turrets
+		FireTurrets.clear();
+
+		// Surprisingly obj_delete_all() does not delete beams so we have to vanish it manually
+		object* obj = &Objects[getLabManager()->CurrentObject];
+		if (obj->type == OBJ_BEAM && Beam_count > 0) {
+			beam* b = &Beams[Objects[CurrentObject].instance];
+			beam_delete(b);
+		}
+		obj_delete_all();
+		CurrentObject = -1;
+	}
+}
+
 void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	if (mode == CurrentMode && info_index == CurrentClass)
 		return;
@@ -366,13 +384,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	CurrentMode = mode;
 	CurrentClass = info_index;
 
-	if (CurrentObject != -1) {
-		// Stop any firing turrets
-		FireTurrets.clear();
-
-		obj_delete_all();
-		CurrentObject = -1;
-	}
+	cleanup();
 
 	switch (CurrentMode) {
 	case LabMode::Ship:
@@ -380,9 +392,36 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		changeShipInternal();
 		break;
 	case LabMode::Weapon:
-		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
-		if (Weapon_info[CurrentClass].model_num != -1) {
-			ModelFilename = model_get(Weapon_info[CurrentClass].model_num)->filename;
+		if (Weapon_info[CurrentClass].wi_flags[Weapon::Info_Flags::Beam]) {
+			beam_fire_info fire_info;
+			memset(&fire_info, 0, sizeof(beam_fire_info));
+			fire_info.accuracy = 0.000001f; // this will guarantee a hit
+			fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
+			fire_info.turret = nullptr; // A free-floating beam isn't fired from a subsystem.
+			fire_info.burst_index = 0;
+			fire_info.beam_info_index = CurrentClass;
+			fire_info.shooter = nullptr;
+			fire_info.team = 0;
+			fire_info.starting_pos = CurrentPosition;
+			fire_info.target = nullptr;
+			fire_info.target_subsys = nullptr;
+			fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+			fire_info.fire_method = BFM_SEXP_FLOATING_FIRED;
+
+			// Fire beam straight ahead from spawn origin
+			vec3d origin = CurrentPosition;
+			vec3d endpoint;
+			vm_vec_scale_add(&endpoint, &origin, &vmd_z_vector, 1500.0f); // Fire forward along +Z
+
+			fire_info.target_pos1 = endpoint;
+			fire_info.target_pos2 = endpoint;
+
+			CurrentObject = beam_fire(&fire_info);
+		} else {
+			CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
+			if (Weapon_info[CurrentClass].model_num != -1) {
+				ModelFilename = model_get(Weapon_info[CurrentClass].model_num)->filename;
+			}
 		}
 		break;
 	default:

@@ -26,6 +26,9 @@ public:
 
 	// Do rendering and handle keyboard/mouse events
 	void onFrame(float frametime);
+
+	// Cleanup all objects
+	void cleanup();
 	
 	// Creates a new object of the passed type, using the respective class definition found at info_index and replaces the currently
 	// displayed object
@@ -33,6 +36,8 @@ public:
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
+
+		cleanup();
 
 		LabRenderer::close();
 
@@ -83,6 +88,7 @@ public:
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
+	bool AllowWeaponDestruction = false;
 
 	flagset<ManagerFlags> Flags;
 

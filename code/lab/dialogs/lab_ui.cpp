@@ -95,10 +95,10 @@ void LabUi::build_weapon_list() const
 {
 	//weapon display needs to be rethought
 
-	//with_TreeNode("Weapon Classes")
-	//{
-	//	build_weapon_subtype_list();
-	//}
+	with_TreeNode("Weapon Classes")
+	{
+		build_weapon_subtype_list();
+	}
 }
 
 void LabUi::build_background_list() const
@@ -523,7 +523,7 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	TextUnformatted(colB);         \
 
 
-void LabUi::build_table_info_txtbox(ship_info* sip) const
+void LabUi::build_ship_table_info_txtbox(ship_info* sip) const
 {
 	with_TreeNode("Table information")
 	{
@@ -536,6 +536,26 @@ void LabUi::build_table_info_txtbox(ship_info* sip) const
 			table_text = get_ship_table_text(sip);
 
 		InputTextMultiline("##table_text",
+			const_cast<char*>(table_text.c_str()),
+			table_text.length(),
+			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+			ImGuiInputTextFlags_ReadOnly);
+	}
+}
+
+void LabUi::build_weapon_table_info_txtbox(weapon_info* wip) const
+{
+	with_TreeNode("Table information")
+	{
+		// Cache result across frames for performance
+		static SCP_string table_text;
+		static int old_class = getLabManager()->CurrentClass;
+
+		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+			table_text = get_weapon_table_text(wip);
+		}
+
+		InputTextMultiline("##weapon_table_text",
 			const_cast<char*>(table_text.c_str()),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
@@ -1127,7 +1147,7 @@ void LabUi::show_object_options() const
 
 			with_CollapsingHeader(sip->name)
 			{
-				build_table_info_txtbox(sip);
+				build_ship_table_info_txtbox(sip);
 
 				build_model_info_box(sip, pm);
 
@@ -1153,6 +1173,18 @@ void LabUi::show_object_options() const
 			with_CollapsingHeader("Weapons")
 			{
 				build_weapon_options(shipp);
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->isSafeForWeapons()) {
+			auto wip = &Weapon_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Weapon Info")
+			{
+				build_weapon_table_info_txtbox(wip);
+			}
+			
+			with_CollapsingHeader("Object Actions")
+			{
+				Checkbox("Allow weapon to reach end of life", &getLabManager()->AllowWeaponDestruction);
 			}
 		}
 	}
