@@ -1828,6 +1828,63 @@ void obj_render(object *obj)
 	gr_reset_lighting();
 }
 
+void raw_pof_render(object* obj, model_draw_list* scene) {
+	model_render_params render_info;
+
+	auto pof_obj = Pof_objects[obj->instance];
+
+	uint64_t render_flags = MR_NORMAL | MR_IS_MISSILE | MR_NO_BATCH;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_light])
+		render_flags |= MR_NO_LIGHTING;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_ambientmap]) {
+		debug_flags |= MR_DEBUG_NO_AMBIENT;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_reflectmap]) {
+		debug_flags |= MR_DEBUG_NO_REFLECT;
+	}
+
+	render_info.set_object_number(OBJ_INDEX(obj));
+
+	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
+
+	model_render_queue(&render_info, scene, Pof_objects[obj->instance].model_num, &obj->orient, &obj->pos);
+}
+
 void obj_queue_render(object* obj, model_draw_list* scene)
 {
 	TRACE_SCOPE(tracing::QueueRender);
@@ -1898,12 +1955,7 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_BEAM:
 		break;
 	case OBJ_RAW_POF:
-		{
-			model_render_params render_info;
-			render_info.set_object_number(OBJ_INDEX(obj));
-
-			model_render_queue(&render_info, scene, Pof_objects[obj->instance].model_num, &obj->orient, &obj->pos);
-		}
+		raw_pof_render(obj, scene);
 		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );

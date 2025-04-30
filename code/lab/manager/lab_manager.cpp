@@ -386,6 +386,16 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 	//if (mode == CurrentMode && info_index == CurrentClass)
 		//return;
 
+	// Toggle the show thrusters default when we change modes
+	if (mode != CurrentMode) {
+		if (mode == LabMode::Ship) {
+			labUi.show_thrusters = false;
+		}
+		if (mode == LabMode::Weapon) {
+			labUi.show_thrusters = true;
+		}
+	}
+
 	CurrentMode = mode;
 	CurrentClass = info_index;
 

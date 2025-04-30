@@ -342,13 +342,17 @@ void LabUi::show_render_options()
 
 		with_CollapsingHeader("Model features")
 		{
-			Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			}
 			Checkbox("Show full detail", &show_full_detail);
 			Checkbox("Show thrusters", &show_thrusters);
-			Checkbox("Show afterburners", &show_afterburners);
-			Checkbox("Show weapons", &show_weapons);
-			Checkbox("Show Insignia", &show_insignia);
-			Checkbox("Show damage lightning", &show_damage_lightning);
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				Checkbox("Show afterburners", &show_afterburners);
+				Checkbox("Show weapons", &show_weapons);
+				Checkbox("Show Insignia", &show_insignia);
+				Checkbox("Show damage lightning", &show_damage_lightning);
+			}
 			Checkbox("No glowpoints", &no_glowpoints);
 		}
 
@@ -372,6 +376,7 @@ void LabUi::show_render_options()
 		with_CollapsingHeader("Scene rendering options")
 		{
 			Checkbox("Hide Post Processing", &hide_post_processing);
+			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
@@ -487,6 +492,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);

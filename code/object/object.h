@@ -125,10 +125,10 @@ class model_draw_list;
 class polymodel;
 struct polymodel_instance;
 
-typedef struct raw_pof_obj
-{
-	  int        model_num;      // The model number of the loaded POF
-	  int        model_instance; // The model instance
+typedef struct raw_pof_obj {
+	  int                            model_num;      // The model number of the loaded POF
+	  int                            model_instance; // The model instance
+	  flagset<Object::Raw_Pof_Flags> flags;          // Render flags
 } raw_pof_obj;
 
 extern SCP_map<int, raw_pof_obj> Pof_objects;
