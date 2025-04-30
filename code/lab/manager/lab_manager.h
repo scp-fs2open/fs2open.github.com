@@ -56,6 +56,7 @@ public:
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
 	SCP_string ModelFilename = "";
+	bool ShowingTechModel = false;
 
 	bool isSafeForShips() {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1;

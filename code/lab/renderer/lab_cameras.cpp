@@ -37,20 +37,17 @@ void OrbitCamera::displayedObjectChanged() {
 		// Ships and Missiles use the object radius to get a camera distance
 		distance = obj->radius * distance_multiplier;
 
-		if (obj->type == OBJ_WEAPON || obj->type == OBJ_BEAM) {
-			int wep_index;
-			// Beams use the muzzle radius
-			if (obj->type == OBJ_BEAM) {
-				wep_index = Beams[obj->instance].weapon_info_index;
-				weapon_info* wip = &Weapon_info[wep_index];
+		// Beams use the muzzle radius
+		if (obj->type == OBJ_BEAM) {
+			weapon_info* wip = &Weapon_info[Beams[obj->instance].weapon_info_index];
+			if (wip != nullptr) {
 				distance = wip->b_info.beam_muzzle_radius * distance_multiplier;
-			// Lasers use the laser length
-			} else {
-				wep_index = Weapons[obj->instance].weapon_info_index;
-				weapon_info* wip = &Weapon_info[wep_index];
-				if (wip != nullptr && wip->render_type == WRT_LASER) {
-					distance = wip->laser_length * distance_multiplier;
-				}
+			}
+		// Lasers use the laser length
+		} else if (obj->type == OBJ_WEAPON) {
+			weapon_info* wip = &Weapon_info[Weapons[obj->instance].weapon_info_index];
+			if (wip != nullptr && wip->render_type == WRT_LASER) {
+				distance = wip->laser_length * distance_multiplier;
 			}
 		}
 	}

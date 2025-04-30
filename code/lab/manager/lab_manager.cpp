@@ -5,6 +5,7 @@
 #include "asteroid/asteroid.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
+#include "object/object.h"
 #include "debris/debris.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
@@ -378,8 +379,12 @@ void LabManager::cleanup() {
 }
 
 void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
-	if (mode == CurrentMode && info_index == CurrentClass)
-		return;
+	// Removing this allows reseting by clicking on the object again,
+	// making it easier to respawn destroyed objects
+	// If this is re-enabled then it will need to be modified so that
+	// ShowingTechModel bool toggles are also accounted for
+	//if (mode == CurrentMode && info_index == CurrentClass)
+		//return;
 
 	CurrentMode = mode;
 	CurrentClass = info_index;
@@ -392,7 +397,10 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		changeShipInternal();
 		break;
 	case LabMode::Weapon:
-		if (Weapon_info[CurrentClass].wi_flags[Weapon::Info_Flags::Beam]) {
+		if (ShowingTechModel) {
+			ModelFilename = Weapon_info[CurrentClass].tech_model;
+			CurrentObject = obj_raw_pof_create(ModelFilename.c_str(), &CurrentOrientation, &CurrentPosition);
+		}else if (Weapon_info[CurrentClass].wi_flags[Weapon::Info_Flags::Beam]) {
 			beam_fire_info fire_info;
 			memset(&fire_info, 0, sizeof(beam_fire_info));
 			fire_info.accuracy = 0.000001f; // this will guarantee a hit

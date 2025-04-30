@@ -1185,6 +1185,12 @@ void LabUi::show_object_options() const
 			with_CollapsingHeader("Object Actions")
 			{
 				Checkbox("Allow weapon to reach end of life", &getLabManager()->AllowWeaponDestruction);
+
+				if (VALID_FNAME(wip->tech_model)) {
+					if (Checkbox("Show Tech Model", &getLabManager()->ShowingTechModel)) {
+						getLabManager()->changeDisplayedObject(LabMode::Weapon, getLabManager()->CurrentClass);
+					}
+				}
 			}
 		}
 	}
