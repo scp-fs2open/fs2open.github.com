@@ -397,7 +397,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		changeShipInternal();
 		break;
 	case LabMode::Weapon:
-		if (ShowingTechModel) {
+		if (ShowingTechModel && VALID_FNAME(Weapon_info[CurrentClass].tech_model)) {
 			ModelFilename = Weapon_info[CurrentClass].tech_model;
 			CurrentObject = obj_raw_pof_create(ModelFilename.c_str(), &CurrentOrientation, &CurrentPosition);
 		}else if (Weapon_info[CurrentClass].wi_flags[Weapon::Info_Flags::Beam]) {
