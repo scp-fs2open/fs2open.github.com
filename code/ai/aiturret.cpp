@@ -6,6 +6,7 @@
 #include "debugconsole/console.h"
 #include "freespace.h"
 #include "gamesnd/gamesnd.h"
+#include "gamesequence/gamesequence.h"
 #include "globalincs/linklist.h"
 #include "globalincs/systemvars.h"
 #include "iff_defs/iff_defs.h"
@@ -1332,16 +1333,17 @@ bool aifft_rotate_turret(const object *objp, const ship *shipp, ship_subsys *ss,
 	auto pmi = model_get_instance(shipp->model_instance_num);
 	auto pm = model_get(pmi->model_num);
 
-	if (ss->turret_enemy_objnum != -1) {
-		model_subsystem *tp = ss->system_info;
+	bool in_lab = (gameseq_get_state() == GS_STATE_LAB);
 
-		//Get the normalized dir between the turret and the predicted enemy position.
-		//If the dot product is smaller than or equal to the turret's FOV, try and point the gun at it.
-		vec3d	v2e;
+	if (!in_lab && ss->turret_enemy_objnum != -1) {
+		model_subsystem* tp = ss->system_info;
+
+		// Get the normalized dir between the turret and the predicted enemy position.
+		// If the dot product is smaller than or equal to the turret's FOV, try and point the gun at it.
+		vec3d v2e;
 		vm_vec_normalized_dir(&v2e, predicted_enemy_pos, global_gun_pos);
 
 		bool in_fov;
-
 		in_fov = turret_fov_test(ss, global_gun_vec, &v2e);
 
 		if (in_fov) {
@@ -1349,8 +1351,15 @@ bool aifft_rotate_turret(const object *objp, const ship *shipp, ship_subsys *ss,
 		} else if ((tp->flags[Model::Subsystem_Flags::Turret_reset_idle]) &&(timestamp_elapsed(ss->rotation_timestamp))) {
 			ret_val = model_rotate_gun(objp, pm, pmi, ss, nullptr);
 		}
-	} else if ((ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
+	} else if (!in_lab && (ss->system_info->flags[Model::Subsystem_Flags::Turret_reset_idle]) && (timestamp_elapsed(ss->rotation_timestamp))) {
 		ret_val = model_rotate_gun(objp, pm, pmi, ss, nullptr);
+	} else if (in_lab) {
+		// in the lab, if predicted_enemy_pos is zero vec, then go to initial, else try to aim at the target
+		if (predicted_enemy_pos != nullptr && *predicted_enemy_pos == vmd_zero_vector) {
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, nullptr);
+		} else {
+			ret_val = model_rotate_gun(objp, pm, pmi, ss, predicted_enemy_pos);
+		}
 	}
 
 	// by default "ret_val" should be set to true for multi-part turrets, and false for single-part turrets
@@ -1601,7 +1610,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 		} else {
 			// flak guns need to fire more rapidly
 			if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
-				if (Ships[aip->shipnum].team == Player_ship->team) {
+				if (Player_ship != nullptr && Ships[aip->shipnum].team == Player_ship->team) {
 					wait *= aip->ai_ship_fire_delay_scale_friendly * 0.5f;
 				} else {
 					wait *= aip->ai_ship_fire_delay_scale_hostile * 0.5f;
@@ -1626,7 +1635,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 				}
 			} else {
 				// give team friendly an advantage
-				if (Ships[aip->shipnum].team == Player_ship->team) {
+				if (Player_ship != nullptr && Ships[aip->shipnum].team == Player_ship->team) {
 					wait *= aip->ai_ship_fire_delay_scale_friendly;
 				} else {
 					wait *= aip->ai_ship_fire_delay_scale_hostile;
@@ -1695,6 +1704,12 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 	auto wip = get_turret_weapon_wip(&turret->weapons, weapon_num);
 	if (!wip)
 		return false;
+
+	bool in_lab = (gameseq_get_state() == GS_STATE_LAB);
+
+	if (in_lab) {
+		predicted_pos = nullptr;
+	}
 
 	bool last_shot_in_salvo = true;
 	if (turret->system_info->flags[Model::Subsystem_Flags::Turret_salvo])
@@ -1780,7 +1795,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		// if this weapon is a beam weapon, handle it specially
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
 			// if this beam isn't free to fire
-			if (!(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
+			if (!in_lab && !(turret->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
 				return false;
 			}
 
@@ -1803,6 +1818,14 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				fire_info.fire_method = BFM_TURRET_FIRED;
 				fire_info.per_burst_rotation = swp->per_burst_rot;
 				fire_info.burst_index = (old_burst_counter * wip->shots) + i;
+
+				// If we're in the lab then force fire
+				if (in_lab) {
+					fire_info.fire_method = BFM_TURRET_FORCE_FIRED;
+					fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+					fire_info.target_pos1 = turret->last_aim_enemy_pos;
+				}
+
 
 				// fire a beam weapon
 				weapon_objnum = beam_fire(&fire_info);
@@ -1833,7 +1856,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				swp->current_secondary_bank = 0;
 			}
 			int bank_to_fire = swp->current_secondary_bank;
-			if ((turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, bank_to_fire)) {
+			if (!in_lab && (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) && !ship_secondary_has_ammo(swp, bank_to_fire)) {
 				if (!(turret->system_info->flags[Model::Subsystem_Flags::Use_multiple_guns])) {
 					swp->current_secondary_bank++;
 					if (swp->current_secondary_bank >= swp->num_secondary_banks) {
@@ -1844,7 +1867,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					return false;
 				}
 			} else {
-				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos);
+				turret_swarm_set_up_info(parent_objnum, turret, wip, turret->turret_next_fire_pos, in_lab);
 
 				turret->flags.set(Ship::Subsystem_Flags::Has_fired);	//set fired flag for scripting -nike
 				return true;
@@ -1853,7 +1876,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		// now do anything else
 		else {
 			for (int i = 0; i < wip->shots; i++) {
-				if (turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
+				if (!in_lab && turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
 					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
 					if (wip->subtype == WP_LASER) {
 						int points;
@@ -1977,7 +2000,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// if the gun is a flak gun
 					if (wip->wi_flags[Weapon::Info_Flags::Flak]) {
 
-						if(predicted_pos != NULL)
+						if(predicted_pos != nullptr)
 						{
 							// pick a firing range so that it detonates properly			
 							flak_pick_range(objp, firing_pos, predicted_pos, ship_get_subsystem_strength(parent_ship, SUBSYSTEM_WEAPONS));
@@ -2158,12 +2181,20 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	vec3d	predicted_enemy_pos = vmd_zero_vector;
 	object	*objp;
 
+	bool in_lab = (gameseq_get_state() == GS_STATE_LAB);
+
+	if (in_lab) {
+		// Adjust behavior for Lab
+		ss->turret_enemy_objnum = -1;
+		lep = nullptr;
+	}
+
 	// Reset the points to target value
 	ss->points_to_target = -1.0f;
 	ss->base_rotation_rate_pct = 0.0f;
 	ss->gun_rotation_rate_pct = 0.0f;
 
-	if (!Ai_firing_enabled) {
+	if (!in_lab && !Ai_firing_enabled) {
 		return;
 	}
 
@@ -2176,7 +2207,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	}
 
 	// Check turret free
-	if (ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]) {
+	if (!in_lab && ss->weapons.flags[Ship::Weapon_Flags::Turret_Lock]) {
 		return;
 	}
 
@@ -2241,8 +2272,13 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		ship_get_global_turret_info(objp, tp, &global_gun_pos, &global_gun_vec);
 	}
 
-	// Update predicted enemy position.  This used to be done in aifft_rotate_turret
-	aifft_update_predicted_enemy_pos(objp, shipp, ss, &global_gun_pos, &global_gun_vec, lep, &predicted_enemy_pos);
+	if (!in_lab) {
+		// Update predicted enemy position.  This used to be done in aifft_rotate_turret
+		aifft_update_predicted_enemy_pos(objp, shipp, ss, &global_gun_pos, &global_gun_vec, lep, &predicted_enemy_pos);
+	} else {
+		// Lab hijacks this value to use as the target position
+		predicted_enemy_pos = ss->last_aim_enemy_pos;
+	}
 
 	// Rotate the turret even if time hasn't elapsed, since it needs to turn to face its target.
 	bool use_angles = aifft_rotate_turret(objp, shipp, ss, &global_gun_pos, &global_gun_vec, &predicted_enemy_pos);
@@ -2268,10 +2304,14 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	// WMC moved the range check to within the loop, but we can still calculate the enemy distance here
 	float dist_to_enemy = 0.0f;
 	if (lep) {
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius])
+		if (The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
 			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos));
-		else
+		} else {
 			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos) - lep->radius);
+		}
+	} else if (in_lab) {
+		dist_to_enemy = 500.0f;
+		vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
 	}
 
 	// count the number of enemies, in case we have a spawning weapon
@@ -2311,7 +2351,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		// Turret spawn weapons are a special case.  They fire if there are enough enemies in the 
 		// immediate area (not necessarily in the turret fov).
 		// However, if this is a 'smart spawn', just use it like a normal weapon
-		if ( (wip->wi_flags[Weapon::Info_Flags::Spawn]) && !(wip->wi_flags[Weapon::Info_Flags::Smart_spawn]) )
+		if (!in_lab && (wip->wi_flags[Weapon::Info_Flags::Spawn]) && !(wip->wi_flags[Weapon::Info_Flags::Smart_spawn]) )
 		{
 			if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
 				turret_fire_weapon(i, ss, parent_objnum, &global_gun_pos, &ss->turret_last_fire_direction);
@@ -2329,13 +2369,13 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		we_did_non_spawning_logic = true;	// for the post-loop check
 
 		// If beam weapon, check beam free
-		if (wip->wi_flags[Weapon::Info_Flags::Beam] && !(ss->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
+		if (!in_lab && wip->wi_flags[Weapon::Info_Flags::Beam] && !(ss->weapons.flags[Ship::Weapon_Flags::Beam_Free])) {
 			tentative_return = true;
 			continue;
 		}
 
 		// the remaining checks in this loop all require a valid lep
-		if (!lep)
+		if (!in_lab && !lep)
 			continue;
 
 		// Get weapon range
@@ -2375,84 +2415,88 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		}
 
 		// Don't try to fire beyond weapon_limit_range (or within min range)
-		if (dist_to_enemy < weapon_min_range || dist_to_enemy > weapon_firing_range) {
+		// In lab we ignore range issues
+		if (!in_lab && (dist_to_enemy < weapon_min_range || dist_to_enemy > weapon_firing_range)) {
 			// it's possible another weapon is in range, but if not,
 			// we will end up selecting a new target
 			continue;
 		}
 
-		ship_info* esip = lep->type != OBJ_SHIP ? nullptr : &Ship_info[Ships[lep->instance].ship_info_index];
+		if (!in_lab) {
 
-		//	If targeted a small ship and have a huge weapon, don't fire.  But this shouldn't happen, as a small ship should not get selected.
-		if ( wip->wi_flags[Weapon::Info_Flags::Huge] ) {
-			if ( lep->type != OBJ_SHIP ) {
-				tentative_return = true;
-				continue;
-			}
-			if ( esip->class_type >= 0 && !(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only])) {
-				tentative_return = true;
-				continue;
-			}
-		}
+			ship_info* esip = lep->type != OBJ_SHIP ? nullptr : &Ship_info[Ships[lep->instance].ship_info_index];
 
-		// Similar check for small weapons
-		if ( wip->wi_flags[Weapon::Info_Flags::Small_only] ) {
-			if ( (lep->type == OBJ_SHIP) && esip->class_type >= 0 && 
-				(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only])) {
-				tentative_return = true;
-				continue;
-			}
-		}
+			//	If targeted a small ship and have a huge weapon, don't fire.  But this shouldn't happen, as a small ship should not get selected.
+			if ( wip->wi_flags[Weapon::Info_Flags::Huge] ) {
+				if ( lep->type != OBJ_SHIP ) {
+						tentative_return = true;
+						continue;
+					}
+				if ( esip->class_type >= 0 && !(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only])) {
+						tentative_return = true;
+						continue;
+					}
+				}
 
-		bool tagged_only = ((wip->wi_flags[Weapon::Info_Flags::Tagged_only]) || (ss->weapons.flags[Ship::Weapon_Flags::Tagged_Only]));
+				// Similar check for small weapons
+			if ( wip->wi_flags[Weapon::Info_Flags::Small_only] ) {
+				if ( (lep->type == OBJ_SHIP) && esip->class_type >= 0 && 
+					(Ship_types[esip->class_type].flags[Ship::Type_Info_Flags::Targeted_by_huge_Ignored_by_small_only])) {
+						tentative_return = true;
+						continue;
+					}
+				}
 
-		// If targeting protected or beam protected ship, don't fire.  Reset enemy objnum
-		// (note: due to the loop, we need to check all weapons on this turret.  if none of them are valid, that's when the enemy objnum is reset)
-		if (lep->type == OBJ_SHIP) {
-			// Check if we're targeting a protected ship
-			if (lep->flags[Object::Object_Flags::Protected]) {
-				// *none* of the weapons will work on this ship, so just quit the loop
-				tentative_return = true;
-				break;
-			}
+			bool tagged_only = ((wip->wi_flags[Weapon::Info_Flags::Tagged_only]) || (ss->weapons.flags[Ship::Weapon_Flags::Tagged_Only]));
 
-			// Check if we're targeting a beam protected ship with a beam weapon
-			if ( (lep->flags[Object::Object_Flags::Beam_protected]) && (wip->wi_flags[Weapon::Info_Flags::Beam]) ) {
-				tentative_return = true;
-				continue;
-			}
-			// Check if we're targeting a flak protected ship with a flak weapon
-			else if ( (lep->flags[Object::Object_Flags::Flak_protected]) && (wip->wi_flags[Weapon::Info_Flags::Flak]) ) {
-				tentative_return = true;
-				continue;
-			}
-			// Check if we're targeting a laser protected ship with a laser weapon
-			else if ( (lep->flags[Object::Object_Flags::Laser_protected]) && (wip->subtype == WP_LASER) ) {
-				tentative_return = true;
-				continue;
-			}
-			// Check if we're targeting a missile protected ship with a missile weapon
-			else if ( (lep->flags[Object::Object_Flags::Missile_protected]) && (wip->subtype == WP_MISSILE) ) {
-				tentative_return = true;
-				continue;
-			}
-			// Check if weapon or turret is set to tagged-only
-			// must check here in case turret has multiple weapons and not all are tagged-only
-			else if (tagged_only && !ship_is_tagged(lep)) {
-				tentative_return = true;
-				continue;
-			}
+			// If targeting protected or beam protected ship, don't fire.  Reset enemy objnum
+			// (note: due to the loop, we need to check all weapons on this turret.  if none of them are valid, that's when the enemy objnum is reset)
+			if (lep->type == OBJ_SHIP) {
+				// Check if we're targeting a protected ship
+				if (lep->flags[Object::Object_Flags::Protected]) {
+					// *none* of the weapons will work on this ship, so just quit the loop
+					tentative_return = true;
+					break;
+				}
 
-			if (!weapon_target_satisfies_lock_restrictions(wip, lep)) {
-				tentative_return = true;
-				continue;
+				// Check if we're targeting a beam protected ship with a beam weapon
+				if ( (lep->flags[Object::Object_Flags::Beam_protected]) && (wip->wi_flags[Weapon::Info_Flags::Beam]) ) {
+					tentative_return = true;
+					continue;
+				}
+				// Check if we're targeting a flak protected ship with a flak weapon
+				else if ( (lep->flags[Object::Object_Flags::Flak_protected]) && (wip->wi_flags[Weapon::Info_Flags::Flak]) ) {
+					tentative_return = true;
+					continue;
+				}
+				// Check if we're targeting a laser protected ship with a laser weapon
+				else if ( (lep->flags[Object::Object_Flags::Laser_protected]) && (wip->subtype == WP_LASER) ) {
+					tentative_return = true;
+					continue;
+				}
+				// Check if we're targeting a missile protected ship with a missile weapon
+				else if ( (lep->flags[Object::Object_Flags::Missile_protected]) && (wip->subtype == WP_MISSILE) ) {
+					tentative_return = true;
+					continue;
+				}
+				// Check if weapon or turret is set to tagged-only
+				// must check here in case turret has multiple weapons and not all are tagged-only
+				else if (tagged_only && !ship_is_tagged(lep)) {
+					tentative_return = true;
+					continue;
+				}
+
+				if (!weapon_target_satisfies_lock_restrictions(wip, lep)) {
+					tentative_return = true;
+					continue;
+				}
 			}
-		}
-		else {
-			// check tagged-only for bombs only if the flag is set; see Mantis #3114
-			if (tagged_only && ((lep->type != OBJ_WEAPON) || The_mission.ai_profile->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting])) {
-				tentative_return = true;
-				continue;
+			else {
+				// check tagged-only for bombs only if the flag is set; see Mantis #3114
+				if (tagged_only && ((lep->type != OBJ_WEAPON) || The_mission.ai_profile->flags[AI::Profile_Flags::Strict_turret_tagged_only_targeting])) {
+					tentative_return = true;
+					continue;
+				}
 			}
 		}
 
@@ -2546,18 +2590,20 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 		lep = &Objects[ss->turret_enemy_objnum];
 	} else {
-		if (timestamp_until(ss->turret_next_fire_stamp) < 500) {
-			ss->turret_next_fire_stamp = timestamp(500);
+		if (!in_lab) {
+			if (timestamp_until(ss->turret_next_fire_stamp) < 500) {
+				ss->turret_next_fire_stamp = timestamp(500);
+			}
+			return;
 		}
-		return;
 	}
 
-	//This can't happen. See above code
+	//This can't happen. See above code -- Except in the Lab as of 4/26/2025
 	//if ( lep == nullptr ){
 	//	return;
 	//}
 
-	//This can't happen. See above code
+	//This can't happen. See above code  -- Except in the Lab as of 4/26/2025
 	//Assert(ss->turret_enemy_objnum != -1);
 
 	bool in_fov = turret_fov_test(ss, &global_gun_vec, &v2e);
@@ -2565,7 +2611,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 	// the only reason predicted_enemy_pos might be zero, while everything else is valid is if
 	// its a ballistic trajectory with no valid path
-	if (in_fov && num_valid && predicted_enemy_pos != vmd_zero_vector) {
+	if (in_lab || (in_fov && num_valid && predicted_enemy_pos != vmd_zero_vector)) {
 
 		// Do salvo thing separately - to prevent messing up things
 		int number_of_firings;
@@ -2741,8 +2787,19 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 				// (Despite the retail comment above, retail actually fired toward the enemy; v2e = vector-to-enemy)
 				vec3d shoot_vector = v2e;
-				if (tp->flags[Model::Subsystem_Flags::Fire_on_normal])
+				if (in_lab || tp->flags[Model::Subsystem_Flags::Fire_on_normal])
 					shoot_vector = global_gun_vec;
+
+				// In the lab the order of operations is a little fuzzy since we're faking targets so always fire along the turret's current vector no matter what if we're a multipart turret
+				if (in_lab && (ss->system_info->turret_gun_sobj >= 0 && ss->system_info->subobj_num != ss->system_info->turret_gun_sobj)) {
+					vec3d new_pos;
+					vec3d new_vec;
+					ship_get_global_turret_gun_info(objp, ss, &new_pos, false, &new_vec, true, nullptr);
+					shoot_vector = new_vec;
+					vm_vec_normalize(&shoot_vector);
+					global_gun_pos = new_pos;
+					predicted_enemy_pos = new_pos + new_vec * 500.0f;
+				}
 
 				// if the weapon is a flak gun, add some jitter to its aim so it fires in a "cone" 
 				// to make a cool visual effect and make them less lethal
@@ -2791,7 +2848,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 				int minimum_stamp = -1;
 
 				for (int i = 0; i < MAX_SHIP_WEAPONS; ++i)
-				{
+			{
 					int stamp = (i < MAX_SHIP_PRIMARY_BANKS) ? swp->next_primary_fire_stamp[i] : swp->next_secondary_fire_stamp[i - MAX_SHIP_PRIMARY_BANKS];
 
 					// valid timestamps start at 2; stamp must be in the future

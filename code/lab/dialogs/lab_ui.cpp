@@ -791,6 +791,120 @@ void LabUi::build_weapon_options(ship* shipp) const {
 			}
 		}
 	}
+
+	with_TreeNode("Turrets")
+	{
+		auto subsys_idx = 0; // unique IDs
+
+		for (auto* subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list);
+			 subsys = GET_NEXT(subsys)) {
+			if (subsys->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			SCP_string label;
+			sprintf(label, "Turret %i - %s", subsys_idx, subsys->system_info->subobj_name);
+
+			if (TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+
+				Spacing();
+
+				// Find the turret in FireTurrets
+				auto it = std::find_if(getLabManager()->FireTurrets.begin(),
+					getLabManager()->FireTurrets.end(),
+					[subsys](const auto& tuple) { return std::get<0>(tuple) == subsys; });
+
+				int mode = 0; // Default to UVEC aligned
+				bool fire_now = false;
+
+				bool multipart = false;
+				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
+					multipart = true;
+				}
+
+				const char* aiming_options[] = {"Random", "UVEC Aligned", "Initial"};
+
+				// In the lab we need to force fire on target because we're faking having an actual target
+				subsys->system_info->flags.set(Model::Subsystem_Flags::Fire_on_target);
+
+				// If already added, load current mode + fire state
+				if (it != getLabManager()->FireTurrets.end()) {
+					mode = static_cast<int>(std::get<1>(*it));
+					fire_now = std::get<2>(*it);
+				}
+
+				// Fire checkbox
+				SCP_string cb_label;
+				sprintf(cb_label, "Fire Turret##turret%i", subsys_idx);
+				Checkbox(cb_label.c_str(), &fire_now);
+
+				// Mode dropdown
+				ImGui::TextUnformatted("Turret Aiming:");
+				ImGui::SameLine(150.0f); // Start combo box at 150px
+				ImGui::SetNextItemWidth(200.0f);
+				ImGui::Combo("##AimingMode", &mode, aiming_options, multipart ? 3 : 2);
+
+				auto modeToAimType = [multipart](int this_mode) -> LabTurretAimType {
+					switch (this_mode) {
+					case 0:
+						return LabTurretAimType::RANDOM;
+					case 1:
+						return LabTurretAimType::UVEC;
+					case 2:
+						if (multipart) {
+							return LabTurretAimType::INITIAL;
+						} else {
+							return LabTurretAimType::UVEC;
+						}
+					default:
+						return LabTurretAimType::RANDOM; // fallback
+					}
+				};
+
+				// Update or add to FireTurrets
+				if (it == getLabManager()->FireTurrets.end()) {
+					getLabManager()->FireTurrets.emplace_back(subsys, modeToAimType(mode), fire_now);
+
+					// Set timestamps to allow turret to fire immediately
+					subsys->turret_next_fire_stamp = timestamp(0);
+					auto& weps = subsys->weapons;
+					for (auto& stamp : weps.next_primary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+
+					for (auto& stamp : weps.next_secondary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+				} else {
+					std::get<1>(*it) = modeToAimType(mode);
+					std::get<2>(*it) = fire_now;
+				}
+
+				auto& weps = subsys->weapons;
+
+				// PRIMARY BANKS
+				for (int bank = 0; bank < weps.num_primary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretPrimaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.primary_bank_weapons[bank]];
+					build_primary_weapon_combobox(text, wip, weps.primary_bank_weapons[bank]);
+				}
+
+				// SECONDARY BANKS
+				for (int bank = 0; bank < weps.num_secondary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretSecondaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.secondary_bank_weapons[bank]];
+					build_secondary_weapon_combobox(text, wip, weps.secondary_bank_weapons[bank]);
+				}
+
+				TreePop(); // Close this turret node
+			}
+
+			subsys_idx++;
+		}
+	}
 }
 
 void LabUi::build_primary_weapon_combobox(SCP_string& text,

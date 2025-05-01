@@ -78,6 +78,8 @@ public:
 
 	int FirePrimaries = 0;
 	int FireSecondaries = 0;
+	
+	SCP_vector<std::tuple<ship_subsys*, LabTurretAimType, bool>> FireTurrets;
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;

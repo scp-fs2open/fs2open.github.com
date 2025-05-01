@@ -12089,6 +12089,8 @@ void ai_process_subobjects(int objnum)
 	ai_info	*aip = &Ai_info[shipp->ai_index];
 	ship_info	*sip = &Ship_info[shipp->ship_info_index];
 
+	bool in_lab = gameseq_get_state() == GS_STATE_LAB;
+
 	// non-player ships that are playing dead do not process subsystems or turrets
 	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && aip->mode == AIM_PLAY_DEAD)
 		return;
@@ -12163,7 +12165,9 @@ void ai_process_subobjects(int objnum)
 
 				if ( psub->turret_num_firing_points > 0 )
 				{
-					ai_turret_execute_behavior(shipp, pss);
+					if (!in_lab) {
+						ai_turret_execute_behavior(shipp, pss);
+					}
 				} else {
 					Warning( LOCATION, "Turret %s on ship %s has no firing points assigned to it.\nThis needs to be fixed in the model.\n", psub->name, shipp->ship_name );
 				}
@@ -12206,6 +12210,11 @@ void ai_process_subobjects(int objnum)
 		}
 
 		// NOTE: Subsystem submodels are no longer rotated here.  See ship_move_subsystems().
+	}
+
+	// Lab doesn't need to do anything else here
+	if (in_lab) {
+		return;
 	}
 
 	// Clients must not make actual AI changes! So bail here.
