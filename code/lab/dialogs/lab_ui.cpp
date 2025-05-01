@@ -529,7 +529,7 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	TextUnformatted(colB);         \
 
 
-void LabUi::build_ship_table_info_txtbox(ship_info* sip) const
+static void build_ship_table_info_txtbox(ship_info* sip)
 {
 	with_TreeNode("Table information")
 	{
@@ -549,7 +549,7 @@ void LabUi::build_ship_table_info_txtbox(ship_info* sip) const
 	}
 }
 
-void LabUi::build_weapon_table_info_txtbox(weapon_info* wip) const
+static void build_weapon_table_info_txtbox(weapon_info* wip)
 {
 	with_TreeNode("Table information")
 	{
