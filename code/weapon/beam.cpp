@@ -921,19 +921,31 @@ void beam_type_slashing_move(beam *b)
 // targeting type beams functions
 void beam_type_targeting_move(beam *b)
 {	
-	vec3d temp;
+	// If floating and targeting, synthesize orientation from known points
+	// because the object could be validly nullptr as when fired in the lab
+	if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+		// Compute forward vector from start to target
+		vec3d fvec;
+		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
+		vm_vec_normalize_safe(&fvec);
 
-	// ugh
-	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
-		Int3();
-		return;
+		// Create synthetic orientation matrix
+		matrix beam_orient;
+		vm_vector_2_matrix(&beam_orient, &fvec, nullptr, nullptr);
+
+		// Final beam endpoint
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &beam_orient.vec.fvec, b->range);
+	} else {
+		Assertion(b->objp != nullptr, "Targeting beam does not have a valid parent object!");
+		Assertion(b->objp->instance >= 0, "Targeting beam parent object instance is invalid!");
+
+		// Standard case: beam fired from a real object
+		// start point
+		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
+		vm_vec_add2(&b->last_start, &b->objp->pos);
+		// end point
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 	}
-
-	// targeting type beams only last one frame so we never have to "move" them.			
-	temp = b->local_fire_postion;
-	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
-	vm_vec_add2(&b->last_start, &b->objp->pos);	
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 }
 
 // antifighter type beam functions
@@ -1004,7 +1016,19 @@ void beam_type_normal_move(beam *b)
 {
 	vec3d turret_norm;
 
-	if (b->subsys == NULL) {	// If we're a free-floating beam, there's nothing to calculate here.
+	// If we're a floating beam and targeting coords then we don't have a subsystem to get a normal from
+	// So we'll calculate it.
+	if (b->subsys == nullptr && (b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+		// Build fvec from target_pos1 and last_start
+		vec3d fvec;
+		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
+		vm_vec_normalize_safe(&fvec);
+
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &fvec, b->range);
+		return;
+	}
+
+	if (b->subsys == nullptr) {
 		return;
 	}
 
@@ -1890,6 +1914,17 @@ void beam_render_all()
 		// next item
 		moveup = GET_NEXT(moveup);
 	}	
+}
+
+// Delete all active beams
+void beam_delete_all()
+{
+	beam* b = GET_FIRST(&Beam_used_list);
+	while (b != END_OF_LIST(&Beam_used_list)) {
+		beam* next = GET_NEXT(b);
+		beam_delete(b);
+		b = next;
+	}
 }
 
 // output top and bottom vectors
@@ -2952,11 +2987,7 @@ void beam_aim(beam *b)
 		break;
 
 	case BeamType::TARGETING:
-		// start point
-		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
-		vm_vec_add2(&b->last_start, &b->objp->pos);
-		// end point
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
+		beam_type_targeting_move(b);
 		break;
 
 	case BeamType::NORMAL_FIRE:

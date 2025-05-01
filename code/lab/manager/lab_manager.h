@@ -27,7 +27,7 @@ public:
 	// Do rendering and handle keyboard/mouse events
 	void onFrame(float frametime);
 
-	// Cleanup all objects
+	// Cleanup all objects and stop firing any weapons
 	void cleanup();
 	
 	// Creates a new object of the passed type, using the respective class definition found at info_index and replaces the currently
@@ -55,8 +55,7 @@ public:
 	int CurrentClass = -1;
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
-	SCP_string ModelFilename = "";
-	bool ShowingTechModel = false;
+	SCP_string ModelFilename = "";	
 
 	bool isSafeForShips() {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1;
@@ -81,15 +80,15 @@ public:
 	}
 	
 	void resetGraphicsSettings();
-
-	int FirePrimaries = 0;
-	int FireSecondaries = 0;
 	
+	std::array<bool, MAX_SHIP_PRIMARY_BANKS> FirePrimaries = {};
+	std::array<bool, MAX_SHIP_SECONDARY_BANKS> FireSecondaries = {};
 	SCP_vector<std::tuple<ship_subsys*, LabTurretAimType, bool>> FireTurrets;
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
 	bool AllowWeaponDestruction = false;
+	bool ShowingTechModel = false;
 
 	flagset<ManagerFlags> Flags;
 

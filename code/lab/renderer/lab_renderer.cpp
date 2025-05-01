@@ -178,7 +178,12 @@ void LabRenderer::renderModel(float frametime) {
 			}
 		} else if (obj->type == OBJ_BEAM) {
 			beam* b = &Beams[obj->instance];
-			b->life_left = b->life_total;
+			//Little hack to keep targeting beams going
+			if (b->type == BeamType::TARGETING) {
+				b->life_left = 0.1f;
+			} else {
+				b->life_left = b->life_total;
+			}
 		}
 	}
 

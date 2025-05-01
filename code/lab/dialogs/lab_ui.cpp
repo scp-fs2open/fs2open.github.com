@@ -777,15 +777,9 @@ void LabUi::build_weapon_options(ship* shipp) const {
 
 				build_primary_weapon_combobox(text, wip, primary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FirePrimaries |= 1 << bank;
-				} else {
-					getLabManager()->FirePrimaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FirePrimaries[bank]);
 
 				bank++;
 			}
@@ -803,15 +797,9 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				sprintf(text, "##Secondary bank %i", bank);
 				build_secondary_weapon_combobox(text, wip, secondary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i##secondary", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FireSecondaries |= 1 << bank;
-				} else {
-					getLabManager()->FireSecondaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FireSecondaries[bank]);
 
 				bank++;
 			}

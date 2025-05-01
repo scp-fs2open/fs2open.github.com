@@ -235,7 +235,7 @@ void LabManager::onFrame(float frametime) {
 		auto obj = &Objects[CurrentObject];
 		bool weapons_firing = false;
 		for (auto i = 0; i < Ships[obj->instance].weapons.num_primary_banks; ++i) {
-			if (FirePrimaries & (1 << i)) {
+			if (FirePrimaries[i]) {
 				weapons_firing = true;
 				Ships[obj->instance].weapons.current_primary_bank = i;
 
@@ -248,7 +248,7 @@ void LabManager::onFrame(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Trigger_down, weapons_firing);
 
 		for (auto i = 0; i < Ships[obj->instance].weapons.num_secondary_banks; ++i) {
-			if (FireSecondaries & (1 << i)) {
+			if (FireSecondaries[i]) {
 				Ships[obj->instance].weapons.current_secondary_bank = i;
 
 				ship_fire_secondary(obj);
@@ -361,20 +361,31 @@ void LabManager::onFrame(float frametime) {
 	gr_flip();
 }
 
+//Cleans the scene and resets object actions. Stops any firing weapons.
 void LabManager::cleanup() {
 	if (CurrentObject != -1) {
 
-		// Stop any firing turrets
+		// Stop any firing weapons
 		FireTurrets.clear();
+		FirePrimaries.fill(false);
+		FireSecondaries.fill(false);
 
-		// Surprisingly obj_delete_all() does not delete beams so we have to vanish it manually
-		object* obj = &Objects[getLabManager()->CurrentObject];
-		if (obj->type == OBJ_BEAM && Beam_count > 0) {
-			beam* b = &Beams[Objects[CurrentObject].instance];
-			beam_delete(b);
-		}
+		// Remove all beams
+		beam_delete_all();
+
+		// Remove all objects
 		obj_delete_all();
+
+		// Clean up the particles
+		particle::kill_all();
+
+		// Reset lab variables
+		CurrentMode = LabMode::None;
 		CurrentObject = -1;
+		CurrentClass = -1;
+		CurrentPosition = vmd_zero_vector;
+		CurrentOrientation = vmd_identity_matrix;
+		ModelFilename = "";
 	}
 }
 
@@ -396,10 +407,10 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 		}
 	}
 
+	cleanup();
+
 	CurrentMode = mode;
 	CurrentClass = info_index;
-
-	cleanup();
 
 	switch (CurrentMode) {
 	case LabMode::Ship:

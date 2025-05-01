@@ -592,18 +592,13 @@ int obj_raw_pof_create(const char* pof_filename, matrix* orient, vec3d* pos)
 		return -1;
 	}
 
-	float radius = model_get_radius(model_num);
-
-	raw_pof_obj pof_obj = {-1, -1};
-	pof_obj.model_num = model_num;
-
 	int id = next_raw_pof_id++;
-	Pof_objects[id] = pof_obj;
+	Pof_objects[id] = {model_num, -1, {}};
 
 	flagset<Object::Object_Flags> flags;
 	flags.set(Object::Object_Flags::Renders);
 
-	int objnum = obj_create(OBJ_RAW_POF, -1, id, orient, pos, radius, flags);
+	int objnum = obj_create(OBJ_RAW_POF, -1, id, orient, pos, model_get_radius(model_num), flags);
 
 	Pof_objects[id].model_instance = model_create_instance(objnum, model_num);
 
