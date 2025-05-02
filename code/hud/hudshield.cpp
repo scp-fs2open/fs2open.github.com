@@ -111,9 +111,7 @@ int Hud_mini_base[GR_NUM_RESOLUTIONS][2] = {
 int Shield_mini_loaded = 0;
 hud_frames Shield_mini_gauge;
 
-#define	SHIELD_HIT_PLAYER		0
-#define	SHIELD_HIT_TARGET		1
-static shield_hit_info	Shield_hit_data[2];
+static shield_hit_info	Shield_hit_data[num_shield_gauge_types];
 
 // translate between clockwise-from-top shield quadrant ordering to way quadrants are numbered in the game
 ubyte Quadrant_xlate[DEFAULT_SHIELD_SECTIONS] = {1,0,2,3};
@@ -372,7 +370,7 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 	sy = (y_force == -1) ? Shield_mini_coords[gr_screen.res][1] : y_force;
 
 	// draw the ship first
-	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
+	hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_GAUGE_TARGET, Shield_hit_data[SHIELD_GAUGE_TARGET].hull_hit_index);
 	hud_show_mini_ship_integrity(objp, x_force + x_hull_offset,y_force + y_hull_offset);
 
 	// draw the four quadrants
@@ -396,7 +394,7 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 			continue;
 		}
 
-		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_HIT_TARGET, i) ) {
+		if ( hud_shield_maybe_flash(HUD_TARGET_MINI_ICON, SHIELD_GAUGE_TARGET, i) ) {
 			frame_offset = i+n_quadrants;
 		} else {
 			frame_offset = i;
@@ -460,9 +458,9 @@ void hud_shield_hit_reset(const object *objp, int player)
 	shield_hit_info	*shi;
 
 	if (player) {
-		shi = &Shield_hit_data[SHIELD_HIT_PLAYER];
+		shi = &Shield_hit_data[SHIELD_GAUGE_PLAYER];
 	} else {
-		shi = &Shield_hit_data[SHIELD_HIT_TARGET];
+		shi = &Shield_hit_data[SHIELD_GAUGE_TARGET];
 	}
 
 	shield_info_reset(objp, shi);
@@ -516,9 +514,9 @@ void hud_shield_quadrant_hit(const object *objp, int quadrant)
 	hud_gauge_popup_start(HUD_TARGET_MINI_ICON);
 
 	if ( OBJ_INDEX(objp) == Player_ai->target_objnum ) {
-		shi = &Shield_hit_data[SHIELD_HIT_TARGET];
+		shi = &Shield_hit_data[SHIELD_GAUGE_TARGET];
 	} else if ( objp == Player_obj ) {
-		shi = &Shield_hit_data[SHIELD_HIT_PLAYER];
+		shi = &Shield_hit_data[SHIELD_GAUGE_PLAYER];
 	} else {
 		return;
 	}
@@ -554,7 +552,7 @@ void HudGaugeShield::render(float  /*frametime*/, bool /*config*/)
 {
 }
 
-void HudGaugeShield::showShields(const object *objp, int mode, bool config)
+void HudGaugeShield::showShields(const object *objp, ShieldGaugeType mode, bool config)
 {
 	if (!config && objp->type != OBJ_SHIP )
 		return;
@@ -569,19 +567,26 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 		sp = &Ships[objp->instance];
 		sip = &Ship_info[sp->ship_info_index];
 	} else {
-		SCP_string ship_name = "gtf myrmidon";
-
-		// Check if the mod specifies a differnt default
-		if (auto it = HC_hud_ships.find("default"); it != HC_hud_ships.end()) {
-			ship_name = it->second;
-		}
+		SCP_string ship_name;
 
 		// Now check if the current HUD specifies a different ship
 		if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
 			SCP_string hud = HC_available_huds[HC_chosen_hud].second;
-			if (auto it = HC_hud_ships.find(hud); it != HC_hud_ships.end()) {
-				ship_name = it->second;
+			if (auto it = HC_hud_shield_ships.find(hud); it != HC_hud_shield_ships.end()) {
+				ship_name = it->second[mode];
 			}
+		}
+
+		// If we don't have a specific setting then let's try using the global setting
+		if (ship_name.empty()) {
+			if (auto it = HC_hud_shield_ships.find("default"); it != HC_hud_shield_ships.end()) {
+				ship_name = it->second[mode];
+			}
+		}
+
+		// If we still don't have something then try to use the FS2 retail default
+		if (ship_name.empty()) {
+			ship_name = "gtf myrmidon";
 		}
 
 		// Try to find the ship with the name specified in the config
@@ -592,6 +597,7 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 				break;
 			}
 		}
+
 		// Couldn't find it so just get the first ship with shields
 		if (sip == nullptr) {
 			for (ship_info& ship : Ship_info) {
@@ -653,7 +659,7 @@ void HudGaugeShield::showShields(const object *objp, int mode, bool config)
 
 	// draw the ship first
 	if (!config) {
-		maybeFlashShield(SHIELD_HIT_PLAYER, Shield_hit_data[SHIELD_HIT_PLAYER].hull_hit_index);
+		maybeFlashShield(SHIELD_GAUGE_PLAYER, Shield_hit_data[SHIELD_GAUGE_PLAYER].hull_hit_index);
 	}
 
 	if(sip->shield_icon_index != 255)
@@ -909,7 +915,7 @@ void HudGaugeShield::renderShieldIcon(coord2d coords[6])
 	gr_reset_screen_scale();
 }
 
-int HudGaugeShield::maybeFlashShield(int target_index, int shield_offset)
+int HudGaugeShield::maybeFlashShield(ShieldGaugeType target_index, int shield_offset)
 {
 	int	flashed = 0;
 	shield_hit_info	*shi;
@@ -941,7 +947,7 @@ void HudGaugeShieldPlayer::render(float  /*frametime*/, bool config)
 	if (!config) {
 		player = Player_obj;
 	}
-	showShields(player, SHIELD_HIT_PLAYER, config);
+	showShields(player, SHIELD_GAUGE_PLAYER, config);
 }
 
 HudGaugeShieldTarget::HudGaugeShieldTarget():
@@ -969,7 +975,7 @@ void HudGaugeShieldTarget::render(float  /*frametime*/, bool config)
 			return;
 	}
 
-	showShields(targetp, SHIELD_HIT_TARGET, config);
+	showShields(targetp, SHIELD_GAUGE_TARGET, config);
 }
 
 HudGaugeShieldMini::HudGaugeShieldMini(): // HUD_TARGET_MINI_ICON
@@ -1052,7 +1058,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 
 	// draw the ship first
 	if (!config) {
-		maybeFlashShield(SHIELD_HIT_TARGET, Shield_hit_data[SHIELD_HIT_TARGET].hull_hit_index);
+		maybeFlashShield(SHIELD_GAUGE_TARGET, Shield_hit_data[SHIELD_GAUGE_TARGET].hull_hit_index);
 	}
 	showIntegrity(config ? 1.0f : get_hull_pct(objp), config);
 
@@ -1084,7 +1090,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 		}
 
 		int frame_offset;
-		if (!config && maybeFlashShield(SHIELD_HIT_TARGET, i) ) {
+		if (!config && maybeFlashShield(SHIELD_GAUGE_TARGET, i) ) {
 			frame_offset = i+n_quadrants;
 		} else {
 			frame_offset = i;
