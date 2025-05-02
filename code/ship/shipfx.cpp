@@ -1066,6 +1066,16 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
 				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
 				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+
+				// set radius manually following logic in weapon_create function --wookieejedi
+				if (Weapon_info[weapon_info_index].collision_radius_override > 0.0f)
+					particleSource->setTriggerRadius(Weapon_info[weapon_info_index].collision_radius_override);
+				else if (Weapon_info[weapon_info_index].render_type == WRT_POF) {
+					particleSource->setTriggerRadius(model_get_radius(Weapon_info[weapon_info_index].model_num));
+				} else if (Weapon_info[weapon_info_index].render_type == WRT_LASER) {
+					particleSource->setTriggerRadius(Weapon_info[weapon_info_index].laser_head_radius);
+				}
+
 				particleSource->finishCreation();
 			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
