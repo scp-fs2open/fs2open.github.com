@@ -461,6 +461,11 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		object* objp = asteroid_create(&Asteroid_field, CurrentClass, CurrentSubtype, false);
 		if (objp != nullptr) {
 			CurrentObject = OBJ_INDEX(objp);
+
+			// Zero out asteroid velocity
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
+			objp->flags.remove(Object::Object_Flags::Physics);
 		} else {
 			CurrentObject = -1;
 			mprintf(("LabManager: Failed to create asteroid for index %d, subtype %d\n", CurrentClass, CurrentSubtype));
