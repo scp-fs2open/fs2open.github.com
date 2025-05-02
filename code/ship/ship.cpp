@@ -11751,6 +11751,10 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	ship_model_change(n, ship_type);
 	sp->ship_info_index = ship_type;
 
+	// get the before and after models (the new model may have only been loaded in ship_model_change)
+	auto pm = model_get(sip->model_num);
+	auto pm_orig = model_get(sip_orig->model_num);
+
 	// if we have the same warp parameters as the ship class, we will need to update them to point to the new class
 	if (sp->warpin_params_index == sip_orig->warpin_params_index) {
 		sp->warpin_params_index = sip->warpin_params_index;
@@ -11963,6 +11967,35 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	delete [] subsys_names;
 	delete [] subsys_pcts;
 
+	// Goober5000 - collect data about whatever is currently docked and compare the dockpoints on the two models
+	auto dock_ptr = objp->dock_list;
+	while (dock_ptr != nullptr)
+	{
+		auto next_ptr = dock_ptr->next;		// since we might remove the dock instance we are iterating on
+		int dockpoint_index = dock_ptr->dockpoint_used;
+		const char *dockpoint_name = pm_orig->docking_bays[dockpoint_index].name;
+
+		// if it's the same dockpoint index and name, do nothing
+		if (dockpoint_index < pm->n_docks && stricmp(dockpoint_name, pm->docking_bays[dockpoint_index].name) == 0)
+		{
+			dock_ptr = next_ptr;
+			continue;
+		}
+
+		// see if this dockpoint is found on the new model under a different name
+		int new_dockpoint_index = find_item_with_string(pm->docking_bays, pm->n_docks, &dock_bay::name, dockpoint_name);
+		if (new_dockpoint_index >= 0)
+		{
+			dock_ptr->dockpoint_used = new_dockpoint_index;
+			dock_ptr = next_ptr;
+			continue;
+		}
+
+		// it wasn't found, so undock these objects
+		ai_do_objects_undocked_stuff(objp, dock_ptr->docked_objp);
+		dock_ptr = next_ptr;
+	}
+
 	sp->afterburner_fuel = MAX(0.0f, sip->afterburner_fuel_capacity - (sip_orig->afterburner_fuel_capacity - sp->afterburner_fuel));
 
 	// handle countermeasure counts
@@ -12008,8 +12041,6 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	sp->ab_count = 0;
 	if (sip->flags[Ship::Info_Flags::Afterburner])
 	{
-		polymodel *pm = model_get(sip->model_num);
-
 		for (int h = 0; h < pm->n_thrusters; h++)
 		{
 			for (int j = 0; j < pm->thrusters[h].num_points; j++)
