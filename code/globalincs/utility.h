@@ -233,6 +233,9 @@ int count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field,
 template <typename ITEM_T, typename FIELD_T>
 int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
+	if (item_array == nullptr)
+		return 0;
+
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
 	{
@@ -250,6 +253,9 @@ int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITE
 template <typename ITEM_T, typename FIELD_T>
 int count_items_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
+	if (item_array == nullptr)
+		return 0;
+
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
 	{
@@ -267,6 +273,9 @@ int count_items_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T
 template <typename ITEM_T, typename FIELD_T>
 int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
 {
+	if (item_array == nullptr)
+		return 0;
+
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
 		if (lcase_equal(item_array[i].*field, str))
@@ -278,7 +287,7 @@ int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITE
 template <typename ITEM_T>
 int count_items_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
 {
-	if (str == nullptr)
+	if (item_array == nullptr || str == nullptr)
 		return 0;
 
 	return count_items_with_string(item_array, num_items, field, SCP_string(str));
@@ -287,6 +296,9 @@ int count_items_with_string(const ITEM_T* item_array, int num_items, SCP_string 
 template <typename ITEM_T, typename FIELD_T>
 int count_items_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
 {
+	if (item_array == nullptr)
+		return 0;
+
 	int count = 0;
 	for (int i = 0; i < num_items; ++i)
 		if (item_array[i].*field == search)
@@ -375,6 +387,9 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
+	if (item_array == nullptr)
+		return -1;
+
 	for (int i = 0; i < num_items; ++i)
 	{
 		if (str == nullptr && item_array[i].*field == nullptr)
@@ -391,6 +406,9 @@ int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
 {
+	if (item_array == nullptr)
+		return -1;
+
 	for (int i = 0; i < num_items; ++i)
 	{
 		if (str == nullptr && (item_array[i].*field).get() == nullptr)
@@ -407,6 +425,9 @@ int find_item_with_ptr_string(const ITEM_T* item_array, int num_items, FIELD_T I
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const SCP_string& str)
 {
+	if (item_array == nullptr)
+		return -1;
+
 	for (int i = 0; i < num_items; ++i)
 		if (lcase_equal(item_array[i].*field, str))
 			return i;
@@ -417,7 +438,7 @@ int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_
 template <typename ITEM_T>
 int find_item_with_string(const ITEM_T* item_array, int num_items, SCP_string ITEM_T::* field, const char* str)
 {
-	if (str == nullptr)
+	if (item_array == nullptr || str == nullptr)
 		return -1;
 
 	return find_item_with_string(item_array, num_items, field, str);
@@ -426,6 +447,9 @@ int find_item_with_string(const ITEM_T* item_array, int num_items, SCP_string IT
 template <typename ITEM_T, typename FIELD_T>
 int find_item_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const FIELD_T& search)
 {
+	if (item_array == nullptr)
+		return -1;
+
 	for (int i = 0; i < num_items; ++i)
 		if (item_array[i].*field == search)
 			return i;
