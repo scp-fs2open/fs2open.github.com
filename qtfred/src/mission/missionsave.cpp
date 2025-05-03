@@ -1439,7 +1439,6 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 	ship_subsys* ptr = NULL;
 	ship_info* sip = NULL;
 	ship_weapon* wp = NULL;
-	float temp_max_hull_strength;
 
 	sip = &Ship_info[shipp->ship_info_index];
 
@@ -1453,31 +1452,24 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 		fout(" %d", (int) objp->phys_info.speed);
 	}
 
-	// Goober5000
-	if (save_format != MissionFormat::RETAIL && (shipp->special_hitpoints > 0)) {
-		temp_max_hull_strength = (float) shipp->special_hitpoints;
-	} else {
-		temp_max_hull_strength = sip->max_hull_strength;
-	}
-
-	if ((int) objp->hull_strength != temp_max_hull_strength) {
+	if (fl2i(objp->hull_strength) != 100) {
 		if (optional_string_fred("+Initial Hull:", "$Name:", "+Subsystem:")) {
 			parse_comments();
 		} else {
 			fout("\n+Initial Hull:");
 		}
 
-		fout(" %d", (int) objp->hull_strength);
+		fout(" %d", fl2i(objp->hull_strength));
 	}
 
-	if ((int) shield_get_strength(objp) != 100) {
+	if (fl2i(objp->shield_quadrant[0]) != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:")) {
 			parse_comments();
 		} else {
 			fout("\n+Initial Shields:");
 		}
 
-		fout(" %d", (int) objp->shield_quadrant[0]);
+		fout(" %d", fl2i(objp->shield_quadrant[0]));
 	}
 
 	// save normal ship weapons info
