@@ -36,6 +36,9 @@ public:
 	// displayed object
 	void changeDisplayedObject(LabMode type, int info_index, int subtype = -1);
 
+	// Spawns a docker object to dock with the current object
+	void spawnDockerObject();
+
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
 
@@ -52,6 +55,7 @@ public:
 		Game_mode &= ~GM_LAB;
 
 		ai_paused = 0;
+		Player_ship = nullptr;
 
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 	}
@@ -62,9 +66,15 @@ public:
 	int CurrentObject = -1;
 	int CurrentSubtype = -1;
 	int CurrentClass = -1;
+	int DockerObject = -1;
+	int DockerClass = 0;
+	SCP_string DockerDockPoint;
+	SCP_string DockeeDockPoint;
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
 	SCP_string ModelFilename;	
+
+	int Saved_cmdline_collisions_value;
 
 	bool isSafeForShips() {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;

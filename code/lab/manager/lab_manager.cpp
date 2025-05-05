@@ -5,12 +5,14 @@
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
 #include "object/object.h"
+#include "object/objectdock.h"
 #include "debris/debris.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "particle/particle.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
+#include "ai/aigoals.h"
 
 #include "freespace.h"
 
@@ -50,8 +52,13 @@ LabManager::LabManager() {
 	weapon_level_init();
 	beam_level_init();
 	particle::init();
+	init_ai_system();
 
 	ai_paused = 1;
+
+	// No collisions because the Lab is a lie and collisions will be bad
+	Saved_cmdline_collisions_value = Cmdline_dis_collisions;
+	Cmdline_dis_collisions = 1;
 
 	// do some other setup
 	// External weapon displays require a call to weapons_page_in, which in turn requires team data to be set
@@ -377,14 +384,94 @@ void LabManager::cleanup() {
 		// Clean up the particles
 		particle::kill_all();
 
+		// Clean up our path mess
+		reset_ai_path_points();
+
 		// Reset lab variables
 		CurrentMode = LabMode::None;
 		CurrentObject = -1;
 		CurrentSubtype = -1;
 		CurrentClass = -1;
+		DockerClass = 0;
+		DockerDockPoint.clear();
+		DockeeDockPoint.clear();
 		CurrentPosition = vmd_zero_vector;
 		CurrentOrientation = vmd_identity_matrix;
 		ModelFilename = "";
+		Player_ship = nullptr;
+	}
+
+	Cmdline_dis_collisions = Saved_cmdline_collisions_value;
+}
+
+void LabManager::spawnDockerObject() {
+	object* obj = &Objects[CurrentObject];
+
+	if (DockerObject >= 0) {
+		while (object_is_docked(obj))
+		{
+			object_jettison_cargo(obj, dock_get_first_docked_object(obj), 50, true);
+		}
+
+		obj_delete(DockerObject);
+		DockerObject = -1;
+		reset_ai_path_points();
+	}
+
+	if (DockerDockPoint.empty() || DockeeDockPoint.empty()) {
+		return;
+	}
+
+	// Check ship class index
+	if (DockerClass < 0 || DockerClass >= MAX_SHIP_CLASSES) {
+		mprintf(("Invalid ship class index %s\n", DockerClass));
+	} else {
+		// Spawn near the target
+		vec3d spawn_pos = obj->pos;
+		vec3d offset = {0.0f, -50000.0f, -50000.0f}; // Spawn it far away then we can move it based on its radius
+		vec3d final_pos;
+		vm_vec_add(&final_pos, &spawn_pos, &offset);
+
+		matrix spawn_orient = vmd_identity_matrix;
+
+		int new_objnum = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
+
+		DockerObject = new_objnum;
+		if (new_objnum >= 0) {
+			object* new_objp = &Objects[new_objnum];
+			ship* new_shipp = &Ships[new_objp->instance];
+			ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+			// Set a more reasonable starting position
+			float offset_radius = obj->radius + new_objp->radius;
+			offset = {0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}; // Make this selectable or random?
+			vm_vec_add(&final_pos, &spawn_pos, &offset);
+			new_objp->pos = final_pos;
+
+			// Ensure AI is ready
+			ai_clear_ship_goals(aip);
+
+			int gindex = 0;
+			ai_goal_type type = ai_goal_type::EVENT_SHIP;
+			ai_goal* aigp = &aip->goals[gindex];
+
+			ai_goal_reset(aigp, true);
+			aigp->type = type;
+
+			aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
+			aigp->docker.name = ai_add_dock_name(DockerDockPoint.c_str());
+			aigp->dockee.name = ai_add_dock_name(DockeeDockPoint.c_str());
+			aigp->priority = 200;
+
+			aigp->ai_mode = AI_GOAL_DOCK;
+			aigp->ai_submode = AIS_DOCK_0; // be sure to set the submode
+
+			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+
+			mprintf(("Spawned docking ship '%s' to dock with '%s'\n",
+				new_shipp->ship_name,
+				Ships[CurrentObject].ship_name));
+		}
 	}
 }
 
@@ -396,6 +483,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 	//if (mode == CurrentMode && info_index == CurrentClass)
 		//return;
 
+	// THIS IS BUGGY FIXMEE
 	// Toggle the show thrusters default when we change modes
 	if (mode != CurrentMode) {
 		if (mode == LabMode::Ship) {
@@ -414,10 +502,22 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 	if (CurrentMode == LabMode::Object)
 		CurrentSubtype = subtype;
 
+	ai_paused = 1;
+	Player_ship = nullptr;
+
+	DockeeDockPoint.clear();
+	DockerDockPoint.clear();
+
 	switch (CurrentMode) {
 	case LabMode::Ship:
 		CurrentObject = ship_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
 		changeShipInternal();
+		if (isSafeForShips()) {
+			Player_ship = &Ships[Objects[CurrentObject].instance];
+			ai_paused = 0;
+
+			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
+		}
 		break;
 	case LabMode::Weapon:
 		if (ShowingTechModel && VALID_FNAME(Weapon_info[CurrentClass].tech_model)) {
