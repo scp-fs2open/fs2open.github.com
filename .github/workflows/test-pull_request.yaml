@@ -11,7 +11,7 @@ jobs:
       matrix:
         configuration: [Debug, Release]
         compiler: [gcc-9, gcc-13, clang-16]
-        cmake_options: [""]
+        cmake_options: ["-DFSO_BUILD_WITH_VULKAN=ON"]
         include:
           # Also include configurations that check if the code compiles without the graphics backends
           - configuration: Debug
