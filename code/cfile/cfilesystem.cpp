@@ -22,6 +22,7 @@
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #include <shlwapi.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef SCP_UNIX
