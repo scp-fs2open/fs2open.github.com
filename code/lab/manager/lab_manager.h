@@ -75,7 +75,7 @@ public:
 		return CurrentMode == LabMode::Weapon && CurrentObject != -1 && valid;
 	}
 
-	bool isSafeForAsteroids() {
+	bool isSafeForAsteroids() const {
 		return CurrentMode == LabMode::Object && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_ASTEROID;
 	}
 

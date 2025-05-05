@@ -92,7 +92,7 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
-void LabUi::build_asteroid_list() const
+void LabUi::build_asteroid_list()
 {
 	with_TreeNode("Asteroids")
 	{
@@ -126,7 +126,7 @@ void LabUi::build_asteroid_list() const
 	}
 }
 
-void LabUi::build_debris_list() const
+void LabUi::build_debris_list()
 {
 	with_TreeNode("Debris")
 	{
@@ -1298,7 +1298,7 @@ void LabUi::show_object_options() const
 								vec3d dummy_force = ZERO_VECTOR;
 
 								// Apply full asteroid health to guarantee destruction
-								asteroid_hit(obj, NULL, &dummy_pos, obj->hull_strength + 1.0f, &dummy_force);
+								asteroid_hit(obj, nullptr, &dummy_pos, obj->hull_strength + 1.0f, &dummy_force);
 							}
 						}
 					}

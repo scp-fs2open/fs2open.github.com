@@ -25,8 +25,8 @@ class LabUi {
 	void build_weapon_list() const;
 	void build_weapon_subtype_list() const;
 	void build_object_list() const;
-	void build_asteroid_list() const;
-	void build_debris_list() const;
+	static void build_asteroid_list();
+	static void build_debris_list();
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;
