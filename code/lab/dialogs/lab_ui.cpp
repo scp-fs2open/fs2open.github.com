@@ -168,7 +168,7 @@ void LabUi::build_weapon_list() const
 	}
 }
 
-void LabUi::build_object_list() const
+static void LabUi::build_object_list()
 {
 	with_TreeNode("Object Classes")
 	{
