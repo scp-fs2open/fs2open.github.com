@@ -32,7 +32,7 @@ char Voice_abbrev_debriefing[NAME_LENGTH];
 char Voice_abbrev_message[NAME_LENGTH];
 char Voice_abbrev_mission[NAME_LENGTH];
 bool Voice_no_replace_filenames;
-char Voice_script_entry_format[NOTES_LENGTH];
+SCP_string Voice_script_entry_format;
 int Voice_export_selection;
 bool Voice_group_messages;
 
@@ -161,7 +161,7 @@ BOOL VoiceActingManager::OnInitDialog()
 	m_no_replace = Voice_no_replace_filenames;
 
 	// load saved data for script
-	m_script_entry_format = _T(Voice_script_entry_format);
+	m_script_entry_format = _T(Voice_script_entry_format.c_str());
 	m_export_everything = m_export_command_briefings = m_export_briefings = m_export_debriefings = m_export_messages = FALSE;
 	if (Voice_export_selection == 1)
 		m_export_command_briefings = TRUE;
@@ -204,7 +204,7 @@ void VoiceActingManager::OnClose()
 	Voice_no_replace_filenames = (m_no_replace == TRUE) ? true : false;
 
 	// save data for script
-	strcpy_s(Voice_script_entry_format, m_script_entry_format);
+	Voice_script_entry_format = (LPCTSTR)m_script_entry_format;
 	if (m_export_command_briefings)
 		Voice_export_selection = 1;
 	else if (m_export_briefings)
