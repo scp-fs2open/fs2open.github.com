@@ -36,8 +36,17 @@ public:
 	// displayed object
 	void changeDisplayedObject(LabMode type, int info_index, int subtype = -1);
 
-	// Spawns a docker object to dock with the current object
+	// Deletes the docker object if exists
+	void deleteDockerObject();
+
+	// Spawns a docker object to use with dock or undock tests. Deletes the current docker object if it exists
 	void spawnDockerObject();
+
+	// Begins the docking test
+	void beginDockingTest();
+
+	// Begins the undocking test
+	void beginUndockingTest();
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();

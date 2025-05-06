@@ -1240,24 +1240,16 @@ void LabUi::show_object_options() const
 						}
 					}
 
-					static int selected_docker_class = 0;
-
-					// Ensure DockerClass is initialized
-					if (getLabManager()->DockerClass < 0) {
-						getLabManager()->DockerClass = selected_docker_class;
-					}
-
 					const ship* dockee_shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
 					auto dockee_dock_map = get_docking_point_map(Ship_info[dockee_shipp->ship_info_index].model_num);
 
 					if (!dockee_dock_map.empty()) {
 
-						if (ImGui::BeginCombo("Docker Ship Class", Ship_info[selected_docker_class].name)) {
+						if (ImGui::BeginCombo("Docker Ship Class", Ship_info[getLabManager()->DockerClass].name)) {
 							for (size_t i = 0; i < Ship_info.size(); ++i) {
-								bool is_selected = (i == selected_docker_class);
+								bool is_selected = (i == getLabManager()->DockerClass);
 								if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
-									selected_docker_class = static_cast<int>(i);
-									getLabManager()->DockerClass = selected_docker_class;
+									getLabManager()->DockerClass = static_cast<int>(i);
 									// Load model if needed
 									auto& dsip = Ship_info[getLabManager()->DockerClass];
 									if (dsip.model_num < 0) {
@@ -1326,8 +1318,12 @@ void LabUi::show_object_options() const
 							ImGui::EndCombo();
 						}
 
-						if (Button("Spawn docking ship")) {
-							getLabManager()->spawnDockerObject();
+						if (Button("Begin Docking Test")) {
+							getLabManager()->beginDockingTest();
+						}
+
+						if (Button("Begin Undocking Test")) {
+							getLabManager()->beginUndockingTest();
 						}
 					}
 

@@ -331,6 +331,25 @@ void LabManager::onFrame(float frametime) {
 			}
 		}
 
+		// Check if we have finished an undock test. If so, delete the docker ship
+		if (DockerObject >= 0) {
+			object* docker_objp = &Objects[DockerObject];
+			ship* shipp = &Ships[docker_objp->instance];
+			ai_info* aip = &Ai_info[shipp->ai_index];
+
+			bool hasDockGoal = false;
+			for (const auto& goal : aip->goals) {
+				if (goal.ai_mode == AI_GOAL_DOCK || goal.ai_mode == AI_GOAL_UNDOCK) {
+					hasDockGoal = true;
+					break;
+				}
+			}
+
+			if (!hasDockGoal && !object_is_docked(docker_objp)) {
+				deleteDockerObject();
+			}
+		}
+
 	}
 
 	// get correct revolution rate
@@ -392,7 +411,6 @@ void LabManager::cleanup() {
 		CurrentObject = -1;
 		CurrentSubtype = -1;
 		CurrentClass = -1;
-		DockerClass = 0;
 		DockerDockPoint.clear();
 		DockeeDockPoint.clear();
 		CurrentPosition = vmd_zero_vector;
@@ -404,12 +422,11 @@ void LabManager::cleanup() {
 	Cmdline_dis_collisions = Saved_cmdline_collisions_value;
 }
 
-void LabManager::spawnDockerObject() {
-	object* obj = &Objects[CurrentObject];
-
+void LabManager::deleteDockerObject() {
 	if (DockerObject >= 0) {
-		while (object_is_docked(obj))
-		{
+		object* obj = &Objects[CurrentObject];
+
+		while (object_is_docked(obj)) {
 			object_jettison_cargo(obj, dock_get_first_docked_object(obj), 50, true);
 		}
 
@@ -417,6 +434,11 @@ void LabManager::spawnDockerObject() {
 		DockerObject = -1;
 		reset_ai_path_points();
 	}
+}
+
+void LabManager::spawnDockerObject() {
+
+	deleteDockerObject();
 
 	if (DockerDockPoint.empty() || DockeeDockPoint.empty()) {
 		return;
@@ -426,6 +448,8 @@ void LabManager::spawnDockerObject() {
 	if (DockerClass < 0 || DockerClass >= MAX_SHIP_CLASSES) {
 		mprintf(("Invalid ship class index %s\n", DockerClass));
 	} else {
+		object* obj = &Objects[CurrentObject];
+
 		// Spawn near the target
 		vec3d spawn_pos = obj->pos;
 		vec3d offset = {0.0f, -50000.0f, -50000.0f}; // Spawn it far away then we can move it based on its radius
@@ -434,44 +458,111 @@ void LabManager::spawnDockerObject() {
 
 		matrix spawn_orient = vmd_identity_matrix;
 
-		int new_objnum = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
+		DockerObject = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
 
-		DockerObject = new_objnum;
-		if (new_objnum >= 0) {
-			object* new_objp = &Objects[new_objnum];
-			ship* new_shipp = &Ships[new_objp->instance];
-			ai_info* aip = &Ai_info[new_shipp->ai_index];
+		if (DockerObject >= 0) {
+			object* new_objp = &Objects[DockerObject];
 
 			// Set a more reasonable starting position
 			float offset_radius = obj->radius + new_objp->radius;
 			offset = {0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}; // Make this selectable or random?
 			vm_vec_add(&final_pos, &spawn_pos, &offset);
 			new_objp->pos = final_pos;
-
-			// Ensure AI is ready
-			ai_clear_ship_goals(aip);
-
-			int gindex = 0;
-			ai_goal_type type = ai_goal_type::EVENT_SHIP;
-			ai_goal* aigp = &aip->goals[gindex];
-
-			ai_goal_reset(aigp, true);
-			aigp->type = type;
-
-			aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
-			aigp->docker.name = ai_add_dock_name(DockerDockPoint.c_str());
-			aigp->dockee.name = ai_add_dock_name(DockeeDockPoint.c_str());
-			aigp->priority = 200;
-
-			aigp->ai_mode = AI_GOAL_DOCK;
-			aigp->ai_submode = AIS_DOCK_0; // be sure to set the submode
-
-			aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
-
-			mprintf(("Spawned docking ship '%s' to dock with '%s'\n",
-				new_shipp->ship_name,
-				Ships[CurrentObject].ship_name));
 		}
+	}
+}
+
+void LabManager::beginDockingTest() {
+	// Spawn a docker object
+	spawnDockerObject();
+
+	if (DockerObject >= 0) {
+		object* new_objp = &Objects[DockerObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		// Create the dock order
+		int gindex = 0;
+		ai_goal_type type = ai_goal_type::EVENT_SHIP;
+		ai_goal* aigp = &aip->goals[gindex];
+
+		ai_goal_reset(aigp, true);
+		aigp->type = type;
+
+		aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
+		aigp->docker.name = ai_add_dock_name(DockerDockPoint.c_str());
+		aigp->dockee.name = ai_add_dock_name(DockeeDockPoint.c_str());
+		aigp->priority = 200;
+
+		aigp->ai_mode = AI_GOAL_DOCK;
+		aigp->ai_submode = AIS_DOCK_0;
+
+		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}
+}
+
+void LabManager::beginUndockingTest() {
+	// Spawn a docker object if necessary
+	if (DockerObject < 0 || !object_is_docked(&Objects[DockerObject])) {
+		spawnDockerObject();
+
+		// Once spawned we need to instantly set it to docked
+		if (DockerObject >= 0) {
+			object* dockee_objp = &Objects[CurrentObject];
+			object* docker_objp = &Objects[DockerObject];
+
+			int docker_point_index = model_find_dock_name_index(Ship_info[Ships[docker_objp->instance].ship_info_index].model_num, DockerDockPoint.c_str());
+			int dockee_point_index = model_find_dock_name_index(Ship_info[Ships[dockee_objp->instance].ship_info_index].model_num, DockeeDockPoint.c_str());
+
+			// set model animations correctly
+			// (fortunately, this function is called AFTER model_anim_set_initial_states in the sea of ship creation
+			// functions, which is necessary for model animations to start from t=0 at the correct positions)
+			ship *shipp = &Ships[docker_objp->instance];
+			ship *goal_shipp = &Ships[dockee_objp->instance];
+
+			ship_info* sip = &Ship_info[shipp->ship_info_index];
+			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
+
+			polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+			polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
+
+			(sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, docker_point_index)).start(animation::ModelAnimationDirection::FWD, true, true);
+			(goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, dockee_point_index)).start(animation::ModelAnimationDirection::FWD, true, true);
+
+			// Set docker as instantly docked
+			dock_orient_and_approach(docker_objp, docker_point_index, dockee_objp, dockee_point_index, DOA_DOCK_STAY);
+			ai_do_objects_docked_stuff(docker_objp, docker_point_index, dockee_objp, dockee_point_index, true);
+		}
+	}
+
+	if (DockerObject >= 0) {
+		ai_info* aip = &Ai_info[Ships[Objects[DockerObject].instance].ai_index];
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		// Create the undock order
+		int gindex = 0;
+		ai_goal_type type = ai_goal_type::EVENT_SHIP;
+		ai_goal* aigp = &aip->goals[gindex];
+
+		ai_goal_reset(aigp, true);
+		aigp->type = type;
+
+		aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
+		aigp->priority = 200;
+
+		aigp->ai_mode = AI_GOAL_UNDOCK;
+		aigp->ai_submode = AIS_UNDOCK_0;
 	}
 }
 
