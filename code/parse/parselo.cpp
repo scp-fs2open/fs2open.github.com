@@ -2430,7 +2430,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 				// Compare filename by lowercase string
 				SCP_string key = filename;
-				std::transform(key.begin(), key.end(), key.begin(), ::tolower);
+				SCP_tolower(key);
 
 				// Check for a hash
 				auto it = retail_hashes.find(key);
