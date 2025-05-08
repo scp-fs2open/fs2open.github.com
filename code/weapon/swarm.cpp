@@ -312,7 +312,7 @@ void turret_swarm_delete(int i)
 void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, bool no_tracking_object)
 {
 	turret_swarm_info	*tsi;
-	object *parent_obj, *target_obj;
+	object *parent_obj;
 	ship *shipp;
 	int tsi_index;
 
@@ -334,9 +334,10 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weap
 	Assert(parent_obj->type == OBJ_SHIP);
 	shipp = &Ships[parent_obj->instance];
 	Assert(turret->turret_enemy_objnum < MAX_OBJECTS);
-	if(!no_tracking_object && ((turret->turret_enemy_objnum < 0) || (turret->turret_enemy_objnum >= MAX_OBJECTS))){
+	if (turret->turret_enemy_objnum < 0 && !no_tracking_object)
 		return;
-	}
+	if (turret->turret_enemy_objnum >= MAX_OBJECTS)
+		return;
 
 	// valid swarm weapon
 	Assert(((wip->wi_flags[Weapon::Info_Flags::Swarm]) && (wip->swarm_count > 0)) || ((wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && (wip->cs_num_fired > 0)));
