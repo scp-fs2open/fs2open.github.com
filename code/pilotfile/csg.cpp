@@ -1379,7 +1379,7 @@ void pilotfile::csg_read_controls()
 		cfread_string(buf, sizeof(buf), cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-		                       [buf](const CC_preset& preset) { return preset.name == buf; });
+		                       [&buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");

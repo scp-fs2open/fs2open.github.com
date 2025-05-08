@@ -780,7 +780,7 @@ void pilotfile::plr_read_controls()
 		SCP_string buf = handler->readString("preset");
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-							   [buf](const CC_preset& preset) { return preset.name == buf; });
+							   [&buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");

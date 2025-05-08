@@ -226,8 +226,8 @@ class TypeVisitor : public BaseVisitor {
 		}
 
 		if (previous.isNotNull()) {
-			const auto& previousType = previous.as<ade_type_info>();
-			const auto& nextType     = nextResult.as<ade_type_info>();
+			auto previousType = previous.as<ade_type_info>();	// NOLINT - more investigation needed here
+			auto nextType     = nextResult.as<ade_type_info>();	// NOLINT - ditto
 			return merge_alternatives(previousType, nextType);
 		} else {
 			return nextResult.as<ade_type_info>();

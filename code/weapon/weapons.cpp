@@ -2246,7 +2246,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		if (wip->impact_weapon_expl_effect.isValid()) {
 			// Initialize with value of the previously created single particle effect
 			wip->shield_impact_explosion_radius = 0.0f;
-			const auto particle_effect = ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect);
+			const auto& particle_effect = ParticleManager::get()->getEffect(wip->impact_weapon_expl_effect);
 			for (const auto& particle_def : particle_effect) {
 				wip->shield_impact_explosion_radius += particle_def.m_radius.avg();
 			}

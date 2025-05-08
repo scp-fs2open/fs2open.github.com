@@ -110,7 +110,7 @@ ADE_VIRTVAR(Color, l_HUD_Color_Preset, nullptr, "The name of this preset", "colo
 		LuaError(L, "This property is read only.");
 	}
 
-	auto preset = HC_colors[current.getIndex()];
+	const auto &preset = HC_colors[current.getIndex()];
 
 	color c;
 	gr_init_color(&c, preset.r, preset.g, preset.b);
