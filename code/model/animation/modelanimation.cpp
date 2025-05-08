@@ -1474,9 +1474,7 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
+					int curve_id = curve_parse();
 					if (curve_id < 0) 
 						error_display(0, "Unknown curve specified! The driver will not use a curve.");
 					else
@@ -1503,9 +1501,7 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
+					int curve_id = curve_parse();
 					if (curve_id < 0)
 						error_display(0, "Unknown curve specified! The driver will not use a curve.");
 					else
@@ -1533,9 +1529,7 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
+					int curve_id = curve_parse();
 					if (curve_id < 0)
 						error_display(0, "Unknown curve specified! The driver will not use a curve.");
 					else
