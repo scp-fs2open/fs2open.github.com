@@ -337,7 +337,6 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weap
 	if(!no_tracking_object && ((turret->turret_enemy_objnum < 0) || (turret->turret_enemy_objnum >= MAX_OBJECTS))){
 		return;
 	}
-	target_obj = &Objects[turret->turret_enemy_objnum];
 
 	// valid swarm weapon
 	Assert(((wip->wi_flags[Weapon::Info_Flags::Swarm]) && (wip->swarm_count > 0)) || ((wip->wi_flags[Weapon::Info_Flags::Corkscrew]) && (wip->cs_num_fired > 0)));
@@ -399,7 +398,7 @@ void turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weap
 	tsi->parent_objnum = parent_objnum;
 	tsi->parent_sig    = parent_obj->signature;
 	tsi->target_objnum = turret->turret_enemy_objnum;
-	tsi->target_sig    = target_obj->signature;
+	tsi->target_sig    = turret->turret_enemy_objnum >= 0 ? Objects[turret->turret_enemy_objnum].signature : 0;
 	tsi->turret = turret;
 	tsi->target_subsys = turret->targeted_subsys;
 	tsi->time_to_fire = 1;	// first missile next frame
