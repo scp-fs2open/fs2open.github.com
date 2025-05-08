@@ -1035,7 +1035,7 @@ void pilotfile::plr_reset_data(bool reset_all)
 	scoring_special_t blank_score;
 
 	all_time_stats = blank_score;
-	multi_stats = blank_score;
+	multi_stats = std::move(blank_score);
 
 	// clear variables
 	p->variables.clear();
