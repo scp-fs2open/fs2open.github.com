@@ -385,10 +385,17 @@ render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), tex
 
 	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	gauge_config_id = ""; // gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	gauge_config_id = create_custom_gauge_id(_custom_name);
 	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+
+	//Set the gauge type for color backup lookup
+	HUD_config.set_gauge_type(gauge_config_id, gauge_type);
+
+	// Custom gauges are always default visible and popup false for now
+	HUD_config.set_gauge_visibility(gauge_config_id, true);
+	HUD_config.set_gauge_popup(gauge_config_id, false);
 
 	popup_timer = timestamp(1);
 
@@ -583,15 +590,9 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 
 	if (config) {
 		color use_color;
-		if (custom_gauge) {
-			// Custom gauges currently use the color based on their gauge type
-			const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
-			use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_type));
-		} else {
-			use_color = HUD_config.get_gauge_color(gauge_config_id);
-		}
+		use_color = HUD_config.get_gauge_color(gauge_config_id);
 		
-		if (!custom_gauge && HUD_config.is_gauge_visible(gauge_config_id)) {
+		if (HUD_config.is_gauge_visible(gauge_config_id)) {
 			if (use_iff_color) {
 				// Ditto for target tagging color
 				if (use_tag_color) {
@@ -608,11 +609,6 @@ void HudGauge::setGaugeColor(int bright_index, bool config)
 			} else {
 				alpha = 150;
 			}
-			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
-			gr_set_color_fast(&use_color);
-		} else if (custom_gauge) {
-			// Custom gauges currently use the current color but alpha dimmed since they are not selectable
-			alpha = MAX(use_color.alpha - 50, 25);
 			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			gr_set_color_fast(&use_color);
 		} else {
@@ -881,10 +877,10 @@ void HudGauge::render(float /*frametime*/, bool config)
 
 	if (config) {
 		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
-		// The following code will be used to allow custom coloring of custom HUD gauges. This will be implemented in the future.
-		/*int bmw, bmh;
+		// Commenting out this code below will disable custom gauges from being selectable and individually colorable
+		int bmw, bmh;
 		bm_get_info(custom_frame.first_frame, &bmw, &bmh);
-		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
 	}
 
 	setGaugeColor(HUD_C_NONE, config);

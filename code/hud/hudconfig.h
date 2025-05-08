@@ -35,6 +35,107 @@ struct ai_info;
 extern float Radar_ranges[RR_MAX_RANGES];
 extern const char *Radar_range_text(int range_num);
 
+class HC_gauge_mappings {
+  public:
+	static HC_gauge_mappings& get_instance()
+	{
+		static HC_gauge_mappings instance;
+		return instance;
+	}
+
+	// Prevent copying
+	HC_gauge_mappings(const HC_gauge_mappings&) = delete;
+	HC_gauge_mappings& operator=(const HC_gauge_mappings&) = delete;
+
+	// Numeric ID -> New String ID
+	SCP_string get_string_id_from_numeric_id(int numeric_id) const
+	{
+		auto it = gauge_map.find(numeric_id);
+		return (it != gauge_map.end()) ? it->second.second : "";
+	}
+
+	// HCF String Name -> New String ID
+	SCP_string get_string_id_from_hcf_id(const SCP_string& hcf_name) const
+	{
+		for (const auto& [id, mapping] : gauge_map) {
+			if (XSTR(mapping.first.first.c_str(), mapping.first.second) == hcf_name) {
+				return mapping.second;
+			}
+		}
+		return "";
+	}
+
+	// New String ID -> Numeric ID (for saving to player file)
+	int get_numeric_id_from_string_id(const SCP_string& string_id) const
+	{
+		for (const auto& [id, mapping] : gauge_map) {
+			if (mapping.second == string_id) {
+				return id;
+			}
+		}
+		return -1;
+	}
+
+	// New String ID -> HCF String Name (for saving HCF files)
+	SCP_string get_hcf_name_from_string_id(const SCP_string& string_id) const
+	{
+		for (const auto& [id, mapping] : gauge_map) {
+			if (mapping.second == string_id) {
+				return XSTR(mapping.first.first.c_str(), mapping.first.second);
+			}
+		}
+		return "";
+	}
+
+  private:
+	HC_gauge_mappings()
+	{
+		// Map the old gauge_config numeric IDs, the HCF file IDs (which, yes, were translated...), and the newer string
+		// IDs for the retail built-in gauges. Custom gauges will only have a string ID and do not need to be mapped.
+		gauge_map = {{0, {{"lead indicator", 249}, "Builtin::LeadIndicator"}},
+			{1, {{"target orientation", 250}, "Builtin::TargetOrientation"}},
+			{2, {{"closest attacking hostile", 251}, "Builtin::ClosestAttackingHostile"}},
+			{3, {{"current target direction", 252}, "Builtin::CurrentTargetDirection"}},
+			{4, {{"mission time", 253}, "Builtin::MissionTime"}},
+			{5, {{"reticle", 254}, "Builtin::Reticle"}},
+			{6, {{"throttle", 255}, "Builtin::Throttle"}},
+			{7, {{"radar", 256}, "Builtin::Radar"}},
+			{8, {{"target monitor", 257}, "Builtin::TargetMonitor"}},
+			{9, {{"center of reticle", 258}, "Builtin::CenterOfReticle"}},
+			{10, {{"extra target info", 259}, "Builtin::ExtraTargetInfo"}},
+			{11, {{"target shield", 260}, "Builtin::TargetShield"}},
+			{12, {{"player shield", 261}, "Builtin::PlayerShield"}},
+			{13, {{"power management", 262}, "Builtin::PowerManagement"}},
+			{14, {{"auto-target icon", 263}, "Builtin::AutoTargetIcon"}},
+			{15, {{"auto-speed-match icon", 264}, "Builtin::AutoSpeedMatchIcon"}},
+			{16, {{"weapons display", 265}, "Builtin::WeaponsDisplay"}},
+			{17, {{"monitoring view", 266}, "Builtin::MonitoringView"}},
+			{18, {{"directives view", 267}, "Builtin::DirectivesView"}},
+			{19, {{"threat gauge", 268}, "Builtin::ThreatGauge"}},
+			{20, {{"afterburner energy", 269}, "Builtin::AfterburnerEnergy"}},
+			{21, {{"weapons energy", 270}, "Builtin::WeaponsEnergy"}},
+			{22, {{"weapon linking", 271}, "Builtin::WeaponLinking"}},
+			{23, {{"target hull/shield icon", 272}, "Builtin::TargetHullShieldIcon"}},
+			{24, {{"offscreen indicator", 273}, "Builtin::OffscreenIndicator"}},
+			{25, {{"comm video", 274}, "Builtin::CommVideo"}},
+			{26, {{"damage display", 275}, "Builtin::DamageDisplay"}},
+			{27, {{"message output", 276}, "Builtin::MessageOutput"}},
+			{28, {{"locked missile direction", 277}, "Builtin::LockedMissileDirection"}},
+			{29, {{"countermeasures", 278}, "Builtin::Countermeasures"}},
+			{30, {{"objective notify", 279}, "Builtin::ObjectiveNotify"}},
+			{31, {{"wingmen status", 280}, "Builtin::WingmenStatus"}},
+			{32, {{"offscreen range", 281}, "Builtin::OffscreenRange"}},
+			{33, {{"kills gauge", 282}, "Builtin::KillsGauge"}},
+			{34, {{"attacking target count", 283}, "Builtin::AttackingTargetCount"}},
+			{35, {{"warning flash", 1459}, "Builtin::WarningFlash"}},
+			{36, {{"comm menu", 1460}, "Builtin::CommMenu"}},
+			{37, {{"support gauge", 1461}, "Builtin::SupportGauge"}},
+			{38, {{"lag gauge", 1462}, "Builtin::LagGauge"}}};
+	}
+
+	SCP_unordered_map<int, std::pair<std::pair<SCP_string, int>, SCP_string>> gauge_map;
+};
+
 /*!
  * @brief Vector for storing the filenames of hud preset files
  * @note main definition in hudconfig.cpp
@@ -51,14 +152,15 @@ extern int HC_resize_mode;
  * @note Is not default init'd.  Assumes new player, PLR, or CSG reads will correctly set data.
  */
 typedef struct HUD_CONFIG_TYPE {
-	int rp_dist;				//!< one of RR_ #defines above; Is the maxium radar view distance setting
-	int is_observer;			//!< 1 or 0, observer mode or not, respectively
-	int main_color;				//!< the default HUD_COLOR selection for all gauges; each gauge may override this with a custom RGB
+	int rp_dist;				// one of RR_ #defines above; Is the maxium radar view distance setting
+	bool is_observer;			// 1 or 0, observer mode or not, respectively
+	int main_color;				// the default HUD_COLOR selection for all gauges; each gauge may override this with a custom RGB
 
 	// Maps for HUD gauge configuration
-	std::unordered_map<std::string, color> gauge_colors;   //!< Gauge-specific colors
-	std::unordered_map<std::string, bool> show_flags_map;  //!< Show/hide state for gauges
-	std::unordered_map<std::string, bool> popup_flags_map; //!< Popup state for gauges
+	SCP_unordered_map<SCP_string, color> gauge_colors;     // Gauge-specific colors
+	SCP_unordered_map<SCP_string, bool> show_flags_map;   // Show/hide state for gauges
+	SCP_unordered_map<SCP_string, bool> popup_flags_map;   // Popup state for gauges
+	SCP_unordered_map<SCP_string, int> gauge_types;      // Gauge types used for backup colors for custom gauges to preseve old behavior
 
 	static color default_white_color()
 	{
@@ -69,37 +171,58 @@ typedef struct HUD_CONFIG_TYPE {
 
 	// Methods for setting and getting gauge properties where getting will return a default value
 
-	void set_gauge_color(const std::string& gauge_id, const color& col)
+	void set_gauge_color(const SCP_string& gauge_id, const color& col)
 	{
 		gauge_colors[gauge_id] = col;
 	}
 
-	// Get the gauge color or white if the gauge is not found
-	color get_gauge_color(const std::string& gauge_id) const
+	// Get the gauge color, the color based on it's type, or white if the gauge is not found
+	color get_gauge_color(const SCP_string& gauge_id) const
 	{
 		auto it = gauge_colors.find(gauge_id);
-		return (it != gauge_colors.end()) ? it->second : default_white_color();
+
+		// Got a match? Return it
+		if (it != gauge_colors.end()) {
+			return it->second;
+		}
+
+		// No match.. try using the gauge type
+		auto type_it = gauge_types.find(gauge_id);
+		if (type_it != gauge_types.end()) {
+			const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+			it = gauge_colors.find(gauge_map.get_string_id_from_numeric_id(type_it->second));
+
+			return it->second;
+		}
+
+		// Still nothing.. return white
+		return default_white_color();
 	}
 
-	void set_gauge_visibility(const std::string& gauge_id, bool visible)
+	void set_gauge_type(const SCP_string& gauge_id, int type) {
+		gauge_types[gauge_id] = type;
+	}
+
+	void set_gauge_visibility(const SCP_string& gauge_id, bool visible)
 	{
 		show_flags_map[gauge_id] = visible;
 	}
 
 	// Get the gauge config visibility setting or false (invisible) if not found
-	bool is_gauge_visible(const std::string& gauge_id) const
+	bool is_gauge_visible(const SCP_string& gauge_id) const
 	{
 		auto it = show_flags_map.find(gauge_id);
 		return (it != show_flags_map.end()) ? it->second : false; // Default to invisible
 	}
 
-	void set_gauge_popup(const std::string& gauge_id, bool popup)
+	void set_gauge_popup(const SCP_string& gauge_id, bool popup)
 	{
 		popup_flags_map[gauge_id] = popup;
 	}
 
 	// Get the gauge config popup setting or false if not found
-	bool is_gauge_popup(const std::string& gauge_id) const
+	bool is_gauge_popup(const SCP_string& gauge_id) const
 	{
 		auto it = popup_flags_map.find(gauge_id);
 		return (it != popup_flags_map.end()) ? it->second : false; // Default to not a popup
@@ -195,105 +318,6 @@ extern std::unordered_set<SCP_string> HC_ignored_huds;
 extern SCP_map<SCP_string, std::array<SCP_string, num_shield_gauge_types>> HC_hud_shield_ships;
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_primary_weapons;
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_secondary_weapons;
-
-class HC_gauge_mappings {
-public:
-    static HC_gauge_mappings& get_instance() {
-        static HC_gauge_mappings instance;
-        return instance;
-    }
-
-    // Prevent copying
-    HC_gauge_mappings(const HC_gauge_mappings&) = delete;
-    HC_gauge_mappings& operator=(const HC_gauge_mappings&) = delete;
-
-    // Numeric ID -> New String ID
-    SCP_string get_string_id_from_numeric_id(int numeric_id) const {
-        auto it = gauge_map.find(numeric_id);
-        return (it != gauge_map.end()) ? it->second.second : "";
-    }
-
-   // HCF String Name -> New String ID
-	SCP_string get_string_id_from_hcf_id(const SCP_string& hcf_name) const
-	{
-		for (const auto& [id, mapping] : gauge_map) {
-			if (XSTR(mapping.first.first.c_str(), mapping.first.second) == hcf_name) {
-				return mapping.second;
-			}
-		}
-		return "";
-	}
-
-    // New String ID -> Numeric ID (for saving to player file)
-    int get_numeric_id_from_string_id(const SCP_string& string_id) const {
-        for (const auto& [id, mapping] : gauge_map) {
-            if (mapping.second == string_id) {
-                return id;
-            }
-        }
-        return -1;
-    }
-
-    // New String ID -> HCF String Name (for saving HCF files)
-	SCP_string get_hcf_name_from_string_id(const SCP_string& string_id) const
-	{
-		for (const auto& [id, mapping] : gauge_map) {
-			if (mapping.second == string_id) {
-				return XSTR(mapping.first.first.c_str(), mapping.first.second);
-			}
-		}
-		return "";
-	}
-
-private:
-	HC_gauge_mappings() {
-		// Map the old gauge_config numeric IDs, the HCF file IDs (which, yes, were translated...), and the newer string IDs
-		// for the retail built-in gauges. Custom gauges will only have a string ID and do not need to be mapped.
-        gauge_map = {
-            {0, {{"lead indicator", 249}, "Builtin::LeadIndicator"}},
-            {1, {{"target orientation", 250}, "Builtin::TargetOrientation"}},
-            {2, {{"closest attacking hostile", 251}, "Builtin::ClosestAttackingHostile"}},
-            {3, {{"current target direction", 252}, "Builtin::CurrentTargetDirection"}},
-            {4, {{"mission time", 253}, "Builtin::MissionTime"}},
-            {5, {{"reticle", 254}, "Builtin::Reticle"}},
-            {6, {{"throttle", 255}, "Builtin::Throttle"}},
-            {7, {{"radar", 256}, "Builtin::Radar"}},
-            {8, {{"target monitor", 257}, "Builtin::TargetMonitor"}},
-            {9, {{"center of reticle", 258}, "Builtin::CenterOfReticle"}},
-            {10, {{"extra target info", 259}, "Builtin::ExtraTargetInfo"}},
-            {11, {{"target shield", 260}, "Builtin::TargetShield"}},
-            {12, {{"player shield", 261}, "Builtin::PlayerShield"}},
-            {13, {{"power management", 262}, "Builtin::PowerManagement"}},
-            {14, {{"auto-target icon", 263}, "Builtin::AutoTargetIcon"}},
-            {15, {{"auto-speed-match icon", 264}, "Builtin::AutoSpeedMatchIcon"}},
-            {16, {{"weapons display", 265}, "Builtin::WeaponsDisplay"}},
-            {17, {{"monitoring view", 266}, "Builtin::MonitoringView"}},
-            {18, {{"directives view", 267}, "Builtin::DirectivesView"}},
-            {19, {{"threat gauge", 268}, "Builtin::ThreatGauge"}},
-            {20, {{"afterburner energy", 269}, "Builtin::AfterburnerEnergy"}},
-            {21, {{"weapons energy", 270}, "Builtin::WeaponsEnergy"}},
-            {22, {{"weapon linking", 271}, "Builtin::WeaponLinking"}},
-            {23, {{"target hull/shield icon", 272}, "Builtin::TargetHullShieldIcon"}},
-            {24, {{"offscreen indicator", 273}, "Builtin::OffscreenIndicator"}},
-            {25, {{"comm video", 274}, "Builtin::CommVideo"}},
-            {26, {{"damage display", 275}, "Builtin::DamageDisplay"}},
-            {27, {{"message output", 276}, "Builtin::MessageOutput"}},
-            {28, {{"locked missile direction", 277}, "Builtin::LockedMissileDirection"}},
-            {29, {{"countermeasures", 278}, "Builtin::Countermeasures"}},
-            {30, {{"objective notify", 279}, "Builtin::ObjectiveNotify"}},
-            {31, {{"wingmen status", 280}, "Builtin::WingmenStatus"}},
-            {32, {{"offscreen range", 281}, "Builtin::OffscreenRange"}},
-            {33, {{"kills gauge", 282}, "Builtin::KillsGauge"}},
-            {34, {{"attacking target count", 283}, "Builtin::AttackingTargetCount"}},
-            {35, {{"warning flash", 1459}, "Builtin::WarningFlash"}},
-            {36, {{"comm menu", 1460}, "Builtin::CommMenu"}},
-            {37, {{"support gauge", 1461}, "Builtin::SupportGauge"}},
-            {38, {{"lag gauge", 1462}, "Builtin::LagGauge"}}
-        };
-    }
-
-    SCP_unordered_map<int, std::pair<std::pair<SCP_string, int>, SCP_string>> gauge_map;
-};
 
 
 /*!
@@ -443,6 +467,11 @@ std::pair<float, float> hud_config_calc_coords_from_angle(float angle_degrees, i
  * @brief try to find an angle with no overlapping mouse coordinates for target-related gauges
  */
 float hud_config_find_valid_angle(const SCP_string& gauge, float initial_angle, int centerX, int centerY, float radius);
+
+/*!
+ * @brief generage a custom gauge id
+ */
+SCP_string create_custom_gauge_id(const SCP_string& gauge_name);
 
 #endif
 
