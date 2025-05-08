@@ -5772,7 +5772,7 @@ void weapon_home(object *obj, int num, float frame_time)
 					vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f));
 				} 
 			} else if (fs1_behavior) {
-				vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f) * -1.0);
+				vm_vec_scale_add2(&target_pos, &hobjp->phys_info.vel, MIN(time_to_target, 2.0f) * -1.0f);
 			}
 		}
 
