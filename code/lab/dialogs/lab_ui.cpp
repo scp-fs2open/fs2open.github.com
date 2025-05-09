@@ -1247,7 +1247,7 @@ void LabUi::show_object_options() const
 
 						if (ImGui::BeginCombo("Docker Ship Class", Ship_info[getLabManager()->DockerClass].name)) {
 							for (size_t i = 0; i < Ship_info.size(); ++i) {
-								bool is_selected = (i == getLabManager()->DockerClass);
+								bool is_selected = (static_cast<int>(i) == getLabManager()->DockerClass);
 								if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
 									getLabManager()->DockerClass = static_cast<int>(i);
 									// Load model if needed

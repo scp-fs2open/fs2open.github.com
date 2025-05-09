@@ -445,8 +445,8 @@ void LabManager::spawnDockerObject() {
 	}
 
 	// Check ship class index
-	if (DockerClass < 0 || DockerClass >= MAX_SHIP_CLASSES) {
-		mprintf(("Invalid ship class index %s\n", DockerClass));
+	if (DockerClass < 0 || DockerClass >= static_cast<int>(Ship_info.size())) {
+		mprintf(("Invalid ship class index %d\n", DockerClass));
 	} else {
 		object* obj = &Objects[CurrentObject];
 
