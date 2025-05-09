@@ -452,7 +452,7 @@ void LabManager::spawnDockerObject() {
 
 		// Spawn near the target
 		vec3d spawn_pos = obj->pos;
-		vec3d offset = {0.0f, -50000.0f, -50000.0f}; // Spawn it far away then we can move it based on its radius
+		vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
 		vec3d final_pos;
 		vm_vec_add(&final_pos, &spawn_pos, &offset);
 
@@ -465,7 +465,7 @@ void LabManager::spawnDockerObject() {
 
 			// Set a more reasonable starting position
 			float offset_radius = obj->radius + new_objp->radius;
-			offset = {0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}; // Make this selectable or random?
+			offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
 			vm_vec_add(&final_pos, &spawn_pos, &offset);
 			new_objp->pos = final_pos;
 		}
