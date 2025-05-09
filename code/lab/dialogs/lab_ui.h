@@ -12,6 +12,8 @@ enum class LabTurretAimType {
 
 class LabUi {
   public:
+	bool show_thrusters = false; // So that it can be toggled on/off based on the lab mode being changed
+
 	void create_ui();
 	void object_changed();
 	void closeUi();
@@ -22,6 +24,9 @@ class LabUi {
 	void build_species_entry(const species_info &species_def, int species_idx) const;
 	void build_weapon_list() const;
 	void build_weapon_subtype_list() const;
+	static void build_object_list();
+	static void build_asteroid_list();
+	static void build_debris_list();
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;
@@ -31,7 +36,6 @@ class LabUi {
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
 	void build_tone_mapper_combobox();
-	void build_table_info_txtbox(ship_info* sip) const;
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
 	void build_subsystem_list_entry(SCP_string& subsys_name,
@@ -85,6 +89,7 @@ class LabUi {
 	bool show_damage_lightning = false;
 	bool animate_subsystems = false;
 	bool hide_post_processing = false;
+	bool no_particles = false;
 	bool diffuse_map = true;
 	bool glow_map = true;
 	bool spec_map = true;
@@ -98,10 +103,10 @@ class LabUi {
 	bool use_wireframe_rendering = false;
 	bool no_lighting = false;
 	bool show_full_detail = false;
-	bool show_thrusters = false;
 	bool show_afterburners = false;
 	bool show_weapons = false;
 	bool show_emissive_lighting = false;
+	bool show_particles = true;
 	
 	std::optional<vec3d> volumetrics_pos_backup = std::nullopt;
 };
