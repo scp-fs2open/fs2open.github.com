@@ -51,7 +51,7 @@ ADE_FUNC(addHook,
 	}
 
 	action.hook.hook_function.language = SC_LUA;
-	action.hook.hook_function.function = hook;
+	action.hook.hook_function.function = std::move(hook);
 
 	if (override_func.isValid()) {
 		action.hook.override_function.language = SC_LUA;

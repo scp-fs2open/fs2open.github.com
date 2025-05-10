@@ -149,7 +149,7 @@ ADE_FUNC(resolved,
 		values.push_back(val);
 	}
 
-	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::resolved(values)));
+	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::resolved(std::move(values))));
 }
 
 ADE_FUNC(errored,
@@ -169,7 +169,7 @@ ADE_FUNC(errored,
 		values.push_back(val);
 	}
 
-	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::errored(values)));
+	return ade_set_args(L, "o", l_Promise.Set(LuaPromise::errored(std::move(values))));
 }
 
 ADE_FUNC(run,
@@ -375,7 +375,7 @@ ADE_FUNC(error,
 
 	// Push an errored promise on the stack and then yield the coroutine. The awaiter will get this promise and stop
 	// execution.
-	ade_set_args(L, "o", l_Promise.Set(LuaPromise::errored(values)));
+	ade_set_args(L, "o", l_Promise.Set(LuaPromise::errored(std::move(values))));
 	return lua_yield(L, 1);
 }
 

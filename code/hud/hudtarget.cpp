@@ -620,16 +620,11 @@ void hud_reticle_list_update(object *objp, float measure, int dot_flag)
 {
 	reticle_list	*rl, *new_rl;
 	int				i;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (objp->type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if( jnp->GetSCPObject() != objp )
-				continue;
-
-			if( jnp->IsHidden() )
-				return;
-		}
+		auto jnp = jumpnode_get_by_objp(objp);
+		if (!jnp || jnp->IsHidden())
+			return;
 	}
 
 	for ( rl = GET_FIRST(&Reticle_cur_list); rl != END_OF_LIST(&Reticle_cur_list); rl = GET_NEXT(rl) ) {
@@ -1168,7 +1163,6 @@ void hud_target_common(int team_mask, int next_flag)
 	object	*A, *start, *start2;
 	ship		*shipp;
 	int		is_ship, target_found = FALSE;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (Player_ai->target_objnum == -1)
 		start = &obj_used_list;
@@ -1209,14 +1203,10 @@ void hud_target_common(int team_mask, int next_flag)
 		}
 
 		if (A->type == OBJ_JUMP_NODE) {
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if( jnp->GetSCPObject() == A )
-					break;
-			}
+			auto jnp = jumpnode_get_by_objp(A);
+			Assertion(jnp, "Failed to find jump node with object index %d; trace out and fix!\n", OBJ_INDEX(A));
 
-			Assertion(jnp != Jump_nodes.end(), "Failed to find jump node with object index %d; trace out and fix!\n", OBJ_INDEX(A));
-
-			if( jnp->IsHidden() )
+			if( !jnp || jnp->IsHidden() )
 				continue;
 		}
 
@@ -2419,7 +2409,6 @@ void hud_target_targets_target()
 int object_targetable_in_reticle(object *target_objp)
 {
 	int obj_type;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (target_objp == Player_obj ) {
 		return 0;
@@ -2430,12 +2419,12 @@ int object_targetable_in_reticle(object *target_objp)
 	if ( (obj_type == OBJ_SHIP) || (obj_type == OBJ_DEBRIS) || (obj_type == OBJ_WEAPON) || (obj_type == OBJ_ASTEROID) )
 	{
 		return 1;
-	} else if ( obj_type == OBJ_JUMP_NODE )
+	}
+	else if ( obj_type == OBJ_JUMP_NODE )
 	{
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == target_objp)
-				break;
-		}
+		auto jnp = jumpnode_get_by_objp(target_objp);
+		if (!jnp)
+			return 0;
 
 		if (!jnp->IsHidden())
 			return 1;
@@ -2465,7 +2454,6 @@ void hud_target_in_reticle_new()
 	object	*A;
 	mc_info	mc;
 	float		dist;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	hud_reticle_clear_list(&Reticle_cur_list);
 	Reticle_save_timestamp = timestamp(RESET_TARGET_IN_RETICLE);
@@ -2523,12 +2511,12 @@ void hud_target_in_reticle_new()
 			}
 			break;
 		case OBJ_JUMP_NODE:
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == A)
-					break;
-			}
-
+			{
+			auto jnp = jumpnode_get_by_objp(A);
+			if (!jnp)
+				continue;
 			mc.model_num = jnp->GetModelNumber();
+			}
 			break;
 		default:
 			Int3();	//	Illegal object type.

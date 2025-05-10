@@ -13574,9 +13574,9 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				scripting::hook_param("User", 'o', objp),
 				scripting::hook_param("Target", 'o', target)
 			);
-			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, firedWeapons, true };
+			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, std::move(firedWeapons), true };
 			scripting::hooks::OnWeaponFired->run(conditions, param_list);
-			scripting::hooks::OnPrimaryFired->run(conditions, param_list);
+			scripting::hooks::OnPrimaryFired->run(std::move(conditions), std::move(param_list));
 		}
 	}
 
@@ -14305,7 +14305,7 @@ done_secondary:
 			);
 			auto conditions = scripting::hooks::WeaponUsedConditions{ shipp, target, SCP_vector<int>{ weapon_idx }, false };
 			scripting::hooks::OnWeaponFired->run(conditions, param_list);
-			scripting::hooks::OnSecondaryFired->run(conditions, param_list);
+			scripting::hooks::OnSecondaryFired->run(std::move(conditions), std::move(param_list));
 		}
 	}
 
@@ -14514,7 +14514,7 @@ bool ship_select_next_primary(object *objp, CycleDirection direction)
 				scripting::hook_param("Target", 'o', target)
 			);
 			scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
-			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, param_list);
+			scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_primary_bank, original_bank, true }, std::move(param_list));
 		}
 
 		return true;
@@ -14619,7 +14619,7 @@ int ship_select_next_secondary(object *objp)
 					scripting::hook_param("Target", 'o', target)
 				);
 				scripting::hooks::OnWeaponSelected->run(scripting::hooks::WeaponSelectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
-				scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, param_list);
+				scripting::hooks::OnWeaponDeselected->run(scripting::hooks::WeaponDeselectedConditions{ shipp, swp->current_secondary_bank, original_bank, false }, std::move(param_list));
 			}
 
 			return 1;
@@ -20834,9 +20834,9 @@ void parse_ai_target_priorities()
 	temp_strings.clear();
 
 	if (already_exists == -1) {
-		Ai_tp_list.push_back(temp_priority);
+		Ai_tp_list.push_back(std::move(temp_priority));
 	} else {
-		Ai_tp_list[already_exists] = temp_priority;
+		Ai_tp_list[already_exists] = std::move(temp_priority);
 	}
 }
 

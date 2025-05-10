@@ -1264,7 +1264,8 @@ int common_object_delete(int obj)
 		Objects[obj].type = OBJ_NONE;
 		
 		// now call the destructor
-		Jump_nodes.erase(jnp);
+		if (jnp != Jump_nodes.end())
+			Jump_nodes.erase(jnp);
 
 		// now restore the jump node type so that the below unmark and obj_delete will work
 		Objects[obj].type = OBJ_JUMP_NODE;

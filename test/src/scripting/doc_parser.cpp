@@ -245,7 +245,7 @@ TEST_F(ArgumentListParserTest, MapType) {
 	const auto& arglist = parser.getArgList();
 	ASSERT_EQ(1, static_cast<int>(arglist.size()));
 
-	const auto mapType = arglist[0].type;
+	const auto& mapType = arglist[0].type;
 	ASSERT_EQ(ade_type_info_type::Map, mapType.getType());
 	ASSERT_EQ(2, static_cast<int>(mapType.elements().size()));
 	ASSERT_TRUE(mapType.elements()[0].isSimple());
@@ -265,7 +265,7 @@ TEST_F(ArgumentListParserTest, IteratorType) {
 	const auto& arglist = parser.getArgList();
 	ASSERT_EQ(1, static_cast<int>(arglist.size()));
 
-	const auto mapType = arglist[0].type;
+	const auto& mapType = arglist[0].type;
 	ASSERT_EQ(ade_type_info_type::Iterator, mapType.getType());
 	ASSERT_EQ(1, static_cast<int>(mapType.elements().size()));
 	ASSERT_TRUE(mapType.elements()[0].isSimple());

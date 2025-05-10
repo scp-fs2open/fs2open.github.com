@@ -55,7 +55,7 @@ ActionResult MoveToSubmodel::execute(ProgramLocals& locals) const
 
 	// We need to do a linear search for the right subobject
 	for (int i = 0; i < pm->n_models; ++i) {
-		const auto submodel = pm->submodel[i];
+		const auto& submodel = pm->submodel[i];
 
 		if (subsystem_stricmp(destinationSubObject.c_str(), submodel.name) == 0) {
 			// Found something!

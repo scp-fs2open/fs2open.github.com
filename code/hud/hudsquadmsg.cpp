@@ -207,7 +207,7 @@ void hud_squadmsg_start()
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
 		if (scripting::hooks::OnHudCommMenuOpened->isOverride(paramList))
 		{
-			scripting::hooks::OnHudCommMenuOpened->run(paramList);
+			scripting::hooks::OnHudCommMenuOpened->run(std::move(paramList));
 			return;
 		}
 	}
@@ -243,7 +243,7 @@ void hud_squadmsg_end()
 		auto paramList = scripting::hook_param_list(scripting::hook_param("Player", 'o', Player_obj));
 		if (scripting::hooks::OnHudCommMenuClosed->isOverride(paramList))
 		{
-			scripting::hooks::OnHudCommMenuClosed->run(paramList);
+			scripting::hooks::OnHudCommMenuClosed->run(std::move(paramList));
 			return;
 		}
 	}
@@ -2007,7 +2007,7 @@ void hud_squadmsg_reinforcement_select()
 			}
 
 			Assert ( Num_menu_items < MAX_MENU_ITEMS );
-			MsgItems[Num_menu_items].text = rp_name;
+			MsgItems[Num_menu_items].text = std::move(rp_name);
 			MsgItems[Num_menu_items].instance = i;
 			MsgItems[Num_menu_items].active = 0;
 

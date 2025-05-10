@@ -1348,7 +1348,7 @@ bool control_config_accept(bool API_Access)
 
 			// Pack the current bindings into a preset, then save the file
 			CC_preset preset;
-			preset.name = str;
+			preset.name = std::move(str);
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
 			save_preset_file(preset, true);

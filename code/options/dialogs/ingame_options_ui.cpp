@@ -158,7 +158,7 @@ void OptUi::create_ui()
 {
 	build_toolbar_entries();
 
-	for (auto cat : Option_categories) {
+	for (const auto &cat : Option_categories) {
 		if (cat.second) {
 			SCP_string title = cat.first + " " + XSTR("Options", 1036);
 			with_Window(title.c_str())

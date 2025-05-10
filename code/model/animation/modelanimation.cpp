@@ -1084,7 +1084,7 @@ namespace animation {
 				return submodel;
 		}
 
-		auto submodel = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(submodelName));
+		auto submodel = std::make_shared<ModelAnimationSubmodel>(std::move(submodelName));
 		m_submodels.push_back(submodel);
 		return submodel;
 	}
@@ -1100,7 +1100,7 @@ namespace animation {
 			}
 		}
 
-		auto submodel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(submodelName, findBarrel, SIP_name));
+		auto submodel = std::make_shared<ModelAnimationSubmodelTurret>(std::move(submodelName), findBarrel, SIP_name);
 		m_submodels.push_back(submodel);
 		return submodel;
 	}
@@ -1360,7 +1360,7 @@ namespace animation {
 
 		animation->setAnimation(helper.parseSegment());
 
-		s_animationsById.emplace(helper.m_animationName, ParsedModelAnimation { animation, type, name, subtype });
+		s_animationsById.emplace(helper.m_animationName, ParsedModelAnimation { std::move(animation), type, std::move(name), subtype });
 	}
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
@@ -1483,7 +1483,7 @@ namespace animation {
 						curve = Curves[curve_id];
 				}
 
-				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
+				driver = [&remap_driver_source, &curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
 					CLAMP(instance.time, 0.0f, instance.duration);
@@ -1699,7 +1699,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+				auto rot = std::make_shared<ModelAnimationSegmentSetOrientation>(std::move(subsys), angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 				anim->setAnimation(std::move(rot));
 			}
 

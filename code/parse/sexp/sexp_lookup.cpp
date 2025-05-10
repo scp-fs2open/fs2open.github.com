@@ -92,7 +92,7 @@ void parse_sexp_table(const char* filename) {
 				}
 
 				if (thisList.list.size() > 0) {
-					Dynamic_enums.push_back(thisList);
+					Dynamic_enums.push_back(std::move(thisList));
 					increment_enum_list_id();
 				} else {
 					error_display(0, "Parsed empty enum list '%s'. Ignoring!\n", thisList.name.c_str());
@@ -244,8 +244,8 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
 
 	// Now actually add the operator to the SEXP containers
-	Operators.push_back(new_op);
-	Sexp_help.push_back(new_help);
+	Operators.push_back(std::move(new_op));
+	Sexp_help.push_back(std::move(new_help));
 
 	return new_op.value;
 }

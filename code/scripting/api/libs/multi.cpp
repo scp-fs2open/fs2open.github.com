@@ -43,9 +43,9 @@ namespace scripting {
 			}
 
 			auto rpc = rpc_h_impl::create(L, name);
-			rpc->func = func;
-			rpc->recipient = recipient;
-			rpc->mode = mode;
+			rpc->func = std::move(func);
+			rpc->recipient = std::move(recipient);
+			rpc->mode = std::move(mode);
 			return ade_set_args(L, "o", l_RPC.Set(std::move(rpc)));
 		}
 	}

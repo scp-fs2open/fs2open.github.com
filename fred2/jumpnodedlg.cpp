@@ -127,17 +127,12 @@ void jumpnode_dlg::OnClose()
 void jumpnode_dlg::initialize_data(int full_update)
 {
 	int enable = TRUE;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return;
 
 	if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[cur_object_index])
-				break;
-		}
-		
+		auto jnp = jumpnode_get_by_objnum(cur_object_index);
 		m_name = _T(jnp->GetName());
 		m_display = _T(jnp->GetDisplayName());
 
@@ -177,16 +172,12 @@ int jumpnode_dlg::update_data()
 	char old_name[255];
 	int i, z;
 	object *ptr;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (!GetSafeHwnd())
 		return 0;
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if(jnp->GetSCPObject() == &Objects[cur_object_index])
-				break;
-		}
+		auto jnp = jumpnode_get_by_objnum(cur_object_index);
 
 		for (i=0; i<MAX_WINGS; i++)
 		{

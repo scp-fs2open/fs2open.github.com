@@ -1868,20 +1868,23 @@ size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(SCP_string &text)
+SCP_string maybe_convert_foreign_characters(const SCP_string &text)
 {
-	if (!Fred_running) {
-		for (SCP_string::iterator ii = text.begin(); ii != text.end(); ++ii) {
-			text.reserve(get_converted_string_length(text));
+	if (Fred_running)
+		return text;
 
-			if (*ii == SHARP_S) {
-				text.replace(ii, ii + 1, "ss");
-				++ii;
-			} else if (!Lcl_pl) {
-				*ii = (char) maybe_convert_foreign_character(*ii);
-			}
-		}
+	SCP_string new_text;
+	for (auto ch: text)
+	{
+		if (ch == SHARP_S)
+			new_text += "ss";
+		else if (!Lcl_pl)
+			new_text += i2ch(maybe_convert_foreign_character(ch));
+		else
+			new_text += ch;
 	}
+
+	return new_text;
 }
 
 // Yarn - Returns what the length of the text will be after it's processed by

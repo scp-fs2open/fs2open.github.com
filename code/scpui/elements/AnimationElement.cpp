@@ -121,7 +121,7 @@ void AnimationElement::OnAttributeChange(const Rocket::Core::AttributeNameList& 
 			if (coords_list.size() != 4) {
 				Rocket::Core::Log::Message(
 				    Log::LT_WARNING,
-				    "Element '%s' has an invalid 'coords' attribute; coords requires 4 values, found %d.",
+				    "Element '%s' has an invalid 'coords' attribute; coords requires 4 values, found " SIZE_T_ARG ".",
 				    GetAddress().CString(), coords_list.size());
 				ResetCoords();
 			} else {

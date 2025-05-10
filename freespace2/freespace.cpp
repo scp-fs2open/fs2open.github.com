@@ -5278,7 +5278,7 @@ void game_leave_state( int old_state, int new_state )
 
 		if (scripting::hooks::OnStateEndHook->isActive() && scripting::hooks::OnStateEndHook->isOverride(script_param_list))
 		{
-			scripting::hooks::OnStateEndHook->run(script_param_list);
+			scripting::hooks::OnStateEndHook->run(std::move(script_param_list));
 			return;
 		}
 	}
@@ -6295,7 +6295,7 @@ void mouse_force_pos(int x, int y);
 
 	//WMC - now do user scripting stuff
 	if (scripting::hooks::OnStateStart->isActive()) {
-		scripting::hooks::OnStateStart->run(script_param_list);
+		scripting::hooks::OnStateStart->run(std::move(script_param_list));
 	}
 }
 

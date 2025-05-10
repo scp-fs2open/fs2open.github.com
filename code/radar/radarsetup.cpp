@@ -151,7 +151,6 @@ void radar_plot_object( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
@@ -199,13 +198,10 @@ void radar_plot_object( object *objp )
 		
 		case OBJ_JUMP_NODE:
 		{
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == objp)
-					break;
-			}
+			auto jnp = jumpnode_get_by_objp(objp);
 			
-			// don't plot hidden jump nodes
-			if ( jnp->IsHidden() )
+			// don't plot missing or hidden jump nodes
+			if ( !jnp || jnp->IsHidden() )
 				return;
 
 			// filter jump nodes here if required
@@ -520,7 +516,6 @@ RadarVisibility radar_is_visible( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;
@@ -558,13 +553,10 @@ RadarVisibility radar_is_visible( object *objp )
 		
 		case OBJ_JUMP_NODE:
 		{
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == objp)
-					break;
-			}
+			auto jnp = jumpnode_get_by_objp(objp);
 			
-			// don't plot hidden jump nodes
-			if ( jnp->IsHidden() )
+			// don't plot missing or hidden jump nodes
+			if ( !jnp || jnp->IsHidden() )
 				return NOT_VISIBLE;
 
 			// filter jump nodes here if required

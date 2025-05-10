@@ -398,7 +398,6 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 	int x1,x2,y1,y2;
 	bool draw_box = true;
 	int bound_rc;
-	SCP_list<CJumpNode>::iterator jnp;
 
 
 	bool not_player_target = (Player_ai->target_objnum < 0 || targetp != &Objects[Player_ai->target_objnum]);
@@ -449,13 +448,11 @@ void HudGaugeBrackets::renderObjectBrackets(object *targetp, color *clr, int w_c
 			break;
 
 		case OBJ_JUMP_NODE:
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == targetp)
-					break;
-			}	
-				
-			modelnum = jnp->GetModelNumber();
+			{
+			auto jnp = jumpnode_get_by_objp(targetp);
+			modelnum = jnp ? jnp->GetModelNumber() : -1;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
+			}
 			break;
 
 		default:
@@ -637,7 +634,6 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 		const char* tinfo_class = NULL;
 		char temp_name[NAME_LENGTH*2+3];
 		char temp_class[NAME_LENGTH];
-		SCP_list<CJumpNode>::iterator jnp;
 
 		switch(t_objp->type) {
 			case OBJ_SHIP:
@@ -676,11 +672,8 @@ void HudGaugeBrackets::renderBoundingBrackets(int x1, int y1, int x2, int y2, in
 				}
 				break;
 			case OBJ_JUMP_NODE:
-				for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-					if(jnp->GetSCPObjectNumber() == target_objnum)
-						break;
-				}
-				tinfo_name = jnp->GetDisplayName();
+				auto jnp = jumpnode_get_by_objnum(target_objnum);
+				tinfo_name = jnp ? jnp->GetDisplayName() : "";
 				break;
 		}
 
