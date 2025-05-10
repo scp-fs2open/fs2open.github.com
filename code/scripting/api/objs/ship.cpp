@@ -811,7 +811,7 @@ ADE_VIRTVAR(TargetSubsystem, l_Ship, "subsystem", "Target subsystem of ship.", "
 		}
 	}
 
-	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(&Objects[aip->target_objnum], aip->targeted_subsys)));
+	return ade_set_args(L, "o", l_Subsystem.Set(ship_subsys_h(aip->target_objnum >= 0 ? &Objects[aip->target_objnum] : nullptr, aip->targeted_subsys)));
 }
 
 ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid team handle if ship handle is invalid")
