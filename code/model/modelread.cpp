@@ -1370,16 +1370,24 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		if (in(p, props, axis_string))
 		{
 			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
-				vm_vec_normalize(movement_axis);
+			{
+				if (!fl_near_zero(vm_vec_mag(movement_axis)))
+					vm_vec_normalize(movement_axis);
+				else
+				{
+					Warning(LOCATION, "%s on submodel '%s' on ship %s has a magnitude near zero!", axis_string, sm->name, filename);
+					*movement_type = MOVEMENT_TYPE_NONE;
+				}
+			}
 			else
 			{
-				Warning(LOCATION, "Failed to parse %s on subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+				Warning(LOCATION, "Failed to parse %s on submodel '%s' on ship %s!", axis_string, sm->name, filename);
 				*movement_type = MOVEMENT_TYPE_NONE;
 			}
 		}
 		else
 		{
-			Warning(LOCATION, "A %s was not specified for subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+			Warning(LOCATION, "A %s was not specified for submodel '%s' on ship %s!", axis_string, sm->name, filename);
 			*movement_type = MOVEMENT_TYPE_NONE;
 		}
 	}
@@ -1483,8 +1491,9 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 
 	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
-	// make sure this is a validly normalized axis
-	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
+	// make sure this is a validly normalized axis - also catch axes that are unspecified or 0,0,0
+	// (it would be nice to warn here, but the signal to noise ratio is extremely poor)
+	if (!vm_vec_is_normalized(movement_axis))
 		*movement_type = MOVEMENT_TYPE_NONE;
 
 	// maybe use the FOR to manipulate the axes
@@ -2055,45 +2064,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				// KeldorKatarn, with modifications
-				if (in(p, props, "$uvec")) {
-					matrix submodel_orient;
+				{
+					bool has_fvec = false, has_uvec = false, has_rvec = false;
+					vec3d fvec, uvec, rvec;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
-
-						if (in(p, props, "$fvec")) {
-
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
-
-								vm_vec_normalize(&submodel_orient.vec.uvec);
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-
-								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
-								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
-
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-								vm_vec_normalize(&submodel_orient.vec.rvec);
-
-								vm_orthogonalize_matrix(&submodel_orient);
-
-								sm->frame_of_reference = submodel_orient;
-
-							} else {
-								Warning(LOCATION,
-									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
-									"\n\n$fvec should be followed by 3 numbers separated with commas.",
-									sm->name, filename);
-							}
-						} else {
-							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", sm->name);
-						}
-					} else {
-						Warning(LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
-							"\n\n$uvec should be followed by 3 numbers separated with commas.",
-							sm->name, filename);
-					}
-				} else {
+					// default
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
+
+					// parse what we can
+					auto vectors = { std::make_tuple("$fvec", &fvec, &has_fvec), std::make_tuple("$uvec", &uvec, &has_uvec), std::make_tuple("$rvec", &rvec, &has_rvec) };
+					for (auto &item : vectors)
+					{
+						if (in(p, props, std::get<0>(item)))
+						{
+							if (get_user_vec3d_value(p + 5, std::get<1>(item), false, sm->name, pm->filename))
+								*std::get<2>(item) = true;
+							else
+								Warning(LOCATION, "Submodel '%s' of model '%s' has an improperly formatted %s declaration in its properties.\n\n%s should be followed by 3 numbers separated with commas.", sm->name, filename, std::get<0>(item), std::get<0>(item));
+						}
+					}
+
+					// make a matrix if we have at least the fvec
+					if (has_fvec)
+					{
+						vm_vector_2_matrix(&sm->frame_of_reference, &fvec, has_uvec ? &uvec : nullptr, has_rvec ? &rvec : nullptr);
+
+						// if the look_at_offset is still the default value (hasn't been set by submodel properties), assume that
+						// by specifying the submodel orientation matrix we are also specifying the "looking" direction
+						if (sm->look_at_offset == -1.0f)
+							sm->look_at_offset = 0.0f;
+					}
+					else if (has_uvec || has_rvec)
+						Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define an $fvec", sm->name);
 				}
 
 				{
@@ -2939,6 +2941,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			// if we couldn't find it, we shouldn't move
 			if (sm->look_at_submodel < 0) {
+				Warning(LOCATION, "Could not find $look_at target for %s %s!", pm->filename, sm->name);
 				sm->rotation_type = MOVEMENT_TYPE_NONE;
 			}
 			// are we navel-gazing?
