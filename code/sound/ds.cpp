@@ -772,7 +772,7 @@ int ds_get_free_channel_retail(float new_volume, int snd_id, int priority)
 			continue;
 		}
 
-		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), continue );
+		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), goto continue_channels );
 
 		if ( (status == AL_INITIAL) || (status == AL_STOPPED) ) {
 			ds_close_channel_fast(i);
@@ -795,6 +795,7 @@ int ds_get_free_channel_retail(float new_volume, int snd_id, int priority)
 				lowest_vol = chp->vol;
 			}
 		}
+continue_channels: ;
 	}
 
 	// If we've exceeded the limit, then maybe stop the duplicate if it is lower volume
@@ -885,7 +886,7 @@ int ds_get_free_channel_enhanced(float new_volume, int snd_id, int enhanced_prio
 			continue;
 		}
 
-		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), continue );
+		OpenAL_ErrorCheck( alGetSourcei(chp->source_id, AL_SOURCE_STATE, &status), goto continue_channels );
 
 		if ( (status == AL_INITIAL) || (status == AL_STOPPED) ) {
 			ds_close_channel_fast(i);
@@ -924,6 +925,7 @@ int ds_get_free_channel_enhanced(float new_volume, int snd_id, int enhanced_prio
 				least_important_priority = chp->priority;
 			}
 		}
+continue_channels: ;
 	}
 
 	// If we've exceeded the limit, then stop the least important duplicate if it is lower or equal volume
