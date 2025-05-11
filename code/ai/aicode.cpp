@@ -3534,6 +3534,13 @@ void ai_start_waypoints(object *objp, int wp_list_index, int wp_flags, int start
 		wp_list = find_waypoint_list_at_index(wp_list_index);
 	}
 
+	if (wp_list->get_waypoints().empty())
+	{
+		Warning(LOCATION, "Waypoint list '%s' is empty!", wp_list->get_name());
+		aip->mode = AIM_NONE;
+		return;
+	}
+
 	auto wp = find_waypoint_at_index(wp_list, start_index);
 	if (!wp)
 	{
