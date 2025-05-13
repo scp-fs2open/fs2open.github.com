@@ -25208,8 +25208,8 @@ void sexp_set_training_context_fly_path(int node)
 {
 	bool is_nan, is_nan_forever;
 
-	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
-	if (wp_list == nullptr)
+	int wp_list = find_matching_waypoint_list_index(CTEXT(node));
+	if (wp_list < 0)
 		return;
 
 	int distance = eval_num(CDR(node), is_nan, is_nan_forever);
@@ -25217,7 +25217,7 @@ void sexp_set_training_context_fly_path(int node)
 		return;
 
 	Training_context |= TRAINING_CONTEXT_FLY_PATH;
-	Training_context_waypoint_path = find_index_of_waypoint_list(wp_list);
+	Training_context_waypoint_path = wp_list;
 	Training_context_distance = static_cast<float>(distance);
 	Training_context_goal_waypoint = 0;
 	Training_context_at_waypoint = -1;

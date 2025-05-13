@@ -1472,28 +1472,74 @@ ADE_FUNC(createDebris,
 	return ade_set_args(L, "o", l_Debris.Set(object_h(obj)));
 }
 
+ADE_FUNC(createWaypointList, l_Mission, "[string name]",
+	"Creates a waypoint list.  If a name is not specified, the list will have a default name.  Be sure to populate the list with at least one waypoint before using it!",
+	"waypointlist",
+	"Waypoint list handle, or invalid handle if waypoint list couldn't be created")
+{
+	char buf[NAME_LENGTH];
+	const char* name = nullptr;
+	if (!ade_get_args(L, "|s", &name))
+		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+
+	// use either a specified name...
+	if (name)
+	{
+		auto list = find_matching_waypoint_list(name);
+		if (list)
+		{
+			Warning(LOCATION, "Waypoint list '%s' already exists!", name);
+			return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+		}
+		if (strlen(name) > NAME_LENGTH - 1)
+		{
+			Warning(LOCATION, "Waypoint list name '%s' must be at most %d characters!", name, NAME_LENGTH - 1);
+			return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+		}
+		strcpy_s(buf, name);
+	}
+	// ...or a generated name
+	else
+	{
+		waypoint_find_unique_name(buf, static_cast<int>(Waypoint_lists.size()) + 1);
+	}
+
+	// add new list with that name
+	Waypoint_lists.emplace_back(buf);
+	return ade_set_args(L, "o", l_WaypointList.Set(waypointlist_h(static_cast<int>(Waypoint_lists.size()) - 1)));
+}
+
 ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
-		 "Creates a waypoint",
+		 "Creates a waypoint.  If Position is not specified, the waypoint will be at (0,0,0).  If List is not specified, a new list will be created and the waypoint will be added to it.",
 		 "waypoint",
 		 "Waypoint handle, or invalid waypoint handle if waypoint couldn't be created")
 {
-	vec3d *v3 = NULL;
-	waypointlist_h *wlh = NULL;
+	vec3d *v3 = nullptr;
+	waypointlist_h *wlh = nullptr;
 	if(!ade_get_args(L, "|oo", l_Vector.GetPtr(&v3), l_WaypointList.GetPtr(&wlh)))
 		return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 
-	// determine where we need to create it - it looks like we were given a waypoint list but not a waypoint itself
+	// determine where we need to create it - if we were given a waypoint list, put it at the end
+	// (unless the list is empty, in which case put it at the beginning)
 	int waypoint_instance = -1;
+	bool first_waypoint_in_list = false;
 	if (wlh && wlh->isValid())
 	{
-		int wp_list_index = find_index_of_waypoint_list(wlh->getList());
-		int wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
+		int wp_list_index = wlh->wl_index;
+		int wp_index;
+		if (wlh->getList()->get_waypoints().empty())
+		{
+			wp_index = 0;
+			first_waypoint_in_list = true;
+		}
+		else
+			wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
 		waypoint_instance = calc_waypoint_instance(wp_list_index, wp_index);
 	}
-	int obj_idx = waypoint_add(v3 != NULL ? v3 : &vmd_zero_vector, waypoint_instance);
+	int obj_idx = waypoint_add(v3 != nullptr ? v3 : &vmd_zero_vector, waypoint_instance, first_waypoint_in_list);
 
 	if(obj_idx >= 0)
-		return ade_set_args(L, "o", l_Waypoint.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Waypoint.Set(object_h(obj_idx)));
 	else
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h()));
 }
