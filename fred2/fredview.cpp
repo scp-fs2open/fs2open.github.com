@@ -3083,6 +3083,8 @@ int CFREDView::global_error_check_mixed_player_wing(int w)
 
 int CFREDView::global_error_check_player_wings(int multi)
 {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	int i, z, err;
 	int starting_wing_count[MAX_STARTING_WINGS];
 	int tvt_wing_count[MAX_TVT_WINGS];
