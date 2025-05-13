@@ -283,7 +283,6 @@ void common_buttons_init(UI_WINDOW *ui_window)
 	if ( brief_only_allow_briefing() ) {
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_SS_REGION].button.disable();
 		Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_REGION].button.disable();
-		ui_window->add_XSTR("Ships/Weapons Locked", 749, Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_BUTTON].xt, Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_BUTTON].yt + 30, &Common_buttons[Current_screen-1][gr_screen.res][COMMON_WEAPON_BUTTON].button, UI_XSTR_COLOR_GREEN);
 	}
 }
 
