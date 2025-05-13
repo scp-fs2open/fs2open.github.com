@@ -229,12 +229,10 @@ namespace particle {
 				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
 
 				required_string("+Curve Name:");
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				curve = curve_get_by_name(buf);
+				curve = curve_parse();
 
 				if (curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
+					error_display(0, "Could not find curve");
 				}
 			}
 		}
@@ -305,24 +303,20 @@ namespace particle {
 
 		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_size_lifetime_curve = curve_get_by_name(buf);
+				effect.m_size_lifetime_curve = curve_parse();
 
 				if (effect.m_size_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
+					error_display(0, "Could not find curve");
 				}
 			}
 		}
 
 		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
+				effect.m_vel_lifetime_curve = curve_parse();
 
 				if (effect.m_vel_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
+					error_display(0, "Could not find curve");
 				}
 			}
 		}
