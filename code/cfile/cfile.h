@@ -30,6 +30,9 @@
 // Opaque file handle
 struct CFILE;
 
+// For passing pack compression info pointers to CFILE
+struct COMPRESSION_INFO;
+
 // extra info that can be returned when getting a file listing
 typedef struct {
 	time_t write_time;
@@ -379,7 +382,7 @@ struct CFileLocation {
 	size_t offset        = 0;
 	time_t m_time        = 0;
 	const void* data_ptr = nullptr;
-
+	COMPRESSION_INFO* pack_ci_ptr = nullptr; //Pointer to the pack COMPRESSION_INFO if it has one;
 	explicit CFileLocation(bool found_in = false) : found(found_in) {}
 };
 

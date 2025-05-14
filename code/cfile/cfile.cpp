@@ -105,7 +105,7 @@ static const char *Cfile_cdrom_dir = NULL;
 //
 static int cfget_cfile_block();
 static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* original_filename, FILE * fp, int type);
-static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size, COMPRESSION_INFO* pack_ci_ptr);
 static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type);
 
 #if defined _WIN32
@@ -812,7 +812,7 @@ CFILE *_cfopen_special(const char* source, int line, const CFileLocation &res, c
 		if (fp) {
 			if (res.offset) {
 				// Found it in a pack file
-				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size);
+				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size, res.pack_ci_ptr);
 			}
 			else {
 				// Found it in a normal file
@@ -983,7 +983,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size, COMPRESSION_INFO* pack_ci_ptr)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1006,6 +1006,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
+		cfp->pack_ci_ptr = pack_ci_ptr;
 		cf_check_compression(cfp);
 		return cfp;
 	}

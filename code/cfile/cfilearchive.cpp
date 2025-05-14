@@ -54,31 +54,53 @@ void cf_init_lowlevel_read_code( CFILE * cfile, size_t lib_offset, size_t size, 
 	}
 }
 
-//This function checks the file header to see if the file is compressed, if so it fills the correct compression info.
+//This function checks the file header to see if the file is compressed, if so it inits the compression_info struct.
 void cf_check_compression(CFILE* cfile)
 {
-	if (cfile->size <= 16)
+	if (cfile->pack_ci_ptr != nullptr)
+		return; //No compressed files inside compressed packs, please.
+
+	if (cfile->size <= COMP_FILE_MIN_SIZE)
 		return;
-	int header=cfread_int(cfile);
-	cfseek(cfile, 0, SEEK_SET);
-	if (comp_check_header(header) == COMP_HEADER_MATCH)
-		comp_create_ci(cfile, header);
+
+	// Read file header magic
+	char header[COMP_HEADER_MAX_BYTES];
+	cfread(header, COMP_HEADER_MAX_BYTES, 1, cfile);
+	cfseek(cfile, 0, SEEK_SET); 
+	auto header_id = comp_get_header(header);
+
+	if (header_id != COMP_HEADER_IS_UNKNOWN) {
+		// Is a supported compressed file, load up compression info
+		comp_create_ci(cfile, header_id);
+	}
 }
 
-//This function is called to cleanup compression info when the cfile handle is reused.
+//This function is called to cleanup compression_info when the cfile handle is reused.
 void cf_clear_compression_info(CFILE* cfile)
 {
-	if (cfile->compression_info.header != 0)
-	{
-		free(cfile->compression_info.offsets);
+	if (comp_cfile_uses_compression(cfile) == 1) {
 		free(cfile->compression_info.decoder_buffer);
-		cfile->compression_info.offsets = nullptr;
+		cfile->size = cfile->compression_info.compressed_size; // Important! Restore the real file size on disk
 		cfile->compression_info.decoder_buffer = nullptr;
-		cfile->compression_info.header = 0;
 		cfile->compression_info.block_size = 0;
 		cfile->compression_info.last_decoded_block_pos = 0;
 		cfile->compression_info.last_decoded_block_bytes = 0;
-		cfile->compression_info.num_offsets = 0;
+		cfile->compression_info.uncompressed_size = 0;
+		cfile->compression_info.compressed_size = 0;
+		if (cfile->compression_info.header = COMP_HEADER_IS_LZ41) {
+			free(cfile->compression_info.offsets);
+			cfile->compression_info.offsets = nullptr;
+			cfile->compression_info.num_offsets = 0;
+		}
+
+		if (cfile->compression_info.header = COMP_HEADER_IS_XZ) {
+			lzma_index_end(cfile->compression_info.xz_block_index, NULL);
+			cfile->compression_info.xz_block_index = nullptr;
+			free(cfile->compression_info.xz_index_iter);
+			cfile->compression_info.xz_index_iter = nullptr;
+		}
+		cfile->compression_info.header = COMP_HEADER_IS_UNKNOWN;
+		cfile->pack_ci_ptr = nullptr;
 	}
 }
 
@@ -91,7 +113,7 @@ void cf_clear_compression_info(CFILE* cfile)
 int cfeof(CFILE *cfile)
 {
 	Assert(cfile != NULL);
-	if (cfile->compression_info.header != 0)
+	if (comp_cfile_uses_compression(cfile) == 1)
 		return comp_feof(cfile);
 	int result = 0;
 
@@ -119,7 +141,7 @@ int cfeof(CFILE *cfile)
 int cftell( CFILE * cfile )
 {
 	Assert(cfile != NULL);
-	if (cfile->compression_info.header != 0)
+	if (comp_cfile_uses_compression(cfile) == 1)
 		return (int)comp_ftell(cfile);
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
@@ -146,7 +168,7 @@ int cfseek( CFILE *cfile, int offset, int where )
 
 	Assert(cfile != NULL);
 
-	if (cfile->compression_info.header != 0)
+	if (comp_cfile_uses_compression(cfile) == 1)
 		return comp_fseek(cfile, offset, where);
 
 	// TODO: seek to offset in memory mapped file
@@ -234,7 +256,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 		// This is a file from memory
 		bytes_read = size;
 		memcpy(buf, reinterpret_cast<const char*>(cfile->data) + cfile->raw_position, size);
-	} else if (cfile->compression_info.header != 0) {
+	} else if (comp_cfile_uses_compression(cfile) == 1) {
 		bytes_read = comp_fread(cfile, reinterpret_cast<char*>(buf),size);
 		if (bytes_read != size)
 		{
@@ -252,7 +274,7 @@ int cfread(void *buf, int elsize, int nelem, CFILE *cfile)
 
 	#if defined(CHECK_POSITION) && !defined(NDEBUG)
 	//Raw position is not the fp position with compressed files
-    if (cfile->fp && cfile->compression_info.header == 0) {
+	if (cfile->fp && comp_cfile_uses_compression(cfile) == 0) {
 		auto tmp_offset = ftell(cfile->fp) - cfile->lib_offset;
 		Assert(tmp_offset == cfile->raw_position);
 	}
