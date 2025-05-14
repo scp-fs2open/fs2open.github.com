@@ -165,6 +165,7 @@ bool Preload_briefing_icon_models;
 EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 bool Fix_asteroid_bounding_box_check;
 bool Disable_intro_movie;
+bool Show_locked_status_scramble_missions;
 
 
 #ifdef WITH_DISCORD
@@ -1504,6 +1505,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Disable_intro_movie);
 			}
 
+			if (optional_string("$Show locked status for scramble missions:")) {
+				stuff_boolean(&Show_locked_status_scramble_missions);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1733,6 +1738,7 @@ void mod_table_reset()
 	escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
 	Fix_asteroid_bounding_box_check = false;
 	Disable_intro_movie = false;
+	Show_locked_status_scramble_missions = false;
 }
 
 void mod_table_set_version_flags()
