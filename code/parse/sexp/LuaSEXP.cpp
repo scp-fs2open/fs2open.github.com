@@ -733,7 +733,7 @@ void LuaSEXP::parseTable() {
 
 			if (new_enum) {
 				type.second = increment_enum_list_id();
-				Dynamic_enums.push_back(thisList);
+				Dynamic_enums.push_back(std::move(thisList));
 			} else {
 				// Not an error but large mods may lose track of their enum names and I thought this would be helpful -Mjn
 				mprintf(("Found previously existing Lua Enum '%s'. Using that for sexp '%s'!\n",

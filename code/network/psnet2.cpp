@@ -1101,7 +1101,7 @@ static bool psnet_explode_ip_string(const char *ip_string, SCP_string &host, SCP
 		host = ip.substr(0, colon);
 		port = ip.substr(colon + 1);
 	} else {
-		host = ip;
+		host = std::move(ip);
 	}
 
 	return true;

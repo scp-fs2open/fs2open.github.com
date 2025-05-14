@@ -495,6 +495,24 @@ CJumpNode *jumpnode_get_by_objnum(int objnum)
 }
 
 /**
+ * Get jump node object by the object pointer
+ *
+ * @param objp to search for
+ * @return Jump node object pointer
+ */
+CJumpNode *jumpnode_get_by_objp(const object *objp)
+{
+	Assert(objp != nullptr);
+
+	for (CJumpNode &jnp : Jump_nodes) {
+		if (jnp.GetSCPObject() == objp)
+			return &(jnp);
+	}
+
+	return nullptr;
+}
+
+/**
  * Given an object, returns which jump node it's inside (if any)
  *
  * @param objp Object

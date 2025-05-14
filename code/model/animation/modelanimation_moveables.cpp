@@ -178,7 +178,7 @@ namespace animation {
 
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOffset(submodel, m_defaultOffset, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(submodel, m_defaultOffset, m_velocity, std::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(std::move(submodel), m_defaultOffset, m_velocity, std::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
 
 		anim->setAnimation(sequence);
 
@@ -377,7 +377,7 @@ namespace animation {
 			auto submodel = parentSet->getSubmodel(link.submodel);
 			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(submodel, std::optional<angles>({0,0,0}), std::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 			parallelIK->addSegment(rotation);
-			segment->m_chain.push_back({submodel, link.constraint, rotation});
+			segment->m_chain.push_back({submodel, link.constraint, std::move(rotation)});
 		}
 		
 		sequence->addSegment(segment);
@@ -432,7 +432,7 @@ namespace animation {
 			} else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 
-			chain.push_back({submodel, constraint, acceleration});
+			chain.push_back({std::move(submodel), constraint, acceleration});
 		}
 		
 		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(chain, time));

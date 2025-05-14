@@ -874,8 +874,8 @@ void credits_do_frame(float  /*frametime*/)
 			// Check if the text part is actually visible
 			if (Credit_position + y_offset + height > 0.0f)
 			{
-				float x = static_cast<float>((gr_screen.clip_width_unscaled - width) / 2);
-				gr_string(x, Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, 1.0f, length);
+				int x = (gr_screen.clip_width_unscaled - width) / 2;
+				gr_string(i2fl(x), Credit_position + y_offset, iter->c_str() + currentPos, GR_RESIZE_MENU, 1.0f, length);
 			}
 
 			y_offset += height;
