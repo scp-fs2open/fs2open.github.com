@@ -180,6 +180,7 @@ extern bool Preload_briefing_icon_models;
 extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 extern bool Fix_asteroid_bounding_box_check;
 extern bool Disable_intro_movie;
+extern bool Show_locked_status_scramble_missions;
 
 void mod_table_init();
 void mod_table_post_process();
