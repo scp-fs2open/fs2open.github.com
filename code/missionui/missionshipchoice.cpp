@@ -1475,7 +1475,7 @@ void ship_select_do(float frametime)
 
 		draw_ship_icons();
 		for ( int i = 0; i < MAX_WING_BLOCKS; i++ ) {
-			draw_wing_block(i, Hot_ss_slot, -1, Selected_ss_class);
+			draw_wing_block(i, Hot_ss_slot, -1, Selected_ss_class, true, false);
 		}		
 	}
 	
@@ -2142,7 +2142,7 @@ void pick_from_wing(int wb_num, int ws_num)
 //				hot_slot	=>		index of slot that mouse is over
 //				selected_slot	=>	index of slot that is selected
 //				class_select	=>	all ships of this class are drawn selected (send -1 to not use)
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection )
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection, bool always_highlight_ply )
 {
 	GR_DEBUG_SCOPE("Wing block");
 
@@ -2259,7 +2259,7 @@ void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_sele
 					}
 				}
 
-				if ( ws->status & WING_SLOT_IS_PLAYER && (selected_slot != slot_index) )
+				if ( ws->status & WING_SLOT_IS_PLAYER && (always_highlight_ply || (selected_slot != slot_index)) )
 				{
 					if(icon->model_index == -1)
 						bitmap_to_draw = icon->icon_bmaps[ICON_FRAME_PLAYER];

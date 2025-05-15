@@ -82,7 +82,7 @@ typedef struct ss_wing_info {
 extern ss_wing_info Ss_wings_teams[MAX_TVT_TEAMS][MAX_WING_BLOCKS];
 extern ss_wing_info* Ss_wings;
 
-void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection = true);
+void draw_wing_block(int wb_num, int hot_slot, int selected_slot, int class_select, bool ship_selection = true, bool always_highlight_ply = false);
 void ship_select_init();
 void ship_select_do(float frametime);
 void ship_select_close();
