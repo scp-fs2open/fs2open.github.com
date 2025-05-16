@@ -21,14 +21,14 @@ struct CFILE;
 #include "liblzma/api/lzma.h"
 
 /*LZ41*/
-const char LZ41_HEADER_MAGIC[4] = { 'L', 'Z', '4', '1' };
+const unsigned char LZ41_HEADER_MAGIC[4] = { 'L', 'Z', '4', '1' };
 #define LZ41_DECOMPRESSION_ERROR -1
 #define LZ41_MAX_BLOCKS_OVERFLOW -2
 #define LZ41_HEADER_MISMATCH -3
 #define LZ41_OFFSETS_MISMATCH -4
 
 /* XZ (liblzma) */
-const char XZ_HEADER_MAGIC[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
+const unsigned char XZ_HEADER_MAGIC[6] = { 0xFD, '7', 'z', 'X', 'Z', 0x00 };
 
 /******/
 
@@ -108,4 +108,19 @@ int comp_feof(CFILE* cf);
 */
 int comp_fseek(CFILE* cf, int offset, int where);
 
+/*
+	Use when you dont know if the file is compressed or not
+	If it is compressed based on CI data, it will use the comp_fread function, if not it will use the regular fread function.
+	Returned value is should be the same on both cases.
+	Requieres an external ptr to size_t variable "file_pos" to keep track of the uncompressed file position as if it where a FILE pointer.
+*/
+
+size_t comp_compatible_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, size_t* file_pos, COMPRESSION_INFO* ci);
+/*
+	Use when you dont know if the file is compressed or not
+	If it is compressed based on CI data, it will use the comp_fseek function, if not it will use the regular fseek
+	function. Returned value is should be the same on both cases. Requieres an external ptr to size_t variable "file_pos"
+	to keep track of the uncompressed file position as if it where a FILE pointer.
+*/
+int comp_compatible_fseek(FILE* fp, size_t* file_pos, long offset, int where, COMPRESSION_INFO* ci);
 #endif

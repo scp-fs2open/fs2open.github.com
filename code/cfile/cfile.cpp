@@ -1651,7 +1651,7 @@ static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max
 }
 
 // get the chksum of a pack file (VP)
-int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
+int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, bool full)
 {
 	const size_t safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
@@ -1659,6 +1659,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	size_t read_size;
 	size_t max_size;
+	size_t file_pos = 0;
 
 	if (chk_long == NULL) {
 		Int3();
@@ -1675,12 +1676,17 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 	*chk_long = 0;
 
 	// get the max size
-	fseek(fp, 0, SEEK_END);
-	max_size = (size_t)ftell(fp);
+	comp_compatible_fseek(fp, &file_pos, 0, SEEK_END, ci);
+	if (ci->header == COMP_HEADER_IS_UNKNOWN) {
+		max_size = (size_t)ftell(fp);
+	} else {
+		max_size = file_pos;
+	}
+		
 
 	// maybe do a chksum of the entire file
 	if (full) {
-		fseek(fp, 0, SEEK_SET);
+		comp_compatible_fseek(fp, &file_pos, 0, SEEK_SET, ci);
 	}
 	// othewise it's only a partial check
 	else {
@@ -1692,7 +1698,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 			"max_size (" SIZE_T_ARG ") > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
-		fseek(fp, -((long)max_size), SEEK_END);
+		comp_compatible_fseek(fp, &file_pos, -((long)max_size), SEEK_END, ci);
 	}
 
 	size_t cf_total = 0;
@@ -1705,7 +1711,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 			read_size = max_size - cf_total;
 
 		// read in some buffer
-		cf_len = fread(cf_buffer, 1, read_size, fp);
+		cf_len = comp_compatible_fread(cf_buffer, 1, read_size, fp, &file_pos, ci);
 
 		// total we've read so far
 		cf_total += cf_len;

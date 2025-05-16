@@ -277,7 +277,7 @@ int cf_chksum_long(const char *filename, uint *chksum, int max_size = -1, int cf
 // NOTE : preserves current file position
 int cf_chksum_long(CFILE *file, uint *chksum, int max_size = -1);
 
-int cf_chksum_pack(const char *filename, uint *chk_long, bool full = false);
+int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, bool full = false);
 
 // convenient for misc checksumming purposes ------------------------------------------
 

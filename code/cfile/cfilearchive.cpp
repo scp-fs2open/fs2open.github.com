@@ -87,13 +87,13 @@ void cf_clear_compression_info(CFILE* cfile)
 		cfile->compression_info.last_decoded_block_bytes = 0;
 		cfile->compression_info.uncompressed_size = 0;
 		cfile->compression_info.compressed_size = 0;
-		if (cfile->compression_info.header = COMP_HEADER_IS_LZ41) {
+		if (cfile->compression_info.header == COMP_HEADER_IS_LZ41) {
 			free(cfile->compression_info.offsets);
 			cfile->compression_info.offsets = nullptr;
 			cfile->compression_info.num_offsets = 0;
 		}
 
-		if (cfile->compression_info.header = COMP_HEADER_IS_XZ) {
+		if (cfile->compression_info.header == COMP_HEADER_IS_XZ) {
 			lzma_index_end(cfile->compression_info.xz_block_index, NULL);
 			cfile->compression_info.xz_block_index = nullptr;
 			free(cfile->compression_info.xz_index_iter);

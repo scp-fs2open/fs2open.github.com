@@ -119,10 +119,6 @@ static SCP_vector<std::unique_ptr<cf_file_block>> File_blocks;
 
 //Check if a root pack is compressed
 void cf_root_check_compression_info(cf_root* cr);
-//Replacement fread for root packs that may be compressed, uses fread() or comp_fread() depending if the pack is compressed or not
-size_t cf_root_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, size_t* file_pos, COMPRESSION_INFO* ci);
-// Replacement fseek for root packs that may be compressed, uses fseek() or comp_fseek() depending if the pack is compressed or not
-int cf_root_fseek(FILE* fp, size_t* file_pos, size_t offset, int where, COMPRESSION_INFO* ci);
 
 // Return a pointer to to file 'index'.
 cf_file *cf_get_file(int index)
@@ -589,10 +585,9 @@ void cf_build_pack_list( cf_root *root )
 		cf_root_check_compression_info(new_root);
 
 #ifndef NDEBUG
-		//TODO: restore this
-		//uint chksum = 0;
-		//cf_chksum_pack(s_root.path.c_str(), &chksum);
-		//mprintf(("Found root pack '%s' with a checksum of 0x%08x\n", s_root.path.c_str(), chksum));
+		uint chksum = 0;
+		cf_chksum_pack(s_root.path.c_str(), &chksum, &new_root->compression_info);
+		mprintf(("Found root pack '%s' with a checksum of 0x%08x\n", s_root.path.c_str(), chksum));
 #endif
 	}
 }
@@ -1009,45 +1004,6 @@ static int cf_add_pack_files(const int root_index, SCP_vector<_file_list_t> &fil
 	return static_cast<int>(files.size());
 }
 
-size_t cf_root_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, size_t* file_pos, COMPRESSION_INFO* ci)
-{
-	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
-		auto read = comp_fread(ci, fp, 0, (char*)dest, *file_pos, elem_size * elem_num);
-		*file_pos += read;
-		return read / elem_size;
-	}
-
-	return fread(dest, elem_size, elem_num, fp);
-}
-
-int cf_root_fseek(FILE *fp, size_t *file_pos, size_t offset, int where, COMPRESSION_INFO* ci)
-{
-	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
-		size_t goal_position;
-		switch (where) {
-		case SEEK_SET:
-			goal_position = offset;
-			break;
-		case SEEK_CUR:
-			goal_position = *file_pos + offset;
-			break;
-		case SEEK_END:
-			goal_position = ci->uncompressed_size + offset;
-			break;
-		default:
-			return 1;
-		}
-
-		// Make sure we don't seek beyond the end of the file
-		CAP(goal_position, (size_t)0, ci->uncompressed_size);
-
-		*file_pos = goal_position;
-		return 0;
-	}
-
-	return fseek(fp, offset, where);
-}
-
 void cf_search_root_pack(int root_index)
 {
 	int num_files = 0;
@@ -1062,9 +1018,9 @@ void cf_search_root_pack(int root_index)
 		return;
 	}
 
-	size_t file_pos = 0;
+	size_t file_pos = 0; //uncompressed file position for compressed packs
 
-	auto file_len = root->compression_info.header != COMP_HEADER_IS_UNKNOWN ? root->compression_info.compressed_size : filelength(fileno(fp));
+	auto file_len = root->compression_info.header != COMP_HEADER_IS_UNKNOWN ? root->compression_info.uncompressed_size : filelength(fileno(fp));
 
 	if (file_len < (int)(sizeof(VP_FILE_HEADER) + (sizeof(int) * 3))) {
 		mprintf(( "Skipping VP file ('%s') of invalid size...\n", root->path.c_str() ));
@@ -1075,7 +1031,7 @@ void cf_search_root_pack(int root_index)
 	VP_FILE_HEADER VP_header;
 
 	Assert( sizeof(VP_header) == 16 );
-	if (cf_root_fread(&VP_header, sizeof(VP_header), 1, fp, &file_pos, &root->compression_info) != 1) {
+	if (comp_compatible_fread(&VP_header, sizeof(VP_header), 1, fp, &file_pos, &root->compression_info) != 1) {
 		mprintf(("Skipping VP file ('%s') because the header could not be read...\n", root->path.c_str()));
 		fclose(fp);
 		return;
@@ -1088,7 +1044,7 @@ void cf_search_root_pack(int root_index)
 	mprintf(( "Searching root pack '%s' ... ", root->path.c_str() ));
 
 	// Read index info
-	cf_root_fseek(fp, &file_pos, VP_header.index_offset, SEEK_SET, &root->compression_info);
+	comp_compatible_fseek(fp, &file_pos, VP_header.index_offset, SEEK_SET, &root->compression_info);
 
 
 	SCP_string search_path;
@@ -1104,7 +1060,7 @@ void cf_search_root_pack(int root_index)
 	for (i=0; i<VP_header.num_files; i++ )	{
 		VP_FILE find;
 
-		if (cf_root_fread(&find, sizeof(VP_FILE), 1, fp, &file_pos, &root->compression_info) != 1) {
+		if (comp_compatible_fread(&find, sizeof(VP_FILE), 1, fp, &file_pos, &root->compression_info) != 1) {
 			mprintf(("Failed to read file entry (currently in directory %s)!\n", search_path.c_str()));
 			break;
 		}
@@ -2582,7 +2538,7 @@ void cfile_spew_pack_file_crcs()
 			continue;
 
 		chksum = 0;
-		cf_chksum_pack(cur_root->path.c_str(), &chksum, true);
+		cf_chksum_pack(cur_root->path.c_str(), &chksum, &cur_root->compression_info, true);
 
 		fprintf(out, "  %s  --  0x%x\n", cur_root->path.c_str(), chksum);
 	}

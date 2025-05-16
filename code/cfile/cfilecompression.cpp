@@ -25,15 +25,11 @@ void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t fi
 /*XZ*/
 void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size);
 // Called by xz_stream_random_access(). Do not use directly!
-// Block decoder intended to be used for multithreaded cases
 int xz_block_decoder(COMPRESSION_INFO *ci, size_t uncompressed_size, size_t input_size, uint8_t* input_buffer, char* bytes_out, size_t offset, size_t copyLength, bool save_to_cache);
-// Called by xz_stream_random_access(). Do not use directly!
-// Single block decoding version for when we are sure we only need to decode one block, use the minimum amount of code as possible
-size_t xz_stream_random_access_single_block_optimised(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length); 
 size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length);
 /*MISC*/
-int fso_fseek(CFILE* cfile, int offset, int where);
-int fso_fseek(FILE* fp, size_t compressed_size, size_t lib_offset, int offset, int where);
+int fso_fseek(CFILE* cfile, long offset, int where);
+int fso_fseek(FILE* fp, size_t compressed_size, size_t lib_offset, long offset, int where);
 /*END OF INTERNAL FUNCTIONS*/
 
 int comp_cfile_uses_compression(CFILE* cf)
@@ -46,11 +42,11 @@ int comp_cfile_uses_compression(CFILE* cf)
 int comp_get_header(char* header)
 {
 	//XZ
-	if (strncmp(header, XZ_HEADER_MAGIC, sizeof(XZ_HEADER_MAGIC)) == 0)
+	if (memcmp(header, XZ_HEADER_MAGIC, sizeof(XZ_HEADER_MAGIC)) == 0)
 		return COMP_HEADER_IS_XZ;
 
 	//LZ41
-	if (strncmp(header, LZ41_HEADER_MAGIC, sizeof(LZ41_HEADER_MAGIC)) == 0)
+	if (memcmp(header, LZ41_HEADER_MAGIC, sizeof(LZ41_HEADER_MAGIC)) == 0)
 		return COMP_HEADER_IS_LZ41;
 
 	return COMP_HEADER_IS_UNKNOWN;
@@ -149,8 +145,41 @@ int comp_fseek(CFILE* cf, int offset, int where)
 	return 0;
 }
 
+size_t comp_compatible_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, size_t* file_pos, COMPRESSION_INFO* ci)
+{
+	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
+		auto read = comp_fread(ci, fp, 0, (char*)dest, *file_pos, elem_size * elem_num);
+		*file_pos += read;
+		return read / elem_size;
+	}
+
+	return fread(dest, elem_size, elem_num, fp);
+}
+
+int comp_compatible_fseek(FILE* fp, size_t* file_pos, long offset, int where, COMPRESSION_INFO* ci)
+{
+	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
+		size_t goal_position;
+		switch (where) {
+		case SEEK_SET: goal_position = offset; break;
+		case SEEK_CUR: goal_position = *file_pos + offset; break;
+		case SEEK_END: goal_position = ci->uncompressed_size + offset; break;
+		default:
+			return 1;
+		}
+
+		// Make sure we don't seek beyond the end of the file
+		CAP(goal_position, (size_t)0, ci->uncompressed_size);
+
+		*file_pos = goal_position;
+		return 0;
+	}
+
+	return fseek(fp, offset, where);
+}
+
 //Special fseek for compressed files handled by FSO, only SEEK_SET and SEEK_END is supported.
-int fso_fseek(FILE *fp, size_t compressed_size, size_t lib_offset, int offset, int where)
+int fso_fseek(FILE *fp, size_t compressed_size, size_t lib_offset, long offset, int where)
 {
 	size_t goal_position;
 
@@ -176,7 +205,7 @@ int fso_fseek(FILE *fp, size_t compressed_size, size_t lib_offset, int offset, i
 }
 
 // Special fseek for compressed files handled by FSO, only SEEK_SET and SEEK_END is supported.
-int fso_fseek(CFILE* cfile, int offset, int where)
+int fso_fseek(CFILE* cfile, long offset, int where)
 {
 	return fso_fseek(cfile->fp, cfile->compression_info.compressed_size, cfile->lib_offset, offset, where);
 }
@@ -279,14 +308,11 @@ size_t lz41_stream_random_access(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offs
 
 void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size)
 {
-	ci->header = COMP_HEADER_IS_XZ;
 	ci->compressed_size = file_size;
 
 	lzma_stream strm = LZMA_STREAM_INIT;
 	lzma_ret ret = lzma_file_info_decoder(&strm, &ci->xz_block_index, UINT64_MAX, file_size);
-	if (ret != LZMA_OK) {
-		//TODO
-	}
+	Assertion(ret == LZMA_OK, "Failed to decode XZ file, return code is %d.", ret);
 	
 	strm.avail_in = 0;
 	uint8_t in[LZMA_BLOCK_HEADER_SIZE_MAX];
@@ -308,7 +334,8 @@ void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file
 				strm.avail_in = 0;
 				fso_fseek(fp, file_size, lib_offset, (long)strm.seek_pos, SEEK_SET);
 			} else {
-				//TODO: Info decoding failed
+				//Decoding info failed
+				Assertion(false,  "Failed to decode XZ file info. The return code was %d.", ret);
 			}
 		}
 	}
@@ -327,6 +354,7 @@ void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file
 	ci->decoder_buffer = (char*)malloc(ci->block_size);
 	ci->last_decoded_block_pos = 0;
 	ci->last_decoded_block_bytes = 0;
+	ci->header = COMP_HEADER_IS_XZ;
 }
 
 int xz_block_decoder(COMPRESSION_INFO *ci, size_t block_uncompressed_size, size_t input_size, uint8_t* input_buffer, char* bytes_out, size_t offset, size_t copy_length, bool save_to_cache)
@@ -347,11 +375,16 @@ int xz_block_decoder(COMPRESSION_INFO *ci, size_t block_uncompressed_size, size_
 	block_filters[LZMA_FILTERS_MAX].id = LZMA_VLI_UNKNOWN;
 	block.filters = block_filters;
 	block.header_size = lzma_block_header_size_decode(input_buffer[0]);
-	//TODO: Check header size min/max in debug
+	#if !defined(NDEBUG)
+	Assertion(block.header_size <= LZMA_BLOCK_HEADER_SIZE_MAX && block.header_size >= LZMA_BLOCK_HEADER_SIZE_MIN,
+		"Failed to decode XZ block header size.");
+	#endif
 
 	//Decode block Header
 	auto ret_hd = lzma_block_header_decode(&block, nullptr, input_buffer);
-	//TODO Check return in debug
+	#if !defined(NDEBUG)
+	Assertion(ret_hd == LZMA_OK, "Failed to decode XZ block header, return code is %d.", ret_hd);
+	#endif
 
 	//Set Decoding stream, we must skip the block header
 	lzma_stream stream = LZMA_STREAM_INIT;
@@ -362,10 +395,17 @@ int xz_block_decoder(COMPRESSION_INFO *ci, size_t block_uncompressed_size, size_
 	
 	//Set block decoder
 	auto ret_bd = lzma_block_decoder(&stream, &block);
-	//TODO: Check return in debug
+	#if !defined(NDEBUG)
+	Assertion(ret_bd == LZMA_OK, "Failed to decode XZ block header, return code is %d.", ret_bd);
+	#endif
 
 	//Decode block data
 	auto ret_code = lzma_code(&stream, LZMA_RUN);
+	#if !defined(NDEBUG)
+		Assertion(ret_code == LZMA_STREAM_END || ret_code == LZMA_OK,
+			"Failed to decode XZ block data, return code is %d.",
+			ret_code);
+	#endif
 
 	//Copy decoded data only when saving to cache and partial reads
 	if (save_to_cache || !entire_block)
@@ -381,94 +421,23 @@ int xz_block_decoder(COMPRESSION_INFO *ci, size_t block_uncompressed_size, size_
 	return 0;
 }
 
-size_t xz_stream_random_access_single_block_optimised(COMPRESSION_INFO *ci, FILE *fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length)
-{
-	// Get the first block we need. Do this before changing the offset
-	auto ret = lzma_index_iter_locate(ci->xz_index_iter, offset);
-
-	// Determines the offset of where the data requested starts at the output the first block to decode
-	if (offset != 0) {
-		offset = offset % ci->block_size;
-	}
-
-	// Determine how much data we need to copy from this block to bytes_out
-	size_t copy_length = (length < (ci->xz_index_iter->block.uncompressed_size - offset) ? length : ci->xz_index_iter->block.uncompressed_size - offset);
-
-	// If the requested block is the same as the last decoded block use the cache, otherwise find and decode the block
-	if (ci->last_decoded_block_pos != ci->xz_index_iter->block.compressed_file_offset) {
-		// Seek to the block to read
-		fso_fseek(fp, ci->compressed_size, lib_offset, ci->xz_index_iter->block.compressed_file_offset, SEEK_SET);
-
-		uint8_t* inbuf = (uint8_t*)malloc(ci->xz_index_iter->block.total_size);
-
-		// Read block into memory
-		fread(inbuf, 1, ci->xz_index_iter->block.total_size, fp);
-
-		// Set block
-		lzma_block block;
-		block.check = ci->xz_index_iter->stream.flags->check;
-		lzma_filter block_filters[LZMA_FILTERS_MAX + 1];
-		block_filters[LZMA_FILTERS_MAX].id = LZMA_VLI_UNKNOWN;
-		block.filters = block_filters;
-		block.header_size = lzma_block_header_size_decode(inbuf[0]);
-		// TODO: Check header size min/max in debug
-
-		// Decode block Header
-		auto ret_hd = lzma_block_header_decode(&block, nullptr, inbuf);
-		// TODO Check return in debug
-
-		// Set Decoding stream, we must skip the block header
-		lzma_stream stream = LZMA_STREAM_INIT;
-		stream.next_in = inbuf + block.header_size;
-		stream.next_out = (uint8_t*)ci->decoder_buffer;
-		stream.avail_out = ci->xz_index_iter->block.uncompressed_size;
-		stream.avail_in = ci->xz_index_iter->block.total_size - block.header_size;
-
-		// Set block decoder
-		auto ret_bd = lzma_block_decoder(&stream, &block);
-		// TODO: Check return in debug
-
-		// Decode block data
-		auto ret_code = lzma_code(&stream, LZMA_RUN);
-		
-		// Save data for cache to use later
-		ci->last_decoded_block_bytes = ci->xz_index_iter->block.uncompressed_size;
-		ci->last_decoded_block_pos = ci->xz_index_iter->block.compressed_file_offset;
-
-		//Cleanup
-		free(inbuf);
-		lzma_end(&stream);
-		lzma_filters_free(block_filters, nullptr);
-	}
-
-	// Copy requested data
-	memcpy(bytes_out, ci->decoder_buffer + offset, copy_length);
-
-	return copy_length;
-}
-
-
 size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length)
 {
 	if (length == 0)
 		return 0;
-
-	// Determine the the block number of the first and last block we need to decode
-	size_t start_block = offset / ci->block_size;
-	size_t end_block = (offset + length - 1) / ci->block_size;
-
-	//If we need to decode only one block use the single-block version as it is more efficient
-	if (start_block == end_block) {
-		return xz_stream_random_access_single_block_optimised(ci, fp, lib_offset, bytes_out, offset, length);
-	}
 
 	// Create the thread pool, one thread per block to decode
 	SCP_vector<std::thread> thread_pool;
 	size_t written_bytes = 0;
 
 	// Get the first block we need. Do this before changing the offset
-	auto ret = lzma_index_iter_locate(ci->xz_index_iter, offset);
-	// TODO: Check return in debug
+	auto ret_locate = lzma_index_iter_locate(ci->xz_index_iter, offset);
+	#if !defined(NDEBUG)
+	Assertion(ret_locate == 0,
+		"XZ is unable to seek to position %llu, uncompressed file size is %llu.",
+		offset,
+		ci->uncompressed_size);
+	#endif
 
 	// Determines the offset of where the data requested starts at the output the first block to decode
 	if (offset != 0) {
@@ -484,13 +453,16 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 
 		// If the requested block is the same as the last decoded block use the cache, otherwise find and decode the block
 		if (ci->last_decoded_block_pos != ci->xz_index_iter->block.compressed_file_offset) {
-			// Seek to the block to read
-			fso_fseek(fp, ci->compressed_size, lib_offset, ci->xz_index_iter->block.compressed_file_offset, SEEK_SET);
-
 			uint8_t* inbuf = (uint8_t*)malloc(ci->xz_index_iter->block.total_size);
 
+			// Seek to the block to read
+			if (ftell(fp) != ci->xz_index_iter->block.compressed_file_offset) {
+				fso_fseek(fp, ci->compressed_size, lib_offset, (long)ci->xz_index_iter->block.compressed_file_offset, SEEK_SET);
+			}
+
 			// Read block into memory
-			auto read_bytes = fread(inbuf, 1, ci->xz_index_iter->block.total_size, fp);
+			auto read_bytes = fread(inbuf, ci->xz_index_iter->block.total_size, 1, fp);
+			Assertion(read_bytes == 1, "Error reading from XZ compressed file.");
 
 			// Decode block in thread pool
 			thread_pool.emplace_back(xz_block_decoder,
@@ -504,7 +476,7 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 				is_last_block);
 
 			if (is_last_block) {
-				// Save data for cache to use later
+				// Save data to cache for later
 				ci->last_decoded_block_bytes = ci->xz_index_iter->block.uncompressed_size;
 				ci->last_decoded_block_pos = ci->xz_index_iter->block.compressed_file_offset;
 			}
@@ -516,7 +488,13 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 
 		// Look for the next block if we are not finished
 		if (!is_last_block) {
-			lzma_index_iter_next(ci->xz_index_iter, LZMA_INDEX_ITER_BLOCK);
+			auto ret_next = lzma_index_iter_next(ci->xz_index_iter, LZMA_INDEX_ITER_BLOCK);
+			#if !defined(NDEBUG)
+			Assertion(ret_next == 0,
+				"XZ is unable to seek to position %llu, uncompressed file size is %llu.",
+				offset,
+				ci->uncompressed_size);
+			#endif
 		}
 
 		written_bytes += copy_length;
