@@ -61,6 +61,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "weapon.h"
+#include "model/modelrender.h"
 
 
 // Since SSMs are parsed after weapons, if we want to allow SSM strikes to be specified by name, we need to store those names until after SSMs are parsed.
@@ -9257,7 +9258,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state);
+						headon_framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state);
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
@@ -9363,7 +9364,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames) * anim_state);
+						headon_framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames) * anim_state);
 					} else {
 						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
 					}
@@ -10471,10 +10472,21 @@ float weapon_get_age(const weapon& wp) {
 
 float weapon_get_viewing_angle(const weapon& wp) {
 	object* wep_objp = &Objects[wp.objnum];
-	weapon_info* wip = &Weapon_info[wp.weapon_info_index];
 
 	vec3d reye;
 	vm_vec_sub(&reye, &Eye_position, &wep_objp->pos);
 	vm_vec_normalize(&reye);
 	return vm_vec_dot(&reye, &wep_objp->orient.vec.fvec);
+}
+
+float weapon_get_apparent_size(const weapon& wp) {
+	object* wep_objp = &Objects[wp.objnum];
+
+	float dist = vm_vec_dist(&Eye_position, &wep_objp->pos);
+	
+	return convert_distance_and_diameter_to_pixel_size(
+		dist,
+		wep_objp->radius,
+		fl_degrees(g3_get_hfov(Eye_fov)),
+		gr_screen.max_h) / i2fl(gr_screen.max_h);
 }
