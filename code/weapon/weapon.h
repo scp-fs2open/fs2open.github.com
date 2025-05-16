@@ -744,6 +744,7 @@ struct weapon_info
 			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
 			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
 			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
+			std::pair {"Base Damage", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::damage>{}},
 			std::pair {"Max Hitpoints", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>{}},
 			std::pair {"Current Hitpoints", modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>{}},
 			std::pair {"Hitpoints Fraction", modular_curves_math_input<
