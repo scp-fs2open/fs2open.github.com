@@ -44,6 +44,21 @@ namespace Object {
 		Autoaim_convergence,   // has autoaim with convergence
 		Convergence_offset,    // marks that convergence has offset valuem, only used for ships not weapons
 
+		NUM_VALUES
+	};
+
+	FLAG_LIST(Raw_Pof_Flags){Glowmaps_disabled, // No glowmaps for this weapon instance
+		Draw_as_wireframe,                      // Render wireframe for this weapon instance
+		Render_full_detail,                     // Render full detail for this weapon instance
+		Render_without_light,                   // Render without light for this weapon instance
+		Render_without_diffuse,                 // Render without diffuse for this weapon instance
+		Render_without_glowmap,                 // Render without glowmap for this weapon instance
+		Render_without_normalmap,               // Render without normal map for this weapon instance
+		Render_without_heightmap,               // Render without height map for this weapon instance
+		Render_without_ambientmap,              // Render without ambient for this weapon instance
+		Render_without_specmap,                 // Render without spec for this weapon instance
+		Render_without_reflectmap,              // Render without reflect for this weapon instance
+
 		NUM_VALUES};
 	}
 

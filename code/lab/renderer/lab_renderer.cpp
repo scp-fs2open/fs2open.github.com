@@ -1,4 +1,5 @@
 #include "freespace.h"
+#include "asteroid/asteroid.h"
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
@@ -74,7 +75,10 @@ void LabRenderer::renderModel(float frametime) {
 
 	object* obj = &Objects[getLabManager()->CurrentObject];
 
-	obj->pos = getLabManager()->CurrentPosition;
+	// Ships && Objects stay put. Weapons are allowed to move so particle effects look correct
+	if (obj->type == OBJ_SHIP || obj->type == OBJ_ASTEROID) {
+		obj->pos = getLabManager()->CurrentPosition;
+	}
 	obj->orient = getLabManager()->CurrentOrientation;
 
 	Envmap_override = renderFlags[LabRenderFlag::NoEnvMap];
@@ -108,6 +112,48 @@ void LabRenderer::renderModel(float frametime) {
 		}
 	}
 
+	if (obj->type == OBJ_WEAPON) {
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+	}
+
+	if (obj->type == OBJ_RAW_POF) {
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+	}
+
+	if (obj->type == OBJ_ASTEROID) {
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+	}
+
 	if (renderFlags[LabRenderFlag::ShowWireframe])
 		model_render_set_wireframe_color(&Color_white);
 
@@ -115,6 +161,8 @@ void LabRenderer::renderModel(float frametime) {
 		obj->phys_info.linear_thrust.xyz.z = 1.0f;
 		if (obj->type == OBJ_SHIP) {
 			Ships[obj->instance].flags.remove(Ship::Ship_Flags::No_thrusters);
+		} else if (obj->type == OBJ_WEAPON) {
+			Weapons[obj->instance].weapon_flags.remove(Weapon::Weapon_Flags::No_thruster);
 		}
 		if (renderFlags[LabRenderFlag::ShowAfterburners]) {
 			obj->phys_info.flags |= PF_AFTERBURNER_ON;
@@ -127,14 +175,42 @@ void LabRenderer::renderModel(float frametime) {
 	else {
 		obj->phys_info.linear_thrust.xyz.z = 0.0f;
 
-		if (obj->type == OBJ_SHIP)
+		if (obj->type == OBJ_SHIP) {
 			Ships[obj->instance].flags.set(Ship::Ship_Flags::No_thrusters);
+		} else if (obj->type == OBJ_WEAPON) {
+			Weapons[obj->instance].weapon_flags.set(Weapon::Weapon_Flags::No_thruster);
+		}
+	}
+
+	// Prevent weapons from destroying themselves
+	if (!getLabManager()->AllowWeaponDestruction) {
+		if (obj->type == OBJ_WEAPON) {
+			weapon* wep = &Weapons[obj->instance];
+			weapon_info* wip = &Weapon_info[wep->weapon_info_index];
+
+			if (wip != nullptr && !wip->wi_flags[Weapon::Info_Flags::Beam]) {
+				wep->lifeleft = wip->lifetime;
+			}
+		} else if (obj->type == OBJ_BEAM) {
+			beam* b = &Beams[obj->instance];
+			//Little hack to keep targeting beams going
+			if (b->type == BeamType::TARGETING) {
+				b->life_left = 0.1f;
+			} else {
+				b->life_left = b->life_total;
+			}
+		}
 	}
 
 	obj_move_all(frametime);
 
-	particle::move_all(frametime);
-	particle::ParticleManager::get()->doFrame(frametime);
+	// Force the camera to follow our current object
+	labCamera->updateCamera();
+
+	if (!renderFlags[LabRenderFlag::NoParticles]) {
+		particle::move_all(frametime);
+		particle::ParticleManager::get()->doFrame(frametime);
+	}
 	shockwave_move_all(frametime);
 
 	Trail_render_override = true;
