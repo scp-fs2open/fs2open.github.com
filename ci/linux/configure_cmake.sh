@@ -22,6 +22,11 @@ if [ "$RUNNER_OS" = "macOS" ]; then
     export CMAKE_OSX_ARCHITECTURES="$ARCHITECTURE"
 else
     PLATFORM_CMAKE_OPTIONS="-DFSO_BUILD_APPIMAGE=ON -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DUSE_STATIC_LIBCXX=ON"
+
+    # On Linux amd64, enable Vulkan build, if not explicitly disabled for the job, to make sure it is checked in CI.
+    if [[ "$RUNNER_ARCH" = "X64" && ! "$JOB_CMAKE_OPTIONS" =~ "-DFSO_BUILD_WITH_VULKAN=OFF" ]]; then
+        PLATFORM_CMAKE_OPTIONS="${PLATFORM_CMAKE_OPTIONS} -DFSO_BUILD_WITH_VULKAN=ON"
+    fi
 fi
 
 CMAKE_OPTIONS="$JOB_CMAKE_OPTIONS"
