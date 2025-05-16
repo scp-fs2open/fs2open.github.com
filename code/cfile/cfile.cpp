@@ -105,7 +105,7 @@ static const char *Cfile_cdrom_dir = NULL;
 //
 static int cfget_cfile_block();
 static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* original_filename, FILE * fp, int type);
-static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size);
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size, COMPRESSION_INFO* pack_ci_ptr);
 static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type);
 
 #if defined _WIN32
@@ -812,7 +812,7 @@ CFILE *_cfopen_special(const char* source, int line, const CFileLocation &res, c
 		if (fp) {
 			if (res.offset) {
 				// Found it in a pack file
-				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size);
+				return cf_open_packed_cfblock(source, line, res.name_ext.c_str(), fp, dir_type, res.offset, res.size, res.pack_ci_ptr);
 			}
 			else {
 				// Found it in a normal file
@@ -983,7 +983,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 // returns:   success ==> ptr to CFILE structure.  
 //            error   ==> NULL
 //
-static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size)
+static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size, COMPRESSION_INFO* pack_ci_ptr)
 {
 	// Found it in a pack file
 	int cfile_block_index;
@@ -1006,6 +1006,7 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		cfp->line_num = line;
 
 		cf_init_lowlevel_read_code(cfp,offset, size, 0 );
+		cfp->pack_ci_ptr = pack_ci_ptr;
 		cf_check_compression(cfp);
 		return cfp;
 	}
@@ -1650,7 +1651,7 @@ static int cf_chksum_do(CFILE *cfile, ushort *chk_short, uint *chk_long, int max
 }
 
 // get the chksum of a pack file (VP)
-int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
+int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, bool full)
 {
 	const size_t safe_size = 2097152; // 2 Meg
 	const int header_offset = 32;  // skip 32bytes for header (header is currently smaller than this though)
@@ -1658,6 +1659,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	size_t read_size;
 	size_t max_size;
+	size_t file_pos = 0;
 
 	if (chk_long == NULL) {
 		Int3();
@@ -1674,12 +1676,17 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 	*chk_long = 0;
 
 	// get the max size
-	fseek(fp, 0, SEEK_END);
-	max_size = (size_t)ftell(fp);
+	comp_compatible_fseek(fp, &file_pos, 0, SEEK_END, ci);
+	if (ci->header == COMP_HEADER_IS_UNKNOWN) {
+		max_size = (size_t)ftell(fp);
+	} else {
+		max_size = file_pos;
+	}
+		
 
 	// maybe do a chksum of the entire file
 	if (full) {
-		fseek(fp, 0, SEEK_SET);
+		comp_compatible_fseek(fp, &file_pos, 0, SEEK_SET, ci);
 	}
 	// othewise it's only a partial check
 	else {
@@ -1691,7 +1698,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 			"max_size (" SIZE_T_ARG ") > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
-		fseek(fp, -((long)max_size), SEEK_END);
+		comp_compatible_fseek(fp, &file_pos, -((long)max_size), SEEK_END, ci);
 	}
 
 	size_t cf_total = 0;
@@ -1704,7 +1711,7 @@ int cf_chksum_pack(const char *filename, uint *chk_long, bool full)
 			read_size = max_size - cf_total;
 
 		// read in some buffer
-		cf_len = fread(cf_buffer, 1, read_size, fp);
+		cf_len = comp_compatible_fread(cf_buffer, 1, read_size, fp, &file_pos, ci);
 
 		// total we've read so far
 		cf_total += cf_len;
