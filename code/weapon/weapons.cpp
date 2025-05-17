@@ -9187,6 +9187,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
 			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE);
 			float anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			float anim_state_add = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD, *wp, &wp->modular_curves_instance);
 			float alpha_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
 			float bitmap_r_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
 			float bitmap_g_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
@@ -9246,7 +9247,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames - 1) * anim_state);
+						framenum = fl2i((i2fl(wip->laser_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 					}
@@ -9258,12 +9259,12 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state);
+						headon_framenum = fl2i((i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
 
-					CLAMP(framenum, 0, wip->laser_headon_bitmap.num_frames - 1);
+					CLAMP(headon_framenum, 0, wip->laser_headon_bitmap.num_frames - 1);
 				}
 
 				if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
@@ -10472,9 +10473,21 @@ float weapon_get_age(const weapon& wp) {
 
 float weapon_get_viewing_angle(const weapon& wp) {
 	object* wep_objp = &Objects[wp.objnum];
+	weapon_info* wip = &Weapon_info[wp.weapon_info_index];
+	vec3d center;
+	if (wip->render_type != WRT_LASER) {
+		center = wep_objp->pos;
+	} else {
+		vec3d rotated_offset;
+		vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &wep_objp->orient);
+
+		vec3d center_interim;
+		vm_vec_scale_add(&center_interim, &wep_objp->pos, &wep_objp->orient.vec.fvec, wip->laser_length / 2.f);
+		vm_vec_scale_add(&center, &center_interim, &rotated_offset, wip->laser_length);
+	}
 
 	vec3d reye;
-	vm_vec_sub(&reye, &Eye_position, &wep_objp->pos);
+	vm_vec_sub(&reye, &Eye_position, &center);
 	vm_vec_normalize(&reye);
 	return vm_vec_dot(&reye, &wep_objp->orient.vec.fvec);
 }
