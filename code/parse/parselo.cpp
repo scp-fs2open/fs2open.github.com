@@ -4032,7 +4032,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
@@ -4135,7 +4135,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, ch_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
