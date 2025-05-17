@@ -9089,8 +9089,14 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
+	vec3d rotated_offset;
+	vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &wep_objp->orient);
+
 	vec3d center, reye;
 	vm_vec_avg(&center, headp, &wep_objp->pos);
+
+	vm_vec_scale_add(&center, &center, &rotated_offset, wip->laser_length);
+
 	vm_vec_sub(&reye, &Eye_position, &center);
 	vm_vec_normalize(&reye);
 	float ang = vm_vec_delta_ang_norm(&reye, &wep_objp->orient.vec.fvec, nullptr);
@@ -9214,6 +9220,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 			if (laser_length < 0.0001f)
 				return;
 
+			if (head_radius < 0.0001f && tail_radius < 0.0001f)
+				return;
+
 			if (head_radius <= 0.0001f) {
 				head_radius = 0.0001f;
 			}
@@ -9247,7 +9256,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i((i2fl(wip->laser_bitmap.num_frames - 1) * anim_state) + anim_state_add);
+						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames - 1) * (anim_state + anim_state_add));
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 					}
@@ -9259,7 +9268,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i((i2fl(wip->laser_headon_bitmap.num_frames - 1) * anim_state) + anim_state_add);
+						headon_framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * (anim_state + anim_state_add));
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
@@ -10481,9 +10490,8 @@ float weapon_get_viewing_angle(const weapon& wp) {
 		vec3d rotated_offset;
 		vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &wep_objp->orient);
 
-		vec3d center_interim;
-		vm_vec_scale_add(&center_interim, &wep_objp->pos, &wep_objp->orient.vec.fvec, wip->laser_length / 2.f);
-		vm_vec_scale_add(&center, &center_interim, &rotated_offset, wip->laser_length);
+		vm_vec_scale_add(&center, &wep_objp->pos, &wep_objp->orient.vec.fvec, wip->laser_length / 2.f);
+		vm_vec_scale_add(&center, &center, &rotated_offset, wip->laser_length);
 	}
 
 	vec3d reye;
