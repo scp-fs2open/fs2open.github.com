@@ -51,6 +51,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	new_sample.children_sample_time = 0;
 	new_sample.num_children = 0;
 	new_sample.parent = parent;
+	new_sample.num_parents = (parent >= 0) ? 1 : 0;
 
 	samples.push_back(new_sample);
 }
