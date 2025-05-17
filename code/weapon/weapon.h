@@ -344,6 +344,8 @@ enum class FiringPattern {
 
 float weapon_get_lifetime_pct(const weapon& wp);
 float weapon_get_age(const weapon& wp);
+float weapon_get_viewing_angle(const weapon& wp);
+float weapon_get_apparent_size(const weapon& wp);
 
 float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
@@ -689,6 +691,7 @@ struct weapon_info
 		LASER_HEADON_SWITCH_ANG_MULT,
 		LASER_HEADON_SWITCH_RATE_MULT,
 		LASER_ANIM_STATE,
+		LASER_ANIM_STATE_ADD,
 		LASER_ALPHA_MULT,
 		LASER_BITMAP_R_MULT,
 		LASER_BITMAP_G_MULT,
@@ -722,6 +725,7 @@ struct weapon_info
 					std::pair {"Laser Headon Transition Angle Mult", WeaponCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT},
 					std::pair {"Laser Headon Transition Rate Mult", WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT},
 					std::pair {"Laser Animation State", WeaponCurveOutputs::LASER_ANIM_STATE},
+					std::pair {"Laser Animation State Add", WeaponCurveOutputs::LASER_ANIM_STATE_ADD},
 					std::pair {"Laser Alpha Mult", WeaponCurveOutputs::LASER_ALPHA_MULT},
 					std::pair {"Laser Bitmap R Mult", WeaponCurveOutputs::LASER_BITMAP_R_MULT},
 					std::pair {"Laser Bitmap G Mult", WeaponCurveOutputs::LASER_BITMAP_G_MULT},
@@ -742,6 +746,7 @@ struct weapon_info
 			std::pair {"Lifetime", modular_curves_functional_input<weapon_get_lifetime_pct>{}},
 			std::pair {"Age", modular_curves_functional_input<weapon_get_age>{}},
 			std::pair {"Base Velocity", modular_curves_submember_input<&weapon::weapon_max_vel>{}},
+			std::pair {"Base Damage", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::damage>{}},
 			std::pair {"Max Hitpoints", modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>{}},
 			std::pair {"Current Hitpoints", modular_curves_submember_input<&weapon::objnum, &Objects, &object::hull_strength>{}},
 			std::pair {"Hitpoints Fraction", modular_curves_math_input<
@@ -749,7 +754,9 @@ struct weapon_info
 				modular_curves_submember_input<&weapon::weapon_info_index, &Weapon_info, &weapon_info::weapon_hitpoints>,
 				ModularCurvesMathOperators::division
 			>{}},
-			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}}
+			std::pair {"Parent Radius", modular_curves_submember_input<&weapon::objnum, &Objects, &object::parent, &Objects, &object::radius>{}},
+			std::pair {"Viewing Angle", modular_curves_functional_input<weapon_get_viewing_angle>{}},
+			std::pair {"Apparent Size", modular_curves_functional_input<weapon_get_apparent_size>{}}
 	);
 
   public:
