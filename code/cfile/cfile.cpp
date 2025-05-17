@@ -1659,7 +1659,6 @@ int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, b
 	ubyte cf_buffer[CF_CHKSUM_SAMPLE_SIZE];
 	size_t read_size;
 	size_t max_size;
-	size_t file_pos = 0;
 
 	if (chk_long == NULL) {
 		Int3();
@@ -1673,20 +1672,20 @@ int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, b
 		return 0;
 	}
 
+	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
+		ci->uncompressed_pos = 0; // In case the file was read previusly
+	}
+
 	*chk_long = 0;
 
 	// get the max size
-	comp_compatible_fseek(fp, &file_pos, 0, SEEK_END, ci);
-	if (ci->header == COMP_HEADER_IS_UNKNOWN) {
-		max_size = (size_t)ftell(fp);
-	} else {
-		max_size = file_pos;
-	}
+	comp_compatible_fseek(fp, 0, SEEK_END, ci);
+	max_size = comp_compatible_ftell(fp, ci);
 		
 
 	// maybe do a chksum of the entire file
 	if (full) {
-		comp_compatible_fseek(fp, &file_pos, 0, SEEK_SET, ci);
+		comp_compatible_fseek(fp, 0, SEEK_SET, ci);
 	}
 	// othewise it's only a partial check
 	else {
@@ -1698,7 +1697,7 @@ int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, b
 			"max_size (" SIZE_T_ARG ") > header_offset in packfile %s", max_size, filename);
 		max_size -= header_offset;
 
-		comp_compatible_fseek(fp, &file_pos, -((long)max_size), SEEK_END, ci);
+		comp_compatible_fseek(fp, -((long)max_size), SEEK_END, ci);
 	}
 
 	size_t cf_total = 0;
@@ -1711,7 +1710,7 @@ int cf_chksum_pack(const char* filename, uint* chk_long, COMPRESSION_INFO* ci, b
 			read_size = max_size - cf_total;
 
 		// read in some buffer
-		cf_len = comp_compatible_fread(cf_buffer, 1, read_size, fp, &file_pos, ci);
+		cf_len = comp_compatible_fread(cf_buffer, 1, read_size, fp, ci);
 
 		// total we've read so far
 		cf_total += cf_len;

@@ -498,7 +498,7 @@ void cf_root_check_compression_info(cf_root *cr)
 
 	// Is a supported compressed file, load up compression info
 	fseek(fp, 0, SEEK_SET);
-	comp_create_ci(&cr->compression_info, fp, file_size, 0, header_id);
+	comp_create_ci(&cr->compression_info, fp, file_size, 0, header_id, cr->path);
 	fclose(fp);
 }
 
@@ -1018,7 +1018,9 @@ void cf_search_root_pack(int root_index)
 		return;
 	}
 
-	size_t file_pos = 0; //uncompressed file position for compressed packs
+	if (root->compression_info.header != COMP_HEADER_IS_UNKNOWN) {
+		root->compression_info.uncompressed_pos = 0; // In case the file was read previusly
+	}
 
 	auto file_len = root->compression_info.header != COMP_HEADER_IS_UNKNOWN ? root->compression_info.uncompressed_size : filelength(fileno(fp));
 
@@ -1031,7 +1033,7 @@ void cf_search_root_pack(int root_index)
 	VP_FILE_HEADER VP_header;
 
 	Assert( sizeof(VP_header) == 16 );
-	if (comp_compatible_fread(&VP_header, sizeof(VP_header), 1, fp, &file_pos, &root->compression_info) != 1) {
+	if (comp_compatible_fread(&VP_header, sizeof(VP_header), 1, fp, &root->compression_info) != 1) {
 		mprintf(("Skipping VP file ('%s') because the header could not be read...\n", root->path.c_str()));
 		fclose(fp);
 		return;
@@ -1044,7 +1046,7 @@ void cf_search_root_pack(int root_index)
 	mprintf(( "Searching root pack '%s' ... ", root->path.c_str() ));
 
 	// Read index info
-	comp_compatible_fseek(fp, &file_pos, VP_header.index_offset, SEEK_SET, &root->compression_info);
+	comp_compatible_fseek(fp, VP_header.index_offset, SEEK_SET, &root->compression_info);
 
 
 	SCP_string search_path;
@@ -1060,7 +1062,7 @@ void cf_search_root_pack(int root_index)
 	for (i=0; i<VP_header.num_files; i++ )	{
 		VP_FILE find;
 
-		if (comp_compatible_fread(&find, sizeof(VP_FILE), 1, fp, &file_pos, &root->compression_info) != 1) {
+		if (comp_compatible_fread(&find, sizeof(VP_FILE), 1, fp, &root->compression_info) != 1) {
 			mprintf(("Failed to read file entry (currently in directory %s)!\n", search_path.c_str()));
 			break;
 		}

@@ -21,15 +21,17 @@
 /*LZ41*/
 void lz41_load_offsets(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size);
 size_t lz41_stream_random_access(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length);
-void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size);
+void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size, SCP_string file_name);
 /*XZ*/
-void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size);
+void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size, SCP_string file_name);
 // Called by xz_stream_random_access(). Do not use directly!
 int xz_block_decoder(COMPRESSION_INFO *ci, size_t uncompressed_size, size_t input_size, uint8_t* input_buffer, char* bytes_out, size_t offset, size_t copyLength, bool save_to_cache);
 size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, char* bytes_out, size_t offset, size_t length);
 /*MISC*/
 int fso_fseek(CFILE* cfile, long offset, int where);
 int fso_fseek(FILE* fp, size_t compressed_size, size_t lib_offset, long offset, int where);
+int comp_fseek(size_t* uncompressed_pos, size_t uncompressed_size, int offset, int where);
+size_t comp_fread(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, char* buffer, size_t offset, size_t length);
 /*END OF INTERNAL FUNCTIONS*/
 
 int comp_cfile_uses_compression(CFILE* cf)
@@ -58,22 +60,23 @@ void comp_create_ci(CFILE* cf, int header_id)
 		return;
 	//mprintf(("(CI)Compressed File Opened: %s \n", cf->original_filename.c_str()));
 
-	comp_create_ci(&cf->compression_info, cf->fp, cf->size, cf->lib_offset, header_id);
+	comp_create_ci(&cf->compression_info, cf->fp, cf->size, cf->lib_offset, header_id, cf->original_filename);
 	cf->size = cf->compression_info.uncompressed_size;
+	cf->compression_info.uncompressed_pos = cf->raw_position;
 
 	//mprintf(("(CI)Uncompressed FileSize: %d \n", cf->compression_info.uncompressed_size));
 	//mprintf(("(CI)Compressed FileSize: %d \n", cf->compression_info.compressed_size));
 	//mprintf(("(CI)Block Size: %d \n", cf->compression_info.block_size));
 }
 
-void comp_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t file_size, size_t lib_offset, int header_id)
+void comp_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t file_size, size_t lib_offset, int header_id, SCP_string file_name)
 {
 	if (COMP_HEADER_IS_XZ == header_id) {
-		xz_create_ci(ci, fp, lib_offset, file_size);
+		xz_create_ci(ci, fp, lib_offset, file_size, file_name);
 	}
 
 	if (COMP_HEADER_IS_LZ41 == header_id) {
-		lz41_create_ci(ci, fp, lib_offset, file_size);
+		lz41_create_ci(ci, fp, lib_offset, file_size, file_name);
 	}
 }
 
@@ -129,50 +132,54 @@ int comp_feof(CFILE* cf)
 
 int comp_fseek(CFILE* cf, int offset, int where)
 {
-	size_t goal_position;
-	switch (where) {
-	case SEEK_SET: goal_position = offset; break;
-	case SEEK_CUR: goal_position = cf->raw_position + offset; break;
-	case SEEK_END: goal_position = cf->size + offset; break;
-	default: return 1;
-	}
-
-	// Make sure we don't seek beyond the end of the file
-	CAP(goal_position,(size_t)0, cf->size);
-
-	cf->raw_position = goal_position;
+	comp_fseek(&cf->raw_position, cf->size, offset, where);
+	if(cf->compression_info.header != COMP_HEADER_IS_UNKNOWN)
+		cf->compression_info.uncompressed_pos = cf->raw_position;
 
 	return 0;
 }
 
-size_t comp_compatible_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, size_t* file_pos, COMPRESSION_INFO* ci)
+int comp_fseek(size_t *uncompressed_pos, size_t uncompressed_size, int offset, int where)
+{
+	size_t goal_position;
+	switch (where) {
+	case SEEK_SET: goal_position = offset; break;
+	case SEEK_CUR: goal_position = *uncompressed_pos + offset; break;
+	case SEEK_END: goal_position = uncompressed_size + offset; break;
+	default:
+		return 1;
+	}
+
+	// Make sure we don't seek beyond the end of the file
+	CAP(goal_position, (size_t)0, uncompressed_size);
+
+	*uncompressed_pos = goal_position;
+
+	return 0;
+}
+
+size_t comp_compatible_ftell(FILE* fp, COMPRESSION_INFO* ci)
 {
 	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
-		auto read = comp_fread(ci, fp, 0, (char*)dest, *file_pos, elem_size * elem_num);
-		*file_pos += read;
-		return read / elem_size;
+		return ci->uncompressed_pos;
+	}
+
+	return ftell(fp);
+}
+
+size_t comp_compatible_fread(void* dest, size_t elem_size, size_t elem_num, FILE* fp, COMPRESSION_INFO* ci)
+{
+	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
+		return comp_fread(ci, fp, 0, (char*)dest, ci->uncompressed_pos, elem_size * elem_num) / elem_size;
 	}
 
 	return fread(dest, elem_size, elem_num, fp);
 }
 
-int comp_compatible_fseek(FILE* fp, size_t* file_pos, long offset, int where, COMPRESSION_INFO* ci)
+int comp_compatible_fseek(FILE* fp, long offset, int where, COMPRESSION_INFO* ci)
 {
 	if (ci->header != COMP_HEADER_IS_UNKNOWN) {
-		size_t goal_position;
-		switch (where) {
-		case SEEK_SET: goal_position = offset; break;
-		case SEEK_CUR: goal_position = *file_pos + offset; break;
-		case SEEK_END: goal_position = ci->uncompressed_size + offset; break;
-		default:
-			return 1;
-		}
-
-		// Make sure we don't seek beyond the end of the file
-		CAP(goal_position, (size_t)0, ci->uncompressed_size);
-
-		*file_pos = goal_position;
-		return 0;
+		return comp_fseek(&ci->uncompressed_pos, ci->uncompressed_size, offset, where);
 	}
 
 	return fseek(fp, offset, where);
@@ -210,7 +217,7 @@ int fso_fseek(CFILE* cfile, long offset, int where)
 	return fso_fseek(cfile->fp, cfile->compression_info.compressed_size, cfile->lib_offset, offset, where);
 }
 
-void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size)
+void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size, SCP_string file_name)
 {
 	ci->header = COMP_HEADER_IS_LZ41;
 	ci->compressed_size = file_size;
@@ -219,13 +226,13 @@ void lz41_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t fi
 	auto fSize = fread(&ci->uncompressed_size, sizeof(int), 1, fp);
 	auto fBsize = fread(&ci->block_size, sizeof(int), 1, fp);
 
-	Assertion(ci->num_offsets > 0, "Invalid number of offsets, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(ci->num_offsets > 0, "File %s has an invalid number of offsets, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
 	#if !defined(NDEBUG)
-	Assertion(ci->uncompressed_size > 4, "Invalid filesize, compressed file is possibly in the wrong format or corrupted.");
-	Assertion(ci->block_size > 16, "Invalid block size, compressed file is possibly in the wrong format or corrupted.");
-	Assertion(fNumoffsets == 1, "Error while reading the number of offsets, compressed file is possibly in the wrong format or corrupted.");
-	Assertion(fSize == 1, "Error while reading original filesize, compressed file is possibly in the wrong format or corrupted.");
-	Assertion(fBsize == 1, "Error while reading block size, compressed file is possibly in the wrong format or corrupted.");
+	Assertion(ci->uncompressed_size > 4, "File %s has a invalid filesize, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
+	Assertion(ci->block_size > 16, "File %s has a invalid block size, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
+	Assertion(fNumoffsets == 1, "Error in file %s while reading the number of offsets, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
+	Assertion(fSize == 1, "Error in file %s while reading original filesize, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
+	Assertion(fBsize == 1, "Error in file %s while reading block size, compressed file is possibly in the wrong format or corrupted.", file_name.c_str());
 	#endif
 
 	ci->decoder_buffer = (char*)malloc(ci->block_size);
@@ -301,18 +308,19 @@ size_t lz41_stream_random_access(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offs
 	}
 
 	free(cmp_buf);
+	ci->uncompressed_pos += written_bytes;
 	return written_bytes;
 }
 
 /***************************************************************/
 
-void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size)
+void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file_size, SCP_string file_name)
 {
 	ci->compressed_size = file_size;
 
 	lzma_stream strm = LZMA_STREAM_INIT;
 	lzma_ret ret = lzma_file_info_decoder(&strm, &ci->xz_block_index, UINT64_MAX, file_size);
-	Assertion(ret == LZMA_OK, "Failed to decode XZ file, return code is %d.", ret);
+	Assertion(ret == LZMA_OK, "Failed to decode XZ file %s, return code is %d.", file_name.c_str(), ret);
 	
 	strm.avail_in = 0;
 	uint8_t in[LZMA_BLOCK_HEADER_SIZE_MAX];
@@ -335,7 +343,7 @@ void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file
 				fso_fseek(fp, file_size, lib_offset, (long)strm.seek_pos, SEEK_SET);
 			} else {
 				//Decoding info failed
-				Assertion(false,  "Failed to decode XZ file info. The return code was %d.", ret);
+				Assertion(false,  "Failed to decode XZ file %s info. The return code was %d.", file_name.c_str(), ret);
 			}
 		}
 	}
@@ -351,7 +359,15 @@ void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file
 
 	ci->uncompressed_size = ci->xz_index_iter->stream.uncompressed_size;
 	ci->block_size = (int)ci->xz_index_iter->block.uncompressed_size;
-	ci->decoder_buffer = (char*)malloc(ci->block_size);
+	if (ci->block_size <= COMP_MAX_DECODER_BUFFER) {
+		ci->decoder_buffer = (char*)malloc(ci->block_size);
+
+	} else {
+		#if !defined(NDEBUG)
+		mprintf(("(CI Warning) Compressed File: %s has a block size of %d and the maximum allowed is %d. Decoder optimization has been disabled, reading this file will be very slow.\n",
+				file_name.c_str(), ci->block_size, COMP_MAX_DECODER_BUFFER));
+		#endif
+	}
 	ci->last_decoded_block_pos = 0;
 	ci->last_decoded_block_bytes = 0;
 	ci->header = COMP_HEADER_IS_XZ;
@@ -448,12 +464,13 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 		// Determine how much data we need to copy from this block to bytes_out
 		size_t copy_length = (length < (ci->xz_index_iter->block.uncompressed_size - offset) ? length : ci->xz_index_iter->block.uncompressed_size - offset);
 
-		// Is this is the last block to decode? Is so we will need to save it to the cache
+		// Is this is the last block to decode?
 		auto is_last_block = (length - copy_length) == 0;
-
+	
 		// If the requested block is the same as the last decoded block use the cache, otherwise find and decode the block
 		if (ci->last_decoded_block_pos != ci->xz_index_iter->block.compressed_file_offset) {
 			uint8_t* inbuf = (uint8_t*)malloc(ci->xz_index_iter->block.total_size);
+			auto save_to_cache = is_last_block && ci->decoder_buffer != nullptr ? true : false;
 
 			// Seek to the block to read
 			if (ftell(fp) != ci->xz_index_iter->block.compressed_file_offset) {
@@ -473,9 +490,9 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 				bytes_out + written_bytes,
 				offset,
 				copy_length,
-				is_last_block);
+				save_to_cache);
 
-			if (is_last_block) {
+			if (save_to_cache) {
 				// Save data to cache for later
 				ci->last_decoded_block_bytes = ci->xz_index_iter->block.uncompressed_size;
 				ci->last_decoded_block_pos = ci->xz_index_iter->block.compressed_file_offset;
@@ -506,5 +523,6 @@ size_t xz_stream_random_access(COMPRESSION_INFO* ci, FILE *fp, size_t lib_offset
 	for (auto &th : thread_pool)
 		th.join();
 
+	ci->uncompressed_pos += written_bytes;
 	return written_bytes;
 }
