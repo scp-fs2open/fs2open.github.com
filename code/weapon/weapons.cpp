@@ -9193,7 +9193,10 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
 			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE);
 			float anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
-			float anim_state_add = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD, *wp, &wp->modular_curves_instance);
+			float anim_state_add = 0.f;
+			if (wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD)) {
+				anim_state_add = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD, *wp, &wp->modular_curves_instance);
+			}
 			float alpha_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ALPHA_MULT, *wp, &wp->modular_curves_instance);
 			float bitmap_r_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_R_MULT, *wp, &wp->modular_curves_instance);
 			float bitmap_g_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_BITMAP_G_MULT, *wp, &wp->modular_curves_instance);
