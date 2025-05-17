@@ -547,6 +547,10 @@ void HudGaugeTargetBox::renderTargetIntegrity(int disabled,int force_obj_num, bo
 		case TS_CRT:
 			strcpy_s(buf,XSTR( "crt", 347));
 			break;
+		default:
+			UNREACHABLE("Unhandled target integrity status %d in HudGaugeTargetBox::renderTargetIntegrity!", status);
+			buf[0] = '\0';
+			break;
 	}
 
 	if (!config) {

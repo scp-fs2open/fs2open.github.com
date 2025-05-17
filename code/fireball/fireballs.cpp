@@ -1232,6 +1232,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 			float flare_rad = obj->radius * fi->flare_size_ratio;
 
 			matrix* warp_orientation;
+			matrix dest = ZERO_MATRIX;
 
 			// Flare animation selection
 			if (fi->warp_flare_style == warp_style::ENHANCED) {
@@ -1244,7 +1245,6 @@ void fireball_render(object* obj, model_draw_list *scene)
 
 			if (fi->warp_model_style == warp_style::CINEMATIC) {
 				matrix m = ZERO_MATRIX;
-				matrix dest = ZERO_MATRIX;
 
 				float duration_ratio = 2.0f / fb->warp_open_duration;
 
