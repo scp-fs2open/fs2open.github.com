@@ -1787,6 +1787,7 @@ bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 	// Pack the current bindings into a preset, then save the file
 	CC_preset preset;
 	preset.name = newName;
+	preset.type = Preset_t::pst;
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 
 	// Done with the file

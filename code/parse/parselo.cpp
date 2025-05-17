@@ -4004,7 +4004,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			lines.emplace_back(pos_start, 0);
 		} else {
 			auto sublines = str_wrap_to_width(source_string, max_pixel_width, strip_leading_whitespace, pos_start, (newline_at - pos_start));
-			lines.reserve(lines.size() + sublines.size());
+			lines.reserve(lines.size() + sublines.size());	// coverity[inefficient_reserve:FALSE]
 			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
 		}
 
@@ -4032,7 +4032,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
@@ -4107,7 +4107,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 				for (auto& subline : sublines)
 					subline.first += (ch_start - source_string);
 
-			lines.reserve(lines.size() + sublines.size());
+			lines.reserve(lines.size() + sublines.size());	// coverity[inefficient_reserve:FALSE]
 			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
 		}
 
@@ -4135,7 +4135,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, ch_start, 1.0f, center);
 				if (line_width == max_pixel_width) {

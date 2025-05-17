@@ -192,8 +192,9 @@ typedef struct HUD_CONFIG_TYPE {
 			const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
 			it = gauge_colors.find(gauge_map.get_string_id_from_numeric_id(type_it->second));
-
-			return it->second;
+			if (it != gauge_colors.end()) {
+				return it->second;
+			}
 		}
 
 		// Still nothing.. return white

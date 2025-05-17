@@ -162,7 +162,7 @@ typename T::size_type stringcost(const T& op, const T& input, typename T::size_t
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+int count_items_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str)
 {
 	int count = 0;
 	for (const ITEM_T& item : item_vector)
@@ -231,7 +231,7 @@ int count_items_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field,
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+int count_items_with_string(const ITEM_T* item_array, int num_items, FIELD_T* ITEM_T::* field, const char* str)
 {
 	if (item_array == nullptr)
 		return 0;
@@ -308,7 +308,7 @@ int count_items_with_field(const ITEM_T* item_array, int num_items, FIELD_T ITEM
 }
 
 template <typename VECTOR_T, typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_string(const VECTOR_T& item_vector, FIELD_T* ITEM_T::* field, const char* str)
 {
 	int index = 0;
 	for (const ITEM_T& item : item_vector)
@@ -385,7 +385,7 @@ int find_item_with_field(const VECTOR_T& item_vector, FIELD_T ITEM_T::* field, c
 }
 
 template <typename ITEM_T, typename FIELD_T>
-int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T ITEM_T::* field, const char* str)
+int find_item_with_string(const ITEM_T* item_array, int num_items, FIELD_T* ITEM_T::* field, const char* str)
 {
 	if (item_array == nullptr)
 		return -1;
