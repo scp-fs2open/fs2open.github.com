@@ -656,7 +656,8 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	csg->main_hall = cfread_ubyte(cfp);
+	ubyte hall_index = cfread_ubyte(cfp);
+	sprintf(csg->main_hall, "%u", hall_index);
 
 	csg_import_red_alert();
 
