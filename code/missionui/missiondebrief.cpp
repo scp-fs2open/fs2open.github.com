@@ -2203,7 +2203,7 @@ void debrief_draw_award_text()
 	curr_y = start_y;
 
 	// draw the strings
-	for (i=0; i<Debrief_award_text_num_lines; i++) {
+	for (i=0; i<Debrief_award_text_num_lines && i < AWARD_TEXT_MAX_LINES; i++) {
 		gr_get_string_size(&sw, NULL, Debrief_award_text[i]);
 		x = (Medal_bitmap < 0) ? (Debrief_award_text_coords[gr_screen.res][0] + (field_width - sw) / 2) : Debrief_award_text_coords[gr_screen.res][0];
 		if (i==AWARD_TEXT_MAX_LINES-1) x += 7;				// hack because of the shape of the box

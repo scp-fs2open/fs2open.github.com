@@ -5890,7 +5890,7 @@ void parse_glowpoint_table(const char *filename)
 			}
 
 			if (optional_string("$Texture:")) {
-				char glow_texture_name[32];
+				char glow_texture_name[NAME_LENGTH];
 				stuff_string(glow_texture_name, F_NAME, NAME_LENGTH);
 
 				gpo.glow_bitmap_override = true;
@@ -5907,10 +5907,18 @@ void parse_glowpoint_table(const char *filename)
 						nprintf(("Model", "Glowpoint preset %s texture num is %d\n", gpo.name, gpo.glow_bitmap));
 					}
 
-					char glow_texture_neb_name[256];
-					strncpy(glow_texture_neb_name, glow_texture_name, 256);
-					strcat(glow_texture_neb_name, "-neb");
-					gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					if (strlen(glow_texture_name) > MAX_FILENAME_LEN - 4 - 1)
+					{
+						nprintf(("Model", "Texture '%s' referenced by glowpoint preset '%s' is too long for the -neb suffix!\n", glow_texture_name, gpo.name));
+						gpo.glow_neb_bitmap = -1;
+					}
+					else
+					{
+						char glow_texture_neb_name[MAX_FILENAME_LEN];
+						strcpy_s(glow_texture_neb_name, glow_texture_name);
+						strcat_s(glow_texture_neb_name, "-neb");
+						gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					}
 
 					if (gpo.glow_neb_bitmap < 0)
 					{
