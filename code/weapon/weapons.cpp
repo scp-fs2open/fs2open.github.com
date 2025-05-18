@@ -9089,13 +9089,8 @@ float weapon_render_headon_bitmap(object* wep_objp, vec3d* headp, vec3d* tailp, 
 	weapon* wp = &Weapons[wep_objp->instance];
 	weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
-	vec3d rotated_offset;
-	vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &wep_objp->orient);
-
 	vec3d center, reye;
-	vm_vec_avg(&center, headp, &wep_objp->pos);
-
-	vm_vec_scale_add(&center, &center, &rotated_offset, wip->laser_length);
+	vm_vec_avg(&center, headp, tailp);
 
 	vm_vec_sub(&reye, &Eye_position, &center);
 	vm_vec_normalize(&reye);
@@ -10493,8 +10488,8 @@ float weapon_get_viewing_angle(const weapon& wp) {
 		vec3d rotated_offset;
 		vm_vec_unrotate(&rotated_offset, &wip->laser_pos_offset, &wep_objp->orient);
 
-		vm_vec_scale_add(&center, &wep_objp->pos, &wep_objp->orient.vec.fvec, wip->laser_length / 2.f);
-		vm_vec_scale_add(&center, &center, &rotated_offset, wip->laser_length);
+		center = wep_objp->pos + (wep_objp->orient.vec.fvec * wip->laser_length * 0.5f);
+		center += rotated_offset * wip->laser_length;
 	}
 
 	vec3d reye;
