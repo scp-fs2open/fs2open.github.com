@@ -9356,7 +9356,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames) * anim_state);
+						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state + anim_state_add));
 					} else {
 						framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
 					}
@@ -9377,7 +9377,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames) * anim_state);
+						headon_framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames - 1) * (anim_state + anim_state_add));
 					} else {
 						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
 					}
@@ -10498,7 +10498,7 @@ float weapon_get_viewing_angle(const weapon& wp) {
 	}
 
 	vec3d reye;
-	vm_vec_sub(&reye, &Eye_position, &center);
+	vm_vec_sub(&reye, &center, &Eye_position);
 	vm_vec_normalize(&reye);
 	return vm_vec_dot(&reye, &wep_objp->orient.vec.fvec);
 }
