@@ -85,6 +85,7 @@ float ets_power_factor(object *objp, bool include_power_output)
 		constexpr float missing_single_factor = 2.0f/3;
 		constexpr float missing_double_factor = 1.0f/3;
 
+		// if the properties are *equal* to just one, then it's missing double; otherwise we ruled out the all-three case so it has two and it's missing single
 		float missing_factor = (properties == HAS_WEAPONS || properties == HAS_SHIELDS || properties == HAS_ENGINES) ? missing_double_factor : missing_single_factor;
 
 		if (The_mission.ai_profile->flags[AI::Profile_Flags::ETS_uses_power_output] && include_power_output)
