@@ -56,7 +56,15 @@ std::pair<int, int> EffectHostObject::getParentObjAndSig() const {
 }
 
 float EffectHostObject::getHostRadius() const {
-	return Objects[m_objnum].radius;
+	auto objp = &Objects[m_objnum];
+	if (objp->type == OBJ_WEAPON) {
+		auto wp = &Weapons[objp->instance];
+		auto wip = &Weapon_info[wp->weapon_info_index];
+		if (wip->render_type == WRT_LASER) {
+			return objp->radius * wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+		}
+	}
+	return objp->radius;
 }
 
 bool EffectHostObject::isValid() const {
