@@ -6519,10 +6519,15 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 
 				if (auto it_spec = weapon_map.find(hud); it_spec != weapon_map.end()) {
 					return it_spec->second;
-				} else if (auto it_def = weapon_map.find("default"); it_def != weapon_map.end()) {
-					return it_def->second;
 				}
 			}
+			
+			// Nothing found, try default
+			if (auto it_def = weapon_map.find("default"); it_def != weapon_map.end()) {
+				return it_def->second;
+			}
+
+			// No specialized settings, return null and pick some weapons later
 			return std::nullopt;
 		};
 
@@ -6606,6 +6611,12 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 				int match_count = 0;
 				for (weapon_info& wep : Weapon_info) {
 					if (wep.subtype == WP_LASER && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
+
+						// Skip the retail dogfight weapons
+						if (wep.wi_flags[Weapon::Info_Flags::Dogfight_weapon]) {
+							continue;
+						}
+
 						if (match_count == i) {
 							wip = &wep;
 							weapon_name = wip->get_display_name();
@@ -6694,6 +6705,12 @@ void HudGaugeWeapons::render(float /*frametime*/, bool config)
 				int match_count = 0;
 				for (weapon_info& wep : Weapon_info) {
 					if (wep.subtype == WP_MISSILE && wep.wi_flags[Weapon::Info_Flags::Player_allowed]) {
+
+						// Skip the retail dogfight weapons
+						if (wep.wi_flags[Weapon::Info_Flags::Dogfight_weapon]) {
+							continue;
+						}
+
 						if (match_count == i) {
 							wip = &wep;
 							break;
