@@ -756,17 +756,19 @@ int optional_string_fred(const char *pstr, const char *end, const char *end2)
  * @details Advances the Mp until a string is found or exceeds RS_MAX_TRIES. Once a string is found, Mp is located at
  * the start of the found string.
  */
-int required_string_either(const char *str1, const char *str2)
+int required_string_either(const char *str1, const char *str2, bool advance)
 {
 	ignore_white_space();
 
 	for (int count = 0; count < RS_MAX_TRIES; ++count) {
 		if (strnicmp(str1, Mp, strlen(str1)) == 0) {
-			// Mp += strlen(str1);
+			if (advance)
+				Mp += strlen(str1);
 			diag_printf("Found required string [%s]\n", token_found = str1);
 			return 0;
 		} else if (strnicmp(str2, Mp, strlen(str2)) == 0) {
-			// Mp += strlen(str2);
+			if (advance)
+				Mp += strlen(str2);
 			diag_printf("Found required string [%s]\n", token_found = str2);
 			return 1;
 		}

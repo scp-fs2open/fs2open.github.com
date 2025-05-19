@@ -338,8 +338,8 @@ struct modular_curves_definition {
 
 			modular_curves_entry curve_entry;
 
-			required_string("+Curve Name:");
-			curve_entry.curve_idx = curve_parse();
+			required_string_either("+Curve Name:", "+Curve:");
+			curve_entry.curve_idx = curve_parse(" Unknown curve requested for modular curves!");
 			if (curve_entry.curve_idx < 0){
 				error_display(1, "Unknown curve requested for modular curves!");
 			}

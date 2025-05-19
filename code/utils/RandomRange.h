@@ -469,7 +469,7 @@ using CurveFloatRange = RandomRange<float, CurveNumberDistribution, std::minstd_
 inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<float>::lowest()/2.1f, float max = std::numeric_limits<float>::max()/2.1f) {
 	CurveNumberDistribution::param_type curve_params;
 
-	curve_params.curve = curve_parse();
+	curve_params.curve = curve_parse(" Random distributions using this curve will return 0.");
 
 	optional_string("(");
 	stuff_float_optional(&curve_params.min);
@@ -477,7 +477,6 @@ inline CurveFloatRange parseCurveFloatRange(float min = std::numeric_limits<floa
 	optional_string(")");
 
 	if (curve_params.curve < 0) {
-		error_display(0, "Curve not found! Random distributions using this curve will return 0.");
 		return CurveFloatRange{curve_params};
 	} else {
 		bool y_below_0 = false;

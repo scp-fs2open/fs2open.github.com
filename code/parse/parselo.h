@@ -128,7 +128,7 @@ extern int optional_string_one_of(int arg_count, ...);
 
 // required
 extern int required_string(const char *pstr);
-extern int required_string_either(const char *str1, const char *str2);
+extern int required_string_either(const char *str1, const char *str2, bool advance = false);
 extern int required_string_one_of(int arg_count, ...);
 
 // stuff

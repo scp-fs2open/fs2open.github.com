@@ -53,14 +53,18 @@ static int curve_inline_def(){
 	return resulting_curve;
 }
 
-int curve_parse() {
+int curve_parse(const char *err_msg) {
 	if(optional_string("(")) {
 		return curve_inline_def();
 	}
 	else {
 		SCP_string curve_name;
 		stuff_string(curve_name, F_NAME);
-		return curve_get_by_name(curve_name);
+		int curve_id = curve_get_by_name(curve_name);
+		if (curve_id < 0) {
+			error_display(0, "Curve %s not found!%s", curve_name.c_str(), err_msg);
+		}
+		return curve_id;
 	}
 }
 
