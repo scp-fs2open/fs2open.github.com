@@ -847,10 +847,12 @@ void hud_config_check_regions_by_mouse(int mx, int my)
  */
 void hud_config_check_regions(int mx, int my)
 {
+	// "-2" is a special mark that we're in the HUD area but may or may not be over a gauge
 	if (hud_config_check_mouse_in_hud_area(mx, my)) {
 		HC_gauge_hot = "-2";
 	}
 
+	// If we click inside the HUD area then reset the UI
 	if (HC_gauge_hot == "-2" && mouse_down(MOUSE_LEFT_BUTTON)) {
 		HC_gauge_selected.clear();
 		HC_color_sliders[HCS_RED].hide();
@@ -862,8 +864,12 @@ void hud_config_check_regions(int mx, int my)
 		HC_color_sliders[HCS_GREEN].disable();
 		HC_color_sliders[HCS_BLUE].disable();
 		HC_color_sliders[HCS_ALPHA].disable();
+
+		// turn off select all
+		hud_config_select_all_toggle(false);
 	}
 
+	// If we click on one of the new arrows the try to select a new HUD
 	if (HC_arrow_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		if (HC_arrow_hot == 0) {
@@ -877,14 +883,15 @@ void hud_config_check_regions(int mx, int my)
 
 	hud_config_check_regions_by_mouse(mx, my);
 
-	if (!HC_gauge_hot.empty() && mouse_down(MOUSE_LEFT_BUTTON)) {
+	const auto gauge = hud_config_get_gauge_pointer(HC_gauge_hot);
+
+	// If we clicked on a gauge then set the UI up for managing that gauge
+	if (gauge && mouse_down(MOUSE_LEFT_BUTTON)) {
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		HC_gauge_selected = HC_gauge_hot;
 
 		// turn off select all
 		hud_config_select_all_toggle(false);
-
-		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_selected);
 
 		// maybe setup rgb sliders
 		if (gauge != nullptr && gauge->getConfigUseIffColor()) {
@@ -918,8 +925,9 @@ void hud_config_check_regions(int mx, int my)
 
 		// recalc alpha slider
 		hud_config_recalc_alpha_slider();
-		mouse_flush();
 	}
+
+	mouse_flush();
 }
 
 // set the display flags for a HUD gauge
