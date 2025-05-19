@@ -226,7 +226,7 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 		}
 
 		if (m_vel_inherit_absolute)
-			vm_vec_normalize_quick(&info.vel);
+			vm_vec_normalize_safe(&info.vel, true);
 
 		info.vel *= m_vel_inherit.next() * inheritVelocityMultiplier;
 
