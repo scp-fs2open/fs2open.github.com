@@ -847,29 +847,7 @@ void hud_config_check_regions_by_mouse(int mx, int my)
  */
 void hud_config_check_regions(int mx, int my)
 {
-	// "-2" is a special mark that we're in the HUD area but may or may not be over a gauge
-	if (hud_config_check_mouse_in_hud_area(mx, my)) {
-		HC_gauge_hot = "-2";
-	}
-
-	// If we click inside the HUD area then reset the UI
-	if (HC_gauge_hot == "-2" && mouse_down(MOUSE_LEFT_BUTTON)) {
-		HC_gauge_selected.clear();
-		HC_color_sliders[HCS_RED].hide();
-		HC_color_sliders[HCS_GREEN].hide();
-		HC_color_sliders[HCS_BLUE].hide();
-		HC_color_sliders[HCS_ALPHA].hide();
-
-		HC_color_sliders[HCS_RED].disable();
-		HC_color_sliders[HCS_GREEN].disable();
-		HC_color_sliders[HCS_BLUE].disable();
-		HC_color_sliders[HCS_ALPHA].disable();
-
-		// turn off select all
-		hud_config_select_all_toggle(false);
-	}
-
-	// If we click on one of the new arrows the try to select a new HUD
+	// If we click on one of the new arrows then try to select a new HUD
 	if (HC_arrow_hot >= 0 && mouse_down(MOUSE_LEFT_BUTTON)) {
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		if (HC_arrow_hot == 0) {
@@ -881,50 +859,62 @@ void hud_config_check_regions(int mx, int my)
 		return;
 	}
 
+	// If we're not in the HUD area then nothing else applies here
+	if (!hud_config_check_mouse_in_hud_area(mx, my)) {
+		mouse_flush();
+		return;
+	}
+
+	// Sets HC_gauge_hot to a gauge name if we're hovering over one of them
 	hud_config_check_regions_by_mouse(mx, my);
 
-	const auto gauge = hud_config_get_gauge_pointer(HC_gauge_hot);
+	// If we click inside the HUD area then reset the UI
+	if (mouse_down(MOUSE_LEFT_BUTTON)) {
+		HC_gauge_selected.clear();
+		HC_color_sliders[HCS_RED].hide();
+		HC_color_sliders[HCS_GREEN].hide();
+		HC_color_sliders[HCS_BLUE].hide();
+		HC_color_sliders[HCS_ALPHA].hide();
 
-	// If we clicked on a gauge then set the UI up for managing that gauge
-	if (gauge && mouse_down(MOUSE_LEFT_BUTTON)) {
-		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-		HC_gauge_selected = HC_gauge_hot;
+		HC_color_sliders[HCS_RED].disable();
+		HC_color_sliders[HCS_GREEN].disable();
+		HC_color_sliders[HCS_BLUE].disable();
+		HC_color_sliders[HCS_ALPHA].disable();
 
-		// turn off select all
+		// Turn off select all
 		hud_config_select_all_toggle(false);
 
-		// maybe setup rgb sliders
-		if (gauge != nullptr && gauge->getConfigUseIffColor()) {
-			HC_color_sliders[HCS_RED].hide();
-			HC_color_sliders[HCS_GREEN].hide();
-			HC_color_sliders[HCS_BLUE].hide();
-			HC_color_sliders[HCS_ALPHA].hide();
+		// See if we have a gauge that we were hovering over when we clicked
+		const auto gauge = hud_config_get_gauge_pointer(HC_gauge_hot);
 
-			HC_color_sliders[HCS_RED].disable();
-			HC_color_sliders[HCS_GREEN].disable();
-			HC_color_sliders[HCS_BLUE].disable();
-			HC_color_sliders[HCS_ALPHA].disable();
-		} else {
-			HC_color_sliders[HCS_RED].enable();
-			HC_color_sliders[HCS_GREEN].enable();
-			HC_color_sliders[HCS_BLUE].enable();
-			HC_color_sliders[HCS_ALPHA].enable();
+		// If we clicked on a gauge then set the UI up for managing that gauge
+		if (gauge) {
+			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
+			HC_gauge_selected = HC_gauge_hot;
 
-			HC_color_sliders[HCS_RED].unhide();
-			HC_color_sliders[HCS_GREEN].unhide();
-			HC_color_sliders[HCS_BLUE].unhide();
-			HC_color_sliders[HCS_ALPHA].unhide();
+			// Setup rgb sliders if the gauge doesn't use IFF colors
+			if (!gauge->getConfigUseIffColor()) {
+				HC_color_sliders[HCS_RED].enable();
+				HC_color_sliders[HCS_GREEN].enable();
+				HC_color_sliders[HCS_BLUE].enable();
+				HC_color_sliders[HCS_ALPHA].enable();
 
-			color clr = HUD_config.get_gauge_color(HC_gauge_selected);
+				HC_color_sliders[HCS_RED].unhide();
+				HC_color_sliders[HCS_GREEN].unhide();
+				HC_color_sliders[HCS_BLUE].unhide();
+				HC_color_sliders[HCS_ALPHA].unhide();
 
-			HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(clr.red));
-			HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(clr.green));
-			HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(clr.blue));
-			HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(clr.alpha));
+				color clr = HUD_config.get_gauge_color(HC_gauge_selected);
+
+				HC_color_sliders[HCS_RED].force_currentItem(HCS_CONV(clr.red));
+				HC_color_sliders[HCS_GREEN].force_currentItem(HCS_CONV(clr.green));
+				HC_color_sliders[HCS_BLUE].force_currentItem(HCS_CONV(clr.blue));
+				HC_color_sliders[HCS_ALPHA].force_currentItem(HCS_CONV(clr.alpha));
+			}
+
+			// recalc alpha slider
+			hud_config_recalc_alpha_slider();
 		}
-
-		// recalc alpha slider
-		hud_config_recalc_alpha_slider();
 	}
 
 	mouse_flush();
