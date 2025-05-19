@@ -42,6 +42,8 @@ enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 
 void update_ets(object* obj, float fl_frametime);
 void ets_init_ship(object* obj);
+int ets_properties(object* objp);
+float ets_power_factor(object* objp, bool include_power_output = true);
 void ai_manage_ets(object* obj);
 
 void increase_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
