@@ -16,6 +16,11 @@ class EffectHost;
 //Due to parsing shenanigans in weapons, this needs a forward-declare here
 int parse_weapon(int, bool, const char*);
 
+namespace anl {
+	class CKernel;
+	class CInstructionIndex;
+}
+
 namespace particle {
 
 /**
@@ -64,6 +69,12 @@ public:
 		INHERIT_VELOCITY_MULT,
 		POSITION_INHERIT_VELOCITY_MULT,
 		ORIENTATION_INHERIT_VELOCITY_MULT,
+		VELOCITY_NOISE_MULT,
+		VELOCITY_NOISE_TIME_MULT,
+		VELOCITY_NOISE_SEED,
+		SPAWN_POSITION_NOISE_MULT,
+		SPAWN_POSITION_NOISE_TIME_MULT,
+		SPAWN_POSITION_NOISE_SEED,
 
 		NUM_VALUES
 	};
@@ -101,12 +112,17 @@ public:
 	::util::ParsedRandomFloatRange m_length;
 	::util::ParsedRandomFloatRange m_vel_inherit;
 	::util::ParsedRandomFloatRange m_velocity_scaling;
+	::util::ParsedRandomFloatRange m_velocity_noise_scaling;
+	::util::ParsedRandomFloatRange m_position_noise_scaling;
 
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_orientation;
 	std::optional<::util::ParsedRandomFloatRange> m_vel_inherit_from_position;
 
 	std::shared_ptr<::particle::ParticleVolume> m_velocityVolume;
 	std::shared_ptr<::particle::ParticleVolume> m_spawnVolume;
+
+	std::shared_ptr<std::pair<anl::CKernel, anl::CInstructionIndex>> m_velocityNoise;
+	std::shared_ptr<std::pair<anl::CKernel, anl::CInstructionIndex>> m_spawnNoise;
 
 	std::optional<vec3d> m_manual_offset;
 
@@ -119,6 +135,7 @@ public:
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
 	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
+	void sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, const std::tuple<const ParticleSource&, const size_t&>& source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const;
  public:
 	/**
 	 * @brief Initializes the base ParticleEffect
@@ -173,7 +190,13 @@ public:
 			std::pair {"Velocity Volume Mult", ParticleCurvesOutput::VOLUME_VELOCITY_MULT},
 			std::pair {"Velocity Inherit Mult", ParticleCurvesOutput::INHERIT_VELOCITY_MULT},
 			std::pair {"Velocity Position Inherit Mult", ParticleCurvesOutput::POSITION_INHERIT_VELOCITY_MULT},
-			std::pair {"Velocity Orientation Inherit Mult", ParticleCurvesOutput::ORIENTATION_INHERIT_VELOCITY_MULT}
+			std::pair {"Velocity Orientation Inherit Mult", ParticleCurvesOutput::ORIENTATION_INHERIT_VELOCITY_MULT},
+			std::pair {"Velocity Noise Mult", ParticleCurvesOutput::VELOCITY_NOISE_MULT},
+			std::pair {"Velocity Noise Time Mult", ParticleCurvesOutput::VELOCITY_NOISE_TIME_MULT},
+			std::pair {"Velocity Noise Seed", ParticleCurvesOutput::VELOCITY_NOISE_SEED},
+			std::pair {"Spawn Position Noise Mult", ParticleCurvesOutput::SPAWN_POSITION_NOISE_MULT},
+			std::pair {"Spawn Position Noise Time Mult", ParticleCurvesOutput::SPAWN_POSITION_NOISE_TIME_MULT},
+			std::pair {"Spawn Position Noise Seed", ParticleCurvesOutput::SPAWN_POSITION_NOISE_SEED}
 		},
 		std::pair {"Trigger Radius", modular_curves_submember_input<&ParticleSource::m_triggerRadius>{}},
 		std::pair {"Trigger Velocity", modular_curves_submember_input<&ParticleSource::m_triggerVelocity>{}},
@@ -185,7 +208,8 @@ public:
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
 			ModularCurvesMathOperators::division>{}})
 	.derive_modular_curves_input_only_subset<size_t>(
-		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}}
+		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
+		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);

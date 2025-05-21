@@ -229,9 +229,9 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
 
 //	This version of vector normalize checks for the null vector before normalization.
-//	If it is detected, it returns the vector 1, 0, 0.
-float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src);
-float vm_vec_normalize_safe(vec3d *v);
+//	If it is detected, it returns the vector 1, 0, 0 (or 0, 0, 0 if fallbackToZeroVec is true)..
+float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src, bool fallbackToZeroVec = false);
+float vm_vec_normalize_safe(vec3d *v, bool fallbackToZeroVec = false);
 
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
