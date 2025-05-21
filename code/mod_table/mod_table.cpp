@@ -133,8 +133,8 @@ float Min_pixel_size_beam;
 float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
-float Visually_cull_lasers_below_length;
-float Visually_cull_lasers_below_radius;
+float Do_not_render_lasers_below_length;
+float Do_not_render_lasers_below_radius;
 bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
@@ -932,12 +932,12 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Min_pixel_size_laser);
 			}
 
-			if (optional_string("Visually Cull Lasers Below Length:")) {
-				stuff_float(&Visually_cull_lasers_below_length);
+			if (optional_string("$Do Not Render Lasers Below Length:")) {
+				stuff_float(&Do_not_render_lasers_below_length);
 			}
 
-			if (optional_string("Visually Cull Lasers Below Radius:")) {
-				stuff_float(&Visually_cull_lasers_below_radius);
+			if (optional_string("$Do Not Render Lasers Below Radius:")) {
+				stuff_float(&Do_not_render_lasers_below_radius);
 			}
 
 			if (optional_string("$Thruster easing value:")) {
@@ -1702,8 +1702,8 @@ void mod_table_reset()
 	Min_pizel_size_muzzleflash = 0.0f;
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
-	Visually_cull_lasers_below_length = 0.0001f;
-	Visually_cull_lasers_below_radius = 0.0001f;
+	Do_not_render_lasers_below_length = 0.0001f;
+	Do_not_render_lasers_below_radius = 0.0001f;
 	Supernova_hits_at_zero = false;
 	Show_subtitle_uses_pixels = false;
 	Show_subtitle_screen_base_res[0] = -1;
