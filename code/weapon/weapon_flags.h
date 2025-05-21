@@ -96,6 +96,7 @@ namespace Weapon {
 		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
 		Ignores_countermeasures,			// The weapon will never be affected by countermeasures
 		Freespace_1_missile_behavior,		// Bundles several observed behaviors missiles had in the freespace 1 release
+		Dogfight_weapon,                    // Dogfight weapons are intended as balanced variants for multiplayer. This flag can be used to filter them out when necessary.
 
         NUM_VALUES
 	};
