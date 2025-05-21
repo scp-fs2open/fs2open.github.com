@@ -21,5 +21,6 @@ BASE_COMMIT=$(git merge-base $1 $2)
 echo "Running clang-tidy on changed files"
 git diff -U0 --no-color "$BASE_COMMIT..$2" | \
     $HERE/clang-tidy-diff.py -path "$(pwd)/build" -p1 \
+    -extra-arg="-DVULKAN_HPP_DISPATCH_LOADER_DYNAMIC" \
     -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)))|freespace2|qtfred|test|build|tools)\/.*\.(cpp|h)' \
     -clang-tidy-binary /usr/bin/clang-tidy-16 -j$(nproc) -export-fixes "$(pwd)/clang-fixes.yaml"
