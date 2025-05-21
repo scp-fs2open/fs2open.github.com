@@ -9215,21 +9215,19 @@ void weapon_render(object* obj, model_draw_list *scene)
 			head_radius *= head_radius_mult * radius_mult;
 			tail_radius *= tail_radius_mult * radius_mult;
 
-			if (laser_length < Visually_cull_lasers_below_length) {
-				mprintf(("  ZZZZ here 0 \n"));
+			if (laser_length < Do_not_render_lasers_below_length) {
 				return;
 			}
 
-			if (head_radius < Visually_cull_lasers_below_radius && tail_radius < Visually_cull_lasers_below_radius) {
-				mprintf(("  ZZZZ here 1 \n"));
+			if (head_radius < Do_not_render_lasers_below_radius && tail_radius < Do_not_render_lasers_below_radius) {
 				return;
 			}
 
-			if (head_radius <= Visually_cull_lasers_below_radius) {
-				head_radius = Visually_cull_lasers_below_radius;
+			if (head_radius <= Do_not_render_lasers_below_radius) {
+				head_radius = Do_not_render_lasers_below_radius;
 			}
-			if (tail_radius <= Visually_cull_lasers_below_radius) {
-				tail_radius = Visually_cull_lasers_below_radius;
+			if (tail_radius <= Do_not_render_lasers_below_radius) {
+				tail_radius = Do_not_render_lasers_below_radius;
 			}
 
 
