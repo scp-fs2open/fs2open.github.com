@@ -2017,7 +2017,6 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 					// do mflash if the weapon has it
 					if (wip->muzzle_effect.isValid()) {
 						float radius_mult = 1.f;
-
 						if (wip->render_type == WRT_LASER) {
 							radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
 						}
