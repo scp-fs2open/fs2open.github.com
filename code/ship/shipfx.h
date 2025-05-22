@@ -135,7 +135,7 @@ void shipfx_flash_init();
 // accordingly.
 // Set is_primary to non-zero if this is a primary weapon.
 // Gun_pos should be in object's frame of reference, not world!!!
-void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index);
+void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index, int weapon_objnum);
 
 // Does whatever processing needs to be done each frame.
 void shipfx_flash_do_frame(float frametime);
