@@ -1035,7 +1035,7 @@ void shipfx_flash_init()
 /**
  * Given that a ship fired a weapon, light up the model accordingly.
  */
-void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index)
+void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index, int weapon_objnum)
 {
 	int i;
 	int objnum = OBJ_INDEX(objp);
@@ -1055,7 +1055,10 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 		objp == Player_obj 
 		&& Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]
 		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
-	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+
+	auto* wip = &Weapon_info[weapon_info_index];
+	
+	if (!(wip->wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
 			// if there's a muzzle effect entry, we use that
 			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
@@ -1067,14 +1070,17 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
 				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
 
-				// set radius manually following logic in weapon_create function --wookieejedi
-				if (Weapon_info[weapon_info_index].collision_radius_override > 0.0f)
-					particleSource->setTriggerRadius(Weapon_info[weapon_info_index].collision_radius_override);
-				else if (Weapon_info[weapon_info_index].render_type == WRT_POF) {
-					particleSource->setTriggerRadius(model_get_radius(Weapon_info[weapon_info_index].model_num));
-				} else if (Weapon_info[weapon_info_index].render_type == WRT_LASER) {
-					particleSource->setTriggerRadius(Weapon_info[weapon_info_index].laser_head_radius);
+				auto *weapon_objp = &Objects[weapon_objnum];
+				auto *wp = &Weapons[weapon_objp->instance];
+
+				float radius_mult = 1.f;
+
+				if (wip->render_type == WRT_LASER) {
+					radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
 				}
+
+				particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
+				particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
 
 				particleSource->finishCreation();
 			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
