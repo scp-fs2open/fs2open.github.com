@@ -5,6 +5,7 @@
  * or otherwise commercially exploit the source or things you created based on
  * the source.
  */
+#pragma once
 
 #if defined(DOXYGEN)
 /**
@@ -45,6 +46,22 @@
  * it's necessary to hide these changes behind a macro. Use this in place of %zd
  */
 #define PTRDIFF_T_ARG "%zd"
+
+/**
+ * @brief Format specifier for a @c uint64_t argument
+ *
+ * Due to different runtimes using different format specifier for these types
+ * it's necessary to hide these changes behind a macro.
+ */
+#define UINT64_T_ARG  "%" PRIu64
+
+/**
+ * @brief Format specifier for an @c int64_t argument
+ *
+ * Due to different runtimes using different format specifier for these types
+ * it's necessary to hide these changes behind a macro.
+ */
+#define  INT64_T_ARG  "%" PRId64
 
 /**
  * @brief Attribute for forcing a static variable to be instantiated
