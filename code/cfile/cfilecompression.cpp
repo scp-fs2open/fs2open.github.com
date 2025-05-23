@@ -402,6 +402,12 @@ int xz_block_decoder(COMPRESSION_INFO *ci, size_t block_uncompressed_size, size_
 	Assertion(ret_hd == LZMA_OK, "Failed to decode XZ block header, return code is %d.", ret_hd);
 	#endif
 
+	#if defined(NDEBUG)
+	// Skip block integrity check on release
+	block.version = 1;
+	block.ignore_check = true;
+	#endif
+
 	//Set Decoding stream, we must skip the block header
 	lzma_stream stream = LZMA_STREAM_INIT;
 	stream.next_in = input_buffer + block.header_size;
