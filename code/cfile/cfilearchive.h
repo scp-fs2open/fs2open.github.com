@@ -15,23 +15,13 @@
 #endif
 
 #include "globalincs/pstypes.h"
+#include "cfile/cfilecompression.h"
 
 // The following Cfile_block data is private to cfile.cpp
 // DO NOT MOVE the Cfile_block* information to cfile.h / do not extern this data
 //
 #define CFILE_BLOCK_UNUSED		0
 #define CFILE_BLOCK_USED		1
-
-struct COMPRESSION_INFO {
-	int header = 0;
-	size_t compressed_size = 0;
-	int block_size = 0;
-	int num_offsets = 0;
-	int* offsets = nullptr;
-	char* decoder_buffer = nullptr;
-	int last_decoded_block_pos = 0;
-	int last_decoded_block_bytes = 0;
-};
 
 struct CFILE {
 	int type = CFILE_BLOCK_UNUSED;                // CFILE_BLOCK_UNUSED, CFILE_BLOCK_USED
@@ -54,7 +44,8 @@ struct CFILE {
 	SCP_string original_filename;
 	const char* source_file;
 	int line_num;
-	COMPRESSION_INFO compression_info;
+	COMPRESSION_INFO  compression_info;
+	COMPRESSION_INFO* pack_ci_ptr = nullptr; //This points to the pack COMPRESSION_INFO if this file is inside of a compressed pack
 };
 
 #define MAX_CFILE_BLOCKS	64
@@ -63,7 +54,8 @@ extern std::array<CFILE, MAX_CFILE_BLOCKS> Cfile_block_list;
 // Called once to setup the low-level reading code.
 void cf_init_lowlevel_read_code(CFILE* cfile, size_t lib_offset, size_t size, size_t pos);
 
-// This checks if the file is compressed or not, and creates the proper compression info if so.
+// This checks if the file is compressed or not, and creates the proper compression info if so
+// If the file is in a pack, pass the pointer to the pack compression_info, otherwise use nullptr
 void cf_check_compression(CFILE* cfile);
 
 // Used to clear compression info data and free dynamic memory used by compression
