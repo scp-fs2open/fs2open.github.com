@@ -359,7 +359,8 @@ void xz_create_ci(COMPRESSION_INFO* ci, FILE* fp, size_t lib_offset, size_t file
 
 	ci->uncompressed_size = ci->xz_index_iter->stream.uncompressed_size;
 	ci->block_size = (int)ci->xz_index_iter->block.uncompressed_size;
-	if (ci->block_size <= COMP_MAX_DECODER_BUFFER) {
+	extern bool Cmdline_xz_no_cache_limit;
+	if (ci->block_size <= COMP_MAX_DECODER_BUFFER || Cmdline_xz_no_cache_limit) {
 		ci->decoder_buffer = (char*)malloc(ci->block_size);
 
 	} else {
