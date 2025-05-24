@@ -18,12 +18,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#define SDL_SUPPORTS_VULKAN 1
-#else
-#define SDL_SUPPORTS_VULKAN 0
-#endif
-
 namespace graphics::vulkan {
 
 struct QueueIndex {
@@ -448,10 +442,8 @@ class VulkanRenderer {
 	vk::SampleCountFlagBits m_msaaSampleCount = vk::SampleCountFlagBits::e1;  // Validated MSAA sample count
 	bool m_renderTargetActive = false;  // True when rendering to off-screen RT (bm_set_render_target)
 
-#if SDL_SUPPORTS_VULKAN
 	bool m_debugReportEnabled = false;
 	bool m_debugUtilsEnabled = false;
-#endif
 
 };
 

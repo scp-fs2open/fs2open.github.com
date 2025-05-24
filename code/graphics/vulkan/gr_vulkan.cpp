@@ -12,7 +12,7 @@
 #include "VulkanDeferred.h"
 #include "VulkanPostProcessing.h"
 
-#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "osapi/osapi.h"
 
@@ -552,12 +552,12 @@ bool initialize(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		shadow_cascade_params_init();
 	}
 
-	// Initialize ImGui SDL2 backend for input handling.
+	// Initialize ImGui SDL3 backend for input handling.
 	// The Vulkan rendering backend (ImGui_ImplVulkan) is initialized
 	// inside VulkanRenderer::initImGui() after all Vulkan objects are ready.
 	SDL_Window* window = os::getSDLMainWindow();
 	if (window) {
-		ImGui_ImplSDL2_InitForVulkan(window);
+		ImGui_ImplSDL3_InitForVulkan(window);
 	}
 
 	gr_screen.gf_flip = vulkan_flip;

@@ -35,7 +35,7 @@ public:
 class MFCOpenGLContext : public os::OpenGLContext
 {
 	// HACK: Since OpenGL apparently likes global state we also have to make this global...
-	static void* _oglDllHandle;
+	static SDL_SharedObject* _oglDllHandle;
 	static size_t _oglDllReferenceCount;
 
 	HGLRC _render_context = nullptr;
