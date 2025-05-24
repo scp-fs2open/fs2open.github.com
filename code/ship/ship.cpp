@@ -12730,6 +12730,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		has_converging_autoaim = ((autoaim_convergence_flagged || (The_mission.ai_profile->player_autoaim_fov[Game_skill_level] > 0.0f && !( Game_mode & GM_MULTIPLAYER ))) && aip->target_objnum != -1);
 		has_autoaim = ((autoaim_flagged || has_converging_autoaim || (sip->bank_autoaim_fov[bank_to_fire] > 0.0f)) && aip->target_objnum != -1);
 		needs_target_pos = ((auto_convergence_flagged || has_autoaim) && aip->target_objnum != -1);
+		// TODO: check if weapon has launch curves that might need distance to enemy
 
 		if (needs_target_pos) {
 			if (has_autoaim) {
@@ -12789,6 +12790,11 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 
 		int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 
+		auto launch_curve_data = WeaponLaunchCurveData {
+			num_firepoints: num_slots,
+			distance_to_target: dist_to_target,
+		};
+
 		// do timestamp stuff for next firing time
 		float next_fire_delay;
 		bool fast_firing = false;
@@ -12805,17 +12811,22 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		int old_burst_seed = swp->burst_seed[bank_to_fire];
 
 		// should subtract 1 from num_slots to match behavior of winfo_p->burst_shots
-		int burst_shots = (winfo_p->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? num_slots - 1 : winfo_p->burst_shots);
+		int burst_shots = fl2i(i2fl(winfo_p->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? num_slots - 1 : winfo_p->burst_shots)
+			* winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data));
 		if (burst_shots > swp->burst_counter[bank_to_fire]) {
-			next_fire_delay = winfo_p->burst_delay * 1000.0f;
+			next_fire_delay = winfo_p->burst_delay * 1000.0f * winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_DELAY_MULT, launch_curve_data);
 			swp->burst_counter[bank_to_fire]++;
 			if (winfo_p->burst_flags[Weapon::Burst_Flags::Fast_firing])
 				fast_firing = true;
 		} else {
 			if (winfo_p->max_delay != 0.0f && winfo_p->min_delay != 0.0f) // Random fire delay (DahBlount)
-				next_fire_delay = frand_range(winfo_p->min_delay, winfo_p->max_delay) * 1000.0f;
+				next_fire_delay = frand_range(winfo_p->min_delay, winfo_p->max_delay)
+					* 1000.0f
+					* winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FIRE_WAIT_MULT, launch_curve_data);
 			else
-				next_fire_delay = winfo_p->fire_wait * 1000.0f;
+				next_fire_delay = winfo_p->fire_wait
+				* 1000.0f
+				* winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FIRE_WAIT_MULT, launch_curve_data);
 
 			swp->burst_counter[bank_to_fire] = 0;
 			swp->burst_seed[bank_to_fire] = Random::next();
@@ -12983,16 +12994,16 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 				// ok if this is a cycling weapon use shots as the number of points to fire from at a time
 				// otherwise shots is the number of times all points will be fired (used mostly for the 'shotgun' effect)
 				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
-					shot_count = winfo_p->cycle_multishot;
+					shot_count = fl2i(i2fl(winfo_p->cycle_multishot) * winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
 					point_count = MIN(num_slots, swp->primary_bank_slot_count[bank_to_fire] );
 				} else if (winfo_p->b_info.beam_shots) {
-					shot_count = winfo_p->shots;
+					shot_count = fl2i(i2fl(winfo_p->shots) * winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
 					point_count = MIN(winfo_p->b_info.beam_shots, num_slots);
 				} else if (firing_pattern != FiringPattern::STANDARD) {
-					shot_count = winfo_p->cycle_multishot;
+					shot_count = fl2i(i2fl(winfo_p->cycle_multishot) * winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
 					point_count = MIN(num_slots, winfo_p->shots);
 				} else {
-					shot_count = winfo_p->shots;
+					shot_count = fl2i(i2fl(winfo_p->shots) * winfo_p->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
 					point_count = num_slots;
 				}
 
@@ -13350,7 +13361,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 							// create the weapon -- the network signature for multiplayer is created inside
 							// of weapon_create							
 							weapon_objnum = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), new_group_id,
-								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire] );
+								0, 0, swp->primary_bank_fof_cooldown[bank_to_fire], nullptr, launch_curve_data );
 
 							if (weapon_objnum == -1) {
 								// Weapon most likely failed to fire
@@ -13851,6 +13862,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		return 0;
 	}
 
+	float dist_to_target = 0.f;
+	if (aip->target_objnum != -1) {
+		dist_to_target = vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos);
+	};
+
 	if ( !timestamp_elapsed(swp->next_secondary_fire_stamp[bank]) && !allow_swarm) {
 		if (timestamp_until(swp->next_secondary_fire_stamp[bank]) > 60000){
 			swp->next_secondary_fire_stamp[bank] = timestamp(1000);
@@ -13871,7 +13887,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 					}
 
 					if ((aip->target_objnum != -1) &&
-						(vm_vec_dist_quick(&obj->pos, &Objects[aip->target_objnum].pos) > max_dist)) {
+						(dist_to_target > max_dist)) {
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, "%s", XSTR("Too far from target to acquire lock", 487));
 					} else {
 						HUD_sourced_printf(HUD_SOURCE_HIDDEN, XSTR("Cannot fire %s without a lock", 488), wip->get_display_name());
@@ -14050,6 +14066,11 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 		num_slots = pm->missile_banks[bank].num_slots;
 
+		auto launch_curve_data = WeaponLaunchCurveData {
+			num_firepoints: num_slots,
+			distance_to_target: dist_to_target,
+		};
+
 		// determine if there is enough ammo left to fire weapons on this bank.  As with primary
 		// weapons, we might or might not check ammo counts depending on game mode, who is firing,
 		// and if I am a client in multiplayer
@@ -14163,7 +14184,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked, false, 0.f, nullptr, launch_curve_data);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire

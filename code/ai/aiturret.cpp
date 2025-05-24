@@ -26,6 +26,7 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
 #include "weapon/weapon.h"
+#include "utils/modular_curves.h"
 
 #include <climits>
 
@@ -1549,22 +1550,26 @@ bool turret_should_pick_new_target(ship_subsys *turret)
 /**
  * Set the next fire timestamp for a turret, based on weapon type and ai class
  */
-void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship_subsys *turret, const ai_info *aip)
+void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship_subsys *turret, const ai_info *aip, WeaponLaunchCurveData launch_curve_data)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
 	// should subtract 1 from firepoints to match behavior of wip->burst_shots
 	int burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points - 1 : wip->burst_shots);
+	burst_shots = fl2i(i2fl(burst_shots) * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data));
 
 	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {
 		wait *= wip->burst_delay;
+		wait *= wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_DELAY_MULT, launch_curve_data);
 		turret->weapons.burst_counter[weapon_num]++;
 	} else {
 		// Random fire delay (DahBlount) used in ship_fire_primary(), added here by wookieejedi to correct oversight
 		if (wip->max_delay != 0.0f && wip->min_delay != 0.0f) {
 			wait *= frand_range(wip->min_delay, wip->max_delay);
+			wait *= wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FIRE_WAIT_MULT, launch_curve_data);
 		} else {
 			wait *= wip->fire_wait;
+			wait *= wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FIRE_WAIT_MULT, launch_curve_data);
 		}
 		if ((burst_shots > 0) && (wip->burst_flags[Weapon::Burst_Flags::Random_length])) {
 			turret->weapons.burst_counter[weapon_num] = Random::next(burst_shots);
@@ -1690,7 +1695,15 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 /**
  * Fire a weapon from a turret
  */
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true)
+bool turret_fire_weapon(int weapon_num,
+	ship_subsys *turret,
+	int parent_objnum,
+	WeaponLaunchCurveData launch_curve_data,
+	const vec3d *orig_firing_pos,
+	const vec3d *orig_firing_vec,
+	const vec3d *predicted_pos = nullptr,
+	float flak_range_override = 100.0f,
+	bool play_sound = true)
 {
 	matrix	firing_orient;
 	int weapon_objnum;
@@ -1790,7 +1803,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 
 		// set next fire timestamp for the turret
 		if (last_shot_in_salvo)
-			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip);
+			turret_set_next_fire_timestamp(weapon_num, wip, turret, parent_aip, launch_curve_data);
 
 		// if this weapon is a beam weapon, handle it specially
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -1875,7 +1888,8 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 		}
 		// now do anything else
 		else {
-			for (int i = 0; i < wip->shots; i++) {
+			int shots = fl2i(i2fl(wip->shots) * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
+			for (int i = 0; i < shots; i++) {
 				if (!in_lab && turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
 					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
 					if (wip->subtype == WP_LASER) {
@@ -1971,7 +1985,7 @@ bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, 
 				// so we need to get the position info separately for each shot
 				ship_get_global_turret_gun_info(&Objects[parent_objnum], turret, &firing_pos_buf, false, nullptr, true, nullptr);
 
-				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, 1, 0, 0.0f, turret);
+				weapon_objnum = weapon_create(firing_pos, &firing_orient, turret_weapon_class, parent_objnum, -1, 1, 0, 0.0f, turret, launch_curve_data);
 				weapon_set_tracking_info(weapon_objnum, parent_objnum, turret->turret_enemy_objnum, 1, turret->targeted_subsys);		
 			
 				//nprintf(("AI", "Turret_time_enemy_in_range = %7.3f\n", ss->turret_time_enemy_in_range));		
@@ -2105,8 +2119,13 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	// make firing_orient from turret_fvec -- turret->turret_last_fire_direction
 	vm_vector_2_matrix_norm(&firing_orient, &turret_fvec, nullptr, nullptr);
 
+	auto launch_curve_data = WeaponLaunchCurveData {
+		num_firepoints: tsi->turret->system_info->turret_num_firing_points,
+		distance_to_target: 0.f,
+	};
+
 	// create weapon and homing info
-	weapon_objnum = weapon_create(&turret_pos, &firing_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1, 0, 0.0f, tsi->turret);
+	weapon_objnum = weapon_create(&turret_pos, &firing_orient, tsi->weapon_class, tsi->parent_objnum, -1, 1, 0, 0.0f, tsi->turret, launch_curve_data);
 	weapon_set_tracking_info(weapon_objnum, tsi->parent_objnum, tsi->target_objnum, 1, tsi->target_subsys);
 
 	// do other cool stuff if weapon is created.
@@ -2325,6 +2344,12 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 	float turret_barrel_length = -1.0f;
 
+	// grab the data for the launch curve inputs
+	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
+			num_firepoints: ss->system_info->turret_num_firing_points,
+			distance_to_target: dist_to_enemy,
+	};
+
 	//WMC - go through all valid weapons. Fire spawns if there are any.
 	int valid_weapons[MAX_SHIP_WEAPONS];
 	int num_valid = 0;
@@ -2356,7 +2381,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		if (!in_lab && (wip->wi_flags[Weapon::Info_Flags::Spawn]) && !(wip->wi_flags[Weapon::Info_Flags::Smart_spawn]) )
 		{
 			if (( num_ships_nearby >= 3 ) || ((num_ships_nearby >= 2) && (frand() < 0.1f))) {
-				turret_fire_weapon(i, ss, parent_objnum, &global_gun_pos, &ss->turret_last_fire_direction);
+				turret_fire_weapon(i, ss, parent_objnum, launch_curve_data, &global_gun_pos, &ss->turret_last_fire_direction);
 			} else {
 				//	Regardless of firing rate, don't check whether should fire for awhile.
 				if (tp->flags[Model::Subsystem_Flags::Use_multiple_guns])
@@ -2809,7 +2834,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 					flak_jitter_aim(&shoot_vector, dist_to_enemy, ship_get_subsystem_strength(shipp, SUBSYSTEM_WEAPONS), wip);
 				}
 
-				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, &global_gun_pos, &shoot_vector, &predicted_enemy_pos, 100.0f, play_sound);
+				turret_fire_weapon(valid_weapons[valid_index], ss, parent_objnum, launch_curve_data, &global_gun_pos, &shoot_vector, &predicted_enemy_pos, 100.0f, play_sound);
 			}
 			else
 			{
@@ -2822,7 +2847,7 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 				// make sure salvo fire mode does not turn into autofire
 				if ((tp->flags[Model::Subsystem_Flags::Turret_salvo]) && ((i + 1) == number_of_firings)) {
 					ai_info *parent_aip = &Ai_info[shipp->ai_index];
-					turret_set_next_fire_timestamp(valid_weapons[valid_index], wip, ss, parent_aip);
+					turret_set_next_fire_timestamp(valid_weapons[valid_index], wip, ss, parent_aip, launch_curve_data);
 				}
 			}
 

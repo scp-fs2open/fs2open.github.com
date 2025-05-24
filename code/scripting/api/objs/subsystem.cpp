@@ -15,7 +15,7 @@
 #include "network/multiutil.h"
 
 void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free);
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, WeaponLaunchCurveData launch_curve_data, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
 namespace api {
@@ -891,7 +891,13 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 	if (override_gvec != nullptr)
 		vm_vec_copy_normalize(&gvec, override_gvec);
 
-	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, &gpos, &gvec, NULL, flak_range);
+	// we don't have a target, so just set the range to 0
+	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
+		num_firepoints: sso->ss->system_info->turret_num_firing_points,
+		distance_to_target: 0.f,
+	};
+
+	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, NULL, flak_range);
 
 	sso->ss->turret_next_fire_pos++;
 

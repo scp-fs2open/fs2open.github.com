@@ -2511,6 +2511,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
+			mprintf(("damage: %f\n", damage));
+
 			// multiplayer clients don't do damage
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
 			} else {
