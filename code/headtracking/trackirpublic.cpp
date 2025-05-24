@@ -51,14 +51,13 @@ int TrackIRDLL::Init(SDL_Window* window)
 {
 	if (m_Init)
 	{
-		SDL_SysWMinfo info;
-		SDL_VERSION(&info.version); // initialize info structure with SDL version info
+		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(window), SDL_PROP_WINDOW_WIN32_HWND_POINTER, nullptr));
 
-		if (SDL_GetWindowWMInfo(window, &info))
+		if (hwnd)
 		{ // the call returns true on success
 			// success
 
-			return m_Init(info.info.win.window);
+			return m_Init(hwnd);
 		}
 		else
 		{

@@ -78,7 +78,7 @@
 #include "cmdline/cmdline.h"
 
 #define SDL_MAIN_HANDLED
-#include <SDL_main.h>
+#include <SDL3/SDL_main.h>
 
 #define MAX_DOCKS 1000
 
