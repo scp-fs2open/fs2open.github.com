@@ -1,9 +1,6 @@
 
 #ifndef CURSOR_H
 #define CURSOR_H
-#pragma once
-
-#include <SDL_mouse.h>
 
 #include "globalincs/pstypes.h"
 #include "cmdline/cmdline.h"

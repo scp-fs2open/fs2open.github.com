@@ -5,7 +5,8 @@
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 
-#include <SDL_syswm.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #ifdef _WIN64
 #define TRACKIRBRIDGEDLLNAME "scptrackir64.dll"
