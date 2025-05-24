@@ -36,6 +36,7 @@ FLAG_LIST(LabRenderFlag) {
 	ShowEmissiveLighting,
 	ShowAfterburners,
 	TimeStopped,
+	NoParticles,
 
 	NUM_VALUES
 };
