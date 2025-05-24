@@ -3,16 +3,14 @@
 
 #include "globalincs/version.h"
 
-#include "backends/imgui_impl_sdl.h"
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
 #include "def_files/def_files.h"
 #include "graphics/2d.h"
 #include "libs/renderdoc/renderdoc.h"
 #include "mod_table/mod_table.h"
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#include <SDL_vulkan.h>
-#endif
+#include <SDL3/SDL_vulkan.h>
 
 VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
@@ -20,7 +18,6 @@ namespace graphics {
 namespace vulkan {
 
 namespace {
-#if SDL_SUPPORTS_VULKAN
 const char* EngineName = "FreeSpaceOpen";
 
 const gameversion::version MinVulkanVersion(1, 1, 0, 0);
@@ -43,7 +40,6 @@ VkBool32 VKAPI_PTR debugReportCallback(
 	mprintf(("Vulkan message: [%s]: %s\n", pLayerPrefix, pMessage));
 	return VK_FALSE;
 }
-#endif
 
 const SCP_vector<const char*> RequiredDeviceExtensions = {
 	VK_KHR_SWAPCHAIN_EXTENSION_NAME,
@@ -298,7 +294,7 @@ bool VulkanRenderer::initDisplayDevice() const
 	attrs.enable_opengl = false;
 	attrs.enable_vulkan = true;
 
-	attrs.display = os_config_read_uint("Video", "Display", 0);
+	attrs.display = gr_get_preferred_display();
 	attrs.width = static_cast<uint32_t>(gr_screen.max_w);
 	attrs.height = static_cast<uint32_t>(gr_screen.max_h);
 
@@ -342,26 +338,25 @@ bool VulkanRenderer::initDisplayDevice() const
 }
 bool VulkanRenderer::initializeInstance()
 {
-#if SDL_SUPPORTS_VULKAN
 	const auto vkGetInstanceProcAddr =
 		reinterpret_cast<PFN_vkGetInstanceProcAddr>(SDL_Vulkan_GetVkGetInstanceProcAddr());
 
 	VULKAN_HPP_DEFAULT_DISPATCHER.init(vkGetInstanceProcAddr);
 
-	const auto window = os::getSDLMainWindow();
-
 	unsigned int count;
-	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, nullptr)) {
-		mprintf(("Error in first SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
+
+	auto vkExt = SDL_Vulkan_GetInstanceExtensions(&count);
+
+	if (!vkExt) {
+		mprintf(("Error in SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
 		return false;
 	}
 
 	std::vector<const char*> extensions;
 	extensions.resize(count);
 
-	if (!SDL_Vulkan_GetInstanceExtensions(window, &count, extensions.data())) {
-		mprintf(("Error in second SDL_Vulkan_GetInstanceExtensions: %s\n", SDL_GetError()));
-		return false;
+	for (unsigned int i = 0; i < count; ++i) {
+		extensions.push_back(vkExt[i]);
 	}
 
 	const auto instanceVersion = vk::enumerateInstanceVersion();
@@ -446,19 +441,14 @@ bool VulkanRenderer::initializeInstance()
 
 	m_vkInstance = std::move(instance);
 	return true;
-#else
-	mprintf(("SDL does not support Vulkan in its current version.\n"));
-	return false;
-#endif
 }
 
 bool VulkanRenderer::initializeSurface()
 {
-#if SDL_SUPPORTS_VULKAN
 	const auto window = os::getSDLMainWindow();
 
 	VkSurfaceKHR surface;
-	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), &surface)) {
+	if (!SDL_Vulkan_CreateSurface(window, static_cast<VkInstance>(*m_vkInstance), nullptr, &surface)) {
 		mprintf(("Failed to create vulkan surface: %s\n", SDL_GetError()));
 		return false;
 	}
@@ -472,9 +462,6 @@ bool VulkanRenderer::initializeSurface()
 		VULKAN_HPP_DEFAULT_DISPATCHER);
 	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
 	return true;
-#else
-	return false;
-#endif
 }
 
 bool VulkanRenderer::pickPhysicalDevice(PhysicalDeviceValues& deviceValues)

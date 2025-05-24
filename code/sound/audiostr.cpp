@@ -35,7 +35,7 @@
 ubyte *Wavedata_load_buffer = NULL;		// buffer used for cueing audiostreams
 ubyte *Wavedata_service_buffer = NULL;	// buffer used for servicing audiostreams
 
-SDL_mutex* Global_service_lock;
+SDL_Mutex* Global_service_lock;
 
 typedef bool (*TIMERCALLBACK)(ptr_u);
 
@@ -86,7 +86,7 @@ public:
 	void destructor();
 	bool Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCallback);
 protected:
-	static uint TimeProc(uint interval, void *param);
+	static uint TimeProc(void *dwUser, SDL_TimerID timerID, Uint32 interval);
 	TIMERCALLBACK m_pfnCallback;
 	ptr_u m_dwUser;
 	uint m_nPeriod;
@@ -160,7 +160,7 @@ protected:
 	size_t m_total_uncompressed_bytes_read;
 	size_t m_max_uncompressed_bytes_to_read;
 
-	SDL_mutex* write_lock;
+	SDL_Mutex* write_lock;
 
 };
 
@@ -212,7 +212,7 @@ bool Timer::Create (uint nPeriod, uint nRes, ptr_u dwUser, TIMERCALLBACK pfnCall
 // Calls procedure specified when Timer object was created. The 
 // dwUser parameter contains "this" pointer for associated Timer object.
 // 
-uint Timer::TimeProc(uint interval, void *dwUser)
+uint Timer::TimeProc(void *dwUser, SDL_TimerID /* timerID */, Uint32 interval)
 {
 	// dwUser contains ptr to Timer object
 	Timer * ptimer = (Timer *) dwUser;
@@ -878,8 +878,6 @@ void audiostream_init()
 		Audio_streams[i].type = ASF_NONE;
 		Audio_streams[i].paused_via_sexp_or_script = false;
 	}
-
-	SDL_InitSubSystem(SDL_INIT_TIMER);
 
 	Global_service_lock = SDL_CreateMutex();
 

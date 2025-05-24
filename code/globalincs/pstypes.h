@@ -362,6 +362,10 @@ const float PI2			= (PI*2.0f);
 const float PI_2		= (PI/2.0f);
 const float PI_4		= (PI/4.0f);
 
+// not defined generally on Windows, no longer included in SDL
+#ifndef M_PI
+#define M_PI SDL_PI_F
+#endif
 
 extern int Fred_running;  // Is Fred running, or FreeSpace?
 extern bool running_unittests;
@@ -391,10 +395,10 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 // turn off inline asm
 #undef USE_INLINE_ASM
 
-#define INTEL_INT(x)	SDL_Swap32(x)
-#define INTEL_LONG(x)   SDL_Swap64(x)
-#define INTEL_SHORT(x)	SDL_Swap16(x)
-#define INTEL_FLOAT(x)	SDL_SwapFloat((*x))
+#define INTEL_INT(x)	SDL_Swap32LE(x)
+#define INTEL_LONG(x)   SDL_Swap64LE(x)
+#define INTEL_SHORT(x)	SDL_Swap16LE(x)
+#define INTEL_FLOAT(x)	SDL_SwapFloatLE((*x))
 
 #else // Little Endian -
 #define INTEL_INT(x)	x
