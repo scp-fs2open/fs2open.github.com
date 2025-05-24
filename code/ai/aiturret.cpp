@@ -2047,9 +2047,9 @@ bool turret_fire_weapon(int weapon_num,
 						subsys_index = ship_get_subsys_index(turret);
 						Assert( subsys_index != -1 );
 						if(wip->wi_flags[Weapon::Info_Flags::Flak]){			
-							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range );
+							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target );
 						} else {
-							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum );
+							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target );
 						}
 					}
 
@@ -2176,7 +2176,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
-			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum );
+			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f);
 		}
 	}
 }
