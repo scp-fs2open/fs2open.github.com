@@ -19,6 +19,7 @@
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
+#include "scripting/doc_luastub.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting_doc.h"
 #include "ship/ship.h"
@@ -32,6 +33,7 @@ using namespace scripting;
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
+bool Output_scripting_luastub = false;
 bool Scripting_game_init_run = false;
 
 flag_def_list Script_conditions[] = 
@@ -154,7 +156,7 @@ void script_init()
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
 
-	if (Output_scripting_meta || Output_scripting_json) {
+	if (Output_scripting_meta || Output_scripting_json || Output_scripting_luastub) {
 		const auto doc = Script_system.OutputDocumentation([](const SCP_string& error) {
 			mprintf(("Scripting documentation: Error while parsing\n%s(This is only relevant for coders)\n\n",
 				error.c_str()));
@@ -167,6 +169,10 @@ void script_init()
 		if (Output_scripting_json) {
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			scripting::output_json_doc(doc, "scripting.json");
+		}
+		if (Output_scripting_luastub) {
+			mprintf(("SCRIPTING: Outputting scripting metadata in LUA Stub format...\n"));
+			scripting::output_luastub_doc(doc, "scripting.lua");
 		}
 	}
 
