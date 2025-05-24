@@ -4,31 +4,35 @@
 #include "DebugWindow.h"
 
 #include "globalincs/alphacolors.h"
+#include "osapi/osapi.h"
 
 namespace {
-uint32_t get_debug_display() {
-	// If there are two or more monitors then we would like to display the window on the second monitor but it shouldn't
-	// be shown on the same monitor that the game is running on
-	// If there is only then then we'll just display it on that one
-	auto numDisplays = SDL_GetNumVideoDisplays();
+SDL_DisplayID get_debug_display() {
+	// If we have multiple displays then try to put the debug window on the one
+	// that isn't used by the main game window
+	auto primaryDisplay = SDL_GetPrimaryDisplay();
+	auto gameDisplay = SDL_GetDisplayForWindow(os::getSDLMainWindow());
 
-	if (numDisplays < 1) {
-		// Some kind of error
-		return 0;
+	if (primaryDisplay != gameDisplay) {
+		return primaryDisplay;
 	}
 
-	if (numDisplays == 1) {
-		// We only have one display
-		return 0;
+	auto debugDisplay = primaryDisplay;
+
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if (displays) {
+		for (int i = 0; displays[i]; ++i) {
+			if (displays[i] != gameDisplay) {
+				debugDisplay = displays[i];
+				break;
+			}
+		}
+
+		SDL_free(displays);
 	}
-	auto mainDisplay = os_config_read_uint("Video", "Display", 0);
-	if (mainDisplay == 1) {
-		// Game is on the second monitor => use the primary screen
-		return 0;
-	} else {
-		// Use the secondary screen
-		return 1;
-	}
+
+	return debugDisplay;
 }
 }
 
@@ -55,12 +59,14 @@ DebugWindow::DebugWindow() {
 		debug_sdl_window = debug_view->toSDLWindow();
 
 		if (debug_sdl_window != nullptr) {
-			os::events::addEventListener(SDL_KEYUP,
+			os::events::addEventListener(SDL_EVENT_KEY_UP,
 										 os::events::DEFAULT_LISTENER_WEIGHT - 5,
 										 [this](const SDL_Event& e) { return this->debug_key_handler(e); });
 		}
 	}
-	if (debug_view->toSDLWindow() != nullptr && os::getSDLMainWindow() != nullptr) {
+
+	// try and return focus to the game window (this may be ignored by the DE)
+	if (debug_sdl_window != nullptr && os::getSDLMainWindow() != nullptr) {
 		SDL_RaiseWindow(os::getSDLMainWindow());
 	}
 }
@@ -160,7 +166,7 @@ bool DebugWindow::debug_key_handler(const SDL_Event& evt) {
 	}
 
 	ptrdiff_t diff = 0;
-	switch(evt.key.keysym.sym) {
+	switch(evt.key.key) {
 		case SDLK_DOWN:
 			diff = 1;
 			break;

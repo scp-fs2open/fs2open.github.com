@@ -7,9 +7,6 @@
 #include "scripting/ade.h"
 #include "utils/string_utils.h"
 
-#include <SDL_messagebox.h>
-#include <SDL_clipboard.h>
-
 #include <string>
 #include <algorithm>
 
@@ -69,7 +66,7 @@ namespace
 	void set_clipboard_text(const char* text)
 	{
 		// Make sure video is enabled
-		if (!SDL_InitSubSystem(SDL_INIT_VIDEO))
+		if (SDL_InitSubSystem(SDL_INIT_VIDEO))
 		{
 			SDL_SetClipboardText(text);
 		}
@@ -239,7 +236,7 @@ namespace os
 			gr_activate(0);
 
 			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
 				buttonId = 1; // No action
@@ -323,7 +320,7 @@ namespace os
 			gr_activate(0);
 
 			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
 				abort();
@@ -391,7 +388,7 @@ namespace os
 			gr_activate(0);
 
 			int buttonId;
-			if (SDL_ShowMessageBox(&boxData, &buttonId) < 0)
+			if ( !SDL_ShowMessageBox(&boxData, &buttonId) )
 			{
 				// Call failed
 				buttonId = 1; // No action

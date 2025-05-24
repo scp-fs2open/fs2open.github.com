@@ -45,7 +45,7 @@ keyboard key_data;
 
 int key_inited = 0;
 
-SDL_mutex* key_lock;
+SDL_Mutex* key_lock;
 
 //int Backspace_debug=1;	// global flag that will enable/disable the backspace key from stopping execution
 								// This flag was created since the backspace key is also used to correct mistakes
@@ -91,8 +91,8 @@ namespace
 			return false;
 		}
 
-		if (SDLtoFS2[e.key.keysym.scancode]) {
-			key_mark(SDLtoFS2[e.key.keysym.scancode], 1, 0);
+		if (SDLtoFS2[e.key.scancode]) {
+			key_mark(SDLtoFS2[e.key.scancode], 1, 0);
 
 			return true;
 		}
@@ -106,8 +106,8 @@ namespace
 			return false;
 		}
 
-		if (SDLtoFS2[e.key.keysym.scancode]) {
-			key_mark(SDLtoFS2[e.key.keysym.scancode], 0, 0);
+		if (SDLtoFS2[e.key.scancode]) {
+			key_mark(SDLtoFS2[e.key.scancode], 0, 0);
 
 			return true;
 		}
@@ -249,7 +249,7 @@ SDL_Scancode fs2_to_sdl(int scancode) {
 
 int key_numlock_is_on()
 {
-	const Uint8 *state = SDL_GetKeyboardState(NULL);
+	auto state = SDL_GetKeyboardState(nullptr);
 
 	return state[SDL_SCANCODE_NUMLOCKCLEAR];
 }
@@ -685,8 +685,8 @@ void key_init()
 
 	SDL_UnlockMutex( key_lock );
 
-	os::events::addEventListener(SDL_KEYDOWN, os::events::DEFAULT_LISTENER_WEIGHT, key_down_event_handler);
-	os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT, key_up_event_handler);
+	os::events::addEventListener(SDL_EVENT_KEY_DOWN, os::events::DEFAULT_LISTENER_WEIGHT, key_down_event_handler);
+	os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT, key_up_event_handler);
 
 	atexit(key_close);
 }

@@ -668,7 +668,7 @@ const char *textify_scancode(int code)
 	}
 
 	SCP_string name;
-	unicode::convert_encoding(name, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode))), unicode::Encoding::Encoding_utf8);
+	unicode::convert_encoding(name, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode), SDL_KMOD_NONE, false)), unicode::Encoding::Encoding_utf8);
 	strcat_s(text, name.c_str());
 	return text;
 }

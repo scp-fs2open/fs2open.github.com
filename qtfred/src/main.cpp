@@ -23,6 +23,11 @@
 #include <csignal>
 #include <project.h>
 
+#define SDL_MAIN_HANDLED
+#include <SDL3/SDL_main.h>
+
+
+
 // Globals needed by the engine when built in 'FRED' mode.
 int Fred_running = 1;
 int Show_cpu = 0;
@@ -58,11 +63,6 @@ void fsoMessageOutput(QtMsgType type, const QMessageLogContext &context, const Q
 		break;
 	}
 }
-
-// SDL defines this on windows which causes problems
-#ifdef main
-#undef main
-#endif
 
 void handler(int signal) {
 	auto stacktrace = dump_stacktrace();
