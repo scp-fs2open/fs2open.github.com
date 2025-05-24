@@ -8,7 +8,9 @@
 
 #include <gamesequence/gamesequence.h>
 #include "osapi/osapi.h"
+#include "asteroid/asteroid.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
@@ -26,15 +28,26 @@ public:
 
 	// Do rendering and handle keyboard/mouse events
 	void onFrame(float frametime);
+
+	// Cleanup all objects and stop firing any weapons
+	void cleanup();
 	
 	// Creates a new object of the passed type, using the respective class definition found at info_index and replaces the currently
 	// displayed object
-	void changeDisplayedObject(LabMode type, int info_index);
+	void changeDisplayedObject(LabMode type, int info_index, int subtype = -1);
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
 
+		cleanup();
+
 		LabRenderer::close();
+
+		// Unload any asteroids that were loaded
+		asteroid_level_close();
+
+		// Lab can only be entered from the Mainhall so this should be safe
+		model_free_all();
 
 		Game_mode &= ~GM_LAB;
 
@@ -47,17 +60,23 @@ public:
 
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
+	int CurrentSubtype = -1;
 	int CurrentClass = -1;
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
-	SCP_string ModelFilename = "";
+	SCP_string ModelFilename;	
 
 	bool isSafeForShips() {
-		return CurrentMode == LabMode::Ship && CurrentObject != -1;
+		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;
 	}
 
 	bool isSafeForWeapons() {
-		return CurrentMode == LabMode::Weapon && CurrentObject != -1;
+		bool valid = (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
+		return CurrentMode == LabMode::Weapon && CurrentObject != -1 && valid;
+	}
+
+	bool isSafeForAsteroids() const {
+		return CurrentMode == LabMode::Object && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_ASTEROID;
 	}
 
 	void loadWeapons() {
@@ -75,14 +94,15 @@ public:
 	}
 	
 	void resetGraphicsSettings();
-
-	int FirePrimaries = 0;
-	int FireSecondaries = 0;
 	
+	std::array<bool, MAX_SHIP_PRIMARY_BANKS> FirePrimaries = {};
+	std::array<bool, MAX_SHIP_SECONDARY_BANKS> FireSecondaries = {};
 	SCP_vector<std::tuple<ship_subsys*, LabTurretAimType, bool>> FireTurrets;
 
 	LabRotationMode RotationMode = LabRotationMode::Both;
 	float RotationSpeedDivisor = 100.0f;
+	bool AllowWeaponDestruction = false;
+	bool ShowingTechModel = false;
 
 	flagset<ManagerFlags> Flags;
 

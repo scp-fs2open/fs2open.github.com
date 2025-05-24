@@ -44,6 +44,12 @@ public:
 	/// </summary>
 	/// <returns></returns>
 	virtual bool handlesObjectPlacement() = 0;
+
+	/// <summary>
+	/// Forces the camera to update its position based on input or object position
+	/// </summary>
+	/// <returns></returns>
+	virtual void updateCamera() = 0;
 };
 
 class OrbitCamera : public LabCamera {
@@ -68,10 +74,11 @@ public:
 	void displayedObjectChanged() override;
 
 	bool handlesObjectPlacement() override { return false; }
-private:
+
+	void updateCamera() override;
+
+  private:
 	float distance = 100.0f;
 	float phi = 1.24f;
 	float theta = 2.25f;
-
-	void updateCamera();
 };
