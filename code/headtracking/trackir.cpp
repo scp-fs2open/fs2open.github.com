@@ -7,7 +7,6 @@
 
 #include "osapi/osapi.h"
 
-#include <SDL_syswm.h>
 
 namespace headtracking
 {
