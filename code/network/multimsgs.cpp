@@ -3453,8 +3453,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
 
 	auto launch_curve_data = WeaponLaunchCurveData {
-		num_firepoints: ssp->system_info->turret_num_firing_points,
-		distance_to_target: dist_to_target,
+		ssp->system_info->turret_num_firing_points,
+		dist_to_target,
 	};
 
 	// create the weapon object
@@ -8753,8 +8753,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
 
 	auto launch_curve_data = WeaponLaunchCurveData {
-		num_firepoints: ssp->system_info->turret_num_firing_points,
-		distance_to_target: dist_to_target,
+		ssp->system_info->turret_num_firing_points,
+		dist_to_target,
 	};
 
 	// create the weapon object	

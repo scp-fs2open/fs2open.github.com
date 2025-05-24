@@ -1019,7 +1019,8 @@ int weapon_create( const vec3d *pos,
 	float fof_cooldown = 0.0f,
 	ship_subsys *src_turret = nullptr,
 	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
-		num_firepoints: 0, distance_to_target: 0.f
+		0,
+		0.f
 	});
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 

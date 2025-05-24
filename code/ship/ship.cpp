@@ -12791,8 +12791,8 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 		int num_slots = pm->gun_banks[bank_to_fire].num_slots;
 
 		auto launch_curve_data = WeaponLaunchCurveData {
-			num_firepoints: num_slots,
-			distance_to_target: dist_to_target,
+			num_slots,
+			dist_to_target,
 		};
 
 		// do timestamp stuff for next firing time
@@ -14067,8 +14067,8 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 		num_slots = pm->missile_banks[bank].num_slots;
 
 		auto launch_curve_data = WeaponLaunchCurveData {
-			num_firepoints: num_slots,
-			distance_to_target: dist_to_target,
+			num_slots,
+			dist_to_target,
 		};
 
 		// determine if there is enough ammo left to fire weapons on this bank.  As with primary

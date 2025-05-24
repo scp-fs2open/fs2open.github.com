@@ -2120,8 +2120,8 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	vm_vector_2_matrix_norm(&firing_orient, &turret_fvec, nullptr, nullptr);
 
 	auto launch_curve_data = WeaponLaunchCurveData {
-		num_firepoints: tsi->turret->system_info->turret_num_firing_points,
-		distance_to_target: 0.f,
+		tsi->turret->system_info->turret_num_firing_points,
+		0.f,
 	};
 
 	// create weapon and homing info
@@ -2345,9 +2345,9 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	float turret_barrel_length = -1.0f;
 
 	// grab the data for the launch curve inputs
-	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
-			num_firepoints: ss->system_info->turret_num_firing_points,
-			distance_to_target: dist_to_enemy,
+	auto launch_curve_data = WeaponLaunchCurveData {
+			ss->system_info->turret_num_firing_points,
+			dist_to_enemy,
 	};
 
 	//WMC - go through all valid weapons. Fire spawns if there are any.

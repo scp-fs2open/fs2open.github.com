@@ -892,9 +892,9 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 		vm_vec_copy_normalize(&gvec, override_gvec);
 
 	// we don't have a target, so just set the range to 0
-	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
-		num_firepoints: sso->ss->system_info->turret_num_firing_points,
-		distance_to_target: 0.f,
+	auto launch_curve_data = WeaponLaunchCurveData {
+		sso->ss->system_info->turret_num_firing_points,
+		0.f,
 	};
 
 	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, NULL, flak_range);
