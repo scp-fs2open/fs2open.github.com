@@ -810,15 +810,14 @@ struct weapon_info
   private:
 	static constexpr auto weapon_hit_modular_curves_definition = weapon_modular_curves_definition.derive_modular_curves_input_only_subset<object>(
 			std::pair {"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
-			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}},
-			std::pair {"Weapon Max Velocity", modular_curves_submember_input<&object::instance, &Weapons, &weapon::weapon_max_vel>{}}
-	).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
+			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
+		).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
 			std::array {
-					std::pair {"Damage Mult", WeaponHitCurveOutputs::DAMAGE_MULT},
-					std::pair {"Hull Damage Mult", WeaponHitCurveOutputs::HULL_DAMAGE_MULT},
-					std::pair {"Shield Damage Mult", WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT},
-					std::pair {"Subsystem Damage Mult", WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT},
-					std::pair {"Mass Mult", WeaponHitCurveOutputs::MASS_MULT},
+				std::pair {"Damage Mult", WeaponHitCurveOutputs::DAMAGE_MULT},
+				std::pair {"Hull Damage Mult", WeaponHitCurveOutputs::HULL_DAMAGE_MULT},
+				std::pair {"Shield Damage Mult", WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT},
+				std::pair {"Subsystem Damage Mult", WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT},
+				std::pair {"Mass Mult", WeaponHitCurveOutputs::MASS_MULT},
 			},
 			std::pair {"Dot", modular_curves_self_input{}}
 	);

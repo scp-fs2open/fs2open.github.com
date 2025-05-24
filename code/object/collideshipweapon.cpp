@@ -103,9 +103,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 		damage *= wip->damage_incidence_min + ((wip->damage_incidence_max - wip->damage_incidence_min) * dot);
 	}
 
-	float damage_mult = wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
-	mprintf(("damage mult: %f  ", damage_mult));
-	damage *= damage_mult;
+	damage *= wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*wp, *pship_obj, dot), &wp->modular_curves_instance);
 
 	// we handle curve scaling for shield damage here, but hull and subsystem damage scaling happens in shiphit.cpp
 	if (quadrant_num) {

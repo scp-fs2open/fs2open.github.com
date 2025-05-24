@@ -6854,8 +6854,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		wp->lifeleft = wp->lifeleft/2.0f + rand_val * wp->lifeleft/2.0f;
 	}
 
-	mprintf(("range: %f  ", launch_curve_data.distance_to_target));
-
 	objp->phys_info.mass = wip->mass;
 	objp->phys_info.side_slip_time_const = 0.0f;
 	objp->phys_info.rotdamp = wip->turn_accel_time ? wip->turn_accel_time / 2.f : 0.0f;
