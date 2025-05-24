@@ -108,14 +108,14 @@ int mouse_down(int btn, bool must_be_wheel = false);
 void mouse_reset_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);
 
-void mouse_event(int x, int y, int dx, int dy);
+void mouse_event(float x, float y, float dx, float dy);
 
 /**
  * Called when there is motion on the mouse wheel(s). Supports 2 axes
  */
-void mousewheel_motion(int x, int y, bool reversed);
+void mousewheel_motion(float x, float y, bool reversed);
 
-extern void mouse_force_pos(int x, int y);
+extern void mouse_force_pos(float x, float y);
 
 /**
  * Get the closest distance of a bit mask to 0
