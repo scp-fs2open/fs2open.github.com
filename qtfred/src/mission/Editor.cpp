@@ -5,7 +5,7 @@
 #include <stdexcept>
 #include <clocale>
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 #include <ai/ai.h>
 #include <parse/parselo.h>
 #include <mission/missiongoals.h>

@@ -3,7 +3,6 @@
 
 #include "globalincs/pstypes.h"
 
-#include <SDL_loadso.h>
 
 /* This class loads external libraries for FSO use.
 * Uses SDL to do the actual loading so this should be supported on most platforms
@@ -44,7 +43,7 @@ protected:
 	{
 		if (m_library != NULL && functionname != NULL)
 		{
-			void* func = SDL_LoadFunction(m_library, functionname);
+			void* func = reinterpret_cast<void *>(SDL_LoadFunction(m_library, functionname));
 
 #ifndef NDEBUG
 			if (func == NULL)
@@ -66,7 +65,7 @@ protected:
 	}
 
 private:
-	void* m_library;
+	SDL_SharedObject* m_library;
 };
 
 /* These are available if you're compiling an external DLL
