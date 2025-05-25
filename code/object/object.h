@@ -428,7 +428,7 @@ void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source
  *
  * @author Mike Nelson
  */
-int obj_raw_pof_create(const char* pof_filename, matrix* orient, vec3d* pos);
+int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos);
 
 
 #endif

@@ -571,12 +571,12 @@ void obj_free(int objnum)
  * Create a raw pof item
  * @return the objnum of this raw POF
  */
-int obj_raw_pof_create(const char* pof_filename, matrix* orient, vec3d* pos)
+int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos)
 {
 	static int next_raw_pof_id = 0;
 
 	// Unlikely this would ever be hit.. but just in case
-	if (next_raw_pof_id >= INT_MAX) {
+	if (next_raw_pof_id >= INT_MAX || next_raw_pof_id < 0) {
 		Error(LOCATION, "Too many RAW_POF objects created!");
 		return -1;
 	}

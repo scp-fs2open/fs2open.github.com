@@ -929,12 +929,8 @@ void beam_type_targeting_move(beam *b)
 		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
 		vm_vec_normalize_safe(&fvec);
 
-		// Create synthetic orientation matrix
-		matrix beam_orient;
-		vm_vector_2_matrix(&beam_orient, &fvec, nullptr, nullptr);
-
 		// Final beam endpoint
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &beam_orient.vec.fvec, b->range);
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &fvec, b->range);
 	} else {
 		Assertion(b->objp != nullptr, "Targeting beam does not have a valid parent object!");
 		Assertion(b->objp->instance >= 0, "Targeting beam parent object instance is invalid!");
@@ -1016,25 +1012,22 @@ void beam_type_normal_move(beam *b)
 {
 	vec3d turret_norm;
 
-	// If we're a floating beam and targeting coords then we don't have a subsystem to get a normal from
-	// So we'll calculate it.
-	if (b->subsys == nullptr && (b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
-		// Build fvec from target_pos1 and last_start
-		vec3d fvec;
-		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
-		vm_vec_normalize_safe(&fvec);
-
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &fvec, b->range);
-		return;
-	}
-
 	if (b->subsys == nullptr) {
-		return;
+		// If we're a floating beam and targeting coords then we don't have a subsystem to get a normal from, so we'll calculate it.
+		if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+			// Build normal from target_pos1 and last_start
+			vm_vec_sub(&turret_norm, &b->target_pos1, &b->last_start);
+			vm_vec_normalize_safe(&turret_norm);
+		}
+		// Otherwise, there's nothing to calculate here.
+		else {
+			return;
+		}
+	} else {
+		// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
+		// get the "originating point" of the beam for this frame. essentially bashes last_start
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 	}
-
-	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
-	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
