@@ -6578,7 +6578,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret, WeaponLaunchCurveData launch_curve_data )
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret, const WeaponLaunchCurveData& launch_curve_data )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;

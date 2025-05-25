@@ -1018,7 +1018,7 @@ int weapon_create( const vec3d *pos,
 	bool is_spawned = false,
 	float fof_cooldown = 0.0f,
 	ship_subsys *src_turret = nullptr,
-	WeaponLaunchCurveData launch_curve_data = WeaponLaunchCurveData {
+	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
 		0.f
 	});

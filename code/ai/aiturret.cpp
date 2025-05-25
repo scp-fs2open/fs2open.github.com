@@ -1550,7 +1550,7 @@ bool turret_should_pick_new_target(ship_subsys *turret)
 /**
  * Set the next fire timestamp for a turret, based on weapon type and ai class
  */
-void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship_subsys *turret, const ai_info *aip, WeaponLaunchCurveData launch_curve_data)
+void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship_subsys *turret, const ai_info *aip, const WeaponLaunchCurveData& launch_curve_data)
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
@@ -1698,7 +1698,7 @@ void turret_update_enemy_in_range(ship_subsys *turret, float seconds)
 bool turret_fire_weapon(int weapon_num,
 	ship_subsys *turret,
 	int parent_objnum,
-	WeaponLaunchCurveData launch_curve_data,
+	const WeaponLaunchCurveData& launch_curve_data,
 	const vec3d *orig_firing_pos,
 	const vec3d *orig_firing_vec,
 	const vec3d *predicted_pos = nullptr,

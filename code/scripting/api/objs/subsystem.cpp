@@ -15,7 +15,7 @@
 #include "network/multiutil.h"
 
 void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free);
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, WeaponLaunchCurveData launch_curve_data, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const WeaponLaunchCurveData& launch_curve_data, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
 namespace api {
