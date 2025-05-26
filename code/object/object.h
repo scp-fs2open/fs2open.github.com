@@ -34,25 +34,26 @@
 #endif
 
 //Object types
-#define OBJ_NONE				0		//unused object
-#define OBJ_SHIP				1		//a ship
-#define OBJ_WEAPON			2		//a laser, missile, etc
-#define OBJ_FIREBALL			3		//an explosion
-#define OBJ_START				4		//a starting point marker (player start, etc)
-#define OBJ_WAYPOINT			5		//a waypoint object, maybe only ever used by Fred
-#define OBJ_DEBRIS			6		//a flying piece of ship debris
-//#define OBJ_CMEASURE			7		//a countermeasure, such as chaff
-#define OBJ_GHOST				8		//so far, just a placeholder for when a player dies.
-#define OBJ_POINT				9		//generic object type to display a point in Fred.
-#define OBJ_SHOCKWAVE		10		// a shockwave
-#define OBJ_WING				11		// not really a type used anywhere, but I need it for Fred.
-#define OBJ_OBSERVER       12    // used for multiplayer observers (possibly single player later)
-#define OBJ_ASTEROID			13		//	An asteroid, you know, a big rock, like debris, sort of.
-#define OBJ_JUMP_NODE		14		// A jump node object, used only in Fred.
-#define OBJ_BEAM				15		// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
+#define OBJ_NONE            0	//unused object
+#define OBJ_SHIP            1	//a ship
+#define OBJ_WEAPON          2	//a laser, missile, etc
+#define OBJ_FIREBALL        3	//an explosion
+#define OBJ_START           4	//a starting point marker (player start, etc)
+#define OBJ_WAYPOINT        5	//a waypoint object, maybe only ever used by Fred
+#define OBJ_DEBRIS          6	//a flying piece of ship debris
+//#define OBJ_CMEASURE      7	//a countermeasure, such as chaff
+#define OBJ_GHOST           8	//so far, just a placeholder for when a player dies.
+#define OBJ_POINT           9	//generic object type to display a point in Fred.
+#define OBJ_SHOCKWAVE       10	// a shockwave
+#define OBJ_WING            11	// not really a type used anywhere, but I need it for Fred.
+#define OBJ_OBSERVER        12	// used for multiplayer observers (possibly single player later)
+#define OBJ_ASTEROID        13	//	An asteroid, you know, a big rock, like debris, sort of.
+#define OBJ_JUMP_NODE       14	// A jump node object, used only in Fred.
+#define OBJ_BEAM            15	// beam weapons. we have to roll them into the object system to get the benefits of the collision pairs
+#define OBJ_RAW_POF         16	// A raw pof file. has no physics, ai or anything. Currently only used in the Lab to render tech models
 
 //Make sure to change Object_type_names in Object.c when adding another type!
-#define MAX_OBJECT_TYPES	16
+#define MAX_OBJECT_TYPES	17
 
 #define UNUSED_OBJNUM		(-MAX_OBJECTS*2)	//	Newer systems use this instead of -1 for invalid object.
 
@@ -123,6 +124,14 @@ struct dock_instance;
 class model_draw_list;
 class polymodel;
 struct polymodel_instance;
+
+typedef struct raw_pof_obj {
+	  int                            model_num;      // The model number of the loaded POF
+	  int                            model_instance; // The model instance
+	  flagset<Object::Raw_Pof_Flags> flags;          // Render flags
+} raw_pof_obj;
+
+extern SCP_map<int, raw_pof_obj> Pof_objects;
 
 class object
 {
@@ -413,6 +422,13 @@ void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp);
  * @author J Fernandez
  */
 void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source);
+
+/**
+ *@brief create a raw pof instance
+ *
+ * @author Mike Nelson
+ */
+int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos);
 
 
 #endif

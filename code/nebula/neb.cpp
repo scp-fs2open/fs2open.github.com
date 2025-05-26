@@ -671,7 +671,8 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 			break;
 
-		// any ship less than 3% visible at their closest point
+		// any ship or raw pof less than 3% visible at their closest point
+		case OBJ_RAW_POF:
 		case OBJ_SHIP:
 			if (fog < 0.03f)
 				return 1;

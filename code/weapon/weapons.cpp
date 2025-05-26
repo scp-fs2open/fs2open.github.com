@@ -6209,7 +6209,7 @@ void weapon_process_post(object * obj, float frame_time)
 		}
 	}
 
-	if ( wip->wi_flags[Weapon::Info_Flags::Thruster] )	{
+	if (wip->wi_flags[Weapon::Info_Flags::Thruster] && !wp->weapon_flags[Weapon::Weapon_Flags::No_thruster]) {
 		ship_do_weapon_thruster_frame( wp, obj, flFrametime );	
 	}
 
@@ -6222,7 +6222,7 @@ void weapon_process_post(object * obj, float frame_time)
 		weapon_maybe_play_flyby_sound(obj, wp);
 	#endif
 
-	if(wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3 ){
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3) {
 		weapon_maybe_spew_particle(obj);
 	}
 
@@ -9444,7 +9444,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 
 			uint64_t render_flags = MR_NORMAL|MR_IS_MISSILE|MR_NO_BATCH;
 
-			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting])
+			if (wip->wi_flags[Weapon::Info_Flags::Mr_no_lighting] || wp->weapon_flags[Weapon::Weapon_Flags::Render_without_light])
 				render_flags |= MR_NO_LIGHTING;
 
 			if (wip->wi_flags[Weapon::Info_Flags::Transparent]) {
@@ -9452,11 +9452,50 @@ void weapon_render(object* obj, model_draw_list *scene)
 				render_flags |= MR_ALL_XPARENT;
 			}
 
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Glowmaps_disabled]) {
+				render_flags |= MR_NO_GLOWMAPS;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Draw_as_wireframe]) {
+				render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+				render_info.set_color(Wireframe_color);
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_full_detail]) {
+				render_flags |= MR_FULL_DETAIL;
+			}
+
+			uint debug_flags = render_info.get_debug_flags();
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_diffuse]) {
+				debug_flags |= MR_DEBUG_NO_DIFFUSE;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_glowmap]) {
+				debug_flags |= MR_DEBUG_NO_GLOW;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_normalmap]) {
+				debug_flags |= MR_DEBUG_NO_NORMAL;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_ambientmap]) {
+				debug_flags |= MR_DEBUG_NO_AMBIENT;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_specmap]) {
+				debug_flags |= MR_DEBUG_NO_SPEC;
+			}
+
+			if (wp->weapon_flags[Weapon::Weapon_Flags::Render_without_reflectmap]) {
+				debug_flags |= MR_DEBUG_NO_REFLECT;
+			}
+
 			model_clear_instance(wip->model_num);
 
 			render_info.set_object_number(wp->objnum);
 
-			if ( (wip->wi_flags[Weapon::Info_Flags::Thruster]) && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
+			if ( (wip->wi_flags[Weapon::Info_Flags::Thruster]) && !wp->weapon_flags[Weapon::Weapon_Flags::No_thruster] && ((wp->thruster_bitmap > -1) || (wp->thruster_glow_bitmap > -1)) ) {
 				float ft;
 				mst_info mst;
 
@@ -9493,6 +9532,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 			}
 
 			render_info.set_flags(render_flags);
+			render_info.set_debug_flags(debug_flags);
 
 			if (wp->model_instance_num >= 0)
 				render_info.set_replacement_textures(model_get_instance(wp->model_instance_num)->texture_replace);

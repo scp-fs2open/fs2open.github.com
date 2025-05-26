@@ -114,6 +114,19 @@ namespace Weapon {
 		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
 		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
 		Begun_detonation,			// The engine has set this weapon to detonate momentarily
+		No_thruster,                // Disable rendering thrusters for this weapon instance
+		Glowmaps_disabled,			// No glowmaps for this weapon instance
+		Draw_as_wireframe,			// Render wireframe for this weapon instance
+		Render_full_detail,			// Render full detail for this weapon instance
+		Render_without_light,		// Render without light for this weapon instance
+		Render_without_diffuse,		// Render without diffuse for this weapon instance
+		Render_without_glowmap,		// Render without glowmap for this weapon instance
+		Render_without_normalmap,	// Render without normal map for this weapon instance
+		Render_without_heightmap,	// Render without height map for this weapon instance
+		Render_without_ambientmap,	// Render without ambient for this weapon instance
+		Render_without_specmap,		// Render without spec for this weapon instance
+		Render_without_reflectmap,	// Render without reflect for this weapon instance
+
 
 		NUM_VALUES
 	};
