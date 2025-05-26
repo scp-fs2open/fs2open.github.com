@@ -534,7 +534,7 @@ void asteroid_sub_create(object *parent_objp, int asteroid_type, vec3d *relvec)
 /**
  * Load in an asteroid model
  */
-static void asteroid_load(int asteroid_info_index, int asteroid_subtype)
+void asteroid_load(int asteroid_info_index, int asteroid_subtype)
 {
 	int i;
 	asteroid_info	*asip;
@@ -1492,8 +1492,54 @@ void asteroid_render(object * obj, model_draw_list *scene)
 
 		model_render_params render_info;
 
+		uint64_t render_flags = MR_IS_ASTEROID;
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_light])
+			render_flags |= MR_NO_LIGHTING;
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Glowmaps_disabled]) {
+			render_flags |= MR_NO_GLOWMAPS;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Draw_as_wireframe]) {
+			render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+			render_info.set_color(Wireframe_color);
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_full_detail]) {
+			render_flags |= MR_FULL_DETAIL;
+		}
+
+		uint debug_flags = render_info.get_debug_flags();
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_diffuse]) {
+			debug_flags |= MR_DEBUG_NO_DIFFUSE;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_glowmap]) {
+			debug_flags |= MR_DEBUG_NO_GLOW;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_normalmap]) {
+			debug_flags |= MR_DEBUG_NO_NORMAL;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_ambientmap]) {
+			debug_flags |= MR_DEBUG_NO_AMBIENT;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_specmap]) {
+			debug_flags |= MR_DEBUG_NO_SPEC;
+		}
+
+		if (asp->render_flags[Object::Raw_Pof_Flags::Render_without_reflectmap]) {
+			debug_flags |= MR_DEBUG_NO_REFLECT;
+		}
+
 		render_info.set_object_number( OBJ_INDEX(obj) );
-		render_info.set_flags(MR_IS_ASTEROID);
+
+		render_info.set_flags(render_flags);
+		render_info.set_debug_flags(debug_flags);
 		if (asp->model_instance_num >= 0)
 			render_info.set_replacement_textures(model_get_instance(asp->model_instance_num)->texture_replace);
 
@@ -2192,6 +2238,16 @@ static void asteroid_parse_section()
 		asteroid_p->type = ASTEROID_TYPE_DEBRIS;
 	}
 
+	auto insert_or_replace_subtype_pof = [](SCP_vector<asteroid_subtype_info>& subtypes, const asteroid_subtype_info& new_subtype) {
+		for (auto& subtype : subtypes) {
+			if (lcase_equal(subtype.type_name, new_subtype.type_name)) {
+				strncpy(subtype.pof_filename, new_subtype.pof_filename, MAX_FILENAME_LEN);
+				return;
+			}
+		}
+		subtypes.push_back(new_subtype);
+	};
+
 	if (optional_string("$POF file1:")) {
 		asteroid_subtype_info thisType;
 
@@ -2201,7 +2257,7 @@ static void asteroid_parse_section()
 
 		thisType.model_number = -1;
 
-		asteroid_p->subtypes.push_back(thisType);
+		insert_or_replace_subtype_pof(asteroid_p->subtypes, thisType);
 	}
 
 	if (optional_string("$POF file2:")) {
@@ -2212,7 +2268,7 @@ static void asteroid_parse_section()
 
 		thisType.model_number = -1;
 
-		asteroid_p->subtypes.push_back(thisType);
+		insert_or_replace_subtype_pof(asteroid_p->subtypes, thisType);
 	}
 
 	if (optional_string("$POF file3:")) {
@@ -2223,7 +2279,7 @@ static void asteroid_parse_section()
 
 		thisType.model_number = -1;
 
-		asteroid_p->subtypes.push_back(thisType);
+		insert_or_replace_subtype_pof(asteroid_p->subtypes, thisType);
 	}
 
 	// For asteroid types we can have unlimited subtypes
