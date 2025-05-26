@@ -228,7 +228,7 @@ namespace particle {
 				required_string(output == 0 ? "Radius" : "Velocity");
 				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
 
-				required_string_either("+Curve Name:", "+Curve:");
+				required_string_either("+Curve Name:", "+Curve:", true);
 				curve = curve_parse(" Unknown curve requested for modular curves!");
 			}
 		}
