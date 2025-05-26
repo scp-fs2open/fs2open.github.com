@@ -351,6 +351,11 @@ float beam_get_warmup_lifetime_pct(const beam& wp);
 float beam_get_warmdown_lifetime_pct(const beam& wp);
 float beam_get_warmdown_age(const beam& wp);
 
+struct WeaponLaunchCurveData {
+	int num_firepoints;
+	float distance_to_target;
+};
+
 struct weapon_info;
 extern SCP_vector<weapon_info> Weapon_info;
 
@@ -679,6 +684,37 @@ struct weapon_info
 
 	animation::ModelAnimationSet animations;
 
+	enum class WeaponLaunchCurveOutputs {
+		// outputs
+		FIRE_WAIT_MULT,
+		SHOTS_MULT,
+		BURST_SHOTS_MULT,
+		BURST_DELAY_MULT,
+		VELOCITY_MULT,
+		LIFE_MULT,
+		FAILURE_RATE_MULT,
+		FOF_MULT,
+		
+		NUM_VALUES
+	};
+
+  private:
+	static constexpr auto weapon_launch_modular_curves_definition = make_modular_curve_definition<WeaponLaunchCurveData, WeaponLaunchCurveOutputs>(
+			std::array {
+					std::pair {"Fire Wait Mult", WeaponLaunchCurveOutputs::FIRE_WAIT_MULT},
+					std::pair {"Shots Mult", WeaponLaunchCurveOutputs::SHOTS_MULT},
+					std::pair {"Burst Shots Mult", WeaponLaunchCurveOutputs::BURST_SHOTS_MULT},
+					std::pair {"Burst Delay Mult", WeaponLaunchCurveOutputs::BURST_DELAY_MULT},
+					std::pair {"Velocity Mult", WeaponLaunchCurveOutputs::VELOCITY_MULT},
+					std::pair {"Life Mult", WeaponLaunchCurveOutputs::LIFE_MULT},
+					std::pair {"Failure Rate Mult", WeaponLaunchCurveOutputs::FAILURE_RATE_MULT},
+					std::pair {"FoF Mult", WeaponLaunchCurveOutputs::FOF_MULT},
+			},
+			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
+			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}}
+	);
+
+  public:
 	enum class WeaponCurveOutputs {
 		// outputs
 		LASER_LENGTH_MULT,
@@ -775,13 +811,13 @@ struct weapon_info
 	static constexpr auto weapon_hit_modular_curves_definition = weapon_modular_curves_definition.derive_modular_curves_input_only_subset<object>(
 			std::pair {"Target Hitpoints", modular_curves_submember_input<&object::hull_strength>{}},
 			std::pair {"Target Radius", modular_curves_submember_input<&object::radius>{}}
-	).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
+		).derive_modular_curves_subset<float, WeaponHitCurveOutputs>(
 			std::array {
-					std::pair {"Damage Mult", WeaponHitCurveOutputs::DAMAGE_MULT},
-					std::pair {"Hull Damage Mult", WeaponHitCurveOutputs::HULL_DAMAGE_MULT},
-					std::pair {"Shield Damage Mult", WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT},
-					std::pair {"Subsystem Damage Mult", WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT},
-					std::pair {"Mass Mult", WeaponHitCurveOutputs::MASS_MULT},
+				std::pair {"Damage Mult", WeaponHitCurveOutputs::DAMAGE_MULT},
+				std::pair {"Hull Damage Mult", WeaponHitCurveOutputs::HULL_DAMAGE_MULT},
+				std::pair {"Shield Damage Mult", WeaponHitCurveOutputs::SHIELD_DAMAGE_MULT},
+				std::pair {"Subsystem Damage Mult", WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT},
+				std::pair {"Mass Mult", WeaponHitCurveOutputs::MASS_MULT},
 			},
 			std::pair {"Dot", modular_curves_self_input{}}
 	);
@@ -857,6 +893,7 @@ struct weapon_info
 			);
 
   public:
+	MODULAR_CURVE_SET(weapon_launch_curves, weapon_info::weapon_launch_modular_curves_definition);
 	MODULAR_CURVE_SET(weapon_curves, weapon_info::weapon_modular_curves_definition);
 	MODULAR_CURVE_SET(weapon_hit_curves, weapon_info::weapon_hit_modular_curves_definition);
 	MODULAR_CURVE_SET(beam_curves, weapon_info::beam_modular_curves_definition);
@@ -972,7 +1009,19 @@ int weapon_create_group_id();
 
 // Passing a group_id of -1 means it isn't in a group.  See weapon_create_group_id for more 
 // help on weapon groups.
-int weapon_create( const vec3d *pos, const matrix *orient, int weapon_type, int parent_obj, int group_id=-1, bool is_locked = false, bool is_spawned = false, float fof_cooldown = 0.0f, ship_subsys *src_turret = nullptr);
+int weapon_create( const vec3d *pos,
+	const matrix *orient,
+	int weapon_type,
+	int parent_obj,
+	int group_id=-1,
+	bool is_locked = false,
+	bool is_spawned = false,
+	float fof_cooldown = 0.0f,
+	ship_subsys *src_turret = nullptr,
+	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
+		0,
+		0.f
+	});
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
 
 // gets the substitution pattern pointer for a given weapon

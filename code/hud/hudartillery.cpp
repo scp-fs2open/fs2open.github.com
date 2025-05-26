@@ -463,7 +463,7 @@ void ssm_process()
 							}
 						} else {
 							// fire the missile and flash the screen
-							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, true);
 
 							if (weapon_objnum >= 0) {
 								Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;

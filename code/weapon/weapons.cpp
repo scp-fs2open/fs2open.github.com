@@ -1479,6 +1479,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		}
 	}
 
+	wip->weapon_launch_curves.parse("$Launch Curve:");
+
 	wip->weapon_curves.parse("$Lifetime Curve:");
 
 	wip->weapon_hit_curves.parse("$Hit Curve:");
@@ -6576,7 +6578,7 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
  * @return Index of weapon in the Objects[] array, -1 if the weapon object was not created
  */
 int Weapons_created = 0;
-int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret )
+int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int parent_objnum, int group_id, bool is_locked, bool is_spawned, float fof_cooldown, ship_subsys *src_turret, const WeaponLaunchCurveData& launch_curve_data )
 {
 	int			n, objnum;
 	object		*objp, *parent_objp=NULL;
@@ -6626,17 +6628,19 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 			return -1;
 		} else if ( wip->weapon_substitution_pattern[curr_pos] != weapon_type ) {
 			// weapon wants to sub with weapon other than me
-			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+			return weapon_create(pos, porient, wip->weapon_substitution_pattern[curr_pos], parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
 		}
 	}
 
+	float failure_rate = wip->failure_rate * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FAILURE_RATE_MULT, launch_curve_data);
+
 	// Let's setup a fast failure check with a uniform distribution.
-	if (wip->failure_rate > 0.0f) {
+	if (failure_rate > 0.0f) {
 		util::UniformFloatRange rng(0.0f, 1.0f);
 		float test = rng.next();
-		if (test < wip->failure_rate) {
+		if (test < failure_rate) {
 			if (wip->failure_sub != -1) {
-				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown);
+				return weapon_create(pos, porient, wip->failure_sub, parent_objnum, group_id, is_locked, is_spawned, fof_cooldown, nullptr, launch_curve_data);
 			} else {
 				return -1;
 			}
@@ -6688,7 +6692,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	orient = &morient;
 
-	float combined_fof = wip->field_of_fire;
+	float combined_fof = wip->field_of_fire * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::FOF_MULT, launch_curve_data);
 	// If there is a fof_cooldown value, increase the spread linearly
 	if (fof_cooldown != 0.0f) {
 		combined_fof = wip->field_of_fire + (fof_cooldown * wip->max_fof_spread);
@@ -6822,11 +6826,13 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		rand_val = static_randf(Objects[objnum].net_signature);
 	}
 
+	float life_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::LIFE_MULT, launch_curve_data);
+
 	wp->weapon_info_index = weapon_type;
 	if(wip->life_min < 0.0f && wip->life_max < 0.0f) {
-		wp->lifeleft = wip->lifetime;
+		wp->lifeleft = wip->lifetime * life_mult;
 	} else {
-		wp->lifeleft = ((rand_val) * (wip->life_max - wip->life_min)) + wip->life_min;
+		wp->lifeleft = (((rand_val) * (wip->life_max - wip->life_min)) + wip->life_min) * life_mult;
 		if((wip->wi_flags[Weapon::Info_Flags::Cmeasure]) && (parent_objp != NULL) && (parent_objp->flags[Object::Object_Flags::Player_ship])) {
 			wp->lifeleft *= The_mission.ai_profile->cmeasure_life_scale[Game_skill_level];
 		}
@@ -6852,7 +6858,7 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	objp->phys_info.side_slip_time_const = 0.0f;
 	objp->phys_info.rotdamp = wip->turn_accel_time ? wip->turn_accel_time / 2.f : 0.0f;
 	vm_vec_zero(&objp->phys_info.max_vel);
-	objp->phys_info.max_vel.xyz.z = wip->max_speed;
+	objp->phys_info.max_vel.xyz.z = wip->max_speed * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::VELOCITY_MULT, launch_curve_data);
 	vm_vec_zero(&objp->phys_info.max_rotvel);
 	objp->shield_quadrant[0] = wip->damage;
 	if (wip->weapon_hitpoints > 0){
@@ -7219,7 +7225,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				beam_fire(&fire_info);
 			} else {
 				vm_vector_2_matrix_norm(&orient, &tvec, nullptr, nullptr);
-				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], 1);
+				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], true);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
 				if ((child_wip->wi_flags[Weapon::Info_Flags::Inherit_parent_target]) && (weapon_has_homing_object(wp)))
