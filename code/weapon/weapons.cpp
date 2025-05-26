@@ -9178,9 +9178,37 @@ void weapon_render(object* obj, model_draw_list *scene)
 	case WRT_LASER:
 		{
 			float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+
+			if (wip->laser_length_by_frametime) {
+				length_mult *= flFrametime;
+			}
+			
+			float laser_length = wip->laser_length;
+			laser_length *= length_mult;
+			if (laser_length < Do_not_render_lasers_below_length) {
+				return;
+			}
+
 			float radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
 			float head_radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEAD_RADIUS_MULT, *wp, &wp->modular_curves_instance);
 			float tail_radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_TAIL_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+			
+			float head_radius = wip->laser_head_radius;
+			float tail_radius = wip->laser_tail_radius;
+			head_radius *= head_radius_mult * radius_mult;
+			tail_radius *= tail_radius_mult * radius_mult;
+
+			if (head_radius < Do_not_render_lasers_below_radius && tail_radius < Do_not_render_lasers_below_radius) {
+				return;
+			}
+
+			if (head_radius <= Do_not_render_lasers_below_radius) {
+				head_radius = Do_not_render_lasers_below_radius;
+			}
+			if (tail_radius <= Do_not_render_lasers_below_radius) {
+				tail_radius = Do_not_render_lasers_below_radius;
+			}
+
 			float offset_x_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_X_MULT, *wp, &wp->modular_curves_instance);
 			float offset_y_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Y_MULT, *wp, &wp->modular_curves_instance);
 			float offset_z_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
@@ -9200,36 +9228,9 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float glow_g_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_GLOW_G_MULT, *wp, &wp->modular_curves_instance);
 			float glow_b_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_GLOW_B_MULT, *wp, &wp->modular_curves_instance);
 
-			if (wip->laser_length_by_frametime) {
-				length_mult *= flFrametime;
-			}
-
 			float alphaf = 1.0f;
 			int framenum = 0;
 			int headon_framenum = 0;
-
-			float laser_length = wip->laser_length;
-			laser_length *= length_mult;
-			float head_radius = wip->laser_head_radius;
-			float tail_radius = wip->laser_tail_radius;
-			head_radius *= head_radius_mult * radius_mult;
-			tail_radius *= tail_radius_mult * radius_mult;
-
-			if (laser_length < Do_not_render_lasers_below_length) {
-				return;
-			}
-
-			if (head_radius < Do_not_render_lasers_below_radius && tail_radius < Do_not_render_lasers_below_radius) {
-				return;
-			}
-
-			if (head_radius <= Do_not_render_lasers_below_radius) {
-				head_radius = Do_not_render_lasers_below_radius;
-			}
-			if (tail_radius <= Do_not_render_lasers_below_radius) {
-				tail_radius = Do_not_render_lasers_below_radius;
-			}
-
 
 			vec3d rotated_offset;
 
