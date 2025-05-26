@@ -1,4 +1,5 @@
 #include "freespace.h"
+#include "asteroid/asteroid.h"
 #include "globalincs/vmallocator.h"
 #include "graphics/2d.h"
 #include "graphics/light.h"
@@ -74,8 +75,8 @@ void LabRenderer::renderModel(float frametime) {
 
 	object* obj = &Objects[getLabManager()->CurrentObject];
 
-	// Ships stay put. Weapons are allowed to move so particle effects look correct
-	if (obj->type == OBJ_SHIP) {
+	// Ships && Objects stay put. Weapons are allowed to move so particle effects look correct
+	if (obj->type == OBJ_SHIP || obj->type == OBJ_ASTEROID) {
 		obj->pos = getLabManager()->CurrentPosition;
 	}
 	obj->orient = getLabManager()->CurrentOrientation;
@@ -137,6 +138,20 @@ void LabRenderer::renderModel(float frametime) {
 		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
 		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
 		Pof_objects[obj->instance].flags.set(Object::Raw_Pof_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+	}
+
+	if (obj->type == OBJ_ASTEROID) {
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Asteroids[obj->instance].render_flags.set(Object::Raw_Pof_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
 	}
 
 	if (renderFlags[LabRenderFlag::ShowWireframe])
