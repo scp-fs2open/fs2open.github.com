@@ -3,6 +3,7 @@
 
 #include "lab_ui_helpers.h"
 
+#include "asteroid/asteroid.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
@@ -91,13 +92,88 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
+void LabUi::build_asteroid_list()
+{
+	with_TreeNode("Asteroids")
+	{
+		int asteroid_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type == ASTEROID_TYPE_DEBRIS) {
+				asteroid_idx++;
+				continue;
+			}
+
+			int subtype_idx = 0;
+			for (const auto& subtype : info.subtypes) {
+				SCP_string node_label;
+				sprintf(node_label, "##AsteroidClassIndex%i_%i", asteroid_idx, subtype_idx);
+				TreeNodeEx(node_label.c_str(),
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					"%s (%s)",
+					info.name,
+					subtype.type_name.c_str());
+
+				if (IsItemClicked() && !IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Object, asteroid_idx, subtype_idx);
+				}
+
+				subtype_idx++;
+			}
+
+			asteroid_idx++;
+		}
+	}
+}
+
+void LabUi::build_debris_list()
+{
+	with_TreeNode("Debris")
+	{
+		int debris_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type != ASTEROID_TYPE_DEBRIS) {
+				debris_idx++;
+				continue;
+			}
+
+			int subtype_idx = 0;
+			for (const auto& subtype : info.subtypes) {
+				SCP_string node_label;
+				sprintf(node_label, "##DebrisClassIndex%i_%i", debris_idx, subtype_idx);
+				TreeNodeEx(node_label.c_str(),
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					"%s (%s)",
+					info.name,
+					subtype.type_name.c_str());
+
+				if (IsItemClicked() && !IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Object, debris_idx, subtype_idx);
+				}
+
+				subtype_idx++;
+			}
+
+			debris_idx++;
+		}
+	}
+}
+
 void LabUi::build_weapon_list() const
 {
-	//weapon display needs to be rethought
-
 	with_TreeNode("Weapon Classes")
 	{
 		build_weapon_subtype_list();
+	}
+}
+
+void LabUi::build_object_list()
+{
+	with_TreeNode("Object Classes")
+	{
+		build_asteroid_list();
+		build_debris_list();
 	}
 }
 
@@ -201,6 +277,8 @@ void LabUi::show_object_selector() const
 			build_ship_list();
 
 			build_weapon_list();
+
+			build_object_list();
 		}
 	}
 }
@@ -346,12 +424,14 @@ void LabUi::show_render_options()
 				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			}
 			Checkbox("Show full detail", &show_full_detail);
-			Checkbox("Show thrusters", &show_thrusters);
-			if (getLabManager()->CurrentMode == LabMode::Ship) {
-				Checkbox("Show afterburners", &show_afterburners);
-				Checkbox("Show weapons", &show_weapons);
-				Checkbox("Show Insignia", &show_insignia);
-				Checkbox("Show damage lightning", &show_damage_lightning);
+			if (getLabManager()->CurrentMode != LabMode::Object) {
+				Checkbox("Show thrusters", &show_thrusters);
+				if (getLabManager()->CurrentMode == LabMode::Ship) {
+					Checkbox("Show afterburners", &show_afterburners);
+					Checkbox("Show weapons", &show_weapons);
+					Checkbox("Show Insignia", &show_insignia);
+					Checkbox("Show damage lightning", &show_damage_lightning);
+				}
 			}
 			Checkbox("No glowpoints", &no_glowpoints);
 		}
@@ -1160,6 +1240,94 @@ void LabUi::show_object_options() const
 						}
 					}
 
+					const ship* dockee_shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
+					auto dockee_dock_map = get_docking_point_map(Ship_info[dockee_shipp->ship_info_index].model_num);
+
+					if (!dockee_dock_map.empty()) {
+
+						if (ImGui::BeginCombo("Docker Ship Class", Ship_info[getLabManager()->DockerClass].name)) {
+							for (size_t i = 0; i < Ship_info.size(); ++i) {
+								bool is_selected = (static_cast<int>(i) == getLabManager()->DockerClass);
+								if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
+									getLabManager()->DockerClass = static_cast<int>(i);
+									// Load model if needed
+									auto& dsip = Ship_info[getLabManager()->DockerClass];
+									if (dsip.model_num < 0) {
+										dsip.model_num = model_load(dsip.pof_file, &dsip);
+									}
+									auto new_dock_map = get_docking_point_map(dsip.model_num);
+
+									// Auto-select first available dockpoint (or clear if none)
+									if (!new_dock_map.empty()) {
+										getLabManager()->DockerDockPoint = new_dock_map.begin()->second;
+									} else {
+										getLabManager()->DockerDockPoint.clear();
+									}
+								}
+								if (is_selected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						auto& dsip = Ship_info[getLabManager()->DockerClass];
+						if (dsip.model_num < 0) {
+							dsip.model_num = model_load(dsip.pof_file, &dsip);
+						}
+						auto dock_map = get_docking_point_map(dsip.model_num);
+
+						// Ensure DockerDockPoint is initialized once based on the current DockerClass
+						if (getLabManager()->DockerDockPoint.empty()) {
+							if (!dock_map.empty()) {
+								getLabManager()->DockerDockPoint = dock_map.begin()->second;
+							}
+						}
+
+						const char* docker_label = getLabManager()->DockerDockPoint.c_str();
+
+						if (ImGui::BeginCombo("Docker Dockpoint", docker_label)) {
+							if (!dock_map.empty()) {
+								for (const auto& [index, name] : dock_map) {
+									bool is_selected = (name == getLabManager()->DockerDockPoint);
+									if (ImGui::Selectable(name.c_str(), is_selected)) {
+										getLabManager()->DockerDockPoint = name;
+									}
+									if (is_selected)
+										ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+						}
+
+						// Auto-select first dockpoint if none currently selected
+						if (getLabManager()->DockeeDockPoint.empty()) {
+							getLabManager()->DockeeDockPoint = dockee_dock_map.begin()->second;
+						}
+
+						const char* dockee_label = getLabManager()->DockeeDockPoint.c_str();
+
+						if (ImGui::BeginCombo("Dockee Dockpoint", dockee_label)) {
+							for (const auto& [index, name] : dockee_dock_map) {
+								bool is_selected = (name == getLabManager()->DockeeDockPoint);
+								if (ImGui::Selectable(name.c_str(), is_selected)) {
+									getLabManager()->DockeeDockPoint = name;
+								}
+								if (is_selected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						if (Button("Begin Docking Test")) {
+							getLabManager()->beginDockingTest();
+						}
+
+						if (Button("Begin Undocking Test")) {
+							getLabManager()->beginUndockingTest();
+						}
+					}
+
+
 					build_animation_options(shipp, sip);
 				}
 			}
@@ -1183,6 +1351,44 @@ void LabUi::show_object_options() const
 				if (VALID_FNAME(wip->tech_model)) {
 					if (Checkbox("Show Tech Model", &getLabManager()->ShowingTechModel)) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, getLabManager()->CurrentClass);
+					}
+				}
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Object && getLabManager()->CurrentClass >= 0) {
+			const auto& info = Asteroid_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Object Info")
+			{
+				static SCP_string table_text;
+				static int old_class = -1;
+
+				if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
+					table_text = get_asteroid_table_text(&info);
+					old_class = getLabManager()->CurrentClass;
+				}
+
+				InputTextMultiline("##asteroid_table_text",
+					const_cast<char*>(table_text.c_str()),
+					table_text.length(),
+					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+					ImGuiInputTextFlags_ReadOnly);
+			}
+
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->isSafeForAsteroids()) {
+					if (Button("Destroy object")) {
+						if (Objects[getLabManager()->CurrentObject].type == OBJ_ASTEROID) {
+							auto obj = &Objects[getLabManager()->CurrentObject];
+
+							if (obj->type == OBJ_ASTEROID) {
+								vec3d dummy_pos = obj->pos;
+								vec3d dummy_force = ZERO_VECTOR;
+
+								// Apply full asteroid health to guarantee destruction
+								asteroid_hit(obj, nullptr, &dummy_pos, obj->hull_strength + 1.0f, &dummy_force);
+							}
+						}
 					}
 				}
 			}
