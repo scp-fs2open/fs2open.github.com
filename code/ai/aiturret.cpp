@@ -2030,10 +2030,15 @@ bool turret_fire_weapon(int weapon_num,
 
 					// do mflash if the weapon has it
 					if (wip->muzzle_effect.isValid()) {
+						float radius_mult = 1.f;
+						if (wip->render_type == WRT_LASER) {
+							radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+						}
 						//spawn particle effect
 						auto particleSource = particle::ParticleManager::get()->createSource(wip->muzzle_effect);
 						particleSource->setHost(make_unique<EffectHostTurret>(&Objects[parent_ship->objnum], turret->system_info->turret_gun_sobj, turret->turret_next_fire_pos));
-						particleSource->setTriggerRadius(objp->radius);
+						particleSource->setTriggerRadius(objp->radius * radius_mult);
+						particleSource->setTriggerVelocity(vm_vec_mag_quick(&objp->phys_info.vel));
 						particleSource->finishCreation();
 					}
 					else if (wip->muzzle_flash >= 0) {

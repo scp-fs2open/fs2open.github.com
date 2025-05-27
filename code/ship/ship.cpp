@@ -13407,7 +13407,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								}
 							}
 							// create the muzzle flash effect
-							shipfx_flash_create( obj, sip->model_num, &pnt, &dir, 1, weapon_idx );
+							shipfx_flash_create( obj, sip->model_num, &pnt, &dir, 1, weapon_idx, weapon_objnum );
 
 							// maybe shudder the ship - if its me
 							if((winfo_p->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
@@ -14200,7 +14200,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				has_fired = true;
 
 				// create the muzzle flash effect
-				shipfx_flash_create(obj, sip->model_num, &pnt, &dir, 0, weapon_idx);
+				shipfx_flash_create(obj, sip->model_num, &pnt, &dir, 0, weapon_idx, weapon_num);
 
 				if((wip->wi_flags[Weapon::Info_Flags::Shudder]) && (obj == Player_obj) && !(Game_mode & GM_STANDALONE_SERVER)){
 					// calculate some arbitrary value between 100
