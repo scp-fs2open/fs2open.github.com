@@ -258,6 +258,7 @@ special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info
 			flags.remove(Weapon::Info_Flags::Freespace_1_missile_behavior);
 		}
 	}}, //special case
+	{"dogfight variant",                Weapon::Info_Flags::Dogfight_weapon,                    true},
 };
 
 const size_t num_weapon_info_flags = sizeof(Weapon_Info_Flags) / sizeof(special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&>);
@@ -2068,6 +2069,26 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	parse_wi_flags(wip);
+
+	// List of retail dogfight weapons to enforce dogfight flag on
+	static const SCP_unordered_set<SCP_string> retailDogfightWeapons = {
+		"Subach HL-D",
+		"Mekhu HL-7D",
+		"MorningStar D",
+		"Prometheus D",
+		"Maxim D",
+		"UD-D Kayser",
+		"Rockeye D",
+		"Tempest D",
+		"Hornet D",
+		"Tornado D",
+		"Harpoon D"
+	};
+
+	// If we're a retail dogfight weapon then mark it
+	if (retailDogfightWeapons.contains(wip->name)) {
+		wip->wi_flags.set(Weapon::Info_Flags::Dogfight_weapon);
+	}
 
 	// be friendly; make sure ballistic flags are synchronized - Goober5000
 	// primary
