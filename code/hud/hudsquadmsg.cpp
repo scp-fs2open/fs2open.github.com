@@ -551,10 +551,12 @@ void hud_squadmsg_selection_select() {
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
 		//Check if selected option is even active
-		if (!(MsgItems[Selected_menu_item + First_menu_item].active)) {
+		if (!(MsgItems[Selected_menu_item + First_menu_item].active))
+		{
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
-		else {
+		else
+		{
 			Msg_key_used = 1;
 			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
 												  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
