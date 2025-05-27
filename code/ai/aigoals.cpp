@@ -486,7 +486,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 	int i, j;
 	ai_goal *purge_goal;
 	const char *name;
-	int mode, ship_index, wingnum, ship_type;
+	int mode, ship_index, wingnum;
 
 	// get locals for easer access
 	name = aigp->target_name;
@@ -524,7 +524,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		}
 		else if (purge_ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
 			// Get the ship type of the ship we're concerned about
-			ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
+			int ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
 
 			// If the ship type is invalid, we can't match it, so continue
 			if (ship_type < 0)
@@ -534,7 +534,6 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			if (stricmp(purge_goal->target_name, Ship_types[ship_type].name) != 0)
 				continue;
 		}
-
 		// standard goals operating on either wings or ships
 		else {
 			// determine if the purge goal is acting either on the ship or the ship's wing.
@@ -1710,15 +1709,15 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
-
+	// chasing all ships of a certain ship type
 	if (aigp->ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
 		for (auto so : list_range(&Ship_obj_list)) {
-			auto type_objp = &Objects[so->objnum];
-			if (type_objp->flags[Object::Object_Flags::Should_be_dead])
+			auto objp = &Objects[so->objnum];
+			if (objp->type != OBJ_SHIP || objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
-			int class_type = Ship_info[Ships[type_objp->instance].ship_info_index].class_type;
-			if ((type_objp->type == OBJ_SHIP) && class_type >= 0 && 
-				!strcmp(aigp->target_name, Ship_types[class_type].name)) {
+			int ship_info_idx = Ships[objp->instance].ship_info_index;
+			int class_type = Ship_info[ship_info_idx].class_type;
+			if (class_type >= 0 && !strcmp(aigp->target_name, Ship_types[class_type].name)) {
 				return ai_achievability::ACHIEVABLE;
 			}
 		}
@@ -2563,7 +2562,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 		ai_attack_object(objp, nullptr, ship_info_index);
 		break;
 	}
-
+	// similarly for chase-ship-type
 	case AI_GOAL_CHASE_SHIP_TYPE:
 	{
 		int class_type = ship_type_name_lookup(current_goal->target_name);

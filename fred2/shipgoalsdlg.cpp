@@ -1160,6 +1160,10 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			goalp[item].target_name = ai_get_goal_target_name(Ship_info[m_data[item] & DATA_MASK].name, &not_used);
 			break;
 
+		case TYPE_SHIP_TYPE:
+			goalp[item].target_name = ai_get_goal_target_name(Ship_types[m_data[item] & DATA_MASK].name, &not_used);
+			break;
+
 		case 0:
 		case -1:
 		case (-1 & TYPE_MASK):

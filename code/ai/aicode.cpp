@@ -2523,11 +2523,11 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 		aip->choose_enemy_timestamp = timestamp(get_enemy_timestamp());
 		if (aip->target_objnum != -1) {
 			int target_objnum = aip->target_objnum;
-			ship* target_shipp = &Ships[Objects[target_objnum].instance];
+			ship* target_shipp = (Objects[target_objnum].type == OBJ_SHIP) ? &Ships[Objects[target_objnum].instance] : nullptr;
 
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves out of nebula range.  (BAD)
-			if (Objects[target_objnum].signature == aip->target_signature) {
+			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {{
 				if (iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
 						if (class_type < 0 || (target_shipp->ship_info_index >= 0 && class_type == Ship_info[target_shipp->ship_info_index].class_type)) {
@@ -2542,7 +2542,7 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 				aip->target_signature = -1;
 			}
 		}
-		return get_nearest_objnum(objnum, enemy_team_mask,aip->enemy_wing, range, max_attackers, ship_info_index, class_type);
+		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, ship_info_index, class_type);
 
 	} else {
 		aip->target_objnum = -1;
@@ -2550,7 +2550,6 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 		return -1;
 	}
 }
-
 
 /**
  * If issued an order to a ship that's awaiting repair, abort that process.
