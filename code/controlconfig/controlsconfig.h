@@ -297,6 +297,13 @@ enum IoActionId : int {
 	JOY_ABS_THROTTLE_AXIS							= 127,
 	JOY_REL_THROTTLE_AXIS							= 128,
 
+	//!< @n
+	//! Communication menu controls
+	//! ----------------------------
+	COMMS_MENU_MOVE_UP                              = 129,
+	COMMS_MENU_MOVE_DOWN                            = 130,
+	COMMS_MENU_SELECT                               = 131,
+
 	TOGGLE_HUD_SHADOWS,
 
 	CYCLE_PRIMARY_WEAPON_PATTERN,
