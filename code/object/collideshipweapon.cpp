@@ -446,6 +446,12 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 		// make sure that the shield is active in that quadrant
 		if (shipp->flags[Ship::Ship_Flags::Dying] || !ship_is_shield_up(ship_objp, quadrant_num)) {
+			// if the shield is down in the quadrant we still want the AI to record that the shield was hit here
+			// so that the AI can put energy torwards repairing that shield segement (but put behind a flag)
+			// --wookieejedi
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_AI_shield_management_bug] || true && SCP_vector_inbounds(ship_objp->shield_quadrant, quadrant_num)) {
+				Ai_info[Ships[ship_objp->instance].ai_index].last_hit_quadrant = quadrant_num;
+			}
 			quadrant_num = -1;
 			shield_collision = 0;
 		}

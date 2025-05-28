@@ -172,6 +172,8 @@ namespace AI {
 		Guards_ignore_protected_attackers,
 		Standard_strafe_used_more,
 		Unify_usage_ai_shield_manage_delay,
+		Fix_AI_shield_management_bug,
+		AI_balances_shields_when_attacked,
 		Disable_ai_transferring_energy,
 		Freespace_1_missile_behavior,
 		ETS_uses_power_output,

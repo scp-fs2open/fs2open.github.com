@@ -13320,7 +13320,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 		aip->shield_manage_timestamp = timestamp((int) (delay * 1000.0f));
 
 		if (sip->is_small_ship() || (aip->ai_profile_flags[AI::Profile_Flags::All_ships_manage_shields])) {
-			if (Missiontime - aip->last_hit_time < F1_0*10)
+			if ((Missiontime - aip->last_hit_time < F1_0 * 10) && !(The_mission.ai_profile->flags[AI::Profile_Flags::AI_balances_shields_when_attacked]))
 				ai_transfer_shield(objp, aip->last_hit_quadrant);
 			else
 				ai_balance_shield(objp);
