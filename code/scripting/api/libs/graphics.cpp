@@ -357,7 +357,7 @@ ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interf
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", Cmdline_stretch_menu != 0);
+	return ade_set_args(L, "b", Cmdline_stretch_menu);
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
@@ -422,6 +422,26 @@ ADE_FUNC(getCurrentCamera, l_Graphics, "[boolean]", "Gets the current camera han
 		current = Main_camera;
 
 	return ade_set_args(L, "o", l_Camera.Set(current));
+}
+
+ADE_FUNC(getEyePosition, l_Graphics, nullptr, "Where the viewer's eye is at in World coordinates", "vector", "a vector containing the eye position")
+{
+	return ade_set_args(L, "o", l_Vector.Set(Eye_position));
+}
+
+ADE_FUNC(getEyeOrientation, l_Graphics, nullptr, "Where the viewer's eye is pointing in World coordinates", "orientation", "a matrix containing the eye orientation")
+{
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&Eye_matrix)));
+}
+
+ADE_FUNC(getEyeFOV, l_Graphics, "[boolean visible_fov=true]", "What the viewer's FOV is, in radians.  If visible_fov is true, the visible field of view (for culling) "
+	"is returned; if false, the camera field of view (for rendering) is returned.  For non-VR setups, these two numbers are the same.",
+	"number", "a number containing the eye fov")
+{
+	bool visible_fov = true;
+	ade_get_args(L, "|b", &visible_fov);
+
+	return ade_set_args(L, "f", g3_get_hfov(Eye_fov, visible_fov));
 }
 
 ADE_FUNC(getVectorFromCoords, l_Graphics,
@@ -1067,7 +1087,6 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	int bound_rc, pof;
 	int modelnum;
 	bool entered_frame = false;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if ( !(g3_in_frame( ) > 0 ) )
 	{
@@ -1112,15 +1131,16 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].subtypes[pof].model_number;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
-		case OBJ_JUMP_NODE:
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == targetp)
-					break;
+		case OBJ_JUMP_NODE: {
+			auto jnp = jumpnode_get_by_objp(targetp);
+			if (!jnp) {
+				x1 = y1 = x2 = y2 = 0;
+				break;
 			}
-
 			modelnum = jnp->GetModelNumber();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
+		}
 		default: //Someone passed an invalid pointer.
 			if ( entered_frame )
 				g3_end_frame( );

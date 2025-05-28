@@ -699,6 +699,15 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$unify usage of AI Shield Manage Delay:", AI::Profile_Flags::Unify_usage_ai_shield_manage_delay);
 
+				set_flag(profile, "$disable AI transferring energy:", AI::Profile_Flags::Disable_ai_transferring_energy);
+
+				set_flag(profile, "$enable freespace 1 style missile behavior:", AI::Profile_Flags::Freespace_1_missile_behavior);
+
+				set_flag(profile, "$ETS uses ship class power output:", AI::Profile_Flags::ETS_uses_power_output);
+
+				set_flag(profile, "$ETS energy same regardless of system presence:", AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence);
+
+
 				// end of options ----------------------------------------
 
 				// if we've been through once already and are at the same place, force a move

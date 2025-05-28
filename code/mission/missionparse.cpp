@@ -2468,9 +2468,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// with
 	if (Fred_running)
 	{
-		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
-		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
+		Objects[objnum].phys_info.speed = i2fl(p_objp->initial_velocity);
+		Objects[objnum].hull_strength = i2fl(p_objp->initial_hull);
+		Objects[objnum].shield_quadrant[0] = i2fl(p_objp->initial_shields);
 
 	}
 	else
@@ -2478,10 +2478,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		int max_allowed_sparks, num_sparks, iLoop;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
-		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f);
-		}
+		float quad_strength = shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f;
+		for (auto &quadrant : Objects[objnum].shield_quadrant)
+			quadrant = quad_strength;
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		// WMC - Make it apply for ships with IN_PLACE_ANIM type
@@ -6392,6 +6391,10 @@ bool post_process_mission(mission *pm)
 
 	// the player_start_shipname had better exist at this point!
 	auto player_start_entry = ship_registry_get(Player_start_shipname);
+	if (!player_start_entry) {
+		Warning(LOCATION, "Player start ship '%s' does not exist!", Player_start_shipname);		// maybe the mission was hand-edited :P
+		return false;
+	}
 	Player_start_shipnum = player_start_entry->shipnum;
 	Assert( Player_start_shipnum != -1 );
 	Player_start_pobject = player_start_entry->p_objp();
@@ -6418,7 +6421,7 @@ bool post_process_mission(mission *pm)
 
 	// Kazan - player use AI at start?
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
-		Player_use_ai = 1;
+		Player_use_ai = true;
 
 	// Assign squadron information
 	if (!Fred_running && (Player != nullptr) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER)) {
@@ -6654,9 +6657,9 @@ bool post_process_mission(mission *pm)
 		if (MULTI_TEAM) {
 			team = Net_player->p_info.team;
 		}
-		auto br = Briefings[team].stages;
+		const auto &br = Briefings[team].stages;
 		for (i = 0; i < Briefings[team].num_stages; i++) {
-			auto stage = br[i];
+			const auto &stage = br[i];
 			for (int j = 0; j < stage.num_icons; j++) {
 				stage.icons[j].modelnum = model_load(Ship_info[stage.icons[j].ship_class].pof_file);
 			}
@@ -7594,8 +7597,8 @@ int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist,
 		//
 		// calculate the new fvec of the ship arriving and use only that to get the matrix.  isn't a big
 		// deal not getting bank.
-		vm_vec_sub(&new_fvec, &anchor_pos, &Objects[objnum].pos );
-		vm_vector_2_matrix( &orient, &new_fvec, NULL, NULL );
+		vm_vec_normalized_dir(&new_fvec, &anchor_pos, &Objects[objnum].pos );
+		vm_vector_2_matrix_norm( &orient, &new_fvec, nullptr, nullptr );
 		Objects[objnum].orient = orient;
 	}
 

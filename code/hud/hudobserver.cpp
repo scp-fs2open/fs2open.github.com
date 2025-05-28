@@ -43,12 +43,13 @@ void hud_observer_init(ship *shipp, ai_info *aip)
 	Hud_obs_ship.ship_max_shield_strength = shipp->ship_max_shield_strength;
 	Hud_obs_ship.weapons = shipp->weapons;
 
-	HUD_config.is_observer = 1;
-	HUD_config.show_flags = HUD_observer_default_flags;
-	HUD_config.show_flags2 = HUD_observer_default_flags2;
+	HUD_config.is_observer = true;
+	HUD_config.show_flags_map.clear();
+	HUD_config.popup_flags_map.clear();
 
-	HUD_config.popup_flags = 0x0;
-	HUD_config.popup_flags2 = 0x0;
+	for (const auto& gauge_id : observer_visible_gauges) {
+		HUD_config.show_flags_map[gauge_id] = true;
+	}
 
 	// shutdown any playing static animations
 	hud_init_target_static();

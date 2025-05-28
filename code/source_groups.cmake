@@ -288,8 +288,10 @@ add_file_folder("Default files\\\\data\\\\maps"
 )
 
 add_file_folder("Default files\\\\data\\\\scripts"
+	def_files/data/scripts/cfile_include.lua
 	def_files/data/scripts/cfile_require.lua
 	def_files/data/scripts/dkjson.lua
+	def_files/data/scripts/forwarders.lua
 )
 
 add_file_folder("Default files\\\\data\\\\tables"
@@ -1076,6 +1078,8 @@ add_file_folder("Parse"
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
+	parse/md5_hash.cpp
+	parse/md5_hash.h
 	parse/parsehi.cpp
 	parse/parsehi.h
 	parse/parselo.cpp
@@ -1169,6 +1173,8 @@ add_file_folder("PilotFile"
 	pilotfile/pilotfile_convert.h
 	pilotfile/plr.cpp
 	pilotfile/plr_convert.cpp
+	pilotfile/plr_hudprefs.cpp
+	pilotfile/plr_hudprefs.h
 )
 
 # Playerman files
@@ -1359,6 +1365,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/comm_order.cpp
+	scripting/api/objs/comm_order.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
 	scripting/api/objs/control_config.cpp

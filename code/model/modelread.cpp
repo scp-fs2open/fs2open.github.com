@@ -491,12 +491,13 @@ void get_user_prop_value(char *buf, char *value)
 	while ( isspace(*p) || (*p == '=') )		// skip white space and equal sign
 		p++;
 	p1 = p;
-	while ( !iscntrl(*p1) )
+	while ( !iscntrl(*p1) )						// copy until we get to a control character
 		p1++;
 	c = *p1;
 	*p1 = '\0';
 	strcpy(value, p);
 	*p1 = c;
+	drop_trailing_white_space(value);			// trim ending whitespace, just as we trimmed leading whitespace
 }
 
 // routine to parse out a vec3d from a user property field of an object
@@ -1113,19 +1114,17 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 	}
 #ifndef NDEBUG
-	char bname[FILESPEC_LENGTH];
-
 	if ( !ss_warning_shown_mismatch) {
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 		ss_warning_shown_mismatch = true;
-	} else
+	}
 #endif
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
+	mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{
+		char bname[FILESPEC_LENGTH];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
 		char tmp_buffer[128];
@@ -1133,7 +1132,6 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		cfputs(tmp_buffer, ss_fp);
 	}
 #endif
-
 }
 
 void print_family_tree(polymodel *obj)
@@ -1372,16 +1370,24 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		if (in(p, props, axis_string))
 		{
 			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
-				vm_vec_normalize(movement_axis);
+			{
+				if (!fl_near_zero(vm_vec_mag(movement_axis)))
+					vm_vec_normalize(movement_axis);
+				else
+				{
+					Warning(LOCATION, "%s on submodel '%s' on ship %s has a magnitude near zero!", axis_string, sm->name, filename);
+					*movement_type = MOVEMENT_TYPE_NONE;
+				}
+			}
 			else
 			{
-				Warning(LOCATION, "Failed to parse %s on subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+				Warning(LOCATION, "Failed to parse %s on submodel '%s' on ship %s!", axis_string, sm->name, filename);
 				*movement_type = MOVEMENT_TYPE_NONE;
 			}
 		}
 		else
 		{
-			Warning(LOCATION, "A %s was not specified for subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+			Warning(LOCATION, "A %s was not specified for submodel '%s' on ship %s!", axis_string, sm->name, filename);
 			*movement_type = MOVEMENT_TYPE_NONE;
 		}
 	}
@@ -1485,8 +1491,9 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 
 	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
-	// make sure this is a validly normalized axis
-	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
+	// make sure this is a validly normalized axis - also catch axes that are unspecified or 0,0,0
+	// (it would be nice to warn here, but the signal to noise ratio is extremely poor)
+	if (!vm_vec_is_normalized(movement_axis))
 		*movement_type = MOVEMENT_TYPE_NONE;
 
 	// maybe use the FOR to manipulate the axes
@@ -1933,19 +1940,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 				if (in(p, props, "$special")) {
 					char type[64];
+					SCP_string type_desc;
+					sprintf(type_desc, "$special property (for submodel %s) allowed token", sm->name);
 
 					get_user_prop_value(p+9, type);
-					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+					const char* type_list[] = { "subsystem", "no_movement", "no_rotate", "no_translate" };
+					int type_index = string_lookup(type, type_list, 4, type_desc.c_str(), true, true);
+
+					if (type_index == 0) {	// if we have a subsystem, put it into the list!
 						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
-						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 2 || type_index == 1) {	// this doesn't rotate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->rotation_type = MOVEMENT_TYPE_NONE;
 						} else {
 							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 							Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
 						}
-						if ( !stricmp(type, "no_translate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 3 || type_index == 1) {	// this doesn't translate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->translation_type = MOVEMENT_TYPE_NONE;
 						} else {
@@ -2052,45 +2064,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				// KeldorKatarn, with modifications
-				if (in(p, props, "$uvec")) {
-					matrix submodel_orient;
+				{
+					bool has_fvec = false, has_uvec = false, has_rvec = false;
+					vec3d fvec, uvec, rvec;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
-
-						if (in(p, props, "$fvec")) {
-
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
-
-								vm_vec_normalize(&submodel_orient.vec.uvec);
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-
-								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
-								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
-
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-								vm_vec_normalize(&submodel_orient.vec.rvec);
-
-								vm_orthogonalize_matrix(&submodel_orient);
-
-								sm->frame_of_reference = submodel_orient;
-
-							} else {
-								Warning(LOCATION,
-									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
-									"\n\n$fvec should be followed by 3 numbers separated with commas.",
-									sm->name, filename);
-							}
-						} else {
-							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", sm->name);
-						}
-					} else {
-						Warning(LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
-							"\n\n$uvec should be followed by 3 numbers separated with commas.",
-							sm->name, filename);
-					}
-				} else {
+					// default
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
+
+					// parse what we can
+					auto vectors = { std::make_tuple("$fvec", &fvec, &has_fvec), std::make_tuple("$uvec", &uvec, &has_uvec), std::make_tuple("$rvec", &rvec, &has_rvec) };
+					for (auto &item : vectors)
+					{
+						if (in(p, props, std::get<0>(item)))
+						{
+							if (get_user_vec3d_value(p + 5, std::get<1>(item), false, sm->name, pm->filename))
+								*std::get<2>(item) = true;
+							else
+								Warning(LOCATION, "Submodel '%s' of model '%s' has an improperly formatted %s declaration in its properties.\n\n%s should be followed by 3 numbers separated with commas.", sm->name, filename, std::get<0>(item), std::get<0>(item));
+						}
+					}
+
+					// make a matrix if we have at least the fvec
+					if (has_fvec)
+					{
+						vm_vector_2_matrix(&sm->frame_of_reference, &fvec, has_uvec ? &uvec : nullptr, has_rvec ? &rvec : nullptr);
+
+						// if the look_at_offset is still the default value (hasn't been set by submodel properties), assume that
+						// by specifying the submodel orientation matrix we are also specifying the "looking" direction
+						if (sm->look_at_offset == -1.0f)
+							sm->look_at_offset = 0.0f;
+					}
+					else if (has_uvec || has_rvec)
+						Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define an $fvec", sm->name);
 				}
 
 				{
@@ -2313,12 +2318,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						if (in(p, props, "$name")) {
 							get_user_prop_value(p+5, bay->name);
-
-							auto length = strlen(bay->name);
-							if ((length > 0) && is_white_space(bay->name[length-1])) {
-								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
-								drop_trailing_white_space(bay->name);
-							}
 							if (strlen(bay->name) == 0) {
 								nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
 							}
@@ -2373,8 +2372,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						for (j = 0; j < bay->num_slots; j++) {
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
-							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
-								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+
+							if (vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
+								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal.  Generating a normal in the forward Z direction.", filename, bay->name);
+								bay->norm[j] = vmd_z_vector;
+							} else {
+								vm_vec_normalize(&(bay->norm[j]));
 							}
 						}
 
@@ -2630,11 +2633,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
 					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
+						SCP_string type_desc;
+						sprintf(type_desc, "$special property (for special point %s) allowed token", name);
 
 						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+						const char *type_list[] = { "subsystem", "shieldpoint" };
+						int type_index = string_lookup(type, type_list, 2, type_desc.c_str(), true, true);
+
+						if (type_index == 0) {	// if we have a subsystem, put it into the list!
 							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
-						} else if ( !stricmp(type, "shieldpoint") ) {
+						} else if (type_index == 1) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
@@ -2789,6 +2797,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						pm->view_positions[i].parent = cfread_int( fp );
 						cfread_vector( &pm->view_positions[i].pnt, fp );
 						cfread_vector( &pm->view_positions[i].norm, fp );
+						// normalize, and just point it forward if this fails
+						if (!vm_maybe_normalize(&pm->view_positions[i].norm, &pm->view_positions[i].norm))
+							pm->view_positions[i].norm = vmd_z_vector;
 					}
 				}
 				break;			
@@ -2930,6 +2941,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			// if we couldn't find it, we shouldn't move
 			if (sm->look_at_submodel < 0) {
+				Warning(LOCATION, "Could not find $look_at target for %s %s!", pm->filename, sm->name);
 				sm->rotation_type = MOVEMENT_TYPE_NONE;
 			}
 			// are we navel-gazing?
@@ -2989,10 +3001,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
 	// but should at least head off potential crashes before they happen
 	for (i = 0; i < pm->n_view_positions; ++i) {
-		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+		if (pm->view_positions[i].parent >= pm->n_models) {
 			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
 			pm->view_positions[i].parent = 0;
-			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].norm = {{{0.0f, 0.0f, 1.0f}}};
 			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
@@ -3318,6 +3330,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
+	pause_parse();
+	Mp = Parse_text;
+	strcpy_s(Current_filename, filename);
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
@@ -3360,8 +3375,9 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 		if (pm != NULL) {
 			delete pm;
 		}
-
 		Polygon_models[num] = NULL;
+
+		unpause_parse();
 		return -1;
 	}
 
@@ -3428,6 +3444,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 
 	//==============================
 	// Find all the lower detail versions of the hires model
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> lower_to_higher_detail_submodels;
 	for (i=0; i<pm->n_models; i++ )	{
 		int j;
 		size_t l1;
@@ -3505,6 +3522,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}
 		}
@@ -3514,8 +3532,23 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 				sm1->num_details = 0;
 			}
 		}
-
 	}
+
+#ifndef NDEBUG
+	// make sure no lower detail submodels were actually made subsystems
+	for (const auto& pair : lower_to_higher_detail_submodels) {
+		auto lower_ss = deferredTasks.model_subsystems.find(pair.first);
+		if (lower_ss != deferredTasks.model_subsystems.end()) {
+			auto higher_ss = deferredTasks.model_subsystems.find(pair.second);
+			if (higher_ss != deferredTasks.model_subsystems.end()) {
+				auto lower_ss_name = lower_ss->first.c_str();
+				auto higher_ss_name = higher_ss->first.c_str();
+				Warning(LOCATION, "%s is a lower-detail submodel of %s, but both are configured as subsystems.  Subsystem properties should be removed from lower-detail "
+					"submodels, as this causes them to be recognized as extra subsystems.", lower_ss_name, higher_ss_name);
+			}
+		}
+	}
+#endif
 
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
@@ -3549,6 +3582,7 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
 	model_set_bay_path_nums(pm);
 
+	unpause_parse();
 	return pm->id;
 }
 
@@ -5856,7 +5890,7 @@ void parse_glowpoint_table(const char *filename)
 			}
 
 			if (optional_string("$Texture:")) {
-				char glow_texture_name[32];
+				char glow_texture_name[NAME_LENGTH];
 				stuff_string(glow_texture_name, F_NAME, NAME_LENGTH);
 
 				gpo.glow_bitmap_override = true;
@@ -5873,10 +5907,18 @@ void parse_glowpoint_table(const char *filename)
 						nprintf(("Model", "Glowpoint preset %s texture num is %d\n", gpo.name, gpo.glow_bitmap));
 					}
 
-					char glow_texture_neb_name[256];
-					strncpy(glow_texture_neb_name, glow_texture_name, 256);
-					strcat(glow_texture_neb_name, "-neb");
-					gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					if (strlen(glow_texture_name) > MAX_FILENAME_LEN - 4 - 1)
+					{
+						nprintf(("Model", "Texture '%s' referenced by glowpoint preset '%s' is too long for the -neb suffix!\n", glow_texture_name, gpo.name));
+						gpo.glow_neb_bitmap = -1;
+					}
+					else
+					{
+						char glow_texture_neb_name[MAX_FILENAME_LEN];
+						strcpy_s(glow_texture_neb_name, glow_texture_name);
+						strcat_s(glow_texture_neb_name, "-neb");
+						gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					}
 
 					if (gpo.glow_neb_bitmap < 0)
 					{

@@ -9,6 +9,7 @@
 #include "mission/missioncampaign.h"
 #include "missionui/missionscreencommon.h"
 #include "model/modelrender.h"
+#include "utils/string_utils.h"
 
 namespace scripting {
 namespace api {
@@ -134,17 +135,11 @@ ADE_VIRTVAR(Description, l_Weaponclass, "string", "Weapon class description stri
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		vm_free(wip->desc);
-		if(s != nullptr) {
-			wip->desc = (char*)vm_malloc(strlen(s)+1);
-			strcpy(wip->desc, s);
-		} else {
-			wip->desc = nullptr;
-		}
+		wip->desc = util::unique_copy(s, true);
 	}
 
 	if(wip->desc != nullptr)
-		return ade_set_args(L, "s", wip->desc);
+		return ade_set_args(L, "s", wip->desc.get());
 	else
 		return ade_set_args(L, "s", "");
 }
@@ -234,17 +229,11 @@ ADE_VIRTVAR(TechDescription, l_Weaponclass, "string", "Weapon class tech descrip
 	weapon_info *wip = &Weapon_info[idx];
 
 	if(ADE_SETTING_VAR) {
-		vm_free(wip->tech_desc);
-		if(s != nullptr) {
-			wip->tech_desc = (char*)vm_malloc(strlen(s)+1);
-			strcpy(wip->tech_desc, s);
-		} else {
-			wip->tech_desc = nullptr;
-		}
+		wip->tech_desc = util::unique_copy(s, true);
 	}
 
 	if(wip->tech_desc != nullptr)
-		return ade_set_args(L, "s", wip->tech_desc);
+		return ade_set_args(L, "s", wip->tech_desc.get());
 	else
 		return ade_set_args(L, "s", "");
 }

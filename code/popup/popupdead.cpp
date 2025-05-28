@@ -244,7 +244,7 @@ void popupdead_start()
 			scripting::hook_param("DeathMessage", 's', Player->death_message.c_str()));
 
 		scripting::hooks::OnDialogInit->run(paramList);
-		if (scripting::hooks::OnDialogInit->isOverride(paramList))
+		if (scripting::hooks::OnDialogInit->isOverride(std::move(paramList)))
 			return;
 	}
 
@@ -496,7 +496,7 @@ int popupdead_do_frame(float  /*frametime*/)
 			scripting::hook_param("Freeze", 'b', static_cast<bool>(popup_active())));
 
 		scripting::hooks::OnDialogFrame->run(paramList);
-		isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+		isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(std::move(paramList));
 	}
 
 	// don't process keys/buttons if another popup is active

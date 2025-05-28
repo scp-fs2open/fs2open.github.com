@@ -568,7 +568,7 @@ class CC_preset {
 public:
 	SCP_vector<CCB> bindings;
 	SCP_string name;
-	Preset_t type;
+	Preset_t type = Preset_t::hardcode;
 
 public:
 	CC_preset() = default;

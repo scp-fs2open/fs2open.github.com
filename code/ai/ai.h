@@ -36,7 +36,7 @@ typedef struct ai_flag_name {
 
 typedef struct ai_flag_description {
 	AI::AI_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } ai_flag_description;
 
 extern ai_flag_name Ai_flag_names[];
@@ -318,7 +318,7 @@ typedef struct ai_info {
 	//Unlike the predicted position stuff, also takes into account velocity
 	//Only used against small ships
 	fix		next_aim_pos_time;
-	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_pos;		// Normally this is the position of the enemy a turret is targeting but in the F3 Lab, this is used to pass raw target coordinates to the turret firing methods. 
 	vec3d	last_aim_enemy_vel;
 
 	ai_goal	goals[MAX_AI_GOALS];

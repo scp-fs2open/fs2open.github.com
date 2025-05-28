@@ -697,7 +697,7 @@ void generic_anim_render_variable_frame_delay(generic_anim* ga, float frametime,
  * @param [in] y  2D screen y co-ordinate to render at
  * @param [in] menu select if this is rendered in menu screen, or fullscreen
  */
-void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu, const generic_extras *ge)
+void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool menu, const generic_extras *ge, float scale_factor)
 {
 	if ((ge != nullptr) && (ga->use_hud_color == true)) {
 		Warning(LOCATION, "Monochrome generic anims can't use extra info (yet)");
@@ -719,11 +719,11 @@ void generic_anim_render(generic_anim *ga, float frametime, int x, int y, bool m
 		ga->previous_frame = ga->current_frame;
 
 		if(ga->use_hud_color) {
-			gr_aabitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
+			gr_aabitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL), false, scale_factor);
 		}
 		else {
 			if (ge == nullptr) {
-				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL));
+				gr_bitmap(x, y, (menu ? GR_RESIZE_MENU : GR_RESIZE_FULL), false, scale_factor);
 			}
 			else if (ge->draw == true) {
 				// currently only for lua streaminganim objects

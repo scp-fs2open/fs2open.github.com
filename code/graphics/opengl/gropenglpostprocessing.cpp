@@ -442,7 +442,7 @@ void opengl_post_lightshafts()
 	float x, y;
 
 	// should we even be here?
-	if ( !Game_subspace_effect && gr_lightshafts_enabled() ) {
+	if ( !Game_subspace_effect && gr_sunglare_enabled() && gr_lightshafts_enabled() ) {
 		int n_lights = light_get_global_count();
 
 		for ( int idx = 0; idx<n_lights; idx++ ) {

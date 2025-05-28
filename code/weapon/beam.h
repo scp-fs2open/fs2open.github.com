@@ -289,6 +289,9 @@ void beam_move_all_post();
 // render all beam weapons
 void beam_render_all();
 
+// delete all active beams
+void beam_delete_all();
+
 // early-out function for when adding object collision pairs, return 1 if the pair should be ignored
 int beam_collide_early_out(object *a, object *b);
 

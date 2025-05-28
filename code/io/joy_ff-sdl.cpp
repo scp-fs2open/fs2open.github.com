@@ -24,14 +24,24 @@
 #endif
 
 static int Joy_ff_enabled = 0;
+static int Joy_ff_acquired = 0;
 static SDL_Haptic *haptic = NULL;
 static int joy_ff_handling_scaler = 0;
 static bool Joy_ff_directional_hit_effect_enabled = true;
+static int Joy_ff_afterburning = 0;
 
-typedef struct {
+typedef struct haptic_effect_t {
 	SDL_HapticEffect eff;
 	int id;
-	int loaded;
+	bool loaded;
+
+	void init() {
+		eff = {0};
+		id = -1;
+		loaded = false;
+	}
+
+	haptic_effect_t() { init(); }
 } haptic_effect_t;
 
 static haptic_effect_t pHitEffect1;
@@ -42,9 +52,6 @@ static haptic_effect_t pShootEffect;
 static haptic_effect_t pSecShootEffect;
 static haptic_effect_t pSpring;
 static haptic_effect_t pDock;
-static haptic_effect_t pDeathroll1;
-static haptic_effect_t pDeathroll2;
-static haptic_effect_t pExplode;
 
 static auto ForceFeedbackOption = options::OptionBuilder<bool>("Input.ForceFeedback",
                      std::pair<const char*, int>{"Force Feedback", 1728},
@@ -71,10 +78,9 @@ static auto ForceFeedbackStrength = options::OptionBuilder<float>("Input.FFStren
                      .default_val(100)
                      .finish();
 
-static int joy_ff_create_effects();
-static int joy_ff_has_valid_effects();
-static int joy_ff_effect_playing(haptic_effect_t *eff);
+static bool joy_ff_create_effects();
 static void joy_ff_start_effect(haptic_effect_t *eff, const char *name);
+static void joy_ff_stop_effect(haptic_effect_t *eff, const char *name);
 
 static void check_and_print_haptic_feature(uint32_t flags, uint32_t check_flag, const char* description) {
 	auto has_flag = (flags & check_flag) == check_flag;
@@ -108,13 +114,29 @@ int joy_ff_init()
 {
 	bool ff_enabled;
 
+	if (Joy_ff_enabled) {
+		return 0;
+	}
+
+	auto Joy = io::joystick::getPlayerJoystick(CID_JOY0);
+
+	if ( !Joy || !Joy->isHaptic() ) {
+		return 0;
+	}
+
 	if (Using_in_game_options) {
 		ff_enabled = ForceFeedbackOption->getValue();
 	} else {
 		ff_enabled = os_config_read_uint(nullptr, "EnableJoystickFF", 1) != 0;
 	}
-	
-	if ( !ff_enabled || (io::joystick::getPlayerJoystick(CID_JOY0) == nullptr) ) {
+
+	if ( !ff_enabled ) {
+		return 0;
+	}
+
+	// ignore gamepads
+	if ( Joy->isGamepad() ) {
+		// TODO: add support for gamepad API and rumble effects
 		return 0;
 	}
 
@@ -143,7 +165,7 @@ int joy_ff_init()
 	}
 #endif
 
-	haptic = SDL_HapticOpenFromJoystick(io::joystick::getPlayerJoystick(CID_JOY0)->getDevice());
+	haptic = SDL_HapticOpenFromJoystick(Joy->getDevice());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
@@ -152,14 +174,9 @@ int joy_ff_init()
 	}
 
 	Joy_ff_enabled = 1;
+	Joy_ff_acquired = 1;
 
-	if ( !joy_ff_has_valid_effects() ) {
-		mprintf(("    ERROR: Haptic joystick does not support the necessary effects\n"));
-		joy_ff_shutdown();
-		return -1;
-	}
-
-	if ( joy_ff_create_effects() ) {
+	if ( !joy_ff_create_effects() ) {
 		mprintf(("    ERROR: Unable to create effects\n"));
 		joy_ff_shutdown();
 		return -1;
@@ -207,10 +224,8 @@ void joy_ff_shutdown()
 		return;
 	}
 
-	if (pSpring.loaded) {
-		SDL_HapticStopEffect(haptic, pSpring.id);
-	}
-	joy_ff_stop_effects();
+	joy_ff_afterburn_off();
+	SDL_HapticStopAll(haptic);
 
 	SDL_HapticClose(haptic);
 	haptic = NULL;
@@ -218,267 +233,223 @@ void joy_ff_shutdown()
 	SDL_QuitSubSystem(SDL_INIT_HAPTIC);
 
 	Joy_ff_enabled = 0;
+	Joy_ff_acquired = 0;
 }
 
-static int joy_ff_has_valid_effects()
+int joy_ff_reinit()
 {
-	unsigned int supported = 0;
-	int rval = 1;
-
-	supported = SDL_HapticQuery(haptic);
-
-	if ( !(supported & SDL_HAPTIC_CONSTANT) ) {
-		mprintf((" missing constant effect\n"));
-		rval = 0;
+	if (Joy_ff_enabled) {
+		joy_ff_shutdown();
 	}
 
-	if ( !(supported & SDL_HAPTIC_SINE) ) {
-		mprintf((" missing sine effect\n"));
-		rval = 0;
-	}
-
-	if ( !(supported & SDL_HAPTIC_SAWTOOTHDOWN) ) {
-		mprintf((" missing sawtoothdown effect\n"));
-		rval = 0;
-	}
-
-	if ( !(supported & SDL_HAPTIC_SPRING) ) {
-		mprintf((" missing spring effect\n"));
-		rval = 0;
-	}
-
-	//SDL_HAPTIC_SQUARE has been removed from SDL2, pending reintroduction in SDL 2.1
-	/*if ( !(supported & SDL_HAPTIC_SQUARE) ) {
-		mprintf((" missing square effect\n"));
-		rval = 0;
-	}*/
-
-	return rval;
+	return joy_ff_init();
 }
 
-static int joy_ff_create_effects()
+static bool joy_ff_create_effects()
 {
+	int num_loaded = 0;
+
 	// clear all SDL errors
 	SDL_ClearError();
 
+	// missing effects aren't fatal, we'll just ignore/disable them
+	auto supported = SDL_HapticQuery(haptic);
 
-	// pHitEffect1
-	memset(&pHitEffect1, 0, sizeof(haptic_effect_t));
+	// effects are created in priority order, most important first
+	// this allows a soft fail for low memory devices that can't load everything
 
-	pHitEffect1.eff.type = SDL_HAPTIC_CONSTANT;
-	pHitEffect1.eff.constant.direction.type = SDL_HAPTIC_POLAR;
-	pHitEffect1.eff.constant.direction.dir[0] = 0;
-	pHitEffect1.eff.constant.length = 300;
-	pHitEffect1.eff.constant.level = 0x7FFF;
-	pHitEffect1.eff.constant.attack_length = 0;
-	pHitEffect1.eff.constant.attack_level = 0x7FFF;
-	pHitEffect1.eff.constant.fade_length = 120;
-	pHitEffect1.eff.constant.fade_level = 1;
+	if (supported & SDL_HAPTIC_SPRING) {
+		// pSpring
+		pSpring.init();
 
-	pHitEffect1.id = SDL_HapticNewEffect(haptic, &pHitEffect1.eff);
+		pSpring.eff.type = SDL_HAPTIC_SPRING;
+		pSpring.eff.condition.type = SDL_HAPTIC_SPRING;
+		pSpring.eff.condition.length = SDL_HAPTIC_INFINITY;
 
-	if (pHitEffect1.id < 0) {
-		mprintf(("    Hit effect 1 failed to load:\n      %s\n", SDL_GetError()));
-		return -1;
-	} else {
-		pHitEffect1.loaded = 1;
+		for (size_t i = 0; i < SDL_arraysize(pSpring.eff.condition.right_sat); i++) {
+			pSpring.eff.condition.right_sat[i] = 0x7FFF;
+			pSpring.eff.condition.left_sat[i] = 0x7FFF;
+			pSpring.eff.condition.right_coeff[i] = 0x147;
+			pSpring.eff.condition.left_coeff[i] = 0x147;
+		}
+
+		pSpring.id = SDL_HapticNewEffect(haptic, &pSpring.eff);
+
+		if (pSpring.id < 0) {
+			mprintf(("    Spring effect failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pSpring.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pHitEffect2
-	memset(&pHitEffect2, 0, sizeof(haptic_effect_t));
+	if (supported & SDL_HAPTIC_SAWTOOTHDOWN) {
+		// pShootEffect
+		pShootEffect.init();
 
-	pHitEffect2.eff.type = SDL_HAPTIC_SINE;
-	pHitEffect2.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pHitEffect2.eff.periodic.direction.dir[0] = 9000;
-	pHitEffect2.eff.periodic.length = 300;
-	pHitEffect2.eff.periodic.period = 100;
-	pHitEffect2.eff.periodic.magnitude = 0x7FFF;
-	pHitEffect2.eff.periodic.attack_length = 100;
-	pHitEffect2.eff.periodic.fade_length = 100;
+		pShootEffect.eff.type = SDL_HAPTIC_SAWTOOTHDOWN;
+		pShootEffect.eff.periodic.type = SDL_HAPTIC_SAWTOOTHDOWN;
+		pShootEffect.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
+		pShootEffect.eff.periodic.direction.dir[0] = 0;
+		pShootEffect.eff.periodic.length = 160;
+		pShootEffect.eff.periodic.period = 20;
+		pShootEffect.eff.periodic.magnitude = 0x7FFF;
+		pShootEffect.eff.periodic.fade_length = 120;
 
-	pHitEffect2.id = SDL_HapticNewEffect(haptic, &pHitEffect2.eff);
+		pShootEffect.id = SDL_HapticNewEffect(haptic, &pShootEffect.eff);
 
-	if (pHitEffect2.id < 0) {
-		mprintf(("    Hit effect 2 failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pHitEffect2.loaded = 1;
+		if (pShootEffect.id < 0) {
+			mprintf(("    Fire primary effect failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pShootEffect.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pShootEffect
-	memset(&pShootEffect, 0, sizeof(haptic_effect_t));
+	if (supported & SDL_HAPTIC_CONSTANT) {
+		// pSecShootEffect
+		pSecShootEffect.init();
 
-	pShootEffect.eff.type = SDL_HAPTIC_SAWTOOTHDOWN;
-	pShootEffect.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pShootEffect.eff.periodic.direction.dir[0] = 0;
-	pShootEffect.eff.periodic.length = 160;
-	pShootEffect.eff.periodic.period = 20;
-	pShootEffect.eff.periodic.magnitude = 0x7FFF;
-	pShootEffect.eff.periodic.fade_length = 120;
+		pSecShootEffect.eff.type = SDL_HAPTIC_CONSTANT;
+		pSecShootEffect.eff.constant.type = SDL_HAPTIC_CONSTANT;
+		pSecShootEffect.eff.constant.direction.type = SDL_HAPTIC_POLAR;
+		pSecShootEffect.eff.constant.direction.dir[0] = 0;
+		pSecShootEffect.eff.constant.length = 200;
+		pSecShootEffect.eff.constant.level = 0x7FFF;
+		pSecShootEffect.eff.constant.attack_length = 50;
+		pSecShootEffect.eff.constant.attack_level = 0x7FFF;
+		pSecShootEffect.eff.constant.fade_length = 100;
+		pSecShootEffect.eff.constant.fade_level = 1;
 
-	pShootEffect.id = SDL_HapticNewEffect(haptic, &pShootEffect.eff);
+		pSecShootEffect.id = SDL_HapticNewEffect(haptic, &pSecShootEffect.eff);
 
-	if (pShootEffect.id < 0) {
-		mprintf(("    Fire primary effect failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pShootEffect.loaded = 1;
+		if (pSecShootEffect.id < 0) {
+			mprintf(("    Fire secondary effect failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pSecShootEffect.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pSecShootEffect
-	memset(&pSecShootEffect, 0, sizeof(haptic_effect_t));
+	if (supported & SDL_HAPTIC_SINE) {
+		// pAfterburn1
+		pAfterburn1.init();
 
-	pSecShootEffect.eff.type = SDL_HAPTIC_CONSTANT;
-	pSecShootEffect.eff.constant.direction.type = SDL_HAPTIC_POLAR;
-	pSecShootEffect.eff.constant.direction.dir[0] = 0;
-	pSecShootEffect.eff.constant.length = 200;
-	pSecShootEffect.eff.constant.level = 0x7FFF;
-	pSecShootEffect.eff.constant.attack_length = 50;
-	pSecShootEffect.eff.constant.attack_level = 0x7FFF;
-	pSecShootEffect.eff.constant.fade_length = 100;
-	pSecShootEffect.eff.constant.fade_level = 1;
+		pAfterburn1.eff.type = SDL_HAPTIC_SINE;
+		pAfterburn1.eff.periodic.type = SDL_HAPTIC_SINE;
+		pAfterburn1.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
+		pAfterburn1.eff.periodic.direction.dir[0] = 0;
+		pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
+		pAfterburn1.eff.periodic.period = 20;
+		pAfterburn1.eff.periodic.magnitude = 0x3332;
 
-	pSecShootEffect.id = SDL_HapticNewEffect(haptic, &pSecShootEffect.eff);
+		pAfterburn1.id = SDL_HapticNewEffect(haptic, &pAfterburn1.eff);
 
-	if (pSecShootEffect.id < 0) {
-		mprintf(("    Fire secondary effect failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pSecShootEffect.loaded = 1;
+		if (pAfterburn1.id < 0) {
+			mprintf(("    Afterburn effect 1 failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pAfterburn1.loaded = true;
+			++num_loaded;
+		}
+
+		// pAfterburn2
+		pAfterburn2.init();
+
+		pAfterburn2.eff.type = SDL_HAPTIC_SINE;
+		pAfterburn2.eff.periodic.type = SDL_HAPTIC_SINE;
+		pAfterburn2.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
+		pAfterburn2.eff.periodic.direction.dir[0] = 9000;
+		pAfterburn2.eff.periodic.length = 125;
+		pAfterburn2.eff.periodic.period = 100;
+		pAfterburn2.eff.periodic.magnitude = 0x1999;
+
+		pAfterburn2.id = SDL_HapticNewEffect(haptic, &pAfterburn2.eff);
+
+		if (pAfterburn2.id < 0) {
+			mprintf(("    Afterburn effect 2 failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pAfterburn2.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pSpring
-	memset(&pSpring, 0, sizeof(haptic_effect_t));
+	if (supported & SDL_HAPTIC_CONSTANT) {
+		// pHitEffect1
+		pHitEffect1.init();
 
-	pSpring.eff.type = SDL_HAPTIC_SPRING;
-	pSpring.eff.condition.length = SDL_HAPTIC_INFINITY;
+		pHitEffect1.eff.type = SDL_HAPTIC_CONSTANT;
+		pHitEffect1.eff.constant.type = SDL_HAPTIC_CONSTANT;
+		pHitEffect1.eff.constant.direction.type = SDL_HAPTIC_POLAR;
+		pHitEffect1.eff.constant.direction.dir[0] = 0;
+		pHitEffect1.eff.constant.length = 300;
+		pHitEffect1.eff.constant.level = 0x7FFF;
+		pHitEffect1.eff.constant.attack_length = 0;
+		pHitEffect1.eff.constant.attack_level = 0x7FFF;
+		pHitEffect1.eff.constant.fade_length = 120;
+		pHitEffect1.eff.constant.fade_level = 1;
 
-	for (int i = 0; i < SDL_HapticNumAxes(haptic); i++) {
-		pSpring.eff.condition.right_sat[i] = 0x7FFF;
-		pSpring.eff.condition.left_sat[i] = 0x7FFF;
-		pSpring.eff.condition.right_coeff[i] = 0x147;
-		pSpring.eff.condition.left_coeff[i] = 0x147;
+		pHitEffect1.id = SDL_HapticNewEffect(haptic, &pHitEffect1.eff);
+
+		if (pHitEffect1.id < 0) {
+			mprintf(("    Hit effect 1 failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pHitEffect1.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	pSpring.id = SDL_HapticNewEffect(haptic, &pSpring.eff);
+	if (supported & SDL_HAPTIC_SINE) {
+		// pHitEffect2
+		pHitEffect2.init();
 
-	if (pSpring.id < 0) {
-		mprintf(("    Spring effect failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pSpring.loaded = 1;
-		joy_ff_start_effect(&pSpring, "Spring");
+		pHitEffect2.eff.type = SDL_HAPTIC_SINE;
+		pHitEffect2.eff.periodic.type = SDL_HAPTIC_SINE;
+		pHitEffect2.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
+		pHitEffect2.eff.periodic.direction.dir[0] = 9000;
+		pHitEffect2.eff.periodic.length = 300;
+		pHitEffect2.eff.periodic.period = 100;
+		pHitEffect2.eff.periodic.magnitude = 0x7FFF;
+		pHitEffect2.eff.periodic.attack_length = 100;
+		pHitEffect2.eff.periodic.fade_length = 100;
+
+		pHitEffect2.id = SDL_HapticNewEffect(haptic, &pHitEffect2.eff);
+
+		if (pHitEffect2.id < 0) {
+			mprintf(("    Hit effect 2 failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pHitEffect2.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pAfterburn1
-	memset(&pAfterburn1, 0, sizeof(haptic_effect_t));
+	if (supported & SDL_HAPTIC_SINE /* SDL_HAPTIC_SQUARE */) {
+		// pDock
+		pDock.init();
 
-	pAfterburn1.eff.type = SDL_HAPTIC_SINE;
-	pAfterburn1.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pAfterburn1.eff.periodic.direction.dir[0] = 0;
-	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
-	pAfterburn1.eff.periodic.period = 20;
-	pAfterburn1.eff.periodic.magnitude = 0x3332;
+		pDock.eff.type = SDL_HAPTIC_SINE; //SDL_HAPTIC_SQUARE;
+		pDock.eff.periodic.type = SDL_HAPTIC_SINE; //SDL_HAPTIC_SQUARE;
+		pDock.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
+		pDock.eff.periodic.direction.dir[0] = 9000;
+		pDock.eff.periodic.length = 125;
+		pDock.eff.periodic.period = 100;
+		pDock.eff.periodic.magnitude = 0x3332;
 
-	pAfterburn1.id = SDL_HapticNewEffect(haptic, &pAfterburn1.eff);
+		pDock.id = SDL_HapticNewEffect(haptic, &pDock.eff);
 
-	if (pAfterburn1.id < 0) {
-		mprintf(("    Afterburn effect 1 failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pAfterburn1.loaded = 1;
+		if (pDock.id < 0) {
+			mprintf(("    Dock effect failed to load:\n      %s\n", SDL_GetError()));
+		} else {
+			pDock.loaded = true;
+			++num_loaded;
+		}
 	}
 
-	// pAfterburn2
-	memset(&pAfterburn2, 0, sizeof(haptic_effect_t));
+	return (num_loaded > 0);
+}
 
-	pAfterburn2.eff.type = SDL_HAPTIC_SINE;
-	pAfterburn2.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pAfterburn2.eff.periodic.direction.dir[0] = 9000;
-	pAfterburn2.eff.periodic.length = 125;
-	pAfterburn2.eff.periodic.period = 100;
-	pAfterburn2.eff.periodic.magnitude = 0x1999;
-
-	pAfterburn2.id = SDL_HapticNewEffect(haptic, &pAfterburn2.eff);
-
-	if (pAfterburn2.id < 0) {
-		mprintf(("    Afterburn effect 2 failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pAfterburn2.loaded = 1;
-	}
-
-	// pDock
-	memset(&pDock, 0, sizeof(haptic_effect_t));
-
-	pDock.eff.type = SDL_HAPTIC_SINE; //SDL_HAPTIC_SQUARE;
-	pDock.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pDock.eff.periodic.direction.dir[0] = 9000;
-	pDock.eff.periodic.length = 125;
-	pDock.eff.periodic.period = 100;
-	pDock.eff.periodic.magnitude = 0x3332;
-
-	pDock.id = SDL_HapticNewEffect(haptic, &pDock.eff);
-
-	if (pDock.id < 0) {
-		mprintf(("    Dock effect failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pDock.loaded = 1;
-	}
-
-	// pExplode
-	memset(&pExplode, 0, sizeof(haptic_effect_t));
-
-	pExplode.eff.type = SDL_HAPTIC_SAWTOOTHDOWN;
-	pExplode.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pExplode.eff.periodic.direction.dir[0] = 9000;
-	pExplode.eff.periodic.length = 500;
-	pExplode.eff.periodic.period = 20;
-	pExplode.eff.periodic.magnitude = 0x7FFF;
-	pExplode.eff.periodic.attack_length = 0;
-	pExplode.eff.periodic.fade_length = 500;
-
-	pExplode.id = SDL_HapticNewEffect(haptic, &pExplode.eff);
-
-	if (pExplode.id < 0) {
-		mprintf(("    Explosion effect failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pExplode.loaded = 1;
-	}
-
-	// pDeathroll1
-	memset(&pDeathroll1, 0, sizeof(haptic_effect_t));
-
-	pDeathroll1.eff.type = SDL_HAPTIC_SINE;
-	pDeathroll1.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pDeathroll1.eff.periodic.direction.dir[0] = 0;
-	pDeathroll1.eff.periodic.length = SDL_HAPTIC_INFINITY;
-	pDeathroll1.eff.periodic.period = 200;
-	pDeathroll1.eff.periodic.magnitude = 0x7FFF;
-	pDeathroll1.eff.periodic.attack_length = 200;
-
-	pDeathroll1.id = SDL_HapticNewEffect(haptic, &pDeathroll1.eff);
-
-	if (pDeathroll1.id < 0) {
-		mprintf(("    Deathroll effect 1 failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pDeathroll1.loaded = 1;
-	}
-
-	// pDeathroll2
-	memset(&pDeathroll2, 0, sizeof(haptic_effect_t));
-
-	pDeathroll2.eff.type = SDL_HAPTIC_SINE;
-	pDeathroll2.eff.periodic.direction.type = SDL_HAPTIC_POLAR;
-	pDeathroll2.eff.periodic.direction.dir[0] = 9000;
-	pDeathroll2.eff.periodic.length = SDL_HAPTIC_INFINITY;
-	pDeathroll2.eff.periodic.period = 200;
-	pDeathroll2.eff.periodic.magnitude = 0x7FFF;
-	pDeathroll2.eff.periodic.attack_length = 200;
-
-	pDeathroll2.id = SDL_HapticNewEffect(haptic, &pDeathroll2.eff);
-
-	if (pDeathroll2.id < 0) {
-		mprintf(("    Deathroll effect 2 failed to load:\n      %s\n", SDL_GetError()));
-	} else {
-		pDeathroll2.loaded = 1;
-	}
-
-	return 0;
+static bool joy_ff_can_play()
+{
+	return (Joy_ff_enabled && Joy_ff_acquired);
 }
 
 static void joy_ff_start_effect(haptic_effect_t *eff, const char* /* name */)
@@ -489,7 +460,35 @@ static void joy_ff_start_effect(haptic_effect_t *eff, const char* /* name */)
 
 //	nprintf(("Joystick", "FF: Starting effect %s\n", name));
 
-	SDL_HapticRunEffect(haptic, eff->id, 1);
+	if (SDL_HapticRunEffect(haptic, eff->id, 1) != 0) {
+//		nprintf(("Joystick", "FF: Unable to run %s:\n  %s\n", name, SDL_GetError()));
+	}
+}
+
+static void joy_ff_update_effect(haptic_effect_t *eff, const char* /* name */)
+{
+	if ( !eff->loaded ) {
+		return;
+	}
+
+//	nprintf(("Joystick", "FF: Updating effect %s\n", name));
+
+	if (SDL_HapticUpdateEffect(haptic, eff->id, &eff->eff) != 0) {
+//		nprintf(("Joystick", "FF: Unable to update %s:\n  %s\n", name, SDL_GetError()));
+	}
+}
+
+static void joy_ff_stop_effect(haptic_effect_t *eff, const char* /* name */)
+{
+	if ( !eff->loaded ) {
+		return;
+	}
+
+//	nprintf(("Joystick", "FF: Stopping effect %s\n", name));
+
+	if (SDL_HapticStopEffect(haptic, eff->id) != 0) {
+//		nprintf(("Joystick", "FF: Unable to stop %s:\n  %s\n", name, SDL_GetError()));
+	}
 }
 
 void joy_ff_stop_effects()
@@ -500,26 +499,95 @@ void joy_ff_stop_effects()
 
 	joy_ff_afterburn_off();
 
-	if (pDeathroll1.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll1.id);
-	}
-
-	if (pDeathroll2.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll2.id);
-	}
+	// stop everything *except* spring
+	joy_ff_stop_effect(&pHitEffect1, "HitEffect1");
+	joy_ff_stop_effect(&pHitEffect2, "HitEffect2");
+	joy_ff_stop_effect(&pAfterburn1, "Afterburn1");
+	joy_ff_stop_effect(&pAfterburn2, "Afterburn2");
+	joy_ff_stop_effect(&pShootEffect, "ShootEffect");
+	joy_ff_stop_effect(&pSecShootEffect, "SecShootEffect");
+	joy_ff_stop_effect(&pDock, "Dock");
 }
 
 void joy_ff_mission_init(vec3d v)
 {
+	if ( !Joy_ff_enabled ) {
+		return;
+	}
+
 	v.xyz.z = 0.0f;
 
 	joy_ff_handling_scaler = (int) ((vm_vec_mag(&v) + 1.3f) * 5.0f);
+
+	joy_ff_adjust_handling(0);
+	joy_ff_start_effect(&pSpring, "Spring");
+
+	Joy_ff_afterburning = 0;
+
+	// reset afterburn effects to default values
+
+	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn1.eff.periodic.period = 20;
+	pAfterburn1.eff.periodic.magnitude = 0x3332;
+	pAfterburn1.eff.periodic.attack_length = 0;
+
+	joy_ff_update_effect(&pAfterburn1, "Afterburn1 (init)");
+
+	pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn2.eff.periodic.period = 100;
+	pAfterburn2.eff.periodic.magnitude = 0x1999;
+	pAfterburn2.eff.periodic.attack_length = 0;
+
+	joy_ff_update_effect(&pAfterburn2, "Afterburn2 (init)");
+
+	// reset primary shoot effect to default values
+
+	pShootEffect.eff.periodic.direction.dir[0] = 0;
+	pShootEffect.eff.periodic.length = 160;
+	pShootEffect.eff.periodic.fade_length = 120;
+
+	joy_ff_update_effect(&pShootEffect, "ShootEffect (init)");
+}
+
+void joy_reacquire_ff()
+{
+	if ( !Joy_ff_enabled ) {
+		return;
+	}
+
+	if (Joy_ff_acquired) {
+		return;
+	}
+
+	Joy_ff_acquired = 1;
+
+	joy_ff_start_effect(&pSpring, "Spring");
+}
+
+void joy_unacquire_ff()
+{
+	if ( !Joy_ff_enabled ) {
+		return;
+	}
+
+	if ( !Joy_ff_acquired ) {
+		return;
+	}
+
+	joy_ff_afterburn_off();
+	SDL_HapticStopAll(haptic);
+
+	Joy_ff_acquired = 0;
 }
 
 void joy_ff_play_vector_effect(vec3d *v, float scaler)
 {
 	vec3d vf;
 	float x, y;
+
+	if ( !joy_ff_can_play() ) {
+		return;
+	}
 
 //	nprintf(("Joystick", "FF: vec = { %f, %f, %f } s = %f\n", v->xyz.x, v->xyz.y, v->xyz.z, scaler));
 	vm_vec_copy_scale(&vf, v, scaler);
@@ -537,17 +605,25 @@ void joy_ff_play_vector_effect(vec3d *v, float scaler)
 
 void joy_ff_play_dir_effect(float x, float y)
 {
+	static UI_TIMESTAMP hit_timeout;
 	int idegs, imag;
 	float degs;
 
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
-	if (joy_ff_effect_playing(&pHitEffect1) || joy_ff_effect_playing(&pHitEffect2)) {
+	// allow for at least one of the effects to work
+	if ( !pHitEffect1.loaded && !pHitEffect2.loaded ) {
+		return;
+	}
+
+	if ( !ui_timestamp_elapsed(hit_timeout) ) {
 		nprintf(("Joystick", "FF: HitEffect already playing.  Skipping\n"));
 		return;
 	}
+
+	hit_timeout = ui_timestamp(pHitEffect1.eff.condition.length);
 
 	if (Joy_ff_directional_hit_effect_enabled) {
 		if (x > 8000.0f) {
@@ -577,38 +653,28 @@ void joy_ff_play_dir_effect(float x, float y)
 			idegs -= 36000;
 		}
 
-		if (pHitEffect1.loaded) {
-			pHitEffect1.eff.constant.direction.dir[0] = idegs;
-			pHitEffect1.eff.constant.level = (Sint16)fl2i(0x7FFF * (imag / 10000.0f));
+		pHitEffect1.eff.constant.direction.dir[0] = idegs;
+		pHitEffect1.eff.constant.level = (Sint16)fl2i(0x7FFF * (imag / 10000.0f));
 
-			if ( SDL_HapticUpdateEffect(haptic, pHitEffect1.id, &pHitEffect1.eff) < 0 ) {
-				mprintf(("HapticERROR:  Unable to update pHitEffect1:\n  %s\n", SDL_GetError()));
-			}
-		}
+		joy_ff_update_effect(&pHitEffect1, "HitEffect1");
 
 		idegs += 9000;
 		if (idegs >= 36000)
 			idegs -= 36000;
 
-		if (pHitEffect2.loaded) {
-			pHitEffect2.eff.periodic.direction.dir[0] = idegs;
-			pHitEffect2.eff.periodic.magnitude = (Sint16)fl2i(0x7FFF * (imag / 10000.0f));
+		pHitEffect2.eff.periodic.direction.dir[0] = idegs;
+		pHitEffect2.eff.periodic.magnitude = (Sint16)fl2i(0x7FFF * (imag / 10000.0f));
 
-			if ( SDL_HapticUpdateEffect(haptic, pHitEffect2.id, &pHitEffect2.eff) < 0 ) {
-				mprintf(("HapticERROR:  Unable to update pHitEffect2:\n  %s\n", SDL_GetError()));
-			}
-		}
+		joy_ff_update_effect(&pHitEffect2, "HitEffect2");
 	}
 
 	joy_ff_start_effect(&pHitEffect1, "HitEffect1");
 	joy_ff_start_effect(&pHitEffect2, "HitEffect2");
 }
 
-static int primary_ff_level = 10000;
-
 void joy_ff_play_primary_shoot(int gain)
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
@@ -618,14 +684,12 @@ void joy_ff_play_primary_shoot(int gain)
 
 	CLAMP(gain, 1, 10000);
 
-	SDL_HapticStopEffect(haptic, pShootEffect.id);
+	static int primary_ff_level = 10000;
 
 	if (gain != primary_ff_level) {
 		pShootEffect.eff.periodic.magnitude = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
 
-		if ( SDL_HapticUpdateEffect(haptic, pShootEffect.id, &pShootEffect.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pShootEffect:\n  %s\n", SDL_GetError()));
-		}
+		joy_ff_update_effect(&pShootEffect, "ShootEffect");
 
 		primary_ff_level = gain;
 	}
@@ -633,11 +697,9 @@ void joy_ff_play_primary_shoot(int gain)
 	joy_ff_start_effect(&pShootEffect, "ShootEffect");
 }
 
-static int secondary_ff_level = 10000;
-
 void joy_ff_play_secondary_shoot(int gain)
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
@@ -649,18 +711,16 @@ void joy_ff_play_secondary_shoot(int gain)
 
 	CLAMP(gain, 1, 10000);
 
-	SDL_HapticStopEffect(haptic, pSecShootEffect.id);
+	static int secondary_ff_level = 10000;
 
 	if (gain != secondary_ff_level) {
 		pSecShootEffect.eff.constant.level = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
 		pSecShootEffect.eff.constant.length = (150000 + gain * 25) / 1000;
 
-		if ( SDL_HapticUpdateEffect(haptic, pSecShootEffect.id, &pSecShootEffect.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pSecShootEffect:\n  %s\n", SDL_GetError()));
-		}
+		joy_ff_update_effect(&pSecShootEffect, "SecShootEffect");
 
 		secondary_ff_level = gain;
-		nprintf(("Joystick", "FF: Secondary force = 0x%04x\n", pSecShootEffect.eff.constant.level));
+//		nprintf(("Joystick", "FF: Secondary force = 0x%04x\n", pSecShootEffect.eff.constant.level));
 	}
 
 	joy_ff_start_effect(&pSecShootEffect, "SecShootEffect");
@@ -671,13 +731,21 @@ void joy_ff_adjust_handling(int speed)
 	int v;
 	short coeff = 0;
 
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
 	if ( !pSpring.loaded ) {
 		return;
 	}
+
+	static int last_speed = -1000;
+
+	if (speed == last_speed) {
+		return;
+	}
+
+	last_speed = speed;
 
 	v = speed * joy_ff_handling_scaler * 2 / 3;
 //	v += joy_ff_handling_scaler * joy_ff_handling_scaler * 6 / 7 + 250;
@@ -687,24 +755,19 @@ void joy_ff_adjust_handling(int speed)
 
 	coeff = (Sint16) fl2i(0x7FFF * (v / 10000.0f));
 
-	for (int i = 0; i < SDL_HapticNumAxes(haptic); i++) {
+	for (size_t i = 0; i < SDL_arraysize(pSpring.eff.condition.right_coeff); i++) {
 		pSpring.eff.condition.right_coeff[i] = coeff;
 		pSpring.eff.condition.left_coeff[i] = coeff;
 	}
 
 //	nprintf(("Joystick", "FF: New handling force = 0x%04x\n", coeff));
 
-	SDL_HapticUpdateEffect(haptic, pSpring.id, &pSpring.eff);
-}
-
-static int joy_ff_effect_playing(haptic_effect_t *eff)
-{
-	return (SDL_HapticGetEffectStatus(haptic, eff->id) > 0);
+	joy_ff_update_effect(&pSpring, "Spring");
 }
 
 void joy_ff_docked()
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
@@ -712,14 +775,9 @@ void joy_ff_docked()
 		return;
 	}
 
-	SDL_HapticStopEffect(haptic, pDock.id);
-
 	pDock.eff.periodic.magnitude = 0x3332;
 
-	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
-		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
-	}
-
+	joy_ff_update_effect(&pDock, "Dock");
 	joy_ff_start_effect(&pDock, "Dock");
 }
 
@@ -733,46 +791,31 @@ void joy_ff_play_reload_effect()
 		return;
 	}
 
-	SDL_HapticStopEffect(haptic, pDock.id);
-
 	pDock.eff.periodic.magnitude = 0x1999;
 
-	if ( SDL_HapticUpdateEffect(haptic, pDock.id, &pDock.eff) < 0 ) {
-		mprintf(("HapticERROR:  Unable to update pDock:\n  %s\n", SDL_GetError()));
-	}
-
+	joy_ff_update_effect(&pDock, "Dock (Reload)");
 	joy_ff_start_effect(&pDock, "Dock (Reload)");
 }
 
-static int Joy_ff_afterburning = 0;
-
 void joy_ff_afterburn_on()
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
-	if (pAfterburn1.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn1.id);
-
-		pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn1.eff.periodic.magnitude = 0x3332;
-
-		if ( SDL_HapticUpdateEffect(haptic, pAfterburn1.id, &pAfterburn1.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pAfterburn1:\n  %s\n", SDL_GetError()));
-		}
+	if (Joy_ff_afterburning) {
+		return;
 	}
 
-	if (pAfterburn2.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn2.id);
+	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn1.eff.periodic.magnitude = 0x3332;
 
-		pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
-		pAfterburn2.eff.periodic.magnitude = 0x1999;
+	joy_ff_update_effect(&pAfterburn1, "Afterburn1");
 
-		if ( SDL_HapticUpdateEffect(haptic, pAfterburn2.id, &pAfterburn2.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pAfterburn2:\n  %s\n", SDL_GetError()));
-		}
-	}
+	pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn2.eff.periodic.magnitude = 0x1999;
+
+	joy_ff_update_effect(&pAfterburn2, "Afterburn2");
 
 	joy_ff_start_effect(&pAfterburn1, "Afterburn1");
 	joy_ff_start_effect(&pAfterburn2, "Afterburn2");
@@ -784,7 +827,7 @@ void joy_ff_afterburn_on()
 
 void joy_ff_afterburn_off()
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
@@ -792,13 +835,8 @@ void joy_ff_afterburn_off()
 		return;
 	}
 
-	if (pAfterburn1.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn1.id);
-	}
-
-	if (pAfterburn2.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn2.id);
-	}
+	joy_ff_stop_effect(&pAfterburn1, "Afterburn1");
+	joy_ff_stop_effect(&pAfterburn2, "Afterburn2");
 
 	Joy_ff_afterburning = 0;
 
@@ -807,30 +845,33 @@ void joy_ff_afterburn_off()
 
 void joy_ff_explode()
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
-	if (pDeathroll1.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll1.id);
-	}
+	joy_ff_afterburn_off();
 
-	if (pDeathroll2.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll2.id);
-	}
+	// reuse shoot effect here to save device memory
+	if (pShootEffect.loaded) {
+		// direction changes so an effect stop is needed before udpate
+		joy_ff_stop_effect(&pShootEffect, "ShootEffect (Explode)");
 
-	if (pExplode.loaded) {
-		SDL_HapticStopEffect(haptic, pExplode.id);
-	}
+		pShootEffect.eff.periodic.direction.dir[0] = 9000;
+		pShootEffect.eff.periodic.length = 500;
+		pShootEffect.eff.periodic.magnitude = 0x7FFF;
+		pShootEffect.eff.periodic.fade_length = 500;
 
-	joy_ff_start_effect(&pExplode, "Explode");
+		joy_ff_update_effect(&pShootEffect, "ShootEffect (Explode)");
+
+		joy_ff_start_effect(&pShootEffect, "ShootEffect (Explode)");
+	}
 }
 
 void joy_ff_fly_by(int mag)
 {
 	int gain;
 
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
@@ -842,27 +883,15 @@ void joy_ff_fly_by(int mag)
 
 	CLAMP(gain, 1, 10000);
 
-	if (pAfterburn1.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn1.id);
+	pAfterburn1.eff.periodic.length = (6000 * mag + 400000) / 1000;
+	pAfterburn1.eff.periodic.magnitude = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
 
-		pAfterburn1.eff.periodic.length = (6000 * mag + 400000) / 1000;
-		pAfterburn1.eff.periodic.magnitude = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
+	joy_ff_update_effect(&pAfterburn1, "Afterburn1 (Fly by)");
 
-		if ( SDL_HapticUpdateEffect(haptic, pAfterburn1.id, &pAfterburn1.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pAfterburn1:\n  %s\n", SDL_GetError()));
-		}
-	}
+	pAfterburn2.eff.periodic.length = (6000 * mag + 400000) / 1000;
+	pAfterburn2.eff.periodic.magnitude = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
 
-	if (pAfterburn2.loaded) {
-		SDL_HapticStopEffect(haptic, pAfterburn2.id);
-
-		pAfterburn2.eff.periodic.length = (6000 * mag + 400000) / 1000;
-		pAfterburn2.eff.periodic.magnitude = (Sint16) fl2i(0x7FFF * (gain / 10000.0f));
-
-		if ( SDL_HapticUpdateEffect(haptic, pAfterburn2.id, &pAfterburn2.eff) < 0 ) {
-			mprintf(("HapticERROR:  Unable to update pAfterburn2:\n  %s\n", SDL_GetError()));
-		}
-	}
+	joy_ff_update_effect(&pAfterburn2, "Afterburn2 (Fly by)");
 
 	joy_ff_start_effect(&pAfterburn1, "Afterburn1 (Fly by)");
 	joy_ff_start_effect(&pAfterburn2, "Afterburn2 (Fly by)");
@@ -870,18 +899,32 @@ void joy_ff_fly_by(int mag)
 
 void joy_ff_deathroll()
 {
-	if ( !Joy_ff_enabled ) {
+	if ( !joy_ff_can_play() ) {
 		return;
 	}
 
-	if (pDeathroll1.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll1.id);
+	if ( !(pAfterburn1.loaded && pAfterburn2.loaded) ) {
+		return;
 	}
 
-	if (pDeathroll2.loaded) {
-		SDL_HapticStopEffect(haptic, pDeathroll2.id);
-	}
+	// reuse afterburn effects here to save device memory
 
-	joy_ff_start_effect(&pDeathroll1, "Deathroll1");
-	joy_ff_start_effect(&pDeathroll2, "Deathroll2");
+	pAfterburn1.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn1.eff.periodic.period = 200;
+	pAfterburn1.eff.periodic.magnitude = 0x7FFF;
+	pAfterburn1.eff.periodic.attack_length = 200;
+
+	joy_ff_update_effect(&pAfterburn1, "Afterburn1 (Death Roll)");
+
+	pAfterburn2.eff.periodic.length = SDL_HAPTIC_INFINITY;
+	pAfterburn2.eff.periodic.period = 200;
+	pAfterburn2.eff.periodic.magnitude = 0x7FFF;
+	pAfterburn2.eff.periodic.attack_length = 200;
+
+	joy_ff_update_effect(&pAfterburn2, "Afterburn2 (Death Roll)");
+
+	joy_ff_start_effect(&pAfterburn1, "Afterburn1 (Death Roll)");
+	joy_ff_start_effect(&pAfterburn2, "Afterburn2 (Death Roll)");
+
+	Joy_ff_afterburning = 1;	// to prevent flyby effect
 }

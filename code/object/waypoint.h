@@ -97,7 +97,7 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list);
 
 // Attempts to create a waypoint with the specified instance (used to calculate list and index).
 // Returns the object number, or -1 on failure.  Used by scripting and FRED.
-int waypoint_add(const vec3d *pos, int waypoint_instance);
+int waypoint_add(const vec3d *pos, int waypoint_instance, bool first_waypoint_in_list = false);
 
 // Removes a waypoint, including its entire list if it's the last waypoint remaining.
 void waypoint_remove(const waypoint *wpt);

@@ -95,10 +95,10 @@ void LabUi::build_weapon_list() const
 {
 	//weapon display needs to be rethought
 
-	//with_TreeNode("Weapon Classes")
-	//{
-	//	build_weapon_subtype_list();
-	//}
+	with_TreeNode("Weapon Classes")
+	{
+		build_weapon_subtype_list();
+	}
 }
 
 void LabUi::build_background_list() const
@@ -342,13 +342,17 @@ void LabUi::show_render_options()
 
 		with_CollapsingHeader("Model features")
 		{
-			Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			}
 			Checkbox("Show full detail", &show_full_detail);
 			Checkbox("Show thrusters", &show_thrusters);
-			Checkbox("Show afterburners", &show_afterburners);
-			Checkbox("Show weapons", &show_weapons);
-			Checkbox("Show Insignia", &show_insignia);
-			Checkbox("Show damage lightning", &show_damage_lightning);
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				Checkbox("Show afterburners", &show_afterburners);
+				Checkbox("Show weapons", &show_weapons);
+				Checkbox("Show Insignia", &show_insignia);
+				Checkbox("Show damage lightning", &show_damage_lightning);
+			}
 			Checkbox("No glowpoints", &no_glowpoints);
 		}
 
@@ -372,6 +376,7 @@ void LabUi::show_render_options()
 		with_CollapsingHeader("Scene rendering options")
 		{
 			Checkbox("Hide Post Processing", &hide_post_processing);
+			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
@@ -487,6 +492,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);
@@ -523,7 +529,7 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	TextUnformatted(colB);         \
 
 
-void LabUi::build_table_info_txtbox(ship_info* sip) const
+static void build_ship_table_info_txtbox(ship_info* sip)
 {
 	with_TreeNode("Table information")
 	{
@@ -536,6 +542,26 @@ void LabUi::build_table_info_txtbox(ship_info* sip) const
 			table_text = get_ship_table_text(sip);
 
 		InputTextMultiline("##table_text",
+			const_cast<char*>(table_text.c_str()),
+			table_text.length(),
+			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+			ImGuiInputTextFlags_ReadOnly);
+	}
+}
+
+static void build_weapon_table_info_txtbox(weapon_info* wip)
+{
+	with_TreeNode("Table information")
+	{
+		// Cache result across frames for performance
+		static SCP_string table_text;
+		static int old_class = getLabManager()->CurrentClass;
+
+		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+			table_text = get_weapon_table_text(wip);
+		}
+
+		InputTextMultiline("##weapon_table_text",
 			const_cast<char*>(table_text.c_str()),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
@@ -751,15 +777,9 @@ void LabUi::build_weapon_options(ship* shipp) const {
 
 				build_primary_weapon_combobox(text, wip, primary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FirePrimaries |= 1 << bank;
-				} else {
-					getLabManager()->FirePrimaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FirePrimaries[bank]);
 
 				bank++;
 			}
@@ -777,18 +797,126 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				sprintf(text, "##Secondary bank %i", bank);
 				build_secondary_weapon_combobox(text, wip, secondary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i##secondary", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FireSecondaries |= 1 << bank;
-				} else {
-					getLabManager()->FireSecondaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FireSecondaries[bank]);
 
 				bank++;
 			}
+		}
+	}
+
+	with_TreeNode("Turrets")
+	{
+		auto subsys_idx = 0; // unique IDs
+
+		for (auto* subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list);
+			 subsys = GET_NEXT(subsys)) {
+			if (subsys->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			SCP_string label;
+			sprintf(label, "Turret %i - %s", subsys_idx, subsys->system_info->subobj_name);
+
+			if (TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+
+				Spacing();
+
+				// Find the turret in FireTurrets
+				auto it = std::find_if(getLabManager()->FireTurrets.begin(),
+					getLabManager()->FireTurrets.end(),
+					[subsys](const auto& tuple) { return std::get<0>(tuple) == subsys; });
+
+				int mode = 0; // Default to UVEC aligned
+				bool fire_now = false;
+
+				bool multipart = false;
+				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
+					multipart = true;
+				}
+
+				const char* aiming_options[] = {"Random", "UVEC Aligned", "Initial"};
+
+				// In the lab we need to force fire on target because we're faking having an actual target
+				subsys->system_info->flags.set(Model::Subsystem_Flags::Fire_on_target);
+
+				// If already added, load current mode + fire state
+				if (it != getLabManager()->FireTurrets.end()) {
+					mode = static_cast<int>(std::get<1>(*it));
+					fire_now = std::get<2>(*it);
+				}
+
+				// Fire checkbox
+				SCP_string cb_label;
+				sprintf(cb_label, "Fire Turret##turret%i", subsys_idx);
+				Checkbox(cb_label.c_str(), &fire_now);
+
+				// Mode dropdown
+				ImGui::TextUnformatted("Turret Aiming:");
+				ImGui::SameLine(150.0f); // Start combo box at 150px
+				ImGui::SetNextItemWidth(200.0f);
+				ImGui::Combo("##AimingMode", &mode, aiming_options, multipart ? 3 : 2);
+
+				auto modeToAimType = [multipart](int this_mode) -> LabTurretAimType {
+					switch (this_mode) {
+					case 0:
+						return LabTurretAimType::RANDOM;
+					case 1:
+						return LabTurretAimType::UVEC;
+					case 2:
+						if (multipart) {
+							return LabTurretAimType::INITIAL;
+						} else {
+							return LabTurretAimType::UVEC;
+						}
+					default:
+						return LabTurretAimType::RANDOM; // fallback
+					}
+				};
+
+				// Update or add to FireTurrets
+				if (it == getLabManager()->FireTurrets.end()) {
+					getLabManager()->FireTurrets.emplace_back(subsys, modeToAimType(mode), fire_now);
+
+					// Set timestamps to allow turret to fire immediately
+					subsys->turret_next_fire_stamp = timestamp(0);
+					auto& weps = subsys->weapons;
+					for (auto& stamp : weps.next_primary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+
+					for (auto& stamp : weps.next_secondary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+				} else {
+					std::get<1>(*it) = modeToAimType(mode);
+					std::get<2>(*it) = fire_now;
+				}
+
+				auto& weps = subsys->weapons;
+
+				// PRIMARY BANKS
+				for (int bank = 0; bank < weps.num_primary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretPrimaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.primary_bank_weapons[bank]];
+					build_primary_weapon_combobox(text, wip, weps.primary_bank_weapons[bank]);
+				}
+
+				// SECONDARY BANKS
+				for (int bank = 0; bank < weps.num_secondary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretSecondaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.secondary_bank_weapons[bank]];
+					build_secondary_weapon_combobox(text, wip, weps.secondary_bank_weapons[bank]);
+				}
+
+				TreePop(); // Close this turret node
+			}
+
+			subsys_idx++;
 		}
 	}
 }
@@ -1013,7 +1141,7 @@ void LabUi::show_object_options() const
 
 			with_CollapsingHeader(sip->name)
 			{
-				build_table_info_txtbox(sip);
+				build_ship_table_info_txtbox(sip);
 
 				build_model_info_box(sip, pm);
 
@@ -1039,6 +1167,24 @@ void LabUi::show_object_options() const
 			with_CollapsingHeader("Weapons")
 			{
 				build_weapon_options(shipp);
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->isSafeForWeapons()) {
+			auto wip = &Weapon_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Weapon Info")
+			{
+				build_weapon_table_info_txtbox(wip);
+			}
+			
+			with_CollapsingHeader("Object Actions")
+			{
+				Checkbox("Progress weapon lifetime", &getLabManager()->AllowWeaponDestruction);
+
+				if (VALID_FNAME(wip->tech_model)) {
+					if (Checkbox("Show Tech Model", &getLabManager()->ShowingTechModel)) {
+						getLabManager()->changeDisplayedObject(LabMode::Weapon, getLabManager()->CurrentClass);
+					}
+				}
 			}
 		}
 	}

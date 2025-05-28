@@ -217,8 +217,9 @@ protected:
 	int position[2];
 	int base_w, base_h;
 	color gauge_color;
-	int gauge_config;
+	int gauge_type; // Used to be the gauge_config numeric ID but now more accurately is used as the type. Will be one of the HUD_ defines from hudgauges.h
 	int gauge_object;
+	SCP_string gauge_config_id;
 
 	int font_num;
 
@@ -240,6 +241,14 @@ protected:
 	int popup_timer;
 	bool message_gauge;
 	int disabled_views;
+	bool scripting_render_override;
+
+	// Config stuff
+	SCP_string config_name;
+	bool can_popup;
+	bool use_iff_color;
+	bool use_tag_color;
+	bool visible_in_config;
 
 	int flash_duration;
 	int flash_next;
@@ -295,6 +304,14 @@ public:
 	bool isOffbyDefault() const;
 	bool isActive() const;
 
+	// Config getters
+	SCP_string getConfigName() const;
+	SCP_string getConfigId() const;
+	bool getConfigUseIffColor() const;
+	bool getConfigCanPopup() const;
+	bool getConfigUseTagColor() const;
+	bool getVisibleInConfig() const;
+
 	int getFont() const;
 	void getOriginAndOffset(float *originX, float *originY, int *offsetX, int *offsetY) const;
 	void getCoords(bool* use_coords, int* coordsX, int* coordsY) const;
@@ -306,8 +323,11 @@ public:
 	void updateActive(bool show);
 	void updatePopUp(bool pop_up_flag);
 	void updateSexpOverride(bool sexp);
+	bool getScriptingOverride() const;
+	void updateScriptingOverride(bool toggle);
 	void initChase_view_only(bool chase_view_only);
 	void initCockpit_view_choice(int cockpit_view_choice);
+	void initVisible_in_config(bool visible);
 
 	// SEXP interfacing functions
 	// For flashing gauges in training missions
@@ -463,9 +483,9 @@ public:
 	void render(float frametime, bool config = false) override;
 	void startFlashNotify(int duration = 1400);
 	bool maybeFlashNotify(bool flash_fast = false);
-	void renderObjective();
-	void renderRedAlert();
-	void renderSubspace();
+	void renderObjective(bool config);
+	void renderRedAlert(bool config);
+	void renderSubspace(bool config);
 	void pageIn() override;
 	void initialize() override;
 };

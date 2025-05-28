@@ -11,31 +11,32 @@
 
 
 #include "network/multiteamselect.h"
-#include "network/multi.h"
-#include "missionui/chatbox.h"
-#include "gamesnd/gamesnd.h"
-#include "io/key.h"
-#include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "graphics/font.h"
-#include "network/multiutil.h"
+#include "io/key.h"
+#include "io/mouse.h"
+#include "menuui/snazzyui.h"
+#include "mission/missionparse.h"
+#include "missionui/chatbox.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/missionbrief.h"
-#include "network/multimsgs.h"
-#include "menuui/snazzyui.h"
-#include "io/mouse.h"
-#include "popup/popup.h"
-#include "network/multiui.h"
+#include "network/multi.h"
 #include "network/multi_endgame.h"
-#include "globalincs/alphacolors.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
+#include "network/multimsgs.h"
+#include "network/multiui.h"
+#include "network/multiutil.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "mission/missionparse.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "ship/ship.h"
+#include "utils/string_utils.h"
+#include "weapon/weapon.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -1528,18 +1529,18 @@ void multi_ts_blit_ship_info()
 	// blit the ship type
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
-	if((sip->type_str != NULL) && strlen(sip->type_str)){
+	if(sip->type_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the ship length
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
-	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
+	if(sip->ship_length){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1554,45 +1555,45 @@ void multi_ts_blit_ship_info()
 	// blit the maneuverability
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
-	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
+	if(sip->maneuverability_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the armor
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
-	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
+	if(sip->armor_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the gun mounts 
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
-	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts)){
+	if(sip->gun_mounts){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the missile banke
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
-	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
+	if(sip->missile_banks){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the manufacturer
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
-	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
+	if(sip->manufacturer_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1604,7 +1605,6 @@ void multi_ts_blit_ship_info()
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx], GR_RESIZE_MENU);
 		y_start += line_height;
 	}
-	
 }
 
 
@@ -2567,7 +2567,6 @@ void multi_ts_select_ship()
 {
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
-	char ship_desc[1000];
 	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	
@@ -2599,14 +2598,11 @@ void multi_ts_select_ship()
 	// split the text info up	
 	
 	Assert(Multi_ts_select_ship_class >= 0);
-//	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
-	if (Ship_info[Multi_ts_select_ship_class].desc != NULL)
+	if (Ship_info[Multi_ts_select_ship_class].desc)
 	{
-
 		// strip out newlines
-		memset(ship_desc,0,1000);
-		strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
-		token = strtok(ship_desc,"\n");
+		auto ship_desc = util::unique_copy(Ship_info[Multi_ts_select_ship_class].desc.get(), true);
+		token = strtok(ship_desc.get(), "\n");
 		if(token != NULL){
 			strcpy_s(Multi_ts_ship_info_text,token);
 			while(token != NULL){

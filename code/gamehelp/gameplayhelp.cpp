@@ -130,6 +130,11 @@ void gameplay_help_init_control_line(int id, gameplay_help_section &thisHelp)
 
 	auto ci = &Control_config[id];
 
+	// do not draw if a mod has disabled this control --wookieejedi
+	if (ci->disabled) {
+		return;
+	}
+
 	buf[0] = 0;
 
 	strcpy_s(buf, ci->first.textify().c_str());

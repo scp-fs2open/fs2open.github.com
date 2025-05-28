@@ -931,7 +931,7 @@ bool script_state::ParseCondition(const char *filename)
 			bool found = false;
 			pause_parse();
 			SCP_vm_unique_ptr<char> parse{ vm_strdup(local_condition.c_str()) };
-			reset_parse(parse.get());
+			reset_parse(parse.get());	// coverity[escape:FALSE] - this is okay because the pointer escape only lasts until unpause_parse() restores the old state
 			for (const auto& potential_condition : currHook->_conditions) {
 				SCP_string bufCond;
 				sprintf(bufCond, "$%s:", potential_condition.first.c_str());

@@ -226,6 +226,10 @@ void setPlayerJoystick(Joystick* stick, short cid)
 	Assert((cid >= CID_JOY0) && (cid < CID_JOY_MAX));
 	pJoystick[cid] = stick;
 
+	if (cid == CID_JOY0) {
+		joy_ff_shutdown();
+	}
+
 	if (pJoystick[cid] != nullptr) {
 		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
 		mprintf(("\n"));
@@ -234,6 +238,10 @@ void setPlayerJoystick(Joystick* stick, short cid)
 		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
 		mprintf(("  Number of trackballs: %d\n", pJoystick[cid]->numBalls()));
 		mprintf(("\n"));
+
+		if (cid == CID_JOY0) {
+			joy_ff_init();
+		}
 	} else {
 		mprintf((" Joystick %i removed\n", cid));
 	}
@@ -599,6 +607,9 @@ namespace joystick
 
 	Joystick &Joystick::operator=(Joystick &&other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		std::swap(_device_id, other._device_id);
 		std::swap(_joystick, other._joystick);
 
@@ -610,6 +621,16 @@ namespace joystick
 	bool Joystick::isAttached() const
 	{
 		return SDL_JoystickGetAttached(_joystick) == SDL_TRUE;
+	}
+
+	bool Joystick::isHaptic() const
+	{
+		return _isHaptic;
+	}
+
+	bool Joystick::isGamepad() const
+	{
+		return _isGamepad;
 	}
 
 	Sint16 Joystick::getAxis(int index) const
@@ -765,6 +786,7 @@ namespace joystick
 		_guidStr = getJoystickGUID(_joystick);
 		_id = SDL_JoystickInstanceID(_joystick);
 		_isHaptic = SDL_JoystickIsHaptic(_joystick);
+		_isGamepad = SDL_IsGameController(_device_id) == SDL_TRUE;
 
 		// Initialize values of the axes
 		auto numSticks = SDL_JoystickNumAxes(_joystick);
@@ -1087,8 +1109,6 @@ namespace joystick
 		}
 
 		initialized = true;
-
-		joy_ff_init();
 
 		return true;
 	}

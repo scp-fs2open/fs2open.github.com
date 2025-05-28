@@ -70,6 +70,7 @@ object *Viewer_obj = NULL;
 
 //Data for objects
 object Objects[MAX_OBJECTS];
+SCP_map<int, raw_pof_obj> Pof_objects;
 
 #ifdef OBJECT_CHECK 
 checkobject CheckObjects[MAX_OBJECTS];
@@ -140,6 +141,7 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Asteroid",
 	"Jump Node",
 	"Beam",
+	"Raw Pof"
 //XSTR:ON
 };
 
@@ -187,16 +189,15 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
-	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
+	: next(nullptr), prev(nullptr), signature(0), type(OBJ_NONE), parent(-1), parent_sig(0), instance(-1), pos(vmd_zero_vector), orient(vmd_identity_matrix),
+	radius(0.0f), last_pos(vmd_zero_vector), last_orient(vmd_identity_matrix), hull_strength(0.0f), sim_hull_strength(0.0f), net_signature(0), num_pairs(0),
+	dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
 
 object::~object()
 {
-	objsnd_num.clear();
-
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
 }
@@ -277,6 +278,7 @@ int free_object_slots(int target_num_used)
 				case OBJ_ASTEROID:
 				case OBJ_JUMP_NODE:				
 				case OBJ_BEAM:
+				case OBJ_RAW_POF:
 					break;
 				default:
 					Int3();	//	Hey, what kind of object is this?  Unknown!
@@ -566,6 +568,44 @@ void obj_free(int objnum)
 }
 
 /**
+ * Create a raw pof item
+ * @return the objnum of this raw POF
+ */
+int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos)
+{
+	static int next_raw_pof_id = 0;
+
+	// Unlikely this would ever be hit.. but just in case
+	if (next_raw_pof_id >= INT_MAX || next_raw_pof_id < 0) {
+		Error(LOCATION, "Too many RAW_POF objects created!");
+		return -1;
+	}
+
+	if (!VALID_FNAME(pof_filename)) {
+		Warning(LOCATION, "Invalid tech model POF: %s", pof_filename);
+		return -1;
+	}
+
+	int model_num = model_load(pof_filename);
+	if (model_num < 0) {
+		Warning(LOCATION, "Failed to load tech model: %s", pof_filename);
+		return -1;
+	}
+
+	int id = next_raw_pof_id++;
+	Pof_objects[id] = {model_num, -1, {}};
+
+	flagset<Object::Object_Flags> flags;
+	flags.set(Object::Object_Flags::Renders);
+
+	int objnum = obj_create(OBJ_RAW_POF, -1, id, orient, pos, model_get_radius(model_num), flags);
+
+	Pof_objects[id].model_instance = model_create_instance(objnum, model_num);
+
+	return objnum;
+}
+
+/**
  * Initialize a new object. Adds to the list for the given segment.
  *
  * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
@@ -614,8 +654,7 @@ int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
 	}
 	obj->radius 				= radius;
 
-	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
-	obj->shield_quadrant.resize(obj->n_quadrants);
+	obj->shield_quadrant.resize(DEFAULT_SHIELD_SECTIONS);	// Might be changed by the ship creation code
 
 	return objnum;
 }
@@ -716,6 +755,10 @@ void obj_delete(int objnum)
 		observer_delete(objp);
 		break;	
 	case OBJ_BEAM:
+		break;
+	case OBJ_RAW_POF:
+		model_delete_instance(Pof_objects[objp->instance].model_instance);
+		Pof_objects.erase(objp->instance);
 		break;
 	case OBJ_NONE:
 		Int3();
@@ -1224,6 +1267,8 @@ void obj_move_all_pre(object *objp, float frametime)
 		break;	
 	case OBJ_BEAM:		
 		break;
+	case OBJ_RAW_POF:
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1485,6 +1530,9 @@ void obj_move_all_post(object *objp, float frametime)
 			break;	
 
 		case OBJ_BEAM:		
+			break;
+
+		case OBJ_RAW_POF:
 			break;
 
 		case OBJ_NONE:
@@ -1775,6 +1823,63 @@ void obj_render(object *obj)
 	gr_reset_lighting();
 }
 
+void raw_pof_render(object* obj, model_draw_list* scene) {
+	model_render_params render_info;
+
+	auto pof_obj = Pof_objects[obj->instance];
+
+	uint64_t render_flags = MR_NORMAL | MR_IS_MISSILE | MR_NO_BATCH;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_light])
+		render_flags |= MR_NO_LIGHTING;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_ambientmap]) {
+		debug_flags |= MR_DEBUG_NO_AMBIENT;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_reflectmap]) {
+		debug_flags |= MR_DEBUG_NO_REFLECT;
+	}
+
+	render_info.set_object_number(OBJ_INDEX(obj));
+
+	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
+
+	model_render_queue(&render_info, scene, Pof_objects[obj->instance].model_num, &obj->orient, &obj->pos);
+}
+
 void obj_queue_render(object* obj, model_draw_list* scene)
 {
 	TRACE_SCOPE(tracing::QueueRender);
@@ -1843,6 +1948,9 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_GHOST:
 		break;
 	case OBJ_BEAM:
+		break;
+	case OBJ_RAW_POF:
+		raw_pof_render(obj, scene);
 		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
@@ -1949,6 +2057,7 @@ int obj_team(object *objp)
 		case OBJ_GHOST:
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
+		case OBJ_RAW_POF:
 			team = -1;
 			break;
 
@@ -2096,6 +2205,8 @@ int object_get_model_num(const object *objp)
 			weapon *wp = &Weapons[objp->instance];
 			return Weapon_info[wp->weapon_info_index].model_num;
 		}
+		case OBJ_RAW_POF:
+			return Pof_objects[objp->instance].model_num;
 		default:
 			break;
 	}
@@ -2148,6 +2259,8 @@ int object_get_model_instance_num(const object *objp)
 			Assertion(jnp != nullptr, "Could not find jump node!");
 			return jnp->GetPolymodelInstanceNum();
 		}
+		case OBJ_RAW_POF:
+			return Pof_objects[objp->instance].model_instance;
 		default:
 			break;
 	}

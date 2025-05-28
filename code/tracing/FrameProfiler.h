@@ -25,7 +25,6 @@ struct profile_sample_history {
 struct profile_sample {
 	uint profile_instances;
 	int open_profiles;
-	//char name[256];
 	SCP_string name;
 	uint64_t start_time;    // in microseconds
 	uint64_t accumulator;

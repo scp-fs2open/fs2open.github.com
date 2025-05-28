@@ -28,7 +28,7 @@ std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relati
 												 &Objects[m_objnum].orient, &global_pos);
 
 		if (m_orientationOverrideRelative) {
-			vm_vector_2_matrix(&orientation, &gvec, &gun_frame_of_reference.vec.uvec);
+			vm_vector_2_matrix_norm(&orientation, &gvec, &gun_frame_of_reference.vec.uvec);
 			vm_matrix_x_matrix(&orientation, &orientation, &m_orientationOverride);
 		}
 		else {
@@ -40,7 +40,7 @@ std::pair<vec3d, matrix> EffectHostTurret::getPositionAndOrientation(bool relati
 		model_instance_local_to_global_point_dir(&pos, &gvec, gun_pos, &tp->turret_norm, pm, pmi, tp->turret_gun_sobj);
 
 		if (m_orientationOverrideRelative) {
-			vm_vector_2_matrix(&orientation, &gvec, &gun_frame_of_reference.vec.uvec);
+			vm_vector_2_matrix_norm(&orientation, &gvec, &gun_frame_of_reference.vec.uvec);
 			vm_matrix_x_matrix(&orientation, &orientation, &m_orientationOverride);
 		}
 		else {

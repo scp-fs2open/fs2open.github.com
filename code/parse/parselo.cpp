@@ -20,6 +20,7 @@
 #include "localization/localize.h"
 #include "mission/missionparse.h"
 #include "parse/encrypt.h"
+#include "parse/md5_hash.h"
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "ship/ship.h"
@@ -28,6 +29,7 @@
 
 #include "utils/encoding.h"
 #include "utils/unicode.h"
+#include "utils/string_utils.h"
 
 #include <utf8.h>
 
@@ -58,6 +60,11 @@ SCP_vector<Bookmark> Bookmarks;	// Stack of all our previously paused parsing
 // text allocation stuff
 void allocate_parse_text(size_t size);
 static size_t Parse_text_size = 0;
+
+static const SCP_unordered_map<SCP_string, SCP_string> retail_hashes = {
+	{"strings.tbl", "84ab6e5392d7c54752a61161aac9f9fd"},
+	{"weapons.tbl", "ca2c7f305b1f36988c2bb8c371ab2027"}
+};
 
 
 //	Return true if this character is white space, else false.
@@ -278,7 +285,7 @@ int get_line_num()
 			incomment = false;
 		}
 
-		if (*p++ == EOLN) {
+		if (*p++ == EOLN) {	// in the process of parsing, all line endings are normalized to single-character EOLN
 			if ( !multiline && incomment )
 				incomment = false;
 			count++;
@@ -574,19 +581,38 @@ int check_for_string_raw(const char *pstr)
 	return 0;
 }
 
-int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors, bool print_list)
 {
-	return string_lookup(SCP_string(str1), strlist, description, say_errors);
+	return string_lookup(SCP_string(str1), strlist, description, say_errors, print_list);
 }
 
-int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors)
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors, bool print_list)
 {
 	for (size_t i = 0; i < strlist.size(); i++)
 		if (lcase_equal(str1, strlist[i]))
 			return static_cast<int>(i);
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1.c_str(), description ? description : "unnamed");
+	{
+		const char* suffix;
+		SCP_string list;
+
+		if (print_list)
+		{
+			list = ":\n";
+			for (const auto &item: list)
+			{
+				list += "    ";
+				list += item;
+				list += "\n";
+			}
+			suffix = list.c_str();
+		}
+		else
+			suffix = ".\n";
+
+		error_display(0, "Unable to find \"%s\" in %s list%s", str1.c_str(), description ? description : "unnamed", suffix);
+	}
 
 	return -1;
 }
@@ -1268,6 +1294,13 @@ void stuff_string(char *outstr, int type, int len, const char *terminators)
 			advance_to_eoln(terminators);
 			break;
 
+		case F_TRIMMED:
+			ignore_white_space();
+			copy_to_eoln(read_str, terminators, Mp, read_len);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
 		case F_NOTES:
 			ignore_white_space();
 			copy_text_until(read_str, Mp, "$End Notes:", read_len);
@@ -1345,6 +1378,13 @@ void stuff_string(SCP_string &outstr, int type, const char *terminators)
 		case F_PATHNAME:
 		case F_MESSAGE:
 			ignore_gray_space();
+			copy_to_eoln(read_str, terminators, Mp);
+			drop_trailing_white_space(read_str);
+			advance_to_eoln(terminators);
+			break;
+
+		case F_TRIMMED:
+			ignore_white_space();
 			copy_to_eoln(read_str, terminators, Mp);
 			drop_trailing_white_space(read_str);
 			advance_to_eoln(terminators);
@@ -1485,6 +1525,22 @@ void stuff_malloc_string(char **dest, int type, const char *terminators)
 
 		(*dest) = new_val;
 	}
+}
+
+// Like stuff_and_malloc_string but for std::unique_ptr<char[]>
+void stuff_string(std::unique_ptr<char[]> &outstr, int type, bool null_if_empty, const char *terminators)
+{
+	SCP_string tmp_result;
+	stuff_string(tmp_result, type, terminators);
+	outstr = util::unique_copy(tmp_result.c_str(), null_if_empty);
+}
+
+// Like stuff_and_malloc_string but for SCP_vm_unique_ptr<char>
+void stuff_string(SCP_vm_unique_ptr<char> &outstr, int type, bool null_if_empty, const char *terminators)
+{
+	SCP_string tmp_result;
+	stuff_string(tmp_result, type, terminators);
+	outstr = util::vm_unique_copy(tmp_result.c_str(), null_if_empty);
 }
 
 // After reading a multitext string, you can call this function to convert any newlines into
@@ -1812,20 +1868,23 @@ size_t maybe_convert_foreign_characters(const char *in, char *out, bool add_null
 }
 
 // Goober5000
-void maybe_convert_foreign_characters(SCP_string &text)
+SCP_string maybe_convert_foreign_characters(const SCP_string &text)
 {
-	if (!Fred_running) {
-		for (SCP_string::iterator ii = text.begin(); ii != text.end(); ++ii) {
-			text.reserve(get_converted_string_length(text));
+	if (Fred_running)
+		return text;
 
-			if (*ii == SHARP_S) {
-				text.replace(ii, ii + 1, "ss");
-				++ii;
-			} else if (!Lcl_pl) {
-				*ii = (char) maybe_convert_foreign_character(*ii);
-			}
-		}
+	SCP_string new_text;
+	for (auto ch: text)
+	{
+		if (ch == SHARP_S)
+			new_text += "ss";
+		else if (!Lcl_pl)
+			new_text += i2ch(maybe_convert_foreign_character(ch));
+		else
+			new_text += ch;
 	}
+
+	return new_text;
 }
 
 // Yarn - Returns what the length of the text will be after it's processed by
@@ -2087,32 +2146,86 @@ void strip_comments(char *line, bool &in_quote, bool &in_multiline_comment_a, bo
 	}
 }
 
-int parse_get_line(char *lineout, int max_line_len, const char *start, int max_size, const char *cur)
+// Reads one line of text from the input, returning the number of input chars read. Also sets the line ending type if found;
+// and if there is a mismatch, displays a warning.
+int parse_get_line(char *lineout, int max_line_len, const char *textin, int input_len, int line_num, LineEndingType &file_line_ending_type, bool &warned_for_this_file)
 {
-	char * t = lineout;
-	int i, num_chars_read=0;
-	char c;
+	auto found_line_ending = LineEndingType::UNKNOWN;
+	char prev_c = '\0';
+	int num_chars_written = 0;
 
-	for ( i = 0; i < max_line_len-1; i++ ) {
-		do {
-			if ( (cur - start) >= max_size ) {
-				*lineout = 0;
-				if ( lineout > t ) {
-					return num_chars_read;
-				} else {
-					return 0;
-				}
+	for (int num_chars_read = 1; num_chars_read <= input_len; ++num_chars_read)
+	{
+		char c = *textin++;
+
+		if (c == '\0' || c == EOF)	// hard stop
+		{
+			input_len = num_chars_read;
+			break;
+		}
+		else if (c == EOLN)
+		{
+			if (prev_c == CARRIAGE_RETURN)
+				found_line_ending = LineEndingType::CRLF;
+			else
+				found_line_ending = LineEndingType::LF;
+		}
+		else if (c == CARRIAGE_RETURN)
+		{
+			if (*textin != EOLN)
+				found_line_ending = LineEndingType::CR;
+		}
+		else
+		{
+			if (num_chars_written == max_line_len)
+			{
+				num_chars_read--;	// back out the character we just read, since we can't write it
+
+				// terminate the string and return
+				*lineout = '\0';
+				return num_chars_read;
 			}
-			c = *cur++;
-			num_chars_read++;
-		} while ( c == 13 );
 
-		*lineout++ = c;
-		if ( c=='\n' ) break;
+			*lineout++ = c;
+			num_chars_written++;
+		}
+
+		if (found_line_ending != LineEndingType::UNKNOWN)
+		{
+			if (file_line_ending_type == LineEndingType::UNKNOWN)
+				file_line_ending_type = found_line_ending;
+			else if (found_line_ending != file_line_ending_type && !warned_for_this_file)
+			{
+				// we can't use error_display() here because we're in the middle of reading the file
+				Warning(LOCATION, "In %s, an inconsistent line ending was detected on line %d.  Please check the file for line ending errors.", Current_filename_sub, line_num);
+				warned_for_this_file = true;
+			}
+
+			// ugh, if we're at the max length, we can't write the newline, so back out the newline we read
+			if (num_chars_written == max_line_len)
+			{
+				if (found_line_ending == LineEndingType::CRLF)
+					num_chars_read -= 2;
+				else
+					num_chars_read--;
+			}
+			else
+			{
+				*lineout++ = EOLN;	// normalize line endings to single-character EOLN
+				num_chars_written++;
+			}
+
+			// terminate the string and return
+			*lineout = '\0';
+			return num_chars_read;
+		}
+
+		prev_c = c;
 	}
 
-	*lineout++ = 0;
-	return  num_chars_read;
+	// we read the entire input without reaching a newline
+	*lineout = 0;
+	return input_len;
 }
 
 //	Read mission text, stripping comments.
@@ -2150,7 +2263,8 @@ void read_file_text(const char *filename, int mode, char *processed_text, char *
 void read_file_text_from_default(const default_file& file, char *processed_text, char *raw_text)
 {
 	// we have no filename, so copy a substitute
-	strcpy_s(Current_filename_sub, "internal default file");
+	strcpy_s(Current_filename_sub, "internal default file ");
+	strcat_s(Current_filename_sub, file.filename);
 
 	// if we are paused then processed_text and raw_text must not be NULL!!
 	if ( !Bookmarks.empty() && ((processed_text == NULL) || (raw_text == NULL)) ) {
@@ -2313,12 +2427,35 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 
 			// We do the additional can_reallocate check here since we need control over raw_text to reencode the file
 			if (isLatin1 && can_reallocate) {
-				// Latin1 is the encoding of retail data and for legacy reasons we convert that to UTF-8.
-				// We still output a warning though...
-				Warning(LOCATION, "Found Latin-1 encoded file %s. This file will be automatically converted to UTF-8 but "
-						"it may cause parsing issues with retail FS2 files since those contained invalid data.\n"
-						"To silence this warning you must convert the files to UTF-8, e.g. by using a program like iconv.",
+
+				// Some retail files are known to be safe to convert to utf-8 so validate that here and only warn otherwise
+				bool downgrade_warning = false;
+
+				// Compare filename by lowercase string
+				SCP_string key = filename;
+				SCP_tolower(key);
+
+				// Check for a hash
+				auto it = retail_hashes.find(key);
+				if (it != retail_hashes.end()) {
+					const auto hash = md5_hash(raw_text, strlen(raw_text));
+					if (it->second == hash) {
+						downgrade_warning = true;
+					} else {
+						mprintf(("Found Latin-1 encoded retail file %s with non-matching hash '%s'\n", filename, hash.c_str()));
+					}
+				}
+
+				// Log if a retail file was converted. Warn otherwise.
+				if (downgrade_warning) {
+					mprintf(("Found Latin-1 encoded retail file %s. The file will be automatically converted to UTF-8.\n", filename));
+				} else {
+					Warning(LOCATION, "Found Latin-1 encoded file %s. This file will be automatically converted to UTF-8 but "
+						"it may cause parsing issues with some files if they contained invalid data.\n"
+						"To silence this warning you must convert the files to UTF-8, e.g. by using a program like "
+						"iconv.",
 						filename);
+				}
 
 				// SDL2 has iconv functionality so we use that to convert from Latin1 to UTF-8
 
@@ -2397,7 +2534,7 @@ void process_raw_file_text(char* processed_text, char* raw_text)
 	bool in_quote = false;
 	bool in_multiline_comment_a = false;
 	bool in_multiline_comment_b = false;
-	int raw_text_len = (int)strlen(raw_text);
+	int raw_text_len = static_cast<int>(strlen(raw_text));
 
 	if (processed_text == NULL)
 		processed_text = Parse_text;
@@ -2413,8 +2550,14 @@ void process_raw_file_text(char* processed_text, char* raw_text)
 
 	// strip comments from raw text, reading into file_text
 	int num_chars_read = 0;
-	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE, raw_text, raw_text_len, mp_raw)) != 0) {
+	int remaining_raw_len = raw_text_len;
+	int parsed_line_num = 1;
+	auto file_line_ending_type = LineEndingType::UNKNOWN;
+	bool warned_for_this_file = false;
+	while ((num_chars_read = parse_get_line(outbuf, PARSE_BUF_SIZE-1, mp_raw, remaining_raw_len, parsed_line_num, file_line_ending_type, warned_for_this_file)) != 0) {
 		mp_raw += num_chars_read;
+		remaining_raw_len -= num_chars_read;
+		parsed_line_num++;
 
 		// stupid hacks to make retail data work with fixed parser, per Mantis #3072
 		if (!strcmp(outbuf, parse_exception_1402.c_str())) {
@@ -3355,30 +3498,9 @@ void stuff_matrix(matrix *mp)
 	stuff_vec3d(&mp->vec.rvec);
 	stuff_vec3d(&mp->vec.uvec);
 	stuff_vec3d(&mp->vec.fvec);
-}
 
-/**
- * @brief Given a string, find it in a string array.
- *
- * @param str1 is the string to be found.
- * @param strlist is the list of strings to search.
- * @param max is the number of entries in *strlist to scan.
- * @param description is only used for diagnostics in case it can't be found.
- * @param say_errors @c true if errors should be reported
- * @return
- */
-int string_lookup(const char *str1, const char* const *strlist, size_t max, const char *description, bool say_errors) {
-	for (size_t i=0; i<max; i++) {
-		Assert(strlen(strlist[i]) != 0); //-V805
-
-		if (!stricmp(str1, strlist[i]))
-			return (int)i;
-	}
-
-	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description);
-
-	return -1;
+	// Make sure this matrix is well-behaved.
+	vm_fix_matrix(mp);
 }
 
 //	Find a required string (*id), then stuff the text of type f_type that
@@ -3882,7 +4004,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			lines.emplace_back(pos_start, 0);
 		} else {
 			auto sublines = str_wrap_to_width(source_string, max_pixel_width, strip_leading_whitespace, pos_start, (newline_at - pos_start));
-			lines.reserve(lines.size() + sublines.size());
+			lines.reserve(lines.size() + sublines.size());	// coverity[inefficient_reserve:FALSE]
 			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
 		}
 
@@ -3910,7 +4032,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, source_string.c_str() + pos_start, 1.0f, center);
 				if (line_width == max_pixel_width) {
@@ -3985,7 +4107,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 				for (auto& subline : sublines)
 					subline.first += (ch_start - source_string);
 
-			lines.reserve(lines.size() + sublines.size());
+			lines.reserve(lines.size() + sublines.size());	// coverity[inefficient_reserve:FALSE]
 			std::move(sublines.begin(), sublines.end(), std::back_inserter(lines));
 		}
 
@@ -4013,7 +4135,7 @@ SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_strin
 			size_t search_min = 0;
 			size_t search_max = stringlen;
 			size_t center = 0;
-			while ((search_max - search_min) > 0) {
+			while (search_max > search_min) {
 				center = search_min + ((search_max - search_min) / 2);
 				gr_get_string_size(&line_width, nullptr, ch_start, 1.0f, center);
 				if (line_width == max_pixel_width) {

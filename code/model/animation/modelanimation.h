@@ -202,6 +202,8 @@ namespace animation {
 		virtual void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) = 0;
 		//This function must exchange all held submodel pointers of itself and children with ones acquired from replaceWith.
 		virtual void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) = 0;
+		//This function must tidy up animation side-effects when the animation is stopped immediately, such as by ship death or departure
+		virtual void forceStopAnimation(int /*pmi_id*/) { }
 	};
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
@@ -260,7 +262,7 @@ namespace animation {
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
 		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, bool pause = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
-		void stop(polymodel_instance* pmi, bool cleanup = true);
+		void stop(polymodel_instance* pmi, bool cleanup = true, bool forceStop = false);
 
 		float getTime(int pmi_id) const;
 		
@@ -321,6 +323,7 @@ namespace animation {
 	public:
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);
+		ModelAnimationSet(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 

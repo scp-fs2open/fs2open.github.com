@@ -313,6 +313,8 @@ void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector);
 
+float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view_deg, int screen_height);
+
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 
 void model_render_determine_color(color* clr, float alpha, gr_alpha_blend blend_mode, bool no_texturing, bool desaturate);

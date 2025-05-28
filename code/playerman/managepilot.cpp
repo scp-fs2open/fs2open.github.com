@@ -85,7 +85,7 @@ bool delete_pilot_file(const char *pilot_name)
 void init_new_pilot(player *p, int reset)
 {
 	if (reset) {
-		hud_set_default_hud_config(p);		// use a default hud config
+		hud_set_default_hud_config(p, HC_default_preset_file); // use a default hud config
 
 		control_config_use_preset(Control_config_presets[0]);		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults

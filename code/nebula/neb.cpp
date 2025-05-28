@@ -68,7 +68,7 @@ const float UPKEEP_DIST_MULT = 1.2f;
 const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 
 // bit array of neb2 poofs
-std::unique_ptr<ubyte> Neb2_poof_flags;
+std::unique_ptr<ubyte[]> Neb2_poof_flags;
 
 // array of neb2 bitmaps
 SCP_vector<SCP_string> Neb2_bitmap_filenames;
@@ -359,7 +359,7 @@ void neb2_init()
 	Poof_accum.resize(Poof_info.size());
 
 	// set up bit string
-	Neb2_poof_flags.reset(new ubyte[calculate_num_bytes(Poof_info.size())]);
+	Neb2_poof_flags = std::make_unique<ubyte[]>(calculate_num_bytes(Poof_info.size()));
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 }
 
@@ -671,7 +671,8 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 			break;
 
-		// any ship less than 3% visible at their closest point
+		// any ship or raw pof less than 3% visible at their closest point
+		case OBJ_RAW_POF:
 		case OBJ_SHIP:
 			if (fog < 0.03f)
 				return 1;
@@ -1015,7 +1016,7 @@ void neb2_render_poofs()
 
 			vm_vec_normalize(&view_pos);
 
-			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);
+			vm_vector_2_matrix_norm(&orient, &view_pos, &pf.up_vec, nullptr);
 		}
 
 		// update the poof's up vector to be perpindicular to the camera and also rotated by however much its rotating

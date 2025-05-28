@@ -58,8 +58,8 @@ class ShaderProgram {
 	ShaderProgram(const ShaderProgram&) = delete;
 	ShaderProgram& operator=(const ShaderProgram&) = delete;
 
-	ShaderProgram(ShaderProgram&& other) noexcept;
-	ShaderProgram& operator=(ShaderProgram&& other) noexcept;
+	ShaderProgram(ShaderProgram&& other) noexcept = default;
+	ShaderProgram& operator=(ShaderProgram&& other) noexcept = default;
 
 	void use();
 

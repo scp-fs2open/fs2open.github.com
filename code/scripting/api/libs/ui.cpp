@@ -2399,19 +2399,20 @@ ADE_LIB_DERIV(l_UserInterface_HUDConfig,
 
 ADE_FUNC(initHudConfig,
 	l_UserInterface_HUDConfig,
-	"[number X, number Y, number Width]",
+	"[number X, number Y, number Width, number height]",
 	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
 	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
-	"Width is the pixel width to draw the gauges preview.",
+	"Width is the pixel width to draw the gauges preview. Height is the pixel height to draw the gauges preview.",
 	nullptr,
 	nullptr)
 {
 	int x = 0;
 	int y = 0;
 	int w = 0;
-	ade_get_args(L, "|iii", &x, &y, &w);
+	int h = 0;
+	ade_get_args(L, "|iiii", &x, &y, &w, &h);
 
-	hud_config_init(true, x, y, w);
+	hud_config_init(true, x, y, w, h);
 
 	return ADE_RETURN_NIL;
 }
@@ -2450,10 +2451,26 @@ ADE_FUNC(drawHudConfig,
 
 	hud_config_do_frame(0.0f, true, mx, my);
 
-	if (HC_gauge_hot >= 0) {
+	if (!HC_gauge_hot.empty()) {
 		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
 	} else {
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
+}
+
+ADE_FUNC(getCurrentHudName,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Returns the name of the current HUD configuration.",
+	"string",
+	"The name of the current HUD configuration.")
+{
+	SCP_UNUSED(L);
+
+	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+		return ade_set_args(L, "s", HC_available_huds[HC_chosen_hud].second.c_str());
+	} else {
+		return ade_set_args(L, "s", "Default Hud");
 	}
 }
 
@@ -2472,6 +2489,33 @@ ADE_FUNC(selectAllGauges,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(selectNoGauges, l_UserInterface_HUDConfig, nullptr, "Sets no gauges as selected.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_none();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectNextHud, l_UserInterface_HUDConfig, nullptr, "Selects the next available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectPrevHud, l_UserInterface_HUDConfig, nullptr, "Selects the previous available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(false);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(setToDefault,
 	l_UserInterface_HUDConfig,
 	"string Filename",
@@ -2479,7 +2523,7 @@ ADE_FUNC(setToDefault,
 	nullptr,
 	nullptr)
 {
-	const char* filename = "hud_3.hcf";
+	const char* filename = HC_default_preset_file.c_str();
 	ade_get_args(L, "|s", &filename);
 
 	hud_config_select_all_toggle(0, true);
@@ -2545,15 +2589,15 @@ ADE_INDEXER(l_HUD_Gauges,
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert from Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= static_cast<int>(HC_gauge_map.size())))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 
-	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_map[idx].first)));
 }
 
 ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
 {
-	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+	return ade_set_args(L, "i", static_cast<int>(HC_gauge_map.size()));
 }
 
 ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
@@ -2577,6 +2621,29 @@ ADE_INDEXER(l_HUD_Presets,
 ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
 {
 	return ade_set_args(L, "i", HC_preset_filenames.size());
+}
+
+ADE_LIB_DERIV(l_HUD_Color_Presets, "GaugeColorPresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Color_Presets,
+	"number Index",
+	"Array of HUD Color Presets",
+	"hud_color_preset",
+	"hud_color_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_COLOR_PRESETS))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Color_Presets, nullptr, "The number of hud color presets", "number", "The number of hud color presets.")
+{
+	return ade_set_args(L, "i", NUM_HUD_COLOR_PRESETS);
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen

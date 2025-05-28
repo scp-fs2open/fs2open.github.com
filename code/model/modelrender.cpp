@@ -1118,7 +1118,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 				texture_maps[TM_SPEC_GLOSS_TYPE] = model_interp_get_texture(&tmap->textures[TM_SPEC_GLOSS_TYPE], elapsed_time);
 			}
 
-			if (detail_level < 2) {
+			if (detail_level < 2 || Detail.detail_distance > 2) {
 				// likewise, etc.
 				auto norm_map = &tmap->textures[TM_NORMAL_TYPE];
 				auto height_map = &tmap->textures[TM_HEIGHT_TYPE];
@@ -1190,7 +1190,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 			use_blending = true;
 		}
 
-		if (rendering_material->is_alpha_mult_active()) {
+		if (rendering_material->is_alpha_mult_active() && !(model_flags & MR_SKYBOX)) {
 			use_blending = true;
 		}
 
@@ -1213,7 +1213,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 		gr_alpha_blend blend_mode = model_render_determine_blend_mode(texture_maps[TM_BASE_TYPE], use_blending);
 		gr_zbuffer_type depth_mode = material_determine_depth_mode(use_depth_test, use_blending);
 
-		if (rendering_material->is_alpha_mult_active()) {
+		if (rendering_material->is_alpha_mult_active() && !(model_flags & MR_SKYBOX)) {
 			blend_mode = ALPHA_BLEND_PREMULTIPLIED;
 		}
 
@@ -2812,12 +2812,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	}
 
 	if (interp->is_alpha_mult_set()) {
-		float alphamult = 1.0f;
-
-		if (interp->is_alpha_mult_set()) {
-			alphamult *= interp->get_alpha_mult();
-		}
-		rendering_material.set_alpha_mult(alphamult);
+		rendering_material.set_alpha_mult(interp->get_alpha_mult());
 	}
 
 	if ( is_outlines_only_htl ) {

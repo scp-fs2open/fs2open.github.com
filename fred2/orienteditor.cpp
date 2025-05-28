@@ -24,6 +24,8 @@ static char THIS_FILE[] = __FILE__;
 constexpr auto INPUT_THRESHOLD = 0.01f;		// smallest increment of input box
 constexpr auto INPUT_FORMAT = "%.01f";
 
+static bool Select_set_relative = false;
+
 /////////////////////////////////////////////////////////////////////////////
 // orient_editor dialog
 
@@ -43,6 +45,8 @@ orient_editor::orient_editor(CWnd* pParent /*=NULL*/)
 	m_orientation_b = _T("");
 	m_orientation_h = _T("");
 	//}}AFX_DATA_INIT
+
+	set_relative = false;
 
 	Assert(query_valid_object());
 	auto pos = &Objects[cur_object_index].pos;
@@ -90,6 +94,8 @@ BEGIN_MESSAGE_MAP(orient_editor, CDialog)
 	ON_BN_CLICKED(IDC_POINT_TO_CHECKBOX, OnPointTo)
 	ON_BN_CLICKED(IDC_POINT_TO_OBJECT, OnPointToObject)
 	ON_BN_CLICKED(IDC_POINT_TO_LOCATION, OnPointToLocation)
+	ON_BN_CLICKED(IDC_SET_ABSOLUTE, OnSetAbsolute)
+	ON_BN_CLICKED(IDC_SET_RELATIVE, OnSetRelative)
 	ON_WM_CLOSE()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -107,6 +113,7 @@ BOOL orient_editor::OnInitDialog()
 	CDialog::OnInitDialog();
 	theApp.init_window(&Object_wnd_data, this);
 	((CButton *) GetDlgItem(IDC_POINT_TO_OBJECT))->SetCheck(TRUE);
+	((CButton *) GetDlgItem(Select_set_relative ? IDC_SET_RELATIVE : IDC_SET_ABSOLUTE))->SetCheck(TRUE);
 	((CButton *) GetDlgItem(IDC_TRANSFORM_INDEPENDENT))->SetCheck(TRUE);
 	box = (CComboBox *) GetDlgItem(IDC_OBJECT_LIST);
 	box->ResetContent();
@@ -183,6 +190,13 @@ BOOL orient_editor::OnInitDialog()
 	m_spin13.SetPos((int)convert(m_orientation_h));
 
 	UpdateData(FALSE);
+
+	// now that we've set up the dialog, we might need to switch modes depending on the last used mode
+	// (the proper radio button was selected at the beginning of the function)
+	set_relative = false;
+	if (Select_set_relative)
+		OnSetRelative();	// this will toggle it from false to true
+
 	return TRUE;
 }
 
@@ -212,15 +226,22 @@ bool orient_editor::is_angle_close(float rad, const CString &input_str) const
 
 bool orient_editor::query_modified()
 {
-	if (!is_close(Objects[cur_object_index].pos.xyz.x, m_position_x))
+	auto &pos = set_relative
+		? vmd_zero_vector
+		: Objects[cur_object_index].pos;
+
+	if (!is_close(pos.xyz.x, m_position_x))
 		return true;
-	if (!is_close(Objects[cur_object_index].pos.xyz.y, m_position_y))
+	if (!is_close(pos.xyz.y, m_position_y))
 		return true;
-	if (!is_close(Objects[cur_object_index].pos.xyz.z, m_position_z))
+	if (!is_close(pos.xyz.z, m_position_z))
 		return true;
 
 	angles ang;
-	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
+	if (set_relative)
+		ang = vmd_zero_angles;
+	else
+		vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
 
 	if (!is_angle_close(ang.p, m_orientation_p))
 		return true;
@@ -237,34 +258,54 @@ bool orient_editor::query_modified()
 
 void orient_editor::OnOK()
 {
-	vec3d delta, *cur_pos;
+	vec3d delta = vmd_zero_vector;
 	matrix m = vmd_identity_matrix;
-	angles ang;
 	bool change_pos = false, change_orient = false;
 
 	UpdateData(TRUE);
 
+	// save selection for future uses of this dialog
+	Select_set_relative = set_relative;
+
+	// position...
+	const vec3d &reference_pos = set_relative ? vmd_zero_vector : Objects[cur_object_index].pos;
 	// there's enough difference in our position that we're changing it
-	cur_pos = &Objects[cur_object_index].pos;
-	if (!is_close(cur_pos->xyz.x, m_position_x) || !is_close(cur_pos->xyz.y, m_position_y) || !is_close(cur_pos->xyz.z, m_position_z))
+	if (!is_close(reference_pos.xyz.x, m_position_x) || !is_close(reference_pos.xyz.y, m_position_y) || !is_close(reference_pos.xyz.z, m_position_z))
 	{
 		vec3d pos;
 		pos.xyz.x = convert(m_position_x);
 		pos.xyz.y = convert(m_position_y);
 		pos.xyz.z = convert(m_position_z);
-		vm_vec_sub(&delta, &pos, cur_pos);
+
+		if (set_relative)
+			vm_vec_unrotate(&delta, &pos, &Objects[cur_object_index].orient);
+		else
+			vm_vec_sub(&delta, &pos, &reference_pos);
+
 		change_pos = true;
 		set_modified();
 	}
 
+	// orientation...
+	angles object_ang;
+	vm_extract_angles_matrix(&object_ang, &Objects[cur_object_index].orient);
+	const angles &reference_ang = set_relative ? vmd_zero_angles : object_ang;
 	// there's enough difference in our orientation that we're changing it
-	vm_extract_angles_matrix(&ang, &Objects[cur_object_index].orient);
-	if (!is_angle_close(ang.p, m_orientation_p) || !is_angle_close(ang.b, m_orientation_b) || !is_angle_close(ang.h, m_orientation_h))
+	if (!is_angle_close(reference_ang.p, m_orientation_p) || !is_angle_close(reference_ang.b, m_orientation_b) || !is_angle_close(reference_ang.h, m_orientation_h))
 	{
+		angles ang;
 		ang.p = fl_radians(convert(m_orientation_p));
 		ang.b = fl_radians(convert(m_orientation_b));
 		ang.h = fl_radians(convert(m_orientation_h));
+
+		if (set_relative)
+		{
+			ang.p = object_ang.p + ang.p;
+			ang.b = object_ang.b + ang.b;
+			ang.h = object_ang.h + ang.h;
+		}
 		vm_angles_2_matrix(&m, &ang);
+
 		change_orient = true;
 		set_modified();
 	}
@@ -465,6 +506,82 @@ void orient_editor::OnPointToLocation()
 {
 	((CButton*)GetDlgItem(IDC_POINT_TO_CHECKBOX))->SetCheck(TRUE);
 	OnPointTo();
+}
+
+void orient_editor::OnSetAbsolute()
+{
+	// prevent redundant calculations if the button is clicked while selected
+	if (!set_relative)
+		return;
+	set_relative = false;
+
+	UpdateData(TRUE);
+
+	vec3d pos;
+	pos.xyz.x = convert(m_position_x);
+	pos.xyz.y = convert(m_position_y);
+	pos.xyz.z = convert(m_position_z);
+
+	angles ang;
+	ang.p = fl_radians(convert(m_orientation_p));
+	ang.b = fl_radians(convert(m_orientation_b));
+	ang.h = fl_radians(convert(m_orientation_h));
+
+	vm_vec_add2(&pos, &Objects[cur_object_index].pos);
+
+	angles object_ang;
+	vm_extract_angles_matrix(&object_ang, &Objects[cur_object_index].orient);
+	ang.p += object_ang.p;
+	ang.b += object_ang.b;
+	ang.h += object_ang.h;
+
+	m_position_x.Format(INPUT_FORMAT, pos.xyz.x);
+	m_position_y.Format(INPUT_FORMAT, pos.xyz.y);
+	m_position_z.Format(INPUT_FORMAT, pos.xyz.z);
+
+	m_orientation_p.Format(INPUT_FORMAT, to_degrees(ang.p));
+	m_orientation_b.Format(INPUT_FORMAT, to_degrees(ang.b));
+	m_orientation_h.Format(INPUT_FORMAT, to_degrees(ang.h));
+
+	UpdateData(FALSE);
+}
+
+void orient_editor::OnSetRelative()
+{
+	// prevent redundant calculations if the button is clicked while selected
+	if (set_relative)
+		return;
+	set_relative = true;
+
+	UpdateData(TRUE);
+
+	vec3d pos;
+	pos.xyz.x = convert(m_position_x);
+	pos.xyz.y = convert(m_position_y);
+	pos.xyz.z = convert(m_position_z);
+
+	angles ang;
+	ang.p = fl_radians(convert(m_orientation_p));
+	ang.b = fl_radians(convert(m_orientation_b));
+	ang.h = fl_radians(convert(m_orientation_h));
+
+	vm_vec_sub2(&pos, &Objects[cur_object_index].pos);
+
+	angles object_ang;
+	vm_extract_angles_matrix(&object_ang, &Objects[cur_object_index].orient);
+	ang.p -= object_ang.p;
+	ang.b -= object_ang.b;
+	ang.h -= object_ang.h;
+
+	m_position_x.Format(INPUT_FORMAT, pos.xyz.x);
+	m_position_y.Format(INPUT_FORMAT, pos.xyz.y);
+	m_position_z.Format(INPUT_FORMAT, pos.xyz.z);
+
+	m_orientation_p.Format(INPUT_FORMAT, to_degrees(ang.p));
+	m_orientation_b.Format(INPUT_FORMAT, to_degrees(ang.b));
+	m_orientation_h.Format(INPUT_FORMAT, to_degrees(ang.h));
+
+	UpdateData(FALSE);
 }
 
 void orient_editor::OnCancel()

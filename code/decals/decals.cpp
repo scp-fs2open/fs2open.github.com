@@ -26,28 +26,6 @@ DecalDefinition::~DecalDefinition() {
 	}
 }
 
-DecalDefinition::DecalDefinition(DecalDefinition&& other) noexcept {
-	*this = std::move(other); // Use operator implementation
-}
-
-DecalDefinition& DecalDefinition::operator=(DecalDefinition&& other) noexcept {
-	std::swap(_name, other._name);
-
-	std::swap(_diffuseFilename, other._diffuseFilename);
-	std::swap(_glowFilename, other._glowFilename);
-	std::swap(_normalMapFilename, other._normalMapFilename);
-
-	std::swap(_diffuseBitmap, other._diffuseBitmap);
-	std::swap(_glowBitmap, other._glowBitmap);
-	std::swap(_normalBitmap, other._normalBitmap);
-
-	std::swap(_loopDiffuse, other._loopDiffuse);
-	std::swap(_loopGlow, other._loopGlow);
-	std::swap(_loopNormal, other._loopNormal);
-
-	return *this;
-}
-
 void DecalDefinition::parse() {
 	if (optional_string("+Diffuse:")) {
 		stuff_string(_diffuseFilename, F_FILESPEC);
