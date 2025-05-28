@@ -14440,7 +14440,6 @@ void ai_warp_out(object *objp)
 	// Goober5000 - make sure the flag is clear (if it was previously set)
 	aip->ai_flags.remove(AI::AI_Flags::Trying_unsuccessfully_to_warp);
 
-	bool clear_path = false;
 	WarpParams* warp_params = &Warp_params[shipp->warpout_params_index];
 
 	switch (aip->submode) {
@@ -14450,13 +14449,10 @@ void ai_warp_out(object *objp)
 		aip->submode_start_time = Missiontime;
 		break;
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
-		clear_path = warp_params->warp_type == WT_HYPERSPACE ?
-			!collide_predict_large_ship(objp, 100000.0f) : !collide_predict_large_ship(objp, objp->radius * 2.0f + 100.0f);
-
 		if (timestamp_elapsed(aip->force_warp_time)
 			|| (warp_params->warp_type == WT_SWEEPER)
 			|| (warp_params->warp_type == WT_IN_PLACE_ANIM)
-			|| clear_path) {
+			|| (!collide_predict_large_ship(objp, objp->radius * 2.0f + 100.0f))) {
 			aip->submode = AIS_WARP_3;
 			aip->submode_start_time = Missiontime;
 
