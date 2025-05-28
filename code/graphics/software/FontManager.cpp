@@ -58,10 +58,11 @@ namespace font
 
 	int FontManager::getCurrentFontIndex()
 	{
-		if (!isFontNumberValid(currentFontIndex))
+		int id = gr_lua_context_active() ? gr_lua_screen.current_font_index : currentFontIndex;
+		if (!isFontNumberValid(id))
 			return -1;
 
-		return currentFontIndex;
+		return id;
 	}
 
 	int FontManager::getFontIndex(const SCP_string& name)
@@ -118,7 +119,11 @@ namespace font
 	void FontManager::setCurrentFontIndex(int id)
 	{
 		Assertion(isFontNumberValid(id), "New font index must be valid!");
-		currentFontIndex = id;
+		if (gr_lua_context_active()) {
+			gr_lua_screen.current_font_index = id;
+		} else {
+			currentFontIndex = id;
+		}
 	}
 
 	font* FontManager::loadFontOld(const SCP_string& typeface)

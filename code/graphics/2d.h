@@ -935,6 +935,42 @@ typedef struct screen {
 	std::function<bool()> gf_openxr_flip;
 } screen;
 
+/**
+ * @brief Scripting context render values
+ */
+typedef struct lua_screen {
+	bool active = false;
+	bool force_fso_context = false;
+	color current_color = {
+		0,   // is_alphacolor
+		0,   // alphacolor
+		0,   // magic
+		255, // red
+		255, // green
+		255, // blue
+		255, // alpha
+		0,   // ac_type
+		0    // raw8
+	};
+	float line_width = 1.0f;
+	int current_font_index = 0;
+} lua_screen;
+
+extern lua_screen gr_lua_screen;
+
+bool gr_lua_context_active();
+
+// Macros to easily choose been which context to use for color and line width
+// Note that font is handled slightly differently for the normal game context by using it's own global in the FontManager namespace
+// So FontManager::getCurrentFontIndex() is effectively its own macro
+
+// Gets the current color between the game context and the lua context if active
+#define GR_CURRENT_COLOR (gr_lua_context_active() ? &gr_lua_screen.current_color : &gr_screen.current_color)
+
+// Gets the current line width between the game context and the lua contet if active
+#define GR_CURRENT_LINE_WIDTH (gr_lua_context_active() ? gr_lua_screen.line_width : gr_screen.line_width)
+
+
 // handy macro
 #define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(false);
 
