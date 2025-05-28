@@ -265,14 +265,8 @@ namespace particle {
 				required_string(output == 0 ? "Radius" : "Velocity");
 				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
 
-				required_string("+Curve Name:");
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				curve = curve_get_by_name(buf);
-
-				if (curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				required_string_either("+Curve Name:", "+Curve:", true);
+				curve = curve_parse(" Unknown curve requested for modular curves!");
 			}
 		}
 
@@ -344,25 +338,13 @@ namespace particle {
 
 		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_size_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_size_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				effect.m_size_lifetime_curve = curve_parse("");
 			}
 		}
 
 		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_vel_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				effect.m_vel_lifetime_curve = curve_parse("");
 			}
 		}
 

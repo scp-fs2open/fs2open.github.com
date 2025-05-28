@@ -105,7 +105,7 @@ struct modular_curves_submember_input {
 	template<typename result_type>
 	static inline float number_to_float(const result_type& number) {
 		// if constexpr(std::is_same_v<std::decay_t<result_type>, fix>) // TODO: Make sure we can differentiate fixes from ints.
-		//	return f2fl(number);
+		// 	return f2fl(number);
 		// else
 		if constexpr(std::is_integral_v<std::decay_t<result_type>>)
 			return static_cast<float>(number);
@@ -338,12 +338,10 @@ struct modular_curves_definition {
 
 			modular_curves_entry curve_entry;
 
-			required_string("+Curve Name:");
-			SCP_string curve;
-			stuff_string(curve, F_NAME);
-			curve_entry.curve_idx = curve_get_by_name(curve);
+			required_string_either("+Curve Name:", "+Curve:", true);
+			curve_entry.curve_idx = curve_parse(" Unknown curve requested for modular curves!");
 			if (curve_entry.curve_idx < 0){
-				error_display(1, "Unknown curve %s requested for modular curves!", curve.c_str());
+				error_display(1, "Unknown curve requested for modular curves!");
 			}
 
 			if (optional_string("+Random Scaling Factor:")) {
