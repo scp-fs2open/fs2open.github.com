@@ -2951,7 +2951,6 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		by += fl2i(Item_h * scale);
 
 		// set the text color
-		// set the text color
 		if (!config && (MsgItems[First_menu_item + i].active > 0)) {
 			setGaugeColor(HUD_C_BRIGHT, config);
 		}
@@ -2963,11 +2962,11 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		}
 
 		if (MsgItems[First_menu_item + i].active >= 0) {
-			// first print icons to indicate selected item
-			// or do the number
+			// first print an icon to indicate selected item
 			if (isSelectedItem) {
-				renderString(sx, sy, EG_SQ1 + i, ">>");
+				renderString(sx, sy, EG_SQ1 + i, ">>", scale, config);
 			}
+			// or do the number
 			else {
 				item_num = (i + 1) % MAX_MENU_DISPLAY;
 				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
