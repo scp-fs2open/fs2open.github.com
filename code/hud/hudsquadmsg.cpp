@@ -2922,7 +2922,6 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
 		bool isSelectedItem = First_menu_item + i == First_menu_item + Selected_menu_item;
-		//const char *text = MsgItems[First_menu_item+i].text.c_str();
 		char text[255];
 
 		if (!config) {
