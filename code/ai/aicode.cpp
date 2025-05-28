@@ -14447,10 +14447,12 @@ void ai_warp_out(object *objp)
 		aip->submode_start_time = Missiontime;
 		break;
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
+		bool clear_path = Warp_params[shipp->warpout_params_index].warp_type == WT_HYPERSPACE ? 
+			!collide_predict_large_ship(objp, 100000.0f) : !collide_predict_large_ship(objp, objp->radius * 2.0f + 100.0f);
+
 		if (timestamp_elapsed(aip->force_warp_time)
-			|| (!collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)
-			|| (Warp_params[shipp->warpout_params_index].warp_type == WT_HYPERSPACE
-				&& !collide_predict_large_ship(objp, 100000.0f)))) {
+			|| (Warp_params[shipp->warpout_params_index].warp_type == WT_SWEEPER)
+			|| clear_path) {
 			aip->submode = AIS_WARP_3;
 			aip->submode_start_time = Missiontime;
 
