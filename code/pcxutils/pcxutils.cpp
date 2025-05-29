@@ -234,7 +234,7 @@ int pcx_read_bitmap( const char * real_filename, ubyte *org_data, ubyte * /*pal*
 	strcat_s( filename, ".pcx" );
 
 	
-	PCXfile = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
+	PCXfile = cfopen( filename , "rb", cf_type );
 	if ( !PCXfile ){
 	
 		return PCX_ERROR_OPENING;

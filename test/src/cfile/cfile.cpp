@@ -94,7 +94,7 @@ TEST_F(CFileTest, access_default_file) {
 	// We use the controlconfig file since that should stay relatively stable
 	ASSERT_TRUE(cf_exists("controlconfigdefaults.tbl", CF_TYPE_TABLES));
 
-	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CF_TYPE_TABLES);
 	ASSERT_TRUE(fp != nullptr);
 
 	ASSERT_EQ(28, cfilelength(fp));
@@ -106,7 +106,7 @@ TEST_F(CFileTest, override_default_file) {
 	// We use the controlconfig file since that should stay relatively stable
 	ASSERT_TRUE(cf_exists("controlconfigdefaults.tbl", CF_TYPE_TABLES));
 
-	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	auto fp = cfopen("controlconfigdefaults.tbl", "rb", CF_TYPE_TABLES);
 	ASSERT_TRUE(fp != nullptr);
 
 	ASSERT_EQ(66, cfilelength(fp));

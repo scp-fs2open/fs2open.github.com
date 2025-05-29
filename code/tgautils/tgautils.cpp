@@ -509,7 +509,7 @@ int targa_read_bitmap(const char *real_filename, ubyte *image_data, ubyte *palet
 	if ( p ) *p = 0;
 	strcat_s( filename, ".tga" );
 
-	targa_file = cfopen( filename , "rb", CFILE_NORMAL, cf_type );
+	targa_file = cfopen( filename , "rb", cf_type );
 	if ( !targa_file ){
 		return TARGA_ERROR_READING;
 	}		

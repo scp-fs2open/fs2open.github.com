@@ -1110,7 +1110,7 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for reading!\n", filename.c_str()));
@@ -1288,7 +1288,7 @@ bool pilotfile::save_player(player *_p)
 	filename += ".json";
 
 	// open it, hopefully...
-	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "wb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
@@ -1364,7 +1364,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {

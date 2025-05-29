@@ -2304,7 +2304,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 	fred_parse_flag = 0;
 
 	pathname = cf_add_ext(pathname, FS_CAMPAIGN_FILE_EXT);
-	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
+	fp = cfopen(pathname, "wt", CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open campaign file to save.\n"));
 		return -1;
@@ -3103,7 +3103,7 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
 
-	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
+	fp = cfopen(pathname, "wt", CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open mission file to save.\n"));
 		err = -1;

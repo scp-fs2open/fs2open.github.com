@@ -1326,7 +1326,6 @@ bool control_config_accept(bool API_Access)
 			// Check if a preset file with name already exists.  If so, prompt the user
 			CFILE* fp = cfopen((str + ".json").c_str(),
 				"r",
-				CFILE_NORMAL,
 				CF_TYPE_PLAYER_BINDS,
 				false,
 				CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);

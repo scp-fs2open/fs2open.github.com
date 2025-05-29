@@ -26,7 +26,7 @@ void ScriptingTestFixture::TearDown() {
 	FSTestFixture::TearDown();
 }
 void ScriptingTestFixture::EvalTestScript() {
-	auto fp = cfopen("test.lua", "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS);
+	auto fp = cfopen("test.lua", "rb", CF_TYPE_SCRIPTS);
 	if (fp == nullptr) {
 		FAIL() << "Failed to open test file!";
 	}
