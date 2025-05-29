@@ -129,18 +129,24 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 	}
 }
 
-ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
+ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", nullptr)
 {
-	font_h *newFh = NULL;
+	font_h *newFh = nullptr;
 
 	if(!ade_get_args(L, "*|o", l_Font.GetPtr(&newFh)))
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
+
+	gr_lua_screen.active = true;
 
 	if(ADE_SETTING_VAR && newFh->isValid()) {
 		font::FontManager::setCurrentFontIndex(newFh->GetIndex());
 	}
 
-	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getCurrentFontIndex())));
+	int font = font::FontManager::getCurrentFontIndex();
+
+	gr_lua_screen.active = false;
+
+	return ade_set_args(L, "o", l_Font.Set(font_h(font)));
 }
 
 //****SUBLIBRARY: Graphics/PostEffects
@@ -545,7 +551,7 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 ADE_FUNC(setColor,
 	l_Graphics,
 	"number|color /* red value or color object */, number Green, number Blue, [number Alpha]",
-	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
+	"Sets 2D drawing color for the active context; each color number should be from 0 (darkest) to 255 (brightest)",
 	nullptr,
 	nullptr)
 {
@@ -567,7 +573,11 @@ ADE_FUNC(setColor,
 		ade_get_args(L, "o", l_Color.Get(&col));
 	}
 
+	gr_lua_screen.active = true;
+
 	gr_set_color_fast(&col);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -575,7 +585,7 @@ ADE_FUNC(setColor,
 ADE_FUNC(getColor,
 	l_Graphics,
 	"boolean",
-	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
+	"Gets the active 2D drawing color from the active context. False to return raw rgb, true to return a color object. Defaults to false.",
 	"number, number, number, number | color",
 	"rgba color which is currently in use for 2D drawing")
 {
@@ -585,16 +595,20 @@ ADE_FUNC(getColor,
 	bool rc = false;
 	ade_get_args(L, "|b", &rc);
 
-	color cur = gr_screen.current_color;
+	gr_lua_screen.active = true;
+	
+	const color cur = *GR_CURRENT_COLOR;
+	
+	gr_lua_screen.active = false;
 
 	if (!rc) {
-		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+		return ade_set_args(L, "iiii", static_cast<int>(cur.red), static_cast<int>(cur.green), static_cast<int>(cur.blue), static_cast<int>(cur.alpha));
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(cur));
 	}
 }
 
-ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
+ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines for the active context. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_FALSE;
@@ -608,12 +622,16 @@ ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width fo
 		return ADE_RETURN_FALSE;
 	}
 
+	gr_lua_screen.active = true;
+
 	gr_set_line_width(width);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle", NULL, NULL)
+ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -624,6 +642,8 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
 		return ADE_RETURN_NIL;
 
+	gr_lua_screen.active = true;
+
 	if (fill) {
 		//WMC - Circle takes...diameter.
 		gr_circle(x,y, ra*2, lua_ResizeMode);
@@ -631,10 +651,12 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 		gr_unfilled_circle(x,y, ra*2, lua_ResizeMode);
 	}
 
+	gr_lua_screen.active = false;
+
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc", NULL, NULL)
+ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -647,12 +669,16 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
+	gr_lua_screen.active = true;
+
 	gr_arc(x,y, ra, angle_start, angle_end, fill, lua_ResizeMode);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a curve", NULL, NULL)
+ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a curve using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -662,14 +688,18 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	if(!ade_get_args(L, "iii|i", &x,&y,&ra, &dir))
 		return ADE_RETURN_NIL;
 
+	gr_lua_screen.active = true;
+
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
 	gr_curve(x, y, ra, dir, lua_ResizeMode);
 
+	gr_lua_screen.active = false;
+
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) with the CurrentColor that steadily fades out", NULL, NULL)
+ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) that steadily fades out using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return 0;
@@ -679,12 +709,16 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
+	gr_lua_screen.active = true;
+
 	gr_gradient(x1,y1,x2,y2,lua_ResizeMode);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) with CurrentColor", NULL, NULL)
+ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -694,12 +728,16 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
+	gr_lua_screen.active = true;
+
 	gr_line(x1,y1,x2,y2,lua_ResizeMode);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColor", NULL, NULL)
+ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Draws a pixel using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -709,7 +747,11 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
 
+	gr_lua_screen.active = true;
+
 	gr_pixel(x,y,lua_ResizeMode);
+
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -718,7 +760,7 @@ ADE_FUNC(drawPolygon,
 	l_Graphics,
 	"texture Texture, [vector Position /* Default is null vector */, orientation Orientation=nil, number Width=1.0, "
 	"number Height=1.0]",
-	"Draws a polygon. May not work properly in hooks other than On Object Render.",
+	"Draws a polygon using active context values (like color or width). May not work properly in hooks other than On Object Render.",
 	nullptr,
 	nullptr)
 {
@@ -732,6 +774,8 @@ ADE_FUNC(drawPolygon,
 
 	if (!tdx->isValid())
 		return ADE_RETURN_FALSE;
+
+	gr_lua_screen.active = true;
 
 	matrix *orip = &vmd_identity_matrix;
 	if(mh != NULL)
@@ -752,11 +796,15 @@ ADE_FUNC(drawPolygon,
 	if(!in_frame)
 		g3_end_frame();
 
+	gr_lua_screen.active = false;
+
 	return ADE_RETURN_TRUE;
 }
 
 void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0.f) 
 {
+	gr_lua_screen.active = true;
+	
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
@@ -797,9 +845,11 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 		}
 	}
 
+	gr_lua_screen.active = false;
+
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle using active context values (like color or width). May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -818,7 +868,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 
 ADE_FUNC(drawRectangleCentered, l_Graphics, 
 	"number X, number Y, number Width, number Height, [boolean Filled=true, number angle=0.0]", 
-	"Draws a rectangle centered at X,Y with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr) 
+	"Draws a rectangle centered at X,Y using active context values (like color or width). May be rotated by passing the angle parameter in radians.", nullptr, nullptr) 
 {
 		if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -840,11 +890,13 @@ ADE_FUNC(drawRectangleCentered, l_Graphics,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position. May not work properly in hooks other than On Object Render.", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position using active context values (like color). May not work properly in hooks other than On Object Render.", "boolean", "True if successful, false or nil otherwise")
 {
 	float rad = 1.0f;
 	vec3d pos = vmd_zero_vector;
 	ade_get_args(L, "|fo", &rad, l_Vector.Get(&pos));
+
+	gr_lua_screen.active = true;
 
 	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame) {
@@ -883,10 +935,13 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		gr_end_proj_matrix();
 		g3_end_frame();
 	}
+
+	gr_lua_screen.active = false;
+
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination using active context values (like color). "
 "The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
 "The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
 {
@@ -898,6 +953,8 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 
 	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
 		return ADE_RETURN_NIL;
+
+	gr_lua_screen.active = true;
 
 	if (thickness < 0) thickness = 0;
 	if (thicknessEnd < 0) thicknessEnd = thickness;
@@ -914,9 +971,9 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 		return ADE_RETURN_NIL;
 	}
 
-	color &clr = gr_screen.current_color;
+	batching_add_line(v1, v2, thickness, thicknessEnd, *GR_CURRENT_COLOR, translucent);
 
-	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
+	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -1055,7 +1112,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 // Aardwolf's targeting brackets function
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
-         "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
+         "draw is true or the default value of draw is used. Brackets are drawn with the current active context color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.  "
          "Note: this method does NOT use CurrentResizeMode.",
          "number, number, number, number",
@@ -1065,7 +1122,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		return ADE_RETURN_NIL;
 	}
 
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	bool draw_box = true;
 	int padding = 5;
 
@@ -1080,6 +1137,8 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
+
+	gr_lua_screen.active = true;
 
 	object *targetp = objh->objp();
 
@@ -1157,6 +1216,8 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		line_draw_list.flush();
 	}
 
+	gr_lua_screen.active = false;
+
 	if ( entered_frame )
 		g3_end_frame( );
 
@@ -1166,7 +1227,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
-    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
+    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUDcurrent using active context color",
     "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
@@ -1174,7 +1235,7 @@ ADE_FUNC(
 		return ADE_RETURN_NIL;
 	}
 
-	ship_subsys_h *sshp = NULL;
+	ship_subsys_h *sshp = nullptr;
 	bool draw = true;
 	bool set_color = false;
 
@@ -1186,6 +1247,8 @@ ADE_FUNC(
 	{
 		return ADE_RETURN_NIL;
 	}
+
+	gr_lua_screen.active = true;
 
 	bool entered_frame = false;
 
@@ -1204,6 +1267,8 @@ ADE_FUNC(
 	if ( entered_frame )
 		g3_end_frame( );
 
+	gr_lua_screen.active = false;
+
 	if (in_sight > 0)
 	{
 		return ade_set_args(L, "iiii", coords[0], coords[1], coords[2], coords[3]);
@@ -1216,7 +1281,7 @@ ADE_FUNC(
 
 ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true, boolean setColor=false]",
          "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
-         "coordinates will be returned in either case. The indicator will be drawn using the current color if "
+         "coordinates will be returned in either case. The indicator will be drawn using the current active context color. if "
          "setColor=true and using the IFF color of the object if setColor=false.",
          "number, number",
          "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
@@ -1237,6 +1302,8 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 	if( !objh->isValid()) {
 		return ADE_RETURN_NIL;
 	}
+
+	gr_lua_screen.active = true;
 
 	object *targetp = objh->objp();
 	bool in_frame = g3_in_frame() > 0;
@@ -1302,6 +1369,8 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		}
 	}
 
+	gr_lua_screen.active = false;
+
 	if (outpoint.x >= 0 && outpoint.y >=0)
 		return ade_set_args(L, "ii", (int)outpoint.x, (int)outpoint.y);
 	else
@@ -1317,6 +1386,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		return ade_set_error(L, "i", 0);
 
 	int resize_mode = lua_ResizeMode;
+
+	gr_lua_screen.active = true;
 
 	// if the frame has changed since the last drawString call, reset the string position
 	if (PreviousFrametimeOverall != game_get_overall_frametime())
@@ -1440,6 +1511,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		NextDrawStringPos[1] = curr_y;
 	}
 
+	gr_lua_screen.active = false;
+
 	return ade_set_error(L, "i", num_lines);
 }
 
@@ -1448,7 +1521,7 @@ ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1,
 	"Text will automatically move onto new lines, if x2/y2 is specified."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
-	"have been drawn yet",
+	"have been drawn yet. Uses active context values (like color and font).",
 	"number",
 	"Number of lines drawn, or 0 on failure")
 {
@@ -1460,7 +1533,7 @@ ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode, string|boolean 
 	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
-	"have been drawn yet",
+	"have been drawn yet. Uses active context values (like color and font).",
 	"number",
 	"Number of lines drawn, or 0 on failure")
 {
@@ -2331,6 +2404,24 @@ ADE_FUNC(createColor,
 ADE_FUNC(isVR, l_Graphics, nullptr, "Queries whether or not FSO is currently trying to render to a head-mounted VR display.", "boolean", "true if FSO is currently outputting frames to a VR headset.")
 {
 	return ade_set_args(L, "b", openxr_enabled());
+}
+
+ADE_VIRTVAR(FsoContextOverride, l_Graphics, "boolean", "Whether or not the lua graphics system uses FSO's context or its own. "
+	"This affects things like the current color, line width, and font. Use with caution.",
+	"boolean",
+	"True if using FSO's internal context, false if using the lua context")
+{
+	bool val = false;
+
+	if (!ade_get_args(L, "*|b", &val))
+		return ade_set_error(L, "b", gr_lua_screen.force_fso_context);
+
+	if (ADE_SETTING_VAR) {
+		mprintf(("Lua graphics is now using %s context\n", val ? "FSO's" : "Lua's"));
+		gr_lua_screen.force_fso_context = val;
+	}
+
+	return ade_set_args(L, "b", gr_lua_screen.force_fso_context);
 }
 
 } // namespace api
