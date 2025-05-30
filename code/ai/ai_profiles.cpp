@@ -701,7 +701,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$fix AI shield management bug:", AI::Profile_Flags::Fix_AI_shield_management_bug);
 
-				set_flag(profile, "$AI balances shields instead of directs if attacked:", AI::Profile_Flags::AI_balances_shields_when_attacked);
+				set_flag(profile, "$AI balances shields instead of directs when attacked:", AI::Profile_Flags::AI_balances_shields_when_attacked);
 
 				set_flag(profile, "$disable AI transferring energy:", AI::Profile_Flags::Disable_ai_transferring_energy);
 
