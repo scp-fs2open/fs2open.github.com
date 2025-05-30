@@ -80,9 +80,7 @@ void showVideoInfo(const PlayerState& state) {
 
 	size_t audio_queue_size = state.decoder->getAudioQueueSize();
 	if (state.hasAudio) {
-		ALint queued;
-		OpenAL_ErrorPrint(alGetSourcei(state.audioSid, AL_BUFFERS_QUEUED, &queued));
-		audio_queue_size += queued;
+		audio_queue_size += SDL_GetAudioStreamQueued(state.audioStream);
 	}
 
 	y = print_string(x, y, "Audio Queue size: " SIZE_T_ARG, audio_queue_size);
