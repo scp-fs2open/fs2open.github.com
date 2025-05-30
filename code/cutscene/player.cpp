@@ -10,8 +10,6 @@
 
 #include "osapi/osapi.h"
 
-#include "sound/openal.h"
-
 #include "tracing/tracing.h"
 
 #include "io/key.h"
@@ -24,8 +22,6 @@ using namespace cutscene::player;
 
 namespace {
 using namespace cutscene;
-
-const int MAX_AUDIO_BUFFERS = 15;
 
 std::unique_ptr<Decoder> findDecoder(__UNUSED const SCP_string& name, __UNUSED const PlaybackProperties& properties) {
 #ifdef WITH_FFMPEG
@@ -71,18 +67,22 @@ void audioPlaybackInit(PlayerState* state) {
 	}
 	state->hasAudio = true;
 
-	OpenAL_ErrorCheck(alGenSources(1, &state->audioSid), return);
-	OpenAL_ErrorPrint(alSourcef(state->audioSid, AL_GAIN, 1.0f));
+	// best guess defaults, might change later
+	state->audioSpec.channels = 2;
+	state->audioSpec.format = SDL_AUDIO_S16LE;
+	state->audioSpec.freq = 48000;
 
-	state->audioBuffers.clear();
-	state->audioBuffers.resize(MAX_AUDIO_BUFFERS, 0);
+	state->audioStream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+												   &state->audioSpec,
+												   nullptr, nullptr);
 
-	OpenAL_ErrorCheck(alGenBuffers(static_cast<ALsizei>(state->audioBuffers.size()), state->audioBuffers.data()),
-					  return);
-
-	for (auto buffer : state->audioBuffers) {
-		state->unqueuedAudioBuffers.push(buffer);
+	if ( !state->audioStream ) {
+		return;
 	}
+
+	// stream is created in a paused state, so start it playing
+	// it will just be silent until data is queued
+	SDL_ResumeAudioStreamDevice(state->audioStream);
 
 	state->audioInited = true;
 }
@@ -185,10 +185,11 @@ void processSubtitleData(PlayerState* state) {
 bool processAudioData(PlayerState* state) {
 	TRACE_SCOPE(tracing::CutsceneProcessAudioData);
 
+	AudioFramePtr audioData;
+
 	if (!state->hasAudio) {
 		if (state->decoder->hasAudio()) {
 			// Even if we don't play the sound we still need to remove it from the queue
-			AudioFramePtr audioData;
 			while (state->decoder->tryPopAudioData(audioData)) {
 				// Intentionally left empty
 			}
@@ -196,45 +197,23 @@ bool processAudioData(PlayerState* state) {
 		return false;
 	}
 
-	ALint processed = 0;
-	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_BUFFERS_PROCESSED, &processed), return false);
+	while (state->decoder->tryPopAudioData(audioData)) {
+		// change audio format if needed (doesn't affect currently queued data)
+		if ((audioData->channels != state->audioSpec.channels) ||
+			(audioData->rate != state->audioSpec.freq))
+		{
+			state->audioSpec.channels = audioData->channels;
+			state->audioSpec.freq = audioData->rate;
 
-	// First check for free buffers and push them int the audio queue
-	for (int i = 0; i < processed; ++i) {
-		ALuint buffer;
-		OpenAL_ErrorPrint(alSourceUnqueueBuffers(state->audioSid, 1, &buffer));
-		state->unqueuedAudioBuffers.push(buffer);
+			SDL_SetAudioStreamFormat(state->audioStream, &state->audioSpec, nullptr);
+		}
+
+		// add it to the queue
+		SDL_PutAudioStreamData(state->audioStream, audioData->audioData.data(),
+							   static_cast<int>(audioData->audioData.size() * sizeof(short)));
 	}
 
-	AudioFramePtr audioData;
-
-	while (!state->unqueuedAudioBuffers.empty() && state->decoder->tryPopAudioData(audioData)) {
-		auto buffer = state->unqueuedAudioBuffers.front();
-		state->unqueuedAudioBuffers.pop();
-
-		ALenum format = (audioData->channels == 2) ? AL_FORMAT_STEREO16 : AL_FORMAT_MONO16;
-
-		OpenAL_ErrorCheck(alBufferData(buffer,
-									   format,
-									   audioData->audioData.data(),
-									   static_cast<ALsizei>(audioData->audioData.size() * sizeof(short)),
-									   static_cast<ALsizei>(audioData->rate)), return false);
-
-		OpenAL_ErrorCheck(alSourceQueueBuffers(state->audioSid, 1, &buffer), return false);
-	}
-
-	ALint status = 0, queued = 0;
-	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_SOURCE_STATE, &status), return false);
-
-	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_BUFFERS_QUEUED, &queued), return false);
-
-	if ((status != AL_PLAYING) && (queued > 0)) {
-		OpenAL_ErrorPrint(alSourcePlay(state->audioSid));
-	}
-
-	// Get status again in cause we just started playback
-	OpenAL_ErrorCheck(alGetSourcei(state->audioSid, AL_SOURCE_STATE, &status), return false);
-	return status == AL_PLAYING;
+	return true;
 }
 
 void audioPlaybackClose(PlayerState* state) {
@@ -242,19 +221,8 @@ void audioPlaybackClose(PlayerState* state) {
 		return;
 	}
 
-	ALint p = 0;
-
-	OpenAL_ErrorPrint(alSourceStop(state->audioSid));
-	OpenAL_ErrorPrint(alGetSourcei(state->audioSid, AL_BUFFERS_PROCESSED, &p));
-	OpenAL_ErrorPrint(alSourceUnqueueBuffers(state->audioSid, p, state->audioBuffers.data()));
-	OpenAL_ErrorPrint(alDeleteSources(1, &state->audioSid));
-
-	for (auto buffer : state->audioBuffers) {
-		// make sure that the buffer is real before trying to delete, it could crash for some otherwise
-		if ((buffer != 0) && alIsBuffer(buffer)) {
-			OpenAL_ErrorPrint(alDeleteBuffers(1, &buffer));
-		}
-	}
+	SDL_DestroyAudioStream(state->audioStream);
+	state->audioStream = nullptr;
 
 	state->audioInited = false;
 }
