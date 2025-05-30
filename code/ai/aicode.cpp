@@ -13321,7 +13321,7 @@ void ai_manage_shield(object *objp, ai_info *aip)
 
 		if (sip->is_small_ship() || (aip->ai_profile_flags[AI::Profile_Flags::All_ships_manage_shields])) {
 			if ((Missiontime - aip->last_hit_time < F1_0 * 10) && !(The_mission.ai_profile->flags[AI::Profile_Flags::AI_balances_shields_when_attacked]))
-				ai_transfer_shield(objp, aip->last_hit_quadrant);
+				ai_transfer_shield(objp, aip->danger_shield_quadrant);
 			else
 				ai_balance_shield(objp);
 		}
@@ -15559,7 +15559,7 @@ void init_ai_object(int objnum)
 	aip->time_enemy_near = 0.0f;
 	aip->last_attack_time = 0;
 	aip->last_hit_time = 0;
-	aip->last_hit_quadrant = 0;
+	aip->danger_shield_quadrant = 0;
 	aip->hitter_objnum = -1;
 	aip->hitter_signature = -1;
 	aip->resume_goal_time = -1;
