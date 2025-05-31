@@ -153,7 +153,8 @@ int obj_in_view_cone( object * objp )
 		if (wip->laser_length_by_frametime) {
 			length_scalar *= flFrametime;
 		}
-		obj_size = wip->laser_length * length_scalar;
+		float radius_scalar = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+		obj_size = (wip->laser_length * length_scalar) + (wip->laser_head_radius * radius_scalar);
 	} else {
 		obj_size = objp->radius;
 	}
