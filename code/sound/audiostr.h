@@ -87,4 +87,7 @@ void audiostream_unpause(int i, bool via_sexp_or_script = false);	// unpause a p
 void audiostream_pause_all(bool via_sexp_or_script = false);	// pause all audio streams											
 void audiostream_unpause_all(bool via_sexp_or_script = false);	// unpause all audio streams
 
+// stuff to do each frame (destroying streams, etc.)
+void audiostream_do_frame();
+
 #endif // _AUDIOSTR_H

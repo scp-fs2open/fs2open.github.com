@@ -6321,6 +6321,7 @@ void game_do_state_common(int state,int no_networking)
 	io::mouse::CursorManager::doFrame();		// determine if to draw the mouse this frame
 	snd_do_frame();								// update sound system
 	event_music_do_frame();						// music needs to play across many states
+	audiostream_do_frame();					// do any housekeeping for audio streams
 
 	multi_log_process();	
 
