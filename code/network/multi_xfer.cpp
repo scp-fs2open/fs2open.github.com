@@ -238,7 +238,7 @@ int multi_xfer_send_file(PSNET_SOCKET_RELIABLE who, char *filename, int cfile_fl
 
 	// attempt to open the file
 	temp_entry.file = NULL;
-	temp_entry.file = cfopen(filename,"rb",CFILE_NORMAL,cfile_flags);
+	temp_entry.file = cfopen(filename,"rb",cfile_flags);
 	if(temp_entry.file == NULL){
 #ifdef MULTI_XFER_VERBOSE
 		nprintf(("Network","MULTI XFER : Could not open file %s on xfer send!\n",filename));
@@ -972,7 +972,7 @@ void multi_xfer_process_header(ubyte * /*data*/, PSNET_SOCKET_RELIABLE who, usho
 
 	// attempt to open the file (using the prefixed filename)
 	xe->file = NULL;
-	xe->file = cfopen(xe->ex_filename, "wb", CFILE_NORMAL, xe->force_dir);
+	xe->file = cfopen(xe->ex_filename, "wb", xe->force_dir);
 	if(xe->file == NULL){		
 		multi_xfer_send_nak(who, sig);		
 

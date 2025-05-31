@@ -177,7 +177,7 @@ int jpeg_read_bitmap(const char *real_filename, ubyte *image_data, ubyte * /*pal
 	strcat_s( filename, ".jpg" );
 
 
-	img_cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
+	img_cfp = cfopen(filename, "rb", cf_type);
 
 	if (img_cfp == NULL)
 		return JPEG_ERROR_READING;

@@ -658,7 +658,7 @@ const char *textify_scancode(int code)
 	}
 
 	SCP_string name;
-	unicode::convert_encoding(name, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode))), unicode::Encoding::Encoding_utf8);
+	unicode::convert_encoding(name, SDL_GetKeyName(SDL_GetKeyFromScancode(fs2_to_sdl(keycode), SDL_KMOD_NONE, false)), unicode::Encoding::Encoding_utf8);
 	strcat_s(text, name.c_str());
 	return text;
 }
@@ -1956,7 +1956,7 @@ int control_config_common_write_tbl(bool overwrite = false, bool all = false) {
 		return 1;
 	}
 
-	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CF_TYPE_TABLES);
 	if (cfile == nullptr) {
 		// Could not open. Bail.
 		return 1;

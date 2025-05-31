@@ -38,12 +38,6 @@ typedef struct {
 	int ping_pong;
 } anim_play_struct;
 
-enum
-{
-	PAGE_FROM_DISK		  = 0,
-	PAGE_FROM_MEM		  = 1
-};
-
 extern int Anim_paused;
 
 void				anim_init();
@@ -57,7 +51,7 @@ void				anim_ignore_next_frametime();
 int				anim_show_next_frame(anim_instance *instance, float frametime);
 void				anim_release_all_instances(int screen_id = 0);
 void				anim_release_render_instance(anim_instance* instance);
-anim			  *anim_load(const char *name, int cf_dir_type = CF_TYPE_ANY, int file_mapped = PAGE_FROM_DISK);
+anim			  *anim_load(const char *name, int cf_dir_type = CF_TYPE_ANY);
 int				anim_free(anim *ptr);
 void				anim_read_header(anim *ptr, CFILE *fp);
 void				anim_reverse_direction(anim_instance *ai);						// called automatically for ping-ponging, and can also be called externally
