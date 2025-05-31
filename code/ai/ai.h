@@ -330,7 +330,7 @@ typedef struct ai_info {
 	float	time_enemy_near;					//	SUSHI: amount of time enemy continuously "near" the player
 	fix		last_attack_time;					//	Missiontime of last time this ship attacked its enemy.
 	fix		last_hit_time;						//	Missiontime of last time this ship was hit by anyone.
-	int		last_hit_quadrant;				//	Shield section of last hit.
+	int		danger_shield_quadrant;				//	Shield section AI will prefer to prioritize for recharging, it if possible.
 	fix		last_hit_target_time;			//	Missiontime of last time this ship successfully hit target.
 	int		hitter_objnum;						//	Object index of ship that hit this ship last time.
 	int		hitter_signature;					//	Signature of hitter.  Prevents stupidity if hitter gets killed.

@@ -204,7 +204,7 @@ float shield_apply_damage(object *objp, int quadrant_num, float damage)
 
 	if (objp->type != OBJ_SHIP && objp->type != OBJ_START)
 		return damage;
-	Ai_info[Ships[objp->instance].ai_index].last_hit_quadrant = quadrant_num;
+	Ai_info[Ships[objp->instance].ai_index].danger_shield_quadrant = quadrant_num;
 
 	remaining_damage = damage - objp->shield_quadrant[quadrant_num];
 	if (remaining_damage > 0.0f) {
