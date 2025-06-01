@@ -8718,6 +8718,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( angle2 );
 	GET_FLOAT( flak_range );
 	GET_FLOAT( dist_to_target );
+	GET_FLOAT( target_radius );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail

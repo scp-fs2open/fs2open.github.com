@@ -1889,7 +1889,8 @@ bool turret_fire_weapon(int weapon_num,
 		}
 		// now do anything else
 		else {
-			int shots = fl2i(i2fl(wip->shots) * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
+			float shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data);
+			int shots = fl2i(i2fl(wip->shots) * shots_mult);
 			for (int i = 0; i < shots; i++) {
 				if (!in_lab && turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
 					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
