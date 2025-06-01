@@ -30719,38 +30719,37 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	return sexp_val;
 }
 
-DCF(sexpc, "Always runs the given sexp command (Warning! There is no undo for this!)")
+DCF(sexpc, "Runs the given sexp command, wrapped as an action of a when-true condition")
 {
 	SCP_string sexp;
-	SCP_string sexp_always;
+	SCP_string sexp_wrapped;
 	
 	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+		dc_printf( "Usage: sexpc <sexpression>\n. Runs the given sexp as '( when ( true ) ( sexpression ) )' .\n" );
 		return;
 	}
 
 	dc_stuff_string(sexp);
 
-	sexp_always = "( when ( true ) ( " + sexp + " ) )";
+	sexp_wrapped = "( when ( true ) ( " + sexp + " ) )";
 
-	int sexp_val = run_sexp(sexp_always.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp_always.c_str(), sexp_val);
+	int sexp_val = run_sexp(sexp_wrapped.c_str());
+	dc_printf("SEXP '%s' run; sexp_val = %d\n", sexp_wrapped.c_str(), sexp_val);
 }
 
-
-DCF(sexp,"Runs the given sexp")
+DCF(sexp, "Runs the given sexp")
 {
 	SCP_string sexp;
 
 	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+		dc_printf( "Usage: sexp <sexpression>\n. Runs the given sexp.\n");
 		return;
 	}
 
 	dc_stuff_string(sexp);
 
 	int sexp_val = run_sexp(sexp.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
+	dc_printf("Result = %d\n", sexp_val);
 }
 
 bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type)
