@@ -24,3 +24,19 @@ set(CMAKE_FIND_ROOT_PATH /usr/${TOOLCHAIN_PREFIX})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)
 set(CMAKE_FIND_ROOT_PATH_MODE_LIBRARY ONLY)
 set(CMAKE_FIND_ROOT_PATH_MODE_INCLUDE ONLY)
+
+if (FSO_BUILD_WITH_DISCORD)
+    message(WARNING "Discord support is not tested for cross-compilation. Here be dragons! To disable, set -DFSO_BUILD_WITH_DISCORD:BOOL=OFF")
+endif()
+
+if (FSO_BUILD_FRED2)
+    message(WARNING "FRED2 support is not tested for cross-compilation. Here be dragons! To disable, set -DFSO_BUILD_FRED2:BOOL=OFF")
+endif()
+
+if (FSO_USE_SPEECH)
+    message(WARNING "Speech support is not tested for cross-compilation. Here be dragons! To disable, set -DFSO_USE_SPEECH:BOOL=OFF")
+endif()
+
+if (FSO_USE_VOICEREC)
+    message(WARNING "Voice recognition support is not tested for cross-compilation. Here be dragons! To disable, set -DFSO_USE_VOICEREC:BOOL=OFF")
+endif()
