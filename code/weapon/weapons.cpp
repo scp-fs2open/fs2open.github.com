@@ -5822,12 +5822,12 @@ void weapon_home(object *obj, int num, float frame_time)
 		//	Asteroth - but not for homing primaries
 		if (old_dot < 0.90f && wip->subtype != WP_LASER) {
 			if (fs1_behavior) {
-				obj->phys_info.speed = max_speed * MAX(0.2f, fabs(old_dot));
+				obj->phys_info.speed = max_speed * MAX(0.2f, fabsf(old_dot));
 				if (obj->phys_info.speed < max_speed * 0.25f)
 					obj->phys_info.speed = max_speed * 0.25f;
 			}
 			else {
-				obj->phys_info.speed = MAX(0.2f, old_dot * fabs(old_dot));
+				obj->phys_info.speed = MAX(0.2f, old_dot * fabsf(old_dot));
 				if (obj->phys_info.speed < max_speed * 0.75f)
 					obj->phys_info.speed = max_speed * 0.75f;
 			}
