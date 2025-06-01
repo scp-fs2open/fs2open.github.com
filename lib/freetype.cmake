@@ -1,14 +1,16 @@
 
-if(PLATFORM_WINDOWS OR PLATFORM_MAC)
+if(PLATFORM_WINDOWS OR PLATFORM_MAC OR CMAKE_CROSSCOMPILING)
 	add_library(freetype INTERFACE)
 
 	# We use prebuilt binaries for windows and mac
 	get_prebuilt_path(PREBUILT_PATH)
 	set(FREETYPE_ROOT_DIR "${PREBUILT_PATH}/freetype")
 
+	message(${PREBUILT_PATH})
+
 	set(SEARCH_PATH "${FREETYPE_ROOT_DIR}/lib")
 
-	if(PLATFORM_WINDOWS)
+	if(PLATFORM_WINDOWS OR CMAKE_CROSSCOMPILING)
 		set(LIBNAME "freetype*.dll")
 	else()
 		set(LIBNAME "libfreetype*")
@@ -20,6 +22,11 @@ if(PLATFORM_WINDOWS OR PLATFORM_MAC)
 		NAMES freetype freetype281
 		PATHS "${SEARCH_PATH}"
 		NO_DEFAULT_PATH)
+
+	if (${freetype_LOCATION} STREQUAL "freetype_LOCATION-NOTFOUND" AND CMAKE_CROSSCOMPILING)
+		#Just try the default here and see if we can make it work.
+		set(freetype_LOCATION "${SEARCH_PATH}/freetype281.lib")
+	endif()
 
 	file(GLOB freetype_LIBS "${SEARCH_PATH}/${LIBNAME}")
 
