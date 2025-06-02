@@ -597,7 +597,7 @@ ADE_FUNC(getColor,
 
 	gr_lua_screen.active = true;
 	
-	const color cur = *GR_CURRENT_COLOR;
+	const color cur = GR_CURRENT_COLOR;
 	
 	gr_lua_screen.active = false;
 
@@ -971,7 +971,7 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 		return ADE_RETURN_NIL;
 	}
 
-	batching_add_line(v1, v2, thickness, thicknessEnd, *GR_CURRENT_COLOR, translucent);
+	batching_add_line(v1, v2, thickness, thicknessEnd, GR_CURRENT_COLOR, translucent);
 
 	gr_lua_screen.active = false;
 
@@ -1216,10 +1216,10 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		line_draw_list.flush();
 	}
 
-	gr_lua_screen.active = false;
-
 	if ( entered_frame )
 		g3_end_frame( );
+
+	gr_lua_screen.active = false;
 
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
@@ -1227,7 +1227,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
-    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUDcurrent using active context color",
+    "actually draws the brackets if <i>draw</i> is true, optionally sets the color if it was drawn on the HUD using active context color",
     "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {

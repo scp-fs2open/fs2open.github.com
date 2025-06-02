@@ -965,7 +965,7 @@ bool gr_lua_context_active();
 // So FontManager::getCurrentFontIndex() is effectively its own macro
 
 // Gets the current color between the game context and the lua context if active
-#define GR_CURRENT_COLOR (gr_lua_context_active() ? &gr_lua_screen.current_color : &gr_screen.current_color)
+#define GR_CURRENT_COLOR (gr_lua_context_active() ? gr_lua_screen.current_color : gr_screen.current_color)
 
 // Gets the current line width between the game context and the lua contet if active
 #define GR_CURRENT_LINE_WIDTH (gr_lua_context_active() ? gr_lua_screen.line_width : gr_screen.line_width)
