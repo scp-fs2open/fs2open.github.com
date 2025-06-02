@@ -680,6 +680,7 @@ int neb2_skip_render(object *objp, float z_depth)
 
 		// any ship or raw pof less than 3% visible at their closest point
 		case OBJ_RAW_POF:
+		case OBJ_PROP:
 		case OBJ_SHIP:
 			if (fog < 0.03f)
 				return 1;
@@ -714,6 +715,8 @@ float neb2_get_lod_scale(int objnum)
 {
 	ship *shipp;
 	ship_info *sip;
+
+	// ADD PROP HERE
 
 	// bogus
 	if ( (objnum < 0) 
@@ -1101,6 +1104,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 		return;
 	}
 
+	// ADD PROP HERE
 	// determine what fog index to use
 	if(objp->type == OBJ_SHIP) {
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));

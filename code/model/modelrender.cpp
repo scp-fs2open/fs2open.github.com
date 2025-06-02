@@ -1329,6 +1329,7 @@ int model_render_determine_elapsed_time(int objnum, uint64_t flags)
 	if ( objnum >= 0 ) {
 		object *objp = &Objects[objnum];
 
+		// ADD PROP HERE
 		if ( objp->type == OBJ_SHIP ) {
 			return timestamp_since(Ships[objp->instance].base_texture_anim_timestamp);
 		}
@@ -1925,6 +1926,7 @@ void model_render_set_glow_points(const polymodel *pm, int objnum)
 	if ( objnum > -1 ) {
 		object *objp = &Objects[objnum];
 
+		// ADD PROP HERE
 		if ( objp != NULL && objp->type == OBJ_SHIP ) {
 			shipp = &Ships[Objects[objnum].instance];
 			sip = &Ship_info[shipp->ship_info_index];
@@ -2609,6 +2611,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		objp = &Objects[objnum];
 		int tentative_num = -1;
 
+		// ADD PROP HERE
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 			tentative_num = shipp->model_instance_num;
@@ -2932,6 +2935,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 		objp = &Objects[objnum];
 		int tentative_num = -1;
 
+		// ADD PROP HERE
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 			tentative_num = shipp->model_instance_num;
