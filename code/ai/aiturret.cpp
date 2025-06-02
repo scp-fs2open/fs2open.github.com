@@ -2334,11 +2334,13 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 	float base_dist_to_enemy = 0.0f;
 	float dist_to_enemy = 0.0f;
 	if (lep) {
-		base_dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos));
+		base_dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
 		dist_to_enemy = base_dist_to_enemy;
 		if (!The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
 			dist_to_enemy -= lep->radius;
 		}
+		MAX(0.0f, base_dist_to_enemy);
+		MAX(0.0f, dist_to_enemy);
 	} else if (in_lab) {
 		base_dist_to_enemy = 500.0f;
 		dist_to_enemy = base_dist_to_enemy;
