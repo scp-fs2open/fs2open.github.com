@@ -546,7 +546,7 @@ void render_shields()
 
 	int	i;
 
-	if (Detail.shield_effects == 0){
+	if (Detail.shield_effects == 0 || Disable_shield_effects) {
 		return;	//	No shield effect rendered at lowest detail level.
 	}
 
@@ -870,15 +870,15 @@ void shield_point_multi_setup()
  */
 void create_shield_explosion_all(object *objp)
 {
+	if (Detail.shield_effects == 0 || Disable_shield_effects) {
+		return;	
+	}
+
 	int	i;
 	int	num;
 	int	count;
 	int	objnum;
 	ship	*shipp;
-
-	if (Detail.shield_effects == 0){
-		return;	
-	}
 
 	num = objp->instance;
 	shipp = &Ships[num];
