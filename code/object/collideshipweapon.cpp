@@ -28,6 +28,8 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+// Need a version of this for PROPS
+
 //mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri_hit, shield_hitpoint
 using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
 

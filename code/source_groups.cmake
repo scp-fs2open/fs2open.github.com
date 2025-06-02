@@ -1017,6 +1017,9 @@ ENDIF(WIN32)
 add_file_folder("Object"
 	object/collidedebrisship.cpp
 	object/collidedebrisweapon.cpp
+	object/collidepropdebris.cpp
+	object/collidepropship.cpp
+	object/collidepropweapon.cpp
 	object/collideshipship.cpp
 	object/collideshipweapon.cpp
 	object/collideweaponweapon.cpp
@@ -1212,6 +1215,13 @@ add_file_folder("Popup"
 	popup/popup.h
 	popup/popupdead.cpp
 	popup/popupdead.h
+)
+
+# Prop files
+add_file_folder("Prop"
+	prop/prop.cpp
+	prop/prop.h
+	prop/prop_flags.h
 )
 
 # Radar files

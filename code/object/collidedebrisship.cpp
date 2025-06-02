@@ -23,6 +23,8 @@
 #include "ship/ship.h"
 #include "ship/shiphit.h"
 
+// Need a version of this for PROPS
+
 
 void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_info);
 

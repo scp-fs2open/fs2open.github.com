@@ -41,6 +41,7 @@
 #include "osapi/osapi.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
+#include "prop/prop.h"
 #include "sound/ds.h"
 #include "sound/sound.h"
 #include "starfield/nebula.h"
@@ -3091,6 +3092,8 @@ void Fred_mission_save::save_mission_internal(const char* pathname)
 		err = -7;
 	else if (save_wings())
 		err = -8;
+	else if (save_props())
+		err = -18;
 	else if (save_events())
 		err = -9;
 	else if (save_goals())
@@ -4859,7 +4862,7 @@ int Fred_mission_save::save_wings()
 			continue;
 
 		count++;
-		required_string_either_fred("$Name:", "#Events");
+		required_string_one_of_fred(3, "$Name:", "#Events", "#Props");
 		required_string_fred("$Name:");
 		parse_comments(2);
 		fout(" %s", w.name);
@@ -5116,5 +5119,40 @@ int Fred_mission_save::save_wings()
 	fso_comment_pop(true);
 
 	Assert(count == Num_wings);
+	return err;
+}
+
+int CFred_mission_save::save_props()
+{
+	if (Mission_save_format != FSO_FORMAT_RETAIL) {
+		fred_parse_flag = 0;
+		required_string_fred("#Props");
+		parse_comments(2);
+		fout("\t\t;! %d total", static_cast<int>(Props.size()));
+
+		for (int i = 0; i < static_cast<int>(Props.size()); i++) {
+			required_string_either_fred("$Name:", "#Events");
+			required_string_fred("$Name:");
+			parse_comments(2);
+			fout(" %s", Props[i].prop_name);
+
+			required_string_fred("$Class:");
+			parse_comments(2);
+			fout(" %d", Props[i].prop_info_index);
+
+			required_string_fred("$Location:");
+			parse_comments();
+			save_vector(Objects[Props[i].objnum].pos);
+
+			required_string_fred("$Orientation:");
+			parse_comments();
+			save_matrix(Objects[Props[i].objnum].orient);
+
+			fso_comment_pop();
+		}
+	}
+
+	fso_comment_pop(true);
+	//Assert(count == Num_props);
 	return err;
 }

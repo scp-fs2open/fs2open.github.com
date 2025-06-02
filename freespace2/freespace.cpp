@@ -165,6 +165,7 @@
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "popup/popupdead.h"
+#include "prop/prop.h"
 #include "radar/radar.h"
 #include "radar/radarsetup.h"
 #include "render/3d.h"
@@ -2027,6 +2028,7 @@ void game_init()
 	weapon_init();
 	glowpoint_init();
 	ship_init();						// read in ships.tbl	
+	prop_init();
 
 	player_init();	
 	mission_campaign_init();		// load in the default campaign	
