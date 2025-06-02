@@ -30752,6 +30752,73 @@ DCF(sexp, "Runs the given sexp")
 	dc_printf("Result = %d\n", sexp_val);
 }
 
+DCF(script, "Runs the given script, without regard to its return value")
+{
+	SCP_string script;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: script <script code>\n. Runs the given script.\n");
+		return;
+	}
+
+	dc_stuff_string(script);
+
+	bool success = Script_system.EvalString(script.c_str());
+	dc_printf("Script %s\n", success ? "successful" : "unsuccessful");
+}
+
+template <typename T>
+void script_eval_with_return(const char *help_text, const char *format, void (*to_scp_string)(T, SCP_string&))
+{
+	SCP_string script;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("%s", help_text);
+		return;
+	}
+
+	dc_stuff_string(script);
+
+	T result{};
+	SCP_string result_string;
+
+	bool success = Script_system.EvalStringWithReturn(script.c_str(), format, &result);
+	to_scp_string(result, result_string);
+	dc_printf("Script %s.  Result = %s\n", success ? "successful" : "unsuccessful", result_string.c_str());
+}
+
+DCF(script_eval_bool, "Evaluates the given script, returning a boolean result")
+{
+	script_eval_with_return<bool>("Usage: script_eval_bool <script code>\n. Runs the given script, returning a boolean result.\n",
+		"|b",
+		[](bool b, SCP_string& str) { str = b ? "true" : "false"; }
+	);
+}
+
+DCF(script_eval_int, "Evaluates the given script, returning an integer result")
+{
+	script_eval_with_return<int>("Usage: script_eval_int <script code>\n. Runs the given script, returning an integer result.\n",
+		"|i",
+		[](int i, SCP_string& str) { sprintf(str, "%d", i); }
+	);
+}
+
+DCF(script_eval_float, "Evaluates the given script, returning a float result")
+{
+	script_eval_with_return<float>("Usage: script_eval_float <script code>\n. Runs the given script, returning a float result.\n",
+		"|f",
+		[](float f, SCP_string& str) { sprintf(str, "%f", f); }
+	);
+}
+
+DCF(script_eval_string, "Evaluates the given script, returning a string result")
+{
+	script_eval_with_return<const char*>("Usage: script_eval_string <script code>\n. Runs the given script, returning a string result.\n",
+		"|s",
+		[](const char* s, SCP_string& str) { sprintf(str, "'%s'", s ? s : ""); }
+	);
+}
+
 bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type)
 {
 	opr_type = OPR_NONE;
