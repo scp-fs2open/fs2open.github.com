@@ -29,6 +29,8 @@
 #include "tracing/tracing.h"
 #include "weapon/weapon.h"
 #include "decals/decals.h"
+#include "freespace.h"
+#include "utils/modular_curves.h"
 
 class sorted_obj
 {
@@ -142,8 +144,23 @@ int obj_in_view_cone( object * objp )
 	// Center isn't in... are other points?
 	ubyte and_codes = 0xff;
 
+	float obj_size;
+
+	if (objp->type == OBJ_WEAPON && Weapon_info[Weapons[objp->instance].weapon_info_index].render_type == WRT_LASER) {
+		auto wp = &Weapons[objp->instance];
+		auto wip = &Weapon_info[wp->weapon_info_index];
+		float length_scalar = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+		if (wip->laser_length_by_frametime) {
+			length_scalar *= flFrametime;
+		}
+		float radius_scalar = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+		obj_size = (wip->laser_length * length_scalar) + (wip->laser_head_radius * radius_scalar);
+	} else {
+		obj_size = objp->radius;
+	}
+
 	for (i=0; i<8; i++ ) {
-		vm_vec_scale_add( &pt, &objp->pos, &check_offsets[i], objp->radius );
+		vm_vec_scale_add( &pt, &objp->pos, &check_offsets[i], obj_size );
 		codes=g3_rotate_vector(&tmp,&pt);
 		if ( !codes ) {
 			//mprintf(( "A point is inside, so render it.\n" ));
