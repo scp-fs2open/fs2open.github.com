@@ -1554,8 +1554,8 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
-	// should subtract 1 from firepoints to match behavior of wip->burst_shots
-	int base_burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points - 1 : wip->burst_shots) + 1;
+	// we have to add 1 to wip->burst_shots so that the multiplier behaves as expected, then remove 1 from burst_shots to match the zero-indexed burst_counter
+	int base_burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points : wip->burst_shots + 1);
 	float burst_shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data);
 	int burst_shots = MAX(fl2i(i2fl(base_burst_shots) * burst_shots_mult) - 1, 0);
 
