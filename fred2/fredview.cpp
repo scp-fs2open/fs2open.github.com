@@ -966,23 +966,31 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	drag_rotate_save_backup();
 	
 	if (nFlags & MK_CONTROL)	{  // add a new object
-		if (!Bg_bitmap_dialog) {
-			if (on_object == -1) {
-				Selection_lock = 0;  // force off selection lock
-				on_object = create_object_on_grid(waypoint_instance);
+		bool shift_down = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
-			} else
-				Dup_drag = 1;
-
+		if (shift_down) {
+			Selection_lock = 0; // force off selection lock
+			on_object = create_object_on_grid(waypoint_instance, true);
 		} else {
-			/*
-			Selection_lock = 0;  // force off selection lock
-			on_object = Cur_bitmap = create_bg_bitmap();
-			Bg_bitmap_dialog->update_data();
-			Update_window = 1;
-			if (Cur_bitmap == -1)
-				MessageBox("Background bitmap limit reached.\nCan't add more.");
-			*/
+
+			if (!Bg_bitmap_dialog) {
+				if (on_object == -1) {
+					Selection_lock = 0; // force off selection lock
+					on_object = create_object_on_grid(waypoint_instance);
+
+				} else
+					Dup_drag = 1;
+
+			} else {
+				/*
+				Selection_lock = 0;  // force off selection lock
+				on_object = Cur_bitmap = create_bg_bitmap();
+				Bg_bitmap_dialog->update_data();
+				Update_window = 1;
+				if (Cur_bitmap == -1)
+					MessageBox("Background bitmap limit reached.\nCan't add more.");
+				*/
+			}
 		}
 
 	} else if (!Selection_lock) {
@@ -2585,7 +2593,7 @@ int CFREDView::global_error_check()
 			//Shouldn't be needed anymore.
 			//If we really do need it, call me and I'll write a is_valid function for jumpnodes -WMC
 		} 
-		else if (ptr->type == OBJ_JUMP_NODE)
+		else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP)
 		{
 			//nothing needs to be done here, we just need to make sure the else doesn't occur
 		}
