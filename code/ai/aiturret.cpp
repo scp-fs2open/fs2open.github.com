@@ -2339,8 +2339,8 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 		if (!The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
 			dist_to_enemy -= lep->radius;
 		}
-		MAX(0.0f, base_dist_to_enemy);
-		MAX(0.0f, dist_to_enemy);
+		base_dist_to_enemy = MAX(0.0f, base_dist_to_enemy);
+		dist_to_enemy = MAX(0.0f, dist_to_enemy);
 	} else if (in_lab) {
 		base_dist_to_enemy = 500.0f;
 		dist_to_enemy = base_dist_to_enemy;
