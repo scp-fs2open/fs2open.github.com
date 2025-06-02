@@ -13,6 +13,40 @@
 
 #define	WM_MENU_POPUP_TEST	(WM_USER+9)
 
+class color_combo_box_prop : public CComboBox {
+  public:
+	/**
+	 * Gets the ship class corresponding to the item index
+	 */
+	int GetPropClass(int item_index);
+
+	/**
+	 * Gets the item index corresponding to the ship class
+	 */
+	int GetItemIndex(int ship_class);
+
+  private:
+	/**
+	 * @brief Draws the given item
+	 *
+	 * @param[in] lpDrawItemStruct Item to draw
+	 */
+	void DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct);
+
+	/**
+	 * @brief Calculates the minimum height required to fit all items. This is determined by the "tallest" character
+	 */
+	int CalcMinimumItemHeight();
+
+	/**
+	 * @brief Measures the given item
+	 *
+	 * @details Er, actually does nothing other than Assert that the style of the combo box is LBS_ONWERDRAWFIXED and
+	 * CBS_HASSTRINGS
+	 */
+	void MeasureItem(LPMEASUREITEMSTRUCT);
+};
+
 /**
  * @class color_combo_box
  *
@@ -202,5 +236,11 @@ extern CMainFrame *Fred_main_wnd;   //!< The main FRED window
 
 extern color_combo_box m_new_ship_type_combo_box;  //!< The combo box
 extern size_t ship_type_combo_box_size;
+
+extern color_combo_box_prop m_new_prop_type_combo_box;
+extern size_t prop_type_combo_box_size;
+
+CStatic m_ship_label;
+CStatic m_prop_label;
 
 #endif // _MAINFRM_H
