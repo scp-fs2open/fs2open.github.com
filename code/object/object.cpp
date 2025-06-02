@@ -35,6 +35,7 @@
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "observer/observer.h"
+#include "prop/prop.h"
 #include "scripting/global_hooks.h"
 #include "scripting/api/libs/graphics.h"
 #include "scripting/scripting.h"
@@ -279,6 +280,7 @@ int free_object_slots(int target_num_used)
 				case OBJ_JUMP_NODE:				
 				case OBJ_BEAM:
 				case OBJ_RAW_POF:
+				case OBJ_PROP:
 					break;
 				default:
 					Int3();	//	Hey, what kind of object is this?  Unknown!
@@ -760,6 +762,9 @@ void obj_delete(int objnum)
 		model_delete_instance(Pof_objects[objp->instance].model_instance);
 		Pof_objects.erase(objp->instance);
 		break;
+	case OBJ_PROP:
+		prop_delete(objp);
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1185,7 +1190,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 		if ( obj->type == OBJ_OBSERVER ) {
 			return;
 		}
-
+		// Maybe add PROP here
 		// sanity checks
 		if ( (obj->type != OBJ_SHIP) || (obj->instance < 0) ) {
 			return;				// return because we really don't want to set the flag
@@ -1268,6 +1273,9 @@ void obj_move_all_pre(object *objp, float frametime)
 	case OBJ_BEAM:		
 		break;
 	case OBJ_RAW_POF:
+		break;
+	case OBJ_PROP:
+		// Handle moving submodels maybe?
 		break;
 	case OBJ_NONE:
 		Int3();
@@ -1531,6 +1539,10 @@ void obj_move_all_post(object *objp, float frametime)
 		case OBJ_RAW_POF:
 			break;
 
+		case OBJ_PROP:
+			// Not sure if anything will be needed here
+			break;
+
 		case OBJ_NONE:
 			Int3();
 			break;
@@ -1680,6 +1692,7 @@ void obj_move_all(float frametime)
 		// and look_at needs to happen last or the angle may be off by a frame)
 		model_do_intrinsic_motions(objp);
 
+		// PROP probably will need something like this
 		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
 		if (objp->type == OBJ_SHIP)
 			ship_model_replicate_submodels(objp);
@@ -1948,6 +1961,9 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_RAW_POF:
 		raw_pof_render(obj, scene);
 		break;
+	case OBJ_PROP:
+		prop_render(obj, scene);
+		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
 	}
@@ -2054,6 +2070,7 @@ int obj_team(object *objp)
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
 		case OBJ_RAW_POF:
+		case OBJ_PROP:
 			team = -1;
 			break;
 
@@ -2203,6 +2220,8 @@ int object_get_model_num(const object *objp)
 		}
 		case OBJ_RAW_POF:
 			return Pof_objects[objp->instance].model_num;
+		case OBJ_PROP:
+			return Prop_info[objp->instance].model_num;
 		default:
 			break;
 	}
@@ -2257,6 +2276,8 @@ int object_get_model_instance_num(const object *objp)
 		}
 		case OBJ_RAW_POF:
 			return Pof_objects[objp->instance].model_instance;
+		case OBJ_PROP:
+			return Props[objp->instance].model_instance_num;
 		default:
 			break;
 	}
