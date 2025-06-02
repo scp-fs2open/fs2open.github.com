@@ -162,19 +162,19 @@ obj_flag_name Object_flag_names[] = {
 };
 
 obj_flag_description Object_flag_descriptions[] = {
-    { Object::Object_Flags::Invulnerable,				"Stops ship from taking any damage."},
-	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack ship."},
-	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
-	{ Object::Object_Flags::Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
-	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Immobile,					"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
-	{ Object::Object_Flags::Dont_change_position,		"Will not let a ship change position. Upon destruction the ship will still do the death roll and explosion."},
-	{ Object::Object_Flags::Dont_change_orientation,	"Will not let a ship change orientation. Upon destruction the ship will still do the death roll and explosion."},
-	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
-	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
+    { Object::Object_Flags::Invulnerable,				"Stops this object from taking any damage."},
+	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack this object."},
+	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::No_shields,					"This object will have no shields.  (If this object can otherwise have shields, its shield energy will be fully reallocated to other ETS systems.)"},
+	{ Object::Object_Flags::Targetable_as_bomb,			"Allows this object to be targeted with the bomb targeting key."},
+	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Immobile,					"Will not let an object change position or orientation.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_position,		"Will not let an object change position.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_orientation,	"Will not let an object change orientation.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Collides,					"This object will collide with other objects."},
+	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set.  (Normally an object that does not collide is also not attacked.)"},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
