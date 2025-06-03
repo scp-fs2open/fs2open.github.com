@@ -1747,7 +1747,7 @@ void start_ship_animation(int ship_class, int  /*play_sound*/)
 		// page in ship textures properly (takes care of nondimming pixels)
 		model_page_in_textures(ShipSelectModelNum, ship_class);
 		
-		if (sip->model_num < 0) {
+		if (ShipSelectModelNum < 0) {
 			mprintf(("Couldn't load model file %s in missionshipchoice.cpp\n", sip->pof_file));
 		}
 	} else {
