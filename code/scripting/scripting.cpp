@@ -175,7 +175,7 @@ void script_init()
 	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
 	mprintf(("SCRIPTING: Parsing pure Lua scripts\n"));
 	parse_modular_table(NOX("*-sct.lua"), script_parse_lua_script);
-	mprintf(("SCRIPTING: Inititialization complete.\n"));
+	mprintf(("SCRIPTING: Initialization complete.\n"));
 }
 /*
 //WMC - Doesn't work as debug console interferes with any non-alphabetic chars.

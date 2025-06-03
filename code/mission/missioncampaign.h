@@ -122,7 +122,7 @@ public:
 	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
 	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
-	int		next_mission;							// number of the next mission to fly when comtinuing the campaign.  Always valid
+	int		next_mission;							// number of the next mission to fly when continuing the campaign.  Always valid
 	int		prev_mission;							// mission that we just came from.  Always valid
 	int		loop_enabled;							// whether mission loop is chosen - true during a loop, false otherwise
 	int		loop_mission;							// mission number of misssion loop (if any)
