@@ -14442,6 +14442,8 @@ void ai_warp_out(object *objp)
 	// Goober5000 - make sure the flag is clear (if it was previously set)
 	aip->ai_flags.remove(AI::AI_Flags::Trying_unsuccessfully_to_warp);
 
+	WarpParams* warp_params = &Warp_params[shipp->warpout_params_index];
+
 	switch (aip->submode) {
 	case AIS_WARP_1:
 		aip->force_warp_time = timestamp(10*1000);	//	Try to avoid a collision for up to ten seconds.
@@ -14450,9 +14452,9 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_WARP_2:			//	Make sure won't collide with any object.
 		if (timestamp_elapsed(aip->force_warp_time)
-			|| (!collide_predict_large_ship(objp, objp->radius*2.0f + 100.0f)
-			|| (Warp_params[shipp->warpout_params_index].warp_type == WT_HYPERSPACE
-				&& !collide_predict_large_ship(objp, 100000.0f)))) {
+			|| (warp_params->warp_type == WT_SWEEPER)
+			|| (warp_params->warp_type == WT_IN_PLACE_ANIM)
+			|| (!collide_predict_large_ship(objp, objp->radius * 2.0f + 100.0f))) {
 			aip->submode = AIS_WARP_3;
 			aip->submode_start_time = Missiontime;
 
@@ -14494,7 +14496,7 @@ void ai_warp_out(object *objp)
 		break;
 	case AIS_WARP_4: {
 		// Only lets the ship warp after waiting for the warpout engage time
-		if ( (Missiontime / 100) >= (aip->submode_start_time / 100 + Warp_params[shipp->warpout_params_index].warpout_engage_time) ) {
+		if ( (Missiontime / 100) >= (aip->submode_start_time / 100 + warp_params->warpout_engage_time) ) {
 			shipfx_warpout_start(objp);
 			aip->submode = AIS_WARP_5;
 			aip->submode_start_time = Missiontime;
