@@ -169,6 +169,7 @@ extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
+extern bool Disable_shield_effects;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
 extern bool Contrails_use_absolute_speed;
