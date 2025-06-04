@@ -354,6 +354,7 @@ float beam_get_warmdown_age(const beam& wp);
 struct WeaponLaunchCurveData {
 	int num_firepoints;
 	float distance_to_target;
+	float target_radius;
 };
 
 struct weapon_info;
@@ -711,7 +712,8 @@ struct weapon_info
 					std::pair {"FoF Mult", WeaponLaunchCurveOutputs::FOF_MULT},
 			},
 			std::pair {"Num Firepoints", modular_curves_submember_input<&WeaponLaunchCurveData::num_firepoints>{}},
-			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}}
+			std::pair {"Distance to Target", modular_curves_submember_input<&WeaponLaunchCurveData::distance_to_target>{}},
+			std::pair {"Target Radius", modular_curves_submember_input<&WeaponLaunchCurveData::target_radius>{}}
 	);
 
   public:
@@ -1020,6 +1022,7 @@ int weapon_create( const vec3d *pos,
 	ship_subsys *src_turret = nullptr,
 	const WeaponLaunchCurveData& launch_curve_data = WeaponLaunchCurveData {
 		0,
+		0.f,
 		0.f
 	});
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);

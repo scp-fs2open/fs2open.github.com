@@ -1554,9 +1554,10 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 {
 	Assert(weapon_num < MAX_SHIP_WEAPONS);
 	float wait = 1000.0f;
-	// should subtract 1 from firepoints to match behavior of wip->burst_shots
-	int burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points - 1 : wip->burst_shots);
-	burst_shots = fl2i(i2fl(burst_shots) * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data));
+	// we have to add 1 to wip->burst_shots so that the multiplier behaves as expected, then remove 1 from burst_shots to match the zero-indexed burst_counter
+	int base_burst_shots = (wip->burst_flags[Weapon::Burst_Flags::Num_firepoints_burst_shots] ? turret->system_info->turret_num_firing_points : wip->burst_shots + 1);
+	float burst_shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data);
+	int burst_shots = MAX(fl2i(i2fl(base_burst_shots) * burst_shots_mult) - 1, 0);
 
 	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {
 		wait *= wip->burst_delay;
@@ -1888,7 +1889,8 @@ bool turret_fire_weapon(int weapon_num,
 		}
 		// now do anything else
 		else {
-			int shots = fl2i(i2fl(wip->shots) * wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data));
+			float shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::SHOTS_MULT, launch_curve_data);
+			int shots = fl2i(i2fl(wip->shots) * shots_mult);
 			for (int i = 0; i < shots; i++) {
 				if (!in_lab && turret->system_info->flags[Model::Subsystem_Flags::Turret_use_ammo]) {
 					int bank_to_fire, num_slots = turret->system_info->turret_num_firing_points;
@@ -2052,9 +2054,9 @@ bool turret_fire_weapon(int weapon_num,
 						subsys_index = ship_get_subsys_index(turret);
 						Assert( subsys_index != -1 );
 						if(wip->wi_flags[Weapon::Info_Flags::Flak]){			
-							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target );
+							send_flak_fired_packet( parent_objnum, subsys_index, weapon_objnum, flak_range, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
 						} else {
-							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target );
+							send_turret_fired_packet( parent_objnum, subsys_index, weapon_objnum, launch_curve_data.distance_to_target, launch_curve_data.target_radius );
 						}
 					}
 
@@ -2127,6 +2129,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 	auto launch_curve_data = WeaponLaunchCurveData {
 		tsi->turret->system_info->turret_num_firing_points,
 		0.f,
+		0.f,
 	};
 
 	// create weapon and homing info
@@ -2181,7 +2184,7 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 
 			subsys_index = ship_get_subsys_index(tsi->turret);
 			Assert( subsys_index != -1 );
-			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f);
+			send_turret_fired_packet( tsi->parent_objnum, subsys_index, weapon_objnum, 0.f, 0.f);
 		}
 	}
 }
@@ -2328,15 +2331,19 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 	// Don't try to fire beyond weapon_limit_range
 	// WMC moved the range check to within the loop, but we can still calculate the enemy distance here
+	float base_dist_to_enemy = 0.0f;
 	float dist_to_enemy = 0.0f;
 	if (lep) {
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
-			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos));
-		} else {
-			dist_to_enemy = MAX(0.0f, vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos) - lep->radius);
+		base_dist_to_enemy = vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
+		dist_to_enemy = base_dist_to_enemy;
+		if (!The_mission.ai_profile->flags[AI::Profile_Flags::Turrets_ignore_target_radius]) {
+			dist_to_enemy -= lep->radius;
 		}
+		base_dist_to_enemy = MAX(0.0f, base_dist_to_enemy);
+		dist_to_enemy = MAX(0.0f, dist_to_enemy);
 	} else if (in_lab) {
-		dist_to_enemy = 500.0f;
+		base_dist_to_enemy = 500.0f;
+		dist_to_enemy = base_dist_to_enemy;
 		vm_vec_normalized_dir(&v2e, &predicted_enemy_pos, &global_gun_pos);
 	}
 
@@ -2349,10 +2356,17 @@ void ai_turret_execute_behavior(const ship *shipp, ship_subsys *ss)
 
 	float turret_barrel_length = -1.0f;
 
+	float target_radius = 0.f;
+
+	if (lep != nullptr) {
+		target_radius = lep->radius;
+	}
+
 	// grab the data for the launch curve inputs
 	auto launch_curve_data = WeaponLaunchCurveData {
 			ss->system_info->turret_num_firing_points,
-			dist_to_enemy,
+			base_dist_to_enemy,
+			target_radius,
 	};
 
 	//WMC - go through all valid weapons. Fire spawns if there are any.
