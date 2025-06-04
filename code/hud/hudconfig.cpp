@@ -1635,7 +1635,7 @@ void hud_config_as_player()
 
 void hud_config_color_save(const char *name, int version)
 {
-	CFILE* out     = cfopen(name, "wt", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	CFILE* out     = cfopen(name, "wt", CF_TYPE_PLAYERS, false,
                         CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	try {

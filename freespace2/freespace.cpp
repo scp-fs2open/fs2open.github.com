@@ -6726,7 +6726,7 @@ void game_spew_pof_info()
 	}
 
 	// go
-	CFILE* out = cfopen("pofspew.txt", "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	CFILE* out = cfopen("pofspew.txt", "wt", CF_TYPE_DATA);
 	if(out == nullptr){
 		BAIL();
 	}	

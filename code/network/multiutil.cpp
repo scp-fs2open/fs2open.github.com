@@ -2996,7 +2996,7 @@ void multi_update_valid_missions()
 	}
 	
 	// attempt to open the valid mission config file
-	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CF_TYPE_DATA);
 
 	if (in != nullptr) {
 		// read in all listed missions
@@ -3069,7 +3069,7 @@ void multi_update_valid_missions()
 	}
 
 	// now rewrite the outfile with the new mission info
-	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CF_TYPE_DATA);
 	if(in == nullptr){
 		// if we're a standalone, kill the validate dialog
 		if(Game_mode & GM_STANDALONE_SERVER){

@@ -2369,7 +2369,7 @@ void read_raw_file_text(const char *filename, int mode, char *raw_text)
 	if (!filename)
 		throw parse::FileOpenException("Filename must not be null!");
 
-	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
+	mf = cfopen(filename, "rb", mode);
 	if (mf == NULL)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));
@@ -2646,7 +2646,7 @@ void read_file_bytes(const char *filename, int mode, char *raw_bytes)
 		Error(LOCATION, "ERROR: raw_bytes may not be NULL when parsing is paused!!\n");
 	}
 
-	mf = cfopen(filename, "rb", CFILE_NORMAL, mode);
+	mf = cfopen(filename, "rb", mode);
 	if (mf == nullptr)
 	{
 		nprintf(("Error", "Wokka!  Error opening file (%s)!\n", filename));

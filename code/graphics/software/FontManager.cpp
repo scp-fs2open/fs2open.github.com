@@ -139,12 +139,12 @@ namespace font
 
 		lcl_add_dir_to_path_with_filename(typeface_lcl);
 
-		fp = cfopen(typeface_lcl.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		fp = cfopen(typeface_lcl.c_str(), "rb", CF_TYPE_ANY);
 
 		// fallback if not found
 		if ( !fp )
 		{
-			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			fp = cfopen(typeface.c_str(), "rb", CF_TYPE_ANY);
 		}
 
 		if ( !fp )
@@ -309,7 +309,7 @@ namespace font
 		auto iter = allocatedData.find(fileName);
 		if (iter == allocatedData.end())
 		{
-			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CF_TYPE_ANY);
 
 			if (fontFile == nullptr)
 			{

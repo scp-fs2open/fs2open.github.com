@@ -18,7 +18,7 @@ void hud_config_save_player_prefs(const char* callsign)
 	SCP_string filename = callsign;
 	filename += ".hdp";
 
-	CFILE* file = cfopen(filename.c_str(), "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	CFILE* file = cfopen(filename.c_str(), "wt", CF_TYPE_DATA);
 
 	if (file == nullptr) {
 		mprintf(("HUDPREFS: Unable to open file '%s' for writing player HUD preferences.\n", filename.c_str()));

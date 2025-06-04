@@ -1017,7 +1017,7 @@ void load_default_script(lua_State* L, const char* name)
 		// Load from disk (or built-in file)
 		source_name = name;
 
-		auto cfp = cfopen(name, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS);
+		auto cfp = cfopen(name, "rb", CF_TYPE_SCRIPTS);
 		Assertion(cfp != nullptr, "Failed to open default file!");
 
 		auto length = cfilelength(cfp);

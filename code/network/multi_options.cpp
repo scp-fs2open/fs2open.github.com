@@ -185,7 +185,7 @@ void multi_options_read_config()
 	Multi_options_g.log = (Cmdline_multi_log) ? 1 : 0;
 
 	// read in the config file
-	in = cfopen(MULTI_CFG_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	in = cfopen(MULTI_CFG_FILE, "rt", CF_TYPE_DATA);
 	
 	// if we failed to open the config file, user default settings
 	if (in == NULL) {

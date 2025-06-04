@@ -405,7 +405,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 	strcat_s(real_name, ".dds");
 
 	// open it up and go to the data section
-	cfp = cfopen(real_name, "rb", CFILE_NORMAL, cf_type);
+	cfp = cfopen(real_name, "rb", cf_type);
 
 	// just in case
 	if (cfp == nullptr)
@@ -558,7 +558,7 @@ void dds_save_image(int width, int height, int bpp, int num_mipmaps, ubyte *data
 		strcat_s(real_filename, ".dds");
 	}
 
-	CFILE *image = cfopen( real_filename, "wb", CFILE_NORMAL, CF_TYPE_CACHE );
+	CFILE *image = cfopen( real_filename, "wb", CF_TYPE_CACHE );
 
 	if (image == NULL) {
 		mprintf(("Unable to open DDS image for saving!!\n"));
