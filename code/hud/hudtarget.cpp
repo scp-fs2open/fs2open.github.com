@@ -2850,10 +2850,10 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3, bool config)
 	verts[0].texture_position.v = 0.0f;
 	verts[0].flags = PF_PROJECTED;
 	verts[0].codes = 0;
-	verts[0].r = (ubyte)gr_screen.current_color.red;
-	verts[0].g = (ubyte)gr_screen.current_color.green;
-	verts[0].b = (ubyte)gr_screen.current_color.blue;
-	verts[0].a = (ubyte)gr_screen.current_color.alpha;
+	verts[0].r = (ubyte)GR_CURRENT_COLOR.red;
+	verts[0].g = (ubyte)GR_CURRENT_COLOR.green;
+	verts[0].b = (ubyte)GR_CURRENT_COLOR.blue;
+	verts[0].a = (ubyte)GR_CURRENT_COLOR.alpha;
 
 	verts[1].screen.xyw.x = x2;
 	verts[1].screen.xyw.y = y2;
@@ -2862,10 +2862,10 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3, bool config)
 	verts[1].texture_position.v = 0.0f;
 	verts[1].flags = PF_PROJECTED;
 	verts[1].codes = 0;
-	verts[1].r = (ubyte)gr_screen.current_color.red;
-	verts[1].g = (ubyte)gr_screen.current_color.green;
-	verts[1].b = (ubyte)gr_screen.current_color.blue;
-	verts[1].a = (ubyte)gr_screen.current_color.alpha;
+	verts[1].r = (ubyte)GR_CURRENT_COLOR.red;
+	verts[1].g = (ubyte)GR_CURRENT_COLOR.green;
+	verts[1].b = (ubyte)GR_CURRENT_COLOR.blue;
+	verts[1].a = (ubyte)GR_CURRENT_COLOR.alpha;
 
 	verts[2].screen.xyw.x = x3;
 	verts[2].screen.xyw.y = y3;
@@ -2874,10 +2874,10 @@ void hud_tri(float x1,float y1,float x2,float y2,float x3,float y3, bool config)
 	verts[2].texture_position.v = 0.0f;
 	verts[2].flags = PF_PROJECTED;
 	verts[2].codes = 0;
-	verts[2].r = (ubyte)gr_screen.current_color.red;
-	verts[2].g = (ubyte)gr_screen.current_color.green;
-	verts[2].b = (ubyte)gr_screen.current_color.blue;
-	verts[2].a = (ubyte)gr_screen.current_color.alpha;
+	verts[2].r = (ubyte)GR_CURRENT_COLOR.red;
+	verts[2].g = (ubyte)GR_CURRENT_COLOR.green;
+	verts[2].b = (ubyte)GR_CURRENT_COLOR.blue;
+	verts[2].a = (ubyte)GR_CURRENT_COLOR.alpha;
 
 	for (auto& vert : verts) {
 		gr_resize_screen_posf(&vert.screen.xyw.x, &vert.screen.xyw.y, nullptr, nullptr, config ? HC_resize_mode : GR_RESIZE_FULL);

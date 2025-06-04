@@ -552,10 +552,10 @@ static void gr_string_old(float sx,
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	render_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
 	render_mat.set_texture_map(TM_BASE_TYPE, fontData->bitmap_id);
-	render_mat.set_color(gr_screen.current_color.red,
-		gr_screen.current_color.green,
-		gr_screen.current_color.blue,
-		gr_screen.current_color.alpha);
+	render_mat.set_color(GR_CURRENT_COLOR.red,
+		GR_CURRENT_COLOR.green,
+		GR_CURRENT_COLOR.blue,
+		GR_CURRENT_COLOR.alpha);
 	render_mat.set_cull_mode(false);
 	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
 
@@ -749,7 +749,7 @@ graphics::paths::PathRenderer* beginDrawing(int resize_mode) {
 
 	path->beginPath();
 
-	path->setStrokeWidth(gr_screen.line_width);
+	path->setStrokeWidth(GR_CURRENT_LINE_WIDTH);
 
 	return path;
 }
@@ -829,7 +829,7 @@ void gr_string(float sx, float sy, const char* s, int resize_mode, float scaleMu
 
 		bool twoPassRequired = false;
 
-		path->setFillColor(&gr_screen.current_color);
+		path->setFillColor(&GR_CURRENT_COLOR);
 
 		// Do a two pass algorithm, first render text using NanoVG, then render old characters
 		for (int pass = 0; pass < 2; ++pass) {
@@ -940,13 +940,13 @@ static void gr_line(float x1, float y1, float x2, float y2, int resize_mode) {
 	if ((x1 == x2) && (y1 == y2)) {
 		path->circle(x1, y1, 1.5);
 
-		path->setFillColor(&gr_screen.current_color);
+		path->setFillColor(&GR_CURRENT_COLOR);
 		path->fill();
 	} else {
 		path->moveTo(x1, y1);
 		path->lineTo(x2, y2);
 
-		path->setStrokeColor(&gr_screen.current_color);
+		path->setStrokeColor(&GR_CURRENT_COLOR);
 		path->stroke();
 	}
 
@@ -980,18 +980,18 @@ void gr_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
 		return;
 	}
 
-	if (!gr_screen.current_color.is_alphacolor) {
+	if (!GR_CURRENT_COLOR.is_alphacolor) {
 		gr_line(x1, y1, x2, y2, resize_mode);
 		return;
 	}
 
 	auto path = beginDrawing(resize_mode);
 
-	color endColor = gr_screen.current_color;
+	color endColor = GR_CURRENT_COLOR;
 	endColor.alpha = 0;
 
 	auto gradientPaint =
-		path->createLinearGradient(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), &gr_screen.current_color, &endColor);
+		path->createLinearGradient(i2fl(x1), i2fl(y1), i2fl(x2), i2fl(y2), &GR_CURRENT_COLOR, &endColor);
 
 	path->moveTo(i2fl(x1), i2fl(y1));
 	path->lineTo(i2fl(x2), i2fl(y2));
@@ -1017,7 +1017,7 @@ void gr_circle(int xc, int yc, int d, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
 	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
-	path->setFillColor(&gr_screen.current_color);
+	path->setFillColor(&GR_CURRENT_COLOR);
 	path->fill();
 
 	endDrawing(path);
@@ -1030,7 +1030,7 @@ void gr_unfilled_circle(int xc, int yc, int d, int resize_mode) {
 	auto path = beginDrawing(resize_mode);
 
 	path->circle(i2fl(xc), i2fl(yc), d / 2.0f);
-	path->setStrokeColor(&gr_screen.current_color);
+	path->setStrokeColor(&GR_CURRENT_COLOR);
 	path->stroke();
 
 	endDrawing(path);
@@ -1055,11 +1055,11 @@ void gr_arc(int xc, int yc, float r, float angle_start, float angle_end, bool fi
 		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
 		path->lineTo(i2fl(xc), i2fl(yc));
 
-		path->setFillColor(&gr_screen.current_color);
+		path->setFillColor(&GR_CURRENT_COLOR);
 		path->fill();
 	} else {
 		path->arc(i2fl(xc), i2fl(yc), r, fl_radians(angle_start), fl_radians(angle_end), DIR_CW);
-		path->setStrokeColor(&gr_screen.current_color);
+		path->setStrokeColor(&GR_CURRENT_COLOR);
 		path->stroke();
 	}
 
@@ -1110,7 +1110,7 @@ void gr_curve(int xc, int yc, int r, int direction, int resize_mode) {
 	}
 
 	path->arc(centerX, centerY, i2fl(r), beginAngle, endAngle, DIR_CW);
-	path->setStrokeColor(&gr_screen.current_color);
+	path->setStrokeColor(&GR_CURRENT_COLOR);
 	path->stroke();
 
 	endDrawing(path);
@@ -1131,7 +1131,7 @@ void gr_rect(int x, int y, int w, int h, int resize_mode, float angle) {
 		path->translate(-offsetX, -offsetY);
 	}
 	path->rectangle(i2fl(x), i2fl(y), i2fl(w), i2fl(h));
-	path->setFillColor(&gr_screen.current_color);
+	path->setFillColor(&GR_CURRENT_COLOR);
 	path->fill();
 
 	endDrawing(path);

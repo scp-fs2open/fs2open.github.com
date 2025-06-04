@@ -787,10 +787,15 @@ void gr_opengl_zbias(int bias)
 
 void gr_opengl_set_line_width(float width)
 {
-	if (width <= 1.0f) {
-		GL_state.SetLineWidth(width);
+	if (gr_lua_context_active()) {
+		gr_lua_screen.line_width = width;
+	} else {
+		if (width <= 1.0f) {
+			GL_state.SetLineWidth(width);
+		}
+
+		gr_screen.line_width = width;
 	}
-	gr_screen.line_width = width;
 }
 
 int opengl_check_for_errors(const char *err_at)

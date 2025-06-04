@@ -90,6 +90,8 @@ const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
 
+lua_screen gr_lua_screen;
+
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
 color_gun Gr_t_red, Gr_t_green, Gr_t_blue, Gr_t_alpha;
 color_gun Gr_ta_red, Gr_ta_green, Gr_ta_blue, Gr_ta_alpha;
@@ -2115,7 +2117,11 @@ void gr_set_color( int r, int g, int b )
 
 void gr_set_color_fast(const color *dst)
 {
-	gr_screen.current_color = *dst;
+	if (gr_lua_context_active()) {
+		gr_lua_screen.current_color = *dst;
+	} else {
+		gr_screen.current_color = *dst;
+	}
 }
 
 //Compares the RGBA values of two colors. Returns true if the colors are identical
@@ -3286,4 +3292,12 @@ bool gr_is_viewport_window()
 	}
 
 	return false;
+}
+
+bool gr_lua_context_active() {
+	if (gr_lua_screen.force_fso_context) {
+		return false;
+	}
+
+	return gr_lua_screen.active;
 }
