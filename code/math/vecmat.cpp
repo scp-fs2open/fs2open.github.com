@@ -1715,10 +1715,10 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
 		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
 
-		solutions = { 2 * atan2(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
-					  2 * atan2(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
-					  2 * atan2(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
-					  2 * atan2(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+		solutions = { 2.0f * atan2f(-sr_neg * (y * y + sr) * yz_recip, -2.0f * sr_neg),
+					  2.0f * atan2f(sr_neg * (y * y + sr) * yz_recip, 2.0f * sr_neg),
+					  2.0f * atan2f(-sr_pos * (y * y - sr) * yz_recip, -2.0f * sr_pos),
+					  2.0f * atan2f(sr_pos * (y * y - sr) * yz_recip, 2.0f * sr_pos) };
 	}
 	float value = -2.0f;
 	float correct = 0;
