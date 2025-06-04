@@ -20,7 +20,7 @@ jobs:
     name: Build FSO With Coverity Wrapper
     if: github.repository == 'scp-fs2open/fs2open.github.com'
     runs-on: ${{ matrix.config.os }}
-    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
+    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     strategy:
       fail-fast: false
       matrix:
