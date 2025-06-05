@@ -1614,7 +1614,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 		_splitpath(filename, NULL, NULL, bname, NULL);
 		sprintf(debug_name, "%s.subsystems", bname);
-		ss_fp = cfopen(debug_name, "wb", CFILE_NORMAL, CF_TYPE_TABLES );
+		ss_fp = cfopen(debug_name, "wb", CF_TYPE_TABLES );
 		if ( !ss_fp )	{
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {

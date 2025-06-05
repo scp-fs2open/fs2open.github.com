@@ -667,12 +667,10 @@ void anim_read_header(anim *ptr, CFILE *fp)
  * 
  * @param real_filename Filename of animation
  * @param cf_dir_type 
- * @param file_mapped Whether to use memory-mapped file or not.
- * 
- * @details Memory-mapped files will page in the animation from disk as it is needed, but performance is not as good.
+ *
  * @return Pointer to anim that is loaded if success, NULL if failure.
  */
-anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
+anim *anim_load(const char *real_filename, int cf_dir_type)
 {
 	anim			*ptr;
 	CFILE			*fp;
@@ -697,7 +695,7 @@ anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 	}
 
 	if (!ptr) {
-		fp = cfopen(name, "rb", CFILE_NORMAL, cf_dir_type);
+		fp = cfopen(name, "rb", cf_dir_type);
 		if ( !fp )
 			return NULL;
 
@@ -743,18 +741,9 @@ anim *anim_load(const char *real_filename, int cf_dir_type, int file_mapped)
 
 		ptr->cfile_ptr = NULL;
 
-		if ( file_mapped == PAGE_FROM_MEM) {
-			// Try mapping the file to memory 
-			ptr->flags |= ANF_MEM_MAPPED;
-			ptr->cfile_ptr = cfopen(name, "rb", CFILE_MEMORY_MAPPED, cf_dir_type);
-		}
-
-		// couldn't memory-map file... must be in a packfile, so stream manually
-		if ( file_mapped == PAGE_FROM_MEM && !ptr->cfile_ptr ) {
-			ptr->flags &= ~ANF_MEM_MAPPED;
-			ptr->flags |= ANF_STREAMED;
-			ptr->cfile_ptr = cfopen(name, "rb", CFILE_NORMAL, cf_dir_type);
-		}
+		// NOTE: mapped files no longer supported!!
+		ptr->flags |= ANF_STREAMED;
+		ptr->cfile_ptr = cfopen(name, "rb", cf_dir_type);
 
 		ptr->cache = NULL;
 

@@ -45,7 +45,7 @@ void load_preset_files(SCP_string clone) {
 	std::unique_ptr<PresetFileHandler> handler = nullptr;
 
 	for (const auto &file : filelist) {
-		CFILE* fp = cfopen((file + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+		CFILE* fp = cfopen((file + ".json").c_str(), "r", CF_TYPE_PLAYER_BINDS, false,
 						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 		if (!fp) {
@@ -190,7 +190,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	std::unique_ptr<PresetFileHandler> handler = nullptr;
 
 	// Check if there's a file already
-	CFILE* fp = cfopen(filename.c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+	CFILE* fp = cfopen(filename.c_str(), "r", CF_TYPE_PLAYER_BINDS, false,
 	                  CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	
 	if ((fp != nullptr) && !overwrite) {
@@ -199,7 +199,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	}
 
 	// Try opening file for write
-	fp = cfopen(filename.c_str(), "w", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+	fp = cfopen(filename.c_str(), "w", CF_TYPE_PLAYER_BINDS, false,
 					   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if (!fp) {

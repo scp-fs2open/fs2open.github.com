@@ -117,7 +117,7 @@ void script_parse_table(const char* filename)
 void script_parse_lua_script(const char *filename) {
 	using namespace luacpp;
 
-	CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	CFILE *cfp = cfopen(filename, "rb", CF_TYPE_TABLES);
 	if(cfp == nullptr)
 	{
 		Warning(LOCATION, "Could not open lua script file '%s'", filename);
@@ -630,7 +630,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		char *filename = alloc_block("[[", "]]");
 
 		//Load from file
-		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
+		CFILE *cfp = cfopen(filename, "rb", CF_TYPE_SCRIPTS );
 
 		//WMC - use filename instead of debug_str so that the filename gets passed.
 		function_name = filename;

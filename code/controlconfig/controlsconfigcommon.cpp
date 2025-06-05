@@ -1956,7 +1956,7 @@ int control_config_common_write_tbl(bool overwrite = false, bool all = false) {
 		return 1;
 	}
 
-	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CFILE_NORMAL, CF_TYPE_TABLES);
+	CFILE* cfile = cfopen("controlconfigdefaults.tbl", "w", CF_TYPE_TABLES);
 	if (cfile == nullptr) {
 		// Could not open. Bail.
 		return 1;

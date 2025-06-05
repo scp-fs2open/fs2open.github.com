@@ -3460,7 +3460,7 @@ void multi_pxo_set_end_of_motd()
 	
 	// write out the motd for next time
 	if(strlen(Pxo_motd)){
-		CFILE *out = cfopen("oldmotd.txt", "wb", CFILE_NORMAL, CF_TYPE_DATA);
+		CFILE *out = cfopen("oldmotd.txt", "wb", CF_TYPE_DATA);
 		if(out != NULL){
 			// write all the text
 			cfwrite(&new_chksum, sizeof(new_chksum), 1, out);
@@ -4694,7 +4694,7 @@ void multi_pxo_help_load()
 
 	// read in the text file
 	in = NULL;
-	in = cfopen(MULTI_PXO_HELP_FILE,"rt",CFILE_NORMAL,CF_TYPE_DATA);			
+	in = cfopen(MULTI_PXO_HELP_FILE,"rt",CF_TYPE_DATA);			
 	Assert(in != NULL);
 	if(in == NULL){
 		return;
@@ -5040,7 +5040,7 @@ void multi_pxo_ban_parse_banner_file()
 	char urls[10][512];
 	int num_banners, idx;
 
-	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CFILE_NORMAL, CF_TYPE_MULTI_CACHE);
+	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CF_TYPE_MULTI_CACHE);
 
 	// bad
 	if(in == NULL){

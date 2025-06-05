@@ -207,7 +207,7 @@ std::unique_ptr<FFmpegContext> FFmpegContext::createContextMem(const uint8_t* sn
 }
 
 std::unique_ptr<FFmpegContext> FFmpegContext::createContext(const SCP_string& path, int dir_type) {
-	CFILE* file = cfopen(path.c_str(), "rb", CFILE_NORMAL, dir_type);
+	CFILE* file = cfopen(path.c_str(), "rb", dir_type);
 
 	if (!file) {
 		throw FFmpegException("Failed to open file!");

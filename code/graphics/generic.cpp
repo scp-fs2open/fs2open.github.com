@@ -187,7 +187,7 @@ int generic_anim_stream(generic_anim *ga, const bool cache)
 		if(ga->use_hud_color)
 			bpp = 8;
 		if (ga->ani.animation == nullptr) {
-			ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY, 0);
+			ga->ani.animation = anim_load(ga->filename, CF_TYPE_ANY);
 		}
 		if (ga->ani.instance == nullptr) {
 			ga->ani.instance = init_anim_instance(ga->ani.animation, bpp);
