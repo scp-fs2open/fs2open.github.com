@@ -147,8 +147,9 @@ SCP_vector<player_order> Player_orders = {
 };
 
 const SCP_set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
+// note: STAY_NEAR_TARGET_ITEM appears in both enemy and friendly sets
 const SCP_set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
+const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM , STAY_NEAR_TARGET_ITEM };
 const SCP_set<size_t> target_messages = []() {
 	SCP_set<size_t> setunion;
 	std::set_union(enemy_target_messages.cbegin(), enemy_target_messages.cend(), friendly_target_messages.cbegin(), friendly_target_messages.cend(), std::inserter(setunion, setunion.end()));
@@ -1319,11 +1320,6 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		
 		case STAY_NEAR_ME_ITEM:
 		case STAY_NEAR_TARGET_ITEM:
-
-			// cannot stay near a hostile ship(?)
-			if ( (command == STAY_NEAR_TARGET_ITEM) && (ship_team != target_team) )
-				break;
-
 			ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 			ai_submode = -1;
 			message = MESSAGE_YESSIR;
