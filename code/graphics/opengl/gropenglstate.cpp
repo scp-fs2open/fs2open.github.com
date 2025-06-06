@@ -193,7 +193,7 @@ void opengl_state::init()
 	current_program = 0;
 	glUseProgram(0);
 
-	current_framebuffer = 0;
+	current_framebuffer = {0, 0};
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	framebuffer_stack.clear();
@@ -552,22 +552,56 @@ bool opengl_state::IsCurrentProgram(GLuint program) {
 	return current_program == program;
 }
 void opengl_state::BindFrameBuffer(GLuint name, GLenum mode) {
-	if (current_framebuffer != name) {
-		glBindFramebuffer(mode, name);
-		current_framebuffer = name;
+	switch(mode) {
+		case GL_FRAMEBUFFER:
+			if (current_framebuffer.first != current_framebuffer.second || current_framebuffer.first != name) {
+				glBindFramebuffer(mode, name);
+				current_framebuffer = {name, name};
+			}
+			break;
+		case GL_READ_FRAMEBUFFER:
+			if (current_framebuffer.first != name) {
+				glBindFramebuffer(mode, name);
+				current_framebuffer.first = name;
+			}
+			break;
+		case GL_DRAW_FRAMEBUFFER:
+			if (current_framebuffer.second != name) {
+				glBindFramebuffer(mode, name);
+				current_framebuffer.second = name;
+			}
+			break;
+		default:
+			UNREACHABLE("Invalid BindFrameBuffer mode!");
+	}
+}
+void opengl_state::BindFrameBufferBoth(GLuint read, GLuint draw) {
+	if (read != current_framebuffer.first) {
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, read);
+		current_framebuffer.first = read;
+	}
+	if (draw != current_framebuffer.second) {
+		glBindFramebuffer(GL_DRAW_FRAMEBUFFER, draw);
+		current_framebuffer.second = draw;
 	}
 }
 void opengl_state::PushFramebufferState() {
 	framebuffer_stack.push_back(current_framebuffer);
 }
 void opengl_state::PopFramebufferState() {
-	Assertion(framebuffer_stack.size() > 0, "Tried to pop the framebuffer state stack while it was empty!");
+	Assertion(!framebuffer_stack.empty(), "Tried to pop the framebuffer state stack while it was empty!");
 
-	auto restoreBuffer = framebuffer_stack.back();
+	auto [restoreBufferRead, restoreBufferDraw] = framebuffer_stack.back();
 	framebuffer_stack.pop_back();
 
-	BindFrameBuffer(restoreBuffer);
+	BindFrameBufferBoth(restoreBufferRead, restoreBufferDraw);
 }
+
+bool opengl_state::ValidForFlip() const {
+	//Check everything that may put the state into an invalid state for rendering
+	return framebuffer_stack.empty() && current_framebuffer.first == 0 && current_framebuffer.second == 0;
+}
+
 void opengl_state::BindVertexArray(GLuint vao) {
 	if (current_vao == vao) {
 		return;

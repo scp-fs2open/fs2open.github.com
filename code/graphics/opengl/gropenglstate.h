@@ -241,9 +241,9 @@ class opengl_state
 
 		GLuint current_program;
 
-		// The framebuffer state actually consists of draw and read buffers but we only use both at the same time
-		GLuint current_framebuffer;
-		SCP_vector<GLuint> framebuffer_stack;
+		// The first is the read buffer, the second is the draw buffer
+		std::pair<GLuint, GLuint> current_framebuffer;
+		SCP_vector<std::pair<GLuint, GLuint>> framebuffer_stack;
 
 		GLuint current_vao = 0;
 	public:
@@ -291,11 +291,14 @@ class opengl_state
 		bool IsCurrentProgram(GLuint program);
 
 		void BindFrameBuffer(GLuint name, GLenum mode = GL_FRAMEBUFFER);
+		void BindFrameBufferBoth(GLuint read, GLuint draw);
 
 		void PushFramebufferState();
 		void PopFramebufferState();
 
 		void BindVertexArray(GLuint vao);
+
+		bool ValidForFlip() const;
 };
 
 inline GLenum opengl_state::FrontFaceValue(GLenum new_val)
