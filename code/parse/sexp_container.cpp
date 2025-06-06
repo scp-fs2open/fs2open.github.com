@@ -10,7 +10,6 @@
 
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/toolchain.h"
 #include "mission/missiongoals.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
