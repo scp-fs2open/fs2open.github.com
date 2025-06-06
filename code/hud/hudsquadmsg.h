@@ -190,6 +190,11 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );
 
+// functions for menu item selection with simple up/down/select buttons
+void hud_squadmsg_selection_move_down();
+void hud_squadmsg_selection_move_up();
+void hud_squadmsg_selection_select();
+
 // Added for checking message validity - Mjn
 bool hud_squadmsg_ship_order_valid(int shipnum, int order);
 
