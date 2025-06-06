@@ -59,7 +59,7 @@ int curve_parse(const char *err_msg) {
 	}
 	else {
 		SCP_string curve_name;
-		stuff_string(curve_name, F_NAME);
+		stuff_string(curve_name, F_NAME, "()");
 		int curve_id = curve_get_by_name(curve_name);
 		if (curve_id < 0) {
 			error_display(0, "Curve %s not found!%s", curve_name.c_str(), err_msg);
@@ -79,6 +79,10 @@ void parse_curve_table(const char* filename) {
 		while (optional_string("$Name:")) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
+
+			if (name.find("(") != SCP_string::npos || name.find(")") != SCP_string::npos) {
+				error_display(0, "Curve name %s contains parentheses, which are not permitted.", name.c_str());
+			}
 
 			int index = curve_get_by_name(name);
 
