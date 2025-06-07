@@ -24,6 +24,9 @@ class LabUi {
 	void build_species_entry(const species_info &species_def, int species_idx) const;
 	void build_weapon_list() const;
 	void build_weapon_subtype_list() const;
+	static void build_object_list();
+	static void build_asteroid_list();
+	static void build_debris_list();
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;
