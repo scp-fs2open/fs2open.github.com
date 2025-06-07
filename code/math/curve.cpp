@@ -80,7 +80,7 @@ void parse_curve_table(const char* filename) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
 
-			if (name.find("(") != SCP_string::npos || name.find(")") != SCP_string::npos) {
+			if (name.find('(') != SCP_string::npos || name.find(')') != SCP_string::npos) {
 				error_display(0, "Curve name %s contains parentheses, which are not permitted.", name.c_str());
 			}
 
