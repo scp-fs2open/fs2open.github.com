@@ -174,6 +174,7 @@ namespace fso {
 				case AI_GOAL_IGNORE_NEW:
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
+				case AI_GOAL_FORM_ON_WING:
 				case AI_GOAL_STAY_STILL:
 				case AI_GOAL_CHASE_SHIP_CLASS:
 					break;
@@ -512,6 +513,7 @@ namespace fso {
 					case AI_GOAL_IGNORE_NEW:
 					case AI_GOAL_EVADE_SHIP:
 					case AI_GOAL_STAY_NEAR_SHIP:
+					case AI_GOAL_FORM_ON_WING:
 						break;
 
 					case AI_GOAL_WAYPOINTS:
