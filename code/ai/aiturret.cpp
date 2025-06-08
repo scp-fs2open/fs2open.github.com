@@ -1086,7 +1086,7 @@ int find_turret_enemy(const ship_subsys *turret_subsys, int objnum, const vec3d 
 	if ((sip->class_type >= 0) && (Ship_types[sip->class_type].flags[Ship::Type_Info_Flags::Turret_tgt_ship_tgt]) && (aip->target_objnum != -1)) {
 		int target_objnum = aip->target_objnum;
 
-	if (Objects[target_objnum].signature == aip->target_signature) {
+		if (Objects[target_objnum].signature == aip->target_signature) {
 			ship* target_shipp = &Ships[Objects[target_objnum].instance];
 			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
 				if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) { // check this flag as well
