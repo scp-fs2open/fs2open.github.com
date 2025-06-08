@@ -1811,8 +1811,6 @@ void game_init()
 		Cmdline_load_all_weapons = 0;
 
 		// Force some ingame options to off
-		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.WarpFlash", false);
-
 		Use_3D_shockwaves = false;
 		options::OptionsManager::instance()->set_ingame_binary_option("Graphics.3DShockwaves", false);
 

@@ -298,6 +298,8 @@ void HudGaugeReticle::render(float  /*frametime*/, bool config)
 				}
 				has_autoaim_lock = false;
 			}
+		} else {
+			has_autoaim_lock = false;
 		}
 	}
 
