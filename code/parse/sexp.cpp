@@ -39887,7 +39887,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_AI_STAY_STILL, "Ai-stay-still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
 		"which time the ship will come to life and defend itself.  By default all goals on the ship's goal list will be cleared when this goal runs.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"Takes 2 to 3 arguments...\r\n"
 		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
 		"\t2:\tGoal priority (number between 0 and 89).\r\n"
 		"\t3:\tWhether to clear all goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
