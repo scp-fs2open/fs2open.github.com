@@ -3,6 +3,22 @@
 #include "cfile/cfile.h"
 #include "lab/labv2_internal.h"
 
+SCP_map<int, SCP_string> get_docking_point_map(int model_index)
+{
+	SCP_map<int, SCP_string> result;
+
+	polymodel* pm = model_get(model_index);
+	if (pm == nullptr || pm->n_docks <= 0)
+		return result;
+
+	for (int i = 0; i < pm->n_docks; ++i) {
+		const char* name = pm->docking_bays[i].name;
+		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed>");
+	}
+
+	return result;
+}
+
 
 SCP_string get_ship_table_text(ship_info* sip)
 {

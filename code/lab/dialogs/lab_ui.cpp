@@ -1233,12 +1233,103 @@ void LabUi::show_object_options() const
 				if (getLabManager()->isSafeForShips()) {
 					if (Button("Destroy ship")) {
 						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+							// If we have an undocker, delete it before destroying the current ship
+							getLabManager()->deleteDockerObject();
+
 							auto obj = &Objects[getLabManager()->CurrentObject];
 
 							obj->flags.remove(Object::Object_Flags::Player_ship);
 							ship_self_destruct(obj);
 						}
 					}
+
+					const ship* dockee_shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
+					auto dockee_dock_map = get_docking_point_map(Ship_info[dockee_shipp->ship_info_index].model_num);
+
+					if (!dockee_dock_map.empty()) {
+
+						if (ImGui::BeginCombo("Docker Ship Class", Ship_info[getLabManager()->DockerClass].name)) {
+							for (size_t i = 0; i < Ship_info.size(); ++i) {
+								bool is_selected = (static_cast<int>(i) == getLabManager()->DockerClass);
+								if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
+									getLabManager()->DockerClass = static_cast<int>(i);
+									// Load model if needed
+									auto& dsip = Ship_info[getLabManager()->DockerClass];
+									if (dsip.model_num < 0) {
+										dsip.model_num = model_load(dsip.pof_file, &dsip);
+									}
+									auto new_dock_map = get_docking_point_map(dsip.model_num);
+
+									// Auto-select first available dockpoint (or clear if none)
+									if (!new_dock_map.empty()) {
+										getLabManager()->DockerDockPoint = new_dock_map.begin()->second;
+									} else {
+										getLabManager()->DockerDockPoint.clear();
+									}
+								}
+								if (is_selected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						auto& dsip = Ship_info[getLabManager()->DockerClass];
+						if (dsip.model_num < 0) {
+							dsip.model_num = model_load(dsip.pof_file, &dsip);
+						}
+						auto dock_map = get_docking_point_map(dsip.model_num);
+
+						// Ensure DockerDockPoint is initialized once based on the current DockerClass
+						if (getLabManager()->DockerDockPoint.empty()) {
+							if (!dock_map.empty()) {
+								getLabManager()->DockerDockPoint = dock_map.begin()->second;
+							}
+						}
+
+						const char* docker_label = getLabManager()->DockerDockPoint.c_str();
+
+						if (ImGui::BeginCombo("Docker Dockpoint", docker_label)) {
+							if (!dock_map.empty()) {
+								for (const auto& [index, name] : dock_map) {
+									bool is_selected = (name == getLabManager()->DockerDockPoint);
+									if (ImGui::Selectable(name.c_str(), is_selected)) {
+										getLabManager()->DockerDockPoint = name;
+									}
+									if (is_selected)
+										ImGui::SetItemDefaultFocus();
+								}
+							}
+							ImGui::EndCombo();
+						}
+
+						// Auto-select first dockpoint if none currently selected
+						if (getLabManager()->DockeeDockPoint.empty()) {
+							getLabManager()->DockeeDockPoint = dockee_dock_map.begin()->second;
+						}
+
+						const char* dockee_label = getLabManager()->DockeeDockPoint.c_str();
+
+						if (ImGui::BeginCombo("Dockee Dockpoint", dockee_label)) {
+							for (const auto& [index, name] : dockee_dock_map) {
+								bool is_selected = (name == getLabManager()->DockeeDockPoint);
+								if (ImGui::Selectable(name.c_str(), is_selected)) {
+									getLabManager()->DockeeDockPoint = name;
+								}
+								if (is_selected)
+									ImGui::SetItemDefaultFocus();
+							}
+							ImGui::EndCombo();
+						}
+
+						if (Button("Begin Docking Test")) {
+							getLabManager()->beginDockingTest();
+						}
+
+						if (Button("Begin Undocking Test")) {
+							getLabManager()->beginUndockingTest();
+						}
+					}
+
 
 					build_animation_options(shipp, sip);
 				}

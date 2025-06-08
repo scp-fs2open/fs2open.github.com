@@ -152,6 +152,8 @@ typedef struct ai_goal {
 
 extern void ai_goal_reset(ai_goal *aigp, bool adding_goal = false, ai_goal_mode ai_mode = AI_GOAL_NONE, int ai_submode = -1, ai_goal_type type = ai_goal_type::INVALID);
 
+// Reset all path points. Used in the ship lab. Missions clean up path points with the garbage collector.
+extern void reset_ai_path_points();
 
 typedef flag_def_list_templated<ai_goal_mode> ai_goal_list;
 
