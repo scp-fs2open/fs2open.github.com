@@ -475,6 +475,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "change-iff-color",				OP_CHANGE_IFF_COLOR,					6,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
 	{ "add-remove-escort",				OP_ADD_REMOVE_ESCORT,					2,	2,			SEXP_ACTION_OPERATOR,	},
 	{ "ship-change-alt-name",			OP_SHIP_CHANGE_ALT_NAME,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
+	{ "ship-change-display-name",		OP_SHIP_CHANGE_DISPLAY_NAME,			2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // DarkVisor
 	{ "ship-change-callsign",			OP_SHIP_CHANGE_CALLSIGN,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// FUBAR
 	{ "ship-tag",						OP_SHIP_TAG,							3,	8,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-untag",						OP_SHIP_UNTAG,							1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -748,6 +749,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "set-camera-shudder",				OP_SET_CAMERA_SHUDDER,					2,	4,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-start",				OP_SUPERNOVA_START,						1,	1,			SEXP_ACTION_OPERATOR,	},
 	{ "supernova-stop",					OP_SUPERNOVA_STOP,						0,	0,			SEXP_ACTION_OPERATOR,	},	//CommanderDJ
+	{ "get-supernova-stage",			OP_GET_SUPERNOVA_STAGE,					0,	0,			SEXP_INTEGER_OPERATOR,	},	// Goober5000
 	{ "set-motion-debris-override",		OP_OVERRIDE_MOTION_DEBRIS,				1,  1,			SEXP_ACTION_OPERATOR,	},	// The E
 
 	//Background and Nebula Sub-Category
@@ -13560,7 +13562,8 @@ void sexp_hud_reset_color(int n)
 				WarningEx(LOCATION, "HUD gauge %s does not have a built-in configured color!", gaugename);
 			} else {
 				// use the color as specified in the HUD config
-				auto& c = HUD_config.clr[std::distance(std::begin(Legacy_HUD_gauges), ii)];
+				auto id = hg->getConfigId();
+				auto& c = HUD_config.gauge_colors[id];
 
 				hg->sexpLockConfigColor(false);
 				hg->updateColor(c.red, c.green, c.blue, (HUD_color_alpha + 1) * 16);
@@ -13747,11 +13750,20 @@ void sexp_set_squadron_wings(int node)
 /**
  * Trigger whether player uses the game AI for stuff
  */
-void sexp_player_use_ai(int flag)
+void sexp_player_use_ai(bool use_ai)
 {
-	Player_use_ai = flag ? 1 : 0;
+	// if turning off player AI, clean up the AI to prevent any stale state from causing trouble later
+	if (Player_use_ai && !use_ai)
+	{
+		ai_clear_ship_goals(Player_ai);
+		Player_ai->mode = AIM_NONE;
+		set_target_objnum(Player_ai, -1);
+	}
 
-	if (!flag) {
+	Player_use_ai = use_ai;
+
+	if (!use_ai)
+	{
 		Player_ai->ai_override_flags.reset();
 		Player_obj->phys_info.flags &= ~PF_MANEUVER_NO_DAMP;
 	}
@@ -19596,19 +19608,27 @@ void sexp_kamikaze(int n, int kamikaze)
 }
 
 // Goober5000
-void sexp_ingame_ship_alt_name_or_callsign(ship *shipp, int alt_index, bool alt_name)
+void sexp_ingame_ship_alt_name_or_display_name_or_callsign(ship *shipp, bool clear_it, int alt_index, const char *display_name, int op_num)
 {
 	// we might be clearing it
-	if (alt_index < 0)
+	if (clear_it)
 	{
-		if (alt_name)
+		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 			shipp->alt_type_index = -1;
-		else
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 			shipp->callsign_index = -1;
+		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		{
+			shipp->display_name = "";
+			shipp->flags.remove(Ship::Ship_Flags::Has_display_name);
+		}
+		else
+			UNREACHABLE("Unhandled op_num %d!", op_num);
+
 		return;
 	}
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 	{
 		// see if this is actually the ship class
 		if (!stricmp(Ship_info[shipp->ship_info_index].name, Mission_alt_types[alt_index]))
@@ -19618,26 +19638,41 @@ void sexp_ingame_ship_alt_name_or_callsign(ship *shipp, int alt_index, bool alt_
 		}
 	}
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		shipp->alt_type_index = alt_index;
-	else
+	else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		shipp->callsign_index = alt_index;
+	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	{
+		shipp->display_name = display_name;
+		shipp->flags.set(Ship::Ship_Flags::Has_display_name);
+	}
+	else
+		UNREACHABLE("Unhandled op_num %d!", op_num);
 }
 
 // Goober5000
-void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, bool alt_name)
+void sexp_parse_ship_alt_name_or_display_name_or_callsign(p_object *parse_obj, bool clear_it, int alt_index, const char *display_name, int op_num)
 {
 	// we might be clearing it
-	if (alt_index < 0)
+	if (clear_it)
 	{
-		if (alt_name)
+		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 			parse_obj->alt_type_index = -1;
-		else
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 			parse_obj->callsign_index = -1;
+		else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+		{
+			parse_obj->display_name = "";
+			parse_obj->flags.remove(Mission::Parse_Object_Flags::SF_Has_display_name);
+		}
+		else
+			UNREACHABLE("Unhandled op_num %d!", op_num);
+
 		return;
 	}
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 	{
 		// see if this is actually the ship class
 		if (!stricmp(Ship_class_names[parse_obj->ship_class], Mission_alt_types[alt_index]))
@@ -19647,18 +19682,25 @@ void sexp_parse_ship_alt_name_or_callsign(p_object *parse_obj, int alt_index, bo
 		}
 	}
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		parse_obj->alt_type_index = alt_index;
-	else
+	else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		parse_obj->callsign_index = alt_index;
+	else if (op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
+	{
+		parse_obj->display_name = display_name;
+		parse_obj->flags.set(Mission::Parse_Object_Flags::SF_Has_display_name);
+	}
+	else
+		UNREACHABLE("Unhandled op_num %d!", op_num);
 }
 
 // Goober5000
-void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
+void sexp_ship_change_alt_name_or_display_name_or_callsign(int node, int op_num)
 {
 	char new_string[TOKEN_LENGTH];
-	int n = node, new_index;
-	bool string_was_empty;
+	int n = node, new_index = -1;
+	bool string_was_empty = false, clear_it = false;
 
 	// get the string
 	strcpy_s(new_string, CTEXT(n));
@@ -19674,7 +19716,7 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 	// if the hash is at the beginning, the string might be truncated to empty, so check this first
 	string_was_empty = (*new_string == '\0');
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME || op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
 	{
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(new_string, true);
@@ -19686,17 +19728,17 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 	// get the string's index
 	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
-		new_index = -1;
+		clear_it = true;
 	}
 	else
 	{
-		if (alt_name)
+		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		{
 			new_index = mission_parse_lookup_alt(new_string);
 			if (new_index < 0)
 				new_index = mission_parse_add_alt(new_string);
 		}
-		else
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		{
 			new_index = mission_parse_lookup_callsign(new_string);
 			if (new_index < 0)
@@ -19717,7 +19759,7 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 			// change ingame ship
 			case OSWPT_TYPE_SHIP:
 			{
-				sexp_ingame_ship_alt_name_or_callsign(oswpt.shipp(), new_index, alt_name);
+				sexp_ingame_ship_alt_name_or_display_name_or_callsign(oswpt.shipp(), clear_it, new_index, new_string, op_num);
 				if (MULTIPLAYER_MASTER)
 					Current_sexp_network_packet.send_ship(oswpt.shipp());
 				break;
@@ -19726,7 +19768,7 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 			// change ship yet to arrive
 			case OSWPT_TYPE_PARSE_OBJECT:
 			{
-				sexp_parse_ship_alt_name_or_callsign(oswpt.p_objp(), new_index, alt_name);
+				sexp_parse_ship_alt_name_or_display_name_or_callsign(oswpt.p_objp(), clear_it, new_index, new_string, op_num);
 				if (MULTIPLAYER_MASTER)
 					Current_sexp_network_packet.send_parse_object(oswpt.p_objp());
 				break;
@@ -19738,13 +19780,13 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 			{
 				// current ships
 				for (int i = 0; i < oswpt.wingp()->current_count; i++)
-					sexp_ingame_ship_alt_name_or_callsign(&Ships[oswpt.wingp()->ship_index[i]], new_index, alt_name);
+					sexp_ingame_ship_alt_name_or_display_name_or_callsign(&Ships[oswpt.wingp()->ship_index[i]], clear_it, new_index, new_string, op_num);
 	
 				// ships yet to arrive
 				for (auto p_objp: list_range(&Ship_arrival_list))
 				{
 					if (p_objp->wingnum == oswpt.wingnum)
-						sexp_parse_ship_alt_name_or_callsign(p_objp, new_index, alt_name);
+						sexp_parse_ship_alt_name_or_display_name_or_callsign(p_objp, clear_it, new_index, new_string, op_num);
 				}
 
 				if (MULTIPLAYER_MASTER)
@@ -19761,18 +19803,18 @@ void sexp_ship_change_alt_name_or_callsign(int node, bool alt_name)
 		Current_sexp_network_packet.end_callback();
 }
 
-void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
+void multi_sexp_ship_change_alt_name_or_display_name_or_callsign(int op_num)
 {
 	char new_string[TOKEN_LENGTH];
-	int type, new_index;
-	bool string_was_empty;
+	int type, new_index = -1;
+	bool string_was_empty = false, clear_it = false;
 
 	Current_sexp_network_packet.get_string(new_string);
 
 	// if the hash is at the beginning, the string might be truncated to empty, so check this first
 	string_was_empty = (*new_string == '\0');
 
-	if (alt_name)
+	if (op_num == OP_SHIP_CHANGE_ALT_NAME || op_num == OP_SHIP_CHANGE_DISPLAY_NAME)
 	{
 		// truncate at a single hash
 		end_string_at_first_hash_symbol(new_string, true);
@@ -19783,17 +19825,17 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 
 	if (string_was_empty || !stricmp(new_string, SEXP_ANY_STRING))
 	{
-		new_index = -1;
+		clear_it = true;
 	}
 	else
 	{
-		if (alt_name)
+		if (op_num == OP_SHIP_CHANGE_ALT_NAME)
 		{
 			new_index = mission_parse_lookup_alt(new_string);
 			if (new_index < 0)
 				new_index = mission_parse_add_alt(new_string);
 		}
-		else
+		else if (op_num == OP_SHIP_CHANGE_CALLSIGN)
 		{
 			new_index = mission_parse_lookup_callsign(new_string);
 			if (new_index < 0)
@@ -19809,7 +19851,7 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 			{
 				ship *shipp;
 				if (Current_sexp_network_packet.get_ship(shipp))
-					sexp_ingame_ship_alt_name_or_callsign(shipp, new_index, alt_name);
+					sexp_ingame_ship_alt_name_or_display_name_or_callsign(shipp, clear_it, new_index, new_string, op_num);
 				break;
 			}
 
@@ -19817,7 +19859,7 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 			{
 				p_object *pobjp;
 				if (Current_sexp_network_packet.get_parse_object(pobjp))
-					sexp_parse_ship_alt_name_or_callsign(pobjp, new_index, alt_name);
+					sexp_parse_ship_alt_name_or_display_name_or_callsign(pobjp, clear_it, new_index, new_string, op_num);
 				break;
 			}
 
@@ -19829,13 +19871,13 @@ void multi_sexp_ship_change_alt_name_or_callsign(bool alt_name)
 				{
 					// current ships
 					for (int i = 0; i < wingp->current_count; i++)
-						sexp_ingame_ship_alt_name_or_callsign(&Ships[wingp->ship_index[i]], new_index, alt_name);
+						sexp_ingame_ship_alt_name_or_display_name_or_callsign(&Ships[wingp->ship_index[i]], clear_it, new_index, new_string, op_num);
 
 					// ships yet to arrive
 					for (p_object *p_objp = GET_FIRST(&Ship_arrival_list); p_objp != END_OF_LIST(&Ship_arrival_list); p_objp = GET_NEXT(p_objp))
 					{
 						if (p_objp->wingnum == WING_INDEX(wingp))
-							sexp_parse_ship_alt_name_or_callsign(p_objp, new_index, alt_name);
+							sexp_parse_ship_alt_name_or_display_name_or_callsign(p_objp, clear_it, new_index, new_string, op_num);
 					}
 				}
 				break;
@@ -20474,7 +20516,7 @@ int sexp_gse_recharge_pct(int node, int op_num)
 		return SEXP_NAN_FOREVER;
 
 	// recharge pct
-	return (int)(100.0f * Energy_levels[index]);
+	return (int)(100.0f * ets_power_factor(ship_entry->objp(), false) * Energy_levels[index]);
 }
 
 /*
@@ -20583,21 +20625,21 @@ int sexp_shield_quad_low(int node)
 		return SEXP_NAN_FOREVER;
 
 	auto sip = &Ship_info[ship_entry->shipp()->ship_info_index];
-	if(!(sip->is_small_ship())){
+	if (!sip->is_small_ship()) {
 		return SEXP_KNOWN_FALSE;
 	}
 	max_quad = shield_get_max_quad(ship_entry->objp());	
 
 	// shield pct
-	check = (float)eval_num(CDR(node), is_nan, is_nan_forever);
+	check = i2fl(eval_num(CDR(node), is_nan, is_nan_forever));
 	if (is_nan)
 		return SEXP_FALSE;
 	if (is_nan_forever)
 		return SEXP_KNOWN_FALSE;
 
 	// check his quadrants
-	for (int idx = 0; idx < ship_entry->objp()->n_quadrants; ++idx) {
-		if (((ship_entry->objp()->shield_quadrant[idx] / max_quad) * 100.0f) <= check) {
+	for (float quadrant: ship_entry->objp()->shield_quadrant) {
+		if ((quadrant / max_quad * 100.0f) <= check) {
 			return SEXP_TRUE;
 		}
 	}
@@ -21232,8 +21274,18 @@ void ship_copy_damage(const ship_registry_entry *target, const ship_registry_ent
 	// ...and shields
 	target_shipp->special_shield = source_shipp->special_shield;
 	target_shipp->ship_max_shield_strength = source_shipp->ship_max_shield_strength;
-	for (int i = 0; i < MIN(target_objp->n_quadrants, source_objp->n_quadrants); i++)
-		target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
+	int n_quadrants = static_cast<int>(target_objp->shield_quadrant.size());
+	if (source_objp->shield_quadrant.size() == target_objp->shield_quadrant.size())
+	{
+		for (int i = 0; i < n_quadrants; i++)
+			target_objp->shield_quadrant[i] = source_objp->shield_quadrant[i];
+	}
+	else
+	{
+		float quad_strength = target_shipp->ship_max_shield_strength / n_quadrants;
+		for (int i = 0; i < n_quadrants; i++)
+			target_objp->shield_quadrant[i] = quad_strength;
+	}
 
 
 	// search through all subsystems on source ship and map them onto target ship
@@ -24434,6 +24486,11 @@ void sexp_supernova_stop(int  /*node*/)
 	supernova_stop();
 }
 
+int sexp_get_supernova_stage(int /*node*/)
+{
+	return static_cast<int>(supernova_stage());
+}
+
 int sexp_is_weapon_selected(int node, bool primary)
 {
 	int bank, num_banks;
@@ -24476,11 +24533,12 @@ int sexp_is_weapon_selected(int node, bool primary)
 //	Return SEXP_TRUE if quadrant quadnum is near max.
 int shield_quad_near_max(int quadnum)
 {
-	if (quadnum >= Player_obj->n_quadrants)
+	int n_quadrants = static_cast<int>(Player_obj->shield_quadrant.size());
+	if (quadnum < 0 || quadnum >= n_quadrants)
 		return SEXP_FALSE;
 
 	float	remaining = 0.0f;
-	for (int i=0; i<Player_obj->n_quadrants; i++) {
+	for (int i=0; i<n_quadrants; i++) {
 		if (i == quadnum){
 			continue;
 		}
@@ -24573,7 +24631,7 @@ int process_special_sexps(int index)
 			shield_apply_damage(Player_obj, FRONT_QUAD, -flFrametime*200.0f);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > shield_get_max_quad(Player_obj))
-			Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
+				Player_obj->shield_quadrant[FRONT_QUAD] = shield_get_max_quad(Player_obj);
 
 			if (Player_obj->shield_quadrant[FRONT_QUAD] > Player_obj->shield_quadrant[(FRONT_QUAD+1)%DEFAULT_SHIELD_SECTIONS] - 2.0f)
 				return SEXP_TRUE;
@@ -25150,8 +25208,8 @@ void sexp_set_training_context_fly_path(int node)
 {
 	bool is_nan, is_nan_forever;
 
-	waypoint_list *wp_list = find_matching_waypoint_list(CTEXT(node));
-	if (wp_list == nullptr)
+	int wp_list = find_matching_waypoint_list_index(CTEXT(node));
+	if (wp_list < 0)
 		return;
 
 	int distance = eval_num(CDR(node), is_nan, is_nan_forever);
@@ -25159,7 +25217,7 @@ void sexp_set_training_context_fly_path(int node)
 		return;
 
 	Training_context |= TRAINING_CONTEXT_FLY_PATH;
-	Training_context_waypoint_path = find_index_of_waypoint_list(wp_list);
+	Training_context_waypoint_path = wp_list;
 	Training_context_distance = static_cast<float>(distance);
 	Training_context_goal_waypoint = 0;
 	Training_context_at_waypoint = -1;
@@ -28408,8 +28466,9 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_SHIP_CHANGE_ALT_NAME:
+			case OP_SHIP_CHANGE_DISPLAY_NAME:
 			case OP_SHIP_CHANGE_CALLSIGN:
-				sexp_ship_change_alt_name_or_callsign(node, op_num == OP_SHIP_CHANGE_ALT_NAME);
+				sexp_ship_change_alt_name_or_display_name_or_callsign(node, op_num);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -29536,6 +29595,10 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_supernova_stop(node);
 				break;
 
+			case OP_GET_SUPERNOVA_STAGE:
+				return sexp_get_supernova_stage(node);
+				break;
+
 			case OP_OVERRIDE_MOTION_DEBRIS:
 				sexp_val = SEXP_TRUE;
 				sexp_set_motion_debris(node);
@@ -30281,7 +30344,8 @@ void multi_sexp_eval()
 
 			case OP_SHIP_CHANGE_ALT_NAME:
 			case OP_SHIP_CHANGE_CALLSIGN:
-				multi_sexp_ship_change_alt_name_or_callsign(op_num == OP_SHIP_CHANGE_ALT_NAME);
+			case OP_SHIP_CHANGE_DISPLAY_NAME:
+				multi_sexp_ship_change_alt_name_or_display_name_or_callsign(op_num);
 				break;
 
 			case OP_SET_RESPAWNS:
@@ -30655,38 +30719,104 @@ int run_sexp(const char* sexpression, bool run_eval_num, bool *is_nan_or_nan_for
 	return sexp_val;
 }
 
-DCF(sexpc, "Always runs the given sexp command (Warning! There is no undo for this!)")
+DCF(sexpc, "Runs the given sexp command, wrapped as an action of a when-true condition")
 {
 	SCP_string sexp;
-	SCP_string sexp_always;
+	SCP_string sexp_wrapped;
 	
 	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: sexpc sexpression\n. Always runs the given sexp as '( when ( true ) ( sexp ) )' .\n" );
+		dc_printf( "Usage: sexpc <sexpression>\n. Runs the given sexp as '( when ( true ) ( sexpression ) )' .\n" );
 		return;
 	}
 
 	dc_stuff_string(sexp);
 
-	sexp_always = "( when ( true ) ( " + sexp + " ) )";
+	sexp_wrapped = "( when ( true ) ( " + sexp + " ) )";
 
-	int sexp_val = run_sexp(sexp_always.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp_always.c_str(), sexp_val);
+	int sexp_val = run_sexp(sexp_wrapped.c_str());
+	dc_printf("SEXP '%s' run; sexp_val = %d\n", sexp_wrapped.c_str(), sexp_val);
 }
 
-
-DCF(sexp,"Runs the given sexp")
+DCF(sexp, "Runs the given sexp")
 {
 	SCP_string sexp;
 
 	if (dc_optional_string_either("help", "--help")) {
-		dc_printf( "Usage: sexp 'sexpression'\n. Runs the given sexp.\n");
+		dc_printf( "Usage: sexp <sexpression>\n. Runs the given sexp.\n");
 		return;
 	}
 
 	dc_stuff_string(sexp);
 
 	int sexp_val = run_sexp(sexp.c_str());
-	dc_printf("SEXP '%s' run, sexp_val = %d\n", sexp.c_str(), sexp_val);
+	dc_printf("Result = %d\n", sexp_val);
+}
+
+DCF(script, "Runs the given script, without regard to its return value")
+{
+	SCP_string script;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf( "Usage: script <script code>\n. Runs the given script.\n");
+		return;
+	}
+
+	dc_stuff_string(script);
+
+	bool success = Script_system.EvalString(script.c_str());
+	dc_printf("Script %s\n", success ? "successful" : "unsuccessful");
+}
+
+template <typename T>
+void script_eval_with_return(const char *help_text, const char *format, void (*to_scp_string)(T, SCP_string&))
+{
+	SCP_string script;
+
+	if (dc_optional_string_either("help", "--help")) {
+		dc_printf("%s", help_text);
+		return;
+	}
+
+	dc_stuff_string(script);
+
+	T result{};
+	SCP_string result_string;
+
+	bool success = Script_system.EvalStringWithReturn(script.c_str(), format, &result);
+	to_scp_string(result, result_string);
+	dc_printf("Script %s.  Result = %s\n", success ? "successful" : "unsuccessful", result_string.c_str());
+}
+
+DCF(script_eval_bool, "Evaluates the given script, returning a boolean result")
+{
+	script_eval_with_return<bool>("Usage: script_eval_bool <script code>\n. Runs the given script, returning a boolean result.\n",
+		"|b",
+		[](bool b, SCP_string& str) { str = b ? "true" : "false"; }
+	);
+}
+
+DCF(script_eval_int, "Evaluates the given script, returning an integer result")
+{
+	script_eval_with_return<int>("Usage: script_eval_int <script code>\n. Runs the given script, returning an integer result.\n",
+		"|i",
+		[](int i, SCP_string& str) { sprintf(str, "%d", i); }
+	);
+}
+
+DCF(script_eval_float, "Evaluates the given script, returning a float result")
+{
+	script_eval_with_return<float>("Usage: script_eval_float <script code>\n. Runs the given script, returning a float result.\n",
+		"|f",
+		[](float f, SCP_string& str) { sprintf(str, "%f", f); }
+	);
+}
+
+DCF(script_eval_string, "Evaluates the given script, returning a string result")
+{
+	script_eval_with_return<const char*>("Usage: script_eval_string <script code>\n. Runs the given script, returning a string result.\n",
+		"|s",
+		[](const char* s, SCP_string& str) { sprintf(str, "'%s'", s ? s : ""); }
+	);
 }
 
 bool map_opf_to_opr(sexp_opf_t opf_type, sexp_opr_t &opr_type)
@@ -31010,6 +31140,7 @@ int query_operator_return_type(int op)
 		case OP_TURRET_GET_PRIMARY_AMMO:
 		case OP_TURRET_GET_SECONDARY_AMMO:
 		case OP_GET_POWER_OUTPUT:
+		case OP_GET_SUPERNOVA_STAGE:
 			return OPR_POSITIVE;
 
 		case OP_COND:
@@ -31265,6 +31396,7 @@ int query_operator_return_type(int op)
 		case OP_SET_SQUADRON_WINGS:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SET_DEATH_MESSAGE:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
@@ -31528,6 +31660,7 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_VALIDATE_ALL_ARGUMENTS:
 		case OP_NUM_VALID_ARGUMENTS:
 		case OP_SUPERNOVA_STOP:
+		case OP_GET_SUPERNOVA_STAGE:
 		case OP_NAV_UNSELECT:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_RESET_POST_EFFECTS:
@@ -31912,6 +32045,12 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_STRING;
 			else
 				return OPF_SHIP;
+
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
+			if (argnum == 0)
+				return OPF_STRING;
+			else
+				return OPF_SHIP_WING;
 
 		case OP_SET_DEATH_MESSAGE:
 			return OPF_MESSAGE_OR_STRING;
@@ -35928,6 +36067,7 @@ int category_of_subcategory(int subcategory_id)
 			return OP_CATEGORY_CHANGE;
 
 		case STATUS_SUBCATEGORY_MISSION:
+		case STATUS_SUBCATEGORY_CUTSCENES:
 		case STATUS_SUBCATEGORY_PLAYER:
 		case STATUS_SUBCATEGORY_MULTIPLAYER:
 		case STATUS_SUBCATEGORY_SHIP_STATUS:
@@ -36155,6 +36295,8 @@ int get_category(int op_id)
 		case OP_IS_SHIP_EMP_ACTIVE:
 		case OP_PLAYER_IS_CHEATING_BASTARD:
 		case OP_USED_CHEAT:
+		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_SUPERNOVA_STAGE:
 			return OP_CATEGORY_STATUS;
 
 		case OP_WHEN:
@@ -36319,6 +36461,7 @@ int get_category(int op_id)
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
 		case OP_SHIP_CHANGE_ALT_NAME:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SCRAMBLE_MESSAGES:
 		case OP_UNSCRAMBLE_MESSAGES:
 		case OP_CUTSCENES_SET_CUTSCENE_BARS:
@@ -36388,7 +36531,6 @@ int get_category(int op_id)
 		case OP_SET_PERSONA:
 		case OP_CHANGE_PLAYER_SCORE:
 		case OP_CHANGE_TEAM_SCORE:
-		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_SET_CAMERA_FOV:
 		case OP_CUTSCENES_SET_CAMERA:
 		case OP_CUTSCENES_SET_CAMERA_HOST:
@@ -36719,6 +36861,7 @@ int get_subcategory(int op_id)
 		case OP_ADD_REMOVE_ESCORT:
 		case OP_SHIP_CHANGE_ALT_NAME:
 		case OP_SHIP_CHANGE_CALLSIGN:
+		case OP_SHIP_CHANGE_DISPLAY_NAME:
 		case OP_SHIP_TAG:
 		case OP_SHIP_UNTAG:
 		case OP_SET_ARRIVAL_INFO:
@@ -36973,7 +37116,6 @@ int get_subcategory(int op_id)
 		case OP_CUTSCENES_SET_CAMERA_TARGET:
 		case OP_CUTSCENES_SET_CAMERA_FOV:
 		case OP_CUTSCENES_SET_FOV:
-		case OP_CUTSCENES_GET_FOV:
 		case OP_CUTSCENES_RESET_FOV:
 		case OP_CUTSCENES_RESET_CAMERA:
 		case OP_CUTSCENES_SHOW_SUBTITLE:
@@ -37083,6 +37225,10 @@ int get_subcategory(int op_id)
 		case OP_DIRECTIVE_VALUE:
 		case OP_GET_HOTKEY:
 			return STATUS_SUBCATEGORY_MISSION;
+
+		case OP_CUTSCENES_GET_FOV:
+		case OP_GET_SUPERNOVA_STAGE:
+			return STATUS_SUBCATEGORY_CUTSCENES;
 
 		case OP_WAS_PROMOTION_GRANTED:
 		case OP_WAS_MEDAL_GRANTED:
@@ -39944,6 +40090,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe ship class name to display\r\n"
 		"\tRest:\tThe ships to display the new class name (ships do not need to be in-mission)" },
 
+	{ OP_SHIP_CHANGE_DISPLAY_NAME, "ship-change-display-name\r\n"
+		"\tChanges the ship name displayed in the HUD target window.  Takes 2 arguments...\r\n"
+		"\t1:\tThe ship name to display\r\n"
+		"\tRest:\tThe ship to display the new name (ships do not need to be in-mission)" },
+
 	// FUBAR
 	{ OP_SHIP_CHANGE_CALLSIGN, "ship-change-callsign\r\n"
 		"\tChanges the callsign of a ship.  Takes 2 or more arguments...\r\n"
@@ -40572,8 +40723,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1: Time in seconds that the supernova lasts.  Note that it will actually hit the player at " SCP_TOKEN_TO_STR(SUPERNOVA_HIT_TIME) " seconds.  If you want the HUD gauge to adjust for this, use the '$Supernova hits at zero' game_settings.tbl option.\r\n"},
 
 	{ OP_SUPERNOVA_STOP, "supernova-stop\r\n"
-		"\t Stops a supernova in progress.\r\n"
-		"\t Note this only works if the camera hasn't cut to the player's death animation yet.\r\n"},
+		"\tStops a supernova in progress.  Note this only works if the camera hasn't cut to the player's death animation yet (is not yet at stage 3 as described in get-supernova-stage).\r\n"},
+
+	{ OP_GET_SUPERNOVA_STAGE, "get-supernova-stage\r\n"
+		"\tReturns the current stage of the active supernova, if any.  Takes no arguments.  Note that the game considers the player to be hit by the supernova at stage 3.\r\n"
+		"\tPossible return values:\r\n"
+		"\t0 = not active\r\n"
+		"\t1 = player still in control. shockwave approaching.\r\n"
+		"\t2 = shockwave still approaching, but very close. sound1 has started\r\n"
+		"\t3 = camera cut. player controls locked. letterbox. sound2 has started. particles start\r\n"
+		"\t4 = tooltime. lots of particles. camera stops moving\r\n"
+		"\t5 = player is effectively dead. fade to white. stop simulation\r\n"
+		"\t6 = dead popup\r\n"
+	},
 
 	{ OP_WEAPON_RECHARGE_PCT, "weapon-recharge-pct\r\n"
 		"\tReturns a percentage from 0 to 100\r\n"
@@ -42225,6 +42387,7 @@ SCP_vector<op_menu_struct> op_submenu =
 	{ "Containers",                     CHANGE_SUBCATEGORY_CONTAINERS                   },
 	{ "Other",                          CHANGE_SUBCATEGORY_OTHER                        },
 	{ "Mission",                        STATUS_SUBCATEGORY_MISSION                      },
+	{ "Cutscenes",                      STATUS_SUBCATEGORY_CUTSCENES                    },
 	{ "Player",                         STATUS_SUBCATEGORY_PLAYER                       },
 	{ "Multiplayer",                    STATUS_SUBCATEGORY_MULTIPLAYER                  },
 	{ "Ship Status",                    STATUS_SUBCATEGORY_SHIP_STATUS                  },

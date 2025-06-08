@@ -38,6 +38,8 @@ extern int Token_found_flag;
 #define	EOLN			(char)0x0a
 #define CARRIAGE_RETURN (char)0x0d
 
+enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
+
 #define	F_NAME					1
 #define	F_DATE					2
 #define	F_NOTES					3
@@ -49,7 +51,8 @@ extern int Token_found_flag;
 #define	F_MESSAGE				9	// this is now obsolete for mission messages - all messages in missions should now use $MessageNew and stuff strings as F_MULTITEXT
 #define	F_MULTITEXT				10
 #define F_RAW					11	// for any internal parsing use. Just strips whitespace and copies the text.
-#define F_LNAME					12	//Filenames
+#define F_LNAME					12	// Filenames
+#define F_TRIMMED				13	// Like F_NAME etc., but without leading and trailing whitespace
 
 #define PARSE_BUF_SIZE			4096
 
@@ -125,7 +128,7 @@ extern int optional_string_one_of(int arg_count, ...);
 
 // required
 extern int required_string(const char *pstr);
-extern int required_string_either(const char *str1, const char *str2);
+extern int required_string_either(const char *str1, const char *str2, bool advance = false);
 extern int required_string_one_of(int arg_count, ...);
 
 // stuff
@@ -152,6 +155,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern void stuff_string(std::unique_ptr<char[]> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
+extern void stuff_string(SCP_vm_unique_ptr<char> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
 extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
@@ -278,7 +283,7 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
-int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false, bool print_list = false)
 {
 	for (size_t i=0; i<max; i++)
 	{
@@ -289,13 +294,32 @@ int string_lookup(const char* str1, const T& strlist, size_t max, const char* de
 	}
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description ? description : "unnamed");
+	{
+		const char* suffix;
+		SCP_string list;
+
+		if (print_list)
+		{
+			list = ":\n";
+			for (size_t i=0; i<max; i++)
+			{
+				list += "    ";
+				list += strlist[i];
+				list += "\n";
+			}
+			suffix = list.c_str();
+		}
+		else
+			suffix = ".\n";
+
+		error_display(0, "Unable to find \"%s\" in %s list%s", str1, description ? description : "unnamed", suffix);
+	}
 
 	return -1;
 }
 
-int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
-int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false);
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)

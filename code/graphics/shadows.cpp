@@ -34,6 +34,31 @@ ShadowQuality Shadow_quality = ShadowQuality::Disabled;
 
 bool Shadow_quality_uses_mod_option = false; 
 
+static void parse_shadow_quality_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	SCP_tolower(mode);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"disabled", []() { Shadow_quality = ShadowQuality::Disabled; }},
+		{"low", []() { Shadow_quality = ShadowQuality::Low; }},
+		{"medium", []() { Shadow_quality = ShadowQuality::Medium; }},
+		{"high", []() { Shadow_quality = ShadowQuality::High; }},
+		{"ultra", []() { Shadow_quality = ShadowQuality::Ultra; }}
+	};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid shadow quality setting", mode.c_str());
+	}
+}
+
 auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shadows",
                      std::pair<const char*, int>{"Shadow Quality", 1750},
                      std::pair<const char*, int>{"The quality of the shadows", 1751})
@@ -45,8 +70,9 @@ auto ShadowQualityOption = options::OptionBuilder<ShadowQuality>("Graphics.Shado
                      .change_listener([](ShadowQuality val, bool initial) {if (initial) {Shadow_quality = val;}return initial;})
                      .level(options::ExpertLevel::Advanced)
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(ShadowQuality::Disabled)
+                     .default_func([]() { return ShadowQuality::Disabled; } )
                      .importance(80)
+                     .parser(parse_shadow_quality_func)
                      .finish();
 
 bool shadows_obj_in_frustum(object *objp, matrix *light_orient, vec3d *min, vec3d *max)
@@ -408,7 +434,7 @@ matrix shadows_start_render(matrix *eye_orient, vec3d *eye_pos, fov_t fov, float
 	matrix light_matrix;
 
 	vm_vec_copy_normalize(&light_dir, &lp.vec);
-	vm_vector_2_matrix(&light_matrix, &light_dir, &eye_orient->vec.uvec, NULL);
+	vm_vector_2_matrix_norm(&light_matrix, &light_dir, &eye_orient->vec.uvec, nullptr);
 
 	shadows_construct_light_frustum(&Shadow_frustums[0], &light_matrix, eye_orient, eye_pos, fov, aspect, 0.0f, veryneardist);
 	shadows_construct_light_frustum(&Shadow_frustums[1], &light_matrix, eye_orient, eye_pos, fov, aspect, veryneardist - (veryneardist - 0.0f)* 0.2f, neardist);
@@ -482,6 +508,7 @@ void shadows_render_all(fov_t fov, matrix *eye_orient, vec3d *eye_pos)
 
 		switch(objp->type)
 		{
+		case OBJ_RAW_POF:
 		case OBJ_SHIP:
 			{
 				obj_queue_render(objp, &scene);

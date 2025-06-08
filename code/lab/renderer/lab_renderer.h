@@ -36,6 +36,7 @@ FLAG_LIST(LabRenderFlag) {
 	ShowEmissiveLighting,
 	ShowAfterburners,
 	TimeStopped,
+	NoParticles,
 
 	NUM_VALUES
 };
@@ -127,24 +128,33 @@ public:
 	void useNextTeamColorPreset() {
 		if (!Team_Colors.empty()) {
 			auto color_itr = Team_Colors.find(currentTeamColor);
+			auto penultimate = Team_Colors.end();
+			penultimate--;
 
-			if (color_itr == Team_Colors.begin()) {
-				color_itr = --Team_Colors.end();
-				currentTeamColor = color_itr->first;
+			if (color_itr == Team_Colors.end()) {	// not found
+				color_itr = Team_Colors.begin();
+			} else if (color_itr == penultimate) {
+				color_itr = Team_Colors.begin();
 			} else {
-				--color_itr;
-				currentTeamColor = color_itr->first;
+				color_itr++;
 			}
+			currentTeamColor = color_itr->first;
 		}
 	}
 
 	void usePreviousTeamColorPreset() {
 		if (!Team_Colors.empty()) {
 			auto color_itr = Team_Colors.find(currentTeamColor);
+			auto penultimate = Team_Colors.end();
+			penultimate--;
 
-			++color_itr;
-			if (color_itr == Team_Colors.end())
+			if (color_itr == Team_Colors.end()) {	// not found
 				color_itr = Team_Colors.begin();
+			} else if (color_itr == Team_Colors.begin()) {
+				color_itr = penultimate;
+			} else {
+				color_itr--;
+			}
 			currentTeamColor = color_itr->first;
 		}
 	}

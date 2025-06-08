@@ -581,7 +581,8 @@ bool VulkanRenderer::createSwapChain(const PhysicalDeviceValues& deviceValues)
 
 	m_swapChain = m_device->createSwapchainKHRUnique(createInfo);
 
-	m_swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
+	std::vector<vk::Image> swapChainImages = m_device->getSwapchainImagesKHR(m_swapChain.get());
+	m_swapChainImages = SCP_vector<vk::Image>(swapChainImages.begin(), swapChainImages.end());
 	m_swapChainImageFormat = surfaceFormat.format;
 	m_swapChainExtent = createInfo.imageExtent;
 

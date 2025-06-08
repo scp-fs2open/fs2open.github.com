@@ -921,19 +921,27 @@ void beam_type_slashing_move(beam *b)
 // targeting type beams functions
 void beam_type_targeting_move(beam *b)
 {	
-	vec3d temp;
+	// If floating and targeting, synthesize orientation from known points
+	// because the object could be validly nullptr as when fired in the lab
+	if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+		// Compute forward vector from start to target
+		vec3d fvec;
+		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
+		vm_vec_normalize_safe(&fvec);
 
-	// ugh
-	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
-		Int3();
-		return;
+		// Final beam endpoint
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &fvec, b->range);
+	} else {
+		Assertion(b->objp != nullptr, "Targeting beam does not have a valid parent object!");
+		Assertion(b->objp->instance >= 0, "Targeting beam parent object instance is invalid!");
+
+		// Standard case: beam fired from a real object
+		// start point
+		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
+		vm_vec_add2(&b->last_start, &b->objp->pos);
+		// end point
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 	}
-
-	// targeting type beams only last one frame so we never have to "move" them.			
-	temp = b->local_fire_postion;
-	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
-	vm_vec_add2(&b->last_start, &b->objp->pos);	
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 }
 
 // antifighter type beam functions
@@ -1004,13 +1012,22 @@ void beam_type_normal_move(beam *b)
 {
 	vec3d turret_norm;
 
-	if (b->subsys == NULL) {	// If we're a free-floating beam, there's nothing to calculate here.
-		return;
+	if (b->subsys == nullptr) {
+		// If we're a floating beam and targeting coords then we don't have a subsystem to get a normal from, so we'll calculate it.
+		if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+			// Build normal from target_pos1 and last_start
+			vm_vec_sub(&turret_norm, &b->target_pos1, &b->last_start);
+			vm_vec_normalize_safe(&turret_norm);
+		}
+		// Otherwise, there's nothing to calculate here.
+		else {
+			return;
+		}
+	} else {
+		// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
+		// get the "originating point" of the beam for this frame. essentially bashes last_start
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 	}
-
-	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
-	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1586,7 +1603,7 @@ void beam_generate_muzzle_particles(beam *b)
 	}
 
 	// randomly perturb a vector within a cone around the normal
-	vm_vector_2_matrix(&m, &turret_norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, &turret_norm, nullptr, nullptr);
 	for(idx=0; idx<particle_count; idx++){
 		// get a random point in the cone
 		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
@@ -1662,7 +1679,8 @@ void beam_render_muzzle_glow(beam *b)
 	// don't show the muzzle glow for players in the cockpit unless show_ship_model is on, provided Render_player_mflash isn't on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
 	bool player_show_ship_model = (
-		b->objp == Player_obj  
+		b->objp != nullptr // Can validly be nullptr for floating beams!
+		&& b->objp == Player_obj  
 		&& Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model] 
 		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
 	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
@@ -1889,6 +1907,17 @@ void beam_render_all()
 		// next item
 		moveup = GET_NEXT(moveup);
 	}	
+}
+
+// Delete all active beams
+void beam_delete_all()
+{
+	beam* b = GET_FIRST(&Beam_used_list);
+	while (b != END_OF_LIST(&Beam_used_list)) {
+		beam* next = GET_NEXT(b);
+		beam_delete(b);
+		b = next;
+	}
 }
 
 // output top and bottom vectors
@@ -2546,12 +2575,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				target_pos = b->target_pos1;
 			else
 				UNREACHABLE("Turret beam fired without a target or target coordinates?");
-			vm_vec_sub(&fvec, &target_pos, &turret_point);
+			vm_vec_normalized_dir(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
-			vm_vector_2_matrix(&orient, &fvec, &uvec);
+			vm_vector_2_matrix_norm(&orient, &fvec, &uvec);
 		} else if (b->flags & BF_TARGETING_COORDS) {
 			// targeting coords already set up turret_norm with target_pos above
-			vm_vector_2_matrix(&orient, &turret_norm);
+			vm_vector_2_matrix_norm(&orient, &turret_norm);
 		} 
 
 		vec3d rand1_on = vm_vec_new(0.f, 0.f, 0.f); 
@@ -2951,11 +2980,7 @@ void beam_aim(beam *b)
 		break;
 
 	case BeamType::TARGETING:
-		// start point
-		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
-		vm_vec_add2(&b->last_start, &b->objp->pos);
-		// end point
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
+		beam_type_targeting_move(b);
 		break;
 
 	case BeamType::NORMAL_FIRE:
@@ -3036,11 +3061,10 @@ void beam_jitter_aim(beam *b, float aim)
 
 	// shot aim is a direct linear factor of the target model's radius.
 	// so, pick a random point on the circle
-	vm_vec_sub(&forward, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&forward);
+	vm_vec_normalized_dir(&forward, &b->last_shot, &b->last_start);
 	
 	// vector
-	vm_vector_2_matrix(&m, &forward, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, &forward, nullptr, nullptr);
 
 	// get a random vector on the circle, but somewhat biased towards the center
 	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false, true);
@@ -3810,13 +3834,12 @@ bool beam_sort_collisions_func(const beam_collision &b1, const beam_collision &b
 
 static std::unique_ptr<EffectHost> beam_hit_make_effect_host(const beam* b, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
 	vec3d beam_dir;
-	vm_vec_sub(&beam_dir, &b->last_shot, &b->last_start);
-	vm_vec_normalize_safe(&beam_dir);
+	vm_vec_normalized_dir(&beam_dir, &b->last_shot, &b->last_start);
 
 	if (impacted_obj->type != OBJ_SHIP) {
 		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
 		matrix beamOrientation;
-		vm_vector_2_matrix(&beamOrientation, &beam_dir);
+		vm_vector_2_matrix_norm(&beamOrientation, &beam_dir);
 
 		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, beamOrientation, vmd_zero_vector);
 		vector_host->setRadius(impacted_obj->radius);

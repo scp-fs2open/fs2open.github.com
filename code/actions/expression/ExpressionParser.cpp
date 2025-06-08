@@ -122,9 +122,9 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 	}
 	antlrcpp::Any visitVec3d_constructor(ActionExpressionParser::Vec3d_constructorContext* context) override
 	{
-		auto xExpression = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
-		auto yExpression = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
-		auto zExpression = visit(context->expression(2)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto xExpression = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto yExpression = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto zExpression = visit(context->expression(2)).as<std::shared_ptr<nodes::AbstractExpression>>();
 
 		auto expression = std::make_shared<nodes::VectorConstructorExpression>(context->L_PAREN()->getSymbol(),
 			xExpression,

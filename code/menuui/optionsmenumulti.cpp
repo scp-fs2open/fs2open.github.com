@@ -243,8 +243,8 @@ UI_BUTTON Om_ip_button;										// button for detecting clicks on the ip addres
 UI_INPUTBOX Om_ip_input;									// input box for adding new ip addresses
 
 // setting vars
-int Om_local_broadcast;										// whether the player has local broadcast selected or not
-bool Om_tracker_flag;											// if the guy has the tracker selected
+bool Om_local_broadcast;										// whether the player has local broadcast selected or not
+bool Om_tracker_flag;											// whether the player has the PXO tracker selected
 int Om_protocol;												// protocol in use
 
 // load all the controls for the protocol section
@@ -378,9 +378,9 @@ UI_XSTR Om_gen_text[GR_NUM_RESOLUTIONS][OM_GEN_NUM_TEXT] = {
 
 // setting vars
 int Om_gen_obj_update;								// object update level
-int Om_gen_pix;										// accept pilot pix or not
-int Om_gen_xfer_multidata;							// xfer missions to multidata or not
-int Om_gen_flush_cache;								// flush multidata directory before every game
+bool Om_gen_pix;									// accept pilot pix or not
+bool Om_gen_xfer_multidata;							// xfer missions to multidata or not
+bool Om_gen_flush_cache;							// flush multidata directory before every game
 
 // load all the general tab controls
 void options_multi_load_gen_controls();
@@ -794,7 +794,7 @@ void options_multi_init_protocol_vars()
 	Om_protocol = Multi_options_g.protocol;
 
 	// whether or not the user has the local broadcast button selected
-	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) ? 1 : 0;
+	Om_local_broadcast = (Player->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST);
 
 	// whether or not we're playing on the tracker
 	Om_tracker_flag = Multi_options_g.pxo;
@@ -864,7 +864,13 @@ void options_multi_protocol_do(int key)
 		}
 		// otherwise quit the options screen altogether
 		else {
+			// reaching this section is unlikely because
+			// escape key detection is already executed 
+			// within options_menu_do_frame(),
+			// which runs before options_multi_do()
+			// --wookieejedi
 			options_cancel_exit();
+			return;
 		}
 		break;
 
@@ -926,28 +932,28 @@ void options_multi_protocol_accept()
 {
 	// if the user has selected local broadcast write it into his options struct
 	Player->m_local_options.flags &= ~(MLO_FLAG_LOCAL_BROADCAST);
-	if(Om_local_broadcast){
+	if (Om_local_broadcast) {
 		Player->m_local_options.flags |= MLO_FLAG_LOCAL_BROADCAST;
 	}	
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", Om_local_broadcast);
 
 	// active protocol
 	Multi_options_g.protocol = Om_protocol;
 
 	// VMT status
 	Multi_options_g.pxo = Om_tracker_flag;
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", Om_tracker_flag);
 
-	// copy the VMT login and password data
+	// copy the VMT login, password and PXO squad name data
 	Om_tracker_login.get_text(Multi_tracker_login);
 	Om_tracker_passwd.get_text(Multi_tracker_passwd);
 	Om_tracker_squad_name.get_text(Multi_tracker_squad_name);
 
-	// write out the tracker login and passwd values to the registry
+	// write out the tracker login, passwd, and PXO squad name values to the registry
 	os_config_write_string( "PXO", "Login", Multi_tracker_login );
 	os_config_write_string( "PXO", "Password", Multi_tracker_passwd );
-
-	// write out the PXO squad name and passwd values to the registry
 	os_config_write_string( "PXO", "SquadName", Multi_tracker_squad_name );
-	
+
 	// save the ip address list
 	options_multi_protocol_save_ip_file();
 }
@@ -1004,13 +1010,7 @@ void options_multi_protocol_button_pressed(int n)
 			break;
 		}
 
-		if(!Om_local_broadcast){			
-			Om_local_broadcast = 1;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", true);
-		} else {
-			Om_local_broadcast = 0;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", false);
-		}
+		Om_local_broadcast = !Om_local_broadcast;
 
 		gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 		break;
@@ -1051,12 +1051,10 @@ void options_multi_protocol_button_pressed(int n)
 			Om_tracker_login.enable();
 			Om_tracker_passwd.enable();
 			Om_tracker_squad_name.enable();
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", true);
 		} else {
 			Om_tracker_login.disable();
 			Om_tracker_passwd.disable();
 			Om_tracker_squad_name.disable();
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", false);
 		}
 
 		// play a sound
@@ -1369,25 +1367,13 @@ void options_multi_init_gen_vars()
 	Om_gen_obj_update = Player->m_local_options.obj_update_level;
 
 	// initialize the accept pix var	
-	if(Player->m_local_options.flags & MLO_FLAG_ACCEPT_PIX){
-		Om_gen_pix = 1;
-	} else {
-		Om_gen_pix = 0;
-	}
+	Om_gen_pix = (Player->m_local_options.flags & MLO_FLAG_ACCEPT_PIX);
 
 	// initialize the xfer_multidata var
-	if(Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA){
-		Om_gen_xfer_multidata = 1;
-	} else {
-		Om_gen_xfer_multidata = 0;
-	}
+	Om_gen_xfer_multidata = (Player->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA);
 
 	// initialize the flush cache var
-	if(Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE){
-		Om_gen_flush_cache = 1;
-	} else {
-		Om_gen_flush_cache = 0;
-	}
+	Om_gen_flush_cache = (Player->m_local_options.flags & MLO_FLAG_FLUSH_CACHE);
 }
 
 // accept function for the general tab
@@ -1407,12 +1393,14 @@ void options_multi_gen_accept()
 	if(Om_gen_xfer_multidata){
 		Player->m_local_options.flags |= MLO_FLAG_XFER_MULTIDATA;
 	} 
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", Om_gen_xfer_multidata);
 
 	// apply the flush cache var
 	Player->m_local_options.flags &= ~(MLO_FLAG_FLUSH_CACHE);
 	if(Om_gen_flush_cache){
 		Player->m_local_options.flags |= MLO_FLAG_FLUSH_CACHE;
 	}
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", Om_gen_flush_cache);
 }
 
 // do frame for the general tab
@@ -1523,7 +1511,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_PIX_YES:
 		if(!Om_gen_pix){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_pix = 1;
+			Om_gen_pix = true;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1533,7 +1521,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_PIX_NO:
 		if(Om_gen_pix){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_pix = 0;
+			Om_gen_pix = false;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1543,8 +1531,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_XFER_MULTIDATA_YES:
 		if(!Om_gen_xfer_multidata){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_xfer_multidata = 1;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", true);
+			Om_gen_xfer_multidata = true;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1554,8 +1541,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_XFER_MULTIDATA_NO:
 		if(Om_gen_xfer_multidata){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_xfer_multidata = 0;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", false);
+			Om_gen_xfer_multidata = false;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1565,8 +1551,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_FLUSH_YES:
 		if(!Om_gen_flush_cache){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_flush_cache = 1;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", true);
+			Om_gen_flush_cache = true;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -1576,8 +1561,7 @@ void options_multi_gen_button_pressed(int n)
 	case OM_GEN_FLUSH_NO:
 		if(Om_gen_flush_cache){
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
-			Om_gen_flush_cache = 0;
-			options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", false);
+			Om_gen_flush_cache = false;
 		} else {
 			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
@@ -2222,17 +2206,24 @@ bool options_multi_ok_to_accept()
 
 /**
 * Called if the accept button on the main options screen was hit. 
-* Returns false if the multi option screen is not in a legal state
+* Also allows saving PXO credentials as "".
 **/
-bool options_multi_accept()
+void options_multi_accept()
 {	
+	// is it legal to leave this screen?
+	// The following check has been commented out for the following reasons:
+	//   1) Retail never had such a check,
+	//   2) when starting PXO in multiplayer, the PXO lobby screen 
+	//      displays a warning if the login values are actually valid or not,
+	//   3) and not having this function be a bool allows for 
+	//      much more streamlined option managment, especially with in-game options.
+	// --wookieejedi and confirmed with taylor
+	//if (!options_multi_ok_to_accept()) {
+		//return false;
+	//}
+
 	// accept function for the protocol section
 	options_multi_protocol_accept();
-
-	// is it legal to leave this screen?
-	if (!options_multi_ok_to_accept()) {
-		return false;
-	}
 
 	// accept function for the general tab
 	options_multi_gen_accept();
@@ -2251,7 +2242,7 @@ bool options_multi_accept()
 		multi_options_update_local();
 	}
 
-	return true;
+	// recall that in-game option values get persisted/saved to file within options_accept() in optionsmenu.cpp
 }
 
 // called when the multiplayer tab is hit - initializes/switches all necessary data.

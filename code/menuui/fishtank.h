@@ -12,7 +12,7 @@
 #ifndef __FISHTANK_H__
 #define __FISHTANK_H__
 
-void fishtank_start();
+void fishtank_start(const SCP_string& f_left, const SCP_string& f_right);
 void fishtank_stop();
 void fishtank_process();
 

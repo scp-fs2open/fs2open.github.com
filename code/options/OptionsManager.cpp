@@ -108,6 +108,9 @@ const OptionBase* OptionsManager::addOption(std::shared_ptr<const OptionBase>&& 
 //Removes an option from the options vector
 void OptionsManager::removeOption(const std::shared_ptr<const OptionBase>& option)
 {
+	if (_optionsMapping.find(option->getConfigKey()) == _optionsMapping.end())
+		return;
+
 	_optionsMapping.erase(option->getConfigKey());
 	_options.erase(
 	    std::remove_if(_options.begin(), _options.end(),

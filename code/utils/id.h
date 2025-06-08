@@ -29,10 +29,10 @@ public:
 	typedef Tag tag_type;
 	typedef Impl impl_type;
 
-	static ID invalid() { return ID(); }
+	static constexpr ID invalid() { return ID(); }
 
 	// Defaults to ID::invalid()
-	ID() : m_val(default_value) { }
+	constexpr ID() : m_val(default_value) { }
 
 	// Explicit constructor:
 	explicit ID(Impl val) : m_val(val) { }

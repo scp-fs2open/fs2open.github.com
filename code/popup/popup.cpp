@@ -533,7 +533,7 @@ int popup_init(popup_info *pi, int flags)
 			scripting::hook_param("AllowedInput", 's', pi->valid_chars, flags & PF_INPUT));
 
 		scripting::hooks::OnDialogInit->run(paramList);
-		if (scripting::hooks::OnDialogInit->isOverride(paramList))
+		if (scripting::hooks::OnDialogInit->isOverride(std::move(paramList)))
 			return 0;
 	}
 
@@ -954,7 +954,7 @@ int popup_do(popup_info *pi, int flags)
 				scripting::hook_param("IsDeathPopup", 'b', false));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
-			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(std::move(paramList));
 		}
 
 		if (!isScriptingOverride) {
@@ -1025,7 +1025,7 @@ int popup_do_with_condition(popup_info *pi, int flags, int(*condition)())
 				scripting::hook_param("Text", 's', pi->raw_text));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
-			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(std::move(paramList));
 			gr_flip();
 		}
 
@@ -1246,7 +1246,7 @@ char *popup_input(int flags, const char *caption, int max_output_len, const char
 	Assert(strlen(Popup_info.raw_text) < POPUP_MAX_CHARS );
 
 	// set input text length
-	if((max_output_len > POPUP_INPUT_MAX_CHARS) || (max_output_len == -1)){
+	if((max_output_len >= POPUP_INPUT_MAX_CHARS) || (max_output_len == -1)){
 		Popup_info.max_input_text_len = POPUP_INPUT_MAX_CHARS - 1;
 	} else {
 		Popup_info.max_input_text_len = max_output_len;
@@ -1398,7 +1398,7 @@ int popup_conditional_do(int (*condition)(), const char *text)
 				scripting::hook_param("Text", 's', pi->raw_text));
 
 			scripting::hooks::OnDialogFrame->run(paramList);
-			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(paramList);
+			isScriptingOverride = scripting::hooks::OnDialogFrame->isOverride(std::move(paramList));
 			gr_flip();
 		}
 

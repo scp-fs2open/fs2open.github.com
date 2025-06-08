@@ -75,9 +75,10 @@ class player;
 // Version 59 - 12/9/2022 - New IDs for SEXP operators
 // Version 60 - 3/27/2023 - Added generic lua data packet
 // Version 61 - 4/17/2023 - Added compatibility for whackable asteroids (added force)
+// Version 62 - 5/26/2025 - Added some modular curve input data to turret firing packets; 5/31/2025 - Added another input
 // STANDALONE_ONLY
 
-#define MULTI_FS_SERVER_VERSION							61
+#define MULTI_FS_SERVER_VERSION							62
 
 #define MULTI_FS_SERVER_COMPATIBLE_VERSION			MULTI_FS_SERVER_VERSION
 

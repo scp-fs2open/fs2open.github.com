@@ -15,6 +15,7 @@
 #include "options/OptionsManager.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
+#include "pilotfile/plr_hudprefs.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
@@ -142,7 +143,8 @@ void pilotfile::csg_read_info()
 	Campaign.next_mission = cfread_int(cfp);
 
 	// check that the next mission won't be greater than the total number of missions
-	if (Campaign.next_mission >= Campaign.num_missions) {
+	// though ensure we only flag if campaign exists and has been loaded
+	if (Campaign.num_missions > 0 && Campaign.next_mission >= Campaign.num_missions) {
 		Campaign.next_mission = 0; // Prevent trying to load from invalid mission data downstream
 		m_data_invalid = true; // Causes a warning popup to be displayed
 	}
@@ -1013,20 +1015,41 @@ void pilotfile::csg_write_redalert()
 
 void pilotfile::csg_read_hud()
 {
-	int idx;
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	
 	int strikes = 0;
 
 	// flags
-	HUD_config.show_flags = cfread_int(cfp);
-	HUD_config.show_flags2 = cfread_int(cfp);
+	int show_flags = cfread_int(cfp);
+	int show_flags2 = cfread_int(cfp);
 
-	HUD_config.popup_flags = cfread_int(cfp);
-	HUD_config.popup_flags2 = cfread_int(cfp);
+	int popup_flags = cfread_int(cfp);
+	int popup_flags2 = cfread_int(cfp);
+
+	// Convert show_flags (0-31) and show_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (show_flags & (1 << i)) : (show_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_visibility(gauge_id, is_set);
+		}
+	}
+
+	// Convert popup_flags (0-31) and popup_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (popup_flags & (1 << i)) : (popup_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_popup(gauge_id, is_set);
+		}
+	}
 
 	// settings
-	HUD_config.num_msg_window_lines = cfread_ubyte(cfp);
+	SCP_UNUSED(cfread_ubyte(cfp));// Deprecated but still read for file compatibility 3/7/2025
+	SCP_UNUSED(cfread_int(cfp));// Deprecated but still read for file compatibility 3/7/2025
 
-	HUD_config.rp_flags = cfread_int(cfp);
 	HUD_config.rp_dist = cfread_int(cfp);
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
 		ReleaseWarning(LOCATION, "Campaign file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
@@ -1036,9 +1059,9 @@ void pilotfile::csg_read_hud()
 
 	// basic colors
 	HUD_config.main_color = cfread_int(cfp);
-	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= NUM_HUD_COLOR_PRESETS) {
 		ReleaseWarning(LOCATION, "Campaign file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
-		HUD_config.main_color = HUD_COLOR_GREEN;
+		HUD_config.main_color = HUD_COLOR_PRESET_1;
 		strikes++;
 	}
 
@@ -1058,7 +1081,7 @@ void pilotfile::csg_read_hud()
 	// gauge-specific colors
 	int num_gauges = cfread_int(cfp);
 
-	for (idx = 0; idx < num_gauges; idx++) {
+	for (int idx = 0; idx < num_gauges; idx++) {
 		ubyte red = cfread_ubyte(cfp);
 		ubyte green = cfread_ubyte(cfp);
 		ubyte blue = cfread_ubyte(cfp);
@@ -1068,30 +1091,61 @@ void pilotfile::csg_read_hud()
 			continue;
 		}
 
-		HUD_config.clr[idx].red = red;
-		HUD_config.clr[idx].green = green;
-		HUD_config.clr[idx].blue = blue;
-		HUD_config.clr[idx].alpha = alpha;
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		if (!gauge_id.empty()) {
+			color clr;
+			gr_init_alphacolor(&clr, red, green, blue, alpha);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 	}
 }
 
 void pilotfile::csg_write_hud()
 {
-	int idx;
-
 	startSection(Section::HUD);
 
-	// flags
-	cfwrite_int(HUD_config.show_flags, cfp);
-	cfwrite_int(HUD_config.show_flags2, cfp);
+	// Get gauge mappings instance
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	cfwrite_int(HUD_config.popup_flags, cfp);
-	cfwrite_int(HUD_config.popup_flags2, cfp);
+	// Initialize bitfields
+	int show_flags = 0, show_flags2 = 0;
+	int popup_flags = 0, popup_flags2 = 0;
+
+	// Convert show_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_visible(gauge_id)) {
+			if (i < 32) {
+				show_flags |= (1 << i);
+			} else {
+				show_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Convert popup_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_popup(gauge_id)) {
+			if (i < 32) {
+				popup_flags |= (1 << i);
+			} else {
+				popup_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// flags
+	cfwrite_int(show_flags, cfp);
+	cfwrite_int(show_flags2, cfp);
+
+	cfwrite_int(popup_flags, cfp);
+	cfwrite_int(popup_flags2, cfp);
 
 	// settings
-	cfwrite_ubyte(HUD_config.num_msg_window_lines, cfp);
+	cfwrite_ubyte(0, cfp);// Deprecated but still written for file compatibility 3/7/2025
+	cfwrite_int(0, cfp);// Deprecated but still written for file compatibility 3/7/2025
 
-	cfwrite_int(HUD_config.rp_flags, cfp);
 	cfwrite_int(HUD_config.rp_dist, cfp);
 
 	// basic colors
@@ -1101,11 +1155,15 @@ void pilotfile::csg_write_hud()
 	// gauge-specific colors
 	cfwrite_int(NUM_HUD_GAUGES, cfp);
 
-	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
-		cfwrite_ubyte(HUD_config.clr[idx].red, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].green, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].blue, cfp);
-		cfwrite_ubyte(HUD_config.clr[idx].alpha, cfp);
+	for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+		// Get the gauge string ID from numeric ID
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		color clr = HUD_config.get_gauge_color(gauge_id);
+
+		cfwrite_ubyte(clr.red, cfp);
+		cfwrite_ubyte(clr.green, cfp);
+		cfwrite_ubyte(clr.blue, cfp);
+		cfwrite_ubyte(clr.alpha, cfp);
 	}
 
 	endSection();
@@ -1323,7 +1381,7 @@ void pilotfile::csg_read_controls()
 		cfread_string(buf, sizeof(buf), cfp);
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-		                       [buf](const CC_preset& preset) { return preset.name == buf; });
+		                       [&buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			Assertion(!Control_config_presets.empty(), "[CSG] Error reading CSG! Control_config_presets empty; Get a coder!");
@@ -1635,7 +1693,7 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 	m_data_invalid = false;
 
 	// open it, hopefully...
-	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	cfp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
@@ -1768,6 +1826,9 @@ bool pilotfile::load_savefile(player *_p, const char *campaign)
 		}
 	}
 
+	mprintf(("HUDPREFS => Loading extended player HUD preferences...\n"));
+	hud_config_load_player_prefs(p->callsign); 
+
 	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these campaign options set
 	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
 	//options::OptionsManager::instance()->persistChanges();
@@ -1821,7 +1882,7 @@ bool pilotfile::save_savefile()
 	Assertion(Red_alert_wing_status.size() <= MAX_WINGS, "Invalid number of Red_alert_wing_status entries: " SIZE_T_ARG "\n", Red_alert_wing_status.size());
 
 	// open it, hopefully...
-	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	cfp = cfopen(filename.c_str(), "wb", CF_TYPE_PLAYERS, false,
 	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {
@@ -1867,6 +1928,9 @@ bool pilotfile::save_savefile()
 	mprintf(("CSG => Saving:  Containers...\n"));
 	csg_write_containers();
 
+	mprintf(("HUDPREFS => Saving player HUD preferences (testing)...\n"));
+	hud_config_save_player_prefs(p->callsign);
+
 	// Done!
 	mprintf(("CSG => Saving complete!\n"));
 
@@ -1900,7 +1964,7 @@ bool pilotfile::get_csg_rank(int *rank)
 	p = &t_csg;
 
 	// filename has already been set
-	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	cfp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {

@@ -72,11 +72,11 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	Assert(submodel_num != -1);
 
 	// maybe no active sparks on submodel
-	if (shipp->num_hits == 0) {
+	if (shipp->num_sparks == 0) {
 		return;
 	}
 
-	for (int spark_num = 0; spark_num < shipp->num_hits; spark_num++) {
+	for (int spark_num = 0; spark_num < shipp->num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num == submodel_num) {
 			shipp->sparks[spark_num].end_time = timestamp(1);
 		}
@@ -596,7 +596,7 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpOutCompleteHook->isOverride(conditions, params)) {
-			OnWarpOutCompleteHook->run(conditions, params);
+			OnWarpOutCompleteHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -862,7 +862,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
 				vec3d pos,eye_posi;
 				matrix eye_ori;
-				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
 
@@ -1035,7 +1035,7 @@ void shipfx_flash_init()
 /**
  * Given that a ship fired a weapon, light up the model accordingly.
  */
-void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index)
+void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index, int weapon_objnum)
 {
 	int i;
 	int objnum = OBJ_INDEX(objp);
@@ -1055,17 +1055,33 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 		objp == Player_obj 
 		&& Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]
 		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
-	if (!(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+
+	auto* wip = &Weapon_info[weapon_info_index];
+	
+	if (!(wip->wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
 			// if there's a muzzle effect entry, we use that
 			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
 				matrix gunOrient;
-				vm_vector_2_matrix(&gunOrient, gun_dir);
+				vm_vector_2_matrix_norm(&gunOrient, gun_dir);
 
 				// spawn particle effect
 				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
 				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
 				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+
+				auto *weapon_objp = &Objects[weapon_objnum];
+				auto *wp = &Weapons[weapon_objp->instance];
+
+				float radius_mult = 1.f;
+
+				if (wip->render_type == WRT_LASER) {
+					radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+				}
+
+				particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
+				particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+
 				particleSource->finishCreation();
 			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
 			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
@@ -1179,7 +1195,7 @@ void shipfx_emit_spark( int n, int sn )
 	if(sn < 0 && !sip->damage_spew.isValid())
 		return;
 	
-	if ( shipp->num_hits <= 0 )
+	if ( shipp->num_sparks <= 0 )
 		return;
 
 	obj = &Objects[shipp->objnum];
@@ -1195,7 +1211,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = Random::next(shipp->num_hits);
+		spark_num = Random::next(shipp->num_sparks);
 	} else {
 		spark_num = sn;
 	}
@@ -3619,11 +3635,11 @@ int WE_Default::getWarpOrientation(matrix* output) const
 	auto objp = &Objects[m_objnum];
 
 	if (this->m_direction == WarpDirection::WARP_IN)
-		vm_vector_2_matrix(output, &objp->orient.vec.fvec, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, nullptr, nullptr);
 	}
     return 1;
 }
@@ -4007,7 +4023,7 @@ int WE_BSG::getWarpOrientation(matrix* output) const
 
 	auto objp = &Objects[m_objnum];
 
-	vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	return 1;
 }
 
@@ -4296,7 +4312,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output) const
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, &objp->orient.vec.uvec, nullptr);
 	}
 
 	return 1;

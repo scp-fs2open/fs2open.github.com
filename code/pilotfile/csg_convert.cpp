@@ -656,7 +656,8 @@ void pilotfile_convert::csg_import(bool inferno)
 
 	csg_import_missions(inferno);
 
-	csg->main_hall = cfread_ubyte(cfp);
+	ubyte hall_index = cfread_ubyte(cfp);
+	sprintf(csg->main_hall, "%u", hall_index);
 
 	csg_import_red_alert();
 
@@ -1178,7 +1179,7 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 
 	mprintf(("    CS2 => Converting '%s'...\n", filename.c_str()));
 
-	cfp = cfopen(filename.c_str(), "rb", CFILE_NORMAL);
+	cfp = cfopen(filename.c_str(), "rb");
 
 	if ( !cfp ) {
 		mprintf(("    CS2 => Unable to open '%s' for import!\n", fname));
@@ -1208,7 +1209,7 @@ bool pilotfile_convert::csg_convert(const char *fname, bool inferno)
 	filename.assign(fname);
 	filename.append(".csg");
 
-	cfp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	cfp = cfopen(filename.c_str(), "wb", CF_TYPE_PLAYERS, false,
 	             CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !cfp ) {

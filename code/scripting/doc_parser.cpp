@@ -30,7 +30,7 @@ ade_type_info merge_alternatives(const ade_type_info& left, const ade_type_info&
 		elements.insert(elements.end(), right.elements().begin(), right.elements().end());
 	}
 
-	return ade_type_info(ade_type_alternative(elements));
+	return { ade_type_alternative(std::move(elements)) };
 }
 
 class BaseVisitor : public ArgumentListVisitor {
@@ -148,7 +148,7 @@ class ArglistVisitor : public BaseVisitor {
 	{
 		if (any.isNull()) {
 		}
-		return AbstractParseTreeVisitor::aggregateResult(any, nextResult);
+		return AbstractParseTreeVisitor::aggregateResult(std::move(any), nextResult);
 	}
 };
 
@@ -202,17 +202,17 @@ class TypeVisitor : public BaseVisitor {
 
 	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
 	{
-		const auto keyType = visit(context->type(0)).as<ade_type_info>();
-		const auto valueType = visit(context->type(1)).as<ade_type_info>();
+		auto keyType = visit(context->type(0)).as<ade_type_info>();
+		auto valueType = visit(context->type(1)).as<ade_type_info>();
 
-		return ade_type_info(ade_type_map(keyType, valueType));
+		return ade_type_info(ade_type_map(std::move(keyType), std::move(valueType)));
 	}
 
 	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* context) override
 	{
-		const auto valueType = visit(context->type()).as<ade_type_info>();
+		auto valueType = visit(context->type()).as<ade_type_info>();
 
-		return ade_type_info(ade_type_iterator(valueType));
+		return ade_type_info(ade_type_iterator(std::move(valueType)));
 	}
 
 	antlrcpp::Any visitErrorNode(antlr4::tree::ErrorNode* /*node*/) override { return ade_type_info("<error type>"); }
@@ -226,8 +226,8 @@ class TypeVisitor : public BaseVisitor {
 		}
 
 		if (previous.isNotNull()) {
-			const auto& previousType = previous.as<ade_type_info>();
-			const auto& nextType     = nextResult.as<ade_type_info>();
+			auto previousType = previous.as<ade_type_info>();	// NOLINT - more investigation needed here
+			auto nextType     = nextResult.as<ade_type_info>();	// NOLINT - ditto
 			return merge_alternatives(previousType, nextType);
 		} else {
 			return nextResult.as<ade_type_info>();

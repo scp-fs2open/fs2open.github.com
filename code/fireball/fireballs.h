@@ -62,6 +62,7 @@ typedef struct fireball_info {
 	float				exp_color[3];	// red, green, blue
 
 	bool	use_3d_warp;
+	bool    warp_flash;
 	bool	fireball_used;
 
 	warp_style warp_flare_style;
@@ -162,10 +163,6 @@ float fireball_wormhole_intensity( fireball *fb );
 
 // Goober5000
 extern bool Knossos_warp_ani_used;
-
-extern bool Fireball_use_3d_warp;
-
-extern bool Fireball_warp_flash;
 
 // Cyborg - get a count of how many valid fireballs are in the mission.
 int fireball_get_count();

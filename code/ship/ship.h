@@ -57,8 +57,7 @@ extern vec3d	Original_vec_to_deader;
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
 #define SUBSYS_MAX_HITS_THRESHOLD		0.01f	// max_hits threshold where subsys is considered to take damage
 
-#define	HP_SCALE						1.2			//	1.2 means die when 20% of hits remaining
-#define	MAX_SHIP_HITS				8				// hits to kill a ship
+#define	MAX_SHIP_SPARKS			8				// maximum number of spark emitters on a ship
 #define	MAX_SHIP_DETAIL_LEVELS	5				// maximum detail levels that a ship can render at
 #define	MAX_REINFORCEMENTS		32
 
@@ -468,7 +467,7 @@ typedef struct ship_flag_name {
 
 typedef struct ship_flag_description {
 	Ship::Ship_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } ship_flag_description;
 
 extern ship_flag_name Ship_flag_names[];
@@ -482,7 +481,7 @@ typedef struct wing_flag_name {
 
 typedef struct wing_flag_description {
 	Ship::Wing_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } wing_flag_description;
 
 extern wing_flag_name Wing_flag_names[];
@@ -594,8 +593,8 @@ public:
 	int	next_fireball;
 
 	int	next_hit_spark;
-	int	num_hits;			//	Note, this is the number of spark emitter positions!
-	ship_spark	sparks[MAX_SHIP_HITS];
+	int	num_sparks;			//	Note, this is the number of spark emitter positions!
+	ship_spark	sparks[MAX_SHIP_SPARKS];
 	
 	bool use_special_explosion; 
 	int special_exp_damage;					// new special explosion/hitpoints system
@@ -1149,17 +1148,17 @@ public:
 	int			species;								// which species this craft belongs to
 	int			class_type;						//For type table
 
-	char		*type_str;							// type string used by tooltips
-	char		*maneuverability_str;			// string used by tooltips
-	char		*armor_str;							// string used by tooltips
-	char		*manufacturer_str;				// string used by tooltips
-	char		*desc;								// string used by tooltips
-	char		*tech_desc;							// string used by tech database
+	std::unique_ptr<char[]> type_str;							// type string used by tooltips
+	std::unique_ptr<char[]> maneuverability_str;			// string used by tooltips
+	std::unique_ptr<char[]> armor_str;							// string used by tooltips
+	std::unique_ptr<char[]> manufacturer_str;				// string used by tooltips
+	std::unique_ptr<char[]> desc;								// string used by tooltips
+	std::unique_ptr<char[]> tech_desc;							// string used by tech database
 	char		tech_title[NAME_LENGTH];			// ship's name (in tech database)
 
-	char     *ship_length;						// string used by multiplayer ship desc
-	char     *gun_mounts;			         // string used by multiplayer ship desc
-	char     *missile_banks;					// string used by multiplayer ship desc
+	std::unique_ptr<char[]> ship_length;						// string used by multiplayer ship desc
+	std::unique_ptr<char[]> gun_mounts;			         // string used by multiplayer ship desc
+	std::unique_ptr<char[]> missile_banks;					// string used by multiplayer ship desc
 
 	char		cockpit_pof_file[MAX_FILENAME_LEN];	// POF file for cockpit view
 	vec3d		cockpit_offset;
@@ -1496,8 +1495,6 @@ public:
 
 	ship_info &operator=(ship_info&& other) noexcept;
 
-	void free_strings();
-
     //Helper functions
     
     inline bool is_small_ship() const { return flags[Ship::Info_Flags::Fighter, Ship::Info_Flags::Bomber, Ship::Info_Flags::Support, Ship::Info_Flags::Escapepod]; }
@@ -1784,8 +1781,7 @@ extern int ship_find_num_crewpoints(object *objp);
 extern int ship_find_num_turrets(object *objp);
 
 extern void compute_slew_matrix(matrix *orient, angles *a);
-extern void ship_get_eye( vec3d *eye_pos, matrix *eye_orient, object *obj, bool do_slew = true, bool from_origin = false);		// returns in eye the correct viewing position for the given object
-extern void ship_get_eye_local(vec3d* eye_pos, matrix* eye_orient, object* obj, bool do_slew = true);		// returns the eye data, local to the ship
+extern void object_get_eye(vec3d *eye_pos, matrix *eye_orient, const object *obj, bool do_slew = true, bool local_pos = false, bool local_orient = false);
 
 extern ship_subsys *ship_find_first_subsys(ship *sp, int subsys_type, const vec3d *attacker_pos = nullptr);
 extern ship_subsys *ship_get_indexed_subsys(ship *sp, int index);	// returns index'th subsystem of this ship

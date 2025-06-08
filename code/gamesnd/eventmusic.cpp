@@ -45,15 +45,24 @@ static bool music_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_music_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_music_volume = volume;
+}
+
 static auto MusicVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Music",
                      std::pair<const char*, int>{"Music", 1371},
                      std::pair<const char*, int>{"Volume used for playing music", 1760})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_music_volume)
+                     .default_func([]() { return Default_music_volume;})
                      .range(0.0f, 1.0f)
                      .change_listener(music_volume_change_listener)
                      .importance(1)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_music_volume_func)
                      .finish();
 
 typedef struct tagSNDPATTERN {
@@ -334,16 +343,30 @@ void event_music_init()
 			// (since event music specifies samples and measures, the audio format is important; so we don't want to assume any format will work)
 			if (!cf_exists_full(filename, CF_TYPE_MUSIC))
 			{
-#ifndef NDEBUG
-				// see if the file exists with a different extension
-				auto res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_MUSIC);
-				if (res.found)
-					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
-#endif
+				static SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> filename_substitutions;
+				CFileLocationExt res;
 
-				Warning(LOCATION, "Soundtrack file %s was not found.  The soundtrack '%s' will not be used.", filename, soundtrack.name);
-				all_patterns_valid = false;
-				break;
+				// see if we ran into this file already (case-insensitive)
+				auto pair = filename_substitutions.find(filename);
+				if (pair != filename_substitutions.end())
+				{
+					// don't warn, since we warned for this file name when we added it to the map
+					strcpy_s(soundtrack.patterns[i].fname, pair->second.c_str());
+				}
+				// see if the file exists with a different extension
+				else if (res = cf_find_file_location_ext(filename, NUM_AUDIO_EXT, audio_ext_list, CF_TYPE_MUSIC), res.found)
+				{
+					Warning(LOCATION, "Soundtrack file %s was not found with its specified extension, but another file %s exists in the modpack.  Please update the extension and adjust audio specifications if necessary.", filename, res.name_ext.c_str());
+					filename_substitutions.emplace(filename, res.name_ext);
+					strcpy_s(soundtrack.patterns[i].fname, res.name_ext.c_str());
+				}
+				// file does not exist
+				else
+				{
+					Warning(LOCATION, "Soundtrack file %s was not found.  The soundtrack '%s' will not be used.", filename, soundtrack.name);
+					all_patterns_valid = false;
+					break;
+				}
 			}
 		}
 

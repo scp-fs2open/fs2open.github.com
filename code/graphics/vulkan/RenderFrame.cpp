@@ -20,7 +20,9 @@ void RenderFrame::waitForFinish()
 		return;
 	}
 
-	m_device.waitForFences(m_frameInFlightFence.get(), true, std::numeric_limits<uint64_t>::max());
+	// waitForFences can theoretically return a timeout, but as this passes the maximum uint64_t value in microseconds,
+	// this won't happen in practice, and the result can be ignored.
+	(void)m_device.waitForFences(m_frameInFlightFence.get(), true, std::numeric_limits<uint64_t>::max());
 	m_device.resetFences(m_frameInFlightFence.get());
 
 	// That frame is now definitely not in flight anymore so we can call the functions that depend on that
@@ -41,11 +43,14 @@ uint32_t RenderFrame::acquireSwapchainImage()
 	Assertion(!m_inFlight, "Cannot acquire swapchain image when frame is still in flight.");
 
 	uint32_t imageIndex;
-	m_device.acquireNextImageKHR(m_swapChain,
+	vk::Result res = m_device.acquireNextImageKHR(m_swapChain,
 		std::numeric_limits<uint64_t>::max(),
 		m_imageAvailableSemaphore.get(),
 		nullptr,
 		&imageIndex);
+	// TODO: This should handle at least VK_SUBOPTIMAL_KHR, which means that the swap chain is no longer
+	// optimal and should be recreated.
+	(void)res;
 
 	m_swapChainIdx = imageIndex;
 
@@ -85,7 +90,10 @@ void RenderFrame::submitAndPresent(const std::vector<vk::CommandBuffer>& cmdBuff
 	presentInfo.pImageIndices = &m_swapChainIdx;
 	presentInfo.pResults = nullptr;
 
-	m_presentQueue.presentKHR(presentInfo);
+	vk::Result res = m_presentQueue.presentKHR(presentInfo);
+	// TODO: This should handle at least VK_SUBOPTIMAL_KHR, which means that the swap chain is no longer
+	// optimal and should be recreated.
+	(void)res;
 }
 
 } // namespace vulkan

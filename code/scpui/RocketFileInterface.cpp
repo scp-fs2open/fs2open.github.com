@@ -35,7 +35,7 @@ FileHandle RocketFileInterface::Open(const String& path)
 		return 0;
 	}
 
-	return (FileHandle)cfopen(name.c_str(), "rb", CFILE_NORMAL, dir_type);
+	return (FileHandle)cfopen(name.c_str(), "rb", dir_type);
 }
 void RocketFileInterface::Close(FileHandle file) { cfclose((CFILE*)file); }
 size_t RocketFileInterface::Read(void* buffer, size_t size, FileHandle file)

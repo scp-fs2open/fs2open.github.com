@@ -596,7 +596,11 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$improved missile avoidance for fightercraft:", AI::Profile_Flags::Improved_missile_avoidance);
 
-				set_flag(profile, "$friendly ships use AI profile countermeasure chance:", AI::Profile_Flags::Friendlies_use_countermeasure_firechance);
+				if (optional_string_either("$friendly ships use AI profile countermeasure chance:", "$unify usage of AI profile countermeasure chance:", true) >= 0) {
+					bool val;
+					stuff_boolean(&val);
+					profile->flags.set(AI::Profile_Flags::Unify_usage_countermeasure_firechance, val);
+				}
 
 				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
 
@@ -692,6 +696,21 @@ void parse_ai_profiles_tbl(const char *filename)
 						mprintf(("Warning: \"$guard with big-orbit uses max speed percent:\" should be > 0 and <= 1 (read %f). Value will not be used.\n", max_percent));
 					}
 				}
+
+				set_flag(profile, "$unify usage of AI Shield Manage Delay:", AI::Profile_Flags::Unify_usage_ai_shield_manage_delay);
+
+				set_flag(profile, "$fix AI shield management bug:", AI::Profile_Flags::Fix_AI_shield_management_bug);
+
+				set_flag(profile, "$AI balances shields instead of directs when attacked:", AI::Profile_Flags::AI_balances_shields_when_attacked);
+
+				set_flag(profile, "$disable AI transferring energy:", AI::Profile_Flags::Disable_ai_transferring_energy);
+
+				set_flag(profile, "$enable freespace 1 style missile behavior:", AI::Profile_Flags::Freespace_1_missile_behavior);
+
+				set_flag(profile, "$ETS uses ship class power output:", AI::Profile_Flags::ETS_uses_power_output);
+
+				set_flag(profile, "$ETS energy same regardless of system presence:", AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence);
+
 
 				// end of options ----------------------------------------
 

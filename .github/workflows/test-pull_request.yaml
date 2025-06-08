@@ -20,9 +20,15 @@ jobs:
           - configuration: Release
             compiler: gcc-13
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
+          - configuration: Debug
+            compiler: gcc-13
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=ON
+          - configuration: Release
+            compiler: gcc-13
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=ON
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
+    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -107,9 +113,9 @@ jobs:
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake
@@ -202,9 +208,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}-${{ matrix.arch }}
           save: false # Caches are created by a separate job and only restored for PRs
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake

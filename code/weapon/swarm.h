@@ -52,7 +52,7 @@ void	swarm_maybe_fire_missile(int shipnum);
 
 int	turret_swarm_create();
 void	turret_swarm_delete(int i);
-void	turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num);
+void	turret_swarm_set_up_info(int parent_objnum, ship_subsys *turret, const weapon_info *wip, int weapon_num, bool no_tracking_object = false);
 void	turret_swarm_check_validity();
 
 #endif /* __FREESPACE_SWARM_H__ */

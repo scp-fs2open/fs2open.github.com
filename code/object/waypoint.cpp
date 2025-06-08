@@ -411,7 +411,7 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 	Assert(wp_list.get_waypoints().size() <= 0xffff);
 }
 
-int waypoint_add(const vec3d *pos, int waypoint_instance)
+int waypoint_add(const vec3d *pos, int waypoint_instance, bool first_waypoint_in_list)
 {
 	Assert(pos != NULL);
 	waypoint_list *wp_list;
@@ -426,22 +426,28 @@ int waypoint_add(const vec3d *pos, int waypoint_instance)
 		waypoint_find_unique_name(buf, static_cast<int>(Waypoint_lists.size()) + 1);
 
 		// add new list with that name
-		waypoint_list new_list(buf);
-		Waypoint_lists.push_back(new_list);
+		Waypoint_lists.emplace_back(buf);
 		wp_list = &Waypoint_lists.back();
 
 		// set up references
 		wp_list_index = static_cast<int>(Waypoint_lists.size()) - 1;
 		wp_index = static_cast<int>(wp_list->get_waypoints().size());
 	}
-	// create the waypoint on the same list as, and immediately after, waypoint_instance
+	// create the waypoint on the same list as, and immediately after, waypoint_instance (unless it's the first waypoint)
 	else
 	{
 		calc_waypoint_indexes(waypoint_instance, wp_list_index, wp_index);
 		wp_list = find_waypoint_list_at_index(wp_list_index);
 
-		// theoretically waypoint_instance points to a current waypoint, so advance past it
-		wp_index++;
+		if (first_waypoint_in_list)
+		{
+			wp_index = 0;
+		}
+		else
+		{
+			// theoretically waypoint_instance points to a current waypoint, so advance past it
+			wp_index++;
+		}
 
 		// it has to be on, or at the end of, an existing list
 		Assert(wp_list != NULL);

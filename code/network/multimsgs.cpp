@@ -3315,7 +3315,7 @@ void process_countermeasure_fired_packet( ubyte *data, header *hinfo )
 }
 
 // send a packet indicating that a turret has been fired
-void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum )
+void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius )
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -3370,6 +3370,10 @@ void send_turret_fired_packet( int ship_objnum, int subsys_index, int weapon_obj
 	else {
 		ADD_FLOAT(ZERO_VALUE);
 	}
+
+	ADD_FLOAT(dist_to_target);
+
+	ADD_FLOAT(target_radius);
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -3390,6 +3394,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	ubyte has_sig = 0;
 	ship *shipp;
 	float angle1, angle2;
+	float dist_to_target;
+	float target_radius;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;	
@@ -3405,6 +3411,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	GET_SHORT( turret_index );
 	GET_FLOAT( angle1 );
 	GET_FLOAT( angle2 );
+	GET_FLOAT( dist_to_target );
+	GET_FLOAT( target_radius );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -3425,7 +3433,7 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix(&orient, &o_fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
@@ -3448,12 +3456,18 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &temp);
 
+	auto launch_curve_data = WeaponLaunchCurveData {
+		ssp->system_info->turret_num_firing_points,
+		dist_to_target,
+		target_radius,
+	};
+
 	// create the weapon object
 	if(wnet_signature != 0){		
 		multi_set_network_signature( wnet_signature, MULTI_SIG_NON_PERMANENT );
 	}
 
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
 
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
@@ -7191,11 +7205,11 @@ void send_client_update_packet(net_player *pl)
 		}
 		ADD_DATA( percent );
 
-		n_quadrants = (ubyte)objp->n_quadrants;
+		n_quadrants = static_cast<ubyte>(objp->shield_quadrant.size());
 		ADD_DATA( n_quadrants );
-		for (i = 0; i < n_quadrants; i++ ) {
-			percent = (ubyte)(objp->shield_quadrant[i] / shield_get_max_quad(objp) * 100.0f);
-
+		float max_quad = shield_get_max_quad(objp);
+		for (float quadrant: objp->shield_quadrant) {
+			percent = static_cast<ubyte>(quadrant / max_quad * 100.0f);
 			ADD_DATA( percent );
 		}
 
@@ -7327,11 +7341,10 @@ void process_client_update_packet(ubyte *data, header *hinfo)
 			fl_val = hull_percent * shipp->ship_max_hull_strength / 100.0f;
 			objp->hull_strength = fl_val;
 
+			float max_quad = shield_get_max_quad(objp);
 			for ( i = 0; i < n_quadrants; i++ ) {
-				if (i < objp->n_quadrants) {
-					fl_val = (shield_percent[i] * shield_get_max_quad(objp) / 100.0f);
-					objp->shield_quadrant[i] = fl_val;
-				}
+				fl_val = (shield_percent[i] * max_quad / 100.0f);
+				objp->shield_quadrant[i] = fl_val;
 			}
 
 			// for sanity, be sure that the number of susbystems that I read in matches the player.  If not,
@@ -8621,7 +8634,7 @@ void process_weapon_detonate_packet(ubyte *data, header *hinfo)
 }	
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range)
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius)
 {
 	int packet_size;
 	ushort pnet_signature;
@@ -8669,6 +8682,10 @@ void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum
 		ADD_FLOAT(ZERO_VALUE);
 	}
 	ADD_FLOAT( flak_range );
+
+	ADD_FLOAT( dist_to_target );
+
+	ADD_FLOAT( target_radius );
 	
 	multi_io_send_to_all(data, packet_size);
 
@@ -8688,6 +8705,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	ship *shipp;
 	float angle1, angle2;
 	float flak_range;
+	float dist_to_target;
+	float target_radius;
 
 	// get the data for the turret fired packet
 	offset = HEADER_LENGTH;		
@@ -8698,6 +8717,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	GET_FLOAT( angle1 );
 	GET_FLOAT( angle2 );
 	GET_FLOAT( flak_range );
+	GET_FLOAT( dist_to_target );
+	GET_FLOAT( target_radius );
 	PACKET_SET_SIZE();				// move our counter forward the number of bytes we have read
 
 	// if we don't have a valid weapon index then bail
@@ -8718,7 +8739,7 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix(&orient, &o_fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
@@ -8740,8 +8761,14 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// get the world position of the weapon
 	ship_get_global_turret_info(objp, ssp->system_info, &pos, &dir);
 
+	auto launch_curve_data = WeaponLaunchCurveData {
+		ssp->system_info->turret_num_firing_points,
+		dist_to_target,
+		target_radius,
+	};
+
 	// create the weapon object	
-	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, 1, 0, 0.0f, ssp);
+	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
 	if (weapon_objnum != -1) {
 		if ( Weapon_info[wid].launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );

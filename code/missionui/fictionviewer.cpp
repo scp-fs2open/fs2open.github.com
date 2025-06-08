@@ -599,7 +599,7 @@ void fiction_viewer_load(int stage)
 	// load up the text
 	SCP_string localized_filename = get_localized_fiction_filename(stagep->story_filename);
 
-	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_FICTION);
+	CFILE *fp = cfopen(localized_filename.c_str(), "rb", CF_TYPE_FICTION);
 	if (fp == NULL)
 	{
 		Warning(LOCATION, "Unable to load story file '%s'.", localized_filename.c_str());

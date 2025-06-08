@@ -68,7 +68,7 @@ const float UPKEEP_DIST_MULT = 1.2f;
 const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 
 // bit array of neb2 poofs
-std::unique_ptr<ubyte> Neb2_poof_flags;
+std::unique_ptr<ubyte[]> Neb2_poof_flags;
 
 // array of neb2 bitmaps
 SCP_vector<SCP_string> Neb2_bitmap_filenames;
@@ -135,18 +135,34 @@ const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues 
                                                                                    { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
+static void parse_nebula_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NebulaDetail, value[i]);
+		}
+	}
+}
+
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
                      std::pair<const char*, int>{"Nebula Detail", 1361},
                      std::pair<const char*, int>{"Detail level of nebulas", 1697})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_VALUE)
+                     .default_func([]() { return Detail.nebula_detail; })
                      .importance(7)
                      .change_listener([](int val, bool) {
                           Detail.nebula_detail = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_nebula_detail_func)
                      .finish();
 
 // --------------------------------------------------------------------------------------------------------
@@ -343,7 +359,7 @@ void neb2_init()
 	Poof_accum.resize(Poof_info.size());
 
 	// set up bit string
-	Neb2_poof_flags.reset(new ubyte[calculate_num_bytes(Poof_info.size())]);
+	Neb2_poof_flags = std::make_unique<ubyte[]>(calculate_num_bytes(Poof_info.size()));
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 }
 
@@ -655,7 +671,8 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 			break;
 
-		// any ship less than 3% visible at their closest point
+		// any ship or raw pof less than 3% visible at their closest point
+		case OBJ_RAW_POF:
 		case OBJ_SHIP:
 			if (fog < 0.03f)
 				return 1;
@@ -999,7 +1016,7 @@ void neb2_render_poofs()
 
 			vm_vec_normalize(&view_pos);
 
-			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);
+			vm_vector_2_matrix_norm(&orient, &view_pos, &pf.up_vec, nullptr);
 		}
 
 		// update the poof's up vector to be perpindicular to the camera and also rotated by however much its rotating

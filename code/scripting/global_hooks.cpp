@@ -27,6 +27,30 @@ const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>:
 		{"ViaTechRoom", "boolean", "Whether the movie player was invoked through the tech room."},
 	});
 
+const std::shared_ptr<Hook<>> OnOptionsTabChanged = Hook<>::Factory("On Options Menu Tab Changed",
+	"Executed whenever a tab is changed within the Options Menu.",
+	{
+		{"TabNumber", "number", "The number of the tab that has been changed to, with 0 = Options Tab, 1 = Multi Tab, and 2 = Details Tab. "},
+	});
+
+const std::shared_ptr<Hook<>> OnOptionsMenuClosed = Hook<>::Factory("On Options Menu Closed",
+	"Executed whenever the Options Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnHUDConfigMenuClosed = Hook<>::Factory("On HUD Config Menu Closed",
+	"Executed whenever the HUD Config Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnControlConfigMenuClosed = Hook<>::Factory("On Controls Config Menu Closed",
+	"Executed whenever the Control Config Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
 	{
@@ -43,7 +67,9 @@ const std::shared_ptr<Hook<>> OnLoadComplete =
 
 const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
 	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
-	{});
+	{
+		{"Mission", "string", "The filename of the mission that was just accepted."}
+	});
 
 const std::shared_ptr<Hook<>> OnBriefStage = Hook<>::Factory("On Briefing Stage",
 	"Invoked for each briefing stage what it is shown.",
@@ -368,6 +394,18 @@ const std::shared_ptr<OverridableHook<>> OnHudCommMenuOpened = OverridableHook<>
 	"Invoked when the HUD comm menu, or squad message menu, is displayed.",
 	{
 		{"Player", "object", "The player object."}
+	});
+
+const std::shared_ptr<OverridableHook<CommOrderConditions>> OnHudCommOrderIssued = OverridableHook<CommOrderConditions>::Factory(
+	"On HUD Comm Order Issued",
+	"Invoked when the player issues an order through the squad message menu.",
+	{
+		{"Sender", "ship", "The ship that sent the order. Usually the player."},
+		{"Recipient", "oswpt", "The recipient of the order."},
+		{"Target", "ship", "The target if the order, if any. Usually the Player's current target."},
+		{"Subsystem", "subsystem", "The target subsystem, if any. Usually the Player's current target."},
+		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE enumerations."},
+		{"Name", "string", "The name of the order as it appears in the squad message menu. Useful for LuaAI orders."}
 	});
 
 const std::shared_ptr<OverridableHook<>> OnHudCommMenuClosed = OverridableHook<>::Factory("On HUD Comm Menu Closed",

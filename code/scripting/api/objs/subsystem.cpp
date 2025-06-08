@@ -15,7 +15,7 @@
 #include "network/multiutil.h"
 
 void sexp_beam_or_turret_free_one(ship_subsys *turret, bool is_beam, bool free);
-bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
+bool turret_fire_weapon(int weapon_num, ship_subsys *turret, int parent_objnum, const WeaponLaunchCurveData& launch_curve_data, const vec3d *orig_firing_pos, const vec3d *orig_firing_vec, const vec3d *predicted_pos = nullptr, float flak_range_override = 100.0f, bool play_sound = true);
 
 namespace scripting {
 namespace api {
@@ -243,7 +243,7 @@ ADE_VIRTVAR(HitpointsMax, l_Subsystem, "number", "Subsystem hitpoints max", "num
 
 	if(ADE_SETTING_VAR)
 	{
-		sso->ss->max_hits = MIN(0.0f, f);
+		sso->ss->max_hits = MAX(0.0f, f);
 
 		ship_recalc_subsys_strength(&Ships[sso->objh.objp()->instance]);
 	}
@@ -889,9 +889,16 @@ ADE_FUNC(fireWeapon, l_Subsystem, "[number TurretWeaponIndex = 1, number FlakRan
 
 	ship_get_global_turret_gun_info(sso->objh.objp(), sso->ss, &gpos, false, &gvec, true, nullptr);
 	if (override_gvec != nullptr)
-		gvec = *override_gvec;
+		vm_vec_copy_normalize(&gvec, override_gvec);
 
-	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, &gpos, &gvec, NULL, flak_range);
+	// we don't have a target, so just set the range and radius to 0
+	auto launch_curve_data = WeaponLaunchCurveData {
+		sso->ss->system_info->turret_num_firing_points,
+		0.f,
+		0.f,
+	};
+
+	bool rtn = turret_fire_weapon(wnum, sso->ss, sso->objh.objnum, launch_curve_data, &gpos, &gvec, nullptr, flak_range);
 
 	sso->ss->turret_next_fire_pos++;
 
@@ -1001,7 +1008,7 @@ ADE_FUNC(getTurretMatrix, l_Subsystem, nullptr, "Returns current subsystems turr
 	model_subsystem *tp = sso->ss->system_info;
 
 	// we have to fake a turret matrix because that field is no longer part of model_subsystem
-	vm_vector_2_matrix(&m, &tp->turret_norm, nullptr, nullptr);
+	vm_vector_2_matrix_norm(&m, &tp->turret_norm, nullptr, nullptr);
 
 	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&m)));
 }

@@ -20,6 +20,12 @@ typedef enum {
 	OH_ROTATING
 } overhead_style;
 
+// Typedef for Escape key behavior --wookieejedi
+typedef enum {
+	DEFAULT,
+	SAVE
+} EscapeKeyBehaviorInOptions;
+
 // And one for splash screens
 struct splash_screen {
 	SCP_string filename;
@@ -42,6 +48,8 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
+extern bool Use_model_eyepoint_for_set_camera_host;
+extern bool Use_model_eyepoint_normals;
 extern bool Always_show_directive_value_count;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
@@ -138,6 +146,8 @@ extern float Min_pixel_size_beam;
 extern float Min_pizel_size_muzzleflash;
 extern float Min_pixel_size_trail;
 extern float Min_pixel_size_laser;
+extern float Do_not_render_lasers_below_length;
+extern float Do_not_render_lasers_below_radius;
 extern bool Supernova_hits_at_zero;
 extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
@@ -159,15 +169,21 @@ extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
+extern bool Disable_shield_effects;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
 extern bool Contrails_use_absolute_speed;
 extern bool Use_new_scanning_behavior;
 extern bool Lua_API_returns_nil_instead_of_invalid_object;
 extern bool Dont_show_callsigns_in_escort_list;
+extern bool Hide_main_rearm_items_in_comms_gauge;
 extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 extern bool Preload_briefing_icon_models;
+extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
+extern bool Fix_asteroid_bounding_box_check;
+extern bool Disable_intro_movie;
+extern bool Show_locked_status_scramble_missions;
 
 void mod_table_init();
 void mod_table_post_process();

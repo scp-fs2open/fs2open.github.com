@@ -218,22 +218,38 @@ static float asteroid_cap_speed(int asteroid_info_index, float speed)
  */
 static bool asteroid_in_inner_bound(asteroid_field *asfieldp, vec3d *pos, float delta) {
 
-	if (!asfieldp->has_inner_bound)
+	if (!asfieldp->has_inner_bound) {
 		return false;
+	}
 
-	return (pos->xyz.x > asfieldp->inner_min_bound.xyz.x - delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x + delta) &&
-		(pos->xyz.y > asfieldp->inner_min_bound.xyz.y - delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y + delta) &&
-		(pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta);
+	if (Fix_asteroid_bounding_box_check) {
+		return (pos->xyz.x > asfieldp->inner_min_bound.xyz.x + delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x - delta) &&
+			(pos->xyz.y > asfieldp->inner_min_bound.xyz.y + delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y - delta) &&
+			(pos->xyz.z > asfieldp->inner_min_bound.xyz.z + delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z - delta);
+	} else {
+		return (pos->xyz.x > asfieldp->inner_min_bound.xyz.x - delta) && (pos->xyz.x < asfieldp->inner_max_bound.xyz.x + delta) &&
+			(pos->xyz.y > asfieldp->inner_min_bound.xyz.y - delta) && (pos->xyz.y < asfieldp->inner_max_bound.xyz.y + delta) &&
+			(pos->xyz.z > asfieldp->inner_min_bound.xyz.z - delta) && (pos->xyz.z < asfieldp->inner_max_bound.xyz.z + delta);
+	}
+
 }
 
 static bool asteroid_is_ship_inside_field(asteroid_field* asfieldp, vec3d* pos, float radius) {
 
 	radius *= 2.0f;
 
-	return pos->xyz.x + radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x - radius < Asteroid_field.max_bound.xyz.x &&
-		   pos->xyz.y + radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y - radius < Asteroid_field.max_bound.xyz.y &&
-	       pos->xyz.z + radius > Asteroid_field.min_bound.xyz.z && pos->xyz.z - radius < Asteroid_field.max_bound.xyz.z &&
-		   !asteroid_in_inner_bound(asfieldp, pos, radius);
+	if (Fix_asteroid_bounding_box_check) {
+		return pos->xyz.x - radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x + radius < Asteroid_field.max_bound.xyz.x &&
+			   pos->xyz.y - radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y + radius < Asteroid_field.max_bound.xyz.y &&
+			   pos->xyz.z - radius > Asteroid_field.min_bound.xyz.z && pos->xyz.z + radius < Asteroid_field.max_bound.xyz.z &&
+			   !asteroid_in_inner_bound(asfieldp, pos, radius);
+	} else {
+		return pos->xyz.x + radius > Asteroid_field.min_bound.xyz.x && pos->xyz.x - radius < Asteroid_field.max_bound.xyz.x &&
+			   pos->xyz.y + radius > Asteroid_field.min_bound.xyz.y && pos->xyz.y - radius < Asteroid_field.max_bound.xyz.y &&
+			   pos->xyz.z + radius > Asteroid_field.min_bound.xyz.z && pos->xyz.z - radius < Asteroid_field.max_bound.xyz.z &&
+			   !asteroid_in_inner_bound(asfieldp, pos, radius);
+	}
+
 }
 
 /**
@@ -1039,19 +1055,19 @@ static void maybe_throw_asteroid()
 		if (subtype < 0)
 			return;
 
-		object *objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
-		if (objp != nullptr) {
-			asteroid_aim_at_target(target_objp, objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
+		object *ast_objp = asteroid_create(&Asteroid_field, ASTEROID_TYPE_LARGE, subtype, Asteroid_field.enhanced_visibility_checks);
+		if (ast_objp != nullptr) {
+			asteroid_aim_at_target(target_objp, ast_objp, ASTEROID_MIN_COLLIDE_TIME + frand() * 20.0f);
 
 			// if asteroid is inside inner bound, kill it
-			if (asteroid_in_inner_bound(&Asteroid_field, &objp->pos, 0.0f)) {
-				objp->flags.set(Object::Object_Flags::Should_be_dead);
+			if (asteroid_in_inner_bound(&Asteroid_field, &ast_objp->pos, 0.0f)) {
+				ast_objp->flags.set(Object::Object_Flags::Should_be_dead);
 			} else {
-				Asteroids[objp->instance].target_objnum = target.objnum;
+				Asteroids[ast_objp->instance].target_objnum = target.objnum;
 				target.incoming_asteroids++;
 
 				if ( MULTIPLAYER_MASTER ) {
-					send_asteroid_throw( objp );
+					send_asteroid_throw( ast_objp );
 				}
 			}
 		}

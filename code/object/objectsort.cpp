@@ -29,6 +29,8 @@
 #include "tracing/tracing.h"
 #include "weapon/weapon.h"
 #include "decals/decals.h"
+#include "freespace.h"
+#include "utils/modular_curves.h"
 
 class sorted_obj
 {
@@ -71,6 +73,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 
 		asp = &Asteroids[obj->instance];
 		model_num_a = Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
+	} else if (obj->type == OBJ_RAW_POF) {
+		model_num_a = Pof_objects[obj->instance].model_num;
 	}
 
 	if ( other.obj->type == OBJ_SHIP ) {
@@ -95,6 +99,8 @@ inline bool sorted_obj::operator < (const sorted_obj &other) const
 
 		asp = &Asteroids[other.obj->instance];
 		model_num_b = Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
+	} else if (other.obj->type == OBJ_RAW_POF) {
+		model_num_b = Pof_objects[other.obj->instance].model_num;
 	}
 
 	if ( model_num_a == model_num_b ) {
@@ -138,8 +144,23 @@ int obj_in_view_cone( object * objp )
 	// Center isn't in... are other points?
 	ubyte and_codes = 0xff;
 
+	float obj_size;
+
+	if (objp->type == OBJ_WEAPON && Weapon_info[Weapons[objp->instance].weapon_info_index].render_type == WRT_LASER) {
+		auto wp = &Weapons[objp->instance];
+		auto wip = &Weapon_info[wp->weapon_info_index];
+		float length_scalar = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+		if (wip->laser_length_by_frametime) {
+			length_scalar *= flFrametime;
+		}
+		float radius_scalar = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+		obj_size = (wip->laser_length * length_scalar) + (wip->laser_head_radius * radius_scalar);
+	} else {
+		obj_size = objp->radius;
+	}
+
 	for (i=0; i<8; i++ ) {
-		vm_vec_scale_add( &pt, &objp->pos, &check_offsets[i], objp->radius );
+		vm_vec_scale_add( &pt, &objp->pos, &check_offsets[i], obj_size );
 		codes=g3_rotate_vector(&tmp,&pt);
 		if ( !codes ) {
 			//mprintf(( "A point is inside, so render it.\n" ));
@@ -164,7 +185,8 @@ inline bool obj_render_is_model(object *obj)
 			&& Weapon_info[Weapons[obj->instance].weapon_info_index].render_type == WRT_POF) 
 		|| obj->type == OBJ_ASTEROID 
 		|| obj->type == OBJ_DEBRIS
-		|| obj->type == OBJ_JUMP_NODE;
+		|| obj->type == OBJ_JUMP_NODE
+		|| obj->type == OBJ_RAW_POF;
 }
 
 // Are there reasons to hide objects base on distance?

@@ -16,6 +16,7 @@
 #include "pilotfile/pilotfile.h"
 #include "pilotfile/BinaryFileHandler.h"
 #include "pilotfile/JSONFileHandler.h"
+#include "pilotfile/plr_hudprefs.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "scripting/hook_api.h"
@@ -182,18 +183,40 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
 	int strikes = 0;
 	// flags
-	HUD_config.show_flags = handler->readInt("show_flags");
-	HUD_config.show_flags2 = handler->readInt("show_flags2");
+	int show_flags = handler->readInt("show_flags");
+	int show_flags2 = handler->readInt("show_flags2");
 
-	HUD_config.popup_flags = handler->readInt("popup_flags");
-	HUD_config.popup_flags2 = handler->readInt("popup_flags2");
+	int popup_flags = handler->readInt("popup_flags");
+	int popup_flags2 = handler->readInt("popup_flags2");
+
+	// Convert show_flags (0-31) and show_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (show_flags & (1 << i)) : (show_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_visibility(gauge_id, is_set);
+		}
+	}
+
+	// Convert popup_flags (0-31) and popup_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (popup_flags & (1 << i)) : (popup_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_popup(gauge_id, is_set);
+		}
+	}
 
 	// settings
-	HUD_config.num_msg_window_lines = handler->readUByte("num_msg_window_lines");
+	SCP_UNUSED(handler->readUByte("num_msg_window_lines"));// Deprecated but still read for file compatibility 3/7/2025
+	SCP_UNUSED(handler->readInt("rp_flags"));// Deprecated but still read for file compatibility 3/7/2025
 
-	HUD_config.rp_flags = handler->readInt("rp_flags");
 	HUD_config.rp_dist = handler->readInt("rp_dist");
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
 		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
@@ -203,9 +226,9 @@ void pilotfile::plr_read_hud()
 
 	// basic colors
 	HUD_config.main_color = handler->readInt("main_color");
-	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= NUM_HUD_COLOR_PRESETS) {
 		ReleaseWarning(LOCATION, "Player file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
-		HUD_config.main_color = HUD_COLOR_GREEN;
+		HUD_config.main_color = HUD_COLOR_PRESET_1;
 		strikes++;
 	}
 
@@ -220,11 +243,15 @@ void pilotfile::plr_read_hud()
 		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
-	hud_config_set_color(HUD_config.main_color);
+	// This seemed to be previously used to ensure a valid color was set
+	// but under the new method we can rely on the getter to return a valid color
+	// in all cases. So comment this out to prevent forcing a default color on
+	// custom gauges that rely on color by their gauge type
+	//hud_config_set_color(HUD_config.main_color);
 
 	// gauge-specific colors
 	auto num_gauges = handler->startArrayRead("hud_gauges");
-	for (size_t idx = 0; idx < num_gauges; idx++, handler->nextArraySection()) {
+	for (int idx = 0; idx < static_cast<int>(num_gauges); idx++, handler->nextArraySection()) {
 		ubyte red = handler->readUByte("red");
 		ubyte green = handler->readUByte("green");
 		ubyte blue = handler->readUByte("blue");
@@ -235,31 +262,62 @@ void pilotfile::plr_read_hud()
 			continue;
 		}
 
-		HUD_config.clr[idx].red = red;
-		HUD_config.clr[idx].green = green;
-		HUD_config.clr[idx].blue = blue;
-		HUD_config.clr[idx].alpha = alpha;
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		if (!gauge_id.empty()) {
+			color clr;
+			gr_init_alphacolor(&clr, red, green, blue, alpha);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 	}
 	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_hud()
 {
-	int idx;
-
 	handler->startSectionWrite(Section::HUD);
 
-	// flags
-	handler->writeInt("show_flags", HUD_config.show_flags);
-	handler->writeInt("show_flags2", HUD_config.show_flags2);
+	// Get gauge mappings instance
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	handler->writeInt("popup_flags", HUD_config.popup_flags);
-	handler->writeInt("popup_flags2", HUD_config.popup_flags2);
+	// Initialize bitfields
+	int show_flags = 0, show_flags2 = 0;
+	int popup_flags = 0, popup_flags2 = 0;
+
+	// Convert show_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_visible(gauge_id)) {
+			if (i < 32) {
+				show_flags |= (1 << i);
+			} else {
+				show_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Convert popup_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_popup(gauge_id)) {
+			if (i < 32) {
+				popup_flags |= (1 << i);
+			} else {
+				popup_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Write converted bitfields
+	handler->writeInt("show_flags", show_flags);
+	handler->writeInt("show_flags2", show_flags2);
+
+	handler->writeInt("popup_flags", popup_flags);
+	handler->writeInt("popup_flags2", popup_flags2);
 
 	// settings
-	handler->writeUByte("num_msg_window_lines", HUD_config.num_msg_window_lines);
+	handler->writeUByte("num_msg_window_lines", 0);// Deprecated but still written for file compatibility 3/7/2025
+	handler->writeInt("rp_flags", 0);// Deprecated but still written for file compatibility 3/7/2025
 
-	handler->writeInt("rp_flags", HUD_config.rp_flags);
 	handler->writeInt("rp_dist", HUD_config.rp_dist);
 
 	// basic colors
@@ -268,13 +326,17 @@ void pilotfile::plr_write_hud()
 
 	// gauge-specific colors
 	handler->startArrayWrite("hud_gauges", NUM_HUD_GAUGES);
-	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+	for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeUByte("red", HUD_config.clr[idx].red);
-		handler->writeUByte("green", HUD_config.clr[idx].green);
-		handler->writeUByte("blue", HUD_config.clr[idx].blue);
-		handler->writeUByte("alpha", HUD_config.clr[idx].alpha);
+		// Get the gauge string ID from numeric ID
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		color clr = HUD_config.get_gauge_color(gauge_id);
+
+		handler->writeUByte("red", clr.red);
+		handler->writeUByte("green", clr.green);
+		handler->writeUByte("blue", clr.blue);
+		handler->writeUByte("alpha", clr.alpha);
 
 		handler->endSectionWrite();
 	}
@@ -416,8 +478,10 @@ void pilotfile::plr_read_multiplayer()
 	p->m_local_options.flags = handler->readInt("local_flags");
 	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
 
-	//Make sure the local games multi option is reflected by the OptionsManager
-	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST) != 0);
+	// Make sure multi options from player file are reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", (p->m_local_options.flags & MLO_FLAG_FLUSH_CACHE));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", (p->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA));
 
 	// netgame protocol
 	Multi_options_g.protocol = handler->readInt("protocol");
@@ -425,6 +489,8 @@ void pilotfile::plr_read_multiplayer()
 	if (Multi_options_g.protocol == NET_VMT) {
 		Multi_options_g.protocol = NET_TCP;
 		Multi_options_g.pxo = true;
+		// also update PXO in-game value
+		options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", Multi_options_g.pxo);
 	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
@@ -719,7 +785,7 @@ void pilotfile::plr_read_controls()
 		SCP_string buf = handler->readString("preset");
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-							   [buf](const CC_preset& preset) { return preset.name == buf; });
+							   [&buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
@@ -974,7 +1040,7 @@ void pilotfile::plr_reset_data(bool reset_all)
 	scoring_special_t blank_score;
 
 	all_time_stats = blank_score;
-	multi_stats = blank_score;
+	multi_stats = std::move(blank_score);
 
 	// clear variables
 	p->variables.clear();
@@ -1044,7 +1110,7 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for reading!\n", filename.c_str()));
@@ -1154,6 +1220,9 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 	handler->endSectionRead();
 
+	mprintf(("HUDPREFS => Loading extended player HUD preferences...\n"));
+	hud_config_load_player_prefs(callsign); 
+
 	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
 	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
 	//options::OptionsManager::instance()->persistChanges();
@@ -1219,7 +1288,7 @@ bool pilotfile::save_player(player *_p)
 	filename += ".json";
 
 	// open it, hopefully...
-	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "wb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
@@ -1270,6 +1339,9 @@ bool pilotfile::save_player(player *_p)
 
 	handler->flush();
 
+	mprintf(("HUDPREFS => Saving player HUD preferences (testing)...\n"));
+	hud_config_save_player_prefs(p->callsign);
+
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));
 
@@ -1292,7 +1364,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {

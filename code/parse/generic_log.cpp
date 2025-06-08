@@ -55,7 +55,7 @@ bool logfile_init(int logfile_type)
 	}
 
 	// attempt to open the file
-	logfiles[logfile_type].log_file = cfopen(logfiles[logfile_type].filename, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	logfiles[logfile_type].log_file = cfopen(logfiles[logfile_type].filename, "wt", CF_TYPE_DATA);
 
 	if(logfiles[logfile_type].log_file == NULL){
 		nprintf(("Network","Error opening %s for writing!!\n",logfiles[logfile_type].filename));

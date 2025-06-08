@@ -34,6 +34,8 @@ bool Cutscene_camera_displays_hud;
 bool Alternate_chaining_behavior;
 bool Fixed_chaining_to_repeat;
 bool Use_host_orientation_for_set_camera_facing;
+bool Use_model_eyepoint_for_set_camera_host;
+bool Use_model_eyepoint_normals;
 bool Always_show_directive_value_count;
 bool Use_3d_ship_select;
 bool Use_3d_ship_icons;
@@ -131,6 +133,8 @@ float Min_pixel_size_beam;
 float Min_pizel_size_muzzleflash;
 float Min_pixel_size_trail;
 float Min_pixel_size_laser;
+float Do_not_render_lasers_below_length;
+float Do_not_render_lasers_below_radius;
 bool Supernova_hits_at_zero;
 bool Show_subtitle_uses_pixels;
 int Show_subtitle_screen_base_res[2];
@@ -150,15 +154,22 @@ bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
+bool Disable_shield_effects;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
 bool Use_new_scanning_behavior;
 bool Lua_API_returns_nil_instead_of_invalid_object;
 bool Dont_show_callsigns_in_escort_list;
+bool Hide_main_rearm_items_in_comms_gauge;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
+EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
+bool Fix_asteroid_bounding_box_check;
+bool Disable_intro_movie;
+bool Show_locked_status_scramble_missions;
+
 
 #ifdef WITH_DISCORD
 static auto DiscordOption __UNUSED = options::OptionBuilder<bool>("Game.Discord",
@@ -463,6 +474,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Dont_show_callsigns_in_escort_list);
 			}
 
+			if (optional_string("$Hide main Rearm/Repair items in Comms Gauge:")) {
+				stuff_boolean(&Hide_main_rearm_items_in_comms_gauge);
+			}
+
 			optional_string("#SEXP SETTINGS");
 
 			if (optional_string("$Loop SEXPs Then Arguments:")) {
@@ -502,6 +517,22 @@ void parse_mod_table(const char *filename)
 				} else {
 					mprintf(("Game Settings Table: Using identity orientation for set-camera-facing\n"));
 				}
+			}
+
+			if (optional_string("$Use model eyepoint for set-camera-host:")) 
+			{
+				stuff_boolean(&Use_model_eyepoint_for_set_camera_host);
+				if (Use_model_eyepoint_for_set_camera_host)
+					mprintf(("Game Settings Table: Use model eyepoint for set-camera-host\n"));
+			}
+
+			if (optional_string("$Use model eyepoint normals:"))
+			{
+				stuff_boolean(&Use_model_eyepoint_normals);
+				if (Use_model_eyepoint_normals)
+					mprintf(("Game Settings Table: Model eyepoints will respect eyepoint normals\n"));
+				else
+					mprintf(("Game Settings Table: Model eyepoints will use the model's orientation\n"));
 			}
 
 			if (optional_string("$Show-subtitle uses pixels:")) {
@@ -902,6 +933,14 @@ void parse_mod_table(const char *filename)
 				stuff_float(&Min_pixel_size_laser);
 			}
 
+			if (optional_string("$Do Not Render Lasers Below Length:")) {
+				stuff_float(&Do_not_render_lasers_below_length);
+			}
+
+			if (optional_string("$Do Not Render Lasers Below Radius:")) {
+				stuff_float(&Do_not_render_lasers_below_radius);
+			}
+
 			if (optional_string("$Thruster easing value:")) {
 				stuff_float(&Thruster_easing);
 				if (Thruster_easing <= 0.0f) {
@@ -940,6 +979,10 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string("$Randomize particle rotation:")) {
 				stuff_boolean(&Randomize_particle_rotation);
+			}
+
+			if (optional_string("$Disable shield effects:")) {
+				stuff_boolean(&Disable_shield_effects);
 			}
 
 			optional_string("#NETWORK SETTINGS");
@@ -1449,6 +1492,38 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Preload_briefing_icon_models);
 			}
 
+			if (optional_string("$Behavior for pressing Escape key in options menu:")) {
+				SCP_string temp;
+				stuff_string(temp, F_RAW);
+				SCP_tolower(temp);
+
+				if (temp == "default")
+				{
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+				}
+				else if (temp == "save")
+				{
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::SAVE;
+				}
+				else
+				{
+					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be value of 'default' or 'save'. Reverting to 'default' value.");
+					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+				}
+			}
+
+			if (optional_string("$Fix asteroid/debris field bounding box checks:")) {
+				stuff_boolean(&Fix_asteroid_bounding_box_check);
+			}
+
+			if (optional_string("$Disable intro cutscene:")) {
+				stuff_boolean(&Disable_intro_movie);
+			}
+
+			if (optional_string("$Show locked status for scramble missions:")) {
+				stuff_boolean(&Show_locked_status_scramble_missions);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1540,6 +1615,8 @@ void mod_table_reset()
 	Alternate_chaining_behavior = false;
 	Fixed_chaining_to_repeat = false;
 	Use_host_orientation_for_set_camera_facing = false;
+	Use_model_eyepoint_for_set_camera_host = false;
+	Use_model_eyepoint_normals = false;
 	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
@@ -1630,6 +1707,8 @@ void mod_table_reset()
 	Min_pizel_size_muzzleflash = 0.0f;
 	Min_pixel_size_trail = 0.0f;
 	Min_pixel_size_laser = 0.0f;
+	Do_not_render_lasers_below_length = 0.0001f;
+	Do_not_render_lasers_below_radius = 0.0001f;
 	Supernova_hits_at_zero = false;
 	Show_subtitle_uses_pixels = false;
 	Show_subtitle_screen_base_res[0] = -1;
@@ -1658,12 +1737,14 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
 	Randomize_particle_rotation = false;
+	Disable_shield_effects = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;
 	Contrails_use_absolute_speed = false;
 	Use_new_scanning_behavior = false;
 	Lua_API_returns_nil_instead_of_invalid_object = false;
 	Dont_show_callsigns_in_escort_list = false;
+	Hide_main_rearm_items_in_comms_gauge = false;
 	Fix_scripted_velocity = false;
 	// These colors were taken from missionscreencommon.cpp line 591 which
 	// were the original colors used by the overhead ship loadout lines
@@ -1672,6 +1753,10 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
+	escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+	Fix_asteroid_bounding_box_check = false;
+	Disable_intro_movie = false;
+	Show_locked_status_scramble_missions = false;
 }
 
 void mod_table_set_version_flags()
@@ -1692,5 +1777,10 @@ void mod_table_set_version_flags()
 	}
 	if (mod_supports_version(24, 2, 0)) {
 		Fix_scripted_velocity = true;		// more sensical behavior
+	}
+	if (mod_supports_version(25, 0, 0)) {
+		Use_model_eyepoint_for_set_camera_host = true;
+		Use_model_eyepoint_normals = true;
+		Fix_asteroid_bounding_box_check = true;
 	}
 }

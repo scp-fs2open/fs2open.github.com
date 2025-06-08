@@ -1616,11 +1616,11 @@ void ai_big_strafe_glide_attack()
 	//If we haven't chosen the goal point yet, do so now
 	if (aip->submode_parm1 == 0) {
 		//Pick goal point. This should be a random point that passes through the circle whose normal is the vector between attacker and target
-		vec3d targetToAttacker;
-		vec3d tangentPoint;
-		vm_vec_sub(&targetToAttacker, &Pl_objp->pos, &target_objp->pos);
+		vec3d targetToAttackerDir;
+		vm_vec_normalized_dir(&targetToAttackerDir, &Pl_objp->pos, &target_objp->pos);
 		matrix orient;
-		vm_vector_2_matrix(&orient, &targetToAttacker, NULL, NULL);
+		vm_vector_2_matrix_norm(&orient, &targetToAttackerDir, nullptr, nullptr);
+		vec3d tangentPoint;
 		vm_vec_random_in_circle(&tangentPoint, &target_objp->pos, &orient, target_objp->radius + GLIDE_STRAFE_DISTANCE, true);
 		//Get tangent point in coords relative to ship, scale it up so the actual goal point is far away, then put back in world coords
 		vm_vec_sub2(&tangentPoint, &Pl_objp->pos);

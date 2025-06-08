@@ -10,7 +10,7 @@ extern "C" {
 
 #ifdef WIN32
 #define WIN32_LEAN_AND_MEAN
-#include <Windows.h>
+#include <windows.h>
 #else
 #include <sys/stat.h>
 #endif
@@ -254,7 +254,9 @@ int script_state::CreateLuaState()
 
 	//***** LOAD DEFAULT SCRIPTS
 	mprintf(("ADE: Loading default scripts...\n"));
+	load_default_script(L, "forwarders.lua");
 	load_default_script(L, "cfile_require.lua");
+	load_default_script(L, "cfile_include.lua");
 	load_default_script(L, "dkjson.lua");
 
 	return 1;

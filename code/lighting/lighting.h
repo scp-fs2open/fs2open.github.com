@@ -126,4 +126,6 @@ extern int light_find_for_sun(int sun_index);
 bool light_compare_by_type(const light &a, const light &b);
 
 bool light_deferred_enabled();
+
+bool light_deferredcockpit_enabled();
 #endif

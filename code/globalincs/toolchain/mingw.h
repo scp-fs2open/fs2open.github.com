@@ -16,6 +16,7 @@
  * include toolchain.h which will pull in the file appropriate to
  * the detected toolchain.
  */
+#pragma once
 
 #if defined(__MINGW32__)
 
@@ -58,6 +59,9 @@
 
 #define SIZE_T_ARG    "%zu"
 #define PTRDIFF_T_ARG "%zd"
+
+#define UINT64_T_ARG  "%" PRIu64
+#define  INT64_T_ARG  "%" PRId64
 
 #define likely(x)    __builtin_expect((long) !!(x), 1L)
 #define unlikely(x)  __builtin_expect((long) !!(x), 0L)

@@ -47,11 +47,6 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
-IF(CMAKE_CROSSCOMPILING)
-	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
-	INCLUDE(${IMPORT_EXE_DIR}/ImportExecutables.cmake)
-ENDIF(CMAKE_CROSSCOMPILING)
-
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")

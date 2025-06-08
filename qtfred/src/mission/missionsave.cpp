@@ -1439,7 +1439,6 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 	ship_subsys* ptr = NULL;
 	ship_info* sip = NULL;
 	ship_weapon* wp = NULL;
-	float temp_max_hull_strength;
 
 	sip = &Ship_info[shipp->ship_info_index];
 
@@ -1453,31 +1452,24 @@ int CFred_mission_save::save_common_object_data(object* objp, ship* shipp)
 		fout(" %d", (int) objp->phys_info.speed);
 	}
 
-	// Goober5000
-	if (save_format != MissionFormat::RETAIL && (shipp->special_hitpoints > 0)) {
-		temp_max_hull_strength = (float) shipp->special_hitpoints;
-	} else {
-		temp_max_hull_strength = sip->max_hull_strength;
-	}
-
-	if ((int) objp->hull_strength != temp_max_hull_strength) {
+	if (fl2i(objp->hull_strength) != 100) {
 		if (optional_string_fred("+Initial Hull:", "$Name:", "+Subsystem:")) {
 			parse_comments();
 		} else {
 			fout("\n+Initial Hull:");
 		}
 
-		fout(" %d", (int) objp->hull_strength);
+		fout(" %d", fl2i(objp->hull_strength));
 	}
 
-	if ((int) shield_get_strength(objp) != 100) {
+	if (fl2i(objp->shield_quadrant[0]) != 100) {
 		if (optional_string_fred("+Initial Shields:", "$Name:", "+Subsystem:")) {
 			parse_comments();
 		} else {
 			fout("\n+Initial Shields:");
 		}
 
-		fout(" %d", (int) objp->shield_quadrant[0]);
+		fout(" %d", fl2i(objp->shield_quadrant[0]));
 	}
 
 	// save normal ship weapons info
@@ -1658,8 +1650,9 @@ int CFred_mission_save::save_cutscenes()
 			if (optional_string_fred("#Cutscenes")) {
 				parse_comments(2);
 			} else {
-				fout_version("\n\n#Cutscenes\n\n");
+				fout_version("\n\n#Cutscenes");
 			}
+			fout("\n");
 
 			for (uint i = 0; i < The_mission.cutscenes.size(); i++) {
 				if (strlen(The_mission.cutscenes[i].filename)) {
@@ -1695,13 +1688,13 @@ int CFred_mission_save::save_cutscenes()
 						parse_comments();
 						fout(" %s", The_mission.cutscenes[i].filename);
 					} else {
-						fout_version("%s %s\n", type, The_mission.cutscenes[i].filename);
+						fout_version("\n%s %s", type, The_mission.cutscenes[i].filename);
 					}
 
 					required_string_fred("+formula:");
 					parse_comments();
 					convert_sexp_to_string(sexp_out, The_mission.cutscenes[i].formula, SEXP_SAVE_MODE);
-					fout(" %s", sexp_out.c_str());
+					fout(" %s\n", sexp_out.c_str());
 				}
 			}
 			required_string_fred("#end");
@@ -2311,7 +2304,7 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 	fred_parse_flag = 0;
 
 	pathname = cf_add_ext(pathname, FS_CAMPAIGN_FILE_EXT);
-	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
+	fp = cfopen(pathname, "wt", CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open campaign file to save.\n"));
 		return -1;
@@ -2407,6 +2400,19 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		} else {
 			// save Bastion flag properly
 			fout(" %d", flags_to_save | ((! cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
+		}
+
+		if (!cm.substitute_main_hall.empty()) {
+			fso_comment_push(";;FSO 3.7.2;;");
+			if (optional_string_fred("+Substitute Main Hall:")) {
+				parse_comments(1);
+				fout(" %s", cm.substitute_main_hall.c_str());
+			} else {
+				fout_version("\n+Substitute Main Hall: %s", cm.substitute_main_hall.c_str());
+			}
+			fso_comment_pop();
+		} else {
+			bypass_comment(";;FSO 3.7.2;; +Substitute Main Hall:");
 		}
 
 		if (cm.debrief_persona_index > 0) {
@@ -3097,7 +3103,7 @@ void CFred_mission_save::save_mission_internal(const char* pathname)
 	raw_ptr = Parse_text_raw;
 	fred_parse_flag = 0;
 
-	fp = cfopen(pathname, "wt", CFILE_NORMAL, CF_TYPE_MISSIONS);
+	fp = cfopen(pathname, "wt", CF_TYPE_MISSIONS);
 	if (!fp) {
 		nprintf(("Error", "Can't open mission file to save.\n"));
 		err = -1;
@@ -3435,6 +3441,7 @@ int CFred_mission_save::save_objects()
 	int i, z;
 	object* objp;
 	ship* shipp;
+	ship_info* sip;
 
 	required_string_fred("#Objects");
 	parse_comments(2);
@@ -3452,6 +3459,7 @@ int CFred_mission_save::save_objects()
 
 		shipp = &Ships[i];
 		objp = &Objects[shipp->objnum];
+		sip = &Ship_info[shipp->ship_info_index];
 		required_string_either_fred("$Name:", "#Wings");
 		required_string_fred("$Name:");
 		parse_comments(z ? 2 : 1);
@@ -3717,7 +3725,7 @@ int CFred_mission_save::save_objects()
 		if (shipp->flags[Ship::Ship_Flags::Reinforcement]) {
 			fout(" \"reinforcement\"");
 		}
-		if (objp->flags[Object::Object_Flags::No_shields]) {
+		if (objp->flags[Object::Object_Flags::No_shields] && !sip->flags[Ship::Info_Flags::Intrinsic_no_shields]) {	// don't save no-shields for intrinsic-no-shields ships
 			fout(" \"no-shields\"");
 		}
 		if (shipp->flags[Ship::Ship_Flags::Escort]) {

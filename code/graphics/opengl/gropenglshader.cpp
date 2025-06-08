@@ -218,22 +218,7 @@ static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(op
 opengl_shader_t *Current_shader = NULL;
 
 opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
-{
-}
-opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) noexcept {
-	*this = std::move(other);
-}
-// NOLINTNEXTLINE(misc-unconventional-assign-operator)
-opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) noexcept {
-	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
-	shader = other.shader;
-	flags = other.flags;
-	flags2 = other.flags2;
-
-	program = std::move(other.program);
-
-	return *this;
-}
+{}
 
 /**
  * Set the currently active shader
@@ -360,7 +345,7 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 static SCP_string opengl_load_shader(const char* filename) {
 	SCP_string content;
 	if (Enable_external_shaders) {
-		CFILE* cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+		CFILE* cf_shader = cfopen(filename, "rt", CF_TYPE_EFFECTS);
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
@@ -661,7 +646,7 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 	auto metadata = base_filename + ".json";
 	auto binary = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto metadata_fp = cfopen(metadata.c_str(), "rb", CF_TYPE_CACHE, false,
 	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		nprintf(("ShaderCache", "Metadata file does not exist.\n"));
@@ -703,7 +688,7 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 		return false;
 	}
 
-	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto binary_fp = cfopen(binary.c_str(), "rb", CF_TYPE_CACHE, false,
 	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		nprintf(("ShaderCache", "Binary file does not exist.\n"));
@@ -767,7 +752,7 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	auto metadata_name = base_filename + ".json";
 	auto binary_name = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CF_TYPE_CACHE, false,
 	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		mprintf(("Could not open shader cache metadata file!\n"));
@@ -783,7 +768,7 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	cfclose(metadata_fp);
 	json_decref(metadata);
 
-	auto binary_fp = cfopen(binary_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto binary_fp = cfopen(binary_name.c_str(), "wb", CF_TYPE_CACHE, false,
 	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		mprintf(("Could not open shader cache binary file!\n"));

@@ -15,6 +15,7 @@
 #include "gamesnd/eventmusic.h"
 #include "hud/hudescort.h"
 #include "hud/hudmessage.h"
+#include "hud/hudsquadmsg.h"
 #include "iff_defs/iff_defs.h"
 #include "mission/missioncampaign.h"
 #include "mission/missiongoals.h"
@@ -43,6 +44,7 @@
 #include "scripting/api/objs/animation_handle.h"
 #include "scripting/api/objs/background_element.h"
 #include "scripting/api/objs/beam.h"
+#include "scripting/api/objs/comm_order.h"
 #include "scripting/api/objs/debris.h"
 #include "scripting/api/objs/enums.h"
 #include "scripting/api/objs/event.h"
@@ -243,6 +245,38 @@ ADE_FUNC(__len, l_Mission_Asteroids, NULL,
 		return ade_set_args(L, "i", object_subclass_count(Asteroids, MAX_ASTEROIDS));
 	}
 	return ade_set_args(L, "i", 0);
+}
+
+//****SUBLIBRARY: Mission/Comm Items
+ADE_LIB_DERIV(l_Mission_Comm_Items, "CommItems", nullptr, "Comm Items in the mission", l_Mission);
+
+ADE_INDEXER(l_Mission_Comm_Items,
+	"number Index",
+	"Gets comm items",
+	"comm_item",
+	"Comm Item handle, or invalid handle if invalid index specified")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= MAX_MENU_ITEMS)
+		return ade_set_args(L, "o", l_Comm_Item.Set(-1));
+
+	return ade_set_args(L, "o", l_Comm_Item.Set(idx));
+}
+
+ADE_FUNC(__len,
+	l_Mission_Comm_Items,
+	nullptr,
+	"Number of comm orders in mission currently. Note that the value will change when an order is selected or the open/closed state of the comm menu is changed.",
+	"number",
+	"Number of comm orders in the mission. 0 if comm menu is closed")
+{
+	return ade_set_args(L, "i", Num_menu_items);
 }
 
 //****SUBLIBRARY: Mission/Debris
@@ -1015,6 +1049,162 @@ ADE_FUNC(sendPlainMessage,
 	return ADE_RETURN_TRUE;
 }
 
+// Map from the Lua enums to the message type enums
+int getBuiltinMessageType(const enum_h* enumValue)
+{
+	switch (enumValue->index) {
+	case LE_BUILTIN_MESSAGE_ATTACK_TARGET:
+		return MESSAGE_ATTACK_TARGET;
+	case LE_BUILTIN_MESSAGE_DISABLE_TARGET:
+		return MESSAGE_DISABLE_TARGET;
+	case LE_BUILTIN_MESSAGE_DISARM_TARGET:
+		return MESSAGE_DISARM_TARGET;
+	case LE_BUILTIN_MESSAGE_ATTACK_SUBSYSTEM:
+		return MESSAGE_ATTACK_SUBSYSTEM;
+	case LE_BUILTIN_MESSAGE_PROTECT_TARGET:
+		return MESSAGE_PROTECT_TARGET;
+	case LE_BUILTIN_MESSAGE_FORM_ON_MY_WING:
+		return MESSAGE_FORM_ON_MY_WING;
+	case LE_BUILTIN_MESSAGE_COVER_ME:
+		return MESSAGE_COVER_ME;
+	case LE_BUILTIN_MESSAGE_IGNORE:
+		return MESSAGE_IGNORE;
+	case LE_BUILTIN_MESSAGE_ENGAGE:
+		return MESSAGE_ENGAGE;
+	case LE_BUILTIN_MESSAGE_WARP_OUT:
+		return MESSAGE_WARP_OUT;
+	case LE_BUILTIN_MESSAGE_DOCK_YES:
+		return MESSAGE_DOCK_YES;
+	case LE_BUILTIN_MESSAGE_YESSIR:
+		return MESSAGE_YESSIR;
+	case LE_BUILTIN_MESSAGE_NOSIR:
+		return MESSAGE_NOSIR;
+	case LE_BUILTIN_MESSAGE_NO_TARGET:
+		return MESSAGE_NO_TARGET;
+	case LE_BUILTIN_MESSAGE_CHECK_6:
+		return MESSAGE_CHECK_6;
+	case LE_BUILTIN_MESSAGE_PLAYER_DIED:
+		return MESSAGE_PLAYER_DIED;
+	case LE_BUILTIN_MESSAGE_PRAISE:
+		return MESSAGE_PRAISE;
+	case LE_BUILTIN_MESSAGE_HIGH_PRAISE:
+		return MESSAGE_HIGH_PRAISE;
+	case LE_BUILTIN_MESSAGE_BACKUP:
+		return MESSAGE_BACKUP;
+	case LE_BUILTIN_MESSAGE_HELP:
+		return MESSAGE_HELP;
+	case LE_BUILTIN_MESSAGE_WINGMAN_SCREAM:
+		return MESSAGE_WINGMAN_SCREAM;
+	case LE_BUILTIN_MESSAGE_PRAISE_SELF:
+		return MESSAGE_PRAISE_SELF;
+	case LE_BUILTIN_MESSAGE_REARM_REQUEST:
+		return MESSAGE_REARM_REQUEST;
+	case LE_BUILTIN_MESSAGE_REPAIR_REQUEST:
+		return MESSAGE_REPAIR_REQUEST;
+	case LE_BUILTIN_MESSAGE_PRIMARIES_LOW:
+		return MESSAGE_PRIMARIES_LOW;
+	case LE_BUILTIN_MESSAGE_REARM_PRIMARIES:
+		return MESSAGE_REARM_PRIMARIES;
+	case LE_BUILTIN_MESSAGE_REARM_WARP:
+		return MESSAGE_REARM_WARP;
+	case LE_BUILTIN_MESSAGE_ON_WAY:
+		return MESSAGE_ON_WAY;
+	case LE_BUILTIN_MESSAGE_ALREADY_ON_WAY:
+		return MESSAGE_ALREADY_ON_WAY;
+	case LE_BUILTIN_MESSAGE_REPAIR_DONE:
+		return MESSAGE_REPAIR_DONE;
+	case LE_BUILTIN_MESSAGE_REPAIR_ABORTED:
+		return MESSAGE_REPAIR_ABORTED;
+	case LE_BUILTIN_MESSAGE_SUPPORT_KILLED:
+		return MESSAGE_SUPPORT_KILLED;
+	case LE_BUILTIN_MESSAGE_ALL_ALONE:
+		return MESSAGE_ALL_ALONE;
+	case LE_BUILTIN_MESSAGE_ARRIVE_ENEMY:
+		return MESSAGE_ARRIVE_ENEMY;
+	case LE_BUILTIN_MESSAGE_OOPS:
+		return MESSAGE_OOPS;
+	case LE_BUILTIN_MESSAGE_HAMMER_SWINE:
+		return MESSAGE_HAMMER_SWINE;
+	case LE_BUILTIN_MESSAGE_AWACS_75:
+		return MESSAGE_AWACS_75;
+	case LE_BUILTIN_MESSAGE_AWACS_25:
+		return MESSAGE_AWACS_25;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING:
+		return MESSAGE_STRAY_WARNING;
+	case LE_BUILTIN_MESSAGE_STRAY_WARNING_FINAL:
+		return MESSAGE_STRAY_WARNING_FINAL;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_HIT:
+		return MESSAGE_INSTRUCTOR_HIT;
+	case LE_BUILTIN_MESSAGE_INSTRUCTOR_ATTACK:
+		return MESSAGE_INSTRUCTOR_ATTACK;
+	case LE_BUILTIN_MESSAGE_ALL_CLEAR:
+		return MESSAGE_ALL_CLEAR;
+	case LE_BUILTIN_MESSAGE_PERMISSION:
+		return MESSAGE_PERMISSION;
+	case LE_BUILTIN_MESSAGE_STRAY:
+		return MESSAGE_STRAY;
+	default:
+		return -1;
+	}
+}
+
+ADE_FUNC(sendBuiltinMessage,
+	l_Mission,
+	"ship sender, ship subject, enumeration|string type_or_type_name",
+	"Sends one of the builtin messages from the given source or ship, taking the message subject into account."
+	"The subject can be nil or it can be the target of the message like a response to a destroy order."
+	"The type must be one of the BUILTIN_MESSAGE enumerations or a string matching a custom built-in message defined in messages.tbl.",
+	"boolean",
+	"true if successful, false otherwise")
+{
+	ship* sender = nullptr;
+	ship* subject = nullptr;
+	int messageType = -1;
+
+	enum_h* ehp = nullptr;
+
+	object_h* sender_ship_h = nullptr;
+	object_h* subject_ship_h = nullptr;
+
+	if (lua_isstring(L, 3)) {
+		// If the type is a string, it could be a custom message type defined in messages.tbl.
+		const char* type_str = nullptr;
+		if (!ade_get_args(L, "oos", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), &type_str))
+			return ADE_RETURN_FALSE;
+		
+		// Get the builtin message type from the string.
+		messageType = get_builtin_message_type(type_str);
+	} else {
+		if (!ade_get_args(L, "ooo", l_Ship.GetPtr(&sender_ship_h), l_Ship.GetPtr(&subject_ship_h), l_Enum.GetPtr(&ehp)))
+			return ADE_RETURN_FALSE;
+
+		// I don't love this method of error checking the enums becuase if someone inserts an enum accidentally in this
+		// range it could fail but the way we do all our LUA Enums is prone to that kind of mess at a foundational
+		// level...
+		if (ehp == nullptr || ehp->index < LE_BUILTIN_MESSAGE_ATTACK_TARGET || ehp->index > LE_BUILTIN_MESSAGE_STRAY) {
+			Warning(LOCATION, "Invalid message type %d passed to sendBuiltinMessage!\n", (ehp != nullptr) ? ehp->index : -1);
+			return ADE_RETURN_FALSE;
+		}
+
+		messageType = getBuiltinMessageType(ehp);
+	}
+
+	if (sender_ship_h == nullptr || !sender_ship_h->isValid())
+		return ADE_RETURN_FALSE;
+
+	sender = &Ships[sender_ship_h->objp()->instance];
+
+	if (subject_ship_h != nullptr && subject_ship_h->isValid())
+		subject = &Ships[subject_ship_h->objp()->instance];
+
+	if (messageType < 0 || messageType >= static_cast<int>(Builtin_messages.size())) {
+		LuaError(L, "Message type is invalid!");
+		return ADE_RETURN_FALSE;
+	}
+
+	return message_send_builtin(messageType, sender, subject);
+}
+
 ADE_FUNC(addMessageToScrollback,
 	l_Mission,
 	"string message, [team|enumeration source=HUD_SOURCE_COMPUTER]",
@@ -1282,28 +1472,74 @@ ADE_FUNC(createDebris,
 	return ade_set_args(L, "o", l_Debris.Set(object_h(obj)));
 }
 
+ADE_FUNC(createWaypointList, l_Mission, "[string name]",
+	"Creates a waypoint list.  If a name is not specified, the list will have a default name.  Be sure to populate the list with at least one waypoint before using it!",
+	"waypointlist",
+	"Waypoint list handle, or invalid handle if waypoint list couldn't be created")
+{
+	char buf[NAME_LENGTH];
+	const char* name = nullptr;
+	if (!ade_get_args(L, "|s", &name))
+		return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+
+	// use either a specified name...
+	if (name)
+	{
+		auto list = find_matching_waypoint_list(name);
+		if (list)
+		{
+			Warning(LOCATION, "Waypoint list '%s' already exists!", name);
+			return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+		}
+		if (strlen(name) > NAME_LENGTH - 1)
+		{
+			Warning(LOCATION, "Waypoint list name '%s' must be at most %d characters!", name, NAME_LENGTH - 1);
+			return ade_set_error(L, "o", l_WaypointList.Set(waypointlist_h()));
+		}
+		strcpy_s(buf, name);
+	}
+	// ...or a generated name
+	else
+	{
+		waypoint_find_unique_name(buf, static_cast<int>(Waypoint_lists.size()) + 1);
+	}
+
+	// add new list with that name
+	Waypoint_lists.emplace_back(buf);
+	return ade_set_args(L, "o", l_WaypointList.Set(waypointlist_h(static_cast<int>(Waypoint_lists.size()) - 1)));
+}
+
 ADE_FUNC(createWaypoint, l_Mission, "[vector Position, waypointlist List]",
-		 "Creates a waypoint",
+		 "Creates a waypoint.  If Position is not specified, the waypoint will be at (0,0,0).  If List is not specified, a new list will be created and the waypoint will be added to it.",
 		 "waypoint",
 		 "Waypoint handle, or invalid waypoint handle if waypoint couldn't be created")
 {
-	vec3d *v3 = NULL;
-	waypointlist_h *wlh = NULL;
+	vec3d *v3 = nullptr;
+	waypointlist_h *wlh = nullptr;
 	if(!ade_get_args(L, "|oo", l_Vector.GetPtr(&v3), l_WaypointList.GetPtr(&wlh)))
 		return ade_set_error(L, "o", l_Waypoint.Set(object_h()));
 
-	// determine where we need to create it - it looks like we were given a waypoint list but not a waypoint itself
+	// determine where we need to create it - if we were given a waypoint list, put it at the end
+	// (unless the list is empty, in which case put it at the beginning)
 	int waypoint_instance = -1;
+	bool first_waypoint_in_list = false;
 	if (wlh && wlh->isValid())
 	{
-		int wp_list_index = find_index_of_waypoint_list(wlh->getList());
-		int wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
+		int wp_list_index = wlh->wl_index;
+		int wp_index;
+		if (wlh->getList()->get_waypoints().empty())
+		{
+			wp_index = 0;
+			first_waypoint_in_list = true;
+		}
+		else
+			wp_index = static_cast<int>(wlh->getList()->get_waypoints().size()) - 1;
 		waypoint_instance = calc_waypoint_instance(wp_list_index, wp_index);
 	}
-	int obj_idx = waypoint_add(v3 != NULL ? v3 : &vmd_zero_vector, waypoint_instance);
+	int obj_idx = waypoint_add(v3 != nullptr ? v3 : &vmd_zero_vector, waypoint_instance, first_waypoint_in_list);
 
 	if(obj_idx >= 0)
-		return ade_set_args(L, "o", l_Waypoint.Set(object_h(&Objects[obj_idx])));
+		return ade_set_args(L, "o", l_Waypoint.Set(object_h(obj_idx)));
 	else
 		return ade_set_args(L, "o", l_Waypoint.Set(object_h()));
 }
@@ -2786,16 +3022,15 @@ ADE_FUNC(getPrevMissionFilename, l_Campaign, NULL, "Gets previous mission filena
 }
 
 // DahBlount - This jumps to a mission, the reason it accepts a boolean value is so that players can return to campaign maps
-ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, or returns nil.")
+ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to a mission based on the filename. Optionally, the player can be sent to a hub mission without setting missions to skipped.", "boolean", "Jumps to a mission, returning true if successful, false if unsuccessful (e.g. the mission could not be found in the campaign), or nil if no mission was specified.")
 {
 	const char* filename = nullptr;
 	bool hub = false;
 	if (!ade_get_args(L, "s|b", &filename, &hub))
 		return ADE_RETURN_NIL;
 
-	mission_campaign_jump_to_mission(filename, hub);
-
-	return ADE_RETURN_TRUE;
+	bool success = mission_campaign_jump_to_mission(filename, hub);
+	return ade_set_args(L, "b", success);
 }
 
 // TODO: add a proper indexer type that returns a handle

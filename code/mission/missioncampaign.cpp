@@ -1160,7 +1160,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		scripting::hooks::OnCampaignMissionAccept->run();
+		scripting::hooks::OnCampaignMissionAccept->run(
+			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name)
+		));
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
@@ -1773,24 +1775,25 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-void mission_campaign_jump_to_mission(const char* name, bool no_skip)
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 {
 	int i = 0, mission_num = -1;
-	char dest_name[64], *p;
+	constexpr size_t dest_filename_size = 64;
+	char dest_filename[dest_filename_size], *p;
 
 	// load in the campaign junk
 	mission_load_up_campaign();
 
-	// tack the .fs2 onto the input name
-	strcpy_s(dest_name, name);
-	p = strchr(dest_name, '.');
-	if (p != NULL)
-		*p = '\0';
-	strcat_s(dest_name, ".fs2");
+	// tack the .fs2 onto the input name if necessary
+	strcpy_s(dest_filename, filename);
+	drop_white_space(dest_filename);
+	p = strchr(dest_filename, '.');
+	if ((p == nullptr || stricmp(p, ".fs2") != 0) && strlen(dest_filename) <= dest_filename_size - 4 - 1)
+		strcat_s(dest_filename, ".fs2");
 
 	// search for our mission
 	for (i = 0; i < Campaign.num_missions; i++) {
-		if ((Campaign.missions[i].name != NULL) && !stricmp(Campaign.missions[i].name, dest_name)) {
+		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name, dest_filename)) {
 			mission_num = i;
 			break;
 		} else if (!no_skip) {
@@ -1802,9 +1805,8 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 
 	if (mission_num < 0) {
 		// if we got here, no match was found
-		// restart the campaign
-		mission_campaign_savefile_delete(Campaign.filename);
-		mission_campaign_load(Campaign.filename);
+		// based on player feedback, let's NOT restart the campaign but rather fail gracefully
+		return false;
 	} else {
 		for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
 			i = static_cast<int>(std::distance(Ship_info.begin(), it));
@@ -1820,6 +1822,7 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 		Game_mode |= GM_CAMPAIGN_MODE;
 
 		gameseq_post_event(GS_EVENT_START_GAME);
+		return true;
 	}
 }
 

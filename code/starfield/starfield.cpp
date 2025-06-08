@@ -162,14 +162,22 @@ bool Dynamic_environment = false;
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
+static void parse_motion_debris_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Motion_debris_enabled = enabled;
+}
+
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
                      std::pair<const char*, int>{"Motion Debris", 1713},
                      std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
                      .category(std::make_pair("Graphics", 1825))
                      .bind_to(&Motion_debris_enabled)
-                     .default_val(true)
+                     .default_func([]() { return Motion_debris_enabled;})
                      .level(options::ExpertLevel::Advanced)
                      .importance(67)
+                     .parser(parse_motion_debris_func)
                      .finish();
 
 static int Default_env_map = -1;
@@ -1334,7 +1342,7 @@ void stars_draw_sun(int show_sun)
 
 		material mat_params;
 		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
-		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale);
+		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
 		Sun_drew++;
 
 // 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
@@ -1455,7 +1463,7 @@ void stars_draw_sun_glow(int sun_n)
 	//g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
 	material mat_params;
 	material_set_unlit(&mat_params, bitmap_id, 0.5f, true, false);
-	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale);
+	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, true);
 
 	if (bm->flare) {
 		vec3d light_dir;
@@ -1716,7 +1724,7 @@ void subspace_render()
 
 	glow_pos.xyz.x = 0.0f;
 	glow_pos.xyz.y = 0.0f;
-	glow_pos.xyz.z = 100.0f;
+	glow_pos.xyz.z = 1.0f;
 
 	//gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 	material mat_params;
@@ -1724,13 +1732,13 @@ void subspace_render()
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
-	glow_pos.xyz.z = -100.0f;
+	glow_pos.xyz.z = -1.0f;
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);

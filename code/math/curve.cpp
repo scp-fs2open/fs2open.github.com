@@ -9,6 +9,65 @@ int curve_get_by_name(const SCP_string& in_name) {
 	return find_item_with_field(Curves, &Curve::name, in_name);
 }
 
+static int curve_inline_def(){
+	//The curve needs a unique identifier. Build this with semicolon + filename + semicolon + character in file
+	SCP_string curve_name = ';' + SCP_string(Current_filename) + ';' + std::to_string(Mp - Parse_text);
+
+	int resulting_curve = static_cast<int>(Curves.size());
+	Curve& new_curve = Curves.emplace_back(curve_name);
+
+	do {
+		curve_keyframe& new_keyframe = new_curve.keyframes.emplace_back();
+		stuff_float(&new_keyframe.pos.x);
+		stuff_float(&new_keyframe.pos.y);
+		required_string(")");
+
+		bool found_interpolation = true;
+		int interpolation_mode = optional_string_one_of(4, "--", "-|", "-/", "/-");
+		switch (interpolation_mode) {
+		case 0:
+			new_keyframe.interp_func = CurveInterpFunction::Linear;
+			break;
+		case 1:
+			new_keyframe.interp_func = CurveInterpFunction::Constant;
+			break;
+		case 2:
+			new_keyframe.interp_func = CurveInterpFunction::Polynomial;
+			new_keyframe.param1 = 2.0f;
+			new_keyframe.param2 = 1.0f;
+			break;
+		case 3:
+			new_keyframe.interp_func = CurveInterpFunction::Polynomial;
+			new_keyframe.param1 = 2.0f;
+			new_keyframe.param2 = -1.0f;
+			break;
+		default:
+			new_keyframe.interp_func = CurveInterpFunction::Linear;
+			found_interpolation = false;
+			break;
+		}
+		if (!found_interpolation)
+			break;
+	} while (optional_string("("));
+
+	return resulting_curve;
+}
+
+int curve_parse(const char *err_msg) {
+	if(optional_string("(")) {
+		return curve_inline_def();
+	}
+	else {
+		SCP_string curve_name;
+		stuff_string(curve_name, F_NAME, "()");
+		int curve_id = curve_get_by_name(curve_name);
+		if (curve_id < 0) {
+			error_display(0, "Curve %s not found!%s", curve_name.c_str(), err_msg);
+		}
+		return curve_id;
+	}
+}
+
 void parse_curve_table(const char* filename) {
 	try
 	{
@@ -20,6 +79,10 @@ void parse_curve_table(const char* filename) {
 		while (optional_string("$Name:")) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
+
+			if (name.find('(') != SCP_string::npos || name.find(')') != SCP_string::npos) {
+				error_display(0, "Curve name %s contains parentheses, which are not permitted.", name.c_str());
+			}
 
 			int index = curve_get_by_name(name);
 

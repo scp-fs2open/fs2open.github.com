@@ -36,7 +36,7 @@ typedef struct ai_flag_name {
 
 typedef struct ai_flag_description {
 	AI::AI_Flags flag;
-	SCP_string flag_desc;
+	const char *flag_desc;
 } ai_flag_description;
 
 extern ai_flag_name Ai_flag_names[];
@@ -318,7 +318,7 @@ typedef struct ai_info {
 	//Unlike the predicted position stuff, also takes into account velocity
 	//Only used against small ships
 	fix		next_aim_pos_time;
-	vec3d	last_aim_enemy_pos;
+	vec3d	last_aim_enemy_pos;		// Normally this is the position of the enemy a turret is targeting but in the F3 Lab, this is used to pass raw target coordinates to the turret firing methods. 
 	vec3d	last_aim_enemy_vel;
 
 	ai_goal	goals[MAX_AI_GOALS];
@@ -330,7 +330,7 @@ typedef struct ai_info {
 	float	time_enemy_near;					//	SUSHI: amount of time enemy continuously "near" the player
 	fix		last_attack_time;					//	Missiontime of last time this ship attacked its enemy.
 	fix		last_hit_time;						//	Missiontime of last time this ship was hit by anyone.
-	int		last_hit_quadrant;				//	Shield section of last hit.
+	int		danger_shield_quadrant;				//	Shield section AI will prefer to prioritize for recharging, it if possible.
 	fix		last_hit_target_time;			//	Missiontime of last time this ship successfully hit target.
 	int		hitter_objnum;						//	Object index of ship that hit this ship last time.
 	int		hitter_signature;					//	Signature of hitter.  Prevents stupidity if hitter gets killed.

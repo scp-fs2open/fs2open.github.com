@@ -3,6 +3,8 @@
 #include "particle/volumes/ConeVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
 
+#include <anl.h>
+
 namespace particle {
 
 	//
@@ -141,9 +143,30 @@ namespace particle {
 			}
 		}
 
+		static void parseVelocityNoise(ParticleEffect &effect) {
+			if (optional_string("+Velocity Noise:")) {
+				SCP_string func;
+				stuff_string(func, F_RAW);
+				anl::CKernel kernel;
+				anl::CExpressionBuilder builder(kernel);
+				anl::CInstructionIndex instruction = builder.eval(func);
+				effect.m_velocityNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
+			}
+			if (optional_string("+Velocity Noise Scale:")) {
+				effect.m_velocity_noise_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			}
+		}
+
 		template<bool modern = true> static void parseVelocityVolumeScale(ParticleEffect &effect) {
-			if (internal::required_string_if_new(modern ? "+Velocity Volume Scale:" : "+Velocity:", false)) {
-				effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+			if constexpr (modern) {
+				if (optional_string("+Velocity Volume Scale:")) {
+					effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+				}
+			}
+			else {
+				if (internal::required_string_if_new("+Velocity:", false)) {
+					effect.m_velocity_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
+				}
 			}
 		}
 
@@ -167,6 +190,20 @@ namespace particle {
 		static void parsePositionVolume(ParticleEffect &effect) {
 			if (optional_string("+Spawn Position Volume:")) {
 				effect.m_spawnVolume = parseVolume();
+			}
+		}
+
+		static void parsePositionNoise(ParticleEffect &effect) {
+			if (optional_string("+Spawn Position Noise:")) {
+				SCP_string func;
+				stuff_string(func, F_RAW);
+				anl::CKernel kernel;
+				anl::CExpressionBuilder builder(kernel);
+				anl::CInstructionIndex instruction = builder.eval(func);
+				effect.m_spawnNoise = std::make_shared<std::pair<anl::CKernel, anl::CInstructionIndex>>(std::move(kernel), std::move(instruction));
+			}
+			if (optional_string("+Spawn Position Noise Scale:")) {
+				effect.m_position_noise_scaling = ::util::ParsedRandomFloatRange::parseRandomRange();
 			}
 		}
 
@@ -228,14 +265,8 @@ namespace particle {
 				required_string(output == 0 ? "Radius" : "Velocity");
 				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
 
-				required_string("+Curve Name:");
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				curve = curve_get_by_name(buf);
-
-				if (curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				required_string_either("+Curve Name:", "+Curve:", true);
+				curve = curve_parse(" Unknown curve requested for modular curves!");
 			}
 		}
 
@@ -283,8 +314,10 @@ namespace particle {
 			parseDirection(effect);
 			parseOffset(effect);
 			parsePositionVolume(effect);
+			parsePositionNoise(effect);
 			parseVelocityVolume(effect);
 			parseVelocityVolumeScale(effect);
+			parseVelocityNoise(effect);
 			parseVelocityDirectionScale(effect);
 			parseVelocityInheritFromPosition(effect);
 			parseVelocityInheritFromOrientation(effect);
@@ -305,25 +338,13 @@ namespace particle {
 
 		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_size_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_size_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				effect.m_size_lifetime_curve = curve_parse("");
 			}
 		}
 
 		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				SCP_string buf;
-				stuff_string(buf, F_NAME);
-				effect.m_vel_lifetime_curve = curve_get_by_name(buf);
-
-				if (effect.m_vel_lifetime_curve < 0) {
-					error_display(0, "Could not find curve '%s'", buf.c_str());
-				}
+				effect.m_vel_lifetime_curve = curve_parse("");
 			}
 		}
 
@@ -378,7 +399,12 @@ namespace particle {
 					error_display(0, "Unknown particle effect name '%s' encountered!", newName.c_str());
 				}
 
-				return ParticleManager::get()->getEffect(index);
+				auto effect = ParticleManager::get()->getEffect(index);
+				if (!effect.empty()) {
+					effect.front().m_name = name;
+				}
+
+				return effect;
 			}
 
 			ParticleEffectLegacyType type = parseLegacyEffectType();

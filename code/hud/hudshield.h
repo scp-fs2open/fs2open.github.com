@@ -15,8 +15,15 @@
 #include "globalincs/pstypes.h"
 #include "hud/hud.h"
 
-#define SHIELD_HIT_DURATION	1400	// time a shield quadrant flashes after being hit
+#define SHIELD_HIT_FLASH_DURATION	1400	// time a shield quadrant flashes after being hit
 #define SHIELD_FLASH_INTERVAL	200	// time between shield quadrant flashes
+
+enum ShieldGaugeType {
+	SHIELD_GAUGE_PLAYER,
+	SHIELD_GAUGE_TARGET,
+
+	num_shield_gauge_types
+};
 
 typedef struct shield_hit_info
 {
@@ -57,9 +64,9 @@ protected:
 public:
 	HudGaugeShield();
 	HudGaugeShield(int _gauge_object, int _gauge_config);
-	void showShields(const object *objp, int mode);
+	void showShields(const object* objp, ShieldGaugeType mode, bool config);
 	void render(float frametime, bool config = false) override;
-	int maybeFlashShield(int target_index, int shield_offset);
+	int maybeFlashShield(ShieldGaugeType target_index, int shield_offset);
 	void renderShieldIcon(coord2d coords[6]);
 };
 
@@ -94,8 +101,8 @@ public:
 	void init1DigitOffsets(int x, int y);
 	void init2DigitOffsets(int x, int y);
 	int maybeFlashShield(int target_index, int shield_offset);
-	void showMiniShields(const object *objp);
-	void showIntegrity(float p_target_integrity);
+	void showMiniShields(const object* objp, bool config);
+	void showIntegrity(float p_target_integrity, bool config);
 	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };

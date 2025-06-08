@@ -458,7 +458,8 @@ float vm_vec_dist(const vec3d *v0, const vec3d *v1)
 bool vm_vec_is_normalized(const vec3d *v)
 {
 	// By the standards of FSO, it is sufficient to check that the magnitude is close to 1.
-	return vm_vec_mag(v) > 0.999f && vm_vec_mag(v) < 1.001f;
+	float mag = vm_vec_mag(v);
+	return mag > 0.999f && mag < 1.001f;
 }
 
 //normalize a vector. returns mag of source vec (always greater than zero)
@@ -469,7 +470,8 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
+	if (fl_near_zero(m)) {
+		// Since vectors are not expected to be null in this function, this really ought to be a Warning, as in the original release.
 		nprintf(("Network", "Null vec3d in vec3d normalize.\n"
 			"Trace out of vecmat.cpp and find offending code.\n"));
 		dest->xyz.x = 1.0f;
@@ -491,37 +493,51 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src)
 //normalize a vector. returns mag of source vec (always greater than zero)
 float vm_vec_normalize(vec3d *v)
 {
-	float t;
-	t = vm_vec_copy_normalize(v,v);
-	return t;
+	return vm_vec_copy_normalize(v,v);
 }
 
 // Normalize a vector.
-// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.  
+// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.
 // Otherwise return the magnitude.
-// No warning() generated for null vector.
-float vm_vec_normalize_safe(vec3d *v)
+// No warning() generated for null vector, as it is expected that some vectors may be null.
+float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src, bool fallbackToZeroVec)
 {
 	float m;
 
-	m = vm_vec_mag(v);
+	m = vm_vec_mag(src);
 
 	//	Mainly here to trap attempts to normalize a null vector.
-	if (m <= 0.0f) {
-		v->xyz.x = 1.0f;
-		v->xyz.y = 0.0f;
-		v->xyz.z = 0.0f;
-		return 1.0f;
+	if (fl_near_zero(m)) {
+		if (fallbackToZeroVec) {
+			dest->xyz.x = 0.0f;
+			dest->xyz.y = 0.0f;
+			dest->xyz.z = 0.0f;
+			return 0.0f;
+		}
+		else {
+			dest->xyz.x = 1.0f;
+			dest->xyz.y = 0.0f;
+			dest->xyz.z = 0.0f;
+			return 1.0f;
+		}
 	}
 
 	float im = 1.0f / m;
 
-	v->xyz.x *= im;
-	v->xyz.y *= im;
-	v->xyz.z *= im;
+	dest->xyz.x = src->xyz.x * im;
+	dest->xyz.y = src->xyz.y * im;
+	dest->xyz.z = src->xyz.z * im;
 
 	return m;
+}
 
+// Normalize a vector.
+// If vector is 0,0,0, return 1.0f, and change v to 1,0,0.
+// Otherwise return the magnitude.
+// No warning() generated for null vector.
+float vm_vec_normalize_safe(vec3d *v, bool fallbackToZeroVec)
+{
+	return vm_vec_copy_normalize_safe(v,v, fallbackToZeroVec);
 }
 
 //return the normalized direction vector between two points
@@ -827,6 +843,11 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec, cons
 
 matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec, const vec3d *rvec)
 {
+	// sanity
+	Assertion(fvec == nullptr || vm_vec_is_normalized(fvec), "if fvec is provided, it must be normalized!");
+	Assertion(uvec == nullptr || vm_vec_is_normalized(uvec), "if uvec is provided, it must be normalized!");
+	Assertion(rvec == nullptr || vm_vec_is_normalized(rvec), "if rvec is provided, it must be normalized!");
+
 	matrix temp = vmd_identity_matrix;
 
 	vec3d *xvec=&temp.vec.rvec;
@@ -1372,6 +1393,8 @@ void vm_vec_rand_vec(vec3d *rvec)
 // Returns the rotated point in "out".
 void vm_rot_point_around_line(vec3d *out, const vec3d *in, float angle, const vec3d *line_point, const vec3d *line_dir)
 {
+	Assertion(line_dir != nullptr && vm_vec_is_normalized(line_dir), "line_dir vector must be normalized!");
+
 	vec3d tmp, tmp1;
 	matrix m, r;
 	angles ta;
@@ -1692,10 +1715,10 @@ float vm_closest_angle_to_matrix(const matrix* mat, const vec3d* rot_axis, float
 		//If we support IEEE float handling, we don't need this, the div by 0 will be handled correctly with the INF. If not, do this:
 		const float yz_recip = (!std::numeric_limits<float>::is_iec559 && y * z < 0.001f) ? FLT_MAX : 1.0f / (y * z);
 
-		solutions = { 2 * atan2(-sr_neg * (y * y + sr) * yz_recip, -2 * sr_neg),
-					  2 * atan2(sr_neg * (y * y + sr) * yz_recip, 2 * sr_neg),
-					  2 * atan2(-sr_pos * (y * y - sr) * yz_recip, -2 * sr_pos),
-					  2 * atan2(sr_pos * (y * y - sr) * yz_recip, 2 * sr_pos) };
+		solutions = { 2.0f * atan2f(-sr_neg * (y * y + sr) * yz_recip, -2.0f * sr_neg),
+					  2.0f * atan2f(sr_neg * (y * y + sr) * yz_recip, 2.0f * sr_neg),
+					  2.0f * atan2f(-sr_pos * (y * y - sr) * yz_recip, -2.0f * sr_pos),
+					  2.0f * atan2f(sr_pos * (y * y - sr) * yz_recip, 2.0f * sr_pos) };
 	}
 	float value = -2.0f;
 	float correct = 0;
@@ -2315,7 +2338,8 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float max_angle, const matr
 	if(orient != NULL){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 
@@ -2342,7 +2366,8 @@ void vm_vec_random_cone(vec3d *out, const vec3d *in, float min_angle, float max_
 	if(orient != NULL){
 		rot = orient;
 	} else {
-		vm_vector_2_matrix(&m, in, NULL, NULL);
+		Assertion(in != nullptr && vm_vec_is_normalized(in), "input vector must be normalized!");
+		vm_vector_2_matrix_norm(&m, in, nullptr, nullptr);
 		rot = &m;
 	}
 	

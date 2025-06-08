@@ -45,7 +45,6 @@ bool WaypointEditorDialogModel::apply() {
 	char old_name[255];
 	int i;
 	object* ptr;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if (query_valid_object(_editor->currentObject) && Objects[_editor->currentObject].type == OBJ_WAYPOINT) {
 		Assert(
@@ -141,11 +140,7 @@ bool WaypointEditorDialogModel::apply() {
 
 		_editor->missionChanged();
 	} else if (Objects[_editor->currentObject].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if (jnp->GetSCPObject() == &Objects[_editor->currentObject]) {
-				break;
-			}
-		}
+		auto jnp = jumpnode_get_by_objnum(_editor->currentObject);
 
 		for (i = 0; i < MAX_WINGS; i++) {
 			if (!stricmp(Wings[i].name, _currentName.c_str())) {
@@ -244,7 +239,6 @@ void WaypointEditorDialogModel::onSelectedObjectMarkingChanged(int, bool) {
 }
 void WaypointEditorDialogModel::initializeData() {
 	_enabled = true;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	updateElementList();
 
@@ -256,13 +250,8 @@ void WaypointEditorDialogModel::initializeData() {
 	if (_editor->cur_waypoint_list != NULL) {
 		_currentName = _editor->cur_waypoint_list->get_name();
 	} else if (Objects[_editor->currentObject].type == OBJ_JUMP_NODE) {
-		for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-			if (jnp->GetSCPObject() == &Objects[_editor->currentObject]) {
-				break;
-			}
-		}
-
-		_currentName = jnp->GetName();
+		auto jnp = jumpnode_get_by_objnum(_editor->currentObject);
+		_currentName = jnp ? jnp->GetName() : "";
 	} else {
 		_currentName = "";
 		_enabled = false;

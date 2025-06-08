@@ -326,7 +326,7 @@ namespace animation {
 		}
 	}
 
-	void ModelAnimation::stop(polymodel_instance* pmi, bool cleanup) {
+	void ModelAnimation::stop(polymodel_instance* pmi, bool cleanup, bool forceStop) {
 		//If inaccuracies occur, this needs to reset again, but only if no other animation is running on this submodel
 		/*for (const auto& animation : m_submodelAnimation) {
 			animation->reset(pmi);
@@ -334,6 +334,9 @@ namespace animation {
 
 		if (!pmi)
 			return;
+
+		if (forceStop)
+			m_animation->forceStopAnimation(pmi->id);
 
 		instance_data& instanceData = m_instances[pmi->id];
 		instanceData.time = 0.0f;
@@ -641,7 +644,14 @@ namespace animation {
 		operator=(other);
 	}
 
+	ModelAnimationSet::ModelAnimationSet(ModelAnimationSet&& other) noexcept {
+		*this = std::move(other);
+	}
+
 	ModelAnimationSet& ModelAnimationSet::operator=(ModelAnimationSet&& other) noexcept {
+		if (this == &other)
+			return *this;
+
 		std::swap(m_submodels, other.m_submodels);
 		std::swap(m_animationSet, other.m_animationSet);
 		std::swap(m_moveableSet, other.m_moveableSet);
@@ -655,8 +665,6 @@ namespace animation {
 				}
 			}
 		}
-
-
 
 		return *this;
 	}
@@ -743,14 +751,14 @@ namespace animation {
 	void ModelAnimationSet::stopAnimations(polymodel_instance* pmi) {
 		if (pmi != nullptr) {
 			for (const auto& anim : s_runningAnimations[pmi->id].animationList) {
-				anim->stop(pmi, false);
+				anim->stop(pmi, false, true);
 			}
 			s_runningAnimations.erase(pmi->id);
 		}
 		else {
 			for (const auto& animList : s_runningAnimations) {
 				for (const auto& anim : animList.second.animationList) {
-					anim->stop(model_get_instance(animList.first), false);
+					anim->stop(model_get_instance(animList.first), false, true);
 				}
 			}
 
@@ -1076,7 +1084,7 @@ namespace animation {
 				return submodel;
 		}
 
-		auto submodel = std::shared_ptr<ModelAnimationSubmodel>(new ModelAnimationSubmodel(submodelName));
+		auto submodel = std::make_shared<ModelAnimationSubmodel>(std::move(submodelName));
 		m_submodels.push_back(submodel);
 		return submodel;
 	}
@@ -1092,7 +1100,7 @@ namespace animation {
 			}
 		}
 
-		auto submodel = std::shared_ptr<ModelAnimationSubmodelTurret>(new ModelAnimationSubmodelTurret(submodelName, findBarrel, SIP_name));
+		auto submodel = std::make_shared<ModelAnimationSubmodelTurret>(std::move(submodelName), findBarrel, SIP_name);
 		m_submodels.push_back(submodel);
 		return submodel;
 	}
@@ -1352,7 +1360,7 @@ namespace animation {
 
 		animation->setAnimation(helper.parseSegment());
 
-		s_animationsById.emplace(helper.m_animationName, ParsedModelAnimation { animation, type, name, subtype });
+		s_animationsById.emplace(helper.m_animationName, ParsedModelAnimation { std::move(animation), type, std::move(name), subtype });
 	}
 
 	void ModelAnimationParseHelper::parseSingleMoveable() {
@@ -1466,16 +1474,12 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
-					if (curve_id < 0) 
-						error_display(0, "Unknown curve specified! The driver will not use a curve.");
-					else
+					int curve_id = curve_parse(" The driver will not use a curve.");
+					if (curve_id >= 0)
 						curve = Curves[curve_id];
 				}
 
-				driver = [remap_driver_source, curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
+				driver = [&remap_driver_source, &curve](ModelAnimation &, ModelAnimation::instance_data &instance, polymodel_instance *pmi, float) {
 					float oldFrametime = instance.time;
 					instance.time = curve ? curve->GetValue(remap_driver_source(pmi)) : remap_driver_source(pmi);
 					CLAMP(instance.time, 0.0f, instance.duration);
@@ -1495,12 +1499,8 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
-					if (curve_id < 0)
-						error_display(0, "Unknown curve specified! The driver will not use a curve.");
-					else
+					int curve_id = curve_parse(" The driver will not use a curve.");
+					if (curve_id >= 0)
 						curve = Curves[curve_id];
 				}
 
@@ -1525,12 +1525,8 @@ namespace animation {
 
 				std::optional<Curve> curve = std::nullopt;
 				if (optional_string("+Curve:")) {
-					SCP_string curve_name;
-					stuff_string(curve_name, F_NAME);
-					int curve_id = curve_get_by_name(curve_name);
-					if (curve_id < 0)
-						error_display(0, "Unknown curve specified! The driver will not use a curve.");
-					else
+					int curve_id = curve_parse(" The driver will not use a curve.");
+					if (curve_id >= 0)
 						curve = Curves[curve_id];
 				}
 
@@ -1691,7 +1687,7 @@ namespace animation {
 			}
 			else {
 				auto subsys = sip->animations.getSubmodel(sp->subobj_name);
-				auto rot = std::shared_ptr<ModelAnimationSegmentSetOrientation>(new ModelAnimationSegmentSetOrientation(subsys, angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+				auto rot = std::make_shared<ModelAnimationSegmentSetOrientation>(std::move(subsys), angle, isRelative ? ModelAnimationCoordinateRelation::RELATIVE_COORDS : ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 				anim->setAnimation(std::move(rot));
 			}
 

@@ -35,7 +35,8 @@ texture_h::texture_h(texture_h&& other) noexcept {
 	*this = std::move(other);
 }
 texture_h& texture_h::operator=(texture_h&& other) noexcept {
-	std::swap(handle, other.handle);
+	if (this != &other)
+		std::swap(handle, other.handle);
 	return *this;
 }
 

@@ -1367,7 +1367,7 @@ void parse_sound_table(const char* filename)
 
 						// retail sounds with numeric names must match their indexes
 						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
-							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+							error_display(0, "Retail-style game sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 
 						// prevent new named sounds from colliding with reserved indexes
 						tempIndex = gamesnd_find_nonreserved_last_index(Snds, gamesnd_is_reserved_game_index);
@@ -1397,7 +1397,7 @@ void parse_sound_table(const char* filename)
 
 						// retail sounds with numeric names must match their indexes
 						if ((tempSound.flags & GAME_SND_RETAIL_STYLE) && (atoi(tempSound.name.c_str()) != tempIndex) && !gamesnd_is_placeholder(tempSound))
-							error_display(0, "Retail-style sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
+							error_display(0, "Retail-style interface sound %s has a name that does not match its index %d!", tempSound.name.c_str(), tempIndex);
 
 						// prevent new named sounds from colliding with reserved indexes
 						tempIndex = gamesnd_find_nonreserved_last_index(Snds_iface, gamesnd_is_reserved_interface_index);

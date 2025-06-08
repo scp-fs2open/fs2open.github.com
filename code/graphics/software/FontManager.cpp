@@ -58,10 +58,11 @@ namespace font
 
 	int FontManager::getCurrentFontIndex()
 	{
-		if (!isFontNumberValid(currentFontIndex))
+		int id = gr_lua_context_active() ? gr_lua_screen.current_font_index : currentFontIndex;
+		if (!isFontNumberValid(id))
 			return -1;
 
-		return currentFontIndex;
+		return id;
 	}
 
 	int FontManager::getFontIndex(const SCP_string& name)
@@ -118,7 +119,11 @@ namespace font
 	void FontManager::setCurrentFontIndex(int id)
 	{
 		Assertion(isFontNumberValid(id), "New font index must be valid!");
-		currentFontIndex = id;
+		if (gr_lua_context_active()) {
+			gr_lua_screen.current_font_index = id;
+		} else {
+			currentFontIndex = id;
+		}
 	}
 
 	font* FontManager::loadFontOld(const SCP_string& typeface)
@@ -139,12 +144,12 @@ namespace font
 
 		lcl_add_dir_to_path_with_filename(typeface_lcl);
 
-		fp = cfopen(typeface_lcl.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		fp = cfopen(typeface_lcl.c_str(), "rb", CF_TYPE_ANY);
 
 		// fallback if not found
 		if ( !fp )
 		{
-			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			fp = cfopen(typeface.c_str(), "rb", CF_TYPE_ANY);
 		}
 
 		if ( !fp )
@@ -309,7 +314,7 @@ namespace font
 		auto iter = allocatedData.find(fileName);
 		if (iter == allocatedData.end())
 		{
-			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CF_TYPE_ANY);
 
 			if (fontFile == nullptr)
 			{

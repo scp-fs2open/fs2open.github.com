@@ -323,8 +323,14 @@ ADE_VIRTVAR(Shields, l_Object, "shields", "Shields", "shields", "Shields handle,
 	//WMC - copy shields
 	if(ADE_SETTING_VAR && sobjh && sobjh->isValid())
 	{
-		for(int i = 0; i < objh->objp()->n_quadrants; i++)
-			shield_set_quad(objh->objp(), i, shield_get_quad(sobjh->objp(), i));
+		if (objh->objp()->shield_quadrant.size() != sobjh->objp()->shield_quadrant.size())
+			LuaError(L, "Both objects' shields must have the same number of quadrants!");
+		else
+		{
+			int n_quadrants = static_cast<int>(objh->objp()->shield_quadrant.size());
+			for (int i = 0; i < n_quadrants; i++)
+				objh->objp()->shield_quadrant[i] = sobjh->objp()->shield_quadrant[i];
+		}
 	}
 
 	return ade_set_args(L, "o", l_Shields.Set(*objh));

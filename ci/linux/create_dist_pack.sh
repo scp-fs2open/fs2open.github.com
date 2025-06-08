@@ -8,11 +8,11 @@ OS="$1"
 source $HERE/dist_functions.sh
 
 if [ "$OS" = "Linux" ]; then
-    tar -cvzf "$(get_package_name)-builds-Linux.tar.gz" *
+    tar -cvzf "$(get_package_name)-builds-Linux-$ARCH.tar.gz" *
 
-    echo "package_path=$(pwd)/$(get_package_name)-builds-Linux.tar.gz" >> $GITHUB_OUTPUT
-    echo "package_name=$(get_package_name)-builds-Linux.tar.gz" >> $GITHUB_OUTPUT
-    echo "package_mime=$(file -b --mime-type "$(pwd)/$(get_package_name)-builds-Linux.tar.gz")" >> $GITHUB_OUTPUT
+    echo "package_path=$(pwd)/$(get_package_name)-builds-Linux-$ARCH.tar.gz" >> $GITHUB_OUTPUT
+    echo "package_name=$(get_package_name)-builds-Linux-$ARCH.tar.gz" >> $GITHUB_OUTPUT
+    echo "package_mime=$(file -b --mime-type "$(pwd)/$(get_package_name)-builds-Linux-$ARCH.tar.gz")" >> $GITHUB_OUTPUT
 elif [ "$OS" = "Windows" ]; then
     7z a -xr'!*.pdb' "$(get_package_name)-builds-$ARCH-$SIMD.zip" "*"
 
