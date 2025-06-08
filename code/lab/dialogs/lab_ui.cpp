@@ -170,7 +170,7 @@ void LabUi::build_weapon_list() const
 
 void LabUi::build_object_list()
 {
-	with_TreeNode("Object Classes")
+	with_TreeNode("Asteroid/Debris Types")
 	{
 		build_asteroid_list();
 		build_debris_list();
