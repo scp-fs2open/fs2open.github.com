@@ -1588,7 +1588,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	int stype = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-	if(!ade_get_args(L, "oo|oofo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype)))
+	if(!ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype)))
 		return ADE_RETURN_NIL;
 
 	if(!objh->isValid() || !eh->isValid())
@@ -1841,7 +1841,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 			if (stype >= 0) 
 			{
 				ai_mode = AI_GOAL_CHASE_SHIP_TYPE;
-				ai_shipname = Ship_info[stype].name;
+				ai_shipname = Ship_types[stype].name;
 				ai_submode = SM_ATTACK;
 			}
 			break;

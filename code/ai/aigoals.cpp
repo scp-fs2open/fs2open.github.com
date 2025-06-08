@@ -1709,7 +1709,7 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
-	// chasing all ships of a certain ship type
+	// and similarly for chasing all ships of a certain ship type
 	if (aigp->ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
 		for (auto so : list_range(&Ship_obj_list)) {
 			auto objp = &Objects[so->objnum];

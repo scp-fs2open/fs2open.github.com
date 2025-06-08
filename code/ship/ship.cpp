@@ -17375,14 +17375,6 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	case AI_GOAL_CHASE_SHIP_CLASS:
-		if (aigp->target_name) {
-			outbuf += XSTR("any ", -1);
-			outbuf += target_name;
-		} else {
-			outbuf = XSTR("no orders", 495);
-		}
-		break;
-
 	case AI_GOAL_CHASE_SHIP_TYPE:
 		if (aigp->target_name) {
 			outbuf += XSTR("any ", -1);
@@ -17391,6 +17383,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf = XSTR("no orders", 495);
 		}
 		break;
+
 
 	case AI_GOAL_CHASE:
 	case AI_GOAL_DOCK:

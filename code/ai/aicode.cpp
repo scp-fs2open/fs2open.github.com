@@ -2527,13 +2527,11 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 
 			// DKA don't undo object as target in nebula missions.
 			// This could cause attack on ship on fringe on nebula to stop if attackee moves out of nebula range.  (BAD)
-			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {{
-				if (iff_matches_mask(target_shipp->team, enemy_team_mask)) {
-					if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
-						if (class_type < 0 || (target_shipp->ship_info_index >= 0 && class_type == Ship_info[target_shipp->ship_info_index].class_type)) {
-							if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) {
-								return target_objnum;
-							}
+			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
+				if (ship_info_index < 0 || ship_info_index == target_shipp->ship_info_index) {
+					if (class_type < 0 || (target_shipp->ship_info_index >= 0 && class_type == Ship_info[target_shipp->ship_info_index].class_type)) {
+						if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) {
+							return target_objnum;
 						}
 					}
 				}
@@ -2541,7 +2539,6 @@ int find_enemy(int objnum, float range, int max_attackers, int ship_info_index, 
 				aip->target_objnum = -1;
 				aip->target_signature = -1;
 			}
-		}
 		return get_nearest_objnum(objnum, enemy_team_mask, aip->enemy_wing, range, max_attackers, ship_info_index, class_type);
 
 	} else {

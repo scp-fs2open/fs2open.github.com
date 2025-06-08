@@ -9,5 +9,3 @@ DECLARE_ADE_OBJ(l_Shipclass, int);
 
 }
 }
-
-

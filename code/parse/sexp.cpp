@@ -847,7 +847,7 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-chase",						OP_AI_CHASE,							2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-wing",					OP_AI_CHASE_WING,						2,	4,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-chase-ship-class",			OP_AI_CHASE_SHIP_CLASS,					2,	4,			SEXP_GOAL_OPERATOR, },
-	{ "ai-chase-ship-type",				OP_AI_CHASE_SHIP_TYPE,                  2,  4,          SEXP_GOAL_OPERATOR, },
+	{ "ai-chase-ship-type",				OP_AI_CHASE_SHIP_TYPE,                  2,  4,          SEXP_GOAL_OPERATOR, }, // LuytenKy
 	{ "ai-chase-any",					OP_AI_CHASE_ANY,						1,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard",						OP_AI_GUARD,							2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-guard-wing",					OP_AI_GUARD_WING,						2,	3,			SEXP_GOAL_OPERATOR,	},
