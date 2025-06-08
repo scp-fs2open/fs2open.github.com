@@ -3501,7 +3501,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_DOCK:
 				if (ship < 0)
 					return "Wings can't dock";
-				// fall through..
+				FALLTHROUGH;
 
 			case AI_GOAL_DESTROY_SUBSYSTEM:
 			case AI_GOAL_CHASE:
@@ -3512,6 +3512,7 @@ char *error_check_initial_orders(ai_goal *goals, int ship, int wing)
 			case AI_GOAL_DISABLE_SHIP_TACTICAL:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
+			case AI_GOAL_FORM_ON_WING:
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
 				flag = 2;

@@ -527,6 +527,7 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_EVADE_SHIP:
 			case AI_GOAL_STAY_NEAR_SHIP:
+			case AI_GOAL_FORM_ON_WING:
 				break;
 
 			case AI_GOAL_WAYPOINTS:
@@ -757,6 +758,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_STAY_NEAR_SHIP:
+		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_STAY_STILL:
 			ptr = GET_FIRST(&obj_used_list);
 			while (ptr != END_OF_LIST(&obj_used_list)) {
@@ -1037,6 +1039,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_IGNORE_NEW:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
+		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_STAY_STILL:
 		case AI_GOAL_CHASE_SHIP_CLASS:
 		case AI_GOAL_CHASE_SHIP_TYPE:
