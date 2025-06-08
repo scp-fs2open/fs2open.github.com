@@ -710,6 +710,10 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 					str = "ai-stay-near-ship";
 					break;
 
+				case AI_GOAL_FORM_ON_WING:
+					str = "ai-form-on-wing";
+					break;
+
 				case AI_GOAL_STAY_STILL:
 					str = "ai-stay-still";
 					break;
