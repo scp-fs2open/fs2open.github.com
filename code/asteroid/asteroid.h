@@ -14,6 +14,7 @@
 
 #include "globalincs/globals.h"		// for NAME_LENGTH
 #include "globalincs/pstypes.h"
+#include "object/object_flags.h"
 #include "io/timer.h"
 
 class object;
@@ -102,6 +103,7 @@ public:
 
 typedef	struct asteroid {
 	int		flags;
+	flagset<Object::Raw_Pof_Flags> render_flags; // Render flags
 	int		objnum;
 	int		model_instance_num;
 	int		asteroid_type;		// 0..MAX_DEBRIS_TYPES
@@ -178,6 +180,9 @@ void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
 int get_asteroid_index(const char* asteroid_name);
 SCP_vector<SCP_string> get_list_valid_asteroid_subtypes();
+
+// extern for the lab
+void asteroid_load(int asteroid_info_index, int asteroid_subtype);
 
 // need to extern for keycontrol debug commands
 object *asteroid_create(asteroid_field *asfieldp, int asteroid_type, int asteroid_subtype, bool check_visibility = false);

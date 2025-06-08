@@ -2,7 +2,6 @@
 #include "lab/manager/lab_manager.h"
 #include "lab/renderer/lab_renderer.h"
 #include "io/key.h"
-#include "asteroid/asteroid.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
 #include "object/object.h"
@@ -17,7 +16,6 @@
 
 #include "extensions/ImGuizmo.h"
 #include "io/mouse.h"
-#include "weapon/weapon.h"
 
 //Turret firing forward declarations
 void ai_turret_execute_behavior(const ship* shipp, ship_subsys* ss);
@@ -382,6 +380,7 @@ void LabManager::cleanup() {
 		// Reset lab variables
 		CurrentMode = LabMode::None;
 		CurrentObject = -1;
+		CurrentSubtype = -1;
 		CurrentClass = -1;
 		CurrentPosition = vmd_zero_vector;
 		CurrentOrientation = vmd_identity_matrix;
@@ -389,7 +388,7 @@ void LabManager::cleanup() {
 	}
 }
 
-void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
+void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype) {
 	// Removing this allows reseting by clicking on the object again,
 	// making it easier to respawn destroyed objects
 	// If this is re-enabled then it will need to be modified so that
@@ -411,6 +410,9 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 
 	CurrentMode = mode;
 	CurrentClass = info_index;
+
+	if (CurrentMode == LabMode::Asteroid)
+		CurrentSubtype = subtype;
 
 	switch (CurrentMode) {
 	case LabMode::Ship:
@@ -453,6 +455,24 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
 			}
 		}
 		break;
+	case LabMode::Asteroid: {
+		// Ensure model is loaded before creating asteroid
+		asteroid_load(CurrentClass, CurrentSubtype);
+		object* objp = asteroid_create(&Asteroid_field, CurrentClass, CurrentSubtype, false);
+		if (objp != nullptr) {
+			CurrentObject = OBJ_INDEX(objp);
+
+			// Zero out asteroid velocity
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
+			objp->flags.remove(Object::Object_Flags::Physics);
+		} else {
+			CurrentObject = -1;
+			mprintf(("LabManager: Failed to create asteroid for index %d, subtype %d\n", CurrentClass, CurrentSubtype));
+		}
+
+		break;
+	}
 	default:
 		UNREACHABLE("Unhandled lab mode %d", (int)mode);
 		ModelFilename = "";

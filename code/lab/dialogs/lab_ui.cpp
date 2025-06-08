@@ -3,6 +3,7 @@
 
 #include "lab_ui_helpers.h"
 
+#include "asteroid/asteroid.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
@@ -91,13 +92,88 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
+void LabUi::build_asteroid_list()
+{
+	with_TreeNode("Asteroids")
+	{
+		int asteroid_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type == ASTEROID_TYPE_DEBRIS) {
+				asteroid_idx++;
+				continue;
+			}
+
+			int subtype_idx = 0;
+			for (const auto& subtype : info.subtypes) {
+				SCP_string node_label;
+				sprintf(node_label, "##AsteroidClassIndex%i_%i", asteroid_idx, subtype_idx);
+				TreeNodeEx(node_label.c_str(),
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					"%s (%s)",
+					info.name,
+					subtype.type_name.c_str());
+
+				if (IsItemClicked() && !IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Asteroid, asteroid_idx, subtype_idx);
+				}
+
+				subtype_idx++;
+			}
+
+			asteroid_idx++;
+		}
+	}
+}
+
+void LabUi::build_debris_list()
+{
+	with_TreeNode("Debris")
+	{
+		int debris_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type != ASTEROID_TYPE_DEBRIS) {
+				debris_idx++;
+				continue;
+			}
+
+			int subtype_idx = 0;
+			for (const auto& subtype : info.subtypes) {
+				SCP_string node_label;
+				sprintf(node_label, "##DebrisClassIndex%i_%i", debris_idx, subtype_idx);
+				TreeNodeEx(node_label.c_str(),
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					"%s (%s)",
+					info.name,
+					subtype.type_name.c_str());
+
+				if (IsItemClicked() && !IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, subtype_idx);
+				}
+
+				subtype_idx++;
+			}
+
+			debris_idx++;
+		}
+	}
+}
+
 void LabUi::build_weapon_list() const
 {
-	//weapon display needs to be rethought
-
 	with_TreeNode("Weapon Classes")
 	{
 		build_weapon_subtype_list();
+	}
+}
+
+void LabUi::build_object_list()
+{
+	with_TreeNode("Asteroid/Debris Types")
+	{
+		build_asteroid_list();
+		build_debris_list();
 	}
 }
 
@@ -201,6 +277,8 @@ void LabUi::show_object_selector() const
 			build_ship_list();
 
 			build_weapon_list();
+
+			build_object_list();
 		}
 	}
 }
@@ -346,12 +424,14 @@ void LabUi::show_render_options()
 				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			}
 			Checkbox("Show full detail", &show_full_detail);
-			Checkbox("Show thrusters", &show_thrusters);
-			if (getLabManager()->CurrentMode == LabMode::Ship) {
-				Checkbox("Show afterburners", &show_afterburners);
-				Checkbox("Show weapons", &show_weapons);
-				Checkbox("Show Insignia", &show_insignia);
-				Checkbox("Show damage lightning", &show_damage_lightning);
+			if (getLabManager()->CurrentMode != LabMode::Asteroid) {
+				Checkbox("Show thrusters", &show_thrusters);
+				if (getLabManager()->CurrentMode == LabMode::Ship) {
+					Checkbox("Show afterburners", &show_afterburners);
+					Checkbox("Show weapons", &show_weapons);
+					Checkbox("Show Insignia", &show_insignia);
+					Checkbox("Show damage lightning", &show_damage_lightning);
+				}
 			}
 			Checkbox("No glowpoints", &no_glowpoints);
 		}
@@ -1183,6 +1263,44 @@ void LabUi::show_object_options() const
 				if (VALID_FNAME(wip->tech_model)) {
 					if (Checkbox("Show Tech Model", &getLabManager()->ShowingTechModel)) {
 						getLabManager()->changeDisplayedObject(LabMode::Weapon, getLabManager()->CurrentClass);
+					}
+				}
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Asteroid && getLabManager()->CurrentClass >= 0) {
+			const auto& info = Asteroid_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Object Info")
+			{
+				static SCP_string table_text;
+				static int old_class = -1;
+
+				if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
+					table_text = get_asteroid_table_text(&info);
+					old_class = getLabManager()->CurrentClass;
+				}
+
+				InputTextMultiline("##asteroid_table_text",
+					const_cast<char*>(table_text.c_str()),
+					table_text.length(),
+					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+					ImGuiInputTextFlags_ReadOnly);
+			}
+
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->isSafeForAsteroids()) {
+					if (Button("Destroy object")) {
+						if (Objects[getLabManager()->CurrentObject].type == OBJ_ASTEROID) {
+							auto obj = &Objects[getLabManager()->CurrentObject];
+
+							if (obj->type == OBJ_ASTEROID) {
+								vec3d dummy_pos = obj->pos;
+								vec3d dummy_force = ZERO_VECTOR;
+
+								// Apply full asteroid health to guarantee destruction
+								asteroid_hit(obj, nullptr, &dummy_pos, obj->hull_strength + 1.0f, &dummy_force);
+							}
+						}
 					}
 				}
 			}

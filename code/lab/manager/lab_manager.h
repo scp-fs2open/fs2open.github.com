@@ -8,7 +8,9 @@
 
 #include <gamesequence/gamesequence.h>
 #include "osapi/osapi.h"
+#include "asteroid/asteroid.h"
 #include "ship/ship.h"
+#include "weapon/weapon.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
@@ -32,7 +34,7 @@ public:
 	
 	// Creates a new object of the passed type, using the respective class definition found at info_index and replaces the currently
 	// displayed object
-	void changeDisplayedObject(LabMode type, int info_index);
+	void changeDisplayedObject(LabMode type, int info_index, int subtype = -1);
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
@@ -40,6 +42,12 @@ public:
 		cleanup();
 
 		LabRenderer::close();
+
+		// Unload any asteroids that were loaded
+		asteroid_level_close();
+
+		// Lab can only be entered from the Mainhall so this should be safe
+		model_free_all();
 
 		Game_mode &= ~GM_LAB;
 
@@ -52,17 +60,23 @@ public:
 
 	LabMode CurrentMode = LabMode::None;
 	int CurrentObject = -1;
+	int CurrentSubtype = -1;
 	int CurrentClass = -1;
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
 	SCP_string ModelFilename;	
 
 	bool isSafeForShips() {
-		return CurrentMode == LabMode::Ship && CurrentObject != -1;
+		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;
 	}
 
 	bool isSafeForWeapons() {
-		return CurrentMode == LabMode::Weapon && CurrentObject != -1;
+		bool valid = CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
+		return CurrentMode == LabMode::Weapon && valid;
+	}
+
+	bool isSafeForAsteroids() const {
+		return CurrentMode == LabMode::Asteroid && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_ASTEROID;
 	}
 
 	void loadWeapons() {

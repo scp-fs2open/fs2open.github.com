@@ -1,6 +1,7 @@
 #pragma once
 
 enum class LabMode {
+	Asteroid,
 	Ship,
 	Weapon,
 	None
