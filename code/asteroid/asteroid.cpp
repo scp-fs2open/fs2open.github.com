@@ -2241,7 +2241,7 @@ static void asteroid_parse_section()
 	auto insert_or_replace_subtype_pof = [](SCP_vector<asteroid_subtype_info>& subtypes, const asteroid_subtype_info& new_subtype) {
 		for (auto& subtype : subtypes) {
 			if (lcase_equal(subtype.type_name, new_subtype.type_name)) {
-				strncpy(subtype.pof_filename, new_subtype.pof_filename, MAX_FILENAME_LEN);
+				strcpy_s(subtype.pof_filename, new_subtype.pof_filename);
 				return;
 			}
 		}

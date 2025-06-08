@@ -71,12 +71,12 @@ public:
 	}
 
 	bool isSafeForWeapons() {
-		bool valid = (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
-		return CurrentMode == LabMode::Weapon && CurrentObject != -1 && valid;
+		bool valid = CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
+		return CurrentMode == LabMode::Weapon && valid;
 	}
 
 	bool isSafeForAsteroids() const {
-		return CurrentMode == LabMode::Object && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_ASTEROID;
+		return CurrentMode == LabMode::Asteroid && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_ASTEROID;
 	}
 
 	void loadWeapons() {

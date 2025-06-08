@@ -115,7 +115,7 @@ void LabUi::build_asteroid_list()
 					subtype.type_name.c_str());
 
 				if (IsItemClicked() && !IsItemToggledOpen()) {
-					getLabManager()->changeDisplayedObject(LabMode::Object, asteroid_idx, subtype_idx);
+					getLabManager()->changeDisplayedObject(LabMode::Asteroid, asteroid_idx, subtype_idx);
 				}
 
 				subtype_idx++;
@@ -149,7 +149,7 @@ void LabUi::build_debris_list()
 					subtype.type_name.c_str());
 
 				if (IsItemClicked() && !IsItemToggledOpen()) {
-					getLabManager()->changeDisplayedObject(LabMode::Object, debris_idx, subtype_idx);
+					getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, subtype_idx);
 				}
 
 				subtype_idx++;
@@ -424,7 +424,7 @@ void LabUi::show_render_options()
 				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
 			}
 			Checkbox("Show full detail", &show_full_detail);
-			if (getLabManager()->CurrentMode != LabMode::Object) {
+			if (getLabManager()->CurrentMode != LabMode::Asteroid) {
 				Checkbox("Show thrusters", &show_thrusters);
 				if (getLabManager()->CurrentMode == LabMode::Ship) {
 					Checkbox("Show afterburners", &show_afterburners);
@@ -1266,7 +1266,7 @@ void LabUi::show_object_options() const
 					}
 				}
 			}
-		} else if (getLabManager()->CurrentMode == LabMode::Object && getLabManager()->CurrentClass >= 0) {
+		} else if (getLabManager()->CurrentMode == LabMode::Asteroid && getLabManager()->CurrentClass >= 0) {
 			const auto& info = Asteroid_info[getLabManager()->CurrentClass];
 
 			with_CollapsingHeader("Object Info")

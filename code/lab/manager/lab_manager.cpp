@@ -411,7 +411,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 	CurrentMode = mode;
 	CurrentClass = info_index;
 
-	if (CurrentMode == LabMode::Object)
+	if (CurrentMode == LabMode::Asteroid)
 		CurrentSubtype = subtype;
 
 	switch (CurrentMode) {
@@ -455,7 +455,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			}
 		}
 		break;
-	case LabMode::Object: {
+	case LabMode::Asteroid: {
 		// Ensure model is loaded before creating asteroid
 		asteroid_load(CurrentClass, CurrentSubtype);
 		object* objp = asteroid_create(&Asteroid_field, CurrentClass, CurrentSubtype, false);
