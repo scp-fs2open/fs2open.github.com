@@ -300,9 +300,9 @@ enum IoActionId : int {
 	//!< @n
 	//! Communication menu controls
 	//! ----------------------------
-	COMMS_MENU_MOVE_UP                              = 129,
-	COMMS_MENU_MOVE_DOWN                            = 130,
-	COMMS_MENU_SELECT                               = 131,
+	COMMS_MENU_MOVE_UP,
+	COMMS_MENU_MOVE_DOWN,
+	COMMS_MENU_SELECT,
 
 	TOGGLE_HUD_SHADOWS,
 

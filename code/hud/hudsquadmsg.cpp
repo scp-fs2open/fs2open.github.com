@@ -108,7 +108,7 @@ mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
 int First_menu_item= -1;							// index of first item in the menu
-int Selected_menu_item = First_menu_item;           // index of selected item in the menu
+int Selected_menu_item = First_menu_item;           // index of selected item in the menu //!< Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
 SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
@@ -522,7 +522,7 @@ void hud_squadmsg_selection_move_up() {
 	//Check if comms menu is up
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
-		//move down
+		//move up
 		--Selected_menu_item;
 
 		//play scrolling sound and reset the comms window timeout timer, so the window doesn't dissapear while we select our item
@@ -539,7 +539,10 @@ void hud_squadmsg_selection_move_up() {
 		//Select the last menu item if we went outside items range, so we can loop around
 		else if (Selected_menu_item < 0) 
 		{
-			First_menu_item = ((Num_menu_items - 1) / 10) * 10; 
+			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
+			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
+			//exactly like pageUp/pageDown does
+			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
 			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
 		}
 	}
