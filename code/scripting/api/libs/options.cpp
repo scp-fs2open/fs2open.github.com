@@ -14,7 +14,7 @@ namespace api {
 //**********LIBRARY: Mission
 ADE_LIB(l_Options, "Options", "opt", "Options library");
 
-ADE_VIRTVAR(Options, l_Options, nullptr, "The available options.", "option[]", "A table of all the options.")
+ADE_VIRTVAR(Options, l_Options, nullptr, "The available options.", "table", "A table of all the options.")
 {
 	using namespace luacpp;
 

@@ -174,7 +174,7 @@ ADE_FUNC(getString, l_Parsing, nullptr, "Gets a single line of text from the fil
 	}
 }
 
-ADE_FUNC(getFloat, l_Parsing, nullptr, "Gets a floating point number from the file", "string", "number or nil on error")
+ADE_FUNC(getFloat, l_Parsing, nullptr, "Gets a floating point number from the file", "number", "number or nil on error")
 {
 	if (Parse_text == nullptr) {
 		LuaError(L, "Parsing system is currently not active!");
@@ -192,7 +192,7 @@ ADE_FUNC(getFloat, l_Parsing, nullptr, "Gets a floating point number from the fi
 	}
 }
 
-ADE_FUNC(getInt, l_Parsing, nullptr, "Gets an integer number from the file", "string", "number or nil on error")
+ADE_FUNC(getInt, l_Parsing, nullptr, "Gets an integer number from the file", "number", "number or nil on error")
 {
 	if (Parse_text == nullptr) {
 		LuaError(L, "Parsing system is currently not active!");
