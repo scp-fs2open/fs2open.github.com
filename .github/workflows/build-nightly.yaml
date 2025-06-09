@@ -104,7 +104,7 @@ jobs:
         arch: [Win32, x64]
         simd: [SSE2]
     name: Windows
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v1
         name: Checkout
