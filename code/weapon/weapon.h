@@ -225,7 +225,7 @@ typedef struct type5_beam_info {
 	float continuous_rot;                        // radians per sec rotation over beam lifetime
 	int rot_curve_idx;
 	Type5BeamRotAxis continuous_rot_axis;		 // axis around which do continuous rotation
-	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire 
+	SCP_vector<float> burst_rot_pattern;         // radians to rotate for each beam in a burst, will also make spawned and ssb beams fire
 	                                             // this many beams simultaneously with the defined rotations
 	Type5BeamRotAxis burst_rot_axis;			 // axis around which to do burst rotation
 	float per_burst_rot;                         // radians to rotate for each burst, or each shot if no burst
@@ -256,7 +256,7 @@ typedef struct beam_weapon_info {
 	float beam_initial_width;		    // what percentage of total beam width the beam has initially
 	float beam_grow_factor;			    // what percentage of total beam lifetime when the beam starts growing
 	float beam_grow_pct;				// what percent/second the beam grows at
-	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam 	
+	beam_weapon_section_info sections[MAX_BEAM_SECTIONS];	// info on the visible sections of the beam
 	float range;						// how far it will shoot-Bobboau
 	float damage_threshold;				// point at wich damage will start being atenuated from 0.0 to 1.0
 	float beam_width;					// width of the beam (for certain collision checks)
@@ -833,6 +833,7 @@ struct weapon_info
 		GLOW_RADIUS_MULT,
 		GLOW_ALPHA_MULT,
 		GLOW_ANIM_STATE,
+		T5_END_POSITION_BY_VELOCITY,
 
 		NUM_VALUES
 	};
@@ -846,6 +847,7 @@ struct weapon_info
 					std::pair {"Muzzle Glow Radius Mult", BeamCurveOutputs::GLOW_RADIUS_MULT},
 					std::pair {"Muzzle Glow Alpha Mult", BeamCurveOutputs::GLOW_ALPHA_MULT},
 					std::pair {"Muzzle Glow Anim State", BeamCurveOutputs::GLOW_ANIM_STATE},
+					std::pair {"Move End Position by Target Velocity", BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY}
 			},
 			std::pair {"Beam Lifetime", modular_curves_math_input<
 				modular_curves_math_input<
@@ -861,6 +863,7 @@ struct weapon_info
 				modular_curves_submember_input<&beam::life_left>,
 				ModularCurvesMathOperators::subtraction
 			>{}},
+			std::pair {"Beam Total Life", modular_curves_submember_input<&beam::life_total>{}},
 			std::pair {"Warmup Lifetime", modular_curves_functional_input<beam_get_warmup_lifetime_pct>{}},
 			std::pair {"Warmdown Lifetime", modular_curves_functional_input<beam_get_warmdown_lifetime_pct>{}},
 			std::pair {"Warmdown Age", modular_curves_functional_input<beam_get_warmdown_age>{}},

@@ -2471,7 +2471,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	if(b->weapon_info_index < 0){
 		return;
 	}
-	bwi = &Weapon_info[b->weapon_info_index].b_info;
+
+	auto& wi = Weapon_info[b->weapon_info_index];
+	bwi = &wi.b_info;
 
 	// stuff num shots even though its only used for antifighter beam weapons
 	b->binfo.shot_count = (ubyte)num_shots;
@@ -2643,6 +2645,11 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				per_burst_rot_axis = b->target->pos;
 			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = b->target->pos;
+
+			if (wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY)) {
+				float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
+				pos2 += b->target->phys_info.vel * velocity_mult;
+			}
 			
 		} else { // No usable target
 			vec3d center = vm_vec_new(0.f, 0.f, 0.f);
