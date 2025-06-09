@@ -833,7 +833,7 @@ struct weapon_info
 		GLOW_RADIUS_MULT,
 		GLOW_ALPHA_MULT,
 		GLOW_ANIM_STATE,
-		T5_END_POSITION_BY_VELOCITY,
+		END_POSITION_BY_VELOCITY,
 
 		NUM_VALUES
 	};
@@ -847,7 +847,7 @@ struct weapon_info
 					std::pair {"Muzzle Glow Radius Mult", BeamCurveOutputs::GLOW_RADIUS_MULT},
 					std::pair {"Muzzle Glow Alpha Mult", BeamCurveOutputs::GLOW_ALPHA_MULT},
 					std::pair {"Muzzle Glow Anim State", BeamCurveOutputs::GLOW_ANIM_STATE},
-					std::pair {"Move End Position by Target Velocity", BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY}
+					std::pair {"Move End Position by Target Velocity", BeamCurveOutputs::END_POSITION_BY_VELOCITY}
 			},
 			std::pair {"Beam Lifetime", modular_curves_math_input<
 				modular_curves_math_input<

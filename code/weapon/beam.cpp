@@ -2521,6 +2521,11 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		vm_vec_sub(&b->binfo.dir_a, &pos1, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_a);
 
+		if (b->target && wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY)) {
+			float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
+			pos2 += b->target->phys_info.vel * velocity_mult;
+		}
+
 		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_b);
@@ -2646,8 +2651,8 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = b->target->pos;
 
-			if (wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY)) {
-				float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::T5_END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
+			if (wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY)) {
+				float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
 				pos2 += b->target->phys_info.vel * velocity_mult;
 			}
 			
