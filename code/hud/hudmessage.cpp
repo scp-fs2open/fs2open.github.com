@@ -1324,7 +1324,7 @@ void HudGaugeTalkingHead::render(float frametime, bool config)
 				head_anim = Playing_messages[i].anim_data;
 				// If we're using the newer setup then choose a random starting frame
 				if (Use_newer_head_ani_suffix && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) && head_anim->num_frames > 0) {
-					int random_frame = rand() % head_anim->num_frames; // Generate random frame to start with
+					int random_frame = util::Random::next(head_anim->num_frames); // Generate random frame to start with
 					head_anim->anim_time = (float)random_frame * head_anim->total_time / head_anim->num_frames;
 				}
 			} else {
