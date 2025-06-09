@@ -52,6 +52,21 @@ static bool WarnedBadThicknessLine = false;
 namespace scripting {
 namespace api {
 
+// Sets the graphics context to the Lua context on creation and resets it back to the main context on destruction
+// Ensures that no matter how the parent function is exited the context is reset properly
+struct LuaScreenContext {
+	LuaScreenContext() noexcept
+	{
+		gr_lua_screen.active = true;
+	}
+	~LuaScreenContext() noexcept
+	{
+		gr_lua_screen.active = false;
+	}
+	LuaScreenContext(const LuaScreenContext&) = delete;
+	LuaScreenContext& operator=(const LuaScreenContext&) = delete;
+};
+
 model_draw_list *Current_scene = nullptr;
 
 //**********LIBRARY: Graphics
@@ -136,15 +151,13 @@ ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", nullptr)
 	if(!ade_get_args(L, "*|o", l_Font.GetPtr(&newFh)))
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	if(ADE_SETTING_VAR && newFh->isValid()) {
 		font::FontManager::setCurrentFontIndex(newFh->GetIndex());
 	}
 
 	int font = font::FontManager::getCurrentFontIndex();
-
-	gr_lua_screen.active = false;
 
 	return ade_set_args(L, "o", l_Font.Set(font_h(font)));
 }
@@ -573,11 +586,9 @@ ADE_FUNC(setColor,
 		ade_get_args(L, "o", l_Color.Get(&col));
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_set_color_fast(&col);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -595,11 +606,9 @@ ADE_FUNC(getColor,
 	bool rc = false;
 	ade_get_args(L, "|b", &rc);
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 	
 	const color cur = GR_CURRENT_COLOR;
-	
-	gr_lua_screen.active = false;
 
 	if (!rc) {
 		return ade_set_args(L, "iiii", static_cast<int>(cur.red), static_cast<int>(cur.green), static_cast<int>(cur.blue), static_cast<int>(cur.alpha));
@@ -622,11 +631,9 @@ ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width fo
 		return ADE_RETURN_FALSE;
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_set_line_width(width);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_TRUE;
 }
@@ -642,7 +649,7 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	if (fill) {
 		//WMC - Circle takes...diameter.
@@ -650,8 +657,6 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 	} else {
 		gr_unfilled_circle(x,y, ra*2, lua_ResizeMode);
 	}
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -669,11 +674,9 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_arc(x,y, ra, angle_start, angle_end, fill, lua_ResizeMode);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -688,13 +691,11 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	if(!ade_get_args(L, "iii|i", &x,&y,&ra, &dir))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
 	gr_curve(x, y, ra, dir, lua_ResizeMode);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -709,11 +710,9 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_gradient(x1,y1,x2,y2,lua_ResizeMode);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -728,11 +727,9 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_line(x1,y1,x2,y2,lua_ResizeMode);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -747,11 +744,9 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Draws a pixel using activ
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	gr_pixel(x,y,lua_ResizeMode);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -775,7 +770,7 @@ ADE_FUNC(drawPolygon,
 	if (!tdx->isValid())
 		return ADE_RETURN_FALSE;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	matrix *orip = &vmd_identity_matrix;
 	if(mh != NULL)
@@ -796,14 +791,12 @@ ADE_FUNC(drawPolygon,
 	if(!in_frame)
 		g3_end_frame();
 
-	gr_lua_screen.active = false;
-
 	return ADE_RETURN_TRUE;
 }
 
 void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0.f) 
 {
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 	
 	if(f)
 	{
@@ -844,8 +837,6 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 			gr_line(x2, y1, x2, y2, lua_ResizeMode);	//Right
 		}
 	}
-
-	gr_lua_screen.active = false;
 
 }
 
@@ -896,7 +887,7 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 	vec3d pos = vmd_zero_vector;
 	ade_get_args(L, "|fo", &rad, l_Vector.Get(&pos));
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame) {
@@ -936,8 +927,6 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		g3_end_frame();
 	}
 
-	gr_lua_screen.active = false;
-
 	return ADE_RETURN_TRUE;
 }
 
@@ -954,7 +943,7 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
 		return ADE_RETURN_NIL;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	if (thickness < 0) thickness = 0;
 	if (thicknessEnd < 0) thicknessEnd = thickness;
@@ -972,8 +961,6 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 	}
 
 	batching_add_line(v1, v2, thickness, thicknessEnd, GR_CURRENT_COLOR, translucent);
-
-	gr_lua_screen.active = false;
 
 	return ADE_RETURN_NIL;
 }
@@ -1138,7 +1125,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		return ADE_RETURN_NIL;
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	object *targetp = objh->objp();
 
@@ -1219,8 +1206,6 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 	if ( entered_frame )
 		g3_end_frame( );
 
-	gr_lua_screen.active = false;
-
 	return ade_set_args(L, "iiii", x1, y1, x2, y2);
 }
 
@@ -1248,7 +1233,7 @@ ADE_FUNC(
 		return ADE_RETURN_NIL;
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	bool entered_frame = false;
 
@@ -1266,8 +1251,6 @@ ADE_FUNC(
 
 	if ( entered_frame )
 		g3_end_frame( );
-
-	gr_lua_screen.active = false;
 
 	if (in_sight > 0)
 	{
@@ -1303,7 +1286,7 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 	}
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	object *targetp = objh->objp();
 	bool in_frame = g3_in_frame() > 0;
@@ -1369,8 +1352,6 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		}
 	}
 
-	gr_lua_screen.active = false;
-
 	if (outpoint.x >= 0 && outpoint.y >=0)
 		return ade_set_args(L, "ii", (int)outpoint.x, (int)outpoint.y);
 	else
@@ -1387,7 +1368,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 	int resize_mode = lua_ResizeMode;
 
-	gr_lua_screen.active = true;
+	LuaScreenContext context;
 
 	// if the frame has changed since the last drawString call, reset the string position
 	if (PreviousFrametimeOverall != game_get_overall_frametime())
@@ -1510,8 +1491,6 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 
 		NextDrawStringPos[1] = curr_y;
 	}
-
-	gr_lua_screen.active = false;
 
 	return ade_set_error(L, "i", num_lines);
 }
