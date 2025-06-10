@@ -240,7 +240,7 @@ function(cxx_executable name dir libs)
 endfunction()
 
 # Sets PYTHONINTERP_FOUND and PYTHON_EXECUTABLE.
-find_package(PythonInterp)
+find_package(Python3)
 
 # cxx_test_with_flags(name cxx_flags libs srcs...)
 #
@@ -272,7 +272,7 @@ endfunction()
 # creates a Python test with the given name whose main module is in
 # test/name.py.  It does nothing if Python is not installed.
 function(py_test name)
-  if (PYTHONINTERP_FOUND)
+  if (PYTHON3_FOUND)
     if ("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 3.1)
       if (CMAKE_CONFIGURATION_TYPES)
         # Multi-configuration build generators as for Visual Studio save
@@ -318,7 +318,7 @@ function(py_test name)
             --build_dir=${CMAKE_CURRENT_BINARY_DIR}/\${CTEST_CONFIGURATION_TYPE} ${ARGN})
       endif()
     endif()
-  endif(PYTHONINTERP_FOUND)
+  endif(PYTHON3_FOUND)
 endfunction()
 
 # install_project(targets...)

@@ -19,4 +19,4 @@ Accidental Noise Library
   3. This notice may not be removed or altered from any source distribution.
   
 
-This is a modified copy of the Accidental Noise Library, where support for non-C++ bindings (lua, AngelScript) as well as the imageing functions has been removed to cut down on external dependencies. In addition, the build script has been changed to accomodate ANL as a static library. Furthermore, compiler errors were fixed, and the include path was changes.
+This is a modified copy of the Accidental Noise Library, where support for non-C++ bindings (lua, AngelScript) as well as the imageing functions has been removed to cut down on external dependencies. In addition, the build script has been changed to accomodate ANL as a static library. Furthermore, compiler errors were fixed, and the include path was changes. In addition, cmake buildfiles were patched to work with cmake 4.

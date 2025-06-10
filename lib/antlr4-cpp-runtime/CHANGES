@@ -2,6 +2,7 @@ Any.h: Change std::is_nothrow_copy_constructible to std::is_copy_constructible
 CMakeLists.txt:
  - Slight changes to avoid conflicts with Antlr license file
  - Removed searching for libuuid since it is not needed
+ - Increase minimum version to 3.12
 runtime/CMakeLists.txt:
  - Removed special output directory setting
  - Removed linking against libuuid

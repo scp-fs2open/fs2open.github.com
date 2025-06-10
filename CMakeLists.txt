@@ -156,9 +156,6 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
-# Include cotire file from https://github.com/sakra/cotire/
-include(cotire)
-
 INCLUDE(globals)
 INCLUDE(toolchain)
 INCLUDE(platforms)

@@ -1,5 +1,5 @@
 # -*- mode:cmake -*-
-cmake_minimum_required (VERSION 3.7)
+cmake_minimum_required (VERSION 3.12)
 # 2.8 needed because of ExternalProject
 
 # Detect build type, fallback to release and throw a warning if use didn't specify any
