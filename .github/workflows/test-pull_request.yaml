@@ -80,7 +80,7 @@ jobs:
         compiler: [MSVC]
         arch: [Win32, x64]
     name: Windows
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Prepare Environment
         run: choco install ninja
