@@ -2864,7 +2864,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 		create_sparks = false;
 	}
 	else
-		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, hit_dot);
+		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot);
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
 	// doesn't hit shield and we want sparks
