@@ -53,7 +53,8 @@ namespace font
 
 	FSFont *FontManager::getCurrentFont()
 	{
-		return getFont(currentFontIndex);
+		int id = gr_lua_context_active() ? gr_lua_screen.current_font_index : currentFontIndex;
+		return getFont(id);
 	}
 
 	int FontManager::getCurrentFontIndex()

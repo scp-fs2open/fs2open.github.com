@@ -242,7 +242,7 @@ void gr_aabitmap(int x, int y, int resize_mode, bool mirror, float scale_factor)
 					   resize_mode,
 					   true,
 					   mirror,
-					   &gr_screen.current_color,
+					   &GR_CURRENT_COLOR,
 					   scale_factor);
 }
 void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode, bool mirror, float scale_factor) {
@@ -383,7 +383,7 @@ void gr_aabitmap_ex(int x, int y, int w, int h, int sx, int sy, int resize_mode,
 		resize_mode,
 		true,
 		mirror,
-		&gr_screen.current_color,
+		&GR_CURRENT_COLOR,
 		scale_factor);
 }
 //these are penguins bitmap functions
@@ -1439,7 +1439,7 @@ void gr_aabitmap_list(bitmap_rect_list* list, int n_bm, int resize_mode, float a
 	render_mat.set_blend_mode(ALPHA_BLEND_ALPHA_BLEND_ALPHA);
 	render_mat.set_depth_mode(ZBUFFER_TYPE_NONE);
 	render_mat.set_texture_map(TM_BASE_TYPE, gr_screen.current_bitmap);
-	render_mat.set_color(gr_screen.current_color);
+	render_mat.set_color(GR_CURRENT_COLOR);
 	render_mat.set_cull_mode(false);
 	render_mat.set_texture_type(material::TEX_TYPE_AABITMAP);
 
