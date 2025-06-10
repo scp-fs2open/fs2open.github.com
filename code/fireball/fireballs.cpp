@@ -1268,7 +1268,7 @@ void fireball_render(object* obj, model_draw_list *scene)
 				flare_rad,
 				fi->flicker_magnitude,
 				obj->radius,
-				fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0,
+				!Is_standalone && (fi->use_3d_warp || (fb->flags & FBF_WARP_3D) != 0),
 				fi->warp_glow_bitmap,
 				fi->warp_ball_bitmap,
 				fi->warp_model_id,
