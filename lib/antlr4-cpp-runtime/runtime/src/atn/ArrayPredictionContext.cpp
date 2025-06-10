@@ -3,25 +3,41 @@
  * can be found in the LICENSE.txt file in the project root.
  */
 
-#include "support/Arrays.h"
-#include "atn/SingletonPredictionContext.h"
-
 #include "atn/ArrayPredictionContext.h"
 
+#include <cstring>
+
+#include "atn/SingletonPredictionContext.h"
+#include "atn/HashUtils.h"
+#include "misc/MurmurHash.h"
+#include "support/Casts.h"
+
 using namespace antlr4::atn;
+using namespace antlr4::misc;
+using namespace antlrcpp;
 
-ArrayPredictionContext::ArrayPredictionContext(Ref<SingletonPredictionContext> const& a)
-  : ArrayPredictionContext({ a->parent }, { a->returnState }) {
+namespace {
+
+  bool predictionContextEqual(const Ref<const PredictionContext> &lhs, const Ref<const PredictionContext> &rhs) {
+    // parent PredictionContext pointers can be null during full context mode and
+    // the ctxs are in an ArrayPredictionContext.  If both are null, return true
+    // if just one is null, return false. If both are non-null, do comparison.
+    if ( lhs == nullptr ) return rhs == nullptr;
+    if ( rhs == nullptr ) return false; // lhs!=null and rhs==null
+    return *lhs == *rhs;                // both nonnull
+  }
+
 }
 
-ArrayPredictionContext::ArrayPredictionContext(std::vector<Ref<PredictionContext>> const& parents_,
-                                               std::vector<size_t> const& returnStates)
-  : PredictionContext(calculateHashCode(parents_, returnStates)), parents(parents_), returnStates(returnStates) {
-    assert(parents.size() > 0);
-    assert(returnStates.size() > 0);
-}
+ArrayPredictionContext::ArrayPredictionContext(const SingletonPredictionContext &predictionContext)
+    : ArrayPredictionContext({ predictionContext.parent }, { predictionContext.returnState }) {}
 
-ArrayPredictionContext::~ArrayPredictionContext() {
+ArrayPredictionContext::ArrayPredictionContext(std::vector<Ref<const PredictionContext>> parents,
+                                               std::vector<size_t> returnStates)
+    : PredictionContext(PredictionContextType::ARRAY), parents(std::move(parents)), returnStates(std::move(returnStates)) {
+  assert(this->parents.size() > 0);
+  assert(this->returnStates.size() > 0);
+  assert(this->parents.size() == this->returnStates.size());
 }
 
 bool ArrayPredictionContext::isEmpty() const {
@@ -33,7 +49,7 @@ size_t ArrayPredictionContext::size() const {
   return returnStates.size();
 }
 
-Ref<PredictionContext> ArrayPredictionContext::getParent(size_t index) const {
+const Ref<const PredictionContext>& ArrayPredictionContext::getParent(size_t index) const {
   return parents[index];
 }
 
@@ -41,18 +57,49 @@ size_t ArrayPredictionContext::getReturnState(size_t index) const {
   return returnStates[index];
 }
 
-bool ArrayPredictionContext::operator == (PredictionContext const& o) const {
-  if (this == &o) {
+size_t ArrayPredictionContext::hashCodeImpl() const {
+  size_t hash = MurmurHash::initialize();
+  hash = MurmurHash::update(hash, static_cast<size_t>(getContextType()));
+  for (const auto &parent : parents) {
+    hash = MurmurHash::update(hash, parent);
+  }
+  for (const auto &returnState : returnStates) {
+    hash = MurmurHash::update(hash, returnState);
+  }
+  return MurmurHash::finish(hash, 1 + parents.size() + returnStates.size());
+}
+
+bool ArrayPredictionContext::equals(const PredictionContext &other) const {
+  if (this == std::addressof(other)) {
     return true;
   }
-
-  const ArrayPredictionContext *other = dynamic_cast<const ArrayPredictionContext*>(&o);
-  if (other == nullptr || hashCode() != other->hashCode()) {
-    return false; // can't be same if hash is different
+  if (getContextType() != other.getContextType()) {
+    return false;
+  }
+  const auto &array = downCast<const ArrayPredictionContext&>(other);
+  const bool sameSize = returnStates.size() == array.returnStates.size() &&
+                        parents.size() == array.parents.size();
+  if ( !sameSize ) {
+      return false;
   }
 
-  return antlrcpp::Arrays::equals(returnStates, other->returnStates) &&
-    antlrcpp::Arrays::equals(parents, other->parents);
+  const bool sameHash = cachedHashCodeEqual(cachedHashCode(), array.cachedHashCode());
+  if ( !sameHash ) {
+      return false;
+  }
+
+  const size_t stateSizeBytes = sizeof(decltype(returnStates)::value_type);
+  const bool returnStateArraysEqual =
+          std::memcmp(returnStates.data(), array.returnStates.data(),
+                      returnStates.size() * stateSizeBytes) == 0;
+  if ( !returnStateArraysEqual ) {
+      return false;
+  }
+
+  // stack of contexts is the same
+  const bool parentCtxEqual =
+          std::equal(parents.begin(), parents.end(), array.parents.begin(), predictionContextEqual);
+  return parentCtxEqual;
 }
 
 std::string ArrayPredictionContext::toString() const {

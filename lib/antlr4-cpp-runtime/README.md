@@ -5,18 +5,18 @@ This folder contains the C++ runtime support for ANTLR.  See [the canonical antl
 ## Authors and major contributors
 
 ANTLR 4 is the result of substantial effort of the following people:
- 
+
 * [Terence Parr](http://www.cs.usfca.edu/~parrt/), parrt@cs.usfca.edu
   ANTLR project lead and supreme dictator for life
   [University of San Francisco](http://www.usfca.edu/)
-* [Sam Harwell](http://tunnelvisionlabs.com/) 
+* [Sam Harwell](http://tunnelvisionlabs.com/)
   Tool co-author, Java and C# target)
 
 The C++ target has been the work of the following people:
 
 * Dan McLaughlin, dan.mclaughlin@gmail.com (initial port, got code to compile)
 * David Sisson, dsisson@google.com (initial port, made the runtime C++ tests runnable)
-* [Mike Lischke](www.soft-gems.net), mike@lischke-online.de (brought the initial port to a working library, made most runtime tests passing)
+* [Mike Lischke](http://www.soft-gems.net), mike@lischke-online.de (brought the initial port to a working library, made most runtime tests passing)
 
 ## Other contributors
 
@@ -35,16 +35,17 @@ The C++ target has been the work of the following people:
 
 ### Build + Usage Notes
 
-The minimum C++ version to compile the ANTLR C++ runtime with is C++11. The supplied projects can built the runtime either as static or dynamic library, as both 32bit and 64bit arch. The macOS project contains a target for iOS and can also be built using cmake (instead of XCode).
+The minimum C++ version to compile the ANTLR C++ runtime with is C++17. The supplied projects can built the runtime either as static or dynamic library, as both 32bit and 64bit arch. The macOS project contains a target for iOS and can also be built using cmake (instead of XCode).
 
 Include the antlr4-runtime.h umbrella header in your target application to get everything needed to use the library.
 
 If you are compiling with cmake, the minimum version required is cmake 2.8.
+By default, the libraries produced by the CMake build target C++17. If you want to target a different C++ standard, you can explicitly pass the standard - e.g. `-DCMAKE_CXX_STANDARD=17`.
 
 #### Compiling on Windows with Visual Studio using he Visual Studio projects
-Simply open the VS project from the runtime folder (VS 2013+) and build it.
+Simply open the VS project from the runtime folder (VS 2019+) and build it.
 
-#### Compiling on Windows using cmake with Visual Studio VS2017 and later
+#### Compiling on Windows using cmake with Visual Studio VS2019 and later
 Use the "Open Folder" Feature from the File->Open->Folder menu to open the runtime/Cpp directory.
 It will automatically use the CMake description to open up a Visual Studio Solution.
 
@@ -55,13 +56,13 @@ Either open the included XCode project and build that or use the cmake compilati
 Try run cmake -DCMAKE_ANDROID_NDK=/folder/of/android_ndkr17_and_above -DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_API=14 -DCMAKE_ANDROID_ARCH_ABI=x86 -DCMAKE_ANDROID_STL_TYPE=c++_shared -DCMAKE_ANDROID_NDK_TOOLCHAIN_VERSION=clang -DCMAKE_BUILD_TYPE=Release /folder/antlr4_src_dir -G Ninja.
 
 #### Compiling on Linux
-- cd <antlr4-dir>/runtime/Cpp (this is where this readme is located)
+- cd \<antlr4-dir\>/runtime/Cpp (this is where this readme is located)
 - mkdir build && mkdir run && cd build
 - cmake .. -DANTLR_JAR_LOCATION=full/path/to/antlr4-4.5.4-SNAPSHOT.jar -DWITH_DEMO=True
 - make
-- DESTDIR=<antlr4-dir>/runtime/Cpp/run make install
+- DESTDIR=\<antlr4-dir\>/runtime/Cpp/run make install
 
-If you don't want to build the demo then simply run cmake without parameters.
+If you don't want to build the demo then replace the "cmake .. -DANTLR_JAR_LOCATION<...>" command in the above recipe with "cmake .." without any further parameters.
 There is another cmake script available in the subfolder cmake/ for those who prefer the superbuild cmake pattern.
 
 #### CMake Package support
@@ -69,5 +70,3 @@ If the CMake variable 'ANTLR4_INSTALL' is set, CMake Packages will be build and 
 They expose two packages: antlr4_runtime and antlr4_generator which can be referenced to ease up the use of the
 ANTLR Generator and runtime.
 Use and Sample can be found [here](cmake/Antlr4Package.md)
-
-
