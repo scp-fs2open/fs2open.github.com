@@ -1559,6 +1559,8 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
+	LuaScreenContext context;
+
 	int w;
 	gr_get_string_size(&w, nullptr, s);
 
@@ -1574,6 +1576,8 @@ ADE_FUNC(getStringHeight, l_Graphics, "string String", "Gets string height", "nu
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
+	LuaScreenContext context;
+
 	int h;
 	gr_get_string_size(nullptr, &h, s);
 
@@ -1588,6 +1592,8 @@ ADE_FUNC(getStringSize, l_Graphics, "string String", "Gets string width and heig
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "ii", 0, 0);
+
+	LuaScreenContext context;
 
 	int w, h;
 	gr_get_string_size(&w, &h, s);
@@ -1708,6 +1714,8 @@ ADE_FUNC(drawImage,
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
+	LuaScreenContext context;
+
 	int idx;
 	int x1 = 0;
 	int y1 = 0;
@@ -1797,6 +1805,8 @@ ADE_FUNC(drawImageCentered,
 	"Whether image was drawn") {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
+
+	LuaScreenContext context;
 
 	int idx;
 	int x = 0;
@@ -1888,6 +1898,8 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
+
+	LuaScreenContext context;
 
 	int idx;
 	int x,y;
