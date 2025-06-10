@@ -6,7 +6,7 @@
 #include <cassert>
 #include <cstdint>
 
-#include "support/Utf8.h"
+#include "support/AntlrUtf8.h"
 #include "support/Unicode.h"
 
 // The below implementation is based off of https://github.com/google/cel-cpp/internal/utf8.cc,

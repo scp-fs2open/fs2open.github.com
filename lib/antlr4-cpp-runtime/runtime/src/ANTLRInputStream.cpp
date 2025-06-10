@@ -9,7 +9,7 @@
 #include "misc/Interval.h"
 #include "IntStream.h"
 
-#include "support/Utf8.h"
+#include "support/AntlrUtf8.h"
 #include "support/CPPUtils.h"
 
 #include "ANTLRInputStream.h"

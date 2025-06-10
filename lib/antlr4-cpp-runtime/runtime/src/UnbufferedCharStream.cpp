@@ -5,7 +5,7 @@
 
 #include "misc/Interval.h"
 #include "Exceptions.h"
-#include "support/Utf8.h"
+#include "support/AntlrUtf8.h"
 
 #include "UnbufferedCharStream.h"
 

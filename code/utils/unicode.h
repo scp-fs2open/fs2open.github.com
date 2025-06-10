@@ -7,7 +7,7 @@
 #include <iterator>
 #include <cinttypes>
 
-#include <Utf8.h>
+#include <utf8.h>
 
 #if !HAVE_CHAR32_T
 // Older compilers don't have this as a built-in type so we define it for those

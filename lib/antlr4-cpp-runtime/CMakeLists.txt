@@ -5,7 +5,7 @@ cmake_minimum_required (VERSION 3.15)
 
 set(CMAKE_MACOSX_RPATH OFF)
 
-enable_testing()
+set(ANTLR_BUILD_SHARED OFF)
 
 # Detect build type, fallback to release and throw a warning if use didn't specify any
 if(NOT CMAKE_BUILD_TYPE)

@@ -1,4 +1,6 @@
 Stripped the CMake Files to no longer concern themselves with tests or demos.
 Force C++17.
+Disable shared target
 Commented out antlr4/runtime/Cpp/runtime/src/RuleContext.h Line 135 as per https://github.com/antlr/antlr4/issues/4608
 Remove variable shadowing in each constructor
+Renamed Utf8.h due to conflicts in dependent projects
