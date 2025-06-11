@@ -76,7 +76,7 @@ jobs:
   build_windows:
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Debug, FastDebug, Release]
         compiler: [MSVC]
         arch: [Win32, x64]
     name: Windows

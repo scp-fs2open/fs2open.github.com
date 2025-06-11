@@ -8,12 +8,12 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 include(cmake/util.cmake)
-include(cmake/embed_file.cmake)
 
 # Set a few policies
 set_policy(CMP0051 NEW)
 set_policy(CMP0053 NEW)
 set_policy(CMP0054 NEW)
+set_policy(CMP0091 NEW) # Enable use of CMAKE_MSVC_RUNTIME_LIBRARY
 
 SET(FSO_PROJECT_DESCRIPTION "Open source project based on the original FreeSpace 2 source code.")
 
@@ -56,6 +56,9 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
+
+INCLUDE(toolchain)
+include(embed_file)
 
 IF(RESET_INSTALL_PREFIX)
 	IF(NOT $ENV{FS2PATH} STREQUAL "")
@@ -157,7 +160,6 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
 INCLUDE(globals)
-INCLUDE(toolchain)
 INCLUDE(platforms)
 include(version)
 

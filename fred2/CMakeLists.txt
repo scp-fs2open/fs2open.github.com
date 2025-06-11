@@ -204,8 +204,6 @@ target_link_libraries(FRED2 PUBLIC glad_wgl)
 
 enable_clang_tidy(FRED2)
 
-target_compile_definitions(FRED2 PUBLIC _AFXDLL)
-
 INSTALL(
 	TARGETS FRED2
 	RUNTIME DESTINATION ${BINARY_DESTINATION}

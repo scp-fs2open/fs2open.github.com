@@ -92,7 +92,7 @@ if(BUILD_WITH_WAYLAND_HEADERS)
     target_include_directories(openxr_loader PRIVATE ${WAYLAND_CLIENT_INCLUDE_DIRS})
 endif()
 
-target_compile_definitions(openxr_loader PUBLIC "$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
+# target_compile_definitions(openxr_loader PUBLIC "$<$<CONFIG:FastDebug>:_ITERATOR_DEBUG_LEVEL=0>")
 
 # set_target_properties(openxr_loader PROPERTIES FOLDER ${LOADER_FOLDER})
 
