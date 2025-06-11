@@ -99,6 +99,7 @@ int delete_flag;
 int bypass_update = 0;
 int Update_ship = 0;
 int Update_wing = 0;
+int Update_prop = 0;
 
 char Fred_exe_dir[512] = "";
 char Fred_base_dir[512] = "";
@@ -502,8 +503,13 @@ int create_object_on_grid(int waypoint_instance, bool prop)
 			mark_object(obj);
 			FREDDoc_ptr->autosave("object create");
 
-		} else if (obj == -1)
-			Fred_main_wnd->MessageBox("Maximum object limit reached.  Can't add any more object.");
+		} else if (obj == -1) {
+			if (prop && Prop_info.empty()) {
+				Fred_main_wnd->MessageBox("No props defined. Can't create prop object!");
+			} else {
+				Fred_main_wnd->MessageBox("Maximum object limit reached.  Can't add any more objects.");
+			}
+		}
 	}
 
 	return obj;
@@ -628,9 +634,6 @@ int create_prop(matrix* orient, vec3d* pos, int prop_type)
 
 	// ok, done with file io, restore the pwd
 	chdir(pwd);
-
-	prop* propp = &Props[Objects[obj].instance];
-	prop_info* pip = &Prop_info[propp->prop_info_index];
 
 	if (query_prop_name_duplicate(Objects[obj].instance))
 		fix_prop_name(Objects[obj].instance);
@@ -1035,7 +1038,7 @@ void set_cur_object_index(int obj)
 		mark_object(obj);
 
 	set_cur_indices(obj);  // select the new object
-	Update_ship = Update_wing = 1;
+	Update_ship = Update_wing = Update_prop = 1;
 	Waypoint_editor_dialog.initialize_data(1);
 	Jumpnode_editor_dialog.initialize_data(1);
 	Update_window = 1;
@@ -1146,6 +1149,15 @@ int update_dialog_boxes()
 	if (z) {
 		nprintf(("Fred routing", "ship dialog save failed\n"));
 		Ship_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
+			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+
+		return z;
+	}
+
+	z = Prop_editor_dialog.update_data();
+	if (z) {
+		nprintf(("Fred routing", "prop dialog save failed\n"));
+		Prop_editor_dialog.SetWindowPos(&Fred_main_wnd->wndTop, 0, 0, 0, 0,
 			SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 
 		return z;
@@ -1311,18 +1323,19 @@ int common_object_delete(int obj)
 			invalidate_references(name, sexp_ref_type::SHIP);
 		}
 
-		for (i=0; i<Num_reinforcements; i++)
+		for (i = 0; i < Num_reinforcements; i++)
 			if (!stricmp(name, Reinforcements[i].name)) {
 				delete_reinforcement(i);
 				break;
 			}
 
 		// check if any ship is docked with this ship and break dock if so
-		while (object_is_docked(&Objects[obj]))
-		{
+		while (object_is_docked(&Objects[obj])) {
 			ai_do_objects_undocked_stuff(&Objects[obj], dock_get_first_docked_object(&Objects[obj]));
 		}
 
+	} else if (type == OBJ_PROP) {
+		// Delete briefing icons maybe?
 	} else if (type == OBJ_POINT) {
 		Assert(Briefing_dialog);
 		Briefing_dialog->delete_icon(Objects[obj].instance);
@@ -1475,7 +1488,7 @@ void mark_object(int obj)
 		if (cur_object_index == -1){
 			set_cur_object_index(obj);
 		}
-		Update_ship = Update_wing = 1;
+		Update_ship = Update_wing = Update_prop = 1;
 		Waypoint_editor_dialog.initialize_data(1);
 		Jumpnode_editor_dialog.initialize_data(1);
 	}
@@ -1503,7 +1516,7 @@ void unmark_object(int obj)
 
 			set_cur_object_index(-1);  // can't find one; nothing is marked.
 		}
-		Update_ship = Update_wing = 1;
+		Update_ship = Update_wing = Update_prop = 1;
 		Waypoint_editor_dialog.initialize_data(1);
 		Jumpnode_editor_dialog.initialize_data(1);
 	}

@@ -5148,6 +5148,16 @@ int CFred_mission_save::save_props()
 			parse_comments();
 			save_matrix(Objects[Props[i].objnum].orient);
 
+			if (optional_string_fred("+Flags:", "$Name:")) {
+				parse_comments();
+				fout(" (");
+			} else
+				fout("\n+Flags: (");
+
+			if (!(Objects[Props[i].objnum].flags[Object::Object_Flags::Collides]))
+				fout(" \"no_collide\"");
+			fout(" )");
+
 			fso_comment_pop();
 		}
 	}

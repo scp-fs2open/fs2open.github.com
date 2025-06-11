@@ -101,6 +101,8 @@ set(FRED2_SOURCES
 	playerstarteditor.h
 	prefsdlg.cpp
 	prefsdlg.h
+	propdlg.cpp
+	propdlg.h
 	reinforcementeditordlg.cpp
 	reinforcementeditordlg.h
 	resource.h

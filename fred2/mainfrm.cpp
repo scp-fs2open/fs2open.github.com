@@ -82,6 +82,9 @@ size_t prop_type_combo_box_size = 0;
 int Toggle1_var = 0;
 CPoint Global_point2;
 
+CStatic m_ship_label;
+CStatic m_prop_label;
+
 /**
  * @brief Launches the default browser to open the given URL
  */
@@ -134,6 +137,12 @@ void CMainFrame::init_tools()
 			m_new_prop_type_combo_box.SetItemData((int)prop_type_combo_box_size, std::distance(Prop_info.begin(), it));
 			prop_type_combo_box_size++;
 		}
+	}
+
+	// No valid props, so disable the dropdown
+	if (prop_type_combo_box_size == 0) {
+		m_new_prop_type_combo_box.EnableWindow(FALSE);
+		m_prop_label.EnableWindow(FALSE);
 	}
 
 	Id_select_type_waypoint = ship_type_combo_box_size;
@@ -282,6 +291,7 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct) {
 
 	Fred_main_wnd = this;
 	Ship_editor_dialog.Create();
+	Prop_editor_dialog.Create();
 	Wing_editor_dialog.Create();
 	Waypoint_editor_dialog.Create();
 	Jumpnode_editor_dialog.Create();

@@ -584,6 +584,16 @@ parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[] =
 
 const size_t Num_parse_wing_flags = sizeof(Parse_wing_flags) / sizeof(flag_def_list_new<Ship::Wing_Flags>);
 
+flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[] = {
+    { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
+};
+
+parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[] = {
+    { Mission::Parse_Object_Flags::OF_No_collide,					"Prop cannot be collided with."},
+};
+
+const size_t Num_parse_prop_flags = sizeof(Parse_prop_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
 	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
@@ -5126,6 +5136,17 @@ void parse_prop(mission* pm)
 	required_string("$Orientation:");
 	stuff_matrix(&prop.orientation);
 
+	// set flags
+	if (optional_string("+Flags:")) {
+		SCP_vector<SCP_string> unparsed;
+		parse_string_flag_list(prop.flags, Parse_prop_flags, Num_parse_prop_flags, &unparsed);
+		if (!unparsed.empty()) {
+			for (size_t k = 0; k < unparsed.size(); ++k) {
+				WarningEx(LOCATION, "Unknown flag in parse prop flags: %s", unparsed[k].c_str());
+			}
+		}
+	}
+
 	Parse_props.emplace_back(prop);
 }
 
@@ -5237,7 +5258,15 @@ void post_process_props()
 {
 	for (int i = 0; i < static_cast<int>(Parse_props.size()); i++) {
 		parsed_prop* propp = &Parse_props[i];
-		prop_create(&propp->orientation, &propp->position, propp->prop_info_index, propp->name);
+		int objnum = prop_create(&propp->orientation, &propp->position, propp->prop_info_index, propp->name);
+
+		if (objnum >= 0) {
+			auto& obj = Objects[objnum];
+
+			if (propp->flags[Mission::Parse_Object_Flags::OF_No_collide]) {
+				obj.flags.remove(Object::Object_Flags::Collides);
+			}
+		}
 	}
 }
 

@@ -240,7 +240,7 @@ extern size_t ship_type_combo_box_size;
 extern color_combo_box_prop m_new_prop_type_combo_box;
 extern size_t prop_type_combo_box_size;
 
-CStatic m_ship_label;
-CStatic m_prop_label;
+extern CStatic m_ship_label;
+extern CStatic m_prop_label;
 
 #endif // _MAINFRM_H

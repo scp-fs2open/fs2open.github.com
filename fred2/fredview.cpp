@@ -31,6 +31,7 @@
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
+#include "prop/prop.h" // for prop names
 #include "MissionGoalsDlg.h"
 #include "MissionCutscenesDlg.h"
 #include "wing.h"
@@ -149,6 +150,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_WAYPOINTS, OnUpdateViewWaypoints)
 	ON_WM_LBUTTONDOWN()
 	ON_COMMAND(ID_EDITORS_SHIPS, OnEditorsShips)
+	ON_COMMAND(ID_EDITORS_PROPS, OnEditorsProps)
 	ON_WM_KEYDOWN()
 	ON_WM_KEYUP()
 	ON_WM_SETFOCUS()
@@ -1195,6 +1197,18 @@ void CFREDView::OnEditorsShips()
 	Ship_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
+void CFREDView::OnEditorsProps()
+{
+	Assert(Prop_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Prop_wnd_data, &Prop_editor_dialog, 0))
+		return;
+
+	Prop_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Prop_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
 void CFREDView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT lParam)
 {
 	uint lKeyData;
@@ -1460,10 +1474,14 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			else {
 				CString str;
 
-				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP))
+				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP)) {
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
-				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
+				} else if (Objects[objnum].type == OBJ_PROP) {
+					id = ID_EDITORS_PROPS;
+					str.Format("Edit %s", Props[Objects[objnum].instance].prop_name);
+
+				} else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					auto jnp = jumpnode_get_by_objnum(objnum);
 					Assert(jnp != nullptr);
 
@@ -1999,6 +2017,10 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 			case OBJ_SHIP:
 			case OBJ_START:
 				OnEditorsShips();
+				break;
+
+			case OBJ_PROP:
+				OnEditorsProps();
 				break;
 
 			case OBJ_WAYPOINT:
