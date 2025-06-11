@@ -73,6 +73,7 @@ endif()
 
 IF(MSVC_USE_RUNTIME_DLL)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>DLL")
+	add_compile_definitions(_AFXDLL)
 ELSE(MSVC_USE_RUNTIME_DLL)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<NOT:$<CONFIG:Release>>:Debug>")
 ENDIF(MSVC_USE_RUNTIME_DLL)
