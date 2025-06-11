@@ -650,19 +650,21 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	obj->hull_strength = hull_strength;
 
 	if (hull_flag) {
-		if(sip->debris_min_hitpoints >= 0.0f && sip->debris_max_hitpoints >= 0.0f)
+		float min_hp = sip->debris_min_hitpoints * sip->debris_hitpoints_radius_multi * radius;
+		float max_hp = sip->debris_max_hitpoints * sip->debris_hitpoints_radius_multi * radius;
+		if (min_hp >= 0.0f && max_hp >= 0.0f)
 		{
-			obj->hull_strength = (( sip->debris_max_hitpoints - sip->debris_min_hitpoints ) * frand()) + sip->debris_min_hitpoints;
+			obj->hull_strength = ((max_hp - min_hp) * frand()) + min_hp;
 		}
-		else if(sip->debris_min_hitpoints >= 0.0f)
+		else if(min_hp >= 0.0f)
 		{
-			if(obj->hull_strength < sip->debris_min_hitpoints)
-				obj->hull_strength = sip->debris_min_hitpoints;
+			if (obj->hull_strength < min_hp)
+				obj->hull_strength = min_hp;
 		}
-		else if(sip->debris_max_hitpoints >= 0.0f)
+		else if(max_hp >= 0.0f)
 		{
-			if(obj->hull_strength > sip->debris_max_hitpoints)
-				obj->hull_strength = sip->debris_max_hitpoints;
+			if (obj->hull_strength > max_hp)
+				obj->hull_strength = max_hp;
 		}
 		db->damage_mult = sip->debris_damage_mult;
 
