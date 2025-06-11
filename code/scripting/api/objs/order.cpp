@@ -174,6 +174,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_CHASE_SHIP_CLASS:
 			eh_idx = LE_ORDER_ATTACK_SHIP_CLASS;
 			break;
+		case AI_GOAL_CHASE_SHIP_TYPE:
+			eh_idx = LE_ORDER_ATTACK_SHIP_TYPE;
+			break;
 		case AI_GOAL_LUA:
 			eh_idx = LE_ORDER_LUA;
 			break;
@@ -256,6 +259,10 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 
 				case AI_GOAL_CHASE_SHIP_CLASS:
 					// a ship class isn't an in-mission object
+					return ade_set_error(L, "o", l_Object.Set(object_h()));
+
+				case AI_GOAL_CHASE_SHIP_TYPE:
+					// a ship type isn't an in-mission object
 					return ade_set_error(L, "o", l_Object.Set(object_h()));
 
 				case AI_GOAL_WAYPOINTS:
