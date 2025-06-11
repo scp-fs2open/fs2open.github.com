@@ -2,6 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
+#include "mission/mission_flags.h"
 #include "object/object.h"
 #include "prop/prop_flags.h"
 #include "ship/ship.h"
@@ -29,7 +30,7 @@ typedef struct prop {
 	float alpha_mult;
 	// glow points
 	std::deque<bool> glow_point_bank_active;
-	flagset<Prop::Prop_Flags> flags;     // Render flags
+	flagset<Prop::Prop_Flags> flags;
 } prop;
 
 typedef struct parsed_prop {
@@ -37,6 +38,7 @@ typedef struct parsed_prop {
 	int prop_info_index;
 	matrix orientation;
 	vec3d position;
+	flagset<Mission::Parse_Object_Flags> flags;
 } parsed_prop;
 
 // Global prop info array
