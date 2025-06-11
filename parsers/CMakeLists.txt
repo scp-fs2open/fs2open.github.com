@@ -31,6 +31,7 @@ function(add_parser filename)
 endfunction()
 
 add_library(parsers STATIC)
+set_property(TARGET parsers PROPERTY CXX_STANDARD 17)
 
 target_link_libraries(parsers PUBLIC antlr4_static)
 

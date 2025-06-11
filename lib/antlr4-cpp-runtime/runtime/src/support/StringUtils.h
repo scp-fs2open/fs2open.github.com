@@ -9,14 +9,8 @@
 
 namespace antlrcpp {
 
-	template<typename T>
-	std::string utf32_to_utf8(T const& data);
+  ANTLR4CPP_PUBLIC std::string escapeWhitespace(std::string_view in);
 
-	UTF32String utf8_to_utf32(const char* first, const char* last);
+  ANTLR4CPP_PUBLIC std::string& escapeWhitespace(std::string& out, std::string_view in);
 
-  void replaceAll(std::string &str, std::string const& from, std::string const& to);
-
-  // string <-> wstring conversion (UTF-16), e.g. for use with Window's wide APIs.
-  ANTLR4CPP_PUBLIC std::string ws2s(std::wstring const& wstr);
-  ANTLR4CPP_PUBLIC std::wstring s2ws(std::string const& str);
 }

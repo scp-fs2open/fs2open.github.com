@@ -8,6 +8,7 @@
 #include "support/CPPUtils.h"
 #include "atn/StarLoopEntryState.h"
 #include "atn/ATNConfigSet.h"
+#include "support/Casts.h"
 
 #include "dfa/DFA.h"
 
@@ -22,8 +23,8 @@ DFA::DFA(atn::DecisionState *atnStartState, size_t decision)
   : atnStartState(atnStartState), s0(nullptr), decision(decision) {
 
   _precedenceDfa = false;
-  if (is<atn::StarLoopEntryState *>(atnStartState)) {
-    if (static_cast<atn::StarLoopEntryState *>(atnStartState)->isPrecedenceDecision) {
+  if (atn::StarLoopEntryState::is(atnStartState)) {
+    if (downCast<atn::StarLoopEntryState*>(atnStartState)->isPrecedenceDecision) {
       _precedenceDfa = true;
       s0 = new DFAState(std::unique_ptr<atn::ATNConfigSet>(new atn::ATNConfigSet()));
       s0->isAcceptState = false;
@@ -32,13 +33,12 @@ DFA::DFA(atn::DecisionState *atnStartState, size_t decision)
   }
 }
 
-DFA::DFA(DFA &&other) : atnStartState(other.atnStartState), decision(other.decision) {
+DFA::DFA(DFA &&other) : atnStartState(other.atnStartState), s0(other.s0), decision(other.decision) {
   // Source states are implicitly cleared by the move.
   states = std::move(other.states);
 
   other.atnStartState = nullptr;
   other.decision = 0;
-  s0 = other.s0;
   other.s0 = nullptr;
   _precedenceDfa = other._precedenceDfa;
   other._precedenceDfa = false;
@@ -46,14 +46,15 @@ DFA::DFA(DFA &&other) : atnStartState(other.atnStartState), decision(other.decis
 
 DFA::~DFA() {
   bool s0InList = (s0 == nullptr);
-  for (auto state : states) {
+  for (auto *state : states) {
     if (state == s0)
       s0InList = true;
     delete state;
   }
 
-  if (!s0InList)
+  if (!s0InList) {
     delete s0;
+  }
 }
 
 bool DFA::isPrecedenceDfa() const {
@@ -70,7 +71,7 @@ DFAState* DFA::getPrecedenceStartState(int precedence) const {
   return iterator->second;
 }
 
-void DFA::setPrecedenceStartState(int precedence, DFAState *startState, SingleWriteMultipleReadLock &lock) {
+void DFA::setPrecedenceStartState(int precedence, DFAState *startState) {
   if (!isPrecedenceDfa()) {
     throw IllegalStateException("Only precedence DFAs may contain a precedence start state.");
   }
@@ -79,16 +80,12 @@ void DFA::setPrecedenceStartState(int precedence, DFAState *startState, SingleWr
     return;
   }
 
-  {
-    lock.writeLock();
-    s0->edges[precedence] = startState;
-    lock.writeUnlock();
-  }
+  s0->edges[precedence] = startState;
 }
 
 std::vector<DFAState *> DFA::getStates() const {
   std::vector<DFAState *> result;
-  for (auto state : states)
+  for (auto *state : states)
     result.push_back(state);
 
   std::sort(result.begin(), result.end(), [](DFAState *o1, DFAState *o2) -> bool {
@@ -96,15 +93,6 @@ std::vector<DFAState *> DFA::getStates() const {
   });
 
   return result;
-}
-
-std::string DFA::toString(const std::vector<std::string> &tokenNames) {
-  if (s0 == nullptr) {
-    return "";
-  }
-  DFASerializer serializer(this, tokenNames);
-
-  return serializer.toString();
 }
 
 std::string DFA::toString(const Vocabulary &vocabulary) const {
@@ -116,7 +104,7 @@ std::string DFA::toString(const Vocabulary &vocabulary) const {
   return serializer.toString();
 }
 
-std::string DFA::toLexerString() {
+std::string DFA::toLexerString() const {
   if (s0 == nullptr) {
     return "";
   }

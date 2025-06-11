@@ -1,5 +1,5 @@
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.9)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Make sure the source and binary directory are not the sample
@@ -155,9 +155,6 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
-
-# Include cotire file from https://github.com/sakra/cotire/
-include(cotire)
 
 INCLUDE(globals)
 INCLUDE(toolchain)

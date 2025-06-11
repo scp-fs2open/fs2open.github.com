@@ -14,24 +14,24 @@ namespace antlr4 {
   /// we obtained this token.
   class ANTLR4CPP_PUBLIC Token {
   public:
-    static const size_t INVALID_TYPE = 0;
+    static constexpr size_t INVALID_TYPE = 0;
 
     /// During lookahead operations, this "token" signifies we hit rule end ATN state
     /// and did not follow it despite needing to.
-    static const size_t EPSILON = static_cast<size_t>(-2);
-    static const size_t MIN_USER_TOKEN_TYPE = 1;
-    static const size_t EOF = IntStream::EOF;
+    static constexpr size_t EPSILON = std::numeric_limits<size_t>::max() - 1;
+    static constexpr size_t MIN_USER_TOKEN_TYPE = 1;
+    static constexpr size_t EOF = IntStream::EOF;
 
     virtual ~Token();
 
     /// All tokens go to the parser (unless skip() is called in that rule)
     /// on a particular "channel".  The parser tunes to a particular channel
     /// so that whitespace etc... can go to the parser on a "hidden" channel.
-    static const size_t DEFAULT_CHANNEL = 0;
+    static constexpr size_t DEFAULT_CHANNEL = 0;
 
     /// Anything on different channel than DEFAULT_CHANNEL is not parsed
     /// by parser.
-    static const size_t HIDDEN_CHANNEL = 1;
+    static constexpr size_t HIDDEN_CHANNEL = 1;
 
     /**
      * This is the minimum constant value which can be assigned to a
@@ -44,7 +44,7 @@ namespace antlr4 {
      *
      * @see Token#getChannel()
      */
-    static const size_t MIN_USER_CHANNEL_VALUE = 2;
+    static constexpr size_t MIN_USER_CHANNEL_VALUE = 2;
 
     /// Get the text of the token.
     virtual std::string getText() const = 0;
