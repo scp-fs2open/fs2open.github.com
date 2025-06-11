@@ -154,7 +154,9 @@ void prop_init()
 {
 	
 	// first parse the default table
-	parse_prop_table("props.tbl");
+	if (cf_exists_full("props.tbl", CF_TYPE_TABLES)) {
+		parse_prop_table("props.tbl");
+	}
 
 	// parse any modular tables
 	parse_modular_table("*-prp.tbm", parse_prop_table);
@@ -196,7 +198,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
 		strcpy_s(base_name, Prop_info[prop_type].name);
-		sprintf(suffix, NOX(" %d"), Props.size());
+		sprintf(suffix, NOX(" %d"), static_cast<int>(Props.size()));
 
 		// start building name
 		strcpy_s(propp->prop_name, base_name);

@@ -73,12 +73,14 @@
 #define IDB_OPERATOR                    226
 #define IDB_DATA                        227
 #define IDB_ROOT                        228
+#define IDD_PROP_EDITOR                 229
 #define IDD_ADJUST_GRID                 230
 #define IDD_SHIELD_SYS                  231
 #define IDR_ASTEROID_FIELD_MENU         232
 #define IDR_CPGN_VIEW_OFF               233
 #define IDR_CPGN_VIEW_ON                234
 #define IDD_CALC_RELATIVE_COORDS        235
+#define IDR_PROP_EDIT_MENU              236
 #define IDD_INITIAL_SHIPS               238
 #define IDB_CHAINED                     239
 #define IDB_STOP                        240
@@ -1265,6 +1267,10 @@
 #define IDC_SELECT_ASTEROID             1706
 #define IDC_SMOOTHING                   1707
 #define IDC_SPIN_SMOOTHING              1708
+#define IDC_PROP_NAME                   1709
+#define IDC_PROP_PREV                   1710
+#define IDC_PROP_NEXT                   1711
+#define IDC_PROP_FLAGS                  1712
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1300,6 +1306,7 @@
 #define ID_VIEW_ELEVATIONS              32806
 #define ID_VIEW_WAYPOINTS               32807
 #define ID_VIEW_GRID                    32808
+#define ID_EDITORS_PROPS                32809
 #define ID_MIKE_GRIDCONTROL             32811
 #define ID_PROPERTIES_ONE               32812
 #define ID_PROPERTIES_TWO               32813
