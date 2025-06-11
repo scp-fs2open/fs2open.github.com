@@ -116,6 +116,7 @@ int Show_cpu = 0;
 
 CWnd*                Prev_window;
 CShipEditorDlg       Ship_editor_dialog;
+prop_dlg             Prop_editor_dialog;
 wing_editor          Wing_editor_dialog;
 waypoint_path_dlg    Waypoint_editor_dialog;
 jumpnode_dlg         Jumpnode_editor_dialog;
@@ -125,6 +126,7 @@ briefing_editor_dlg* Briefing_dialog = NULL;
 
 window_data Main_wnd_data;
 window_data Ship_wnd_data;
+window_data Prop_wnd_data;
 window_data Wing_wnd_data;
 window_data Object_wnd_data;
 window_data Mission_goals_wnd_data;
@@ -249,6 +251,7 @@ BOOL CFREDApp::InitInstance() {
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
+	read_window("Prop window", &Prop_wnd_data);
 	read_window("Wing window", &Wing_wnd_data);
 	read_window("Waypoint window", &Waypoint_wnd_data);
 	read_window("Jumpnode window", &Jumpnode_wnd_data);
@@ -391,6 +394,7 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 	if (!app_init) {
 		app_init = 1;
 		theApp.init_window(&Ship_wnd_data, &Ship_editor_dialog, 0, 1);
+		theApp.init_window(&Prop_wnd_data, &Prop_editor_dialog, 0, 1);
 		theApp.init_window(&Wing_wnd_data, &Wing_editor_dialog, 0, 1);
 		theApp.init_window(&MusPlayer_wnd_data, &Music_player_dialog, 0, 1);
 		theApp.init_window(&Waypoint_wnd_data, &Waypoint_editor_dialog, 0, 1);
@@ -425,6 +429,11 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 	if (Update_wing) {
 		Wing_editor_dialog.initialize_data(1);
 		Update_wing = 0;
+	}
+
+	if (Update_prop) {
+		Prop_editor_dialog.initialize_data(1);
+		Update_prop = 0;
 	}
 
 	Prev_window = CFREDView::GetActiveWindow();
@@ -546,10 +555,12 @@ void CFREDApp::write_ini_file(int degree) {
 		record_window_data(&MusPlayer_wnd_data, &Music_player_dialog);
 		record_window_data(&Wing_wnd_data, &Wing_editor_dialog);
 		record_window_data(&Ship_wnd_data, &Ship_editor_dialog);
+		record_window_data(&Prop_wnd_data, &Prop_editor_dialog);
 		record_window_data(&Main_wnd_data, Fred_main_wnd);
 
 		write_window("Main window", &Main_wnd_data);
 		write_window("Ship window", &Ship_wnd_data);
+		write_window("Prop window", &Prop_wnd_data);
 		write_window("Wing window", &Wing_wnd_data);
 		write_window("Waypoint window", &Waypoint_wnd_data);
 		write_window("Jumpnode window", &Jumpnode_wnd_data);
