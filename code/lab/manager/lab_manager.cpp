@@ -450,29 +450,33 @@ void LabManager::spawnDockerObject() {
 	// Check ship class index
 	if (DockerClass < 0 || DockerClass >= static_cast<int>(Ship_info.size())) {
 		mprintf(("Invalid ship class index %d\n", DockerClass));
-	} else {
-		object* obj = &Objects[CurrentObject];
-
-		// Spawn near the target
-		vec3d spawn_pos = obj->pos;
-		vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
-		vec3d final_pos;
-		vm_vec_add(&final_pos, &spawn_pos, &offset);
-
-		matrix spawn_orient = vmd_identity_matrix;
-
-		DockerObject = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
-
-		if (DockerObject >= 0) {
-			object* new_objp = &Objects[DockerObject];
-
-			// Set a more reasonable starting position
-			float offset_radius = obj->radius + new_objp->radius;
-			offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
-			vm_vec_add(&final_pos, &spawn_pos, &offset);
-			new_objp->pos = final_pos;
-		}
+		return;
 	}
+
+	object* obj = &Objects[CurrentObject];
+
+	// Spawn near the target
+	vec3d spawn_pos = obj->pos;
+	vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
+	vec3d final_pos;
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+
+	matrix spawn_orient = vmd_identity_matrix;
+
+	DockerObject = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
+
+	if (DockerObject < 0) {
+		mprintf(("Failed to create docker object with ship class index %d!\n", DockerClass));
+		return;
+	}
+
+	object* new_objp = &Objects[DockerObject];
+
+	// Set a more reasonable starting position
+	float offset_radius = obj->radius + new_objp->radius;
+	offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+	new_objp->pos = final_pos;
 }
 
 void LabManager::beginDockingTest() {
@@ -488,9 +492,8 @@ void LabManager::beginDockingTest() {
 		ai_clear_ship_goals(aip);
 
 		// Create the dock order
-		int gindex = 0;
 		ai_goal_type type = ai_goal_type::EVENT_SHIP;
-		ai_goal* aigp = &aip->goals[gindex];
+		ai_goal* aigp = &aip->goals[0];
 
 		ai_goal_reset(aigp, true);
 		aigp->type = type;
@@ -577,7 +580,6 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 	//if (mode == CurrentMode && info_index == CurrentClass)
 		//return;
 
-	// THIS IS BUGGY FIXMEE
 	// Toggle the show thrusters default when we change modes
 	if (mode != CurrentMode) {
 		if (mode == LabMode::Ship) {
@@ -586,6 +588,9 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		if (mode == LabMode::Weapon) {
 			labUi.show_thrusters = true;
 		}
+
+		// Set the render flag now
+		Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, labUi.show_thrusters);
 	}
 
 	cleanup();

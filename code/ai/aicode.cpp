@@ -549,11 +549,9 @@ void reset_ai_path_points()
 
 	// Also clear any AI path state
 	for (int i = 0; i < MAX_SHIPS; ++i) {
-		if (Ai_info[i].path_length > 0) {
-			Ai_info[i].path_start = -1;
-			Ai_info[i].path_cur = -1;
-			Ai_info[i].path_length = 0;
-		}
+		Ai_info[i].path_start = -1;
+		Ai_info[i].path_cur = -1;
+		Ai_info[i].path_length = 0;
 	}
 }
 

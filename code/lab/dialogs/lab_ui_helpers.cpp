@@ -13,7 +13,7 @@ SCP_map<int, SCP_string> get_docking_point_map(int model_index)
 
 	for (int i = 0; i < pm->n_docks; ++i) {
 		const char* name = pm->docking_bays[i].name;
-		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed>");
+		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed " + std::to_string(i) + ">");
 	}
 
 	return result;

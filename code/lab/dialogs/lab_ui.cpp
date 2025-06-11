@@ -1295,8 +1295,9 @@ void LabUi::show_object_options() const
 									if (ImGui::Selectable(name.c_str(), is_selected)) {
 										getLabManager()->DockerDockPoint = name;
 									}
-									if (is_selected)
+									if (is_selected) {
 										ImGui::SetItemDefaultFocus();
+									}
 								}
 							}
 							ImGui::EndCombo();
@@ -1315,8 +1316,9 @@ void LabUi::show_object_options() const
 								if (ImGui::Selectable(name.c_str(), is_selected)) {
 									getLabManager()->DockeeDockPoint = name;
 								}
-								if (is_selected)
+								if (is_selected) {
 									ImGui::SetItemDefaultFocus();
+								}
 							}
 							ImGui::EndCombo();
 						}
