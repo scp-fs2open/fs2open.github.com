@@ -8,6 +8,8 @@
 
 MONITOR(NumPropsRend)
 
+bool Props_inited = false;
+
 SCP_vector<prop_info> Prop_info;
 
 SCP_vector<prop> Props;
@@ -142,8 +144,66 @@ void parse_prop_table(const char* filename)
 		required_string("+POF file:");
 		stuff_string(pip->pof_file, F_NAME, MAX_FILENAME_LEN);
 
+		if (optional_string("$Closeup_pos:")) {
+			stuff_vec3d(&pip->closeup_pos);
+		} else if (first_time && VALID_FNAME(pip->pof_file)) {
+			// Calculate from the model file. This is inefficient, but whatever
+			int model_idx = model_load(pip->pof_file);
+			polymodel* pm = model_get(model_idx);
+
+			// Go through, find best
+			pip->closeup_pos.xyz.z = fabsf(pm->maxs.xyz.z);
+
+			float temp = fabsf(pm->mins.xyz.z);
+			if (temp > pip->closeup_pos.xyz.z)
+				pip->closeup_pos.xyz.z = temp;
+
+			// Now multiply by 2
+			pip->closeup_pos.xyz.z *= -2.0f;
+
+			// We're done with the model.
+			model_unload(model_idx);
+		}
+
+		if (optional_string("$Closeup_zoom:")) {
+			stuff_float(&pip->closeup_zoom);
+
+			if (pip->closeup_zoom <= 0.0f) {
+				mprintf(("Warning!  Prop '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting "
+						 "to default value.\n",
+					pip->name,
+					pip->closeup_zoom));
+				pip->closeup_zoom = 0.5f;
+			}
+		}
+
 		if(optional_string("$Detail distance:")) {
 			pip->num_detail_levels = (int)stuff_int_list(pip->detail_distance, MAX_PROP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		}
+
+		if (optional_string("$Custom data:")) {
+			parse_string_map(pip->custom_data, "$end_custom_data", "+Val:");
+		}
+
+		if (optional_string("$Custom Strings")) {
+			while (optional_string("$Name:")) {
+				custom_string cs;
+
+				// The name of the string
+				stuff_string(cs.name, F_NAME);
+
+				// Arbitrary string value used for grouping strings together
+				required_string("+Value:");
+				stuff_string(cs.value, F_NAME);
+
+				// The string text itself
+				required_string("+String:");
+				stuff_string(cs.text, F_MULTITEXT);
+
+				pip->custom_strings.push_back(cs);
+			}
+
+			required_string("$end_custom_strings");
 		}
 	}
 
@@ -160,6 +220,8 @@ void prop_init()
 
 	// parse any modular tables
 	parse_modular_table("*-prp.tbm", parse_prop_table);
+
+	Props_inited = true;
 }
 
 /**
@@ -325,6 +387,125 @@ void prop_delete(object* obj)
 	model_delete_instance(propp->model_instance_num);
 
 	Props.erase(Props.begin() + num);
+}
+
+/**
+ * Change the prop model for a prop to that for prop class 'prop_type'
+ *
+ * @param n			index of prop in ::Props[] array
+ * @param prop_type	prop class (index into ::Prop_info vector)
+ */
+static void prop_model_change(int n, int prop_type)
+{
+	Assert( n >= 0 && n < MAX_PROPS );
+	prop* sp = &Props[n];
+	prop_info* sip = &(Prop_info[prop_type]);
+	object* objp = &Objects[sp->objnum];
+	polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
+
+	// get new model
+	if (sip->model_num == -1) {
+		sip->model_num = model_load(sip->pof_file);
+	}
+
+	polymodel* pm = model_get(sip->model_num);
+	Objects[sp->objnum].radius = model_get_radius(pm->id);
+
+	// page in nondims in game
+	if ( !Fred_running )
+		model_page_in_textures(sip->model_num, prop_type);
+
+	// allocate memory for keeping glow point bank status (enabled/disabled)
+	{
+		bool val = true; // default value, enabled
+
+		// clear out any old gpb's first, then add new ones if needed
+		sp->glow_point_bank_active.clear();
+
+		if (pm->n_glow_point_banks)
+			sp->glow_point_bank_active.resize( pm->n_glow_point_banks, val );
+		
+		// set any default off banks to off
+		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
+			glow_point_bank_override* gpo = nullptr;
+
+			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			if (gpoi != sip->glowpoint_bank_override_map.end()) {
+				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
+			}
+
+			if (gpo) {
+				if (gpo->default_off) {
+					sp->glow_point_bank_active[bank] = false;
+				}
+			}
+		}
+	}
+
+	if ( sip->num_detail_levels != pm->n_detail_levels )
+	{
+		if ( !Is_standalone )
+		{
+			// just log to file for standalone servers
+			Warning(LOCATION, "For prop '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+		}
+		else
+		{
+			nprintf(("Warning",  "For prop '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+		}
+	}	
+	for (int i=0; i<pm->n_detail_levels; i++ )
+		pm->detail_depth[i] = (i < sip->num_detail_levels) ? i2fl(sip->detail_distance[i]) : 0.0f;
+
+	// reset texture animations
+	//sp->base_texture_anim_timestamp = _timestamp();
+
+	model_delete_instance(sp->model_instance_num);
+
+	// create new model instance data
+	// note: this is needed for both subsystem stuff and submodel animation stuff
+	sp->model_instance_num = model_create_instance(OBJ_INDEX(objp), sip->model_num);
+	pmi = model_get_instance(sp->model_instance_num);
+}
+
+/**
+ * Change the prop class on a prop, and changing all required information
+ * for consistency
+ *
+ * @param n			index of prop in ::Props[] array
+ * @param prop_type	prop class (index into ::Prop_info vector)
+ * @param by_sexp	SEXP reference
+ */
+void change_prop_type(int n, int prop_type)
+{
+	Assert( n >= 0 && n < MAX_PROPS );
+	prop* sp = &Props[n];
+
+	// do a quick out if we're already using the new ship class
+	if (sp->prop_info_index == prop_type)
+		return;
+
+	int objnum = sp->objnum;
+	//auto prop_entry = ship_registry_get(sp->prop_name);
+
+	prop_info* sip = &(Prop_info[prop_type]);
+	prop_info* sip_orig = &Prop_info[sp->prop_info_index];
+	object* objp = &Objects[objnum];
+
+	// point to new ship data
+	prop_model_change(n, prop_type);
+	sp->prop_info_index = prop_type;
+
+	// get the before and after models (the new model may have only been loaded in ship_model_change)
+	auto pm = model_get(sip->model_num);
+	auto pm_orig = model_get(sip_orig->model_num);
+
+	// check class-specific flags
+
+	if (sip->flags[Prop::Info_Flags::No_collide])								// changing TO a no-collision ship class
+		obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
+	else if (sip_orig->flags[Prop::Info_Flags::No_collide])						// changing FROM a no-collision ship class
+		obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
 }
 
 void prop_render(object* obj, model_draw_list* scene)
