@@ -14,6 +14,7 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
 #include "ai/aigoals.h"
+#include "prop/prop.h"
 
 #include "freespace.h"
 
@@ -746,6 +747,12 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			// 1: Allow subsystem rotations/translations
 			// 2: Allow subystems to be processed
 			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
+		}
+		break;
+	case LabMode::Prop:
+		CurrentObject = prop_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
+		if (isSafeForShips()) {
+			ModelFilename = Prop_info[CurrentClass].pof_file;
 		}
 		break;
 	case LabMode::Weapon:
