@@ -19,7 +19,7 @@
 
 class ship_subsys;
 class ship;
-class prop;
+struct prop;
 class waypoint_list;
 class object;
 class waypoint;
