@@ -2274,6 +2274,42 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 	return 1;
 }
 
+void maybe_play_conditional_impacts(object* weapon_objp, object* impacted_objp, int submodel, vec3d* hitpos, float hull_damage, float subsys_damage, float shield_damage) {
+	for (auto entry : impact_data) {
+			if (entry.valid && wip->conditional_impacts.count(entry.condition) == 1) {
+				for (const auto& ci : wip->conditional_impacts[entry.condition]) {
+					if (((!armed_weapon) == ci.dinky)
+						&& !(hull_and_subsys && ci.disable_when_subsys_also_hit)
+						&& entry.health_fraction >= ci.min_health_threshold.next()
+						&& entry.health_fraction <= ci.max_health_threshold.next()
+						&& entry.damage_hits_fraction >= ci.min_damage_hits_ratio.next()
+						&& entry.damage_hits_fraction <= ci.max_damage_hits_ratio.next()
+						&& hit_angle >= fl_radians(ci.min_angle_threshold.next())
+						&& hit_angle <= fl_radians(ci.max_angle_threshold.next())
+						&& entry.laser_pokethrough_amount >= ci.laser_pokethrough_threshold
+					) {
+						auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
+						if (entry.condition == ImpactCondition(SpecialImpactCondition::LASER_POKETHROUGH)) {
+							particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, nullptr, submodel, &laser_head_pos, nullptr));
+						} else {
+							particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, impacted_objp, submodel, hitpos, hitpos));
+						}
+						particleSource->setTriggerRadius(weapon_obj->radius * radius_mult);
+						particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
+
+						if (hitnormal)
+						{
+							particleSource->setNormal(*hitnormal);
+						}
+						particleSource->finishCreation();
+
+						valid_conditional_impact = true;
+					}
+				}
+			}
+		}
+}
+
 // ------------------------------------------------------------------------
 // ship_do_damage()
 //

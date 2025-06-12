@@ -80,5 +80,7 @@ int get_max_sparks(const object* ship_obj);
 // player pain
 void ship_hit_pain(float damage, int quadrant);
 
+void maybe_play_conditional_impacts(object* weapon_objp, object* impacted_objp, int submodel, vec3d* hitpos, float hull_damage = 0.0f, float subsys_damage = 0.0f, float shield_damage = 0.0f);
+
 
 #endif //_SHIPHIT_H
