@@ -1801,7 +1801,7 @@ ship_info::ship_info()
 	debris_max_speed = -1.0f;
 	debris_min_rotspeed = -1.0f;
 	debris_max_rotspeed = -1.0f;
-	debris_hitpoints_radius_multi = 1.0f;
+	debris_hitpoints_radius_multi = -1.0f;
 	debris_damage_type_idx = -1;
 	debris_min_hitpoints = -1.0f;
 	debris_max_hitpoints = -1.0f;
