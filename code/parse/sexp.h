@@ -38,6 +38,7 @@ enum sexp_opf_t : int {
 	OPF_BOOL,
 	OPF_NUMBER,
 	OPF_SHIP,
+	OPF_PROP,
 	OPF_WING,
 	OPF_SUBSYSTEM,
 	OPF_POINT,						// either a 3d point in space, or a waypoint name
@@ -66,6 +67,7 @@ enum sexp_opf_t : int {
 	OPF_MEDAL_NAME,					// name of medals
 	OPF_WEAPON_NAME,				// name of a weapon
 	OPF_SHIP_CLASS_NAME,			// name of a ship class
+	OPF_PROP_CLASS_NAME,            // name of a prop class
 	OPF_CUSTOM_HUD_GAUGE,			// name of custom HUD gauge
 	OPF_HUGE_WEAPON,				// name of a secondary bomb type weapon
 	OPF_SHIP_NOT_PLAYER,			// a ship, but not a player ship
@@ -594,6 +596,7 @@ enum : int {
 	OP_CARGO_NO_DEPLETE,
 	OP_SET_SPECIAL_WARPOUT_NAME,
 	OP_SHIP_VANISH,
+	OP_PROP_VANISH, // MjnMixael
 	OP_SHIELDS_ON,	//-Sesquipedalian
 	OP_SHIELDS_OFF,	//-Sesquipedalian
 	
@@ -692,6 +695,7 @@ enum : int {
 	OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD,	// Goober5000
 	OP_SET_SKYBOX_MODEL, // taylor
 	OP_SHIP_CREATE,
+	OP_PROP_CREATE,     // MjnMixael
 	OP_WEAPON_CREATE,	// Goober5000
 	OP_SET_OBJECT_SPEED_X, // Deprecated by wookieejedi
 	OP_SET_OBJECT_SPEED_Y, // Deprecated by wookieejedi
@@ -819,6 +823,7 @@ enum : int {
 	OP_ADD_TO_COLGROUP, // The E
 	OP_REMOVE_FROM_COLGROUP, // The E
 	OP_GET_COLGROUP_ID, // The E
+	OP_GET_COLGROUP_ID_PROP, // MjnMixael
 	OP_SHIP_EFFECT, // Valathil
 	OP_CLEAR_SUBTITLES, // The E
 	OP_BEAM_FIRE_COORDS,	// Goober5000
@@ -875,6 +880,8 @@ enum : int {
 	OP_SET_TRAITOR_OVERRIDE,	//MjnMixael
 	OP_ADD_TO_COLGROUP_NEW,	// Goober5000
 	OP_REMOVE_FROM_COLGROUP_NEW,	// Goober5000
+	OP_ADD_TO_COLGROUP_PROP,         // MjnMixael
+	OP_REMOVE_FROM_COLGROUP_PROP,    // MjnMixael
 	OP_GET_POWER_OUTPUT,	// The E
 	OP_TURRET_SET_FORCED_TARGET,	// Asteroth
 	OP_TURRET_SET_FORCED_SUBSYS_TARGET,	// Asteroth
@@ -1186,6 +1193,7 @@ enum sexp_error_check
 
 	SEXP_CHECK_INVALID_NUM = 101,       // number is not valid
 	SEXP_CHECK_INVALID_SHIP,            // invalid ship name
+	SEXP_CHECK_INVALID_PROP,            // invalid prop name
 	SEXP_CHECK_INVALID_WING,            // invalid wing name
 	SEXP_CHECK_INVALID_SUBSYS,          // invalid subsystem
 	SEXP_CHECK_INVALID_IFF,             // invalid iff string
