@@ -6,6 +6,7 @@
 #include "scripting/api/objs/decaldefinition.h"
 #include "scripting/api/objs/fireballclass.h"
 #include "scripting/api/objs/intelentry.h"
+#include "scripting/api/objs/propclass.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/shiptype.h"
 #include "scripting/api/objs/team_colors.h"
@@ -17,6 +18,7 @@
 #include "fireball/fireballs.h"
 #include "menuui/techmenu.h"
 #include "mission/missionmessage.h"
+#include "prop/prop.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "particle/ParticleManager.h"
@@ -108,6 +110,44 @@ ADE_FUNC(__len, l_Tables_ShipTypes, nullptr, "Number of ship types", "number", "
 		return ade_set_args(L, "i", 0);	//No ship types loaded...should be 0
 
 	return ade_set_args(L, "i", Ship_types.size());
+}
+
+//*****SUBLIBRARY: Tables/ShipClasses
+ADE_LIB_DERIV(l_Tables_PropClasses, "PropClasses", NULL, NULL, l_Tables);
+ADE_INDEXER(l_Tables_PropClasses, "number/string IndexOrName", "Array of prop classes", "propclass", "Prop class handle, or invalid handle if index is invalid")
+{
+	if(!Props_inited)
+		return ade_set_error(L, "o", l_Propclass.Set(-1));
+
+	const char* name;
+	if(!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_Propclass.Set(-1));
+
+	int idx = prop_info_lookup(name);
+
+	if(idx < 0) {
+		try {
+			idx = std::stoi(name);
+			idx--; // Lua->FS2
+		} catch (const std::exception&) {
+			// Not a number
+			return ade_set_error(L, "o", l_Propclass.Set(-1));
+		}
+
+		if (idx < 0 || idx >= prop_info_size()) {
+			return ade_set_error(L, "o", l_Propclass.Set(-1));
+		}
+	}
+
+	return ade_set_args(L, "o", l_Propclass.Set(idx));
+}
+
+ADE_FUNC(__len, l_Tables_PropClasses, NULL, "Number of prop classes", "number", "Number of prop classes, or 0 if prop classes haven't been loaded yet")
+{
+	if(!Props_inited)
+		return ade_set_args(L, "i", 0);	//No props loaded...should be 0
+
+	return ade_set_args(L, "i", Prop_info.size());
 }
 
 //*****SUBLIBRARY: Tables/WeaponClasses
