@@ -107,6 +107,10 @@ public:
 		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;
 	}
 
+	bool isSafeForProps() {
+		return CurrentMode == LabMode::Prop && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_PROP;
+	}
+
 	bool isSafeForWeapons() {
 		bool valid = CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
 		return CurrentMode == LabMode::Weapon && valid;
