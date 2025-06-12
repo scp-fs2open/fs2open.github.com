@@ -1844,7 +1844,7 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		}
 	}
 
-	if (!Cmdline_window_res.has_value()) {
+	if (!Fred_running && !Cmdline_window_res.has_value()) {
 		// For whatever reason, it seems that a combination of Win 11 and presumably NVidia GPU's causes weird artifacts.
 		// These artifacts do not appear in windowed mode, or with an attached renderdoc / nvidia nsight.
 		// Similarly using the -window_res command line parameter prevents this.
