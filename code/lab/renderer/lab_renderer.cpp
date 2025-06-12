@@ -13,6 +13,7 @@
 #include "particle/particle.h"
 #include "starfield/starfield.h"
 #include "starfield/nebula.h"
+#include "prop/prop.h"
 
 #include "missionui/missionscreencommon.h"
 #include "tracing/tracing.h"
@@ -112,6 +113,20 @@ void LabRenderer::renderModel(float frametime) {
 		else {
 			obj->hull_strength = Ship_info[Ships[obj->instance].ship_info_index].max_hull_strength;
 		}
+	}
+
+	if (obj->type == OBJ_PROP) {
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_light,
+			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
 	}
 
 	if (obj->type == OBJ_WEAPON) {
