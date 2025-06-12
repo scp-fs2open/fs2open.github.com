@@ -11489,7 +11489,7 @@ void ai_stay_near()
 	else if (aip->submode_parm0 != 0) {
 		vec3d rand_vec, center_to_goal, center_to_objp;
 		auto goal_objp = &Objects[goal_objnum];
-		float max_dist = aip->submode_float0;
+		float max_dist = std::max(aip->submode_float0, 1.0f);
 
 		// Figure out a goal point to fly to
 		//	Make not all ships pursue same point.
@@ -11520,7 +11520,7 @@ void ai_stay_near()
 	else {
 		vec3d	rand_vec, goal_pos, vec_to_goal;
 		auto goal_objp = &Objects[goal_objnum];
-		float max_dist = aip->submode_float0;
+		float max_dist = std::max(aip->submode_float0, 1.0f);
 
 		//	Make not all ships pursue same point.
 		//	Calculate the seed from both shipnums so the same Pl_objp doesn't always choose the same spot
