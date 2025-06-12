@@ -10,14 +10,17 @@
 #define MAX_PROP_DETAIL_LEVELS    MAX_SHIP_DETAIL_LEVELS
 
 typedef struct prop_info {
-	char name[NAME_LENGTH];               // Prop name
-	char pof_file[MAX_FILENAME_LEN];      // Pof filename
-	int model_num;                        // The model number of the loaded POF
-	//int model_instance;                   // The model instance
-	int num_detail_levels;                // Detail levels of the model
-	int detail_distance[MAX_PROP_DETAIL_LEVELS]; // distance to change detail levels at
-	SCP_unordered_map<int, void*> glowpoint_bank_override_map;
-	flagset<Prop::Info_Flags> flags; // Info flags
+	char name[NAME_LENGTH];                                     // Prop name
+	char pof_file[MAX_FILENAME_LEN];                            // Pof filename
+	vec3d closeup_pos;                                          // position for camera when using ship in closeup view (eg briefing and techroom)
+	float closeup_zoom;                                         // zoom when using ship in closeup view (eg briefing and techroom)
+	int model_num;                                              // The model number of the loaded POF
+	int num_detail_levels;                                      // Detail levels of the model
+	int detail_distance[MAX_PROP_DETAIL_LEVELS];                // distance to change detail levels at
+	SCP_unordered_map<int, void*> glowpoint_bank_override_map;  // Glow point bank overrides currently unused
+	flagset<Prop::Info_Flags> flags;                            // Info flags
+	SCP_map<SCP_string, SCP_string> custom_data;                // Custom data for this prop
+	SCP_vector<custom_string> custom_strings;                   // Custom strings for this prop
 } prop_info;
 
 typedef struct prop {
@@ -41,10 +44,17 @@ typedef struct parsed_prop {
 	flagset<Mission::Parse_Object_Flags> flags;
 } parsed_prop;
 
+extern bool Props_inited;
+
 // Global prop info array
 extern SCP_vector<prop_info> Prop_info;
 
 extern SCP_vector<prop> Props;
+
+inline int prop_info_size()
+{
+	return static_cast<int>(Prop_info.size());
+}
 
 // Load all props from table
 void prop_init();
@@ -58,5 +68,7 @@ void props_level_close();
 
 int prop_info_lookup(const char* token);
 int prop_name_lookup(const char* name);
+
+void change_prop_type(int n, int prop_type);
 
 void spawn_test_prop();
