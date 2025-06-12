@@ -107,8 +107,8 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
-int First_menu_item= -1;							// index of first item in the menu
-int Selected_menu_item = First_menu_item;           // index of selected item in the menu //!< Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
+int First_menu_item= -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
+int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
 SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
