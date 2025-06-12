@@ -17,9 +17,9 @@ static SCP_vector<SCP_string> Removed_props;
 /**
  * Return the index of Prop_info[].name that is *token.
  */
-static int prop_info_lookup_sub(const char* token)
+int prop_info_lookup(const char* token)
 {
-	Assertion(token != nullptr, "NULL token passed to prop_info_lookup_sub");
+	Assertion(token != nullptr, "NULL token passed to prop_info_lookup");
 
 	for (auto it = Prop_info.cbegin(); it != Prop_info.cend(); ++it)
 		if (!stricmp(token, it->name))
@@ -88,7 +88,7 @@ void parse_prop_table(const char* filename)
 		}
 
 		// Check if prop exists already
-		int prop_id = prop_info_lookup_sub(fname);
+		int prop_id = prop_info_lookup(fname);
 
 		// maybe remove it
 		if (remove_prop) {
@@ -416,7 +416,7 @@ void prop_render(object* obj, model_draw_list* scene)
 
 void spawn_test_prop()
 {
-	int prop_idx = prop_info_lookup_sub("TestProp"); // whatever’s in your props.tbl
+	int prop_idx = prop_info_lookup("TestProp"); // whatever’s in your props.tbl
 	if (prop_idx < 0) {
 		mprintf(("TEST: Prop not found!\n"));
 		return;
