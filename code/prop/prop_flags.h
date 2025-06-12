@@ -24,7 +24,7 @@ FLAG_LIST(Prop_Flags){
 FLAG_LIST(Info_Flags){
 	No_collide = 0,      // No collisions
 	No_fred,             // not available in fred
-	No_impact_debris,    // wookieejedi - Don't spawn the small debris on impact
+	//No_impact_debris,
 	No_lighting,
 
 	NUM_VALUES};
