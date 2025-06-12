@@ -9260,7 +9260,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
+						framenum = fl2i((i2fl(wip->laser_glow_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 					}
@@ -9272,7 +9272,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
+						headon_framenum = fl2i((i2fl(wip->laser_glow_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
@@ -9357,7 +9357,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
+						framenum = fl2i((i2fl(wip->laser_glow_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
 					}
@@ -9378,7 +9378,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
+						headon_framenum = fl2i((i2fl(wip->laser_glow_bitmap.num_frames - 1) * anim_state) + anim_state_add);
 					} else {
 						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
 					}
