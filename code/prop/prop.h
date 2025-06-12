@@ -56,4 +56,7 @@ void prop_render(object* obj, model_draw_list* scene);
 
 void props_level_close();
 
+int prop_info_lookup(const char* token);
+int prop_name_lookup(const char* name);
+
 void spawn_test_prop();
