@@ -542,6 +542,19 @@ void garbage_collect_path_points()
 
 }
 
+void reset_ai_path_points()
+{
+	memset(Path_points, 0, sizeof(Path_points)); // optional: zero out for safety
+	Ppfp = Path_points;
+
+	// Also clear any AI path state
+	for (int i = 0; i < MAX_SHIPS; ++i) {
+		Ai_info[i].path_start = -1;
+		Ai_info[i].path_cur = -1;
+		Ai_info[i].path_length = 0;
+	}
+}
+
 /**
  * Hash two values together, return result.
  *	Hash function: curval shifted right circular by one, newval xored in.
