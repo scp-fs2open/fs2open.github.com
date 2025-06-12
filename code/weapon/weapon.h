@@ -90,6 +90,7 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+
 struct homing_cache_info {
 	TIMESTAMP next_update;
 	vec3d expected_pos;
@@ -324,12 +325,25 @@ enum class HomingAcquisitionType {
 	RANDOM,
 };
 
+enum class SpecialImpactCondition {
+	NO_ARMOR,
+	ASTEROID,
+	EMPTY_SPACE,
+	LASER_POKETHROUGH,
+};
+
+using ImpactCondition = std::variant<int, SpecialImpactCondition>;
+
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	float min_health_threshold; //factor, 0-1
-	float max_health_threshold; //factor, 0-1
-	float min_angle_threshold; //in degrees
-	float max_angle_threshold; //in degrees
+	bool disable_when_subsys_also_hit;
+	::util::ParsedRandomFloatRange min_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange max_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange min_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange max_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange min_angle_threshold; // in degrees
+	::util::ParsedRandomFloatRange max_angle_threshold; // in degrees
+	float laser_pokethrough_threshold; // factor, 0-1
 	bool dinky;
 };
 
@@ -546,7 +560,7 @@ struct weapon_info
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
-	SCP_map<int, SCP_vector<ConditionalImpact>> conditional_impacts;
+	SCP_map<ImpactCondition, SCP_vector<ConditionalImpact>> conditional_impacts;
 
 	particle::ParticleEffectHandle muzzle_effect;
 

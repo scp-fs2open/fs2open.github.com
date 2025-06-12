@@ -2438,41 +2438,71 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	}
 
 	while (optional_string("$Conditional Impact:")) {
-		int armor_index;
+		ImpactCondition impact_condition;
 		ConditionalImpact ci;
-		ci.min_health_threshold = std::numeric_limits<float>::lowest();
-		ci.max_health_threshold = std::numeric_limits<float>::max();
-		ci.min_angle_threshold = 0.f;
-		ci.max_angle_threshold = 180.f;
+		ci.disable_when_subsys_also_hit = false;
+		ci.min_health_threshold = ::util::UniformFloatRange(std::numeric_limits<float>::lowest());
+		ci.max_health_threshold = ::util::UniformFloatRange(std::numeric_limits<float>::max());
+		ci.min_damage_hits_ratio = ::util::UniformFloatRange(std::numeric_limits<float>::lowest());
+		ci.max_damage_hits_ratio = ::util::UniformFloatRange(std::numeric_limits<float>::max());
+		ci.min_angle_threshold = ::util::UniformFloatRange(0.f);
+		ci.max_angle_threshold = ::util::UniformFloatRange(180.f);
+		ci.laser_pokethrough_threshold = std::numeric_limits<float>::lowest();
 		ci.dinky = false;
 
 		bool invalid_armor = false;
-		required_string("+Armor Type:");
+		if (optional_string("+Armor Type:")) {
 			stuff_string(fname, F_NAME, NAME_LENGTH);
-		if (!stricmp(fname, "NO ARMOR")) {
-			armor_index = -1;
+			if (!stricmp(fname, "NO ARMOR")) {
+				impact_condition = SpecialImpactCondition::NO_ARMOR;
+			} else {
+				impact_condition = armor_type_get_idx(fname);
+				if (std::holds_alternative<int>(impact_condition) && std::get<int>(impact_condition) < 0) {
+					Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
+					invalid_armor = true;
+				}
+			};
+		} else if (optional_string("+Asteroid")) {
+			impact_condition = SpecialImpactCondition::ASTEROID;
+		} else if (optional_string("+Empty Space")) {
+			impact_condition = SpecialImpactCondition::EMPTY_SPACE;
 		} else {
-			armor_index = armor_type_get_idx(fname);
-			if (armor_index < 0) {
-				Warning(LOCATION, "Armor type '%s' not found for conditional impact in weapon %s!", fname, wip->name);
-				invalid_armor = true;
-			}
-		};
-		parse_optional_float_into("+Min Health Threshold:", &ci.min_health_threshold);
-		parse_optional_float_into("+Max Health Threshold:", &ci.max_health_threshold);
-		parse_optional_float_into("+Min Angle Threshold:", &ci.min_angle_threshold);
-		parse_optional_float_into("+Max Angle Threshold:", &ci.max_angle_threshold);
+			required_string("+Laser Pokethrough:");
+			impact_condition = SpecialImpactCondition::LASER_POKETHROUGH;
+			stuff_float(&ci.laser_pokethrough_threshold);
+		}
+		if (optional_string("+Disable When Subsystem Also Hit")) {
+			stuff_boolean(&ci.disable_when_subsys_also_hit);
+		}
+		if (optional_string("+Min Health Threshold")) {
+			ci.min_health_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+		if (optional_string("+Max Health Threshold")) {
+			ci.max_health_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+		if (optional_string("+Min Damage/Hitpoints Ratio")) {
+			ci.min_damage_hits_ratio = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+		if (optional_string("+Max Damage/Hitpoints Ratio")) {
+			ci.max_damage_hits_ratio = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+		if (optional_string("+Min Angle Threshold")) {
+			ci.min_angle_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
+		if (optional_string("+Max Angle Threshold")) {
+			ci.max_angle_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
+		}
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
 		required_string("+Effect Name:");
 			ci.effect = particle::util::parseEffect(wip->name);
 		SCP_vector<ConditionalImpact> ci_vec;
-		if (wip->conditional_impacts.count(armor_index) == 1) {
-			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[armor_index];
+		if (wip->conditional_impacts.count(impact_condition) == 1) {
+			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[impact_condition];
 			ci_vec.insert(ci_vec.end(), existing_cis.begin(), existing_cis.end());
 		}
 		ci_vec.push_back(ci);
 		if (!invalid_armor) {
-			wip->conditional_impacts[armor_index] = ci_vec;
+			wip->conditional_impacts[impact_condition] = ci_vec;
 		}
 	}
 
@@ -7779,9 +7809,10 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 	bool		hit_target = false;
 
 	ship		*shipp;
-	weapon		*target_wp;
 	weapon_info *target_wip;
+	asteroid_info *target_asip;
 	int         objnum;
+	vec3d laser_head_pos = vmd_zero_vector;
 
 	Assert((weapon_type >= 0) && (weapon_type < weapon_info_size()));
 	if ((weapon_type < 0) || (weapon_type >= weapon_info_size())) {
@@ -7814,9 +7845,17 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 
 
  	bool valid_conditional_impact = false;
-	int relevant_armor_idx = -1;
-	float relevant_fraction = 1.0f;
+	struct ConditionData {
+		bool valid = false;
+		ImpactCondition condition = SpecialImpactCondition::EMPTY_SPACE;
+		float health_fraction = 1.0f;
+		float damage_hits_fraction = 1.0f;
+		float laser_pokethrough_amount = 0.0f;
+	};
+	ConditionData impact_data[3];
+	bool hull_and_subsys = false;
 	float hit_angle = 0.0f;
+	float hit_dot = 1.0f;
 	vec3d reverse_incoming = weapon_obj->orient.vec.fvec;
 	vm_vec_negate(&reverse_incoming);
 
@@ -7828,53 +7867,126 @@ void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, 
 
 	if (hitnormal) {
 		hit_angle = vm_vec_delta_ang(hitnormal, &reverse_incoming, nullptr);
+		hit_dot = -vm_vec_dot(&weapon_obj->orient.vec.fvec, hitnormal);
 	}
 
-	if (!wip->conditional_impacts.empty() && impacted_obj != nullptr) { 
-		switch (impacted_obj->type) {
-			case OBJ_SHIP:
-				shipp = &Ships[impacted_obj->instance];
-				if (quadrant == -1) {
-					relevant_armor_idx = shipp->armor_type_idx;
-					relevant_fraction = impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength);
-				} else {
-					relevant_armor_idx = shipp->shield_armor_type_idx;
-					relevant_fraction = ship_quadrant_shield_strength(impacted_obj, quadrant);
+	if (!wip->conditional_impacts.empty()) {
+		if (impacted_obj != nullptr) {
+			float damage_mult = wip->weapon_hit_curves.get_output(weapon_info::WeaponHitCurveOutputs::SUBSYS_DAMAGE_MULT, std::forward_as_tuple(*wp, *impacted_obj, hit_dot), &wp->modular_curves_instance);
+			switch (impacted_obj->type) {
+				case OBJ_SHIP:
+					shipp = &Ships[impacted_obj->instance];
+					if (quadrant == -1) {
+						float damage = wip->damage;
+						//Armor_types[shipp->armor_type_idx].GetDamage(wip->damage, wip->damage_type_idx, 1.0, false);
+						auto subsys = ship_get_subsys_for_submodel(shipp, submodel);
+						impact_data[0] = ConditionData{
+							true, shipp->armor_type_idx,
+							(damage * wip->armor_factor * damage_mult) / impacted_obj->hull_strength,
+							impacted_obj->hull_strength / i2fl(shipp->ship_max_hull_strength)
+						};
+						if (subsys) {
+							hull_and_subsys = true;
+							float subsys_damage = wip->damage;
+							//Armor_types[subsys->armor_type_idx].GetDamage(wip->damage, wip->damage_type_idx, 1.0, false);
+							impact_data[1] = ConditionData{
+								true,
+								subsys->armor_type_idx,
+								(subsys_damage * wip->subsystem_factor * damage_mult) / subsys->max_hits,
+								subsys->current_hits / subsys->max_hits
+							};
+						}
+					} else {
+						float damage = wip->damage;
+						//Armor_types[shipp->shield_armor_type_idx].GetDamage(wip->damage, wip->damage_type_idx, 1.0, false);
+						impact_data[0] = ConditionData{
+							true,
+							shipp->shield_armor_type_idx,
+							(damage * wip->shield_factor * damage_mult) / impacted_obj->shield_quadrant[quadrant],
+							ship_quadrant_shield_strength(impacted_obj, quadrant)
+						};
+					}
+					break;
+				case OBJ_WEAPON:
+					target_wip = &Weapon_info[Weapons[impacted_obj->instance].weapon_info_index];
+					impact_data[0] = ConditionData{
+						true,
+						target_wip->armor_type_idx,
+						1.0f,
+						impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints)
+					};
+					break;
+				case OBJ_ASTEROID:
+					target_asip = &Asteroid_info[Asteroids[impacted_obj->instance].asteroid_type];
+					impact_data[0] = ConditionData{
+						true,
+						SpecialImpactCondition::ASTEROID,
+						(wip->damage * damage_mult) / impacted_obj->hull_strength,
+						impacted_obj->hull_strength / target_asip->initial_asteroid_strength
+					};
+					break;
+				default:
+					break;
+			}
+			if (wip->conditional_impacts.count(SpecialImpactCondition::LASER_POKETHROUGH) == 1 && wip->render_type == WRT_LASER) {
+				float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
+
+				if (wip->laser_length_by_frametime) {
+					length_mult *= flFrametime;
 				}
-				break;
-			case OBJ_WEAPON:
-				target_wp = &Weapons[impacted_obj->instance];
-				target_wip = &Weapon_info[target_wp->weapon_info_index];
-				relevant_armor_idx = target_wip->armor_type_idx;
-				relevant_fraction = impacted_obj->hull_strength / i2fl(target_wip->weapon_hitpoints);
-				break;
-			default:
-				break;
+
+				float laser_length = wip->laser_length * length_mult;
+
+				vm_vec_scale_add(&laser_head_pos, &weapon_obj->last_pos, &weapon_obj->orient.vec.fvec, laser_length);
+				impact_data[2] = ConditionData{
+					true,
+					SpecialImpactCondition::LASER_POKETHROUGH,
+					1.0f,
+					1.0f,
+					vm_vec_dist_quick(&laser_head_pos, hitpos) / laser_length
+				};
+			}
+		} else {
+			impact_data[0] = ConditionData{
+				true, SpecialImpactCondition::EMPTY_SPACE,
+				1.0f
+			};
 		}
 		
-		if (wip->conditional_impacts.count(relevant_armor_idx) == 1) {
-			for (const auto& ci : wip->conditional_impacts[relevant_armor_idx]) {
-				if (((!armed_weapon) == ci.dinky)
-					&& relevant_fraction >= ci.min_health_threshold
-					&& relevant_fraction <= ci.max_health_threshold
-					&& hit_angle >= fl_radians(ci.min_angle_threshold)
-					&& hit_angle <= fl_radians(ci.max_angle_threshold)
-				) {
-					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-					particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
-					particleSource->setTriggerRadius(weapon_obj->radius * radius_mult);
-					particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
+		for (auto entry : impact_data) {
+			if (entry.valid && wip->conditional_impacts.count(entry.condition) == 1) {
+				for (const auto& ci : wip->conditional_impacts[entry.condition]) {
+					if (((!armed_weapon) == ci.dinky)
+						&& !(hull_and_subsys && ci.disable_when_subsys_also_hit)
+						&& entry.health_fraction >= ci.min_health_threshold.next()
+						&& entry.health_fraction <= ci.max_health_threshold.next()
+						&& entry.damage_hits_fraction >= ci.min_damage_hits_ratio.next()
+						&& entry.damage_hits_fraction <= ci.max_damage_hits_ratio.next()
+						&& hit_angle >= fl_radians(ci.min_angle_threshold.next())
+						&& hit_angle <= fl_radians(ci.max_angle_threshold.next())
+						&& entry.laser_pokethrough_amount >= ci.laser_pokethrough_threshold
+					) {
+						auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
+						if (entry.condition == ImpactCondition(SpecialImpactCondition::LASER_POKETHROUGH)) {
+							particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, nullptr, submodel, &laser_head_pos, nullptr));
+						} else {
+							particleSource->setHost(weapon_hit_make_effect_host(weapon_obj, impacted_obj, submodel, hitpos, local_hitpos));
+						}
+						particleSource->setTriggerRadius(weapon_obj->radius * radius_mult);
+						particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_obj->phys_info.vel));
 
-					if (hitnormal)
-					{
-						particleSource->setNormal(*hitnormal);
+						if (hitnormal)
+						{
+							particleSource->setNormal(*hitnormal);
+						}
+						particleSource->finishCreation();
+
+						valid_conditional_impact = true;
 					}
-					particleSource->finishCreation();
-
-					valid_conditional_impact = true;
 				}
 			}
 		}
+		
 	}
 
 
@@ -9260,7 +9372,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_bitmap.num_frames - 1) * (anim_state + anim_state_add));
+						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
 					} else {
 						framenum = bm_get_anim_frame(wip->laser_bitmap.first_frame, wp->laser_bitmap_frame, wip->laser_bitmap.total_time, true);
 					}
@@ -9272,7 +9384,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 					wp->laser_headon_bitmap_frame += flFrametime;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_headon_bitmap.num_frames - 1) * (anim_state + anim_state_add));
+						headon_framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
 					} else {
 						headon_framenum = bm_get_anim_frame(wip->laser_headon_bitmap.first_frame, wp->laser_headon_bitmap_frame, wip->laser_headon_bitmap.total_time, true);
 					}
@@ -9357,7 +9469,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_bitmap_frame -= wip->laser_glow_bitmap.total_time;
 
 					if (anim_has_curve) {
-						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state + anim_state_add));
+						framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
 					} else {
 						framenum = fl2i( (wp->laser_glow_bitmap_frame * wip->laser_glow_bitmap.num_frames) / wip->laser_glow_bitmap.total_time );
 					}
@@ -9378,7 +9490,7 @@ void weapon_render(object* obj, model_draw_list *scene)
 						wp->laser_glow_headon_bitmap_frame -= wip->laser_glow_headon_bitmap.total_time;
 
 					if (anim_has_curve) {
-						headon_framenum = fl2i(i2fl(wip->laser_glow_headon_bitmap.num_frames - 1) * (anim_state + anim_state_add));
+						headon_framenum = fl2i(i2fl(wip->laser_glow_bitmap.num_frames - 1) * (anim_state)) + anim_state_add;
 					} else {
 						headon_framenum = fl2i((wp->laser_glow_headon_bitmap_frame * wip->laser_glow_headon_bitmap.num_frames) / wip->laser_glow_headon_bitmap.total_time);
 					}
