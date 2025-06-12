@@ -37,6 +37,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "jumpnode/jumpnode.h"
+#include "prop/prop.h"
 #include "AddVariableDlg.h"
 #include "ModifyVariableDlg.h"
 #include "gamesnd/eventmusic.h"	// for change-soundtrack
@@ -3323,6 +3324,10 @@ int sexp_tree::get_default_value(sexp_list_item *item, char *text_buf, int op, i
 			str = "<name of ship here>";
 			break;
 
+		case OPF_PROP:
+			str = "<name of prop here>";
+			break;
+
 		case OPF_ORDER_RECIPIENT:
 			str = "<all fighters>";
 			break;
@@ -3515,6 +3520,7 @@ int sexp_tree::query_default_argument_available(int op, int i)
 		case OPF_WEAPON_NAME:
 		case OPF_INTEL_NAME:
 		case OPF_SHIP_CLASS_NAME:
+		case OPF_PROP_CLASS_NAME:
 		case OPF_HUGE_WEAPON:
 		case OPF_JUMP_NODE_NAME:
 		case OPF_AMBIGUOUS:
@@ -3589,6 +3595,16 @@ int sexp_tree::query_default_argument_available(int op, int i)
 				ptr = GET_NEXT(ptr);
 			}
 
+			return 0;
+
+		case OPF_PROP:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_PROP)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
 			return 0;
 
 		case OPF_SHIP_NOT_PLAYER:
@@ -5417,6 +5433,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			list = get_listing_opf_ship(parent_node);
 			break;
 
+		case OPF_PROP:
+			list = get_listing_opf_prop(parent_node);
+			break;
+
 		case OPF_WING:
 			list = get_listing_opf_wing();
 			break;
@@ -5586,6 +5606,10 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 		case OPF_SHIP_CLASS_NAME:
 			list = get_listing_opf_ship_class_name();
+			break;
+
+		case OPF_PROP_CLASS_NAME:
+			list = get_listing_opf_prop_class_name();
 			break;
 
 		case OPF_HUGE_WEAPON:
@@ -6142,6 +6166,23 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 					head.add_data(Ships[ptr->instance].ship_name);
 				}
 			}
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_prop(int parent_node)
+{
+	object *ptr;
+	sexp_list_item head;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->type == OBJ_PROP) {
+			head.add_data(Props[ptr->instance].prop_name);
 		}
 
 		ptr = GET_NEXT(ptr);
@@ -7242,6 +7283,16 @@ sexp_list_item *sexp_tree::get_listing_opf_ship_class_name()
 
 	for (auto &si : Ship_info)
 		head.add_data(si.name);
+
+	return head.next;
+}
+
+sexp_list_item* sexp_tree::get_listing_opf_prop_class_name()
+{
+	sexp_list_item head;
+
+	for (auto& pi : Prop_info)
+		head.add_data(pi.name);
 
 	return head.next;
 }

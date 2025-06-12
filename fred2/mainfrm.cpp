@@ -494,7 +494,11 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		if (pip != nullptr) {
 			strText = _T(pip->name);
 		} else {
-			strText = _T("Invalid index!");
+			if (prop_type_combo_box_size == 0) {
+				strText = _T("No props available");
+			} else {
+				strText = _T("Invalid index!");
+			}
 		}
 
 		pDC->ExtTextOut(lpDrawItemStruct->rcItem.left,

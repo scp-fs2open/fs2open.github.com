@@ -16,14 +16,14 @@
 class color_combo_box_prop : public CComboBox {
   public:
 	/**
-	 * Gets the ship class corresponding to the item index
+	 * Gets the prop class corresponding to the item index
 	 */
 	int GetPropClass(int item_index);
 
 	/**
-	 * Gets the item index corresponding to the ship class
+	 * Gets the item index corresponding to the prop class
 	 */
-	int GetItemIndex(int ship_class);
+	int GetItemIndex(int prop_class);
 
   private:
 	/**

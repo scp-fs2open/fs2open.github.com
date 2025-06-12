@@ -86,6 +86,7 @@
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "playerman/player.h"
+#include "prop/prop.h"
 #include "render/3d.h"
 #include "scripting/global_hooks.h"
 #include "ship/afterburner.h"
@@ -617,6 +618,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "add-to-collision-group-new",		OP_ADD_TO_COLGROUP_NEW,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "remove-from-collision-group-new",	OP_REMOVE_FROM_COLGROUP_NEW,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "get-collision-group",			OP_GET_COLGROUP_ID,						1,	1,			SEXP_ACTION_OPERATOR,	},
+	{ "add-to-collision-group-prop",	OP_ADD_TO_COLGROUP_PROP,				2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "remove-from-collision-group-prop",	OP_REMOVE_FROM_COLGROUP_PROP,		2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "get-collision-group-prop",		OP_GET_COLGROUP_ID_PROP,				1,	1,			SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "change-team-color",				OP_CHANGE_TEAM_COLOR,					3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// The E
 	{ "replace-texture",				OP_REPLACE_TEXTURE,						3,  INT_MAX,	SEXP_ACTION_OPERATOR,   },  // Lafiel
 	{ "replace-skybox-texture",				OP_REPLACE_TEXTURE_SKYBOX,						2, 2,	SEXP_ACTION_OPERATOR,   },  // Lafiel
@@ -796,8 +800,10 @@ SCP_vector<sexp_oper> Operators = {
 	{ "reset-post-effects",				OP_RESET_POST_EFFECTS,					0,	0,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-effect",					OP_SHIP_EFFECT,							3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Valathil
 	{ "ship-create",					OP_SHIP_CREATE,							5,	10,			SEXP_ACTION_OPERATOR,	},	// WMC
+	{ "prop-create",                    OP_PROP_CREATE,                         5,  8,          SEXP_ACTION_OPERATOR,   },  // MjnMixael
 	{ "weapon-create",					OP_WEAPON_CREATE,						5,	10,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-vanish",					OP_SHIP_VANISH,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},
+	{ "prop-vanish",					OP_PROP_VANISH,							1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},  // MjnMixael
 	{ "ship-vaporize",					OP_SHIP_VAPORIZE,						1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "ship-no-vaporize",				OP_SHIP_NO_VAPORIZE,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "set-explosion-option",			OP_SET_EXPLOSION_OPTION,				3,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
@@ -2492,6 +2498,15 @@ int check_sexp_syntax(int node, int return_type, int recursive, int *bad_node, s
 					}
 				}
 
+				break;
+
+			case OPF_PROP:
+				if (type2 != SEXP_ATOM_STRING) {
+					return SEXP_CHECK_TYPE_MISMATCH;
+				}
+				if (prop_name_lookup(CTEXT(node)) < 0) {
+					return SEXP_CHECK_INVALID_PROP;
+				}
 				break;
 
 			case OPF_WING:
@@ -4460,6 +4475,23 @@ void preload_debris_class(const char* text)
 	asteroid_load(idx, 0);
 }
 
+// MjnMixael
+void preload_change_prop_class(const char* text)
+{
+	int idx;
+	prop_info* pip;
+
+	idx = prop_info_lookup(text);
+	if (idx < 0)
+		return;
+
+	pip = &Prop_info[idx];
+	pip->model_num = model_load(pip->pof_file);
+
+	if (pip->model_num >= 0)
+		model_page_in_textures(pip->model_num, idx);
+}
+
 // Goober5000
 void preload_turret_change_weapon(const char *text)
 {
@@ -4844,6 +4876,13 @@ int get_sexp()
 				// page in ship classes of dynamically created ships
 				// preload_change_ship_class doesn't require a class change, so we can use that here -zookeeper
 				do_preload_for_arguments(preload_change_ship_class, n, arg_handler);
+				break;
+
+			case OP_PROP_CREATE:
+				// prop class is argument #2
+				n = CDDR(start);
+				// page in prop classes of dynamically created props
+				do_preload_for_arguments(preload_change_prop_class, n, arg_handler);
 				break;
 
 			case OP_SET_SPECIAL_WARPOUT_NAME:
@@ -5781,6 +5820,49 @@ const ship_registry_entry *eval_ship(int node)
 	}
 
 	// we know nothing about this ship, apparently
+	return nullptr;
+}
+
+/**
+ * Gets a prop from a sexp node.  Returns the prop entry, or nullptr if the prop is unknown.
+ * May be overkill for props. Research required.
+ */
+const prop *eval_prop(int node)
+{
+	if (node < 0)
+		return nullptr;
+
+	// check cache
+	if (Sexp_nodes[node].cache)
+	{
+		// have we cached something else?
+		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
+			return nullptr;
+
+		return &Props[Sexp_nodes[node].cache->ship_registry_index];
+	}
+
+	// maybe forward to a special-arg node
+	if (Sexp_nodes[node].flags & SNF_SPECIAL_ARG_IN_NODE)
+	{
+		auto current_argument = Sexp_replacement_arguments.back();
+		int arg_node = current_argument.second;
+
+		if (arg_node >= 0)
+			return eval_prop(arg_node);
+	}
+
+	auto prop_idx = prop_name_lookup(CTEXT(node));
+	if (prop_idx >= 0)
+	{
+		// cache the value if it can't change later
+		if (!is_node_value_dynamic(node))
+			Sexp_nodes[node].cache = new sexp_cached_data(OPF_PROP, -1, prop_idx);
+
+		return &Props[prop_idx];
+	}
+
+	// we know nothing about this prop, apparently
 	return nullptr;
 }
 
@@ -19530,6 +19612,55 @@ void sexp_ship_create(int n)
 	}
 }
 
+// MjnMixael
+void sexp_prop_create(int n)
+{
+	int new_prop_class, angle_count;
+	vec3d new_prop_pos;
+	angles new_prop_ang;
+	matrix new_prop_ori;
+	bool is_nan, is_nan_forever;
+
+	Assert( n >= 0 );
+
+	// get ship name
+	auto new_ship_name = CTEXT(n);
+	n = CDR(n);
+
+	// none means don't specify it
+	// if ship with this name already exists, ship_create will respond appropriately
+	if (!stricmp(new_ship_name, SEXP_NONE_STRING))
+		new_ship_name = nullptr;
+	
+	//Get ship class
+	new_prop_class = prop_info_lookup(CTEXT(n));
+	if (new_prop_class < 0)
+	{
+		Warning(LOCATION, "Invalid prop class passed to prop-create; prop type '%s' does not exist", CTEXT(n));
+		return;
+	}
+	n = CDR(n);
+
+	eval_vec3d(&new_prop_pos, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	angle_count = eval_angles(&new_prop_ang, n, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+
+	//This is a costly function, so only do it if needed
+	if (angle_count > 0)
+		vm_angles_2_matrix(&new_prop_ori, &new_prop_ang);
+	else
+		new_prop_ori = vmd_identity_matrix;
+
+	int objnum = prop_create(&new_prop_ori, &new_prop_pos, new_prop_class, new_ship_name);
+	Assert(objnum != -1);
+
+	// note: model_page_in_textures was called via the sexp preloader
+}
+
 // Goober5000
 void sexp_weapon_create(int n)
 {
@@ -19616,6 +19747,17 @@ void sexp_ship_vanish(int n)
 		auto ship_entry = eval_ship(n);
 		if (ship_entry && ship_entry->status == ShipStatus::PRESENT)
 			ship_actually_depart(ship_entry->shipnum, SHIP_VANISHED);
+	}
+}
+
+// make prop vanish without a trace
+void sexp_prop_vanish(int n)
+{
+	for (; n != -1; n = CDR(n)) {
+		auto prop_entry = eval_prop(n);
+		if (prop_entry != nullptr) {
+			Objects[prop_entry->objnum].flags.set(Object::Object_Flags::Should_be_dead);
+		}
 	}
 }
 
@@ -27385,6 +27527,46 @@ int sexp_get_colgroup(int node)
 		return ship_entry->p_objp()->collision_group_id;
 }
 
+void sexp_manipulate_colgroup_prop(int node, bool add_to_group)
+{
+	bool is_nan, is_nan_forever;
+	int group = eval_num(node, is_nan, is_nan_forever);
+	if (is_nan || is_nan_forever)
+		return;
+	node = CDR(node);
+
+	if (group < 0 || group > 31)
+	{
+		WarningEx(LOCATION, "Invalid collision group id %d specified. Valid IDs range from 0 to 31.\n", group);
+		return;
+	}
+
+	for (; node != -1; node = CDR(node))
+	{
+		auto prop_entry = eval_prop(node);
+
+		if (prop_entry != nullptr) {
+			object& obj = Objects[eval_prop(node)->objnum];
+
+			if (add_to_group)
+				obj.collision_group_id |= (1 << group);
+			else
+				obj.collision_group_id &= ~(1 << group);
+		}
+	}
+}
+
+int sexp_get_colgroup_prop(int node)
+{
+	auto prop_entry = eval_prop(node);
+	if (!prop_entry)
+		return SEXP_NAN;
+
+	object& obj = Objects[eval_prop(node)->objnum];
+
+	return obj.collision_group_id;
+}
+
 int get_effect_from_name(const char* name)
 {
 	int i = 0;
@@ -28714,6 +28896,11 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = SEXP_TRUE;
 				break;
 
+			case OP_PROP_CREATE:
+				sexp_prop_create(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
 			case OP_WEAPON_CREATE:
 				sexp_weapon_create(node);
 				sexp_val = SEXP_TRUE;
@@ -28721,6 +28908,11 @@ int eval_sexp(int cur_node, int referenced_node)
 
 			case OP_SHIP_VANISH:
 				sexp_ship_vanish(node);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_PROP_VANISH:
+				sexp_prop_vanish(node);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -30294,6 +30486,16 @@ int eval_sexp(int cur_node, int referenced_node)
 				sexp_val = sexp_get_colgroup(node);
 				break;
 
+			case OP_ADD_TO_COLGROUP_PROP:
+			case OP_REMOVE_FROM_COLGROUP_PROP:
+				sexp_manipulate_colgroup_prop(node, op_num == OP_ADD_TO_COLGROUP_PROP);
+				sexp_val = SEXP_TRUE;
+				break;
+
+			case OP_GET_COLGROUP_ID_PROP:
+				sexp_val = sexp_get_colgroup_prop(node);
+				break;
+
 			case OP_SHIP_EFFECT:
 				sexp_val = SEXP_TRUE;
 				sexp_ship_effect(node);
@@ -31223,6 +31425,7 @@ int query_operator_return_type(int op)
 		case OP_GET_THROTTLE_SPEED:
 		case OP_GET_VARIABLE_BY_INDEX:
 		case OP_GET_COLGROUP_ID:
+		case OP_GET_COLGROUP_ID_PROP:
 		case OP_FUNCTIONAL_IF_THEN_ELSE:
 		case OP_FUNCTIONAL_SWITCH:
 		case OP_GET_HOTKEY:
@@ -31397,6 +31600,7 @@ int query_operator_return_type(int op)
 		case OP_SHIP_GUARDIAN_THRESHOLD:
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SHIP_VANISH:
+		case OP_PROP_VANISH:
 		case OP_DESTROY_INSTANTLY:
 		case OP_DESTROY_INSTANTLY_WITH_DEBRIS:
 		case OP_SHIELDS_ON:
@@ -31587,6 +31791,7 @@ int query_operator_return_type(int op)
 		case OP_SET_OBJECT_SPEED_Y:
 		case OP_SET_OBJECT_SPEED_Z:
 		case OP_SHIP_CREATE:
+		case OP_PROP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_MISSION_SET_NEBULA:
 		case OP_CHANGE_BACKGROUND:
@@ -31661,6 +31866,8 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
+		case OP_ADD_TO_COLGROUP_PROP:
+		case OP_REMOVE_FROM_COLGROUP_PROP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_SET_THRUSTERS:
@@ -32025,6 +32232,9 @@ int query_operator_argument_type(int op, int argnum)
 		case OP_ABORT_REARM:
 			return OPF_SHIP;
 
+		case OP_PROP_VANISH:
+			return OPF_PROP;
+
 		case OP_ALTER_SHIP_FLAG:
 			if(argnum == 0)
 				return OPF_SHIP_FLAG;
@@ -32059,6 +32269,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_IFF;
 			else if (argnum == 9)
 				return OPF_BOOL;
+			else
+				return OPF_NUMBER;
+
+		case OP_PROP_CREATE:
+			if (argnum == 0)
+				return OPF_STRING;
+			else if (argnum == 1)
+				return OPF_PROP_CLASS_NAME;
 			else
 				return OPF_NUMBER;
 
@@ -34528,6 +34746,16 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_SHIP;
 
+		case OP_ADD_TO_COLGROUP_PROP:
+		case OP_REMOVE_FROM_COLGROUP_PROP:
+			if (argnum == 0)
+				return OPF_POSITIVE;
+			else
+				return OPF_PROP;
+
+		case OP_GET_COLGROUP_ID_PROP:
+			return OPF_PROP;
+
 		case OP_SHIP_EFFECT:
 			if (argnum == 0)
 				return OPF_SHIP_EFFECT;
@@ -35020,6 +35248,9 @@ const char *sexp_error_message(int num)
 
 		case SEXP_CHECK_INVALID_SHIP:
 			return "Invalid ship name";
+
+		case SEXP_CHECK_INVALID_PROP:
+			return "Invalid prop name";
 
 		case SEXP_CHECK_INVALID_WING:
 			return "Invalid wing name";
@@ -36584,6 +36815,7 @@ int get_category(int op_id)
 		case OP_CARGO_NO_DEPLETE:
 		case OP_SET_SPECIAL_WARPOUT_NAME:
 		case OP_SHIP_VANISH:
+		case OP_PROP_VANISH:
 		case OP_SHIELDS_ON:
 		case OP_SHIELDS_OFF:
 		case OP_CHANGE_AI_LEVEL:
@@ -36676,6 +36908,7 @@ int get_category(int op_id)
 		case OP_SHIP_SUBSYS_GUARDIAN_THRESHOLD:
 		case OP_SET_SKYBOX_MODEL:
 		case OP_SHIP_CREATE:
+		case OP_PROP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_SET_OBJECT_SPEED_X:
 		case OP_SET_OBJECT_SPEED_Y:
@@ -36797,6 +37030,7 @@ int get_category(int op_id)
 		case OP_ADD_TO_COLGROUP:
 		case OP_REMOVE_FROM_COLGROUP:
 		case OP_GET_COLGROUP_ID:
+		case OP_GET_COLGROUP_ID_PROP:
 		case OP_SHIP_EFFECT:
 		case OP_CLEAR_SUBTITLES:
 		case OP_BEAM_FIRE_COORDS:
@@ -36849,6 +37083,8 @@ int get_category(int op_id)
 		case OP_SET_TRAITOR_OVERRIDE:
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
+		case OP_ADD_TO_COLGROUP_PROP:
+		case OP_REMOVE_FROM_COLGROUP_PROP:
 		case OP_GET_POWER_OUTPUT:
 		case OP_TURRET_SET_FORCED_TARGET:
 		case OP_TURRET_SET_FORCED_SUBSYS_TARGET:
@@ -37189,6 +37425,9 @@ int get_subcategory(int op_id)
 		case OP_ADD_TO_COLGROUP_NEW:
 		case OP_REMOVE_FROM_COLGROUP_NEW:
 		case OP_GET_COLGROUP_ID:
+		case OP_ADD_TO_COLGROUP_PROP:
+		case OP_REMOVE_FROM_COLGROUP_PROP:
+		case OP_GET_COLGROUP_ID_PROP:
 		case OP_CHANGE_TEAM_COLOR:
 		case OP_REPLACE_TEXTURE:
 		case OP_REPLACE_TEXTURE_SKYBOX:
@@ -37362,8 +37601,10 @@ int get_subcategory(int op_id)
 		case OP_RESET_POST_EFFECTS:
 		case OP_SHIP_EFFECT:
 		case OP_SHIP_CREATE:
+		case OP_PROP_CREATE:
 		case OP_WEAPON_CREATE:
 		case OP_SHIP_VANISH:
+		case OP_PROP_VANISH:
 		case OP_SHIP_VAPORIZE:
 		case OP_SHIP_NO_VAPORIZE:
 		case OP_SET_EXPLOSION_OPTION:
@@ -41053,6 +41294,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSingle Player Only!  Warning: This will cause ship exit not to be logged, so 'has-departed', etc. will not work\r\n"
 		"\t1: List of ship names to vanish (ship must be in-mission)\r\n"},
 
+	{ OP_PROP_VANISH, "prop-vanish\r\n"
+		"\tMakes the named prop vanish\r\n"
+		"\tSingle Player Only!\r\n"
+		"\t1: List of prop names to vanish (prop must be in-mission)\r\n"},
+
 	{ OP_DESTROY_INSTANTLY, "destroy-instantly\r\n"
 		"\tSelf-destructs the named ship without explosion, death roll, or debris.  That is, the ship is instantly gone from the mission and the only indication of what happened is a mission log entry.\r\n"
 		"\tNon-player ship only!\r\n"
@@ -41076,6 +41322,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t8: Heading (optional)\r\n"
 		"\t9: Team (optional; overrides ships.tbl default if set)\r\n"
 		"\t10: Show in mission log (optional; defaults to true)\r\n"
+	},
+
+	{ OP_PROP_CREATE, "prop-create\r\n"
+		"\tCreates a new prop\r\n"
+		"\tTakes 5 to 8 arguments...\r\n"
+		"\t1: Name of new prop (use \"" SEXP_NONE_STRING "\" for a default name)\r\n"
+		"\t2: Class of new prop\r\n"
+		"\t3: X position\r\n"
+		"\t4: Y position\r\n"
+		"\t5: Z position\r\n"
+		"\t6: Pitch (optional)\r\n"
+		"\t7: Bank (optional)\r\n"
+		"\t8: Heading (optional)\r\n"
 	},
 
 	// Goober5000
@@ -42330,6 +42589,28 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns an objects' collision group ID. Note that this ID is a bitfield.\r\n"
 		"Takes 1 Argument...\r\n"
 		"\t1:\tObject name\r\n"
+	},
+
+	{OP_ADD_TO_COLGROUP_PROP, "add-to-collision-group-prop\r\n"
+		"\tAdds one or more props to the specified collision group. There are 32 collision groups, "
+		"and an object may be in several collision groups at the same time.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
+		"\t2+:\tProp to add (props do need to be in-mission).\r\n"
+	},
+
+	{OP_REMOVE_FROM_COLGROUP_PROP, "remove-from-collision-group-prop\r\n"
+		"\tRemoves one or more props from the specified collision group. There are 32 collision groups, "
+		"and an object may be in several collision groups at the same time.\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tGroup ID. Valid IDs are 0 through 31 inclusive.\r\n"
+		"\t2+:\tProp to remove (props do need to be in-mission).\r\n"
+	},
+
+	{OP_GET_COLGROUP_ID_PROP, "get-collision-group-prop\r\n"
+		"\tReturns an prop's collision group ID. Note that this ID is a bitfield.\r\n"
+		"Takes 1 Argument...\r\n"
+		"\t1:\tProp name\r\n"
 	},
 
 	//Valathil
