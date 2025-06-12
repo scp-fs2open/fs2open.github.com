@@ -1488,6 +1488,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/prop.cpp
+	scripting/api/objs/prop.h
+	scripting/api/objs/propclass.cpp
+	scripting/api/objs/propclass.h
 	scripting/api/objs/rank.cpp
 	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp

@@ -25,6 +25,7 @@
 #include "mod_table/mod_table.h"
 #include "nebula/neb.h"
 #include "particle/particle.h"
+#include "prop/prop.h"
 #include "render/3dinternal.h"
 #include "render/batching.h"
 #include "ship/ship.h"
@@ -3139,6 +3140,22 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			// Make sure model is loaded
 			model_num = model_load(sip, true);
 			render_info.set_replacement_textures(model_num, sip->replacement_textures);
+
+			break;
+
+		case TECH_PROP:
+			prop_info* pip;
+			pip = &Prop_info[class_idx];
+
+			closeup_pos = &pip->closeup_pos;
+			closeup_zoom = pip->closeup_zoom;
+
+			if (pip->flags[Prop::Info_Flags::No_lighting]) {
+				model_lighting = false;
+			}
+
+			// Make sure model is loaded
+			model_num = model_load(pip->pof_file);
 
 			break;
 

@@ -17,6 +17,8 @@
 #include "scripting/api/objs/message.h"
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/oswpt.h"
+#include "scripting/api/objs/prop.h"
+#include "scripting/api/objs/propclass.h"
 #include "scripting/api/objs/sexpvar.h"
 #include "scripting/api/objs/ship.h"
 #include "scripting/api/objs/shipclass.h"
@@ -28,6 +30,7 @@
 #include "scripting/api/objs/wing.h"
 #include "scripting/scripting.h"
 #include "ship/ship.h"
+#include "prop/prop.h"
 #include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
@@ -41,6 +44,8 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "string",       OPF_STRING },
 														  { "ship",         OPF_SHIP },
 														  { "shipname",     OPF_SHIP },
+														  { "prop",         OPF_PROP },
+														  { "propname",     OPF_PROP },
 														  { "team",         OPF_IFF },
 														  { "waypointpath", OPF_WAYPOINT_PATH },
 														  { "waypoint",     OPF_POINT },
@@ -48,6 +53,7 @@ static SCP_unordered_map<SCP_string, int> parameter_type_mapping {
 														  { "message",      OPF_MESSAGE },
 														  { "wing",         OPF_WING },
 														  { "shipclass",    OPF_SHIP_CLASS_NAME },
+														  { "propclass",    OPF_PROP_CLASS_NAME },
 														  { "weaponclass",  OPF_WEAPON_NAME },
 														  { "soundentry",   OPF_GAME_SND }, 
 														  { "ship+waypoint",OPF_SHIP_POINT },
@@ -199,6 +205,29 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 
 		return LuaValue::createValue(_action.getLuaState(), l_Ship.Set(object_h(objp)));
 	}
+	case OPF_PROP: {
+		auto ship_entry = eval_prop(node);
+
+		// if this is a shipname type, we want the name of a valid ship but not the ship itself
+		// (if the ship is not valid, return an empty string)
+		if (argtype.first == "propname") {
+			return LuaValue::createValue(_action.getLuaState(), ship_entry ? ship_entry->prop_name : "");
+		}
+
+		if (!ship_entry || (ship_entry->objnum >= 0)) {
+			// Name is invalid
+			return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h()));
+		}
+
+		auto objp = &Objects[ship_entry->objnum];
+
+		// The other SEXP code does not validate the object type so this should be safe
+		Assertion(objp->type == OBJ_PROP,
+			"Prop '%s' was found in the Props array but has a different object type in the Objects array. Get a coder!",
+			CTEXT(node));
+
+		return LuaValue::createValue(_action.getLuaState(), l_Prop.Set(object_h(objp)));
+	}
 	case OPF_MESSAGE: {
 		auto name = CTEXT(node);
 
@@ -223,6 +252,10 @@ luacpp::LuaValue LuaSEXP::sexpToLua(int node, int argnum, int parent_node) const
 	case OPF_SHIP_CLASS_NAME: {
 		auto name = CTEXT(node);
 		return LuaValue::createValue(_action.getLuaState(), l_Shipclass.Set(ship_info_lookup(name)));
+	}
+	case OPF_PROP_CLASS_NAME: {
+		auto name = CTEXT(node);
+		return LuaValue::createValue(_action.getLuaState(), l_Propclass.Set(prop_info_lookup(name)));
 	}
 	case OPF_WEAPON_NAME: {
 		auto name = CTEXT(node);
