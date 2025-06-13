@@ -3470,6 +3470,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
 
+		// when Debris Density was added in 23.2 it did not have a colon, so keep that backwards compatability
 		if (optional_string("+Debris Density:") || optional_string("+Debris Density"))
 			stuff_float(&sip->debris_density);
 
