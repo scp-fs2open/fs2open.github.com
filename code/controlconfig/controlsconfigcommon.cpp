@@ -275,9 +275,9 @@ void control_config_common_init_bindings() {
 
 
 	//Comms Controls
-	(COMMS_MENU_MOVE_UP,                                             -1, -1, COMPUTER_TAB, 1789, "Communication Menu Move Up",   CC_TYPE_TRIGGER)
-	(COMMS_MENU_MOVE_DOWN,                                           -1, -1, COMPUTER_TAB, 1790, "Communication Menu Move Down", CC_TYPE_TRIGGER)
-	(COMMS_MENU_SELECT,                                              -1, -1, COMPUTER_TAB, 1791, "Communication Menu Select",    CC_TYPE_TRIGGER)
+	(COMMS_MENU_MOVE_UP,                                             -1, -1, COMPUTER_TAB, 1883, "Communication Menu Move Up",   CC_TYPE_TRIGGER)
+	(COMMS_MENU_MOVE_DOWN,                                           -1, -1, COMPUTER_TAB, 1884, "Communication Menu Move Down", CC_TYPE_TRIGGER)
+	(COMMS_MENU_SELECT,                                              -1, -1, COMPUTER_TAB, 1885, "Communication Menu Select",    CC_TYPE_TRIGGER)
 
 	.end();	// Builder
 
