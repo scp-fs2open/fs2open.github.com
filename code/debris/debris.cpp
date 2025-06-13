@@ -652,7 +652,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	if (hull_flag) {
 		float min_hp = sip->debris_min_hitpoints;
 		float max_hp = sip->debris_max_hitpoints;
-		if (sip->debris_hitpoints_radius_multi > 0.0f) {
+		if (sip->debris_hitpoints_radius_multi >= 0.0f) {
 			min_hp *= sip->debris_hitpoints_radius_multi * radius;
 			max_hp *= sip->debris_hitpoints_radius_multi * radius;
 		}
