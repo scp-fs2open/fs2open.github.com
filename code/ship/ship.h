@@ -1236,6 +1236,7 @@ public:
 	int				debris_damage_type_idx;
 	float			debris_min_hitpoints;
 	float			debris_max_hitpoints;
+	float			debris_hitpoints_radius_multi;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
 	float			debris_gravity_const;			// see gravity_const above

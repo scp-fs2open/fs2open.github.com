@@ -1085,6 +1085,7 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_type_idx = other.debris_damage_type_idx;
 	debris_min_hitpoints = other.debris_min_hitpoints;
 	debris_max_hitpoints = other.debris_max_hitpoints;
+	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
@@ -1440,6 +1441,7 @@ void ship_info::move(ship_info&& other)
 	debris_damage_type_idx = other.debris_damage_type_idx;
 	debris_min_hitpoints = other.debris_min_hitpoints;
 	debris_max_hitpoints = other.debris_max_hitpoints;
+	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
@@ -1799,6 +1801,7 @@ ship_info::ship_info()
 	debris_max_speed = -1.0f;
 	debris_min_rotspeed = -1.0f;
 	debris_max_rotspeed = -1.0f;
+	debris_hitpoints_radius_multi = -1.0f;
 	debris_damage_type_idx = -1;
 	debris_min_hitpoints = -1.0f;
 	debris_max_hitpoints = -1.0f;
@@ -3441,6 +3444,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			stuff_float(&sip->debris_max_hitpoints);
 			if(sip->debris_max_hitpoints < 0.0f)
 				Warning(LOCATION, "Debris max hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
+		if(optional_string("+Hitpoints Radius Multiplier:")) {
+			stuff_float(&sip->debris_hitpoints_radius_multi);
+			if (sip->debris_hitpoints_radius_multi < 0.0f)
+				Warning(LOCATION, "Hitpoints Radius Multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
 		}
 		if(optional_string("+Damage Multiplier:")) {
 			stuff_float(&sip->debris_damage_mult);
