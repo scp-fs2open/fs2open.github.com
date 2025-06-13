@@ -5,11 +5,9 @@
 
 #include "cmdline/cmdline.h"
 
-#if SDL_VERSION_ATLEAST(2, 0, 6)
-#include <SDL_vulkan.h>
-#include "backends/imgui_impl_sdl.h"
+#include <SDL3/SDL_vulkan.h>
+#include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_opengl3.h"
-#endif
 
 namespace {
 void setOGLProperties(const os::ViewPortProperties& props)
@@ -66,11 +64,11 @@ class SDLOpenGLContext: public os::OpenGLContext {
 	}
 
 	~SDLOpenGLContext() override {
-		SDL_GL_DeleteContext(_glCtx);
+		SDL_GL_DestroyContext(_glCtx);
 	}
 
 	os::OpenGLLoadProc getLoaderFunction() override {
-		return SDL_GL_GetProcAddress;
+		return reinterpret_cast<os::OpenGLLoadProc>(SDL_GL_GetProcAddress);
 	}
 
 	void makeCurrent(SDL_Window* window) {
@@ -112,11 +110,11 @@ class SDLWindowViewPort: public os::Viewport {
 		switch (state) {
 			case os::ViewportState::Windowed:
 				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_TRUE);
+				SDL_SetWindowBordered(_window, true);
 				break;
 			case os::ViewportState::Borderless:
 				SDL_SetWindowFullscreen(_window, 0);
-				SDL_SetWindowBordered(_window, SDL_FALSE);
+				SDL_SetWindowBordered(_window, false);
 				break;
 			case os::ViewportState::Fullscreen:
 				SDL_SetWindowFullscreen(_window, SDL_WINDOW_FULLSCREEN);
@@ -148,7 +146,7 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 	setenv("force_s3tc_enable", "true", 1);
 #endif
 
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		Error(LOCATION, "Couldn't init SDL video: %s", SDL_GetError());
 		return;
 	}
@@ -156,7 +154,7 @@ SDLGraphicsOperations::SDLGraphicsOperations() {
 SDLGraphicsOperations::~SDLGraphicsOperations() {
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	
-	ImGui_ImplSDL2_Shutdown();
+	ImGui_ImplSDL3_Shutdown();
 
 	if (!Cmdline_vulkan) {
 		ImGui_ImplOpenGL3_Shutdown();
@@ -164,16 +162,14 @@ SDLGraphicsOperations::~SDLGraphicsOperations() {
 }
 std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::ViewPortProperties& props)
 {
-	uint32_t windowflags = SDL_WINDOW_SHOWN;
+	uint32_t windowflags = 0;
 	if (props.enable_opengl) {
 		windowflags |= SDL_WINDOW_OPENGL;
 		setOGLProperties(props);
 	}
-#if SDL_VERSION_ATLEAST(2, 0, 6)
 	if (props.enable_vulkan) {
 		windowflags |= SDL_WINDOW_VULKAN;
 	}
-#endif
 	if (props.flags[os::ViewPortFlags::Borderless]) {
 		windowflags |= SDL_WINDOW_BORDERLESS;
 	}
@@ -184,11 +180,11 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		windowflags |= SDL_WINDOW_RESIZABLE;
 	}
 	if (props.flags[os::ViewPortFlags::Capture_Mouse]) {
-		windowflags |= SDL_WINDOW_INPUT_GRABBED;
+		windowflags |= SDL_WINDOW_MOUSE_GRABBED;
 	}
 
 	SDL_Rect bounds;
-	if (SDL_GetDisplayBounds(props.display, &bounds) != 0) {
+	if ( !SDL_GetDisplayBounds(props.display, &bounds) ) {
 		mprintf(("Failed to get display bounds: %s\n", SDL_GetError()));
 		return nullptr;
 	}
@@ -214,8 +210,6 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 	}
 
 	SDL_Window* window = SDL_CreateWindow(props.title.c_str(),
-										  x,
-										  y,
 										  width,
 										  height,
 										  windowflags);
@@ -224,6 +218,7 @@ std::unique_ptr<os::Viewport> SDLGraphicsOperations::createViewport(const os::Vi
 		return nullptr;
 	}
 
+	SDL_SetWindowPosition(window, x, y);
 	SDL_RaiseWindow(window);
 
 	return std::unique_ptr<os::Viewport>(new SDLWindowViewPort(window, props));
@@ -268,7 +263,7 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 		r, g, b, depth, stencil, db, fsaa_samples));
 
 	
-	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	ImGui_ImplSDL3_InitForOpenGL(viewport->toSDLWindow(), ctx);
 	ImGui_ImplOpenGL3_Init();
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));

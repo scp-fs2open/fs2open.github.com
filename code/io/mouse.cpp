@@ -36,7 +36,7 @@ LOCAL int Mouse_y;
 LOCAL int Mouse_wheel_x;
 LOCAL int Mouse_wheel_y;
 
-SDL_mutex* mouse_lock;
+SDL_Mutex* mouse_lock;
 
 int mouse_flags;
 int mouse_left_pressed = 0;
@@ -105,19 +105,19 @@ namespace
 
 		switch (e.button.button) {
 			case SDL_BUTTON_LEFT:
-				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_RIGHT:
-				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_MIDDLE:
-				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_X1:
-				mouse_mark_button(MOUSE_X1_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_X1_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_X2:
-				mouse_mark_button(MOUSE_X2_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_X2_BUTTON, e.button.down);
 				break;
 			default:
 				// SDL gave us an unknown button. Just log it
@@ -144,11 +144,7 @@ namespace
 			return false;
 		}
 
-#if SDL_VERSION_ATLEAST(2, 0, 4)
 		mousewheel_motion(e.wheel.x, e.wheel.y, e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
-#else
-		mousewheel_motion(e.wheel.x, e.wheel.y, false);
-#endif
 
 		return true;
 	}
@@ -193,18 +189,18 @@ void mouse_init()
 
 	// we do want to make sure that button presses go through event polling though
 	// (should be on by default already, just here as a reminder)
-	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
-	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
-	SDL_EventState( SDL_MOUSEWHEEL, SDL_ENABLE );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_BUTTON_DOWN, true );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_BUTTON_UP, true );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_WHEEL, true );
 
 	SDL_UnlockMutex( mouse_lock );
 
-	os::events::addEventListener(SDL_MOUSEBUTTONDOWN, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
-	os::events::addEventListener(SDL_MOUSEBUTTONUP, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_DOWN, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_UP, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
 
-	os::events::addEventListener(SDL_MOUSEMOTION, os::events::DEFAULT_LISTENER_WEIGHT, mouse_motion_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_MOTION, os::events::DEFAULT_LISTENER_WEIGHT, mouse_motion_event_handler);
 
-	os::events::addEventListener(SDL_MOUSEWHEEL, os::events::DEFAULT_LISTENER_WEIGHT, mouse_wheel_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_WHEEL, os::events::DEFAULT_LISTENER_WEIGHT, mouse_wheel_event_handler);
 
 	atexit( mouse_close );
 }
@@ -611,7 +607,12 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 
 void mouse_get_real_pos(int *mx, int *my)
 {
-	SDL_GetMouseState(mx, my);
+	float fx, fy;
+	SDL_GetMouseState(&fx, &fy);
+
+	if (mx)	*mx = fl2i(fx);
+	if (my) *my = fl2i(fy);
+
 	if (Cmdline_window_res) {
 		if (mx)
 			*mx *= gr_screen.max_w / Cmdline_window_res->first;
