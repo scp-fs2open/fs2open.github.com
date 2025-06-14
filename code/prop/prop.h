@@ -4,6 +4,7 @@
 
 #include "mission/mission_flags.h"
 #include "object/object.h"
+#include "object/objcollide.h"
 #include "prop/prop_flags.h"
 #include "ship/ship.h"
 
@@ -70,5 +71,7 @@ int prop_info_lookup(const char* token);
 int prop_name_lookup(const char* name);
 
 void change_prop_type(int n, int prop_type);
+
+int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, collision_info_struct* prop_hit_info);
 
 void spawn_test_prop();

@@ -7397,6 +7397,7 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 			// do nothing
 			break;
 
+		case OBJ_PROP:
 		case OBJ_ASTEROID:
 			if ( timestamp_elapsed(Weapon_impact_timer) ) {
 				weapon_play_impact_sound(wip, hitpos, is_armed);	

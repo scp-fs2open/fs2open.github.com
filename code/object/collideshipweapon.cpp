@@ -23,6 +23,7 @@
 #include "scripting/api/objs/model.h"
 #include "scripting/api/objs/vecmath.h"
 #include "playerman/player.h"
+#include "prop/prop.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "ship/shiphit.h"
@@ -35,6 +36,7 @@ using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool,
 
 extern int Game_skill_level;
 extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
+static int check_inside_radius_for_big_objects( object *ship, object *weapon_obj, obj_pair *pair );
 static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
@@ -617,6 +619,135 @@ static void ship_weapon_process_collision(obj_pair* pair, const std::any& collis
 }
 
 
+
+static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, float time_limit = 0.0f, int* next_hit = nullptr)
+{
+	weapon* wp;
+	weapon_info* wip;
+
+	Assert(prop_objp != nullptr);
+	Assert(prop_objp->type == OBJ_PROP);
+	Assert(prop_objp->instance >= 0);
+
+	prop* propp = &Props[prop_objp->instance];
+	prop_info* prinfo = &Prop_info[propp->prop_info_index];
+
+	Assert(weapon_objp != nullptr);
+	Assert(weapon_objp->type == OBJ_WEAPON);
+	Assert(weapon_objp->instance >= 0);
+
+	wp = &Weapons[weapon_objp->instance];
+	wip = &Weapon_info[wp->weapon_info_index];
+
+	Assert(propp->objnum == OBJ_INDEX(prop_objp));
+
+	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
+	polymodel* pm = model_get(prinfo->model_num);
+
+	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
+	vec3d weapon_start_pos = weapon_objp->last_pos;
+	vec3d weapon_end_pos;
+	vm_vec_scale_add(&weapon_end_pos, &weapon_objp->pos, &weapon_objp->phys_info.vel, time_limit);
+
+	if (!IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f) {
+		// subtle point about simulating collisions against a parabola
+		// every simulated point, the positions every frame, are perfectly on the correct parabola
+		// however this means collision is checking *the lines inbetween* those points, which will always be undernearth the parabola
+		// the grater the frametime, the greater the discrepancy, and can cause erroneous misses
+		// So just for collision purposes, we offset these points slightly in the opposite direction of gravity
+		// at least to ensure the *average* position at all interpolated points is on the parabola
+		weapon_start_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
+		weapon_end_pos -= The_mission.gravity * flFrametime * flFrametime * (1.f / 12);
+	}
+
+
+	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
+
+	// set up collision struct
+	mc_info mc;
+	mc.model_instance_num = propp->model_instance_num;
+	mc.model_num = prinfo->model_num;
+	mc.submodel_num = -1;
+	mc.orient = &prop_objp->orient;
+	mc.pos = &prop_objp->pos;
+	mc.p0 = &weapon_start_pos;
+	mc.p1 = &weapon_end_pos;
+	//mc.lod = prinfo->collision_lod;
+
+	
+	mc.flags = MC_CHECK_MODEL;
+	bool hit = model_collide(&mc);
+
+	// deal with predictive collisions.  Find their actual hit time and see if they occured in current frame
+	if (next_hit && hit) {
+		// find hit time
+		*next_hit = (int)(1000.0f * (mc.hit_dist * (flFrametime + time_limit) - flFrametime));
+		if (*next_hit > 0)
+			// if hit occurs outside of this frame, do not do damage 
+			return 1;
+	}
+
+	if (hit)
+	{
+		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
+		*wp->collisionInfo = mc;
+
+		bool ship_override = false, weapon_override = false;
+
+		// get submodel handle if scripting needs it
+		bool has_submodel = (mc.hit_submodel >= 0);
+		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
+
+
+		// TODO PROP
+		/*
+		if (scripting::hooks::OnWeaponCollision->isActive()) {
+			ship_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
+		}
+		if (scripting::hooks::OnShipCollision->isActive()) {
+			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', ship_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
+					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}*/
+
+		if (!ship_override && !weapon_override) {
+			weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS, &mc.hit_normal, &mc.hit_point, mc.hit_submodel);
+		}
+
+		// TODO PROP
+		/*
+		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !ship_override)) {
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', weapon_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
+		}
+		if (scripting::hooks::OnShipCollision->isActive() && !ship_override) {
+			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+					scripting::hook_param("Object", 'o', ship_objp),
+					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Weapon", 'o', weapon_objp),
+					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
+					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}*/
+	}
+
+	return valid_hit_occurred;
+}
+
+
 /**
  * Checks ship-weapon collisions.  
  * @param pair obj_pair pointer to the two objects. pair->a is ship and pair->b is weapon.
@@ -725,6 +856,55 @@ collision_result collide_ship_weapon_check( obj_pair * pair )
 }
 
 /**
+ * Checks prop-weapon collisions.
+ * @param pair obj_pair pointer to the two objects. pair->a is ship and pair->b is weapon.
+ * @return 1 if all future collisions between these can be ignored
+ */
+int collide_prop_weapon(obj_pair* pair)
+{
+	int		did_hit;
+	object* prop = pair->a;
+	object* weapon_obj = pair->b;
+
+	Assert(prop->type == OBJ_PROP);
+	Assert(weapon_obj->type == OBJ_WEAPON);
+
+	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
+	//Asteroth - should this be kept?
+	/*if ((Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(ship))) {
+		return 0;
+	}*/
+
+	if (reject_due_collision_groups(prop, weapon_obj))
+		return 0;
+
+	// Cull lasers within big prop spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
+	// If it does hit, don't check the pair until about 200 ms before collision.  
+	// If it does not hit and is within error tolerance, cull the pair.
+
+	if (prop->radius > 500.0f && (weapon_obj->phys_info.flags & PF_CONST_VEL)) {
+		// Check when within ~1.1 radii.  
+		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
+		// within the sphere with little time between.  There may be some time for "small" big ships
+		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
+		// so we're not doing that here
+		if (vm_vec_dist_squared(&prop->pos, &weapon_obj->pos) < (1.2f * prop->radius * prop->radius)) {
+			return check_inside_radius_for_big_objects(prop, weapon_obj, pair);
+		}
+	}
+
+	did_hit = prop_weapon_check_collision(prop, weapon_obj);
+
+	if (!did_hit) {
+		// Since we didn't hit, check to see if we can disable all future collisions
+		// between these two.
+		return weapon_will_never_hit(weapon_obj, prop, pair);
+	}
+
+	return 0;
+}
+
+/**
  * Upper limit estimate ship speed at end of time
  */
 static float estimate_ship_speed_upper_limit( object *ship, float time ) 
@@ -751,7 +931,7 @@ static float estimate_ship_speed_upper_limit( object *ship, float time )
 #define ERROR_STD	2	
 
 /**
- * When inside radius of big ship, check if we can cull collision pair determine the time when pair should next be checked
+ * When inside radius of big ship or prop, check if we can cull collision pair determine the time when pair should next be checked
  * @return 1 if pair can be culled
  * @return 0 if pair can not be culled
  */
@@ -761,20 +941,20 @@ static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_fo
 	float error_vel_mag;	// magnitude of error_vel
 	float time_to_max_error, time_to_exit_sphere;
 	float ship_speed_at_exit_sphere, error_at_exit_sphere;	
-	float max_error = (float) ERROR_STD / 150.0f * ship->radius;
+	float max_error = (float) ERROR_STD / 150.0f * big_obj->radius;
 	if (max_error < 2)
 		max_error = 2.0f;
 
 	float weapon_max_vel = MAX(weapon_obj->phys_info.max_vel.xyz.z, vm_vec_mag(&weapon_obj->phys_info.vel));
-	Assertion(IS_VEC_NULL(&The_mission.gravity) || weapon_obj->phys_info.gravity_const == 0.0f, "check_inside_radius_for_big_ships being used for a ballistic weapon");
+	Assertion(IS_VEC_NULL(&The_mission.gravity) || weapon_obj->phys_info.gravity_const == 0.0f, "check_inside_radius_for_big_objects being used for a ballistic weapon");
 
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_max_vel - ship->phys_info.max_vel.xyz.z);
-	ship_speed_at_exit_sphere = estimate_ship_speed_upper_limit( ship, time_to_exit_sphere );
+	time_to_exit_sphere = (big_obj->radius + vm_vec_dist(&big_obj->pos, &weapon_obj->pos)) / (weapon_max_vel - big_obj->phys_info.max_vel.xyz.z);
+	ship_speed_at_exit_sphere = estimate_ship_speed_upper_limit(big_obj, time_to_exit_sphere );
 	// update estimated time to exit sphere
-	time_to_exit_sphere = (ship->radius + vm_vec_dist(&ship->pos, &weapon_obj->pos)) / (weapon_max_vel - ship_speed_at_exit_sphere);
-	vm_vec_scale_add( &error_vel, &ship->phys_info.vel, &weapon_obj->orient.vec.fvec, -vm_vec_dot(&ship->phys_info.vel, &weapon_obj->orient.vec.fvec) );
+	time_to_exit_sphere = (big_obj->radius + vm_vec_dist(&big_obj->pos, &weapon_obj->pos)) / (weapon_max_vel - ship_speed_at_exit_sphere);
+	vm_vec_scale_add( &error_vel, &big_obj->phys_info.vel, &weapon_obj->orient.vec.fvec, -vm_vec_dot(&big_obj->phys_info.vel, &weapon_obj->orient.vec.fvec) );
 	error_vel_mag = vm_vec_mag_quick( &error_vel );
-	error_vel_mag += 0.5f * (ship->phys_info.max_vel.xyz.z - error_vel_mag)*(time_to_exit_sphere/ship->phys_info.forward_accel_time_const);
+	error_vel_mag += 0.5f * (big_obj->phys_info.max_vel.xyz.z - error_vel_mag)*(time_to_exit_sphere/big_obj->phys_info.forward_accel_time_const);
 	// error_vel_mag is now average velocity over period
 	error_at_exit_sphere = error_vel_mag * time_to_exit_sphere;
 	time_to_max_error = max_error / error_at_exit_sphere * time_to_exit_sphere;
@@ -792,6 +972,12 @@ static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_fo
 
 	// Note:  when estimated hit time is less than 200 ms, look at every frame
 	int hit_time;	// estimated time of hit in ms
+	// modify the collision check to do damage if hit_time is negative (ie, hit occurs in this frame)
+	bool hit = false;
+	if (big_obj->type == OBJ_SHIP)
+		hit = ship_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
+	else // OBJ_PROP
+		hit = prop_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
 
 	const auto& [do_postproc, does_not_hit, collision_data] = ship_weapon_check_collision( ship, weapon_obj, limit_time, &hit_time );
 	// modify ship_weapon_check_collision to do damage if hit_time is negative (ie, hit occurs in this frame)
