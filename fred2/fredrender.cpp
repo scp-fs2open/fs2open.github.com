@@ -546,7 +546,7 @@ void display_ship_info() {
 							prop* propp;
 							int prop_type;
 
-							propp = &Props[objp->instance];
+							propp = prop_id_lookup(objp->instance);
 							prop_type = propp->prop_info_index;
 							ASSERT(prop_type >= 0);
 							sprintf(buf, "%s\n", propp->prop_name);
@@ -1880,14 +1880,16 @@ void render_one_model_htl(object *objp) {
 
 		render_info.set_debug_flags(debug_flags);
 
+		prop* propp = prop_id_lookup(z);
+
 		if (Fred_outline) {
 			render_info.set_color(Fred_outline >> 16, (Fred_outline >> 8) & 0xff, Fred_outline & 0xff);
 			render_info.set_flags(flags | MR_SHOW_OUTLINE_HTL | MR_NO_LIGHTING | MR_NO_POLYS | MR_NO_TEXTURING);
-			model_render_immediate(&render_info, Prop_info[Props[z].prop_info_index].model_num, Props[z].model_instance_num, &objp->orient, &objp->pos);
+			model_render_immediate(&render_info, Prop_info[propp->prop_info_index].model_num, propp->model_instance_num, &objp->orient, &objp->pos);
 		}
 		//
 		render_info.set_flags(flags);
-		model_render_immediate(&render_info, Prop_info[Props[z].prop_info_index].model_num, Props[z].model_instance_num, &objp->orient, &objp->pos);
+		model_render_immediate(&render_info, Prop_info[propp->prop_info_index].model_num, propp->model_instance_num, &objp->orient, &objp->pos);
 	}
 
 	// build flags
