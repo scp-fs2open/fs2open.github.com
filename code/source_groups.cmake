@@ -1007,9 +1007,6 @@ ENDIF(WIN32)
 add_file_folder("Object"
 	object/collidedebrisship.cpp
 	object/collidedebrisweapon.cpp
-	object/collidepropdebris.cpp
-	object/collidepropship.cpp
-	object/collidepropweapon.cpp
 	object/collideshipship.cpp
 	object/collideshipweapon.cpp
 	object/collideweaponweapon.cpp
