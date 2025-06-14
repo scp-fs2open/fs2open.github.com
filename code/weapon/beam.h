@@ -279,6 +279,9 @@ int beam_collide_missile(obj_pair *pair);
 // collide a beam with debris, returns 1 if we can ignore all future collisions between the 2 objects
 int beam_collide_debris(obj_pair *pair);
 
+// collide a beam with a prop, returns 1 if we can ignore all future collisions between the 2 objects
+int beam_collide_prop(obj_pair* pair);
+
 // pre-move (before collision checking - but AFTER ALL OTHER OBJECTS HAVE BEEN MOVED)
 void beam_move_all_pre();
 
