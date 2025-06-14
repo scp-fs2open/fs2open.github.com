@@ -107,7 +107,8 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
-int First_menu_item= -1;							// index of first item in the menu
+int First_menu_item= -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
+int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
 SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
@@ -217,6 +218,7 @@ void hud_squadmsg_start()
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
+	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
 	Squad_msg_mode = SM_MODE_TYPE_SELECT;							// start off at the base state
 	Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
 	Msg_shortcut_command = -1;											// assume no shortcut key being used
@@ -482,6 +484,89 @@ void hud_squadmsg_page_up()
 	if ( First_menu_item > 0 ) {
 		First_menu_item -= MAX_MENU_DISPLAY;
 		Assert (First_menu_item >= 0 );
+	}
+}
+
+//Fuctions that allow selection of specific comms menu items with simple up/down/select buttons
+void hud_squadmsg_selection_move_down() {
+
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//move down
+		++Selected_menu_item;
+
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't dissapear while we select our item
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
+		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+
+		//Move to next page if we went outside of current one
+		if (Selected_menu_item == MAX_MENU_DISPLAY 
+			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+		{
+			hud_squadmsg_page_down();
+			Selected_menu_item = 0;
+		}
+
+		//Select the first menu item if we went outside items range, so we can loop around
+		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
+		{
+			First_menu_item = 0;
+			Selected_menu_item = First_menu_item;
+		}
+	}
+}
+
+void hud_squadmsg_selection_move_up() {
+
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//move up
+		--Selected_menu_item;
+
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't dissapear while we select our item
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
+		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+
+		//Move to previous page if it exists
+		if (Selected_menu_item < 0 && First_menu_item > 0)
+		{
+			hud_squadmsg_page_up();
+			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
+		}
+
+		//Select the last menu item if we went outside items range, so we can loop around
+		else if (Selected_menu_item < 0) 
+		{
+			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
+			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
+			//exactly like pageUp/pageDown does
+			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
+			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
+		}
+	}
+}
+
+//function that tricks hud_squadmsg_get_key() into thinking player selected a menu item with a num key press
+//Yes, this is a pretty much a hack, but it's simple and works with every squadmsq type.
+void hud_squadmsg_selection_select() {
+	
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//Check if selected option is even active
+		if (!(MsgItems[Selected_menu_item + First_menu_item].active))
+		{
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
+		else
+		{
+			Msg_key_used = 1;
+			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
+												  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
+			Selected_menu_item = 0; //Reset this value, so the position will reset at the next window
+		}
 	}
 }
 
@@ -2839,6 +2924,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
+		bool isSelectedItem = First_menu_item + i == First_menu_item + Selected_menu_item;
 		char text[255];
 
 		if (!config) {
@@ -2867,22 +2953,30 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		by += fl2i(Item_h * scale);
 
 		// set the text color
-		if (!config && (MsgItems[First_menu_item+i].active > 0) ) {
+		if (!config && (MsgItems[First_menu_item + i].active > 0)) {
 			setGaugeColor(HUD_C_BRIGHT, config);
-		} else {
+		}
+		else if (isSelectedItem) {
+			setGaugeColor(HUD_C_NORMAL, config);
+		}
+		else {
 			setGaugeColor(HUD_C_DIM, config);
 		}
 
-		// first do the number
 		if (MsgItems[First_menu_item + i].active >= 0) {
-			item_num = (i+1) % MAX_MENU_DISPLAY;
-			renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
+			// first print an icon to indicate selected item
+			if (isSelectedItem) {
+				renderString(sx, sy, EG_SQ1 + i, ">>", scale, config);
+			}
+			// or do the number
+			else {
+				item_num = (i + 1) % MAX_MENU_DISPLAY;
+				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
+			}
 
 			// then the text
 			font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
-   
 			renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
-
 			sy += fl2i(Item_h * scale);
 		}
 

@@ -340,7 +340,11 @@ int Normal_key_set[] = {
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+		
+	COMMS_MENU_MOVE_UP,
+	COMMS_MENU_MOVE_DOWN,
+	COMMS_MENU_SELECT
 };
 
 int Dead_key_set[] = {
@@ -480,7 +484,11 @@ int Non_critical_key_set[] = {
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+
+	COMMS_MENU_MOVE_UP,
+	COMMS_MENU_MOVE_DOWN,
+	COMMS_MENU_SELECT
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -2839,6 +2847,18 @@ int button_function(int n)
 		// toggle the squadmate messaging menu
 		case SQUADMSG_MENU:
 			hud_squadmsg_toggle();				// leave the details to the messaging code!!!
+			break;
+			 
+		case COMMS_MENU_MOVE_DOWN:
+			hud_squadmsg_selection_move_down();
+			break;
+
+		case COMMS_MENU_MOVE_UP:
+			hud_squadmsg_selection_move_up();
+			break;
+
+		case COMMS_MENU_SELECT:
+			hud_squadmsg_selection_select();
 			break;
 
 		// show the mission goals screen
