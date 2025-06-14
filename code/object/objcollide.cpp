@@ -883,6 +883,13 @@ void obj_collide_pair(object *A, object *B)
             check_collision = collide_debris_ship;
             swapped = 1;
             break;
+		case COLLISION_OF(OBJ_DEBRIS, OBJ_PROP):
+			check_collision = collide_debris_prop;
+			break;
+		case COLLISION_OF(OBJ_PROP, OBJ_DEBRIS):
+			check_collision = collide_debris_prop;
+			swapped = 1;
+			break;
         case COLLISION_OF(OBJ_ASTEROID, OBJ_WEAPON):
             check_collision = collide_asteroid_weapon;
             break;
@@ -897,6 +904,13 @@ void obj_collide_pair(object *A, object *B)
             check_collision = collide_asteroid_ship;
             swapped = 1;
             break;
+		case COLLISION_OF(OBJ_ASTEROID, OBJ_PROP):
+			check_collision = collide_asteroid_prop;
+			break;
+		case COLLISION_OF(OBJ_PROP, OBJ_ASTEROID):
+			check_collision = collide_asteroid_prop;
+			swapped = 1;
+			break;
         case COLLISION_OF(OBJ_SHIP,OBJ_SHIP):
             check_collision = collide_ship_ship;
 #ifdef NDEBUG
@@ -904,7 +918,20 @@ void obj_collide_pair(object *A, object *B)
 			support_mp = true;
 #endif
             break;
-
+		case COLLISION_OF(OBJ_PROP, OBJ_SHIP):
+			check_collision = collide_prop_ship;
+			break;
+		case COLLISION_OF(OBJ_SHIP, OBJ_PROP):
+			check_collision = collide_prop_ship;
+			swapped = 1;
+			break;
+		case COLLISION_OF(OBJ_PROP, OBJ_WEAPON):
+			check_collision = collide_prop_weapon;
+			break;
+		case COLLISION_OF(OBJ_WEAPON, OBJ_PROP):
+			check_collision = collide_prop_weapon;
+			swapped = 1;
+			break;
         case COLLISION_OF(OBJ_SHIP, OBJ_BEAM):
             if(beam_collide_early_out(B, A)){
                 return;
@@ -961,6 +988,20 @@ void obj_collide_pair(object *A, object *B)
             }
             check_collision = beam_collide_missile;
             break;
+		case COLLISION_OF(OBJ_PROP, OBJ_BEAM):
+			if (beam_collide_early_out(B, A)) {
+				return;
+			}
+			swapped = 1;
+			check_collision = beam_collide_prop;
+			break;
+
+		case COLLISION_OF(OBJ_BEAM, OBJ_PROP):
+			if (beam_collide_early_out(A, B)) {
+				return;
+			}
+			check_collision = beam_collide_prop;
+			break;
 
         case COLLISION_OF(OBJ_WEAPON, OBJ_WEAPON): {
             weapon_info* awip = &Weapon_info[Weapons[A->instance].weapon_info_index];
@@ -977,27 +1018,6 @@ void obj_collide_pair(object *A, object *B)
 
             break;
         }
-		/* case COLLISION_OF(OBJ_SHIP, OBJ_PROP):
-			check_collision = collide_prop_ship;
-			break;
-		case COLLISION_OF(OBJ_PROP, OBJ_SHIP):
-			check_collision = collide_prop_ship;
-			swapped = 1;
-			break;
-		case COLLISION_OF(OBJ_WEAPON, OBJ_PROP):
-			check_collision = collide_prop_weapon;
-			break;
-		case COLLISION_OF(OBJ_PROP, OBJ_WEAPON):
-			check_collision = collide_prop_weapon;
-			swapped = 1;
-			break;
-		case COLLISION_OF(OBJ_DEBRIS, OBJ_PROP):
-			check_collision = collide_prop_debris;
-			break;
-		case COLLISION_OF(OBJ_PROP, OBJ_DEBRIS):
-			check_collision = collide_prop_debris;
-			swapped = 1;
-			break; */
 
         default:
             return;
