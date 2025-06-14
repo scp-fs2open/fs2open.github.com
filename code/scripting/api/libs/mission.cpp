@@ -129,6 +129,45 @@ int object_subclass_count(A& object_subclass_array, size_t array_size)
 	return object_subclass_at_index(object_subclass_array, array_size, COUNT_OBJECTS);
 }
 
+// Overload for a vector of std::optional objects
+template <typename T>
+int object_subclass_at_index(const SCP_vector<std::optional<T>>& vec, int index)
+{
+	int count = 0;
+
+	for (const auto& opt_obj : vec) {
+
+		if (!opt_obj.has_value()) {
+			continue;
+		}
+
+
+		const T& obj = *opt_obj;
+
+		int objnum = obj.objnum;
+		if (objnum < 0 || objnum >= MAX_OBJECTS)
+			continue;
+		if (Objects[objnum].flags[Object::Object_Flags::Should_be_dead])
+			continue;
+
+		++count;
+
+		if (count == index) {
+			return obj.objnum;
+		}
+	}
+
+	if (index == COUNT_OBJECTS)
+		return count;
+	else
+		return -1;
+}
+
+template <typename A>
+int object_subclass_count(A& object_subclass_array)
+{
+	return object_subclass_at_index(object_subclass_array, COUNT_OBJECTS);
+}
 
 namespace scripting {
 namespace api {
@@ -564,7 +603,7 @@ ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "
 
 	if (idx >= 0)
 	{
-		return ade_set_args(L, "o", l_Prop.Set(object_h(&Objects[Props[idx].objnum])));
+		return ade_set_args(L, "o", l_Prop.Set(object_h(&Objects[prop_id_lookup(idx)->objnum])));
 	}
 	else
 	{
@@ -572,7 +611,7 @@ ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "
 
 		int objnum = -1;
 		if (idx > 0)
-			objnum = object_subclass_at_index(Props, MAX_PROPS, idx);
+			objnum = object_subclass_at_index(Props, idx);
 
 		return ade_set_args(L, "o", l_Prop.Set(object_h(objnum)));
 	}
@@ -585,7 +624,7 @@ ADE_FUNC(__len, l_Mission_Props, NULL,
 		 "number",
 		 "Number of props in the mission, or 0 if props haven't been initialized yet")
 {
-	return ade_set_args(L, "i", object_subclass_count(Props, MAX_PROPS));
+	return ade_set_args(L, "i", object_subclass_count(Props));
 }
 
 //****SUBLIBRARY: Mission/Waypoints
@@ -1409,8 +1448,6 @@ ADE_FUNC(createProp,
 	int obj_idx = prop_create(real_orient, &pos, pclass, name);
 
 	if(obj_idx >= 0) {
-		auto propp = &Props[Objects[obj_idx].instance];
-
 		prop_info* pip = &Prop_info[pclass];
 
 		model_page_in_textures(pip->model_num, pclass);

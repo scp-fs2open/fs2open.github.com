@@ -116,17 +116,18 @@ void LabRenderer::renderModel(float frametime) {
 	}
 
 	if (obj->type == OBJ_PROP) {
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_light,
+		prop* propp = prop_id_lookup(obj->instance);
+		propp->flags.set(Prop::Prop_Flags::Draw_as_wireframe, renderFlags[LabRenderFlag::ShowWireframe]);
+		propp->flags.set(Prop::Prop_Flags::Render_full_detail, renderFlags[LabRenderFlag::ShowFullDetail]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_light,
 			renderFlags[LabRenderFlag::NoLighting] || currentMissionBackground == LAB_MISSION_NONE_STRING);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
-		Props[obj->instance].flags.set(Prop::Prop_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_diffuse, renderFlags[LabRenderFlag::NoDiffuseMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_glowmap, renderFlags[LabRenderFlag::NoGlowMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_normalmap, renderFlags[LabRenderFlag::NoNormalMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_specmap, renderFlags[LabRenderFlag::NoSpecularMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_reflectmap, renderFlags[LabRenderFlag::NoReflectMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_heightmap, renderFlags[LabRenderFlag::NoHeightMap]);
+		propp->flags.set(Prop::Prop_Flags::Render_without_ambientmap, renderFlags[LabRenderFlag::NoAOMap]);
 	}
 
 	if (obj->type == OBJ_WEAPON) {

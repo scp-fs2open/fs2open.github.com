@@ -6182,7 +6182,7 @@ sexp_list_item *sexp_tree::get_listing_opf_prop(int parent_node)
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (ptr->type == OBJ_PROP) {
-			head.add_data(Props[ptr->instance].prop_name);
+			head.add_data(prop_id_lookup(ptr->instance)->prop_name);
 		}
 
 		ptr = GET_NEXT(ptr);

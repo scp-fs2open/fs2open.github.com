@@ -5131,34 +5131,37 @@ int CFred_mission_save::save_props()
 		fout("\t\t;! %d total", static_cast<int>(Props.size()));
 
 		for (int i = 0; i < static_cast<int>(Props.size()); i++) {
-			required_string_either_fred("$Name:", "#Events");
-			required_string_fred("$Name:");
-			parse_comments(2);
-			fout(" %s", Props[i].prop_name);
+			const auto& p = Props[i];
+			if (p.has_value()) {
+				required_string_either_fred("$Name:", "#Events");
+				required_string_fred("$Name:");
+				parse_comments(2);
+				fout(" %s", p->prop_name);
 
-			required_string_fred("$Class:");
-			parse_comments(2);
-			fout(" %d", Props[i].prop_info_index);
+				required_string_fred("$Class:");
+				parse_comments(2);
+				fout(" %d", p->prop_info_index);
 
-			required_string_fred("$Location:");
-			parse_comments();
-			save_vector(Objects[Props[i].objnum].pos);
-
-			required_string_fred("$Orientation:");
-			parse_comments();
-			save_matrix(Objects[Props[i].objnum].orient);
-
-			if (optional_string_fred("+Flags:", "$Name:")) {
+				required_string_fred("$Location:");
 				parse_comments();
-				fout(" (");
-			} else
-				fout("\n+Flags: (");
+				save_vector(Objects[p->objnum].pos);
 
-			if (!(Objects[Props[i].objnum].flags[Object::Object_Flags::Collides]))
-				fout(" \"no_collide\"");
-			fout(" )");
+				required_string_fred("$Orientation:");
+				parse_comments();
+				save_matrix(Objects[p->objnum].orient);
 
-			fso_comment_pop();
+				if (optional_string_fred("+Flags:", "$Name:")) {
+					parse_comments();
+					fout(" (");
+				} else
+					fout("\n+Flags: (");
+
+				if (!(Objects[p->objnum].flags[Object::Object_Flags::Collides]))
+					fout(" \"no_collide\"");
+				fout(" )");
+
+				fso_comment_pop();
+			}
 		}
 	}
 

@@ -520,7 +520,7 @@ void fix_prop_name(int prop)
 	int i = 1;
 
 	do {
-		sprintf(Props[prop].prop_name, "U.R.A. Dummy %d", i++);
+		sprintf(prop_id_lookup(prop)->prop_name, "U.R.A. Dummy %d", i++);
 	} while (query_prop_name_duplicate(prop));
 }
 
@@ -643,13 +643,19 @@ int create_prop(matrix* orient, vec3d* pos, int prop_type)
 
 int query_prop_name_duplicate(int prop)
 {
-	int i;
+	const auto& target = prop_id_lookup(prop)->prop_name;
 
-	for (i = 0; i < static_cast<int>(Props.size()); i++)
-		if ((i != prop) && (Props[i].objnum != -1))
-			if (!stricmp(Props[i].prop_name, Props[prop].prop_name))
+	for (size_t i = 0; i < Props.size(); ++i) {
+		if (i == static_cast<size_t>(prop))
+			continue;
+
+		const auto& other = Props[i];
+		if (other.has_value() && other->objnum != -1) {
+			if (!stricmp(other->prop_name, target)) {
 				return 1;
-
+			}
+		}
+	}
 	return 0;
 }
 

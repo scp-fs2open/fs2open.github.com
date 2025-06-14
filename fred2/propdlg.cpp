@@ -82,8 +82,8 @@ void prop_dlg::initialize_data(int full_update)
 
 	// Check if we have a selected prop
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_PROP) {
-		auto& prp = Props[Objects[cur_object_index].instance];
-		m_name = _T(prp.prop_name);
+		auto prp = prop_id_lookup(Objects[cur_object_index].instance);
+		m_name = _T(prp->prop_name);
 	} else {
 		// No valid prop selected; disable editing fields
 		m_name = _T("");
@@ -135,16 +135,20 @@ int prop_dlg::update_data()
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_PROP) {
 		int this_instance = Objects[cur_object_index].instance;
-		auto& prp = Props[this_instance];
+		auto prp = prop_id_lookup(this_instance);
 
 		m_name.TrimLeft();
 		m_name.TrimRight();
 
 		for (size_t i = 0; i < Props.size(); ++i) {
-			if ((int)i == this_instance)
+			if (static_cast<int>(i) == this_instance)
 				continue; // skip self
 
-			if (!stricmp(m_name, Props[i].prop_name)) {
+			if (!Props[i].has_value()) {
+				continue;
+			}
+
+			if (!stricmp(m_name, Props[i].value().prop_name)) {
 				if (bypass_errors)
 					return 1;
 
@@ -155,16 +159,16 @@ int prop_dlg::update_data()
 				if (z == IDCANCEL)
 					return -1;
 
-				m_name = _T(prp.prop_name);
+				m_name = _T(prp->prop_name);
 				UpdateData(FALSE);
 				return 1;
 			}
 		}
 		
 		// Passed name validation
-		strcpy_s(prp.prop_name, m_name);
+		strcpy_s(prp->prop_name, m_name);
 
-		prp.flags.reset(); // Clear all flags
+		prp->flags.reset(); // Clear all flags
 
 		for (int i = 0; i < m_flags_list.GetCount(); ++i) {
 			size_t flag_index = static_cast<size_t>(m_flags_list.GetItemData(i));

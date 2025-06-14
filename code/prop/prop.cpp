@@ -17,7 +17,7 @@ bool Props_inited = false;
 
 SCP_vector<prop_info> Prop_info;
 
-SCP_vector<prop> Props;
+SCP_vector<std::optional<prop>> Props;
 
 static SCP_vector<SCP_string> Removed_props;
 
@@ -40,9 +40,13 @@ int prop_name_lookup(const char *name)
 	Assertion(name != nullptr, "NULL name passed to prop_name_lookup");
 
 	for (int i=0; i<static_cast<int>(Props.size()); i++){
-		if (Props[i].objnum >= 0){
-			if (Objects[Props[i].objnum].type == OBJ_PROP){
-				if (!stricmp(name, Props[i].prop_name)){
+		auto prop = Props[i] ? &Props[i].value() : nullptr;
+		if (prop == nullptr) {
+			continue;
+		}
+		if (prop->objnum >= 0){
+			if (Objects[prop->objnum].type == OBJ_PROP) {
+				if (!stricmp(name, prop->prop_name)) {
 					return i;
 				}
 			}
@@ -51,6 +55,15 @@ int prop_name_lookup(const char *name)
 	
 	// couldn't find it
 	return -1;
+}
+
+prop* prop_id_lookup(int id)
+{
+	if (id < 0 || id >= static_cast<int>(Props.size()) || !Props[id].has_value()) {
+		Assertion(false, "Could not find prop for id %d", id);
+		return nullptr;
+	}
+	return &Props[id].value();
 }
 
 void parse_prop_table(const char* filename)
@@ -257,7 +270,10 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 	pip = &(Prop_info[prop_type]);
 
 	Props.emplace_back(prop());
-	propp = &Props.back();
+	int new_id = static_cast<int>(Props.size()) - 1;
+	propp = prop_id_lookup(new_id);
+	Assertion(propp != nullptr, "Could not create prop!");
+
 	propp->prop_info_index = prop_type;
 
 	if ((name == nullptr) || (prop_name_lookup(name) >= 0)) {
@@ -321,7 +337,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 
 	int objnum = obj_create(OBJ_PROP,
 		-1,
-		static_cast<int>(Props.size() - 1),
+		new_id,
 		orient,
 		pos,
 		model_get_radius(pip->model_num),
@@ -389,23 +405,25 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 void prop_delete(object* obj)
 {
 	int num = obj->instance;
-	Assert(num >= 0 && num <= static_cast<int>(Props.size()));
 
 	int objnum = OBJ_INDEX(obj);
-	Assert(Props[num].objnum == objnum);
+	Assertion(Props[num].has_value(), "Props[%d] is already nullopt!", num);
 
-	prop* propp = &Props[num];
+	prop& propp = *Props[num];
+	Assertion(propp.objnum == objnum, "Prop object id does not match passed object!");
 
-	propp->objnum = -1;
+	propp.objnum = -1;
 
 	//animation::ModelAnimationSet::stopAnimations(model_get_instance(propp->model_instance_num));
 
 	// glow point banks
-	propp->glow_point_bank_active.clear();
+	propp.glow_point_bank_active.clear();
 
-	model_delete_instance(propp->model_instance_num);
+	model_delete_instance(propp.model_instance_num);
 
-	Props.erase(Props.begin() + num);
+	// Leave the slot empty for the duration of the scene
+	// The Props array will be compacted at the end of the level
+	Props[num] = std::nullopt;
 }
 
 /**
@@ -416,8 +434,7 @@ void prop_delete(object* obj)
  */
 static void prop_model_change(int n, int prop_type)
 {
-	Assert( n >= 0 && n < MAX_PROPS );
-	prop* sp = &Props[n];
+	prop* sp = prop_id_lookup(n);
 	prop_info* sip = &(Prop_info[prop_type]);
 	object* objp = &Objects[sp->objnum];
 	polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
@@ -497,8 +514,7 @@ static void prop_model_change(int n, int prop_type)
  */
 void change_prop_type(int n, int prop_type)
 {
-	Assert( n >= 0 && n < MAX_PROPS );
-	prop* sp = &Props[n];
+	prop* sp = prop_id_lookup(n);
 
 	// do a quick out if we're already using the new ship class
 	if (sp->prop_info_index == prop_type)
@@ -515,10 +531,6 @@ void change_prop_type(int n, int prop_type)
 	prop_model_change(n, prop_type);
 	sp->prop_info_index = prop_type;
 
-	// get the before and after models (the new model may have only been loaded in ship_model_change)
-	auto pm = model_get(sip->model_num);
-	auto pm_orig = model_get(sip_orig->model_num);
-
 	// check class-specific flags
 
 	if (sip->flags[Prop::Info_Flags::No_collide])								// changing TO a no-collision ship class
@@ -530,10 +542,10 @@ void change_prop_type(int n, int prop_type)
 void prop_render(object* obj, model_draw_list* scene)
 {
 	int num = obj->instance;
-	Assert(num >= 0 && num <= static_cast<int>(Props.size()));
 
-	prop* propp = &Props[num];
-	prop_info* pip = &Prop_info[Props[num].prop_info_index];
+	prop* propp = prop_id_lookup(num);
+
+	prop_info* pip = &Prop_info[propp->prop_info_index];
 
 	MONITOR_INC(NumPropsRend, 1);
 
@@ -637,9 +649,14 @@ void spawn_test_prop()
 
 void props_level_close()
 {
-	while (!Props.empty()) {
-		prop_delete(&Objects[Props.back().objnum]);
+	for (auto& opt_prop : Props) {
+		if (opt_prop.has_value()) {
+			prop_delete(&Objects[opt_prop->objnum]);
+		}
 	}
+
+	// Clear all props and empty prop slots
+	Props.clear();
 }
 
 
@@ -648,14 +665,13 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 {
 	mc_info	mc;
 
-	Assert(prop_obj->type == OBJ_PROP);
+	Assertion(prop_obj->type == OBJ_PROP, "Object is not a prop!");
 
 	int num = prop_obj->instance;
 
-	Assert(num >= 0 && num < (int)Props.size());
-	Assert(Props[num].objnum == OBJ_INDEX(prop_obj));
-
-	prop* propp = &Props[num];
+	prop* propp = prop_id_lookup(num);
+	Assertion(propp->objnum == OBJ_INDEX(prop_obj), "Prop object id does not match passed object!");
+	
 	prop_info* prinfo = &Prop_info[propp->prop_info_index];
 
 	// debris_hit_info NULL - so debris-weapon collision
@@ -839,7 +855,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 				asteroid* astp = &Asteroids[instance];
 				mc.model_instance_num = astp->model_instance_num;
 				mc.model_num = Asteroid_info[astp->asteroid_type].subtypes[astp->asteroid_subtype].model_number;	
-				mc.submodel_num - 1;
+				mc.submodel_num - 1; // Typo from asteroth?
 			}
 
 			mc.orient = &heavy_obj->orient;				// The object's orient
@@ -862,7 +878,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 			}
 		} else { // prop is the heavy object
 			mc.flags = (MC_CHECK_MODEL | MC_CHECK_SPHERELINE);
-			int instance = heavy_obj->instance;
+			//int instance = heavy_obj->instance;
 
 			// fill the appropriate model data
 			mc.model_instance_num = propp->model_instance_num;

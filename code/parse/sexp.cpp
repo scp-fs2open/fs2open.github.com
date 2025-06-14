@@ -5839,7 +5839,7 @@ const prop *eval_prop(int node)
 		if (Sexp_nodes[node].cache->sexp_node_data_type != OPF_PROP)
 			return nullptr;
 
-		return &Props[Sexp_nodes[node].cache->ship_registry_index];
+		return prop_id_lookup(Sexp_nodes[node].cache->ship_registry_index);
 	}
 
 	// maybe forward to a special-arg node
@@ -5859,7 +5859,7 @@ const prop *eval_prop(int node)
 		if (!is_node_value_dynamic(node))
 			Sexp_nodes[node].cache = new sexp_cached_data(OPF_PROP, -1, prop_idx);
 
-		return &Props[prop_idx];
+		return prop_id_lookup(prop_idx);
 	}
 
 	// we know nothing about this prop, apparently

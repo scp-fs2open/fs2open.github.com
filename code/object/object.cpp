@@ -2277,7 +2277,7 @@ int object_get_model_instance_num(const object *objp)
 		case OBJ_RAW_POF:
 			return Pof_objects[objp->instance].model_instance;
 		case OBJ_PROP:
-			return Props[objp->instance].model_instance_num;
+			return prop_id_lookup(objp->instance)->model_instance_num;
 		default:
 			break;
 	}

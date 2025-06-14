@@ -591,8 +591,9 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 		} else if (heavy->type == OBJ_DEBRIS) {
 			pm = model_get(Debris[heavy->instance].model_num);
 		} else if (heavy->type == OBJ_PROP) {
-			pm = model_get(Prop_info[Props[heavy->instance].prop_info_index].model_num);
-			model_instance_num = Props[heavy->instance].model_instance_num;
+			prop* propp = prop_id_lookup(heavy->instance);
+			pm = model_get(Prop_info[propp->prop_info_index].model_num);
+			model_instance_num = propp->model_instance_num;
 			pmi = model_get_instance(model_instance_num);
 		} else {
 			// we should have caught this already

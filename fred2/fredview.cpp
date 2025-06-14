@@ -1479,7 +1479,7 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 
 				} else if (Objects[objnum].type == OBJ_PROP) {
 					id = ID_EDITORS_PROPS;
-					str.Format("Edit %s", Props[Objects[objnum].instance].prop_name);
+					str.Format("Edit %s", prop_id_lookup(Objects[objnum].instance)->prop_name);
 
 				} else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					auto jnp = jumpnode_get_by_objnum(objnum);

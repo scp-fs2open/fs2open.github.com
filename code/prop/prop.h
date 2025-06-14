@@ -50,7 +50,7 @@ extern bool Props_inited;
 // Global prop info array
 extern SCP_vector<prop_info> Prop_info;
 
-extern SCP_vector<prop> Props;
+extern SCP_vector<std::optional<prop>> Props;
 
 inline int prop_info_size()
 {
@@ -69,6 +69,7 @@ void props_level_close();
 
 int prop_info_lookup(const char* token);
 int prop_name_lookup(const char* name);
+prop* prop_id_lookup(int id);
 
 void change_prop_type(int n, int prop_type);
 

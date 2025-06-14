@@ -629,7 +629,7 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 	Assert(prop_objp->type == OBJ_PROP);
 	Assert(prop_objp->instance >= 0);
 
-	prop* propp = &Props[prop_objp->instance];
+	prop* propp = prop_id_lookup(prop_objp->instance);
 	prop_info* prinfo = &Prop_info[propp->prop_info_index];
 
 	Assert(weapon_objp != nullptr);

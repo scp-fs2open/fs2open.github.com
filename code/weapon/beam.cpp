@@ -2197,7 +2197,7 @@ int beam_get_model(object *objp)
 		return Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[pof].model_number;
 
 	case OBJ_PROP:
-		return Prop_info[Props[objp->instance].prop_info_index].model_num;
+		return Prop_info[prop_id_lookup(objp->instance)->prop_info_index].model_num;
 
 	default:
 		// this shouldn't happen too often
@@ -3401,11 +3401,11 @@ int beam_collide_prop(obj_pair* pair)
 	// get the ship
 	Assert(pair->b->instance >= 0);
 	Assert(pair->b->type == OBJ_PROP);
-	Assert(Props[pair->b->instance].objnum == OBJ_INDEX(pair->b));
+	Assert(prop_id_lookup(pair->b->instance)->objnum == OBJ_INDEX(pair->b));
 	if ((pair->b->type != OBJ_PROP) || (pair->b->instance < 0))
 		return 1;
 	prop_objp = pair->b;
-	prop* propp = &Props[prop_objp->instance];
+	prop* propp = prop_id_lookup(prop_objp->instance);
 
 	bwi = &Weapon_info[a_beam->weapon_info_index];
 

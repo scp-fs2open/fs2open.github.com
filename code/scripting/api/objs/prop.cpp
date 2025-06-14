@@ -64,7 +64,7 @@ ADE_VIRTVAR(Name,
 	if (!objh->isValid())
 		return ade_set_error(L, "s", "");
 
-	prop* propp = &Props[objh->objp()->instance];
+	prop* propp = prop_id_lookup(objh->objp()->instance);
 
 	if (ADE_SETTING_VAR && s != nullptr) {
 		auto len = sizeof(propp->prop_name);
@@ -90,7 +90,7 @@ ADE_VIRTVAR(Class,
 	if (!objh->isValid())
 		return ade_set_error(L, "o", l_Propclass.Set(-1));
 
-	prop* propp = &Props[objh->objp()->instance];
+	prop* propp = prop_id_lookup(objh->objp()->instance);
 
 	if (ADE_SETTING_VAR && idx > -1) {
 		change_prop_type(objh->objp()->instance, idx);
@@ -117,10 +117,12 @@ ADE_VIRTVAR(Textures,
 	if (!dh->isValid())
 		return ade_set_error(L, "o", l_ModelInstanceTextures.Set(modelinstance_h()));
 
-	polymodel_instance* dest = model_get_instance(Props[dh->objp()->instance].model_instance_num);
+	prop* propp = prop_id_lookup(dh->objp()->instance);
+
+	polymodel_instance* dest = model_get_instance(propp->model_instance_num);
 
 	if (ADE_SETTING_VAR && sh && sh->isValid()) {
-		dest->texture_replace = model_get_instance(Props[sh->objp()->instance].model_instance_num)->texture_replace;
+		dest->texture_replace = model_get_instance(propp->model_instance_num)->texture_replace;
 	}
 
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
