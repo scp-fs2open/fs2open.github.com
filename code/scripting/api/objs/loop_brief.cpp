@@ -36,7 +36,7 @@ ADE_VIRTVAR(Text,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->mission_branch_desc);
+	return ade_set_args(L, "s", coalesce(current.getStage()->mission_branch_desc.get(), ""));
 }
 
 ADE_VIRTVAR(AniFilename,
@@ -55,7 +55,7 @@ ADE_VIRTVAR(AniFilename,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->mission_branch_brief_anim);
+	return ade_set_args(L, "s", coalesce(current.getStage()->mission_branch_brief_anim.get(), ""));
 }
 
 ADE_VIRTVAR(AudioFilename,
@@ -74,7 +74,7 @@ ADE_VIRTVAR(AudioFilename,
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", current.getStage()->mission_branch_brief_sound);
+	return ade_set_args(L, "s", coalesce(current.getStage()->mission_branch_brief_sound.get(), ""));
 }
 
 } // namespace api
