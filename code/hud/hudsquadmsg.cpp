@@ -107,7 +107,7 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
-int First_menu_item= -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
+int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
 int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
 SCP_string Lua_sqd_msg_cat;
 
@@ -556,16 +556,16 @@ void hud_squadmsg_selection_select() {
 	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
 	{
 		//Check if selected option is even active
-		if (!(MsgItems[Selected_menu_item + First_menu_item].active))
-		{
-			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
-		}
-		else
+		if ((MsgItems[Selected_menu_item + First_menu_item].active > 0))
 		{
 			Msg_key_used = 1;
 			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
 												  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
 			Selected_menu_item = 0; //Reset this value, so the position will reset at the next window
+		}
+		else
+		{
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
 		}
 	}
 }
@@ -2965,13 +2965,13 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 		if (MsgItems[First_menu_item + i].active >= 0) {
 			// first print an icon to indicate selected item
+			item_num = (i + 1) % MAX_MENU_DISPLAY;
 			if (isSelectedItem) {
-				renderString(sx, sy, EG_SQ1 + i, ">>", scale, config);
+				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, XSTR(">>", 1887), item_num); //allow modders to change string and add number
 			}
 			// or do the number
 			else {
-				item_num = (i + 1) % MAX_MENU_DISPLAY;
-				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
+				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, XSTR("%1d.", 1886), item_num);
 			}
 
 			// then the text
