@@ -891,7 +891,7 @@ int opengl_init_display_device()
 
 	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
 
-	attrs.display = os_config_read_uint("Video", "Display", 0);
+	attrs.display = gr_get_preferred_display();
 	attrs.width = (uint32_t) gr_screen.max_w;
 	attrs.height = (uint32_t) gr_screen.max_h;
 
