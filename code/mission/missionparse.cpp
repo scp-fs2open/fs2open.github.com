@@ -5169,7 +5169,6 @@ void parse_props(mission* pm)
 {
 	if (optional_string("#Props")) {
 		while (required_string_either("#Events", "$Name:")) {
-			Assert(Parse_props.size() < MAX_PROPS);
 			parse_prop(pm);
 		}
 	}

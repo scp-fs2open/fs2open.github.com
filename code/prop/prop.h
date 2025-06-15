@@ -47,9 +47,13 @@ typedef struct parsed_prop {
 
 extern bool Props_inited;
 
-// Global prop info array
+// Global prop info
 extern SCP_vector<prop_info> Prop_info;
 
+// Global prop objects. Vector of optionals so that we can have stable indices
+// and still be able to remove props. Deleted props are set to std::nullopt
+// so any access should check if the optional has a value first.
+// The vector is cleared at the end of each mission, never during.
 extern SCP_vector<std::optional<prop>> Props;
 
 inline int prop_info_size()
