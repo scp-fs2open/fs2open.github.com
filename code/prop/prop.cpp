@@ -626,27 +626,6 @@ void prop_render(object* obj, model_draw_list* scene)
 	model_render_queue(&render_info, scene, pip->model_num, &obj->orient, &obj->pos);
 }
 
-void spawn_test_prop()
-{
-	int prop_idx = prop_info_lookup("TestProp"); // whatever’s in your props.tbl
-	if (prop_idx < 0) {
-		mprintf(("TEST: Prop not found!\n"));
-		return;
-	}
-
-	matrix mtx = vmd_identity_matrix;
-	vec3d pos = ZERO_VECTOR;
-	pos.xyz.z = -2000.0f;
-
-	int objnum = prop_create(&mtx, &pos, prop_idx, "Test Prop");
-
-	if (objnum >= 0) {
-		mprintf(("TEST: Spawned prop '%s' at objnum %d\n", Prop_info[prop_idx].name, objnum));
-	} else {
-		mprintf(("TEST: Failed to create prop\n"));
-	}
-}
-
 void props_level_close()
 {
 	for (auto& opt_prop : Props) {

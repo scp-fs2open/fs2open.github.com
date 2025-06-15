@@ -74,5 +74,3 @@ prop* prop_id_lookup(int id);
 void change_prop_type(int n, int prop_type);
 
 int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, collision_info_struct* prop_hit_info);
-
-void spawn_test_prop();
