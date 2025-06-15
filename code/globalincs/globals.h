@@ -34,9 +34,6 @@
 #define MAX_SHIPS					500		// max number of ship instances there can be.DTP; bumped from 200 to 400, then to 500 in 2022
 #define SHIPS_LIMIT					500		// what MAX_SHIPS will be at release time (for error checking in debug mode); dtp Bumped from 200 to 400, then to 500 in 2022
 
-// from prop.h
-#define MAX_PROPS               200 // Arbitrary guess
-
 // from missionparse.h and then redefined to the same value in sexp.h
 #define TOKEN_LENGTH	32
 
