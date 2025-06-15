@@ -251,17 +251,6 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 	prop_info* pip;
 	prop* propp;
 
-	if (Props.size() >= MAX_PROPS) {
-		if (!Fred_running) {
-			Error(LOCATION,
-				"There is a limit of %d props in the mission at once.  Please be sure that you do not have more "
-				"than %d props present in the mission at the same time.",
-				MAX_PROPS,
-				MAX_PROPS);
-		}
-		return -1;
-	}
-
 	Assertion((prop_type >= 0) && (prop_type < static_cast<int>(Prop_info.size())),
 		"Invalid prop_type %d passed to prop_create() (expected value in the range 0-%d)\n",
 		prop_type,
@@ -834,7 +823,7 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 				asteroid* astp = &Asteroids[instance];
 				mc.model_instance_num = astp->model_instance_num;
 				mc.model_num = Asteroid_info[astp->asteroid_type].subtypes[astp->asteroid_subtype].model_number;	
-				mc.submodel_num - 1; // Typo from asteroth?
+				mc.submodel_num = -1;
 			}
 
 			mc.orient = &heavy_obj->orient;				// The object's orient
