@@ -6997,7 +6997,8 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 		
 		// if we know the other object is a weapon, then do a weapon hit to kill the weapon
 		if ( other_objp && (other_objp->type == OBJ_WEAPON) ){
-			weapon_hit( other_objp, objp, &hitpos );
+			bool armed = weapon_hit( other_objp, objp, &hitpos );
+			maybe_play_conditional_impacts({}, other_objp, objp, armed, -1, &hitpos);
 		}
 		break;
 	}

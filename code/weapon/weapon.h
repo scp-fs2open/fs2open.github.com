@@ -325,8 +325,17 @@ enum class HomingAcquisitionType {
 	RANDOM,
 };
 
+enum class HitType {
+	SHIELD,
+	SUBSYS,
+	HULL,
+	NONE,
+};
+
+constexpr size_t NumHitTypes = static_cast<std::underlying_type_t<HitType>>(HitType::NONE);
+
 enum class SpecialImpactCondition {
-	NO_ARMOR,
+	DEBRIS,
 	ASTEROID,
 	EMPTY_SPACE,
 	LASER_POKETHROUGH,
@@ -334,9 +343,17 @@ enum class SpecialImpactCondition {
 
 using ImpactCondition = std::variant<int, SpecialImpactCondition>;
 
+struct ConditionData {
+	ImpactCondition condition = SpecialImpactCondition::EMPTY_SPACE;
+	HitType hit_type = HitType::NONE;
+	float damage = 0.0f;
+	float health = 1.0f;
+	float max_health = 1.0f;
+};
+
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	bool disable_when_subsys_also_hit;
+	bool disable_on_subsys_passthrough;
 	::util::ParsedRandomFloatRange min_health_threshold; // factor, 0-1
 	::util::ParsedRandomFloatRange max_health_threshold; // factor, 0-1
 	::util::ParsedRandomFloatRange min_damage_hits_ratio; // factor
@@ -1052,7 +1069,8 @@ size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, 
 void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr, const vec3d* local_hitpos = nullptr, int submodel = -1 );
+void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes> impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);
+bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1 );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
