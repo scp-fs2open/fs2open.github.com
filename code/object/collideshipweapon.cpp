@@ -642,7 +642,6 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 	Assert(propp->objnum == OBJ_INDEX(prop_objp));
 
 	int	valid_hit_occurred = 0;				// If this is set, then hitpos is set
-	polymodel* pm = model_get(prinfo->model_num);
 
 	//	total time is flFrametime + time_limit (time_limit used to predict collisions into the future)
 	vec3d weapon_start_pos = weapon_objp->last_pos;
@@ -692,56 +691,52 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
 		*wp->collisionInfo = mc;
 
-		bool ship_override = false, weapon_override = false;
+		bool prop_override = false, weapon_override = false;
 
 		// get submodel handle if scripting needs it
 		bool has_submodel = (mc.hit_submodel >= 0);
 		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
 
 
-		// TODO PROP
-		/*
 		if (scripting::hooks::OnWeaponCollision->isActive()) {
-			ship_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			prop_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-		if (scripting::hooks::OnShipCollision->isActive()) {
-			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+		if (scripting::hooks::OnPropCollision->isActive()) {
+			weapon_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', ship_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
-					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}*/
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}
 
-		if (!ship_override && !weapon_override) {
+		if (!prop_override && !weapon_override) {
 			weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS, &mc.hit_normal, &mc.hit_point, mc.hit_submodel);
 		}
 
-		// TODO PROP
-		/*
-		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !ship_override)) {
-			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !prop_override)) {
+			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc->hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-		if (scripting::hooks::OnShipCollision->isActive() && !ship_override) {
-			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+		if (scripting::hooks::OnPropCollision->isActive() && !prop_override) {
+			scripting::hooks::OnPropCollision->run(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', ship_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc->hit_point_world),
-					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}*/
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}
 	}
 
 	return valid_hit_occurred;

@@ -3409,8 +3409,6 @@ int beam_collide_prop(obj_pair* pair)
 
 	bwi = &Weapon_info[a_beam->weapon_info_index];
 
-	polymodel* pm = model_get(model_num);
-
 	// get the width of the beam
 	width = a_beam->beam_collide_width * a_beam->current_width_factor;
 
@@ -3451,61 +3449,56 @@ int beam_collide_prop(obj_pair* pair)
 	if (hit)
 	{
 
-		bool ship_override = false, weapon_override = false;
+		bool prop_override = false, weapon_override = false;
 
 		// get submodel handle if scripting needs it
 		bool has_submodel = (mc.hit_submodel >= 0);
 		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
 
-		// TODO PROP
-		/*
 		if (scripting::hooks::OnBeamCollision->isActive()) {
-			ship_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+			prop_override = scripting::hooks::OnBeamCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Beam", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
 
-		if (scripting::hooks::OnShipCollision->isActive()) {
-			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+		if (scripting::hooks::OnPropCollision->isActive()) {
+			weapon_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', ship_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Beam", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world),
-					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}*/
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+		}
 
-		if (!ship_override && !weapon_override)
+		if (!prop_override && !weapon_override)
 		{
 			// add to the collision_list
 			// if we got "tooled", add an exit hole too
 			beam_add_collision(a_beam, prop_objp, &mc, MISS_SHIELDS, false);
 		}
 
-		//TODO PROP
-		/*
-		if (scripting::hooks::OnBeamCollision->isActive() && !(weapon_override && !ship_override)) {
-			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+		if (scripting::hooks::OnBeamCollision->isActive() && !(weapon_override && !prop_override)) {
+			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Beam", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
 		}
-		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !ship_override) || (!weapon_override && !ship_override)))
+		if (scripting::hooks::OnShipCollision->isActive() && ((weapon_override && !prop_override) || (!weapon_override && !prop_override)))
 		{
-			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, weapon_objp} },
+			scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', ship_objp),
-					scripting::hook_param("Ship", 'o', ship_objp),
+					scripting::hook_param("Object", 'o', prop_objp),
+					scripting::hook_param("Prop", 'o', prop_objp),
 					scripting::hook_param("Beam", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc_array[i]->hit_point_world),
-					scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
-		*/
 	}
 
 	// reset timestamp to timeout immediately
