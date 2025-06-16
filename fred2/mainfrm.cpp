@@ -133,7 +133,7 @@ void CMainFrame::init_tools()
 		if (it->flags[Prop::Info_Flags::No_fred]) {
 			continue;
 		} else {
-			m_new_prop_type_combo_box.AddString(it->name);
+			m_new_prop_type_combo_box.AddString(it->name.c_str());
 			m_new_prop_type_combo_box.SetItemData((int)prop_type_combo_box_size, std::distance(Prop_info.begin(), it));
 			prop_type_combo_box_size++;
 		}
@@ -470,8 +470,15 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		BOOL fDisabled = !IsWindowEnabled();
 
 		COLORREF newTextColor = RGB(0x80, 0x80, 0x80); // light gray
-		if (!fDisabled && pip == nullptr) {
-			newTextColor = RGB(0, 0, 0);
+		if (!fDisabled) {
+			if (pip == nullptr)
+				newTextColor = RGB(0, 0, 0);
+			else {
+				auto cinfo = prop_get_category(pip->category);
+				if (cinfo != nullptr) {
+					newTextColor = RGB(cinfo->color.red, cinfo->color.green, cinfo->color.blue);
+				}
+			}
 		}
 
 		COLORREF oldTextColor = pDC->SetTextColor(newTextColor);
@@ -492,7 +499,7 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 		}
 
 		if (pip != nullptr) {
-			strText = _T(pip->name);
+			strText = _T(pip->name.c_str());
 		} else {
 			if (prop_type_combo_box_size == 0) {
 				strText = _T("No props available");
