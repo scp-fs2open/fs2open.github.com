@@ -3,43 +3,10 @@
 
 #include "globalincs/utility.h"
 
-#include "animation_handle.h"
-#include "cockpit_display.h"
-#include "enums.h"
-#include "message.h"
 #include "modelinstance.h"
 #include "object.h"
-#include "order.h"
-#include "parse_object.h"
-#include "ship.h"
-#include "ship_bank.h"
-#include "shipclass.h"
-#include "subsystem.h"
-#include "team.h"
-#include "texture.h"
-#include "vecmath.h"
-#include "waypoint.h"
-#include "weaponclass.h"
-#include "wing.h"
-
 #include "prop.h"
 #include "propclass.h"
-
-#include "ai/aigoals.h"
-#include "hud/hudets.h"
-#include "hud/hudshield.h"
-#include "mission/missionlog.h"
-#include "mission/missionmessage.h"
-#include "model/model.h"
-#include "network/multiutil.h"
-#include "object/object.h"
-#include "object/objectdock.h"
-#include "parse/parselo.h"
-#include "playerman/player.h"
-#include "scripting/api/objs/message.h"
-#include "ship/ship.h"
-#include "ship/shipfx.h"
-#include "ship/shiphit.h"
 
 #include "prop/prop.h"
 
@@ -92,7 +59,7 @@ ADE_VIRTVAR(Class,
 
 	prop* propp = prop_id_lookup(objh->objp()->instance);
 
-	if (ADE_SETTING_VAR && idx > -1) {
+	if (ADE_SETTING_VAR && SCP_vector_inbounds(Prop_info, idx)) {
 		change_prop_type(objh->objp()->instance, idx);
 	}
 
