@@ -452,7 +452,7 @@ SCP_string get_prop_table_text(const prop_info* pip)
 			while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
 				i++;
 
-			if (!stricmp(line2 + i, pip->name)) {
+			if (!stricmp(line2 + i, pip->name.c_str())) {
 				result += "-- props.tbl -------------------------------\r\n";
 				found = 1;
 			}
@@ -510,7 +510,7 @@ SCP_string get_prop_table_text(const prop_info* pip)
 				while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
 					i++;
 
-				if (!stricmp(line2 + i, pip->name)) {
+				if (!stricmp(line2 + i, pip->name.c_str())) {
 					memset(file_text, 0, sizeof(file_text));
 					snprintf(file_text,
 						sizeof(file_text) - 1,
