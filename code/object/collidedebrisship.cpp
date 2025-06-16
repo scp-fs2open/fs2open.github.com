@@ -458,26 +458,24 @@ int collide_debris_prop(obj_pair* pair)
 			bool has_submodel = (debris_hit_info.heavy_submodel_num >= 0);
 			scripting::api::submodel_h smh(debris_hit_info.heavy_model_num, debris_hit_info.heavy_submodel_num);
 
-			// TODO PROP
-			/*
 			if (scripting::hooks::OnDebrisCollision->isActive()) {
-				ship_override = scripting::hooks::OnDebrisCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+				ship_override = scripting::hooks::OnDebrisCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 						scripting::hook_param("Object", 'o', debris_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Ship", 'o', prop_objp),
 						scripting::hook_param("Debris", 'o', debris_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 
-			if (scripting::hooks::OnShipCollision->isActive()) {
-				debris_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
+			if (scripting::hooks::OnPropCollision->isActive()) {
+				debris_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
-						scripting::hook_param("Object", 'o', ship_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', prop_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Debris", 'o', debris_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (debris_hit_info.heavy == ship_objp))));
-			}*/
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (debris_hit_info.heavy == prop_objp))));
+			}
 
 			if (!ship_override && !debris_override)
 			{
@@ -591,26 +589,24 @@ int collide_asteroid_prop(obj_pair* pair)
 			bool has_submodel = (asteroid_hit_info.heavy_submodel_num >= 0);
 			scripting::api::submodel_h smh(asteroid_hit_info.heavy_model_num, asteroid_hit_info.heavy_submodel_num);
 
-			//Scripting support (WMC)
-			// TODO PROP
-			/*
+			//Scripting support
 			if (scripting::hooks::OnAsteroidCollision->isActive()) {
-				ship_override = scripting::hooks::OnAsteroidCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
+				ship_override = scripting::hooks::OnAsteroidCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
+					scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 						scripting::hook_param("Object", 'o', asteroid_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Asteroid", 'o', asteroid_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
 			if (scripting::hooks::OnShipCollision->isActive()) {
-				asteroid_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
+				asteroid_override = scripting::hooks::OnShipCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, asteroid_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
-						scripting::hook_param("Object", 'o', ship_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
+						scripting::hook_param("Object", 'o', prop_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Asteroid", 'o', asteroid_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (asteroid_hit_info.heavy == ship_objp))));
-			}*/
+						scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (asteroid_hit_info.heavy == prop_objp))));
+			}
 
 			if (!ship_override && !asteroid_override)
 			{
