@@ -93,6 +93,32 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
+void LabUi::build_prop_subtype_list() const
+{
+	for (size_t i = 0; i < Prop_categories.size(); i++) {
+		with_TreeNode(Prop_categories[i].name.c_str())
+		{
+			int prop_idx = 0;
+
+			for (auto const& class_def : Prop_info) {
+				if (lcase_equal(class_def.category, Prop_categories[i].name)) {
+					SCP_string node_label;
+					sprintf(node_label, "##PropClassIndex%i", prop_idx);
+					TreeNodeEx(node_label.c_str(),
+						ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+						"%s",
+						class_def.name.c_str());
+
+					if (IsItemClicked() && !IsItemToggledOpen()) {
+						getLabManager()->changeDisplayedObject(LabMode::Prop, prop_idx);
+					}
+				}
+				prop_idx++;
+			}
+		}
+	}
+}
+
 void LabUi::build_asteroid_list()
 {
 	with_TreeNode("Asteroids")
@@ -172,24 +198,11 @@ void LabUi::build_object_list()
 	}
 }
 
-void LabUi::build_prop_list()
+void LabUi::build_prop_list() const
 {
 	with_TreeNode("Prop Classes")
 	{
-		int prop_info_idx = 0;
-
-		for (auto const& class_def : Prop_info) {
-			SCP_string node_label;
-			sprintf(node_label, "##PropClassIndex%i", prop_info_idx);
-			TreeNodeEx(node_label.c_str(),
-				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-				"%s",
-				class_def.name);
-			if (IsItemClicked() && !IsItemToggledOpen()) {
-				getLabManager()->changeDisplayedObject(LabMode::Prop, prop_info_idx);
-			}
-			prop_info_idx++;
-		}
+		build_prop_subtype_list();
 	}
 }
 
@@ -294,9 +307,9 @@ void LabUi::show_object_selector() const
 
 			build_weapon_list();
 
-			build_object_list();
-
 			build_prop_list();
+
+			build_object_list();
 		}
 	}
 }
