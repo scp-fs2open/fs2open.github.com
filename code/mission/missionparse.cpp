@@ -5253,7 +5253,7 @@ void post_process_path_stuff()
 }
 
 // MjnMixael
-void post_process_props()
+void post_process_mission_props()
 {
 	for (int i = 0; i < static_cast<int>(Parse_props.size()); i++) {
 		parsed_prop* propp = &Parse_props[i];
@@ -6629,7 +6629,7 @@ bool post_process_mission(mission *pm)
 	ship_weapon	*swp;
 	ship_obj *so;
 
-	post_process_props();
+	post_process_mission_props();
 
 	// Goober5000 - this must be done even before post_process_ships_wings because it is a prerequisite
 	ship_clear_ship_type_counts();
