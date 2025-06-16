@@ -4,6 +4,7 @@
 #include "debris/debris.h"
 #include "freespace.h"
 #include "model/model.h"
+#include "model/modelreplace.h"
 #include "parse/parselo.h"
 #include "render/3d.h"
 #include "ship/shipfx.h"
@@ -19,6 +20,8 @@ SCP_vector<prop_info> Prop_info;
 
 SCP_vector<std::optional<prop>> Props;
 
+SCP_vector<prop_category> Prop_categories;
+
 static SCP_vector<SCP_string> Removed_props;
 
 /**
@@ -29,7 +32,7 @@ int prop_info_lookup(const char* token)
 	Assertion(token != nullptr, "NULL token passed to prop_info_lookup");
 
 	for (auto it = Prop_info.cbegin(); it != Prop_info.cend(); ++it)
-		if (!stricmp(token, it->name))
+		if (!stricmp(token, it->name.c_str()))
 			return (int)std::distance(Prop_info.cbegin(), it);
 
 	return -1;
@@ -66,10 +69,46 @@ prop* prop_id_lookup(int id)
 	return &Props[id].value();
 }
 
+prop_category* prop_get_category(const SCP_string& name)
+{
+	for (auto it = Prop_categories.begin(); it != Prop_categories.end(); ++it) {
+		if (lcase_equal(name, it->name)) {
+			return &(*it);
+		}
+	}
+	return nullptr;
+}
+
 void parse_prop_table(const char* filename)
 {
 	read_file_text(filename, CF_TYPE_TABLES);
 	reset_parse();
+
+	if (optional_string("#PROP CATEGORIES")) {
+		while (optional_string("$Name:")) {
+			prop_category pc;
+			stuff_string(pc.name, F_NAME);
+
+			required_string("+Color:");
+			int rgb[3];
+			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			gr_init_color(&pc.color, rgb[0], rgb[1], rgb[2]);
+
+			Prop_categories.push_back(pc);
+
+			// Replace existing category if name matches (case-insensitive)
+			auto existing =
+				std::find_if(Prop_categories.begin(), Prop_categories.end(), [&pc](const prop_category& existing_pc) {
+					return !stricmp(existing_pc.name.c_str(), pc.name.c_str());
+				});
+
+			if (existing != Prop_categories.end()) {
+				*existing = pc; // Replace
+			} else {
+				Prop_categories.push_back(pc); // Add new
+			}
+		}
+	}
 
 	required_string("#PROPS");
 
@@ -147,26 +186,41 @@ void parse_prop_table(const char* filename)
 				continue;
 			}
 
-			// Check if there are too many ship classes
-			//if (Prop_info.size() >= MAX_SHIP_CLASSES) {
-				//Error(LOCATION, "Too many prop classes before '%s'; maximum is %d.\n", fname, MAX_SHIP_CLASSES);
-			//}
-
 			Prop_info.push_back(prop_info());
 			pip = &Prop_info.back();
 			first_time = true;
 
-			strcpy_s(pip->name, fname);
+			pip->name = fname;
 		}
 
-		required_string("+POF file:");
-		stuff_string(pip->pof_file, F_NAME, MAX_FILENAME_LEN);
+		if (optional_string("+POF file:")) {
+			char temp[32];
+			stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
+
+			bool valid = true;
+
+			// if this is a modular table, and we're replacing an existing file name, and the file doesn't exist, don't replace it
+			if (Parsing_modular_table) {
+				if (VALID_FNAME(pip->pof_file)) {
+					if (!model_exists(temp)) {
+						valid = false;
+					}
+				}
+			}
+
+
+			if (valid) {
+				pip->pof_file = temp;
+			} else {
+				WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", pip->name.c_str(), temp);
+			}
+		}
 
 		if (optional_string("$Closeup_pos:")) {
 			stuff_vec3d(&pip->closeup_pos);
 		} else if (first_time && VALID_FNAME(pip->pof_file)) {
 			// Calculate from the model file. This is inefficient, but whatever
-			int model_idx = model_load(pip->pof_file);
+			int model_idx = model_load(pip->pof_file.c_str());
 			polymodel* pm = model_get(model_idx);
 
 			// Go through, find best
@@ -189,7 +243,7 @@ void parse_prop_table(const char* filename)
 			if (pip->closeup_zoom <= 0.0f) {
 				mprintf(("Warning!  Prop '%s' has a $Closeup_zoom value that is less than or equal to 0 (%f). Setting "
 						 "to default value.\n",
-					pip->name,
+					pip->name.c_str(),
 					pip->closeup_zoom));
 				pip->closeup_zoom = 0.5f;
 			}
@@ -197,6 +251,10 @@ void parse_prop_table(const char* filename)
 
 		if(optional_string("$Detail distance:")) {
 			pip->num_detail_levels = (int)stuff_int_list(pip->detail_distance, MAX_PROP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		}
+
+		if (optional_string("$Category:")) {
+			stuff_string(pip->category, F_NAME);
 		}
 
 		if (optional_string("$Custom data:")) {
@@ -228,6 +286,63 @@ void parse_prop_table(const char* filename)
 	required_string("#END");
 }
 
+void post_process_props()
+{
+	constexpr auto UnknownCategory = "Unknown Category";
+	bool create_unknown_category = false;
+	
+	// check for missing data
+	for (auto& pi : Prop_info) {
+		if (!VALID_FNAME(pi.pof_file)) {
+			Warning(LOCATION, "Prop '%s' has no POF file specified!", pi.name.c_str());
+		}
+		if (!VALID_FNAME(pi.category)) {
+			Warning(LOCATION, "Prop '%s' has no category specified!", pi.name.c_str());
+			pi.category = UnknownCategory;
+			create_unknown_category = true;
+			continue;
+		} else {
+			bool found = false;
+			for (const auto& pc : Prop_categories) {
+				if (!stricmp(pi.category.c_str(), pc.name.c_str())) {
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				Warning(LOCATION, "Prop '%s' has unknown category '%s'", pi.name.c_str(), pi.category.c_str());
+				pi.category = UnknownCategory;
+				create_unknown_category = true;
+			}
+		}
+	}
+
+	if (create_unknown_category) {
+		prop_category pc;
+		pc.name = "Unknown Category";
+		gr_init_color(&pc.color, 128, 128, 128);
+		Prop_categories.push_back(pc);
+	}
+
+	// Sort props by category order from Prop_categories, preserving internal order
+	std::stable_sort(Prop_info.begin(), Prop_info.end(), [](const prop_info& a, const prop_info& b) {
+		// Get index of a's category in Prop_categories
+		auto a_it = std::find_if(Prop_categories.begin(), Prop_categories.end(), [&](const prop_category& cat) {
+			return !stricmp(a.category.c_str(), cat.name.c_str());
+		});
+		int a_index = (a_it != Prop_categories.end()) ? static_cast<int>(std::distance(Prop_categories.begin(), a_it)) : INT_MAX;
+
+		// Get index of b's category in Prop_categories
+		auto b_it = std::find_if(Prop_categories.begin(), Prop_categories.end(), [&](const prop_category& cat) {
+			return !stricmp(b.category.c_str(), cat.name.c_str());
+		});
+		int b_index = (b_it != Prop_categories.end()) ? static_cast<int>(std::distance(Prop_categories.begin(), b_it)) : INT_MAX;
+
+		// Sort by category index
+		return a_index < b_index;
+	});
+}
+
 void prop_init()
 {
 	
@@ -238,6 +353,8 @@ void prop_init()
 
 	// parse any modular tables
 	parse_modular_table("*-prp.tbm", parse_prop_table);
+
+	post_process_props();
 
 	Props_inited = true;
 }
@@ -269,7 +386,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 		// regular name, regular suffix
 		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
-		strcpy_s(base_name, Prop_info[prop_type].name);
+		strcpy_s(base_name, Prop_info[prop_type].name.c_str());
 		sprintf(suffix, NOX(" %d"), static_cast<int>(Props.size()));
 
 		// start building name
@@ -289,10 +406,10 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 	}	
 
 	if (!VALID_FNAME(pip->pof_file)) {
-		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name);
+		Error(LOCATION, "Cannot create prop %s; pof file is not valid", pip->name.c_str());
 		return -1;
 	}
-	pip->model_num = model_load(pip->pof_file);
+	pip->model_num = model_load(pip->pof_file.c_str());
 
 	polymodel* pm = model_get(pip->model_num);
 
@@ -301,13 +418,13 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 			// just log to file for standalone servers
 			Warning(LOCATION,
 				"For prop '%s', detail level\nmismatch. Table has %d,\nPOF has %d.",
-				pip->name,
+				pip->name.c_str(),
 				pip->num_detail_levels,
 				pm->n_detail_levels);
 		} else {
 			nprintf(("Warning",
 				"For prop '%s', detail level mismatch. Table has %d, POF has %d.",
-				pip->name,
+				pip->name.c_str(),
 				pip->num_detail_levels,
 				pm->n_detail_levels));
 		}
@@ -430,7 +547,7 @@ static void prop_model_change(int n, int prop_type)
 
 	// get new model
 	if (sip->model_num == -1) {
-		sip->model_num = model_load(sip->pof_file);
+		sip->model_num = model_load(sip->pof_file.c_str());
 	}
 
 	polymodel* pm = model_get(sip->model_num);
@@ -472,11 +589,11 @@ static void prop_model_change(int n, int prop_type)
 		if ( !Is_standalone )
 		{
 			// just log to file for standalone servers
-			Warning(LOCATION, "For prop '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels );
+			Warning(LOCATION, "For prop '%s', detail level\nmismatch. Table has %d,\nPOF has %d.", sip->name.c_str(), sip->num_detail_levels, pm->n_detail_levels );
 		}
 		else
 		{
-			nprintf(("Warning",  "For prop '%s', detail level mismatch. Table has %d, POF has %d.", sip->name, sip->num_detail_levels, pm->n_detail_levels ));
+			nprintf(("Warning",  "For prop '%s', detail level mismatch. Table has %d, POF has %d.", sip->name.c_str(), sip->num_detail_levels, pm->n_detail_levels ));
 		}
 	}	
 	for (int i=0; i<pm->n_detail_levels; i++ )

@@ -3155,7 +3155,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			}
 
 			// Make sure model is loaded
-			model_num = model_load(pip->pof_file);
+			model_num = model_load(pip->pof_file.c_str());
 
 			break;
 

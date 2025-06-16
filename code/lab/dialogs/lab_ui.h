@@ -32,7 +32,8 @@ class LabUi {
 	static void build_object_list();
 	static void build_asteroid_list();
 	static void build_debris_list();
-	static void build_prop_list();
+	void build_prop_list() const;
+	void build_prop_subtype_list() const;
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;

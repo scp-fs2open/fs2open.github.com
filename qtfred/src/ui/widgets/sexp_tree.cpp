@@ -5165,7 +5165,7 @@ sexp_list_item* sexp_tree::get_listing_opf_prop_class_name()
 	sexp_list_item head;
 
 	for (auto& pi : Prop_info) {
-		head.add_data(pi.name);
+		head.add_data(pi.name.c_str());
 	}
 
 	return head.next;
