@@ -311,7 +311,7 @@ ADE_FUNC(isModelLoaded,
 		return ADE_RETURN_FALSE;
 
 	if (load_check) {
-		pip->model_num = model_load(pip->pof_file);
+		pip->model_num = model_load(pip->pof_file.c_str());
 	}
 
 	if (pip->model_num > -1)

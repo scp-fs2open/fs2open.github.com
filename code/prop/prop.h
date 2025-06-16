@@ -11,8 +11,9 @@
 #define MAX_PROP_DETAIL_LEVELS    MAX_SHIP_DETAIL_LEVELS
 
 typedef struct prop_info {
-	char name[NAME_LENGTH];                                     // Prop name
-	char pof_file[MAX_FILENAME_LEN];                            // Pof filename
+	SCP_string name;                                            // Prop name
+	SCP_string category;                                        // Category name
+	SCP_string pof_file;                                        // Pof filename
 	vec3d closeup_pos;                                          // position for camera when using ship in closeup view (eg briefing and techroom)
 	float closeup_zoom;                                         // zoom when using ship in closeup view (eg briefing and techroom)
 	int model_num;                                              // The model number of the loaded POF
@@ -37,6 +38,11 @@ typedef struct prop {
 	flagset<Prop::Prop_Flags> flags;
 } prop;
 
+typedef struct prop_category {
+	SCP_string name;
+	color color;
+} prop_category;
+
 typedef struct parsed_prop {
 	char name[NAME_LENGTH];
 	int prop_info_index;
@@ -49,6 +55,9 @@ extern bool Props_inited;
 
 // Global prop info
 extern SCP_vector<prop_info> Prop_info;
+
+// Global prop categories
+extern SCP_vector<prop_category> Prop_categories;
 
 // Global prop objects. Vector of optionals so that we can have stable indices
 // and still be able to remove props. Deleted props are set to std::nullopt
@@ -76,5 +85,7 @@ int prop_name_lookup(const char* name);
 prop* prop_id_lookup(int id);
 
 void change_prop_type(int n, int prop_type);
+
+prop_category* prop_get_category(const SCP_string& name);
 
 int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, collision_info_struct* prop_hit_info);
