@@ -178,7 +178,7 @@ void parse_prop_table(const char* filename)
 		}
 		// an entry does not exist
 		else {
-			// Don't create ship if it has +nocreate and is in a modular table.
+			// Don't create prop if it has +nocreate and is in a modular table.
 			if (!create_if_not_found && Parsing_modular_table) {
 				if (!skip_to_start_of_string_either("$Name:", "#End")) {
 					error_display(1, "Missing [#End] or [$Name] after prop class %s", fname);
@@ -212,7 +212,7 @@ void parse_prop_table(const char* filename)
 			if (valid) {
 				pip->pof_file = temp;
 			} else {
-				WarningEx(LOCATION, "Ship %s\nPOF file \"%s\" invalid!", pip->name.c_str(), temp);
+				WarningEx(LOCATION, "Prop %s\nPOF file \"%s\" invalid!", pip->name.c_str(), temp);
 			}
 		}
 
@@ -360,7 +360,7 @@ void prop_init()
 }
 
 /**
- * Returns object index of ship.
+ * Returns object index of prop.
  * @return -1 means failed.
  */
 int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
@@ -432,14 +432,11 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 	for (int i = 0; i < pm->n_detail_levels; i++)
 		pm->detail_depth[i] = (i < pip->num_detail_levels) ? i2fl(pip->detail_distance[i]) : 0.0f;
 
-	flagset<Object::Object_Flags> default_ship_object_flags;
-	default_ship_object_flags.set(Object::Object_Flags::Renders);
-	default_ship_object_flags.set(Object::Object_Flags::Physics);
-	default_ship_object_flags.set(Object::Object_Flags::Immobile);
-	// JAS: Nav buoys don't need to do collisions!
-	// G5K: Corrected to apply specifically for ships with the no-collide flag.  (In retail, navbuoys already have this
-	// flag, so this doesn't break anything.)
-	default_ship_object_flags.set(Object::Object_Flags::Collides, !pip->flags[Prop::Info_Flags::No_collide]);
+	flagset<Object::Object_Flags> default_prop_object_flags;
+	default_prop_object_flags.set(Object::Object_Flags::Renders);
+	default_prop_object_flags.set(Object::Object_Flags::Physics);
+	default_prop_object_flags.set(Object::Object_Flags::Immobile);
+	default_prop_object_flags.set(Object::Object_Flags::Collides, !pip->flags[Prop::Info_Flags::No_collide]);
 
 	int objnum = obj_create(OBJ_PROP,
 		-1,
@@ -447,7 +444,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 		orient,
 		pos,
 		model_get_radius(pip->model_num),
-		default_ship_object_flags);
+		default_prop_object_flags);
 	Assert(objnum >= 0);
 
 	propp->objnum = objnum;
@@ -493,15 +490,13 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 
 	//animation::anim_set_initial_states(propp);
 
-	// Start up stracking for this ship in multi.
+	// Start up stracking for this prop in multi.
 	//if (Game_mode & (GM_MULTIPLAYER)) {
 		//multi_rollback_ship_record_add_ship(objnum);
 	//}
 
-	// Set time when ship is created
+	// Set time when prop is created
 	propp->create_time = timer_get_milliseconds();
-
-	//ship_make_create_time_unique(shipp);
 
 	propp->time_created = Missiontime;
 
@@ -622,26 +617,25 @@ void change_prop_type(int n, int prop_type)
 {
 	prop* sp = prop_id_lookup(n);
 
-	// do a quick out if we're already using the new ship class
+	// do a quick out if we're already using the new prop class
 	if (sp->prop_info_index == prop_type)
 		return;
 
 	int objnum = sp->objnum;
-	//auto prop_entry = ship_registry_get(sp->prop_name);
 
-	prop_info* sip = &(Prop_info[prop_type]);
-	prop_info* sip_orig = &Prop_info[sp->prop_info_index];
+	prop_info* pip = &(Prop_info[prop_type]);
+	prop_info* pip_orig = &Prop_info[sp->prop_info_index];
 	object* objp = &Objects[objnum];
 
-	// point to new ship data
+	// point to new prop data
 	prop_model_change(n, prop_type);
 	sp->prop_info_index = prop_type;
 
 	// check class-specific flags
 
-	if (sip->flags[Prop::Info_Flags::No_collide])								// changing TO a no-collision ship class
+	if (pip->flags[Prop::Info_Flags::No_collide])								// changing TO a no-collision prop class
 		obj_set_flags(objp, objp->flags - Object::Object_Flags::Collides);
-	else if (sip_orig->flags[Prop::Info_Flags::No_collide])						// changing FROM a no-collision ship class
+	else if (pip_orig->flags[Prop::Info_Flags::No_collide])						// changing FROM a no-collision prop class
 		obj_set_flags(objp, objp->flags + Object::Object_Flags::Collides);
 }
 
@@ -668,9 +662,6 @@ void prop_render(object* obj, model_draw_list* scene)
 	if (propp->flags[Prop::Prop_Flags::Render_with_alpha_mult]) {
 		render_info.set_alpha_mult(propp->alpha_mult);
 	}
-
-	// Valathil - maybe do a scripting hook here to do some scriptable effects?
-	//ship_render_set_animated_effect(&render_info, shipp, &render_flags);
 
 	if (pip->flags[Prop::Info_Flags::No_lighting]) {
 		render_flags |= MR_NO_LIGHTING;

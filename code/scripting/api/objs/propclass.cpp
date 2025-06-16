@@ -242,7 +242,7 @@ ADE_FUNC(renderTechModel,
 			&lighting))
 		return ade_set_error(L, "b", false);
 
-	if (idx < 0 || idx >= ship_info_size())
+	if (idx < 0 || idx >= prop_info_size())
 		return ade_set_args(L, "b", false);
 
 	if (x2 < x1 || y2 < y1)
@@ -280,7 +280,7 @@ ADE_FUNC(renderTechModel2,
 	if (!ade_get_args(L, "oiiiio|f", l_Propclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
 		return ade_set_error(L, "b", false);
 
-	if (idx < 0 || idx >= ship_info_size())
+	if (idx < 0 || idx >= prop_info_size())
 		return ade_set_args(L, "b", false);
 
 	if (x2 < x1 || y2 < y1)

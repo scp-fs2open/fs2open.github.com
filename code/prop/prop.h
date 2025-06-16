@@ -14,8 +14,8 @@ typedef struct prop_info {
 	SCP_string name;                                            // Prop name
 	SCP_string category;                                        // Category name
 	SCP_string pof_file;                                        // Pof filename
-	vec3d closeup_pos;                                          // position for camera when using ship in closeup view (eg briefing and techroom)
-	float closeup_zoom;                                         // zoom when using ship in closeup view (eg briefing and techroom)
+	vec3d closeup_pos;                                          // position for camera when using prop in closeup view (eg briefing and techroom)
+	float closeup_zoom;                                         // zoom when using prop in closeup view (eg briefing and techroom)
 	int model_num;                                              // The model number of the loaded POF
 	int num_detail_levels;                                      // Detail levels of the model
 	int detail_distance[MAX_PROP_DETAIL_LEVELS];                // distance to change detail levels at
@@ -74,7 +74,7 @@ inline int prop_info_size()
 void prop_init();
 
 // Object management
-int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* ship_name = nullptr);
+int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name = nullptr);
 void prop_delete(object* obj);
 void prop_render(object* obj, model_draw_list* scene);
 
