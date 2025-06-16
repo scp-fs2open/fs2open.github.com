@@ -4454,7 +4454,7 @@ void preload_change_prop_class(const char* text)
 	// preload the model, just in case there is no other prop of this class in the mission
 	// (this eliminates the slight pause during a mission when changing to a previously unloaded model)
 	pip = &Prop_info[idx];
-	pip->model_num = model_load(pip->pof_file);
+	pip->model_num = model_load(pip->pof_file.c_str());
 
 	if (pip->model_num >= 0)
 		model_page_in_textures(pip->model_num, idx);
