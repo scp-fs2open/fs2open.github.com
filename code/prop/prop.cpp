@@ -6,6 +6,7 @@
 #include "model/model.h"
 #include "model/modelreplace.h"
 #include "parse/parselo.h"
+#include "prop/prop_flags.h"
 #include "render/3d.h"
 #include "ship/shipfx.h"
 #include "object/objcollide.h"
@@ -23,6 +24,15 @@ SCP_vector<std::optional<prop>> Props;
 SCP_vector<prop_category> Prop_categories;
 
 static SCP_vector<SCP_string> Removed_props;
+
+flag_def_list_new<Prop::Info_Flags> Prop_flags[] = {
+    { "no_collide",					Prop::Info_Flags::No_collide,				true, false },
+    { "no_fred",					Prop::Info_Flags::No_fred,				true, false },
+    { "no lighting",				Prop::Info_Flags::No_lighting,			true, false }
+	//{ "no impact debris",			Prop::Info_Flags::No_impact_debris,		true, false },
+};
+
+const size_t Num_prop_flags = sizeof(Prop_flags) / sizeof(flag_def_list_new<Prop::Info_Flags>);
 
 /**
  * Return the index of Prop_info[].name that is *token.
@@ -193,7 +203,7 @@ void parse_prop_table(const char* filename)
 			pip->name = fname;
 		}
 
-		if (optional_string("+POF file:")) {
+		if (optional_string("$POF file:")) {
 			char temp[32];
 			stuff_string(temp, F_NAME, MAX_FILENAME_LEN);
 
@@ -255,6 +265,44 @@ void parse_prop_table(const char* filename)
 
 		if (optional_string("$Category:")) {
 			stuff_string(pip->category, F_NAME);
+		}
+
+		if (optional_string("$Flags:")) {
+			SCP_vector<SCP_string> prop_strings;
+			stuff_string_list(prop_strings);
+
+			for (const auto& flag : prop_strings) {
+				// get ship type from ship flags
+				const char* cur_flag = flag.c_str();
+				bool flag_found = false;
+
+				// check various ship flags
+				for (size_t idx = 0; idx < Num_prop_flags; idx++) {
+					if (!stricmp(Prop_flags[idx].name, cur_flag)) {
+						flag_found = true;
+
+						if (!Prop_flags[idx].in_use)
+							Warning(LOCATION,
+								"Use of '%s' flag for Prop Class '%s' - this flag is no longer needed.",
+								Prop_flags[idx].name,
+								pip->name.c_str());
+						else
+							pip->flags.set(Prop_flags[idx].def);
+
+						break;
+					}
+				}
+
+				// catch typos or deprecations
+				if (!stricmp(cur_flag, "no-collide") || !stricmp(cur_flag, "no_collide")) {
+					flag_found = true;
+					pip->flags.set(Prop::Info_Flags::No_collide);
+				}
+
+				if (!flag_found) {
+					Warning(LOCATION, "Bogus string in ship flags: %s\n", cur_flag);
+				}
+			}
 		}
 
 		if (optional_string("$Custom data:")) {
@@ -723,6 +771,40 @@ void prop_render(object* obj, model_draw_list* scene)
 	model_render_queue(&render_info, scene, pip->model_num, &obj->orient, &obj->pos);
 }
 
+// Draft. Props vector uses std::optional to allow for empty slots for deleted props so the indices of the remaining
+// props do not change. In long FRED sessions without saving and loading, this can lead to a lot of empty slots. However,
+// saving and loading the level will naturally compact the props vector by way of clearing and re-adding props.
+void compact_props_vector()
+{
+	SCP_vector<std::optional<prop>> new_props;
+	SCP_unordered_map<int, int> index_remap;
+
+	for (size_t i = 0; i < Props.size(); ++i) {
+		if (Props[i].has_value()) {
+			index_remap[static_cast<int>(i)] = static_cast<int>(new_props.size());
+			new_props.push_back(std::move(Props[i]));
+		}
+	}
+
+	Props = std::move(new_props);
+
+	// Remap object instances
+	for (object* obj = GET_FIRST(&obj_used_list); obj != END_OF_LIST(&obj_used_list); obj = GET_NEXT(obj)) {
+		if (obj->type == OBJ_PROP && obj->instance >= 0) {
+			auto it = index_remap.find(obj->instance);
+			Assertion(it != index_remap.end(), "Object is pointing to invalid prop index %d! Get a coder!", obj->instance);
+
+			if (it != index_remap.end()) {
+				obj->instance = it->second;
+			}
+		}
+	}
+}
+
+void props_level_init() {
+	Props.clear();
+}
+
 void props_level_close()
 {
 	for (auto& opt_prop : Props) {
@@ -734,7 +816,6 @@ void props_level_close()
 	// Clear all props and empty prop slots
 	Props.clear();
 }
-
 
 // handles prop-ship/debris/asteroid/weapon collisions
 int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, collision_info_struct* prop_hit_info)
