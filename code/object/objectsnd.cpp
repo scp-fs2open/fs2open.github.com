@@ -517,7 +517,7 @@ void obj_snd_do_frame()
 
 			// we don't want to start the engine sound unless the ship is
 			// moving (unless flag SIF_BIG_SHIP is set)
-			if ( (osp->flags & OS_ENGINE) && !(sip->is_big_or_huge()) ) {
+			if ( (osp->flags & OS_ENGINE) && (!(sip->is_big_or_huge()) || Unify_minimum_engine_sound) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
@@ -666,7 +666,8 @@ void obj_snd_do_frame()
 		channel = ds_get_channel(osp->instance);
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
-		if ( (sp == nullptr) || !(osp->flags & OS_ENGINE) || (sp->flags[Ship::Ship_Flags::Engines_on]) ) {
+		if ( (sp == nullptr) || !(osp->flags & OS_ENGINE) || 
+			(sp->flags[Ship::Ship_Flags::Engine_sound_on] && !(sp->flags[Ship::Ship_Flags::Disabled] && Disabled_engines_are_silent)) ) {
 			snd_set_volume( osp->instance, gs->volume_range.next() *speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {

@@ -7370,7 +7370,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
-	shipp->flags.set(Ship_Flags::Engines_on);
+	shipp->flags.set(Ship_Flags::Engine_sound_on);
 
 	// set certain flags that used to be in ship_info - Goober5000
 	if (sip->flags[Ship::Info_Flags::Stealth])
@@ -9561,7 +9561,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 		// If a ship is dying (and not a capital or big ship) then stutter the engine sound
 		if ( timestamp_elapsed(shipp->next_engine_stutter) ) {
 			if ( !(sip->is_big_or_huge()) ) {
-				shipp->flags.toggle(Ship_Flags::Engines_on);			// toggle state of engines
+				shipp->flags.toggle(Ship_Flags::Engine_sound_on); // toggle state of engines
 				shipp->next_engine_stutter = timestamp_rand(50, 250);
 			}
 		}

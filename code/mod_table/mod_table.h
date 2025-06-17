@@ -167,6 +167,8 @@ extern bool SCPUI_loads_hi_res_animations;
 extern bool Auto_assign_personas;
 extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
+extern bool Unify_minimum_engine_sound;
+extern bool Disabled_engines_are_silent;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
 extern bool Disable_shield_effects;
