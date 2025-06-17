@@ -11,6 +11,7 @@
 #include "asteroid/asteroid.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "prop/prop.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
