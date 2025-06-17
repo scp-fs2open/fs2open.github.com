@@ -672,6 +672,10 @@ void obj_delete_all()
 		obj_delete(i);
 	}
 
+	// If we've removed all objects then we can safely
+	// clear the Props vector TODO maybe remove this?
+	Props.clear();
+
 	mprintf(("Cleanup: Deleted %i objects\n", counter));
 }
 

@@ -72,6 +72,9 @@ public:
 		// Unload any asteroids that were loaded
 		asteroid_level_close();
 
+		// Unload any props that were loaded
+		props_level_close();
+
 		// Lab can only be entered from the Mainhall so this should be safe
 		model_free_all();
 

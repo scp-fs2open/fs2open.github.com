@@ -13,6 +13,7 @@
 #include <mission/missiongoals.h>
 #include <asteroid/asteroid.h>
 #include <jumpnode/jumpnode.h>
+#include <prop/prop.h>
 #include <util.h>
 #include <mission/missionmessage.h>
 #include <missioneditor/common.h>
@@ -485,6 +486,7 @@ void Editor::clearMission(bool fast_reload) {
 		model_free_all();                // Free all existing models
 
 	ai_init();
+	props_level_init();
 	asteroid_level_init();
 	ship_level_init();
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);

@@ -78,6 +78,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name = nu
 void prop_delete(object* obj);
 void prop_render(object* obj, model_draw_list* scene);
 
+void props_level_init();
 void props_level_close();
 
 int prop_info_lookup(const char* token);

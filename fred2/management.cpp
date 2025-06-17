@@ -879,6 +879,7 @@ void clear_mission(bool fast_reload)
 		model_free_all();				// Free all existing models
 
 	ai_init();
+	props_level_init();
 	asteroid_level_init();
 	ship_level_init();
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);

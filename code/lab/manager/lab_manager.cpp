@@ -11,6 +11,7 @@
 #include "ship/ship.h"
 #include "ship/shipfx.h"
 #include "particle/particle.h"
+#include "prop/prop.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
 #include "ai/aigoals.h"
@@ -46,6 +47,7 @@ LabManager::LabManager() {
 	debris_init();
 	extern void debris_page_in();
 	debris_page_in();
+	props_level_init();
 	asteroid_level_init();
 	shockwave_level_init();
 	ship_level_init();
