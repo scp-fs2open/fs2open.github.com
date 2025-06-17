@@ -96,9 +96,9 @@ ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "strin
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
-ADE_VIRTVAR(FamilyName, l_Font, "string", "Family Name of font. Bitmap fonts always return 'Volition Font'.", "string", NULL)
+ADE_VIRTVAR(FamilyName, l_Font, "string", "Family Name of font. Bitmap fonts always return 'Volition Font'.", "string", nullptr)
 {
-	font_h *fh = NULL;
+	font_h *fh = nullptr;
 	const char* newname = nullptr;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
