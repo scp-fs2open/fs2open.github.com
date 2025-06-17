@@ -157,12 +157,24 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 	vm_vec_unrotate(&noiseTarget, &noiseSampleLocal, orientation);
 }
 
-void ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+template<bool isPersistent>
+auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+	using persistentParticlesList = std::conditional_t<isPersistent, SCP_vector<WeakParticlePtr>, bool>;
+	persistentParticlesList createdParticles;
+
+	if constexpr (!isPersistent)
+		SCP_UNUSED(createdParticles);
+
 	if (m_affectedByDetail){
 		if (Detail.num_particles > 0)
 			particle_percent *= (0.5f + (0.25f * static_cast<float>(Detail.num_particles - 1)));
-		else
-			return; //Will not emit on current detail settings, but may in the future.
+		else {
+			//Will not emit on current detail settings, but may in the future.
+			if constexpr (isPersistent)
+				return createdParticles;
+			else
+				return;
+		}
 	}
 
 	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber);
@@ -302,6 +314,9 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 		if (m_particleTrail.isValid()) {
 			auto part = createPersistent(&info);
 
+			if constexpr (isPersistent)
+				createdParticles.push_back(part);
+
 			// There are some possibilities where we can get a null pointer back. Those are very rare but we
 			// still shouldn't crash in those circumstances.
 			if (!part.expired()) {
@@ -310,10 +325,27 @@ void ParticleEffect::processSource(float interp, const ParticleSource& source, s
 				trailSource->finishCreation();
 			}
 		} else {
-			// We don't have a trail so we don't need a persistent particle
-			create(&info);
+			if constexpr (isPersistent){
+				auto part = createPersistent(&info);
+				createdParticles.push_back(part);
+			}
+			else {
+				// We don't have a trail so we don't need a persistent particle
+				create(&info);
+			}
 		}
 	}
+
+	if constexpr (isPersistent)
+		return createdParticles;
+}
+
+void ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+	processSourceInternal<false>(interp, source, effectNumber, velParent, parent, parent_sig, parentLifetime, parentRadius, particle_percent);
+}
+
+SCP_vector<WeakParticlePtr> ParticleEffect::processSourcePersistent(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+	return processSourceInternal<true>(interp, source, effectNumber, velParent, parent, parent_sig, parentLifetime, parentRadius, particle_percent);
 }
 
 void ParticleEffect::pageIn() {

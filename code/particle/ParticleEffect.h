@@ -15,6 +15,9 @@ class EffectHost;
 
 //Due to parsing shenanigans in weapons, this needs a forward-declare here
 int parse_weapon(int, bool, const char*);
+namespace scripting::api {
+	particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap);
+}
 
 namespace anl {
 	class CKernel;
@@ -84,6 +87,8 @@ public:
 
 	friend int ::parse_weapon(int, bool, const char*);
 
+	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap);
+
 	SCP_string m_name; //!< The name of this effect
 
 	Duration m_duration;
@@ -136,7 +141,10 @@ public:
 
 	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
 	void sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, const std::tuple<const ParticleSource&, const size_t&>& source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const;
- public:
+
+	template<bool isPersistent>
+	auto processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+  public:
 	/**
 	 * @brief Initializes the base ParticleEffect
 	 * @param name The name this effect should have
@@ -169,6 +177,7 @@ public:
 	);
 
 	void processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+	SCP_vector<WeakParticlePtr> processSourcePersistent(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
 
 	void pageIn();
 
