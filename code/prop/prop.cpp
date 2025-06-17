@@ -52,7 +52,7 @@ int prop_name_lookup(const char *name)
 {
 	Assertion(name != nullptr, "NULL name passed to prop_name_lookup");
 
-	for (int i=0; i<static_cast<int>(Props.size()); i++){
+	for (size_t i=0; i < Props.size(); i++){
 		auto prop = Props[i] ? &Props[i].value() : nullptr;
 		if (prop == nullptr) {
 			continue;
@@ -60,13 +60,23 @@ int prop_name_lookup(const char *name)
 		if (prop->objnum >= 0){
 			if (Objects[prop->objnum].type == OBJ_PROP) {
 				if (!stricmp(name, prop->prop_name)) {
-					return i;
+					return static_cast<int>(i);
 				}
 			}
 		}
 	}
 	
 	// couldn't find it
+	return -1;
+}
+
+int find_prop_empty_slot() {
+	for (size_t i = 0; i < Props.size(); i++) {
+		if (!Props[i].has_value()) {
+			return static_cast<int>(i);
+		}
+	}
+
 	return -1;
 }
 
@@ -423,8 +433,15 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 
 	pip = &(Prop_info[prop_type]);
 
-	Props.emplace_back(prop());
-	int new_id = static_cast<int>(Props.size()) - 1;
+	int new_id = find_prop_empty_slot();
+
+	if (new_id < 0) {
+		Props.emplace_back(prop());
+		new_id = static_cast<int>(Props.size()) - 1;
+	} else {
+		Props[new_id] = prop();
+	}
+
 	propp = prop_id_lookup(new_id);
 	Assertion(propp != nullptr, "Could not create prop!");
 
