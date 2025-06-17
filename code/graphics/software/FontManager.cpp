@@ -310,8 +310,117 @@ namespace font
 		}
 	}
 
+	// This function will extract the font family name (Name ID 1) from TrueType font data.
+	// It handles UCS-2 (UTF-16BE) to UTF-8 conversion.
+	static SCP_string extractFamilyNameFromTTF(const ubyte* data, int size)
+	{
+		// TTF/OTF fonts start the table directory at byte 12.
+		int table_offset = 12;
+		
+		if (size < table_offset) {
+			return "Unknown";
+		}
+
+		// Offset to the start of the table directory (after SFNT header)
+		const uint8_t* tableDir = data + table_offset;
+
+		// Read numTables (ushort at offset 4 in SFNT header)
+		// The SFNT header bytes are big-endian
+		uint16_t numTables = (static_cast<uint16_t>(data[4]) << 8) | static_cast<uint16_t>(data[5]);
+
+		const uint8_t* nameTable = nullptr;
+
+		// Iterate through table directory entries to find the 'name' table
+		for (int i = 0; i < numTables; ++i) {
+			const uint8_t* entry = tableDir + i * 16; // Each entry is 16 bytes
+
+			// Read table tag (4 bytes)
+			uint32_t tag = (static_cast<uint32_t>(entry[0]) << 24) | (static_cast<uint32_t>(entry[1]) << 16) |
+						   (static_cast<uint32_t>(entry[2]) << 8) | static_cast<uint32_t>(entry[3]);
+
+			// Check if it's the 'name' table (tag 0x6E616D65)
+			if (tag == 0x6E616D65) {
+				// Read offset to the 'name' table (4 bytes, big-endian)
+				uint32_t offset = (static_cast<uint32_t>(entry[8]) << 24) | (static_cast<uint32_t>(entry[9]) << 16) |
+								  (static_cast<uint32_t>(entry[10]) << 8) | static_cast<uint32_t>(entry[11]);
+				nameTable = data + offset;
+				break;
+			}
+		}
+
+		if (!nameTable) {
+			return "Unknown";
+		}
+
+		// Name table header - All values are big-endian
+		uint16_t count = (static_cast<uint16_t>(nameTable[2]) << 8) | static_cast<uint16_t>(nameTable[3]);
+		uint16_t stringOffset = (static_cast<uint16_t>(nameTable[4]) << 8) | static_cast<uint16_t>(nameTable[5]);
+
+		// Iterate through name records
+		for (int i = 0; i < count; ++i) {
+			const uint8_t* record = nameTable + 6 + i * 12; // 6 bytes for name table header, 12 bytes per record
+
+			// Read metadata for the record
+			uint16_t platformID = (static_cast<uint16_t>(record[0]) << 8) | static_cast<uint16_t>(record[1]);
+			uint16_t encodingID = (static_cast<uint16_t>(record[2]) << 8) | static_cast<uint16_t>(record[3]);
+			uint16_t nameID = (static_cast<uint16_t>(record[6]) << 8) | static_cast<uint16_t>(record[7]);
+			uint16_t length = (static_cast<uint16_t>(record[8]) << 8) | static_cast<uint16_t>(record[9]);
+			uint16_t offset = (static_cast<uint16_t>(record[10]) << 8) | static_cast<uint16_t>(record[11]);
+
+			// We are looking for Name ID 1 (Font Family Name)
+			// Prefer Unicode (Platform ID 0, 3) or Apple Roman (Platform ID 1) if available
+			if (nameID == 1) {
+				// Check for Unicode (Platform ID 0, Encoding ID 3 or 4) or (Platform ID 3, Encoding ID 1)
+				// or Mac Roman (Platform ID 1, Encoding ID 0)
+				bool isUnicode = (platformID == 0 && (encodingID == 3 || encodingID == 4)) || (platformID == 3 && encodingID == 1);
+				bool isMacRoman = (platformID == 1 && encodingID == 0);
+
+				if (isUnicode || isMacRoman) {
+					const uint8_t* nameString = nameTable + stringOffset + offset;
+					SCP_string familyName;
+
+					// Bounds check to prevent reading past the end of the font metadata
+					if (nameString + length > data + size) {
+						return "Unknown";
+					}
+
+					if (isUnicode) {
+						// UCS-2 (UTF-16BE) to UTF-8 conversion
+						// This assumes standard UCS-2, which is UTF-16BE for basic multilingual plane.
+						for (int j = 0; j < length; j += 2) {
+							uint16_t unicodeChar =
+								(static_cast<uint16_t>(nameString[j]) << 8) | static_cast<uint16_t>(nameString[j + 1]);
+
+							if (unicodeChar <= 0x7F) { // 1-byte UTF-8
+								familyName += static_cast<char>(unicodeChar);
+							} else if (unicodeChar <= 0x7FF) { // 2-byte UTF-8
+								familyName += static_cast<char>(0xC0 | (unicodeChar >> 6));
+								familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+							} else { // 3-byte UTF-8
+								familyName += static_cast<char>(0xE0 | (unicodeChar >> 12));
+								familyName += static_cast<char>(0x80 | ((unicodeChar >> 6) & 0x3F));
+								familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+							}
+							// For supplementary planes (4-byte UTF-8, characters > 0xFFFF),
+							// this simple conversion is not sufficient and would require surrogate pair handling.
+							// Most common font names will be in BMP (Basic Multilingual Plane) according to my research - Mjn
+						}
+					} else { // Mac Roman (single byte) - this encoding is less common but supported easily enough
+						for (int j = 0; j < length; ++j) {
+							familyName += static_cast<char>(nameString[j]);
+						}
+					}
+					return familyName;
+				}
+			}
+		}
+
+		return "Unknown"; // No suitable family name found
+	}
+
 	std::pair<NVGFont*, int> FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
 	{
+		SCP_string familyName;
 		auto iter = allocatedData.find(fileName);
 		if (iter == allocatedData.end())
 		{
@@ -338,6 +447,8 @@ namespace font
 
 			TrueTypeFontData newData;
 
+			familyName = extractFamilyNameFromTTF(fontData.get(), size);
+
 			newData.size = static_cast<size_t>(size);
 			std::swap(newData.data, fontData);
 
@@ -360,6 +471,7 @@ namespace font
 		std::unique_ptr<NVGFont> nvgFont(new NVGFont());
 		nvgFont->setHandle(handle);
 		nvgFont->setSize(fontSize);
+		nvgFont->setFamilyName(familyName);
 
 		auto ptr = nvgFont.get();
 

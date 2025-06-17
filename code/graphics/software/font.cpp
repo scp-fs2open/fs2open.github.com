@@ -315,6 +315,7 @@ namespace
 
 		font->setName(fontName);
 		font->setFilename(fontFilename);
+		font->setFamilyName("Volition Font");
 
 		int font_id = vfntPair.second;
 

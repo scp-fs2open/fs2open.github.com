@@ -39,6 +39,7 @@ namespace font
 	private:
 		SCP_string name = "<Invalid>";	//!< The name of this font
 		SCP_string filename;			//!< The file name used to retrieve this font
+		SCP_string familyName;          //!< The family name of the font. Will be "volition font" for bitmap fonts
 
 	protected:
 		bool autoScale = false;			//!< If the font is allowed to auto scale. Only used for VFNT fonts as NVG fonts do the auto scale calculation during parse time
@@ -87,6 +88,15 @@ namespace font
 		void setFilename(const SCP_string& newName);
 
 		/**
+		 * @brief	Sets the family name of this font.
+		 *
+		 * @date	17.6.2025
+		 *
+		 * @param	newName		The new famly name.
+		 */
+		void setFamilyName(const SCP_string& newName);
+
+		/**
 		* @brief	Gets the name of this font.
 		*
 		* @date	23.11.2011
@@ -103,6 +113,15 @@ namespace font
 		* @return	The name.
 		*/
 		const SCP_string& getFilename() const;
+
+		/**
+		 * @brief	Gets the family name of this font. Will be "Volition font" for bitmap fonts
+		 *
+		 * @date	17.6.2025
+		 *
+		 * @return	The family name.
+		 */
+		virtual const SCP_string& getFamilyName() const;
 
 		/**
 		* @brief	Gets the type of this font.

@@ -70,6 +70,11 @@ namespace font
 		this->filename = newName;
 	}
 
+	void FSFont::setFamilyName(const SCP_string& newName)
+	{
+		this->familyName = newName;
+	}
+
 	[[nodiscard]] bool FSFont::getAutoScaleBehavior() const
 	{
 		return this->autoScale;
@@ -103,6 +108,11 @@ namespace font
 	const SCP_string &FSFont::getFilename() const
 	{
 		return this->filename;
+	}
+
+	const SCP_string& FSFont::getFamilyName() const
+	{
+		return this->familyName;
 	}
 
 	void FSFont::computeFontMetrics() {
