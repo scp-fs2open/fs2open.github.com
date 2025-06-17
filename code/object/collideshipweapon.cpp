@@ -865,10 +865,9 @@ int collide_prop_weapon(obj_pair* pair)
 	Assert(weapon_obj->type == OBJ_WEAPON);
 
 	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
-	//Asteroth - should this be kept?
-	/*if ((Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(ship))) {
+	if ((Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(prop))) {
 		return 0;
-	}*/
+	}
 
 	if (reject_due_collision_groups(prop, weapon_obj))
 		return 0;
