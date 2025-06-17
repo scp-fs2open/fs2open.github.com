@@ -2463,7 +2463,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			// apply shield damage
 			float remaining_damage = shield_apply_damage(ship_objp, quadrant, shield_damage * shield_factor);
 			shield_impact.damage = (shield_damage * shield_factor) - remaining_damage;
-			impact_data[0] = &shield_impact;
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 			// remove the shield factor, since the overflow will no longer be thrown at shields
 			remaining_damage /= shield_factor;
 
@@ -2476,14 +2476,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			damage = remaining_damage + (damage * piercing_pct);
 		}
 	}
-
-	ConditionData hull_impact = ConditionData {
-		ImpactCondition(shipp->armor_type_idx),
-		HitType::HULL,
-		0.0f,
-		ship_objp->hull_strength,
-		shipp->ship_max_hull_strength,
-	};
 			
 	// Apply leftover damage to the ship's subsystem and hull.
 	if ( (damage > 0.0f) )	{
@@ -2494,7 +2486,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 		damage = damage_pair.second;
 
-		impact_data[1] = damage_pair.first;
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)] = damage_pair.first;
 
 		// damage scaling doesn't apply to subsystems, but it does to the hull
 		damage *= damage_scale;
@@ -2549,7 +2541,15 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
-			hull_impact.damage = damage;
+			ConditionData hull_impact = ConditionData {
+				ImpactCondition(shipp->armor_type_idx),
+				HitType::HULL,
+				damage,
+				ship_objp->hull_strength,
+				shipp->ship_max_hull_strength,
+			};
+
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
 
 			// multiplayer clients don't do damage
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
@@ -2663,7 +2663,6 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
-	impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
 	maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
 
 	// handle weapon and afterburner leeching here

@@ -135,7 +135,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 		}
 	}	
 
-	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, nullptr, dot, hitpos);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, &worldNormal, dot, hitpos);
 
 	// let the hud shield gauge know when Player or Player target is hit
 	hud_shield_quadrant_hit(pship_obj, quadrant_num);

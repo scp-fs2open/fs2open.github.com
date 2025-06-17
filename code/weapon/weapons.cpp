@@ -2473,25 +2473,25 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			impact_condition = SpecialImpactCondition::LASER_POKETHROUGH;
 			stuff_float(&ci.laser_pokethrough_threshold);
 		}
-		if (optional_string("+Disable On Subsystem Passthrough")) {
+		if (optional_string("+Disable On Subsystem Passthrough:")) {
 			stuff_boolean(&ci.disable_on_subsys_passthrough);
 		}
-		if (optional_string("+Min Health Threshold")) {
+		if (optional_string("+Min Health Threshold:")) {
 			ci.min_health_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
-		if (optional_string("+Max Health Threshold")) {
+		if (optional_string("+Max Health Threshold:")) {
 			ci.max_health_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
-		if (optional_string("+Min Damage/Hitpoints Ratio")) {
+		if (optional_string("+Min Damage/Hitpoints Ratio:")) {
 			ci.min_damage_hits_ratio = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
-		if (optional_string("+Max Damage/Hitpoints Ratio")) {
+		if (optional_string("+Max Damage/Hitpoints Ratio:")) {
 			ci.max_damage_hits_ratio = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
-		if (optional_string("+Min Angle Threshold")) {
+		if (optional_string("+Min Angle Threshold:")) {
 			ci.min_angle_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
-		if (optional_string("+Max Angle Threshold")) {
+		if (optional_string("+Max Angle Threshold:")) {
 			ci.max_angle_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
@@ -7767,7 +7767,8 @@ bool weapon_armed(weapon *wp, bool hit_target)
 static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* weapon_obj, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
 	if (impacted_obj == nullptr || impacted_obj->type != OBJ_SHIP || local_hitpos == nullptr) {
 		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
-		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, weapon_obj->phys_info.vel);
+		vec3d vel = impacted_obj == nullptr ? weapon_obj->phys_info.vel : impacted_obj->phys_info.vel;
+		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, weapon_obj->last_orient, vel);
 		vector_host->setRadius(impacted_obj == nullptr ? weapon_obj->radius : impacted_obj->radius);
 		return vector_host;
 	}
@@ -7792,7 +7793,7 @@ static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* wea
 const ConditionData* process_conditional_impact(
 	const ConditionData* entry,
 	const object* weapon_objp,
-	weapon_info* wip,
+	const weapon_info* wip,
 	const object* impacted_objp,
 	bool armed_weapon,
 	bool subsys_hit,
@@ -7807,10 +7808,14 @@ const ConditionData* process_conditional_impact(
 	bool* valid_conditional_impact,
 	bool* prev_nonnull_entry
 ) {
-	if (entry != nullptr && wip->conditional_impacts.count(entry->condition) == 1) {
+	if (entry == nullptr) {
+		return nullptr;
+	}
+	auto conditional_impact_it = wip->conditional_impacts.find(entry->condition);
+	if (conditional_impact_it != wip->conditional_impacts.end()) {
 		float health_fraction = entry->health / entry->max_health;
 		float damage_hits_fraction = entry->damage / entry->health;
-		for (const auto& ci : wip->conditional_impacts[entry->condition]) {
+		for (const auto& ci : conditional_impact_it->second) {
 			if (((!armed_weapon) == ci.dinky)
 				&& !((entry->hit_type == HitType::HULL && subsys_hit) && ci.disable_on_subsys_passthrough)
 				&& health_fraction >= ci.min_health_threshold.next()
@@ -7854,7 +7859,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 	auto wp = &Weapons[weapon_objp->instance];
 	auto wip = &Weapon_info[wp->weapon_info_index];
 	ship* shipp = nullptr;
-	if (impacted_objp->type == OBJ_SHIP) {
+	if (impacted_objp != nullptr && impacted_objp->type == OBJ_SHIP) {
 		shipp = &Ships[impacted_objp->instance];
 	}
 
@@ -8225,9 +8230,11 @@ void weapon_detonate(object *objp)
 	// call weapon hit
 	// Wanderer - use last frame pos for the corkscrew missiles
 	if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {
-		weapon_hit(objp, NULL, &objp->last_pos);
+		bool armed = weapon_hit(objp, NULL, &objp->last_pos);
+		maybe_play_conditional_impacts({}, objp, nullptr, armed, -1, &objp->pos);
 	} else {
-		weapon_hit(objp, NULL, &objp->pos);
+		bool armed = weapon_hit(objp, NULL, &objp->pos);
+		maybe_play_conditional_impacts({}, objp, nullptr, armed, -1, &objp->pos);
 	}
 }
 
