@@ -24,8 +24,8 @@ FLAG_LIST(Prop_Flags){
 FLAG_LIST(Info_Flags){
 	No_collide = 0,      // No collisions
 	No_fred,             // not available in fred
-	//No_impact_debris,
 	No_lighting,
+	//No_impact_debris,
 
 	NUM_VALUES};
 
