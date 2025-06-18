@@ -2804,6 +2804,8 @@ void control_check_indicate()
 
 int check_control_used(int id, int key)
 {
+	// Make sure mouse_down() is only called once during any logic path, 
+	// or the mousewheel may be decayed multiple times!!
 	int mask;
 	static int last_key = 0;
 	auto & item = Control_config[id];
@@ -2885,13 +2887,19 @@ int check_control_used(int id, int key)
 	}
 
 	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
-	if (item.type == CC_TYPE_TRIGGER && !Use_mouse_to_fly && 
-		((1 << item.first.get_btn() >= LOWEST_MOUSE_WHEEL && 1 << item.first.get_btn() <= HIGHEST_MOUSE_WHEEL) || 
-		(1 << item.second.get_btn() >= LOWEST_MOUSE_WHEEL && 1 << item.second.get_btn() <= HIGHEST_MOUSE_WHEEL)) &&
-		(mouse_down(item.first) || mouse_down(item.second)) ) {
-		// Mouse wheel bound to this trigger control was pressed, control activated
-		control_used(id);
-		return 1;
+	if (item.type == CC_TYPE_TRIGGER) {
+
+		int first_btn = 1 << item.first.get_btn();
+		int second_btn = 1 << item.second.get_btn();
+
+		if ( (first_btn >= LOWEST_MOUSE_WHEEL && first_btn <= HIGHEST_MOUSE_WHEEL) ||
+			 (second_btn >= LOWEST_MOUSE_WHEEL && second_btn <= HIGHEST_MOUSE_WHEEL) ) {
+			if ( mouse_down(item.first) || mouse_down(item.second) ) {
+				// Mouse wheel bound to this trigger control was pressed, control activated
+				control_used(id);
+				return 1;
+			}
+		}
 	}
 
 	return 0;
