@@ -2825,23 +2825,20 @@ int check_control_used(int id, int key)
 
 	short z = item.get_btn(CID_KEYBOARD);	// Get the key that's bound to this control
 
-	// this is awful, need to make a reverse lookup table to do button -> control 
-	// instead of this control -> button nonsense.
-	bool joy_pressed =   (joy_down(item.first) || joy_down_count(item.first, 1)) ||
-	                     (joy_down(item.second) || joy_down_count(item.second, 1));
-	bool mouse_pressed = (mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
-	                     (mouse_down(item.second) || mouse_down_count(item.second, 1));
-
 	if (item.type == CC_TYPE_CONTINUOUS) {
 		
-		if (joy_pressed) {
+		// this is awful, need to make a reverse lookup table to do button -> control instead of this control -> button
+		// nonsense.
+		if ((joy_down(item.first) || joy_down_count(item.first, 1)) ||
+			(joy_down(item.second) || joy_down_count(item.second, 1))) {
 			// Joy button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
 
-		if (mouse_pressed) {
-			// Mouse button bound to this control was pressed, control activated
+		if ((mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
+			(mouse_down(item.second) || mouse_down_count(item.second, 1))) {
+			// Joy button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
@@ -2879,7 +2876,9 @@ int check_control_used(int id, int key)
 		return 0;
 	}
 
-	if (((z >= 0) && (z == key)) || joy_pressed || mouse_pressed) {
+	if (((z >= 0) && (z == key)) ||
+		joy_down_count(item.first, 1) || joy_down_count(item.second, 1) ||
+		mouse_down_count(item.first, 1) || mouse_down_count(item.second, 1)) {
 		//mprintf(("Key used %d\n", key));
 		control_used(id);
 		return 1;
