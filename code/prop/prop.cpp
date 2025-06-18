@@ -5,6 +5,7 @@
 #include "freespace.h"
 #include "model/model.h"
 #include "model/modelreplace.h"
+#include "network/multiutil.h"
 #include "parse/parselo.h"
 #include "prop/prop_flags.h"
 #include "render/3d.h"
@@ -522,6 +523,11 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 	objp->phys_info.desired_vel = vmd_zero_vector;
 	objp->phys_info.forward_accel_time_const = 1.0;
 	objp->phys_info.flags = PF_CONST_VEL;
+
+	// For now use the asteroid signature for props as requested by Cyborg.
+	if (Game_mode & GM_MULTIPLAYER) {
+		objp->net_signature = multi_assign_network_signature(MULTI_SIG_ASTEROID);
+	}
 
 	// this is a little 'dangerous', values like this can cause the physics to do wierd things
 	// but they are the most 'honest', and will help to indicate when the physics is trying to use these values in ways they shouldn't
