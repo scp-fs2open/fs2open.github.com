@@ -2827,8 +2827,8 @@ int check_control_used(int id, int key)
 
 	if (item.type == CC_TYPE_CONTINUOUS) {
 		
-		// this is awful, need to make a reverse lookup table to do button -> control instead of this control -> button
-		// nonsense.
+		// this is awful, need to make a reverse lookup table to do 
+		// button -> control instead of this control -> button nonsense.
 		if ((joy_down(item.first) || joy_down_count(item.first, 1)) ||
 			(joy_down(item.second) || joy_down_count(item.second, 1))) {
 			// Joy button bound to this control was pressed, control activated
@@ -2838,7 +2838,7 @@ int check_control_used(int id, int key)
 
 		if ((mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
 			(mouse_down(item.second) || mouse_down_count(item.second, 1))) {
-			// Joy button bound to this control was pressed, control activated
+			// Mouse button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
@@ -2880,6 +2880,16 @@ int check_control_used(int id, int key)
 		joy_down_count(item.first, 1) || joy_down_count(item.second, 1) ||
 		mouse_down_count(item.first, 1) || mouse_down_count(item.second, 1)) {
 		//mprintf(("Key used %d\n", key));
+		control_used(id);
+		return 1;
+	}
+
+	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
+	if (item.type == CC_TYPE_TRIGGER && !Use_mouse_to_fly && 
+		((1 << item.first.get_btn() >= LOWEST_MOUSE_WHEEL && 1 << item.first.get_btn() <= HIGHEST_MOUSE_WHEEL) || 
+		(1 << item.second.get_btn() >= LOWEST_MOUSE_WHEEL && 1 << item.second.get_btn() <= HIGHEST_MOUSE_WHEEL)) &&
+		(mouse_down(item.first) || mouse_down(item.second)) ) {
+		// Mouse wheel bound to this trigger control was pressed, control activated
 		control_used(id);
 		return 1;
 	}
