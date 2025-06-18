@@ -94,6 +94,9 @@ void mouse_flush();
  * @returns 0 if the button is not down, or
  * 
  * @returns 1 if the given button is down
+ * 
+ * @note Calls mousewheel_decay() if the mousewheel direction is "down".  
+ *       Please ensure mouse_down() is called only once per frame.
  */
 int mouse_down(const CC_bind &bind);
 
