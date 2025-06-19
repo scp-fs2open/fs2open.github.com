@@ -861,7 +861,6 @@ void hud_config_check_regions(int mx, int my)
 
 	// If we're not in the HUD area then nothing else applies here
 	if (!hud_config_check_mouse_in_hud_area(mx, my)) {
-		mouse_flush();
 		return;
 	}
 
