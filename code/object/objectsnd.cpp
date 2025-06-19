@@ -667,7 +667,7 @@ void obj_snd_do_frame()
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
 		if ( (sp == nullptr) || !(osp->flags & OS_ENGINE) || 
-			(sp->flags[Ship::Ship_Flags::Engine_sound_on] && !(sp->flags[Ship::Ship_Flags::Disabled] && Disabled_engines_are_silent)) ) {
+		     ((sp->flags[Ship::Ship_Flags::Engine_sound_on]) && !(sp->flags[Ship::Ship_Flags::Disabled])) ) {
 			snd_set_volume( osp->instance, gs->volume_range.next() *speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {
