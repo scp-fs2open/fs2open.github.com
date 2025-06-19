@@ -1788,6 +1788,5 @@ void mod_table_set_version_flags()
 		Use_model_eyepoint_for_set_camera_host = true;
 		Use_model_eyepoint_normals = true;
 		Fix_asteroid_bounding_box_check = true;
-		Unify_minimum_engine_sound = true;
 	}
 }
