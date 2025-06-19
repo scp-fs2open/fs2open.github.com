@@ -2048,48 +2048,50 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			if (skip) continue;
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
-				// spawn the arc in the first unused slot
-				for (int j = 0; j < MAX_ARC_EFFECTS; j++) {
-					if (!shipp->arc_timestamp[j].isValid()) {
-						shipp->arc_timestamp[j] = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
+				// spawn the arc in the first unused slot, or in a new slot if there are no unused ones
+				auto arc = ship_find_or_create_electrical_arc_slot(shipp, shipp->electrical_arcs.size() >= MAX_ARC_EFFECTS);
+				if (arc) {
+					arc->timestamp = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
 
-						vec3d v1, v2, offset;
-						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
-						model_find_submodel_offset(&offset, pm, submodel_1);
-						v1 = arc_info->pos.first - offset;
-						model_find_submodel_offset(&offset, pm, submodel_2);
-						v2 = arc_info->pos.second - offset;
+					vec3d v1, v2, offset;
+					// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
+					model_find_submodel_offset(&offset, pm, submodel_1);
+					v1 = arc_info->pos.first - offset;
+					model_find_submodel_offset(&offset, pm, submodel_2);
+					v2 = arc_info->pos.second - offset;
 
-						model_instance_local_to_global_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
-						shipp->arc_pts[j][0] = v1;
-						model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
-						shipp->arc_pts[j][1] = v2;
+					model_instance_local_to_global_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
+					arc->endpoint_1 = v1;
+					model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
+					arc->endpoint_2 = v2;
 
-						//Set the arc colors
-						shipp->arc_primary_color_1[j] = arc_info->primary_color_1;
-						shipp->arc_primary_color_2[j] = arc_info->primary_color_2;
-						shipp->arc_secondary_color[j] = arc_info->secondary_color;
+					//Set the arc colors
+					arc->primary_color_1 = arc_info->primary_color_1;
+					arc->primary_color_2 = arc_info->primary_color_2;
+					arc->secondary_color = arc_info->secondary_color;
 
-						shipp->arc_type[j] = MARC_TYPE_SHIP;
+					arc->type = MARC_TYPE_SHIP;
 
-						if (arc_info->width > 0.0f) {
-							shipp->arc_width[j] = arc_info->width;
-						} else {
-							// same width as other arc types in model_render_add_lightning
-							// try and scale the size a bit so that it looks equally well on smaller vessels
-							shipp->arc_width[j] = Arc_width_default_damage;
-							if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
-								shipp->arc_width[j] *= (pm->rad * Arc_width_radius_multiplier_damage);
+					if (arc_info->width > 0.0f) {
+						arc->width = arc_info->width;
+					} else {
+						// same width as other arc types in model_render_add_lightning
+						// try and scale the size a bit so that it looks equally well on smaller vessels
+						arc->width = Arc_width_default_damage;
+						if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+							arc->width *= (pm->rad * Arc_width_radius_multiplier_damage);
 
-								if (shipp->arc_width[j] < Arc_width_minimum_damage) {
-									shipp->arc_width[j] = Arc_width_minimum_damage;
-								}
+							if (arc->width < Arc_width_minimum_damage) {
+								arc->width = Arc_width_minimum_damage;
 							}
 						}
-
-						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
-						break;
 					}
+
+					arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+					arc->persistent_arc_points.reset();	// by default, no persistent points
+
+					shipp->passive_arc_next_times[passive_arc_info_idx] = _timestamp(fl2i(arc_info->frequency * MILLISECONDS_PER_SECOND));
 				}
 			}
 		}
@@ -2129,9 +2131,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for (auto &arc_stamp : shipp->arc_timestamp) {
-		if (arc_stamp.isValid() && timestamp_elapsed(arc_stamp)) {
-			arc_stamp = TIMESTAMP::invalid();
+	for (auto &arc: shipp->electrical_arcs) {
+		if (arc.timestamp.isValid() && timestamp_elapsed(arc.timestamp)) {
+			arc.timestamp = TIMESTAMP::invalid();
 		}
 	}
 
@@ -2140,7 +2142,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		return;
 	}
 
-	if (!timestamp_valid(shipp->arc_next_time))	{
+	if (!shipp->arc_next_time.isValid()) {
 		// start the next fireball up in the next 10 seconds or so... 
 		int freq;
 		
@@ -2154,14 +2156,14 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		}
 
 		// set the next arc time
-		shipp->arc_next_time = timestamp_rand(freq*2,freq*4);
+		shipp->arc_next_time = _timestamp_rand(freq*2,freq*4);
 	}
 
 	if ( timestamp_elapsed(shipp->arc_next_time) )	{
 
-		shipp->arc_next_time = timestamp(-1);		// invalid, so it gets restarted next frame
+		shipp->arc_next_time = TIMESTAMP::invalid();		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = Random::next(1, 3);
+		int n_arcs = Random::next(1, 3);
 
 		vec3d v1 = submodel_get_random_point(model_num, -1);
 		vec3d v2 = submodel_get_random_point(model_num, -1);
@@ -2199,84 +2201,83 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			
 		}
 		
-		n = 0;
-
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		int num_damage_arcs = 0;
-		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
-			if ( !shipp->arc_timestamp[i].isValid() )	{
-				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
+		auto num_damage_arcs = std::count_if(shipp->electrical_arcs.begin(), shipp->electrical_arcs.end(), [](const ship_electrical_arc &arc) {
+			return arc.timestamp.isValid() && (arc.type == MARC_TYPE_DAMAGED || arc.type == MARC_TYPE_EMP);
+		});
+		for (int n = 0; n < n_arcs && num_damage_arcs < MAX_SHIP_DAMAGE_ARCS; n++) {
+			auto arc = ship_find_or_create_electrical_arc_slot(shipp, false);
+			if (arc) {
+				arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 				switch( n )	{
 				case 0:
-					shipp->arc_pts[i][0] = v1;
-					shipp->arc_pts[i][1] = v2;
+					arc->endpoint_1 = v1;
+					arc->endpoint_2 = v2;
 					break;
 				case 1:
-					shipp->arc_pts[i][0] = v2;
-					shipp->arc_pts[i][1] = v3;
+					arc->endpoint_1 = v2;
+					arc->endpoint_2 = v3;
 					break;
-
 				case 2:
-					shipp->arc_pts[i][0] = v2;
-					shipp->arc_pts[i][1] = v4;
+					arc->endpoint_1 = v2;
+					arc->endpoint_2 = v4;
 					break;
 
 				default:
-					Int3();
+					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create
 				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
-					shipp->arc_type[i] = MARC_TYPE_EMP;
+					arc->type = MARC_TYPE_EMP;
 				} else {
-					shipp->arc_type[i] = MARC_TYPE_DAMAGED;
+					arc->type = MARC_TYPE_DAMAGED;
 				}
-					
-				n++;
-				num_damage_arcs++;
-				if ( n == n_arcs || num_damage_arcs >= MAX_SHIP_DAMAGE_ARCS)
-					break;	// Don't need to create anymore
-			} else if (shipp->arc_type[i] == MARC_TYPE_DAMAGED || shipp->arc_type[i] == MARC_TYPE_EMP) {
-				num_damage_arcs ++;
-			}
-	
-			// rotate v2 out of local coordinates into world.
-			// Use v2 since it is used in every bolt.  See above switch().
-			vec3d snd_pos;
-			vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
-			vm_vec_add2(&snd_pos, &obj->pos );
 
-			//Play a sound effect
-			if ( lifetime > 750 )	{
-				// 1.00 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  500 )	{
-				// 0.75 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  250 )	{
-				// 0.50 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  100 )	{
-				// 0.25 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
-			} else {
-				// 0.10 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
+				arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+				arc->persistent_arc_points.reset();	// by default, no persistent points
+
+				num_damage_arcs++;
 			}
+		}
+
+		// rotate v2 out of local coordinates into world.
+		// Use v2 since it is used in every bolt.  See above switch().
+		vec3d snd_pos;
+		vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
+		vm_vec_add2(&snd_pos, &obj->pos );
+
+		//Play a sound effect
+		if ( lifetime > 750 )	{
+			// 1.00 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  500 )	{
+			// 0.75 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  250 )	{
+			// 0.50 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  100 )	{
+			// 0.25 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
+		} else {
+			// 0.10 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 		}
 	}
 
 	// maybe move arc points around
-	for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
+	for (auto &arc: shipp->electrical_arcs)	{
 		//Only move arc points around for Damaged or EMP type arcs
-		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
-			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
+		if (((arc.type == MARC_TYPE_DAMAGED) || (arc.type == MARC_TYPE_EMP)) && arc.timestamp.isValid()) {
+			if (!timestamp_elapsed(arc.timestamp)) {
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
@@ -2285,9 +2286,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					vec3d static_one;
 
 					if ( mr % 2 )	{
-						static_one = shipp->arc_pts[i][0];
+						static_one = arc.endpoint_1;
 					} else {
-						static_one = shipp->arc_pts[i][1];
+						static_one = arc.endpoint_2;
 					}
 
 					// For large ships, cap the length to be 25% of max radius
@@ -2305,7 +2306,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						}
 					}
 
-					shipp->arc_pts[i][mr % 2] = v1;
+					if (mr % 2 == 0)
+						arc.endpoint_1 = v1;
+					else
+						arc.endpoint_2 = v1;
 				}
 			}
 		}

@@ -91,6 +91,14 @@ void tableToList(LuaTable& table, Container& list) {
 }
 
 const char* getValueName(ValueType type);
+
+/**
+ * Processes a LuaValue and returns a vec3d.  The LuaValue could be a Vector, an array with three elements, or a table with x/X, y/Y, and z/Z entries.
+ * 
+ * Throws a LuaException if the conversion was not successful.
+ */
+vec3d valueToVec3d(const LuaValue &luaValue);
+
 }
 }
 
