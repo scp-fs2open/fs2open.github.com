@@ -450,10 +450,10 @@ namespace font
 			throw std::runtime_error("No suitable family name found");
 		} catch (const std::exception& e) {
 			mprintf(("Failed to extract font name: %s\n", e.what()));
-			return "Unknown";
+			return "";
 		} catch (...) {
 			mprintf(("Failed to extract font name: Unknown exception\n"));
-			return "Unknown";
+			return "";
 		}
 	}
 
