@@ -312,11 +312,14 @@ namespace font
 
 	// This function will extract the font family name (Name ID 1) from TrueType font data.
 	// It handles UCS-2 (UTF-16BE) to UTF-8 conversion.
-	static SCP_string extractFamilyNameFromTTF(const ubyte* data, int size)
+	static SCP_string extractFamilyNameFromTTF(const TrueTypeFontData& fontData)
 	{
 		try {
 			// TTF/OTF fonts start the table directory at byte 12.
 			constexpr size_t table_offset = 12;
+
+			const ubyte* data = fontData.data.get();
+			const size_t size = fontData.size;
 
 			if (size < table_offset) {
 				throw std::runtime_error("Font data too small for table offset");
@@ -456,7 +459,6 @@ namespace font
 
 	std::pair<NVGFont*, int> FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
 	{
-		SCP_string familyName;
 		auto iter = allocatedData.find(fileName);
 		if (iter == allocatedData.end())
 		{
@@ -483,8 +485,6 @@ namespace font
 
 			TrueTypeFontData newData;
 
-			familyName = extractFamilyNameFromTTF(fontData.get(), size);
-
 			newData.size = static_cast<size_t>(size);
 			std::swap(newData.data, fontData);
 
@@ -507,7 +507,7 @@ namespace font
 		std::unique_ptr<NVGFont> nvgFont(new NVGFont());
 		nvgFont->setHandle(handle);
 		nvgFont->setSize(fontSize);
-		nvgFont->setFamilyName(familyName);
+		nvgFont->setFamilyName(extractFamilyNameFromTTF(*data));
 
 		auto ptr = nvgFont.get();
 
