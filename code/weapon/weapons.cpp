@@ -2446,7 +2446,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		ci.max_damage_hits_ratio = ::util::UniformFloatRange(std::numeric_limits<float>::max());
 		ci.min_angle_threshold = ::util::UniformFloatRange(0.f);
 		ci.max_angle_threshold = ::util::UniformFloatRange(180.f);
-		ci.laser_pokethrough_threshold = 0.1;
+		ci.laser_pokethrough_threshold = 0.1f;
 		ci.dinky = false;
 		ci.disable_if_player_parent = false;
 		ci.disable_on_subsys_passthrough = false;
