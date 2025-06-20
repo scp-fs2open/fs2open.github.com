@@ -7823,8 +7823,8 @@ const ConditionData* process_conditional_impact(
 		float damage_hits_fraction = entry->damage / entry->health;
 		for (const auto& ci : conditional_impact_it->second) {
 			if (((!armed_weapon) == ci.dinky)
-				&& !(ci.disable_if_player_parent && (&Objects[weapon_objp->parent] == Player_obj))
-				&& !((entry->hit_type == HitType::HULL && subsys_hit) && ci.disable_on_subsys_passthrough)
+				&& (!ci.disable_if_player_parent || (&Objects[weapon_objp->parent] != Player_obj))
+				&& ((entry->hit_type != HitType::HULL || !subsys_hit) || !ci.disable_on_subsys_passthrough)
 				&& health_fraction >= ci.min_health_threshold.next()
 				&& health_fraction <= ci.max_health_threshold.next()
 				&& damage_hits_fraction >= ci.min_damage_hits_ratio.next()
@@ -8059,8 +8059,8 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
  */
 bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant)
 {
-	Assert(weapon_obj != NULL);
-	if(weapon_obj == NULL){
+	Assert(weapon_obj != nullptr);
+	if(weapon_obj == nullptr){
 		return false;
 	}
 	Assert((weapon_obj->type == OBJ_WEAPON) && (weapon_obj->instance >= 0) && (weapon_obj->instance < MAX_WEAPONS));
@@ -8226,10 +8226,10 @@ void weapon_detonate(object *objp)
 	// call weapon hit
 	// Wanderer - use last frame pos for the corkscrew missiles
 	if ( (Weapon_info[Weapons[objp->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Corkscrew]) ) {
-		bool armed = weapon_hit(objp, NULL, &objp->last_pos);
+		bool armed = weapon_hit(objp, nullptr, &objp->last_pos);
 		maybe_play_conditional_impacts({}, objp, nullptr, armed, -1, &objp->pos);
 	} else {
-		bool armed = weapon_hit(objp, NULL, &objp->pos);
+		bool armed = weapon_hit(objp, nullptr, &objp->pos);
 		maybe_play_conditional_impacts({}, objp, nullptr, armed, -1, &objp->pos);
 	}
 }

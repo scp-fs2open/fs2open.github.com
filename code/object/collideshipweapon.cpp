@@ -131,7 +131,7 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num);
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num); //NOLINT(readability-suspicious-call-argument)
 		}
 	}	
 

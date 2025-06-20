@@ -4120,13 +4120,13 @@ void beam_handle_collisions(beam *b)
 
 							if (trgt->hull_strength < 0) {
 								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-								bool armed = weapon_hit(trgt, NULL, &trgt->pos);
+								bool armed = weapon_hit(trgt, nullptr, &trgt->pos);
 								maybe_play_conditional_impacts({}, trgt, nullptr, armed, -1, &trgt->pos);
 							}
 						} else {
 							if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-								bool armed = weapon_hit(trgt, NULL, &trgt->pos);
+								bool armed = weapon_hit(trgt, nullptr, &trgt->pos);
 								maybe_play_conditional_impacts({}, trgt, nullptr, armed, -1, &trgt->pos);
 							}
 						}
@@ -4139,7 +4139,7 @@ void beam_handle_collisions(beam *b)
 
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 						Weapons[Objects[target].instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						bool armed = weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+						bool armed = weapon_hit(&Objects[target], nullptr, &Objects[target].pos);
 						maybe_play_conditional_impacts({}, &Objects[target], nullptr, armed, -1, &Objects[target].pos);
 					}
 				}
