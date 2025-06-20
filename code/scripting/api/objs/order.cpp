@@ -91,7 +91,7 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 
 	switch(ohp->aigp->ai_mode){
 		case AI_GOAL_NONE:
-		case AI_GOAL_PLACEHOLDER_1:
+		case AI_GOAL_SCHROEDINGER:
 		case AI_GOAL_NUM_VALUES:
 			break;
 		case AI_GOAL_DESTROY_SUBSYSTEM:

@@ -55,6 +55,10 @@ namespace fso {
 				// which_item indicates initial goal 1 through MAX_AI_GOALS, so find that behavior...
 				int behavior_index = m_behavior[which_item];
 
+				// if we have a superposition of behaviors, bail here
+				if (behavior_index < 0)
+					return ai_goal_mode::AI_GOAL_SCHROEDINGER;
+
 				// the behavior is the index into the combo box that contains a subset of goals from Ai_goal_list
 				const auto &set = m_ai_goal_combo_data[behavior_index].second;
 
@@ -154,6 +158,10 @@ namespace fso {
 					// these goals do not have a target in the dialog box, so let's set the goal and return immediately
 					// so that we don't run afoul of the "doesn't have a valid target" code at the bottom of the function
 					modify(goalp[item].ai_mode, mode);
+					return;
+
+				case AI_GOAL_SCHROEDINGER:
+					// return, but don't set the goal
 					return;
 
 				case AI_GOAL_WAYPOINTS:

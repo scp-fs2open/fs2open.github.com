@@ -378,6 +378,10 @@ ai_goal_mode ShipGoalsDlg::get_first_mode_from_combo_box(int which_item)
 	// which_item indicates initial goal 1 through MAX_AI_GOALS, so find that behavior...
 	int behavior_index = m_behavior[which_item];
 
+	// if we have a superposition of behaviors, bail here
+	if (behavior_index < 0)
+		return ai_goal_mode::AI_GOAL_SCHROEDINGER;
+
 	// the behavior is the index into the combo box that contains a subset of goals from Ai_goal_list
 	const auto &set = m_ai_goal_combo_data[behavior_index].second;
 
@@ -996,6 +1000,10 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			MODIFY(goalp[item].ai_mode, mode);
 			return;
 
+		case AI_GOAL_SCHROEDINGER:
+			// return, but don't set the goal
+			return;
+
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
 		case AI_GOAL_DISABLE_SHIP:
@@ -1163,7 +1171,7 @@ void ShipGoalsDlg::OnOK()
 
 	for (i=0; i<ED_MAX_GOALS; i++) {
 		auto mode = get_first_mode_from_combo_box(i);
-		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
+		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_SCHROEDINGER) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
 			if (!m_object_box[i] -> GetCount())  // no valid objects?
 				m_behavior[i] = 0;
 			else
