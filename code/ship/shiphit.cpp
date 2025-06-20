@@ -1004,7 +1004,7 @@ std::pair<ConditionData*, float> do_subobj_hit_stuff(object *ship_objp, const ob
 			}
 
 			if (j == 0) {
-				ConditionData subsys_impact_real = ConditionData {
+				auto subsys_impact_real = ConditionData {
 					ImpactCondition(subsystem->armor_type_idx),
 					HitType::SUBSYS,
 					damage_to_apply,
@@ -2452,7 +2452,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			if (weapon_info_index >= 0 && (!other_obj_is_beam || Beams_use_damage_factors))
 				shield_factor = Weapon_info[weapon_info_index].shield_factor;
 
-			ConditionData shield_impact = ConditionData {
+			auto shield_impact = ConditionData {
 				ImpactCondition(shipp->shield_armor_type_idx),
 				HitType::SHIELD,
 				0.0f,
@@ -2541,7 +2541,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
-			ConditionData hull_impact = ConditionData {
+			auto hull_impact = ConditionData {
 				ImpactCondition(shipp->armor_type_idx),
 				HitType::HULL,
 				damage,

@@ -140,7 +140,7 @@ int collide_weapon_weapon( obj_pair * pair )
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-						ConditionData weapon_impact_b = ConditionData {
+						auto weapon_impact_b = ConditionData {
 							ImpactCondition(wipB->armor_type_idx),
 							HitType::HULL,
 							aDamage,
@@ -152,7 +152,7 @@ int collide_weapon_weapon( obj_pair * pair )
 						maybe_play_conditional_impacts(impact_data_b, A, B, a_armed, -1, &A->pos);
 						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-						ConditionData weapon_impact_a = ConditionData {
+						auto weapon_impact_a = ConditionData {
 							ImpactCondition(wipA->armor_type_idx),
 							HitType::HULL,
 							bDamage,
@@ -178,7 +178,7 @@ int collide_weapon_weapon( obj_pair * pair )
 						if (A->hull_strength < 0.0f) {
 							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 							std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-							ConditionData weapon_impact_b = ConditionData {
+							auto weapon_impact_b = ConditionData {
 								ImpactCondition(wipB->armor_type_idx),
 								HitType::HULL,
 								aDamage,
@@ -192,7 +192,7 @@ int collide_weapon_weapon( obj_pair * pair )
 						if (B->hull_strength < 0.0f) {
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 							std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-							ConditionData weapon_impact_a = ConditionData {
+							auto weapon_impact_a = ConditionData {
 								ImpactCondition(wipA->armor_type_idx),
 								HitType::HULL,
 								bDamage,
@@ -208,7 +208,7 @@ int collide_weapon_weapon( obj_pair * pair )
 					A->hull_strength -= bDamage;
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-					ConditionData weapon_impact_a = ConditionData {
+					auto weapon_impact_a = ConditionData {
 						ImpactCondition(wipA->armor_type_idx),
 						HitType::HULL,
 						bDamage,
@@ -221,7 +221,7 @@ int collide_weapon_weapon( obj_pair * pair )
 					if (A->hull_strength < 0.0f) {
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 						std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-						ConditionData weapon_impact_b = ConditionData {
+						auto weapon_impact_b = ConditionData {
 							ImpactCondition(wipB->armor_type_idx),
 							HitType::HULL,
 							aDamage,
@@ -237,7 +237,7 @@ int collide_weapon_weapon( obj_pair * pair )
 				B->hull_strength -= aDamage;
 				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 				std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-				ConditionData weapon_impact_b = ConditionData {
+				auto weapon_impact_b = ConditionData {
 					ImpactCondition(wipB->armor_type_idx),
 					HitType::HULL,
 					aDamage,
@@ -250,7 +250,7 @@ int collide_weapon_weapon( obj_pair * pair )
 				if (B->hull_strength < 0.0f) {
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
 					std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-					ConditionData weapon_impact_a = ConditionData {
+					auto weapon_impact_a = ConditionData {
 						ImpactCondition(wipA->armor_type_idx),
 						HitType::HULL,
 						bDamage,
