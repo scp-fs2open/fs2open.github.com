@@ -310,6 +310,153 @@ namespace font
 		}
 	}
 
+	// This function will extract the font family name (Name ID 1) from TrueType font data.
+	// It handles UCS-2 (UTF-16BE) to UTF-8 conversion.
+	static SCP_string extractFamilyNameFromTTF(const TrueTypeFontData& fontData)
+	{
+		try {
+			// TTF/OTF fonts start the table directory at byte 12.
+			constexpr size_t table_offset = 12;
+
+			const ubyte* data = fontData.data.get();
+			const size_t size = fontData.size;
+
+			if (size < table_offset) {
+				throw std::runtime_error("Font data too small for table offset");
+			}
+
+			// Offset to the start of the table directory (after SFNT header)
+			const uint8_t* tableDir = data + table_offset;
+
+			// Read numTables (ushort at offset 4 in SFNT header)
+			// The SFNT header bytes are big-endian
+			uint16_t numTables = (static_cast<uint16_t>(data[4]) << 8) | static_cast<uint16_t>(data[5]);
+
+			const uint8_t* nameTable = nullptr;
+
+			// Each table entry is 16 bytes
+			constexpr size_t tableEntrySize = 16;
+			const size_t tableDirSize = static_cast<size_t>(numTables) * tableEntrySize;
+			if (size < table_offset + tableDirSize) {
+				throw std::runtime_error("Table directory extends past file size");
+			}
+
+			// Iterate through table directory entries to find the 'name' table
+			for (int i = 0; i < numTables; ++i) {
+				const uint8_t* entry = tableDir + i * tableEntrySize;
+
+				// Ensure entry access is within range
+				if (entry + 12 >= data + size) {
+					throw std::runtime_error("Table entry access out of bounds");
+				}
+
+				// Read table tag (4 bytes)
+				uint32_t tag = (static_cast<uint32_t>(entry[0]) << 24) | (static_cast<uint32_t>(entry[1]) << 16) |
+							   (static_cast<uint32_t>(entry[2]) << 8) | static_cast<uint32_t>(entry[3]);
+
+				// Check if it's the 'name' table (tag 0x6E616D65)
+				if (tag == 0x6E616D65) {
+					// Read offset to the 'name' table (4 bytes, big-endian)
+					uint32_t offset = (static_cast<uint32_t>(entry[8]) << 24) |
+									  (static_cast<uint32_t>(entry[9]) << 16) |
+									  (static_cast<uint32_t>(entry[10]) << 8) | static_cast<uint32_t>(entry[11]);
+
+					if (offset >= static_cast<uint32_t>(size)) {
+						throw std::runtime_error("Name table offset beyond file size");
+					}
+
+					nameTable = data + offset;
+					break;
+				}
+			}
+
+			if (!nameTable || nameTable + 6 > data + size) {
+				throw std::runtime_error("Name table header is missing or truncated");
+			}
+
+			// Name table header - All values are big-endian
+			uint16_t count = (static_cast<uint16_t>(nameTable[2]) << 8) | static_cast<uint16_t>(nameTable[3]);
+			uint16_t stringOffset = (static_cast<uint16_t>(nameTable[4]) << 8) | static_cast<uint16_t>(nameTable[5]);
+
+			constexpr size_t recordSize = 12;
+			const uint8_t* recordBase = nameTable + 6;
+
+			if (recordBase + count * recordSize > data + size) {
+				throw std::runtime_error("Name records extend beyond font data");
+			}
+
+			// Iterate through name records
+			for (int i = 0; i < count; ++i) {
+				const uint8_t* record =
+					recordBase + i * recordSize; // 6 bytes for name table header, 12 bytes per record
+
+				// Read metadata for the record
+				uint16_t platformID = (static_cast<uint16_t>(record[0]) << 8) | static_cast<uint16_t>(record[1]);
+				uint16_t encodingID = (static_cast<uint16_t>(record[2]) << 8) | static_cast<uint16_t>(record[3]);
+				uint16_t nameID = (static_cast<uint16_t>(record[6]) << 8) | static_cast<uint16_t>(record[7]);
+				uint16_t length = (static_cast<uint16_t>(record[8]) << 8) | static_cast<uint16_t>(record[9]);
+				uint16_t offset = (static_cast<uint16_t>(record[10]) << 8) | static_cast<uint16_t>(record[11]);
+
+				// We are looking for Name ID 1 (Font Family Name)
+				// Prefer Unicode (Platform ID 0, 3) or Apple Roman (Platform ID 1) if available
+				if (nameID == 1) {
+					// Check for Unicode (Platform ID 0, Encoding ID 3 or 4) or (Platform ID 3, Encoding ID 1)
+					// or Mac Roman (Platform ID 1, Encoding ID 0)
+					bool isUnicode = (platformID == 0 && (encodingID == 3 || encodingID == 4)) ||
+									 (platformID == 3 && encodingID == 1);
+					bool isMacRoman = (platformID == 1 && encodingID == 0);
+
+					if (isUnicode || isMacRoman) {
+						const uint8_t* nameString = nameTable + stringOffset + offset;
+						SCP_string familyName;
+
+						// Bounds check to prevent reading past the end of the font metadata
+						if (nameString + length > data + size) {
+							throw std::runtime_error("Name string extends past font data");
+						}
+
+						if (isUnicode) {
+							// UCS-2 (UTF-16BE) to UTF-8 conversion
+							// This assumes standard UCS-2, which is UTF-16BE for basic multilingual plane.
+							for (int j = 0; j < length; j += 2) {
+								uint16_t unicodeChar = (static_cast<uint16_t>(nameString[j]) << 8) |
+													   static_cast<uint16_t>(nameString[j + 1]);
+
+								if (unicodeChar <= 0x7F) { // 1-byte UTF-8
+									familyName += static_cast<char>(unicodeChar);
+								} else if (unicodeChar <= 0x7FF) { // 2-byte UTF-8
+									familyName += static_cast<char>(0xC0 | (unicodeChar >> 6));
+									familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+								} else { // 3-byte UTF-8
+									familyName += static_cast<char>(0xE0 | (unicodeChar >> 12));
+									familyName += static_cast<char>(0x80 | ((unicodeChar >> 6) & 0x3F));
+									familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+								}
+								// For supplementary planes (4-byte UTF-8, characters > 0xFFFF),
+								// this simple conversion is not sufficient and would require surrogate pair handling.
+								// Most common font names will be in BMP (Basic Multilingual Plane) according to my
+								// research - Mjn
+							}
+						} else { // Mac Roman (single byte) - this encoding is less common but supported easily enough
+							for (int j = 0; j < length; ++j) {
+								familyName += static_cast<char>(nameString[j]);
+							}
+						}
+						return familyName;
+					}
+				}
+			}
+
+			throw std::runtime_error("No suitable family name found");
+		} catch (const std::exception& e) {
+			mprintf(("Failed to extract font name: %s\n", e.what()));
+			return "";
+		} catch (...) {
+			mprintf(("Failed to extract font name: Unknown exception\n"));
+			return "";
+		}
+	}
+
 	std::pair<NVGFont*, int> FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
 	{
 		auto iter = allocatedData.find(fileName);
@@ -360,6 +507,7 @@ namespace font
 		std::unique_ptr<NVGFont> nvgFont(new NVGFont());
 		nvgFont->setHandle(handle);
 		nvgFont->setSize(fontSize);
+		nvgFont->setFamilyName(extractFamilyNameFromTTF(*data));
 
 		auto ptr = nvgFont.get();
 

@@ -96,6 +96,24 @@ ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "strin
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
+ADE_VIRTVAR(FamilyName, l_Font, "string", "Family Name of font. Bitmap fonts always return 'Volition Font'.", "string", nullptr)
+{
+	font_h *fh = nullptr;
+	const char* newname = nullptr;
+	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
+		return ade_set_error(L, "s", "");
+
+	if (fh != nullptr && !fh->isValid())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR)
+	{
+		LuaError(L, "Setting font family name is not supported!");
+	}
+
+	return ade_set_args(L, "s", fh->Get()->getFamilyName().c_str());
+}
+
 ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "Font height, or 0 if the handle is invalid")
 {
 	font_h *fh = NULL;

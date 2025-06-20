@@ -33,6 +33,12 @@ namespace font
 		return this->fontPtr;
 	}
 
+	const SCP_string& VFNTFont::getFamilyName() const
+	{
+		static const SCP_string volitionFontName = "Volition Font";
+		return volitionFontName;
+	}
+
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
 	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1, float scaleMultiplier) const
 	{
