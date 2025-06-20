@@ -152,6 +152,7 @@ bool SCPUI_loads_hi_res_animations;
 bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
+bool Unify_minimum_engine_sound;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Disable_shield_effects;
@@ -1043,6 +1044,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Play_thruster_sounds_for_player);
 			}
 
+			if (optional_string("$Unify minimum engine sound:")) {
+				stuff_boolean(&Unify_minimum_engine_sound);
+			}
+
 			optional_string("#FRED SETTINGS");
 
 			if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -1728,6 +1733,7 @@ void mod_table_reset()
 	Auto_assign_personas = true;
 	Countermeasures_use_capacity = false;
 	Play_thruster_sounds_for_player = false;
+	Unify_minimum_engine_sound = false;
 	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f },
