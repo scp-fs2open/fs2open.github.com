@@ -732,12 +732,14 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
+void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, int int_data, float float_data, const ai_lua_parameters& lua_target )
 {
 	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
 	ai_goal_reset(aigp, true, mode, submode, type);
 
+	aigp->int_data = int_data;
+	aigp->float_data = float_data;
 	aigp->lua_ai_target = lua_target;
 
 	if ( mode == AI_GOAL_WARP ) {
@@ -865,14 +867,14 @@ void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, co
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
+void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, int int_data, float float_data, const ai_lua_parameters& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
 
 	empty_index = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, lua_target );
+	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, int_data, float_data, lua_target );
 
 	// if the goal is to dock, then we must determine which dock points on the two ships to use.
 	// If the target of the dock is a cargo type container, then we should use DOCK_TYPE_CARGO
@@ -886,7 +888,7 @@ void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, 
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
+void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, int int_data, float float_data, const ai_lua_parameters& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -897,7 +899,7 @@ void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, 
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], lua_target );
+			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], int_data, float_data, lua_target );
 		}
 	}
 
@@ -905,7 +907,7 @@ void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, 
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
 	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], lua_target );
+	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], int_data, float_data, lua_target );
 }
 
 

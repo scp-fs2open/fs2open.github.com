@@ -2804,6 +2804,8 @@ void control_check_indicate()
 
 int check_control_used(int id, int key)
 {
+	// Make sure mouse_down() is only called once during any logic path, 
+	// or the mousewheel may be decayed multiple times!!
 	int mask;
 	static int last_key = 0;
 	auto & item = Control_config[id];
@@ -2827,8 +2829,8 @@ int check_control_used(int id, int key)
 
 	if (item.type == CC_TYPE_CONTINUOUS) {
 		
-		// this is awful, need to make a reverse lookup table to do button -> control instead of this control -> button
-		// nonsense.
+		// this is awful, need to make a reverse lookup table to do 
+		// button -> control instead of this control -> button nonsense.
 		if ((joy_down(item.first) || joy_down_count(item.first, 1)) ||
 			(joy_down(item.second) || joy_down_count(item.second, 1))) {
 			// Joy button bound to this control was pressed, control activated
@@ -2838,7 +2840,7 @@ int check_control_used(int id, int key)
 
 		if ((mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
 			(mouse_down(item.second) || mouse_down_count(item.second, 1))) {
-			// Joy button bound to this control was pressed, control activated
+			// Mouse button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
@@ -2882,6 +2884,22 @@ int check_control_used(int id, int key)
 		//mprintf(("Key used %d\n", key));
 		control_used(id);
 		return 1;
+	}
+
+	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
+	if (item.type == CC_TYPE_TRIGGER) {
+
+		int first_btn = 1 << item.first.get_btn();
+		int second_btn = 1 << item.second.get_btn();
+
+		if ( (first_btn >= LOWEST_MOUSE_WHEEL && first_btn <= HIGHEST_MOUSE_WHEEL) ||
+			 (second_btn >= LOWEST_MOUSE_WHEEL && second_btn <= HIGHEST_MOUSE_WHEEL) ) {
+			if ( mouse_down(item.first) || mouse_down(item.second) ) {
+				// Mouse wheel bound to this trigger control was pressed, control activated
+				control_used(id);
+				return 1;
+			}
+		}
 	}
 
 	return 0;
