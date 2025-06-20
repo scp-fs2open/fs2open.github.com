@@ -131,11 +131,11 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 
 		// if this is a player ship
 		if((np_index >= 0) && (np_index != MY_NET_PLAYER_NUM) && (wip->subtype == WP_LASER)){
-			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num); //NOLINT(readability-suspicious-call-argument)
+			send_player_pain_packet(&Net_players[np_index], wp->weapon_info_index, wip->damage * weapon_get_damage_scale(wip, weapon_obj, pship_obj), &force, world_hitpos, quadrant_num);
 		}
 	}	
 
-	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, &worldNormal, dot, hitpos);
+	ship_apply_local_damage(pship_obj, weapon_obj, world_hitpos, damage, wip->damage_type_idx, quadrant_num, CREATE_SPARKS, submodel_num, &worldNormal, dot, hitpos); //NOLINT(readability-suspicious-call-argument)
 
 	// let the hud shield gauge know when Player or Player target is hit
 	hud_shield_quadrant_hit(pship_obj, quadrant_num);
