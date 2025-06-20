@@ -2440,15 +2440,17 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	while (optional_string("$Conditional Impact:")) {
 		ImpactCondition impact_condition;
 		ConditionalImpact ci;
-		ci.disable_on_subsys_passthrough = false;
 		ci.min_health_threshold = ::util::UniformFloatRange(std::numeric_limits<float>::lowest());
 		ci.max_health_threshold = ::util::UniformFloatRange(std::numeric_limits<float>::max());
 		ci.min_damage_hits_ratio = ::util::UniformFloatRange(std::numeric_limits<float>::lowest());
 		ci.max_damage_hits_ratio = ::util::UniformFloatRange(std::numeric_limits<float>::max());
 		ci.min_angle_threshold = ::util::UniformFloatRange(0.f);
 		ci.max_angle_threshold = ::util::UniformFloatRange(180.f);
-		ci.laser_pokethrough_threshold = std::numeric_limits<float>::lowest();
+		ci.laser_pokethrough_threshold = 0.1;
 		ci.dinky = false;
+		ci.disable_if_player_parent = false;
+		ci.disable_on_subsys_passthrough = false;
+		ci.disable_main_on_pokethrough = false;
 
 		bool invalid_armor = false;
 		if (optional_string("+Armor Type:")) {
@@ -2468,13 +2470,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			impact_condition = SpecialImpactCondition::DEBRIS;
 		} else if (optional_string("+Empty Space")) {
 			impact_condition = SpecialImpactCondition::EMPTY_SPACE;
-		} else {
-			required_string("+Laser Pokethrough:");
-			impact_condition = SpecialImpactCondition::LASER_POKETHROUGH;
-			stuff_float(&ci.laser_pokethrough_threshold);
-		}
-		if (optional_string("+Disable On Subsystem Passthrough:")) {
-			stuff_boolean(&ci.disable_on_subsys_passthrough);
 		}
 		if (optional_string("+Min Health Threshold:")) {
 			ci.min_health_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
@@ -2495,8 +2490,19 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			ci.max_angle_threshold = ::util::ParsedRandomFloatRange::parseRandomRange();
 		}
 		parse_optional_bool_into("+Dinky:", &ci.dinky);
+		parse_optional_bool_into("+Disable If Player Parent:", &ci.disable_if_player_parent);
+		parse_optional_bool_into("+Disable On Subsystem Passthrough:", &ci.disable_on_subsys_passthrough);
+		
 		required_string("+Effect Name:");
 			ci.effect = particle::util::parseEffect(wip->name);
+		if (optional_string("+Laser Pokethrough Effect Name:")) {
+			ci.pokethrough_effect = particle::util::parseEffect(wip->name);
+			if (optional_string("+Laser Pokethrough Threshold:")) {
+				stuff_float(&ci.laser_pokethrough_threshold);
+			}
+			parse_optional_bool_into("+Disable Main On Pokethrough:", &ci.disable_main_on_pokethrough);
+		}
+
 		SCP_vector<ConditionalImpact> ci_vec;
 		if (wip->conditional_impacts.count(impact_condition) == 1) {
 			SCP_vector<ConditionalImpact> existing_cis = wip->conditional_impacts[impact_condition];
@@ -7817,6 +7823,7 @@ const ConditionData* process_conditional_impact(
 		float damage_hits_fraction = entry->damage / entry->health;
 		for (const auto& ci : conditional_impact_it->second) {
 			if (((!armed_weapon) == ci.dinky)
+				&& !(ci.disable_if_player_parent && (&Objects[weapon_objp->parent] == Player_obj))
 				&& !((entry->hit_type == HitType::HULL && subsys_hit) && ci.disable_on_subsys_passthrough)
 				&& health_fraction >= ci.min_health_threshold.next()
 				&& health_fraction <= ci.max_health_threshold.next()
@@ -7824,22 +7831,31 @@ const ConditionData* process_conditional_impact(
 				&& damage_hits_fraction <= ci.max_damage_hits_ratio.next()
 				&& hit_angle >= fl_radians(ci.min_angle_threshold.next())
 				&& hit_angle <= fl_radians(ci.max_angle_threshold.next())
-				&& laser_pokethrough_amount >= ci.laser_pokethrough_threshold
 			) {
-				auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
-				if (impacted_objp != nullptr && entry->condition == ImpactCondition(SpecialImpactCondition::LASER_POKETHROUGH) && wip->render_type == WRT_LASER) {
-					particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, nullptr, submodel, laser_head_pos, nullptr));
-				} else {
-					particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, impacted_objp, submodel, hitpos, local_hitpos));
-				}
-				particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
-				particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+				bool pokethrough = (laser_pokethrough_amount >= ci.laser_pokethrough_threshold && ci.pokethrough_effect && wip->render_type == WRT_LASER);
 
-				if (hitnormal)
-				{
-					particleSource->setNormal(*hitnormal);
+				if (!(pokethrough && ci.disable_main_on_pokethrough)) {
+					auto particleSource = particle::ParticleManager::get()->createSource(ci.effect);
+					particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, impacted_objp, submodel, hitpos, local_hitpos));
+					particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
+					particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+					if (hitnormal) {
+						particleSource->setNormal(*hitnormal);
+					}
+					particleSource->finishCreation();
 				}
-				particleSource->finishCreation();
+
+				if (pokethrough) {
+					auto pokethroughParticleSource = particle::ParticleManager::get()->createSource(ci.pokethrough_effect.value());
+					pokethroughParticleSource->setHost(weapon_hit_make_effect_host(weapon_objp, nullptr, submodel, laser_head_pos, nullptr));
+					pokethroughParticleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
+					pokethroughParticleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+					if (hitnormal) {
+						pokethroughParticleSource->setNormal(*hitnormal);
+					}
+					pokethroughParticleSource->finishCreation();
+				}
+
 				*valid_conditional_impact = true;
 			}
 		}
@@ -7882,7 +7898,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 
 	float laser_pokethrough_amount = 0.0f;
 	vec3d laser_head_pos = vmd_zero_vector;
-	if (impacted_objp != nullptr && wip->conditional_impacts.count(SpecialImpactCondition::LASER_POKETHROUGH) == 1 && wip->render_type == WRT_LASER) {
+	if (wip->render_type == WRT_LASER) {
 		float length_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_LENGTH_MULT, *wp, &wp->modular_curves_instance);
 
 		if (wip->laser_length_by_frametime) {
@@ -7899,7 +7915,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 	bool valid_conditional_impact = false;
 	bool prev_nonnull_entry = false;
 	ConditionData first_nonnull_entry = ConditionData {
-		SpecialImpactCondition::LASER_POKETHROUGH,
+		SpecialImpactCondition::EMPTY_SPACE,
 		HitType::NONE,
 		0.0f,
 		1.0f,
@@ -7930,28 +7946,8 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 		}
 	}
 
-	// if we're hitting something, we check for laser pokethrough impacts
-	// otherwise, we check for empty space impacts
-	if (impacted_objp != nullptr && wip->render_type == WRT_LASER) {
-		process_conditional_impact(
-			&first_nonnull_entry,
-			weapon_objp,
-			wip,
-			impacted_objp,
-			armed_weapon,
-			subsys_hit,
-			submodel,
-			hitpos,
-			local_hitpos,
-			hitnormal,
-			hit_angle,
-			radius_mult,
-			laser_pokethrough_amount,
-			&laser_head_pos,
-			&valid_conditional_impact,
-			&prev_nonnull_entry
-		);
-	} else {
+	// check for empty space impacts
+	if (impacted_objp == nullptr) {
 		first_nonnull_entry.condition = SpecialImpactCondition::EMPTY_SPACE;
 		process_conditional_impact(
 			&first_nonnull_entry,

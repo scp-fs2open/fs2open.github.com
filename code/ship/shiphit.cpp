@@ -2460,10 +2460,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				shipp->ship_max_shield_strength,
 			};
 			
+			shield_impact.damage = shield_damage * shield_factor;
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 			// apply shield damage
 			float remaining_damage = shield_apply_damage(ship_objp, quadrant, shield_damage * shield_factor);
-			shield_impact.damage = (shield_damage * shield_factor) - remaining_damage;
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 			// remove the shield factor, since the overflow will no longer be thrown at shields
 			remaining_damage /= shield_factor;
 

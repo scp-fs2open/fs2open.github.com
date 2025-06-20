@@ -338,7 +338,6 @@ enum class SpecialImpactCondition {
 	DEBRIS,
 	ASTEROID,
 	EMPTY_SPACE,
-	LASER_POKETHROUGH,
 };
 
 using ImpactCondition = std::variant<int, SpecialImpactCondition>;
@@ -353,7 +352,7 @@ struct ConditionData {
 
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	bool disable_on_subsys_passthrough;
+	std::optional<particle::ParticleEffectHandle> pokethrough_effect;
 	::util::ParsedRandomFloatRange min_health_threshold; // factor, 0-1
 	::util::ParsedRandomFloatRange max_health_threshold; // factor, 0-1
 	::util::ParsedRandomFloatRange min_damage_hits_ratio; // factor
@@ -362,6 +361,9 @@ struct ConditionalImpact {
 	::util::ParsedRandomFloatRange max_angle_threshold; // in degrees
 	float laser_pokethrough_threshold; // factor, 0-1
 	bool dinky;
+	bool disable_if_player_parent;
+	bool disable_on_subsys_passthrough;
+	bool disable_main_on_pokethrough;
 };
 
 enum class FiringPattern {
