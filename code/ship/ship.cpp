@@ -17034,11 +17034,7 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 	// determine if hitpos is close enough to subsystem
 	dist = vm_vec_dist(&mc.hit_point_world, subsys_pos);
 
-	if ( dist <= subsys->system_info->radius ) {
-		return true;
-	}
-	
-	return false;
+	return (dist <= subsys->system_info->radius);
 }
 
 /**
