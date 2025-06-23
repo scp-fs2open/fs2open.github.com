@@ -135,6 +135,9 @@ public:
 	float better_collision_avoid_aggression_combat;
 	float better_collision_avoid_aggression_guard;
 
+	// AI improved subsystem attack option  --wookieejedi
+	float Improved_subsystem_attack_extra_distance;
+
 	// AI strafing options  --wookieejedi
 	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
 	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 

@@ -16977,7 +16977,7 @@ int ship_return_subsys_path_normal(const ship *shipp, const ship_subsys *ss, con
 //				subsys	=>		pointer to the subsystem of interest
 //				eye_pos	=>		world coord for the eye looking at the subsystem
 //				subsys_pos			=>	world coord for the center of the subsystem of interest
-//				do_facing_check	=>	OPTIONAL PARAMETER (default value is 1), do a dot product check to see if subsystem fvec is facing
+//				do_facing_check	=>	OPTIONAL PARAMETER (default value is true), do a dot product check to see if subsystem fvec is facing
 //											towards the eye position	
 //				dot_out	=>		OPTIONAL PARAMETER, output parameter, will return dot between subsys fvec and subsys_to_eye_vec
 //									(only filled in if do_facing_check is true)
@@ -16988,7 +16988,7 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 	vec3d	terminus, eye_to_pos, subsys_fvec, subsys_to_eye_vec;
 
 	if (objp->type != OBJ_SHIP)
-		return 0;
+		return false;
 
 	// See if we are at least facing the subsystem
 	if ( do_facing_check ) {
@@ -17008,8 +17008,8 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 			vm_vec_negate(vec_out);
 		}
 
-		if ( dot < 0 )
-			return 0;
+		if ( dot <= 0 )
+			return false;
 	}
 
 	// See if ray from eye to subsystem actually hits close enough to the subsystem position
@@ -17028,17 +17028,17 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 	model_collide(&mc);
 
 	if ( !mc.num_hits ) {
-		return 0;
+		return false;
 	}	
 
 	// determine if hitpos is close enough to subsystem
 	dist = vm_vec_dist(&mc.hit_point_world, subsys_pos);
 
 	if ( dist <= subsys->system_info->radius ) {
-		return 1;
+		return true;
 	}
 	
-	return 0;
+	return false;
 }
 
 /**

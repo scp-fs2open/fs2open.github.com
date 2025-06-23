@@ -604,6 +604,10 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$improved subsystem attack pathing:", AI::Profile_Flags::Improved_subsystem_attack_pathing);
 
+				if (optional_string("+subsystem attack pathing extra distance:")) {
+					stuff_float(&profile->Improved_subsystem_attack_extra_distance);
+				}
+
 				set_flag(profile, "$fixed ship-weapon collisions:", AI::Profile_Flags::Fixed_ship_weapon_collision);
 
 				//Intention is to expand this feature to include a preference for close or long range weapons
@@ -668,6 +672,8 @@ void parse_ai_profiles_tbl(const char *filename)
 				}
 
 				set_flag(profile, "$fix avoid-shockwave bugs:", AI::Profile_Flags::Fix_avoid_shockwave_bugs);
+
+				set_flag(profile, "$fix standard strafe:", AI::Profile_Flags::Fix_standard_strafe);
 
 				set_flag(profile, "$standard strafe used more:", AI::Profile_Flags::Standard_strafe_used_more);
 
@@ -806,6 +812,8 @@ void ai_profile_t::reset()
 
 	better_collision_avoid_aggression_combat = 3.5f;
 	better_collision_avoid_aggression_guard = 3.5f;
+
+	Improved_subsystem_attack_extra_distance = 2000.0f;
 
 	standard_strafe_when_below_speed = 3.0f;
 	strafe_retreat_box_dist = 300.0f;
