@@ -7678,7 +7678,7 @@ void mabs_pick_goal_point(object *objp, object *big_objp, vec3d *collision_point
 /**
  * Return true if a large ship is being ignored.
  */
-int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f)
+bool maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f)
 {
 	if (timestamp_elapsed(aip->avoid_check_timestamp)) {
 		float		distance;
@@ -7713,10 +7713,30 @@ int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d 
 		if (ai_willing_to_afterburn_hard(aip) && dot > 0.99f)
 			ai_afterburn_hard(Pl_objp, aip);
 
-		return 1;
+		return true;
 	}
 
-	return 0;
+	return false;
+}
+
+/**
+ * Return true if small ship and it will likely collide with large ship
+ * developed by Asteroth
+ */
+bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_aggression, object* pl_objp, object* en_objp)
+{
+	ship* shipp = &Ships[pl_objp->instance];
+	ship_info* sip = &Ship_info[shipp->ship_info_index];
+
+	if ((flag_to_check) && sip->is_small_ship()) {
+		vec3d collide_vec = pl_objp->phys_info.vel * (avoidance_aggression / (PI2 / sip->srotation_time));
+		float radius_contribution = (pl_objp->phys_info.speed + pl_objp->radius) / pl_objp->phys_info.speed;
+		collide_vec *= radius_contribution;
+
+		collide_vec += pl_objp->pos;
+		return (maybe_avoid_big_ship(pl_objp, en_objp, &Ai_info[shipp->ai_index], &collide_vec, 0.f, 0.1f));
+	}
+	return false;
 }
 
 /**
@@ -8941,14 +8961,11 @@ void ai_chase()
 		return;
 	}
 
-	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance]) && sip->is_small_ship()) {
-		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_combat / (PI2 / sip->srotation_time));
-		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
-		collide_vec *= radius_contribution;
-
-		collide_vec += Pl_objp->pos;
-		if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &collide_vec, 0.f, 0.1f))
-			return;
+	if (better_collision_avoidance_triggered(
+			The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance],
+			The_mission.ai_profile->better_collision_avoid_aggression_combat,
+			Pl_objp, En_objp)) {
+		return;
 	}
 
 	if (enemy_sip_flags.any_set()) {
@@ -10862,16 +10879,11 @@ void ai_guard()
 		return;
 	}
 
-	ship_info* sip = &Ship_info[shipp->ship_info_index];
-	if ((The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance]) && sip->is_small_ship()) {
-
-		vec3d collide_vec = Pl_objp->phys_info.vel * (The_mission.ai_profile->better_collision_avoid_aggression_guard / (PI2 / sip->srotation_time));
-		float radius_contribution = (Pl_objp->phys_info.speed + Pl_objp->radius) / Pl_objp->phys_info.speed;
-		collide_vec *= radius_contribution;
-
-		collide_vec += Pl_objp->pos;
-		if (maybe_avoid_big_ship(Pl_objp, En_objp, aip, &collide_vec, 0.f, 0.1f))
-			return;
+	if (better_collision_avoidance_triggered(
+			The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance],
+			The_mission.ai_profile->better_collision_avoid_aggression_guard,
+			Pl_objp, En_objp)) {
+		return;
 	}
 
 	// handler for guard object with BIG radius
@@ -14153,7 +14165,12 @@ void ai_execute_behavior(ai_info *aip)
 	case AIM_STRAFE:
 		if (En_objp) {
 			Assert(En_objp->type == OBJ_SHIP);
-			ai_big_strafe();	// strafe a big ship
+			if (!(better_collision_avoidance_triggered(
+					The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance],
+					The_mission.ai_profile->better_collision_avoid_aggression_combat,
+					Pl_objp, En_objp))) {
+				ai_big_strafe();	// strafe a big ship
+			}
 		} else {
 			aip->mode = AIM_NONE;
 		}

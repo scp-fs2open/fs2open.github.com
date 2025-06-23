@@ -864,7 +864,7 @@ void ai_big_chase_ct()
 extern bool ai_select_secondary_weapon(object *objp, ship_weapon *swp, int priority1 = -1, int priority2 = -1);
 extern float set_secondary_fire_delay(ai_info *aip, ship *shipp, weapon_info *swip, bool burst);
 extern bool ai_choose_secondary_weapon(object *objp, ai_info *aip, object *en_objp);
-extern int maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f);
+extern bool maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d *goal_point, float delta_time, float time_scale = 1.f);
 
 extern void maybe_cheat_fire_synaptic(object *objp);
 
