@@ -560,14 +560,32 @@ int beam_fire(beam_fire_info *fire_info)
 
 	//Do particles
 	if (wip->b_info.beam_muzzle_effect.isValid()) {
-		//TODO attach to turret if b subsys exists
-		//Else attach to ship if b obj exists
-		//Else just place in space with velocity
 		auto source = particle::ParticleManager::get()->createSource(wip->b_info.beam_muzzle_effect);
-		//auto host = std::make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel);
-		//host->setRadius(debris_obj->radius);
-		//source->setHost(std::move(host));
 
+		std::unique_ptr<EffectHost> host;
+		if (new_item->objp == nullptr) {
+			vec3d beam_dir = new_item->last_shot - new_item->last_start;
+			matrix orient;
+			vm_vector_2_matrix(&orient, &beam_dir);
+
+			host = std::make_unique<EffectHostVector>(new_item->last_start, orient, vmd_zero_vector);
+		}
+		else if (new_item->subsys == nullptr || new_item->firingpoint < 0) {
+			vec3d beam_dir = new_item->last_shot - new_item->last_start;
+			matrix orient;
+			vm_vector_2_matrix(&orient, &beam_dir);
+
+			vec3d local_pos = new_item->last_start - new_item->objp->pos;
+			vm_vec_rotate(&local_pos, &local_pos, &new_item->objp->orient);
+			orient = new_item->objp->orient * orient;
+
+			host = std::make_unique<EffectHostObject>(new_item->objp, local_pos, orient);
+		}
+		else {
+			host = std::make_unique<EffectHostTurret>(new_item->objp, new_item->subsys->system_info->turret_gun_sobj, new_item->firingpoint);
+		}
+
+		source->setHost(std::move(host));
 		source->setTriggerRadius(wip->b_info.beam_muzzle_radius);
 		source->finishCreation();
 	}
