@@ -119,6 +119,9 @@ void debris_init()
 	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 		"", //Name
 		::util::UniformFloatRange(10.f), //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?

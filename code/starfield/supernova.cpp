@@ -48,6 +48,9 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 			"", //Name
 			::util::UniformFloatRange(2.f, 5.f), //Particle num
+			particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+			::util::UniformFloatRange(), //No duration
+			::util::UniformFloatRange (-1.f), //Single particle only
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit
 			false, //Velocity Inherit absolute?

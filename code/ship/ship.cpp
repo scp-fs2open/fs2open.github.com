@@ -2529,6 +2529,9 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	auto effect = particle::ParticleEffect(
 		"", //Name
 		particle_num, //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(velocityInherit), //Velocity Inherit
 		false, //Velocity Inherit absolute?
@@ -4843,6 +4846,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			auto particle = particle::ParticleEffect(
 				"", //Name
 				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				true, //Velocity Inherit absolute?

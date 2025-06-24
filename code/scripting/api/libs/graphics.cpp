@@ -2208,6 +2208,9 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 	particle::ParticleEffect effect(
 		"", //Name
 		::util::UniformFloatRange(1.f), //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(), //Velocity Inherit
 		false, //Velocity Inherit absolute?

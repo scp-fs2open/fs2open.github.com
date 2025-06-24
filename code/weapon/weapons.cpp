@@ -2223,6 +2223,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(1.f), //Particle num
+					ParticleEffect::Duration::ONETIME, //Single Particle Emission
+					::util::UniformFloatRange(), //No duration
+					::util::UniformFloatRange (-1.f), //Single particle only
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(0.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
@@ -2305,6 +2308,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -2396,6 +2402,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->piercing_impact_effect = ParticleManager::get()->addEffect(ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(count / 2.f, 2.f * count), //Particle num
+					ParticleEffect::Duration::ONETIME, //Single Particle Emission
+					::util::UniformFloatRange(), //No duration
+					::util::UniformFloatRange (-1.f), //Single particle only
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
@@ -2420,6 +2429,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(count / 4.f, i2fl(count)), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -2940,6 +2952,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				auto effect = particle::ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(0, pcount), //Particle num
+					particle::ParticleEffect::Duration::RANGE,
+					::util::UniformFloatRange((float)wip->b_info.beam_warmup / 1000.0f), //Emit for beam warmup time
+					::util::UniformFloatRange (10.f), //One particle every 10ms
 					particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
@@ -2958,10 +2973,6 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref),
 					::util::UniformFloatRange(pradius), //Radius
 					bm_load_animation(pani.c_str())); //Bitmap
-
-				//TODO
-				//Source lifetime = ((float)wip->b_info.beam_warmup / 1000.0f)
-				//Spawn frequency = 100ms
 
 				static const int beam_particle_curve = []() -> int {
 					int curve_id = static_cast<int>(Curves.size());
@@ -3141,6 +3152,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->flash_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -3215,6 +3229,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				piercingEffect.emplace_back(
 						particle_effect_name, //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -3238,6 +3255,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				piercingEffect.emplace_back(
 						"", //Name, empty as it's a non-findable part of a composite
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?

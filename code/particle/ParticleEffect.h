@@ -158,6 +158,9 @@ public:
 	// Parsing the deprecated -part.tbm effects uses the simple constructor + parseLegacy() instead!
 	explicit ParticleEffect(SCP_string name,
 							::util::ParsedRandomFloatRange particleNum,
+							Duration duration,
+							::util::ParsedRandomFloatRange durationRange,
+							::util::ParsedRandomFloatRange particlesPerSecond,
 							ShapeDirection direction,
 							::util::ParsedRandomFloatRange vel_inherit,
 							bool vel_inherit_absolute,
