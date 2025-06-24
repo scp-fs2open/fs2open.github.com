@@ -19,6 +19,12 @@ namespace particle {
 			}
 		}
 
+		static void parseBitmapReversed(ParticleEffect &effect) {
+			if (optional_string("+Animation Reversed:")) {
+				stuff_boolean(&effect.m_reverseAnimation);
+			}
+		}
+
 		template<bool modern = true> static void parseRadius(ParticleEffect &effect) {
 			if (optional_string(modern ? "+Radius:" : "+Size:")) {
 				effect.m_radius = ::util::ParsedRandomFloatRange::parseRandomRange();
@@ -302,6 +308,7 @@ namespace particle {
 
 			//Particle Settings
 			parseBitmaps(effect);
+			parseBitmapReversed(effect);
 			parseRotationType(effect);
 			parseRadius(effect);
 			parseLength(effect);
