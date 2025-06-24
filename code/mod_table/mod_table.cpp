@@ -1049,7 +1049,7 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Unify_minimum_engine_sound);
 			}
 
-			if (optional_string("$Disabled engines are silent:")) {
+			if (optional_string("$Disabled or disrupted engines are silent:")) {
 				stuff_boolean(&Disabled_engines_are_silent);
 			}
 

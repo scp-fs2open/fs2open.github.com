@@ -660,8 +660,9 @@ void obj_snd_do_frame()
 			continue;
 
 		bool sound_allowed = true;
+		ship* sp = nullptr; 
 		if (obj_is_ship) {
-			ship* sp = &Ships[objp->instance];
+			sp = &Ships[objp->instance];
 			if (osp->flags & OS_ENGINE) {
 				bool disabled_and_silent = Disabled_engines_are_silent && 
 				                           (sp->flags[Ship::Ship_Flags::Disabled] || ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE));
@@ -683,7 +684,7 @@ void obj_snd_do_frame()
 		vec3d vel = objp->phys_info.vel;
 
 		// Don't play doppler effect for cruisers or capitals
-		if ( sp ) {
+		if (obj_is_ship) {
 			if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
 				vel = vmd_zero_vector;
 			}
