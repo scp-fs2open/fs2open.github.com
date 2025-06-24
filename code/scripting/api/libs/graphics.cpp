@@ -2194,13 +2194,13 @@ ADE_FUNC(openMovie, l_Graphics, "string name, [boolean looping = false, boolean 
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
 }
 
-particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap) {
-	static SCP_map<int, particle::ParticleEffectHandle> custom_texture_effects;
+particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool reversed) {
+	static SCP_map<std::pair<int, bool>, particle::ParticleEffectHandle> custom_texture_effects;
 
 	bool is_builtin_bitmap = bitmap == particle::Anim_bitmap_id_fire || bitmap == particle::Anim_bitmap_id_smoke || bitmap == particle::Anim_bitmap_id_smoke2;
 
 	if (!is_builtin_bitmap) {
-		auto it = custom_texture_effects.find(bitmap);
+		auto it = custom_texture_effects.find(std::make_pair(bitmap, reversed));
 		if (it != custom_texture_effects.end())
 			return it->second;
 	}
@@ -2222,6 +2222,7 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap) {
 		false, //Affected by detail
 		1.f, //Culling range multiplier
 		is_builtin_bitmap, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		reversed, //Is reversed?
 		::util::UniformFloatRange(1.f), //Lifetime
 		::util::UniformFloatRange(1.f), //Radius
 		bitmap);
@@ -2233,7 +2234,7 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap) {
 	particle::ParticleEffectHandle handle = particle::ParticleManager::get()->addEffect(std::move(effect));
 
 	if (!is_builtin_bitmap) {
-		custom_texture_effects.emplace(bitmap, handle);
+		custom_texture_effects.emplace(std::make_pair(bitmap, reversed), handle);
 	}
 
 	return handle;
@@ -2264,18 +2265,21 @@ static int spawnParticles(lua_State *L, bool persistent) {
 			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
 			return fail_return;
 		case LE_PARTICLE_FIRE: {
-			static auto fire_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire);
-			handle = fire_handle;
+			static auto fire_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, false);
+			static auto fire_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, true);
+			handle = rev ? fire_handle_rev : fire_handle;
 			break;
 		}
 		case LE_PARTICLE_SMOKE: {
-			static auto smoke_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke);
-			handle = smoke_handle;
+			static auto smoke_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, false);
+			static auto smoke_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, true);
+			handle = rev ? smoke_handle_rev : smoke_handle;
 			break;
 		}
 		case LE_PARTICLE_SMOKE2: {
-			static auto smoke2_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2);
-			handle = smoke2_handle;
+			static auto smoke2_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, false);
+			static auto smoke2_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, true);
+			handle = rev ? smoke2_handle_rev : smoke2_handle;
 			break;
 		}
 		case LE_PARTICLE_BITMAP:
@@ -2283,7 +2287,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 				LuaError(L, "Invalid texture specified for createParticle()!");
 				return fail_return;
 			} else {
-				handle = getLegacyScriptingParticleEffect(texture->handle);
+				handle = getLegacyScriptingParticleEffect(texture->handle, rev);
 			}
 			break;
 		default:
@@ -2291,10 +2295,6 @@ static int spawnParticles(lua_State *L, bool persistent) {
 			return fail_return;
 		}
 	}
-
-	//TODO
-	//if (rev)
-	//	pi.reverse = false;
 
 	std::unique_ptr<EffectHost> host;
 	if (objh != nullptr && objh->isValid()) {

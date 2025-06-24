@@ -16,7 +16,7 @@ class EffectHost;
 //Due to parsing shenanigans in weapons, this needs a forward-declare here
 int parse_weapon(int, bool, const char*);
 namespace scripting::api {
-	particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap);
+	particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 }
 
 namespace anl {
@@ -87,7 +87,7 @@ public:
 
 	friend int ::parse_weapon(int, bool, const char*);
 
-	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap);
+	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -104,6 +104,7 @@ public:
 	bool m_keep_anim_length_if_available;
 	bool m_vel_inherit_absolute;
 	bool m_vel_inherit_from_position_absolute;
+	bool m_reverseAnimation;
 
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;
@@ -171,6 +172,7 @@ public:
 							bool affectedByDetail,
 							float distanceCulled,
 							bool disregardAnimationLength,
+							bool reverseAnimation,
 							::util::ParsedRandomFloatRange lifetime,
 							::util::ParsedRandomFloatRange radius,
 							int bitmap

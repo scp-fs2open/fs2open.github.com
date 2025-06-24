@@ -23,6 +23,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_keep_anim_length_if_available(false),
 	  m_vel_inherit_absolute(false),
 	  m_vel_inherit_from_position_absolute(false),
+	  m_reverseAnimation(false),
 	  m_bitmap_list({}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -66,6 +67,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	bool affectedByDetail,
 	float distanceCulled,
 	bool disregardAnimationLength,
+	bool reverseAnimation,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
@@ -82,6 +84,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_keep_anim_length_if_available(!disregardAnimationLength),
 	  m_vel_inherit_absolute(vel_inherit_absolute),
 	  m_vel_inherit_from_position_absolute(false),
+	  m_reverseAnimation(reverseAnimation),
 	  m_bitmap_list({bitmap}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -224,6 +227,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 	for (uint i = 0; i < num_spawn; ++i) {
 		particle_info info;
 
+		info.reverse = m_reverseAnimation;
 		info.pos = pos;
 		info.vel = velParent;
 
