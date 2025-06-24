@@ -1434,9 +1434,9 @@ static bool ai_big_strafe_maybe_retreat(const vec3d *target_pos)
 	bool collide_distance;
 	if (The_mission.ai_profile->flags[AI::Profile_Flags::Fix_standard_strafe]) {
 		// check if ship facing target, as likely will only collide if facing
-		vec3d vec_to_cargo;
-		vm_vec_normalized_dir(&vec_to_cargo, target_pos, &Pl_objp->pos);
-		float dot = vm_vec_dot(&vec_to_cargo, &Pl_objp->orient.vec.fvec);
+		vec3d vec_to_tpos;
+		vm_vec_normalized_dir(&vec_to_tpos, target_pos, &Pl_objp->pos);
+		float dot = vm_vec_dot(&vec_to_tpos, &Pl_objp->orient.vec.fvec);
 		if (dot <= 0.0f) {
 			collide_time = false;
 			collide_distance = false;
