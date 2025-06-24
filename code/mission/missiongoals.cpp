@@ -990,7 +990,7 @@ void mission_process_event( int event )
 			mission_event_unset_directive_special(event);
 		}
 
-		if (Mission_events[event].count || Always_show_directive_value_count || (Directive_count > 1)) {
+		if (Mission_events[event].count || (Directive_count > 1) || (Always_show_directive_value_count && Directive_count != DIRECTIVE_WING_ZERO)) {
 			Mission_events[event].count = Directive_count;
 		}
 
