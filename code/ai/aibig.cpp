@@ -525,8 +525,7 @@ bool ai_new_maybe_reposition_attack_subsys() {
 	object* target_objp = &Objects[aip->target_objnum];
 
 	// dont bother with this if you're still far away
-	if (vm_vec_dist(&Pl_objp->pos, &target_objp->pos) >
-		target_objp->radius * 2.0f + The_mission.ai_profile->Improved_subsystem_attack_extra_distance)
+	if (vm_vec_dist(&Pl_objp->pos, &target_objp->pos) > target_objp->radius * 2.0f + 2000.0f)
 		return false;
 
 	vec3d		geye, gsubpos;
