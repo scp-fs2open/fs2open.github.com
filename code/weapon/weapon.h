@@ -238,10 +238,7 @@ typedef struct beam_weapon_info {
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
 	float beam_muzzle_radius;			// muzzle glow radius
-	int beam_particle_count;			// beam spew particle count
-	float beam_particle_radius;			// radius of beam particles
-	float beam_particle_angle;			// angle of beam particle spew cone
-	generic_anim beam_particle_ani;		// particle_ani
+	particle::ParticleEffectHandle beam_muzzle_effect;
 	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound

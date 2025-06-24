@@ -449,7 +449,6 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
 	new_item->bank = fire_info->bank;
-	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
 	new_item->firingpoint = (fire_info->bfi_flags & BFIF_FLOATING_BEAM) ? -1 : fire_info->turret->turret_next_fire_pos;
 	new_item->last_start = fire_info->starting_pos;
@@ -558,6 +557,20 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// start the warmup phase
 	beam_start_warmup(new_item);
+
+	//Do particles
+	if (wip->b_info.beam_muzzle_effect.isValid()) {
+		//TODO attach to turret if b subsys exists
+		//Else attach to ship if b obj exists
+		//Else just place in space with velocity
+		auto source = particle::ParticleManager::get()->createSource(wip->b_info.beam_muzzle_effect);
+		//auto host = std::make_unique<EffectHostVector>(*hitpos, orient, debris_obj->phys_info.vel);
+		//host->setRadius(debris_obj->radius);
+		//source->setHost(std::move(host));
+
+		source->setTriggerRadius(wip->b_info.beam_muzzle_radius);
+		source->finishCreation();
+	}
 
 	return objnum;
 }
@@ -1555,82 +1568,6 @@ void beam_render(beam *b, float u_offset)
 	//gr_set_cull(cull);
 }
 
-// generate particles for the muzzle glow
-int hack_time = 100;
-DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
-{
-	dc_stuff_int(&hack_time);
-}
-
-void beam_generate_muzzle_particles(beam *b)
-{
-	int particle_count;
-	int idx;
-	weapon_info *wip;
-	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
-	matrix m;
-
-	// if our hack stamp has expired
-	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
-		return;
-	}
-
-	// never generate anything past about 1/5 of the beam fire time	
-	if(b->warmup_stamp == -1){
-		return;
-	}
-
-	// get weapon info
-	wip = &Weapon_info[b->weapon_info_index];
-
-	// no specified particle for this beam weapon
-	if (wip->b_info.beam_particle_ani.first_frame < 0)
-		return;
-
-	
-	// reset the hack stamp
-	b->Beam_muzzle_stamp = timestamp(hack_time);
-
-	// randomly generate 10 to 20 particles
-	particle_count = Random::next(wip->b_info.beam_particle_count+1);
-
-	// get turret info - position and normal
-	turret_pos = b->last_start;
-	if (b->subsys != NULL) {
-		turret_norm = b->subsys->system_info->turret_norm;	
-	} else {
-		vm_vec_normalized_dir(&turret_norm, &b->last_shot, &b->last_start);
-	}
-
-	// randomly perturb a vector within a cone around the normal
-	vm_vector_2_matrix_norm(&m, &turret_norm, nullptr, nullptr);
-	for(idx=0; idx<particle_count; idx++){
-		// get a random point in the cone
-		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
-		vm_vec_scale_add(&particle_pos, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
-
-		// now generate some interesting values for the particle
-		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
-		float p_life = frand_range(p_time_ref * 0.5f, p_time_ref * 0.7f);
-		float p_vel = (wip->b_info.beam_muzzle_radius / p_life) * frand_range(0.85f, 1.2f);
-		vm_vec_scale(&particle_dir, -p_vel);
-		if (b->objp != NULL) {
-			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
-		}
-
-		particle::particle_info pinfo;
-		pinfo.pos = particle_pos;
-		pinfo.vel = particle_dir;
-		pinfo.lifetime = p_life;
-		pinfo.attached_objnum = -1;
-		pinfo.attached_sig = 0;
-		pinfo.rad = wip->b_info.beam_particle_radius;
-		pinfo.reverse = 1;
-		pinfo.bitmap = wip->b_info.beam_particle_ani.first_frame;
-		particle::create(&pinfo);
-	}
-}
-
 static float get_muzzle_glow_alpha(beam* b)
 {
 	float dist;
@@ -1899,10 +1836,7 @@ void beam_render_all()
 		}
 
 		// render the muzzle glow
-		beam_render_muzzle_glow(moveup);		
-
-		// maybe generate some muzzle particles
-		beam_generate_muzzle_particles(moveup);
+		beam_render_muzzle_glow(moveup);
 
 		// next item
 		moveup = GET_NEXT(moveup);

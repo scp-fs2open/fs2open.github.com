@@ -3,6 +3,8 @@
 namespace particle {
 	ConeVolume::ConeVolume() : m_deviation(::util::UniformFloatRange(0.f)), m_length(::util::UniformFloatRange(1.f)), m_modular_curve_instance(m_modular_curves.create_instance()) { }
 	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, float length) : m_deviation(deviation), m_length(::util::UniformFloatRange(length)), m_modular_curve_instance(m_modular_curves.create_instance()) { }
+	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, ::util::ParsedRandomFloatRange length) : m_deviation(deviation), m_length(length), m_modular_curve_instance(m_modular_curves.create_instance()) { }
+
 
 	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) {
 		//It is surely possible to do this more efficiently.
