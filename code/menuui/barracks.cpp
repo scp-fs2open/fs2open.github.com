@@ -463,7 +463,7 @@ void barracks_init_stats(scoring_struct *stats)
 			if (Num_stat_lines < Max_stat_lines)
 			{
 				// wookieejedi - consolidate by display name or ship class name
-				const char* name_key = Use_displayname_shipclass_kill_stats && it->has_display_name() ? it->display_name : it->name;
+				const char* name_key = it->has_display_name() ? it->display_name : it->name;
 				Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
 				kill_map[name_key] += stats->kills[i];
 				score_from_kills += stats->kills[i] * it->score;

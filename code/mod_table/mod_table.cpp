@@ -170,7 +170,6 @@ EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 bool Fix_asteroid_bounding_box_check;
 bool Disable_intro_movie;
 bool Show_locked_status_scramble_missions;
-bool Use_displayname_shipclass_kill_stats;
 
 
 #ifdef WITH_DISCORD
@@ -1530,10 +1529,6 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Show_locked_status_scramble_missions);
 			}
 
-			if (optional_string("$Use Display Name of ship class for kill stats:")) {
-				stuff_boolean(&Use_displayname_shipclass_kill_stats);
-			}
-
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1768,7 +1763,6 @@ void mod_table_reset()
 	Fix_asteroid_bounding_box_check = false;
 	Disable_intro_movie = false;
 	Show_locked_status_scramble_missions = false;
-	Use_displayname_shipclass_kill_stats = false;
 }
 
 void mod_table_set_version_flags()
@@ -1794,6 +1788,5 @@ void mod_table_set_version_flags()
 		Use_model_eyepoint_for_set_camera_host = true;
 		Use_model_eyepoint_normals = true;
 		Fix_asteroid_bounding_box_check = true;
-		Use_displayname_shipclass_kill_stats = true;
 	}
 }

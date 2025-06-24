@@ -1736,7 +1736,7 @@ void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 		}
 
 		// wookieejedi - consolidate by display name or ship class name
-		const char* name_key = Use_displayname_shipclass_kill_stats && it->has_display_name() ? it->display_name : it->name;
+		const char* name_key = it->has_display_name() ? it->display_name : it->name;
 		kill_map[name_key] += num_kills;
 	}
 
