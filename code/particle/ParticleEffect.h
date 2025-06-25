@@ -141,7 +141,6 @@ public:
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
 
 	matrix getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const;
-	void sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, const std::tuple<const ParticleSource&, const size_t&>& source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const;
 
 	template<bool isPersistent>
 	auto processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
@@ -181,7 +180,7 @@ public:
 							int bitmap
 	);
 
-	void processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
+	float processSource(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
 	SCP_vector<WeakParticlePtr> processSourcePersistent(float interp, const ParticleSource& host, size_t effectNumber, const vec3d& vel, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const;
 
 	void pageIn();
@@ -193,6 +192,8 @@ public:
 	float getNextSpawnDelay() const;
 
 	bool isOnetime() const { return m_duration == Duration::ONETIME; }
+
+	float getApproximateVisualSize(const vec3d& pos) const;
 
 	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
 		std::array {
@@ -221,12 +222,18 @@ public:
 		    modular_curves_submember_input<&ParticleSource::m_effect_is_running, &decltype(ParticleSource::m_effect_is_running)::count>,
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
 			ModularCurvesMathOperators::division>{}})
-	.derive_modular_curves_input_only_subset<size_t>(
+	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
-		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}}
+		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
+	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
+		std::pair {"Apparent Visual Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectVisualSize>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
+
+  private:
+	float getCurrentFrequencyMult(decltype(modular_curves_definition)::input_type_t source) const;
+	void sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, decltype(modular_curves_definition)::input_type_t source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const;
 };
 
 }

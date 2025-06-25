@@ -3,6 +3,7 @@
 #include "particle/ParticleEffect.h"
 #include "particle/ParticleManager.h"
 
+#include "model/modelrender.h"
 #include "render/3d.h"
 
 #include <anl.h>
@@ -114,6 +115,20 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}
 
+float ParticleEffect::getApproximateVisualSize(const vec3d& pos) const {
+	float distance_to_eye = vm_vec_dist(&Eye_position, &pos);
+
+	return convert_distance_and_diameter_to_pixel_size(
+		distance_to_eye,
+		m_radius.avg(),
+		fl_degrees(g3_get_hfov(Eye_fov)),
+		gr_screen.max_h);
+}
+
+float ParticleEffect::getCurrentFrequencyMult(decltype(modular_curves_definition)::input_type_t source) const {
+	return m_modular_curves.get_output(ParticleEffect::ParticleCurvesOutput::PARTICLE_FREQ_MULT, source);
+}
+
 matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const std::optional<vec3d>& normal) const {
 	switch (m_direction) {
 		case ShapeDirection::ALIGNED:
@@ -149,7 +164,7 @@ matrix ParticleEffect::getNewDirection(const matrix& hostOrientation, const std:
 	}
 }
 
-void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, const std::tuple<const ParticleSource&, const size_t&>& source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const {
+void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, std::pair<anl::CKernel, anl::CInstructionIndex>& noise, decltype(modular_curves_definition)::input_type_t source, ParticleCurvesOutput noiseMult, ParticleCurvesOutput noiseTimeMult, ParticleCurvesOutput noiseSeed) const {
 	auto& [kernel, instruction] = noise;
 	anl::CNoiseExecutor executor(kernel);
 	const auto& color = executor.evaluateColor(
@@ -163,6 +178,11 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 	vm_vec_unrotate(&noiseTarget, &noiseSampleLocal, orientation);
 }
 
+/*
+ * In persistent mode (should only ever be used by scripting, really), this function returns pointers to the persistent particles
+ * In non-persistent mode, this function returns the multiplier for the next spawn time. This is because the source cannot know about the curve evaluation that is required to get this factor
+ *
+ * */
 template<bool isPersistent>
 auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
 	using persistentParticlesList = std::conditional_t<isPersistent, SCP_vector<WeakParticlePtr>, bool>;
@@ -178,14 +198,16 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 			//Will not emit on current detail settings, but may in the future.
 			if constexpr (isPersistent)
 				return createdParticles;
-			else
-				return;
+			else {
+				const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
+				auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, pos);
+				return getCurrentFrequencyMult(modularCurvesInput);
+			}
 		}
 	}
 
-	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber);
-
 	const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
+	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, pos);
 
 	const auto& orientation = getNewDirection(hostOrientation, source.m_normal);
 
@@ -345,10 +367,12 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 
 	if constexpr (isPersistent)
 		return createdParticles;
+	else
+		return getCurrentFrequencyMult(modularCurvesInput);
 }
 
-void ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
-	processSourceInternal<false>(interp, source, effectNumber, velParent, parent, parent_sig, parentLifetime, parentRadius, particle_percent);
+float ParticleEffect::processSource(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {
+	return processSourceInternal<false>(interp, source, effectNumber, velParent, parent, parent_sig, parentLifetime, parentRadius, particle_percent);
 }
 
 SCP_vector<WeakParticlePtr> ParticleEffect::processSourcePersistent(float interp, const ParticleSource& source, size_t effectNumber, const vec3d& velParent, int parent, int parent_sig, float parentLifetime, float parentRadius, float particle_percent) const {

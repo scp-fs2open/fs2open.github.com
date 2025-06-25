@@ -6,7 +6,7 @@ namespace particle {
 	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, ::util::ParsedRandomFloatRange length) : m_deviation(deviation), m_length(length), m_modular_curve_instance(m_modular_curves.create_instance()) { }
 
 
-	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) {
+	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source) {
 		//It is surely possible to do this more efficiently.
 		angles angs;
 

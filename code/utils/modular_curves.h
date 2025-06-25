@@ -20,7 +20,7 @@
 
 template<auto... grabbers>
 struct modular_curves_submember_input {
-  private:
+  protected:
 	template<typename input_type, auto grabber>
 	static inline auto grab_part(const input_type& input) {
 		//Pointer to member function
@@ -141,6 +141,39 @@ struct modular_curves_submember_input {
 		}
 		else {
 			return number_to_float(result);
+		}
+	}
+};
+
+//Allows submember grabbers on full inputs by using a reducer-function.
+//Mostly useful for submember-like access if you need to combine multiple input components to get the value
+template<auto reducer, auto... grabbers>
+struct modular_curves_submember_input_full : public modular_curves_submember_input<grabbers...> {
+  public:
+	template<int /*tuple_idx*/, typename input_type>
+	static inline float grab(const input_type& input) {
+		const auto& reduced = reducer(input);
+		const auto& result = modular_curves_submember_input<grabbers...>::template grab_internal<std::decay_t<decltype(reduced)>, grabbers...>(reduced);
+		if constexpr (is_optional_v<typename std::decay_t<decltype(result)>>) {
+			if (result.has_value())
+				return modular_curves_submember_input<grabbers...>::number_to_float(result->get());
+			else
+				return 1.0f;
+		}
+		else if constexpr (is_instance_of_v<std::decay_t<decltype(result)>, std::reference_wrapper>) {
+			//We could also be returned not a temporary optional from a check, but a true optional stored somewhere, so check for this here
+			if constexpr (is_optional_v<typename std::decay_t<typename std::decay_t<decltype(result)>::type>>) {
+				const auto& inner_result = result.get();
+				if (inner_result.has_value())
+					return modular_curves_submember_input<grabbers...>::number_to_float(*inner_result);
+				else
+					return 1.0f;
+			}
+			else
+				return modular_curves_submember_input<grabbers...>::number_to_float(result.get());
+		}
+		else {
+			return modular_curves_submember_input<grabbers...>::number_to_float(result);
 		}
 	}
 };
@@ -390,6 +423,8 @@ struct modular_curves_definition {
 	}
 
 public:
+  	using input_type_t = const input_type&;
+
 	template<typename additional_input_type, typename new_output_enum, size_t new_output_size, typename... additional_input_grabbers>
 	constexpr auto derive_modular_curves_subset(std::array<std::pair<const char*, new_output_enum>, new_output_size> new_outputs, std::pair<const char*, additional_input_grabbers>... additional_inputs) const {
 		using new_input_type = decltype(unevaluated_maybe_tuple_cat(std::declval<input_type>(), std::declval<additional_input_type>()));
@@ -459,6 +494,8 @@ private:
 
 	constexpr modular_curves_set() : curves() {}
 public:
+ 	using input_type_t = const input_type&;
+
 	// Used to create an instance for any single thing affected by modular curves. Note that having an instance is purely optional
 	[[nodiscard]] modular_curves_entry_instance create_instance() const {
 		return modular_curves_entry_instance{util::Random::next(), util::Random::next()};

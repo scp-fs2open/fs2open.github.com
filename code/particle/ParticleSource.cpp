@@ -62,13 +62,12 @@ bool ParticleSource::process() {
 				//Find "time" in last frame where particle spawned
 				float interp = static_cast<float>(timestamp_since(timing.m_nextCreation)) / (f2fl(Frametime) * 1000.0f);
 
+				// Some of these
+				float freqMult = effect.processSource(interp, *this, i, vel, parent, parent_sig, parent_lifetime, parent_radius, particleMultiplier);
+
 				// we need to clamp this to 1 because a spawn delay lower than it takes to spawn the particle in ms means we try to spawn infinite particles
-				float freqMult = effect.m_modular_curves.get_output(ParticleEffect::ParticleCurvesOutput::PARTICLE_FREQ_MULT, std::pair<const ParticleSource&, size_t>(*this, i));
 				auto time_diff_ms = std::max(fl2i(effect.getNextSpawnDelay() / freqMult * MILLISECONDS_PER_SECOND), 1);
 				timing.m_nextCreation = timestamp_delta(timing.m_nextCreation, time_diff_ms);
-
-				//Some of these
-				effect.processSource(interp, *this, i, vel, parent, parent_sig, parent_lifetime, parent_radius, particleMultiplier);
 
 				bool isDone = effect.isOnetime() || timestamp_compare(timing.m_endTimestamp, timing.m_nextCreation) < 0;
 
@@ -98,11 +97,15 @@ void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
 	m_host = std::move(host);
 }
 
-float ParticleSource::getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
+float ParticleSource::getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
 	return i2fl(timestamp_until(std::get<0>(source).m_timing[std::get<1>(source)].m_endTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
-float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
+float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
 	return i2fl(timestamp_since(std::get<0>(source).m_timing[std::get<1>(source)].m_startTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
+}
+
+float ParticleSource::getEffectVisualSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
+	return std::get<0>(source).getEffect()[std::get<1>(source)].getApproximateVisualSize(std::get<2>(source));
 }
 }
