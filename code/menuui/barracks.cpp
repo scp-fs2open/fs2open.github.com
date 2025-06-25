@@ -457,24 +457,21 @@ void barracks_init_stats(scoring_struct *stats)
 	i = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->kills[i]) {
-			Assert(Num_stat_lines < Max_stat_lines);
-
-			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-			if (Num_stat_lines < Max_stat_lines)
-			{
-				// wookieejedi - consolidate by display name or ship class name
-				const char* name_key = it->has_display_name() ? it->display_name : it->name;
-				Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
-				kill_map[name_key] += stats->kills[i];
-				score_from_kills += stats->kills[i] * it->score;
-			}
+			// wookieejedi - consolidate by display name or ship class name
+			const char* name_key = it->has_display_name() ? it->display_name : it->name;
+			Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
+			kill_map[name_key] += stats->kills[i];
+			score_from_kills += stats->kills[i] * it->score;
 		}
 	}
 
 	// wookieejedi - now display the kills per ship type
 	for (const auto& [name, count] : kill_map) {
-		if (Num_stat_lines >= Max_stat_lines)
+		Assert(Num_stat_lines < Max_stat_lines);
+		// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
+		if (Num_stat_lines >= Max_stat_lines) {
 			break;
+		}
 
 		Assert(name.length() + 1 < STAT_COLUMN1_W);
 		sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), name.c_str());
