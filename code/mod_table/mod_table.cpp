@@ -153,6 +153,7 @@ bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
 bool Unify_minimum_engine_sound;
+bool Disabled_or_disrupted_engines_silent;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Disable_shield_effects;
@@ -1048,6 +1049,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Unify_minimum_engine_sound);
 			}
 
+			if (optional_string("$Disabled or disrupted engines are silent:")) {
+				stuff_boolean(&Disabled_or_disrupted_engines_silent);
+			}
+
 			optional_string("#FRED SETTINGS");
 
 			if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -1734,6 +1739,7 @@ void mod_table_reset()
 	Countermeasures_use_capacity = false;
 	Play_thruster_sounds_for_player = false;
 	Unify_minimum_engine_sound = false;
+	Disabled_or_disrupted_engines_silent = false;
 	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f },
