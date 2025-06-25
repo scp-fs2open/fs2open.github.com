@@ -664,7 +664,7 @@ void obj_snd_do_frame()
 		if (obj_is_ship) {
 			sp = &Ships[objp->instance];
 			if (osp->flags & OS_ENGINE) {
-				bool disabled_and_silent = Disabled_engines_are_silent && 
+				bool disabled_and_silent = Disabled_or_disrupted_engines_silent && 
 				                           (sp->flags[Ship::Ship_Flags::Disabled] || ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE));
 				sound_allowed = (sp->flags[Ship::Ship_Flags::Engine_sound_on]) && !disabled_and_silent;
 			}
