@@ -458,7 +458,7 @@ void barracks_init_stats(scoring_struct *stats)
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->kills[i]) {
 			// wookieejedi - consolidate by display name or ship class name
-			const char* name_key = it->has_display_name() ? it->display_name : it->name;
+			const char* name_key = it->get_display_name();
 			Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
 			kill_map[name_key] += stats->kills[i];
 			score_from_kills += stats->kills[i] * it->score;
