@@ -2244,8 +2244,6 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 }
 
 static int spawnParticles(lua_State *L, bool persistent) {
-	int fail_return = persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
-
 	vec3d pos, vel;
 	float lifetime, rad;
 
@@ -2258,7 +2256,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 	texture_h* texture = nullptr;
 	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pos), l_Vector.Get(&vel), &lifetime, &rad,
 			l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return fail_return;
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 
 	particle::ParticleEffectHandle handle;
 
@@ -2266,7 +2264,7 @@ static int spawnParticles(lua_State *L, bool persistent) {
 		switch (type->index) {
 		case LE_PARTICLE_DEBUG:
 			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
-			return fail_return;
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 		case LE_PARTICLE_FIRE: {
 			static auto fire_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, false);
 			static auto fire_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, true);
@@ -2288,14 +2286,14 @@ static int spawnParticles(lua_State *L, bool persistent) {
 		case LE_PARTICLE_BITMAP:
 			if (texture == nullptr || !texture->isValid()) {
 				LuaError(L, "Invalid texture specified for createParticle()!");
-				return fail_return;
+				return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 			} else {
 				handle = getLegacyScriptingParticleEffect(texture->handle, rev);
 			}
 			break;
 		default:
 			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-			return fail_return;
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 		}
 	}
 
@@ -2335,11 +2333,11 @@ static int spawnParticles(lua_State *L, bool persistent) {
 		if (!p.expired())
 			return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
 		else
-			return fail_return;
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 	else {
 		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
-		return fail_return;
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
 	}
 }
 
