@@ -7869,7 +7869,7 @@ const ConditionData* process_conditional_impact(
 }
 
 void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes> impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos, const vec3d* hitnormal) {
-	if (weapon_objp->type != OBJ_WEAPON) {
+	if (weapon_objp == nullptr || weapon_objp->type != OBJ_WEAPON) {
 		return;
 	}
 	auto wp = &Weapons[weapon_objp->instance];
@@ -7889,11 +7889,6 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 	float radius_mult = 1.0f;
 	if (wip->render_type == WRT_LASER) {
 		radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
-	}
-
-	std::array<const ConditionData*, NumHitTypes + 1> full_impact_data = {};
-	for (int i = 0; i < 3; i++) {
-		full_impact_data[i] = impact_data[i];
 	}
 
 	float laser_pokethrough_amount = 0.0f;
@@ -7941,7 +7936,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 			&valid_conditional_impact,
 			&prev_nonnull_entry
 		);
-		if (entry_result != nullptr) {
+		if (entry_result != nullptr && !prev_nonnull_entry) {
 			first_nonnull_entry = *entry_result;
 		}
 	}
@@ -7994,8 +7989,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 		particleSource->finishCreation();
 	}
 
-	// impact_data[0] is the shield entry
-	if (impacted_objp != nullptr && impact_data[0] == nullptr && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] == nullptr && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;

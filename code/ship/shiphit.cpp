@@ -2433,6 +2433,14 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 //		mprintf(("applying damage ge to shield\n"));
 		float shield_damage = damage * damage_scale;
 
+		auto shield_impact = ConditionData {
+			ImpactCondition(shipp->shield_armor_type_idx),
+			HitType::SHIELD,
+			0.0f,
+			ship_objp->shield_quadrant[quadrant],
+			shipp->ship_max_shield_strength,
+		};
+
 		if ( damage > 0.0f ) {
 			float piercing_pct = 0.0f;
 
@@ -2451,30 +2459,23 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			float shield_factor = 1.0f;
 			if (weapon_info_index >= 0 && (!other_obj_is_beam || Beams_use_damage_factors))
 				shield_factor = Weapon_info[weapon_info_index].shield_factor;
-
-			auto shield_impact = ConditionData {
-				ImpactCondition(shipp->shield_armor_type_idx),
-				HitType::SHIELD,
-				0.0f,
-				ship_objp->shield_quadrant[quadrant],
-				shipp->ship_max_shield_strength,
-			};
 			
 			shield_impact.damage = shield_damage * shield_factor;
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 			// apply shield damage
 			float remaining_damage = shield_apply_damage(ship_objp, quadrant, shield_damage * shield_factor);
 			// remove the shield factor, since the overflow will no longer be thrown at shields
 			remaining_damage /= shield_factor;
-
+			
 			// Unless the backwards compatible flag is on, remove difficulty scaling as well
 			// The hull/subsystem code below will re-add it where necessary
 			if (!The_mission.ai_profile->flags[AI::Profile_Flags::Carry_shield_difficulty_scaling_bug])
-				remaining_damage /= difficulty_scale_factor;
-
+			remaining_damage /= difficulty_scale_factor;
+			
 			// the rest of the damage is what overflowed from the shield damage and pierced
 			damage = remaining_damage + (damage * piercing_pct);
 		}
+
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 	}
 			
 	// Apply leftover damage to the ship's subsystem and hull.
@@ -2847,6 +2848,29 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 		//	Ie, player can always do damage.  AI can only damage team if that ship is targeted.
 		if (wp->target_num != OBJ_INDEX(ship_objp)) {
 			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship]) ) {
+				// need to play the impact effect(s) for the weapon if we have one, since we won't get the chance to do it later
+				// we won't account for subsystems; that's a lot of extra logic for little benefit in this edge case
+				std::array<const ConditionData*, NumHitTypes> impact_data = {};
+				if (quadrant >= 0) {
+					auto shield_impact = ConditionData {
+						ImpactCondition(ship_p->shield_armor_type_idx),
+						HitType::SHIELD,
+						0.0f,
+						ship_objp->shield_quadrant[quadrant],
+						ship_p->ship_max_shield_strength,
+					};
+					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
+				} else {
+					auto hull_impact = ConditionData {
+						ImpactCondition(ship_p->armor_type_idx),
+						HitType::HULL,
+						0.0f,
+						ship_objp->hull_strength,
+						ship_p->ship_max_hull_strength,
+					};
+					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
+				}
+				maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
 				return;
 			}
 		}
