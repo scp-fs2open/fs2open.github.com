@@ -2095,7 +2095,7 @@ void hud_render_gauges(int cockpit_display_num, float frametime)
 
 		render_target = ship_start_render_cockpit_display(cockpit_display_num);
 
-		if ( render_target <= 0 ) {
+		if ( render_target < 0 ) {
 			return;
 		}
 	} else {
