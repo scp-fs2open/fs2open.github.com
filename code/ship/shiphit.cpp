@@ -2411,6 +2411,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
+	std::array<const ConditionData*, NumHitTypes> impact_data = {};
 
 	// If the ship is invulnerable, do nothing
 	if (ship_objp->flags[Object::Object_Flags::Invulnerable])	{
@@ -2419,13 +2420,32 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 	//	if ship is already dying, shorten deathroll.
 	if (shipp->flags[Ship::Ship_Flags::Dying]) {
+		if (quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields])) {
+			auto shield_impact = ConditionData {
+				ImpactCondition(shipp->shield_armor_type_idx),
+				HitType::SHIELD,
+				0.0f,
+				ship_objp->shield_quadrant[quadrant],
+				shipp->ship_max_shield_strength,
+			};
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
+		} else {
+			auto hull_impact = ConditionData {
+				ImpactCondition(shipp->armor_type_idx),
+				HitType::HULL,
+				0.0f,
+				ship_objp->hull_strength,
+				shipp->ship_max_hull_strength,
+			};
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
+		}
+		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
 	}
 
 	int weapon_info_index = shiphit_get_damage_weapon(other_obj);
-
-	std::array<const ConditionData*, NumHitTypes> impact_data = {};
 
 	//	If we hit the shield, reduce it's strength and found
 	// out how much damage is left over.
@@ -2851,7 +2871,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 				// need to play the impact effect(s) for the weapon if we have one, since we won't get the chance to do it later
 				// we won't account for subsystems; that's a lot of extra logic for little benefit in this edge case
 				std::array<const ConditionData*, NumHitTypes> impact_data = {};
-				if (quadrant >= 0) {
+				if (quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields])) {
 					auto shield_impact = ConditionData {
 						ImpactCondition(ship_p->shield_armor_type_idx),
 						HitType::SHIELD,
