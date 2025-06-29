@@ -44,7 +44,7 @@ static int Msg_key_used;								// local variable which tells if the key being p
 															// with the messaging system was actually used
 static int Msg_key;                         // global which indicates which key was currently pressed
 static bool Msg_key_set_from_scripting; // is true if the key was set from scripting and not from a player keypress
-static int Msg_mode_timestamp;
+static TIMESTAMP Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
 static int Msg_target_objnum;           // id of the current target of the player
@@ -107,9 +107,10 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
-int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
-int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
-SCP_string Lua_sqd_msg_cat;
+static int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
+static int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
+static bool Display_selector = false;
+static SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
 #define MAX_KEYS_USED		12		// maximum number of keys used for the messaging system
@@ -220,8 +221,10 @@ void hud_squadmsg_start()
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
 	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
+	Display_selector = false;
+
 	Squad_msg_mode = SM_MODE_TYPE_SELECT;							// start off at the base state
-	Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
+	Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
 	Msg_shortcut_command = -1;											// assume no shortcut key being used
 	Msg_target_objnum = Player_ai->target_objnum;				// save the players target object number
 	Msg_targeted_subsys = Player_ai->targeted_subsys;				// save the players currently targted subsystem
@@ -496,10 +499,11 @@ void hud_squadmsg_selection_move_down() {
 	{
 		//move down
 		++Selected_menu_item;
+		Display_selector = true;
 
-		//play scrolling sound and reset the comms window timeout timer, so the window doesn't dissapear while we select our item
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
-		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
 		//Move to next page if we went outside of current one
 		if (Selected_menu_item == MAX_MENU_DISPLAY 
@@ -525,10 +529,11 @@ void hud_squadmsg_selection_move_up() {
 	{
 		//move up
 		--Selected_menu_item;
+		Display_selector = true;
 
-		//play scrolling sound and reset the comms window timeout timer, so the window doesn't dissapear while we select our item
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
 		gamesnd_play_iface(InterfaceSounds::SCROLL);
-		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 
 		//Move to previous page if it exists
 		if (Selected_menu_item < 0 && First_menu_item > 0)
@@ -550,7 +555,7 @@ void hud_squadmsg_selection_move_up() {
 }
 
 //function that tricks hud_squadmsg_get_key() into thinking player selected a menu item with a num key press
-//Yes, this is a pretty much a hack, but it's simple and works with every squadmsq type.
+//Yes, this is a pretty much a hack, but it's simple and works with every squadmsg type.
 void hud_squadmsg_selection_select() {
 	
 	//Check if comms menu is up
@@ -2604,7 +2609,7 @@ int hud_squadmsg_do_frame( )
 	HUD_reset_clip();		// JAS: Is this needed?
 
 	if ( Msg_key_used || target_changed ) {
-		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 		return 1;
 	} else
 		return 0;
@@ -2925,7 +2930,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
-		bool isSelectedItem = First_menu_item + i == First_menu_item + Selected_menu_item;
+		bool isSelectedItem = (i == Selected_menu_item);
 		char text[255];
 
 		if (!config) {
@@ -2967,7 +2972,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		if (MsgItems[First_menu_item + i].active >= 0) {
 			// first print an icon to indicate selected item
 			item_num = (i + 1) % MAX_MENU_DISPLAY;
-			if (isSelectedItem) {
+			if (isSelectedItem && Display_selector) {
 				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, XSTR(">>", 1887), item_num); //allow modders to change string and add number
 			}
 			// or do the number
