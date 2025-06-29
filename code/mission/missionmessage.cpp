@@ -50,6 +50,39 @@ float Command_announces_enemy_arrival_chance = 0.25;
 SCP_vector<SCP_string> Builtin_moods;
 int Current_mission_mood;
 
+builtin_message::builtin_message(const char* _name, int _occurrence_chance, int _max_count, int _min_delay, int _priority, int _timing, int _fallback, bool _used_strdup)
+	: name(_name), occurrence_chance(_occurrence_chance), max_count(_max_count), min_delay(_min_delay), priority(_priority), timing(_timing), fallback(_fallback), used_strdup(_used_strdup)
+{}
+
+builtin_message::~builtin_message()
+{
+	if (used_strdup)
+	{
+		vm_free(const_cast<char*>(name));
+		name = nullptr;
+	}
+}
+
+builtin_message::builtin_message(const builtin_message& other)
+	: name(other.name), occurrence_chance(other.occurrence_chance), max_count(other.max_count), min_delay(other.min_delay), priority(other.priority), timing(other.timing), fallback(other.fallback), used_strdup(other.used_strdup)
+{
+	if (other.used_strdup)
+		name = vm_strdup(other.name);
+}
+
+builtin_message& builtin_message::operator=(const builtin_message& other)
+{
+	name = other.used_strdup ? vm_strdup(other.name) : other.name;
+	occurrence_chance = other.occurrence_chance;
+	max_count = other.max_count;
+	min_delay = other.min_delay;
+	priority = other.priority;
+	timing = other.timing;
+	fallback = other.fallback;
+	used_strdup = other.used_strdup;
+	return *this;
+}
+
 SCP_vector<builtin_message> Builtin_messages = {
   #define X(_, NAME, CHANCE, COUNT, DELAY, PRIORITY, TIME, FALLBACK) { \
     NAME,                                                              \
@@ -58,7 +91,8 @@ SCP_vector<builtin_message> Builtin_messages = {
     DELAY,                                                             \
     MESSAGE_PRIORITY_ ## PRIORITY,                                     \
     MESSAGE_TIME_ ## TIME,                                             \
-    MESSAGE_ ## FALLBACK                                               \
+    MESSAGE_ ## FALLBACK,                                              \
+    false                                                              \
   }
   BUILTIN_MESSAGE_TYPES
   #undef X
@@ -709,7 +743,7 @@ void parse_custom_message_types(bool live = true) {
 			int priority = parse_message_priority();
 			if (live) {
 				if (get_builtin_message_type(name) == MESSAGE_NONE) {
-					Builtin_messages.push_back({ strdup(name), 100, -1, 0, priority, MESSAGE_TIME_SOON, fallback });
+					Builtin_messages.emplace_back(vm_strdup(name), 100, -1, 0, priority, MESSAGE_TIME_SOON, fallback, true);
 				} else {
 					Warning(LOCATION, "Custom message type %s is already defined", name);
 				}
