@@ -7796,7 +7796,7 @@ static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* wea
 	}
 }
 
-const ConditionData* process_conditional_impact(
+void process_conditional_impact(
 	const ConditionData* entry,
 	const object* weapon_objp,
 	const weapon_info* wip,
@@ -7811,11 +7811,10 @@ const ConditionData* process_conditional_impact(
 	float radius_mult,
 	float laser_pokethrough_amount,
 	const vec3d* laser_head_pos,
-	bool* valid_conditional_impact,
-	bool* prev_nonnull_entry
+	bool* valid_conditional_impact
 ) {
 	if (entry == nullptr) {
-		return nullptr;
+		return;
 	}
 	auto conditional_impact_it = wip->conditional_impacts.find(entry->condition);
 	if (conditional_impact_it != wip->conditional_impacts.end()) {
@@ -7859,13 +7858,7 @@ const ConditionData* process_conditional_impact(
 				*valid_conditional_impact = true;
 			}
 		}
-		// we return the first non-null ConditionData entry we find to set it as the one that will be used for laser pokethrough or empty space impacts
-		if (!prev_nonnull_entry) {
-			*prev_nonnull_entry = true;
-			return entry;
-		}
 	}
-	return nullptr;
 }
 
 void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes> impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos, const vec3d* hitnormal) {
@@ -7908,17 +7901,9 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 
 	bool subsys_hit = impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)] != nullptr;
 	bool valid_conditional_impact = false;
-	bool prev_nonnull_entry = false;
-	ConditionData first_nonnull_entry = ConditionData {
-		SpecialImpactCondition::EMPTY_SPACE,
-		HitType::NONE,
-		0.0f,
-		1.0f,
-		1.0f,
-	};
 
 	for (const auto entry : impact_data) {
-		auto entry_result = process_conditional_impact(
+		process_conditional_impact(
 			entry,
 			weapon_objp,
 			wip,
@@ -7933,19 +7918,21 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 			radius_mult,
 			laser_pokethrough_amount,
 			&laser_head_pos,
-			&valid_conditional_impact,
-			&prev_nonnull_entry
+			&valid_conditional_impact
 		);
-		if (entry_result != nullptr && !prev_nonnull_entry) {
-			first_nonnull_entry = *entry_result;
-		}
 	}
 
 	// check for empty space impacts
 	if (impacted_objp == nullptr) {
-		first_nonnull_entry.condition = SpecialImpactCondition::EMPTY_SPACE;
+		auto space_entry = ConditionData {
+			SpecialImpactCondition::EMPTY_SPACE,
+			HitType::NONE,
+			0.0f,
+			1.0f,
+			1.0f,
+		};
 		process_conditional_impact(
-			&first_nonnull_entry,
+			&space_entry,
 			weapon_objp,
 			wip,
 			impacted_objp,
@@ -7959,8 +7946,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 			radius_mult,
 			laser_pokethrough_amount,
 			&laser_head_pos,
-			&valid_conditional_impact,
-			&prev_nonnull_entry
+			&valid_conditional_impact
 		);
 	}
 	

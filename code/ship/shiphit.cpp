@@ -2425,8 +2425,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				ImpactCondition(shipp->shield_armor_type_idx),
 				HitType::SHIELD,
 				0.0f,
-				ship_objp->shield_quadrant[quadrant],
-				shipp->ship_max_shield_strength,
+				// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last ten percent of a shield doesn't matter
+				MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp))),
+				shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
 			};
 			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 		} else {
@@ -2457,8 +2458,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			ImpactCondition(shipp->shield_armor_type_idx),
 			HitType::SHIELD,
 			0.0f,
-			ship_objp->shield_quadrant[quadrant],
-			shipp->ship_max_shield_strength,
+			// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last ten percent of a shield doesn't matter
+			MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp))),
+			shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
 		};
 
 		if ( damage > 0.0f ) {
@@ -2876,8 +2878,9 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 						ImpactCondition(ship_p->shield_armor_type_idx),
 						HitType::SHIELD,
 						0.0f,
-						ship_objp->shield_quadrant[quadrant],
-						ship_p->ship_max_shield_strength,
+						// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last ten percent of a shield doesn't matter
+						MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp))),
+						shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
 					};
 					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 				} else {
