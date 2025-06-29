@@ -45,6 +45,7 @@ typedef struct debris {
 	int		submodel_num;			// What submodel this uses
 	TIMESTAMP	next_fireball;		// When to start a fireball
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
+	float	max_hull;
 	int		species;				// What species this is from.  -1 if don't care.
 	TIMESTAMP	fire_timeout;		// timestamp that holds time for fireballs to stop appearing
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
