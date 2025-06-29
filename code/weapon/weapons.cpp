@@ -2938,6 +2938,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			// angle off turret normal
 			if (optional_string("+PAngle:")) {
 				stuff_float(&pangle);
+				pangle = fl_radians(pangle);
 			}
 
 			// particle bitmap/ani
@@ -2947,7 +2948,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (pcount > 0 && !pani.empty()) {
 				float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);
-				float p_vel = wip->b_info.beam_muzzle_radius / p_time_ref * 0.6f;
+				float p_vel = 1.0f / (0.825f * 0.6f * p_time_ref);
 
 				auto effect = particle::ParticleEffect(
 					"", //Name
@@ -2963,26 +2964,16 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 					std::nullopt, //Orientation-based velocity
 					::util::UniformFloatRange(p_vel * -1.2f, p_vel * -0.85f), //Position-based velocity
-					std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-pangle, pangle), ::util::UniformFloatRange(0.75f, 0.9f)), //Position volume
+					std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-pangle, pangle), ::util::UniformFloatRange(wip->b_info.beam_muzzle_radius * 0.75f, wip->b_info.beam_muzzle_radius * 0.9f)), //Position volume
 					particle::ParticleEffectHandle::invalid(), //Trail
 					1.f, //Chance
 					false, //Affected by detail
-					1.f, //Culling range multiplier
-					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+					-1.f, //Culling range multiplier
+					true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X and for most pspews
 					true, //reverse animation, for whatever reason
-					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref),
+					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref), // Lifetime
 					::util::UniformFloatRange(pradius), //Radius
 					bm_load_animation(pani.c_str())); //Bitmap
-
-				static const int beam_particle_curve = []() -> int {
-					int curve_id = static_cast<int>(Curves.size());
-					auto& curve = Curves.emplace_back(";BeamParticleRadius");
-					curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
-					curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
-					return curve_id;
-				}();
-
-				effect.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::VOLUME_VELOCITY_MULT, modular_curves_entry{beam_particle_curve});
 
 				wip->b_info.beam_muzzle_effect = particle::ParticleManager::get()->addEffect(std::move(effect));
 			}

@@ -2223,7 +2223,7 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 		particle::ParticleEffectHandle::invalid(), //Trail
 		1.f, //Chance
 		false, //Affected by detail
-		1.f, //Culling range multiplier
+		-1.f, //Culling range multiplier
 		is_builtin_bitmap, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 		reversed, //Is reversed?
 		::util::UniformFloatRange(1.f), //Lifetime
