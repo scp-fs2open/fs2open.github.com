@@ -2954,7 +2954,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					::util::UniformFloatRange(0, pcount), //Particle num
 					particle::ParticleEffect::Duration::RANGE,
 					::util::UniformFloatRange((float)wip->b_info.beam_warmup / 1000.0f), //Emit for beam warmup time
-					::util::UniformFloatRange (10.f), //One particle every 10ms
+					::util::UniformFloatRange (10.f), //One particle every 100ms
 					particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
