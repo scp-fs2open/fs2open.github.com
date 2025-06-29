@@ -15228,8 +15228,8 @@ void sexp_send_message(int n)
 
 ship* get_builtin_message_sender(const char* name) {
 	auto ship_entry = ship_registry_get(name);
-	if (ship_entry && ship_entry->has_shipp()) {
-		return ship_entry->shipp();
+	if (ship_entry) {
+		return ship_entry->shipp_or_null();
 	}
 	
 	auto wing_index = wing_lookup(name);
