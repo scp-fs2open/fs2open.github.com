@@ -96,6 +96,25 @@ extern const char *Subsystem_types[SUBSYSTEM_MAX];
 
 #define MAX_SPLIT_PLANE				5				// number of artist specified split planes (used in big ship explosions)
 
+// Electrical Arc Effect Info
+// Sets a spark for this submodel between vertex v1 and v2
+struct electrical_arc
+{
+	color	primary_color_1;
+	color	primary_color_2;
+	color	secondary_color;
+	float	width;								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
+	vec3d	endpoint_1;
+	vec3d	endpoint_2;
+	ubyte	type;								// see MARC_TYPE_* defines
+	ubyte	segment_depth;						// number of times to divide the arc into segments
+};
+
+struct model_electrical_arc : electrical_arc
+{
+	const SCP_vector<vec3d> *persistent_arc_points;
+};
+
 // Data specific to a particular instance of a submodel.
 struct submodel_instance
 {
@@ -127,31 +146,11 @@ struct submodel_instance
 	vec3d	canonical_offset = vmd_zero_vector;
 	vec3d	canonical_prev_offset = vmd_zero_vector;
 
-	// --- these fields used to be in bsp_info ---
-
-	// Electrical Arc Effect Info
-	// Sets a spark for this submodel between vertex v1 and v2	
-	int		num_arcs = 0;											// See model_add_arc for more info	
-	color   arc_primary_color_1[MAX_ARC_EFFECTS];
-	color   arc_primary_color_2[MAX_ARC_EFFECTS];
-	color	arc_secondary_color[MAX_ARC_EFFECTS];
-	float	arc_width[MAX_ARC_EFFECTS];								// only used for MARC_TYPE_SHIP and MARC_TYPE_SCRIPTED
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];
-	ubyte		arc_type[MAX_ARC_EFFECTS];							// see MARC_TYPE_* defines
+	SCP_vector<model_electrical_arc> electrical_arcs;
 
 	//SMI-Specific movement axis. Only valid in MOVEMENT_TYPE_TRIGGERED.
-	vec3d	rotation_axis;
-	vec3d	translation_axis;
-
-	submodel_instance()
-	{
-		memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
-		memset(&arc_primary_color_1, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_primary_color_2, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_secondary_color, 0, MAX_ARC_EFFECTS * sizeof(color));
-		memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
-		memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
-	}
+	vec3d	rotation_axis = vmd_zero_vector;
+	vec3d	translation_axis = vmd_zero_vector;
 };
 
 #define TM_BASE_TYPE		0		// the standard base map
@@ -1220,8 +1219,8 @@ extern void model_set_up_techroom_instance(ship_info *sip, int model_instance_nu
 void model_replicate_submodel_instance(polymodel *pm, polymodel_instance *pmi, int submodel_num, flagset<Ship::Subsystem_Flags>& flags);
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi);
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1 = nullptr, color *primary_color_2 = nullptr, color *secondary_color = nullptr, float width = 0.0f);
+void model_instance_clear_arcs(const polymodel *pm, polymodel_instance *pmi);
+void model_instance_add_arc(const polymodel *pm, polymodel_instance *pmi, int sub_model_num, const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, ubyte arc_type, const color *primary_color_1 = nullptr, const color *primary_color_2 = nullptr, const color *secondary_color = nullptr, float width = 0.0f, ubyte segment_depth = 4);
 
 // Gets two random points on the surface of a submodel
 extern vec3d submodel_get_random_point(int model_num, int submodel_num, int seed = -1);
