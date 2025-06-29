@@ -237,7 +237,7 @@ typedef struct HUD_CONFIG_TYPE {
 
 	bool is_gauge_shown_in_config(const SCP_string& gauge_id) const
 	{
-		auto gauge = hud_config_get_gauge_pointer(gauge_id);
+		const auto gauge = hud_config_get_gauge_pointer(gauge_id);
 		return gauge && gauge->getVisibleInConfig();
 	}
 } HUD_CONFIG_TYPE;
