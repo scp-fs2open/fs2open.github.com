@@ -42,7 +42,16 @@ void hud_config_save_player_prefs(const char* callsign)
 		// Get current state
 		bool is_visible = HUD_config.is_gauge_visible(gauge_id);
 		bool is_popup = HUD_config.is_gauge_popup(gauge_id);
-		color clr = pair.second;
+
+		// Get color to save. If gauge is hidden in configure screen, then player cannot set it,
+		// so look up the parent gauge type and save/set it. --wookeejedi
+		color clr;
+		if (HUD_config.is_gauge_shown_in_config(gauge_id)) {
+			clr = pair.second;
+		} else {
+			clr = HUD_config.get_gauge_color(gauge_id, false);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 
 		// +Gauge: <id>
 		sprintf(format_buffer, "+Gauge: %s\n", gauge_id.c_str());
