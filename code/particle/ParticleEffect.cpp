@@ -25,6 +25,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_vel_inherit_absolute(false),
 	  m_vel_inherit_from_position_absolute(false),
 	  m_reverseAnimation(false),
+	  m_ignore_velocity_inherit_if_has_parent(false),
 	  m_bitmap_list({}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -89,6 +90,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_vel_inherit_absolute(vel_inherit_absolute),
 	  m_vel_inherit_from_position_absolute(false),
 	  m_reverseAnimation(reverseAnimation),
+	  m_ignore_velocity_inherit_if_has_parent(false),
 	  m_bitmap_list({bitmap}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -120,7 +122,7 @@ float ParticleEffect::getApproximateVisualSize(const vec3d& pos) const {
 
 	return convert_distance_and_diameter_to_pixel_size(
 		distance_to_eye,
-		m_radius.avg(),
+		m_radius.avg() * 2.f,
 		fl_degrees(g3_get_hfov(Eye_fov)),
 		gr_screen.max_h);
 }
@@ -268,7 +270,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_safe(&info.vel, true);
 
-		info.vel *= m_vel_inherit.next() * inheritVelocityMultiplier;
+		info.vel *= (m_ignore_velocity_inherit_if_has_parent && parent > 0) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
 
 		vec3d localVelocity = velNoise;
 		vec3d localPos = posNoise;

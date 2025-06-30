@@ -141,6 +141,10 @@ namespace particle {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 				effect.m_vel_inherit_absolute = true;
 			}
+
+			if (optional_string("+Ignore Velocity Inherit If Parented:")) {
+				stuff_boolean(&effect.m_ignore_velocity_inherit_if_has_parent);
+			}
 		}
 
 		static void parseVelocityVolume(ParticleEffect &effect) {

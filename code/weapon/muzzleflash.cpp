@@ -24,20 +24,17 @@
 // muzzle flash info - read from a table
 typedef struct mflash_blob_info {
 	char name[MAX_FILENAME_LEN];
-	int anim_id;
 	float offset;
 	float radius;
 
 	mflash_blob_info( const mflash_blob_info& mbi )
 	{
 		strcpy_s( name, mbi.name );
-		anim_id = mbi.anim_id;
 		offset = mbi.offset;
 		radius = mbi.radius;
 	}
 
 	mflash_blob_info() :
-		anim_id( -1 ),
 		offset( 0.0 ),
 		radius( 0.0 )
 	{ 
@@ -47,7 +44,6 @@ typedef struct mflash_blob_info {
 	mflash_blob_info& operator=( const mflash_blob_info& r )
 	{
 		strcpy_s( name, r.name );
-		anim_id = r.anim_id;
 		offset = r.offset;
 		radius = r.radius;
 
@@ -157,7 +153,49 @@ void parse_mflash_tbl(const char *filename)
 }
 
 static void convert_mflash_to_particle() {
+	Curve new_curve = Curve(";MuzzleFlashMinSizeScalingCurve");
+	new_curve.keyframes.push_back(curve_keyframe{vec2d{ -0.00001f , 0.f}, CurveInterpFunction::Polynomial, -1.0f, 1.0f}); //just for numerical safety if we ever get an actual size of 0...
+	new_curve.keyframes.push_back(curve_keyframe{vec2d{ Min_pizel_size_muzzleflash, 1.f }, CurveInterpFunction::Constant, 0.0f, 1.0f});
+	Curves.push_back(new_curve);
+	modular_curves_entry scaling_curve {(static_cast<int>(Curves.size()) - 1)};
 
+	for (const auto& mflash : Mflash_info) {
+		SCP_vector<particle::ParticleEffect> subparticles;
+
+		for (const auto& blob : mflash.blobs) {
+			//TODO parent local, ignore vel if parented, offset
+			subparticles.emplace_back(
+				mflash_particle_prefix + mflash.name, //Name
+				::util::UniformFloatRange(1.f), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
+				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+				::util::UniformFloatRange(1.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				nullptr, //Velocity volume
+				::util::UniformFloatRange(), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				false, //Affected by detail
+				-1.f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				::util::UniformFloatRange(-1.f), //Lifetime
+				::util::UniformFloatRange(blob.radius), //Radius
+				bm_load_animation(blob.name));
+
+			if (Min_pizel_size_muzzleflash > 0) {
+				subparticles.back().m_modular_curves.add_curve("Apparent Visual Size At Emitter", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, scaling_curve);
+			}
+		}
+
+		particle::ParticleManager::get()->addEffect(std::move(subparticles));
+	}
 
 	//Clean up no longer required data
 	Mflash_info.clear();
@@ -213,15 +251,12 @@ void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_inf
 			mbi = &mi->blobs[idx];
 
 			// bogus anim
-			if (mbi->anim_id < 0)
-				continue;
 
 			// fire it up
 			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_zero(&p.vel);
 			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.bitmap = mbi->anim_id;
 			p.attached_objnum = attached_objnum;
 			p.attached_sig = local->signature;
 
@@ -234,15 +269,10 @@ void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_inf
 		for (idx = 0; idx < mi->blobs.size(); idx++) {
 			mbi = &mi->blobs[idx];
 
-			// bogus anim
-			if (mbi->anim_id < 0)
-				continue;
-
 			// fire it up
 			particle::particle_info p;
 			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
 			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.bitmap = mbi->anim_id;
 			p.attached_objnum = -1;
 			p.attached_sig = 0;
 

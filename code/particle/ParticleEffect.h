@@ -105,6 +105,7 @@ public:
 	bool m_vel_inherit_absolute;
 	bool m_vel_inherit_from_position_absolute;
 	bool m_reverseAnimation;
+	bool m_ignore_velocity_inherit_if_has_parent;
 
 	SCP_vector<int> m_bitmap_list;
 	::util::UniformRange<size_t> m_bitmap_range;
