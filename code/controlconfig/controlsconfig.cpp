@@ -1298,7 +1298,8 @@ bool control_config_accept(bool API_Access)
 			cstr = popup_input(flags,
 				XSTR( "Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to abort to config menu.", 1867),
 				32 - 6,
-				default_string.c_str());
+				default_string.c_str(),
+				"-_");
 			if (cstr == nullptr) {
 				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
