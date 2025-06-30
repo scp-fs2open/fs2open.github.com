@@ -541,6 +541,14 @@ private:
 	SCP_vector<T> _buffer;
 };
 
+struct ship_electrical_arc : electrical_arc
+{
+	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
+
+	// if this vector exists, these points will be used instead of the ones generated on each frame by interp_generate_arc_segment()
+	std::unique_ptr<SCP_vector<vec3d>>	persistent_arc_points;
+};
+
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship
 {
@@ -728,15 +736,9 @@ public:
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];			// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_ARC_EFFECTS];		// When this times out, the spark goes away.  Invalid is not used
-	ubyte		arc_type[MAX_ARC_EFFECTS];			// see MARC_TYPE_* defines in model.h
-	color		arc_primary_color_1[MAX_ARC_EFFECTS];
-	color		arc_primary_color_2[MAX_ARC_EFFECTS];
-	color		arc_secondary_color[MAX_ARC_EFFECTS];
-	float		arc_width[MAX_ARC_EFFECTS];
-	int		arc_next_time;							// When the next damage/emp arc will be created.	
-	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
+	SCP_vector<ship_electrical_arc> electrical_arcs;
+	TIMESTAMP		arc_next_time;							// When the next damage/emp arc will be created.
+	SCP_vector<TIMESTAMP>		passive_arc_next_times;		// When the next passive ship arc will be created.
 
 	// emp missile stuff
 	float emp_intensity;								// <= 0.0f if no emp effect present
@@ -2113,5 +2115,8 @@ bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 
 // Used to check if one ship can see the other on radar
 int ship_check_visibility(const ship* viewed, ship* viewer);
+
+// Find the first available arc slot.  If none is available, and no_create is false, add one.
+ship_electrical_arc *ship_find_or_create_electrical_arc_slot(ship *shipp, bool no_create);
 
 #endif

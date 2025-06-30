@@ -59,6 +59,8 @@ particle::ParticleEffectHandle Debris_hit_particle;
 
 #define	DEBRIS_INDEX(dp) (int)(dp-Debris.data())
 
+// Find the first available arc slot.  If none is available, and no_create is false, add one.
+debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create);
 
 /**
  * Start the sequence of a piece of debris writhing in unholy agony!!!
@@ -266,56 +268,48 @@ void debris_process_post(object * obj, float frame_time)
 		return;			// If arc_frequency <= 0, this piece has no arcs on it
 	}
 
-	if ( !timestamp_elapsed(db->fire_timeout) && timestamp_elapsed(db->next_fireball))	{		
+	if ( !timestamp_elapsed(db->arc_timeout) && timestamp_elapsed(db->arc_next_time))	{
 
-		db->next_fireball = _timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
+		db->arc_next_time = _timestamp_rand(db->arc_frequency,db->arc_frequency*2 );
 		db->arc_frequency += 100;	
 
 		if (db->is_hull)	{
 
-			int n, n_arcs = Random::next(1, 3);		// Create 1-3 sparks
+			int n_arcs = Random::next(1, 3);		// Create 1-3 sparks
 
 			vec3d v1 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v2 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v3 = submodel_get_random_point(db->model_num, db->submodel_num);
 			vec3d v4 = submodel_get_random_point(db->model_num, db->submodel_num);
 
-			n = 0;
-
 			int lifetime = Random::next(100, 1000);
 
 			// Create the spark effects
-			for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-				if ( !db->arc_timestamp[i].isValid() )	{
-
-					db->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
+			for (int n = 0; n < n_arcs; n++) {
+				auto arc = debris_find_or_create_electrical_arc_slot(db, db->electrical_arcs.size() >= MAX_DEBRIS_ARCS);
+				if (arc) {
+					arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 					switch( n )	{
 					case 0:
-						db->arc_pts[i][0] = v1;
-						db->arc_pts[i][1] = v2;
+						arc->endpoint_1 = v1;
+						arc->endpoint_2 = v2;
 						break;
 					case 1:
-						db->arc_pts[i][0] = v2;
-						db->arc_pts[i][1] = v3;
+						arc->endpoint_1 = v2;
+						arc->endpoint_2 = v3;
 						break;
-
 					case 2:
-						db->arc_pts[i][0] = v2;
-						db->arc_pts[i][1] = v4;
+						arc->endpoint_1 = v2;
+						arc->endpoint_2 = v4;
 						break;
 
 					default:
-						Int3();
+						UNREACHABLE("Unhandled case %d for electrical arc creation in debris_process_post()!", n);
 					}
-						
-					n++;
-					if ( n == n_arcs )
-						break;	// Don't need to create anymore
 				}
 			}
 
-	
 			// rotate v2 out of local coordinates into world.
 			// Use v2 since it is used in every bolt.  See above switch().
 			vec3d snd_pos;
@@ -342,16 +336,20 @@ void debris_process_post(object * obj, float frame_time)
 		}
 	}
 
-	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{
-		if ( db->arc_timestamp[i].isValid() )	{
-			if ( timestamp_elapsed( db->arc_timestamp[i] ) )	{
+	for (auto &arc: db->electrical_arcs) {
+		if (arc.timestamp.isValid()) {
+			if (timestamp_elapsed(arc.timestamp)) {
 				// Kill off the spark
-				db->arc_timestamp[i] = TIMESTAMP::invalid();
+				arc.timestamp = TIMESTAMP::invalid();
 			} else {
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
-					db->arc_pts[i][mr % 2] = submodel_get_random_point(db->model_num, db->submodel_num);
+					auto pt = submodel_get_random_point(db->model_num, db->submodel_num);
+					if (mr % 2 == 0)
+						arc.endpoint_1 = pt;
+					else
+						arc.endpoint_2 = pt;
 				}
 			}
 		}
@@ -595,15 +593,13 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	db->ship_info_index = parent_ship_class;
 	db->team = team;
 	db->ambient_sound = (sip == nullptr) ? gamesnd_id(-1) : sip->debris_ambient_sound;
-	db->fire_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
+	db->arc_timeout = TIMESTAMP::never();	// if not changed, timestamp_elapsed() will return false
 	db->time_started = Missiontime;
 	db->species = (sip == nullptr) ? -1 : sip->species;
 	db->parent_alt_name = alt_type_index;
 	db->damage_mult = 1.0f;
 
-	for (int i=0; i<MAX_DEBRIS_ARCS; ++i)	{	// NOLINT
-		db->arc_timestamp[i] = TIMESTAMP::invalid();
-	}
+	db->electrical_arcs.clear();
 
 	if ( db->is_hull )	{
 		// Percent of debris pieces with arcs controlled via table (default 50%)
@@ -616,7 +612,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		db->arc_frequency = 0;
 	}
 
-	db->next_fireball = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
+	db->arc_next_time = _timestamp_rand(500,2000);	//start one 1/2 - 2 secs later
 
 	flagset<Object::Object_Flags> default_flags;
 	default_flags.set(Object::Object_Flags::Renders);
@@ -677,12 +673,12 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		// limit the amount of time that fireballs appear
 		// let fireball length be linked to radius of ship.  Range is .33 radius => 3.33 radius seconds.
 		if (spark_timeout >= 0) {
-			db->fire_timeout = _timestamp(spark_timeout);
+			db->arc_timeout = _timestamp(spark_timeout);
 		} else if (parent_objnum >= 0) {
 			float t = 1000*Objects[parent_objnum].radius/3 + (fl2i(1000*3*Objects[parent_objnum].radius) == 0 ? 0 : Random::next(fl2i(1000*3*Objects[parent_objnum].radius)));
-			db->fire_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
+			db->arc_timeout = _timestamp(fl2i(t));		// fireballs last from 5 - 30 seconds
 		} else {
-			db->fire_timeout = TIMESTAMP::immediate();
+			db->arc_timeout = TIMESTAMP::immediate();
 		}
 
 		if (parent_objnum >= 0 && Objects[parent_objnum].radius >= MIN_RADIUS_FOR_PERSISTENT_DEBRIS) {
@@ -1168,7 +1164,7 @@ void calc_debris_physics_properties( physics_info *pi, vec3d *mins, vec3d *maxs,
 */
 void debris_render(object * obj, model_draw_list *scene)
 {
-	int			i, num, swapped;
+	int			num, swapped;
 	debris		*db;
 
 	swapped = -1;
@@ -1203,9 +1199,9 @@ void debris_render(object * obj, model_draw_list *scene)
 
 		// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 		if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f )	{
-			for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-				if ( db->arc_timestamp[i].isValid() )	{
-					model_instance_add_arc( pm, pmi, db->submodel_num, &db->arc_pts[i][0], &db->arc_pts[i][1], MARC_TYPE_DAMAGED );
+			for (auto &arc: db->electrical_arcs) {
+				if ( arc.timestamp.isValid() )	{
+					model_instance_add_arc( pm, pmi, db->submodel_num, &arc.endpoint_1, &arc.endpoint_2, nullptr, MARC_TYPE_DAMAGED );
 				}
 			}
 		}
@@ -1255,4 +1251,24 @@ void create_generic_debris(object* ship_objp, const vec3d* pos, float min_num_de
 		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
 		debris_create(ship_objp, model_num, -1, &create_pos, pos, 0, speed_mult);
 	}
+}
+
+debris_electrical_arc *debris_find_or_create_electrical_arc_slot(debris *db, bool no_create)
+{
+	size_t i = 0;
+	for (auto& ii : db->electrical_arcs)
+	{
+		if (!ii.timestamp.isValid())
+			break;
+		i++;
+	}
+
+	if (i == db->electrical_arcs.size())
+	{
+		if (no_create)
+			return nullptr;
+		db->electrical_arcs.emplace_back();
+	}
+
+	return &db->electrical_arcs[i];
 }

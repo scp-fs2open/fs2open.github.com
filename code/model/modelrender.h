@@ -164,6 +164,9 @@ struct arc_effect
 	color primary;
 	color secondary;
 	float width;
+	ubyte segment_depth;
+
+	const SCP_vector<vec3d> *persistent_arc_points;
 };
 
 struct insignia_draw_data
@@ -281,7 +284,7 @@ public:
 	void pop_transform();
 	void set_scale(const vec3d *scale = NULL);
 
-	void add_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width);
+	void add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth);
 	void render_arcs();
 
 	void add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num);
@@ -308,7 +311,7 @@ void submodel_render_immediate(const model_render_params* render_info, const pol
 void submodel_render_queue(const model_render_params* render_info, model_draw_list* scene, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void model_render_buffers(model_draw_list* scene, model_material* rendering_material, const model_render_params* interp, const vertex_buffer* buffer, const polymodel* pm, int mn, int detail_level, uint tmap_flags);
 bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint64_t flags);
-void model_render_arc(const vec3d* v1, const vec3d* v2, const color* primary, const color* secondary, float arc_width);
+void model_render_arc(const vec3d* v1, const vec3d* v2, const SCP_vector<vec3d> *persistent_arc_points, const color* primary, const color* secondary, float arc_width, ubyte depth_limit);
 void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector);
