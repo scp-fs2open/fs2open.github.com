@@ -853,8 +853,8 @@ void draw_3d_overhead_view(int model_num,
 		render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
 
 		if (sip->uses_team_colors) {
-			SCP_string tcolor = tcolor.empty() ? sip->default_team_name : tcolor;
-			render_info.set_team_color(tcolor, "none", 0, 0);
+			SCP_string tc = tcolor.empty() ? sip->default_team_name : tcolor;
+			render_info.set_team_color(tc, "none", 0, 0);
 		}
 
 		model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
