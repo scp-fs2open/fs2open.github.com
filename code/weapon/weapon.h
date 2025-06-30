@@ -569,9 +569,6 @@ struct weapon_info
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
 	int tag_level;							// tag level (1 - 3)
-
-	// muzzle flash
-	int muzzle_flash;						// muzzle flash stuff
 	
 	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)

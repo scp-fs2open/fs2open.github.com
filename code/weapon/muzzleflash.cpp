@@ -57,11 +57,9 @@ typedef struct mflash_blob_info {
 
 typedef struct mflash_info {
 	char name[MAX_FILENAME_LEN];
-	int	 used_this_level;
 	SCP_vector<mflash_blob_info> blobs;
 
-	mflash_info() 
-		: used_this_level( 0 )
+	mflash_info()
 	{ 
 		name[ 0 ] = '\0';
 	}
@@ -69,14 +67,12 @@ typedef struct mflash_info {
 	mflash_info( const mflash_info& mi )
 	{
 		strcpy_s( name, mi.name );
-		used_this_level = mi.used_this_level;
 		blobs = mi.blobs;
 	}
 
 	mflash_info& operator=( const mflash_info& r )
 	{
 		strcpy_s( name, r.name );
-		used_this_level = r.used_this_level;
 		blobs = r.blobs;
 
 		return *this;
@@ -88,7 +84,9 @@ SCP_vector<mflash_info> Mflash_info;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
-// 
+//
+
+static const SCP_string mflash_particle_prefix = ";MflashParticle;";
 
 void parse_mflash_tbl(const char *filename)
 {
@@ -158,6 +156,14 @@ void parse_mflash_tbl(const char *filename)
 	}
 }
 
+static void convert_mflash_to_particle() {
+
+
+	//Clean up no longer required data
+	Mflash_info.clear();
+	Mflash_info.shrink_to_fit();
+}
+
 // initialize muzzle flash stuff for the whole game
 void mflash_game_init()
 {
@@ -166,78 +172,13 @@ void mflash_game_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mfl.tbm"), parse_mflash_tbl);
+
+	//This should really happen at parse time, but that requires modular particle effects which aren't yet a thing
+	convert_mflash_to_particle();
 }
 
-void mflash_mark_as_used(int index)
-{
-	if (index < 0)
-		return;
-
-	Assert( index < (int)Mflash_info.size() );
-
-	Mflash_info[index].used_this_level++;
-}
-
-void mflash_page_in(bool load_all)
-{
-	uint i, idx;
-	int num_frames, fps;
-
-	// load up all anims
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		// skip if it's not used
-		if ( !load_all && !Mflash_info[i].used_this_level )
-			continue;
-
-		// blobs
-		size_t original_num_blobs = Mflash_info[i].blobs.size();
-		int original_idx = 1;
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); ) {
-			mflash_blob_info* mfbip = &Mflash_info[i].blobs[idx];
-			mfbip->anim_id = bm_load_either(mfbip->name, &num_frames, &fps, NULL, true);
-			if ( mfbip->anim_id >= 0 ) {
-				bm_page_in_xparent_texture( mfbip->anim_id );
-				++idx;
-			}
-			else {
-				Warning(LOCATION, "Muzleflash \"%s\", blob [%d/" SIZE_T_ARG "]\nMuzzleflash blob \"%s\" not found!  Deleting.", 
-					Mflash_info[i].name, original_idx, original_num_blobs, Mflash_info[i].blobs[idx].name);
-				Mflash_info[i].blobs.erase( Mflash_info[i].blobs.begin() + idx );
-			}
-			++original_idx;
-		}
-	}
-}
-
-// initialize muzzle flash stuff for the level
-void mflash_level_init()
-{
-	uint i, idx;
-
-	// reset all anim usage for this level
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			Mflash_info[i].used_this_level = 0;
-		}
-	}
-}
-
-// shutdown stuff for the level
-void mflash_level_close()
-{
-	uint i, idx;
-
-	// release all anims
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		// blobs
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			if ( Mflash_info[i].blobs[idx].anim_id < 0 )
-				continue;
-
-			bm_release( Mflash_info[i].blobs[idx].anim_id );
-			Mflash_info[i].blobs[idx].anim_id = -1;
-		}
-	}
+particle::ParticleEffectHandle mflash_lookup(const char *name) {
+	return particle::ParticleManager::get()->getEffectByName(mflash_particle_prefix + name);
 }
 
 // create a muzzle flash on the guy
@@ -311,19 +252,4 @@ void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_inf
 			particle::create(&p);
 		}
 	}		
-}
-
-// lookup type by name
-int mflash_lookup(const char *name)
-{	
-	uint idx;
-
-	// look it up
-	for (idx = 0; idx < Mflash_info.size(); idx++) {
-		if ( !stricmp(name, Mflash_info[idx].name) )
-			return idx;
-	}
-
-	// couldn't find it
-	return -1;	
 }

@@ -2043,9 +2043,6 @@ bool turret_fire_weapon(int weapon_num,
 						particleSource->setTriggerVelocity(vm_vec_mag_quick(&objp->phys_info.vel));
 						particleSource->finishCreation();
 					}
-					else if (wip->muzzle_flash >= 0) {
-						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
-					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
 					if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
@@ -2165,9 +2162,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1));
 			particleSource->setTriggerRadius(Objects[weapon_objnum].radius);
 			particleSource->finishCreation();
-		}
-		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		}
 
 		// maybe sound

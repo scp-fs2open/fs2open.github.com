@@ -2520,14 +2520,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Muzzle Effect:")) {
 		wip->muzzle_effect = particle::util::parseEffect(wip->name);
-	} else {
-		// muzzle flash
-		if (optional_string("$Muzzleflash:")) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
+	} else if (optional_string("$Muzzleflash:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-			// look it up
-			wip->muzzle_flash = mflash_lookup(fname);
-		}
+		// look it up
+		wip->muzzle_effect = mflash_lookup(fname);
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -8305,10 +8302,6 @@ void weapons_page_in()
 			}
 		}
 
-		// muzzle flashes
-		if (wip->muzzle_flash >= 0)
-			mflash_mark_as_used(wip->muzzle_flash);
-
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
 
@@ -8332,9 +8325,6 @@ void weapons_page_in_cheats()
 		return;
 
 	Assert( used_weapons != NULL );
-
-	// force a page in of all muzzle flashes
-	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
 	for (i = 0; i < weapon_info_size(); i++) {
@@ -8492,10 +8482,6 @@ bool weapon_page_in(int weapon_type)
 				}
 			}
 		}
-
-		// muzzle flashes
-		if (wip->muzzle_flash >= 0)
-			mflash_mark_as_used(wip->muzzle_flash);
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
@@ -9908,8 +9894,6 @@ void weapon_info::reset()
 
 	this->tag_time = -1.0f;
 	this->tag_level = -1;
-
-	this->muzzle_flash = -1;
 
 	this->field_of_fire = 0.0f;
 	this->fof_spread_rate = 0.0f;
