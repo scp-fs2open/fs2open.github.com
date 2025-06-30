@@ -147,6 +147,11 @@ extern SCP_vector<SCP_string> observer_visible_gauges;
 extern const int HC_gauge_config_coords[GR_NUM_RESOLUTIONS][4];
 extern int HC_resize_mode;
 
+/*!
+ * @brief get the gauge pointer for the given gauge index
+ */
+HudGauge* hud_config_get_gauge_pointer(const SCP_string& gauge_id);
+
 /**
  * @brief Contains core HUD configuration data
  * @note Is not default init'd.  Assumes new player, PLR, or CSG reads will correctly set data.
@@ -176,17 +181,18 @@ typedef struct HUD_CONFIG_TYPE {
 		gauge_colors[gauge_id] = col;
 	}
 
-	// Get the gauge color, the color based on it's type, or white if the gauge is not found
-	color get_gauge_color(const SCP_string& gauge_id) const
+	// Get the gauge color, the color based on its type, or white if the gauge is not found
+	color get_gauge_color(const SCP_string& gauge_id, bool check_exact_match = true) const
 	{
 		auto it = gauge_colors.find(gauge_id);
 
 		// Got a match? Return it
-		if (it != gauge_colors.end()) {
+		// but only if we are using the exact match
+		if (check_exact_match && it != gauge_colors.end()) {
 			return it->second;
 		}
 
-		// No match.. try using the gauge type
+		// No match yet.. try using the gauge type
 		auto type_it = gauge_types.find(gauge_id);
 		if (type_it != gauge_types.end()) {
 			const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
@@ -227,6 +233,13 @@ typedef struct HUD_CONFIG_TYPE {
 	{
 		auto it = popup_flags_map.find(gauge_id);
 		return (it != popup_flags_map.end()) ? it->second : false; // Default to not a popup
+	}
+
+	// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
+	bool is_gauge_shown_in_config(const SCP_string& gauge_id) const
+	{
+		HudGauge* gauge = hud_config_get_gauge_pointer(gauge_id);
+		return gauge && gauge->getVisibleInConfig();
 	}
 } HUD_CONFIG_TYPE;
 
@@ -320,11 +333,6 @@ extern SCP_map<SCP_string, std::array<SCP_string, num_shield_gauge_types>> HC_hu
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_primary_weapons;
 extern SCP_map<SCP_string, SCP_vector<SCP_string>> HC_hud_secondary_weapons;
 
-
-/*!
- * @brief get the gauge pointer for the given gauge index
- */
-HudGauge* hud_config_get_gauge_pointer(const SCP_string& gauge_id);
 
 /*!
  * @brief init hud config screen, setting up the hud preview display
