@@ -978,7 +978,7 @@ scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
 
 // Run the order issued hook. When an order is issued we first check if we should override. If so, then we run the hook and return true
 // which will skip the rest of the order code.
-bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* target, ship_subsys* subsys)
+bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* targetShip, ship_subsys* subsys)
 {
 	bool isOverride = false;
 
@@ -991,21 +991,23 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 			recipient = recipientWing;
 		}
 
+		auto targetObject = (targetShip == nullptr) ? nullptr : &Objects[targetShip->objnum];
+
 		auto paramList = scripting::hook_param_list(
 				scripting::hook_param("Sender", 'o', &Objects[sendingShip->objnum]),
 				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(recipient)),
-				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
-				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),
+				scripting::hook_param("Target", 'o', targetObject),
+				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(targetObject, subsys))),
 				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command)))),
 				scripting::hook_param("Name", 's', hud_squadmsg_get_order_name(command).c_str())
 			);
 		if (scripting::hooks::OnHudCommOrderIssued->isOverride(
-				scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+				scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
 				paramList)) {
 			isOverride = true;
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
-			scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
 			paramList);
 	}
 
