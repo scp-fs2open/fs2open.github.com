@@ -991,10 +991,11 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 			recipient = recipientWing;
 		}
 
+		auto sendingObject = (sendingShip == nullptr) ? nullptr : &Objects[sendingShip->objnum];
 		auto targetObject = (targetShip == nullptr) ? nullptr : &Objects[targetShip->objnum];
 
 		auto paramList = scripting::hook_param_list(
-				scripting::hook_param("Sender", 'o', &Objects[sendingShip->objnum]),
+				scripting::hook_param("Sender", 'o', sendingObject),
 				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(recipient)),
 				scripting::hook_param("Target", 'o', targetObject),
 				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(targetObject, subsys))),
