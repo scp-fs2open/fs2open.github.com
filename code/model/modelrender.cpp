@@ -3099,7 +3099,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& team_color)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
 {
 
 	model_render_params render_info;
@@ -3118,7 +3118,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			closeup_zoom = sip->closeup_zoom;
 
 			if (sip->uses_team_colors) {
-				render_info.set_team_color(!team_color.empty() ? team_color : sip->default_team_name, "none", 0, 0);
+				render_info.set_team_color(!tcolor.empty() ? tcolor : sip->default_team_name, "none", 0, 0);
 			}
 
 			if (sip->flags[Ship::Info_Flags::No_lighting]) {

@@ -1113,7 +1113,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, string TeamColor=""]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, string TeamColor=nil]",
 	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
@@ -1153,7 +1153,7 @@ ADE_FUNC(renderTechModel,
 }
 
 // Nuke's alternate tech model rendering function
-ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, string TeamColor=""]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, string TeamColor=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	int idx;
@@ -1179,7 +1179,7 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3, string TeamColor=""]",
+	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3, string TeamColor=nil]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
 	"defaults to the mod setting or the model's setting. Zoom is a multiplier to the model's closeup_zoom value.",
@@ -1260,7 +1260,7 @@ ADE_FUNC(renderOverheadModel,
 	"number x, number y, [number width = 467, number height = 362, number|table /* selectedSlot = -1 or empty table */, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
-	"number bank7_x = 552, number bank7_y = 333, number style = 0, string TeamColor=""]",
+	"number bank7_x = 552, number bank7_y = 333, number style = 0, string TeamColor=nil]",
 	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
 	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 9-12. SelectedWeapon is the index into weapon classes. HoverSlot refers "
 	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
