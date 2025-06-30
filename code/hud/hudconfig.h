@@ -181,7 +181,7 @@ typedef struct HUD_CONFIG_TYPE {
 		gauge_colors[gauge_id] = col;
 	}
 
-	// Get the gauge color, the color based on it's type, or white if the gauge is not found
+	// Get the gauge color, the color based on its type, or white if the gauge is not found
 	color get_gauge_color(const SCP_string& gauge_id, bool check_exact_match = true) const
 	{
 		auto it = gauge_colors.find(gauge_id);
