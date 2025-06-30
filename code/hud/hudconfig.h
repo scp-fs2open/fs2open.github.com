@@ -235,6 +235,7 @@ typedef struct HUD_CONFIG_TYPE {
 		return (it != popup_flags_map.end()) ? it->second : false; // Default to not a popup
 	}
 
+	// NOLINTNEXTLINE(readability-convert-member-functions-to-static)
 	bool is_gauge_shown_in_config(const SCP_string& gauge_id) const
 	{
 		HudGauge* gauge = hud_config_get_gauge_pointer(gauge_id);
