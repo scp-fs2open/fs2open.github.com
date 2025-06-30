@@ -7,6 +7,8 @@
  *
 */ 
 
+#include "globalincs/globals.h"
+#include "mod_table/mod_table.h"
 
 
 #ifndef __MISSION_WEAPON_CHOICE_H__
