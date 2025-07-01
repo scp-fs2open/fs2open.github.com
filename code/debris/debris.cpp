@@ -427,6 +427,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, const
 	{
 		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force, source_subsys);
 		debris_create_fire_hook(obj, source_obj);
+		const auto& sip = Ship_info[Ships[source_obj->instance].ship_info_index];
+		if (sip.debris_flame_particles.isValid()) {
+			auto source = particle::ParticleManager::get()->createSource(sip.debris_flame_particles);
+			source->setHost(std::make_unique<EffectHostObject>(obj, vmd_zero_vector));
+			source->setTriggerRadius(source_obj->radius);
+			source->setTriggerVelocity(vm_vec_mag_quick(&source_obj->phys_info.vel));
+			source->finishCreation();
+		}
 	}
 
 	return obj;

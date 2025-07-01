@@ -1075,6 +1075,7 @@ void ship_info::clone(const ship_info& other)
 	split_particles = other.split_particles;
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
+	debris_flame_particles = other.debris_flame_particles;
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1431,6 +1432,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
+	std::swap(debris_flame_particles, other.debris_flame_particles);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1794,6 +1796,8 @@ ship_info::ship_info()
 
 	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	regular_end_particles = default_regular_end_particles;
+
+	debris_flame_particles = particle::ParticleEffectHandle::invalid();
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -3843,6 +3847,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	else if(optional_string("$Alternate Death Particles:"))
 	{
 		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
+	}
+
+	if(optional_string("$Debris Flame Effect:"))
+	{
+		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
