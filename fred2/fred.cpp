@@ -244,6 +244,7 @@ BOOL CFREDApp::InitInstance() {
 	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
+	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
 	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
 
 	read_window("Main window", &Main_wnd_data);
@@ -536,6 +537,7 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
+	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);
 	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
 
 	if (!degree) {

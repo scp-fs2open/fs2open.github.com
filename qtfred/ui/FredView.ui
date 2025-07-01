@@ -238,6 +238,7 @@
     <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
+    <addaction name="actionAlways_Save_Display_Names"/>
     <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
@@ -1441,6 +1442,14 @@
    </property>
    <property name="shortcut">
     <string>Ctrl+Shift+D</string>
+   </property>
+  </action>
+  <action name="actionAlways_Save_Display_Names">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Always save Display Names</string>
    </property>
   </action>
   <action name="actionError_Checker_Checks_Potential_Issues">

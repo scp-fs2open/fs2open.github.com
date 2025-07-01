@@ -394,6 +394,7 @@ BEGIN
         MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
         MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
+        MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
         MENUITEM "Error checker\tShift+H",      32978
     END
@@ -3684,6 +3685,8 @@ END
 
 STRINGTABLE
 BEGIN
+    ID_ALWAYS_SAVE_DISPLAY_NAMES "When saving a mission, always write display names to the mission file even if the display name is not set"
+    ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES "If checked, error checker will check for things that are not necessarily errors but may cause unexpected behavior"
     ID_ERROR_CHECKER        "Checks mission for FRED-detectable errors"
 END
 

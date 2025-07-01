@@ -1462,6 +1462,7 @@
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
+#define ID_ALWAYS_SAVE_DISPLAY_NAMES    33001
 #define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004
