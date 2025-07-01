@@ -49,7 +49,7 @@ void jumpnode_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(jumpnode_dlg)
 	DDX_Text(pDX, IDC_NAME, m_name);
-	DDX_Text(pDX, IDC_ALT_NAME, m_display);
+	DDX_Text(pDX, IDC_DISPLAY_NAME, m_display);
 	DDX_Text(pDX, IDC_MODEL_FILENAME, m_filename);
 	DDX_Text(pDX, IDC_NODE_R, m_color_r);
 	DDV_MinMaxInt(pDX, m_color_r, 0, 255);
@@ -383,5 +383,5 @@ void jumpnode_dlg::OnKillfocusName()
 		end_string_at_first_hash_symbol(buffer);
 
 	// set the display name derived from this name
-	SetDlgItemText(IDC_ALT_NAME, buffer);
+	SetDlgItemText(IDC_DISPLAY_NAME, buffer);
 }

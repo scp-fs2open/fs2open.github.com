@@ -3325,6 +3325,19 @@ void Editor::lcl_fred_replace_stuff(QString& text)
 	text.replace("\\", "$backslash");
 }
 
+SCP_string Editor::get_display_name_for_text_box(const SCP_string &orig_name)
+{
+	auto index = get_index_of_first_hash_symbol(orig_name);
+	if (index >= 0)
+	{
+		SCP_string display_name(orig_name);
+		end_string_at_first_hash_symbol(display_name);
+		return display_name;
+	}
+	else
+		return "<none>";
+}
+
 SCP_vector<int> Editor::getStartingWingLoadoutUseCounts() {
 	// update before sending so that we have the most up to date info.
 	updateStartingWingLoadoutUseCounts();

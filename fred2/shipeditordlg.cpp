@@ -113,6 +113,7 @@ CShipEditorDlg::CShipEditorDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(CShipEditorDlg)
 	m_ship_name = _T("");
+	m_ship_display_name = _T("");
 	m_cargo1 = _T("");
 	m_ship_class_combo_index = -1;
 	m_team = -1;
@@ -159,6 +160,7 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
 	DDX_Text(pDX, IDC_SHIP_NAME, m_ship_name);
 	DDV_MaxChars(pDX, m_ship_name, NAME_LENGTH - 1);
+	DDX_Text(pDX, IDC_DISPLAY_NAME, m_ship_display_name);
 	DDX_CBString(pDX, IDC_SHIP_CARGO1, m_cargo1);
 	DDV_MaxChars(pDX, m_cargo1, NAME_LENGTH - 1);
 	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class_combo_index);
@@ -210,6 +212,7 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_ARRIVAL_TREE, OnEndlabeleditArrivalTree)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_DEPARTURE_TREE, OnEndlabeleditDepartureTree)
 	ON_BN_CLICKED(IDC_GOALS, OnGoals)
+	ON_EN_CHANGE(IDC_SHIP_NAME, OnChangeShipName)
 	ON_CBN_SELCHANGE(IDC_SHIP_CLASS, OnSelchangeShipClass)
 	ON_BN_CLICKED(IDC_INITIAL_STATUS, OnInitialStatus)
 	ON_BN_CLICKED(IDC_WEAPONS, OnWeapons)
@@ -507,9 +510,11 @@ void CShipEditorDlg::initialize_data(int full_update)
 		
 		if (!multi_edit) {
 			Assert((ship_count == 1) && (base_ship >= 0));
-			m_ship_name = Ships[base_ship].ship_name;			
+			m_ship_name = Ships[base_ship].ship_name;
+			m_ship_display_name = Ships[base_ship].has_display_name() ? Ships[base_ship].get_display_name() : "<none>";
 		} else {
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 		}
 
 		m_update_arrival = m_update_departure = 1;
@@ -721,6 +726,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		if (player_count > 1) {  // multiple player ships selected
 			Assert(base_player >= 0);
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 			m_player_ship.SetCheck(TRUE);
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
@@ -747,12 +753,14 @@ void CShipEditorDlg::initialize_data(int full_update)
 			Assert((player_count == 1) && !multi_edit);
 			player_ship = Objects[cur_object_index].instance;
 			m_ship_name = Ships[player_ship].ship_name;
+			m_ship_display_name = Ships[player_ship].has_display_name() ? Ships[player_ship].get_display_name() : "<none>";
 			m_ship_class_combo_index = ship_class_to_combo_index(Ships[player_ship].ship_info_index);
 			m_team = Ships[player_ship].team;
 			m_player_ship.SetCheck(TRUE);
 
 		} else {  // no ships or players selected..
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 			m_ship_class_combo_index = -1;
 			m_team = -1;
 			m_persona = -1;
@@ -924,6 +932,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 	if (total_count) {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(!multi_edit);
+		GetDlgItem(IDC_DISPLAY_NAME)->EnableWindow(!multi_edit);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_SHIP_ALT)->EnableWindow(TRUE);
 		GetDlgItem(IDC_INITIAL_STATUS)->EnableWindow(TRUE);
@@ -935,6 +944,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(TRUE);
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
+		GetDlgItem(IDC_DISPLAY_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_ALT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_INITIAL_STATUS)->EnableWindow(FALSE);
@@ -1082,7 +1092,22 @@ int CShipEditorDlg::update_data(int redraw)
 
 	} else if (single_ship >= 0) {  // editing a single ship
 		m_ship_name.TrimLeft(); 
-		m_ship_name.TrimRight(); 
+		m_ship_name.TrimRight();
+		if (m_ship_name.IsEmpty()) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("A ship name cannot be empty\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_ship_name = _T(Ships[single_ship].ship_name);
+			UpdateData(FALSE);
+		}
+
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
@@ -1230,11 +1255,6 @@ int CShipEditorDlg::update_data(int redraw)
 					strcpy_s(Reinforcements[i].name, str);
 				}
 
-			if (Ships[single_ship].has_display_name()) {
-				Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
-				Ships[single_ship].display_name = "";
-			}
-
 			Update_window = 1;
 		}
 	}
@@ -1270,6 +1290,22 @@ int CShipEditorDlg::update_ship(int ship)
 	CString str;
 	CComboBox *box;
 	int persona;
+
+	// the display name was precalculated, so now just assign it
+	if (m_ship_display_name == m_ship_name || m_ship_display_name.CompareNoCase("<none>") == 0)
+	{
+		if (Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+			set_modified();
+		Ships[ship].display_name = "";
+		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+	}
+	else
+	{
+		if (!Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+			set_modified();
+		Ships[ship].display_name = m_ship_display_name;
+		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+	}
 
 	// THIS DIALOG IS THE SOME OF THE WORST CODE I HAVE EVER SEEN IN MY ENTIRE LIFE. 
 	// IT TOOK A RIDICULOUSLY LONG AMOUNT OF TIME TO ADD 2 FUNCTIONS. OMG
@@ -1616,6 +1652,18 @@ void CShipEditorDlg::OnGoals()
 	if (!multi_edit && !query_initial_orders_empty(Ai_info[Ships[single_ship].ai_index].goals))
 		if ((Ships[single_ship].wingnum >= 0) && (query_initial_orders_conflict(Ships[single_ship].wingnum)))
 			MessageBox("This ship's wing also has initial orders", "Possible conflict");
+}
+
+void CShipEditorDlg::OnChangeShipName()
+{
+	// sync the edit box to the variable
+	UpdateData(TRUE);
+
+	// automatically determine or reset the display name
+	m_ship_display_name = get_display_name_for_text_box(m_ship_name);
+
+	// sync the variable to the edit box
+	UpdateData(FALSE);
 }
 
 void CShipEditorDlg::OnSelchangeShipClass() 

@@ -712,7 +712,7 @@
 #define IDC_REINFORCEMENT               1323
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
-#define IDC_ALT_NAME                    1325
+#define IDC_DISPLAY_NAME                1325
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328

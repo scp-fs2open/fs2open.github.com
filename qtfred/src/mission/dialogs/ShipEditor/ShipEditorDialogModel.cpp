@@ -169,9 +169,11 @@ namespace fso {
 					if (!multi_edit) {
 						Assert((ship_count == 1) && (base_ship >= 0));
 						_m_ship_name = Ships[base_ship].ship_name;
+						_m_ship_display_name = Ships[base_ship].has_display_name() ? Ships[base_ship].get_display_name() : "<none>";
 					}
 					else {
 						_m_ship_name = "";
+						_m_ship_display_name = "";
 					}
 
 					_m_update_arrival = _m_update_departure = true;
@@ -348,6 +350,7 @@ namespace fso {
 					if (player_count > 1) { // multiple player ships selected
 						Assert(base_player >= 0);
 						_m_ship_name = "";
+						_m_ship_display_name = "";
 						_m_player_ship = true;
 						objp = GET_FIRST(&obj_used_list);
 						while (objp != END_OF_LIST(&obj_used_list)) {
@@ -375,6 +378,7 @@ namespace fso {
 						// Assert((player_count == 1) && !multi_edit);
 						player_ship = Objects[_editor->currentObject].instance;
 						_m_ship_name = Ships[player_ship].ship_name;
+						_m_ship_display_name = Ships[player_ship].has_display_name() ? Ships[player_ship].get_display_name() : "<none>";
 						_m_ship_class = Ships[player_ship].ship_info_index;
 						_m_team = Ships[player_ship].team;
 						_m_player_ship = true;
@@ -382,6 +386,7 @@ namespace fso {
 					}
 					else { // no ships or players selected..
 						_m_ship_name = "";
+						_m_ship_display_name = "";
 						_m_ship_class = -1;
 						_m_team = -1;
 						_m_persona = -1;
@@ -428,6 +433,20 @@ namespace fso {
 				}
 				else if (single_ship >= 0) { // editing a single ship
 					drop_white_space(_m_ship_name);
+					if (_m_ship_name.empty()) {
+						auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error,
+							"Ship Name Error",
+							"A ship name cannot be empty.\n Press OK to restore old name",
+							{ DialogButton::Ok, DialogButton::Cancel });
+						if (button == DialogButton::Cancel) {
+							return false;
+						}
+						else {
+							_m_ship_name = Ships[single_ship].ship_name;
+							modelChanged();
+						}
+					}
+
 					ptr = GET_FIRST(&obj_used_list);
 					while (ptr != END_OF_LIST(&obj_used_list)) {
 						if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
@@ -579,11 +598,6 @@ namespace fso {
 							}
 						}
 
-						if (Ships[single_ship].has_display_name()) {
-							Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
-							Ships[single_ship].display_name = "";
-						}
-
 						_editor->missionChanged();
 					}
 				}
@@ -621,6 +635,22 @@ namespace fso {
 			{
 				int z, d;
 				SCP_string str;
+
+				// the display name was precalculated, so now just assign it
+				if (_m_ship_display_name == _m_ship_name || stricmp(_m_ship_display_name.c_str(), "<none>") == 0)
+				{
+					if (Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+						set_modified();
+					Ships[ship].display_name = "";
+					Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+				}
+				else
+				{
+					if (!Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+						set_modified();
+					Ships[ship].display_name = _m_ship_display_name;
+					Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+				}
 
 				ship_alt_name_close(ship);
 				ship_callsign_close(ship);
@@ -870,13 +900,23 @@ namespace fso {
 					"Couldn't add new Callsign. Already using too many!",
 					{ DialogButton::Ok });
 			}
-			void ShipEditorDialogModel::setShipName(const SCP_string m_ship_name)
+
+			void ShipEditorDialogModel::setShipName(const SCP_string &m_ship_name)
 			{
 				modify(_m_ship_name, m_ship_name);
 			}
 			SCP_string ShipEditorDialogModel::getShipName() const
 			{
 				return _m_ship_name;
+			}
+
+			void ShipEditorDialogModel::setShipDisplayName(const SCP_string &m_ship_display_name)
+			{
+				modify(_m_ship_display_name, m_ship_display_name);
+			}
+			SCP_string ShipEditorDialogModel::getShipDisplayName() const
+			{
+				return _m_ship_display_name;
 			}
 
 			void ShipEditorDialogModel::setShipClass(int m_ship_class)
