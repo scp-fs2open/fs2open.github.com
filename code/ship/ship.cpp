@@ -2547,6 +2547,9 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		range, //Culling range multiplier
 		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 		false, //Don't reverse animation
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		std::nullopt, //Local offset
 		lifetime, //Lifetime
 		radius, //Radius
 		bitmap); //Bitmap
@@ -4864,6 +4867,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				1.0f, //Culling range multiplier
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 				false, //Don't reverse animation
+				false, //parent local
+				false, //ignore velocity inherit if parented
+				std::nullopt, //Local offset
 				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
 				::util::UniformFloatRange(min_rad, max_rad), //Radius
 				tpart.thruster_bitmap.first_frame); //Bitmap

@@ -30,9 +30,6 @@ struct vec3d;
 // initialize muzzle flash stuff for the whole game
 void mflash_game_init();
 
-// create a muzzle flash on the guy
-void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local = nullptr);
-
 // lookup type by name
 particle::ParticleEffectHandle mflash_lookup(const char *name);
 

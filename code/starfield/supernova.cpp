@@ -66,6 +66,9 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 			1.f, //Culling range multiplier
 			true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 			false, //Don't reverse animation
+			false, //parent local
+			false, //ignore velocity inherit if parented
+			std::nullopt, //Local offset
 			::util::UniformFloatRange(0.6f, 1.f), //Lifetime
 			::util::UniformFloatRange(0.5f, 1.25f), //Radius
 			particle::Anim_bitmap_id_fire)); //Bitmap

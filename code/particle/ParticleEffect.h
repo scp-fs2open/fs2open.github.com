@@ -176,6 +176,9 @@ public:
 							float distanceCulled,
 							bool disregardAnimationLength,
 							bool reverseAnimation,
+							bool parentLocal,
+							bool ignoreVelocityInheritIfParented,
+							std::optional<vec3d> offsetLocal,
 							::util::ParsedRandomFloatRange lifetime,
 							::util::ParsedRandomFloatRange radius,
 							int bitmap

@@ -73,6 +73,9 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	float distanceCulled,
 	bool disregardAnimationLength,
 	bool reverseAnimation,
+	bool parentLocal,
+	bool ignoreVelocityInheritIfParented,
+	std::optional<vec3d> offsetLocal,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
 	int bitmap)
@@ -85,12 +88,12 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_parentLifetime(false),
 	  m_parentScale(false),
 	  m_hasLifetime(true),
-	  m_parent_local(false),
+	  m_parent_local(parentLocal),
 	  m_keep_anim_length_if_available(!disregardAnimationLength),
 	  m_vel_inherit_absolute(vel_inherit_absolute),
 	  m_vel_inherit_from_position_absolute(false),
 	  m_reverseAnimation(reverseAnimation),
-	  m_ignore_velocity_inherit_if_has_parent(false),
+	  m_ignore_velocity_inherit_if_has_parent(ignoreVelocityInheritIfParented),
 	  m_bitmap_list({bitmap}),
 	  m_bitmap_range(::util::UniformRange<size_t>(0)),
 	  m_delayRange(::util::UniformFloatRange(0.0f)),
@@ -110,7 +113,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_spawnVolume(std::move(spawnVolume)),
 	  m_velocityNoise(nullptr),
 	  m_spawnNoise(nullptr),
-	  m_manual_offset (std::nullopt),
+	  m_manual_offset(offsetLocal),
 	  m_particleTrail(particleTrail),
 	  m_size_lifetime_curve(-1),
 	  m_vel_lifetime_curve (-1),
@@ -209,7 +212,14 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 	}
 
 	const auto& [pos, hostOrientation] = source.m_host->getPositionAndOrientation(m_parent_local, interp, m_manual_offset);
-	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, pos);
+
+	vec3d posGlobal = pos;
+	if (m_parent_local && parent >= 0) {
+		vm_vec_unrotate(&posGlobal, &posGlobal, &Objects[parent].orient);
+		vm_vec_add2(&posGlobal, &Objects[parent].pos);
+	}
+
+	auto modularCurvesInput = std::forward_as_tuple(source, effectNumber, posGlobal);
 
 	const auto& orientation = getNewDirection(hostOrientation, source.m_normal);
 
@@ -270,7 +280,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		if (m_vel_inherit_absolute)
 			vm_vec_normalize_safe(&info.vel, true);
 
-		info.vel *= (m_ignore_velocity_inherit_if_has_parent && parent > 0) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
+		info.vel *= (m_ignore_velocity_inherit_if_has_parent && parent >= 0) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
 
 		vec3d localVelocity = velNoise;
 		vec3d localPos = posNoise;

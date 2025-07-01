@@ -157,13 +157,12 @@ static void convert_mflash_to_particle() {
 	new_curve.keyframes.push_back(curve_keyframe{vec2d{ -0.00001f , 0.f}, CurveInterpFunction::Polynomial, -1.0f, 1.0f}); //just for numerical safety if we ever get an actual size of 0...
 	new_curve.keyframes.push_back(curve_keyframe{vec2d{ Min_pizel_size_muzzleflash, 1.f }, CurveInterpFunction::Constant, 0.0f, 1.0f});
 	Curves.push_back(new_curve);
-	modular_curves_entry scaling_curve {(static_cast<int>(Curves.size()) - 1)};
+	modular_curves_entry scaling_curve {(static_cast<int>(Curves.size()) - 1), ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false};
 
 	for (const auto& mflash : Mflash_info) {
 		SCP_vector<particle::ParticleEffect> subparticles;
 
 		for (const auto& blob : mflash.blobs) {
-			//TODO parent local, ignore vel if parented, offset
 			subparticles.emplace_back(
 				mflash_particle_prefix + mflash.name, //Name
 				::util::UniformFloatRange(1.f), //Particle num
@@ -185,6 +184,9 @@ static void convert_mflash_to_particle() {
 				-1.f, //Culling range multiplier
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 				false, //Don't reverse animation
+				true, //parent local
+				true, //ignore velocity inherit if parented
+				vec3d{{{0, 0, blob.offset}}}, //Local offset
 				::util::UniformFloatRange(-1.f), //Lifetime
 				::util::UniformFloatRange(blob.radius), //Radius
 				bm_load_animation(blob.name));
@@ -217,69 +219,4 @@ void mflash_game_init()
 
 particle::ParticleEffectHandle mflash_lookup(const char *name) {
 	return particle::ParticleManager::get()->getEffectByName(mflash_particle_prefix + name);
-}
-
-// create a muzzle flash on the guy
-void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local)
-{	
-	// mflash *mflashp;
-	mflash_info *mi;
-	mflash_blob_info *mbi;
-	uint idx;
-
-	// standalone server should never create trails
-	if(Game_mode & GM_STANDALONE_SERVER){
-		return;
-	}
-
-	// illegal value
-	if ( (mflash_type < 0) || (mflash_type >= (int)Mflash_info.size()) )
-		return;
-
-	// create the actual animations	
-	mi = &Mflash_info[mflash_type];
-
-	if (local != NULL) {
-		int attached_objnum = OBJ_INDEX(local);
-
-		// This muzzle flash is in local space, so its world position must be derived to apply scaling.
-		vec3d gun_world_pos;
-		vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[attached_objnum].orient);
-		vm_vec_add2(&gun_world_pos, &Objects[attached_objnum].pos);
-
-		for (idx = 0; idx < mi->blobs.size(); idx++) {
-			mbi = &mi->blobs[idx];
-
-			// bogus anim
-
-			// fire it up
-			particle::particle_info p;
-			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
-			vm_vec_zero(&p.vel);
-			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.attached_objnum = attached_objnum;
-			p.attached_sig = local->signature;
-
-			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&gun_world_pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
-
-			particle::create(&p);
-		}
-	} else {
-		for (idx = 0; idx < mi->blobs.size(); idx++) {
-			mbi = &mi->blobs[idx];
-
-			// fire it up
-			particle::particle_info p;
-			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
-			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.attached_objnum = -1;
-			p.attached_sig = 0;
-
-			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&p.pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
-
-			particle::create(&p);
-		}
-	}		
 }

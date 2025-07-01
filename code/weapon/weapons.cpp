@@ -2241,6 +2241,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					-1.f, //Culling range multiplier
 					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 					false, //Don't reverse animation
+					false, //parent local
+					false, //ignore velocity inherit if parented
+					std::nullopt, //Local offset
 					::util::UniformFloatRange(-1.f), //Lifetime
 					radius, //Radius
 					bitmapIndex)); //Bitmap
@@ -2326,6 +2329,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						radius, //Radius
 						bitmapID)); //Bitmap
@@ -2420,6 +2426,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					10.f, //Culling range multiplier
 					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 					false, //Don't reverse animation
+					false, //parent local
+					false, //ignore velocity inherit if parented
+					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 					effectIndex)); //Bitmap
@@ -2447,6 +2456,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						10.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 						effectIndex)); //Bitmap
@@ -2968,6 +2980,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					-1.f, //Culling range multiplier
 					true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X and for most pspews
 					true, //reverse animation, for whatever reason
+					false, //parent local
+					false, //ignore velocity inherit if parented
+					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref), // Lifetime
 					::util::UniformFloatRange(pradius), //Radius
 					bm_load_animation(pani.c_str())); //Bitmap
@@ -3158,6 +3173,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						std::nullopt, //Local offset
 						lifetime, //Lifetime
 						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
 						bitmapIndex)); //Bitmap
@@ -3235,6 +3253,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
@@ -3261,6 +3282,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
