@@ -702,7 +702,7 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 
 	_inKeyReleaseHandler = false;
 }
-void FredView::on_actionEvents_triggered(bool) {
+void FredView::on_actionMission_Events_triggered(bool) {
 	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
@@ -1154,7 +1154,7 @@ void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-void FredView::on_actionMission_Objectives_triggered(bool) {
+void FredView::on_actionMission_Goals_triggered(bool) {
 	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
