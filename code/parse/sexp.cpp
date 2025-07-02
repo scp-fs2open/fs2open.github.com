@@ -364,8 +364,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "map-has-data-item",				OP_MAP_HAS_DATA_ITEM,					2,	3,			SEXP_INTEGER_OPERATOR, }, // Karajorma
 
 	//Other Sub-Category
-	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	1,			SEXP_BOOLEAN_OPERATOR, },
-	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
+	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },
+	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	INT_MAX,	SEXP_INTEGER_OPERATOR, },
 
 	//Time Category
 	{ "time-ship-destroyed",			OP_TIME_SHIP_DESTROYED,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -26764,27 +26764,35 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 	switch(return_type)
 	{
 		case OPR_BOOL:
-			{
-				auto s = CTEXT(n);
-				bool r = false;
-				bool success = Script_system.EvalStringWithReturn(s, "|b", &r);
+		{
+			SCP_string script_cmd;
+			for (; n != -1; n = CDR(n))
+				script_cmd.append(CTEXT(n));
 
-				if(!success)
-					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+			bool r = false;
+			bool success = Script_system.EvalStringWithReturn(script_cmd.c_str(), "|b", &r);
 
-				return r ? SEXP_TRUE : SEXP_FALSE;
-			}
+			if (!success)
+				Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
+
+			return r ? SEXP_TRUE : SEXP_FALSE;
+		}
+
 		case OPR_NUMBER:
-			{
-				auto s = CTEXT(n);
-				int r = -1;
-				bool success = Script_system.EvalStringWithReturn(s, "|i", &r);
+		{
+			SCP_string script_cmd;
+			for (; n != -1; n = CDR(n))
+				script_cmd.append(CTEXT(n));
 
-				if(!success)
-					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+			int r = -1;
+			bool success = Script_system.EvalStringWithReturn(script_cmd.c_str(), "|i", &r);
 
-				return r;
-			}
+			if (!success)
+				Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
+
+			return r;
+		}
+
 		case OPR_STRING:
 			{
 				const char* ret = nullptr;
@@ -26827,7 +26835,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 					if (concat_args)
 					{
-						script_cmd.append(CTEXT(n));
+						script_cmd.append(s);
 					}
 					else
 					{
@@ -41939,15 +41947,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_SCRIPT_EVAL_BOOL, "script-eval-bool\r\n"
-		"\tEvaluates script to return a boolean"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script that returns a boolean"
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tScript\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"
-		"\tEvaluates script to return a number"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script that returns a number"
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tScript\r\n"
 	},
 
 	{ OP_DISABLE_ETS, "disable-ets\r\n"
