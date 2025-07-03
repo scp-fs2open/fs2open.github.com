@@ -2050,7 +2050,7 @@ ship_info::ship_info()
 
 	damage_lightning_type = SLT_DEFAULT;
 
-	shield_impact_explosion_anim = -1;
+	shield_impact_explosion_anim = particle::ParticleEffectHandle::invalid();
 	hud_gauges.clear();
 	hud_enabled = false;
 	hud_retail = false;
@@ -4036,8 +4036,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		char fname[MAX_NAME_LEN];
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		if ( VALID_FNAME(fname) )
-			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+		//TODO
+		//if ( VALID_FNAME(fname) )
+			//sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
 	}
 
 	if(optional_string("$Max Shield Recharge:")){

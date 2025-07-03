@@ -927,43 +927,6 @@ typedef struct missile_obj {
 } missile_obj;
 extern missile_obj Missile_obj_list;
 
-// WEAPON EXPLOSION INFO
-#define MAX_WEAPON_EXPL_LOD						4
-
-typedef struct weapon_expl_lod {
-	char	filename[MAX_FILENAME_LEN];
-	int	bitmap_id;
-	int	num_frames;
-	int	fps;
-
-	weapon_expl_lod( ) 
-		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
-	{ 
-		filename[ 0 ] = 0;
-	}
-} weapon_expl_lod;
-
-typedef struct weapon_expl_info	{
-	int					lod_count;	
-	weapon_expl_lod		lod[MAX_WEAPON_EXPL_LOD];
-} weapon_expl_info;
-
-class weapon_explosions
-{
-private:
-	SCP_vector<weapon_expl_info> ExplosionInfo;
-	int GetIndex(const char *filename) const;
-
-public:
-	weapon_explosions();
-
-	int Load(const char *filename = nullptr, int specified_lods = MAX_WEAPON_EXPL_LOD);
-	int GetAnim(int weapon_expl_index, const vec3d *pos, float size) const;
-	void PageIn(int idx);
-};
-
-extern weapon_explosions Weapon_explosions;
-
 extern int Num_weapons;
 extern int First_secondary_index;
 extern int Default_cmeasure_index;
@@ -1076,7 +1039,7 @@ void weapon_unpause_sounds();
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx);
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, particle::ParticleEffectHandle handle);
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);

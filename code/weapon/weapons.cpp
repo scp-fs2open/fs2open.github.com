@@ -127,10 +127,6 @@ flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
 
 const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
 
-weapon_explosions Weapon_explosions;
-
-SCP_vector<lod_checker> LOD_checker;
-
 special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[] = {
 	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
 		if (weaponp->num_spawn_weapons_defined < MAX_SPAWN_TYPES_PER_WEAPON)
@@ -318,239 +314,7 @@ extern int compute_num_homing_objects(const object *target_objp);
 
 void weapon_spew_stats(WeaponSpewType type);
 
-
-weapon_explosions::weapon_explosions()
-{
-	ExplosionInfo.clear();
-}
-
-int weapon_explosions::GetIndex(const char *filename) const
-{
-	if ( filename == NULL ) {
-		Int3();
-		return -1;
-	}
-
-	for (size_t i = 0; i < ExplosionInfo.size(); i++) {
-		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-int weapon_explosions::Load(const char *filename, int expected_lods)
-{
-	char name_tmp[MAX_FILENAME_LEN] = "";
-	int bitmap_id = -1;
-	int nframes, nfps;
-	weapon_expl_info new_wei;
-
-	Assert( expected_lods <= MAX_WEAPON_EXPL_LOD );
-
-	//Check if it exists
-	int idx = GetIndex(filename);
-
-	if (idx != -1)
-		return idx;
-
-	new_wei.lod_count = 1;
-
-	strcpy_s(new_wei.lod[0].filename, filename);
-	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, nullptr, nullptr, true);
-
-	if (new_wei.lod[0].bitmap_id < 0) {
-		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
-
-		// if we don't have the first then it's only safe to assume that the rest are missing or not usable
-		return -1;
-	}
-
-	// 2 chars for the lod, 4 for the extension that gets added automatically
-	if ( (MAX_FILENAME_LEN - strlen(filename)) > 6 ) {
-		for (idx = 1; idx < expected_lods; idx++) {
-			sprintf(name_tmp, "%s_%d", filename, idx);
-
-			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, nullptr, nullptr, true);
-
-			if (bitmap_id > 0) {
-				strcpy_s(new_wei.lod[idx].filename, name_tmp);
-				new_wei.lod[idx].bitmap_id = bitmap_id;
-				new_wei.lod[idx].num_frames = nframes;
-				new_wei.lod[idx].fps = nfps;
-
-				new_wei.lod_count++;
-			} else {
-				break;
-			}
-		}
-
-		if (new_wei.lod_count != expected_lods)
-			Warning(LOCATION, "For '%s', %i of %i LODs are missing!", filename, expected_lods - new_wei.lod_count, expected_lods);
-	}
-	else {
-		Warning(LOCATION, "Filename '%s' is too long to have any LODs.", filename);
-	}
-
-	ExplosionInfo.push_back( new_wei );
-
-	return (int)(ExplosionInfo.size() - 1);
-}
-
-void weapon_explosions::PageIn(int idx)
-{
-	int i;
-
-	if ( (idx < 0) || (idx >= (int)ExplosionInfo.size()) )
-		return;
-
-	weapon_expl_info *wei = &ExplosionInfo[idx];
-
-	for ( i = 0; i < wei->lod_count; i++ ) {
-		if ( wei->lod[i].bitmap_id >= 0 ) {
-			bm_page_in_xparent_texture( wei->lod[i].bitmap_id, wei->lod[i].num_frames );
-		}
-	}
-}
-
-int weapon_explosions::GetAnim(int weapon_expl_index, const vec3d *pos, float size) const
-{
-	if ( (weapon_expl_index < 0) || (weapon_expl_index >= (int)ExplosionInfo.size()) )
-		return -1;
-
-	//Get our weapon expl for the day
-	auto wei = &ExplosionInfo[weapon_expl_index];
-
-	if (wei->lod_count == 1)
-		return wei->lod[0].bitmap_id;
-
-	// now we have to do some work
-	vertex v;
-	int x, y, w, h, bm_size;
-	int must_stop = 0;
-	int best_lod = 1;
-	int behind = 0;
-
-	// start the frame
-	extern int G3_count;
-
-	if(!G3_count){
-		g3_start_frame(1);
-		must_stop = 1;
-	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Eye_fov);
-
-	// get extents of the rotated bitmap
-	g3_rotate_vertex(&v, pos);
-
-	// if vertex is behind, find size if in front, then drop down 1 LOD
-	if (v.codes & CC_BEHIND) {
-		float dist = vm_vec_dist_quick(&Eye_position, pos);
-		vec3d temp;
-
-		behind = 1;
-		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
-		g3_rotate_vertex(&v, &temp);
-
-		// if still behind, bail and go with default
-		if (v.codes & CC_BEHIND) {
-			behind = 0;
-		}
-	}
-
-	if (!g3_get_bitmap_dims(wei->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
-		if (Detail.hardware_textures == 4) {
-			// straight LOD
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/2){
-				best_lod = 2;
-			} else if(w <= 1.3f*bm_size){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}
-		} else {
-			// less aggressive LOD for lower detail settings
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/3){
-				best_lod = 2;
-			} else if(w <= (1.15f*bm_size)){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}		
-		}
-	}
-
-	// if it's behind, bump up LOD by 1
-	if (behind)
-		best_lod++;
-
-	// end the frame
-	if (must_stop)
-		g3_end_frame();
-
-	best_lod = MIN(best_lod, wei->lod_count - 1);
-	Assert( (best_lod >= 0) && (best_lod < MAX_WEAPON_EXPL_LOD) );
-
-	return wei->lod[best_lod].bitmap_id;
-}
-
-
-void parse_weapon_expl_tbl(const char *filename)
-{
-	uint i;
-	lod_checker lod_check;
-	
-	try
-	{
-		read_file_text(filename, CF_TYPE_TABLES);
-		reset_parse();
-
-		required_string("#Start");
-		while (required_string_either("#End", "$Name:"))
-		{
-			memset(&lod_check, 0, sizeof(lod_checker));
-
-			// base filename
-			required_string("$Name:");
-			stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
-
-			//Do we have an LOD num
-			if (optional_string("$LOD:"))
-			{
-				stuff_int(&lod_check.num_lods);
-			}
-
-			// only bother with this if we have 1 or more lods and less than max lods,
-			// otherwise the stardard level loading will take care of the different effects
-			if ((lod_check.num_lods > 0) && (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
-				// name check, update lod count if it already exists
-				for (i = 0; i < LOD_checker.size(); i++) {
-					if (!stricmp(LOD_checker[i].filename, lod_check.filename)) {
-						LOD_checker[i].num_lods = lod_check.num_lods;
-					}
-				}
-
-				// old entry not found, add new entry
-				if (i == LOD_checker.size()) {
-					LOD_checker.push_back(lod_check);
-				}
-			}
-		}
-		required_string("#End");
-	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
-		return;
-	}
-}
-
-/**
+/*
  * Clear out the Missile_obj_list
  */
 void missile_obj_list_init()
@@ -4885,33 +4649,12 @@ void weapon_do_post_parse()
 	translate_spawn_types();
 }
 
-void weapon_expl_info_init()
-{
-	int i;
-
-	parse_weapon_expl_tbl("weapon_expl.tbl");
-
-	// check for, and load, modular tables
-	parse_modular_table(NOX("*-wxp.tbm"), parse_weapon_expl_tbl);
-
-	// we've got our list so pass it off for final checking and loading
-	for (i = 0; i < (int)LOD_checker.size(); i++) {
-		Weapon_explosions.Load( LOD_checker[i].filename, LOD_checker[i].num_lods );
-	}
-
-	// done
-	LOD_checker.clear();
-}
-
 /**
  * This will get called once at game startup
  */
 void weapon_init()
 {
 	if ( !Weapons_inited ) {
-		//Init weapon explosion info
-		weapon_expl_info_init();
-
 		Num_spawn_types = 0;
 
 		// parse weapons.tbl
@@ -9139,14 +8882,15 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx) {
-	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	particle::create(hitpos,
+void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, particle::ParticleEffectHandle handle) {
+	//TODO
+	//int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
+	/*particle::create(hitpos,
 					 &vmd_zero_vector,
 					 0.0f,
 					 radius,
 					 expl_ani_handle,
-					 objp);
+					 objp);*/
 }
 
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser

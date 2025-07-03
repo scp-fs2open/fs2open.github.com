@@ -527,7 +527,7 @@ static int ship_weapon_check_collision(object *ship_objp, object *weapon_objp, f
 
 		if(!ship_override && !weapon_override) {
 			if (shield_collision && quadrant_num >= 0) {
-				if ((sip->shield_impact_explosion_anim > -1) && (wip->shield_impact_explosion_radius > 0)) {
+				if ((sip->shield_impact_explosion_anim.isValid()) && (wip->shield_impact_explosion_radius > 0)) {
 					shield_impact_explosion(&mc->hit_point, ship_objp, wip->shield_impact_explosion_radius, sip->shield_impact_explosion_anim);
 				}
 			}

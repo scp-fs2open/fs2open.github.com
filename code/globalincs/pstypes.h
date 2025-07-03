@@ -397,15 +397,6 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 // the trailing underscores are to avoid conflicts with previously #define'd tokens
 enum class TriStateBool : int { FALSE_ = 0, TRUE_ = 1, UNKNOWN_ = -1 };
 
-
-// lod checker for (modular) table parsing
-typedef struct lod_checker {
-	char filename[MAX_FILENAME_LEN];
-	int num_lods;
-	int override;
-} lod_checker;
-
-
 // Callback Loading function.
 // If you pass a function to this, that function will get called
 // around 10x per second, so you can update the screen.
