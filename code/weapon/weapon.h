@@ -1039,7 +1039,7 @@ void weapon_unpause_sounds();
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, particle::ParticleEffectHandle handle);
+void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const object *objp, const object *weapon_objp, float radius, particle::ParticleEffectHandle handle);
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);

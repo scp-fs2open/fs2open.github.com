@@ -4032,13 +4032,54 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_ubyte(&sip->shield_color[2]);
 	}
 
-	if(optional_string("$Shield Impact Explosion:")) {
+	if(optional_string("$Shield Impact Explosion Effect:")) {
+		sip->shield_impact_explosion_anim = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Shield Impact Explosion:")) {
 		char fname[MAX_NAME_LEN];
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		//TODO
-		//if ( VALID_FNAME(fname) )
-			//sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+		if ( VALID_FNAME(fname) ) {
+			auto particle = particle::ParticleEffect(
+				"", //Name
+				::util::UniformFloatRange(1.f), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
+				particle::ParticleEffect::ShapeDirection::HIT_NORMAL, //Particle direction
+				::util::UniformFloatRange(0.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				nullptr, //Velocity volume
+				::util::UniformFloatRange(), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				false, //Affected by detail
+				1.f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				true, //parent local
+				false, //ignore velocity inherit if parented
+				std::nullopt, //Local offset
+				::util::UniformFloatRange(0.f), //Lifetime
+				::util::UniformFloatRange(1.f), //Radius
+				bm_load_animation(fname)); //Bitmap
+
+			static const int thruster_particle_curve = []() -> int {
+				int curve_id = static_cast<int>(Curves.size());
+				auto& curve = Curves.emplace_back(";ShipShieldParticles");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			particle.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+
+			sip->shield_impact_explosion_anim = particle::ParticleManager::get()->addEffect(std::move(particle));
+		}
 	}
 
 	if(optional_string("$Max Shield Recharge:")){

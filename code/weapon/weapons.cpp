@@ -8882,15 +8882,18 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, particle::ParticleEffectHandle handle) {
-	//TODO
-	//int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	/*particle::create(hitpos,
-					 &vmd_zero_vector,
-					 0.0f,
-					 radius,
-					 expl_ani_handle,
-					 objp);*/
+void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const object *objp, const object *weapon_objp, float radius, particle::ParticleEffectHandle handle) {
+	matrix localorient = objp->orient * weapon_objp->orient;
+	vec3d hitdir_global;
+	vm_vec_unrotate(&hitdir_global, &hitdir, &objp->orient);
+
+	auto particleSource = particle::ParticleManager::get()->createSource(handle);
+	particleSource->setHost(make_unique<EffectHostObject>(objp, hitpos, localorient));
+	particleSource->setNormal(hitdir_global);
+	particleSource->setTriggerRadius(radius);
+	particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+
+	particleSource->finishCreation();
 }
 
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
