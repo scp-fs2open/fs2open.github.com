@@ -10,19 +10,20 @@ namespace particle {
 		float m_radius;
 
 		enum class VolumeModularCurveOutput : uint8_t {BIAS, STRETCH, RADIUS, NUM_VALUES};
-		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_output_only_subset<VolumeModularCurveOutput>(
+		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_subset<float, VolumeModularCurveOutput>(
 			std::array {
 				std::pair { "Bias Mult", VolumeModularCurveOutput::BIAS },
 				std::pair { "Stretch Mult", VolumeModularCurveOutput::STRETCH },
 				std::pair { "Radius Mult", VolumeModularCurveOutput::RADIUS }
-			});
+			},
+			std::pair { "Fraction Particles Spawned", modular_curves_self_input{}});
 		MODULAR_CURVE_SET(m_modular_curves, modular_curve_definition);
 		modular_curves_entry_instance m_modular_curve_instance;
 	public:
 		explicit SpheroidVolume();
 		explicit SpheroidVolume(float bias, float stretch, float radius);
 
-		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source) override;
+		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) override;
 		void parse() override;
 	};
 }

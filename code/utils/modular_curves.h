@@ -203,10 +203,23 @@ struct modular_curves_functional_input {
 
 template<auto grabber_fnc>
 struct modular_curves_functional_full_input {
-public:
-	template<int /*tuple_idx*/, typename input_type>
+  private:
+	template<typename input_type, int... tuple_idx>
+	static inline auto grab_from_tuple_vararg(const input_type& input, std::integer_sequence<int, tuple_idx...>) {
+		return std::forward_as_tuple(std::get<tuple_idx>(input)...);
+	}
+
+	template<int tuple_idx, typename input_type>
+	static inline auto grab_from_tuple(const input_type& input) {
+		if constexpr(tuple_idx < 0)
+			return std::cref(input);
+		else
+			return grab_from_tuple_vararg<input_type>(input, std::make_integer_sequence<int, tuple_idx + 1>{});
+	}
+  public:
+	template<int tuple_idx, typename input_type>
 	static inline float grab(const input_type& input) {
-		return grabber_fnc(input);
+		return grabber_fnc(grab_from_tuple<tuple_idx, input_type>(input));
 	}
 };
 

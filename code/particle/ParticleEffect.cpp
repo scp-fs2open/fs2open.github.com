@@ -173,7 +173,7 @@ void ParticleEffect::sampleNoise(vec3d& noiseTarget, const matrix* orientation, 
 	auto& [kernel, instruction] = noise;
 	anl::CNoiseExecutor executor(kernel);
 	const auto& color = executor.evaluateColor(
-		ParticleSource::getEffectRunningTime(source)
+		ParticleSource::getEffectRunningTime(std::forward_as_tuple(std::get<0>(source), std::get<1>(source)))
 			* m_modular_curves.get_output(noiseTimeMult, source)
 			, m_modular_curves.get_output(noiseSeed, source), instruction);
 
@@ -262,6 +262,8 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 	}
 
 	for (uint i = 0; i < num_spawn; ++i) {
+		float particleFraction = static_cast<float>(i) / static_cast<float>(num_spawn);
+
 		particle_info info;
 
 		info.reverse = m_reverseAnimation;
@@ -286,11 +288,11 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		vec3d localPos = posNoise;
 
 		if (m_spawnVolume != nullptr) {
-			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput);
+			localPos += m_spawnVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction);
 		}
 
 		if (m_velocityVolume != nullptr) {
-			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {

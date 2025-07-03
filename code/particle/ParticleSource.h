@@ -87,9 +87,9 @@ class ParticleSource {
 
 	friend class ParticleEffect;
 
-	static float getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source);
+	static float getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&>& source);
 
-	static float getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source);
+	static float getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source);
 
 	static float getEffectVisualSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source);
  public:

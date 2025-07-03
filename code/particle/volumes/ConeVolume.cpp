@@ -6,13 +6,15 @@ namespace particle {
 	ConeVolume::ConeVolume(::util::ParsedRandomFloatRange deviation, ::util::ParsedRandomFloatRange length) : m_deviation(deviation), m_length(length), m_modular_curve_instance(m_modular_curves.create_instance()) { }
 
 
-	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source) {
+	vec3d ConeVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
+
 		//It is surely possible to do this more efficiently.
 		angles angs;
 
 		angs.b = 0.0f;
 
-		float deviationMult = m_modular_curves.get_output(VolumeModularCurveOutput::DEVIATION, source, &m_modular_curve_instance);
+		float deviationMult = m_modular_curves.get_output(VolumeModularCurveOutput::DEVIATION, curveSource, &m_modular_curve_instance);
 		angs.h = m_deviation.next() * deviationMult;
 		angs.p = m_deviation.next() * deviationMult;
 
@@ -23,7 +25,10 @@ namespace particle {
 		matrix rotatedVel;
 		vm_matrix_x_matrix(&rotatedVel, &orientation, &m);
 
-		return rotatedVel.vec.fvec * (m_length.next() * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, source, &m_modular_curve_instance));
+		vec3d point = rotatedVel.vec.fvec * (m_length.next() * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, curveSource, &m_modular_curve_instance));
+
+		//TODO
+		return pointCompensateForOffsetAndRotOffset(point, orientation, std::nullopt, std::nullopt, 1, 1);
 	}
 
 	void ConeVolume::parse() {
@@ -49,6 +54,8 @@ namespace particle {
 		if (optional_string("+Length:")) {
 			m_length = ::util::ParsedRandomFloatRange::parseRandomRange(0);
 		}
+
+		ParticleVolume::parse();
 
 		m_modular_curves.parse("$Volume Curve:");
 	}
