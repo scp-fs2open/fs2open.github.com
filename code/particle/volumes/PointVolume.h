@@ -5,9 +5,12 @@
 
 namespace particle {
 	class PointVolume : public ParticleVolume {
+	public:
+		enum class VolumeModularCurveOutput : uint8_t {DISTANCE, OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
+
+	private:
 		vec3d m_pos;
 
-		enum class VolumeModularCurveOutput : uint8_t {DISTANCE, OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
 		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_subset<float, VolumeModularCurveOutput>(
 			std::array {
 				std::pair { "Distance Mult", VolumeModularCurveOutput::DISTANCE },

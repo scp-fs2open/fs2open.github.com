@@ -65,16 +65,6 @@ enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
 constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second delay until player can fire
 
-//particle names go here -nuke
-#define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
-#define PSPEW_DEFAULT	0			//std fs2 pspew
-#define PSPEW_HELIX		1			//q2 style railgun trail
-#define PSPEW_SPARKLER	2			//random particles in every direction, can be sperical or ovoid
-#define PSPEW_RING		3			//outward expanding ring
-#define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
-
-#define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
-
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
 
@@ -143,10 +133,6 @@ typedef struct weapon {
 
 	// corkscrew info (taken out for now)
 	short	cscrew_index;						// corkscrew info index
-
-	// particle spew info
-	int		particle_spew_time[MAX_PARTICLE_SPEWERS];			// time to spew next bunch of particles	
-	float	particle_spew_rand;				// per weapon randomness value used by some particle spew types -nuke
 
 	// flak info
 	short flak_index;							// flak info index
@@ -262,22 +248,6 @@ typedef struct beam_weapon_info {
 	flagset<Weapon::Beam_Info_Flags> flags;
 	type5_beam_info t5info;              // type 5 beams only
 } beam_weapon_info;
-
-typedef struct particle_spew_info {	//this will be used for multi spews
-	// particle spew stuff
-	int particle_spew_type;			//added pspew type field -nuke
-	int particle_spew_count;
-	int particle_spew_time;
-	float particle_spew_vel;
-	float particle_spew_radius;
-	float particle_spew_lifetime;
-	float particle_spew_scale;
-	float particle_spew_z_scale;	//length value for some effects -nuke
-	float particle_spew_rotation_rate;	//rotation rate for some particle effects -nuke
-	vec3d particle_spew_offset;			//offsets and normals, yay!
-	vec3d particle_spew_velocity;
-	generic_anim particle_spew_anim;
-} particle_spew_info;
 
 typedef struct spawn_weapon_info 
 {
@@ -613,7 +583,7 @@ struct weapon_info
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
 
 	// now using new particle spew struct -nuke
-	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
+	SCP_vector<particle::ParticleEffectHandle> particle_spewers;
 
 	// Countermeasure information
 	float cm_aspect_effectiveness;
@@ -990,9 +960,6 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 // gets the substitution pattern pointer for a given weapon
 // src_turret may be null
 size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
-
-// for weapons flagged as particle spewers, spew particles. wheee
-void weapon_maybe_spew_particle(object *obj);
 
 bool weapon_armed(weapon *wp, bool hit_target);
 void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr, const vec3d* local_hitpos = nullptr, int submodel = -1 );
