@@ -674,10 +674,12 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 	std::unique_ptr<particle::ParticleVolume> velocity_vol, position_vol;
 	bool absolutePositionVelocityInherit = false;
 	std::optional<::util::ParsedRandomFloatRange> positionBasedVelocity = std::nullopt;
+	particle::ParticleEffect::ShapeDirection direction = particle::ParticleEffect::ShapeDirection::ALIGNED;
 
 	switch (pspew_buffer.particle_spew_type) {
 		case PSPEW_DEFAULT:
 			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), 3.f * pspew_buffer.particle_spew_scale);
+			direction = particle::ParticleEffect::ShapeDirection::REVERSE;
 			break;
 		case PSPEW_HELIX: {
 			particle_spew_count = 1.f;
@@ -727,7 +729,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			particle::ParticleEffect::Duration::ALWAYS, //permanent Particle Emission
 			::util::UniformFloatRange(), //No duration
 			::util::UniformFloatRange (particle_spew_spawns_per_second), //Single particle only
-			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+			direction, //Particle direction
 			::util::UniformFloatRange(pspew_buffer.particle_spew_vel), //Velocity Inherit
 			false, //Velocity Inherit absolute?
 			std::move(velocity_vol), //Velocity volume
