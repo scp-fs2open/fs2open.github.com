@@ -663,6 +663,12 @@ static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> p
 static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
 	float particle_spew_count = pspew_buffer.particle_spew_count;
 	float particle_spew_spawns_per_second = 1000.f / static_cast<float>(pspew_buffer.particle_spew_time);
+
+	if (particle_spew_spawns_per_second > 60.f) {
+		error_display(0, "PSPEW requested with a spawn frequency of over 60FPS. This used to be capped to spawn once a frame. It will now be artificially capped at 60 spawns per second.");
+		particle_spew_spawns_per_second = 60.f;
+	}
+
 	bool hasAnim = !pspew_buffer.particle_spew_anim.empty() && bm_validate_filename(pspew_buffer.particle_spew_anim, true, true);
 
 	std::unique_ptr<particle::ParticleVolume> velocity_vol, position_vol;
@@ -733,7 +739,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			particle::ParticleEffectHandle::invalid(), //Trail
 			1.f, //Chance
 			false, //Affected by detail
-			1.f, //Culling range multiplier
+			-1.f, //Culling range multiplier
 			!hasAnim, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 			false, //Don't reverse animation
 			false, //parent local

@@ -4060,7 +4060,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				particle::ParticleEffectHandle::invalid(), //Trail
 				1.f, //Chance
 				false, //Affected by detail
-				1.f, //Culling range multiplier
+				-1.f, //Culling range multiplier
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
 				false, //Don't reverse animation
 				true, //parent local
