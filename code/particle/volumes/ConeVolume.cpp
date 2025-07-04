@@ -28,7 +28,9 @@ namespace particle {
 		vec3d point = rotatedVel.vec.fvec * (m_length.next() * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, curveSource, &m_modular_curve_instance));
 
 		//TODO
-		return pointCompensateForOffsetAndRotOffset(point, orientation, std::nullopt, std::nullopt, 1, 1);
+		return pointCompensateForOffsetAndRotOffset(point,
+					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
+					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
 	}
 
 	void ConeVolume::parse() {
@@ -55,7 +57,7 @@ namespace particle {
 			m_length = ::util::ParsedRandomFloatRange::parseRandomRange(0);
 		}
 
-		ParticleVolume::parse();
+		ParticleVolume::parseCommon();
 
 		m_modular_curves.parse("$Volume Curve:");
 	}

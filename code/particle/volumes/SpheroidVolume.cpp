@@ -32,7 +32,9 @@ namespace particle {
 			pos *= radius;
 		}
 
-		return pos;
+		return pointCompensateForOffsetAndRotOffset(pos,
+					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
+					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
 	}
 
 	void SpheroidVolume::parse() {
@@ -46,7 +48,7 @@ namespace particle {
 			stuff_float(&m_stretch);
 		}
 
-		ParticleVolume::parse();
+		ParticleVolume::parseCommon();
 
 		m_modular_curves.parse("$Volume Curve:");
 	}
