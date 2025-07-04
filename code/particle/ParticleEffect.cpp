@@ -325,8 +325,8 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 				m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
 		}
 
-		info.pos += localPos;
 		info.vel += localVelocity;
+		info.pos += localPos + info.vel * interp;
 
 		info.bitmap = m_bitmap_list[m_bitmap_range.next()];
 
