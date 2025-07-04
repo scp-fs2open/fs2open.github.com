@@ -326,7 +326,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		}
 
 		info.vel += localVelocity;
-		info.pos += localPos + info.vel * interp;
+		info.pos += localPos + info.vel * (interp * f2fl(Frametime));
 
 		info.bitmap = m_bitmap_list[m_bitmap_range.next()];
 
