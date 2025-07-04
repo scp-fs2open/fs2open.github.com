@@ -715,6 +715,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 	//TODO vel offset
 	//TODO m_vel_inherit_from_position_absolute
+	//TODO pointvolume offset is not generic offset!
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 			"", //Name

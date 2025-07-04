@@ -39,6 +39,7 @@ namespace particle {
 				vm_vec_unrotate(&outpnt, &outpnt, &orientUse);
 			}
 			if (posOffset.has_value()) {
+				//TODO make local-
 				vec3d pos = *posOffset;
 				vm_rot_point_around_line(&pos, &pos, posOffsetRot, &vmd_zero_vector, &vmd_z_vector);
 				outpnt += pos;
