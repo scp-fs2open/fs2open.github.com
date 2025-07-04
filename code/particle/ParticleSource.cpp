@@ -98,11 +98,13 @@ void ParticleSource::setHost(std::unique_ptr<EffectHost> host) {
 }
 
 float ParticleSource::getEffectRemainingTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
-	return i2fl(timestamp_until(std::get<0>(source).m_timing[std::get<1>(source)].m_endTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
+	const auto& timing = std::get<0>(source).m_timing[std::get<1>(source)];
+	return i2fl(timestamp_get_delta(timing.m_nextCreation, timing.m_endTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
 float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource&, const size_t&>& source) {
-	return i2fl(timestamp_since(std::get<0>(source).m_timing[std::get<1>(source)].m_startTimestamp)) / i2fl(MILLISECONDS_PER_SECOND);
+	const auto& timing = std::get<0>(source).m_timing[std::get<1>(source)];
+	return i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_nextCreation)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
 float ParticleSource::getEffectVisualSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
