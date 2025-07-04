@@ -1,6 +1,8 @@
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
 #include "particle/volumes/ConeVolume.h"
+#include "particle/volumes/PointVolume.h"
+#include "particle/volumes/RingVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
 
 #include <anl.h>
@@ -114,7 +116,7 @@ namespace particle {
 
 		static std::shared_ptr<ParticleVolume> parseVolume() {
 
-			int type = required_string_one_of(2, "Spheroid", "Cone"); //... and future volumes
+			int type = required_string_one_of(4, "Spheroid", "Cone", "Ring", "Point"); //... and future volumes
 			std::shared_ptr<ParticleVolume> volume;
 
 			switch (type) {
@@ -125,6 +127,14 @@ namespace particle {
 				case 1:
 					required_string("Cone");
 					volume = std::make_shared<ConeVolume>();
+					break;
+				case 2:
+					required_string("Ring");
+					volume = std::make_shared<RingVolume>();
+					break;
+				case 3:
+					required_string("Point");
+					volume = std::make_shared<PointVolume>();
 					break;
 				default:
 					UNREACHABLE("Invalid volume type specified!");
