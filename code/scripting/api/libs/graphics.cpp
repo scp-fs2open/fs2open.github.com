@@ -2228,6 +2228,8 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 		reversed, //Is reversed?
 		false, //parent local
 		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
 		std::nullopt, //Local offset
 		::util::UniformFloatRange(1.f), //Lifetime
 		::util::UniformFloatRange(1.f), //Radius

@@ -186,6 +186,8 @@ static void convert_mflash_to_particle() {
 				false, //Don't reverse animation
 				true, //parent local
 				true, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
 				vec3d{{{0, 0, blob.offset}}}, //Local offset
 				::util::UniformFloatRange(-1.f), //Lifetime
 				::util::UniformFloatRange(blob.radius), //Radius

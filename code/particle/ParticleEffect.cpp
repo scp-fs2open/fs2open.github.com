@@ -46,6 +46,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_velocityNoise(nullptr),
 	  m_spawnNoise(nullptr),
 	  m_manual_offset (std::nullopt),
+	  m_manual_velocity_offset(std::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
 	  m_size_lifetime_curve(-1),
 	  m_vel_lifetime_curve (-1),
@@ -75,6 +76,8 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	bool reverseAnimation,
 	bool parentLocal,
 	bool ignoreVelocityInheritIfParented,
+	bool velInheritFromPositionAbsolute,
+	std::optional<vec3d> velocityOffsetLocal,
 	std::optional<vec3d> offsetLocal,
 	::util::ParsedRandomFloatRange lifetime,
 	::util::ParsedRandomFloatRange radius,
@@ -91,7 +94,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_parent_local(parentLocal),
 	  m_keep_anim_length_if_available(!disregardAnimationLength),
 	  m_vel_inherit_absolute(vel_inherit_absolute),
-	  m_vel_inherit_from_position_absolute(false),
+	  m_vel_inherit_from_position_absolute(velInheritFromPositionAbsolute),
 	  m_reverseAnimation(reverseAnimation),
 	  m_ignore_velocity_inherit_if_has_parent(ignoreVelocityInheritIfParented),
 	  m_bitmap_list({bitmap}),
@@ -114,6 +117,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_velocityNoise(nullptr),
 	  m_spawnNoise(nullptr),
 	  m_manual_offset(offsetLocal),
+	  m_manual_velocity_offset(velocityOffsetLocal),
 	  m_particleTrail(particleTrail),
 	  m_size_lifetime_curve(-1),
 	  m_vel_lifetime_curve (-1),
@@ -293,6 +297,10 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 
 		if (m_velocityVolume != nullptr) {
 			localVelocity += m_velocityVolume->sampleRandomPoint(orientation, modularCurvesInput, particleFraction) * (m_velocity_scaling.next() * velocityVolumeMultiplier);
+		}
+
+		if (m_manual_velocity_offset.has_value()) {
+			localVelocity += *m_manual_velocity_offset;
 		}
 
 		if (m_vel_inherit_from_orientation.has_value()) {

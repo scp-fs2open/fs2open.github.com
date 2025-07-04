@@ -132,6 +132,7 @@ public:
 	std::shared_ptr<std::pair<anl::CKernel, anl::CInstructionIndex>> m_spawnNoise;
 
 	std::optional<vec3d> m_manual_offset;
+	std::optional<vec3d> m_manual_velocity_offset;
 
 	ParticleEffectHandle m_particleTrail;
 
@@ -178,6 +179,8 @@ public:
 							bool reverseAnimation,
 							bool parentLocal,
 							bool ignoreVelocityInheritIfParented,
+							bool velInheritFromPositionAbsolute,
+							std::optional<vec3d> velocityOffsetLocal,
 							std::optional<vec3d> offsetLocal,
 							::util::ParsedRandomFloatRange lifetime,
 							::util::ParsedRandomFloatRange radius,

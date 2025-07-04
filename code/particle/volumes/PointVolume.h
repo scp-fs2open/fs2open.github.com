@@ -6,14 +6,11 @@
 namespace particle {
 	class PointVolume : public ParticleVolume {
 	public:
-		enum class VolumeModularCurveOutput : uint8_t {DISTANCE, OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
+		enum class VolumeModularCurveOutput : uint8_t {OFFSET_ROT, POINT_TO_ROT, NUM_VALUES};
 
 	private:
-		vec3d m_pos;
-
 		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_subset<float, VolumeModularCurveOutput>(
 			std::array {
-				std::pair { "Distance Mult", VolumeModularCurveOutput::DISTANCE },
 				std::pair { "Offset Rotate Around Fvec", VolumeModularCurveOutput::OFFSET_ROT },
 				std::pair { "Point To Rotate Around Fvec", VolumeModularCurveOutput::POINT_TO_ROT }
 			},
@@ -27,7 +24,6 @@ namespace particle {
 
 	public:
 		explicit PointVolume();
-		explicit PointVolume(const vec3d& pos);
 
 		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) override;
 		void parse() override;

@@ -2553,6 +2553,8 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		false, //Don't reverse animation
 		false, //parent local
 		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
 		std::nullopt, //Local offset
 		lifetime, //Lifetime
 		radius, //Radius
@@ -4063,6 +4065,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				false, //Don't reverse animation
 				true, //parent local
 				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
 				std::nullopt, //Local offset
 				::util::UniformFloatRange(0.f), //Lifetime
 				::util::UniformFloatRange(1.f), //Radius
@@ -4920,6 +4924,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				false, //Don't reverse animation
 				false, //parent local
 				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
 				std::nullopt, //Local offset
 				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
 				::util::UniformFloatRange(min_rad, max_rad), //Radius

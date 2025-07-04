@@ -673,7 +673,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 		case PSPEW_DEFAULT:
 			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), 3.f * pspew_buffer.particle_spew_scale);
 			break;
-		case PSPEW_HELIX:{
+		case PSPEW_HELIX: {
 			particle_spew_count = 1.f;
 			particle_spew_spawns_per_second *= pspew_buffer.particle_spew_count;
 
@@ -682,7 +682,8 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
 			curve.keyframes.emplace_back(curve_keyframe{vec2d{1.f / pspew_buffer.particle_spew_rotation_rate, PI2}, CurveInterpFunction::Linear, 0.f, 0.f});
 
-			auto vel_vol_temp = std::make_unique<particle::PointVolume>(vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}});
+			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
+			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
 			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
 			velocity_vol = std::move(vel_vol_temp);
 		}
@@ -699,7 +700,8 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 				return curve_id;
 			}();
 
-			auto vel_vol_temp = std::make_unique<particle::PointVolume>(vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}});
+			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
+			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
 			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{ring_pspew_rot});
 			velocity_vol = std::move(vel_vol_temp);
 		}
@@ -712,10 +714,6 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 		default:
 			UNREACHABLE("Invalid PSPEW legacy type!");
 	}
-
-	//TODO vel offset
-	//TODO m_vel_inherit_from_position_absolute
-	//TODO pointvolume offset is not generic offset!
 
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 			"", //Name
@@ -740,6 +738,8 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			false, //Don't reverse animation
 			false, //parent local
 			false, //ignore velocity inherit if parented
+			absolutePositionVelocityInherit, //position velocity inherit absolute?
+			IS_VEC_NULL(&pspew_buffer.particle_spew_velocity) ? std::nullopt : std::optional(pspew_buffer.particle_spew_velocity), //Local velocity offset
 			IS_VEC_NULL(&pspew_buffer.particle_spew_offset) ? std::nullopt : std::optional(pspew_buffer.particle_spew_offset), //Local offset
 			::util::UniformFloatRange(pspew_buffer.particle_spew_lifetime), //Lifetime
 			::util::UniformFloatRange(pspew_buffer.particle_spew_radius), //Radius
@@ -2122,6 +2122,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					false, //Don't reverse animation
 					false, //parent local
 					false, //ignore velocity inherit if parented
+					false, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
 					std::nullopt, //Local offset
 					::util::UniformFloatRange(-1.f), //Lifetime
 					radius, //Radius
@@ -2210,6 +2212,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Don't reverse animation
 						false, //parent local
 						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
 						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						radius, //Radius
@@ -2307,6 +2311,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					false, //Don't reverse animation
 					false, //parent local
 					false, //ignore velocity inherit if parented
+					false, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
 					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
@@ -2337,6 +2343,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Don't reverse animation
 						false, //parent local
 						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
 						std::nullopt, //Local offset
 						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
@@ -2861,6 +2869,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					true, //reverse animation, for whatever reason
 					false, //parent local
 					false, //ignore velocity inherit if parented
+					false, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
 					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref), // Lifetime
 					::util::UniformFloatRange(pradius), //Radius
@@ -3054,6 +3064,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Don't reverse animation
 						false, //parent local
 						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
 						std::nullopt, //Local offset
 						lifetime, //Lifetime
 						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
@@ -3134,6 +3146,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Don't reverse animation
 						false, //parent local
 						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
 						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
@@ -3163,6 +3177,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Don't reverse animation
 						false, //parent local
 						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
 						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius

@@ -28,7 +28,7 @@ namespace particle {
 		vec3d point = rotatedVel.vec.fvec * (m_length.next() * m_modular_curves.get_output(VolumeModularCurveOutput::LENGTH, curveSource, &m_modular_curve_instance));
 
 		//TODO
-		return pointCompensateForOffsetAndRotOffset(point,
+		return pointCompensateForOffsetAndRotOffset(point, orientation,
 					m_modular_curves.get_output(VolumeModularCurveOutput::OFFSET_ROT, curveSource, &m_modular_curve_instance),
 					m_modular_curves.get_output(VolumeModularCurveOutput::POINT_TO_ROT, curveSource, &m_modular_curve_instance));
 	}

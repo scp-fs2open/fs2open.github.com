@@ -8,16 +8,15 @@
 namespace particle {
 	class ParticleSource;
 	class ParticleVolume {
-	private:
-		std::optional<vec3d> posOffset;
-		std::optional<vec3d> rotOffset;
-
 	public:
 		virtual vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source, float particlesFraction) = 0;
 
 		virtual void parse() = 0;
 
 		virtual ~ParticleVolume() = default;
+
+		std::optional<vec3d> posOffset;
+		std::optional<vec3d> rotOffset;
 	protected:
 		void parseCommon() {
 			if (optional_string("+Volume Position Offset:")) {
@@ -26,9 +25,9 @@ namespace particle {
 			if (optional_string("+Volume Point Towards:")) {
 				stuff_vec3d(&rotOffset.emplace());
 			}
-		};
+		}
 
-		vec3d pointCompensateForOffsetAndRotOffset(const vec3d& point, float posOffsetRot, float rotOffsetRot) const {
+		vec3d pointCompensateForOffsetAndRotOffset(const vec3d& point, const matrix& orientation, float posOffsetRot, float rotOffsetRot) const {
 			vec3d outpnt = point;
 
 			if (rotOffset.has_value()) {
@@ -39,8 +38,8 @@ namespace particle {
 				vm_vec_unrotate(&outpnt, &outpnt, &orientUse);
 			}
 			if (posOffset.has_value()) {
-				//TODO make local-
 				vec3d pos = *posOffset;
+				vm_vec_unrotate(&pos, &pos, &orientation);
 				vm_rot_point_around_line(&pos, &pos, posOffsetRot, &vmd_zero_vector, &vmd_z_vector);
 				outpnt += pos;
 			}

@@ -81,6 +81,10 @@ namespace particle {
 			if (optional_string(modern ? "+Position Offset:" : "+Offset:")) {
 				stuff_vec3d(&effect.m_manual_offset.emplace());
 			}
+
+			if (optional_string("+Velocity Offset:")) {
+				stuff_vec3d(&effect.m_manual_velocity_offset.emplace());
+			}
 		}
 
 		static void parseParentLocal(ParticleEffect& effect) {
