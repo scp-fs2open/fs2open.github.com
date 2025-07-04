@@ -2875,8 +2875,8 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					-1.f, //Culling range multiplier
 					true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X and for most pspews
 					true, //reverse animation, for whatever reason
-					false, //parent local
-					false, //ignore velocity inherit if parented
+					true, //parent local
+					true, //ignore velocity inherit if parented
 					false, //position velocity inherit absolute?
 					std::nullopt, //Local velocity offset
 					std::nullopt, //Local offset
