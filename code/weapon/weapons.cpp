@@ -707,7 +707,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			int curve_id_bias = static_cast<int>(Curves.size());
 			auto& curve_bias = Curves.emplace_back(SCP_string(";PSPEWSparklerCurveBias;") + wip->name);
 			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
-			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{1.f, sqrtf(particle_spew_count)}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{1.f, particle_spew_count}, CurveInterpFunction::Linear, 0.f, 0.f});
 
 			auto vel_vol_temp = std::make_unique<particle::SpheroidVolume>(1.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale * particle_spew_count);
 			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::SpheroidVolume::VolumeModularCurveOutput::RADIUS, modular_curves_entry{curve_id_dist});
