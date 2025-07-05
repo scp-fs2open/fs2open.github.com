@@ -7030,6 +7030,9 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 	// if this is a particle spewing weapon, setup some stuff
 	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
 		for (const auto& effect : wip->particle_spewers) {
+			if(!effect.isValid())
+				continue;
+
 			auto source = particle::ParticleManager::get()->createSource(effect);
 			auto host = std::make_unique<EffectHostObject>(objp, vmd_zero_vector);
 			source->setHost(std::move(host));
