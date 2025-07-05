@@ -661,7 +661,7 @@ struct pspew_legacy_parse_data {
 static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
 
 static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
-	float particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
+	auto particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
 	float particle_spew_spawns_per_second = 1000.f / static_cast<float>(pspew_buffer.particle_spew_time);
 
 	if (particle_spew_spawns_per_second > 60.f) {
