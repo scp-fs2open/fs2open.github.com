@@ -661,7 +661,7 @@ struct pspew_legacy_parse_data {
 static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
 
 static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
-	float particle_spew_count = pspew_buffer.particle_spew_count;
+	float particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
 	float particle_spew_spawns_per_second = 1000.f / static_cast<float>(pspew_buffer.particle_spew_time);
 
 	if (particle_spew_spawns_per_second > 60.f) {
@@ -2848,7 +2848,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (wip->b_info.beam_muzzle_effect.isValid()) {
 				//We're modifying existing data. Restore old values... Ugly, but oh well.
 				const auto& oldEffect = particle::ParticleManager::get()->getEffect(wip->b_info.beam_muzzle_effect).front();
-				pcount = oldEffect.m_particleNum.max();
+				pcount = static_cast<int>(oldEffect.m_particleNum.max());
 				pradius = oldEffect.m_radius.max();
 				auto cone_volume = dynamic_cast<const particle::ConeVolume*>(oldEffect.m_spawnVolume.get());
 				if (cone_volume != nullptr) {
@@ -2884,7 +2884,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 				auto effect = particle::ParticleEffect(
 					"", //Name
-					::util::UniformFloatRange(0, pcount), //Particle num
+					::util::UniformFloatRange(0, static_cast<float>(pcount)), //Particle num
 					particle::ParticleEffect::Duration::RANGE,
 					::util::UniformFloatRange((float)wip->b_info.beam_warmup / 1000.0f), //Emit for beam warmup time
 					::util::UniformFloatRange (10.f), //One particle every 100ms
@@ -3579,7 +3579,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 			// no empty spot found, the modder tried to define too many spewers, or screwed up the xmts, or my code sucks
 			if ( spew_index < 0 ) {
-				spew_index = wip->particle_spewers.size();
+				spew_index = static_cast<int>(wip->particle_spewers.size());
 				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
 			}
 
