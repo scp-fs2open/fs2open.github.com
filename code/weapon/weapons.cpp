@@ -697,7 +697,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 		}
 			break;
 		case PSPEW_SPARKLER:
-			velocity_vol = std::make_unique<particle::SpheroidVolume>(1.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale);
+			velocity_vol = std::make_unique<particle::SpheroidVolume>(0.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale);
 			break;
 		case PSPEW_RING: {
 			static const int ring_pspew_rot = []() -> int {
