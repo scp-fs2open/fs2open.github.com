@@ -23,7 +23,7 @@ int model_h::GetID() const
 }
 bool model_h::isValid() const
 {
-	return (model_num >= 0) && (model_get(model_num) != nullptr);
+	return (model_num >= 0) && (model_get(model_num) != nullptr);	// note: the model ID can exceed MAX_POLYGON_MODELS because the modulo is taken
 }
 model_h::model_h(int n_modelnum)
 	: model_num(n_modelnum)
@@ -56,8 +56,8 @@ bool submodel_h::isValid() const
 	if (model_num >= 0 && submodel_num >= 0)
 	{
 		auto model = model_get(model_num);
-		if (model != nullptr)
-			return submodel_num < model->n_models;
+		if (model != nullptr && submodel_num < model->n_models)
+			return true;
 	}
 	return false;
 }

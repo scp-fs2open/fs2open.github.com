@@ -111,65 +111,118 @@ ADE_OBJ(l_ModelInstance, modelinstance_h, "model_instance", "Model instance hand
 
 modelinstance_h::modelinstance_h(int pmi_id)
 {
-	_pmi = model_get_instance(pmi_id);
+	_pmi_id = pmi_id;
 }
 modelinstance_h::modelinstance_h(polymodel_instance *pmi)
-	: _pmi(pmi)
+	: _pmi_id(pmi ? pmi->id : -1)
 {}
 modelinstance_h::modelinstance_h()
-	: _pmi(nullptr)
+	: _pmi_id(-1)
 {}
-polymodel_instance *modelinstance_h::Get()
+polymodel_instance *modelinstance_h::Get() const
 {
-	return _pmi;
+	return isValid() ? model_get_instance(_pmi_id) : nullptr;
+}
+int modelinstance_h::GetID() const
+{
+	return isValid() ? _pmi_id : -1;
+}
+polymodel *modelinstance_h::GetModel() const
+{
+	return isValid() ? model_get(model_get_instance(_pmi_id)->model_num) : nullptr;
+}
+int modelinstance_h::GetModelID() const
+{
+	return isValid() ? model_get_instance(_pmi_id)->model_num : -1;
 }
 bool modelinstance_h::isValid() const
 {
-	return (_pmi != nullptr);
+	return (_pmi_id >= 0) && (_pmi_id < num_model_instances()) && (model_get_instance(_pmi_id) != nullptr);
 }
 
 
 ADE_OBJ(l_SubmodelInstance, submodelinstance_h, "submodel_instance", "Submodel instance handle");
 
 submodelinstance_h::submodelinstance_h(int pmi_id, int submodel_num)
-	: _submodel_num(submodel_num)
-{
-	_pmi = model_get_instance(pmi_id);
-	_pm = _pmi ? model_get(_pmi->model_num) : nullptr;
-}
-submodelinstance_h::submodelinstance_h(polymodel_instance *pmi, int submodel_num)
-	: _pmi(pmi), _submodel_num(submodel_num)
-{
-	_pm = pmi ? model_get(pmi->model_num) : nullptr;
-}
-submodelinstance_h::submodelinstance_h()
-	: _pmi(nullptr), _pm(nullptr), _submodel_num(-1)
+	: _pmi_id(pmi_id), _submodel_num(submodel_num)
 {}
-polymodel_instance *submodelinstance_h::GetModelInstance()
+submodelinstance_h::submodelinstance_h(polymodel_instance *pmi, int submodel_num)
+	: _pmi_id(pmi ? pmi->id : -1), _submodel_num(submodel_num)
+{}
+submodelinstance_h::submodelinstance_h()
+	: _pmi_id(-1), _submodel_num(-1)
+{}
+polymodel_instance *submodelinstance_h::GetModelInstance() const
 {
-	return isValid() ? _pmi : nullptr;
+	return isValid() ? model_get_instance(_pmi_id) : nullptr;
 }
-submodel_instance *submodelinstance_h::Get()
+int submodelinstance_h::GetModelInstanceID() const
 {
-	return isValid() ? &_pmi->submodel[_submodel_num] : nullptr;
+	return isValid() ? _pmi_id : -1;
 }
-polymodel *submodelinstance_h::GetModel()
+submodel_instance *submodelinstance_h::Get() const
 {
-	return isValid() ? _pm : nullptr;
+	return isValid() ? &model_get_instance(_pmi_id)->submodel[_submodel_num] : nullptr;
 }
-bsp_info *submodelinstance_h::GetSubmodel()
+polymodel *submodelinstance_h::GetModel() const
 {
-	return isValid() ? &_pm->submodel[_submodel_num] : nullptr;
+	return isValid() ? model_get(model_get_instance(_pmi_id)->model_num) : nullptr;
 }
-int submodelinstance_h::GetSubmodelIndex()
+int submodelinstance_h::GetModelID() const
+{
+	return isValid() ? model_get_instance(_pmi_id)->model_num : -1;
+}
+bsp_info *submodelinstance_h::GetSubmodel() const
+{
+	return isValid() ? &model_get(model_get_instance(_pmi_id)->model_num)->submodel[_submodel_num] : nullptr;
+}
+int submodelinstance_h::GetSubmodelIndex() const
 {
 	return isValid() ? _submodel_num : -1;
 }
 bool submodelinstance_h::isValid() const
 {
-	return _pmi != nullptr && _pm != nullptr && _submodel_num >= 0 && _submodel_num < _pm->n_models;
+	if (_pmi_id >= 0 && _submodel_num >= 0 && _pmi_id < num_model_instances())
+	{
+		auto pmi = model_get_instance(_pmi_id);
+		if (pmi != nullptr && pmi->model_num >= 0)
+		{
+			auto pm = model_get(pmi->model_num);
+			if (pm != nullptr && _submodel_num < pm->n_models)
+				return true;
+		}
+	}
+	return false;
 }
 
+
+ADE_FUNC(__eq, l_ModelInstance, "model_instance, model_instance", "Checks if two model instance handles refer to the same model instance", "boolean", "True if model instances are equal")
+{
+	modelinstance_h* mih1;
+	modelinstance_h* mih2;
+
+	if (!ade_get_args(L, "oo", l_ModelInstance.GetPtr(&mih1), l_ModelInstance.GetPtr(&mih2)))
+		return ADE_RETURN_NIL;
+
+	if (mih1->GetID() == mih2->GetID())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(__eq, l_SubmodelInstance, "submodel_instance, submodel_instance", "Checks if two submodel instance handles refer to the same submodel instance", "boolean", "True if submodel instances are equal")
+{
+	submodelinstance_h* smih1;
+	submodelinstance_h* smih2;
+
+	if (!ade_get_args(L, "oo", l_SubmodelInstance.GetPtr(&smih1), l_SubmodelInstance.GetPtr(&smih2)))
+		return ADE_RETURN_NIL;
+
+	if (smih1->GetModelInstanceID() == smih2->GetModelInstanceID() && smih1->GetSubmodelIndex() == smih2->GetSubmodelIndex())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
 
 ADE_FUNC(getModel, l_ModelInstance, nullptr, "Returns the model used by this instance", "model", "A model")
 {

@@ -1012,6 +1012,7 @@ SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel);
 // Returns a pointer to the polymodel structure for model 'n'
 polymodel *model_get(int model_num);
 
+int num_model_instances();
 polymodel_instance* model_get_instance(int model_instance_num);
 
 // routine to copy subsystems.  Must be called when subsystems sets are the same -- see ship.cpp
