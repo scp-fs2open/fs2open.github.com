@@ -2829,6 +2829,18 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			float pradius = 1.f, pangle = 0.f;
 			SCP_string pani;
 
+			if (wip->b_info.beam_muzzle_effect.isValid()) {
+				//We're modifying existing data. Restore old values... Ugly, but oh well.
+				const auto& oldEffect = particle::ParticleManager::get()->getEffect(wip->b_info.beam_muzzle_effect).front();
+				pcount = oldEffect.m_particleNum.max();
+				pradius = oldEffect.m_radius.max();
+				auto cone_volume = dynamic_cast<const particle::ConeVolume*>(oldEffect.m_spawnVolume.get());
+				if (cone_volume != nullptr) {
+					pangle = cone_volume->m_deviation.max();
+				}
+				pani = bm_get_filename(oldEffect.m_bitmap_list.front());
+			}
+
 			// particle spew count
 			if (optional_string("+PCount:")) {
 				stuff_int(&pcount);
@@ -2852,7 +2864,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 			if (pcount > 0 && !pani.empty()) {
 				float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);
-				float p_vel = 1.0f / (0.825f * 0.6f * p_time_ref);
+				float p_vel = wip->b_info.beam_muzzle_radius / (0.6f * p_time_ref);
 
 				auto effect = particle::ParticleEffect(
 					"", //Name
@@ -2877,7 +2889,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					true, //reverse animation, for whatever reason
 					true, //parent local
 					true, //ignore velocity inherit if parented
-					false, //position velocity inherit absolute?
+					true, //position velocity inherit absolute?
 					std::nullopt, //Local velocity offset
 					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref), // Lifetime
