@@ -1089,9 +1089,11 @@ int find_turret_enemy(const ship_subsys *turret_subsys, int objnum, const vec3d 
 		int target_objnum = aip->target_objnum;
 
 		if (Objects[target_objnum].signature == aip->target_signature) {
-			if (iff_matches_mask(Ships[Objects[target_objnum].instance].team, enemy_team_mask)) {
-				if ( !(Objects[target_objnum].flags[Object::Object_Flags::Protected]) ) {		// check this flag as well
-					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum, target_objnum));
+			ship* target_shipp = &Ships[Objects[target_objnum].instance];
+			if (target_shipp && iff_matches_mask(target_shipp->team, enemy_team_mask)) {
+				if (!(Objects[target_objnum].flags[Object::Object_Flags::Protected])) { // check this flag as well
+					// nprintf(("AI", "Frame %i: Object %i resuming goal of object %i\n", AI_FrameCount, objnum,
+					// target_objnum));
 					return target_objnum;
 				}
 			}
