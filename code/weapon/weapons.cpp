@@ -696,8 +696,24 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			velocity_vol = std::move(vel_vol_temp);
 		}
 			break;
-		case PSPEW_SPARKLER:
-			velocity_vol = std::make_unique<particle::SpheroidVolume>(0.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale);
+		case PSPEW_SPARKLER: {
+			//This is really strange behaviour cause the old sparklers (likely accidentally) cumulated the random velocity for each particle.
+			//This does not do this, but at least tries to emulate the resulting velocity magnitudes in similar chaotic fashion.
+			int curve_id_dist = static_cast<int>(Curves.size());
+			auto& curve_dist = Curves.emplace_back(SCP_string(";PSPEWSparklerCurveDist;") + wip->name);
+			curve_dist.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f / particle_spew_count}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve_dist.keyframes.emplace_back(curve_keyframe{vec2d{1.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+
+			int curve_id_bias = static_cast<int>(Curves.size());
+			auto& curve_bias = Curves.emplace_back(SCP_string(";PSPEWSparklerCurveBias;") + wip->name);
+			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{1.f, sqrtf(particle_spew_count)}, CurveInterpFunction::Linear, 0.f, 0.f});
+
+			auto vel_vol_temp = std::make_unique<particle::SpheroidVolume>(1.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale * particle_spew_count);
+			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::SpheroidVolume::VolumeModularCurveOutput::RADIUS, modular_curves_entry{curve_id_dist});
+			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::SpheroidVolume::VolumeModularCurveOutput::BIAS, modular_curves_entry{curve_id_bias});
+			velocity_vol = std::move(vel_vol_temp);
+		}
 			break;
 		case PSPEW_RING: {
 			static const int ring_pspew_rot = []() -> int {
