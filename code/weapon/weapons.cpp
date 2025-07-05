@@ -2884,7 +2884,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 				auto effect = particle::ParticleEffect(
 					"", //Name
-					::util::UniformFloatRange(0, static_cast<float>(pcount)), //Particle num
+					::util::UniformFloatRange(0.f, static_cast<float>(pcount)), //Particle num
 					particle::ParticleEffect::Duration::RANGE,
 					::util::UniformFloatRange((float)wip->b_info.beam_warmup / 1000.0f), //Emit for beam warmup time
 					::util::UniformFloatRange (10.f), //One particle every 100ms
