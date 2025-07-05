@@ -17189,6 +17189,11 @@ const char *ship_subsys_get_name_on_hud(const ship_subsys *ss)
 		return ship_subsys_get_name(ss);
 }
 
+const char *ship_subsys_get_canonical_name(const ship_subsys *ss)
+{
+	return ss->system_info->subobj_name;
+}
+
 /**
  * Return the shield strength of the specified quadrant on hit_objp
  *
