@@ -33,7 +33,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "scripting/global_hooks.h"
-#include "particle/particle.h"
+#include "particle/hosts/EffectHostVector.h"
 #include "render/3d.h"
 #include "ship/ship.h"
 #include "ship/shipfx.h"
@@ -63,8 +63,7 @@ asteroid			Asteroids[MAX_ASTEROIDS];
 asteroid_field	Asteroid_field;
 
 
-static int		Asteroid_impact_explosion_ani;
-static float	Asteroid_impact_explosion_radius;
+static particle::ParticleEffectHandle 		Asteroid_impact_explosion_ani;
 char	Asteroid_icon_closeup_model[NAME_LENGTH];
 vec3d	Asteroid_icon_closeup_position;
 float	Asteroid_icon_closeup_zoom;	
@@ -1752,7 +1751,9 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
 			if (!wip->impact_weapon_expl_effect.isValid()) {
-				particle::create( hitpos, &vmd_zero_vector, 0.0f, Asteroid_impact_explosion_radius, Asteroid_impact_explosion_ani );
+				auto source = particle::ParticleManager::get()->createSource(Asteroid_impact_explosion_ani);
+				source->setHost(std::make_unique<EffectHostVector>(*hitpos, vmd_identity_matrix, vmd_zero_vector));
+				source->finishCreation();
 			}
 		}
 	}
@@ -2461,18 +2462,52 @@ static void asteroid_parse_tbl(const char* filename)
 
 		required_string("#End");
 
-		if (optional_string("$Impact Explosion:")) {
-			char impact_ani_file[MAX_FILENAME_LEN];
-			stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
-
-			if (VALID_FNAME(impact_ani_file)) {
-				int num_frames;
-				Asteroid_impact_explosion_ani = bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true);
-			}
+		if (optional_string("$Impact Explosion Effect:")) {
+			Asteroid_impact_explosion_ani = particle::util::parseEffect();
 		}
+		else {
+			char impact_ani_file[MAX_FILENAME_LEN];
+			float Asteroid_impact_explosion_radius;
+			int num_frames;
 
-		if (optional_string("$Impact Explosion Radius:")) {
-			stuff_float(&Asteroid_impact_explosion_radius);
+			if (optional_string("$Impact Explosion:")) {
+				stuff_string(impact_ani_file, F_NAME, MAX_FILENAME_LEN);
+			}
+			if (optional_string("$Impact Explosion Radius:")) {
+				stuff_float(&Asteroid_impact_explosion_radius);
+			}
+
+			if(VALID_FNAME(impact_ani_file)) {
+				Asteroid_impact_explosion_ani = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+						"", //Name
+						::util::UniformFloatRange(1.f), //Particle num
+						particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange(-1.f), //Single particle only
+						particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+						::util::UniformFloatRange(), //Velocity Inherit
+						false, //Velocity Inherit absolute?
+						nullptr, //Velocity volume
+						::util::UniformFloatRange(), //Velocity volume multiplier
+						particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+						std::nullopt, //Orientation-based velocity
+						std::nullopt, //Position-based velocity
+						nullptr, //Position volume
+						particle::ParticleEffectHandle::invalid(), //Trail
+						1.f, //Chance
+						false, //Affected by detail
+						-1.f, //Culling range multiplier
+						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
+						::util::UniformFloatRange(-1.f), //Lifetime
+						::util::UniformFloatRange(Asteroid_impact_explosion_radius), //Radius
+						bm_load_animation(impact_ani_file, &num_frames, nullptr, nullptr, nullptr, true))); //Bitmap
+			}
 		}
 
 		if (optional_string("$Briefing Icon Closeup Model:")) {
@@ -2622,8 +2657,7 @@ static void verify_asteroid_list()
  */
 void asteroid_init()
 {
-	Asteroid_impact_explosion_ani = -1;
-	Asteroid_impact_explosion_radius = 20.0;							// retail value
+	Asteroid_impact_explosion_ani = particle::ParticleEffectHandle::invalid();
 	Asteroid_icon_closeup_model[0] = '\0';
 	vm_vec_make(&Asteroid_icon_closeup_position, 0.0f, 0.0f, -334.0f);	// magic numbers from retail
 	Asteroid_icon_closeup_zoom = 0.5f;									// magic number from retail
@@ -2644,7 +2678,7 @@ void asteroid_init()
 	// now that Asteroid_info is filled in we can verify the asteroid splits and set their indecies
 	verify_asteroid_splits();
 
-	if (Asteroid_impact_explosion_ani == -1) {
+	if (!Asteroid_impact_explosion_ani.isValid()) {
 		Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
 	}
 
