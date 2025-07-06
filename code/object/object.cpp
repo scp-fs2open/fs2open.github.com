@@ -456,6 +456,8 @@ void obj_init()
 	obj_reset_colliders();
 
 	Script_system.OnStateDestroy.add(on_script_state_destroy);
+
+	collide_init();
 }
 
 void obj_shutdown()

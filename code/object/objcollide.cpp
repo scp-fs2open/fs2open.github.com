@@ -19,6 +19,8 @@
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
 
+#include <limits>
+
 
 // the next 2 variables are used for pair statistics
 // also in weapon.cpp there is Weapons_created.
@@ -722,12 +724,71 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
     }
 }
 
+	enum class WorkerThreadTask : uint8_t { COLLISION };
+	std::condition_variable wait_for_task;
+	std::mutex wait_for_task_mutex;
+	std::atomic<WorkerThreadTask> worker_task;
+	size_t num_worker_threads = 3;
+
+struct collision_thread_data {
+	struct collision_queue_item {
+		obj_pair objs;
+		uint ctype;
+	};
+	struct collision_queue_result {
+		obj_pair objs;
+		bool collided, never_recheck;
+		void (*process_collision)( obj_pair *pair,  const std::any& collision_data );
+	};
+
+	std::atomic_size_t queue_length;
+	std::mutex queue_mutex;
+	std::unique_ptr<SCP_vector<collision_queue_item>> queue_load, queue_process;
+	SCP_vector<collision_queue_result> queue_results;
+
+	collision_thread_data() : queue_length(0), queue_load(std::make_unique<SCP_vector<collision_queue_item>>()), queue_process(std::make_unique<SCP_vector<collision_queue_item>>()) { }
+};
+
+std::unique_ptr<collision_thread_data[]> collision_thread_data_buffer;
+std::atomic_bool collision_processing_done = false;
+
+void spin_up_mp_collision() {
+	worker_task.store(WorkerThreadTask::COLLISION);
+	collision_processing_done.store(false);
+	wait_for_task.notify_all();
+}
+
+void queue_mp_collision(uint ctype, const obj_pair& colliding) {
+	size_t min_queue_length = std::numeric_limits<size_t>::max();
+	size_t target_thread = 0;
+	for (size_t i = 0; i < num_worker_threads; i++) {
+		size_t queue_length = collision_thread_data_buffer[i].queue_length.load(std::memory_order_acquire);
+		if (queue_length == 0) {
+			target_thread = i;
+			break;
+		}
+		else if (queue_length < min_queue_length) {
+			target_thread = i;
+			min_queue_length = queue_length;
+		}
+	}
+	{
+		auto& thread = collision_thread_data_buffer[target_thread];
+		std::lock_guard lock(thread.queue_mutex);
+		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
+		thread.queue_length.fetch_add(1, std::memory_order_release);
+	}
+}
+
+
+
 void obj_collide_pair(object *A, object *B)
 {
     TRACE_SCOPE(tracing::CollidePair);
 
     int (*check_collision)( obj_pair *pair ) = nullptr;
     int swapped = 0;
+	bool support_mp = false;
 
     if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -752,9 +813,11 @@ void obj_collide_pair(object *A, object *B)
         case COLLISION_OF(OBJ_WEAPON,OBJ_SHIP):
             swapped = 1;
             check_collision = collide_ship_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_SHIP, OBJ_WEAPON):
             check_collision = collide_ship_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_DEBRIS, OBJ_WEAPON):
             check_collision = collide_debris_weapon;
@@ -971,12 +1034,17 @@ void obj_collide_pair(object *A, object *B)
     new_pair.b = B;
     new_pair.next_check_time = collision_info->next_check_time;
 
-    if ( check_collision(&new_pair) ) {
-        // don't have to check ever again
-        collision_info->next_check_time = -1;
-    } else {
-        collision_info->next_check_time = new_pair.next_check_time;
-    }
+	if (support_mp) {
+		queue_mp_collision(ctype, new_pair);
+	}
+	else {
+		if (check_collision(&new_pair)) {
+			// don't have to check ever again
+			collision_info->next_check_time = -1;
+		} else {
+			collision_info->next_check_time = new_pair.next_check_time;
+		}
+	}
 }
 
 void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<int> &list, int axis, bool collide)
@@ -1026,6 +1094,10 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
 }
 } //anon namespace
 
+void collide_init() {
+	collision_thread_data_buffer = std::make_unique<collision_thread_data[]>(num_worker_threads);
+}
+
 // used only in obj_sort_and_collide()
 static SCP_vector<int> sort_list_y;
 static SCP_vector<int> sort_list_z;
@@ -1037,6 +1109,8 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
+
+	spin_up_mp_collision();
 
 	if (!Collision_cache_stale_objects.empty()) {
 		obj_collide_retime_stale_pairs();
@@ -1068,6 +1142,8 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+
+	collision_processing_done.store(true);
 }
 
 void collide_apply_gravity_flags_weapons() {
