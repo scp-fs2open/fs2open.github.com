@@ -724,11 +724,12 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
     }
 }
 
-	enum class WorkerThreadTask : uint8_t { COLLISION };
+	enum class WorkerThreadTask : uint8_t { SPIN, EXIT, COLLISION };
 	std::condition_variable wait_for_task;
 	std::mutex wait_for_task_mutex;
 	std::atomic<WorkerThreadTask> worker_task;
-	size_t num_worker_threads = 3;
+	size_t num_worker_threads = 1;
+	SCP_vector<std::thread> worker_threads;
 
 struct collision_thread_data {
 	struct collision_queue_item {
@@ -737,12 +738,13 @@ struct collision_thread_data {
 	};
 	struct collision_queue_result {
 		obj_pair objs;
-		bool collided, never_recheck;
+		bool never_recheck;
+		std::any collision_data;
 		void (*process_collision)( obj_pair *pair,  const std::any& collision_data );
 	};
 
 	std::atomic_size_t queue_length;
-	std::mutex queue_mutex;
+	std::mutex queue_mutex, result_mutex;
 	std::unique_ptr<SCP_vector<collision_queue_item>> queue_load, queue_process;
 	SCP_vector<collision_queue_result> queue_results;
 
@@ -774,13 +776,11 @@ void queue_mp_collision(uint ctype, const obj_pair& colliding) {
 	}
 	{
 		auto& thread = collision_thread_data_buffer[target_thread];
-		std::lock_guard lock(thread.queue_mutex);
+		std::scoped_lock lock(thread.queue_mutex);
 		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
-		thread.queue_length.fetch_add(1, std::memory_order_release);
+		thread.queue_length.fetch_add(1);
 	}
 }
-
-
 
 void obj_collide_pair(object *A, object *B)
 {
@@ -1094,9 +1094,64 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
 }
 } //anon namespace
 
+void collide_mp_worker_thread(size_t threadIdx) {
+	auto& thread = collision_thread_data_buffer[threadIdx];
+
+	while (!thread.queue_process->empty() || thread.queue_length.load() > 0 || !collision_processing_done.load(std::memory_order_seq_cst)) {
+		if (!thread.queue_process->empty()) {
+			std::scoped_lock lock(thread.result_mutex);
+			for (auto& collision_check : *thread.queue_process) {
+				collision_result (*check_collision)( obj_pair *pair ) = nullptr;
+
+				switch( collision_check.ctype )	{
+					case COLLISION_OF(OBJ_WEAPON,OBJ_SHIP):
+					case COLLISION_OF(OBJ_SHIP, OBJ_WEAPON):
+						check_collision = collide_ship_weapon_check;
+						break;
+					default:
+						UNREACHABLE("Got non MP-compatible collision type!");
+				}
+
+				auto&& [check_again, collision_data_maybe, collision_fnc] = check_collision(&collision_check.objs);
+
+				thread.queue_results.emplace_back(collision_thread_data::collision_queue_result{collision_check.objs, check_again, collision_data_maybe, collision_fnc});
+				thread.queue_length.fetch_sub(1);
+			}
+			thread.queue_process->clear();
+		}
+		else if (thread.queue_length.load() > 0) {
+			//We must have data in the load queue then.
+			std::scoped_lock lock(thread.queue_mutex);
+			thread.queue_load.swap(thread.queue_process);
+			thread.queue_load->clear();
+		}
+	}
+}
+
+void mp_worker_thread_main(size_t threadIdx) {
+	while(true) {
+		//std::unique_lock<std::mutex> lk(wait_for_task_mutex);
+		//wait_for_task.wait(lk, []() { return worker_task.load(std::memory_order_acquire) != WorkerThreadTask::SPIN; });
+
+		switch (worker_task.load(std::memory_order_acquire)) {
+			case WorkerThreadTask::EXIT:
+				return;
+			case WorkerThreadTask::COLLISION:
+				collide_mp_worker_thread(threadIdx);
+				break;
+			default:
+				break;
+		}
+	}
+}
+
 void collide_init() {
+	for (size_t i = 0; i < num_worker_threads; i++) {
+		worker_threads.emplace_back([i](){ mp_worker_thread_main(i); });
+	}
 	collision_thread_data_buffer = std::make_unique<collision_thread_data[]>(num_worker_threads);
 }
+
 
 // used only in obj_sort_and_collide()
 static SCP_vector<int> sort_list_y;
@@ -1143,6 +1198,39 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
 
+	SCP_set<size_t> workerThreads;
+	for (size_t i = 0; i < num_worker_threads; i++)
+		workerThreads.emplace(i);
+
+	while (!workerThreads.empty()) {
+		for(size_t i : workerThreads) {
+			auto& thread = collision_thread_data_buffer[i];
+
+			if (thread.queue_length.load(std::memory_order_acquire) == 0) {
+				std::scoped_lock lock(thread.result_mutex);
+				for (auto& collision : thread.queue_results) {
+					uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
+					collider_pair *collision_info = &Collision_cached_pairs[key];
+
+					if (collision.collision_data.has_value())
+						collision.process_collision(&collision.objs, collision.collision_data);
+
+					if (collision.never_recheck) {
+						collision_info->next_check_time = -1;
+					} else {
+						collision_info->next_check_time = collision.objs.next_check_time;
+					}
+				}
+
+				thread.queue_results.clear();
+
+				workerThreads.erase(i);
+				break;
+			}
+		}
+	}
+
+	worker_task.store(WorkerThreadTask::SPIN, std::memory_order_release);
 	collision_processing_done.store(true);
 }
 

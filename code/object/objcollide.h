@@ -62,7 +62,7 @@ struct obj_pair	{
 };
 
 //Never check again | data for collision post-processing | collision post-proc function
-using collision_result = std::tuple<bool, std::optional<std::any>, void (*)(obj_pair *, const std::any& collision_data)>;
+using collision_result = std::tuple<bool, std::any, void (*)(obj_pair *, const std::any& collision_data)>;
 
 extern SCP_vector<int> Collision_sort_list;
 

@@ -1765,7 +1765,7 @@ extern void create_shield_explosion(int objnum, int model_num, matrix *orient, v
 extern void shield_hit_init();
 extern void create_shield_explosion_all(object *objp);
 extern void shield_frame_init();
-extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float radius_override);
+extern void add_shield_point(int objnum, int tri_num, const vec3d *hit_pos, float radius_override);
 extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();

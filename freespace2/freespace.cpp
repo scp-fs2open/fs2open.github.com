@@ -2008,7 +2008,8 @@ void game_init()
 	// Initialize SEXPs. Must happen before ship init for LuaAI
 	sexp_startup();
 
-	obj_init();	
+	obj_init();
+	collide_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();

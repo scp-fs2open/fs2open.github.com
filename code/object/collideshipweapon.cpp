@@ -176,8 +176,8 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 
 extern int Framecount;
 
-//mc, notify_ai_shield_down, shield_collision, quadrant_num
-using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int>;
+//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpoint
+using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
 
 //need_postproc, recheck, do collision?
 static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
@@ -206,7 +206,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	Assert( shipp->objnum == OBJ_INDEX(ship_objp));
 
 	// Make ships that are warping in not get collision detection done
-	if ( shipp->is_arriving() ) return {false, true, {std::nullopt, -1, false, -1}};
+	if ( shipp->is_arriving() ) return {false, true, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR}};
 	
 	//	Return information for AI to detect incoming fire.
 	//	Could perhaps be done elsewhere at lower cost --MK, 11/7/97
@@ -446,6 +446,9 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 
 	int notify_ai_shield_down = -1;
 
+	int shield_tri = -1;
+	vec3d shield_hitpos = ZERO_VECTOR;
+
 	if (shield_collision) {
 		// pick out the shield quadrant
 		quadrant_num = get_quadrant(&mc_shield.hit_point, ship_objp);
@@ -466,7 +469,8 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		if (quadrant_num >= 0) {
 			// do the hit effect
 			if ( mc_shield.shield_hit_tri != -1 && (mc_shield.hit_dist*(flFrametime + time_limit) - flFrametime) < 0.0f ) {
-				add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, wip->shield_impact_effect_radius);
+				shield_tri = mc_shield.shield_hit_tri;
+				shield_hitpos = mc_shield.hit_point;
 			}
 
 			// if this weapon pierces the shield, then do the hit effect, but act like a shield collision never occurred;
@@ -499,12 +503,12 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		*next_hit = (int) (1000.0f * (mc->hit_dist*(flFrametime + time_limit) - flFrametime) );
 		if (*next_hit > 0)
 			// if hit occurs outside of this frame, do not do damage
-			return { false, false, {std::nullopt, -1, false, -1} }; //No hit, but continue checking
+			return { false, false, {std::nullopt, -1, false, -1, -1, ZERO_VECTOR} }; //No hit, but continue checking
 	}
 
 	bool postproc = valid_hit_occurred || notify_ai_shield_down >= 0;
 	ship_weapon_collision_data collision_data {
-		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num
+		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num, shield_tri, shield_hitpos
 	};
 
 	// when the $Fixed Missile Detonation: flag is active, skip this whole block, as it's redundant to a similar check in weapon_home()
@@ -539,12 +543,15 @@ void ship_weapon_process_collision(obj_pair* pair, const std::any& collision_dat
 	const weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 	const ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num] = std::any_cast<ship_weapon_collision_data>(collision_data);
+	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpos] = std::any_cast<ship_weapon_collision_data>(collision_data);
 	bool valid_hit_occurred = mc_opt.has_value();
 	auto mc = valid_hit_occurred ? &(*mc_opt) : nullptr;
 
 	if (notify_ai_shield_down >= 0)
 		Ai_info[Ships[ship_objp->instance].ai_index].danger_shield_quadrant = notify_ai_shield_down;
+
+	if (shield_tri >= 0)
+		add_shield_point(OBJ_INDEX(ship_objp), shield_tri, &shield_hitpos, wip->shield_impact_effect_radius);
 
 	if ( valid_hit_occurred )
 	{
@@ -702,14 +709,14 @@ collision_result collide_ship_weapon_check( obj_pair * pair )
 		// so we're not doing that here
 		if ( !(sip->flags[Ship::Info_Flags::Auto_spread_shields]) && vm_vec_dist_squared(&ship->pos, &weapon_obj->pos) < (1.2f*ship->radius*ship->radius) ) {
 			const auto& [do_postproc, never_hits, collision_data] = check_inside_radius_for_big_ships( ship, weapon_obj, pair );
-			return {never_hits, do_postproc ? std::optional(collision_data) : std::nullopt,  &ship_weapon_process_collision};
+			return {never_hits, do_postproc ? collision_data : std::any(),  &ship_weapon_process_collision};
 		}
 	}
 
 	const auto& [do_postproc, check_if_never_hits, collision_data] = ship_weapon_check_collision( ship, weapon_obj );
 	bool never_hits = check_if_never_hits ? weapon_will_never_hit( weapon_obj, ship, pair ) : false;
 
-	return {never_hits, do_postproc ? std::optional(collision_data) : std::nullopt, &ship_weapon_process_collision};
+	return {never_hits, do_postproc ? collision_data : std::any(), &ship_weapon_process_collision};
 }
 
 /**
