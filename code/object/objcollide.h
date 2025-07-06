@@ -127,6 +127,8 @@ int collide_asteroid_weapon(obj_pair *pair);
 // CODE is locatated in CollideShipShip.cpp
 int collide_ship_ship( obj_pair * pair );
 
+void collide_mp_worker_thread(size_t threadIdx);
+
 //	Predictive functions.
 //	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp
 int pp_collide(vec3d *curpos, vec3d *goalpos, object *goalobjp, float radius);

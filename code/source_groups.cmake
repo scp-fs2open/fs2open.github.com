@@ -1700,6 +1700,8 @@ add_file_folder("Utils"
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/strings.h
+	utils/threading.cpp
+	utils/threading.h
 	utils/tuples.h
 	utils/unicode.cpp
 	utils/unicode.h
