@@ -791,7 +791,7 @@ void queue_mp_collision(uint ctype, const obj_pair& colliding) {
 		auto& thread = collision_thread_data_buffer[target_thread];
 		std::scoped_lock lock(thread.queue_mutex);
 		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
-		thread.queue_length.fetch_add(1);
+		thread.queue_length.fetch_add(1, std::memory_order_release);
 	}
 }
 
@@ -1110,7 +1110,7 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
 void collide_mp_worker_thread(size_t threadIdx) {
 	auto& thread = collision_thread_data_buffer[threadIdx];
 
-	while (!thread.queue_process->empty() || thread.queue_length.load() > 0 || !collision_processing_done.load(std::memory_order_seq_cst)) {
+	while (!thread.queue_process->empty() || thread.queue_length.load(std::memory_order_acquire) > 0 || !collision_processing_done.load(std::memory_order_acquire)) {
 		if (!thread.queue_process->empty()) {
 			std::scoped_lock lock(thread.result_mutex);
 			for (auto& collision_check : *thread.queue_process) {
@@ -1128,11 +1128,11 @@ void collide_mp_worker_thread(size_t threadIdx) {
 				auto&& [check_again, collision_data_maybe, collision_fnc] = check_collision(&collision_check.objs);
 
 				thread.queue_results.emplace_back(collision_thread_data::collision_queue_result{collision_check.objs, check_again, collision_data_maybe, collision_fnc});
-				thread.queue_length.fetch_sub(1);
+				thread.queue_length.fetch_sub(1, std::memory_order_release);
 			}
 			thread.queue_process->clear();
 		}
-		else if (thread.queue_length.load() > 0) {
+		else if (thread.queue_length.load(std::memory_order_acquire) > 0) {
 			//We must have data in the load queue then.
 			std::scoped_lock lock(thread.queue_mutex);
 			thread.queue_load.swap(thread.queue_process);
