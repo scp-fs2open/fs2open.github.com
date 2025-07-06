@@ -66,6 +66,10 @@ namespace threading {
 
 	void shut_down_task_pool() {
 		spin_up_threaded_task(WorkerThreadTask::EXIT);
+
+		for(auto& thread : worker_threads) {
+			thread.join();
+		}
 	}
 
 	bool is_threading() {
