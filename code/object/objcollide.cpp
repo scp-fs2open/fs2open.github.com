@@ -724,11 +724,12 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
     }
 }
 
-	enum class WorkerThreadTask : uint8_t { SPIN, EXIT, COLLISION };
+	enum class WorkerThreadTask : uint8_t { EXIT, COLLISION };
 	std::condition_variable wait_for_task;
 	std::mutex wait_for_task_mutex;
+	bool wait_for_task_condition;
 	std::atomic<WorkerThreadTask> worker_task;
-	size_t num_worker_threads = 1;
+	size_t num_worker_threads = 7;
 	SCP_vector<std::thread> worker_threads;
 
 struct collision_thread_data {
@@ -757,7 +758,19 @@ std::atomic_bool collision_processing_done = false;
 void spin_up_mp_collision() {
 	worker_task.store(WorkerThreadTask::COLLISION);
 	collision_processing_done.store(false);
-	wait_for_task.notify_all();
+	{
+		std::scoped_lock lock {wait_for_task_mutex};
+		wait_for_task_condition = true;
+		wait_for_task.notify_all();
+	}
+}
+
+void spin_down_mp_collision() {
+	{
+		std::scoped_lock lock {wait_for_task_mutex};
+		wait_for_task_condition = false;
+	}
+	collision_processing_done.store(true);
 }
 
 void queue_mp_collision(uint ctype, const obj_pair& colliding) {
@@ -1130,8 +1143,10 @@ void collide_mp_worker_thread(size_t threadIdx) {
 
 void mp_worker_thread_main(size_t threadIdx) {
 	while(true) {
-		//std::unique_lock<std::mutex> lk(wait_for_task_mutex);
-		//wait_for_task.wait(lk, []() { return worker_task.load(std::memory_order_acquire) != WorkerThreadTask::SPIN; });
+		{
+			std::unique_lock<std::mutex> lk(wait_for_task_mutex);
+			wait_for_task.wait(lk, []() { return wait_for_task_condition; });
+		}
 
 		switch (worker_task.load(std::memory_order_acquire)) {
 			case WorkerThreadTask::EXIT:
@@ -1230,8 +1245,7 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		}
 	}
 
-	worker_task.store(WorkerThreadTask::SPIN, std::memory_order_release);
-	collision_processing_done.store(true);
+	spin_down_mp_collision();
 }
 
 void collide_apply_gravity_flags_weapons() {
