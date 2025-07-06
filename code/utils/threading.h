@@ -8,7 +8,7 @@ namespace threading {
 	//Call this to start a task on the task pool. Note that task-specific data must be set up before calling this.
 	void spin_up_threaded_task(WorkerThreadTask task);
 
-	//This _must_ be called BEFORE a task completes on a thread of the task pool.
+	//This _must_ be called on the main thread BEFORE a task completes on a thread of the task pool.
 	void spin_down_threaded_task();
 
 	void init_task_pool();

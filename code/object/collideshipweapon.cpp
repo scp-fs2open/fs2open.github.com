@@ -28,10 +28,12 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
+//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpoint
+using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
 
 extern int Game_skill_level;
 extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
-static std::tuple<bool, bool, std::any> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
+static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
 
@@ -175,9 +177,6 @@ static void ship_weapon_do_hit_stuff(object *pship_obj, object *weapon_obj, cons
 }
 
 extern int Framecount;
-
-//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpoint
-using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
 
 //need_postproc, recheck, do collision?
 static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_collision(object *ship_objp, object *weapon_objp, float time_limit = 0.0f, int *next_hit = nullptr)
@@ -535,7 +534,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 	return { postproc, !static_cast<bool>(valid_hit_occurred), collision_data} ;
 }
 
-void ship_weapon_process_collision(obj_pair* pair, const std::any& collision_data) {
+static void ship_weapon_process_collision(obj_pair* pair, const ship_weapon_collision_data& collision_data) {
 	object *ship_objp = pair->a;
 	object *weapon_objp = pair->b;
 	weapon* wp = &Weapons[weapon_objp->instance];
@@ -543,7 +542,7 @@ void ship_weapon_process_collision(obj_pair* pair, const std::any& collision_dat
 	const weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 	const ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpos] = std::any_cast<ship_weapon_collision_data>(collision_data);
+	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpos] = collision_data;
 	bool valid_hit_occurred = mc_opt.has_value();
 	auto mc = valid_hit_occurred ? &(*mc_opt) : nullptr;
 
@@ -609,6 +608,10 @@ void ship_weapon_process_collision(obj_pair* pair, const std::any& collision_dat
 																			  scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
 		}
 	}
+}
+
+static void ship_weapon_process_collision(obj_pair* pair, const std::any& collision_data) {
+	ship_weapon_process_collision(pair, std::any_cast<ship_weapon_collision_data>(collision_data));
 }
 
 
@@ -750,7 +753,7 @@ static float estimate_ship_speed_upper_limit( object *ship, float time )
  * @return 1 if pair can be culled
  * @return 0 if pair can not be culled
  */
-static std::tuple<bool, bool, std::any> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
+static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
 {
 	vec3d error_vel;		// vel perpendicular to laser
 	float error_vel_mag;	// magnitude of error_vel
