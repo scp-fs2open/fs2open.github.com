@@ -68,7 +68,7 @@ BEGIN_MESSAGE_MAP(jumpnode_dlg, CDialog)
 	ON_BN_CLICKED(IDC_NODE_HIDDEN, OnHidden)
 	ON_WM_CLOSE()
 	ON_WM_INITMENU()
-	ON_EN_KILLFOCUS(IDC_NAME, OnKillfocusName)
+	ON_EN_CHANGE(IDC_NAME, OnChangeName)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -134,7 +134,7 @@ void jumpnode_dlg::initialize_data(int full_update)
 	if (Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		auto jnp = jumpnode_get_by_objnum(cur_object_index);
 		m_name = _T(jnp->GetName());
-		m_display = _T(jnp->GetDisplayName());
+		m_display = _T(jnp->HasDisplayName() ? jnp->GetDisplayName() : "<none>");
 
 		int model = jnp->GetModelNumber();
 		polymodel* pm = model_get(model);
@@ -178,6 +178,24 @@ int jumpnode_dlg::update_data()
 
 	if (query_valid_object() && Objects[cur_object_index].type == OBJ_JUMP_NODE) {
 		auto jnp = jumpnode_get_by_objnum(cur_object_index);
+
+		m_name.TrimLeft();
+		m_name.TrimRight();
+		if (m_name.IsEmpty())
+		{
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("A jump node name cannot be empty\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_name = _T(jnp->GetName());
+			UpdateData(FALSE);
+		}
 
 		for (i=0; i<MAX_WINGS; i++)
 		{
@@ -288,7 +306,7 @@ int jumpnode_dlg::update_data()
 		
 		strcpy_s(old_name, jnp->GetName());
 		jnp->SetName((LPCSTR) m_name);
-		jnp->SetDisplayName((LPCSTR) m_display);
+		jnp->SetDisplayName((m_display.CompareNoCase("<none>") == 0) ? m_name : m_display);
 
 		int model = jnp->GetModelNumber();
 		polymodel* pm = model_get(model);
@@ -369,7 +387,7 @@ void jumpnode_dlg::OnHidden()
 	((CButton*)GetDlgItem(IDC_NODE_HIDDEN))->SetCheck(m_hidden);
 }
 
-void jumpnode_dlg::OnKillfocusName()
+void jumpnode_dlg::OnChangeName()
 {
 	char buffer[NAME_LENGTH];
 
@@ -378,10 +396,9 @@ void jumpnode_dlg::OnKillfocusName()
 	// grab the name
 	GetDlgItemText(IDC_NAME, buffer, NAME_LENGTH);
 
-	// if this name has a hash, truncate it for the display name
-	if (get_pointer_to_first_hash_symbol(buffer))
-		end_string_at_first_hash_symbol(buffer);
+	// automatically determine or reset the display name
+	auto display_name = get_display_name_for_text_box(buffer);
 
 	// set the display name derived from this name
-	SetDlgItemText(IDC_DISPLAY_NAME, buffer);
+	SetDlgItemText(IDC_DISPLAY_NAME, (LPCTSTR)display_name);
 }
