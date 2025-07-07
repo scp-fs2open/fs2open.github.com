@@ -83,5 +83,6 @@ void opengl_tnl_set_model_material(model_material *material_info);
 void gr_opengl_set_viewport(int x, int y, int width, int height);
 
 void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuint indexBuffer, size_t base_offset = 0);
+void opengl_bind_vertex_layout_multiple(vertex_layout &layout, const SCP_vector<GLuint>& vertexBuffer, GLuint indexBuffer, size_t base_offset = 0);
 
 #endif //_GROPENGLTNL_H

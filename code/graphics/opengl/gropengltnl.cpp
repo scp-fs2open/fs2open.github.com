@@ -85,6 +85,7 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
 		{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
 		{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
+		{ vertex_format_data::MATRIX4,		16, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::WORLD_MATRIX },
 	};
 
 struct opengl_buffer_object {
@@ -1233,15 +1234,26 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 
 		auto attribIndex = attrib_info.attribute_id;
 
-		glEnableVertexAttribArray(attribIndex);
-		glVertexAttribFormat(attribIndex,
-							 bind_info.size,
-							 bind_info.data_type,
-							 bind_info.normalized,
-							 static_cast<GLuint>(component->offset));
 
-		// Currently, all vertex data comes from one buffer.
-		glVertexAttribBinding(attribIndex, 0);
+		//TODO validate GLAD_GL_ARB_vertex_attrib_binding for instanced rendering
+		size_t add_val_index = 0;
+		for (GLint size = bind_info.size; size > 0; size -=4) {
+			glEnableVertexAttribArray(attribIndex + add_val_index);
+			glVertexAttribFormat(attribIndex + add_val_index,
+				std::min(size, 4),
+				bind_info.data_type,
+				bind_info.normalized,
+				static_cast<GLuint>(component->offset) + add_val_index * 4);
+
+			if (component->divisor != 0) {
+				glVertexBindingDivisor(attribIndex + add_val_index, component->divisor);
+			}
+
+			// Currently, all vertex data comes from one buffer.
+			glVertexAttribBinding(attribIndex, component->buffer_number);
+
+			add_val_index++;
+		}
 	}
 
 	Stored_vertex_arrays.insert(std::make_pair(layout, vao));
@@ -1265,5 +1277,24 @@ void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuin
 									vertexBuffer,
 									static_cast<GLintptr>(base_offset),
 									static_cast<GLsizei>(layout.get_vertex_stride()));
+	GL_state.Array.BindElementBuffer(indexBuffer);
+}
+
+void opengl_bind_vertex_layout_multiple(vertex_layout &layout, const SCP_vector<GLuint>& vertexBuffer, GLuint indexBuffer, size_t base_offset) {
+	GR_DEBUG_SCOPE("Bind vertex layout");
+	if (!GLAD_GL_ARB_vertex_attrib_binding) {
+		return;
+	}
+
+	opengl_bind_vertex_array(layout);
+
+	size_t i = 0;
+	for(const auto& buffer : vertexBuffer) {
+		GL_state.Array.BindVertexBuffer(i,
+			buffer,
+			static_cast<GLintptr>(base_offset),
+			static_cast<GLsizei>(layout.get_vertex_stride(i)));
+		i++;
+	}
 	GL_state.Array.BindElementBuffer(indexBuffer);
 }
