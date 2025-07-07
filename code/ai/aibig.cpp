@@ -146,6 +146,10 @@ done_1:
 
 	*attack_point = best_point;
 
+	//The following raycast tends to make up 10%(!) of total AI-frametime for basically no benefit, especially in the common case for turrets where the normal isn't even queried.
+	if (surface_normal == nullptr && Disable_expensive_turret_target_check)
+		return;
+
 	// Cast from attack_objp_pos to local_attack_pos and check for nearest collision.
 	// If no collision, cast to (0,0,0) [center of big ship]**  [best_point initialized to 000]
 
