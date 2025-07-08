@@ -1291,7 +1291,7 @@ void opengl_bind_vertex_layout_multiple(vertex_layout &layout, const SCP_vector<
 
 	opengl_bind_vertex_array(layout);
 
-	size_t i = 0;
+	GLuint i = 0;
 	for(const auto& buffer : vertexBuffer) {
 		GL_state.Array.BindVertexBuffer(i,
 			buffer,
