@@ -77,6 +77,8 @@ class RandomRange {
 	ValueType m_minValue;
 	ValueType m_maxValue;
 
+	//TODO make rr seeder thread local, just for safety...
+
   public:
 	template <typename T, typename... Ts, typename = typename std::enable_if<(sizeof... (Ts) >=1 || !std::is_convertible<T, ValueType>::value) && !std::is_same_v<std::decay_t<T>, RandomRange>, int>::type>
 	explicit RandomRange(T&& distributionFirstParameter, Ts&&... distributionParameters)
