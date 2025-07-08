@@ -409,8 +409,10 @@ static matrix4 getDecalTransform(Decal& decal, float alpha) {
 	matrix4 mat4;
 	vm_matrix4_set_transform(&mat4, &worldOrient, &worldPos);
 
+	// This is currently a constant but in the future this may be configurable by the decals table
 	mat4.a2d[0][3] = DECAL_ANGLE_CUTOFF;
 	mat4.a2d[1][3] = DECAL_ANGLE_FADE_START;
+
 	mat4.a2d[2][3] = alpha;
 
 	return mat4;
@@ -446,7 +448,7 @@ void renderAll() {
 
 	auto mission_time = f2fl(Missiontime);
 
-	graphics::decal_draw_list draw_list(active_decals.size());
+	graphics::decal_draw_list draw_list;
 	for (auto& decal : active_decals) {
 
 		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int)DecalDefinitions.size(),
