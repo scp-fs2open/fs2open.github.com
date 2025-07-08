@@ -894,6 +894,10 @@ void obj_collide_pair(object *A, object *B)
             break;
         case COLLISION_OF(OBJ_SHIP,OBJ_SHIP):
             check_collision = collide_ship_ship;
+#ifdef NDEBUG
+			//This is, due to debug prints, unfortunately only safe in release builds...
+			support_mp = true;
+#endif
             break;
 
         case COLLISION_OF(OBJ_SHIP, OBJ_BEAM):
@@ -1151,9 +1155,12 @@ void collide_mp_worker_thread(size_t threadIdx) {
 				collision_result (*check_collision)( obj_pair *pair ) = nullptr;
 
 				switch( collision_check.ctype )	{
-					case COLLISION_OF(OBJ_WEAPON,OBJ_SHIP):
+					case COLLISION_OF(OBJ_WEAPON, OBJ_SHIP):
 					case COLLISION_OF(OBJ_SHIP, OBJ_WEAPON):
 						check_collision = collide_ship_weapon_check;
+						break;
+					case COLLISION_OF(OBJ_SHIP, OBJ_SHIP):
+						check_collision = collide_ship_ship_check;
 						break;
 					default:
 						UNREACHABLE("Got non MP-compatible collision type!");

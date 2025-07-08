@@ -38,6 +38,7 @@ struct collision_info_struct {
 	bool	edge_hit;				// if edge is hit, need to change collision normal
 	bool	submodel_move_hit;		// if collision is against a moving submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
+	bool 	player_involved;
 };
 
 //Collision physics constants
@@ -126,6 +127,8 @@ int collide_asteroid_weapon(obj_pair *pair);
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideShipShip.cpp
 int collide_ship_ship( obj_pair * pair );
+//Same as above, but for deferred collision processing / usage in multithreading
+collision_result collide_ship_ship_check( obj_pair * pair );
 
 void collide_mp_worker_thread(size_t threadIdx);
 
