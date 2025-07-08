@@ -370,7 +370,11 @@ void initializeMission() {
 	active_decals.clear();
 }
 
-matrix4 getDecalTransform(Decal& decal) {
+// Discard any fragments where the angle to the direction to greater than 45°
+const float DECAL_ANGLE_CUTOFF = fl_radians(45.f);
+const float DECAL_ANGLE_FADE_START = fl_radians(30.f);
+
+static matrix4 getDecalTransform(Decal& decal, float alpha) {
 	Assertion(decal.object.objp()->type == OBJ_SHIP, "Only ships are currently supported for decals!");
 
 	auto objp = decal.object.objp();
@@ -404,6 +408,10 @@ matrix4 getDecalTransform(Decal& decal) {
 
 	matrix4 mat4;
 	vm_matrix4_set_transform(&mat4, &worldOrient, &worldPos);
+
+	mat4.a2d[0][3] = DECAL_ANGLE_CUTOFF;
+	mat4.a2d[1][3] = DECAL_ANGLE_FADE_START;
+	mat4.a2d[2][3] = alpha;
 
 	return mat4;
 }
@@ -473,7 +481,7 @@ void renderAll() {
 				+ bm_get_anim_frame(decalDef.getNormalBitmap(), decal_time, 0.0f, decalDef.isNormalLooping());
 		}
 
-		draw_list.add_decal(diffuse_bm, glow_bm, normal_bm, decal_time, getDecalTransform(decal), alpha);
+		draw_list.add_decal(diffuse_bm, glow_bm, normal_bm, decal_time, getDecalTransform(decal, alpha));
 	}
 
 	draw_list.render();

@@ -27,8 +27,7 @@ class decal_draw_list {
 	decal_draw_list(const decal_draw_list&) = delete;
 	decal_draw_list& operator=(const decal_draw_list&) = delete;
 
-	void add_decal(int diffuse_bitmap, int glow_bitmap, int normal_bitmap, float decal_timer, const matrix4& transform,
-	               float base_alpha);
+	void add_decal(int diffuse_bitmap, int glow_bitmap, int normal_bitmap, float decal_timer, const matrix4& instancedata);
 
 	void render();
 

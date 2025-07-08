@@ -9,10 +9,6 @@
 
 namespace {
 
-// Discard any fragments where the angle to the direction to greater than 45°
-const float DECAL_ANGLE_CUTOFF = fl_radians(45.f);
-const float DECAL_ANGLE_FADE_START = fl_radians(30.f);
-
 vec3d BOX_VERTS[] = {{{{ -0.5f, -0.5f, -0.5f }}},
 					 {{{ -0.5f, 0.5f,  -0.5f }}},
 					 {{{ 0.5f,  0.5f,  -0.5f }}},
@@ -171,9 +167,8 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 								int glow_bitmap,
 								int normal_bitmap,
 								float  /*decal_timer*/,
-								const matrix4& transform,
-								float base_alpha) {
-	if (!check_box_in_view(transform)) {
+								const matrix4& instancedata) {
+	if (!check_box_in_view(instancedata)) {
 		// The decal box is not in view so we don't need to render it
 		return;
 	}
@@ -182,12 +177,6 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 
 	auto info = aligner.addTypedElement<graphics::decal_info>();
 	// This is currently a constant but in the future this may be configurable by the decals table
-	info->normal_angle_cutoff = DECAL_ANGLE_CUTOFF;
-	info->angle_fade_start = DECAL_ANGLE_FADE_START;
-	info->alpha_scale = base_alpha;
-
-	matrix transform_rot;
-	vm_matrix4_get_orientation(&transform_rot, &transform);
 
 	info->diffuse_index = diffuse_bitmap < 0 ? -1 : bm_get_array_index(diffuse_bitmap);
 	info->glow_index = glow_bitmap < 0 ? -1 : bm_get_array_index(glow_bitmap);
@@ -195,7 +184,7 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 
 	decal_draw_info current_draw;
 	current_draw.uniform_offset = _buffer.getBufferOffset(aligner.getCurrentOffset());
-	current_draw.instance_mat = transform;
+	current_draw.instance_mat = instancedata;
 
 	material_set_decal(&current_draw.draw_mat,
 					   bm_get_base_frame(diffuse_bitmap),

@@ -189,15 +189,13 @@ struct decal_globals {
 };
 
 struct decal_info {
-	float normal_angle_cutoff;
 	int diffuse_index;
 	int glow_index;
 	int normal_index;
-
-	float angle_fade_start;
-	float alpha_scale;
 	int diffuse_blend_mode;
+
 	int glow_blend_mode;
+	float pad[3];
 };
 
 struct matrix_uniforms {
