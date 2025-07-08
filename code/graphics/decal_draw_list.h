@@ -10,6 +10,7 @@ namespace graphics {
 class decal_draw_list {
 	struct decal_draw_info {
 		decal_material draw_mat;
+		matrix4 instance_mat;
 
 		size_t uniform_offset;
 	};

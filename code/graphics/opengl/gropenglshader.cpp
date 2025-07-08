@@ -58,6 +58,7 @@ SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::WORLD_MATRIX,	"vertWorldMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::MODEL_MATRIX,	"vertModelMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 	};
 
 struct opengl_uniform_block_binding {
@@ -141,7 +142,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader", false },
 
 	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::WORLD_MATRIX }, "Decal rendering", false },
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::MODEL_MATRIX }, "Decal rendering", false },
 
 	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging", false },

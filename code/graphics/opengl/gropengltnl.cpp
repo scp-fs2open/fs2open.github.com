@@ -85,7 +85,7 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
 		{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
 		{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
-		{ vertex_format_data::MATRIX4,		16, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::WORLD_MATRIX },
+		{ vertex_format_data::MATRIX4,		16, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_MATRIX },
 	};
 
 struct opengl_buffer_object {
@@ -1232,8 +1232,7 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 		auto& bind_info = GL_array_binding_data[component->format_type];
 		auto& attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
 
-		auto attribIndex = attrib_info.attribute_id;
-
+		auto attribIndex = opengl_shader_get_attribute(attrib_info.attribute_id);
 
 		//TODO validate GLAD_GL_ARB_vertex_attrib_binding for instanced rendering
 		size_t add_val_index = 0;
@@ -1243,16 +1242,15 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 				std::min(size, 4),
 				bind_info.data_type,
 				bind_info.normalized,
-				static_cast<GLuint>(component->offset) + add_val_index * 4);
+				static_cast<GLuint>(component->offset) + add_val_index * 16);
 
-			if (component->divisor != 0) {
-				glVertexBindingDivisor(attribIndex + add_val_index, component->divisor);
-			}
-
-			// Currently, all vertex data comes from one buffer.
-			glVertexAttribBinding(attribIndex, component->buffer_number);
+			glVertexAttribBinding(attribIndex + add_val_index, component->buffer_number);
 
 			add_val_index++;
+		}
+
+		if (component->divisor != 0) {
+			glVertexBindingDivisor(component->buffer_number, component->divisor);
 		}
 	}
 

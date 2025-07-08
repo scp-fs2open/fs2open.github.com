@@ -894,7 +894,9 @@ typedef struct screen {
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int num_elements,
-		const indexed_vertex_source& buffers)>
+		const indexed_vertex_source& buffers,
+		const gr_buffer_handle& instance_buffer,
+		int num_instances)>
 		gf_render_decals;
 	void (*gf_render_rocket_primitives)(interface_material* material_info,
 		primitive_type prim_type,
