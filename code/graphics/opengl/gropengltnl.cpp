@@ -1232,7 +1232,7 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 		auto& bind_info = GL_array_binding_data[component->format_type];
 		auto& attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
 
-		auto attribIndex = opengl_shader_get_attribute(attrib_info.attribute_id);
+		auto attribIndex = static_cast<GLuint>(opengl_shader_get_attribute(attrib_info.attribute_id));
 
 		GLuint add_val_index = 0;
 		for (GLint size = bind_info.size; size > 0; size -=4) {
@@ -1243,13 +1243,13 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 				bind_info.normalized,
 				static_cast<GLuint>(component->offset) + add_val_index * 16);
 
-			glVertexAttribBinding(attribIndex + add_val_index, component->buffer_number);
+			glVertexAttribBinding(attribIndex + add_val_index, static_cast<GLuint>(component->buffer_number));
 
 			add_val_index++;
 		}
 
 		if (component->divisor != 0) {
-			glVertexBindingDivisor(component->buffer_number, component->divisor);
+			glVertexBindingDivisor(static_cast<GLuint>(component->buffer_number), static_cast<GLuint>(component->divisor));
 		}
 	}
 

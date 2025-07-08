@@ -139,7 +139,7 @@ void decal_draw_list::render() {
 
 		gr_update_buffer_data(decal_instance_buffer, sizeof(matrix4) * decal_list.second.size(), decal_list.second.data());
 		gr_bind_uniform_buffer(uniform_block_type::DecalInfo, decal_list.first.uniform_offset, sizeof(graphics::decal_info), _buffer.bufferHandle());
-		gr_screen.gf_render_decals(&decal_list.first.material, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source, decal_instance_buffer, decal_list.second.size());
+		gr_screen.gf_render_decals(&decal_list.first.material, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source, decal_instance_buffer, static_cast<int>(decal_list.second.size()));
 	}
 
 	gr_screen.gf_stop_decal_pass();
