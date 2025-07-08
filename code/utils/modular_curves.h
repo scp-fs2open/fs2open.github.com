@@ -241,7 +241,7 @@ struct modular_curves_entry {
 	int curve_idx = -1;
 	::util::ParsedRandomFloatRange scaling_factor = ::util::UniformFloatRange(1.f);
 	::util::ParsedRandomFloatRange translation = ::util::UniformFloatRange(0.f);
-	bool wraparound = true;
+	bool wraparound = false;
 };
 
 //
@@ -355,7 +355,7 @@ struct modular_curves_definition {
 				curve_entry.translation = ::util::UniformFloatRange(0.0f);
 			}
 
-			curve_entry.wraparound = true;
+			curve_entry.wraparound = false;
 			parse_optional_bool_into("+Wraparound:", &curve_entry.wraparound);
 
 			curves[static_cast<std::underlying_type_t<output_enum>>(output_idx)].emplace_back(input_idx, curve_entry);
