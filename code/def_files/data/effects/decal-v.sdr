@@ -1,6 +1,6 @@
 
 in vec4 vertPosition;
-layout (location = 9) in mat4 vertModelMatrix;
+in mat4 vertModelMatrix;
 
 out flat mat4 invModelMatrix;
 out flat vec3 decalDirection;
