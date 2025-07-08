@@ -3091,7 +3091,7 @@ void vertex_layout::add_vertex_component(vertex_format_data::vertex_format forma
 	Assertion(stride_it->second == stride, "The strides of all elements must be the same in a vertex layout!");
 
 	Vertex_mask |= (1 << format_type);
-	Vertex_components.push_back(vertex_format_data(format_type, stride, offset, divisor, buffer_number));
+	Vertex_components.emplace_back(format_type, stride, offset, divisor, buffer_number);
 }
 bool vertex_layout::operator==(const vertex_layout& other) const {
 	if (Vertex_mask != other.Vertex_mask) {
