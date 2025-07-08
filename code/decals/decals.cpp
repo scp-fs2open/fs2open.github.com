@@ -419,7 +419,7 @@ static matrix4 getDecalTransform(Decal& decal, float alpha) {
 }
 
 void renderAll() {
-	if (!Decal_system_active || !Decal_option_active) {
+	if (!Decal_system_active || !Decal_option_active || !gr_is_capable(gr_capability::CAPABILITY_INSTANCED_RENDERING)) {
 		return;
 	}
 
