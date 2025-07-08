@@ -1234,7 +1234,7 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 
 		auto attribIndex = opengl_shader_get_attribute(attrib_info.attribute_id);
 
-		size_t add_val_index = 0;
+		GLuint add_val_index = 0;
 		for (GLint size = bind_info.size; size > 0; size -=4) {
 			glEnableVertexAttribArray(attribIndex + add_val_index);
 			glVertexAttribFormat(attribIndex + add_val_index,
