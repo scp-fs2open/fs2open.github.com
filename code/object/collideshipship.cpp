@@ -1385,7 +1385,7 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 		return;
 	}
 
-	if(!(b_override && !a_override))
+	if(!b_override || a_override)
 	{
 		scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
 											   scripting::hook_param_list(scripting::hook_param("Self", 'o', A),

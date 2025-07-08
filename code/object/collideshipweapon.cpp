@@ -688,17 +688,17 @@ collision_result collide_ship_weapon_check( obj_pair * pair )
 
 	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
 	if ( (Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(ship)) ) {
-		return {0, std::any(), &ship_weapon_process_collision};
+		return {false, std::any(), &ship_weapon_process_collision};
 	}
 
 	// Don't check collisions for player if past first warpout stage.
 	if ( Player->control_mode > PCM_WARPOUT_STAGE1)	{
 		if ( ship == Player_obj )
-			return {0, std::any(), &ship_weapon_process_collision};
+			return {false, std::any(), &ship_weapon_process_collision};
 	}
 
 	if (reject_due_collision_groups(ship, weapon_obj))
-		return {0, std::any(), &ship_weapon_process_collision};
+		return {false, std::any(), &ship_weapon_process_collision};
 
 	// Cull lasers within big ship spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
 	// If it does hit, don't check the pair until about 200 ms before collision.

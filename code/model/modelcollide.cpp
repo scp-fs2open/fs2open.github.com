@@ -46,7 +46,7 @@ thread_local static vec3d		Mc_p1;			// The ray end rotated into the current subm
 thread_local static float		Mc_mag;			// The length of the ray
 thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-thread_local static vec3d 		**Mc_point_list = NULL;		// A pointer to the current submodel's vertex list
+thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
 
 
 
