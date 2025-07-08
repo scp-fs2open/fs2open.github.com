@@ -1234,7 +1234,6 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 
 		auto attribIndex = opengl_shader_get_attribute(attrib_info.attribute_id);
 
-		//TODO validate GLAD_GL_ARB_vertex_attrib_binding for instanced rendering
 		size_t add_val_index = 0;
 		for (GLint size = bind_info.size; size > 0; size -=4) {
 			glEnableVertexAttribArray(attribIndex + add_val_index);
@@ -1281,6 +1280,12 @@ void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuin
 void opengl_bind_vertex_layout_multiple(vertex_layout &layout, const SCP_vector<GLuint>& vertexBuffer, GLuint indexBuffer, size_t base_offset) {
 	GR_DEBUG_SCOPE("Bind vertex layout");
 	if (!GLAD_GL_ARB_vertex_attrib_binding) {
+		/*
+		 * This will mean that decals don't render.
+		 * It's possible, but way too much effort to support non-instanced fallback rendering here.
+		 * By my estimation, every GPU you might still run FSO run supports this.
+		 * per mesamatrix.net, even the least-extension supporting mesa drivers all support this extension
+		 * */
 		return;
 	}
 
