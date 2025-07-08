@@ -28,7 +28,7 @@
 #include "ship/shiphit.h"
 #include "weapon/weapon.h"
 
-//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpoint
+//mc, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri_hit, shield_hitpoint
 using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool, int, int, vec3d>;
 
 extern int Game_skill_level;
@@ -445,7 +445,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 
 	int notify_ai_shield_down = -1;
 
-	int shield_tri = -1;
+	int shield_tri_hit = -1;
 	vec3d shield_hitpos = ZERO_VECTOR;
 
 	if (shield_collision) {
@@ -468,7 +468,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 		if (quadrant_num >= 0) {
 			// do the hit effect
 			if ( mc_shield.shield_hit_tri != -1 && (mc_shield.hit_dist*(flFrametime + time_limit) - flFrametime) < 0.0f ) {
-				shield_tri = mc_shield.shield_hit_tri;
+				shield_tri_hit = mc_shield.shield_hit_tri;
 				shield_hitpos = mc_shield.hit_point;
 			}
 
@@ -507,7 +507,7 @@ static std::tuple<bool, bool, ship_weapon_collision_data> ship_weapon_check_coll
 
 	bool postproc = valid_hit_occurred || notify_ai_shield_down >= 0;
 	ship_weapon_collision_data collision_data {
-		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num, shield_tri, shield_hitpos
+		valid_hit_occurred ? std::optional(*mc) : std::nullopt, notify_ai_shield_down, postproc, quadrant_num, shield_tri_hit, shield_hitpos
 	};
 
 	// when the $Fixed Missile Detonation: flag is active, skip this whole block, as it's redundant to a similar check in weapon_home()
@@ -542,15 +542,15 @@ static void ship_weapon_process_collision(obj_pair* pair, const ship_weapon_coll
 	const weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 	const ship_info* sip = &Ship_info[shipp->ship_info_index];
 
-	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri, shield_hitpos] = collision_data;
+	const auto& [mc_opt, notify_ai_shield_down, shield_collision, quadrant_num, shield_tri_hit, shield_hitpos] = collision_data;
 	bool valid_hit_occurred = mc_opt.has_value();
 	auto mc = valid_hit_occurred ? &(*mc_opt) : nullptr;
 
 	if (notify_ai_shield_down >= 0)
 		Ai_info[Ships[ship_objp->instance].ai_index].danger_shield_quadrant = notify_ai_shield_down;
 
-	if (shield_tri >= 0)
-		add_shield_point(OBJ_INDEX(ship_objp), shield_tri, &shield_hitpos, wip->shield_impact_effect_radius);
+	if (shield_tri_hit >= 0)
+		add_shield_point(OBJ_INDEX(ship_objp), shield_tri_hit, &shield_hitpos, wip->shield_impact_effect_radius);
 
 	if ( valid_hit_occurred )
 	{

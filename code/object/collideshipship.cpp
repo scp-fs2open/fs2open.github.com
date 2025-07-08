@@ -1487,9 +1487,6 @@ collision_result collide_ship_ship_check( obj_pair * pair )
 			}
 		}
 
-		ship_info *light_sip = &Ship_info[Ships[LightOne->instance].ship_info_index];
-		ship_info* heavy_sip = &Ship_info[Ships[HeavyOne->instance].ship_info_index];
-
 		collision_info_struct ship_ship_hit_info;
 		init_collision_info_struct(&ship_ship_hit_info);
 
