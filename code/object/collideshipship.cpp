@@ -1292,7 +1292,7 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 						vm_vec_scale_add2( &A->phys_info.vel, &right_angle_vec, +2.0f);
 						vm_vec_scale_add2( &B->phys_info.vel, &right_angle_vec, -2.0f);
 
-						return 0;
+						return;
 					}
 				}
 #endif
