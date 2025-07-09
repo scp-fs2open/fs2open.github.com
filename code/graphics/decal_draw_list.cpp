@@ -1,6 +1,5 @@
 #include "graphics/decal_draw_list.h"
 
-#include "graphics/util/uniform_structs.h"
 #include "graphics/matrix.h"
 
 #include "render/3d.h"
@@ -8,10 +7,6 @@
 #include "light.h"
 
 namespace {
-
-// Discard any fragments where the angle to the direction to greater than 45°
-const float DECAL_ANGLE_CUTOFF = fl_radians(45.f);
-const float DECAL_ANGLE_FADE_START = fl_radians(30.f);
 
 vec3d BOX_VERTS[] = {{{{ -0.5f, -0.5f, -0.5f }}},
 					 {{{ -0.5f, 0.5f,  -0.5f }}},
@@ -29,6 +24,7 @@ const size_t BOX_NUM_FACES = sizeof(BOX_FACES) / sizeof(BOX_FACES[0]);
 
 gr_buffer_handle box_vertex_buffer;
 gr_buffer_handle box_index_buffer;
+gr_buffer_handle decal_instance_buffer;
 
 void init_buffers() {
 	box_vertex_buffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Static);
@@ -36,6 +32,8 @@ void init_buffers() {
 
 	box_index_buffer = gr_create_buffer(BufferType::Index, BufferUsageHint::Static);
 	gr_update_buffer_data(box_index_buffer, sizeof(BOX_FACES), BOX_FACES);
+
+	decal_instance_buffer = gr_create_buffer(BufferType::Vertex, BufferUsageHint::Streaming);
 }
 
 bool check_box_in_view(const matrix4& transform) {
@@ -56,35 +54,6 @@ bool check_box_in_view(const matrix4& transform) {
 
 namespace graphics {
 
-/**
- * @brief Sorts Decals so that as many decals can be batched together as possible
- *
- * This uses the bitmaps in the definitions to determine if two decals can be rendered at the same time. Since we use
- * texture arrays we can use the base frame for batching which increases the number of draw calls that can be batched together.
- *
- * @param left
- * @param right
- * @return
- */
-bool decal_draw_list::sort_draws(const decal_draw_info& left, const decal_draw_info& right) {
-	auto left_diffuse_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_BASE_TYPE));
-	auto right_diffuse_base = bm_get_base_frame(right.draw_mat.get_texture_map(TM_BASE_TYPE));
-
-	if (left_diffuse_base != right_diffuse_base) {
-		return left_diffuse_base < right_diffuse_base;
-	}
-	auto left_glow_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_GLOW_TYPE));
-	auto right_glow_base = bm_get_base_frame(right.draw_mat.get_texture_map(TM_GLOW_TYPE));
-
-	if (left_glow_base != right_glow_base) {
-		return left_glow_base < right_glow_base;
-	}
-
-	auto left_normal_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_NORMAL_TYPE));
-	auto right_normal_base = bm_get_base_frame(left.draw_mat.get_texture_map(TM_NORMAL_TYPE));
-
-	return left_normal_base < right_normal_base;
-}
 void decal_draw_list::globalInit() {
 	init_buffers();
 
@@ -96,9 +65,8 @@ void decal_draw_list::globalShutdown() {
 	gr_delete_buffer(box_index_buffer);
 }
 
-decal_draw_list::decal_draw_list(size_t num_decals)
-{
-	_buffer       = gr_get_uniform_buffer(uniform_block_type::DecalInfo, num_decals);
+void decal_draw_list::prepare_global_data() {
+	_buffer       = gr_get_uniform_buffer(uniform_block_type::DecalInfo, _draws.size());
 	auto& aligner = _buffer.aligner();
 
 	// Initialize header data
@@ -124,19 +92,35 @@ decal_draw_list::decal_draw_list(size_t num_decals)
 	header->ambientLight.xyz.x += gr_light_emission[0];
 	header->ambientLight.xyz.y += gr_light_emission[1];
 	header->ambientLight.xyz.z += gr_light_emission[2];
+
+	for (auto& [batch_info, draw_info] : _draws) {
+		auto info = aligner.addTypedElement<graphics::decal_info>();
+		info->diffuse_index = batch_info.diffuse < 0 ? -1 : bm_get_array_index(batch_info.diffuse);
+		info->glow_index = batch_info.glow < 0 ? -1 : bm_get_array_index(batch_info.glow);
+		info->normal_index = batch_info.normal < 0 ? -1 : bm_get_array_index(batch_info.normal);
+
+		draw_info.first.uniform_offset = _buffer.getBufferOffset(aligner.getCurrentOffset());
+
+		material_set_decal(&draw_info.first.material,
+						   bm_get_base_frame(batch_info.diffuse),
+						   bm_get_base_frame(batch_info.glow),
+						   bm_get_base_frame(batch_info.normal));
+		info->diffuse_blend_mode = draw_info.first.material.get_blend_mode(0) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
+		info->glow_blend_mode = draw_info.first.material.get_blend_mode(2) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
+	}
 }
-decal_draw_list::~decal_draw_list() {
-}
+
 void decal_draw_list::render() {
 	GR_DEBUG_SCOPE("Render decals");
 	TRACE_SCOPE(tracing::RenderDecals);
 
-	_buffer.submitData();
+	prepare_global_data();
 
-	std::sort(_draws.begin(), _draws.end(), decal_draw_list::sort_draws);
+	_buffer.submitData();
 
 	vertex_layout layout;
 	layout.add_vertex_component(vertex_format_data::POSITION3, sizeof(vec3d), 0);
+	layout.add_vertex_component(vertex_format_data::MATRIX4, sizeof(matrix4), 0, 1, 1);
 
 	indexed_vertex_source source;
 	source.Vbuffer_handle = box_vertex_buffer;
@@ -149,14 +133,13 @@ void decal_draw_list::render() {
 		_buffer.bufferHandle());
 	gr_screen.gf_start_decal_pass();
 
-	for (auto& draw : _draws) {
-		GR_DEBUG_SCOPE("Draw single decal");
+	for (auto& [textures, decal_list] : _draws) {
+		GR_DEBUG_SCOPE("Draw decal type");
 		TRACE_SCOPE(tracing::RenderSingleDecal);
 
-		gr_bind_uniform_buffer(uniform_block_type::DecalInfo, draw.uniform_offset, sizeof(graphics::decal_info),
-		                       _buffer.bufferHandle());
-
-		gr_screen.gf_render_decals(&draw.draw_mat, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source);
+		gr_update_buffer_data(decal_instance_buffer, sizeof(matrix4) * decal_list.second.size(), decal_list.second.data());
+		gr_bind_uniform_buffer(uniform_block_type::DecalInfo, decal_list.first.uniform_offset, sizeof(graphics::decal_info), _buffer.bufferHandle());
+		gr_screen.gf_render_decals(&decal_list.first.material, PRIM_TYPE_TRIS, &layout, BOX_NUM_FACES, source, decal_instance_buffer, static_cast<int>(decal_list.second.size()));
 	}
 
 	gr_screen.gf_stop_decal_pass();
@@ -165,45 +148,13 @@ void decal_draw_list::add_decal(int diffuse_bitmap,
 								int glow_bitmap,
 								int normal_bitmap,
 								float  /*decal_timer*/,
-								const matrix4& transform,
-								float base_alpha) {
-	if (!check_box_in_view(transform)) {
+								const matrix4& instancedata) {
+	if (!check_box_in_view(instancedata)) {
 		// The decal box is not in view so we don't need to render it
 		return;
 	}
 
-	auto& aligner = _buffer.aligner();
-
-	auto info = aligner.addTypedElement<graphics::decal_info>();
-	info->model_matrix = transform;
-	// This is currently a constant but in the future this may be configurable by the decals table
-	info->normal_angle_cutoff = DECAL_ANGLE_CUTOFF;
-	info->angle_fade_start = DECAL_ANGLE_FADE_START;
-	info->alpha_scale = base_alpha;
-
-	matrix transform_rot;
-	vm_matrix4_get_orientation(&transform_rot, &transform);
-
-	// The decal shader works in view-space so the direction also has to be transformed into that space
-	vm_vec_transform(&info->decal_direction, &transform_rot.vec.fvec, &gr_view_matrix, false);
-
-	vm_inverse_matrix4(&info->inv_model_matrix, &info->model_matrix);
-
-	info->diffuse_index = diffuse_bitmap < 0 ? -1 : bm_get_array_index(diffuse_bitmap);
-	info->glow_index = glow_bitmap < 0 ? -1 : bm_get_array_index(glow_bitmap);
-	info->normal_index = normal_bitmap < 0 ? -1 : bm_get_array_index(normal_bitmap);
-
-	decal_draw_info current_draw;
-	current_draw.uniform_offset = _buffer.getBufferOffset(aligner.getCurrentOffset());
-
-	material_set_decal(&current_draw.draw_mat,
-					   bm_get_base_frame(diffuse_bitmap),
-					   bm_get_base_frame(glow_bitmap),
-					   bm_get_base_frame(normal_bitmap));
-	info->diffuse_blend_mode = current_draw.draw_mat.get_blend_mode(0) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
-	info->glow_blend_mode = current_draw.draw_mat.get_blend_mode(2) == ALPHA_BLEND_ADDITIVE ? 1 : 0;
-
-	_draws.push_back(current_draw);
+	_draws[decal_batch_info{diffuse_bitmap, glow_bitmap, normal_bitmap}].second.emplace_back(instancedata);
 }
 
 }

@@ -1489,7 +1489,10 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		return !Cmdline_no_large_shaders;
+	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
+		return GLAD_GL_ARB_vertex_attrib_binding;
 	}
+
 
 	return false;
 }

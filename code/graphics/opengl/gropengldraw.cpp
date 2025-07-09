@@ -1147,14 +1147,16 @@ void gr_opengl_render_decals(decal_material* material_info,
 							 primitive_type prim_type,
 							 vertex_layout* layout,
 							 int num_elements,
-							 const indexed_vertex_source& binding) {
+							 const indexed_vertex_source& binding,
+							 const gr_buffer_handle& instance_buffer,
+							 int num_instances) {
 	opengl_tnl_set_material_decal(material_info);
 
-	opengl_bind_vertex_layout(*layout,
-							  opengl_buffer_get_id(GL_ARRAY_BUFFER, binding.Vbuffer_handle),
+	opengl_bind_vertex_layout_multiple(*layout,
+							  SCP_vector<GLuint> { opengl_buffer_get_id(GL_ARRAY_BUFFER, binding.Vbuffer_handle), opengl_buffer_get_id(GL_ARRAY_BUFFER, instance_buffer) },
 							  opengl_buffer_get_id(GL_ELEMENT_ARRAY_BUFFER, binding.Ibuffer_handle));
 
-	glDrawElements(opengl_primitive_type(prim_type), num_elements, GL_UNSIGNED_INT, nullptr);
+	glDrawElementsInstanced(opengl_primitive_type(prim_type), num_elements, GL_UNSIGNED_INT, nullptr, num_instances);
 }
 
 void gr_opengl_start_decal_pass() {

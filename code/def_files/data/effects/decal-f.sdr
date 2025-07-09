@@ -10,6 +10,12 @@ out vec4 fragOut0; // Diffuse buffer
 out vec4 fragOut1; // Normal buffer
 out vec4 fragOut2; // Emissive buffer
 
+in flat mat4 invModelMatrix;
+in flat vec3 decalDirection;
+in flat float normal_angle_cutoff;
+in flat float angle_fade_start;
+in flat float alpha_scale;
+
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
 
@@ -24,23 +30,17 @@ layout (std140) uniform decalGlobalData {
 	mat4 invProjMatrix;
 
 	vec3 ambientLight;
+	float pad0;
 
 	vec2 viewportSize;
 };
+
 layout (std140) uniform decalInfoData {
-	mat4 model_matrix;
-	mat4 inv_model_matrix;
-
-	vec3 decal_direction;
-	float normal_angle_cutoff;
-
 	int diffuse_index;
 	int glow_index;
 	int normal_index;
-	float angle_fade_start;
-
-	float alpha_scale;
 	int diffuse_blend_mode;
+
 	int glow_blend_mode;
 };
 
@@ -77,7 +77,7 @@ vec3 getPixelNormal(vec3 frag_position, vec2 tex_coord, inout float alpha, out v
 #endif
 
 	//Calculate angle between surface normal and decal direction
-	float angle = acos(dot(normal, decal_direction));
+	float angle = acos(dot(normal, decalDirection));
 
 	if (angle > normal_angle_cutoff) {
 		// The angle between surface normal and decal direction is too big
@@ -91,7 +91,7 @@ vec3 getPixelNormal(vec3 frag_position, vec2 tex_coord, inout float alpha, out v
 }
 
 vec2 getDecalTexCoord(vec3 view_pos, inout float alpha) {
-	vec4 object_pos = inv_model_matrix * invViewMatrix * vec4(view_pos, 1.0);
+	vec4 object_pos = invModelMatrix * invViewMatrix * vec4(view_pos, 1.0);
 
 	bvec3 invalidComponents = greaterThan(abs(object_pos.xyz), vec3(0.5));
 	bvec4 nanComponents = isnan(object_pos); // nan can happen some times if we have an infinite depth value
@@ -111,6 +111,7 @@ void main() {
 	vec3 frag_position = computeViewPosition(gl_FragCoord.xy);
 
 	float alpha = alpha_scale;
+
 	vec2 tex_coord = getDecalTexCoord(frag_position, alpha);
 
 	vec3 binormal;

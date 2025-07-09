@@ -307,6 +307,24 @@ void gr_stub_shadow_map_end()
 {
 }
 
+void gr_stub_start_decal_pass()
+{
+}
+
+void gr_stub_stop_decal_pass()
+{
+}
+
+void gr_stub_render_decals(decal_material* /*material_info*/,
+						primitive_type /*prim_type*/,
+						vertex_layout* /*layout*/,
+						int /*num_elements*/,
+						const indexed_vertex_source& /*buffers*/,
+						const gr_buffer_handle& /*instance_buffer*/,
+						int /*num_instances*/)
+{
+}
+
 void gr_stub_render_shield_impact(shield_material* /*material_info*/,
 	primitive_type /*prim_type*/,
 	vertex_layout* /*layout*/,
@@ -568,6 +586,10 @@ void gr_stub_init_function_pointers() {
 
 	gr_screen.gf_shadow_map_start	= gr_stub_shadow_map_start;
 	gr_screen.gf_shadow_map_end		= gr_stub_shadow_map_end;
+
+	gr_screen.gf_start_decal_pass = gr_stub_start_decal_pass;
+	gr_screen.gf_stop_decal_pass = gr_stub_stop_decal_pass;
+	gr_screen.gf_render_decals = gr_stub_render_decals;
 
 	gr_screen.gf_render_shield_impact = gr_stub_render_shield_impact;
 
