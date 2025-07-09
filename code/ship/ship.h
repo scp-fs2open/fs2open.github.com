@@ -1803,6 +1803,7 @@ bool ship_subsys_has_instance_name(const ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys* ss, const char* n_name);
 
 const char *ship_subsys_get_name_on_hud(const ship_subsys *ss);
+const char *ship_subsys_get_canonical_name(const ship_subsys *ss);
 
 // subsys disruption
 extern int ship_subsys_disrupted(const ship_subsys *ss);
