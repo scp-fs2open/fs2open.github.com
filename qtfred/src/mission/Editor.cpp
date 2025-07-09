@@ -130,18 +130,18 @@ void Editor::update() {
 	}
 }
 
-std::string Editor::maybeUseAutosave(const std::string& filepath)
+void Editor::maybeUseAutosave(std::string& filepath)
 {
 	// first, just grab the info of this mission
 	if (!parse_main(filepath.c_str(), MPF_ONLY_MISSION_INFO))
-		return filepath;
+		return;
 	SCP_string created = The_mission.created;
 	CFileLocation res = cf_find_file_location(filepath.c_str(), CF_TYPE_ANY);
 	time_t modified = res.m_time;
 	if (!res.found)
 	{
 		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", filepath.c_str());
-		return filepath;	// just load the actual specified file
+		return;
 	}
 
 	// now check all the autosaves
@@ -179,10 +179,8 @@ std::string Editor::maybeUseAutosave(const std::string& filepath)
 																	prompt.c_str(),
 																	{ DialogButton::Yes, DialogButton::No });
 		if (z == DialogButton::Yes)
-			return backup_res.full_name.c_str();
+			filepath = backup_res.full_name;	// replace the specified file with the autosave file
 	}
-
-	return filepath;
 }
 
 bool Editor::loadMission(const std::string& mission_name, int flags) {

@@ -39,7 +39,7 @@ class Editor : public QObject {
 
 	void createNewMission();
 
-	std::string maybeUseAutosave(const std::string& filepath);
+	void maybeUseAutosave(std::string& filepath);
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
