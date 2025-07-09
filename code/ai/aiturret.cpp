@@ -1559,7 +1559,9 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 	float burst_shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data);
 	int burst_shots = MAX(fl2i(i2fl(base_burst_shots) * burst_shots_mult) - 1, 0);
 
-	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {
+	bool burst = burst_shots > turret->weapons.burst_counter[weapon_num];
+
+	if (burst) {
 		wait *= wip->burst_delay;
 		wait *= wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_DELAY_MULT, launch_curve_data);
 		turret->weapons.burst_counter[weapon_num]++;
@@ -1659,7 +1661,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 		wait *= frand_range(0.9f, 1.1f);
 	}
 
-	if(turret->rof_scaler != 1.0f)
+	if(turret->rof_scaler != 1.0f && !(burst && turret->system_info->flags[Model::Subsystem_Flags::Burst_ignores_RoF_Mult]))
 		wait /= get_adjusted_turret_rof(turret);
 
 	(*fs_dest) = timestamp((int)wait);
