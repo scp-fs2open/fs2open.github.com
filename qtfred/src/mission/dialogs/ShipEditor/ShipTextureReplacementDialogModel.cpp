@@ -86,7 +86,7 @@ namespace fso {
 							for (size_t i = 0; i < defaultTextures.size(); i++)
 							{
 								// if match
-								if (!stricmp(defaultTextures[i].c_str(), pureName.c_str()))
+								if (lcase_equal(defaultTextures[i], pureName))
 								{
 									SCP_string newText = Fred_texture_replacement.new_texture;
 									npos = newText.find_last_of('-');

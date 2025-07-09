@@ -26,7 +26,7 @@ bool CustomWingNamesDialogModel::apply() {
 		Editor::strip_quotation_marks(wing);
 	}
 	
-	if (strcmp(_m_starting[0].c_str(), _m_tvt[0].c_str()) != 0)
+	if (_m_starting[0] != _m_tvt[0])
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "The first starting wing and the first team-versus-team wing must have the same wing name.",
 		{ DialogButton::Ok });
@@ -35,8 +35,8 @@ bool CustomWingNamesDialogModel::apply() {
 		}
 	}
 
-	if (!stricmp(_m_starting[0].c_str(), _m_starting[1].c_str()) || !stricmp(_m_starting[0].c_str(), _m_starting[2].c_str())
-		|| !stricmp(_m_starting[1].c_str(), _m_starting[2].c_str()))
+	if (lcase_equal(_m_starting[0], _m_starting[1]) || lcase_equal(_m_starting[0], _m_starting[2])
+		|| lcase_equal(_m_starting[1], _m_starting[2]))
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in starting wing list.",
 		{ DialogButton::Ok });
@@ -45,10 +45,10 @@ bool CustomWingNamesDialogModel::apply() {
 		}
 	}
 
-	if (!stricmp(_m_squadron[0].c_str(), _m_squadron[1].c_str()) || !stricmp(_m_squadron[0].c_str(), _m_squadron[2].c_str()) || !stricmp(_m_squadron[0].c_str(), _m_squadron[3].c_str()) || !stricmp(_m_squadron[0].c_str(), _m_squadron[4].c_str())
-		|| !stricmp(_m_squadron[1].c_str(), _m_squadron[2].c_str()) || !stricmp(_m_squadron[1].c_str(), _m_squadron[3].c_str()) || !stricmp(_m_squadron[1].c_str(), _m_squadron[4].c_str())
-		|| !stricmp(_m_squadron[2].c_str(), _m_squadron[3].c_str()) || !stricmp(_m_squadron[2].c_str(), _m_squadron[4].c_str())
-		|| !stricmp(_m_squadron[3].c_str(), _m_squadron[4].c_str()))
+	if (lcase_equal(_m_squadron[0], _m_squadron[1]) || lcase_equal(_m_squadron[0], _m_squadron[2]) || lcase_equal(_m_squadron[0], _m_squadron[3]) || lcase_equal(_m_squadron[0], _m_squadron[4])
+		|| lcase_equal(_m_squadron[1], _m_squadron[2]) || lcase_equal(_m_squadron[1], _m_squadron[3]) || lcase_equal(_m_squadron[1], _m_squadron[4])
+		|| lcase_equal(_m_squadron[2], _m_squadron[3]) || lcase_equal(_m_squadron[2], _m_squadron[4])
+		|| lcase_equal(_m_squadron[3], _m_squadron[4]))
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in squadron wing list.",
 		{ DialogButton::Ok });
@@ -57,7 +57,7 @@ bool CustomWingNamesDialogModel::apply() {
 		}
 	}
 
-	if (!stricmp(_m_tvt[0].c_str(), _m_tvt[1].c_str()))
+	if (lcase_equal(_m_tvt[0], _m_tvt[1]))
 	{
 		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Error, "Custom Wing Error", "Duplicate wing names in team-versus-team wing list.",
 		{ DialogButton::Ok });
@@ -134,9 +134,9 @@ SCP_string CustomWingNamesDialogModel::getTvTWing(int index) {
 }
 
 bool CustomWingNamesDialogModel::query_modified() {
-	return strcmp(Starting_wing_names[0], _m_starting[0].c_str()) != 0 || strcmp(Starting_wing_names[1], _m_starting[1].c_str()) != 0 || strcmp(Starting_wing_names[2], _m_starting[2].c_str()) != 0
-		|| strcmp(Squadron_wing_names[0], _m_squadron[0].c_str()) != 0 || strcmp(Squadron_wing_names[1], _m_squadron[1].c_str()) != 0 || strcmp(Squadron_wing_names[2], _m_squadron[2].c_str()) != 0 || strcmp(Squadron_wing_names[3], _m_squadron[3].c_str()) != 0 || strcmp(Squadron_wing_names[4], _m_squadron[4].c_str()) != 0
-		|| strcmp(TVT_wing_names[0], _m_tvt[0].c_str()) != 0 || strcmp(TVT_wing_names[1], _m_tvt[1].c_str()) != 0;;
+	return Starting_wing_names[0] != _m_starting[0] || Starting_wing_names[1] != _m_starting[1] || Starting_wing_names[2] != _m_starting[2]
+		|| Squadron_wing_names[0] != _m_squadron[0] || Squadron_wing_names[1] != _m_squadron[1] || Squadron_wing_names[2] != _m_squadron[2] || Squadron_wing_names[3] != _m_squadron[3] || Squadron_wing_names[4] != _m_squadron[4]
+		|| TVT_wing_names[0] != _m_tvt[0] || TVT_wing_names[1] != _m_tvt[1];
 }
 
 }
