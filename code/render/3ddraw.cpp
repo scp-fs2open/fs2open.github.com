@@ -1333,12 +1333,15 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 	}
 }
 
+extern const ubyte* Macro_ubyte_bounds;
 
-void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(ubyte *bsp_data, int bsp_data_size, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	center = *pcenter;
 	vm_vec_negate(&center);
-	parse_bsp(0,bsp_data);
+	Macro_ubyte_bounds = bsp_data + bsp_data_size;
+	parse_bsp(0, bsp_data);
+	Macro_ubyte_bounds = nullptr;
 	center = vmd_zero_vector;
 
 	uint i;

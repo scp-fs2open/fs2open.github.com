@@ -70,6 +70,8 @@ SCP_vector<polymodel_instance*> Polygon_model_instances;
 
 SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
+const ubyte* Macro_ubyte_bounds = nullptr;
+
 static int model_initted = 0;
 
 #ifndef NDEBUG
@@ -2110,7 +2112,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					sm->bsp_data_size = cfread_int(fp);
 					if (sm->bsp_data_size > 0) {
-						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						sm->bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 						cfread(sm->bsp_data, 1, sm->bsp_data_size, fp);
 						swap_bsp_data(pm, sm->bsp_data);
 					}
@@ -2123,7 +2125,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->bsp_data_size = cfread_int(fp);
 
 					if (sm->bsp_data_size > 0) {
-						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
+						auto bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 
 						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
@@ -3555,7 +3557,10 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	for (i = 0; i < pm->n_models; ++i) {
 		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+
+		Macro_ubyte_bounds = pm->submodel[i].bsp_data + pm->submodel[i].bsp_data_size;
 		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+		Macro_ubyte_bounds = nullptr;
 	}
 
 	// Find the core_radius... the minimum of 
@@ -5725,6 +5730,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				Int3();		// Bad chunk type!
 			return;
 		}
+		if (end) break;
 
 		p += chunk_size;
 		chunk_type = INTEL_INT( w(p));	//tigital
