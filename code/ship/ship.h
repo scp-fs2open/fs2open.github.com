@@ -1227,6 +1227,7 @@ public:
 	particle::ParticleEffectHandle		split_particles;
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
+	particle::ParticleEffectHandle 		debris_flame_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1471,7 +1472,7 @@ public:
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
-	int shield_impact_explosion_anim;
+	particle::ParticleEffectHandle shield_impact_explosion_anim;
 
 	int damage_lightning_type;
 

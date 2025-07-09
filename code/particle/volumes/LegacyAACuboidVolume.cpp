@@ -5,8 +5,9 @@
 namespace particle {
 	LegacyAACuboidVolume::LegacyAACuboidVolume(float normalVariance, float size, bool normalize) : m_normalVariance(normalVariance), m_size(size), m_normalize(normalize), m_modular_curve_instance(m_modular_curves.create_instance()) {	}
 
-	vec3d LegacyAACuboidVolume::sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) {
-		float variance = m_normalVariance * m_modular_curves.get_output(VolumeModularCurveOutput::VARIANCE, source, &m_modular_curve_instance);
+	vec3d LegacyAACuboidVolume::sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) {
+		auto curveSource = std::tuple_cat(source, std::make_tuple(particlesFraction));
+		float variance = m_normalVariance * m_modular_curves.get_output(VolumeModularCurveOutput::VARIANCE, curveSource, &m_modular_curve_instance);
 
 		vec3d normal;
 

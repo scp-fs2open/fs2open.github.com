@@ -13,10 +13,11 @@ namespace particle {
 		enum class VolumeModularCurveOutput : uint8_t {VARIANCE, NUM_VALUES};
 
 	private:
-		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_output_only_subset<VolumeModularCurveOutput>(
+		constexpr static auto modular_curve_definition = ParticleEffect::modular_curves_definition.derive_modular_curves_subset<float, VolumeModularCurveOutput>(
 			std::array {
 				std::pair { "Variance", VolumeModularCurveOutput::VARIANCE }
-			});
+			},
+			std::pair { "Fraction Particles Spawned", modular_curves_self_input{}});
 
 	public:
 		MODULAR_CURVE_SET(m_modular_curves, modular_curve_definition);
@@ -27,7 +28,7 @@ namespace particle {
 	public:
 	  	explicit LegacyAACuboidVolume(float normalVariance, float size, bool normalize);
 
-		vec3d sampleRandomPoint(const matrix &orientation, const std::tuple<const ParticleSource&, const size_t&>& source) override;
+		vec3d sampleRandomPoint(const matrix &orientation, decltype(ParticleEffect::modular_curves_definition)::input_type_t source, float particlesFraction) override;
 		void parse() override {
 			UNREACHABLE("Cannot parse Legacy Particle Volume!");
 		};

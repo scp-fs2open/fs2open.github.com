@@ -13,6 +13,7 @@
 #define __FS2_MUZZLEFLASH_HEADER_FILE
 
 #include "physics/physics.h"
+#include "particle/ParticleManager.h"
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH DEFINES/VARS
@@ -29,22 +30,7 @@ struct vec3d;
 // initialize muzzle flash stuff for the whole game
 void mflash_game_init();
 
-// initialize muzzle flash stuff for the level
-void mflash_level_init();
-
-// shutdown stuff for the level
-void mflash_level_close();
-
-// create a muzzle flash on the guy
-void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local = nullptr);
-
 // lookup type by name
-int mflash_lookup(const char *name);
-
-// mark as used
-void mflash_mark_as_used(int index = -1);
-
-// level page in
-void mflash_page_in(bool load_all = false);
+particle::ParticleEffectHandle mflash_lookup(const char *name);
 
 #endif

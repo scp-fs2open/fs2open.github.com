@@ -941,7 +941,6 @@ void game_level_close()
 		volumetrics_level_close();
 		ct_level_close();
 		beam_level_close();
-		mflash_level_close();
 		mission_brief_common_reset();		// close out parsed briefing/mission stuff
 		cam_close();
 		subtitles_close();
@@ -1094,7 +1093,6 @@ void game_level_init()
 	ct_level_init();				// initialize ships contrails, etc
 	awacs_level_init();				// initialize AWACS
 	beam_level_init();				// initialize beam weapons
-	mflash_level_init();
 	ssm_level_init();	
 	supernova_level_init();
 	cam_init();
