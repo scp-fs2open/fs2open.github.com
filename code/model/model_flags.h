@@ -72,6 +72,7 @@ namespace Model {
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
+		Burst_ignores_RoF_Mult,		// The turret's fire rate multiplier won't affect burst delay.
 
         NUM_VALUES
 	};
