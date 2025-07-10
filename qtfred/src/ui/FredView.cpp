@@ -143,7 +143,8 @@ void FredView::loadMissionFile(const QString& pathName) {
 	try {
 		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-		auto pathToLoad = fred->maybeUseAutosave(pathName.toStdString());
+		auto pathToLoad = pathName.toStdString();
+		fred->maybeUseAutosave(pathToLoad);
 
 		fred->loadMission(pathToLoad);
 
