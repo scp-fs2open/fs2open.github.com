@@ -357,6 +357,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
 	{ "override submodel impact",   Model::Subsystem_Flags::Override_submodel_impact,           true, false },
+	{ "burst ignores rof mult", 	Model::Subsystem_Flags::Burst_ignores_RoF_Mult,				true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
@@ -1075,6 +1076,7 @@ void ship_info::clone(const ship_info& other)
 	split_particles = other.split_particles;
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
+	debris_flame_particles = other.debris_flame_particles;
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1431,6 +1433,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
+	std::swap(debris_flame_particles, other.debris_flame_particles);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1795,6 +1798,8 @@ ship_info::ship_info()
 	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	regular_end_particles = default_regular_end_particles;
 
+	debris_flame_particles = particle::ParticleEffectHandle::invalid();
+
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
 	debris_min_speed = -1.0f;
@@ -2046,7 +2051,7 @@ ship_info::ship_info()
 
 	damage_lightning_type = SLT_DEFAULT;
 
-	shield_impact_explosion_anim = -1;
+	shield_impact_explosion_anim = particle::ParticleEffectHandle::invalid();
 	hud_gauges.clear();
 	hud_enabled = false;
 	hud_retail = false;
@@ -2529,6 +2534,9 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	auto effect = particle::ParticleEffect(
 		"", //Name
 		particle_num, //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(velocityInherit), //Velocity Inherit
 		false, //Velocity Inherit absolute?
@@ -2543,6 +2551,12 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		true, //Affected by detail
 		range, //Culling range multiplier
 		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		false, //Don't reverse animation
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
+		std::nullopt, //Local offset
 		lifetime, //Lifetime
 		radius, //Radius
 		bitmap); //Bitmap
@@ -3838,6 +3852,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	}
 
+	if(optional_string("$Debris Flame Effect:"))
+	{
+		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
 	auto skip_str = "$Skip Death Roll Percent Chance:";
 	auto vaporize_str = "$Vaporize Percent Chance:";
 	int which;
@@ -4016,12 +4035,56 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_ubyte(&sip->shield_color[2]);
 	}
 
-	if(optional_string("$Shield Impact Explosion:")) {
+	if(optional_string("$Shield Impact Explosion Effect:")) {
+		sip->shield_impact_explosion_anim = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Shield Impact Explosion:")) {
 		char fname[MAX_NAME_LEN];
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		if ( VALID_FNAME(fname) )
-			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+		if ( VALID_FNAME(fname) ) {
+			auto particle = particle::ParticleEffect(
+				"", //Name
+				::util::UniformFloatRange(1.f), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
+				particle::ParticleEffect::ShapeDirection::HIT_NORMAL, //Particle direction
+				::util::UniformFloatRange(0.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				nullptr, //Velocity volume
+				::util::UniformFloatRange(), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				false, //Affected by detail
+				-1.f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				true, //parent local
+				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
+				std::nullopt, //Local offset
+				::util::UniformFloatRange(0.f), //Lifetime
+				::util::UniformFloatRange(1.f), //Radius
+				bm_load_animation(fname)); //Bitmap
+
+			static const int thruster_particle_curve = []() -> int {
+				int curve_id = static_cast<int>(Curves.size());
+				auto& curve = Curves.emplace_back(";ShipShieldParticles");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			particle.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+
+			sip->shield_impact_explosion_anim = particle::ParticleManager::get()->addEffect(std::move(particle));
+		}
 	}
 
 	if(optional_string("$Max Shield Recharge:")){
@@ -4842,6 +4905,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			auto particle = particle::ParticleEffect(
 				"", //Name
 				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				true, //Velocity Inherit absolute?
@@ -4856,6 +4922,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				true, //Affected by detail
 				1.0f, //Culling range multiplier
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				false, //parent local
+				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
+				std::nullopt, //Local offset
 				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
 				::util::UniformFloatRange(min_rad, max_rad), //Radius
 				tpart.thruster_bitmap.first_frame); //Bitmap
@@ -17187,6 +17259,11 @@ const char *ship_subsys_get_name_on_hud(const ship_subsys *ss)
 		return get_turret_subsys_name(&ss->weapons);
 	else
 		return ship_subsys_get_name(ss);
+}
+
+const char *ship_subsys_get_canonical_name(const ship_subsys *ss)
+{
+	return ss->system_info->subobj_name;
 }
 
 /**

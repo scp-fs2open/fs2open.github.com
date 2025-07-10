@@ -1140,6 +1140,10 @@ add_file_folder("Particle\\\\Volumes"
 	particle/volumes/ConeVolume.h
 	particle/volumes/LegacyAACuboidVolume.cpp
 	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/PointVolume.cpp
+	particle/volumes/PointVolume.h
+	particle/volumes/RingVolume.cpp
+	particle/volumes/RingVolume.h
 	particle/volumes/SpheroidVolume.cpp
 	particle/volumes/SpheroidVolume.h
 )

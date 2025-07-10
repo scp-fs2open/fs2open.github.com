@@ -271,14 +271,17 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
+		MATRIX4,
 	};
 
 	vertex_format format_type;
 	size_t stride;
 	size_t offset;
+	size_t divisor;
+	size_t buffer_number;
 
-	vertex_format_data(vertex_format i_format_type, size_t i_stride, size_t i_offset) :
-	format_type(i_format_type), stride(i_stride), offset(i_offset) {}
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, size_t i_offset, size_t i_divisor, size_t i_buffer_number) :
+	format_type(i_format_type), stride(i_stride), offset(i_offset), divisor(i_divisor), buffer_number(i_buffer_number) {}
 
 	static inline uint mask(vertex_format v_format) { return 1 << v_format; }
 
@@ -291,7 +294,7 @@ class vertex_layout
 	SCP_vector<vertex_format_data> Vertex_components;
 
 	uint Vertex_mask = 0;
-	size_t Vertex_stride = 0;
+	SCP_unordered_map<size_t, size_t> Vertex_stride;
 public:
 	vertex_layout() {}
 
@@ -301,9 +304,9 @@ public:
 	
 	bool resident_vertex_format(vertex_format_data::vertex_format format_type) const;
 
-	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset);
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset, size_t divisor = 0, size_t buffer_number = 0);
 
-	size_t get_vertex_stride() const { return Vertex_stride; }
+	size_t get_vertex_stride(size_t buffer_number = 0) const { return Vertex_stride.at(buffer_number); }
 
 	bool operator==(const vertex_layout& other) const;
 
@@ -333,7 +336,8 @@ enum class gr_capability {
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC,
-	CAPABILITY_LARGE_SHADER
+	CAPABILITY_LARGE_SHADER,
+	CAPABILITY_INSTANCED_RENDERING
 };
 
 struct gr_capability_def {
@@ -891,7 +895,9 @@ typedef struct screen {
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int num_elements,
-		const indexed_vertex_source& buffers)>
+		const indexed_vertex_source& buffers,
+		const gr_buffer_handle& instance_buffer,
+		int num_instances)>
 		gf_render_decals;
 	void (*gf_render_rocket_primitives)(interface_material* material_info,
 		primitive_type prim_type,

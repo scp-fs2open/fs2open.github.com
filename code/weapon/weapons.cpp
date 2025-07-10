@@ -56,8 +56,11 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/swarm.h"
 #include "particle/ParticleEffect.h"
+#include "particle/volumes/ConeVolume.h"
 #include "particle/volumes/LegacyAACuboidVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
+#include "particle/volumes/RingVolume.h"
+#include "particle/volumes/PointVolume.h"
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "weapon.h"
@@ -125,10 +128,6 @@ flag_def_list_new<Weapon::Beam_Info_Flags> Beam_info_flags[] = {
 };
 
 const size_t Num_beam_info_flags = sizeof(Beam_info_flags) / sizeof(flag_def_list_new<Weapon::Beam_Info_Flags>);
-
-weapon_explosions Weapon_explosions;
-
-SCP_vector<lod_checker> LOD_checker;
 
 special_flag_def_list_new<Weapon::Info_Flags, weapon_info*, flagset<Weapon::Info_Flags>&> Weapon_Info_Flags[] = {
 	{ "spawn",							Weapon::Info_Flags::Spawn,								true, [](const SCP_string& spawn, weapon_info* weaponp, flagset<Weapon::Info_Flags>& flags) {
@@ -317,239 +316,7 @@ extern int compute_num_homing_objects(const object *target_objp);
 
 void weapon_spew_stats(WeaponSpewType type);
 
-
-weapon_explosions::weapon_explosions()
-{
-	ExplosionInfo.clear();
-}
-
-int weapon_explosions::GetIndex(const char *filename) const
-{
-	if ( filename == NULL ) {
-		Int3();
-		return -1;
-	}
-
-	for (size_t i = 0; i < ExplosionInfo.size(); i++) {
-		if ( !stricmp(ExplosionInfo[i].lod[0].filename, filename)) {
-			return (int)i;
-		}
-	}
-
-	return -1;
-}
-
-int weapon_explosions::Load(const char *filename, int expected_lods)
-{
-	char name_tmp[MAX_FILENAME_LEN] = "";
-	int bitmap_id = -1;
-	int nframes, nfps;
-	weapon_expl_info new_wei;
-
-	Assert( expected_lods <= MAX_WEAPON_EXPL_LOD );
-
-	//Check if it exists
-	int idx = GetIndex(filename);
-
-	if (idx != -1)
-		return idx;
-
-	new_wei.lod_count = 1;
-
-	strcpy_s(new_wei.lod[0].filename, filename);
-	new_wei.lod[0].bitmap_id = bm_load_animation(filename, &new_wei.lod[0].num_frames, &new_wei.lod[0].fps, nullptr, nullptr, true);
-
-	if (new_wei.lod[0].bitmap_id < 0) {
-		Warning(LOCATION, "Weapon explosion '%s' does not have an LOD0 anim!", filename);
-
-		// if we don't have the first then it's only safe to assume that the rest are missing or not usable
-		return -1;
-	}
-
-	// 2 chars for the lod, 4 for the extension that gets added automatically
-	if ( (MAX_FILENAME_LEN - strlen(filename)) > 6 ) {
-		for (idx = 1; idx < expected_lods; idx++) {
-			sprintf(name_tmp, "%s_%d", filename, idx);
-
-			bitmap_id = bm_load_animation(name_tmp, &nframes, &nfps, nullptr, nullptr, true);
-
-			if (bitmap_id > 0) {
-				strcpy_s(new_wei.lod[idx].filename, name_tmp);
-				new_wei.lod[idx].bitmap_id = bitmap_id;
-				new_wei.lod[idx].num_frames = nframes;
-				new_wei.lod[idx].fps = nfps;
-
-				new_wei.lod_count++;
-			} else {
-				break;
-			}
-		}
-
-		if (new_wei.lod_count != expected_lods)
-			Warning(LOCATION, "For '%s', %i of %i LODs are missing!", filename, expected_lods - new_wei.lod_count, expected_lods);
-	}
-	else {
-		Warning(LOCATION, "Filename '%s' is too long to have any LODs.", filename);
-	}
-
-	ExplosionInfo.push_back( new_wei );
-
-	return (int)(ExplosionInfo.size() - 1);
-}
-
-void weapon_explosions::PageIn(int idx)
-{
-	int i;
-
-	if ( (idx < 0) || (idx >= (int)ExplosionInfo.size()) )
-		return;
-
-	weapon_expl_info *wei = &ExplosionInfo[idx];
-
-	for ( i = 0; i < wei->lod_count; i++ ) {
-		if ( wei->lod[i].bitmap_id >= 0 ) {
-			bm_page_in_xparent_texture( wei->lod[i].bitmap_id, wei->lod[i].num_frames );
-		}
-	}
-}
-
-int weapon_explosions::GetAnim(int weapon_expl_index, const vec3d *pos, float size) const
-{
-	if ( (weapon_expl_index < 0) || (weapon_expl_index >= (int)ExplosionInfo.size()) )
-		return -1;
-
-	//Get our weapon expl for the day
-	auto wei = &ExplosionInfo[weapon_expl_index];
-
-	if (wei->lod_count == 1)
-		return wei->lod[0].bitmap_id;
-
-	// now we have to do some work
-	vertex v;
-	int x, y, w, h, bm_size;
-	int must_stop = 0;
-	int best_lod = 1;
-	int behind = 0;
-
-	// start the frame
-	extern int G3_count;
-
-	if(!G3_count){
-		g3_start_frame(1);
-		must_stop = 1;
-	}
-	g3_set_view_matrix(&Eye_position, &Eye_matrix, Eye_fov);
-
-	// get extents of the rotated bitmap
-	g3_rotate_vertex(&v, pos);
-
-	// if vertex is behind, find size if in front, then drop down 1 LOD
-	if (v.codes & CC_BEHIND) {
-		float dist = vm_vec_dist_quick(&Eye_position, pos);
-		vec3d temp;
-
-		behind = 1;
-		vm_vec_scale_add(&temp, &Eye_position, &Eye_matrix.vec.fvec, dist);
-		g3_rotate_vertex(&v, &temp);
-
-		// if still behind, bail and go with default
-		if (v.codes & CC_BEHIND) {
-			behind = 0;
-		}
-	}
-
-	if (!g3_get_bitmap_dims(wei->lod[0].bitmap_id, &v, size, &x, &y, &w, &h, &bm_size)) {
-		if (Detail.hardware_textures == 4) {
-			// straight LOD
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/2){
-				best_lod = 2;
-			} else if(w <= 1.3f*bm_size){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}
-		} else {
-			// less aggressive LOD for lower detail settings
-			if(w <= bm_size/8){
-				best_lod = 3;
-			} else if(w <= bm_size/3){
-				best_lod = 2;
-			} else if(w <= (1.15f*bm_size)){
-				best_lod = 1;
-			} else {
-				best_lod = 0;
-			}		
-		}
-	}
-
-	// if it's behind, bump up LOD by 1
-	if (behind)
-		best_lod++;
-
-	// end the frame
-	if (must_stop)
-		g3_end_frame();
-
-	best_lod = MIN(best_lod, wei->lod_count - 1);
-	Assert( (best_lod >= 0) && (best_lod < MAX_WEAPON_EXPL_LOD) );
-
-	return wei->lod[best_lod].bitmap_id;
-}
-
-
-void parse_weapon_expl_tbl(const char *filename)
-{
-	uint i;
-	lod_checker lod_check;
-	
-	try
-	{
-		read_file_text(filename, CF_TYPE_TABLES);
-		reset_parse();
-
-		required_string("#Start");
-		while (required_string_either("#End", "$Name:"))
-		{
-			memset(&lod_check, 0, sizeof(lod_checker));
-
-			// base filename
-			required_string("$Name:");
-			stuff_string(lod_check.filename, F_NAME, MAX_FILENAME_LEN);
-
-			//Do we have an LOD num
-			if (optional_string("$LOD:"))
-			{
-				stuff_int(&lod_check.num_lods);
-			}
-
-			// only bother with this if we have 1 or more lods and less than max lods,
-			// otherwise the stardard level loading will take care of the different effects
-			if ((lod_check.num_lods > 0) && (lod_check.num_lods < MAX_WEAPON_EXPL_LOD)) {
-				// name check, update lod count if it already exists
-				for (i = 0; i < LOD_checker.size(); i++) {
-					if (!stricmp(LOD_checker[i].filename, lod_check.filename)) {
-						LOD_checker[i].num_lods = lod_check.num_lods;
-					}
-				}
-
-				// old entry not found, add new entry
-				if (i == LOD_checker.size()) {
-					LOD_checker.push_back(lod_check);
-				}
-			}
-		}
-		required_string("#End");
-	}
-	catch (const parse::ParseException& e)
-	{
-		mprintf(("TABLES: Unable to parse '%s'!  Error message = %s.\n", filename, e.what()));
-		return;
-	}
-}
-
-/**
+/*
  * Clear out the Missile_obj_list
  */
 void missile_obj_list_init()
@@ -865,6 +632,145 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 }
 
 static SCP_vector<SCP_string> Removed_weapons;
+
+enum Pspew_legacy_type {
+	PSPEW_NONE,			//used to disable a spew, useful for xmts
+	PSPEW_DEFAULT,		//std fs2 pspew
+	PSPEW_HELIX,		//q2 style railgun trail
+	PSPEW_SPARKLER,		//random particles in every direction, can be sperical or ovoid
+	PSPEW_RING,			//outward expanding ring
+	PSPEW_PLUME,		//spewers arrayed within a radius for thruster style effects, may converge or scatter
+};
+
+struct pspew_legacy_parse_data {
+       // particle spew stuff
+	   Pspew_legacy_type particle_spew_type;                 //added pspew type field -nuke
+       int particle_spew_count;
+       int particle_spew_time;
+       float particle_spew_vel;
+       float particle_spew_radius;
+       float particle_spew_lifetime;
+       float particle_spew_scale;
+       float particle_spew_z_scale;    //length value for some effects -nuke
+       float particle_spew_rotation_rate;      //rotation rate for some particle effects -nuke
+       vec3d particle_spew_offset;                     //offsets and normals, yay!
+       vec3d particle_spew_velocity;
+       SCP_string particle_spew_anim;
+};
+
+static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
+static bool pspew_do_warning = false;
+
+static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
+	auto particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
+	float particle_spew_spawns_per_second = 1000.f / static_cast<float>(pspew_buffer.particle_spew_time);
+
+	if (particle_spew_spawns_per_second > 60.f) {
+		mprintf(("Warning: %s(line %i): PSPEW requested with a spawn frequency of over 60FPS. This used to be capped to spawn once a frame. It will now be artificially capped at 60 spawns per second.\n", Current_filename, get_line_num()));
+		particle_spew_spawns_per_second = 60.f;
+		pspew_do_warning = true;
+	}
+
+	bool hasAnim = !pspew_buffer.particle_spew_anim.empty() && bm_validate_filename(pspew_buffer.particle_spew_anim, true, true);
+
+	std::unique_ptr<particle::ParticleVolume> velocity_vol, position_vol;
+	bool absolutePositionVelocityInherit = false;
+	std::optional<::util::ParsedRandomFloatRange> positionBasedVelocity = std::nullopt;
+	particle::ParticleEffect::ShapeDirection direction = particle::ParticleEffect::ShapeDirection::ALIGNED;
+
+	switch (pspew_buffer.particle_spew_type) {
+		case PSPEW_DEFAULT:
+			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), 3.f * pspew_buffer.particle_spew_scale);
+			direction = particle::ParticleEffect::ShapeDirection::REVERSE;
+			break;
+		case PSPEW_HELIX: {
+			particle_spew_count = 1.f;
+			particle_spew_spawns_per_second *= pspew_buffer.particle_spew_count;
+
+			int curve_id = static_cast<int>(Curves.size());
+			auto& curve = Curves.emplace_back(SCP_string(";PSPEWHelixCurve;") + wip->name);
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve.keyframes.emplace_back(curve_keyframe{vec2d{1.f / pspew_buffer.particle_spew_rotation_rate, PI2}, CurveInterpFunction::Linear, 0.f, 0.f});
+
+			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
+			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
+			vel_vol_temp->m_modular_curves.add_curve("Time Running", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{curve_id, ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f, 1.f / pspew_buffer.particle_spew_rotation_rate), true});
+			velocity_vol = std::move(vel_vol_temp);
+		}
+			break;
+		case PSPEW_SPARKLER: {
+			//This is really strange behaviour cause the old sparklers (likely accidentally) cumulated the random velocity for each particle.
+			//This does not do this, but at least tries to emulate the resulting velocity magnitudes in similar chaotic fashion.
+			int curve_id_dist = static_cast<int>(Curves.size());
+			auto& curve_dist = Curves.emplace_back(SCP_string(";PSPEWSparklerCurveDist;") + wip->name);
+			curve_dist.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 1.f / particle_spew_count}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve_dist.keyframes.emplace_back(curve_keyframe{vec2d{1.f, 1.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+
+			int curve_id_bias = static_cast<int>(Curves.size());
+			auto& curve_bias = Curves.emplace_back(SCP_string(";PSPEWSparklerCurveBias;") + wip->name);
+			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+			curve_bias.keyframes.emplace_back(curve_keyframe{vec2d{1.f, particle_spew_count}, CurveInterpFunction::Linear, 0.f, 0.f});
+
+			auto vel_vol_temp = std::make_unique<particle::SpheroidVolume>(1.f, pspew_buffer.particle_spew_z_scale, pspew_buffer.particle_spew_scale * particle_spew_count);
+			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::SpheroidVolume::VolumeModularCurveOutput::RADIUS, modular_curves_entry{curve_id_dist});
+			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::SpheroidVolume::VolumeModularCurveOutput::BIAS, modular_curves_entry{curve_id_bias});
+			velocity_vol = std::move(vel_vol_temp);
+		}
+			break;
+		case PSPEW_RING: {
+			static const int ring_pspew_rot = []() -> int {
+				int curve_id = static_cast<int>(Curves.size());
+				auto& curve = Curves.emplace_back(";PSPEWRingCurve");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{1.f, PI2}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			auto vel_vol_temp = std::make_unique<particle::PointVolume>();
+			vel_vol_temp->posOffset = vec3d {{{pspew_buffer.particle_spew_scale, 0.f, 0.f}}};
+			vel_vol_temp->m_modular_curves.add_curve("Fraction Particles Spawned", particle::PointVolume::VolumeModularCurveOutput::OFFSET_ROT, modular_curves_entry{ring_pspew_rot});
+			velocity_vol = std::move(vel_vol_temp);
+		}
+			break;
+		case PSPEW_PLUME:
+			position_vol = std::make_unique<particle::RingVolume>(pspew_buffer.particle_spew_scale, false);
+			positionBasedVelocity = ::util::UniformFloatRange(pspew_buffer.particle_spew_z_scale);
+			absolutePositionVelocityInherit = true;
+			break;
+		default:
+			UNREACHABLE("Invalid PSPEW legacy type!");
+	}
+
+	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			"", //Name
+			::util::UniformFloatRange(particle_spew_count), //Particle num
+			particle::ParticleEffect::Duration::ALWAYS, //permanent Particle Emission
+			::util::UniformFloatRange(), //No duration
+			::util::UniformFloatRange (particle_spew_spawns_per_second), //Single particle only
+			direction, //Particle direction
+			::util::UniformFloatRange(pspew_buffer.particle_spew_vel), //Velocity Inherit
+			false, //Velocity Inherit absolute?
+			std::move(velocity_vol), //Velocity volume
+			::util::UniformFloatRange(1.f), //Velocity volume multiplier
+			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			std::nullopt, //Orientation-based velocity
+			positionBasedVelocity, //Position-based velocity
+			std::move(position_vol), //Position volume
+			particle::ParticleEffectHandle::invalid(), //Trail
+			1.f, //Chance
+			false, //Affected by detail
+			-1.f, //Culling range multiplier
+			!hasAnim, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+			false, //Don't reverse animation
+			false, //parent local
+			false, //ignore velocity inherit if parented
+			absolutePositionVelocityInherit, //position velocity inherit absolute?
+			IS_VEC_NULL(&pspew_buffer.particle_spew_velocity) ? std::nullopt : std::optional(pspew_buffer.particle_spew_velocity), //Local velocity offset
+			IS_VEC_NULL(&pspew_buffer.particle_spew_offset) ? std::nullopt : std::optional(pspew_buffer.particle_spew_offset), //Local offset
+			::util::UniformFloatRange(pspew_buffer.particle_spew_lifetime), //Lifetime
+			::util::UniformFloatRange(pspew_buffer.particle_spew_radius), //Radius
+			hasAnim ? bm_load_animation(pspew_buffer.particle_spew_anim.c_str()) : particle::Anim_bitmap_id_smoke)); //Bitmap
+}
 
 /**
  * Parse the information for a specific ship type.
@@ -2222,6 +2128,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(1.f), //Particle num
+					ParticleEffect::Duration::ONETIME, //Single Particle Emission
+					::util::UniformFloatRange(), //No duration
+					::util::UniformFloatRange (-1.f), //Single particle only
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(0.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
@@ -2236,6 +2145,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					false, //Affected by detail
 					-1.f, //Culling range multiplier
 					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+					false, //Don't reverse animation
+					false, //parent local
+					false, //ignore velocity inherit if parented
+					false, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
+					std::nullopt, //Local offset
 					::util::UniformFloatRange(-1.f), //Lifetime
 					radius, //Radius
 					bitmapIndex)); //Bitmap
@@ -2303,6 +2218,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->dinky_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -2317,6 +2235,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						radius, //Radius
 						bitmapID)); //Bitmap
@@ -2393,6 +2317,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			wip->piercing_impact_effect = ParticleManager::get()->addEffect(ParticleEffect(
 					"", //Name
 					::util::UniformFloatRange(count / 2.f, 2.f * count), //Particle num
+					ParticleEffect::Duration::ONETIME, //Single Particle Emission
+					::util::UniformFloatRange(), //No duration
+					::util::UniformFloatRange (-1.f), //Single particle only
 					ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 					::util::UniformFloatRange(1.f), //Velocity Inherit
 					false, //Velocity Inherit absolute?
@@ -2407,6 +2334,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 					true, //Affected by detail
 					10.f, //Culling range multiplier
 					false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+					false, //Don't reverse animation
+					false, //parent local
+					false, //ignore velocity inherit if parented
+					false, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
+					std::nullopt, //Local offset
 					::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 					::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 					effectIndex)); //Bitmap
@@ -2416,6 +2349,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->piercing_impact_secondary_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(count / 4.f, i2fl(count)), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(1.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -2430,6 +2366,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						true, //Affected by detail
 						10.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(0.25f * life, 2.0f * life), //Lifetime
 						::util::UniformFloatRange(0.5f * radius, 2.0f * radius), //Radius
 						effectIndex)); //Bitmap
@@ -2503,14 +2445,11 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 
 	if (optional_string("$Muzzle Effect:")) {
 		wip->muzzle_effect = particle::util::parseEffect(wip->name);
-	} else {
-		// muzzle flash
-		if (optional_string("$Muzzleflash:")) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
+	} else if (optional_string("$Muzzleflash:")) {
+		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-			// look it up
-			wip->muzzle_flash = mflash_lookup(fname);
-		}
+		// look it up
+		wip->muzzle_effect = mflash_lookup(fname);
 	}
 
 	// EMP optional stuff (if WIF_EMP is not set, none of this matters, anyway)
@@ -2900,25 +2839,83 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			stuff_float(&wip->b_info.beam_muzzle_radius);
 		}
 
-		// particle spew count
-		if(optional_string("+PCount:")) {
-			stuff_int(&wip->b_info.beam_particle_count);
+		if (optional_string("+Muzzle Particle Effect:")) {
+			wip->b_info.beam_muzzle_effect = particle::util::parseEffect(wip->name);
 		}
+		else {
+			int pcount = 0;
+			float pradius = 1.f, pangle = 0.f;
+			SCP_string pani;
 
-		// particle radius
-		if(optional_string("+PRadius:")) {
-			stuff_float(&wip->b_info.beam_particle_radius);
-		}
+			if (wip->b_info.beam_muzzle_effect.isValid()) {
+				//We're modifying existing data. Restore old values... Ugly, but oh well.
+				const auto& oldEffect = particle::ParticleManager::get()->getEffect(wip->b_info.beam_muzzle_effect).front();
+				pcount = static_cast<int>(oldEffect.m_particleNum.max());
+				pradius = oldEffect.m_radius.max();
+				auto cone_volume = dynamic_cast<const particle::ConeVolume*>(oldEffect.m_spawnVolume.get());
+				if (cone_volume != nullptr) {
+					pangle = cone_volume->m_deviation.max();
+				}
+				pani = bm_get_filename(oldEffect.m_bitmap_list.front());
+			}
 
-		// angle off turret normal
-		if(optional_string("+PAngle:")) {
-			stuff_float(&wip->b_info.beam_particle_angle);
-		}
+			// particle spew count
+			if (optional_string("+PCount:")) {
+				stuff_int(&pcount);
+			}
 
-		// particle bitmap/ani		
-		if ( optional_string("+PAni:") ) {
-			stuff_string(fname, F_NAME, NAME_LENGTH);
-			generic_anim_init(&wip->b_info.beam_particle_ani, fname);
+			// particle radius
+			if (optional_string("+PRadius:")) {
+				stuff_float(&pradius);
+			}
+
+			// angle off turret normal
+			if (optional_string("+PAngle:")) {
+				stuff_float(&pangle);
+				pangle = fl_radians(pangle);
+			}
+
+			// particle bitmap/ani
+			if (optional_string("+PAni:")) {
+				stuff_string(pani, F_NAME);
+			}
+
+			if (pcount > 0 && !pani.empty()) {
+				float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);
+				float p_vel = wip->b_info.beam_muzzle_radius / (0.6f * p_time_ref);
+
+				auto effect = particle::ParticleEffect(
+					"", //Name
+					::util::UniformFloatRange(0.f, static_cast<float>(pcount)), //Particle num
+					particle::ParticleEffect::Duration::RANGE,
+					::util::UniformFloatRange((float)wip->b_info.beam_warmup / 1000.0f), //Emit for beam warmup time
+					::util::UniformFloatRange (10.f), //One particle every 100ms
+					particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+					::util::UniformFloatRange(1.f), //Velocity Inherit
+					false, //Velocity Inherit absolute?
+					nullptr, //Velocity volume
+					::util::UniformFloatRange(), //Velocity volume multiplier
+					particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+					std::nullopt, //Orientation-based velocity
+					::util::UniformFloatRange(p_vel * -1.2f, p_vel * -0.85f), //Position-based velocity
+					std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-pangle, pangle), ::util::UniformFloatRange(wip->b_info.beam_muzzle_radius * 0.75f, wip->b_info.beam_muzzle_radius * 0.9f)), //Position volume
+					particle::ParticleEffectHandle::invalid(), //Trail
+					1.f, //Chance
+					false, //Affected by detail
+					-1.f, //Culling range multiplier
+					true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X and for most pspews
+					true, //reverse animation, for whatever reason
+					true, //parent local
+					true, //ignore velocity inherit if parented
+					true, //position velocity inherit absolute?
+					std::nullopt, //Local velocity offset
+					std::nullopt, //Local offset
+					::util::UniformFloatRange(0.5f * p_time_ref, 0.7f * p_time_ref), // Lifetime
+					::util::UniformFloatRange(pradius), //Radius
+					bm_load_animation(pani.c_str())); //Bitmap
+
+				wip->b_info.beam_muzzle_effect = particle::ParticleManager::get()->addEffect(std::move(effect));
+			}
 		}
 
 		// magic miss #
@@ -3085,6 +3082,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				wip->flash_impact_weapon_expl_effect = ParticleManager::get()->addEffect(ParticleEffect(
 						"", //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -3099,6 +3099,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
 						lifetime, //Lifetime
 						::util::UniformFloatRange(size * 1.2f, size * 1.9f), //Radius
 						bitmapIndex)); //Bitmap
@@ -3158,6 +3164,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				piercingEffect.emplace_back(
 						particle_effect_name, //Name
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -3172,6 +3181,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
@@ -3180,6 +3195,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				piercingEffect.emplace_back(
 						"", //Name, empty as it's a non-findable part of a composite
 						::util::UniformFloatRange(1.f), //Particle num
+						ParticleEffect::Duration::ONETIME, //Single Particle Emission
+						::util::UniformFloatRange(), //No duration
+						::util::UniformFloatRange (-1.f), //Single particle only
 						ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 						::util::UniformFloatRange(0.f), //Velocity Inherit
 						false, //Velocity Inherit absolute?
@@ -3194,6 +3212,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 						false, //Affected by detail
 						-1.f, //Culling range multiplier
 						false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+						false, //Don't reverse animation
+						false, //parent local
+						false, //ignore velocity inherit if parented
+						false, //position velocity inherit absolute?
+						std::nullopt, //Local velocity offset
+						std::nullopt, //Local offset
 						::util::UniformFloatRange(-1.f), //Lifetime
 						::util::UniformFloatRange(radius * 0.5f, radius * 2.f), //Radius
 						bitmapIndex);
@@ -3530,9 +3554,12 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		// index for xmt edit, replace and remove support
 		if (optional_string("+Index:")) {
 			stuff_int(&spew_index);
-			if (spew_index < 0 || spew_index >= MAX_PARTICLE_SPEWERS) {
-				Warning(LOCATION, "+Index in particle spewer out of range. It must be between 0 and %i. Tag will be ignored.", MAX_PARTICLE_SPEWERS);
+			if (spew_index < 0) {
+				Warning(LOCATION, "+Index in particle spewer out of range. It must be positive.");
 				spew_index = -1;
+			}
+			else if (spew_index >= static_cast<int>(wip->particle_spewers.size())) {
+				wip->particle_spewers.resize(spew_index + 1, particle::ParticleEffectHandle::invalid());
 			}
 		}
 		// check for remove flag
@@ -3540,24 +3567,13 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			if (spew_index < 0) {
 				Warning(LOCATION, "+Index not specified or is out of range, can not remove spewer.");
 			} else { // restore defaults
-				wip->particle_spewers[spew_index].particle_spew_type = PSPEW_NONE;
-				wip->particle_spewers[spew_index].particle_spew_count = 1;
-				wip->particle_spewers[spew_index].particle_spew_time = 25;
-				wip->particle_spewers[spew_index].particle_spew_vel = 0.4f;
-				wip->particle_spewers[spew_index].particle_spew_radius = 2.0f;
-				wip->particle_spewers[spew_index].particle_spew_lifetime = 0.15f;
-				wip->particle_spewers[spew_index].particle_spew_scale = 0.8f;
-				wip->particle_spewers[spew_index].particle_spew_z_scale = 1.0f;
-				wip->particle_spewers[spew_index].particle_spew_rotation_rate = 10.0f;
-				wip->particle_spewers[spew_index].particle_spew_offset = vmd_zero_vector;
-				wip->particle_spewers[spew_index].particle_spew_velocity = vmd_zero_vector;
-				generic_anim_init(&wip->particle_spewers[spew_index].particle_spew_anim, NULL);
+				wip->particle_spewers[spew_index] = particle::ParticleEffectHandle::invalid();
 			}
 		} else { // were not removing the spewer
 			if (spew_index < 0) { // index us ether not used or is invalid, so figure out where to put things
 				//find a free slot in the pspew info array
-				for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {
-					if (wip->particle_spewers[s].particle_spew_type == PSPEW_NONE) {
+				for (size_t s = 0; s < wip->particle_spewers.size(); s++) {
+					if (!wip->particle_spewers[s].isValid()) {
 						spew_index = (int)s;
 						break;
 					}
@@ -3565,86 +3581,130 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 			}
 			// no empty spot found, the modder tried to define too many spewers, or screwed up the xmts, or my code sucks
 			if ( spew_index < 0 ) {
-				Warning(LOCATION, "Too many particle spewers, max number of spewers is %i.", MAX_PARTICLE_SPEWERS);
-			} else { // we have a valid index, now parse the spewer already
+				spew_index = static_cast<int>(wip->particle_spewers.size());
+				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
+			}
+
+			if (optional_string("+Effect:")) {
+				wip->particle_spewers[spew_index] = particle::util::parseEffect(wip->name);
+			}
+			else { // we have a valid index, now parse the spewer already
+				auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][spew_index];
+				if (pspew_buffer.particle_spew_type == PSPEW_NONE) {
+					//This must be an uninitialized effect, store defaults.
+					pspew_buffer.particle_spew_count = 1;
+					pspew_buffer.particle_spew_time = 25;
+					pspew_buffer.particle_spew_vel = 0.4f;
+					pspew_buffer.particle_spew_radius = 2.0f;
+					pspew_buffer.particle_spew_lifetime = 0.15f;
+					pspew_buffer.particle_spew_scale = 0.8f;
+					pspew_buffer.particle_spew_z_scale = 1.0f;
+					pspew_buffer.particle_spew_rotation_rate = 10.0f;
+					pspew_buffer.particle_spew_offset = vmd_zero_vector;
+					pspew_buffer.particle_spew_velocity = vmd_zero_vector;
+				}
+
 				if (optional_string("+Type:")) { // added type field for pspew types, 0 is the default for reverse compatability -nuke
 					char temp_pspew_type[NAME_LENGTH];
 					stuff_string(temp_pspew_type, F_NAME, NAME_LENGTH);
 
 					if (!stricmp(temp_pspew_type, NOX("DEFAULT"))) {
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
+						pspew_buffer.particle_spew_type = PSPEW_DEFAULT;
 					} else if (!stricmp(temp_pspew_type, NOX("HELIX"))) {
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_HELIX;
+						pspew_buffer.particle_spew_type = PSPEW_HELIX;
 					} else if (!stricmp(temp_pspew_type, NOX("SPARKLER"))) {	// new types can be added here
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_SPARKLER;
+						pspew_buffer.particle_spew_type = PSPEW_SPARKLER;
 					} else if (!stricmp(temp_pspew_type, NOX("RING"))) {
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_RING;
+						pspew_buffer.particle_spew_type = PSPEW_RING;
 					} else if (!stricmp(temp_pspew_type, NOX("PLUME"))) {
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_PLUME;
+						pspew_buffer.particle_spew_type = PSPEW_PLUME;
 					} else {
-						wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
+						pspew_buffer.particle_spew_type = PSPEW_DEFAULT;
 					}
 				// for compatibility with existing tables that don't have a type tag
-				} else if (wip->particle_spewers[spew_index].particle_spew_type == PSPEW_NONE) { // make sure the omission of type wasn't to edit an existing entry
-					wip->particle_spewers[spew_index].particle_spew_type = PSPEW_DEFAULT;
+				} else if (pspew_buffer.particle_spew_type == PSPEW_NONE) { // make sure the omission of type wasn't to edit an existing entry
+					pspew_buffer.particle_spew_type = PSPEW_DEFAULT;
 				}
 
 				if (optional_string("+Count:")) {
-					stuff_int(&wip->particle_spewers[spew_index].particle_spew_count);
+					stuff_int(&pspew_buffer.particle_spew_count);
 				}
 
 				if (optional_string("+Time:")) {
-					stuff_int(&wip->particle_spewers[spew_index].particle_spew_time);
+					stuff_int(&pspew_buffer.particle_spew_time);
 				}
 
 				if (optional_string("+Vel:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_vel);
+					stuff_float(&pspew_buffer.particle_spew_vel);
 				}
 
 				if (optional_string("+Radius:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_radius);
+					stuff_float(&pspew_buffer.particle_spew_radius);
 				}
 
 				if (optional_string("+Life:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_lifetime);
+					stuff_float(&pspew_buffer.particle_spew_lifetime);
 				}
 
 				if (optional_string("+Scale:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_scale);
+					stuff_float(&pspew_buffer.particle_spew_scale);
 				}
 
 				if (optional_string("+Z Scale:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_z_scale);
+					stuff_float(&pspew_buffer.particle_spew_z_scale);
 				}
 
 				if (optional_string("+Rotation Rate:")) {
-					stuff_float(&wip->particle_spewers[spew_index].particle_spew_rotation_rate);
+					stuff_float(&pspew_buffer.particle_spew_rotation_rate);
 				}
 
 				if (optional_string("+Offset:")) {
-					stuff_vec3d(&wip->particle_spewers[spew_index].particle_spew_offset);
+					stuff_vec3d(&pspew_buffer.particle_spew_offset);
 				}
 
 				if (optional_string("+Initial Velocity:")) {
-					stuff_vec3d(&wip->particle_spewers[spew_index].particle_spew_velocity);
+					stuff_vec3d(&pspew_buffer.particle_spew_velocity);
 				}
 
 				if (optional_string("+Bitmap:")) {
-					stuff_string(fname, F_NAME, MAX_FILENAME_LEN);
-					generic_anim_init(&wip->particle_spewers[spew_index].particle_spew_anim, fname);
+					stuff_string(pspew_buffer.particle_spew_anim, F_NAME);
 				}
+
+				//if (wip->particle_spewers[spew_index].isValid()) {
+					//We had a previous particle effect set here, so we could clear it if we have too much overhead from memory waste.
+					//But as clearing a particle requires significant memory movement as we erase from a vector, don't for now.
+				//}
+
+				wip->particle_spewers[spew_index] = convertLegacyPspewBuffer(pspew_buffer, wip);
 			}
 		}	
 	}
 	// check to see if the pspew flag was enabled but no pspew tags were given, for compatability with retail tables
 	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
 		bool nospew = true;
-		for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++)
-			if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
+		for (const auto& spewer : wip->particle_spewers) {
+			if (spewer.isValid()) {
 				nospew = false;
+				break;
 			}
+		}
 		if (nospew) { // set first spewer to default
-			wip->particle_spewers[0].particle_spew_type = PSPEW_DEFAULT;
+			if (wip->particle_spewers.empty()) {
+				wip->particle_spewers.emplace_back(particle::ParticleEffectHandle::invalid());
+			}
+			auto& pspew_buffer = pspew_legacy_parse_data_buffer[weapon_info_get_index(wip)][0];
+			pspew_buffer.particle_spew_count = 1;
+			pspew_buffer.particle_spew_time = 25;
+			pspew_buffer.particle_spew_vel = 0.4f;
+			pspew_buffer.particle_spew_radius = 2.0f;
+			pspew_buffer.particle_spew_lifetime = 0.15f;
+			pspew_buffer.particle_spew_scale = 0.8f;
+			pspew_buffer.particle_spew_z_scale = 1.0f;
+			pspew_buffer.particle_spew_rotation_rate = 10.0f;
+			pspew_buffer.particle_spew_offset = vmd_zero_vector;
+			pspew_buffer.particle_spew_velocity = vmd_zero_vector;
+			pspew_buffer.particle_spew_type = PSPEW_DEFAULT;
+			wip->particle_spewers[0] = convertLegacyPspewBuffer(pspew_buffer, wip);
 		}
 	}
 
@@ -4377,12 +4437,6 @@ void weapon_release_bitmaps()
 		}
 
 		if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-			// particle animation
-			if (wip->b_info.beam_particle_ani.first_frame >= 0) {
-				bm_release(wip->b_info.beam_particle_ani.first_frame);
-				wip->b_info.beam_particle_ani.first_frame = -1;
-			}
-
 			// muzzle glow
 			if (wip->b_info.beam_glow.first_frame >= 0) {
 				bm_release(wip->b_info.beam_glow.first_frame);
@@ -4404,17 +4458,6 @@ void weapon_release_bitmaps()
 			if (wip->tr_info.texture.bitmap_id >= 0) {
 				bm_release(wip->tr_info.texture.bitmap_id);
 				wip->tr_info.texture.bitmap_id = -1;
-			}
-		}
-
-		if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) { // tweaked for multiple particle spews -nuke
-			for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++)  { // just bitmaps that got loaded
-				if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE){
-					if (wip->particle_spewers[s].particle_spew_anim.first_frame >= 0) {
-						bm_release(wip->particle_spewers[s].particle_spew_anim.first_frame);
-						wip->particle_spewers[s].particle_spew_anim.first_frame = -1;
-					}
-				}
 			}
 		}
 
@@ -4507,10 +4550,6 @@ void weapon_load_bitmaps(int weapon_index)
 	}
 
 	if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
-		// particle animation
-		if ( (wip->b_info.beam_particle_ani.first_frame < 0) && strlen(wip->b_info.beam_particle_ani.filename) )
-			generic_anim_load(&wip->b_info.beam_particle_ani);
-
 		// muzzle glow
 		if ( (wip->b_info.beam_glow.first_frame < 0) && strlen(wip->b_info.beam_glow.filename) ) {
 			if ( generic_anim_load(&wip->b_info.beam_glow) ) {
@@ -4553,30 +4592,6 @@ void weapon_load_bitmaps(int weapon_index)
 
 		if (wip->tr_info.texture.bitmap_id == -1) {
 			Warning(LOCATION, "Trail bitmap %s could not be loaded. Trail will not be rendered.", wip->tr_info.texture.filename);
-		}
-	}
-
-	//WMC - Don't try to load an anim if no anim is specified, Mmkay?
-	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
-		for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {	// looperfied for multiple pspewers -nuke
-			if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE){
-
-				if ((wip->particle_spewers[s].particle_spew_anim.first_frame < 0) 
-					&& (wip->particle_spewers[s].particle_spew_anim.filename[0] != '\0') ) {
-
-					wip->particle_spewers[s].particle_spew_anim.first_frame = bm_load(wip->particle_spewers[s].particle_spew_anim.filename);
-
-					if (wip->particle_spewers[s].particle_spew_anim.first_frame >= 0) {
-						wip->particle_spewers[s].particle_spew_anim.num_frames = 1;
-						wip->particle_spewers[s].particle_spew_anim.total_time = 1;
-					}
-					// fall back to an animated type
-					else if ( generic_anim_load(&wip->particle_spewers[s].particle_spew_anim) ) {
-						mprintf(("Could not find a usable particle spew bitmap for '%s'!\n", wip->name));
-						Warning(LOCATION, "Could not find a usable particle spew bitmap (%s) for weapon '%s'!\n", wip->particle_spewers[s].particle_spew_anim.filename, wip->name);
-					}
-				}
-			}
 		}
 	}
 
@@ -4800,26 +4815,13 @@ void weapon_do_post_parse()
 		}
 	}
 
-	// translate all spawn type weapons to referrnce the appropriate spawned weapon entry
-	translate_spawn_types();
-}
-
-void weapon_expl_info_init()
-{
-	int i;
-
-	parse_weapon_expl_tbl("weapon_expl.tbl");
-
-	// check for, and load, modular tables
-	parse_modular_table(NOX("*-wxp.tbm"), parse_weapon_expl_tbl);
-
-	// we've got our list so pass it off for final checking and loading
-	for (i = 0; i < (int)LOD_checker.size(); i++) {
-		Weapon_explosions.Load( LOD_checker[i].filename, LOD_checker[i].num_lods );
+	pspew_legacy_parse_data_buffer.clear();
+	if (pspew_do_warning) {
+		Warning(LOCATION, "At least one legacy PSPEW was requested with a spawn frequency of over 60FPS. See the log for details.");
 	}
 
-	// done
-	LOD_checker.clear();
+	// translate all spawn type weapons to referrnce the appropriate spawned weapon entry
+	translate_spawn_types();
 }
 
 /**
@@ -4828,9 +4830,6 @@ void weapon_expl_info_init()
 void weapon_init()
 {
 	if ( !Weapons_inited ) {
-		//Init weapon explosion info
-		weapon_expl_info_init();
-
 		Num_spawn_types = 0;
 
 		// parse weapons.tbl
@@ -6215,10 +6214,6 @@ void weapon_process_post(object * obj, float frame_time)
 		weapon_maybe_play_flyby_sound(obj, wp);
 	#endif
 
-	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew] && wp->lssm_stage != 3) {
-		weapon_maybe_spew_particle(obj);
-	}
-
 	// If this flag is true this is evaluated in weapon_process_pre()
 	if (!Framerate_independent_turning) {
 		weapon_do_homing_behavior(obj, frame_time);
@@ -6779,16 +6774,6 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 		swarm_create(objp, wp->swarm_info_ptr.get());
 	} 	
 
-	// if this is a particle spewing weapon, setup some stuff
-	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
-		for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {		// allow for multiple time values
-			if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
-				wp->particle_spew_time[s] = -1;
-				wp->particle_spew_rand = frand_range(0, PI2);	// per weapon randomness
-			}
-		}
-	}
-
 	// assign the network signature.  The starting sig is sent to all clients, so this call should
 	// result in the same net signature numbers getting assigned to every player in the game
 	if ( Game_mode & GM_MULTIPLAYER ) {
@@ -7061,6 +7046,19 @@ int weapon_create( const vec3d *pos, const matrix *porient, int weapon_type, int
 
 	if (wip->ambient_snd.isValid()) {
 		obj_snd_assign(objnum, wip->ambient_snd, &vmd_zero_vector , OS_MAIN);
+	}
+
+	// if this is a particle spewing weapon, setup some stuff
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+		for (const auto& effect : wip->particle_spewers) {
+			if(!effect.isValid())
+				continue;
+
+			auto source = particle::ParticleManager::get()->createSource(effect);
+			auto host = std::make_unique<EffectHostObject>(objp, vmd_zero_vector);
+			source->setHost(std::move(host));
+			source->finishCreation();
+		}
 	}
 
 	//Only try and play animations on POF Weapons
@@ -8235,22 +8233,7 @@ void weapons_page_in()
 
 			// muzzle glow
 			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
-
-			// particle ani
-			bm_page_in_texture(wip->b_info.beam_particle_ani.first_frame);
 		}
-
-		if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
-			for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {	// looped, multi particle spew -nuke
-				if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
-					bm_page_in_texture(wip->particle_spewers[s].particle_spew_anim.first_frame);
-				}
-			}
-		}
-
-		// muzzle flashes
-		if (wip->muzzle_flash >= 0)
-			mflash_mark_as_used(wip->muzzle_flash);
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
@@ -8275,9 +8258,6 @@ void weapons_page_in_cheats()
 		return;
 
 	Assert( used_weapons != NULL );
-
-	// force a page in of all muzzle flashes
-	mflash_page_in(true);
 
 	// page in models for all weapon types that aren't already loaded
 	for (i = 0; i < weapon_info_size(); i++) {
@@ -8426,22 +8406,7 @@ bool weapon_page_in(int weapon_type)
 
 			// muzzle glow
 			bm_page_in_texture(wip->b_info.beam_glow.first_frame);
-
-			// particle ani
-			bm_page_in_texture(wip->b_info.beam_particle_ani.first_frame);
 		}
-
-		if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
-			for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {	// looped, multi particle spew -nuke
-				if (wip->particle_spewers[s].particle_spew_type != PSPEW_NONE) {
-					bm_page_in_texture(wip->particle_spewers[s].particle_spew_anim.first_frame);
-				}
-			}
-		}
-
-		// muzzle flashes
-		if (wip->muzzle_flash >= 0)
-			mflash_mark_as_used(wip->muzzle_flash);
 
 		bm_page_in_texture(wip->thruster_flame.first_frame);
 		bm_page_in_texture(wip->thruster_glow.first_frame);
@@ -8508,443 +8473,6 @@ void weapon_get_laser_color(color *c, object *objp)
 
 	// otherwise interpolate between the colors
 	gr_init_color( c, r, g, b );
-}
-
-// default weapon particle spew data
-
-int Weapon_particle_spew_count = 1;
-int Weapon_particle_spew_time = 25;
-float Weapon_particle_spew_vel = 0.4f;
-float Weapon_particle_spew_radius = 2.0f;
-float Weapon_particle_spew_lifetime = 0.15f;
-float Weapon_particle_spew_scale = 0.8f;
-
-/**
- * For weapons flagged as particle spewers, spew particles. wheee
- */
-void weapon_maybe_spew_particle(object *obj)
-{
-	weapon *wp;
-	weapon_info *wip;
-	int idx;
-
-	// check some stuff
-	Assert(obj->type == OBJ_WEAPON);
-	Assert(obj->instance >= 0);
-	Assert(Weapons[obj->instance].weapon_info_index >= 0);
-	Assert(Weapon_info[Weapons[obj->instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Particle_spew]);
-	
-	wp = &Weapons[obj->instance];
-	wip = &Weapon_info[wp->weapon_info_index];
-	vec3d spawn_pos, spawn_vel, output_pos, output_vel, input_pos, input_vel;
-
-	for (int psi = 0; psi < MAX_PARTICLE_SPEWERS; psi++) {	// iterate through spewers	-nuke
-		if (wip->particle_spewers[psi].particle_spew_type != PSPEW_NONE) {
-			// if the weapon's particle timestamp has elapsed
-			if ((wp->particle_spew_time[psi] == -1) || timestamp_elapsed(wp->particle_spew_time[psi])) {
-				// reset the timestamp
-				wp->particle_spew_time[psi] = timestamp(wip->particle_spewers[0].particle_spew_time);
-
-				// turn normals and origins to world space if we need to
-				if (!vm_vec_same(&wip->particle_spewers[psi].particle_spew_offset, &vmd_zero_vector)) {	// don't xform unused vectors
-					vm_vec_unrotate(&spawn_pos, &wip->particle_spewers[psi].particle_spew_offset, &obj->orient);
-				} else {
-					spawn_pos = vmd_zero_vector;
-				}
-
-				if (!vm_vec_same(&wip->particle_spewers[psi].particle_spew_velocity, &vmd_zero_vector)) {
-					vm_vec_unrotate(&spawn_vel, &wip->particle_spewers[psi].particle_spew_velocity, &obj->orient);
-				} else {
-					spawn_vel = vmd_zero_vector;
-				}
-
-				// spew some particles
-				if (wip->particle_spewers[psi].particle_spew_type == PSPEW_DEFAULT)	// default pspew type
-				{		// do the default pspew
-						vec3d direct, direct_temp, particle_pos;
-						vec3d null_vec = ZERO_VECTOR;
-						vec3d vel;
-						float ang;
-
-					for (idx = 0; idx < wip->particle_spewers[psi].particle_spew_count; idx++) {
-						// get the backward vector of the weapon
-						direct = obj->orient.vec.fvec;
-						vm_vec_negate(&direct);
-
-						// randomly perturb x, y and z
-						
-						// uvec
-						ang = frand_range(-PI_2,PI_2);	// fl_radian(frand_range(-90.0f, 90.0f));	-optimized by nuke
-						vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.fvec);			
-						direct = direct_temp;
-						vm_vec_scale(&direct, wip->particle_spewers[psi].particle_spew_scale);
-
-						// rvec
-						ang = frand_range(-PI_2,PI_2);	// fl_radian(frand_range(-90.0f, 90.0f));	-optimized by nuke
-						vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.rvec);			
-						direct = direct_temp;
-						vm_vec_scale(&direct, wip->particle_spewers[psi].particle_spew_scale);
-
-						// fvec
-						ang = frand_range(-PI_2,PI_2);	// fl_radian(frand_range(-90.0f, 90.0f));	-optimized by nuke
-						vm_rot_point_around_line(&direct_temp, &direct, ang, &null_vec, &obj->orient.vec.uvec);			
-						direct = direct_temp;
-						vm_vec_scale(&direct, wip->particle_spewers[psi].particle_spew_scale);
-
-						// get a velocity vector of some percentage of the weapon's velocity
-						vel = obj->phys_info.vel;
-						vm_vec_scale(&vel, wip->particle_spewers[psi].particle_spew_vel);
-
-						// maybe add in offset and initial velocity
-						if (!vm_vec_same(&spawn_vel, &vmd_zero_vector)) { // add in particle velocity if its available
-							vm_vec_add2(&vel, &spawn_vel);
-						}
-						if (!vm_vec_same(&spawn_pos, &vmd_zero_vector)) { // add offset if available
-							vm_vec_add2(&direct, &spawn_pos);
-						}
-
-						if (wip->wi_flags[Weapon::Info_Flags::Corkscrew]) {
-							vm_vec_add(&particle_pos, &obj->last_pos, &direct);
-						} else {
-							vm_vec_add(&particle_pos, &obj->pos, &direct);
-						}
-
-						// emit the particle
-						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::particle_info pi;
-							pi.bitmap = particle::Anim_bitmap_id_smoke;
-							pi.nframes = particle::Anim_num_frames_smoke;
-							pi.pos = particle_pos;
-							pi.vel = vel;
-							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
-							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
-
-							particle::create(&pi);
-						} else {
-							particle::create(&particle_pos,
-											 &vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
-						}
-					}
-				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_HELIX) { // helix
-					float segment_length = wip->max_speed * flFrametime; // determine how long the segment is
-					float segment_angular_length = PI2 * wip->particle_spewers[psi].particle_spew_rotation_rate * flFrametime; 	// determine how much the segment rotates
-					float rotation_value = (wp->lifeleft * PI2 * wip->particle_spewers[psi].particle_spew_rotation_rate) + wp->particle_spew_rand; // calculate a rotational start point based on remaining life
-					float inc = 1.0f / wip->particle_spewers[psi].particle_spew_count;	// determine our incriment
-					float particle_rot;
-					vec3d input_pos_l = ZERO_VECTOR;
-					
-					for (float is = 0; is < 1; is += inc ) { // use iterator as a scaler
-						particle_rot = rotation_value + (segment_angular_length * is); // find what point of the rotation were at
-						input_vel.xyz.x = sinf(particle_rot) * wip->particle_spewers[psi].particle_spew_scale; // determine x/y velocity based on scale and rotation
-						input_vel.xyz.y = cosf(particle_rot) * wip->particle_spewers[psi].particle_spew_scale;
-						input_vel.xyz.z = wip->max_speed * wip->particle_spewers[psi].particle_spew_vel; // velocity inheritance
-						vm_vec_unrotate(&output_vel, &input_vel, &obj->orient);				// orient velocity to weapon
-						input_pos_l.xyz.x = input_vel.xyz.x * flFrametime * (1.0f - is);	// interpolate particle motion
-						input_pos_l.xyz.y = input_vel.xyz.y * flFrametime * (1.0f - is);
-						input_pos_l.xyz.z = segment_length * is;							// position particle correctly on the z axis
-						vm_vec_unrotate(&input_pos, &input_pos_l, &obj->orient);			// orient to weapon
-						vm_vec_sub(&output_pos, &obj->pos, &input_pos);						// translate to world space
-
-						//maybe add in offset and initial velocity
-						if (!vm_vec_same(&spawn_vel, &vmd_zero_vector)) { // add particle velocity if needed
-							vm_vec_add2(&output_vel, &spawn_vel);
-						}
-						if (!vm_vec_same(&spawn_pos, &vmd_zero_vector)) { // add offset if needed
-							vm_vec_add2(&output_pos, &spawn_pos);
-						}
-
-						//emit particles
-						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::particle_info pi;
-							pi.bitmap = particle::Anim_bitmap_id_smoke;
-							pi.nframes = particle::Anim_num_frames_smoke;
-							pi.pos = output_pos;
-							pi.vel = output_vel;
-							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
-							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
-
-							particle::create(&pi);
-						} else {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
-						}
-					}
-				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_SPARKLER) { // sparkler
-					vec3d temp_vel;
-					output_vel = obj->phys_info.vel;
-					vm_vec_scale(&output_vel, wip->particle_spewers[psi].particle_spew_vel);
-
-					for (idx = 0; idx < wip->particle_spewers[psi].particle_spew_count; idx++) {
-						// create a random unit vector and scale it
-						vm_vec_rand_vec_quick(&input_vel);
-						vm_vec_scale(&input_vel, wip->particle_spewers[psi].particle_spew_scale);
-						
-						if (wip->particle_spewers[psi].particle_spew_z_scale != 1.0f) {	// don't do the extra math for spherical effect
-							temp_vel = input_vel;
-							temp_vel.xyz.z *= wip->particle_spewers[psi].particle_spew_z_scale;	// for an ovoid particle effect to better combine with laser effects
-							vm_vec_unrotate(&input_vel, &temp_vel, &obj->orient);				// so it has to be rotated
-						}
-
-						vm_vec_add2(&output_vel, &input_vel); // add to weapon velocity
-						output_pos = obj->pos;
-
-						// maybe add in offset and initial velocity
-						if (!vm_vec_same(&spawn_vel, &vmd_zero_vector)) { // add particle velocity if needed
-							vm_vec_add2(&output_vel, &spawn_vel);
-						}
-						if (!vm_vec_same(&spawn_pos, &vmd_zero_vector)) { // add offset if needed
-							vm_vec_add2(&output_pos, &spawn_pos);
-						}
-
-						// emit particles
-						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::particle_info pi;
-							pi.bitmap = particle::Anim_bitmap_id_smoke;
-							pi.nframes = particle::Anim_num_frames_smoke;
-							pi.pos = output_pos;
-							pi.vel = output_vel;
-							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
-							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
-
-							particle::create(&pi);
-						} else {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
-						}
-					}
-				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_RING) {
-					float inc = PI2 / wip->particle_spewers[psi].particle_spew_count;	
-
-					for (float ir = 0; ir < PI2; ir += inc) { // use iterator for rotation
-						input_vel.xyz.x = sinf(ir) * wip->particle_spewers[psi].particle_spew_scale; // generate velocity from rotation data
-						input_vel.xyz.y = cosf(ir) * wip->particle_spewers[psi].particle_spew_scale;
-						input_vel.xyz.z = obj->phys_info.fspeed * wip->particle_spewers[psi].particle_spew_vel;
-						vm_vec_unrotate(&output_vel, &input_vel, &obj->orient); // rotate it to model
-
-						output_pos = obj->pos;
-
-						// maybe add in offset amd iitial velocity
-						if (!vm_vec_same(&spawn_vel, &vmd_zero_vector)) { // add particle velocity if needed
-							vm_vec_add2(&output_vel, &spawn_vel);
-						}
-						if (!vm_vec_same(&spawn_pos, &vmd_zero_vector)) { // add offset if needed
-							vm_vec_add2(&output_pos, &spawn_pos);
-						}
-
-						// emit particles
-						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::particle_info pi;
-							pi.bitmap = particle::Anim_bitmap_id_smoke;
-							pi.nframes = particle::Anim_num_frames_smoke;
-							pi.pos = output_pos;
-							pi.vel = output_vel;
-							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
-							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
-						} else {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
-						}
-					}
-				} else if (wip->particle_spewers[psi].particle_spew_type == PSPEW_PLUME) {
-					float ang_rand, len_rand, sin_ang, cos_ang;
-					vec3d input_pos_l = ZERO_VECTOR;
-					
-					for (int i = 0; i < wip->particle_spewers[psi].particle_spew_count; i++) {
-						// use polar coordinates to ensure a disk shaped spew plane
-						ang_rand = frand_range(-PI,PI);
-						len_rand = frand() * wip->particle_spewers[psi].particle_spew_scale;
-						sin_ang = sinf(ang_rand);
-						cos_ang = cosf(ang_rand);
-						// compute velocity
-						input_vel.xyz.x = wip->particle_spewers[psi].particle_spew_z_scale * -sin_ang;
-						input_vel.xyz.y = wip->particle_spewers[psi].particle_spew_z_scale * -cos_ang;
-						input_vel.xyz.z = obj->phys_info.fspeed * wip->particle_spewers[psi].particle_spew_vel;
-						vm_vec_unrotate(&output_vel, &input_vel, &obj->orient); // rotate it to model
-						// place particle on a disk prependicular to the weapon normal and rotate to model space
-						input_pos_l.xyz.x = sin_ang * len_rand;
-						input_pos_l.xyz.y = cos_ang * len_rand;
-						vm_vec_unrotate(&input_pos, &input_pos_l, &obj->orient); // rotate to world
-						vm_vec_sub(&output_pos, &obj->pos, &input_pos); // translate to world
-						
-						// maybe add in offset amd iitial velocity
-						if (!vm_vec_same(&spawn_vel, &vmd_zero_vector)) { // add particle velocity if needed
-							vm_vec_add2(&output_vel, &spawn_vel);
-						}
-						if (!vm_vec_same(&spawn_pos, &vmd_zero_vector)) { // add offset if needed
-							vm_vec_add2(&output_pos, &spawn_pos);
-						}
-
-						//emit particles
-						if (wip->particle_spewers[psi].particle_spew_anim.first_frame < 0) {
-							particle::particle_info pi;
-							pi.bitmap = particle::Anim_bitmap_id_smoke;
-							pi.nframes = particle::Anim_num_frames_smoke;
-							pi.pos = output_pos;
-							pi.vel = output_vel;
-							pi.lifetime = wip->particle_spewers[psi].particle_spew_lifetime;
-							pi.rad = wip->particle_spewers[psi].particle_spew_radius;
-
-							particle::create(&pi);
-						} else {
-							particle::create(&output_pos,
-											 &output_vel,
-											 wip->particle_spewers[psi].particle_spew_lifetime,
-											 wip->particle_spewers[psi].particle_spew_radius,
-											 wip->particle_spewers[psi].particle_spew_anim.first_frame);
-						}
-					}
-				}
-			}
-		}
-	}
-}
-
-/**
- * Debug console functionality
- */
-void dcf_pspew();
-DCF(pspew_count, "Number of particles spewed at a time")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-			dc_printf("Partical count is %i\n", Weapon_particle_spew_count);
-			return;
-	}
-
-	dc_stuff_int(&Weapon_particle_spew_count);
-	
-	dc_printf("Partical count set to %i\n", Weapon_particle_spew_count);
-}
-
-DCF(pspew_time, "Time between particle spews")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle spawn period is %i\n", Weapon_particle_spew_time);
-		return;
-	}
-
-	dc_stuff_int(&Weapon_particle_spew_time);
-
-	dc_printf("Particle spawn period set to %i\n", Weapon_particle_spew_time);
-}
-
-DCF(pspew_vel, "Relative velocity of particles (0.0 - 1.0)")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle relative velocity is %f\n", Weapon_particle_spew_vel);
-		return;
-	}
-
-	dc_stuff_float(&Weapon_particle_spew_vel);
-
-	dc_printf("Particle relative velocity set to %f\n", Weapon_particle_spew_vel);
-}
-
-DCF(pspew_size, "Size of spewed particles")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle size is %f\n", Weapon_particle_spew_radius);
-		return;
-	}
-
-	dc_stuff_float(&Weapon_particle_spew_radius);
-
-	dc_printf("Particle size set to %f\n", Weapon_particle_spew_radius);
-}
-
-DCF(pspew_life, "Lifetime of spewed particles")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle lifetime is %f\n", Weapon_particle_spew_lifetime);
-		return;
-	}
-
-	dc_stuff_float(&Weapon_particle_spew_lifetime);
-
-	dc_printf("Particle lifetime set to %f\n", Weapon_particle_spew_lifetime);
-}
-
-DCF(pspew_scale, "How far away particles are from the weapon path")
-{
-	if (dc_optional_string_either("help", "--help")) {
-		dcf_pspew();
-		return;
-	}
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle scale is %f\n", Weapon_particle_spew_scale);
-	}
-
-	dc_stuff_float(&Weapon_particle_spew_scale);
-
-	dc_printf("Particle scale set to %f\n", Weapon_particle_spew_scale);
-}
-
-// Help and Status provider
-DCF(pspew, "Particle spew help and status provider")
-{
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle spew settings\n\n");
-
-		dc_printf(" Count   (pspew_count) : %d\n", Weapon_particle_spew_count);
-		dc_printf(" Time     (pspew_time) : %d\n", Weapon_particle_spew_time);
-		dc_printf(" Velocity  (pspew_vel) : %f\n", Weapon_particle_spew_vel);
-		dc_printf(" Size     (pspew_size) : %f\n", Weapon_particle_spew_radius);
-		dc_printf(" Lifetime (pspew_life) : %f\n", Weapon_particle_spew_lifetime);
-		dc_printf(" Scale   (psnew_scale) : %f\n", Weapon_particle_spew_scale);
-		return;
-	}
-
-	dc_printf("Available particlar spew commands:\n");
-	dc_printf("pspew_count : %s\n", dcmd_pspew_count.help);
-	dc_printf("pspew_time  : %s\n", dcmd_pspew_time.help);
-	dc_printf("pspew_vel   : %s\n", dcmd_pspew_vel.help);
-	dc_printf("pspew_size  : %s\n", dcmd_pspew_size.help);
-	dc_printf("pspew_life  : %s\n", dcmd_pspew_life.help);
-	dc_printf("pspew_scale : %s\n\n", dcmd_pspew_scale.help);
-
-	dc_printf("To view status of all pspew settings, type in 'pspew --status'.\n");
-	dc_printf("Passing '--status' as an argument to any of the individual spew commands will show the status of that variable only.\n\n");
-
-	dc_printf("These commands adjust the various properties of the particle spew system, which is used by weapons when they are fired, are in-flight, and die (either by impact or by end of life time.\n");
-	dc_printf("Generally, a large particle count with small size and scale will result in a nice dense particle spew.\n");
-	dc_printf("Be advised, this effect is applied to _ALL_ weapons, and as such may drastically reduce framerates on lower powered platforms.\n");
 }
 
 /**
@@ -9075,14 +8603,18 @@ void weapon_unpause_sounds()
 	beam_unpause_sounds();
 }
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx) {
-	int expl_ani_handle = Weapon_explosions.GetAnim(idx, hitpos, radius);
-	particle::create(hitpos,
-					 &vmd_zero_vector,
-					 0.0f,
-					 radius,
-					 expl_ani_handle,
-					 objp);
+void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const object *objp, const object *weapon_objp, float radius, particle::ParticleEffectHandle handle) {
+	matrix localorient = objp->orient * weapon_objp->orient;
+	vec3d hitdir_global;
+	vm_vec_unrotate(&hitdir_global, &hitdir, &objp->orient);
+
+	auto particleSource = particle::ParticleManager::get()->createSource(handle);
+	particleSource->setHost(make_unique<EffectHostObject>(objp, hitpos, localorient));
+	particleSource->setNormal(hitdir_global);
+	particleSource->setTriggerRadius(radius);
+	particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+
+	particleSource->finishCreation();
 }
 
 // renders another laser bitmap on top of the regular bitmap based on the angle of the camera to the front of the laser
@@ -9855,8 +9387,6 @@ void weapon_info::reset()
 	this->tag_time = -1.0f;
 	this->tag_level = -1;
 
-	this->muzzle_flash = -1;
-
 	this->field_of_fire = 0.0f;
 	this->fof_spread_rate = 0.0f;
 	this->fof_reset_rate = 0.0f;
@@ -9896,9 +9426,6 @@ void weapon_info::reset()
 	this->b_info.beam_warmup = -1;
 	this->b_info.beam_warmdown = -1;
 	this->b_info.beam_muzzle_radius = 0.0f;
-	this->b_info.beam_particle_count = -1;
-	this->b_info.beam_particle_radius = 0.0f;
-	this->b_info.beam_particle_angle = 0.0f;
 	this->b_info.beam_loop_sound = gamesnd_id();
 	this->b_info.beam_warmup_sound = gamesnd_id();
 	this->b_info.beam_warmdown_sound = gamesnd_id();
@@ -9938,7 +9465,8 @@ void weapon_info::reset()
 	this->b_info.t5info.burst_rot_axis = Type5BeamRotAxis::UNSPECIFIED;
 
 	generic_anim_init(&this->b_info.beam_glow, NULL);
-	generic_anim_init(&this->b_info.beam_particle_ani, NULL);
+
+	this->b_info.beam_muzzle_effect = particle::ParticleEffectHandle::invalid();
 
 	for (i = 0; i < (int)Iff_info.size(); i++)
 		for (j = 0; j < NUM_SKILL_LEVELS; j++)
@@ -9959,20 +9487,7 @@ void weapon_info::reset()
 		bsip->translation = 0.0f;
 	}
 
-	for (size_t s = 0; s < MAX_PARTICLE_SPEWERS; s++) {						// default values for everything -nuke
-		this->particle_spewers[s].particle_spew_type = PSPEW_NONE;				// added by nuke
-		this->particle_spewers[s].particle_spew_count = 1;
-		this->particle_spewers[s].particle_spew_time = 25;
-		this->particle_spewers[s].particle_spew_vel = 0.4f;
-		this->particle_spewers[s].particle_spew_radius = 2.0f;
-		this->particle_spewers[s].particle_spew_lifetime = 0.15f;
-		this->particle_spewers[s].particle_spew_scale = 0.8f;
-		this->particle_spewers[s].particle_spew_z_scale = 1.0f;			// added by nuke
-		this->particle_spewers[s].particle_spew_rotation_rate = 10.0f;
-		this->particle_spewers[s].particle_spew_offset = vmd_zero_vector;
-		this->particle_spewers[s].particle_spew_velocity = vmd_zero_vector;
-		generic_anim_init(&this->particle_spewers[s].particle_spew_anim, NULL);
-	}
+	this->particle_spewers.clear();			// added by nuke
 
 	this->cm_aspect_effectiveness = 1.0f;
 	this->cm_heat_effectiveness = 1.0f;

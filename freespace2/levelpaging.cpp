@@ -28,7 +28,6 @@ extern void asteroid_page_in();
 extern void neb2_page_in();
 extern void message_pagein_mission_messages();
 extern void model_page_in_stop();
-extern void mflash_page_in(bool);
 
 namespace particle
 {
@@ -57,7 +56,6 @@ void level_page_in()
 	shield_hit_page_in();
 	asteroid_page_in();
 	neb2_page_in();
-	mflash_page_in(false);  // just so long as it happens after weapons_page_in()
 
 	// preload mission messages if NOT running low-memory (greater than 48MB)
 	if (game_using_low_mem() == false) {

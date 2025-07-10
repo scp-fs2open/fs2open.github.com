@@ -94,6 +94,36 @@ ADE_FUNC(__len, l_Ship, NULL, "Number of subsystems on ship", "number", "Subsyst
 	return ade_set_args(L, "i", ship_get_num_subsys(&Ships[objh->objp()->instance]));
 }
 
+ADE_FUNC(getSubsystemList,
+	l_Ship,
+	nullptr,
+	"Get the list of subsystems on this ship",
+	"iterator<subsystem>",
+	"An iterator across all subsystems on the ship. Can be used in a for .. in loop. Is not valid for more than one frame.")
+{
+	object_h* objh;
+	if (!ade_get_args(L, "o", l_Ship.GetPtr(&objh)))
+		return ADE_RETURN_NIL;
+
+	if (!objh->isValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[objh->objp()->instance];
+	ship_subsys* ss = &shipp->subsys_list;
+
+	return ade_set_args(L, "u", luacpp::LuaFunction::createFromStdFunction(L, [shipp, ss](lua_State* LInner, const luacpp::LuaValueList& /*params*/) mutable -> luacpp::LuaValueList {
+		//Since the first element of a list is the next element from the head, and we start this function with the captured "ss" object being the head, this GET_NEXT will return the first element on first call of this lambda.
+		//Similarly, an empty list is defined by the head's next element being itself, hence an empty list will immediately return nil just fine
+		ss = GET_NEXT(ss);
+
+		if (ss == END_OF_LIST(&shipp->subsys_list) || ss == nullptr) {
+			return luacpp::LuaValueList{ luacpp::LuaValue::createNil(LInner) };
+		}
+
+		return luacpp::LuaValueList{ luacpp::LuaValue::createValue(LInner, l_Subsystem.Set(ship_subsys_h(&Objects[shipp->objnum], ss))) };
+	}));
+}
+
 ADE_FUNC(setFlag, l_Ship, "boolean set_it, string flag_name", "Sets or clears one or more flags - this function can accept an arbitrary number of flag arguments.  The flag names can be any string that the alter-ship-flag SEXP operator supports.", nullptr, "Returns nothing")
 {
 	object_h *objh;

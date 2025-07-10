@@ -3895,6 +3895,11 @@ polymodel * model_get(int model_num)
 	return Polygon_models[num];
 }
 
+int num_model_instances()
+{
+	return static_cast<int>(Polygon_model_instances.size());
+}
+
 polymodel_instance* model_get_instance(int model_instance_num)
 {
 	Assert( model_instance_num >= 0 );

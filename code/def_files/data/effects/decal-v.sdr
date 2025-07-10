@@ -1,5 +1,12 @@
 
 in vec4 vertPosition;
+in mat4 vertModelMatrix;
+
+out flat mat4 invModelMatrix;
+out flat vec3 decalDirection;
+out flat float normal_angle_cutoff;
+out flat float angle_fade_start;
+out flat float alpha_scale;
 
 layout (std140) uniform decalGlobalData {
 	mat4 viewMatrix;
@@ -8,26 +15,31 @@ layout (std140) uniform decalGlobalData {
 	mat4 invProjMatrix;
 
 	vec3 ambientLight;
+	float pad0;
 
 	vec2 viewportSize;
 };
+
 layout (std140) uniform decalInfoData {
-	mat4 model_matrix;
-	mat4 inv_model_matrix;
-
-	vec3 decal_direction;
-	float normal_angle_cutoff;
-
 	int diffuse_index;
 	int glow_index;
 	int normal_index;
-	float angle_fade_start;
-
-	float alpha_scale;
 	int diffuse_blend_mode;
+
 	int glow_blend_mode;
 };
 
 void main() {
-	gl_Position = projMatrix * viewMatrix * model_matrix * vertPosition;
+    normal_angle_cutoff = vertModelMatrix[0][3];
+    angle_fade_start = vertModelMatrix[1][3];
+    alpha_scale = vertModelMatrix[2][3];
+
+    mat4 modelMatrix = vertModelMatrix;
+    modelMatrix[0][3] = 0.0;
+    modelMatrix[1][3] = 0.0;
+    modelMatrix[2][3] = 0.0;
+
+    invModelMatrix = inverse(modelMatrix);
+    decalDirection = mat3(viewMatrix) * vec3(modelMatrix[0][2], modelMatrix[1][2], modelMatrix[2][2]);
+	gl_Position = projMatrix * viewMatrix * modelMatrix * vertPosition;
 }

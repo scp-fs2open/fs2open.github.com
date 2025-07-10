@@ -1083,9 +1083,6 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 				particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
 
 				particleSource->finishCreation();
-			// if there's a muzzle flash entry and no muzzle effect entry, we use the mflash
-			} else if (Weapon_info[weapon_info_index].muzzle_flash >= 0) {
-				mflash_create(gun_pos, gun_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);
 			}
 	}
 

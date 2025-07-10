@@ -121,6 +121,9 @@ void debris_init()
 	Debris_hit_particle = particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 		"", //Name
 		::util::UniformFloatRange(10.f), //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
@@ -135,6 +138,12 @@ void debris_init()
 		true, //Affected by detail
 		1.f, //Culling range multiplier
 		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		false, //Don't reverse animation
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
+		std::nullopt, //Local offset
 		::util::UniformFloatRange(0.25f, 0.75f), //Lifetime
 		::util::UniformFloatRange(0.2f, 0.4f), //Radius
 		particle::Anim_bitmap_id_fire)); //Bitmap
@@ -418,6 +427,14 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, const
 	{
 		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force, source_subsys);
 		debris_create_fire_hook(obj, source_obj);
+		const auto& sip = Ship_info[Ships[source_obj->instance].ship_info_index];
+		if (sip.debris_flame_particles.isValid()) {
+			auto source = particle::ParticleManager::get()->createSource(sip.debris_flame_particles);
+			source->setHost(std::make_unique<EffectHostObject>(obj, vmd_zero_vector));
+			source->setTriggerRadius(source_obj->radius);
+			source->setTriggerVelocity(vm_vec_mag_quick(&source_obj->phys_info.vel));
+			source->finishCreation();
+		}
 	}
 
 	return obj;

@@ -119,7 +119,7 @@ namespace dialogs {
 	{
 		SCP_vector<SCP_string> listOut;
 		for (auto& currentItem : ui->chosenShipsList->selectedItems()){
-			listOut.push_back(currentItem->text().toStdString());
+			listOut.emplace_back(currentItem->text().toStdString());
 		}
 	
 		if (ui->chosenShipsList->selectedItems().count() > 0) {
@@ -156,7 +156,7 @@ namespace dialogs {
 		for (int i = 0; i < ui->chosenShipsList->count(); i++) {
 			auto current = ui->chosenShipsList->item(i);
 			if (current->isSelected()) {
-				selectedItems.push_back(current->text().toStdString());
+				selectedItems.emplace_back(current->text().toStdString());
 			}
 		}
 
@@ -173,7 +173,7 @@ namespace dialogs {
 		for (int i = 0; i < ui->possibleShipsList->count(); i++) {
 			auto current = ui->possibleShipsList->item(i);
 			if (current->isSelected()) {
-				selectedItems.push_back(current->text().toStdString());
+				selectedItems.emplace_back(current->text().toStdString());
 			}
 		}
 

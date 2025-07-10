@@ -321,7 +321,7 @@ void LoadoutDialog::addShipButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->listShipsNotUsed->selectedItems()){
-		list.push_back(item->text().toStdString());
+		list.emplace_back(item->text().toStdString());
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -338,7 +338,7 @@ void LoadoutDialog::addWeaponButtonClicked()
 	SCP_vector<SCP_string> list;
 	
 	for (const auto& item: ui->listWeaponsNotUsed->selectedItems()){
-		list.push_back(item->text().toStdString());
+		list.emplace_back(item->text().toStdString());
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -355,7 +355,7 @@ void LoadoutDialog::removeShipButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->usedShipsList->selectedItems()){
-		list.push_back(item->text().toStdString());
+		list.emplace_back(item->text().toStdString());
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -372,7 +372,7 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->usedWeaponsList->selectedItems()){
-		list.push_back(item->text().toStdString());
+		list.emplace_back(item->text().toStdString());
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -578,7 +578,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 			
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x){
-				if (ui->usedShipsList->item(x,0) && !stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
+				if (ui->usedShipsList->item(x,0) && lcase_equal(ui->usedShipsList->item(x, 0)->text().toStdString(), shipName)) {
 					found = true;
 					// update the quantities here, and make sure it's visible
 					ui->usedShipsList->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
@@ -600,7 +600,7 @@ void LoadoutDialog::updateUI()
 
 			// remove from the unused list
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
-				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
+				if (lcase_equal(ui->listShipsNotUsed->item(x)->text().toStdString(), shipName)) {
 					ui->listShipsNotUsed->setRowHidden(x, true);
 					break;
 				}
@@ -610,7 +610,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
-				if (!stricmp(ui->listShipsNotUsed->item(x)->text().toStdString().c_str(), shipName.c_str())) {
+				if (lcase_equal(ui->listShipsNotUsed->item(x)->text().toStdString(), shipName)) {
 					found = true;
 					ui->listShipsNotUsed->setRowHidden(x, false); 
 					break;
@@ -624,7 +624,7 @@ void LoadoutDialog::updateUI()
 				// remove from the used list
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
 				if (ui->usedShipsList->item(x, 0) &&
-					!stricmp(ui->usedShipsList->item(x, 0)->text().toStdString().c_str(), shipName.c_str())) {
+					lcase_equal(ui->usedShipsList->item(x, 0)->text().toStdString(), shipName)) {
 					ui->usedShipsList->setRowHidden(x, true);
 					break;
 				}
@@ -641,7 +641,7 @@ void LoadoutDialog::updateUI()
 			
 			// Add or update in the used list
 			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-				if (ui->usedWeaponsList->item(x,0) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
+				if (ui->usedWeaponsList->item(x,0) && lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weaponName)) {
 					found = true;
 					// only need to update the quantities here.
 					ui->usedWeaponsList->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
@@ -664,7 +664,7 @@ void LoadoutDialog::updateUI()
 
 			// remove from the unused list
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
-				if (!stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
+				if (lcase_equal(ui->listWeaponsNotUsed->item(x)->text().toStdString(), weaponName)) {
 					ui->listWeaponsNotUsed->setRowHidden(x, true);
 					break;
 				}
@@ -674,7 +674,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-				if (ui->listWeaponsNotUsed->item(x) && !stricmp(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str(), weaponName.c_str())) {
+				if (ui->listWeaponsNotUsed->item(x) && lcase_equal(ui->listWeaponsNotUsed->item(x)->text().toStdString(), weaponName)) {
 					found = true;
 					ui->listWeaponsNotUsed->setRowHidden(x, false);
 					break;
@@ -688,7 +688,7 @@ void LoadoutDialog::updateUI()
 			// remove from the used list
 			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
 				if (ui->usedWeaponsList->item(x, 0) &&
-					!stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weaponName.c_str())) {
+					lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weaponName)) {
 					ui->usedWeaponsList->setRowHidden(x, true);
 					break;
 				}
@@ -699,9 +699,9 @@ void LoadoutDialog::updateUI()
 	
 	// Go through the lists and make sure that we don't have random empty entries
 	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
-		if (ui->listShipsNotUsed->item(x) && !strlen(ui->listShipsNotUsed->item(x)->text().toStdString().c_str())) {
+		if (ui->listShipsNotUsed->item(x) && ui->listShipsNotUsed->item(x)->text().isEmpty()) {
 			for (int y = x + 1; y < ui->listShipsNotUsed->count(); ++y) {
-				if (ui->listShipsNotUsed->item(y) && strlen(ui->listShipsNotUsed->item(y)->text().toStdString().c_str())) {
+				if (ui->listShipsNotUsed->item(y) && !ui->listShipsNotUsed->item(y)->text().isEmpty()) {
 					ui->listShipsNotUsed->item(x)->setText(ui->listShipsNotUsed->item(y)->text());
 					ui->listShipsNotUsed->item(y)->setText("");
 					break;
@@ -712,9 +712,9 @@ void LoadoutDialog::updateUI()
 
 
 	for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
-		if (ui->listWeaponsNotUsed->item(x) && !strlen(ui->listWeaponsNotUsed->item(x)->text().toStdString().c_str())) {
+		if (ui->listWeaponsNotUsed->item(x) && ui->listWeaponsNotUsed->item(x)->text().isEmpty()) {
 			for (int y = x + 1; y < ui->listWeaponsNotUsed->count(); ++y) {
-				if (ui->listWeaponsNotUsed->item(y) && strlen(ui->listWeaponsNotUsed->item(y)->text().toStdString().c_str())) {
+				if (ui->listWeaponsNotUsed->item(y) && !ui->listWeaponsNotUsed->item(y)->text().isEmpty()) {
 					ui->listWeaponsNotUsed->item(x)->setText(ui->listWeaponsNotUsed->item(y)->text());
 					ui->listWeaponsNotUsed->item(y)->setText("");
 					break;
@@ -724,10 +724,10 @@ void LoadoutDialog::updateUI()
 	}
 
 	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-		if (ui->usedShipsList->item(x, 0) && !strlen(ui->usedShipsList->item(x, 0)->text().toStdString().c_str()) && ui->usedShipsList->item(x, 1)) {
+		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x, 0)->text().isEmpty() && ui->usedShipsList->item(x, 1)) {
 			for (int y = x + 1; y < ui->usedShipsList->rowCount(); ++y) {
-				if (ui->usedShipsList->item(y, 0) && strlen(ui->usedShipsList->item(y, 0)->text().toStdString().c_str())
-				&& ui->usedShipsList->item(y, 1) && strlen(ui->usedShipsList->item(y, 1)->text().toStdString().c_str())) {
+				if (ui->usedShipsList->item(y, 0) && !ui->usedShipsList->item(y, 0)->text().isEmpty()
+				&& ui->usedShipsList->item(y, 1) && !ui->usedShipsList->item(y, 1)->text().isEmpty()) {
 
 					ui->usedShipsList->item(x, 0)->setText(ui->usedShipsList->item(y, 0)->text());
 					ui->usedShipsList->item(y, 0)->setText("");
@@ -741,11 +741,11 @@ void LoadoutDialog::updateUI()
 	}
 
 	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-		if (ui->usedWeaponsList->item(x, 0) && !strlen(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str()) &&
+		if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x, 0)->text().isEmpty() &&
 			ui->usedWeaponsList->item(x, 1)) {
 			for (int y = x + 1; y < ui->usedWeaponsList->rowCount(); ++y) {
-				if (ui->usedWeaponsList->item(y, 0) && strlen(ui->usedWeaponsList->item(y, 0)->text().toStdString().c_str()) 
-				&& ui->usedWeaponsList->item(y, 1) && strlen(ui->usedWeaponsList->item(y, 1)->text().toStdString().c_str())) {
+				if (ui->usedWeaponsList->item(y, 0) && !ui->usedWeaponsList->item(y, 0)->text().isEmpty()
+				&& ui->usedWeaponsList->item(y, 1) && !ui->usedWeaponsList->item(y, 1)->text().isEmpty()) {
 
 					ui->usedWeaponsList->item(x, 0)->setText(ui->usedWeaponsList->item(y, 0)->text());
 					ui->usedWeaponsList->item(y, 0)->setText("");
@@ -832,8 +832,8 @@ void LoadoutDialog::updateUI()
 			ui->extraItemsViaVariableCombo->setCurrentIndex(0);
 		} else {
 			for (int x = 0; x < ui->extraItemsViaVariableCombo->count(); ++x) {
-				if (!stricmp(ui->extraItemsViaVariableCombo->itemText(x).toStdString().c_str(),
-						currentVariable.c_str())) {
+				if (lcase_equal(ui->extraItemsViaVariableCombo->itemText(x).toStdString(),
+						currentVariable)) {
 					ui->extraItemsViaVariableCombo->setCurrentIndex(x);
 					break;
 				}
@@ -850,7 +850,7 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (const auto& weapon : requiredWeapons) {
-				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && !stricmp(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str(), weapon.c_str())) {
+				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weapon)) {
 					found = true;
 					ui->usedWeaponsList->item(x, 2)->setText("Yes");
 					break;
@@ -870,7 +870,7 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedShips()
 
 	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
 		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x,0)->isSelected()) {
-			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString().c_str());
+			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString());
 		}
 	}
 
@@ -883,7 +883,7 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
 
 	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
 		if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x, 0)->isSelected()) {
-			namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString().c_str());
+			namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString());
 		}
 	}
 

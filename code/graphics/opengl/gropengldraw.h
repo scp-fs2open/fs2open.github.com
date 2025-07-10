@@ -112,7 +112,9 @@ void gr_opengl_render_decals(decal_material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,
 	int num_elements,
-	const indexed_vertex_source& binding);
+	const indexed_vertex_source& binding,
+	const gr_buffer_handle& instance_buffer,
+	int num_instances);
 void gr_opengl_render_rocket_primitives(interface_material* material_info,
 	primitive_type prim_type,
 	vertex_layout* layout,

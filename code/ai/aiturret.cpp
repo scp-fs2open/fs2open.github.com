@@ -1559,7 +1559,9 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 	float burst_shots_mult = wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_SHOTS_MULT, launch_curve_data);
 	int burst_shots = MAX(fl2i(i2fl(base_burst_shots) * burst_shots_mult) - 1, 0);
 
-	if (burst_shots > turret->weapons.burst_counter[weapon_num]) {
+	bool burst = burst_shots > turret->weapons.burst_counter[weapon_num];
+
+	if (burst) {
 		wait *= wip->burst_delay;
 		wait *= wip->weapon_launch_curves.get_output(weapon_info::WeaponLaunchCurveOutputs::BURST_DELAY_MULT, launch_curve_data);
 		turret->weapons.burst_counter[weapon_num]++;
@@ -1659,7 +1661,7 @@ void turret_set_next_fire_timestamp(int weapon_num, const weapon_info *wip, ship
 		wait *= frand_range(0.9f, 1.1f);
 	}
 
-	if(turret->rof_scaler != 1.0f)
+	if(turret->rof_scaler != 1.0f && !(burst && turret->system_info->flags[Model::Subsystem_Flags::Burst_ignores_RoF_Mult]))
 		wait /= get_adjusted_turret_rof(turret);
 
 	(*fs_dest) = timestamp((int)wait);
@@ -2043,9 +2045,6 @@ bool turret_fire_weapon(int weapon_num,
 						particleSource->setTriggerVelocity(vm_vec_mag_quick(&objp->phys_info.vel));
 						particleSource->finishCreation();
 					}
-					else if (wip->muzzle_flash >= 0) {
-						mflash_create(firing_pos, firing_vec, &Objects[parent_ship->objnum].phys_info, wip->muzzle_flash);
-					}
 
 					// in multiplayer (and the master), then send a turret fired packet.
 					if ( MULTIPLAYER_MASTER && (weapon_objnum != -1) ) {
@@ -2165,9 +2164,6 @@ void turret_swarm_fire_from_turret(turret_swarm_info *tsi)
 			particleSource->setHost(make_unique<EffectHostTurret>(&Objects[tsi->parent_objnum], tsi->turret->system_info->turret_gun_sobj, tsi->turret->turret_next_fire_pos - 1));
 			particleSource->setTriggerRadius(Objects[weapon_objnum].radius);
 			particleSource->finishCreation();
-		}
-		else if (Weapon_info[tsi->weapon_class].muzzle_flash >= 0) {
-			mflash_create(&turret_pos, &turret_fvec, &Objects[tsi->parent_objnum].phys_info, Weapon_info[tsi->weapon_class].muzzle_flash);
 		}
 
 		// maybe sound
