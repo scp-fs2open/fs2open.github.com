@@ -6,22 +6,16 @@
 #include "parse/parselo.h"
 #include "libs/jansson.h"
 
-#include <string>
 #include <algorithm>
 
-#ifdef _WIN32
-#define VC_EXTRALEAN
-#include <windows.h>
-#endif
+// lookback device functionality
+typedef ALCdevice* (ALC_APIENTRY *ALCLOOPBACKOPENDEVICESOFT)(const ALCchar*);
+typedef ALCboolean (ALC_APIENTRY *ALCISRENDERFORMATSUPPORTEDSOFT)(ALCdevice*,ALCsizei,ALCenum,ALCenum);
+typedef void (ALC_APIENTRY *ALCRENDERSAMPLESSOFT)(ALCdevice*,ALCvoid*,ALCsizei);
 
-// Stupid windows workaround...
-#ifdef MessageBox
-#undef MessageBox
-#endif
-
-
-static SCP_string Playback_device;
-static SCP_string Capture_device;
+static ALCLOOPBACKOPENDEVICESOFT alcLoopbackOpenDeviceSOFT = nullptr;
+static ALCISRENDERFORMATSUPPORTEDSOFT alcIsRenderFormatSupportedSOFT = nullptr;
+static ALCRENDERSAMPLESSOFT alcRenderSamplesSOFT = nullptr;
 
 
 enum {
@@ -46,6 +40,19 @@ typedef struct OALdevice {
 	}
 } OALdevice;
 
+typedef struct audio_context {
+	SDL_AudioStream *stream;
+
+	ALCdevice *device;
+	ALCcontext *context;
+
+	SCP_vector<uint8_t *> render_buffer;
+
+	int frame_size;
+} audio_context;
+
+static audio_context Audio{};
+
 static SCP_vector<OALdevice> PlaybackDevices;
 static SCP_vector<OALdevice> CaptureDevices;
 
@@ -56,9 +63,9 @@ static SCP_vector<OALdevice> CaptureDevices;
 #endif
 
 // List of audio device names for the in-game option
-SCP_vector<SCP_string> PlaybackDeviceList;
+static SCP_string PlaybackDeviceCompat;
 
-static int playbackdevice_deserializer(const json_t* value)
+static SDL_AudioDeviceID playbackdevice_deserializer(const json_t* value)
 {
 	const char* device;
 
@@ -67,41 +74,53 @@ static int playbackdevice_deserializer(const json_t* value)
 		throw json_exception(err);
 	}
 
-	int id = openal_find_playback_device_by_name(device);
+	// store old config value to stay compatible with SDL2 builds
+	PlaybackDeviceCompat = device;
 
-	if (SCP_vector_inbounds(PlaybackDeviceList, id)) {
-		return id;
-	}
-
-	return -1;
+	// just use system default
+	return SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK;
 }
-static json_t* playbackdevice_serializer(int value)
+static json_t* playbackdevice_serializer(SDL_AudioDeviceID /* value */)
 {
-	if (!SCP_vector_inbounds(PlaybackDeviceList, value)) {
-		return json_pack("s", "");
-	}
-	
-	return json_pack("s", PlaybackDeviceList[value].c_str());
+	// save old config value to stay compatible with SDL2 builds
+	return json_pack("s", PlaybackDeviceCompat.c_str());
 }
-static SCP_vector<int> playbackdevice_enumerator()
+static SCP_vector<SDL_AudioDeviceID> playbackdevice_enumerator()
 {
-	SCP_vector<int> vals;
-	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); ++i) {
-		vals.push_back(i);
-	}
+	SCP_vector<SDL_AudioDeviceID> vals;
+	// just use system default
+	vals.push_back(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK);
 	return vals;
 }
-static SCP_string playbackdevice_display(int id)
+static SCP_string playbackdevice_display(SDL_AudioDeviceID id)
 {
-	if (!SCP_vector_inbounds(PlaybackDeviceList, id)) {
-		return "";
-	}
-	
 	SCP_string out;
-	sprintf(out, "(%d) %s", id + 1, PlaybackDeviceList[id].c_str());
+
+	// TODO: SDL3 => when using defaults this only works properly with SDL 3.4
+	//               so we need a fallback/hack for 3.2
+
+	auto device_name = SDL_GetAudioDeviceName(id);
+
+	if (id == SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK) {
+		// hack for SDL 3.2 and default device
+		if ( !device_name && Audio.stream ) {
+			device_name = SDL_GetAudioDeviceName(SDL_GetAudioStreamDevice(Audio.stream));
+		}
+
+		if (device_name) {
+			sprintf(out, "System default (%s)", device_name);
+		} else {
+			out = "System default";
+		}
+	} else if (device_name) {
+		out = device_name;
+	} else {
+		out = "<unknown>";
+	}
+
 	return out;
 }
-static bool playbackdevice_change(int /*device*/, bool initial)
+static bool playbackdevice_change(SDL_AudioDeviceID /*device*/, bool initial)
 {
 	if (initial) {
 		return false; // On game boot always return false
@@ -115,7 +134,8 @@ static bool playbackdevice_change(int /*device*/, bool initial)
 
 	return false;
 }
-static auto PlaybackDeviceOption = options::OptionBuilder<int>("Audio.PlaybackDevice",
+
+static auto PlaybackDeviceOption = options::OptionBuilder<SDL_AudioDeviceID>("Audio.PlaybackDevice",
                      std::pair<const char*, int>{"Playback Device", 1834},
                      std::pair<const char*, int>{"The device used for audio playback", 1835})
                      .category(std::make_pair("Audio", 1826))
@@ -125,15 +145,15 @@ static auto PlaybackDeviceOption = options::OptionBuilder<int>("Audio.PlaybackDe
                      .enumerator(playbackdevice_enumerator)
                      .display(playbackdevice_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_val(0)
+                     .default_val(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK)
                      .change_listener(playbackdevice_change)
                      .importance(99)
                      .finish();
 
 // List of audio device names for the in-game option
-SCP_vector<SCP_string> CaptureDeviceList;
+static SCP_string CaptureDeviceCompat;
 
-static int capturedevice_deserializer(const json_t* value)
+static SDL_AudioDeviceID capturedevice_deserializer(const json_t* value)
 {
 	const char* device;
 
@@ -142,41 +162,50 @@ static int capturedevice_deserializer(const json_t* value)
 		throw json_exception(err);
 	}
 
-	int id = openal_find_capture_device_by_name(device);
+	// store old config value to stay compatible with SDL2 builds
+	CaptureDeviceCompat = device;
 
-	if (SCP_vector_inbounds(CaptureDeviceList, id)) {
-		return id;
-	}
-
-	return -1;
+	// just use system default
+	return SDL_AUDIO_DEVICE_DEFAULT_RECORDING;
 }
-static json_t* capturedevice_serializer(int value)
+static json_t* capturedevice_serializer(SDL_AudioDeviceID /* value */)
 {
-	if (!SCP_vector_inbounds(CaptureDeviceList, value)) {
-		return json_pack("s", "");
-	}
-	
-	return json_pack("s", CaptureDeviceList[value].c_str());
+	// save old config value to stay compatible with SDL2 builds
+	return json_pack("s", CaptureDeviceCompat.c_str());
 }
-static SCP_vector<int> capturedevice_enumerator()
+static SCP_vector<SDL_AudioDeviceID> capturedevice_enumerator()
 {
-	SCP_vector<int> vals;
-	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); ++i) {
-		vals.push_back(i);
-	}
+	SCP_vector<SDL_AudioDeviceID> vals;
+	// just use system default
+	vals.push_back(SDL_AUDIO_DEVICE_DEFAULT_RECORDING);
 	return vals;
 }
-static SCP_string capturedevice_display(int id)
+static SCP_string capturedevice_display(SDL_AudioDeviceID id)
 {
-	if (!SCP_vector_inbounds(CaptureDeviceList, id)) {
-		return "";
-	}
-	
 	SCP_string out;
-	sprintf(out, "(%d) %s", id + 1, CaptureDeviceList[id].c_str());
+
+	// TODO: SDL3 => when using defaults this only works properly with SDL 3.4
+	//               so we need a fallback/hack for 3.2
+
+	auto device_name = SDL_GetAudioDeviceName(id);
+
+	if (id == SDL_AUDIO_DEVICE_DEFAULT_RECORDING) {
+		// TODO: SDL3 => audio capture stuff
+
+		if (device_name) {
+			sprintf(out, "System default (%s)", device_name);
+		} else {
+			out = "System default";
+		}
+	} else if (device_name) {
+		out = device_name;
+	} else {
+		out = "<unknown>";
+	}
+
 	return out;
 }
-static bool capturedevice_change(int /*device*/, bool initial)
+static bool capturedevice_change(SDL_AudioDeviceID /*device*/, bool initial)
 {
 	if (initial) {
 		return false; // On game boot always return false
@@ -190,7 +219,7 @@ static bool capturedevice_change(int /*device*/, bool initial)
 
 	return false;
 }
-static auto CaptureDeviceOption = options::OptionBuilder<int>("Audio.CaptureDevice",
+static auto CaptureDeviceOption = options::OptionBuilder<SDL_AudioDeviceID>("Audio.CaptureDevice",
                      std::pair<const char*, int>{"Capture Device", 1836},
                      std::pair<const char*, int>{"The device used for audio capture", 1837})
                      .category(std::make_pair("Audio", 1826))
@@ -200,9 +229,9 @@ static auto CaptureDeviceOption = options::OptionBuilder<int>("Audio.CaptureDevi
                      .enumerator(capturedevice_enumerator)
                      .display(capturedevice_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_val(0)
+                     .default_val(SDL_AUDIO_DEVICE_DEFAULT_RECORDING)
                      .change_listener(capturedevice_change)
-                     .importance(99)
+                     .importance(98)
                      .finish();
 
 //--------------------------------------------------------------------------
@@ -257,332 +286,216 @@ ALenum openal_get_format(ALint bits, ALint n_channels)
 	return format;
 }
 
-static bool openal_device_sort_func(const OALdevice &d1, const OALdevice &d2)
+static void SDLCALL openal_render_samples(void *userdata, SDL_AudioStream *stream, int additional_amount, int total_amount)
 {
-	if (d1.type > d2.type) {
-		return true;
+	auto ctx = reinterpret_cast<audio_context *>(userdata);
+
+	if (additional_amount < 0) {
+		additional_amount = total_amount;
 	}
 
-	return false;
-}
-
-static void find_playback_device(OpenALInformation* info)
-{
-	// First, build a list of device names for the in-game option to use and pull from
-	for (auto& device : info->playback_devices) {
-		OALdevice new_device(device.c_str());
-		PlaybackDeviceList.push_back(new_device.device_name);
-	}
-	
-	const char* user_device = os_config_read_string("Sound", "PlaybackDevice", nullptr);
-
-	if (Using_in_game_options) {
-		if (SCP_vector_inbounds(PlaybackDeviceList, PlaybackDeviceOption->getValue())) {
-			user_device = PlaybackDeviceList[PlaybackDeviceOption->getValue()].c_str();
-		}
-	}
-
-	const char *default_device = info->default_playback_device.c_str();
-
-	// in case they are the same, we only want to test it once
-	if ( (user_device && default_device) && !strcmp(user_device, default_device) ) {
-		user_device = NULL;
-	}
-
-	for (auto& device : info->playback_devices) {
-		OALdevice new_device(device.c_str());
-
-		if (user_device && !strcmp(device.c_str(), user_device)) {
-			new_device.type = OAL_DEVICE_USER;
-		} else if (default_device && !strcmp(device.c_str(), default_device)) {
-			new_device.type = OAL_DEVICE_DEFAULT;
-		}
-
-		PlaybackDevices.push_back( new_device );
-	}
-
-	if ( PlaybackDevices.empty() ) {
+	if (additional_amount <= 0) {
 		return;
 	}
 
-	std::sort( PlaybackDevices.begin(), PlaybackDevices.end(), openal_device_sort_func );
-
-
-	ALCdevice *device = NULL;
-	ALCcontext *context = NULL;
-
-	// for each device that we have available, try and figure out which to use
-	for (size_t idx = 0; idx < PlaybackDevices.size(); idx++) {
-		OALdevice *pdev = &PlaybackDevices[idx];
-
-		// open our specfic device
-		device = alcOpenDevice( (const ALCchar*) pdev->device_name.c_str() );
-
-		if (device == NULL) {
-			continue;
-		}
-
-		context = alcCreateContext(device, NULL);
-
-		if (context == NULL) {
-			alcCloseDevice(device);
-			continue;
-		}
-
-		alcMakeContextCurrent(context);
-		alcGetError(device);
-
-		// check how many sources we can create
-		static const int MIN_SOURCES = 48;	// MAX_CHANNELS + 16 spare
-		int si = 0;
-
-		for (si = 0; si < MIN_SOURCES; si++) {
-			ALuint source_id = 0;
-			alGenSources(1, &source_id);
-
-			if (alGetError() != AL_NO_ERROR) {
-				break;
-			}
-
-			alDeleteSources(1, &source_id);
-		}
-
-		if (si == MIN_SOURCES) {
-			// ok, it supports our minimum requirements
-			pdev->usable = true;
-
-			// need this for the future
-			Playback_device = pdev->device_name;
-
-			// done
-			break;
-		} else {
-			// clean up for next pass
-			alcMakeContextCurrent(NULL);
-			alcDestroyContext(context);
-			alcCloseDevice(device);
-
-			context = NULL;
-			device = NULL;
-		}
+	if (static_cast<size_t>(additional_amount) > ctx->render_buffer.size()) {
+		ctx->render_buffer.resize(additional_amount);
 	}
 
-	alcMakeContextCurrent(NULL);
+	alcRenderSamplesSOFT(ctx->device, ctx->render_buffer.data(), additional_amount / ctx->frame_size);
 
-	if (context) {
-		alcDestroyContext(context);
-	}
-
-	if (device) {
-		alcCloseDevice(device);
-	}
+	SDL_PutAudioStreamData(stream, ctx->render_buffer.data(), additional_amount);
 }
 
-static void find_capture_device(OpenALInformation* info)
+static const char *sdl_channels_to_str(int ch)
 {
-	// First, build a list of device names for the in-game option to use and pull from
-	for (auto& device : info->capture_devices) {
-		OALdevice new_device(device.c_str());
-		CaptureDeviceList.push_back(new_device.device_name);
-	}
-	
-	const char* user_device = os_config_read_string("Sound", "CaptureDevice", nullptr);
-
-	if (Using_in_game_options) {
-		if (SCP_vector_inbounds(CaptureDevices, CaptureDeviceOption->getValue())) {
-			user_device = CaptureDevices[CaptureDeviceOption->getValue()].device_name.c_str();
-		}
+	switch (ch) {
+		case 1: return "mono";
+		case 2: return "stereo";
+		case 3: return "2.1";
+		case 4: return "quad";
+		case 5: return "4.1";
+		case 6: return "5.1";
+		case 7: return "6.1";
+		case 8: return "7.1";
+		default: break;
 	}
 
-	const char *default_device = info->default_capture_device.c_str();
-
-	// in case they are the same, we only want to test it once
-	if ( (user_device && default_device) && !strcmp(user_device, default_device) ) {
-		user_device = NULL;
-	}
-
-	for (auto& device : info->capture_devices) {
-		OALdevice new_device(device.c_str());
-
-		if (user_device && !strcmp(device.c_str(), user_device)) {
-			new_device.type = OAL_DEVICE_USER;
-		} else if (default_device && !strcmp(device.c_str(), default_device)) {
-			new_device.type = OAL_DEVICE_DEFAULT;
-		}
-
-		CaptureDevices.push_back( new_device );
-	}
-
-	if ( CaptureDevices.empty() ) {
-		return;
-	}
-
-	std::sort( CaptureDevices.begin(), CaptureDevices.end(), openal_device_sort_func );
-
-
-	// for each device that we have available, try and figure out which to use
-	for (size_t idx = 0; idx < CaptureDevices.size(); idx++) {
-		const ALCchar *device_name = CaptureDevices[idx].device_name.c_str();
-
-		ALCdevice *device = alcCaptureOpenDevice(device_name, 22050, AL_FORMAT_MONO8, 22050 * 2);
-
-		if (device == NULL) {
-			continue;
-		}
-
-		if (alcGetError(device) != ALC_NO_ERROR) {
-			alcCaptureCloseDevice(device);
-			continue;
-		}
-
-		// ok, we should be good with this one
-		Capture_device = CaptureDevices[idx].device_name;
-
-		alcCaptureCloseDevice(device);
-
-		break;
-	}
+	return "?";
 }
 
-// find a playback device's vector index
-int openal_find_playback_device_by_name(const SCP_string& device)
+static const char *sdl_format_to_str(SDL_AudioFormat fmt)
 {
-	for (int i = 0; i < static_cast<int>(PlaybackDeviceList.size()); i++) {
-		if (!stricmp(PlaybackDeviceList[i].c_str(), device.c_str())) {
-			return i;
-		}
+	switch (fmt) {
+		case SDL_AUDIO_U8: return "U8";
+		case SDL_AUDIO_S8: return "S8";
+		case SDL_AUDIO_S16: return "S16";
+		case SDL_AUDIO_S32: return "S32";
+		case SDL_AUDIO_F32: return "F32";
+		default: break;
 	}
 
-	return -1;
+	return "?";
 }
 
-// find a capture device's vector index
-int openal_find_capture_device_by_name(const SCP_string& device)
+static void *alc_load_function(const char *func_name)
 {
-	for (int i = 0; i < static_cast<int>(CaptureDeviceList.size()); i++) {
-		if (!stricmp(CaptureDeviceList[i].c_str(), device.c_str())) {
-			return i;
-		}
+	void *func = alcGetProcAddress(nullptr, func_name);
+	if ( !func ) {
+		throw std::runtime_error(func_name);
 	}
-
-	return -1;
+	return func;
 }
 
-// initializes hardware device from perferred/default/enumerated list
-bool openal_init_device(SCP_string *playback, SCP_string *capture)
+static bool openal_init_loopback()
 {
-	if ( !Playback_device.empty() ) {
-		if (playback) {
-			*playback = Playback_device;
-		}
+	SDL_AudioSpec spec;
+	ALCint attrs[10] = {};
 
-		if (capture) {
-			*capture = Capture_device;
-		}
-
-		return true;
-	}
-
-	if (playback) {
-		playback->erase();
-	}
-
-	if (capture) {
-		capture->erase();
-	}
-
-	// This reuses the code for the launcher to make sure everything is consistent
-	auto platform_info = openal_get_platform_information();
-
-	if (platform_info.version_major <= 1 && platform_info.version_minor < 1) {
-		os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
-			"OpenAL 1.1 or newer is required for proper operation. On Linux and Windows OpenAL Soft is recommended. If you are on Mac OS X you need to upgrade your OS.");
+	if ( !alcIsExtensionPresent(nullptr, "ALC_SOFT_loopback") ) {
+		mprintf(("  ERROR: Loopback extension not present!\n"));
 		return false;
 	}
 
-	// go through and find out what devices we actually want to use ...
-	find_playback_device(&platform_info);
-	find_capture_device(&platform_info);
-
-	if ( Playback_device.empty() ) {
+	try {
+		alcLoopbackOpenDeviceSOFT = reinterpret_cast<ALCLOOPBACKOPENDEVICESOFT>(alc_load_function("alcLoopbackOpenDeviceSOFT"));
+		alcIsRenderFormatSupportedSOFT = reinterpret_cast<ALCISRENDERFORMATSUPPORTEDSOFT>(alc_load_function("alcIsRenderFormatSupportedSOFT"));
+		alcRenderSamplesSOFT = reinterpret_cast<ALCRENDERSAMPLESSOFT>(alc_load_function("alcRenderSamplesSOFT"));
+	} catch (const std::exception& err) {
+		mprintf(("  ERROR:  Unable to load function: %s()\n", err.what()));
 		return false;
 	}
 
+	Audio.stream = SDL_OpenAudioDeviceStream(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK,
+											 nullptr, openal_render_samples,
+											 &Audio);
 
-#ifndef NDEBUG
-	if ( !PlaybackDevices.empty() ) {
-		nprintf(("OpenAL", "  Available Playback Devices:\n"));
-
-		for (size_t idx = 0; idx < PlaybackDevices.size(); idx++) {
-			nprintf(("OpenAL", "    %s", PlaybackDevices[idx].device_name.c_str()));
-
-			if (PlaybackDevices[idx].type == OAL_DEVICE_USER) {
-				nprintf(("OpenAL", "  *preferred*\n"));
-			} else if (PlaybackDevices[idx].type == OAL_DEVICE_DEFAULT) {
-				nprintf(("OpenAL", "  *default*\n"));
-			} else {
-				nprintf(("OpenAL", "\n"));
-			}
-		}
+	if ( !Audio.stream ) {
+		mprintf(("  ERROR: Unable to create audio stream!\n"));
+		return false;
 	}
 
-	if ( !CaptureDevices.empty() ) {
-		if ( !PlaybackDevices.empty() ) {
-			nprintf(("OpenAL", "\n"));
-		}
+	SDL_GetAudioStreamFormat(Audio.stream, &spec, nullptr);
 
-		nprintf(("OpenAL", "  Available Capture Devices:\n"));
+	attrs[0] = ALC_FORMAT_CHANNELS_SOFT;
 
-		for (size_t idx = 0; idx < CaptureDevices.size(); idx++) {
-			nprintf(("OpenAL", "    %s", CaptureDevices[idx].device_name.c_str()));
-
-			if (CaptureDevices[idx].type == OAL_DEVICE_USER) {
-				nprintf(("OpenAL", "  *preferred*\n"));
-			} else if (CaptureDevices[idx].type == OAL_DEVICE_DEFAULT) {
-				nprintf(("OpenAL", "  *default*\n"));
-			} else {
-				nprintf(("OpenAL", "\n"));
-			}
-		}
-
-		nprintf(("OpenAL", "\n"));
-	}
-#endif
-
-
-	// cleanup
-	PlaybackDevices.clear();
-	CaptureDevices.clear();
-
-
-	if (playback) {
-		*playback = Playback_device;
+	if (spec.channels == 1) {
+		attrs[1] = ALC_MONO_SOFT;
+	} else if (spec.channels == 2) {
+		attrs[1] = ALC_STEREO_SOFT;
+	} else if (spec.channels == 4) {
+		attrs[1] = ALC_QUAD_SOFT;
+	} else if (spec.channels == 6) {
+		attrs[1] = ALC_5POINT1_SOFT;
+	} else if (spec.channels == 7) {
+		attrs[1] = ALC_6POINT1_SOFT;
+	} else if (spec.channels == 8) {
+		attrs[1] = ALC_7POINT1_SOFT;
+	} else {
+		mprintf(("  ERROR: Unsupported channel setup!\n"));
+		return false;
 	}
 
-	if (capture) {
-		*capture = Capture_device;
+	attrs[2] = ALC_FORMAT_TYPE_SOFT;
+
+	if (spec.format == SDL_AUDIO_U8) {
+		attrs[3] = ALC_UNSIGNED_BYTE_SOFT;
+	} else if (spec.format == SDL_AUDIO_S8) {
+		attrs[3] = ALC_BYTE_SOFT;
+	} else if (spec.format == SDL_AUDIO_S16) {
+		attrs[3] = ALC_SHORT_SOFT;
+	} else if (spec.format == SDL_AUDIO_S32) {
+		attrs[3] = ALC_INT_SOFT;
+	} else if (spec.format == SDL_AUDIO_F32) {
+		attrs[3] = ALC_FLOAT_SOFT;
+	} else {
+		mprintf(("  ERROR: Unsupported format type!\n"));
+		return false;
 	}
+
+	attrs[4] = ALC_FREQUENCY;
+	attrs[5] = spec.freq;
+
+	attrs[6] = 0;	// end
+
+	Audio.frame_size = spec.channels * SDL_AUDIO_BYTESIZE(spec.format);
+
+	// init loopback device
+	Audio.device = alcLoopbackOpenDeviceSOFT(nullptr);
+
+	if ( !Audio.device ) {
+		mprintf(("  ERROR: Unable to open loopback device!\n"));
+		return false;
+	}
+
+	// confirm that format is actually supported
+	if (alcIsRenderFormatSupportedSOFT(Audio.device, attrs[5], attrs[1], attrs[3]) == AL_FALSE) {
+		mprintf(("  ERROR: Audio render format not supported!\n"));
+		return false;
+	}
+
+	// TODO: SDL3 => update openal context with new attributes when SDL device
+	//               format changes (via alcResetDeviceSOFT())
+
+	Audio.context = alcCreateContext(Audio.device, attrs);
+
+	if ( !Audio.context ) {
+		mprintf(("  ERROR: Unable to create OpenAL context!\n"));
+		return false;
+	}
+
+	alcMakeContextCurrent(Audio.context);
+
+	const auto device_id = SDL_GetAudioStreamDevice(Audio.stream);
+
+	mprintf(("  Audio Device      : Default (%s)\n", SDL_GetAudioDeviceName(device_id)));
+	mprintf(("  Audio Format      : %s %s %dHz\n", sdl_format_to_str(spec.format),
+			 sdl_channels_to_str(spec.channels), spec.freq));
+	mprintf(("  Audio Driver      : %s\n", SDL_GetCurrentAudioDriver()));
+
+	mprintf(("  OpenAL Version    : %s\n", alGetString(AL_VERSION)));
+
+	// start stream
+	SDL_ResumeAudioStreamDevice(Audio.stream);
 
 	return true;
 }
 
+// initializes hardware device from perferred/default/enumerated list
+bool openal_init_device()
+{
+	SDL_zero(Audio);
+
+	return openal_init_loopback();
+}
+
+void openal_close_device()
+{
+	SDL_PauseAudioStreamDevice(Audio.stream);
+	alcMakeContextCurrent(nullptr);
+
+	if (Audio.stream) {
+		SDL_DestroyAudioStream(Audio.stream);
+		Audio.stream = nullptr;
+	}
+
+	if (Audio.context) {
+		alcDestroyContext(Audio.context);
+		Audio.context = nullptr;
+	}
+
+	if (Audio.device) {
+		alcCloseDevice(Audio.device);
+		Audio.device = nullptr;
+	}
+
+	Audio.render_buffer.clear();
+	Audio.render_buffer.shrink_to_fit();
+
+	Audio.frame_size = 0;
+}
+
 static void get_version_info(OpenALInformation* info) {
-	// initialize default setup first, for version check...
-	ALCdevice *device = alcOpenDevice(NULL);
-
-	if (device == NULL) {
-		return;
-	}
-
-	ALCcontext *context = alcCreateContext(device, NULL);
-
-	if (context == NULL) {
-		alcCloseDevice(device);
-		return;
-	}
-
-	alcMakeContextCurrent(context);
-
 	// version check (for 1.0 or 1.1)
 	ALCint AL_minor_version = 0;
 	ALCint AL_major_version = 0;
@@ -591,13 +504,6 @@ static void get_version_info(OpenALInformation* info) {
 
 	info->version_major = static_cast<uint32_t>(AL_major_version);
 	info->version_minor = static_cast<uint32_t>(AL_minor_version);
-
-	alcGetError(device);
-
-	// close default device
-	alcMakeContextCurrent(NULL);
-	alcDestroyContext(context);
-	alcCloseDevice(device);
 }
 
 static bool device_supports_efx(const char* device_name) {
@@ -620,10 +526,16 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 	info->playback_devices.clear();
 	info->default_playback_device.clear();
 
-	auto default_device = alcGetString( NULL, ALC_DEFAULT_DEVICE_SPECIFIER );
-	if (default_device != nullptr) {
+	const char *default_device = nullptr;
+
+	if (alcIsExtensionPresent(nullptr, reinterpret_cast<const ALCchar*>("ALC_ENUMERATE_ALL_EXT")) == AL_TRUE) {
+		default_device = alcGetString(nullptr, ALC_DEFAULT_ALL_DEVICES_SPECIFIER);
+	} else {
+		default_device = alcGetString(nullptr, ALC_DEFAULT_DEVICE_SPECIFIER);
+	}
+
+	if (default_device) {
 		info->default_playback_device = default_device;
-		info->efx_support.push_back(std::make_pair(SCP_string(default_device), device_supports_efx(default_device)));
 	}
 
 	if ( alcIsExtensionPresent(NULL, (const ALCchar*)"ALC_ENUMERATION_EXT") == AL_TRUE ) {
@@ -640,8 +552,8 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 
 		if ( (str_list != NULL) && ((ext_length = strlen(str_list)) > 0) ) {
 			while (ext_length) {
-				info->playback_devices.push_back( SCP_string(str_list) );
-				info->efx_support.push_back(std::make_pair(SCP_string(str_list), device_supports_efx(str_list)));
+				info->playback_devices.emplace_back(SCP_string(str_list));
+				info->efx_support.emplace_back(SCP_string(str_list), device_supports_efx(str_list));
 
 				str_list += (ext_length + 1);
 				ext_length = strlen(str_list);
@@ -649,7 +561,8 @@ static void enumerate_playback_devices(OpenALInformation* info) {
 		}
 	} else {
 		if (default_device) {
-			info->playback_devices.push_back(SCP_string(default_device));
+			info->playback_devices.emplace_back(SCP_string(default_device));
+			info->efx_support.emplace_back(SCP_string(default_device), device_supports_efx(default_device));
 		}
 	}
 }
