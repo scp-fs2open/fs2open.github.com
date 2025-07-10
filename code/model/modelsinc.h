@@ -62,6 +62,7 @@ class polymodel;
 
 extern const ubyte* Macro_ubyte_bounds;
 
+#ifndef NDEBUG
 #define us(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<ushort*>(p))
 #define cus(p)  (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const ushort*>(p))
 #define uw(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<uint*>(p))
@@ -72,6 +73,18 @@ extern const ubyte* Macro_ubyte_bounds;
 #define vp(p)	(AssertExpr(p < Macro_ubyte_bounds), reinterpret_cast<vec3d*>(p))
 #define fl(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<float*>(p))
 #define cfl(p)  (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const float*>(p))
+#else
+#define us(p)	(*reinterpret_cast<ushort*>(p))
+#define cus(p)  (*reinterpret_cast<const ushort*>(p))
+#define uw(p)	(*reinterpret_cast<uint*>(p))
+#define cuw(p)  (*reinterpret_cast<const uint*>(p))
+#define w(p)	(*reinterpret_cast<int*>(p))
+#define cw(p)   (*reinterpret_cast<const int*>(p))
+#define wp(p)	(reinterpret_cast<int*>(p)
+#define vp(p)	(reinterpret_cast<vec3d*>(p))
+#define fl(p)	(*reinterpret_cast<float*>(p))
+#define cfl(p)  (*reinterpret_cast<const float*>(p))
+#endif
 
 void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 
