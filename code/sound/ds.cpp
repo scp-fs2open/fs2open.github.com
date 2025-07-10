@@ -41,7 +41,6 @@ typedef struct sound_buffer
 	}
 } sound_buffer;
 
-
 static int MAX_CHANNELS;		// initialized properly in ds_init_channels()
 channel *Channels = NULL;
 static int channel_next_sig = 1;
@@ -52,8 +51,6 @@ SCP_vector<sound_buffer> sound_buffers;
 static int Ds_use_eax = 0;
 
 static int Ds_eax_inited = 0;
-
-static int AL_play_position = 0;
 
 // NOTE: these can't be static
 int Ds_sound_quality = DS_SQ_MEDIUM;
@@ -165,9 +162,6 @@ ALAUXILIARYEFFECTSLOTI v_alAuxiliaryEffectSloti = NULL;
 ALAUXILIARYEFFECTSLOTIV v_alAuxiliaryEffectSlotiv = NULL;
 ALAUXILIARYEFFECTSLOTF v_alAuxiliaryEffectSlotf = NULL;
 ALAUXILIARYEFFECTSLOTFV v_alAuxiliaryEffectSlotfv = NULL;
-
-ALCdevice *ds_sound_device = NULL;
-ALCcontext *ds_sound_context = NULL;
 
 ALuint AL_EFX_aux_id = 0;
 
@@ -326,22 +320,10 @@ void ds_init_channels()
 	// Legacy assumed safe value if for some reason dynamicly setting it does not work
 	MAX_CHANNELS = 128;
 
-	if (Cmdline_no_enhanced_sound)
+	if (Cmdline_no_enhanced_sound) {
 		MAX_CHANNELS = 32; // Old sound code limts
-	else {
-		ALCint size;
-		alcGetIntegerv(ds_sound_device, ALC_ATTRIBUTES_SIZE, 1, &size);
-		std::vector<ALCint> attrs(size);
-		alcGetIntegerv(ds_sound_device, ALC_ALL_ATTRIBUTES, size, &attrs[0]);
-		for (size_t i = 0; i < attrs.size(); ++i) {
-			//We reserve a portion of the reported channels to avoid colliding with other types of sound
-			//Using the 32 channels of the no_enhanced_sound as a floor.
-			if (attrs[i] == ALC_MONO_SOURCES && attrs[i+1] - DS_RESERVED_CHANNELS > 32) {
-				MAX_CHANNELS = attrs[i + 1] - DS_RESERVED_CHANNELS;
-				mprintf(("  ALC reported %i available sources, setting max to use at %i ", attrs[i + 1],MAX_CHANNELS));
-			}
-		}
 	}
+
 	try {
 		Channels = new channel[MAX_CHANNELS];
 	} catch (const std::bad_alloc&) {
@@ -361,90 +343,21 @@ void ds_init_buffers()
 }
 
 /**
-* Check if the player is using OpenAL Soft,
-* which is required to use enhanced sound.
-* Returns true on success, false otherwise.
-*/
-bool ds_check_for_openal_soft()
-{	
-	const ALchar * renderer = alGetString(AL_RENDERER);
-	if (renderer == NULL)
-	{
-		mprintf(("ds_check_for_openal_soft: renderer is null!\n"));
-		return false;
-	}
-	else if (!stricmp((const char *)renderer, "OpenAL Soft"))
-	{
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-/**
  * Sound initialisation
  * @return -1 if init failed, 0 if init success
  */
 int ds_init()
 {
-	ALfloat list_orien[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
-	ALCint attrList[] = { ALC_FREQUENCY, 22050, 0 };
-	unsigned int sample_rate = 22050;
+	mprintf(("Initializing SDL Audio...\n"));
 
-	mprintf(("Initializing OpenAL...\n"));
+	// initial device setup (needed for settings ui)
+	if ( !openal_init_device() ) {
+		ds_close();
+		mprintf(("... SDL Audio failed to initialize!\n"));
 
-	Ds_sound_quality = os_config_read_uint("Sound", "Quality", DS_SQ_MEDIUM);
-	CLAMP(Ds_sound_quality, DS_SQ_LOW, DS_SQ_HIGH);
-
-	switch (Ds_sound_quality) {
-		case DS_SQ_HIGH:
-			sample_rate = 48000;
-		break;
-
-		case DS_SQ_MEDIUM:
-			sample_rate = 44100;
-		break;
-
-		default:
-			sample_rate = 22050;
-		break;
+		return -1;
 	}
 
-	sample_rate = os_config_read_uint("Sound", "SampleRate", sample_rate);
-
-	attrList[1] = sample_rate;
-	SCP_string playback_device;
-	SCP_string capture_device;
-
-	if ( openal_init_device(&playback_device, &capture_device) == false ) {
-		mprintf(("\n  ERROR: Unable to find suitable playback device!\n\n"));
-		goto AL_InitError;
-	}
-
-	ds_sound_device = alcOpenDevice( (const ALCchar*) playback_device.c_str() );
-
-	if (ds_sound_device == NULL) {
-		mprintf(("  Failed to open playback_device (%s) returning error (%s)\n", playback_device.c_str(), openal_error_string(1)));
-		goto AL_InitError;
-	}
-
-	ds_sound_context = alcCreateContext(ds_sound_device, attrList);
-
-	if (ds_sound_context == NULL) {
-		mprintf(("  Failed to create context for playback_device (%s) with attrList = { 0x%x, %d, %d } returning error (%s)\n",
-			playback_device.c_str(), attrList[0], attrList[1], attrList[2], openal_error_string(1)));
-		goto AL_InitError;
-	}
-
-	alcMakeContextCurrent(ds_sound_context);
-
-	alcGetError(ds_sound_device);
-
-	mprintf(("  OpenAL Vendor     : %s\n", alGetString(AL_VENDOR)));
-	mprintf(("  OpenAL Renderer   : %s\n", alGetString(AL_RENDERER)));
-	mprintf(("  OpenAL Version    : %s\n", alGetString(AL_VERSION)));
 	mprintf(("\n"));
 
 	// we need to clear out all errors before moving on
@@ -454,12 +367,6 @@ int ds_init()
 	// set distance model to basically match what the D3D code does
 	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
 
-	// make sure we can actually use AL_BYTE_LOKI (Mac/Win OpenAL doesn't have it)
-	if ( alIsExtensionPresent( (const ALchar*)"AL_LOKI_play_position" ) == AL_TRUE ) {
-		mprintf(("  Found extension \"AL_LOKI_play_position\".\n"));
-		AL_play_position = 1;
-	}
-
 	if ( alIsExtensionPresent( (const ALchar*)"AL_EXT_float32" ) == AL_TRUE ) {
 		mprintf(("  Found extension \"AL_EXT_float32\".\n"));
 		Ds_float_supported = 1;
@@ -467,7 +374,9 @@ int ds_init()
 
 	Ds_use_eax = 0;
 
-	if ( alcIsExtensionPresent(ds_sound_device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
+	const auto oal_device = alcGetContextsDevice(alcGetCurrentContext());
+
+	if ( alcIsExtensionPresent(oal_device, (const ALchar*)"ALC_EXT_EFX") == AL_TRUE ) {
 		mprintf(("  Found extension \"ALC_EXT_EFX\".\n"));
 		if (Using_in_game_options) {
 			if (Fred_running) {
@@ -495,29 +404,15 @@ int ds_init()
 		}
 	}
 
-	if (!Cmdline_no_enhanced_sound)
-	{
-		if (!ds_check_for_openal_soft())
-		{
-			mprintf(("You are not using OpenAL Soft. Disabling enhanced sound.\n"));
-			Cmdline_no_enhanced_sound = 1;
-		}
-		else
-		{
-			mprintf(("Enhanced sound is enabled.\n"));
-		}
-	}
-	else
-	{
-		mprintf(("Enhanced sound is manually disabled.\n"));
-	}
-
 	// setup default listener position/orientation
 	// this is needed for 2D pan
+	const ALfloat list_orien[] = { 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0.0f };
+
 	OpenAL_ErrorPrint( alListener3f(AL_POSITION, 0.0, 0.0, 0.0) );
 	OpenAL_ErrorPrint( alListenerfv(AL_ORIENTATION, list_orien) );
 
-	// disable doppler (FIXME)
+	// FIXME: disable doppler
+	// (Search references to doppler in https://www.hard-light.net/forums/index.php?topic=68146.0)
 	OpenAL_ErrorPrint( alDopplerFactor(0.0f) );
 
 	ds_init_channels();
@@ -525,53 +420,28 @@ int ds_init()
 
 	mprintf(("\n"));
 
-	{
-	ALCint freq = 0;
-	OpenAL_ErrorPrint( alcGetIntegerv(ds_sound_device, ALC_FREQUENCY, sizeof(ALCint), &freq) );
-
-	mprintf(("  Sample rate: %d (%d)\n", freq, sample_rate));
-	}
+	mprintf(("  EFX: %s\n", Ds_use_eax ? "enabled" : "disabled"));
 
 	if (Ds_use_eax) {
 		ALCint major = 0, minor = 0, max_sends = 0;
 
-		alcGetIntegerv(ds_sound_device, ALC_EFX_MAJOR_VERSION, 1, &major);
-		alcGetIntegerv(ds_sound_device, ALC_EFX_MINOR_VERSION, 1, &minor);
-		alcGetIntegerv(ds_sound_device, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
+		alcGetIntegerv(oal_device, ALC_EFX_MAJOR_VERSION, 1, &major);
+		alcGetIntegerv(oal_device, ALC_EFX_MINOR_VERSION, 1, &minor);
+		alcGetIntegerv(oal_device, ALC_MAX_AUXILIARY_SENDS, 1, &max_sends);
 
 		mprintf(("  EFX version: %d.%d\n", (int)major, (int)minor));
 		mprintf(("  Max auxiliary sends: %d\n", max_sends));
-	} else {
-		mprintf(("  EFX enabled: NO\n"));
 	}
 
-	mprintf(("  Playback device: %s\n", playback_device.c_str()));
-	mprintf(("  Capture device: %s\n", (capture_device.empty()) ? "<not available>" : capture_device.c_str()));
+	mprintf(("  Enhanced sound: %s\n", Cmdline_no_enhanced_sound ? "disabled" : "enabled"));
 
-	mprintf(("... OpenAL successfully initialized!\n"));
+	mprintf(("... SDL Audio successfully initialized!\n"));
 
 	// we need to clear out any errors before moving on
 	alcGetError(NULL);
 	alGetError();
 
 	return 0;
-
-AL_InitError:
-	alcMakeContextCurrent(NULL);
-
-	if (ds_sound_context != NULL) {
-		alcDestroyContext(ds_sound_context);
-		ds_sound_context = NULL;
-	}
-
-	if (ds_sound_device != NULL) {
-		alcCloseDevice(ds_sound_device);
-		ds_sound_device = NULL;
-	}
-
-	mprintf(("... OpenAL failed to initialize!\n"));
-
-	return -1;
 }
 
 /**
@@ -579,7 +449,7 @@ AL_InitError:
  */
 void ds_close_channel(int i)
 {
-	if ( (i < 0) || (i >= MAX_CHANNELS) ) {
+	if ( (i < 0) || (i >= MAX_CHANNELS) || !Channels ) {
 		return;
 	}
 
@@ -606,7 +476,7 @@ void ds_close_channel(int i)
 
 void ds_close_channel_fast(int i)
 {
-	if ( (i < 0) || (i >= MAX_CHANNELS) ) {
+	if ( (i < 0) || (i >= MAX_CHANNELS) || !Channels ) {
 		return;
 	}
 
@@ -687,20 +557,12 @@ void ds_close()
 	ds_eax_close();
 
 	// free the Channels[] array, since it was dynamically allocated
-	delete [] Channels;
-	Channels = NULL;
-
-	alcMakeContextCurrent(NULL);	// hangs on me for some reason
-
-	if (ds_sound_context != NULL) {
-		alcDestroyContext(ds_sound_context);
-		ds_sound_context = NULL;
+	if (Channels) {
+		delete [] Channels;
+		Channels = nullptr;
 	}
 
-	if (ds_sound_device != NULL) {
-		alcCloseDevice(ds_sound_device);
-		ds_sound_device = NULL;
-	}
+	openal_close_device();
 }
 
 
@@ -1463,27 +1325,10 @@ unsigned int ds_get_play_position(int channel_id)
 		return 0;
 	}
 
-	if (AL_play_position) {
-		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_BYTE_LOKI, &pos) );
+	OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_BYTE_OFFSET, &pos) );
 
-		if ( pos < 0 ) {
-			pos = 0;
-		} else if ( pos > 0 ) {
-			// AL_BYTE_LOKI returns position in canon format which may differ
-			// from our sample, so we may have to scale it
-			ALuint buf_id = sound_buffers[sid].buf_id;
-			ALint size;
-
-			OpenAL_ErrorCheck( alGetBufferi(buf_id, AL_SIZE, &size), return 0 );
-
-			pos = (ALint)(pos * ((float)sound_buffers[sid].nbytes / size));
-		}
-	} else {
-		OpenAL_ErrorPrint( alGetSourcei(Channels[channel_id].source_id, AL_BYTE_OFFSET, &pos) );
-
-		if (pos < 0) {
-			pos = 0;
-		}
+	if (pos < 0) {
+		pos = 0;
 	}
 
 	return (unsigned int) pos;

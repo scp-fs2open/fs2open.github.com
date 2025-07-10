@@ -43,7 +43,7 @@ int dscap_init()
 		return 0;
 	}
 
-	bool rval = openal_init_device(NULL, &capture_dev_name);
+	bool rval = false;
 
 	if ( !rval || capture_dev_name.empty() ) {
 		dscap_inited = 0;
