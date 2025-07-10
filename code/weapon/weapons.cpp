@@ -659,14 +659,16 @@ struct pspew_legacy_parse_data {
 };
 
 static SCP_unordered_map<int, SCP_unordered_map<int, pspew_legacy_parse_data>> pspew_legacy_parse_data_buffer;
+static bool pspew_do_warning = false;
 
 static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legacy_parse_data& pspew_buffer, const weapon_info* wip) {
 	auto particle_spew_count = static_cast<float>(pspew_buffer.particle_spew_count);
 	float particle_spew_spawns_per_second = 1000.f / static_cast<float>(pspew_buffer.particle_spew_time);
 
 	if (particle_spew_spawns_per_second > 60.f) {
-		error_display(0, "PSPEW requested with a spawn frequency of over 60FPS. This used to be capped to spawn once a frame. It will now be artificially capped at 60 spawns per second.");
+		mprintf(("Warning: %s(line %i): PSPEW requested with a spawn frequency of over 60FPS. This used to be capped to spawn once a frame. It will now be artificially capped at 60 spawns per second.\n", Current_filename, get_line_num()));
 		particle_spew_spawns_per_second = 60.f;
+		pspew_do_warning = true;
 	}
 
 	bool hasAnim = !pspew_buffer.particle_spew_anim.empty() && bm_validate_filename(pspew_buffer.particle_spew_anim, true, true);
@@ -4164,8 +4166,6 @@ void parse_weaponstbl(const char *filename)
 			required_string("#End");
 		}
 
-		pspew_legacy_parse_data_buffer.clear();
-
 		// Read in a list of weapon_info indicies that are an ordering of the player weapon precedence.
 		// This list is used to select an alternate weapon when a particular weapon is not available
 		// during weapon selection.
@@ -4813,6 +4813,11 @@ void weapon_do_post_parse()
 			else
 				ii->cmeasure_index = index;
 		}
+	}
+
+	pspew_legacy_parse_data_buffer.clear();
+	if (pspew_do_warning) {
+		Warning(LOCATION, "At least one legacy PSPEW was requested with a spawn frequency of over 60FPS. See the log for details.");
 	}
 
 	// translate all spawn type weapons to referrnce the appropriate spawned weapon entry
