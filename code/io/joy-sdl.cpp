@@ -905,7 +905,6 @@ namespace joystick
 		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
 
 		_axisValues[axis] = evt.value;
-		printf("Evt.value: %d\n", evt.value);
 	}
 
 	void Joystick::handleButtonEvent(const SDL_JoyButtonEvent &evt)

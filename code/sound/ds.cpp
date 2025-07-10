@@ -567,10 +567,6 @@ int ds_init()
 	SCP_string playback_device;
 	SCP_string capture_device;
 
-	{
-		openal_init_device(nullptr, nullptr);
-	}
-
 	mprintf(("Initializing OpenAL...\n"));
 
 	Ds_sound_quality = os_config_read_uint("Sound", "Quality", DS_SQ_MEDIUM);

@@ -6031,8 +6031,8 @@ void game_enter_state( int old_state, int new_state )
 
 #ifndef NDEBUG
 			// required to truely make mouse deltas zeroed in debug mouse code
-void mouse_force_pos(int x, int y);
-			mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+void mouse_force_pos(float x, float y);
+			mouse_force_pos(gr_screen.max_w / 2.0f, gr_screen.max_h / 2.0f);
 #endif
 
 			game_flush();

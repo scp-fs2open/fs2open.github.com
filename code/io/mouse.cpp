@@ -150,7 +150,7 @@ namespace
 	}
 }
 
-void mouse_force_pos(int x, int y);
+void mouse_force_pos(float x, float y);
 
 /**
  * @brief Decays the mousewheel position back to 0 and clears the appropriate flags when nuetral
@@ -518,7 +518,7 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 }
 
 // Forces the actual windows cursor to be at (x,y).  This may be independent of our tracked (x,y) mouse pos.
-void mouse_force_pos(int x, int y)
+void mouse_force_pos(float x, float y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
 		SDL_WarpMouseInWindow(os::getSDLMainWindow(), SCALE_MOUSE_TO_WINDOW(x, y, /));
@@ -531,15 +531,15 @@ void mouse_reset_deltas()
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 }
 
-void mouse_event(int x, int y, int dx, int dy)
+void mouse_event(float x, float y, float dx, float dy)
 {
-	Mouse_x = x;
-	Mouse_y = y;
+	Mouse_x = static_cast<float>(x);
+	Mouse_y = static_cast<float>(y);
 
 	// Add up these delta values so we don't overwrite previous events,
 	// should be reset in gr_flip my mouse_reset_deltas()
-	Mouse_dx += dx;
-	Mouse_dy += dy;
+	Mouse_dx += static_cast<float>(dx);
+	Mouse_dy += static_cast<float>(dy);
 
 	if ((Mouse_dx != 0 || Mouse_dy != 0) && scripting::hooks::OnMouseMoved->isActive())
 	{
@@ -623,17 +623,17 @@ void mouse_get_real_pos(int *mx, int *my)
 
 void mouse_set_pos(int xpos, int ypos)
 {
-	mouse_force_pos(xpos, ypos);
+	mouse_force_pos(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
-void mousewheel_motion(int x, int y, bool reversed) {
+void mousewheel_motion(float x, float y, bool reversed) {
 	if (reversed) {
 		x = -x;
 		y = -y;
 	}
 
-	Mouse_wheel_x += x;
-	Mouse_wheel_y += y;
+	Mouse_wheel_x += static_cast<float>(x);
+	Mouse_wheel_y += static_cast<float>(y);
 
 	// These nested if's should take care of all edge cases.
 	// Since x and y's magnitudes can be larger than 1, it is possible to ignore the idle state

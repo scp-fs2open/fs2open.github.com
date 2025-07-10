@@ -349,7 +349,7 @@ bool VulkanRenderer::initializeInstance()
 	std::vector<const char*> extensions;
 	extensions.resize(count);
 
-	for (int i = 0; i < count; ++i) {
+	for (unsigned int i = 0; i < count; ++i) {
 		extensions.push_back(vkExt[i]);
 	}
 
