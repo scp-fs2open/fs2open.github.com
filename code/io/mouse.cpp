@@ -533,13 +533,13 @@ void mouse_reset_deltas()
 
 void mouse_event(float x, float y, float dx, float dy)
 {
-	Mouse_x = static_cast<float>(x);
-	Mouse_y = static_cast<float>(y);
+	Mouse_x = static_cast<int>(x);
+	Mouse_y = static_cast<int>(y);
 
 	// Add up these delta values so we don't overwrite previous events,
 	// should be reset in gr_flip my mouse_reset_deltas()
-	Mouse_dx += static_cast<float>(dx);
-	Mouse_dy += static_cast<float>(dy);
+	Mouse_dx += static_cast<int>(dx);
+	Mouse_dy += static_cast<int>(dy);
 
 	if ((Mouse_dx != 0 || Mouse_dy != 0) && scripting::hooks::OnMouseMoved->isActive())
 	{
@@ -632,8 +632,8 @@ void mousewheel_motion(float x, float y, bool reversed) {
 		y = -y;
 	}
 
-	Mouse_wheel_x += static_cast<float>(x);
-	Mouse_wheel_y += static_cast<float>(y);
+	Mouse_wheel_x += static_cast<int>(x);
+	Mouse_wheel_y += static_cast<int>(y);
 
 	// These nested if's should take care of all edge cases.
 	// Since x and y's magnitudes can be larger than 1, it is possible to ignore the idle state

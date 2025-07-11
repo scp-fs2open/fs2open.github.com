@@ -421,7 +421,7 @@ static void SDLCALL openal_render_samples(void *userdata, SDL_AudioStream *strea
 
 	alcRenderSamplesSOFT(ctx->device, ctx->render_buffer, additional_amount / ctx->frame_size);
 
-	SDL_PutAudioStreamData(ctx->stream, ctx->render_buffer, additional_amount);
+	SDL_PutAudioStreamData(stream, ctx->render_buffer, additional_amount);
 }
 
 static bool ds_init_loopback(std::string &Device)
