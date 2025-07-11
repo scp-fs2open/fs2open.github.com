@@ -46,8 +46,6 @@ class ShaderProgram {
 
 	SCP_vector<GLuint> _compiled_shaders;
 
-	SCP_unordered_map<opengl_vert_attrib::attrib_id, GLint> _attribute_locations;
-
 	void freeCompiledShaders();
  public:
 	explicit ShaderProgram(const SCP_string& program_name);
