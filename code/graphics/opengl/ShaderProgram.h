@@ -67,9 +67,7 @@ class ShaderProgram {
 
 	void linkProgram();
 
-	void initAttribute(const SCP_string& name, opengl_vert_attrib::attrib_id attr_id, const vec4& default_value);
-
-	GLint getAttributeLocation(opengl_vert_attrib::attrib_id attribute);
+	void initAttribute(const SCP_string& name, const vec4& default_value);
 
 	GLuint getShaderHandle();
 };
