@@ -308,6 +308,20 @@ constexpr bool LoggingEnabled = false;
 		ASSUME( expr );\
 	} while (false)
 #endif
+
+template <typename T>
+bool CallAssert(bool val, const char *msg, const char *filename, int linenum, T assertMsgFunc)
+{
+	if (!val)
+		assertMsgFunc(msg, filename, linenum, nullptr);
+	ASSUME(val);
+	return true;
+}
+#if defined(NDEBUG)
+#	define AssertExpr(expr) (true)
+#else
+#	define AssertExpr(expr) CallAssert(expr, #expr, __FILE__, __LINE__, os::dialogs::AssertMessage)
+#endif
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode

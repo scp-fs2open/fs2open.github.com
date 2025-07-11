@@ -60,6 +60,20 @@ class polymodel;
 #define ID_SLDC 0x43444c53				// CDLS (SLDC): Shield Collision Tree
 #define ID_SLC2 0x32434c53				// 2CLS (SLC2): Shield Collision Tree with ints instead of char - ShivanSpS
 
+extern const ubyte* Macro_ubyte_bounds;
+
+#ifndef NDEBUG
+#define us(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<ushort*>(p))
+#define cus(p)  (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const ushort*>(p))
+#define uw(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<uint*>(p))
+#define cuw(p)  (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const uint*>(p))
+#define w(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<int*>(p))
+#define cw(p)   (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const int*>(p))
+#define wp(p)	(AssertExpr(p < Macro_ubyte_bounds), reinterpret_cast<int*>(p)
+#define vp(p)	(AssertExpr(p < Macro_ubyte_bounds), reinterpret_cast<vec3d*>(p))
+#define fl(p)	(AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<float*>(p))
+#define cfl(p)  (AssertExpr(p < Macro_ubyte_bounds), *reinterpret_cast<const float*>(p))
+#else
 #define us(p)	(*reinterpret_cast<ushort*>(p))
 #define cus(p)  (*reinterpret_cast<const ushort*>(p))
 #define uw(p)	(*reinterpret_cast<uint*>(p))
@@ -70,6 +84,7 @@ class polymodel;
 #define vp(p)	(reinterpret_cast<vec3d*>(p))
 #define fl(p)	(*reinterpret_cast<float*>(p))
 #define cfl(p)  (*reinterpret_cast<const float*>(p))
+#endif
 
 void model_calc_bound_box(vec3d *box, const vec3d *big_mn, const vec3d *big_mx);
 

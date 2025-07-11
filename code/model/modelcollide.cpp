@@ -577,11 +577,11 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 	}
 }
 
-void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version)
+void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version)
 {
 	TRACE_SCOPE(tracing::ModelParseBSPTree);
 
-	ubyte *p = (ubyte *)model_ptr;
+	ubyte *p = bsp_data;
 	ubyte *next_p;
 
 	int chunk_type = w(p);
@@ -712,7 +712,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			}
 
 			next_p = p + chunk_size;
-			next_chunk_type = w(next_p);
+			next_chunk_type = OP_EOF;	// should not continue after this chunk
 
 			++i;
 			break;
