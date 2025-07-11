@@ -529,7 +529,7 @@ static bool ds_init_physical(std::string &Device, const int sample_rate)
 {
 	ALCint attrList[] = { ALC_FREQUENCY, sample_rate, 0 };
 
-	if ( openal_init_device(&Device, nullptr) == false ) {
+	if ( !openal_init_device(&Device, nullptr) ) {
 		mprintf(("\n  ERROR: Unable to find suitable playback device!\n\n"));
 		return false;
 	}

@@ -150,8 +150,6 @@ namespace
 	}
 }
 
-void mouse_force_pos(float x, float y);
-
 /**
  * @brief Decays the mousewheel position back to 0 and clears the appropriate flags when nuetral
  * @param[in] btn The button (wheel direction) to check against

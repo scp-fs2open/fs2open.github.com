@@ -28,9 +28,9 @@
 #define ASF_USED	1
 
 // constants
-#define BIGBUF_SIZE			352800	// enough for 1 second of 44.1kHz 16-bit stereo
-static ubyte *Wavedata_load_buffer = NULL;		// buffer used for cueing audiostreams
-static ubyte *Wavedata_service_buffer = NULL;	// buffer used for servicing audiostreams
+static constexpr uint32_t BIGBUF_SIZE = 352800;	// enough for 1 second of 44.1kHz 16-bit stereo
+static ubyte *Wavedata_load_buffer = nullptr;		// buffer used for cueing audiostreams
+static ubyte *Wavedata_service_buffer = nullptr;	// buffer used for servicing audiostreams
 
 static SDL_Mutex* Global_service_lock;
 
@@ -98,7 +98,7 @@ public:
 	bool Create (char *pszFilename);
 	bool CreateMem (const uint8_t* snddata, size_t snd_len);
 	bool Destroy ();
-	void Play (float volume, int looping);
+	void Play (float volume, bool looping);
 	bool Is_Playing(){ return m_fPlaying; }
 	bool Is_Paused(){ return m_bIsPaused; }
 	bool Is_Past_Limit() { return m_bPastLimit; }
@@ -249,7 +249,7 @@ void AudioStream::Init_Data ()
 {
 	m_audio_stream = nullptr;
 
-	m_bLooping = 0;
+	m_bLooping = false;
 	m_bFade = false;
 	m_fade_timer_id = 0;
 	m_finished_id = 0;
@@ -611,7 +611,7 @@ void AudioStream::Cue (void)
 }
 
 // Play
-void AudioStream::Play (float volume, int looping)
+void AudioStream::Play (float volume, bool looping)
 {
 	if ( !m_audio_stream ) {
 		return;
@@ -619,15 +619,12 @@ void AudioStream::Play (float volume, int looping)
 
 	// If playing, stop
 	if (m_fPlaying) {
-		if ( m_bIsPaused == false)
+		if ( !m_bIsPaused )
 			Stop_and_Rewind();
 	}
 
 	// loop flag must be set before Cue()!
-	if ( looping )
-		m_bLooping = 1;
-	else
-		m_bLooping = 0;
+	m_bLooping = looping;
 
 	// Cue for playback if necessary
 	if ( !m_fCued )
@@ -1027,7 +1024,7 @@ void audiostream_play(int i, float volume, int looping)
 
 	Assert( Audio_streams[i].status == ASF_USED );
 	Audio_streams[i].Set_Default_Volume(volume);
-	Audio_streams[i].Play(volume, looping);
+	Audio_streams[i].Play(volume, looping != 0);
 }
 
 // use as buffer service function

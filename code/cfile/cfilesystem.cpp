@@ -445,7 +445,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 				}
 
 				// only add if the case is other than expected
-				if (special_parent || (search_name.compare(results[idx]) != 0)) {
+				if (special_parent || (search_name != results[idx])) {
 					root->pathTypeToRealPath.insert(std::make_pair(i, path + results[idx]));
 				}
 
