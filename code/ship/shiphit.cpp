@@ -662,7 +662,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-std::pair<ConditionData*, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
+std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
@@ -687,7 +687,7 @@ std::pair<ConditionData*, float> do_subobj_hit_stuff(object *ship_objp, const ob
 
 	ship_p = &Ships[ship_objp->instance];
 
-	ConditionData* subsys_impact = nullptr;
+	std::optional<ConditionData> subsys_impact = std::nullopt;
 
 	//	Don't damage player subsystems in a training mission.
 	if ( The_mission.game_type & MISSION_TYPE_TRAINING ) {
@@ -1004,14 +1004,13 @@ std::pair<ConditionData*, float> do_subobj_hit_stuff(object *ship_objp, const ob
 			}
 
 			if (j == 0) {
-				auto subsys_impact_real = ConditionData {
+				subsys_impact = ConditionData {
 					ImpactCondition(subsystem->armor_type_idx),
 					HitType::SUBSYS,
 					damage_to_apply,
 					subsystem->current_hits,
 					subsystem->max_hits,
 				};
-				subsys_impact = &subsys_impact_real;
 			}
 
 			subsystem->current_hits -= damage_to_apply;
@@ -2411,7 +2410,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
-	std::array<const ConditionData*, NumHitTypes> impact_data = {};
+	std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
 
 	// If the ship is invulnerable, do nothing
 	if (ship_objp->flags[Object::Object_Flags::Invulnerable])	{
@@ -2421,7 +2420,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	//	if ship is already dying, shorten deathroll.
 	if (shipp->flags[Ship::Ship_Flags::Dying]) {
 		if (quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields])) {
-			auto shield_impact = ConditionData {
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = ConditionData {
 				ImpactCondition(shipp->shield_armor_type_idx),
 				HitType::SHIELD,
 				0.0f,
@@ -2429,16 +2428,14 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp))),
 				shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
 			};
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 		} else {
-			auto hull_impact = ConditionData {
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 				ImpactCondition(shipp->armor_type_idx),
 				HitType::HULL,
 				0.0f,
 				ship_objp->hull_strength,
 				shipp->ship_max_hull_strength,
 			};
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
 		}
 		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
 
@@ -2497,7 +2494,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			damage = remaining_damage + (damage * piercing_pct);
 		}
 
-		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = shield_impact;
 	}
 			
 	// Apply leftover damage to the ship's subsystem and hull.
@@ -2564,15 +2561,13 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
-			auto hull_impact = ConditionData {
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 				ImpactCondition(shipp->armor_type_idx),
 				HitType::HULL,
 				damage,
 				ship_objp->hull_strength,
 				shipp->ship_max_hull_strength,
 			};
-
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
 
 			// multiplayer clients don't do damage
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
@@ -2872,9 +2867,9 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 			if ((ship_p->team == wp->team) && !(Objects[other_obj->parent].flags[Object::Object_Flags::Player_ship]) ) {
 				// need to play the impact effect(s) for the weapon if we have one, since we won't get the chance to do it later
 				// we won't account for subsystems; that's a lot of extra logic for little benefit in this edge case
-				std::array<const ConditionData*, NumHitTypes> impact_data = {};
+				std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
 				if (quadrant >= 0 && !(ship_objp->flags[Object::Object_Flags::No_shields])) {
-					auto shield_impact = ConditionData {
+					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = ConditionData {
 						ImpactCondition(ship_p->shield_armor_type_idx),
 						HitType::SHIELD,
 						0.0f,
@@ -2882,16 +2877,14 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 						MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp))),
 						shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
 					};
-					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = &shield_impact;
 				} else {
-					auto hull_impact = ConditionData {
+					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 						ImpactCondition(ship_p->armor_type_idx),
 						HitType::HULL,
 						0.0f,
 						ship_objp->hull_strength,
 						ship_p->ship_max_hull_strength,
 					};
-					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &hull_impact;
 				}
 				maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
 				return;

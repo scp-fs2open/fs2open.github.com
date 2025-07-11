@@ -70,15 +70,14 @@ int collide_debris_weapon( obj_pair * pair )
 			vec3d force = weapon_obj->phys_info.vel * Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].mass;
 			bool armed = weapon_hit( weapon_obj, pdebris, &hitpos, -1 );
 			float damage = Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage;
-			std::array<const ConditionData*, NumHitTypes> impact_data = {};
-			ConditionData debris_impact = ConditionData {
+			std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 				SpecialImpactCondition::DEBRIS,
 				HitType::HULL,
 				damage,
 				pdebris->hull_strength,
 				Debris[pdebris->instance].max_hull,
 			};
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &debris_impact;
 			maybe_play_conditional_impacts(impact_data, weapon_obj, pdebris, armed, -1, &hitpos, nullptr, &hitnormal);
 			debris_hit( pdebris, weapon_obj, &hitpos, damage , &force);
 		}
@@ -160,15 +159,14 @@ int collide_asteroid_weapon( obj_pair * pair )
 			vec3d force = weapon_obj->phys_info.vel * Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].mass;
 			bool armed = weapon_hit( weapon_obj, pasteroid, &hitpos, -1);
 			float damage = Weapon_info[Weapons[weapon_obj->instance].weapon_info_index].damage;
-			std::array<const ConditionData*, NumHitTypes> impact_data = {};
-			ConditionData asteroid_impact = ConditionData {
+			std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
+			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 				SpecialImpactCondition::DEBRIS,
 				HitType::HULL,
 				damage,
 				pasteroid->hull_strength,
 				Asteroid_info[Asteroids[pasteroid->instance].asteroid_type].initial_asteroid_strength,
 			};
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &asteroid_impact;
 			maybe_play_conditional_impacts(impact_data, weapon_obj, pasteroid, armed, -1, &hitpos, nullptr, &hitnormal);
 			asteroid_hit( pasteroid, weapon_obj, &hitpos, damage, &force );
 		}

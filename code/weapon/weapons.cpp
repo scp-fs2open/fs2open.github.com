@@ -7797,7 +7797,7 @@ static std::unique_ptr<EffectHost> weapon_hit_make_effect_host(const object* wea
 }
 
 void process_conditional_impact(
-	const ConditionData* entry,
+	const ConditionData& entry,
 	const object* weapon_objp,
 	const weapon_info* wip,
 	const object* impacted_objp,
@@ -7813,17 +7813,14 @@ void process_conditional_impact(
 	const vec3d* laser_head_pos,
 	bool* valid_conditional_impact
 ) {
-	if (entry == nullptr) {
-		return;
-	}
-	auto conditional_impact_it = wip->conditional_impacts.find(entry->condition);
+	auto conditional_impact_it = wip->conditional_impacts.find(entry.condition);
 	if (conditional_impact_it != wip->conditional_impacts.end()) {
-		float health_fraction = entry->health / entry->max_health;
-		float damage_hits_fraction = entry->damage / entry->health;
+		float health_fraction = entry.health / entry.max_health;
+		float damage_hits_fraction = entry.damage / entry.health;
 		for (const auto& ci : conditional_impact_it->second) {
 			if (((!armed_weapon) == ci.dinky)
 				&& (!ci.disable_if_player_parent || (&Objects[weapon_objp->parent] != Player_obj))
-				&& ((entry->hit_type != HitType::HULL || !subsys_hit) || !ci.disable_on_subsys_passthrough)
+				&& ((entry.hit_type != HitType::HULL || !subsys_hit) || !ci.disable_on_subsys_passthrough)
 				&& health_fraction >= ci.min_health_threshold.next()
 				&& health_fraction <= ci.max_health_threshold.next()
 				&& damage_hits_fraction >= ci.min_damage_hits_ratio.next()
@@ -7861,7 +7858,7 @@ void process_conditional_impact(
 	}
 }
 
-void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes> impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos, const vec3d* hitnormal) {
+void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos, const vec3d* hitnormal) {
 	if (weapon_objp == nullptr || weapon_objp->type != OBJ_WEAPON) {
 		return;
 	}
@@ -7899,12 +7896,15 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 		laser_pokethrough_amount = vm_vec_dist_quick(&laser_head_pos, hitpos) / laser_length;
 	}
 
-	bool subsys_hit = impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)] != nullptr;
+	bool subsys_hit = impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)].has_value();
 	bool valid_conditional_impact = false;
 
-	for (const auto entry : impact_data) {
+	for (const auto& entry : impact_data) {
+		if (!entry.has_value()) {
+			continue;
+		}
 		process_conditional_impact(
-			entry,
+			*entry,
 			weapon_objp,
 			wip,
 			impacted_objp,
@@ -7932,7 +7932,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 			1.0f,
 		};
 		process_conditional_impact(
-			&space_entry,
+			space_entry,
 			weapon_objp,
 			wip,
 			impacted_objp,
@@ -7975,7 +7975,7 @@ void maybe_play_conditional_impacts(std::array<const ConditionData*, NumHitTypes
 		particleSource->finishCreation();
 	}
 
-	if (impacted_objp != nullptr && impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] == nullptr && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;

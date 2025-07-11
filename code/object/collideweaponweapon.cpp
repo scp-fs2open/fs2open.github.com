@@ -139,27 +139,25 @@ int collide_weapon_weapon( obj_pair * pair )
 				if (wipB->weapon_hitpoints > 0) {		//	Two bombs collide, detonate both.
 					if ((wipA->wi_flags[Weapon::Info_Flags::Bomb]) && (wipB->wi_flags[Weapon::Info_Flags::Bomb])) {
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-						auto weapon_impact_b = ConditionData {
+						std::array<std::optional<ConditionData>, NumHitTypes> impact_data_b = {};
+						impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 							ImpactCondition(wipB->armor_type_idx),
 							HitType::HULL,
 							aDamage,
 							B->hull_strength,
 							i2fl(wipB->weapon_hitpoints),
 						};
-						impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_b;
 						bool a_armed = weapon_hit(A, B, &A->pos, -1);
 						maybe_play_conditional_impacts(impact_data_b, A, B, a_armed, -1, &A->pos);
 						wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-						auto weapon_impact_a = ConditionData {
+						std::array<std::optional<ConditionData>, NumHitTypes> impact_data_a = {};
+						impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 							ImpactCondition(wipA->armor_type_idx),
 							HitType::HULL,
 							bDamage,
 							A->hull_strength,
 							i2fl(wipA->weapon_hitpoints),
 						};
-						impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_a;
 						bool b_armed = weapon_hit(B, A, &B->pos, -1);
 						maybe_play_conditional_impacts(impact_data_a, B, A, b_armed, -1, &B->pos);
 					} else {
@@ -177,29 +175,27 @@ int collide_weapon_weapon( obj_pair * pair )
 						
 						if (A->hull_strength < 0.0f) {
 							wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-							std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-							auto weapon_impact_b = ConditionData {
+							std::array<std::optional<ConditionData>, NumHitTypes> impact_data_b = {};
+							impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 								ImpactCondition(wipB->armor_type_idx),
 								HitType::HULL,
 								aDamage,
 								B->hull_strength,
 								i2fl(wipB->weapon_hitpoints),
 							};
-							impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_b;
 							bool a_armed = weapon_hit(A, B, &A->pos, -1);
 							maybe_play_conditional_impacts(impact_data_b, A, B, a_armed, -1, &A->pos);
 						}
 						if (B->hull_strength < 0.0f) {
 							wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-							std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-							auto weapon_impact_a = ConditionData {
+							std::array<std::optional<ConditionData>, NumHitTypes> impact_data_a = {};
+							impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 								ImpactCondition(wipA->armor_type_idx),
 								HitType::HULL,
 								bDamage,
 								A->hull_strength,
 								i2fl(wipA->weapon_hitpoints),
 							};
-							impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_a;
 							bool b_armed = weapon_hit(B, A, &B->pos, -1);
 							maybe_play_conditional_impacts(impact_data_a, B, A, b_armed, -1, &B->pos);
 						}
@@ -207,28 +203,26 @@ int collide_weapon_weapon( obj_pair * pair )
 				} else {
 					A->hull_strength -= bDamage;
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-					std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-					auto weapon_impact_a = ConditionData {
+					std::array<std::optional<ConditionData>, NumHitTypes> impact_data_a = {};
+					impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 						ImpactCondition(wipA->armor_type_idx),
 						HitType::HULL,
 						bDamage,
 						A->hull_strength,
 						i2fl(wipA->weapon_hitpoints),
 					};
-					impact_data_a[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_a;
 					bool b_armed = weapon_hit(B, A, &B->pos, -1);
 					maybe_play_conditional_impacts(impact_data_a, B, A, b_armed, -1, &B->pos);
 					if (A->hull_strength < 0.0f) {
 						wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-						auto weapon_impact_b = ConditionData {
+						std::array<std::optional<ConditionData>, NumHitTypes> impact_data_b = {};
+						impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
 							ImpactCondition(wipB->armor_type_idx),
 							HitType::HULL,
 							aDamage,
 							B->hull_strength,
 							i2fl(wipB->weapon_hitpoints),
 						};
-						impact_data_b[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = &weapon_impact_b;
 						bool a_armed = weapon_hit(A, B, &A->pos, -1);
 						maybe_play_conditional_impacts(impact_data_b, A, B, a_armed, -1, &A->pos);
 					}
@@ -236,28 +230,26 @@ int collide_weapon_weapon( obj_pair * pair )
 			} else if (wipB->weapon_hitpoints > 0) {
 				B->hull_strength -= aDamage;
 				wpA->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-				std::array<const ConditionData*, NumHitTypes> impact_data_b = {};
-				auto weapon_impact_b = ConditionData {
+				std::array<std::optional<ConditionData>, NumHitTypes> impact_data_b = {};
+				impact_data_b[0] = ConditionData {
 					ImpactCondition(wipB->armor_type_idx),
 					HitType::HULL,
 					aDamage,
 					B->hull_strength,
 					i2fl(wipB->weapon_hitpoints),
 				};
-				impact_data_b[0] = &weapon_impact_b;
 				bool a_armed = weapon_hit(A, B, &A->pos, -1);
 				maybe_play_conditional_impacts(impact_data_b, A, B, a_armed, -1, &A->pos);
 				if (B->hull_strength < 0.0f) {
 					wpB->weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-					std::array<const ConditionData*, NumHitTypes> impact_data_a = {};
-					auto weapon_impact_a = ConditionData {
+					std::array<std::optional<ConditionData>, NumHitTypes> impact_data_a = {};
+					impact_data_a[0] = ConditionData {
 						ImpactCondition(wipA->armor_type_idx),
 						HitType::HULL,
 						bDamage,
 						A->hull_strength,
 						i2fl(wipA->weapon_hitpoints),
 					};
-					impact_data_a[0] = &weapon_impact_a;
 					bool b_armed = weapon_hit(B, A, &B->pos, -1);
 					maybe_play_conditional_impacts(impact_data_a, B, A, b_armed, -1, &B->pos);
 				}
