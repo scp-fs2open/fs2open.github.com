@@ -154,9 +154,9 @@ void parse_mflash_tbl(const char *filename)
 
 static void convert_mflash_to_particle() {
 	Curve new_curve = Curve(";MuzzleFlashMinSizeScalingCurve");
-	new_curve.keyframes.push_back(curve_keyframe{vec2d{ -0.00001f , 0.f}, CurveInterpFunction::Polynomial, -1.0f, 1.0f}); //just for numerical safety if we ever get an actual size of 0...
-	new_curve.keyframes.push_back(curve_keyframe{vec2d{ Min_pizel_size_muzzleflash, 1.f }, CurveInterpFunction::Constant, 0.0f, 1.0f});
-	Curves.push_back(new_curve);
+	new_curve.keyframes.emplace_back(curve_keyframe{vec2d{ -0.00001f , 0.f}, CurveInterpFunction::Polynomial, -1.0f, 1.0f}); //just for numerical safety if we ever get an actual size of 0...
+	new_curve.keyframes.emplace_back(curve_keyframe{vec2d{ Min_pizel_size_muzzleflash, 1.f }, CurveInterpFunction::Constant, 0.0f, 1.0f});
+	Curves.emplace_back(std::move(new_curve));
 	modular_curves_entry scaling_curve {(static_cast<int>(Curves.size()) - 1), ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false};
 
 	for (const auto& mflash : Mflash_info) {

@@ -2640,9 +2640,9 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 				curve_name += "SpawnDelayCurve" + std::to_string(spawn_weap);
 
 				Curve new_curve = Curve(curve_name);
-				new_curve.keyframes.push_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
-				new_curve.keyframes.push_back(curve_keyframe{ vec2d { delay, 1.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
-				Curves.push_back(new_curve);
+				new_curve.keyframes.emplace_back(curve_keyframe{ vec2d { 0.f, 0.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				new_curve.keyframes.emplace_back(curve_keyframe{ vec2d { delay, 1.f}, CurveInterpFunction::Constant, 0.0f, 1.0f });
+				Curves.emplace_back(std::move(new_curve));
 				wip->weapon_curves.add_curve("Age", weapon_info::WeaponCurveOutputs::SPAWN_RATE_MULT, modular_curves_entry{(static_cast<int>(Curves.size()) - 1)});
 			}
 
