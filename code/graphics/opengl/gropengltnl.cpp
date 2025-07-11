@@ -1190,7 +1190,7 @@ void opengl_bind_vertex_component(const vertex_format_data &vert_component, size
 
 	if ( Current_shader != NULL ) {
 		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
-		GLint index = opengl_shader_get_attribute(attrib_info.attribute_id);
+		GLint index = attrib_info.attribute_id;
 
 		if ( index >= 0 ) {
 			GL_state.Array.EnableVertexAttrib(index);
@@ -1232,7 +1232,7 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 		auto& bind_info = GL_array_binding_data[component->format_type];
 		auto& attrib_info = GL_vertex_attrib_info[bind_info.attribute_id];
 
-		auto attribIndex = static_cast<GLuint>(opengl_shader_get_attribute(attrib_info.attribute_id));
+		auto attribIndex = attrib_info.attribute_id;
 
 		GLuint add_val_index = 0;
 		for (GLint size = bind_info.size; size > 0; size -=4) {
