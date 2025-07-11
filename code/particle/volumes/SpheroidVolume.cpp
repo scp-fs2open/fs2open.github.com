@@ -16,7 +16,17 @@ namespace particle {
 		float bias = m_bias * m_modular_curves.get_output(VolumeModularCurveOutput::BIAS, curveSource, &m_modular_curve_instance);
 		if (!fl_equal(bias, 1.f)) {
 			float mag = vm_vec_mag(&pos);
-			pos *= powf(mag, bias) / mag;
+
+			if (fl_near_zero(mag)) {
+				if (fl_near_zero(bias)) {
+					//Mag and bias are zero, the point needs to be put on some point on the sphere's surface. Technically, this could be random, but as its exceedingly rare, don't bother
+					pos = vec3d{{{1.f, 0.f, 0.f}}};
+				}
+				//else: Mag is zero, but bias is not. The point should stay at 0,0,0, so no change is necessary
+			}
+			else {
+				pos *= powf(mag, bias) / mag;
+			}
 		}
 
 		// maybe stretch it
