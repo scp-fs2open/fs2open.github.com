@@ -659,7 +659,7 @@ void mousewheel_motion(float x, float y, bool reversed) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
 
-	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', y), scripting::hook_param("MouseWheelX", 'i', x)));
+	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', static_cast<int>(y)), scripting::hook_param("MouseWheelX", 'i', static_cast<int>(x))));
 }
 
 void mousewheel_decay(int btn) {

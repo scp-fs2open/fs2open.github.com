@@ -485,7 +485,6 @@ static SCP_vector<ResolutionInfo> resolution_enumerator()
 	auto modes = SDL_GetFullscreenDisplayModes(VideoDisplayOption->getValue(), nullptr);
 
 	if ( !modes ) {
-		printf("no modes! (%d)\n", VideoDisplayOption->getValue());
 		return out;
 	}
 
