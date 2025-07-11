@@ -281,7 +281,7 @@ static size_t cf_get_list_of_files(const SCP_string &in_path, SCP_vector<_file_l
 
 		nfile.name = list[i];
 		nfile.m_time = pinfo.modify_time;
-		nfile.size = pinfo.size;
+		nfile.size = static_cast<size_t>(pinfo.size);
 
 		if (subpath) {
 			nfile.sub_path = subpath;
@@ -398,6 +398,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 		SCP_string fn;
 		SDL_PathInfo pinfo{};
 		int count = 0;
+		bool special_parent = false;
 
 		auto parentPathIter = root->pathTypeToRealPath.find(Pathtypes[i].parent_index);
 
@@ -405,6 +406,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 			path = Pathtypes[Pathtypes[i].parent_index].path;
 		} else {
 			path = parentPathIter->second;
+			special_parent = true;
 		}
 
 		if ( !path.empty() && path.back() != DIR_SEPARATOR_CHAR) {
@@ -443,7 +445,7 @@ static void cf_init_root_pathtypes(cf_root *root)
 				}
 
 				// only add if the case is other than expected
-				if (search_name.compare(results[idx]) != 0) {
+				if (special_parent || (search_name.compare(results[idx]) != 0)) {
 					root->pathTypeToRealPath.insert(std::make_pair(i, path + results[idx]));
 				}
 
