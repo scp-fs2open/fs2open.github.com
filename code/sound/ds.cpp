@@ -569,6 +569,9 @@ int ds_init()
 
 	mprintf(("Initializing OpenAL...\n"));
 
+	// initial device setup (needed for settings ui)
+	openal_init_device(nullptr, nullptr);
+
 	Ds_sound_quality = os_config_read_uint("Sound", "Quality", DS_SQ_MEDIUM);
 	CLAMP(Ds_sound_quality, DS_SQ_LOW, DS_SQ_HIGH);
 
