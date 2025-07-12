@@ -228,7 +228,13 @@ namespace io
 			 * @brief The SDL joystick handle
 			 * @return The handle
 			 */
-			SDL_Joystick* getDevice();
+			SDL_Joystick* getJoystick();
+
+			/**
+			 * @brief The SDL gampad handle
+			 * @return The handle
+			 */
+			SDL_Gamepad* getGamepad();
 
 			/**
 			 * @brief Handles a SDL joystick event
@@ -262,8 +268,12 @@ namespace io
 			void handleButtonEvent(const SDL_JoyButtonEvent& evt);
 			void handleHatEvent(const SDL_JoyHatEvent& evt);
 
+			void handleAxisEvent(const SDL_GamepadAxisEvent& evt);
+			void handleButtonEvent(const SDL_GamepadButtonEvent& evt);
+
 			SDL_JoystickID _id;     //!< The instance ID
 			SDL_Joystick *_joystick; //!< The SDL joystick handle
+			SDL_Gamepad *_gamepad;  //!< The SDL gamepad handle
 
 			SCP_string _guidStr;    //!< The GUID string
 			SCP_string _name;       //!< The joystick name
