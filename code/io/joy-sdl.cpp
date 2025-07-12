@@ -225,6 +225,9 @@ void setPlayerJoystick(Joystick* stick, short cid)
 		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
 		mprintf(("\n"));
 		mprintf(("  Is gamepad: %s\n", pJoystick[cid]->isGamepad() ? "YES" : "NO"));
+		if (pJoystick[cid]->isGamepad()) {
+			mprintf(("  Gamepad type: %d\n", SDL_GetGamepadType(pJoystick[cid]->getGamepad())));
+		}
 		mprintf(("  Number of axes: %d\n", pJoystick[cid]->numAxes()));
 		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
 		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
