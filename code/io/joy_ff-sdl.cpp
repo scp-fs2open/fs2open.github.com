@@ -162,7 +162,7 @@ int joy_ff_init()
 	}
 #endif
 
-	haptic = SDL_OpenHapticFromJoystick(Joy->getDevice());
+	haptic = SDL_OpenHapticFromJoystick(Joy->getJoystick());
 
 	if (haptic == NULL) {
 		mprintf(("    ERROR: Unable to open haptic joystick: %s\n", SDL_GetError()));
