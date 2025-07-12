@@ -9,13 +9,18 @@
 #include <mutex>
 #include <thread>
 
-namespace threading {
-	std::condition_variable wait_for_task;
-	std::mutex wait_for_task_mutex;
-	bool wait_for_task_condition;
-	std::atomic<WorkerThreadTask> worker_task;
+#ifdef WIN32
+#include <windows.h>
+#endif
 
-	SCP_vector<std::thread> worker_threads;
+namespace threading {
+	static size_t num_threads = 1;
+	static std::condition_variable wait_for_task;
+	static std::mutex wait_for_task_mutex;
+	static bool wait_for_task_condition;
+	static std::atomic<WorkerThreadTask> worker_task;
+
+	static SCP_vector<std::thread> worker_threads;
 
 	//Internal Functions
 	static void mp_worker_thread_main(size_t threadIdx) {
@@ -53,13 +58,96 @@ namespace threading {
 		wait_for_task_condition = false;
 	}
 
+	static size_t get_number_of_physical_cores_fallback() {
+		unsigned int hardware_threads = std::thread::hardware_concurrency();
+		if (hardware_threads > 0) {
+			return hardware_threads;
+		}
+		else {
+			Warning(LOCATION, "Could not autodetect available number of threads! Disabling multithreading...");
+			return 1;
+		}
+	}
+
+	//We don't want to rely on std::thread::hardware_concurrency() unless we have to, as it reports threads, not physical cores, and FSO doesn't gain much from hyperthreaded threads at the moment.
+#ifdef WIN32
+	static size_t get_number_of_physical_cores() {
+		auto glpi = (BOOL (WINAPI *)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD)) GetProcAddress(
+                            GetModuleHandle(TEXT("kernel32")),
+                            "GetLogicalProcessorInformation");
+
+		if (glpi == nullptr)
+			return get_number_of_physical_cores_fallback();
+
+		DWORD length = 0;
+		glpi(nullptr, &length);
+		std::vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> infoBuffer(length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
+		DWORD error = glpi(infoBuffer.data(), &length);
+
+		if (error != 0)
+			return get_number_of_physical_cores_fallback();
+
+		size_t num_cores = 0;
+		for (const auto& info : infoBuffer) {
+			if (info.Relationship == RelationProcessorCore && info.ProcessorMask != 0)
+				num_cores++;
+		}
+
+		if (num_cores < 1) {
+			//invalid results, try fallback
+			return get_number_of_physical_cores_fallback();
+		}
+		else {
+			return num_cores;
+		}
+	}
+#elif defined SCP_UNIX
+	static size_t get_number_of_physical_cores() {
+		try {
+			std::ifstream cpuinfo("/proc/cpuinfo");
+			SCP_string line;
+			while (std::getline(cpuinfo, line)) {
+				//Looking for a cpu cores property is fine assuming a user has only one physical CPU socket. If they have multiple CPU's, this'll underreport the core count, but that should be very rare in typical configurations
+				if (line.find("cpu cores") != SCP_string::npos){
+					size_t numberpos = line.find(": ");
+					if (numberpos == SCP_string::npos)
+						return get_number_of_physical_cores_fallback();
+
+					int num_cores = std::stoi(line.substr(numberpos + 2));
+
+					if (num_cores < 1) {
+						//invalid results, try fallback
+						return get_number_of_physical_cores_fallback();
+					}
+					else {
+						return num_cores;
+					}
+				}
+			}
+			return get_number_of_physical_cores_fallback();
+		}
+		catch (const std::exception&) {
+			return get_number_of_physical_cores_fallback();
+		}
+	}
+#else
+#define get_number_of_physical_cores() get_number_of_physical_cores_fallback()
+#endif
+
 	void init_task_pool() {
+		if (Cmdline_multithreading == 0) {
+			num_threads = get_number_of_physical_cores() - 1;
+		}
+		else {
+			num_threads = Cmdline_multithreading - 1;
+		}
+
 		if (!is_threading())
 			return;
 
-		mprintf(("Spinning up threadpool with %d threads...\n", Cmdline_multithreading - 1));
+		mprintf(("Spinning up threadpool with %d threads...\n", static_cast<int>(num_threads)));
 
-		for (size_t i = 0; i < static_cast<size_t>(Cmdline_multithreading - 1); i++) {
+		for (size_t i = 0; i < num_threads; i++) {
 			worker_threads.emplace_back([i](){ mp_worker_thread_main(i); });
 		}
 	}
@@ -73,7 +161,7 @@ namespace threading {
 	}
 
 	bool is_threading() {
-		return Cmdline_multithreading > 1;
+		return num_threads > 0;
 	}
 
 	size_t get_num_workers() {
