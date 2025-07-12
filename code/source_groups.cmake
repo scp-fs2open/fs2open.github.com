@@ -674,7 +674,11 @@ add_file_folder("Io"
 	io/joy.h
 	io/joy-sdl.cpp
 	io/joy_ff.h
-	io/joy_ff-sdl.cpp
+	io/joy_ff.cpp
+	io/joy_haptic.h
+	io/joy_haptic.cpp
+	io/joy_rumble.h
+	io/joy_rumble.cpp
 	io/spacemouse.cpp
 	io/spacemouse.h
 )
