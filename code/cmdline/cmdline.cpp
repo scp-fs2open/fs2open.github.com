@@ -2411,10 +2411,6 @@ bool SetCmdlineParams()
 
 	if (multithreading.found()) {
 		Cmdline_multithreading = abs(multithreading.get_int());
-		if (Cmdline_multithreading < 1) {
-			Cmdline_multithreading = 1;
-			Warning(LOCATION,"-threads must be an integer greater or equal to 1. Invalid thread count will be disregarded.");
-		}
 	}
 
 	return true; 
