@@ -285,6 +285,11 @@ void CJumpNode::SetName(const char *new_name)
 		end_string_at_first_hash_symbol(m_display);
 		m_flags |= JN_HAS_DISPLAY_NAME;
 	}
+	else
+	{
+		*m_display = '\0';
+		m_flags &= ~JN_HAS_DISPLAY_NAME;
+	}
 }
 
 /**
@@ -296,8 +301,8 @@ void CJumpNode::SetDisplayName(const char *new_display_name)
 {
 	Assert(new_display_name != NULL);
 
-	// if display name is blank or matches the actual name, clear it
-	if (*new_display_name == '\0' || !stricmp(new_display_name, m_name))
+	// if display name matches the actual name, clear it
+	if (stricmp(new_display_name, m_name) == 0)
 	{
 		*m_display = '\0';
 		m_flags &= ~JN_HAS_DISPLAY_NAME;

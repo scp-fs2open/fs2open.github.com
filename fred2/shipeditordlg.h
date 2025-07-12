@@ -104,6 +104,7 @@ public:
 	sexp_tree	m_arrival_tree;
 	sexp_tree	m_departure_tree;
 	CString	m_ship_name;
+	CString m_ship_display_name;
 	CString	m_cargo1;
 	int		m_ship_class_combo_index;
 	int		m_team;
@@ -148,6 +149,7 @@ protected:
 	afx_msg void OnEndlabeleditArrivalTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnEndlabeleditDepartureTree(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnGoals();
+	afx_msg void OnChangeShipName();
 	afx_msg void OnSelchangeShipClass();
 	afx_msg void OnInitialStatus();
 	afx_msg void OnWeapons();

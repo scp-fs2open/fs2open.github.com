@@ -21,6 +21,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	int _m_departure_tree_formula;
 	int _m_arrival_tree_formula;
 	SCP_string _m_ship_name;
+	SCP_string _m_ship_display_name;
 	SCP_string _m_cargo1;
 	SCP_string _m_alt_name;
 	SCP_string _m_callsign;
@@ -76,8 +77,11 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	void setShipName(const SCP_string m_ship_name);
+	void setShipName(const SCP_string &m_ship_name);
 	SCP_string getShipName() const;
+
+	void setShipDisplayName(const SCP_string &m_ship_display_name);
+	SCP_string getShipDisplayName() const;
 
 	void setShipClass(const int);
 	int getShipClass() const;

@@ -55,7 +55,7 @@ protected:
 	afx_msg void OnInitMenu(CMenu* pMenu);
 	afx_msg void OnClose();
 	afx_msg void OnHidden();
-	afx_msg void OnKillfocusName();
+	afx_msg void OnChangeName();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

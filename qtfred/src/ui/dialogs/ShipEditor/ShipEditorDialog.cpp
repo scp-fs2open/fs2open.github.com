@@ -29,6 +29,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	// Column One
 	connect(ui->shipNameEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::shipNameChanged);
+	connect(ui->shipDisplayNameEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::shipDisplayNameChanged);
 
 	connect(ui->shipClassCombo,
 		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
@@ -223,6 +224,7 @@ void ShipEditorDialog::updateColumnOne()
 {
 	util::SignalBlockers blockers(this);
 	ui->shipNameEdit->setText(_model->getShipName().c_str());
+	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
 	size_t i;
 	auto idx = _model->getShipClass();
 	ui->shipClassCombo->clear();
@@ -555,6 +557,7 @@ void ShipEditorDialog::enableDisable()
 
 	if (_model->getNumSelectedObjects()) {
 		ui->shipNameEdit->setEnabled(!_model->getIfMultipleShips());
+		ui->shipDisplayNameEdit->setEnabled(!_model->getIfMultipleShips());
 		ui->shipClassCombo->setEnabled(true);
 		ui->altNameCombo->setEnabled(true);
 		ui->initialStatusButton->setEnabled(true);
@@ -565,6 +568,7 @@ void ShipEditorDialog::enableDisable()
 		ui->specialStatsButton->setEnabled(true);
 	} else {
 		ui->shipNameEdit->setEnabled(false);
+		ui->shipDisplayNameEdit->setEnabled(false);
 		ui->shipClassCombo->setEnabled(false);
 		ui->altNameCombo->setEnabled(false);
 		ui->initialStatusButton->setEnabled(false);
@@ -659,7 +663,7 @@ void ShipEditorDialog::enableDisable()
 
 /*---------------------------------------------------------
 					WARNING
-Do not try to optimise string entries this convoluted method is necessary to avoid fata errors caused by QT
+Do not try to optimise string entries; this convoluted method is necessary to avoid fatal errors caused by QT
 -----------------------------------------------------------*/
 void ShipEditorDialog::shipNameChanged()
 {
@@ -668,6 +672,21 @@ void ShipEditorDialog::shipNameChanged()
 		const auto textBytes = entry.toUtf8();
 		const std::string NewShipName = textBytes.toStdString();
 		_model->setShipName(NewShipName);
+	}
+
+	// automatically determine or reset the display name
+	_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
+
+	// sync the variable to the edit box
+	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
+}
+void ShipEditorDialog::shipDisplayNameChanged()
+{
+	const QString entry = ui->shipDisplayNameEdit->text();
+	if (entry != _model->getShipDisplayName().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const std::string NewShipDisplayName = textBytes.toStdString();
+		_model->setShipDisplayName(NewShipDisplayName);
 	}
 }
 void ShipEditorDialog::shipClassChanged(const int index)

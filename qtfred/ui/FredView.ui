@@ -168,20 +168,24 @@
     <addaction name="actionWings"/>
     <addaction name="actionObjects"/>
     <addaction name="actionWaypoint_Paths"/>
-    <addaction name="actionMission_Objectives"/>
-    <addaction name="actionEvents"/>
-    <addaction name="actionLoadout"/>
-    <addaction name="actionBackground"/>
-    <addaction name="actionReinforcements"/>
-    <addaction name="actionAsteroid_Field"/>
+    <addaction name="separator"/>
     <addaction name="actionMission_Specs"/>
+    <addaction name="actionMission_Goals"/>
+    <addaction name="actionMission_Events"/>
+    <addaction name="actionVoice_Acting_Manager"/>
+    <addaction name="separator"/>
+    <addaction name="actionFiction_Viewer"/>
+    <addaction name="actionCommand_Briefing"/>
+    <addaction name="actionLoadout"/>
     <addaction name="actionBriefing"/>
     <addaction name="actionDebriefing"/>
-    <addaction name="actionCommand_Briefing"/>
-    <addaction name="actionFiction_Viewer"/>
+    <addaction name="separator"/>
+    <addaction name="actionBackground"/>
+    <addaction name="actionAsteroid_Field"/>
+    <addaction name="separator"/>
+    <addaction name="actionReinforcements"/>
     <addaction name="actionShield_System"/>
     <addaction name="actionSet_Global_Ship_Flags"/>
-    <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionCampaign"/>
    </widget>
@@ -234,6 +238,7 @@
     <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
+    <addaction name="actionAlways_Save_Display_Names"/>
     <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
@@ -1124,9 +1129,9 @@
     <string>Shift+Y</string>
    </property>
   </action>
-  <action name="actionEvents">
+  <action name="actionMission_Events">
    <property name="text">
-    <string>&amp;Events</string>
+    <string>Mission &amp;Events</string>
    </property>
    <property name="shortcut">
     <string>Shift+E</string>
@@ -1439,6 +1444,14 @@
     <string>Ctrl+Shift+D</string>
    </property>
   </action>
+  <action name="actionAlways_Save_Display_Names">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Always save Display Names</string>
+   </property>
+  </action>
   <action name="actionError_Checker_Checks_Potential_Issues">
    <property name="checkable">
     <bool>true</bool>
@@ -1489,9 +1502,9 @@
     <string>&amp;Empty</string>
    </property>
   </action>
-  <action name="actionMission_Objectives">
+  <action name="actionMission_Goals">
    <property name="text">
-    <string>Mission Objectives</string>
+    <string>Mission Goals</string>
    </property>
    <property name="shortcut">
     <string>Shift+G</string>

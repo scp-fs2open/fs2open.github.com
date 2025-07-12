@@ -4445,7 +4445,7 @@ const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_double
 }
 
 // Goober5000
-int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
+int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash)
 {
 	if (ignore_doubled_hash)
 	{
@@ -4456,7 +4456,7 @@ int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash)
 				if ((ch + 1) != src.end() && *(ch + 1) == '#')
 					++ch;
 				else
-					return (int)std::distance(src.begin(), ch);
+					return static_cast<int>(std::distance(src.begin(), ch));
 			}
 		}
 		return -1;
