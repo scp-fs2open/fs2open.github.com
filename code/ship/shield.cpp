@@ -808,7 +808,7 @@ MONITOR(NumShieldHits)
 /**
  * Add data for a shield hit.
  */
-void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float radius_override)
+void add_shield_point(int objnum, int tri_num, const vec3d *hit_pos, float radius_override)
 {
 	if (Num_shield_points >= MAX_SHIELD_POINTS)
 		return;

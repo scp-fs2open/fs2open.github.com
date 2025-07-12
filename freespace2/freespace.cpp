@@ -193,6 +193,7 @@
 #include "tracing/Monitor.h"
 #include "tracing/tracing.h"
 #include "utils/Random.h"
+#include "utils/threading.h"
 #include "weapon/beam.h"
 #include "weapon/emp.h"
 #include "weapon/flak.h"
@@ -1757,6 +1758,8 @@ void game_init()
 	// init os stuff next
 	os_init( Osreg_class_name, Window_title.c_str(), Osreg_app_name );
 
+	threading::init_task_pool();
+
 #ifndef NDEBUG
 	mprintf(("FreeSpace 2 Open version: %s\n", FS_VERSION_FULL));
 
@@ -2006,7 +2009,8 @@ void game_init()
 	// Initialize SEXPs. Must happen before ship init for LuaAI
 	sexp_startup();
 
-	obj_init();	
+	obj_init();
+	collide_init();
 	mflash_game_init();	
 	armor_init();
 	ai_init();
@@ -7023,6 +7027,8 @@ void game_shutdown(void)
 	}
 
 	lcl_xstr_close();
+
+	threading::shut_down_task_pool();
 }
 
 // game_stop_looped_sounds()
