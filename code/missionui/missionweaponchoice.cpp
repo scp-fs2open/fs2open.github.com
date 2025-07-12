@@ -765,7 +765,8 @@ void draw_3d_overhead_view(int model_num,
 	int bank_prim_offset,
 	int bank_sec_offset,
 	int bank_y_offset,
-	overhead_style style)
+	overhead_style style,
+	const SCP_string& tcolor)
 {
 	ship_info* sip = &Ship_info[ship_class];
 
@@ -850,6 +851,11 @@ void draw_3d_overhead_view(int model_num,
 		gr_set_view_matrix(&Eye_position, &vmd_identity_matrix);
 
 		render_info.set_flags(MR_AUTOCENTER | MR_NO_FOGGING);
+
+		if (sip->uses_team_colors) {
+			SCP_string tc = tcolor.empty() ? sip->default_team_name : tcolor;
+			render_info.set_team_color(tc, "none", 0, 0);
+		}
 
 		model_render_immediate(&render_info, model_num, &object_orient, &vmd_zero_vector);
 

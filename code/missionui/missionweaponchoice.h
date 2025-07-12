@@ -7,6 +7,8 @@
  *
 */ 
 
+#include "globalincs/globals.h"
+#include "mod_table/mod_table.h"
 
 
 #ifndef __MISSION_WEAPON_CHOICE_H__
@@ -57,7 +59,8 @@ void draw_3d_overhead_view(int model_num,
 	int bank_prim_offset = 106,
 	int bank_sec_offset = -50,
 	int bank_y_offset = 12,
-	overhead_style style = Default_overhead_ship_style);
+	overhead_style style = Default_overhead_ship_style,
+	const SCP_string& tcolor = "");
 
 void	wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot);
 int	wl_update_ship_weapons(int objnum, wss_unit *slot);

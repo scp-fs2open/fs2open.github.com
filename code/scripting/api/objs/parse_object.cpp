@@ -7,6 +7,7 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
+//#include "globalincs/alphacolors.h" //Needed for team colors
 
 #include "mission/missionparse.h"
 
@@ -330,6 +331,33 @@ ADE_VIRTVAR(Team, l_ParseObject, "team", "The team of the parsed ship.", "team",
 	}
 
 	return ade_set_args(L, "o", l_Team.Set(poh->getObject()->team));
+}
+
+ADE_VIRTVAR(TeamColor, l_ParseObject, "string", "The team color", "string", "The name of the team color or empty if not set or invalid.")
+{
+	parse_object_h* poh = nullptr;
+	const char* team_color = nullptr;
+	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &team_color))
+		return ade_set_error(L, "s", "");
+
+	if (!poh->isValid())
+		return ade_set_error(L, "s", "");
+
+	//Set team color
+	if (ADE_SETTING_VAR && team_color != nullptr) {
+
+		// Verify
+		/*if (Team_Colors.find(team_color) == Team_Colors.end()) {
+			mprintf(("Invalid team color specified in mission file for ship %s. Not setting!\n", poh->getObject()->name));
+		} else {
+			poh->getObject()->team_color_setting = team_color;
+		}*/
+
+		LuaError(L, "Setting team colors is not yet supported!");
+	
+	}	
+
+	return ade_set_args(L, "s", poh->getObject()->team_color_setting);
 }
 
 ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
