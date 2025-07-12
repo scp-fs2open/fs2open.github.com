@@ -13,8 +13,8 @@ SET(IMGUI_SOURCES
 	imstb_truetype.h
     backends/imgui_impl_opengl3.h
     backends/imgui_impl_opengl3.cpp
-    backends/imgui_impl_sdl.h
-    backends/imgui_impl_sdl.cpp
+    backends/imgui_impl_sdl3.h
+    backends/imgui_impl_sdl3.cpp
     extensions/imgui_sugar.hpp
     extensions/ImGuizmo.cpp
     extensions/ImGuizmo.h
@@ -35,7 +35,7 @@ target_include_directories(imgui SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}")
 suppress_warnings(imgui)
 
 set_target_properties(imgui PROPERTIES FOLDER "3rdparty")
-TARGET_LINK_LIBRARIES(imgui PUBLIC sdl2)
+TARGET_LINK_LIBRARIES(imgui PUBLIC sdl3)
 target_link_libraries(imgui PUBLIC compiler)
 
 if (FSO_BUILD_WITH_VULKAN)

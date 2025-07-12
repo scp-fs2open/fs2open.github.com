@@ -43,7 +43,6 @@
 #include <codecvt>
 #include <locale>
 
-#include <SDL_stdinc.h>
 
 using namespace Rocket::Core;
 
@@ -82,27 +81,27 @@ int get_modifier_state()
 
 	auto sdl_mods = SDL_GetModState();
 
-	if (sdl_mods & KMOD_CTRL) {
+	if (sdl_mods & SDL_KMOD_CTRL) {
 		mods |= Input::KM_CTRL;
 	}
 
-	if (sdl_mods & KMOD_SHIFT) {
+	if (sdl_mods & SDL_KMOD_SHIFT) {
 		mods |= Input::KM_SHIFT;
 	}
 
-	if (sdl_mods & KMOD_ALT) {
+	if (sdl_mods & SDL_KMOD_ALT) {
 		mods |= Input::KM_ALT;
 	}
 
-	if (sdl_mods & KMOD_GUI) {
+	if (sdl_mods & SDL_KMOD_GUI) {
 		mods |= Input::KM_META;
 	}
 
-	if (sdl_mods & KMOD_CAPS) {
+	if (sdl_mods & SDL_KMOD_CAPS) {
 		mods |= Input::KM_CAPSLOCK;
 	}
 
-	if (sdl_mods & KMOD_NUM) {
+	if (sdl_mods & SDL_KMOD_NUM) {
 		mods |= Input::KM_NUMLOCK;
 	}
 
@@ -197,7 +196,7 @@ bool mouse_button_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	if (evt.type == SDL_MOUSEBUTTONUP) {
+	if (evt.type == SDL_EVENT_MOUSE_BUTTON_UP) {
 		// Up
 		input_context->ProcessMouseButtonUp(button, get_modifier_state());
 	} else {
@@ -220,12 +219,11 @@ bool mouse_wheel_handler(const SDL_Event& evt)
 		return false;
 	}
 
-	int wheel_value = evt.wheel.y;
-#if SDL_VERSION_ATLEAST(2, 0, 4)
+	int wheel_value = fl2i(evt.wheel.y);
+
 	if (evt.wheel.direction == SDL_MOUSEWHEEL_FLIPPED) {
 		wheel_value *= -1;
 	}
-#endif
 
 	// libRocket expects a different direction than what SDL delivers
 	input_context->ProcessMouseWheel(-wheel_value, get_modifier_state());
@@ -236,57 +234,57 @@ bool mouse_wheel_handler(const SDL_Event& evt)
 Input::KeyIdentifier translateKey(SDL_Keycode Key)
 {
 	switch (Key) {
-	case SDLK_a:
+	case SDLK_A:
 		return Rocket::Core::Input::KI_A;
-	case SDLK_b:
+	case SDLK_B:
 		return Rocket::Core::Input::KI_B;
-	case SDLK_c:
+	case SDLK_C:
 		return Rocket::Core::Input::KI_C;
-	case SDLK_d:
+	case SDLK_D:
 		return Rocket::Core::Input::KI_D;
-	case SDLK_e:
+	case SDLK_E:
 		return Rocket::Core::Input::KI_E;
-	case SDLK_f:
+	case SDLK_F:
 		return Rocket::Core::Input::KI_F;
-	case SDLK_g:
+	case SDLK_G:
 		return Rocket::Core::Input::KI_G;
-	case SDLK_h:
+	case SDLK_H:
 		return Rocket::Core::Input::KI_H;
-	case SDLK_i:
+	case SDLK_I:
 		return Rocket::Core::Input::KI_I;
-	case SDLK_j:
+	case SDLK_J:
 		return Rocket::Core::Input::KI_J;
-	case SDLK_k:
+	case SDLK_K:
 		return Rocket::Core::Input::KI_K;
-	case SDLK_l:
+	case SDLK_L:
 		return Rocket::Core::Input::KI_L;
-	case SDLK_m:
+	case SDLK_M:
 		return Rocket::Core::Input::KI_M;
-	case SDLK_n:
+	case SDLK_N:
 		return Rocket::Core::Input::KI_N;
-	case SDLK_o:
+	case SDLK_O:
 		return Rocket::Core::Input::KI_O;
-	case SDLK_p:
+	case SDLK_P:
 		return Rocket::Core::Input::KI_P;
-	case SDLK_q:
+	case SDLK_Q:
 		return Rocket::Core::Input::KI_Q;
-	case SDLK_r:
+	case SDLK_R:
 		return Rocket::Core::Input::KI_R;
-	case SDLK_s:
+	case SDLK_S:
 		return Rocket::Core::Input::KI_S;
-	case SDLK_t:
+	case SDLK_T:
 		return Rocket::Core::Input::KI_T;
-	case SDLK_u:
+	case SDLK_U:
 		return Rocket::Core::Input::KI_U;
-	case SDLK_v:
+	case SDLK_V:
 		return Rocket::Core::Input::KI_V;
-	case SDLK_w:
+	case SDLK_W:
 		return Rocket::Core::Input::KI_W;
-	case SDLK_x:
+	case SDLK_X:
 		return Rocket::Core::Input::KI_X;
-	case SDLK_y:
+	case SDLK_Y:
 		return Rocket::Core::Input::KI_Y;
-	case SDLK_z:
+	case SDLK_Z:
 		return Rocket::Core::Input::KI_Z;
 	case SDLK_0:
 		return Rocket::Core::Input::KI_0;
@@ -362,7 +360,7 @@ Input::KeyIdentifier translateKey(SDL_Keycode Key)
 		return Rocket::Core::Input::KI_OEM_5;
 	case SDLK_SEMICOLON:
 		return Rocket::Core::Input::KI_OEM_1;
-	case SDLK_QUOTE:
+	case SDLK_APOSTROPHE:
 		return Rocket::Core::Input::KI_OEM_7;
 	case SDLK_COMMA:
 		return Rocket::Core::Input::KI_OEM_COMMA;
@@ -456,31 +454,31 @@ bool key_event_handler(const SDL_Event& evt)
 	// Check for special key combinations
 	auto sdl_mods = SDL_GetModState();
 
-	auto shift_down = (sdl_mods & KMOD_SHIFT) != 0;
+	auto shift_down = (sdl_mods & SDL_KMOD_SHIFT) != 0;
 
-	if (evt.key.keysym.sym == SDLK_ESCAPE && shift_down) {
+	if (evt.key.key == SDLK_ESCAPE && shift_down) {
 		// Ignore this combination to still enable quitting
 		return false;
 	}
-	if (evt.key.keysym.sym == SDLK_PRINTSCREEN) {
+	if (evt.key.key == SDLK_PRINTSCREEN) {
 		// Ignore print screen buttons to still allow the default engine actions
 		return false;
 	}
-	if (evt.key.keysym.sym == SDLK_LSHIFT || evt.key.keysym.sym == SDLK_RSHIFT || evt.key.keysym.sym == SDLK_LCTRL ||
-	    evt.key.keysym.sym == SDLK_RCTRL||evt.key.keysym.sym == SDLK_LALT||evt.key.keysym.sym == SDLK_RALT) {
+	if (evt.key.key == SDLK_LSHIFT || evt.key.key == SDLK_RSHIFT || evt.key.key == SDLK_LCTRL ||
+	    evt.key.key == SDLK_RCTRL||evt.key.key == SDLK_LALT||evt.key.key == SDLK_RALT) {
 		// Ignore simple key events of modifiers since they are not meaningful to libRocket
 		return false;
 	}
 
-	if (evt.type == SDL_KEYUP) {
-		auto ctrl_down = (sdl_mods & KMOD_CTRL) != 0;
+	if (evt.type == SDL_EVENT_KEY_UP) {
+		auto ctrl_down = (sdl_mods & SDL_KMOD_CTRL) != 0;
 
-		if (evt.key.keysym.sym == SDLK_r && ctrl_down && shift_down) {
+		if (evt.key.key == SDLK_R && ctrl_down && shift_down) {
 			// Ctrl+Shift+R reloads everything
 			scpui::reloadAllContexts();
 
 			return true;
-		} else if (evt.key.keysym.sym == SDLK_d && ctrl_down && shift_down) {
+		} else if (evt.key.key == SDLK_D && ctrl_down && shift_down) {
 			// Ctrl+Shift+D toggles the debugger
 			if (!debugger_initialized) {
 				// First we need to initialize the debugger. We use the current context for that, should work in
@@ -502,10 +500,10 @@ bool key_event_handler(const SDL_Event& evt)
 		}
 	}
 
-	if (evt.type == SDL_KEYDOWN) {
-		return input_context->ProcessKeyDown(translateKey(evt.key.keysym.sym), get_modifier_state());
+	if (evt.type == SDL_EVENT_KEY_DOWN) {
+		return input_context->ProcessKeyDown(translateKey(evt.key.key), get_modifier_state());
 	} else {
-		return input_context->ProcessKeyUp(translateKey(evt.key.keysym.sym), get_modifier_state());
+		return input_context->ProcessKeyUp(translateKey(evt.key.key), get_modifier_state());
 	}
 }
 
@@ -610,15 +608,15 @@ void initialize()
 	load_fonts();
 
 	// initialize events
-	os::events::addEventListener(SDL_MOUSEMOTION, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_motion_handler);
-	os::events::addEventListener(SDL_MOUSEBUTTONUP, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_button_handler);
-	os::events::addEventListener(SDL_MOUSEBUTTONDOWN, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_button_handler);
-	os::events::addEventListener(SDL_MOUSEWHEEL, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_wheel_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_MOTION, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_motion_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_button_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_DOWN, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_button_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_WHEEL, os::events::DEFAULT_LISTENER_WEIGHT - 10, mouse_wheel_handler);
 
-	os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_event_handler);
-	os::events::addEventListener(SDL_KEYDOWN, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_event_handler);
+	os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_event_handler);
+	os::events::addEventListener(SDL_EVENT_KEY_DOWN, os::events::DEFAULT_LISTENER_WEIGHT - 10, key_event_handler);
 
-	os::events::addEventListener(SDL_TEXTINPUT, os::events::DEFAULT_LISTENER_WEIGHT - 10, text_input_handler);
+	os::events::addEventListener(SDL_EVENT_TEXT_INPUT, os::events::DEFAULT_LISTENER_WEIGHT - 10, text_input_handler);
 
 	rocket_initialized = true;
 }
