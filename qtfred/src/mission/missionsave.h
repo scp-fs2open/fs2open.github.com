@@ -516,6 +516,11 @@ class CFred_mission_save {
 	 */
 	int save_wings();
 
+	/**
+	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while handling newlines properly
+	 */
+	void fout_raw_comment(const char *comment_start);
+
 	char* raw_ptr = nullptr;
 	SCP_vector<SCP_string> fso_ver_comment;
 	int err = 0;
