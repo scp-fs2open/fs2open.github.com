@@ -224,6 +224,7 @@ void setPlayerJoystick(Joystick* stick, short cid)
 	if (pJoystick[cid] != nullptr) {
 		mprintf(("  Using '%s' as Joy-%i\n", pJoystick[cid]->getName().c_str(), cid));
 		mprintf(("\n"));
+		mprintf(("  Is gamepad: %s\n", pJoystick[cid]->isGamepad() ? "YES" : "NO"));
 		mprintf(("  Number of axes: %d\n", pJoystick[cid]->numAxes()));
 		mprintf(("  Number of buttons: %d\n", pJoystick[cid]->numButtons()));
 		mprintf(("  Number of hats: %d\n", pJoystick[cid]->numHats()));
@@ -573,7 +574,12 @@ namespace joystick
 	Joystick::Joystick(int id) :
 		_id(id)
 	{
-		_joystick = SDL_OpenJoystick(id);
+		if (SDL_IsGamepad(id)) {
+			_gamepad = SDL_OpenGamepad(id);
+			_joystick = SDL_GetGamepadJoystick(_gamepad);
+		} else {
+			_joystick = SDL_OpenJoystick(id);
+		}
 
 		if (_joystick == nullptr) {
 			SCP_stringstream msg;
@@ -585,14 +591,20 @@ namespace joystick
 	}
 
 	Joystick::Joystick(Joystick &&other) noexcept :
-			_joystick(nullptr)
+			_joystick(nullptr), _gamepad(nullptr)
 	{
 		*this = std::move(other);
 	}
 
 	Joystick::~Joystick()
 	{
-		if (_joystick != nullptr)
+		if (_gamepad != nullptr)
+		{
+			SDL_CloseGamepad(_gamepad);	// also closes joystick
+			_gamepad = nullptr;
+			_joystick = nullptr;
+		}
+		else if (_joystick != nullptr)
 		{
 			SDL_CloseJoystick(_joystick);
 			_joystick = nullptr;
@@ -606,6 +618,7 @@ namespace joystick
 
 		std::swap(_id, other._id);
 		std::swap(_joystick, other._joystick);
+		std::swap(_gamepad, other._gamepad);
 
 		fillValues();
 
@@ -614,7 +627,7 @@ namespace joystick
 
 	bool Joystick::isAttached() const
 	{
-		return SDL_JoystickConnected(_joystick);
+		return isGamepad() ? SDL_GamepadConnected(_gamepad) : SDL_JoystickConnected(_joystick);
 	}
 
 	bool Joystick::isHaptic() const
@@ -776,22 +789,35 @@ namespace joystick
 
 	void Joystick::fillValues()
 	{
+		// To avoid some weirdness and build compatiblity issues we always use
+		// _joystick here rather than comparable _gamepad functions
+
 		_name.assign(SDL_GetJoystickName(_joystick));
 		_guidStr = getJoystickGUID(_joystick);
 		_isHaptic = SDL_IsJoystickHaptic(_joystick);
 		_isGamepad = SDL_IsGamepad(_id);
 
 		// Initialize values of the axes
-		auto numSticks = SDL_GetNumJoystickAxes(_joystick);
-		if (numSticks >= 0) {
-			_axisValues.resize(static_cast<size_t>(numSticks));
-			for (auto i = 0; i < numSticks; ++i) {
-				_axisValues[i] = SDL_GetJoystickAxis(_joystick, i);
+		if (_isGamepad) {
+			// gamepads may not have all axes, but they don't necessarily match
+			// the number or index of what's reported by the joystick api either
+			_axisValues.resize(static_cast<size_t>(SDL_GAMEPAD_AXIS_COUNT));
+			for (size_t i = 0; i < _axisValues.size(); ++i) {
+				// will return 0 (center) if axis not supported
+				_axisValues[i] = SDL_GetGamepadAxis(_gamepad, static_cast<SDL_GamepadAxis>(i));
 			}
-
 		} else {
-			_axisValues.resize(0);
-			mprintf(("Failed to get number of axes for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
+			auto numSticks = SDL_GetNumJoystickAxes(_joystick);
+			if (numSticks >= 0) {
+				_axisValues.resize(static_cast<size_t>(numSticks));
+				for (auto i = 0; i < numSticks; ++i) {
+					_axisValues[i] = SDL_GetJoystickAxis(_joystick, i);
+				}
+
+			} else {
+				_axisValues.resize(0);
+				mprintf(("Failed to get number of axes for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
+			}
 		}
 
 		// Initialize ball values
@@ -812,30 +838,41 @@ namespace joystick
 		}
 
 		// Initialize buttons
-		auto buttonNum = SDL_GetNumJoystickButtons(_joystick);
-		if (buttonNum >= 0) {
-			_button.resize(static_cast<size_t>(buttonNum));
-			for (auto i = 0; i < buttonNum; ++i) {
-				if (SDL_GetJoystickButton(_joystick, i)) {
+		if (_isGamepad) {
+			// gamepads may not support all buttons, but they don't necessarily match
+			// the number or index of what's reported by the joystick api either
+			_button.resize(static_cast<size_t>(SDL_GAMEPAD_BUTTON_COUNT));
+			for (size_t i = 0; i < _button.size(); ++i) {
+				if (SDL_GetGamepadButton(_gamepad, static_cast<SDL_GamepadButton>(i))) {
 					_button[i].DownTimestamp = ui_timestamp();
-				
 				} else {
 					_button[i].DownTimestamp = UI_TIMESTAMP::invalid();
 				}
 			}
-
 		} else {
-			_button.resize(0);
-			mprintf(("Failed to get number of buttons for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
+			auto buttonNum = SDL_GetNumJoystickButtons(_joystick);
+			if (buttonNum >= 0) {
+				_button.resize(static_cast<size_t>(buttonNum));
+				for (auto i = 0; i < buttonNum; ++i) {
+					if (SDL_GetJoystickButton(_joystick, i)) {
+						_button[i].DownTimestamp = ui_timestamp();
+					} else {
+						_button[i].DownTimestamp = UI_TIMESTAMP::invalid();
+					}
+				}
+
+			} else {
+				_button.resize(0);
+				mprintf(("Failed to get number of buttons for joystick %s: %s\n", _name.c_str(), SDL_GetError()));
+			}
 		}
 
-		// Initialize hats
-		auto hatNum = SDL_GetNumJoystickHats(_joystick);
+		// Initialize hats (consider gamepads to always have one hat)
+		auto hatNum = _isGamepad ? 1 : SDL_GetNumJoystickHats(_joystick);
 		if (hatNum >= 0) {
 			_hat.resize(static_cast<size_t>(hatNum));
 			for (auto i = 0; i < hatNum; ++i) {
-				std::bitset<4> hatset = SDL_GetJoystickHat(_joystick, i);
-				auto hatval = convertSDLHat(SDL_GetJoystickHat(_joystick, i));
+				auto hatval = _isGamepad ? HAT_CENTERED : convertSDLHat(SDL_GetJoystickHat(_joystick, i));
 				_hat[i].Value = hatval;
 
 				// Reset timestampts
@@ -847,21 +884,23 @@ namespace joystick
 				}
 
 				if (_hat[i].Value != HAT_CENTERED) {
-				// Set the 4-pos timestamp(s)
-				if ((hatset[HAT_DOWN])) {
-					_hat[i].DownTimestamp4[HAT_DOWN] = ui_timestamp();
-				}
-				if ((hatset[HAT_UP])) {
-					_hat[i].DownTimestamp4[HAT_UP] = ui_timestamp();
-				}
-				if ((hatset[HAT_LEFT])) {
-					_hat[i].DownTimestamp4[HAT_LEFT] = ui_timestamp();
-				}
-				if ((hatset[HAT_RIGHT])) {
-					_hat[i].DownTimestamp4[HAT_RIGHT] = ui_timestamp();
-				}
+					std::bitset<4> hatset = SDL_GetJoystickHat(_joystick, i);
 
-				// Set the 8-pos timestamp
+					// Set the 4-pos timestamp(s)
+					if ((hatset[HAT_DOWN])) {
+						_hat[i].DownTimestamp4[HAT_DOWN] = ui_timestamp();
+					}
+					if ((hatset[HAT_UP])) {
+						_hat[i].DownTimestamp4[HAT_UP] = ui_timestamp();
+					}
+					if ((hatset[HAT_LEFT])) {
+						_hat[i].DownTimestamp4[HAT_LEFT] = ui_timestamp();
+					}
+					if ((hatset[HAT_RIGHT])) {
+						_hat[i].DownTimestamp4[HAT_RIGHT] = ui_timestamp();
+					}
+
+					// Set the 8-pos timestamp
 					_hat[i].DownTimestamp8[hatval] = ui_timestamp();
 				}
 			}
@@ -871,30 +910,50 @@ namespace joystick
 		}
 	}
 
-	SDL_Joystick *Joystick::getDevice()
+	SDL_Joystick *Joystick::getJoystick()
 	{
 		return _joystick;
 	}
 
+	SDL_Gamepad *Joystick::getGamepad()
+	{
+		return _gamepad;
+	}
+
 	void Joystick::handleJoyEvent(const SDL_Event &evt)
 	{
-		switch (evt.type)
-		{
-			case SDL_EVENT_JOYSTICK_AXIS_MOTION:
-				handleAxisEvent(evt.jaxis);
-				break;
-			case SDL_EVENT_JOYSTICK_BALL_MOTION:
-				handleBallEvent(evt.jball);
-				break;
-			case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
-			case SDL_EVENT_JOYSTICK_BUTTON_UP:
-				handleButtonEvent(evt.jbutton);
-				break;
-			case SDL_EVENT_JOYSTICK_HAT_MOTION:
-				handleHatEvent(evt.jhat);
-				break;
-			default:
-				break;
+		// gamepads also get joy events, so make sure we ignore those
+		if (isGamepad()) {
+			switch (evt.type) {
+				case SDL_EVENT_GAMEPAD_AXIS_MOTION:
+					handleAxisEvent(evt.gaxis);
+					break;
+				case SDL_EVENT_GAMEPAD_BUTTON_DOWN:
+				case SDL_EVENT_GAMEPAD_BUTTON_UP:
+					handleButtonEvent(evt.gbutton);
+					break;
+				default:
+					break;
+			}
+		} else {
+			switch (evt.type)
+			{
+				case SDL_EVENT_JOYSTICK_AXIS_MOTION:
+					handleAxisEvent(evt.jaxis);
+					break;
+				case SDL_EVENT_JOYSTICK_BALL_MOTION:
+					handleBallEvent(evt.jball);
+					break;
+				case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+				case SDL_EVENT_JOYSTICK_BUTTON_UP:
+					handleButtonEvent(evt.jbutton);
+					break;
+				case SDL_EVENT_JOYSTICK_HAT_MOTION:
+					handleHatEvent(evt.jhat);
+					break;
+				default:
+					break;
+			}
 		}
 	}
 
@@ -905,6 +964,28 @@ namespace joystick
 		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
 
 		_axisValues[axis] = evt.value;
+	}
+
+	// gamepad version of event
+	void Joystick::handleAxisEvent(const SDL_GamepadAxisEvent &evt)
+	{
+		auto axis = evt.axis;
+		auto value = evt.value;
+
+		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
+
+		// Triggers range from 0..32767 so we need to scale the value for FSO
+		// since it expects a full -32768..32767 range. Note that precision is
+		// lost in the scaling so only scale if it's not a min/max trigger value
+		if ((axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) || (axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
+			if (value == 0) {
+				value = -32768;
+			} else if (value < 32767) {
+				value = static_cast<decltype(value)>((value * 2) - 32768);
+			}
+		}
+
+		_axisValues[axis] = value;
 	}
 
 	void Joystick::handleButtonEvent(const SDL_JoyButtonEvent &evt)
@@ -919,6 +1000,58 @@ namespace joystick
 		if (down)
 		{
 			++_button[button].DownCount;
+		}
+	}
+
+	// gamepad version of event (we deal with dpad->hat translation here too)
+	void Joystick::handleButtonEvent(const SDL_GamepadButtonEvent &evt)
+	{
+		auto button = evt.button;
+		auto down = evt.down;
+
+		Assertion(button < numButtons(), "SDL event contained invalid button index!");
+
+		// treat dpad as hat
+		if (button >= SDL_GAMEPAD_BUTTON_DPAD_UP && button <= SDL_GAMEPAD_BUTTON_DPAD_RIGHT) {
+			HatPosition hatpos;
+
+			if (numHats() != 1) {
+				return;
+			}
+
+			switch (button) {
+				case SDL_GAMEPAD_BUTTON_DPAD_UP:
+					hatpos = HAT_UP;
+					break;
+				case SDL_GAMEPAD_BUTTON_DPAD_DOWN:
+					hatpos = HAT_DOWN;
+					break;
+				case SDL_GAMEPAD_BUTTON_DPAD_LEFT:
+					hatpos = HAT_LEFT;
+					break;
+				case SDL_GAMEPAD_BUTTON_DPAD_RIGHT:
+					hatpos = HAT_RIGHT;
+					break;
+				default:
+					return;
+			}
+
+			// Set current values
+			_hat[0].Value = hatpos;
+
+			_hat[0].DownTimestamp4[hatpos] = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
+			_hat[0].DownTimestamp8[hatpos] = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
+
+			if (down) {
+				++_hat[0].DownCount4[hatpos];
+				++_hat[0].DownCount8[hatpos];
+			}
+		} else {
+			_button[button].DownTimestamp = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
+
+			if (down) {
+				++_button[button].DownCount;
+			}
 		}
 	}
 
@@ -1019,14 +1152,12 @@ namespace joystick
 
 		mprintf(("Initializing Joystick...\n"));
 
-		if ( !SDL_InitSubSystem(SDL_INIT_JOYSTICK) )
+		// NOTE: gamepad depends on joystick, so this handles both
+		if ( !SDL_InitSubSystem(SDL_INIT_GAMEPAD) )
 		{
 			mprintf(("  Could not initialize joystick: %s\n", SDL_GetError()));
 			return false;
 		}
-
-		// enable event processing of the joystick
-		SDL_SetJoystickEventsEnabled(true);
 
 		if ( !SDL_HasJoystick() )
 		{
@@ -1052,6 +1183,12 @@ namespace joystick
 
 		addEventListener(SDL_EVENT_JOYSTICK_ADDED, DEFAULT_LISTENER_WEIGHT, device_event_handler);
 		addEventListener(SDL_EVENT_JOYSTICK_REMOVED, DEFAULT_LISTENER_WEIGHT, device_event_handler);
+
+		// Gamepad events. NOTE: This is on top of joystick events, so both will be fired for gamepads!
+		// (we can ignore add/remove events here since the normal joystick ones will do it)
+		addEventListener(SDL_EVENT_GAMEPAD_AXIS_MOTION, DEFAULT_LISTENER_WEIGHT, axis_event_handler);
+		addEventListener(SDL_EVENT_GAMEPAD_BUTTON_DOWN, DEFAULT_LISTENER_WEIGHT, button_event_handler);
+		addEventListener(SDL_EVENT_GAMEPAD_BUTTON_UP, DEFAULT_LISTENER_WEIGHT, button_event_handler);
 
 		// Search for the correct stick
 		if (Using_in_game_options)
@@ -1141,7 +1278,7 @@ namespace joystick
 		// Automatically frees joystick resources
 		joysticks.clear();
 
-		SDL_QuitSubSystem(SDL_INIT_JOYSTICK);
+		SDL_QuitSubSystem(SDL_INIT_GAMEPAD);
 	}
 
 	json_t* getJsonArray() {
