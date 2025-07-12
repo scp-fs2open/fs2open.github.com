@@ -42,22 +42,6 @@ namespace threading {
 		}
 	}
 
-	//External Functions
-
-	void spin_up_threaded_task(WorkerThreadTask task) {
-		worker_task.store(task);
-		{
-			std::scoped_lock lock {wait_for_task_mutex};
-			wait_for_task_condition = true;
-			wait_for_task.notify_all();
-		}
-	}
-
-	void spin_down_threaded_task() {
-		std::scoped_lock lock {wait_for_task_mutex};
-		wait_for_task_condition = false;
-	}
-
 	static size_t get_number_of_physical_cores_fallback() {
 		unsigned int hardware_threads = std::thread::hardware_concurrency();
 		if (hardware_threads > 0) {
@@ -73,15 +57,15 @@ namespace threading {
 #ifdef WIN32
 	static size_t get_number_of_physical_cores() {
 		auto glpi = (BOOL (WINAPI *)(PSYSTEM_LOGICAL_PROCESSOR_INFORMATION, PDWORD)) GetProcAddress(
-                            GetModuleHandle(TEXT("kernel32")),
-                            "GetLogicalProcessorInformation");
+				GetModuleHandle(TEXT("kernel32")),
+				"GetLogicalProcessorInformation");
 
 		if (glpi == nullptr)
 			return get_number_of_physical_cores_fallback();
 
 		DWORD length = 0;
 		glpi(nullptr, &length);
-		std::vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> infoBuffer(length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
+		SCP_vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> infoBuffer(length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
 		DWORD error = glpi(infoBuffer.data(), &length);
 
 		if (error != 0)
@@ -133,6 +117,22 @@ namespace threading {
 #else
 #define get_number_of_physical_cores() get_number_of_physical_cores_fallback()
 #endif
+
+	//External Functions
+
+	void spin_up_threaded_task(WorkerThreadTask task) {
+		worker_task.store(task);
+		{
+			std::scoped_lock lock {wait_for_task_mutex};
+			wait_for_task_condition = true;
+			wait_for_task.notify_all();
+		}
+	}
+
+	void spin_down_threaded_task() {
+		std::scoped_lock lock {wait_for_task_mutex};
+		wait_for_task_condition = false;
+	}
 
 	void init_task_pool() {
 		if (Cmdline_multithreading == 0) {
