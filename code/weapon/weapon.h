@@ -80,6 +80,7 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
 
+
 struct homing_cache_info {
 	TIMESTAMP next_update;
 	vec3d expected_pos;
@@ -291,13 +292,45 @@ enum class HomingAcquisitionType {
 	RANDOM,
 };
 
+enum class HitType {
+	SHIELD,
+	SUBSYS,
+	HULL,
+	NONE,
+};
+
+constexpr size_t NumHitTypes = static_cast<std::underlying_type_t<HitType>>(HitType::NONE);
+
+enum class SpecialImpactCondition {
+	DEBRIS,
+	ASTEROID,
+	EMPTY_SPACE,
+};
+
+using ImpactCondition = std::variant<int, SpecialImpactCondition>;
+
+struct ConditionData {
+	ImpactCondition condition = SpecialImpactCondition::EMPTY_SPACE;
+	HitType hit_type = HitType::NONE;
+	float damage = 0.0f;
+	float health = 1.0f;
+	float max_health = 1.0f;
+};
+
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	float min_health_threshold; //factor, 0-1
-	float max_health_threshold; //factor, 0-1
-	float min_angle_threshold; //in degrees
-	float max_angle_threshold; //in degrees
+	std::optional<particle::ParticleEffectHandle> pokethrough_effect;
+	::util::ParsedRandomFloatRange min_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange max_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange min_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange max_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange min_angle_threshold; // in degrees
+	::util::ParsedRandomFloatRange max_angle_threshold; // in degrees
+	float laser_pokethrough_threshold; // factor, 0-1
 	bool dinky;
+	bool disable_if_player_parent;
+	bool disable_on_subsys_passthrough;
+	bool disable_main_on_pokethrough;
 };
 
 enum class FiringPattern {
@@ -513,7 +546,7 @@ struct weapon_info
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
-	SCP_map<int, SCP_vector<ConditionalImpact>> conditional_impacts;
+	SCP_map<ImpactCondition, SCP_vector<ConditionalImpact>> conditional_impacts;
 
 	particle::ParticleEffectHandle muzzle_effect;
 
@@ -962,7 +995,8 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
 
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr, const vec3d* local_hitpos = nullptr, int submodel = -1 );
+void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);
+bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1 );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer

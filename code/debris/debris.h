@@ -51,6 +51,7 @@ typedef struct debris {
 	int		submodel_num;			// What submodel this uses
 	TIMESTAMP	arc_next_time;		// When the next damage/emp arc will be created.
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
+	float	max_hull;
 	int		species;				// What species this is from.  -1 if don't care.
 	TIMESTAMP	arc_timeout;		// timestamp that holds time for arcs to stop appearing
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start

@@ -705,6 +705,8 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 		}
 	}
 
+	db->max_hull = obj->hull_strength;
+
 	if (hull_flag) {
 		MONITOR_INC(NumHullDebris,1);
 	} else {
