@@ -17,6 +17,10 @@ enum class PostEffectUniformType {
 	Cutoff,
 	Tint,
 	Dither,
+	CustomEffectFloatA,
+	CustomEffectFloatB,
+	CustomEffectVEC3A,
+	CustomEffectVEC3B,
 };
 
 struct post_effect_t {

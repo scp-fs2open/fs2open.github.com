@@ -398,6 +398,12 @@ struct post_data {
 
 	vec3d tint;
 	float dither;
+
+	float custom_effect_float_a;
+	float custom_effect_float_b;
+
+	vec3d custom_effect_vec3_a;
+	vec3d custom_effect_vec3_b;
 };
 
 struct irrmap_data {
