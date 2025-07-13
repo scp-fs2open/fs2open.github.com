@@ -10,11 +10,11 @@ out vec4 fragOut0; // Diffuse buffer
 out vec4 fragOut1; // Normal buffer
 out vec4 fragOut2; // Emissive buffer
 
-in flat mat4 invModelMatrix;
-in flat vec3 decalDirection;
-in flat float normal_angle_cutoff;
-in flat float angle_fade_start;
-in flat float alpha_scale;
+flat in mat4 invModelMatrix;
+flat in vec3 decalDirection;
+flat in float normal_angle_cutoff;
+flat in float angle_fade_start;
+flat in float alpha_scale;
 
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
