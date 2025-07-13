@@ -2,11 +2,11 @@
 in vec4 vertPosition;
 in mat4 vertModelMatrix;
 
-out flat mat4 invModelMatrix;
-out flat vec3 decalDirection;
-out flat float normal_angle_cutoff;
-out flat float angle_fade_start;
-out flat float alpha_scale;
+flat out mat4 invModelMatrix;
+flat out vec3 decalDirection;
+flat out float normal_angle_cutoff;
+flat out float angle_fade_start;
+flat out float alpha_scale;
 
 layout (std140) uniform decalGlobalData {
 	mat4 viewMatrix;
