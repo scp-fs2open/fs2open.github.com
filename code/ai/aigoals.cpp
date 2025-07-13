@@ -1714,10 +1714,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// and similarly for chasing all ships of a certain ship type
 	if (aigp->ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
 		for (auto so : list_range(&Ship_obj_list)) {
-			auto objp = &Objects[so->objnum];
-			if (objp->type != OBJ_SHIP || objp->flags[Object::Object_Flags::Should_be_dead])
+			auto type_objp = &Objects[so->objnum];
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
-			int ship_info_idx = Ships[objp->instance].ship_info_index;
+			int ship_info_idx = Ships[type_objp->instance].ship_info_index;
 			int class_type = Ship_info[ship_info_idx].class_type;
 			if (class_type >= 0 && !strcmp(aigp->target_name, Ship_types[class_type].name)) {
 				return ai_achievability::ACHIEVABLE;
