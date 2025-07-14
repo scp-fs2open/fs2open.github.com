@@ -68,7 +68,7 @@ namespace threading {
 		SCP_vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> infoBuffer(length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
 		DWORD error = glpi(infoBuffer.data(), &length);
 
-		if (error != 0)
+		if (error == 0)
 			return get_number_of_physical_cores_fallback();
 
 		size_t num_cores = 0;
