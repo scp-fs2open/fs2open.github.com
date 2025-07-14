@@ -11,6 +11,8 @@
 
 #ifdef WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
 #endif
 
 namespace threading {
@@ -83,6 +85,23 @@ namespace threading {
 		}
 		else {
 			return num_cores;
+		}
+	}
+#elif defined __APPLE__
+	static size_t get_number_of_physical_cores() {
+		int num;
+		size_t numSize = sizeof(num);
+
+		// apple silicon (performance cores only)
+		if ( !sysctlbyname("hw.perflevel0.physicalcpu", &num, &numSize, nullptr, 0) ) {
+			return num;
+		}
+		// intel
+		else if ( !sysctlbyname("hw.physicalcpu", &num, &numSize, nullptr, 0) ) {
+			return num;
+		} else {
+			// invalid results, try fallback
+			return get_number_of_physical_cores_fallback();
 		}
 	}
 #elif defined SCP_UNIX
