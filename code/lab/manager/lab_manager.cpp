@@ -15,7 +15,6 @@
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
 #include "ai/aigoals.h"
-#include "prop/prop.h"
 
 #include "freespace.h"
 
