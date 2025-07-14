@@ -30,6 +30,14 @@ PostEffectUniformType mapUniformNameToType(const SCP_string& uniform_name)
 		return PostEffectUniformType::Dither;
 	} else if (!stricmp(uniform_name.c_str(), "tint")) {
 		return PostEffectUniformType::Tint;
+	} else if (!stricmp(uniform_name.c_str(), "custom_effect_vec3_a")) {
+		return PostEffectUniformType::CustomEffectVEC3A;
+	} else if (!stricmp(uniform_name.c_str(), "custom_effect_float_a")) {
+		return PostEffectUniformType::CustomEffectFloatA;
+	} else if (!stricmp(uniform_name.c_str(), "custom_effect_vec3_b")) {
+		return PostEffectUniformType::CustomEffectVEC3B;
+	} else if (!stricmp(uniform_name.c_str(), "custom_effect_float_b")) {
+		return PostEffectUniformType::CustomEffectFloatB;
 	} else {
 		error_display(0, "Unknown uniform name '%s'!", uniform_name.c_str());
 		return PostEffectUniformType::Invalid;
