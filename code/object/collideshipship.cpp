@@ -1806,41 +1806,6 @@ int collide_prop_ship(obj_pair* pair)
 				hud_shield_quadrant_hit(ship_objp, -1);
 			}
 
-			//FIX
-			if (!scripting::hooks::OnShipCollision->isActive()) {
-				return 0;
-			}
-
-			if (!(b_override && !a_override))
-			{
-				// TODO PROP
-				/*
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', A),
-						scripting::hook_param("Object", 'o', B),
-						scripting::hook_param("Ship", 'o', A),
-						scripting::hook_param("ShipB", 'o', B),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A)),
-						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B))));
-						*/
-			}
-			if ((b_override && !a_override) || (!b_override && !a_override))
-			{
-				// Yes, this should be reversed.
-				// TODO PROP
-				/*
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {A, B} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', B),
-						scripting::hook_param("Object", 'o', A),
-						scripting::hook_param("Ship", 'o', B),
-						scripting::hook_param("ShipB", 'o', A),
-						scripting::hook_param("Hitpos", 'o', world_hit_pos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == B)),
-						scripting::hook_param("ShipBSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (ship_ship_hit_info.heavy == A))));
-						*/
-			}
-
 			return 0;
 		}
 	}
