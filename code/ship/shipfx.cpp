@@ -827,17 +827,17 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 		}
 	}
 
-	for (const auto& prop : Props) {
-		if (prop.has_value()) {
-			objp = &Objects[prop->objnum];
+	for (const auto& p : Props) {
+		if (p.has_value()) {
+			objp = &Objects[p->objnum];
 			if (objp->flags[Object::Object_Flags::Should_be_dead])
 				continue;
 
 			if (src_obj != objp) {
 				vm_vec_scale_add(&rp1, &rp0, &light_dir, objp->radius * 10.0f);
 
-				mc.model_instance_num = prop->model_instance_num;
-				mc.model_num = Prop_info[prop->prop_info_index].model_num;
+				mc.model_instance_num = p->model_instance_num;
+				mc.model_num = Prop_info[p->prop_info_index].model_num;
 				mc.orient = &objp->orient;
 				mc.pos = &objp->pos;
 				mc.p0 = &rp0;

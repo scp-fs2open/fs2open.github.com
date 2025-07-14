@@ -27562,7 +27562,7 @@ int sexp_get_colgroup_prop(int node)
 	if (!prop_entry)
 		return SEXP_NAN;
 
-	object& obj = Objects[eval_prop(node)->objnum];
+	const object& obj = Objects[eval_prop(node)->objnum];
 
 	return obj.collision_group_id;
 }

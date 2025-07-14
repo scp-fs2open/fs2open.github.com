@@ -113,7 +113,7 @@ ADE_FUNC(__len, l_Tables_ShipTypes, nullptr, "Number of ship types", "number", "
 }
 
 //*****SUBLIBRARY: Tables/ShipClasses
-ADE_LIB_DERIV(l_Tables_PropClasses, "PropClasses", NULL, NULL, l_Tables);
+ADE_LIB_DERIV(l_Tables_PropClasses, "PropClasses", nullptr, nullptr, l_Tables);
 ADE_INDEXER(l_Tables_PropClasses, "number/string IndexOrName", "Array of prop classes", "propclass", "Prop class handle, or invalid handle if index is invalid")
 {
 	if(!Props_inited)
@@ -142,7 +142,7 @@ ADE_INDEXER(l_Tables_PropClasses, "number/string IndexOrName", "Array of prop cl
 	return ade_set_args(L, "o", l_Propclass.Set(idx));
 }
 
-ADE_FUNC(__len, l_Tables_PropClasses, NULL, "Number of prop classes", "number", "Number of prop classes, or 0 if prop classes haven't been loaded yet")
+ADE_FUNC(__len, l_Tables_PropClasses, nullptr, "Number of prop classes", "number", "Number of prop classes, or 0 if prop classes haven't been loaded yet")
 {
 	if(!Props_inited)
 		return ade_set_args(L, "i", 0);	//No props loaded...should be 0

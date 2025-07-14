@@ -462,7 +462,7 @@ int collide_debris_prop(obj_pair* pair)
 				ship_override = scripting::hooks::OnDebrisCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, debris_objp} },
 					scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 						scripting::hook_param("Object", 'o', debris_objp),
-						scripting::hook_param("Ship", 'o', prop_objp),
+						scripting::hook_param("Prop", 'o', prop_objp),
 						scripting::hook_param("Debris", 'o', debris_objp),
 						scripting::hook_param("Hitpos", 'o', hitpos)));
 			}
@@ -492,31 +492,6 @@ int collide_debris_prop(obj_pair* pair)
 				debris_hit(debris_objp, prop_objp, &hitpos, debris_damage, nullptr);		// speed => damage
 
 				collide_ship_ship_do_sound(&hitpos, prop_objp, debris_objp,false );
-			}
-
-			if (scripting::hooks::OnDebrisCollision->isActive() && !(debris_override && !ship_override)) {
-				// TODO PROP
-				/*
-				scripting::hooks::OnDebrisCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
-						scripting::hook_param("Object", 'o', debris_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
-						scripting::hook_param("Debris", 'o', debris_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)));
-						*/
-			}
-			if (scripting::hooks::OnShipCollision->isActive() && ((debris_override && !ship_override) || (!debris_override && !ship_override)))
-			{
-				// TODO PROP
-				/*
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, debris_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', debris_objp),
-						scripting::hook_param("Object", 'o', ship_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
-						scripting::hook_param("Debris", 'o', debris_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (debris_hit_info.heavy == ship_objp))));
-						*/
 			}
 
 			return 0;
@@ -612,7 +587,7 @@ int collide_asteroid_prop(obj_pair* pair)
 			{
 				float		asteroid_damage;
 
-				vec3d asteroid_vel = asteroid_objp->phys_info.vel;
+				//vec3d asteroid_vel = asteroid_objp->phys_info.vel;
 
 				// do collision physics
 				calculate_ship_ship_collision_physics(&asteroid_hit_info);
@@ -627,27 +602,6 @@ int collide_asteroid_prop(obj_pair* pair)
 
 				collide_ship_ship_do_sound(&hitpos, prop_objp, asteroid_objp, false);
 			}
-
-			// TODO PROP
-			/*
-			if (scripting::hooks::OnAsteroidCollision->isActive() && !(asteroid_override && !ship_override)) {
-				scripting::hooks::OnAsteroidCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', ship_objp),
-						scripting::hook_param("Object", 'o', asteroid_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
-						scripting::hook_param("Asteroid", 'o', asteroid_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos)));
-			}
-			if (scripting::hooks::OnShipCollision->isActive() && ((asteroid_override && !ship_override) || (!asteroid_override && !ship_override)))
-			{
-				scripting::hooks::OnShipCollision->run(scripting::hooks::CollisionConditions{ {ship_objp, asteroid_objp} },
-					scripting::hook_param_list(scripting::hook_param("Self", 'o', asteroid_objp),
-						scripting::hook_param("Object", 'o', ship_objp),
-						scripting::hook_param("Ship", 'o', ship_objp),
-						scripting::hook_param("Asteroid", 'o', asteroid_objp),
-						scripting::hook_param("Hitpos", 'o', hitpos),
-						scripting::hook_param("ShipSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel && (asteroid_hit_info.heavy == ship_objp))));
-			}*/
 
 			return 0;
 		}

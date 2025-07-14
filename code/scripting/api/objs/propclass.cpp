@@ -3,15 +3,14 @@
 #include "vecmath.h"
 #include "prop/prop.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 //**********HANDLE: Propclass
 ADE_OBJ(l_Propclass, int, "propclass", "Prop class handle");
 
 ADE_FUNC(__tostring,
 	l_Propclass,
-	NULL,
+	nullptr,
 	"Prop class name",
 	"string",
 	"Prop class name, or an empty string if handle is invalid")
@@ -77,7 +76,7 @@ ADE_VIRTVAR(Model,
 	"Prop class model, or invalid model handle if propclass handle is invalid")
 {
 	int idx = -1;
-	model_h* mdl = NULL;
+	model_h* mdl = nullptr;
 	if (!ade_get_args(L, "o|o", l_Propclass.Get(&idx), l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
@@ -200,7 +199,7 @@ ADE_FUNC(hasCustomStrings,
 
 ADE_FUNC(isValid,
 	l_Propclass,
-	NULL,
+	nullptr,
 	"Detects whether handle is valid",
 	"boolean",
 	"true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -276,7 +275,7 @@ ADE_FUNC(renderTechModel2,
 	int x1, y1, x2, y2;
 	int idx;
 	float zoom = 1.3f;
-	matrix_h* mh = NULL;
+	matrix_h* mh = nullptr;
 	if (!ade_get_args(L, "oiiiio|f", l_Propclass.Get(&idx), &x1, &y1, &x2, &y2, l_Matrix.GetPtr(&mh), &zoom))
 		return ade_set_error(L, "b", false);
 
@@ -337,5 +336,4 @@ ADE_FUNC(getPropClassIndex,
 	return ade_set_args(L, "i", idx + 1); // Lua is 1-based
 }
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api

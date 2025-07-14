@@ -5434,7 +5434,7 @@ sexp_list_item *sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 			break;
 
 		case OPF_PROP:
-			list = get_listing_opf_prop(parent_node);
+			list = get_listing_opf_prop();
 			break;
 
 		case OPF_WING:
@@ -6174,7 +6174,7 @@ sexp_list_item *sexp_tree::get_listing_opf_ship(int parent_node)
 	return head.next;
 }
 
-sexp_list_item *sexp_tree::get_listing_opf_prop(int parent_node)
+sexp_list_item *sexp_tree::get_listing_opf_prop()
 {
 	object *ptr;
 	sexp_list_item head;

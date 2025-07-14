@@ -93,15 +93,15 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
-void LabUi::build_prop_subtype_list() const
+void LabUi::build_prop_subtype_list()
 {
-	for (size_t i = 0; i < Prop_categories.size(); i++) {
-		with_TreeNode(Prop_categories[i].name.c_str())
+	for (auto& propc : Prop_categories) {
+		with_TreeNode(propc.name.c_str())
 		{
 			int prop_idx = 0;
 
 			for (auto const& class_def : Prop_info) {
-				if (lcase_equal(class_def.category, Prop_categories[i].name)) {
+				if (lcase_equal(class_def.category, propc.name)) {
 					SCP_string node_label;
 					sprintf(node_label, "##PropClassIndex%i", prop_idx);
 					TreeNodeEx(node_label.c_str(),
@@ -198,7 +198,7 @@ void LabUi::build_object_list()
 	}
 }
 
-void LabUi::build_prop_list() const
+void LabUi::build_prop_list()
 {
 	with_TreeNode("Prop Classes")
 	{

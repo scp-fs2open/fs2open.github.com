@@ -678,88 +678,23 @@ static std::tuple<bool, bool, ship_weapon_collision_data> prop_weapon_check_coll
 	if (next_hit && hit) {
 		// find hit time
 		*next_hit = (int)(1000.0f * (mc.hit_dist * (flFrametime + time_limit) - flFrametime));
-		if (*next_hit > 0)
-			// if hit occurs outside of this frame, do not do damage 
+		if (*next_hit > 0) {
+			// if hit occurs outside of this frame, do not do damage
 			valid_hit_occurred = 1;
 			bool postproc = true;
 			bool recheck = false;
 			// most of this data is irrevelant for props but let's match it to make it easy
-			ship_weapon_collision_data cd{
-				mc,
-				-1,
-				postproc,
-				-1,
-				-1,
-				ZERO_VECTOR
-			};
+			ship_weapon_collision_data cd{mc, -1, postproc, -1, -1, ZERO_VECTOR};
 			return {postproc, recheck, cd};
+		}
 	}
 
-	if (hit)
-	{
-		/*wp->collisionInfo = new mc_info; // The weapon will free this memory later
-		*wp->collisionInfo = mc;
-
-		bool prop_override = false, weapon_override = false;
-
-		// get submodel handle if scripting needs it
-		bool has_submodel = (mc.hit_submodel >= 0);
-		scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
-
-
-		if (scripting::hooks::OnWeaponCollision->isActive()) {
-			prop_override = scripting::hooks::OnWeaponCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
-					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Prop", 'o', prop_objp),
-					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
-		}
-		if (scripting::hooks::OnPropCollision->isActive()) {
-			weapon_override = scripting::hooks::OnPropCollision->isOverride(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', prop_objp),
-					scripting::hook_param("Prop", 'o', prop_objp),
-					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
-					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}
-
-		if (!prop_override && !weapon_override) {
-			weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS); //, &mc.hit_normal, &mc.hit_point, mc.hit_submodel); This was changed by PR 6785 and the changes were not documented
-		}
-
-		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !prop_override)) {
-			scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
-					scripting::hook_param("Object", 'o', weapon_objp),
-					scripting::hook_param("Prop", 'o', prop_objp),
-					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
-		}
-		if (scripting::hooks::OnPropCollision->isActive() && !prop_override) {
-			scripting::hooks::OnPropCollision->run(scripting::hooks::CollisionConditions{ {prop_objp, weapon_objp} },
-				scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
-					scripting::hook_param("Object", 'o', prop_objp),
-					scripting::hook_param("Prop", 'o', prop_objp),
-					scripting::hook_param("Weapon", 'o', weapon_objp),
-					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
-					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}*/
-		valid_hit_occurred = 1;
-	}
+	valid_hit_occurred = hit ? 1 : 0;
 
 	bool postproc = (valid_hit_occurred != 0);
 	bool recheck = (valid_hit_occurred == 0);
 	// most of this data is irrevelant for props but let's match it to make it easy
-	ship_weapon_collision_data cd{
-		(valid_hit_occurred ? mc : mc_info{}),
-		-1,
-		postproc,
-		-1,
-		-1,
-		ZERO_VECTOR
-	};
+	ship_weapon_collision_data cd{(valid_hit_occurred ? mc : mc_info{}), -1, postproc, -1, -1, ZERO_VECTOR};
 
 	return{postproc, recheck, cd};
 }
@@ -809,7 +744,7 @@ static void prop_weapon_process_collision(obj_pair* pair, const ship_weapon_coll
 		weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS);
 	}
 
-	if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !prop_override)) {
+	if (scripting::hooks::OnWeaponCollision->isActive() && (!weapon_override || prop_override)) {
 		scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
 			scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 				scripting::hook_param("Object", 'o', weapon_objp),
@@ -943,33 +878,33 @@ collision_result collide_ship_weapon_check( obj_pair * pair )
  */
 int collide_prop_weapon(obj_pair* pair)
 {
-	object* prop = pair->a;
+	object* prop_obj = pair->a;
 	object* weapon_obj = pair->b;
 
-	Assert(prop->type == OBJ_PROP);
+	Assert(prop_obj->type == OBJ_PROP);
 	Assert(weapon_obj->type == OBJ_WEAPON);
 
 	// Cyborg17 - no ship-ship collisions when doing multiplayer rollback
-	if ((Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(prop))) {
+	if ((Game_mode & GM_MULTIPLAYER) && multi_ship_record_get_rollback_wep_mode() && (weapon_obj->parent_sig == OBJ_INDEX(prop_obj))) {
 		return 0;
 	}
 
-	if (reject_due_collision_groups(prop, weapon_obj))
+	if (reject_due_collision_groups(prop_obj, weapon_obj))
 		return 0;
 
 	// Cull lasers within big prop spheres by casting a vector forward for (1) exit sphere or (2) lifetime of laser
 	// If it does hit, don't check the pair until about 200 ms before collision.  
 	// If it does not hit and is within error tolerance, cull the pair.
 
-	if (prop->radius > 500.0f && (weapon_obj->phys_info.flags & PF_CONST_VEL)) {
+	if (prop_obj->radius > 500.0f && (weapon_obj->phys_info.flags & PF_CONST_VEL)) {
 		// Check when within ~1.1 radii.  
 		// This allows good transition between sphere checking (leaving the laser about 200 ms from radius) and checking
 		// within the sphere with little time between.  There may be some time for "small" big ships
 		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
 		// so we're not doing that here
-		if (vm_vec_dist_squared(&prop->pos, &weapon_obj->pos) < (1.2f * prop->radius * prop->radius)) {
+		if (vm_vec_dist_squared(&prop_obj->pos, &weapon_obj->pos) < (1.2f * prop_obj->radius * prop_obj->radius)) {
 			auto [do_postproc, never_hits, collision_data] =
-                check_inside_radius_for_big_ships(prop, weapon_obj, pair);
+                check_inside_radius_for_big_ships(prop_obj, weapon_obj, pair);
 
             if (do_postproc) {
                 prop_weapon_process_collision(pair, collision_data);
@@ -978,7 +913,7 @@ int collide_prop_weapon(obj_pair* pair)
 		}
 	}
 
-	auto [do_postproc, does_not_hit, collision_data] = prop_weapon_check_collision(prop, weapon_obj);
+	auto [do_postproc, does_not_hit, collision_data] = prop_weapon_check_collision(prop_obj, weapon_obj);
 
 	if (do_postproc) {
 		prop_weapon_process_collision(pair, collision_data);
@@ -987,7 +922,7 @@ int collide_prop_weapon(obj_pair* pair)
 	if (does_not_hit) {
 		// Since we didn't hit, check to see if we can disable all future collisions
 		// between these two.
-		return weapon_will_never_hit(weapon_obj, prop, pair);
+		return weapon_will_never_hit(weapon_obj, prop_obj, pair);
 	}
 
 	return 0;

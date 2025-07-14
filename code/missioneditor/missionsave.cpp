@@ -5130,8 +5130,7 @@ int CFred_mission_save::save_props()
 		parse_comments(2);
 		fout("\t\t;! %d total", static_cast<int>(Props.size()));
 
-		for (int i = 0; i < static_cast<int>(Props.size()); i++) {
-			const auto& p = Props[i];
+		for (const auto& p : Props) {
 			if (p.has_value()) {
 				required_string_either_fred("$Name:", "#Events");
 				required_string_fred("$Name:");

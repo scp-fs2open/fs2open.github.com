@@ -3358,13 +3358,12 @@ int beam_collide_prop(obj_pair* pair)
 	beam* a_beam;
 	object* weapon_objp;
 	object* prop_objp;
-	weapon_info* bwi;
 	mc_info mc;
 	int model_num;
 	float width;
 
 	// bogus
-	if (pair == NULL) {
+	if (pair == nullptr) {
 		return 0;
 	}
 
@@ -3406,8 +3405,6 @@ int beam_collide_prop(obj_pair* pair)
 		return 1;
 	prop_objp = pair->b;
 	prop* propp = prop_id_lookup(prop_objp->instance);
-
-	bwi = &Weapon_info[a_beam->weapon_info_index];
 
 	// get the width of the beam
 	width = a_beam->beam_collide_width * a_beam->current_width_factor;
@@ -3481,7 +3478,7 @@ int beam_collide_prop(obj_pair* pair)
 			beam_add_collision(a_beam, prop_objp, &mc, MISS_SHIELDS, false);
 		}
 
-		if (scripting::hooks::OnBeamCollision->isActive() && !(weapon_override && !prop_override)) {
+		if (scripting::hooks::OnBeamCollision->isActive() && (!weapon_override || prop_override)) {
 			scripting::hooks::OnBeamCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
 				scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
 					scripting::hook_param("Object", 'o', weapon_objp),

@@ -40,7 +40,7 @@ typedef struct prop {
 
 typedef struct prop_category {
 	SCP_string name;
-	color color;
+	color list_color;
 } prop_category;
 
 typedef struct parsed_prop {

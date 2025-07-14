@@ -10,8 +10,7 @@
 
 #include "prop/prop.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 //**********HANDLE: Prop
 ADE_OBJ_DERIV(l_Prop, object_h, "prop", "Prop handle", l_Object);
@@ -95,5 +94,4 @@ ADE_VIRTVAR(Textures,
 	return ade_set_args(L, "o", l_ModelInstanceTextures.Set(modelinstance_h(dest)));
 }
 
-} // namespace api
-} // namespace scripting
+} // namespace scripting::api
