@@ -89,15 +89,19 @@ namespace threading {
 	}
 #elif defined __APPLE__
 	static size_t get_number_of_physical_cores() {
-		int num;
+		int rval = 0;
+		int num = 0;
 		size_t numSize = sizeof(num);
 
 		// apple silicon (performance cores only)
-		if ( !sysctlbyname("hw.perflevel0.physicalcpu", &num, &numSize, nullptr, 0) ) {
-			return num;
-		}
+		rval = sysctlbyname("hw.perflevel0.physicalcpu", &num, &numSize, nullptr, 0);
+
 		// intel
-		else if ( !sysctlbyname("hw.physicalcpu", &num, &numSize, nullptr, 0) ) {
+		if (rval != 0) {
+			rval = sysctlbyname("hw.physicalcpu", &num, &numSize, nullptr, 0);
+		}
+
+		if (rval == 0 && num > 0) {
 			return num;
 		} else {
 			// invalid results, try fallback
