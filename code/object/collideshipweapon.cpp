@@ -36,7 +36,6 @@ using ship_weapon_collision_data = std::tuple<std::optional<mc_info>, int, bool,
 
 extern int Game_skill_level;
 extern float ai_endangered_time(const object *ship_objp, const object *weapon_objp);
-static int check_inside_radius_for_big_objects( object *ship, object *weapon_obj, obj_pair *pair );
 static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair );
 extern float flFrametime;
 
@@ -618,9 +617,7 @@ static void ship_weapon_process_collision(obj_pair* pair, const std::any& collis
 	ship_weapon_process_collision(pair, std::any_cast<ship_weapon_collision_data>(collision_data));
 }
 
-
-
-static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, float time_limit = 0.0f, int* next_hit = nullptr)
+static std::tuple<bool, bool, ship_weapon_collision_data> prop_weapon_check_collision(object* prop_objp, object* weapon_objp, float time_limit = 0.0f, int* next_hit = nullptr)
 {
 	weapon* wp;
 	weapon_info* wip;
@@ -683,12 +680,24 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 		*next_hit = (int)(1000.0f * (mc.hit_dist * (flFrametime + time_limit) - flFrametime));
 		if (*next_hit > 0)
 			// if hit occurs outside of this frame, do not do damage 
-			return 1;
+			valid_hit_occurred = 1;
+			bool postproc = true;
+			bool recheck = false;
+			// most of this data is irrevelant for props but let's match it to make it easy
+			ship_weapon_collision_data cd{
+				mc,
+				-1,
+				postproc,
+				-1,
+				-1,
+				ZERO_VECTOR
+			};
+			return {postproc, recheck, cd};
 	}
 
 	if (hit)
 	{
-		wp->collisionInfo = new mc_info;	// The weapon will free this memory later
+		/*wp->collisionInfo = new mc_info; // The weapon will free this memory later
 		*wp->collisionInfo = mc;
 
 		bool prop_override = false, weapon_override = false;
@@ -717,7 +726,7 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 		}
 
 		if (!prop_override && !weapon_override) {
-			weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS, &mc.hit_normal, &mc.hit_point, mc.hit_submodel);
+			weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS); //, &mc.hit_normal, &mc.hit_point, mc.hit_submodel); This was changed by PR 6785 and the changes were not documented
 		}
 
 		if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !prop_override)) {
@@ -736,10 +745,87 @@ static int prop_weapon_check_collision(object* prop_objp, object* weapon_objp, f
 					scripting::hook_param("Weapon", 'o', weapon_objp),
 					scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
 					scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
-		}
+		}*/
+		valid_hit_occurred = 1;
 	}
 
-	return valid_hit_occurred;
+	bool postproc = (valid_hit_occurred != 0);
+	bool recheck = (valid_hit_occurred == 0);
+	// most of this data is irrevelant for props but let's match it to make it easy
+	ship_weapon_collision_data cd{
+		(valid_hit_occurred ? mc : mc_info{}),
+		-1,
+		postproc,
+		-1,
+		-1,
+		ZERO_VECTOR
+	};
+
+	return{postproc, recheck, cd};
+}
+
+static void prop_weapon_process_collision(obj_pair* pair, const ship_weapon_collision_data& cd)
+{
+	object* prop_objp = pair->a;
+	object* weapon_objp = pair->b;
+
+	auto mc_opt = std::get<0>(cd);
+	if (!mc_opt) {
+		return;
+	}
+	const mc_info& mc = *mc_opt;
+
+	weapon* wp = &Weapons[weapon_objp->instance];
+	wp->collisionInfo = new mc_info(mc);
+
+	bool prop_override = false;
+	bool weapon_override = false;
+
+	bool has_submodel = (mc.hit_submodel >= 0);
+	scripting::api::submodel_h smh(mc.model_num, mc.hit_submodel);
+
+	if (scripting::hooks::OnWeaponCollision->isActive()) {
+		prop_override = scripting::hooks::OnWeaponCollision->isOverride(
+			scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+				scripting::hook_param("Object", 'o', weapon_objp),
+				scripting::hook_param("Prop", 'o', prop_objp),
+				scripting::hook_param("Weapon", 'o', weapon_objp),
+				scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+	}
+
+	if (scripting::hooks::OnPropCollision->isActive()) {
+		weapon_override = scripting::hooks::OnPropCollision->isOverride(
+			scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+				scripting::hook_param("Object", 'o', prop_objp),
+				scripting::hook_param("Prop", 'o', prop_objp),
+				scripting::hook_param("Weapon", 'o', weapon_objp),
+				scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+				scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+	}
+
+	if (!prop_override && !weapon_override) {
+		weapon_hit(weapon_objp, prop_objp, &mc.hit_point_world, MISS_SHIELDS);
+	}
+
+	if (scripting::hooks::OnWeaponCollision->isActive() && !(weapon_override && !prop_override)) {
+		scripting::hooks::OnWeaponCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', prop_objp),
+				scripting::hook_param("Object", 'o', weapon_objp),
+				scripting::hook_param("Prop", 'o', prop_objp),
+				scripting::hook_param("Weapon", 'o', weapon_objp),
+				scripting::hook_param("Hitpos", 'o', mc.hit_point_world)));
+	}
+	if (scripting::hooks::OnPropCollision->isActive() && !prop_override) {
+		scripting::hooks::OnPropCollision->run(scripting::hooks::CollisionConditions{{prop_objp, weapon_objp}},
+			scripting::hook_param_list(scripting::hook_param("Self", 'o', weapon_objp),
+				scripting::hook_param("Object", 'o', prop_objp),
+				scripting::hook_param("Prop", 'o', prop_objp),
+				scripting::hook_param("Weapon", 'o', weapon_objp),
+				scripting::hook_param("Hitpos", 'o', mc.hit_point_world),
+				scripting::hook_param("PropSubmodel", 'o', scripting::api::l_Submodel.Set(smh), has_submodel)));
+	}
 }
 
 
@@ -857,7 +943,6 @@ collision_result collide_ship_weapon_check( obj_pair * pair )
  */
 int collide_prop_weapon(obj_pair* pair)
 {
-	int		did_hit;
 	object* prop = pair->a;
 	object* weapon_obj = pair->b;
 
@@ -883,13 +968,23 @@ int collide_prop_weapon(obj_pair* pair)
 		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
 		// so we're not doing that here
 		if (vm_vec_dist_squared(&prop->pos, &weapon_obj->pos) < (1.2f * prop->radius * prop->radius)) {
-			return check_inside_radius_for_big_objects(prop, weapon_obj, pair);
+			auto [do_postproc, never_hits, collision_data] =
+                check_inside_radius_for_big_ships(prop, weapon_obj, pair);
+
+            if (do_postproc) {
+                prop_weapon_process_collision(pair, collision_data);
+            }
+            return never_hits;
 		}
 	}
 
-	did_hit = prop_weapon_check_collision(prop, weapon_obj);
+	auto [do_postproc, does_not_hit, collision_data] = prop_weapon_check_collision(prop, weapon_obj);
 
-	if (!did_hit) {
+	if (do_postproc) {
+		prop_weapon_process_collision(pair, collision_data);
+	}
+
+	if (does_not_hit) {
 		// Since we didn't hit, check to see if we can disable all future collisions
 		// between these two.
 		return weapon_will_never_hit(weapon_obj, prop, pair);
@@ -929,7 +1024,7 @@ static float estimate_ship_speed_upper_limit( object *ship, float time )
  * @return 1 if pair can be culled
  * @return 0 if pair can not be culled
  */
-static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *ship, object *weapon_obj, obj_pair *pair )
+static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_for_big_ships( object *big_obj, object *weapon_obj, obj_pair *pair )
 {
 	vec3d error_vel;		// vel perpendicular to laser
 	float error_vel_mag;	// magnitude of error_vel
@@ -967,13 +1062,15 @@ static std::tuple<bool, bool, ship_weapon_collision_data> check_inside_radius_fo
 	// Note:  when estimated hit time is less than 200 ms, look at every frame
 	int hit_time;	// estimated time of hit in ms
 	// modify the collision check to do damage if hit_time is negative (ie, hit occurs in this frame)
-	bool hit = false;
-	if (big_obj->type == OBJ_SHIP)
-		hit = ship_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
-	else // OBJ_PROP
-		hit = prop_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
+	bool do_postproc, does_not_hit;
+	ship_weapon_collision_data collision_data;
 
-	const auto& [do_postproc, does_not_hit, collision_data] = ship_weapon_check_collision( ship, weapon_obj, limit_time, &hit_time );
+	if (big_obj->type == OBJ_PROP) {
+		std::tie(do_postproc, does_not_hit, collision_data) = prop_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
+	} else {
+		std::tie(do_postproc, does_not_hit, collision_data) = ship_weapon_check_collision(big_obj, weapon_obj, limit_time, &hit_time);
+	}
+
 	// modify ship_weapon_check_collision to do damage if hit_time is negative (ie, hit occurs in this frame)
 	if ( !does_not_hit ) {
 		// hit occured in while in sphere

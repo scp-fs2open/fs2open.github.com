@@ -527,7 +527,6 @@ class Fred_mission_save {
 	 */
 	int save_props();
 
-	char *raw_ptr;
 	/**
 	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while
 	 * handling newlines properly
