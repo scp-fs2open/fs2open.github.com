@@ -850,7 +850,7 @@ int required_string_one_of_fred(int arg_count, ...)
 		}
 		va_end(vl);
 
-		advance_to_eoln(NULL);
+		advance_to_eoln(nullptr);
 		ignore_white_space();
 	}
 
