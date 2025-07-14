@@ -5,10 +5,8 @@
 #include "scripting/ade.h"
 #include "scripting/ade_api.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 DECLARE_ADE_OBJ(l_TeamColor, int);
 
-}
-} // namespace scripting
+} // namespace scripting::api

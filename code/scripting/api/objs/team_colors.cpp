@@ -5,8 +5,7 @@
 #include "globalincs/alphacolors.h"
 #include "scripting/api/objs/color.h"
 
-namespace scripting {
-namespace api {
+namespace scripting::api {
 
 //**********HANDLE: TeamColor
 ADE_OBJ(l_TeamColor, int, "teamcolor", "Team color handle");
@@ -130,5 +129,4 @@ ADE_FUNC(isValid, l_TeamColor, nullptr, "Detects whether handle is valid", "bool
 	return ADE_RETURN_TRUE;
 }
 
-}
 }
