@@ -476,7 +476,7 @@ void color_combo_box_prop::DrawItem(LPDRAWITEMSTRUCT lpDrawItemStruct)
 			else {
 				auto cinfo = prop_get_category(pip->category);
 				if (cinfo != nullptr) {
-					newTextColor = RGB(cinfo->color.red, cinfo->color.green, cinfo->color.blue);
+					newTextColor = RGB(cinfo->list_color.red, cinfo->list_color.green, cinfo->list_color.blue);
 				}
 			}
 		}

@@ -33,7 +33,7 @@ flag_def_list_new<Prop::Info_Flags> Prop_flags[] = {
 	//{ "no impact debris",			Prop::Info_Flags::No_impact_debris,		true, false },
 };
 
-const size_t Num_prop_flags = sizeof(Prop_flags) / sizeof(flag_def_list_new<Prop::Info_Flags>);
+//const size_t Num_prop_flags = sizeof(Prop_flags) / sizeof(flag_def_list_new<Prop::Info_Flags>);
 
 /**
  * Return the index of Prop_info[].name that is *token.
@@ -54,13 +54,13 @@ int prop_name_lookup(const char *name)
 	Assertion(name != nullptr, "NULL name passed to prop_name_lookup");
 
 	for (size_t i=0; i < Props.size(); i++){
-		auto prop = Props[i] ? &Props[i].value() : nullptr;
-		if (prop == nullptr) {
+		auto p = Props[i] ? &Props[i].value() : nullptr;
+		if (p == nullptr) {
 			continue;
 		}
-		if (prop->objnum >= 0){
-			if (Objects[prop->objnum].type == OBJ_PROP) {
-				if (!stricmp(name, prop->prop_name)) {
+		if (p->objnum >= 0){
+			if (Objects[p->objnum].type == OBJ_PROP) {
+				if (!stricmp(name, p->prop_name)) {
 					return static_cast<int>(i);
 				}
 			}
@@ -92,9 +92,9 @@ prop* prop_id_lookup(int id)
 
 prop_category* prop_get_category(const SCP_string& name)
 {
-	for (auto it = Prop_categories.begin(); it != Prop_categories.end(); ++it) {
-		if (lcase_equal(name, it->name)) {
-			return &(*it);
+	for (auto& category : Prop_categories) {
+		if (lcase_equal(name, category.name)) {
+			return &category;
 		}
 	}
 	return nullptr;
@@ -113,7 +113,7 @@ void parse_prop_table(const char* filename)
 			required_string("+Color:");
 			int rgb[3];
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
-			gr_init_color(&pc.color, rgb[0], rgb[1], rgb[2]);
+			gr_init_color(&pc.list_color, rgb[0], rgb[1], rgb[2]);
 
 			Prop_categories.push_back(pc);
 
@@ -162,7 +162,7 @@ void parse_prop_table(const char* filename)
 				Warning(LOCATION, "+remove flag used for prop in non-modular table");
 			}
 			if (!remove_prop) {
-				Removed_props.push_back(fname);
+				Removed_props.emplace_back(fname);
 				remove_prop = true;
 			}
 		}
@@ -207,7 +207,7 @@ void parse_prop_table(const char* filename)
 				continue;
 			}
 
-			Prop_info.push_back(prop_info());
+			Prop_info.emplace_back(prop_info());
 			pip = &Prop_info.back();
 			first_time = true;
 
@@ -288,17 +288,18 @@ void parse_prop_table(const char* filename)
 				bool flag_found = false;
 
 				// check various ship flags
-				for (size_t idx = 0; idx < Num_prop_flags; idx++) {
-					if (!stricmp(Prop_flags[idx].name, cur_flag)) {
+				for (auto& pflag : Prop_flags) {
+					if (!stricmp(pflag.name, cur_flag)) {
 						flag_found = true;
 
-						if (!Prop_flags[idx].in_use)
+						if (!pflag.in_use) {
 							Warning(LOCATION,
 								"Use of '%s' flag for Prop Class '%s' - this flag is no longer needed.",
-								Prop_flags[idx].name,
+								pflag.name,
 								pip->name.c_str());
-						else
-							pip->flags.set(Prop_flags[idx].def);
+						} else {
+							pip->flags.set(pflag.def);
+						}
 
 						break;
 					}
@@ -379,7 +380,7 @@ void post_process_props()
 	if (create_unknown_category) {
 		prop_category pc;
 		pc.name = "Unknown Category";
-		gr_init_color(&pc.color, 128, 128, 128);
+		gr_init_color(&pc.list_color, 128, 128, 128);
 		Prop_categories.push_back(pc);
 	}
 
@@ -546,7 +547,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = pip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = pip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != pip->glowpoint_bank_override_map.end()) {
 				gpo = (glow_point_bank_override*)pip->glowpoint_bank_override_map[bank];
 			}
@@ -609,7 +610,7 @@ static void prop_model_change(int n, int prop_type)
 	prop* sp = prop_id_lookup(n);
 	prop_info* sip = &(Prop_info[prop_type]);
 	object* objp = &Objects[sp->objnum];
-	polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
+	//polymodel_instance* pmi = model_get_instance(sp->model_instance_num);
 
 	// get new model
 	if (sip->model_num == -1) {
@@ -637,7 +638,7 @@ static void prop_model_change(int n, int prop_type)
 		for (int bank = 0; bank < pm->n_glow_point_banks; bank++) {
 			glow_point_bank_override* gpo = nullptr;
 
-			SCP_unordered_map<int, void*>::iterator gpoi = sip->glowpoint_bank_override_map.find(bank);
+			auto gpoi = sip->glowpoint_bank_override_map.find(bank);
 			if (gpoi != sip->glowpoint_bank_override_map.end()) {
 				gpo = (glow_point_bank_override*)sip->glowpoint_bank_override_map[bank];
 			}
@@ -673,7 +674,7 @@ static void prop_model_change(int n, int prop_type)
 	// create new model instance data
 	// note: this is needed for both subsystem stuff and submodel animation stuff
 	sp->model_instance_num = model_create_instance(OBJ_INDEX(objp), sip->model_num);
-	pmi = model_get_instance(sp->model_instance_num);
+	//pmi = model_get_instance(sp->model_instance_num);
 }
 
 /**
@@ -854,8 +855,8 @@ int prop_check_collision(object* prop_obj, object* other_obj, vec3d* hitpos, col
 	
 	prop_info* prinfo = &Prop_info[propp->prop_info_index];
 
-	// debris_hit_info NULL - so debris-weapon collision
-	if (prop_hit_info == NULL) {
+	// debris_hit_info nullptr - so debris-weapon collision
+	if (prop_hit_info == nullptr) {
 		// debris weapon collision
 		Assert(other_obj->type == OBJ_WEAPON);
 		mc.model_instance_num = propp->model_instance_num;

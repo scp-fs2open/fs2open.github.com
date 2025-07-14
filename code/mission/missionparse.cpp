@@ -5120,34 +5120,34 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
-void parse_prop(mission* pm)
+void parse_prop(mission* /*pm*/)
 {
-	parsed_prop prop;
+	parsed_prop p;
 	required_string("$Name:");
-	stuff_string(prop.name, F_NAME, NAME_LENGTH);
+	stuff_string(p.name, F_NAME, NAME_LENGTH);
 
 	// Maybe do this by name instead?
 	required_string("$Class:");
-	stuff_int(&prop.prop_info_index);
+	stuff_int(&p.prop_info_index);
 
 	required_string("$Location:");
-	stuff_vec3d(&prop.position);
+	stuff_vec3d(&p.position);
 
 	required_string("$Orientation:");
-	stuff_matrix(&prop.orientation);
+	stuff_matrix(&p.orientation);
 
 	// set flags
 	if (optional_string("+Flags:")) {
 		SCP_vector<SCP_string> unparsed;
-		parse_string_flag_list(prop.flags, Parse_prop_flags, Num_parse_prop_flags, &unparsed);
+		parse_string_flag_list(p.flags, Parse_prop_flags, Num_parse_prop_flags, &unparsed);
 		if (!unparsed.empty()) {
-			for (size_t k = 0; k < unparsed.size(); ++k) {
-				WarningEx(LOCATION, "Unknown flag in parse prop flags: %s", unparsed[k].c_str());
+			for (const auto& f : unparsed) {
+				WarningEx(LOCATION, "Unknown flag in parse prop flags: %s", f.c_str());
 			}
 		}
 	}
 
-	Parse_props.emplace_back(prop);
+	Parse_props.emplace_back(p);
 }
 
 void parse_wings(mission* pm)
@@ -5255,14 +5255,13 @@ void post_process_path_stuff()
 // MjnMixael
 void post_process_mission_props()
 {
-	for (int i = 0; i < static_cast<int>(Parse_props.size()); i++) {
-		parsed_prop* propp = &Parse_props[i];
-		int objnum = prop_create(&propp->orientation, &propp->position, propp->prop_info_index, propp->name);
+	for (auto& propp : Parse_props) {
+		int objnum = prop_create(&propp.orientation, &propp.position, propp.prop_info_index, propp.name);
 
 		if (objnum >= 0) {
 			auto& obj = Objects[objnum];
 
-			if (propp->flags[Mission::Parse_Object_Flags::OF_No_collide]) {
+			if (propp.flags[Mission::Parse_Object_Flags::OF_No_collide]) {
 				obj.flags.remove(Object::Object_Flags::Collides);
 			}
 		}

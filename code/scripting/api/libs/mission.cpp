@@ -617,7 +617,7 @@ ADE_INDEXER(l_Mission_Props, "number/string IndexOrName", "Gets prop", "prop", "
 	}
 }
 
-ADE_FUNC(__len, l_Mission_Props, NULL,
+ADE_FUNC(__len, l_Mission_Props, nullptr,
 		 "Number of props in the mission. "
 			 "This function is somewhat slow, and should be set to a variable for use in looping situations. "
 			 "Note that props can be vanished, and so this value cannot be relied on for more than one frame.",
@@ -1431,12 +1431,12 @@ ADE_FUNC(createProp,
 	vec3d pos        = vmd_zero_vector;
 	ade_get_args(L, "|sooo", &name, l_Propclass.Get(&pclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
-	if (Prop_info.size() == 0) {
+	if (Prop_info.empty()) {
 		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 	}
 
 	matrix *real_orient = &vmd_identity_matrix;
-	if(orient != NULL)
+	if(orient != nullptr)
 	{
 		real_orient = orient->GetMatrix();
 	}
