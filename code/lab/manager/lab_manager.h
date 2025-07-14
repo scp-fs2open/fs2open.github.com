@@ -107,15 +107,15 @@ public:
 
 	int Saved_cmdline_collisions_value;
 
-	bool isSafeForShips() {
+	bool isSafeForShips() const {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;
 	}
 
-	bool isSafeForProps() {
+	bool isSafeForProps() const {
 		return CurrentMode == LabMode::Prop && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_PROP;
 	}
 
-	bool isSafeForWeapons() {
+	bool isSafeForWeapons() const {
 		bool valid = CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
 		return CurrentMode == LabMode::Weapon && valid;
 	}
