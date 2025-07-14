@@ -83,7 +83,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCamera_triggered(bool enabled);
 	void on_actionCurrent_Ship_triggered(bool enabled);
 
-	void on_actionEvents_triggered(bool);
+	void on_actionMission_Events_triggered(bool);
 	void on_actionAsteroid_Field_triggered(bool);
 	void on_actionBriefing_triggered(bool);
 	void on_actionMission_Specs_triggered(bool);
@@ -129,6 +129,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void on_actionMove_Ships_When_Undocking_triggered(bool);
 
+	void on_actionAlways_Save_Display_Names_triggered(bool);
 	void on_actionError_Checker_Checks_Potential_Issues_triggered(bool);
 	void on_actionError_Checker_triggered(bool);
 
@@ -137,7 +138,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionShield_System_triggered(bool);
 	void on_actionVoice_Acting_Manager_triggered(bool);
 	void on_actionFiction_Viewer_triggered(bool);
-	void on_actionMission_Objectives_triggered(bool);
+	void on_actionMission_Goals_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object

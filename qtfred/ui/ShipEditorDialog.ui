@@ -37,41 +37,10 @@
          </property>
          <item>
           <layout class="QGridLayout" name="firstColumnOptions">
-           <item row="3" column="0">
-            <widget class="QLabel" name="teamLabel">
+           <item row="0" column="0">
+            <widget class="QLabel" name="shipNameLabel">
              <property name="text">
-              <string>Team</string>
-             </property>
-            </widget>
-           </item>
-           <item row="2" column="1">
-            <widget class="QComboBox" name="AIClassCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Ship's AI&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="4" column="1">
-            <widget class="QComboBox" name="cargoCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type to add Ship's Cargo or select previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-             <property name="editable">
-              <bool>true</bool>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="1">
-            <widget class="QComboBox" name="shipClassCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's class&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="1">
-            <widget class="QComboBox" name="teamCombo">
-             <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's team&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>Ship Name</string>
              </property>
             </widget>
            </item>
@@ -82,28 +51,28 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
-            <widget class="QLabel" name="cargoLabel">
+           <item row="1" column="0">
+            <widget class="QLabel" name="shipDisplayNameLabel">
              <property name="text">
-              <string>Cargo</string>
+              <string>Display Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QLineEdit" name="shipDisplayNameEdit">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's display name&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
             </widget>
            </item>
            <item row="2" column="0">
-            <widget class="QLabel" name="AIClassLabel">
+            <widget class="QLabel" name="callsignLabel">
              <property name="text">
-              <string>AI Class</string>
+              <string>Callsign</string>
              </property>
             </widget>
            </item>
-           <item row="0" column="0">
-            <widget class="QLabel" name="shipNameLabel">
-             <property name="text">
-              <string>Ship Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="6" column="1">
+           <item row="2" column="1">
             <widget class="QComboBox" name="callsignCombo">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets ship's callsign (Replaces name in messages)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
@@ -113,31 +82,76 @@
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
-            <widget class="QLabel" name="altNameLabel">
-             <property name="text">
-              <string>Alt Name</string>
-             </property>
-            </widget>
-           </item>
-           <item row="1" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="shipClassLabel">
              <property name="text">
               <string>Ship Class</string>
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
-            <widget class="QLabel" name="callsignLabel">
+           <item row="3" column="1">
+            <widget class="QComboBox" name="shipClassCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's class&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="altNameLabel">
              <property name="text">
-              <string>Callsign</string>
+              <string>Alt Name</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="altNameCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's class name (i.e. GTF Ulysses -&amp;gt; NTF Ulysses)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+             <property name="editable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="AIClassLabel">
+             <property name="text">
+              <string>AI Class</string>
              </property>
             </widget>
            </item>
            <item row="5" column="1">
-            <widget class="QComboBox" name="altNameCombo">
+            <widget class="QComboBox" name="AIClassCombo">
              <property name="toolTip">
-              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Change ship's class name (i.e. GTF Ulysses -&amp;gt; NTF Ulysses)&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the Ship's AI&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="0">
+            <widget class="QLabel" name="teamLabel">
+             <property name="text">
+              <string>Team</string>
+             </property>
+            </widget>
+           </item>
+           <item row="6" column="1">
+            <widget class="QComboBox" name="teamCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the ship's team&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="0">
+            <widget class="QLabel" name="cargoLabel">
+             <property name="text">
+              <string>Cargo</string>
+             </property>
+            </widget>
+           </item>
+           <item row="7" column="1">
+            <widget class="QComboBox" name="cargoCombo">
+             <property name="toolTip">
+              <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Type to add Ship's Cargo or select previous&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
              <property name="editable">
               <bool>true</bool>

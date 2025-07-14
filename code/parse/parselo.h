@@ -78,7 +78,7 @@ extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash 
 extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
 extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
-extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+extern int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash = false);
 
 extern void consolidate_double_characters(char *str, char ch);
 
