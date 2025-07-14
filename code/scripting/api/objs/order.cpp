@@ -287,7 +287,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 						const char* type_name;
 
 						if (type_index < 0) {
-							type_name = "<none>"
+							type_name = "<none>";
 						} else {
 							type_name = Ship_types[type_index].name;
 						}
