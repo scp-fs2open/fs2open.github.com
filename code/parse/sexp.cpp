@@ -14059,17 +14059,19 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 	if (Sexp_music_handles.empty())
 		Sexp_music_handles.push_back(-1);
 
-	int index = sexp_find_music_handle_index(sexp_var);
-
-	// since we know the default index 0 exists, this means we have a variable without an index
-	if (index < 0)
+	// if a variable is supplied, we'll be creating a new handle to be stored in the variable
+	int index;
+	if (sexp_var >= 0)
 	{
-		index = (int)Sexp_music_handles.size();
+		index = static_cast<int>(Sexp_music_handles.size());
 		Sexp_music_handles.push_back(-1);
 	}
-
-	// if we were previously playing music on this handle, stop it
-	audiostream_close_file(Sexp_music_handles[index]);
+	// otherwise we'll be reusing the default handle, so close anything that's already playing
+	else
+	{
+		index = 0;
+		audiostream_close_file(Sexp_music_handles[index]);
+	}
 
 	// open the stream and save the handle in our list
 	Sexp_music_handles[index] = audiostream_open(filename, type);
