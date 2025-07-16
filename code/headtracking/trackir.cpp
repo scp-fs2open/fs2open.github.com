@@ -1,4 +1,6 @@
 
+#ifdef _WIN32
+
 #include "headtracking/trackir.h"
 
 #include "headtracking/trackirpublic.h"
@@ -52,3 +54,5 @@ namespace headtracking
 		}
 	}
 }
+
+#endif	// _WIN32
