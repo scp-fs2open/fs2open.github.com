@@ -7949,7 +7949,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 	}
 	
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+    	auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 
 		particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, impacted_objp, submodel, hitpos, local_hitpos));
 		particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
@@ -7973,7 +7973,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 		particleSource->finishCreation();
 	}
 
-	if (impacted_objp != nullptr && impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && !impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
