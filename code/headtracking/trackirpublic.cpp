@@ -1,4 +1,6 @@
 
+#ifdef _WIN32
+
 #include "headtracking/trackirpublic.h"
 
 TrackIRDLL::TrackIRDLL()
@@ -126,3 +128,5 @@ float TrackIRDLL::GetYaw() const
 		return m_GetYaw();
 	return 0.0f;
 }
+
+#endif	// _WIN32
