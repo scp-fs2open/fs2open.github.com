@@ -29,7 +29,7 @@ layout (std140) uniform lightData {
 
 void main()
 {
-	if (lightType == LT_DIRECTIONAL) {
+	if (lightType == LT_DIRECTIONAL || lightType == LT_AMBIENT) {
 		gl_Position = vec4(vertPosition.xyz, 1.0);
 	} else {
 		gl_Position = projMatrix * modelViewMatrix * vec4(vertPosition.xyz * scale, 1.0);

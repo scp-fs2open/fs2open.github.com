@@ -179,7 +179,7 @@ void main()
 
 	if (lightType == LT_AMBIENT) {
 		float ao = position_buffer.w;
-		fragmentColor.rgb = diffuseLightColor * ao;
+		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
 	}
 	else {
 		vec4 normalData = texture(NormalBuffer, screenPos);
