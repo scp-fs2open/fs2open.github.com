@@ -680,7 +680,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 	switch (pspew_buffer.particle_spew_type) {
 		case PSPEW_DEFAULT:
-			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), 3.f * pspew_buffer.particle_spew_scale);
+			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), powf(pspew_buffer.particle_spew_scale, 3.0f));
 			direction = particle::ParticleEffect::ShapeDirection::REVERSE;
 			break;
 		case PSPEW_HELIX: {
