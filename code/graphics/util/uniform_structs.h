@@ -139,7 +139,7 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
-	int pad[1];
+	float pad;
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
@@ -180,9 +180,6 @@ struct decal_globals {
 	matrix4 projMatrix;
 	matrix4 invViewMatrix;
 	matrix4 invProjMatrix;
-
-	vec3d ambientLight;
-	float pad0;
 
 	vec2d viewportSize;
 	float pad1[2];

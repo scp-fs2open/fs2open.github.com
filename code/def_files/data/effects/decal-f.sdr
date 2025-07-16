@@ -29,9 +29,6 @@ layout (std140) uniform decalGlobalData {
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
 
-	vec3 ambientLight;
-	float pad0;
-
 	vec2 viewportSize;
 };
 
@@ -134,16 +131,6 @@ void main() {
 		} else {
 			// Additive blending
 			diffuse_out = vec4(color.rgb * alpha, 1.0);
-		}
-
-		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
-		// texture. We do the same here to make sure the decal material is applied correctly
-		if (glow_blend_mode == 0) {
-			// Normal alpha blending
-			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
-		} else {
-			// Additive blending
-			emissive_out = vec4(alpha * color.rgb * ambientLight, 1.0);
 		}
 	}
 

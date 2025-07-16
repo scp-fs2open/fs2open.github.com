@@ -50,6 +50,7 @@ layout (std140) uniform modelData {
 	int n_lights;
 	float defaultGloss;
 
+	//EXCLUSIVELY used for non-deferred rendering
 	vec3 ambientFactor;
 	int desaturate;
 
@@ -85,14 +86,12 @@ layout (std140) uniform modelData {
 	float fardist;
 
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
+
 	int sMiscmapIndex;
-
 	float alphaMult;
-
 	int flags;
 };
 
@@ -342,19 +341,7 @@ void main()
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_MISC
 
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
-	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
-			// Ambient lighting still needs to be done since that counts as an "emissive" color
-			vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
-			emissiveColor.rgb += baseColor.rgb * lightAmbient;
-		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT
-			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
-				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
-			// If there is no lighting then we copy the color data so far into the
-			emissiveColor.rgb += baseColor.rgb;
-		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
-	#prereplace ELSE_FLAG //MODEL_SDR_FLAG_DEFERRED
+	#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_DEFERRED
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
