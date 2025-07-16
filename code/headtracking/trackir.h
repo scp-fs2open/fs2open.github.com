@@ -2,6 +2,8 @@
 #ifndef HEADTRACKING_TRACKIR_H
 #define HEADTRACKING_TRACKIR_H
 
+#ifdef _WIN32
+
 #include "headtracking/headtracking.h"
 #include "headtracking/headtracking_internal.h"
 #include "headtracking/trackirpublic.h"
@@ -23,5 +25,7 @@ namespace headtracking
 		};
 	}
 }
+
+#endif	// _WIN32
 
 #endif // HEADTRACKING_TRACKIR_H
