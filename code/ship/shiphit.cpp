@@ -2305,7 +2305,7 @@ static int maybe_shockwave_damage_adjust(const object *ship_objp, const object *
 // Goober5000 - sanity checked this whole function in the case that other_obj is NULL, which
 // will happen with the explosion-effect sexp
 void ai_update_lethality(const object *ship_objp, const object *weapon_obj, float damage);
-static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false, float hit_dot = 1.f, const vec3d* hit_normal = nullptr, const vec3d* local_hitpos = nullptr)
+static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hitpos, float damage, int quadrant, int submodel_num, int damage_type_idx = -1, bool wash_damage = false, float hit_dot = 1.f, const vec3d* hit_normal = nullptr, const vec3d* local_hitpos = nullptr, const bool global = false)
 {
 //	mprintf(("doing damage\n"));
 
@@ -2437,7 +2437,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				shipp->ship_max_hull_strength,
 			};
 		}
-		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		if (!global) {
+			maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		}
 
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
@@ -2681,7 +2683,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
-	maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+	if (!global) {
+		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+	}
 
 	// handle weapon and afterburner leeching here
 	if(other_obj_is_weapon || other_obj_is_beam) {		
@@ -2945,7 +2949,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 		ship_do_healing(ship_objp, other_obj, hitpos, damage, submodel_num);
 		create_sparks = false;
 	} else {
-		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot, hit_normal, local_hitpos);
+		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot, hit_normal, local_hitpos, false);
 	}
 
 	// DA 5/5/98: move ship_hit_create_sparks() after do_damage() since number of sparks depends on hull strength
@@ -3024,7 +3028,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, -1, damage_type_idx);
 		else
 			// Do damage on local point		
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx);
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx, false, 1.f, nullptr, nullptr, true);
 	} else {
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
@@ -3033,7 +3037,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 
 		int n_quadrants = static_cast<int>(ship_objp->shield_quadrant.size());
 		for (int i=0; i<n_quadrants; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx );
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx, false, 1.f, nullptr, nullptr, true );
 		}
 	}
 
@@ -3064,7 +3068,7 @@ void ship_apply_wash_damage(object *ship_objp, object *other_obj, float damage)
 
 	// Do damage to hull and not to shields
 	global_damage = true;
-	ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, -1, -1, -1, true);
+	ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, -1, -1, -1, true, 1.f, nullptr, nullptr, true);
 
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_objp == Player_obj ) {
