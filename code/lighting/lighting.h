@@ -32,7 +32,8 @@ enum class Light_Type : int {
 	Directional = 0,// A light like a sun
 	Point = 1,		// A point light, like an explosion
 	Tube = 2,		// A tube light, like a fluorescent light
-	Cone = 3		// A cone light, like a flood light
+	Cone = 3,		// A cone light, like a flood light
+	Ambient = 4		// A directionless and positionless ambient light
 };
 
 typedef struct light {

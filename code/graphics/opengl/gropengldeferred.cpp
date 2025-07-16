@@ -9,6 +9,7 @@
 #include "gropengltnl.h"
 
 #include "graphics/2d.h"
+#include "graphics/light.h"
 #include "graphics/matrix.h"
 #include "graphics/util/UniformAligner.h"
 #include "graphics/util/UniformBuffer.h"
@@ -286,6 +287,8 @@ void gr_opengl_deferred_lighting_finish()
 		case Light_Type::Tube:
 			cylinder_lights.push_back(l);
 			break;
+		case Light_Type::Ambient:
+			UNREACHABLE("Multiple ambient lights are not supported!");
 		}
 	}
 	{
@@ -311,6 +314,20 @@ void gr_opengl_deferred_lighting_finish()
 		header->invScreenWidth = 1.0f / gr_screen.max_w;
 		header->invScreenHeight = 1.0f / gr_screen.max_h;
 		header->nearPlane = gr_near_plane;
+
+		{
+			//Prepare ambient light
+			light l;
+			vec3d ambient;
+			gr_get_ambient_light(&ambient);
+			l.r = ambient.xyz.x;
+			l.g = ambient.xyz.y;
+			l.b = ambient.xyz.z;
+			l.type = Light_Type::Ambient;
+			l.intensity = 1.f;
+			l.source_radius = 0.f;
+			prepare_light_uniforms(l, light_uniform_aligner);
+		}
 
 		// Only the first directional light uses shaders so we need to know when we already saw that light
 		bool first_directional = true;

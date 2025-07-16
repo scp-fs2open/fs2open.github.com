@@ -168,43 +168,52 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
-	vec3 position = texture(PositionBuffer, screenPos).xyz;
+	vec4 position_buffer = texture(PositionBuffer, screenPos);
+	vec3 position = position_buffer.xyz;
 
 	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
 
 	vec3 diffColor = texture(ColorBuffer, screenPos).rgb;
-	vec4 normalData = texture(NormalBuffer, screenPos);
-	vec4 specColor = texture(SpecBuffer, screenPos);
-	// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
-	vec3 normal = normalize(normalData.xyz);
-	float gloss = normalData.a;
-	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
-	float alpha = roughness * roughness;
-	float fresnel = specColor.a;
-	vec3 eyeDir = normalize(-position);
+	vec4 fragmentColor = vec4(1.0);
 
-	vec3 lightDir;
-	float attenuation;
-	float area_normalisation;
-	vec3 reflectDir = reflect(-eyeDir, normal);
-	GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
+	if (lightType == LT_AMBIENT) {
+		float ao = position_buffer.w;
+		fragmentColor.rgb = diffuseLightColor * ao;
+	}
+	else {
+		vec4 normalData = texture(NormalBuffer, screenPos);
+		vec4 specColor = texture(SpecBuffer, screenPos);
+		// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
+		vec3 normal = normalize(normalData.xyz);
+		float gloss = normalData.a;
+		float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
+		float alpha = roughness * roughness;
+		float fresnel = specColor.a;
+		vec3 eyeDir = normalize(-position);
 
-	if (enable_shadows) {
-		vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
-		vec4 fragShadowUV[4];
-		fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
-		fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
-		fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
-		fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+		vec3 lightDir;
+		float attenuation;
+		float area_normalisation;
+		vec3 reflectDir = reflect(-eyeDir, normal);
+		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
 
-		attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
-								neardist, veryneardist);
+		if (enable_shadows) {
+			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
+			vec4 fragShadowUV[4];
+			fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
+			fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
+			fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
+			fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+
+			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
+									neardist, veryneardist);
+		}
+
+		vec3 halfVec = normalize(lightDir + eyeDir);
+		float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
+		fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	}
 
-	vec3 halfVec = normalize(lightDir + eyeDir);
-	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
-	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

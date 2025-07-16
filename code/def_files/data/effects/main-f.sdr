@@ -186,7 +186,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation)
 vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float fresnel, float shadow, float aoFactor)
 {
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
-	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactor; // ambientFactor^2 due to legacy OpenGL compatibility behavior
+	vec3 lightAmbient = ambientFactor * aoFactor;
 	vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
 	vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
 	#pragma optionNV unroll all
@@ -473,7 +473,7 @@ void main()
 	fragOut0 = baseColor;
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		fragOut1 = vec4(vertIn.position.xyz, 1.0);
+		fragOut1 = vec4(vertIn.position.xyz, aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;
