@@ -9024,7 +9024,10 @@ void ai_chase()
 		weapon_info* wip = ai_get_weapon(&shipp->weapons);
 		if (wip) {
 			bool ballistic = !IS_VEC_NULL(&The_mission.gravity) && wip->gravity_const != 0.0f;
-			if (aip->targeted_subsys != NULL && get_shield_pct(En_objp) < HULL_DAMAGE_THRESHOLD_PERCENT) {
+			// retail behavior: if AI targeting a subsystem, and the target has shields lower than 0.25, 
+			// aim straight for the subsystem, instead of leading;
+			// or always lead regardless of shield strength if AI flag is enabled --wookieejedi
+			if ( (aip->targeted_subsys != nullptr && get_shield_pct(En_objp) < 0.25f) && !(The_mission.ai_profile->flags[AI::Profile_Flags::Fix_AI_aim_targeting_subsystems]) ) {
 				Assert(En_objp->type == OBJ_SHIP);
 				vec3d target_pos;
 				get_subsystem_pos(&target_pos, En_objp, aip->targeted_subsys);

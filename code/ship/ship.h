@@ -51,8 +51,6 @@ extern vec3d	Original_vec_to_deader;
 
 #define SHIP_GUARDIAN_THRESHOLD_DEFAULT	1	// Goober5000
 
-#define	HULL_DAMAGE_THRESHOLD_PERCENT	0.25f	//	Apply damage to hull, not shield if shield < this
-
 // the #defines below are to avoid round-off errors
 #define WEAPON_RESERVE_THRESHOLD		0.01f	// energy threshold where ship is considered to have no weapon energy system
 #define SUBSYS_MAX_HITS_THRESHOLD		0.01f	// max_hits threshold where subsys is considered to take damage

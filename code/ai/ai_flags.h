@@ -179,6 +179,7 @@ namespace AI {
 		Freespace_1_missile_behavior,
 		ETS_uses_power_output,
 		ETS_energy_same_regardless_of_system_presence,
+		Fix_AI_aim_targeting_subsystems,
 
 		NUM_VALUES
 	};

@@ -713,6 +713,7 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ETS energy same regardless of system presence:", AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence);
 
+				set_flag(profile, "$Fix AI aim when targeting subsystems:", AI::Profile_Flags::Fix_AI_aim_targeting_subsystems);
 
 				// end of options ----------------------------------------
 
