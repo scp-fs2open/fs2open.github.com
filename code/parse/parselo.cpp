@@ -532,15 +532,12 @@ int required_string(const char *pstr)
 	return 1;
 }
 
-int check_for_eof_raw()
+bool check_for_eof_raw()
 {
-	if (*Mp == '\0')
-		return 1;
-
-	return 0;
+	return (*Mp == '\0');
 }
 
-int check_for_eof()
+bool check_for_eof()
 {
 	ignore_white_space();
 
@@ -548,37 +545,28 @@ int check_for_eof()
 }
 
 /**
-Returns 1 if it finds a newline character precded by any amount of grayspace.
+Returns true if it finds a newline character precded by any amount of grayspace.
 */
-int check_for_eoln()
+bool check_for_eoln()
 {
 	ignore_gray_space();
 
-	if(*Mp == EOLN)
-		return 1;
-	else
-		return 0;
+	return (*Mp == EOLN);
 }
 
 // similar to optional_string, but just checks if next token is a match.
 // It doesn't advance Mp except to skip past white space.
-int check_for_string(const char *pstr)
+bool check_for_string(const char *pstr)
 {
 	ignore_white_space();
 
-	if (!strnicmp(pstr, Mp, strlen(pstr)))
-		return 1;
-
-	return 0;
+	return check_for_string_raw(pstr);
 }
 
 // like check for string, but doesn't skip past any whitespace
-int check_for_string_raw(const char *pstr)
+bool check_for_string_raw(const char *pstr)
 {
-	if (!strnicmp(pstr, Mp, strlen(pstr)))
-		return 1;
-
-	return 0;
+	return (strnicmp(pstr, Mp, strlen(pstr)) == 0);
 }
 
 int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description, bool say_errors, bool print_list)
