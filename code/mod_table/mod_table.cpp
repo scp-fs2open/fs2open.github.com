@@ -172,6 +172,7 @@ bool Fix_asteroid_bounding_box_check;
 bool Disable_intro_movie;
 bool Show_locked_status_scramble_missions;
 bool Disable_expensive_turret_target_check;
+float Shield_percent_skips_damage;
 
 
 #ifdef WITH_DISCORD
@@ -1539,6 +1540,16 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Disable_expensive_turret_target_check);
 			}
 
+			if (optional_string("$Threshold at which shield skips damage:")) {
+				float threshold;
+				stuff_float(&threshold);
+				if ((threshold >= 0.0f) && (threshold <= 1.0f)) {
+					Shield_percent_skips_damage = threshold;
+				} else {
+					mprintf(("Game Settings Table: '$Threshold at which shield skips damage' value of %.2f is not between 0 and 1. Using default value of 0.10.\n", threshold));
+				}
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1775,6 +1786,7 @@ void mod_table_reset()
 	Disable_intro_movie = false;
 	Show_locked_status_scramble_missions = false;
 	Disable_expensive_turret_target_check = false;
+	Shield_percent_skips_damage = 0.1f;
 }
 
 void mod_table_set_version_flags()

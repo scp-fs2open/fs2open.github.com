@@ -178,7 +178,7 @@ void shield_apply_healing(object* objp, float healing)
 	}
 
 	// if the shields are approximately equal give to all quads equally
-	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
+	if (max_shield - min_shield < shield_get_max_strength(objp) * Shield_percent_skips_damage) {
 		for (int i = 0; i < n_quadrants; i++)
 			shield_add_quad(objp, i, healing / n_quadrants);
 	} else { // else give to weakest

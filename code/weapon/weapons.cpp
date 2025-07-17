@@ -7373,7 +7373,7 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 		}
 
 		// play a shield hit if shields are above 10% max in this quadrant
-		if ( shield_str > 0.1f ) {
+		if ( shield_str > Shield_percent_skips_damage ) {
 			// Play a shield impact sound effect
 			if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) {
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );

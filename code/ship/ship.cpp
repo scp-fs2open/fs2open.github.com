@@ -20715,7 +20715,7 @@ void ArmorType::ParseData()
 			no_content = false;
 		}
 
-		adt.piercing_start_pct = 0.1f;
+		adt.piercing_start_pct = Shield_percent_skips_damage;
 		adt.piercing_type = -1;
 
 		if(optional_string("+Weapon Piercing Effect Start Limit:")) {
