@@ -8,6 +8,7 @@
 #include "cockpit_display.h"
 #include "species.h"
 #include "shiptype.h"
+#include "team_colors.h"
 #include "vecmath.h"
 #include "ship/ship.h"
 #include "playerman/player.h"
@@ -1113,7 +1114,7 @@ ADE_FUNC(isInTechroom, l_Shipclass, NULL, "Gets whether or not the ship class is
 ADE_FUNC(renderTechModel,
 	l_Shipclass,
 	"number X1, number Y1, number X2, number Y2, [number RotationPercent =0, number PitchPercent =0, number "
-	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, string TeamColor=nil]",
+	"BankPercent=40, number Zoom=1.3, boolean Lighting=true, teamcolor TeamColor=nil]",
 	"Draws ship model as if in techroom. True for regular lighting, false for flat lighting.",
 	"boolean",
 	"Whether ship was rendered")
@@ -1123,8 +1124,8 @@ ADE_FUNC(renderTechModel,
 	int idx;
 	float zoom = 1.3f;
 	bool lighting = true;
-	const char* team_color = nullptr;
-	if(!ade_get_args(L, "oiiii|ffffbs", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, &team_color))
+	int tc_idx = -1;
+	if(!ade_get_args(L, "oiiii|ffffbo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2, &rot_angles.h, &rot_angles.p, &rot_angles.b, &zoom, &lighting, l_TeamColor.Get(&tc_idx)))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1132,6 +1133,8 @@ ADE_FUNC(renderTechModel,
 
 	if(x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
+
+	ship_info* sip = &Ship_info[idx];
 
 	CLAMP(rot_angles.p, 0.0f, 100.0f);
 	CLAMP(rot_angles.b, 0.0f, 100.0f);
@@ -1147,20 +1150,26 @@ ADE_FUNC(renderTechModel,
 	rot_angles.h = (rot_angles.h*0.01f) * PI2;
 	vm_rotate_matrix_by_angles(&orient, &rot_angles);
 
-	SCP_string tcolor = team_color ? team_color : "";
+	SCP_string tcolor = sip->default_team_name;
+	if (SCP_vector_inbounds(Team_Names, tc_idx)) {
+		const auto& it = Team_Colors.find(Team_Names[tc_idx]);
+		if (it != Team_Colors.end()) {
+			tcolor = Team_Names[tc_idx];
+		}
+	}
 
 	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, lighting, idx, &orient, tcolor));
 }
 
 // Nuke's alternate tech model rendering function
-ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, string TeamColor=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
+ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number Y2, [orientation Orientation=nil, number Zoom=1.3, teamcolor TeamColor=nil]", "Draws ship model as if in techroom", "boolean", "Whether ship was rendered")
 {
 	int x1,y1,x2,y2;
 	int idx;
 	float zoom = 1.3f;
 	matrix_h *mh = nullptr;
-	const char* team_color = nullptr;
-	if(!ade_get_args(L, "oiiiio|fs", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, &team_color))
+	int tc_idx = -1;
+	if(!ade_get_args(L, "oiiiio|fo", l_Shipclass.Get(&idx), &x1, &y1, &x2, &y2,  l_Matrix.GetPtr(&mh), &zoom, l_TeamColor.Get(&tc_idx)))
 		return ade_set_error(L, "b", false);
 
 	if(idx < 0 || idx >= ship_info_size())
@@ -1169,17 +1178,25 @@ ADE_FUNC(renderTechModel2, l_Shipclass, "number X1, number Y1, number X2, number
 	if(x2 < x1 || y2 < y1)
 		return ade_set_args(L, "b", false);
 
+	ship_info* sip = &Ship_info[idx];
+
 	//Handle angles
 	matrix *orient = mh->GetMatrix();
 
-	SCP_string tcolor = team_color ? team_color : "";
+	SCP_string tcolor = sip->default_team_name;
+	if (SCP_vector_inbounds(Team_Names, tc_idx)) {
+		const auto& it = Team_Colors.find(Team_Names[tc_idx]);
+		if (it != Team_Colors.end()) {
+			tcolor = Team_Names[tc_idx];
+		}
+	}
 
 	return ade_set_args(L, "b", render_tech_model(TECH_SHIP, x1, y1, x2, y2, zoom, true, idx, orient, tcolor));
 }
 
 ADE_FUNC(renderSelectModel,
 	l_Shipclass,
-	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3, string TeamColor=nil]",
+	"boolean restart, number x, number y, [number width = 629, number height = 355, number currentEffectSetting = default, number zoom = 1.3, teamcolor TeamColor=nil]",
 	"Draws the 3D select ship model with the chosen effect at the specified coordinates. Restart should "
 	"be true on the first frame this is called and false on subsequent frames. Valid selection effects are 1 (fs1) or 2 (fs2), "
 	"defaults to the mod setting or the model's setting. Zoom is a multiplier to the model's closeup_zoom value.",
@@ -1194,8 +1211,8 @@ ADE_FUNC(renderSelectModel,
 	int y2 = 355;
 	int effect = -1;
 	float zoom = 1.3f;
-	const char* team_color = nullptr;
-	if (!ade_get_args(L, "obii|iiifs", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect, &zoom, &team_color))
+	int tc_idx = -1;
+	if (!ade_get_args(L, "obii|iiifo", l_Shipclass.Get(&idx), &restart, &x1, &y1, &x2, &y2, &effect, &zoom, l_TeamColor.Get(&tc_idx)))
 		return ADE_RETURN_NIL;
 
 	if (idx < 0 || idx >= ship_info_size())
@@ -1230,7 +1247,14 @@ ADE_FUNC(renderSelectModel,
 	model_render_params render_info;
 
 	if (sip->uses_team_colors) {
-		SCP_string tcolor = team_color ? team_color : sip->default_team_name;
+		SCP_string tcolor = sip->default_team_name;
+
+		if (SCP_vector_inbounds(Team_Names, tc_idx)) {
+			const auto& it = Team_Colors.find(Team_Names[tc_idx]);
+			if (it != Team_Colors.end()) {
+				tcolor = Team_Names[tc_idx];
+			}
+		}
 		render_info.set_team_color(tcolor, "none", 0, 0);
 	}
 
@@ -1260,7 +1284,7 @@ ADE_FUNC(renderOverheadModel,
 	"number x, number y, [number width = 467, number height = 362, number|table /* selectedSlot = -1 or empty table */, number selectedWeapon = -1, number hoverSlot = -1, "
 	"number bank1_x = 170, number bank1_y = 203, number bank2_x = 170, number bank2_y = 246, number bank3_x = 170, number bank3_y = 290, "
 	"number bank4_x = 552, number bank4_y = 203, number bank5_x = 552, number bank5_y = 246, number bank6_x = 552, number bank6_y = 290, "
-	"number bank7_x = 552, number bank7_y = 333, number style = 0, string TeamColor=nil]",
+	"number bank7_x = 552, number bank7_y = 333, number style = 0, teamcolor TeamColor=nil]",
 	"Draws the 3D overhead ship model with the lines pointing from bank weapon selections to bank firepoints. SelectedSlot refers to loadout "
 	"ship slots 1-12 where wing 1 is 1-4, wing 2 is 5-8, and wing 3 is 9-12. SelectedWeapon is the index into weapon classes. HoverSlot refers "
 	"to the bank slots 1-7 where 1-3 are primaries and 4-6 are secondaries. Lines will be drawn from any bank containing the SelectedWeapon to "
@@ -1301,12 +1325,12 @@ ADE_FUNC(renderOverheadModel,
 
 	int weapon_list[MAX_SHIP_WEAPONS] = {-1, -1, -1, -1, -1, -1, -1};
 
-	const char* team_color = nullptr;
+	int tc_idx = -1;
 
 	if (lua_isnumber(L, 6)) {
 
 		if (!ade_get_args(L,
-				"oii|iiiiiiiiiiiiiiiiiiiis",
+				"oii|iiiiiiiiiiiiiiiiiiiio",
 				l_Shipclass.Get(&idx),
 				&x1,
 				&y1,
@@ -1330,7 +1354,7 @@ ADE_FUNC(renderOverheadModel,
 				&bank7_x,
 				&bank7_y,
 				&style,
-			    &team_color))
+				l_TeamColor.Get(&tc_idx)))
 			return ADE_RETURN_NIL;
 
 		// Convert this from the Lua index
@@ -1344,7 +1368,7 @@ ADE_FUNC(renderOverheadModel,
 		}
 	} else {
 		if (!ade_get_args(L,
-				"oii|iitiiiiiiiiiiiiiiiiis",
+				"oii|iitiiiiiiiiiiiiiiiiio",
 				l_Shipclass.Get(&idx),
 				&x1,
 				&y1,
@@ -1368,7 +1392,7 @@ ADE_FUNC(renderOverheadModel,
 				&bank7_x,
 				&bank7_y,
 				&style,
-				&team_color))
+				l_TeamColor.Get(&tc_idx)))
 			return ADE_RETURN_NIL;
 
 		int count = 0;
@@ -1415,7 +1439,13 @@ ADE_FUNC(renderOverheadModel,
 
 	ship_info* sip = &Ship_info[idx];
 
-	SCP_string tcolor = team_color ? team_color : sip->default_team_name;
+	SCP_string tcolor = sip->default_team_name;
+	if (SCP_vector_inbounds(Team_Names, tc_idx)) {
+		const auto& it = Team_Colors.find(Team_Names[tc_idx]);
+		if (it != Team_Colors.end()) {
+			tcolor = Team_Names[tc_idx];
+		}
+	}
 
 	int modelNum = model_load(sip->pof_file, sip);
 	model_page_in_textures(modelNum, idx);
