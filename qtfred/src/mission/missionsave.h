@@ -517,6 +517,16 @@ class CFred_mission_save {
 	int save_wings();
 
 	/**
+	 * @brief Saves the prop entries to file
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 */
+	int save_props();
+
+	/**
 	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while handling newlines properly
 	 */
 	void fout_raw_comment(const char *comment_start);

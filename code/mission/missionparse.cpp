@@ -64,6 +64,7 @@
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
 #include "parse/sexp_container.h"
+#include "prop/prop.h"
 #include "scripting/global_hooks.h"
 #include "scripting/hook_api.h"
 #include "scripting/hook_conditions.h"
@@ -139,6 +140,9 @@ p_object Ship_arrival_list;	// for linked list of ships to arrive later
 
 // all the ships that we parse
 SCP_vector<p_object> Parse_objects;
+
+// all the props that we parse
+SCP_vector<parsed_prop> Parse_props;
 
 
 // list for arriving support ship
@@ -400,6 +404,16 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
 };
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
+
+flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[] = {
+    { "no_collide",						Mission::Parse_Object_Flags::OF_No_collide,				true, false },
+};
+
+parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[] = {
+    { Mission::Parse_Object_Flags::OF_No_collide,					"Prop cannot be collided with."},
+};
+
+const size_t Num_parse_prop_flags = sizeof(Parse_prop_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
@@ -4934,14 +4948,57 @@ void parse_wing(mission *pm)
 	// Goober5000 - wing creation stuff moved to post_process_ships_wings
 }
 
+void parse_prop(mission* /*pm*/)
+{
+	parsed_prop p;
+	required_string("$Name:");
+	stuff_string(p.name, F_NAME, NAME_LENGTH);
+
+	// Maybe do this by name instead?
+	required_string("$Class:");
+	stuff_int(&p.prop_info_index);
+
+	required_string("$Location:");
+	stuff_vec3d(&p.position);
+
+	required_string("$Orientation:");
+	stuff_matrix(&p.orientation);
+
+	// set flags
+	if (optional_string("+Flags:")) {
+		SCP_vector<SCP_string> unparsed;
+		parse_string_flag_list(p.flags, Parse_prop_flags, Num_parse_prop_flags, &unparsed);
+		if (!unparsed.empty()) {
+			for (const auto& f : unparsed) {
+				WarningEx(LOCATION, "Unknown flag in parse prop flags: %s", f.c_str());
+			}
+		}
+	}
+
+	Parse_props.emplace_back(p);
+}
+
 void parse_wings(mission* pm)
 {
 	required_string("#Wings");
-	while (required_string_either("#Events", "$Name:"))
-	{
+	while (true) {
+		int which = required_string_one_of(3, "#Events", "#Props", "$Name:");
+
+		if (which == -1 || which == 0 || which == 1) // #Events or #Props
+			break;
+
 		Assert(Num_wings < MAX_WINGS);
 		parse_wing(pm);
 		Num_wings++;
+	}
+}
+
+void parse_props(mission* pm)
+{
+	if (optional_string("#Props")) {
+		while (required_string_either("#Events", "$Name:")) {
+			parse_prop(pm);
+		}
 	}
 }
 
@@ -5020,6 +5077,22 @@ void post_process_path_stuff()
 
 		resolve_path_masks(wingp->arrival_anchor, &wingp->arrival_path_mask);
 		resolve_path_masks(wingp->departure_anchor, &wingp->departure_path_mask);
+	}
+}
+
+// MjnMixael
+void post_process_mission_props()
+{
+	for (auto& propp : Parse_props) {
+		int objnum = prop_create(&propp.orientation, &propp.position, propp.prop_info_index, propp.name);
+
+		if (objnum >= 0) {
+			auto& obj = Objects[objnum];
+
+			if (propp.flags[Mission::Parse_Object_Flags::OF_No_collide]) {
+				obj.flags.remove(Object::Object_Flags::Collides);
+			}
+		}
 	}
 }
 
@@ -5146,7 +5219,6 @@ void post_process_ships_wings()
 		// create as usual
 		mission_parse_maybe_create_parse_object(&p_obj);
 	}
-
 
 	// ----------------- at this point the ships have been created -----------------
 	// Now set up the wings.  This must be done after both dock stuff and ship stuff.
@@ -6298,6 +6370,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_player_info(pm);
 	parse_objects(pm, flags);
 	parse_wings(pm);
+	parse_props(pm);
 	parse_events(pm);
 	parse_goals(pm);
 	parse_waypoints_and_jumpnodes(pm);
@@ -6382,6 +6455,8 @@ bool post_process_mission(mission *pm)
 	int			indices[MAX_SHIPS], objnum;
 	ship_weapon	*swp;
 	ship_obj *so;
+
+	post_process_mission_props();
 
 	// Goober5000 - this must be done even before post_process_ships_wings because it is a prerequisite
 	ship_clear_ship_type_counts();
@@ -6839,6 +6914,7 @@ void mission_init(mission *pm)
 
 	jumpnode_level_close();
 	waypoint_level_close();
+	props_level_close();
 
 	red_alert_invalidate_timestamp();
 	event_music_reset_choices();
@@ -6869,6 +6945,8 @@ void mission_init(mission *pm)
 		Wings[i].clear();
 	
 	Num_reinforcements = 0;
+
+	Parse_props.clear();
 
 	Asteroid_field.num_initial_asteroids = 0;
 
