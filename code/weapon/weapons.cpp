@@ -7328,8 +7328,6 @@ void weapon_play_impact_sound(const weapon_info *wip, const vec3d *hitpos, bool 
  */
 void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant)
 {
-	float shield_str;
-
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
 	if	( wip->subtype != WP_MISSILE ) {		
 		if ( !hit_obj ) {
@@ -7366,14 +7364,16 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 
 	if ( timestamp_elapsed(Weapon_impact_timer) ) {
 
+		float shield_percent;
+
 		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, quadrant);
+			shield_percent = ship_quadrant_shield_strength(hit_obj, quadrant);
 		} else {
-			shield_str = 0.0f;
+			shield_percent = 0.0f;
 		}
 
-		// play a shield hit if shields are above 10% max in this quadrant
-		if ( shield_str > Shield_percent_skips_damage ) {
+		// play a shield hit if shields are above X% max in this quadrant
+		if ( shield_percent > Shield_percent_skips_damage ) {
 			// Play a shield impact sound effect
 			if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) {
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
