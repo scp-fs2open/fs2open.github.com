@@ -49,7 +49,7 @@ void hud_config_save_player_prefs(const char* callsign)
 		if (HUD_config.is_gauge_shown_in_config(gauge_id)) {
 			clr = pair.second;
 		} else {
-			clr = HUD_config.get_gauge_color(gauge_id, false);
+			clr = HUD_config.get_gauge_color(gauge_id);
 			HUD_config.set_gauge_color(gauge_id, clr);
 		}
 
