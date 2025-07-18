@@ -145,7 +145,11 @@ void vm_vec_sub2(vec3d *dest, const vec3d *src);
 //averages n vectors
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[]);
 
+//Calculates the componentwise minimum of the two vectors
+void vm_vec_min(vec3d* dest, const vec3d* src0, const vec3d* src1);
 
+//Calculates the componentwise maximum of the two vectors
+void vm_vec_max(vec3d* dest, const vec3d* src0, const vec3d* src1);
 //averages two vectors. returns ptr to dest
 //dest can equal either source
 vec3d *vm_vec_avg(vec3d *dest, const vec3d *src0, const vec3d *src1);
