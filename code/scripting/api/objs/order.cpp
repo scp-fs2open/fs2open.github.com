@@ -174,6 +174,9 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 		case AI_GOAL_CHASE_SHIP_CLASS:
 			eh_idx = LE_ORDER_ATTACK_SHIP_CLASS;
 			break;
+		case AI_GOAL_CHASE_SHIP_TYPE:
+			eh_idx = LE_ORDER_ATTACK_SHIP_TYPE;
+			break;
 		case AI_GOAL_LUA:
 			eh_idx = LE_ORDER_LUA;
 			break;
@@ -275,6 +278,33 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 					}
 					break;
 
+				case AI_GOAL_CHASE_SHIP_TYPE:
+				{
+					if (newh->objp()->type == OBJ_SHIP) {
+						int info_idx = Ships[newh->objp()->instance].ship_info_index;
+						int type_index = Ship_info[info_idx].class_type;
+
+						const char* type_name;
+
+						if (type_index < 0) {
+							type_name = "<none>";
+						} else {
+							type_name = Ship_types[type_index].name;
+						}
+
+						if (stricmp(type_name, ohp->aigp->target_name) != 0) {
+							ohp->aigp->target_name = ai_get_goal_target_name(type_name, &ohp->aigp->target_name_index);
+							ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
+
+							if (ohp->odx == 0) {
+								aip->ok_to_target_timestamp = timestamp(0);
+								set_target_objnum(aip, newh->objnum);
+							}
+						}
+					}
+				}
+				break;
+
 				case AI_GOAL_WAYPOINTS:
 				case AI_GOAL_WAYPOINTS_ONCE:
 					if (newh->objp()->type == OBJ_WAYPOINT) {
@@ -343,7 +373,8 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			break;
 
 		case AI_GOAL_CHASE_SHIP_CLASS:
-			// a ship class isn't an in-mission object
+		case AI_GOAL_CHASE_SHIP_TYPE:
+			// a ship class/type isn't an in-mission object
 			return ade_set_args(L, "o", l_Object.Set(object_h()));
 
 		case AI_GOAL_WAYPOINTS:
