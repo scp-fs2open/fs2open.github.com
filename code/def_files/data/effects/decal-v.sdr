@@ -37,6 +37,6 @@ void main() {
     modelMatrix[2][3] = 0.0;
 
     invModelMatrix = inverse(modelMatrix);
-    decalDirection = mat3(viewMatrix) * vec3(modelMatrix[2][0], modelMatrix[2][1], modelMatrix[2][2]);
+    decalDirection = mat3(viewMatrix) * modelMatrix[2].xyz;
 	gl_Position = projMatrix * viewMatrix * modelMatrix * vertPosition;
 }
