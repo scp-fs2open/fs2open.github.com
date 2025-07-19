@@ -1547,7 +1547,7 @@ void parse_mod_table(const char *filename)
 					Shield_percent_skips_damage = threshold;
 				} else {
 					mprintf(("Game Settings Table: '$Threshold below which shield skips damage' value of %.2f is not between 0 and 1. Using default value of 0.10.\n", threshold));
-					Shield_percent_skips_damage = 0.01f;
+					Shield_percent_skips_damage = 0.1f;
 				}
 			}
 
