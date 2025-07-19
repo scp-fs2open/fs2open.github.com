@@ -17266,40 +17266,6 @@ const char *ship_subsys_get_canonical_name(const ship_subsys *ss)
 	return ss->system_info->subobj_name;
 }
 
-/**
- * Return the shield strength of the specified quadrant on hit_objp
- *
- * @param hit_objp object pointer to ship getting hit
- * @param quadrant_num shield quadrant that was hit
- * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
- */
-float ship_quadrant_shield_percent(const object* hit_objp, int quadrant_num)
-{
-	float			max_quadrant;
-
-	// If ship doesn't have shield mesh, then return
-	if ( hit_objp->flags[Object::Object_Flags::No_shields] ) {
-		return 0.0f;
-	}
-
-	// If shields weren't hit, return 0
-	if ( quadrant_num < 0 )
-		return 0.0f;
-
-	max_quadrant = shield_get_max_quad(hit_objp);
-	if ( max_quadrant <= 0 ) {
-		return 0.0f;
-	}
-
-	Assertion(quadrant_num < static_cast<int>(hit_objp->shield_quadrant.size()), "ship_quadrant_shield_percent() called with a quadrant of %d on a ship with " SIZE_T_ARG " quadrants; get a coder!\n", quadrant_num, hit_objp->shield_quadrant.size());
-
-	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
-				Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
-
-	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
-}
-
 // Determine if a ship is threatened by any dumbfire projectiles (laser or missile)
 // input:	sp	=>	pointer to ship that might be threatened
 // exit:		0 =>	no dumbfire threats

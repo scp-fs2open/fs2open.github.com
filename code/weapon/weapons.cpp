@@ -38,6 +38,7 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
@@ -7367,7 +7368,7 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 		float shield_percent;
 
 		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
-			shield_percent = ship_quadrant_shield_percent(hit_obj, quadrant);
+			shield_percent = shield_get_quad_percent(hit_obj, quadrant);
 		} else {
 			shield_percent = 0.0f;
 		}

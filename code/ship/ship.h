@@ -1868,8 +1868,6 @@ extern int Show_shield_mesh;
 extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should occur
 #endif
 
-float ship_quadrant_shield_percent(const object* hit_objp, int quadrant_num);
-
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);
 

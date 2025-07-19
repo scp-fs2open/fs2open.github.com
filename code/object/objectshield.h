@@ -76,6 +76,15 @@ void shield_add_strength(object *objp, float delta);
 float shield_get_quad(const object *objp, int quadrant_num);
 
 /**
+ * Return the shield strength of the specified quadrant on hit_objp
+ *
+ * @param hit_objp object pointer to ship getting hit
+ * @param quadrant_num shield quadrant that was hit
+ * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
+ */
+float shield_get_quad_percent(const object* objp, int quadrant_num);
+
+/**
  * @brief Sets the strength (in HP) of a shield quadrant/sector
  *
  * @param[in] quadrant_num Index of the quadrant/sector to set.
