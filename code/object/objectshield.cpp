@@ -178,7 +178,7 @@ void shield_apply_healing(object* objp, float healing)
 	}
 
 	// if the shields are approximately equal give to all quads equally
-	if (max_shield - min_shield < shield_get_max_strength(objp) * 0.1f) {
+	if (max_shield - min_shield < shield_get_max_strength(objp) * Shield_percent_skips_damage) {
 		for (int i = 0; i < n_quadrants; i++)
 			shield_add_quad(objp, i, healing / n_quadrants);
 	} else { // else give to weakest
@@ -351,6 +351,16 @@ float shield_get_quad(const object *objp, int quadrant_num)
 	*/
 
 	return objp->shield_quadrant[quadrant_num];
+}
+
+float shield_get_quad_percent(const object* objp, int quadrant_num) 
+{
+	float max_quad = shield_get_max_quad(objp);
+	if (max_quad > 0.0f) {
+		return shield_get_quad(objp, quadrant_num) / max_quad;
+	} else {
+		return 0.0f;
+	}
 }
 
 float shield_get_strength(const object *objp)
