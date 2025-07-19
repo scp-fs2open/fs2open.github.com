@@ -356,7 +356,7 @@ float shield_get_quad(const object *objp, int quadrant_num)
 float shield_get_quad_percent(const object* objp, int quadrant_num) 
 {
 	float max_quad = shield_get_max_quad(objp);
-	if (max_quad > 0) {
+	if (max_quad > 0.0f) {
 		return shield_get_quad(objp, quadrant_num) / max_quad;
 	} else {
 		return 0.0f;
