@@ -7367,7 +7367,7 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 		float shield_percent;
 
 		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
-			shield_percent = ship_quadrant_shield_strength(hit_obj, quadrant);
+			shield_percent = ship_quadrant_shield_percent(hit_obj, quadrant);
 		} else {
 			shield_percent = 0.0f;
 		}

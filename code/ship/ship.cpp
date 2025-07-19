@@ -17273,7 +17273,7 @@ const char *ship_subsys_get_canonical_name(const ship_subsys *ss)
  * @param quadrant_num shield quadrant that was hit
  * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
  */
-float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num)
+float ship_quadrant_shield_percent(const object* hit_objp, int quadrant_num)
 {
 	float			max_quadrant;
 
@@ -17291,7 +17291,7 @@ float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num)
 		return 0.0f;
 	}
 
-	Assertion(quadrant_num < static_cast<int>(hit_objp->shield_quadrant.size()), "ship_quadrant_shield_strength() called with a quadrant of %d on a ship with " SIZE_T_ARG " quadrants; get a coder!\n", quadrant_num, hit_objp->shield_quadrant.size());
+	Assertion(quadrant_num < static_cast<int>(hit_objp->shield_quadrant.size()), "ship_quadrant_shield_percent() called with a quadrant of %d on a ship with " SIZE_T_ARG " quadrants; get a coder!\n", quadrant_num, hit_objp->shield_quadrant.size());
 
 	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
 		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
