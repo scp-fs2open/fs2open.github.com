@@ -1540,13 +1540,14 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Disable_expensive_turret_target_check);
 			}
 
-			if (optional_string("$Threshold at which shield skips damage:")) {
+			if (optional_string("$Threshold below which shield skips damage:")) {
 				float threshold;
 				stuff_float(&threshold);
 				if ((threshold >= 0.0f) && (threshold <= 1.0f)) {
 					Shield_percent_skips_damage = threshold;
 				} else {
-					mprintf(("Game Settings Table: '$Threshold at which shield skips damage' value of %.2f is not between 0 and 1. Using default value of 0.10.\n", threshold));
+					mprintf(("Game Settings Table: '$Threshold below which shield skips damage' value of %.2f is not between 0 and 1. Using default value of 0.10.\n", threshold));
+					Shield_percent_skips_damage = 0.01f;
 				}
 			}
 
