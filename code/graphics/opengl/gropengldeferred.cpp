@@ -224,7 +224,7 @@ void gr_opengl_deferred_lighting_finish()
 	// GL_state.DepthFunc(GL_GREATER);
 	// GL_state.DepthMask(GL_FALSE);
 
-	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, 0));
+	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
 
 	// Render on top of the composite buffer texture
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
@@ -246,6 +246,16 @@ void gr_opengl_deferred_lighting_finish()
 	GL_state.Texture.Enable(3, GL_TEXTURE_2D, Scene_specular_texture);
 	if (Shadow_quality != ShadowQuality::Disabled) {
 		GL_state.Texture.Enable(4, GL_TEXTURE_2D_ARRAY, Shadow_map_texture);
+	}
+
+	if (ENVMAP > 0) {
+		Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 5);
+		Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 6);
+		float u_scale, v_scale;
+		uint32_t array_index;
+		gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 5);
+		gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 6);
+		Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 	}
 
 	// We need to use stable sorting here to make sure that the relative ordering of the same light types is the same as
@@ -408,7 +418,8 @@ void gr_opengl_deferred_lighting_finish()
 	{
 		for (size_t i = 0; i<full_frame_lights.size(); i++) {
 			// just keeping things aligned really.
-			matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
+			matrix_data->modelViewMatrix = gr_env_texture_matrix;
 		}
 		for (auto& l : sphere_lights) {
 			auto matrix_data = matrix_uniform_aligner.addTypedElement<graphics::matrix_uniforms>();
