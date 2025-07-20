@@ -329,11 +329,11 @@ void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
     destination.set(flag, temp);
 }
 
-extern int check_for_string(const char *pstr);
-extern int check_for_string_raw(const char *pstr);
-extern int check_for_eof();
-extern int check_for_eof_raw();
-extern int check_for_eoln();
+extern bool check_for_string(const char *pstr);
+extern bool check_for_string_raw(const char *pstr);
+extern bool check_for_eof();
+extern bool check_for_eof_raw();
+extern bool check_for_eoln();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, size_t size);

@@ -204,8 +204,13 @@ void parse_nebula_table(const char* filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		// allow modular tables to not define bitmaps
+		bool skip_background_bitmaps = false;
+		if (Parsing_modular_table && (check_for_string("+Poof:") || check_for_string("$Name:")))
+			skip_background_bitmaps = true;
+
 		// background bitmaps
-		while (!optional_string("#end")) {
+		while (!skip_background_bitmaps && !optional_string("#end")) {
 			// nebula
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
@@ -222,7 +227,7 @@ void parse_nebula_table(const char* filename)
 		if (Parsing_modular_table && check_for_eof())
 			return;
 
-		// poofs
+		// poofs (see also check_for_string above)
 		while (required_string_one_of(3, "#end", "+Poof:", "$Name:")) {
 			bool create_if_not_found = true;
 			poof_info pooft;

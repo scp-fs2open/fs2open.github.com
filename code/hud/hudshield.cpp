@@ -390,7 +390,7 @@ void hud_shield_show_mini(const object *objp, int x_force, int y_force, int x_hu
 		else
 			num = i;
 
-		if (objp->shield_quadrant[num] < 0.1f ) {
+		if ( (max_shield > 0.0f) && (objp->shield_quadrant[num]/max_shield < Shield_percent_skips_damage) ) {
 			continue;
 		}
 
@@ -738,12 +738,12 @@ void HudGaugeShield::showShields(const object *objp, ShieldGaugeType mode, bool 
 			break;
 		}
 
-		if (!config) {
+		if ( (!config) && (max_shield > 0.0f) ) {
 			if (!(sip->flags[Ship::Info_Flags::Model_point_shields])) {
-				if (objp->shield_quadrant[Quadrant_xlate[i]] < 0.1f)
+				if (objp->shield_quadrant[Quadrant_xlate[i]]/max_shield < Shield_percent_skips_damage)
 					continue;
 			} else {
-				if (objp->shield_quadrant[i] < 0.1f)
+				if (objp->shield_quadrant[i]/max_shield < Shield_percent_skips_damage)
 					continue;
 			}
 		}
@@ -1085,7 +1085,7 @@ void HudGaugeShieldMini::showMiniShields(const object *objp, bool config)
 		else
 			num = i;
 
-		if (!config && objp->shield_quadrant[num] < 0.1f ) {
+		if ( (!config) && (max_shield > 0.0f) && (objp->shield_quadrant[num]/max_shield < Shield_percent_skips_damage) ) {
 			continue;
 		}
 
