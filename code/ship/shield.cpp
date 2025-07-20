@@ -908,7 +908,7 @@ void create_shield_explosion_all(object *objp)
  *
  * @return If all_quadrants is true, looks at entire shield, otherwise just one quadrant
  */
-float ship_shield_hitpoint_threshold(const object* obj, bool all_quadrants = false) 
+float ship_shield_hitpoint_threshold(const object* obj, bool all_quadrants) 
 {
 	if (all_quadrants) {
 		// All quadrants
