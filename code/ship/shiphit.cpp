@@ -3028,7 +3028,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 			ship_do_healing(ship_objp, other_obj, &world_hitpos, damage, -1, damage_type_idx);
 		else
 			// Do damage on local point		
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx, false, 1.f, nullptr, nullptr);
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, shield_quad, -1 , damage_type_idx);
 	} else {
 		// Since an force_center wasn't specified, this is probably just a debug key
 		// to kill an object.   So pick a shield quadrant and a point on the
@@ -3037,7 +3037,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 
 		int n_quadrants = static_cast<int>(ship_objp->shield_quadrant.size());
 		for (int i=0; i<n_quadrants; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx, false, 1.f, nullptr, nullptr);
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx);
 		}
 	}
 
@@ -3068,7 +3068,7 @@ void ship_apply_wash_damage(object *ship_objp, object *other_obj, float damage)
 
 	// Do damage to hull and not to shields
 	global_damage = true;
-	ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, -1, -1, -1, true, 1.f, nullptr, nullptr);
+	ship_do_damage(ship_objp, other_obj, &world_hitpos, damage, -1, -1, -1, true);
 
 	// AL 3-30-98: Show flashing blast icon if player ship has taken blast damage
 	if ( ship_objp == Player_obj ) {
