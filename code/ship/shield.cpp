@@ -934,7 +934,6 @@ bool ship_is_shield_up(const object *obj, int quadrant)
 		// Check all quadrants
 		return ( shield_get_strength(obj) > ship_shield_hitpoint_threshold(obj, true) );
 	}
-	return false;	// no shield strength
 }
 
 //	return quadrant containing hit_pnt.
