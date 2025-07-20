@@ -2426,7 +2426,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				0.0f,
 				// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
 				MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
-				shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp)),
+				shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 			};
 		} else {
 			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
@@ -2459,7 +2459,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			0.0f,
 			// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
 			MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
-			shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp)),
+			shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 		};
 
 		if ( damage > 0.0f ) {
@@ -2879,7 +2879,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 						0.0f,
 						// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
 						MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
-						shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp)),
+						shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 					};
 				} else {
 					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
