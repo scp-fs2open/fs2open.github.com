@@ -2875,7 +2875,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
 					}
 
-					ins.position = avg_total / num_faces + offset;
+					ins.position = avg_total / static_cast<float>(num_faces) + offset;
 					vec3d bb = max - min;
 					ins.diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
 					vm_vector_2_matrix(&ins.orientation, &avg_normal, &vmd_z_vector);
