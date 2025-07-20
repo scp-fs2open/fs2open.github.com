@@ -81,7 +81,6 @@ struct model_uniform_data {
 	matrix4 textureMatrix;
 	matrix4 shadow_mv_matrix;
 	matrix4 shadow_proj_matrix[4];
-	matrix4 envMatrix;
 
 	vec4 color;
 
