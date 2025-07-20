@@ -912,7 +912,7 @@ float ship_shield_hitpoint_threshold(const object* obj, bool all_quadrants)
 {
 	if (all_quadrants) {
 		// All quadrants
-		float num_quads = static_cast<float>(obj->shield_quadrant.size());
+		auto num_quads = static_cast<float>(obj->shield_quadrant.size());
 		return MAX(2.0f * num_quads, Shield_percent_skips_damage * shield_get_max_strength(obj));
 	} else {
 		// Just one quadrant
