@@ -2784,7 +2784,7 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 
 	float shield_health;
 	if (quadrant >= 0) {
-		shield_health = MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)));
+		shield_health = MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp)));
 	} else {
 		//if we haven't hit a shield, assume the shield is fully depleted, because we have no way of knowing what the relevant quadrant would be
 		shield_health = 0.f;
@@ -2797,7 +2797,7 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 			HitType::SHIELD,
 			0.0f,
 			shield_health,
-			shield_get_max_quad(ship_objp) - MAX(2.0f, 0.1f * shield_get_max_quad(ship_objp)),
+			shield_get_max_quad(ship_objp) - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp)),
 		};
 
 		float shield_healing = healing * wip->shield_factor;
