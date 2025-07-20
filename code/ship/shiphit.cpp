@@ -2437,7 +2437,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				shipp->ship_max_hull_strength,
 			};
 		}
-		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		if (!global_damage) {
+			maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		}
 
 		shiphit_hit_after_death(ship_objp, (damage * difficulty_scale_factor));
 		return;
@@ -2681,7 +2683,9 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
-	maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+	if (!global_damage) {
+		maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+	}
 
 	// handle weapon and afterburner leeching here
 	if(other_obj_is_weapon || other_obj_is_beam) {		
@@ -3033,7 +3037,7 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 
 		int n_quadrants = static_cast<int>(ship_objp->shield_quadrant.size());
 		for (int i=0; i<n_quadrants; i++){
-			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx );
+			ship_do_damage(ship_objp, other_obj, &world_hitpos, damage/n_quadrants, i, -1, damage_type_idx);
 		}
 	}
 
