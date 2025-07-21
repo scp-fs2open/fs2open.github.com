@@ -82,17 +82,6 @@ void decal_draw_list::prepare_global_data() {
 	header->viewportSize.x = (float) gr_screen.max_w;
 	header->viewportSize.y = (float) gr_screen.max_h;
 
-	gr_get_ambient_light(&header->ambientLight);
-
-	// Square the ambient part of the light to match the formula used in the main model shader
-	header->ambientLight.xyz.x *= header->ambientLight.xyz.x;
-	header->ambientLight.xyz.y *= header->ambientLight.xyz.y;
-	header->ambientLight.xyz.z *= header->ambientLight.xyz.z;
-
-	header->ambientLight.xyz.x += gr_light_emission[0];
-	header->ambientLight.xyz.y += gr_light_emission[1];
-	header->ambientLight.xyz.z += gr_light_emission[2];
-
 	for (auto& [batch_info, draw_info] : _draws) {
 		auto info = aligner.addTypedElement<graphics::decal_info>();
 		info->diffuse_index = batch_info.diffuse < 0 ? -1 : bm_get_array_index(batch_info.diffuse);

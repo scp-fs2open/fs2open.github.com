@@ -344,6 +344,16 @@ void gr_get_ambient_light(vec3d* light_vector) {
 	light_vector->xyz.x = over.handle(abv.handle(gr_light_ambient[0]));
 	light_vector->xyz.y = over.handle(abv.handle(gr_light_ambient[1]));
 	light_vector->xyz.z = over.handle(abv.handle(gr_light_ambient[2]));
+
+	//AmbientFactor^2 due to legacy OpenGL behaviour
+	*light_vector *= *light_vector;
+
+	//For some reason, emissive is in here as well...
+	if (Cmdline_emissive) {
+		light_vector->xyz.x += gr_light_emission[0];
+		light_vector->xyz.y += gr_light_emission[1];
+		light_vector->xyz.z += gr_light_emission[2];
+	}
 }
 
 void gr_lighting_fill_uniforms(void* data_out, size_t buffer_size) {

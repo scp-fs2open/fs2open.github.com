@@ -50,6 +50,25 @@ class DecalDefinition {
 	bool isNormalLooping() const;
 };
 
+struct Decal {
+	//DecalDefinition idx vs immediate diffuse/glow/normal
+	std::variant<int, std::tuple<int, int, int>> definition_handle = -1;
+	object_h object;
+	int orig_obj_type = OBJ_NONE;
+	int submodel = -1;
+
+	float creation_time = -1.0f; //!< The mission time at which this decal was created
+	float lifetime = -1.0f; //!< The time this decal is active. When negative it never expires
+
+	vec3d position = vmd_zero_vector;
+	vec3d scale;
+	matrix orientation = vmd_identity_matrix;
+
+	Decal();
+
+	bool isValid() const;
+};
+
 extern SCP_vector<DecalDefinition> DecalDefinitions;
 extern bool Decal_system_active;
 extern bool Decal_option_active;
@@ -138,5 +157,7 @@ void addDecal(creation_info& info,
 			  int submodel,
 			  const vec3d& local_pos,
 			  const matrix& local_orient);
+
+void addSingleFrameDecal(Decal&& info);
 
 }

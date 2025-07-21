@@ -8185,8 +8185,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool renderShipModel = ( 
 		sip->flags[Ship::Info_Flags::Show_ship_model])
 		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL));
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
@@ -8320,6 +8319,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	uint64_t render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
+	render_flags |= MR_NO_INSIGNIA;
 
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;

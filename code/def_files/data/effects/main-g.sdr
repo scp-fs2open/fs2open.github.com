@@ -39,7 +39,6 @@ layout (std140) uniform modelData {
 	mat4 textureMatrix;
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[4];
-	mat4 envMatrix;
 
 	vec4 color;
 
@@ -103,10 +102,6 @@ layout (std140) uniform modelData {
 };
 
 in VertexOutput {
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-	vec3 envReflect;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-
 	mat3 tangentMatrix;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
@@ -131,10 +126,6 @@ in VertexOutput {
 } vertIn[];
 
 out VertexOutput {
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-	vec3 envReflect;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-
 	mat3 tangentMatrix;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
@@ -180,10 +171,6 @@ out VertexOutput {
 			vertOut.texCoord = vertIn[vert].texCoord;
 
 			gl_Layer = instanceID;
-
-			#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
-				vertOut.envReflect = vertIn[vert].envReflect;
-			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
 			#prereplace IF_FLAG MODEL_SDR_FLAG_NORMAL
 				vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
@@ -238,10 +225,6 @@ out VertexOutput {
 				vertOut.position = vertIn[vert].position;
 				vertOut.normal = vertIn[vert].normal;
 				vertOut.texCoord = vertIn[vert].texCoord;
-
-				#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
-                	vertOut.envReflect = vertIn[vert].envReflect;
-                #prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
                 #prereplace IF_FLAG MODEL_SDR_FLAG_NORMAL
                 	vertOut.tangentMatrix = vertIn[vert].tangentMatrix;
