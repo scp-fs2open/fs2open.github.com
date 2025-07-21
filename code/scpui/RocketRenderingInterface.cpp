@@ -335,7 +335,9 @@ int RocketRenderingInterface::getBitmapNum(Rocket::Core::TextureHandle handle)
 void RocketRenderingInterface::advanceAnimation(Rocket::Core::TextureHandle handle, float advanceTime)
 {
 	Assertion(handle != 0, "Invalid handle for setAnimationFrame");
-	Assertion(get_texture(handle)->is_animation, "Tried to use advanceAnimation with a non-animation!");
+	if (!get_texture(handle)->is_animation) {
+		return;
+	}
 
 	auto tex = get_texture(handle);
 
