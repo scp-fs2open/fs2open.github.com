@@ -55,6 +55,10 @@ volumetric_nebula& volumetric_nebula::parse_volumetric_nebula() {
 		stuff_int(&oversampling);
 	}
 
+	if (optional_string("+Smoothing:")) {
+		stuff_float(&smoothing);
+	}
+
 	//Lighting settings
 	if (optional_string("+Heyney Greenstein Coefficient:")) {
 		stuff_float(&henyeyGreensteinCoeff);
@@ -155,6 +159,10 @@ const std::tuple<float, float, float>& volumetric_nebula::getNebulaColor() const
 	return nebulaColor;
 }
 
+int volumetric_nebula::getVolumeBitmapSmoothingSteps() const {
+	return std::max(1, static_cast<int>(static_cast<float>(1 << (resolution + oversampling - 1)) * std::min(smoothing, 0.5f)));
+}
+
 bool volumetric_nebula::getEdgeSmoothing() const {
 	return Detail.nebula_detail == MAX_DETAIL_VALUE || doEdgeSmoothing; //Only for highest setting, or when the lab has an override.
 }
@@ -208,7 +216,7 @@ float volumetric_nebula::getGlobalLightDistanceFactor() const {
 }
 
 float volumetric_nebula::getGlobalLightStepsize() const {
-	return getOpacityDistance() * static_cast<float>(smoothing) / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
+	return getOpacityDistance() * static_cast<float>(getVolumeBitmapSmoothingSteps()) / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
 }
 
 bool volumetric_nebula::getNoiseActive() const {
@@ -355,9 +363,11 @@ void volumetric_nebula::renderVolumeBitmap() {
 	//Sample the nebula values from the binary cubegrid.
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
 	int oversamplingCount = (1 << (oversampling - 1));
-	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount * smoothing) * static_cast<float>(oversamplingCount * smoothing) * static_cast<float>(oversamplingCount * smoothing));
-	int smoothStart = smoothing / 2;
-	int smoothStop = (smoothing / 2 + (1 & ~smoothing)) + 1;
+
+	int smoothing_steps = getVolumeBitmapSmoothingSteps();
+	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount * smoothing_steps) * static_cast<float>(oversamplingCount * smoothing_steps) * static_cast<float>(oversamplingCount * smoothing_steps));
+	int smoothStart = smoothing_steps / 2;
+	int smoothStop = (smoothing_steps / 2 + (1 & ~smoothing_steps)) + 1;
 
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
