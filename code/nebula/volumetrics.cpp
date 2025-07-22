@@ -208,7 +208,7 @@ float volumetric_nebula::getGlobalLightDistanceFactor() const {
 }
 
 float volumetric_nebula::getGlobalLightStepsize() const {
-	return getOpacityDistance() / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
+	return getOpacityDistance() * static_cast<float>(smoothing) / static_cast<float>(getGlobalLightSteps()) * getGlobalLightDistanceFactor();
 }
 
 bool volumetric_nebula::getNoiseActive() const {
@@ -355,15 +355,19 @@ void volumetric_nebula::renderVolumeBitmap() {
 	//Sample the nebula values from the binary cubegrid.
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
 	int oversamplingCount = (1 << (oversampling - 1));
-	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount) * static_cast<float>(oversamplingCount) * static_cast<float>(oversamplingCount));
+	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount * smoothing) * static_cast<float>(oversamplingCount * smoothing) * static_cast<float>(oversamplingCount * smoothing));
+	int smoothStart = smoothing / 2;
+	int smoothStop = (smoothing / 2 + (1 & ~smoothing)) + 1;
+
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
 			for (int z = 0; z < n; z++) {
 				int sum = 0;
-				for (int sx = x * oversamplingCount; sx < (x + 1) * oversamplingCount; sx++) {
-					for (int sy = y * oversamplingCount; sy < (y + 1) * oversamplingCount; sy++) {
-						for (int sz = z * oversamplingCount; sz < (z + 1) * oversamplingCount; sz++) {
-							if (volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
+				for (int sx = (x - smoothStart) * oversamplingCount; sx < (x + smoothStop) * oversamplingCount; sx++) {
+					for (int sy = (y - smoothStart) * oversamplingCount; sy < (y + smoothStop) * oversamplingCount; sy++) {
+						for (int sz = (z - smoothStart) * oversamplingCount; sz < (z + smoothStop) * oversamplingCount; sz++) {
+							if (sx >= 0 && sx < nSample && sy >= 0 && sy < nSample && sz >= 0 && sz < nSample &&
+								volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
 								sum++;
 						}
 					}
