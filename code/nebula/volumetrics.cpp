@@ -365,17 +365,17 @@ void volumetric_nebula::renderVolumeBitmap() {
 	int oversamplingCount = (1 << (oversampling - 1));
 
 	int smoothing_steps = getVolumeBitmapSmoothingSteps();
-	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount * smoothing_steps) * static_cast<float>(oversamplingCount * smoothing_steps) * static_cast<float>(oversamplingCount * smoothing_steps));
+	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount + smoothing_steps) * static_cast<float>(oversamplingCount + smoothing_steps) * static_cast<float>(oversamplingCount + smoothing_steps));
 	int smoothStart = smoothing_steps / 2;
-	int smoothStop = (smoothing_steps / 2 + (1 & ~smoothing_steps)) + 1;
+	int smoothStop = (smoothing_steps / 2 + (1 & smoothing_steps));
 
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
 			for (int z = 0; z < n; z++) {
 				int sum = 0;
-				for (int sx = (x - smoothStart) * oversamplingCount; sx < (x + smoothStop) * oversamplingCount; sx++) {
-					for (int sy = (y - smoothStart) * oversamplingCount; sy < (y + smoothStop) * oversamplingCount; sy++) {
-						for (int sz = (z - smoothStart) * oversamplingCount; sz < (z + smoothStop) * oversamplingCount; sz++) {
+				for (int sx = x * oversamplingCount - smoothStart; sx < (x + 1) * oversamplingCount + smoothStop; sx++) {
+					for (int sy = y * oversamplingCount - smoothStart; sy < (y + 1) * oversamplingCount + smoothStop; sy++) {
+						for (int sz = z * oversamplingCount - smoothStart; sz < (z + 1) * oversamplingCount + smoothStop; sz++) {
 							if (sx >= 0 && sx < nSample && sy >= 0 && sy < nSample && sz >= 0 && sz < nSample &&
 								volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
 								sum++;
