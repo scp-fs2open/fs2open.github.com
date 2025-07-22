@@ -354,15 +354,15 @@ void volumetric_nebula::renderVolumeBitmap() {
 
 	//Sample the nebula values from the binary cubegrid.
 	volumeBitmapData = make_unique<ubyte[]>(n * n * n * 4);
-	int oversamplingCount = (1 << (oversampling - 1)) + 1;
-	float oversamplingDivisor = 255.1f / static_cast<float>(oversamplingCount);
+	int oversamplingCount = (1 << (oversampling - 1));
+	float oversamplingDivisor = 255.1f / (static_cast<float>(oversamplingCount) * static_cast<float>(oversamplingCount) * static_cast<float>(oversamplingCount));
 	for (int x = 0; x < n; x++) {
 		for (int y = 0; y < n; y++) {
 			for (int z = 0; z < n; z++) {
 				int sum = 0;
-				for (int sx = x * oversampling; sx <= (x + 1) * oversampling; sx++) {
-					for (int sy = y * oversampling; sy <= (y + 1) * oversampling; sy++) {
-						for (int sz = z * oversampling; sz <= (z + 1) * oversampling; sz++) {
+				for (int sx = x * oversamplingCount; sx < (x + 1) * oversamplingCount; sx++) {
+					for (int sy = y * oversamplingCount; sy < (y + 1) * oversamplingCount; sy++) {
+						for (int sz = z * oversamplingCount; sz < (z + 1) * oversamplingCount; sz++) {
 							if (volumeSampleCache[sx * nSample * nSample + sy * nSample + sz])
 								sum++;
 						}
