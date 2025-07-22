@@ -662,7 +662,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
+std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot, bool shield_hit)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
@@ -1003,7 +1003,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 				damage_to_apply *= ss_dif_scale;
 			}
 
-			if (j == 0) {
+			if (j == 0 && !shield_hit) {
 				subsys_impact = ConditionData {
 					ImpactCondition(subsystem->armor_type_idx),
 					HitType::SUBSYS,
@@ -2503,8 +2503,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	if ( (damage > 0.0f) )	{
 		bool apply_hull_armor = true;
 
+		bool shield_hit = quadrant >= 0;
+
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
-		auto damage_pair = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor, hit_dot);
+		auto damage_pair = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor, hit_dot, shield_hit);
 
 		damage = damage_pair.second;
 
@@ -2563,13 +2565,15 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
-				ImpactCondition(shipp->armor_type_idx),
-				HitType::HULL,
-				damage,
-				ship_objp->hull_strength,
-				shipp->ship_max_hull_strength,
-			};
+			if (!shield_hit) {
+				impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
+					ImpactCondition(shipp->armor_type_idx),
+					HitType::HULL,
+					damage,
+					ship_objp->hull_strength,
+					shipp->ship_max_hull_strength,
+				};
+			}
 
 			// multiplayer clients don't do damage
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
