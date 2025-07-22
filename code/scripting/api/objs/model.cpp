@@ -23,7 +23,7 @@ int model_h::GetID() const
 }
 bool model_h::isValid() const
 {
-	return (model_num >= 0) && (model_get(model_num) != nullptr);
+	return (model_num >= 0) && (model_get(model_num) != nullptr);	// note: the model ID can exceed MAX_POLYGON_MODELS because the modulo is taken
 }
 model_h::model_h(int n_modelnum)
 	: model_num(n_modelnum)
@@ -56,12 +56,40 @@ bool submodel_h::isValid() const
 	if (model_num >= 0 && submodel_num >= 0)
 	{
 		auto model = model_get(model_num);
-		if (model != nullptr)
-			return submodel_num < model->n_models;
+		if (model != nullptr && submodel_num < model->n_models)
+			return true;
 	}
 	return false;
 }
 
+
+ADE_FUNC(__eq, l_Model, "model, model", "Checks if two model handles refer to the same model", "boolean", "True if models are equal")
+{
+	model_h* mdl1;
+	model_h* mdl2;
+
+	if (!ade_get_args(L, "oo", l_Model.GetPtr(&mdl1), l_Model.GetPtr(&mdl2)))
+		return ADE_RETURN_NIL;
+
+	if (mdl1->GetID() == mdl2->GetID())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(__eq, l_Submodel, "submodel, submodel", "Checks if two submodel handles refer to the same submodel", "boolean", "True if submodels are equal")
+{
+	submodel_h* smh1;
+	submodel_h* smh2;
+
+	if (!ade_get_args(L, "oo", l_Submodel.GetPtr(&smh1), l_Submodel.GetPtr(&smh2)))
+		return ADE_RETURN_NIL;
+
+	if (smh1->GetModelID() == smh2->GetModelID() && smh1->GetSubmodelIndex() == smh2->GetSubmodelIndex())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
 
 ADE_VIRTVAR(Submodels, l_Model, nullptr, "Model submodels", "submodels", "Model submodels, or an invalid submodels handle if the model handle is invalid")
 {

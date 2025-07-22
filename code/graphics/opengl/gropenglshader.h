@@ -35,7 +35,7 @@ struct opengl_vert_attrib {
 		MODEL_ID,
 		RADIUS,
 		UVEC,
-		WORLD_MATRIX,
+		MODEL_MATRIX,
 		NUM_ATTRIBS,
 	};
 
@@ -150,8 +150,6 @@ void opengl_shader_init();
 void opengl_shader_shutdown();
 
 int opengl_compile_shader(shader_type sdr, uint flags);
-
-GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute);
 
 void opengl_shader_set_passthrough(bool textured, bool hdr);
 

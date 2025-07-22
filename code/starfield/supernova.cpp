@@ -48,6 +48,9 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
 			"", //Name
 			::util::UniformFloatRange(2.f, 5.f), //Particle num
+			particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+			::util::UniformFloatRange(), //No duration
+			::util::UniformFloatRange (-1.f), //Single particle only
 			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 			::util::UniformFloatRange(1.f), //Velocity Inherit
 			false, //Velocity Inherit absolute?
@@ -62,6 +65,12 @@ static particle::ParticleEffectHandle supernova_init_particle() {
 			true, //Affected by detail
 			1.f, //Culling range multiplier
 			true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+			false, //Don't reverse animation
+			false, //parent local
+			false, //ignore velocity inherit if parented
+			false, //position velocity inherit absolute?
+			std::nullopt, //Local velocity offset
+			std::nullopt, //Local offset
 			::util::UniformFloatRange(0.6f, 1.f), //Lifetime
 			::util::UniformFloatRange(0.5f, 1.25f), //Radius
 			particle::Anim_bitmap_id_fire)); //Bitmap

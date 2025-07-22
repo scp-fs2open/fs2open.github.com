@@ -152,6 +152,8 @@ bool SCPUI_loads_hi_res_animations;
 bool Auto_assign_personas;
 bool Countermeasures_use_capacity;
 bool Play_thruster_sounds_for_player;
+bool Unify_minimum_engine_sound;
+bool Disabled_or_disrupted_engines_silent;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Disable_shield_effects;
@@ -169,6 +171,8 @@ EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 bool Fix_asteroid_bounding_box_check;
 bool Disable_intro_movie;
 bool Show_locked_status_scramble_missions;
+bool Disable_expensive_turret_target_check;
+float Shield_percent_skips_damage;
 
 
 #ifdef WITH_DISCORD
@@ -1043,6 +1047,14 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Play_thruster_sounds_for_player);
 			}
 
+			if (optional_string("$Unify minimum engine sound:")) {
+				stuff_boolean(&Unify_minimum_engine_sound);
+			}
+
+			if (optional_string("$Disabled or disrupted engines are silent:")) {
+				stuff_boolean(&Disabled_or_disrupted_engines_silent);
+			}
+
 			optional_string("#FRED SETTINGS");
 
 			if (optional_string("$Disable Hard Coded Message Head Ani Files:")) {
@@ -1524,6 +1536,21 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Show_locked_status_scramble_missions);
 			}
 
+			if (optional_string("$Disable expensive turret target check:")) {
+				stuff_boolean(&Disable_expensive_turret_target_check);
+			}
+
+			if (optional_string("$Threshold below which shield skips damage:")) {
+				float threshold;
+				stuff_float(&threshold);
+				if ((threshold >= 0.0f) && (threshold <= 1.0f)) {
+					Shield_percent_skips_damage = threshold;
+				} else {
+					mprintf(("Game Settings Table: '$Threshold below which shield skips damage' value of %.2f is not between 0 and 1. Using default value of 0.10.\n", threshold));
+					Shield_percent_skips_damage = 0.1f;
+				}
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1728,6 +1755,8 @@ void mod_table_reset()
 	Auto_assign_personas = true;
 	Countermeasures_use_capacity = false;
 	Play_thruster_sounds_for_player = false;
+	Unify_minimum_engine_sound = false;
+	Disabled_or_disrupted_engines_silent = false;
 	Fred_spacemouse_nonlinearity = std::array<std::tuple<float, float>, 6>{{
 			std::tuple<float, float>{ 1.0f, 1.0f },
 			std::tuple<float, float>{ 1.0f, 1.0f },
@@ -1757,6 +1786,8 @@ void mod_table_reset()
 	Fix_asteroid_bounding_box_check = false;
 	Disable_intro_movie = false;
 	Show_locked_status_scramble_missions = false;
+	Disable_expensive_turret_target_check = false;
+	Shield_percent_skips_damage = 0.1f;
 }
 
 void mod_table_set_version_flags()
@@ -1782,5 +1813,6 @@ void mod_table_set_version_flags()
 		Use_model_eyepoint_for_set_camera_host = true;
 		Use_model_eyepoint_normals = true;
 		Fix_asteroid_bounding_box_check = true;
+		Disable_expensive_turret_target_check = true;
 	}
 }

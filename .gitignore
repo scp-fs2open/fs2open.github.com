@@ -42,6 +42,7 @@ _ReSharper*/
 
 #Project files
 [Bb]uild/
+[Oo]ut/
 
 #Subversion files
 .svn

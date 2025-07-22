@@ -72,6 +72,15 @@ typedef struct builtin_message {
 	int         priority;
 	int         timing;
 	int         fallback;
+	bool        used_strdup;
+
+	builtin_message(const char* _name, int _occurrence_chance, int _max_count, int _min_delay, int _priority, int _timing, int _fallback, bool _used_strdup);
+	// since we need a destructor, we need the other four special member functions as well
+	~builtin_message();
+	builtin_message(const builtin_message& other);
+	builtin_message& operator=(const builtin_message& other);
+	builtin_message(builtin_message&& other) noexcept = default;
+	builtin_message& operator=(builtin_message&& other) noexcept = default;
 } builtin_message;
 
 // If these are changed or updated be sure to update the map in scripting/api/libs/mission.cpp and the connected lua enumerations!

@@ -167,6 +167,8 @@ extern bool SCPUI_loads_hi_res_animations;
 extern bool Auto_assign_personas;
 extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
+extern bool Unify_minimum_engine_sound;
+extern bool Disabled_or_disrupted_engines_silent;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
 extern bool Disable_shield_effects;
@@ -184,6 +186,8 @@ extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
 extern bool Fix_asteroid_bounding_box_check;
 extern bool Disable_intro_movie;
 extern bool Show_locked_status_scramble_missions;
+extern bool Disable_expensive_turret_target_check;
+extern float Shield_percent_skips_damage;
 
 void mod_table_init();
 void mod_table_post_process();

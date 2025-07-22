@@ -65,16 +65,6 @@ enum class LR_Objecttypes { LRO_SHIPS, LRO_WEAPONS };
 
 constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second delay until player can fire
 
-//particle names go here -nuke
-#define PSPEW_NONE		-1			//used to disable a spew, useful for xmts
-#define PSPEW_DEFAULT	0			//std fs2 pspew
-#define PSPEW_HELIX		1			//q2 style railgun trail
-#define PSPEW_SPARKLER	2			//random particles in every direction, can be sperical or ovoid
-#define PSPEW_RING		3			//outward expanding ring
-#define PSPEW_PLUME		4			//spewers arrayed within a radius for thruster style effects, may converge or scatter
-
-#define MAX_PARTICLE_SPEWERS	4	//i figure 4 spewers should be enough for now -nuke
-
 // scale factor for supercaps taking damage from weapons which are not "supercap" weapons
 #define SUPERCAP_DAMAGE_SCALE			0.25f
 
@@ -89,6 +79,7 @@ constexpr int BANK_SWITCH_DELAY = 250;	// after switching banks, 1/4 second dela
 // homing missiles have an extended lifetime so they don't appear to run out of gas before they can hit a moving target at extreme
 // range. Check the comment in weapon_set_tracking_info() for more details
 #define LOCKED_HOMING_EXTENDED_LIFE_FACTOR			1.2f
+
 
 struct homing_cache_info {
 	TIMESTAMP next_update;
@@ -143,10 +134,6 @@ typedef struct weapon {
 
 	// corkscrew info (taken out for now)
 	short	cscrew_index;						// corkscrew info index
-
-	// particle spew info
-	int		particle_spew_time[MAX_PARTICLE_SPEWERS];			// time to spew next bunch of particles	
-	float	particle_spew_rand;				// per weapon randomness value used by some particle spew types -nuke
 
 	// flak info
 	short flak_index;							// flak info index
@@ -238,10 +225,7 @@ typedef struct beam_weapon_info {
 	int beam_warmup;					// how long it takes to warmup (in ms)
 	int beam_warmdown;					// how long it takes to warmdown (in ms)
 	float beam_muzzle_radius;			// muzzle glow radius
-	int beam_particle_count;			// beam spew particle count
-	float beam_particle_radius;			// radius of beam particles
-	float beam_particle_angle;			// angle of beam particle spew cone
-	generic_anim beam_particle_ani;		// particle_ani
+	particle::ParticleEffectHandle beam_muzzle_effect;
 	SCP_map<int, std::array<float, NUM_SKILL_LEVELS>> beam_iff_miss_factor;	// magic # which makes beams miss more. by parent iff and player skill level
 	gamesnd_id beam_loop_sound;				// looping beam sound
 	gamesnd_id beam_warmup_sound;				// warmup sound
@@ -265,22 +249,6 @@ typedef struct beam_weapon_info {
 	flagset<Weapon::Beam_Info_Flags> flags;
 	type5_beam_info t5info;              // type 5 beams only
 } beam_weapon_info;
-
-typedef struct particle_spew_info {	//this will be used for multi spews
-	// particle spew stuff
-	int particle_spew_type;			//added pspew type field -nuke
-	int particle_spew_count;
-	int particle_spew_time;
-	float particle_spew_vel;
-	float particle_spew_radius;
-	float particle_spew_lifetime;
-	float particle_spew_scale;
-	float particle_spew_z_scale;	//length value for some effects -nuke
-	float particle_spew_rotation_rate;	//rotation rate for some particle effects -nuke
-	vec3d particle_spew_offset;			//offsets and normals, yay!
-	vec3d particle_spew_velocity;
-	generic_anim particle_spew_anim;
-} particle_spew_info;
 
 typedef struct spawn_weapon_info 
 {
@@ -324,13 +292,45 @@ enum class HomingAcquisitionType {
 	RANDOM,
 };
 
+enum class HitType {
+	SHIELD,
+	SUBSYS,
+	HULL,
+	NONE,
+};
+
+constexpr size_t NumHitTypes = static_cast<std::underlying_type_t<HitType>>(HitType::NONE);
+
+enum class SpecialImpactCondition {
+	DEBRIS,
+	ASTEROID,
+	EMPTY_SPACE,
+};
+
+using ImpactCondition = std::variant<int, SpecialImpactCondition>;
+
+struct ConditionData {
+	ImpactCondition condition = SpecialImpactCondition::EMPTY_SPACE;
+	HitType hit_type = HitType::NONE;
+	float damage = 0.0f;
+	float health = 1.0f;
+	float max_health = 1.0f;
+};
+
 struct ConditionalImpact {
 	particle::ParticleEffectHandle effect;
-	float min_health_threshold; //factor, 0-1
-	float max_health_threshold; //factor, 0-1
-	float min_angle_threshold; //in degrees
-	float max_angle_threshold; //in degrees
+	std::optional<particle::ParticleEffectHandle> pokethrough_effect;
+	::util::ParsedRandomFloatRange min_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange max_health_threshold; // factor, 0-1
+	::util::ParsedRandomFloatRange min_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange max_damage_hits_ratio; // factor
+	::util::ParsedRandomFloatRange min_angle_threshold; // in degrees
+	::util::ParsedRandomFloatRange max_angle_threshold; // in degrees
+	float laser_pokethrough_threshold; // factor, 0-1
 	bool dinky;
+	bool disable_if_player_parent;
+	bool disable_on_subsys_passthrough;
+	bool disable_main_on_pokethrough;
 };
 
 enum class FiringPattern {
@@ -546,7 +546,7 @@ struct weapon_info
 	particle::ParticleEffectHandle piercing_impact_effect;
 	particle::ParticleEffectHandle piercing_impact_secondary_effect;
 
-	SCP_map<int, SCP_vector<ConditionalImpact>> conditional_impacts;
+	SCP_map<ImpactCondition, SCP_vector<ConditionalImpact>> conditional_impacts;
 
 	particle::ParticleEffectHandle muzzle_effect;
 
@@ -572,9 +572,6 @@ struct weapon_info
 	// tag stuff
 	float	tag_time;						// how long the tag lasts		
 	int tag_level;							// tag level (1 - 3)
-
-	// muzzle flash
-	int muzzle_flash;						// muzzle flash stuff
 	
 	float field_of_fire;			//cone the weapon will fire in, 0 is strait all the time-Bobboau
 	float fof_spread_rate;			//How quickly the FOF will spread for each shot (primary weapons only, this doesn't really make sense for turrets)
@@ -619,7 +616,7 @@ struct weapon_info
 	beam_weapon_info	b_info;			// this must be valid if the weapon is a beam weapon WIF_BEAM or WIF_BEAM_SMALL
 
 	// now using new particle spew struct -nuke
-	particle_spew_info particle_spewers[MAX_PARTICLE_SPEWERS];
+	SCP_vector<particle::ParticleEffectHandle> particle_spewers;
 
 	// Countermeasure information
 	float cm_aspect_effectiveness;
@@ -933,43 +930,6 @@ typedef struct missile_obj {
 } missile_obj;
 extern missile_obj Missile_obj_list;
 
-// WEAPON EXPLOSION INFO
-#define MAX_WEAPON_EXPL_LOD						4
-
-typedef struct weapon_expl_lod {
-	char	filename[MAX_FILENAME_LEN];
-	int	bitmap_id;
-	int	num_frames;
-	int	fps;
-
-	weapon_expl_lod( ) 
-		: bitmap_id( -1 ), num_frames( 0 ), fps( 0 )
-	{ 
-		filename[ 0 ] = 0;
-	}
-} weapon_expl_lod;
-
-typedef struct weapon_expl_info	{
-	int					lod_count;	
-	weapon_expl_lod		lod[MAX_WEAPON_EXPL_LOD];
-} weapon_expl_info;
-
-class weapon_explosions
-{
-private:
-	SCP_vector<weapon_expl_info> ExplosionInfo;
-	int GetIndex(const char *filename) const;
-
-public:
-	weapon_explosions();
-
-	int Load(const char *filename = nullptr, int specified_lods = MAX_WEAPON_EXPL_LOD);
-	int GetAnim(int weapon_expl_index, const vec3d *pos, float size) const;
-	void PageIn(int idx);
-};
-
-extern weapon_explosions Weapon_explosions;
-
 extern int Num_weapons;
 extern int First_secondary_index;
 extern int Default_cmeasure_index;
@@ -1034,11 +994,9 @@ void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_o
 // src_turret may be null
 size_t* get_pointer_to_weapon_fire_pattern_index(int weapon_type, int ship_idx, ship_subsys* src_turret);
 
-// for weapons flagged as particle spewers, spew particles. wheee
-void weapon_maybe_spew_particle(object *obj);
-
 bool weapon_armed(weapon *wp, bool hit_target);
-void weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1, const vec3d* hitnormal = nullptr, const vec3d* local_hitpos = nullptr, int submodel = -1 );
+void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData>, NumHitTypes>& impact_data, const object* weapon_objp, const object* impacted_objp, bool armed_weapon, int submodel, const vec3d* hitpos, const vec3d* local_hitpos = nullptr, const vec3d* hit_normal = nullptr);
+bool weapon_hit( object* weapon_obj, object* impacted_obj, const vec3d* hitpos, int quadrant = -1 );
 void spawn_child_weapons( object *objp, int spawn_index_override = -1);
 
 // call to detonate a weapon. essentially calls weapon_hit() with other_obj as NULL, and sends a packet in multiplayer
@@ -1082,7 +1040,7 @@ void weapon_unpause_sounds();
 // Called by hudartillery.cpp after SSMs have been parsed to make sure that $SSM: entries defined in weapons are valid.
 void validate_SSM_entries();
 
-void shield_impact_explosion(const vec3d *hitpos, const object *objp, float radius, int idx);
+void shield_impact_explosion(const vec3d& hitpos, const vec3d& hitdir, const object *objp, const object *weapon_objp, float radius, particle::ParticleEffectHandle handle);
 
 // Swifty - return number of max simultaneous locks 
 int weapon_get_max_missile_seekers(weapon_info *wip);

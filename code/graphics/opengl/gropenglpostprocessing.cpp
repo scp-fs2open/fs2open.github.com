@@ -597,6 +597,18 @@ void gr_opengl_post_process_end()
 				case graphics::PostEffectUniformType::Tint:
 					data->tint = postEffects[idx].rgb;
 					break;
+				case graphics::PostEffectUniformType::CustomEffectVEC3A:
+					data->custom_effect_vec3_a = postEffects[idx].rgb;
+					break;
+				case graphics::PostEffectUniformType::CustomEffectFloatA:
+					data->custom_effect_float_a = value;
+					break;
+				case graphics::PostEffectUniformType::CustomEffectVEC3B:
+					data->custom_effect_vec3_b = postEffects[idx].rgb;
+					break;
+				case graphics::PostEffectUniformType::CustomEffectFloatB:
+					data->custom_effect_float_b = value;
+					break;
 				}
 			}
 		}

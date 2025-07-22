@@ -541,6 +541,14 @@ private:
 	SCP_vector<T> _buffer;
 };
 
+struct ship_electrical_arc : electrical_arc
+{
+	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
+
+	// if this vector exists, these points will be used instead of the ones generated on each frame by interp_generate_arc_segment()
+	std::unique_ptr<SCP_vector<vec3d>>	persistent_arc_points;
+};
+
 // NOTE: Can't be treated as a struct anymore, since it has STL data structures in its object tree!
 class ship
 {
@@ -728,15 +736,9 @@ public:
 	std::array<sound_handle, NUM_SUB_EXPL_HANDLES> sub_expl_sound_handle;
 
 	// Stuff for showing electrical arcs on damaged ships
-	vec3d	arc_pts[MAX_ARC_EFFECTS][2];			// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_ARC_EFFECTS];		// When this times out, the spark goes away.  Invalid is not used
-	ubyte		arc_type[MAX_ARC_EFFECTS];			// see MARC_TYPE_* defines in model.h
-	color		arc_primary_color_1[MAX_ARC_EFFECTS];
-	color		arc_primary_color_2[MAX_ARC_EFFECTS];
-	color		arc_secondary_color[MAX_ARC_EFFECTS];
-	float		arc_width[MAX_ARC_EFFECTS];
-	int		arc_next_time;							// When the next damage/emp arc will be created.	
-	SCP_vector<int>		passive_arc_next_times;		// When the next passive ship arc will be created.	
+	SCP_vector<ship_electrical_arc> electrical_arcs;
+	TIMESTAMP		arc_next_time;							// When the next damage/emp arc will be created.
+	SCP_vector<TIMESTAMP>		passive_arc_next_times;		// When the next passive ship arc will be created.
 
 	// emp missile stuff
 	float emp_intensity;								// <= 0.0f if no emp effect present
@@ -1225,6 +1227,7 @@ public:
 	particle::ParticleEffectHandle		split_particles;
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
+	particle::ParticleEffectHandle 		debris_flame_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1236,6 +1239,7 @@ public:
 	int				debris_damage_type_idx;
 	float			debris_min_hitpoints;
 	float			debris_max_hitpoints;
+	float			debris_hitpoints_radius_multi;
 	float			debris_damage_mult;
 	float			debris_arc_percent;
 	float			debris_gravity_const;			// see gravity_const above
@@ -1468,7 +1472,7 @@ public:
 	float emp_resistance_mod;
 
 	float piercing_damage_draw_limit;
-	int shield_impact_explosion_anim;
+	particle::ParticleEffectHandle shield_impact_explosion_anim;
 
 	int damage_lightning_type;
 
@@ -1762,7 +1766,7 @@ extern void create_shield_explosion(int objnum, int model_num, matrix *orient, v
 extern void shield_hit_init();
 extern void create_shield_explosion_all(object *objp);
 extern void shield_frame_init();
-extern void add_shield_point(int objnum, int tri_num, vec3d *hit_pos, float radius_override);
+extern void add_shield_point(int objnum, int tri_num, const vec3d *hit_pos, float radius_override);
 extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();
@@ -1800,6 +1804,7 @@ bool ship_subsys_has_instance_name(const ship_subsys *ss);
 void ship_subsys_set_name(ship_subsys* ss, const char* n_name);
 
 const char *ship_subsys_get_name_on_hud(const ship_subsys *ss);
+const char *ship_subsys_get_canonical_name(const ship_subsys *ss);
 
 // subsys disruption
 extern int ship_subsys_disrupted(const ship_subsys *ss);
@@ -1862,9 +1867,6 @@ extern int Ai_render_debug_flag;
 extern int Show_shield_mesh;
 extern int Ship_auto_repair;	// flag to indicate auto-repair of subsystem should occur
 #endif
-
-void ship_subsystem_delete(ship *shipp);
-float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num);
 
 int ship_dumbfire_threat(ship *sp);
 int ship_lock_threat(ship *sp);
@@ -2112,5 +2114,8 @@ bool ship_secondary_has_ammo(ship_weapon* swp, int bank_index);
 
 // Used to check if one ship can see the other on radar
 int ship_check_visibility(const ship* viewed, ship* viewer);
+
+// Find the first available arc slot.  If none is available, and no_create is false, add one.
+ship_electrical_arc *ship_find_or_create_electrical_arc_slot(ship *shipp, bool no_create);
 
 #endif

@@ -1294,6 +1294,9 @@ float cam_get_bbox_dist(const object* viewer_obj, float preferred_distance, cons
 		return preferred_distance;
 	
 	polymodel* pm = object_get_model(viewer_obj);
+	if (pm == nullptr)
+		return preferred_distance;
+
 	vec3d adjusted_bbox;
 	const vec3d* cam_vec = &cam_orient->vec.fvec;
 

@@ -2,6 +2,7 @@
 //
 
 #include "subsystem.h"
+#include "model.h"
 #include "model_path.h"
 #include "object.h"
 #include "ship.h"
@@ -9,6 +10,7 @@
 #include "vecmath.h"
 #include "hud/hudtarget.h"
 #include "ship/shiphit.h"
+#include "modelinstance.h"
 
 #include "network/multi.h"
 #include "network/multimsgs.h"
@@ -119,6 +121,38 @@ ADE_VIRTVAR(AWACSRadius, l_Subsystem, "number", "Subsystem AWACS radius", "numbe
 		sso->ss->awacs_radius = f;
 
 	return ade_set_args(L, "f", sso->ss->awacs_radius);
+}
+
+ADE_VIRTVAR(Submodel, l_Subsystem, "submodel", "The submodel corresponding to this subsystem, if one exists", "submodel", "Submodel handle, or invalid submodel handle if this subsystem does not have a submodel, or if the subsystem handle is invalid")
+{
+	ship_subsys_h *sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (!sso->isValid())
+		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the Submodel is not allowed!");
+
+	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(sso->ss->system_info->model_num, sso->ss->system_info->subobj_num)));
+}
+
+ADE_VIRTVAR(SubmodelInstance, l_Subsystem, "submodel_instance", "The submodel instance corresponding to this subsystem, if one exists", "submodel_instance", "Submodel instance handle, or invalid submodel instance handle if this subsystem does not have a submodel instance, or if the subsystem handle is invalid")
+{
+	ship_subsys_h *sso;
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
+
+	if (!sso->isValid())
+		return ade_set_error(L, "o", l_SubmodelInstance.Set(submodelinstance_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the SubmodelInstance is not allowed!");
+
+	auto shipp = &Ships[sso->objh.objp()->instance];
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	return ade_set_args(L, "o", l_SubmodelInstance.Set(submodelinstance_h(pmi, sso->ss->system_info->subobj_num)));
 }
 
 ADE_VIRTVAR(Orientation, l_Subsystem, "orientation", "Orientation of subobject or turret base", "orientation", "Subsystem orientation, or identity orientation if handle is invalid")
@@ -345,6 +379,22 @@ ADE_VIRTVAR(NameOnHUD, l_Subsystem, "string", "Subsystem name as it would be dis
 	return ade_set_args(L, "s", ship_subsys_get_name_on_hud(sso->ss));
 }
 
+ADE_VIRTVAR(CanonicalName, l_Subsystem, "string", "Canonical subsystem name that can be used to reference this subsystem in a SEXP or script", "string", "Canonical subsystem name, or an empty string if handle is invalid")
+{
+	ship_subsys_h *sso;
+
+	if (!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
+		return ade_set_error(L, "s", "");
+
+	if (!sso->isValid())
+		return ade_set_error(L, "s", "");
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the CanonicalName is not allowed!");
+
+	return ade_set_args(L, "s", ship_subsys_get_canonical_name(sso->ss));
+}
+
 ADE_VIRTVAR(NumFirePoints, l_Subsystem, "number", "Number of firepoints", "number", "Number of fire points, or 0 if handle is invalid")
 {
 	ship_subsys_h* sso;
@@ -384,7 +434,7 @@ ADE_VIRTVAR(FireRateMultiplier, l_Subsystem, "number", "Factor by which turret's
 	return ade_set_args(L, "f", sso->ss->rof_scaler);
 }
 
-ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subsystem in the model file", "string", "name or empty string on error")
+ADE_FUNC(getModelName, l_Subsystem, nullptr, "Returns the original name of the subsystem as defined in the ship class, which could possibly correspond to a submodel in the model file.  This is the same as CanonicalName.", "string", "name or empty string on error")
 {
 	ship_subsys_h *sso;
 	if(!ade_get_args(L, "o", l_Subsystem.GetPtr(&sso)))
@@ -393,7 +443,7 @@ ADE_FUNC(getModelName, l_Subsystem, NULL, "Returns the original name of the subs
 	if (!sso->isValid())
 		return ade_set_error(L, "s", "");
 
-	return ade_set_args(L, "s", sso->ss->system_info->subobj_name);
+	return ade_set_args(L, "s", ship_subsys_get_canonical_name(sso->ss));
 }
 
 ADE_VIRTVAR(PrimaryBanks, l_Subsystem, "weaponbanktype", "Array of primary weapon banks", "weaponbanktype", "Primary banks, or invalid weaponbanktype handle if subsystem handle is invalid")

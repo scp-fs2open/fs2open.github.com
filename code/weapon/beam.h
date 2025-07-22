@@ -209,7 +209,6 @@ typedef struct beam {
 	beam_info binfo;
 	int bank;
 
-	int Beam_muzzle_stamp;
 	int firingpoint;
 	float		beam_collide_width;
 	float		beam_light_width;

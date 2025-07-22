@@ -26,5 +26,5 @@ git diff -U0 --no-color "$BASE_COMMIT..$2" | \
     -extra-arg="-DWITH_VULKAN" \
     -extra-arg="-DVULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1" \
     -extra-arg="-DVK_NO_PROTOTYPES" \
-    -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)))|freespace2|qtfred|test\/src|build|tools)\/.*\.(cpp|h)' \
+    -regex '(code(?!((\/graphics\/shaders\/compiled)|(\/globalincs\/windebug)|(\/def_files\/data)))|freespace2|qtfred|test\/src|build|tools)\/.*\.(cpp|h)' \
     -clang-tidy-binary /usr/bin/clang-tidy-16 -j$(nproc) -export-fixes "$(pwd)/clang-fixes.yaml"

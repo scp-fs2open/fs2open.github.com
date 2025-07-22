@@ -364,8 +364,8 @@ SCP_vector<sexp_oper> Operators = {
 	{ "map-has-data-item",				OP_MAP_HAS_DATA_ITEM,					2,	3,			SEXP_INTEGER_OPERATOR, }, // Karajorma
 
 	//Other Sub-Category
-	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	1,			SEXP_BOOLEAN_OPERATOR, },
-	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	1,			SEXP_INTEGER_OPERATOR,	},
+	{ "script-eval-bool",				OP_SCRIPT_EVAL_BOOL,					1,	INT_MAX,	SEXP_BOOLEAN_OPERATOR, },
+	{ "script-eval-num",				OP_SCRIPT_EVAL_NUM,						1,	INT_MAX,	SEXP_INTEGER_OPERATOR, },
 
 	//Time Category
 	{ "time-ship-destroyed",			OP_TIME_SHIP_DESTROYED,					1,	1,			SEXP_INTEGER_OPERATOR,	},
@@ -14059,17 +14059,19 @@ void sexp_load_music(const char *filename, int type = -1, int sexp_var = -1)
 	if (Sexp_music_handles.empty())
 		Sexp_music_handles.push_back(-1);
 
-	int index = sexp_find_music_handle_index(sexp_var);
-
-	// since we know the default index 0 exists, this means we have a variable without an index
-	if (index < 0)
+	// if a variable is supplied, we'll be creating a new handle to be stored in the variable
+	int index;
+	if (sexp_var >= 0)
 	{
-		index = (int)Sexp_music_handles.size();
+		index = static_cast<int>(Sexp_music_handles.size());
 		Sexp_music_handles.push_back(-1);
 	}
-
-	// if we were previously playing music on this handle, stop it
-	audiostream_close_file(Sexp_music_handles[index]);
+	// otherwise we'll be reusing the default handle, so close anything that's already playing
+	else
+	{
+		index = 0;
+		audiostream_close_file(Sexp_music_handles[index]);
+	}
 
 	// open the stream and save the handle in our list
 	Sexp_music_handles[index] = audiostream_open(filename, type);
@@ -15228,8 +15230,8 @@ void sexp_send_message(int n)
 
 ship* get_builtin_message_sender(const char* name) {
 	auto ship_entry = ship_registry_get(name);
-	if (ship_entry && ship_entry->has_shipp()) {
-		return ship_entry->shipp();
+	if (ship_entry) {
+		return ship_entry->shipp_or_null();
 	}
 	
 	auto wing_index = wing_lookup(name);
@@ -26764,27 +26766,35 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 	switch(return_type)
 	{
 		case OPR_BOOL:
-			{
-				auto s = CTEXT(n);
-				bool r = false;
-				bool success = Script_system.EvalStringWithReturn(s, "|b", &r);
+		{
+			SCP_string script_cmd;
+			for (; n != -1; n = CDR(n))
+				script_cmd.append(CTEXT(n));
 
-				if(!success)
-					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+			bool r = false;
+			bool success = Script_system.EvalStringWithReturn(script_cmd.c_str(), "|b", &r);
 
-				return r ? SEXP_TRUE : SEXP_FALSE;
-			}
+			if (!success)
+				Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
+
+			return r ? SEXP_TRUE : SEXP_FALSE;
+		}
+
 		case OPR_NUMBER:
-			{
-				auto s = CTEXT(n);
-				int r = -1;
-				bool success = Script_system.EvalStringWithReturn(s, "|i", &r);
+		{
+			SCP_string script_cmd;
+			for (; n != -1; n = CDR(n))
+				script_cmd.append(CTEXT(n));
 
-				if(!success)
-					Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", s);
+			int r = -1;
+			bool success = Script_system.EvalStringWithReturn(script_cmd.c_str(), "|i", &r);
 
-				return r;
-			}
+			if (!success)
+				Warning(LOCATION, "sexp-script-eval failed to evaluate string \"%s\"; check your syntax", script_cmd.c_str());
+
+			return r;
+		}
+
 		case OPR_STRING:
 			{
 				const char* ret = nullptr;
@@ -26827,7 +26837,7 @@ int sexp_script_eval(int node, int return_type, bool concat_args = false)
 
 					if (concat_args)
 					{
-						script_cmd.append(CTEXT(n));
+						script_cmd.append(s);
 					}
 					else
 					{
@@ -37459,7 +37469,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tThe name of the navpoint" },
 
 	{ OP_NAV_DISTANCE, "distance-to-nav\r\n"
-		"Returns the distance from the center of the player ship to a nav point. Takes 1 argument..."
+		"Returns the distance from the center of the player ship to a nav point. Takes 1 argument...\r\n"
 		"\t1:\tThe name of the navpoint" },
 
 	{ OP_NAV_ADD_WAYPOINT, "add-nav-waypoint\r\n"
@@ -37522,12 +37532,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tShips to mark (ships must be in-mission)\r\n" },
 
 	{ OP_NAV_ISLINKED, "is-nav-linked\r\n"
-		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked)"
+		"Determines if a ship is linked for autopilot (\"set-nav-carry\" or \"set-nav-needslink\" + linked).\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tShip to check (evaluation returns NAN until ship is in-mission)\r\n"},
 
 	{ OP_NAV_USECINEMATICS, "use-nav-cinematics\r\n"
-		"Controls the use of the cinematic autopilot camera. Takes 1 Argument..."
+		"Controls the use of the cinematic autopilot camera. Takes 1 Argument...\r\n"
 		"\t1:\tSet to true to enable automatic cinematics, set to false to disable automatic cinematics." },
 
 	{ OP_NAV_USEAP, "use-autopilot\r\n"
@@ -37632,7 +37642,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tPerforms the bitwise XOR operator on its arguments.  This is the same as if the logical XOR operator was performed on each successive bit.  Takes 2 or more numeric arguments.\r\n" },
 
 	{ OP_ANGLE_VECTORS, "angle-vectors\r\n"
-		"\tCalculates the angle between two vectors."
+		"\tCalculates the angle between two vectors.  "
 		"Takes 6 arguments...\r\n"
 		"\t1: The x component of the first vector.\r\n"
 		"\t2: The y component of the first vector.\r\n"
@@ -37642,40 +37652,40 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t6: The z component of the second vector.\r\n"},
 
 	{ OP_SET_OBJECT_SPEED_X, "set-object-speed-x (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the X speed of a ship or wing (ship/wing must be in-mission)."
+		"\tSets the X speed of a ship or wing (ship/wing must be in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Y, "set-object-speed-y (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the Y speed of a ship or wing (ship/wing must be in-mission)."
+		"\tSets the Y speed of a ship or wing (ship/wing must be in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_SET_OBJECT_SPEED_Z, "set-object-speed-z (deprecated in favor of ship-maneuver)\r\n"
-		"\tSets the Z speed of a ship or wing (ship/wing must be in-mission)."
+		"\tSets the Z speed of a ship or wing (ship/wing must be in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: The speed to set.\r\n"
 		"\t3: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_X, "get-object-speed-x\r\n"
-		"\tReturns the X speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
+		"\tReturns the X speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Y, "get-object-speed-y\r\n"
-		"\tReturns the Y speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
+		"\tReturns the Y speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
 
 	{ OP_GET_OBJECT_SPEED_Z, "get-object-speed-z\r\n"
-		"\tReturns the Z speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission)."
+		"\tReturns the Z speed of a ship or wing as an integer (evaluation returns NAN until ship/wing is in-mission).  "
 		"Takes 2 or 3 arguments...\r\n"
 		"\t1: The name of the object.\r\n"
 		"\t2: Whether the speed on the axis should be set according to the universe grid (when false) or according to the object's facing (when true); You almost always want to set this to true; (optional; defaults to false).\r\n" },
@@ -37718,7 +37728,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_SET_OBJECT_POSITION, "set-object-position\r\n"
-		"\tInstantaneously sets an object's spatial coordinates."
+		"\tInstantaneously sets an object's spatial coordinates.  "
 		"Takes 4 arguments...\r\n"
 		"\t1: The name of a ship, wing, or waypoint (object does not need to be in-mission).\r\n"
 		"\t2: The new X coordinate.\r\n"
@@ -37742,7 +37752,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_SET_OBJECT_ORIENTATION, "set-object-orientation\r\n"
-		"\tInstantaneously sets an object's spatial orientation."
+		"\tInstantaneously sets an object's spatial orientation.  "
 		"Takes 4 arguments...\r\n"
 		"\t1: The name of a ship or wing (ship/wing does not need to be in-mission).\r\n"
 		"\t2: The new pitch angle, in degrees.  The angle can be any number; it does not have to be between 0 and 360.\r\n"
@@ -37958,8 +37968,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_GOAL_INCOMPLETE, "Mission Goal Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified goal in the this mission is incomplete.  This "
-		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon mission startup."
+		"sexpression will only be useful in conjunction with another sexpression like "
+		"has-time-elapsed.  Used alone, it will return true upon mission startup.\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 
@@ -38001,19 +38011,19 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_EVENT_INCOMPLETE, "Mission Event Incomplete (Boolean operator)\r\n"
 		"\tReturns true if the specified event in the this mission is incomplete.  This "
-		"sexpression will only be useful in conjunction with another sexpression like"
-		"has-time-elapsed.  Used alone, it will return true upon mission startup."
+		"sexpression will only be useful in conjunction with another sexpression like "
+		"has-time-elapsed.  Used alone, it will return true upon mission startup.\r\n"
 		"Returns a boolean value.  Takes 1 argument...\r\n"
 		"\t1:\tName of the event in the mission."},
 
 	{ OP_RESET_EVENT, "Reset-Event (Action operator)\r\n"
-		"Clears all information associated with an event, resetting SEXP nodes and status flags so that it is as if the event had never been evaluated."
+		"Clears all information associated with an event, resetting SEXP nodes and status flags so that it is as if the event had never been evaluated.  "
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the event"
 	},
 
 	{ OP_RESET_GOAL, "Reset-Goal (Action operator)\r\n"
-		"Clears all information associated with a goal, resetting SEXP nodes and status flags so that it is as if the goal had never been evaluated."
+		"Clears all information associated with a goal, resetting SEXP nodes and status flags so that it is as if the goal had never been evaluated.  "
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of the goal"
 	},
@@ -38808,7 +38818,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"are defined in messages.tbl. For example, this can be used to make a cruiser send a Help message.\r\n\r\n"
 		"Takes 4 or more arguments...\r\n"
 		"\t1:\tThe type of message to send.\r\n"
-		"\t2:\tThe message's subject (used with message filters). If you don't know what this means, set it to <none>."
+		"\t2:\tThe message's subject (used with message filters). If you don't know what this means, set it to <none>.\r\n"
 		"\t3:\tPick a random sender? If this is false, the first available sender will be used.\r\n"
 		"\tRest:\tWho should send the message - a ship, a wing, #Command, or <any wingman>.\r\n"
 	},
@@ -38840,7 +38850,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_PERSONA, "Set Persona (Action operator)\r\n"
 		"\tSets the persona of the supplied ship to the persona supplied\r\n"
 		"Takes 2 or more arguments...\r\n"
-		"\t1:\tPersona to use."
+		"\t1:\tPersona to use.\r\n"
 		"\tRest:\tName of the ship (ship must be in-mission)." },
 
 	{ OP_SELF_DESTRUCT, "Self destruct (Action operator)\r\n"
@@ -38878,8 +38888,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_SABOTAGE_SUBSYSTEM, "Sabotage subystem (Action operator)\r\n"
-		"\tReduces the specified subsystem integrity by the specified percentage."
-		"If the percntage strength of the subsystem (after completion) is less than 0%,"
+		"\tReduces the specified subsystem integrity by the specified percentage.  "
+		"If the percentage strength of the subsystem (after completion) is less than 0%, the "
 		"subsystem strength is set to 0%.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
@@ -38887,8 +38897,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t3:\tPercentage to reduce subsystem integrity by." },
 
 	{ OP_REPAIR_SUBSYSTEM, "Repair Subystem (Action operator)\r\n"
-		"\tIncreases the specified subsystem integrity by the specified percentage."
-		"If the percentage strength of the subsystem (after completion) is greater than 100%,"
+		"\tIncreases the specified subsystem integrity by the specified percentage.  "
+		"If the percentage strength of the subsystem (after completion) is greater than 100%, the "
 		"subsystem strength is set to 100%.\r\n\r\n"
 		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
@@ -38898,9 +38908,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_SET_SUBSYSTEM_STRNGTH, "Set Subsystem Strength (Action operator)\r\n"
-		"\tSets the specified subsystem to the the specified percentage."
+		"\tSets the specified subsystem to the the specified percentage.  "
 		"If the percentage specified is < 0, strength is set to 0.  If the percentage is "
-		"> 100 % the subsystem strength is set to 100%.\r\n\r\n"
+		"greater than 100%, the subsystem strength is set to 100%.\r\n\r\n"
 		"Takes 3 to 5 arguments...\r\n"
 		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\t2:\tName of subsystem to set strength.\r\n"
@@ -38909,7 +38919,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t5:\tIf we are repairing submodels and an ancestor submodel was totally destroyed, repair that too.  Optional argument that defaults to true.\r\n" },
 
 	{ OP_DESTROY_SUBSYS_INSTANTLY, "destroy-subsys-instantly\r\n"
-		"\tDestroys the specified subsystems without effects."
+		"\tDestroys the specified subsystems without effects.  "
 		"Takes 2 or more arguments...\r\n"
 		"\t1:\tName of ship subsystem is on (ship must be in-mission).\r\n"
 		"\tRest:\tName of subsystem to destroy.\r\n"},
@@ -38931,7 +38941,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"character of the first argument a \"#\".\r\n\r\n"
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of who the message is from.\r\n"
-		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\")."
+		"\t2:\tPriority of message (\"Low\", \"Normal\" or \"High\").\r\n"
 		"\tRest:\tName of message (from message list)." },
 
 	{ OP_TRANSFER_CARGO, "Transfer Cargo (Action operator)\r\n"
@@ -39729,7 +39739,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tReturns true if all of the specified objects' cargo is known by the player (i.e. they "
 		"have scanned each one.\r\n\r\n"
 		"Returns a boolean value after <delay> seconds when all cargo is known.  Takes 2 or more arguments...\r\n"
-		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned."
+		"\t1:\tDelay in seconds after which sexpression will return true when all cargo scanned.\r\n"
 		"\tRest:\tNames of ships/cargo to check for cargo known." },
 
 	{ OP_WAS_PROMOTION_GRANTED, "Was promotion granted (Boolean operator)\r\n"
@@ -39825,13 +39835,13 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_CHANGE_PLAYER_SCORE, "Change Player Score (Action operator)\r\n"
 		"\tThis operator allows direct alteration of the player's score for this mission.\r\n\r\n"
-		"Takes 2 or more arguments." 
+		"Takes 2 or more arguments...\r\n" 
 		"\t1:\tAmount to alter the player's score by.\r\n"
 		"\tRest:\tName of ship the player is flying."},
 
 	{ OP_CHANGE_TEAM_SCORE, "Change Team Score (Action operator)\r\n"
 		"\tThis operator allows direct alteration of the team's score for a TvT mission (Does nothing otherwise).\r\n\r\n"
-		"Takes 2 arguments." 
+		"Takes 2 arguments...\r\n" 
 		"\t1:\tAmount to alter the team's score by.\r\n"
 		"\t2:\tThe team to alter the score for. (0 will add the score to all teams!)"},
 
@@ -40021,15 +40031,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Goober5000
 	{ OP_FRIENDLY_STEALTH_INVISIBLE, "friendly-stealth-invisible\r\n"
-		"\tCauses the friendly ships listed in this sexpression to be invisible to radar, just like hostile stealth ships."
-		"It doesn't matter if the ship is friendly at the time this sexp executes: as long as it is a stealth ship, it will"
+		"\tCauses the friendly ships listed in this sexpression to be invisible to radar, just like hostile stealth ships.  "
+		"It doesn't matter if the ship is friendly at the time this sexp executes: as long as it is a stealth ship, it will "
 		"be invisible to radar both as hostile and as friendly.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ships (ships do not need to be in-mission)" },
 
 	// Goober5000
 	{ OP_FRIENDLY_STEALTH_VISIBLE, "friendly-stealth-visible\r\n"
-		"\tCauses the friendly ships listed in this sexpression to resume their normal behavior of being visible to radar as"
+		"\tCauses the friendly ships listed in this sexpression to resume their normal behavior of being visible to radar as "
 		"stealth friendlies.  Does not affect their visibility as stealth hostiles.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tName of ships (ships do not need to be in-mission)" },
@@ -40054,7 +40064,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = Do not render or False = render if exists\r\n"
-		"\tRest: Name of the ship's subsystem(s)" 
+		"\tRest: Name of the ship's subsystem(s)\r\n" 
 		"\tNote: If subsystem is already dead it will vanish or reappear out of thin air" },
 
 
@@ -40073,7 +40083,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"Takes 3 or more arguments...\r\n"
 		"\t1:\tName of a ship (ship must be in-mission)\r\n"
 		"\t2:\tTrue = vanish or False = don't vanish\r\n"
-		"\tRest: Name of the ship's subsystem(s)" 
+		"\tRest: Name of the ship's subsystem(s)\r\n" 
 		"\tNote: Useful for replacing subsystems with actual docked models." },
 
 	// FUBAR
@@ -40423,11 +40433,11 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tOnly really useful for multiplayer."},
 
 	{ OP_CLEAR_WEAPONS, "clear-weapons\r\n"
-		"\tRemoves all live weapons currently in the mission"
+		"\tRemoves all live weapons currently in the mission.\r\n"
 		"\t1: (Optional) Remove only this specific class of weapon\r\n"},
 
 	{ OP_CLEAR_DEBRIS, "clear-debris\r\n"
-		"\tRemoves all ship debris currently in the mission"
+		"\tRemoves all ship debris currently in the mission.\r\n"
 		"\t1: (Optional) Remove only debris from this specific class of ship\r\n"},
 
 	{ OP_SET_RESPAWNS, "set-respawns\r\n"
@@ -40541,7 +40551,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\trest: Priorities to set (max 32) or blank for no priorities\r\n"},
 
 	{ OP_TURRET_SET_INACCURACY, "turret-set-inaccuracy\r\n"
-		"\tMakes the specified turrets more inaccurate by firing their shots in a cone, like field of fire."
+		"\tMakes the specified turrets more inaccurate by firing their shots in a cone, like field of fire.  "
 		"This will only decrease their accuracy, it cannot make the weapons more accurate than normal.\r\n"
 		"\tDoes not work on beams.\r\n"
 		"\t1: Ship turret(s) are on (ship must be in-mission)\r\n"
@@ -41260,10 +41270,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	{ OP_SET_POST_EFFECT, "set-post-effect\r\n"
 		"\tConfigures a post-processing effect.  Takes 2 arguments...\r\n"
 		"\t1: Effect type\r\n"
-		"\t2: Effect intensity (0 - 100)."
-		"\t3: (Optional) Red (0 - 255)."
-		"\t4: (Optional) Green (0 - 255)."
-		"\t5: (Optional) Blue (0 - 255)."
+		"\t2: Effect intensity (0 - 100)\r\n"
+		"\t3: (Optional) Red (0 - 255)\r\n"
+		"\t4: (Optional) Green (0 - 255)\r\n"
+		"\t5: (Optional) Blue (0 - 255)\r\n"
 	},
 
 	{ OP_RESET_POST_EFFECTS, "reset-post-effects\r\n"
@@ -41310,8 +41320,8 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_HUD_DISPLAY_GAUGE, "hud-display-gauge <milliseconds> <gauge>\r\n"
 		"\tCauses specified hud gauge to appear or disappear for so many milliseconds.  Takes 1 argument...\r\n"
-		"\t1: Number of milliseconds that the warpout gauge should appear on the HUD."
-		" 0 will immediately cause the gauge to disappear.\r\n"
+		"\t1: Number of milliseconds that the warpout gauge should appear on the HUD.  Zero "
+		"will immediately cause the gauge to disappear.\r\n"
 		"\t2: Name of HUD element.  Must be one of:\r\n"
 		"\t\t" SEXP_HUD_GAUGE_WARPOUT " - the \"Subspace drive active\" box that appears above the viewscreen.\r\n"
 	},
@@ -41328,9 +41338,10 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	// Kestrellius
 	{ OP_SET_FRIENDLY_DAMAGE_CAPS, "set-friendly-damage-caps\r\n"
-		"\tSets limits on damage weapons and beams can do to friendly targets on the current difficulty level. Takes 1 to 3 arguments.\r\nArguments left blank will leave the values unmodified.\r\n"
-		"\t1:\tMaximum damage beams can do to targets on the same team as the firer. -1 means no limit."
-		"\t2:\tMaximum damage weapons (and their shockwaves) can do to targets on the same team as the firer. -1 means no limit."
+		"\tSets limits on damage weapons and beams can do to friendly targets on the current difficulty level.\r\n"
+		"Takes 1 to 3 arguments. Arguments left blank will leave the values unmodified.\r\n"
+		"\t1:\tMaximum damage beams can do to targets on the same team as the firer. -1 means no limit.\r\n"
+		"\t2:\tMaximum damage weapons (and their shockwaves) can do to targets on the same team as the firer. -1 means no limit.\r\n"
 		"\t3:\tMaximum damage weapons (and their shockwaves) can do to their firer. -1 means no limit."
 	},
 
@@ -41384,7 +41395,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\tSets the text value of a given HUD gauge to a translated string and replaces variables.\r\n"
 		"\tWorks for custom gauges only. Takes 3 arguments...\r\n"
 		"\t1:\tHUD gauge to be modified\r\n"
-		"\t2:\tText to be set"
+		"\t2:\tText to be set\r\n"
 		"\t3:\tXSTR ID to lookup"
 	},
 
@@ -41594,9 +41605,9 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	
 	{ OP_CUTSCENES_SET_CAMERA_HOST, "set-camera-host\r\n"
 		"\tSets the object and subystem camera should view from. Camera position is offset from the host. "
-		"If the selected subsystem or one of its children has an eyepoint bound to it it will be used for the camera position and orientation."
-		"If the selected subsystem is a turret and has no eyepoint the camera will be at the first firing point and look along the firing direction."
-		"If a valid camera target is set the direction to the target will override any other orientation."
+		"If the selected subsystem or one of its children has an eyepoint bound to it it will be used for the camera position and orientation. "
+		"If the selected subsystem is a turret and has no eyepoint the camera will be at the first firing point and look along the firing direction. "
+		"If a valid camera target is set the direction to the target will override any other orientation. "
 		"Takes 1 to 2 arguments...\r\n"
 		"\t1:\tShip to mount camera on\r\n"
 		"\t(optional)\r\n"
@@ -41939,15 +41950,15 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{OP_SCRIPT_EVAL_BOOL, "script-eval-bool\r\n"
-		"\tEvaluates script to return a boolean"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script that returns a boolean. "
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tScript\r\n"
 	},
 
 	{OP_SCRIPT_EVAL_NUM, "script-eval-num\r\n"
-		"\tEvaluates script to return a number"
-		"Takes 1 argument...\r\n"
-		"\t1:\tScript\r\n"
+		"\tEvaluates the concatenation of all arguments as a single script that returns a number. "
+		"Takes at least 1 argument...\r\n"
+		"\tAll:\tScript\r\n"
 	},
 
 	{ OP_DISABLE_ETS, "disable-ets\r\n"
@@ -42164,8 +42175,7 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_OVERRIDE_MOTION_DEBRIS, "set-motion-debris-override\r\n"
-		"\tControls whether or not motion debris should be active.\r\n"
-		"\tThis overrides any choice made by the user through the -nomotiondebris commandline flag."
+		"\tControls whether or not motion debris should be active.  This overrides any choice made by the user through the -nomotiondebris commandline flag.  "
 		"Takes 1 argument...\r\n"
 		"\t1:\tBoolean: True will disable motion debris, False reenable it.\r\n"
 	},

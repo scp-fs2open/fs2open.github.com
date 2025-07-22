@@ -387,6 +387,28 @@ int CFred_mission_save::fout_version(const char* format, ...)
 	return 0;
 }
 
+void CFred_mission_save::fout_raw_comment(const char *comment_start)
+{
+	Assertion(comment_start <= raw_ptr, "This function assumes the beginning of the comment precedes the current raw pointer!");
+
+	// the current character is \n, so either set it to 0, or set the preceding \r (if there is one) to 0
+	if (*(raw_ptr - 1) == '\r') {
+		*(raw_ptr - 1) = '\0';
+	} else {
+		*raw_ptr = '\0';
+	}
+
+	// save the comment, which will write all characters up to the 0 we just set
+	fout("%s\n", comment_start);
+
+	// restore the overwritten character
+	if (*(raw_ptr - 1) == '\0') {
+		*(raw_ptr - 1) = '\r';
+	} else {
+		*raw_ptr = '\n';
+	}
+}
+
 void CFred_mission_save::parse_comments(int newlines)
 {
 	char* comment_start = NULL;
@@ -499,30 +521,15 @@ void CFred_mission_save::parse_comments(int newlines)
 					if (first_comment && !flag) {
 						fout("\t\t");
 					}
+					fout_raw_comment(comment_start);
 
-					*raw_ptr = 0;
-					fout("%s\n", comment_start);
-					*raw_ptr = '\n';
 					state = first_comment = same_line = flag = 0;
 				} else if (state == 4) {
 					same_line = newlines - 2 + same_line;
 					while (same_line-- > 0) {
 						fout("\n");
 					}
-
-					if (*(raw_ptr - 1) == '\r') {
-						*(raw_ptr - 1) = '\0';
-					} else {
-						*raw_ptr = 0;
-					}
-
-					fout("%s\n", comment_start);
-
-					if (*(raw_ptr - 1) == '\0') {
-						*(raw_ptr - 1) = '\r';
-					} else {
-						*raw_ptr = '\n';
-					}
+					fout_raw_comment(comment_start);
 
 					state = first_comment = same_line = flag = 0;
 				}
@@ -3467,15 +3474,19 @@ int CFred_mission_save::save_objects()
 
 		// Display name
 		// The display name is only written if there was one at the start to avoid introducing inconsistencies
-		if (save_format != MissionFormat::RETAIL && shipp->has_display_name()) {
+		if (save_format != MissionFormat::RETAIL && (_viewport->Always_save_display_names || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
 			end_string_at_first_hash_symbol(truncated_name);
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
-			if (strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				fout("\n$Display name:");
-				fout_ext(" ", "%s", shipp->display_name.c_str());
+			if (_viewport->Always_save_display_names || strcmp(shipp->get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display name:", "$Class:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display name:");
+				}
+				fout_ext(" ", "%s", shipp->get_display_name());
 			}
 		}
 
@@ -4938,8 +4949,13 @@ int CFred_mission_save::save_containers()
 					fout("\n+Strictly Typed Data");
 				}
 
+				SCP_vector<std::pair<SCP_string, SCP_string>> sorted_data(container.map_data.begin(), container.map_data.end());
+				std::stable_sort(sorted_data.begin(), sorted_data.end(),
+					[](const std::pair<SCP_string, SCP_string> &a, const std::pair<SCP_string, SCP_string> &b)
+					{ return a.first < b.first; });
+
 				fout("\n$Data: ( ");
-				for (const auto &map_entry : container.map_data) {
+				for (const auto &map_entry : sorted_data) {
 					fout("\"%s\" \"%s\" ", map_entry.first.c_str(), map_entry.second.c_str());
 				}
 
@@ -5003,13 +5019,13 @@ int CFred_mission_save::save_waypoints()
 		if (save_format != MissionFormat::RETAIL) {
 			
 			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			if (jnp->HasDisplayName()) {
+			if (_viewport->Always_save_display_names || jnp->HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
 				strcpy_s(truncated_name, jnp->GetName());
 				end_string_at_first_hash_symbol(truncated_name);
 
 				// Also, the display name is not written if it's just the truncation of the name at the hash
-				if (strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
+				if (_viewport->Always_save_display_names || strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
 					if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 						parse_comments();
 					} else {

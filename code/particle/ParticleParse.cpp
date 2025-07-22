@@ -1,6 +1,8 @@
 #include "particle/ParticleManager.h"
 #include "particle/ParticleEffect.h"
 #include "particle/volumes/ConeVolume.h"
+#include "particle/volumes/PointVolume.h"
+#include "particle/volumes/RingVolume.h"
 #include "particle/volumes/SpheroidVolume.h"
 
 #include <anl.h>
@@ -16,6 +18,12 @@ namespace particle {
 			if (internal::required_string_if_new("+Filename:", false)) {
 				effect.m_bitmap_list = internal::parseAnimationList(true);
 				effect.m_bitmap_range = ::util::UniformRange<size_t>(0, effect.m_bitmap_list.size() - 1);
+			}
+		}
+
+		static void parseBitmapReversed(ParticleEffect &effect) {
+			if (optional_string("+Animation Reversed:")) {
+				stuff_boolean(&effect.m_reverseAnimation);
 			}
 		}
 
@@ -73,6 +81,10 @@ namespace particle {
 			if (optional_string(modern ? "+Position Offset:" : "+Offset:")) {
 				stuff_vec3d(&effect.m_manual_offset.emplace());
 			}
+
+			if (optional_string("+Velocity Offset:")) {
+				stuff_vec3d(&effect.m_manual_velocity_offset.emplace());
+			}
 		}
 
 		static void parseParentLocal(ParticleEffect& effect) {
@@ -108,7 +120,7 @@ namespace particle {
 
 		static std::shared_ptr<ParticleVolume> parseVolume() {
 
-			int type = required_string_one_of(2, "Spheroid", "Cone"); //... and future volumes
+			int type = required_string_one_of(4, "Spheroid", "Cone", "Ring", "Point"); //... and future volumes
 			std::shared_ptr<ParticleVolume> volume;
 
 			switch (type) {
@@ -119,6 +131,14 @@ namespace particle {
 				case 1:
 					required_string("Cone");
 					volume = std::make_shared<ConeVolume>();
+					break;
+				case 2:
+					required_string("Ring");
+					volume = std::make_shared<RingVolume>();
+					break;
+				case 3:
+					required_string("Point");
+					volume = std::make_shared<PointVolume>();
 					break;
 				default:
 					UNREACHABLE("Invalid volume type specified!");
@@ -134,6 +154,10 @@ namespace particle {
 			else if (optional_string("+Absolute Velocity Inherit:")) {
 				effect.m_vel_inherit = ::util::ParsedRandomFloatRange::parseRandomRange();
 				effect.m_vel_inherit_absolute = true;
+			}
+
+			if (optional_string("+Ignore Velocity Inherit If Parented:")) {
+				stuff_boolean(&effect.m_ignore_velocity_inherit_if_has_parent);
 			}
 		}
 
@@ -302,6 +326,7 @@ namespace particle {
 
 			//Particle Settings
 			parseBitmaps(effect);
+			parseBitmapReversed(effect);
 			parseRotationType(effect);
 			parseRadius(effect);
 			parseLength(effect);

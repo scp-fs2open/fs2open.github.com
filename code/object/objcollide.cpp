@@ -18,6 +18,9 @@
 #include "weapon/beam.h"
 #include "weapon/weapon.h"
 #include "tracing/Monitor.h"
+#include "utils/threading.h"
+
+#include <limits>
 
 
 // the next 2 variables are used for pair statistics
@@ -722,12 +725,115 @@ void obj_quicksort_colliders(SCP_vector<int> *list, int left, int right, int axi
     }
 }
 
+struct collision_thread_data {
+	struct collision_queue_item {
+		obj_pair objs;
+		uint ctype;
+	};
+	struct collision_queue_result {
+		obj_pair objs;
+		bool never_recheck;
+		std::any collision_data;
+		void (*process_collision)( obj_pair *pair,  const std::any& collision_data );
+	};
+
+	std::atomic_size_t queue_length, result_length;
+	std::mutex queue_mutex, result_mutex;
+	std::unique_ptr<SCP_vector<collision_queue_item>> queue_load, queue_process;
+	std::unique_ptr<SCP_vector<collision_queue_result>> queue_results, queue_send;
+
+	collision_thread_data() :
+		queue_length(0),
+		result_length(0),
+		queue_load(std::make_unique<SCP_vector<collision_queue_item>>()),
+		queue_process(std::make_unique<SCP_vector<collision_queue_item>>()),
+		queue_results(std::make_unique<SCP_vector<collision_queue_result>>()),
+		queue_send(std::make_unique<SCP_vector<collision_queue_result>>()) {}
+};
+
+std::unique_ptr<collision_thread_data[]> collision_thread_data_buffer;
+std::atomic_bool collision_processing_done = false;
+
+void spin_up_mp_collision() {
+	collision_processing_done.store(false);
+	threading::spin_up_threaded_task(threading::WorkerThreadTask::COLLISION);
+}
+
+void spin_down_mp_collision() {
+	threading::spin_down_threaded_task();
+	collision_processing_done.store(true);
+}
+
+void queue_mp_collision(uint ctype, const obj_pair& colliding) {
+	size_t min_queue_length = std::numeric_limits<size_t>::max();
+	size_t target_thread = 0;
+	for (size_t i = 0; i < threading::get_num_workers(); i++) {
+		size_t queue_length = collision_thread_data_buffer[i].queue_length.load(std::memory_order_acquire);
+		if (queue_length == 0) {
+			target_thread = i;
+			break;
+		}
+		else if (queue_length < min_queue_length) {
+			target_thread = i;
+			min_queue_length = queue_length;
+		}
+	}
+	{
+		auto& thread = collision_thread_data_buffer[target_thread];
+		std::scoped_lock lock(thread.queue_mutex);
+		thread.queue_load->emplace_back( collision_thread_data::collision_queue_item{colliding, ctype} );
+		thread.queue_length.fetch_add(1, std::memory_order_release);
+	}
+}
+
+void post_process_threaded_collisions() {
+	SCP_map<size_t, size_t> workerThreads;
+	for (size_t i = 0; i < threading::get_num_workers(); i++)
+		workerThreads.emplace(i, 0);
+
+	while (!workerThreads.empty()) {
+		for(auto& [i, processed] : workerThreads) {
+			auto& thread = collision_thread_data_buffer[i];
+
+			if (thread.result_length.load(std::memory_order_acquire) > processed) {
+				{
+					std::scoped_lock lock(thread.result_mutex);
+					thread.queue_results.swap(thread.queue_send);
+				}
+				for (auto& collision : *thread.queue_send) {
+					uint key = (OBJ_INDEX(collision.objs.a) << collision_cache_bitshift) + OBJ_INDEX(collision.objs.b);
+					collider_pair *collision_info = &Collision_cached_pairs[key];
+
+					if (collision.collision_data.has_value())
+						collision.process_collision(&collision.objs, collision.collision_data);
+
+					if (collision.never_recheck) {
+						collision_info->next_check_time = -1;
+					} else {
+						collision_info->next_check_time = collision.objs.next_check_time;
+					}
+				}
+				processed += thread.queue_send->size();
+				thread.queue_send->clear();
+			}
+			else if (thread.queue_length.load(std::memory_order_acquire) == 0) {
+				thread.queue_results->clear();
+				workerThreads.erase(i);
+				break;
+			}
+		}
+	}
+
+	spin_down_mp_collision();
+}
+
 void obj_collide_pair(object *A, object *B)
 {
     TRACE_SCOPE(tracing::CollidePair);
 
     int (*check_collision)( obj_pair *pair ) = nullptr;
     int swapped = 0;
+	bool support_mp = false;
 
     if ( A==B ) return;		// Don't check collisions with yourself
 
@@ -752,9 +858,11 @@ void obj_collide_pair(object *A, object *B)
         case COLLISION_OF(OBJ_WEAPON,OBJ_SHIP):
             swapped = 1;
             check_collision = collide_ship_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_SHIP, OBJ_WEAPON):
             check_collision = collide_ship_weapon;
+			support_mp = true;
             break;
         case COLLISION_OF(OBJ_DEBRIS, OBJ_WEAPON):
             check_collision = collide_debris_weapon;
@@ -786,6 +894,10 @@ void obj_collide_pair(object *A, object *B)
             break;
         case COLLISION_OF(OBJ_SHIP,OBJ_SHIP):
             check_collision = collide_ship_ship;
+#ifdef NDEBUG
+			//This is, due to debug prints, unfortunately only safe in release builds...
+			support_mp = true;
+#endif
             break;
 
         case COLLISION_OF(OBJ_SHIP, OBJ_BEAM):
@@ -971,12 +1083,17 @@ void obj_collide_pair(object *A, object *B)
     new_pair.b = B;
     new_pair.next_check_time = collision_info->next_check_time;
 
-    if ( check_collision(&new_pair) ) {
-        // don't have to check ever again
-        collision_info->next_check_time = -1;
-    } else {
-        collision_info->next_check_time = new_pair.next_check_time;
-    }
+	if (threading::is_threading() && support_mp) {
+		queue_mp_collision(ctype, new_pair);
+	}
+	else {
+		if (check_collision(&new_pair)) {
+			// don't have to check ever again
+			collision_info->next_check_time = -1;
+		} else {
+			collision_info->next_check_time = new_pair.next_check_time;
+		}
+	}
 }
 
 void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<int> &list, int axis, bool collide)
@@ -1024,7 +1141,55 @@ void obj_find_overlap_colliders(SCP_vector<int> &overlap_list_out, SCP_vector<in
         overlappers.push_back(in_index);
     }
 }
+
 } //anon namespace
+
+void collide_mp_worker_thread(size_t threadIdx) {
+	auto& thread = collision_thread_data_buffer[threadIdx];
+	thread.result_length.store(0);
+
+	while (!thread.queue_process->empty() || thread.queue_length.load(std::memory_order_acquire) > 0 || !collision_processing_done.load(std::memory_order_acquire)) {
+		if (!thread.queue_process->empty()) {
+
+			for (auto& collision_check : *thread.queue_process) {
+				collision_result (*check_collision)( obj_pair *pair ) = nullptr;
+
+				switch( collision_check.ctype )	{
+					case COLLISION_OF(OBJ_WEAPON, OBJ_SHIP):
+					case COLLISION_OF(OBJ_SHIP, OBJ_WEAPON):
+						check_collision = collide_ship_weapon_check;
+						break;
+					case COLLISION_OF(OBJ_SHIP, OBJ_SHIP):
+						check_collision = collide_ship_ship_check;
+						break;
+					default:
+						UNREACHABLE("Got non MP-compatible collision type!");
+				}
+
+				auto&& [check_again, collision_data_maybe, collision_fnc] = check_collision(&collision_check.objs);
+
+				{
+					std::scoped_lock lock{thread.result_mutex};
+					thread.queue_results->emplace_back(collision_thread_data::collision_queue_result{collision_check.objs, check_again, collision_data_maybe, collision_fnc});
+				}
+				thread.result_length.fetch_add(1, std::memory_order_release);
+				thread.queue_length.fetch_sub(1, std::memory_order_release);
+			}
+			thread.queue_process->clear();
+		}
+		else if (thread.queue_length.load(std::memory_order_acquire) > 0) {
+			//We must have data in the load queue then.
+			std::scoped_lock lock(thread.queue_mutex);
+			thread.queue_load.swap(thread.queue_process);
+			thread.queue_load->clear();
+		}
+	}
+}
+
+void collide_init() {
+	if (threading::is_threading())
+		collision_thread_data_buffer = std::make_unique<collision_thread_data[]>(threading::get_num_workers());
+}
 
 // used only in obj_sort_and_collide()
 static SCP_vector<int> sort_list_y;
@@ -1037,6 +1202,9 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 
 	if ( !(Game_detail_flags & DETAIL_FLAG_COLLISION) )
 		return;
+
+	if (threading::is_threading())
+		spin_up_mp_collision();
 
 	if (!Collision_cache_stale_objects.empty()) {
 		obj_collide_retime_stale_pairs();
@@ -1068,6 +1236,9 @@ void obj_sort_and_collide(SCP_vector<int>* Collision_list)
 		obj_quicksort_colliders(&sort_list_z, 0, (int)(sort_list_z.size() - 1), 2);
 	}
 	obj_find_overlap_colliders(sort_list_y, sort_list_z, 2, true);
+
+	if (threading::is_threading())
+		post_process_threaded_collisions();
 }
 
 void collide_apply_gravity_flags_weapons() {

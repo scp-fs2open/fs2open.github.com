@@ -357,6 +357,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
 	{ "override submodel impact",   Model::Subsystem_Flags::Override_submodel_impact,           true, false },
+	{ "burst ignores rof mult", 	Model::Subsystem_Flags::Burst_ignores_RoF_Mult,				true, false },
 };
 
 const size_t Num_subsystem_flags = sizeof(Subsystem_flags)/sizeof(flag_def_list_new<Model::Subsystem_Flags>);
@@ -1075,6 +1076,7 @@ void ship_info::clone(const ship_info& other)
 	split_particles = other.split_particles;
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
+	debris_flame_particles = other.debris_flame_particles;
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1085,6 +1087,7 @@ void ship_info::clone(const ship_info& other)
 	debris_damage_type_idx = other.debris_damage_type_idx;
 	debris_min_hitpoints = other.debris_min_hitpoints;
 	debris_max_hitpoints = other.debris_max_hitpoints;
+	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
@@ -1430,6 +1433,7 @@ void ship_info::move(ship_info&& other)
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
+	std::swap(debris_flame_particles, other.debris_flame_particles);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1440,6 +1444,7 @@ void ship_info::move(ship_info&& other)
 	debris_damage_type_idx = other.debris_damage_type_idx;
 	debris_min_hitpoints = other.debris_min_hitpoints;
 	debris_max_hitpoints = other.debris_max_hitpoints;
+	debris_hitpoints_radius_multi = other.debris_hitpoints_radius_multi;
 	debris_damage_mult = other.debris_damage_mult;
 	debris_arc_percent = other.debris_arc_percent;
 	debris_gravity_const = other.debris_gravity_const;
@@ -1793,12 +1798,15 @@ ship_info::ship_info()
 	static auto default_regular_end_particles = default_ship_particle_effect(LegacyShipParticleType::OTHER, 100, 50, 1.5f, 0.1f, 4.0f, 0.5f, 20.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	regular_end_particles = default_regular_end_particles;
 
+	debris_flame_particles = particle::ParticleEffectHandle::invalid();
+
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
 	debris_min_speed = -1.0f;
 	debris_max_speed = -1.0f;
 	debris_min_rotspeed = -1.0f;
 	debris_max_rotspeed = -1.0f;
+	debris_hitpoints_radius_multi = -1.0f;
 	debris_damage_type_idx = -1;
 	debris_min_hitpoints = -1.0f;
 	debris_max_hitpoints = -1.0f;
@@ -2043,7 +2051,7 @@ ship_info::ship_info()
 
 	damage_lightning_type = SLT_DEFAULT;
 
-	shield_impact_explosion_anim = -1;
+	shield_impact_explosion_anim = particle::ParticleEffectHandle::invalid();
 	hud_gauges.clear();
 	hud_enabled = false;
 	hud_retail = false;
@@ -2526,6 +2534,9 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 	auto effect = particle::ParticleEffect(
 		"", //Name
 		particle_num, //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
 		useNormal ? particle::ParticleEffect::ShapeDirection::HIT_NORMAL : particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 		::util::UniformFloatRange(velocityInherit), //Velocity Inherit
 		false, //Velocity Inherit absolute?
@@ -2540,6 +2551,12 @@ particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipPart
 		true, //Affected by detail
 		range, //Culling range multiplier
 		true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		false, //Don't reverse animation
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
+		std::nullopt, //Local offset
 		lifetime, //Lifetime
 		radius, //Radius
 		bitmap); //Bitmap
@@ -3442,6 +3459,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			if(sip->debris_max_hitpoints < 0.0f)
 				Warning(LOCATION, "Debris max hitpoints on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
 		}
+		if(optional_string("+Hitpoints Radius Multiplier:")) {
+			stuff_float(&sip->debris_hitpoints_radius_multi);
+			if (sip->debris_hitpoints_radius_multi < 0.0f)
+				Warning(LOCATION, "Hitpoints Radius Multiplier on %s '%s' is below 0 and will be ignored", info_type_name, sip->name);
+		}
 		if(optional_string("+Damage Multiplier:")) {
 			stuff_float(&sip->debris_damage_mult);
 			if(sip->debris_damage_mult < 0.0f)
@@ -3462,7 +3484,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->debris_gravity_const = sip->dying_gravity_const;
 		}
 
-		if (optional_string("+Debris Density"))
+		// when Debris Density was added in 23.2 it did not have a colon, so keep that backwards compatibility
+		if (optional_string("+Debris Density:") || optional_string("+Debris Density"))
 			stuff_float(&sip->debris_density);
 
 		gamesnd_id ambient_snd, collision_snd_light, collision_snd_heavy, explosion_snd;
@@ -3829,6 +3852,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->knossos_end_particles = parse_ship_legacy_particle_effect(LegacyShipParticleType::OTHER, sip, "knossos death spew", 50.f, particle::Anim_bitmap_id_smoke2, 1.f, true);
 	}
 
+	if(optional_string("$Debris Flame Effect:"))
+	{
+		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
 	auto skip_str = "$Skip Death Roll Percent Chance:";
 	auto vaporize_str = "$Vaporize Percent Chance:";
 	int which;
@@ -4007,12 +4035,56 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		stuff_ubyte(&sip->shield_color[2]);
 	}
 
-	if(optional_string("$Shield Impact Explosion:")) {
+	if(optional_string("$Shield Impact Explosion Effect:")) {
+		sip->shield_impact_explosion_anim = particle::util::parseEffect(sip->name);
+	}
+	else if(optional_string("$Shield Impact Explosion:")) {
 		char fname[MAX_NAME_LEN];
 		stuff_string(fname, F_NAME, NAME_LENGTH);
 
-		if ( VALID_FNAME(fname) )
-			sip->shield_impact_explosion_anim = Weapon_explosions.Load(fname);
+		if ( VALID_FNAME(fname) ) {
+			auto particle = particle::ParticleEffect(
+				"", //Name
+				::util::UniformFloatRange(1.f), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
+				particle::ParticleEffect::ShapeDirection::HIT_NORMAL, //Particle direction
+				::util::UniformFloatRange(0.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				nullptr, //Velocity volume
+				::util::UniformFloatRange(), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				false, //Affected by detail
+				-1.f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				true, //parent local
+				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
+				std::nullopt, //Local offset
+				::util::UniformFloatRange(0.f), //Lifetime
+				::util::UniformFloatRange(1.f), //Radius
+				bm_load_animation(fname)); //Bitmap
+
+			static const int thruster_particle_curve = []() -> int {
+				int curve_id = static_cast<int>(Curves.size());
+				auto& curve = Curves.emplace_back(";ShipShieldParticles");
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{0.f, 0.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				curve.keyframes.emplace_back(curve_keyframe{vec2d{100000.f, 100000.f}, CurveInterpFunction::Linear, 0.f, 0.f});
+				return curve_id;
+			}();
+
+			particle.m_modular_curves.add_curve("Trigger Radius", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, modular_curves_entry{thruster_particle_curve});
+
+			sip->shield_impact_explosion_anim = particle::ParticleManager::get()->addEffect(std::move(particle));
+		}
 	}
 
 	if(optional_string("$Max Shield Recharge:")){
@@ -4833,6 +4905,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			auto particle = particle::ParticleEffect(
 				"", //Name
 				::util::UniformFloatRange(i2fl(min_n), i2fl(max_n)), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
 				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
 				::util::UniformFloatRange(1.f), //Velocity Inherit
 				true, //Velocity Inherit absolute?
@@ -4847,6 +4922,12 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				true, //Affected by detail
 				1.0f, //Culling range multiplier
 				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				false, //parent local
+				false, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
+				std::nullopt, //Local offset
 				::util::UniformFloatRange(0.0f, 1.0f), //Lifetime
 				::util::UniformFloatRange(min_rad, max_rad), //Radius
 				tpart.thruster_bitmap.first_frame); //Bitmap
@@ -7020,12 +7101,8 @@ void ship::clear()
 	for (int i = 0; i < NUM_SUB_EXPL_HANDLES; i++)
 		sub_expl_sound_handle[i] = sound_handle::invalid();
 
-	memset(&arc_pts, 0, MAX_ARC_EFFECTS * 2 * sizeof(vec3d));
-	for (int i = 0; i < MAX_ARC_EFFECTS; i++)
-		arc_timestamp[i] = TIMESTAMP::invalid();
-	memset(&arc_type, 0, MAX_ARC_EFFECTS * sizeof(ubyte));
-	memset(&arc_width, 0, MAX_ARC_EFFECTS * sizeof(float));
-	arc_next_time = timestamp(-1);
+	electrical_arcs.clear();
+	arc_next_time = TIMESTAMP::invalid();
 
 	emp_intensity = -1.0f;
 	emp_decr = 0.0f;
@@ -7361,7 +7438,7 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 
 	ets_init_ship(objp);	// init ship fields that are used for the ETS
 
-	shipp->flags.set(Ship_Flags::Engines_on);
+	shipp->flags.set(Ship_Flags::Engine_sound_on);
 
 	// set certain flags that used to be in ship_info - Goober5000
 	if (sip->flags[Ship::Info_Flags::Stealth])
@@ -7478,9 +7555,8 @@ static void ship_set(int ship_index, int objnum, int ship_type)
 	shipp->max_shield_regen_per_second = sip->max_shield_regen_per_second;
 	shipp->max_weapon_regen_per_second = sip->max_weapon_regen_per_second;
 	
-	for (int i = 0; i < (int)sip->ship_passive_arcs.size(); i++)
-		shipp->passive_arc_next_times.push_back(timestamp(0));
-
+	for (size_t i = 0; i < sip->ship_passive_arcs.size(); i++)
+		shipp->passive_arc_next_times.push_back(TIMESTAMP::immediate());
 }
 
 /**
@@ -8109,8 +8185,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 	const bool renderShipModel = ( 
 		sip->flags[Ship::Info_Flags::Show_ship_model])
 		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active)
-		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK)
-			|| !(Viewer_mode & VM_EXTERNAL));
+		&& (!Viewer_mode || (Viewer_mode & VM_PADLOCK_ANY) || (Viewer_mode & VM_OTHER_SHIP) || (Viewer_mode & VM_TRACK));
 	Cockpit_active = renderCockpitModel;
 
 	//Nothing to do
@@ -8244,6 +8319,7 @@ void ship_render_player_ship(object* objp, const vec3d* cam_offset, const matrix
 
 	uint64_t render_flags = MR_NORMAL;
 	render_flags |= MR_NO_FOGGING;
+	render_flags |= MR_NO_INSIGNIA;
 
 	if (shipp->flags[Ship::Ship_Flags::Glowmaps_disabled]) {
 		render_flags |= MR_NO_GLOWMAPS;
@@ -9552,7 +9628,7 @@ static void ship_dying_frame(object *objp, int ship_num)
 		// If a ship is dying (and not a capital or big ship) then stutter the engine sound
 		if ( timestamp_elapsed(shipp->next_engine_stutter) ) {
 			if ( !(sip->is_big_or_huge()) ) {
-				shipp->flags.toggle(Ship_Flags::Engines_on);			// toggle state of engines
+				shipp->flags.toggle(Ship_Flags::Engine_sound_on); // toggle state of engines
 				shipp->next_engine_stutter = timestamp_rand(50, 250);
 			}
 		}
@@ -16968,7 +17044,7 @@ int ship_return_subsys_path_normal(const ship *shipp, const ship_subsys *ss, con
 //				subsys	=>		pointer to the subsystem of interest
 //				eye_pos	=>		world coord for the eye looking at the subsystem
 //				subsys_pos			=>	world coord for the center of the subsystem of interest
-//				do_facing_check	=>	OPTIONAL PARAMETER (default value is 1), do a dot product check to see if subsystem fvec is facing
+//				do_facing_check	=>	OPTIONAL PARAMETER (default value is true), do a dot product check to see if subsystem fvec is facing
 //											towards the eye position	
 //				dot_out	=>		OPTIONAL PARAMETER, output parameter, will return dot between subsys fvec and subsys_to_eye_vec
 //									(only filled in if do_facing_check is true)
@@ -16979,7 +17055,7 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 	vec3d	terminus, eye_to_pos, subsys_fvec, subsys_to_eye_vec;
 
 	if (objp->type != OBJ_SHIP)
-		return 0;
+		return false;
 
 	// See if we are at least facing the subsystem
 	if ( do_facing_check ) {
@@ -16999,8 +17075,8 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 			vm_vec_negate(vec_out);
 		}
 
-		if ( dot < 0 )
-			return 0;
+		if ( dot <= 0 )
+			return false;
 	}
 
 	// See if ray from eye to subsystem actually hits close enough to the subsystem position
@@ -17019,17 +17095,13 @@ bool ship_subsystem_in_sight(const object *objp, const ship_subsys *subsys, cons
 	model_collide(&mc);
 
 	if ( !mc.num_hits ) {
-		return 0;
+		return false;
 	}	
 
 	// determine if hitpos is close enough to subsystem
 	dist = vm_vec_dist(&mc.hit_point_world, subsys_pos);
 
-	if ( dist <= subsys->system_info->radius ) {
-		return 1;
-	}
-	
-	return 0;
+	return (dist <= subsys->system_info->radius);
 }
 
 /**
@@ -17189,38 +17261,9 @@ const char *ship_subsys_get_name_on_hud(const ship_subsys *ss)
 		return ship_subsys_get_name(ss);
 }
 
-/**
- * Return the shield strength of the specified quadrant on hit_objp
- *
- * @param hit_objp object pointer to ship getting hit
- * @param quadrant_num shield quadrant that was hit
- * @return strength of shields in the quadrant that was hit as a percentage, between 0 and 1.0
- */
-float ship_quadrant_shield_strength(const object *hit_objp, int quadrant_num)
+const char *ship_subsys_get_canonical_name(const ship_subsys *ss)
 {
-	float			max_quadrant;
-
-	// If ship doesn't have shield mesh, then return
-	if ( hit_objp->flags[Object::Object_Flags::No_shields] ) {
-		return 0.0f;
-	}
-
-	// If shields weren't hit, return 0
-	if ( quadrant_num < 0 )
-		return 0.0f;
-
-	max_quadrant = shield_get_max_quad(hit_objp);
-	if ( max_quadrant <= 0 ) {
-		return 0.0f;
-	}
-
-	Assertion(quadrant_num < static_cast<int>(hit_objp->shield_quadrant.size()), "ship_quadrant_shield_strength() called with a quadrant of %d on a ship with " SIZE_T_ARG " quadrants; get a coder!\n", quadrant_num, hit_objp->shield_quadrant.size());
-
-	if(hit_objp->shield_quadrant[quadrant_num] > max_quadrant)
-		mprintf(("Warning: \"%s\" has shield quadrant strength of %f out of %f\n",
-				Ships[hit_objp->instance].ship_name, hit_objp->shield_quadrant[quadrant_num], max_quadrant));
-
-	return hit_objp->shield_quadrant[quadrant_num]/max_quadrant;
+	return ss->system_info->subobj_name;
 }
 
 // Determine if a ship is threatened by any dumbfire projectiles (laser or missile)
@@ -20638,7 +20681,7 @@ void ArmorType::ParseData()
 			no_content = false;
 		}
 
-		adt.piercing_start_pct = 0.1f;
+		adt.piercing_start_pct = Shield_percent_skips_damage;
 		adt.piercing_type = -1;
 
 		if(optional_string("+Weapon Piercing Effect Start Limit:")) {
@@ -21388,18 +21431,9 @@ void ship_render(object* obj, model_draw_list* scene)
 
 	// Only render electrical arcs if within 500m of the eye (for a 10m piece)
 	if ( vm_vec_dist_quick( &obj->pos, &Eye_position ) < obj->radius*50.0f && !Rendering_to_shadow_map ) {
-		for ( int i = 0; i < MAX_ARC_EFFECTS; i++ )	{
-			if ( shipp->arc_timestamp[i].isValid() ) {
-				model_instance_add_arc(pm,
-					pmi,
-					-1,
-					&shipp->arc_pts[i][0],
-					&shipp->arc_pts[i][1],
-					shipp->arc_type[i],
-					&shipp->arc_primary_color_1[i],
-					&shipp->arc_primary_color_2[i],
-					&shipp->arc_secondary_color[i],
-					shipp->arc_width[i]);
+		for (auto &arc: shipp->electrical_arcs)	{
+			if (arc.timestamp.isValid()) {
+				model_instance_add_arc(pm, pmi, -1, &arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points.get(), arc.type, &arc.primary_color_1, &arc.primary_color_2, &arc.secondary_color, arc.width, arc.segment_depth);
 			}
 		}
 	}
@@ -21836,4 +21870,24 @@ int ship_check_visibility(const ship* viewed, ship* viewer)
 	}
 
 	return ship_is_visible;
+}
+
+ship_electrical_arc *ship_find_or_create_electrical_arc_slot(ship *shipp, bool no_create)
+{
+	size_t i = 0;
+	for (auto &ii : shipp->electrical_arcs)
+	{
+		if (!ii.timestamp.isValid())
+			break;
+		i++;
+	}
+
+	if (i == shipp->electrical_arcs.size())
+	{
+		if (no_create)
+			return nullptr;
+		shipp->electrical_arcs.emplace_back();
+	}
+
+	return &shipp->electrical_arcs[i];
 }

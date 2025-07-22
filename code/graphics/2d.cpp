@@ -79,7 +79,8 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(SEPARATE_BLEND_FUNCTIONS),
 	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
-	GR_CAPABILITY_ENTRY(LARGE_SHADER)
+	GR_CAPABILITY_ENTRY(LARGE_SHADER),
+	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -3072,7 +3073,7 @@ size_t hash<vertex_layout>::operator()(const vertex_layout& data) const {
 bool vertex_layout::resident_vertex_format(vertex_format_data::vertex_format format_type) const {
 	return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false;
 }
-void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset) {
+void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset, size_t divisor, size_t buffer_number ) {
 	// A stride value of 0 is not handled consistently by the graphics API so we must enforce that that does not happen
 	Assertion(stride != 0, "The stride of a vertex component may not be zero!");
 
@@ -3081,15 +3082,16 @@ void vertex_layout::add_vertex_component(vertex_format_data::vertex_format forma
 		return;
 	}
 
-	if (Vertex_mask == 0) {
+	auto stride_it = Vertex_stride.find(buffer_number);
+	if (stride_it == Vertex_stride.end()) {
 		// This is the first element so we need to initialize the global stride here
-		Vertex_stride = stride;
+		stride_it = Vertex_stride.emplace(buffer_number, stride).first;
 	}
 
-	Assertion(Vertex_stride == stride, "The strides of all elements must be the same in a vertex layout!");
+	Assertion(stride_it->second == stride, "The strides of all elements must be the same in a vertex layout!");
 
 	Vertex_mask |= (1 << format_type);
-	Vertex_components.push_back(vertex_format_data(format_type, stride, offset));
+	Vertex_components.emplace_back(format_type, stride, offset, divisor, buffer_number);
 }
 bool vertex_layout::operator==(const vertex_layout& other) const {
 	if (Vertex_mask != other.Vertex_mask) {

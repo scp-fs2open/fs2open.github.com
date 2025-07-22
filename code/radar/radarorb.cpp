@@ -426,6 +426,9 @@ void HudGaugeRadarOrb::render(float  /*frametime*/, bool config)
 	// For now config view stops here but it should be doable to have
 	// this render the orb outlines using the next two functions eventually
 	if (config) {
+		if(g3_yourself)
+			g3_end_frame();
+
 		return;
 	}
 

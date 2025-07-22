@@ -6997,7 +6997,8 @@ void process_asteroid_info( ubyte *data, header *hinfo )
 		
 		// if we know the other object is a weapon, then do a weapon hit to kill the weapon
 		if ( other_objp && (other_objp->type == OBJ_WEAPON) ){
-			weapon_hit( other_objp, objp, &hitpos );
+			bool armed = weapon_hit( other_objp, objp, &hitpos );
+			maybe_play_conditional_impacts({}, other_objp, objp, armed, -1, &hitpos);
 		}
 		break;
 	}
@@ -8770,15 +8771,30 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	// create the weapon object	
 	weapon_objnum = weapon_create( &pos, &orient, wid, OBJ_INDEX(objp), -1, true, false, 0.0f, ssp, launch_curve_data);
 	if (weapon_objnum != -1) {
-		if ( Weapon_info[wid].launch_snd.isValid() ) {
+		const weapon_info& wip = Weapon_info[wid];
+		if ( wip.launch_snd.isValid() ) {
 			snd_play_3d( gamesnd_get_game_sound(Weapon_info[wid].launch_snd), &pos, &View_position );
 		}
 
-		// create a muzzle flash from a flak gun based upon firing position and weapon type
-		mflash_create(&pos, &dir, &objp->phys_info, Weapon_info[wid].muzzle_flash);
+		object& wp_obj = Objects[weapon_objnum];
+		const weapon& wp = Weapons[wp_obj.instance];
+
+		if (wip.muzzle_effect.isValid()) {
+			float radius_mult = 1.f;
+			if (wip.render_type == WRT_LASER) {
+				radius_mult = wip.weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, wp, &wp.modular_curves_instance);
+			}
+			//spawn particle effect
+			auto particleSource = particle::ParticleManager::get()->createSource(wip.muzzle_effect);
+			//This could potentially be attached to the ship, but might look weird if the spawn position of the weapon is ever interpolated away from the ship's barrel.
+			particleSource->setHost(make_unique<EffectHostVector>(pos, orient, objp->phys_info.vel));
+			particleSource->setTriggerRadius(wp_obj.radius * radius_mult);
+			particleSource->setTriggerVelocity(vm_vec_mag_quick(&wp_obj.phys_info.vel));
+			particleSource->finishCreation();
+		}
 
 		// set its range explicitly - make it long enough so that it's guaranteed to still exist when the server tells us it blew up
-		flak_set_range(&Objects[weapon_objnum], (float)flak_range);
+		flak_set_range(&wp_obj, (float)flak_range);
 	}
 }
 

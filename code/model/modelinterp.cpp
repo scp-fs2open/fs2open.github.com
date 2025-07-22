@@ -97,6 +97,8 @@ class bsp_polygon_data
 	int Num_flat_polies;
 	int Num_flat_verts;
 
+	int bsp_data_size;
+
 	void process_bsp(int offset, ubyte* bsp_data);
 	void process_defpoints(int off, ubyte* bsp_data);
 	void process_sortnorm(int offset, ubyte* bsp_data);
@@ -105,7 +107,7 @@ class bsp_polygon_data
 	void process_tmap2(int offset, ubyte* bsp_data);
 	void process_flat(int offset, ubyte* bsp_data);
 public:
-	bsp_polygon_data(ubyte* bsp_data);
+	bsp_polygon_data(ubyte* bsp_data, int bsp_data_size);
 
 	int get_num_triangles(int texture);
 	int get_num_lines(int texture);
@@ -785,20 +787,13 @@ void model_draw_bay_paths_htl(int model_num)
 	gr_set_cull(cull);
 }
 
-static const int MAX_ARC_SEGMENT_POINTS = 50;
-int Num_arc_segment_points = 0;
-vec3d Arc_segment_points[MAX_ARC_SEGMENT_POINTS];
-
-void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
+void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth)
 {
 	float d = vm_vec_dist_quick( v1, v2 );
-	const float scaler = 0.30f;
+	constexpr float scaler = 0.30f;
 
-	if ( (d < scaler) || (depth > 4) ) {
-		// the real limit appears to be 33, so we should never hit this unless the code changes
-		Assert( Num_arc_segment_points < MAX_ARC_SEGMENT_POINTS );
-
-		memcpy( &Arc_segment_points[Num_arc_segment_points++], v2, sizeof(vec3d) );
+	if ( (d < scaler) || (depth > depth_limit) ) {
+		arc_segment_points.push_back(*v2);
 	} else {
 		// divide in half
 		vec3d tmp;
@@ -809,8 +804,8 @@ void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth )
 		tmp.xyz.z += (frand() - 0.5f) * d * scaler;
 
 		// add additional point
-		interp_render_arc_segment( v1, &tmp, depth+1 );
-		interp_render_arc_segment( &tmp, v2, depth+1 );
+		interp_generate_arc_segment( arc_segment_points, v1, &tmp, depth_limit, depth+1 );
+		interp_generate_arc_segment( arc_segment_points, &tmp, v2, depth_limit, depth+1 );
 	}
 }
 
@@ -1329,6 +1324,8 @@ int submodel_get_num_polys_sub( ubyte *p )
 			Int3();		// Bad chunk type!
 			return 0;
 		}
+		if (end) break;
+
 		p += chunk_size;
 		chunk_type = w(p);
 		chunk_size = w(p+4);
@@ -1817,6 +1814,7 @@ void parse_bsp(int offset, ubyte *bsp_data)
 			default:
 				return;
 		}
+		if (end) break;
 
 		offset += size;
 		id = w(bsp_data+offset);
@@ -1929,6 +1927,7 @@ void find_tri_counts(int offset, ubyte *bsp_data)
 			default:
 				return;
 		}
+		if (end) break;
 
 		offset += size;
 		id = w(bsp_data+offset);
@@ -2180,7 +2179,7 @@ void interp_configure_vertex_buffers(polymodel *pm, int mn, const model_read_def
 
 	int milliseconds = timer_get_milliseconds();
 
-	bsp_polygon_data *bsp_polies = new bsp_polygon_data(model->bsp_data);
+	auto bsp_polies = new bsp_polygon_data(model->bsp_data, model->bsp_data_size);
 
 	auto textureReplace = deferredTasks.texture_replacements.find(mn);
 	if (textureReplace != deferredTasks.texture_replacements.end())
@@ -2885,7 +2884,7 @@ void texture_map::ResetToOriginal()
 		this->textures[i].ResetTexture();
 }
 
-bsp_polygon_data::bsp_polygon_data(ubyte* bsp_data)
+bsp_polygon_data::bsp_polygon_data(ubyte* _bsp_data, int _bsp_data_size)
 {
 	Polygon_vertices.clear();
 	Polygons.clear();
@@ -2898,7 +2897,12 @@ bsp_polygon_data::bsp_polygon_data(ubyte* bsp_data)
 	Num_flat_verts = 0;
 	Num_flat_polies = 0;
 
-	process_bsp(0, bsp_data);
+	bsp_data_size = _bsp_data_size;
+
+	Macro_ubyte_bounds = _bsp_data + _bsp_data_size;
+	process_bsp(0, _bsp_data);
+	Macro_ubyte_bounds = nullptr;
+
 }
 
 void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
@@ -2942,6 +2946,7 @@ void bsp_polygon_data::process_bsp(int offset, ubyte* bsp_data)
 		default:
 			return;
 		}
+		if (end) break;
 
 		offset += size;
 		id = w(bsp_data + offset);
@@ -3298,5 +3303,5 @@ void bsp_polygon_data::replace_textures_used(const SCP_map<int, int>& replacemen
 }
 
 SCP_set<int> model_get_textures_used(const polymodel* pm, int submodel) {
-	return bsp_polygon_data{ pm->submodel[submodel].bsp_data }.get_textures_used();
+	return bsp_polygon_data{ pm->submodel[submodel].bsp_data, pm->submodel[submodel].bsp_data_size }.get_textures_used();
 }

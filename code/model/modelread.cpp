@@ -70,6 +70,8 @@ SCP_vector<polymodel_instance*> Polygon_model_instances;
 
 SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
+const ubyte* Macro_ubyte_bounds = nullptr;
+
 static int model_initted = 0;
 
 #ifndef NDEBUG
@@ -1655,8 +1657,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
-	// reset insignia counts
-	pm->num_ins = 0;
+	// reset insignia
+	pm->ins.clear();
 
 	// reset glow points!! - Goober5000
 	pm->n_glow_point_banks = 0;
@@ -2110,7 +2112,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					sm->bsp_data_size = cfread_int(fp);
 					if (sm->bsp_data_size > 0) {
-						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						sm->bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 						cfread(sm->bsp_data, 1, sm->bsp_data_size, fp);
 						swap_bsp_data(pm, sm->bsp_data);
 					}
@@ -2123,7 +2125,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->bsp_data_size = cfread_int(fp);
 
 					if (sm->bsp_data_size > 0) {
-						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
+						auto bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 
 						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
@@ -2804,62 +2806,81 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 				break;			
 
-			case ID_INSG:				
-				int num_ins, num_verts, num_faces, idx, idx2, idx3;			
-				
+			case ID_INSG: {
 				// get the # of insignias
-				num_ins = cfread_int(fp);
-				pm->num_ins = num_ins;
-				
+				int num_ins = cfread_int(fp);
+				pm->ins = SCP_vector<insignia>(num_ins);
+
 				// read in the insignias
-				for(idx=0; idx<num_ins; idx++){
+				for (int idx = 0; idx < num_ins; idx++){
+					insignia& ins = pm->ins[idx];
+
 					// get the detail level
-					pm->ins[idx].detail_level = cfread_int(fp);
-					if (pm->ins[idx].detail_level < 0) {
-						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
+					ins.detail_level = cfread_int(fp);
+					if (ins.detail_level < 0) {
+						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, ins.detail_level);
 					}
 
 					// # of faces
-					num_faces = cfread_int(fp);
-					pm->ins[idx].num_faces = num_faces;
-					Assert(num_faces <= MAX_INS_FACES);
+					int num_faces = cfread_int(fp);
 
 					// # of vertices
-					num_verts = cfread_int(fp);
-					Assert(num_verts <= MAX_INS_VECS);
+					int num_verts = cfread_int(fp);
+					SCP_vector<vec3d> vertices(num_verts);
 
 					// read in all the vertices
-					for(idx2=0; idx2<num_verts; idx2++){
-						cfread_vector(&pm->ins[idx].vecs[idx2], fp);
+					for(int idx2 = 0; idx2 < num_verts; idx2++){
+						cfread_vector(&vertices[idx2], fp);
 					}
 
+					vec3d offset;
 					// read in world offset
-					cfread_vector(&pm->ins[idx].offset, fp);
+					cfread_vector(&offset, fp);
+
+					vec3d min {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+					vec3d max {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+					vec3d avg_total = ZERO_VECTOR;
+					vec3d avg_normal = ZERO_VECTOR;
 
 					// read in all the faces
-					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){						
+					for(int idx2 = 0; idx2 < num_faces; idx2++){
+						std::array<int, 3> faces;
 						// read in 3 vertices
-						for(idx3=0; idx3<3; idx3++){
-							pm->ins[idx].faces[idx2][idx3] = cfread_int(fp);
-							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
-							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
+						for(int idx3 = 0; idx3 < 3; idx3++){
+							faces[idx3] = cfread_int(fp);
+
+							//UV coords are no longer needed
+							cfread_float(fp);
+							cfread_float(fp);
 						}
-						vec3d tempv;
 
+						const vec3d& v1 = vertices[faces[0]];
+						const vec3d& v2 = vertices[faces[1]];
+						const vec3d& v3 = vertices[faces[2]];
+
+						vec3d normal;
 						//get three points (rotated) and compute normal
+						vm_vec_perp(&normal, &v1, &v2, &v3);
 
-						vm_vec_perp(&tempv, 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+						vm_vec_min(&min, &min, &v1);
+						vm_vec_min(&min, &min, &v2);
+						vm_vec_min(&min, &min, &v3);
+						vm_vec_max(&max, &max, &v1);
+						vm_vec_max(&max, &max, &v2);
+						vm_vec_max(&max, &max, &v3);
 
-						vm_vec_normalize_safe(&tempv);
-
-						pm->ins[idx].norm[idx2] = tempv;
+						vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+						avg_total += avg;
+						avg_normal += normal;
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
-
 					}
-				}					
+
+					ins.position = avg_total / static_cast<float>(num_faces) + offset;
+					vec3d bb = max - min;
+					ins.diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+					vm_vector_2_matrix(&ins.orientation, &avg_normal, &vmd_z_vector);
+				}
+				}
 				break;
 
 			// autocentering info
@@ -3555,7 +3576,10 @@ int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool
 	for (i = 0; i < pm->n_models; ++i) {
 		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+
+		Macro_ubyte_bounds = pm->submodel[i].bsp_data + pm->submodel[i].bsp_data_size;
 		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+		Macro_ubyte_bounds = nullptr;
 	}
 
 	// Find the core_radius... the minimum of 
@@ -3893,6 +3917,11 @@ polymodel * model_get(int model_num)
 		return NULL;
 
 	return Polygon_models[num];
+}
+
+int num_model_instances()
+{
+	return static_cast<int>(Polygon_model_instances.size());
 }
 
 polymodel_instance* model_get_instance(int model_instance_num)
@@ -5195,17 +5224,17 @@ void model_do_intrinsic_motions(object *objp)
 	}
 }
 
-void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
+void model_instance_clear_arcs(const polymodel *pm, polymodel_instance *pmi)
 {
 	Assert(pm->id == pmi->model_num);
 
 	for (int i = 0; i < pm->n_models; ++i) {
-		pmi->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
+		pmi->submodel[i].electrical_arcs.clear();		// Turn off any electric arcing effects
 	}
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
+void model_instance_add_arc(const polymodel *pm, polymodel_instance *pmi, int sub_model_num, const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, ubyte arc_type, const color *primary_color_1, const color *primary_color_2, const color *secondary_color, float width, ubyte segment_depth)
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5220,19 +5249,20 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	if ( sub_model_num >= pm->n_models ) return;
 	auto smi = &pmi->submodel[sub_model_num];
 
-	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
-		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
-		smi->arc_pts[smi->num_arcs][0] = *v1;
-		smi->arc_pts[smi->num_arcs][1] = *v2;
+	smi->electrical_arcs.emplace_back();
+	auto &new_arc = smi->electrical_arcs.back();
 
-		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
-			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
-			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
-			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
-			smi->arc_width[smi->num_arcs] = width;
-		}
+	new_arc.type = arc_type;
+	new_arc.endpoint_1 = *v1;
+	new_arc.endpoint_2 = *v2;
+	new_arc.persistent_arc_points = persistent_arc_points;
+	new_arc.segment_depth = segment_depth;
 
-		smi->num_arcs++;
+	if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
+		new_arc.primary_color_1 = *primary_color_1;
+		new_arc.primary_color_2 = *primary_color_2;
+		new_arc.secondary_color = *secondary_color;
+		new_arc.width = width;
 	}
 }
 
@@ -5719,6 +5749,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				Int3();		// Bad chunk type!
 			return;
 		}
+		if (end) break;
 
 		p += chunk_size;
 		chunk_type = INTEL_INT( w(p));	//tigital

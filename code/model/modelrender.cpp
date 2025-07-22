@@ -40,14 +40,10 @@ extern int Model_polys;
 extern int tiling;
 extern float model_radius;
 
-extern const int MAX_ARC_SEGMENT_POINTS;
-extern int Num_arc_segment_points;
-extern vec3d Arc_segment_points[];
-
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
 
-extern void interp_render_arc_segment(const vec3d *v1, const vec3d *v2, int depth);
+extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
 
@@ -446,7 +442,7 @@ void model_draw_list::add_submodel_to_batch(int model_num)
 	TransformBufferHandler.set_model_transform(transform, model_num);
 }
 
-void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
+void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth)
 {
 	arc_effect new_arc;
 
@@ -456,6 +452,8 @@ void model_draw_list::add_arc(const vec3d *v1, const vec3d *v2, const color *pri
 	new_arc.primary = *primary;
 	new_arc.secondary = *secondary;
 	new_arc.width = arc_width;
+	new_arc.segment_depth = segment_depth;
+	new_arc.persistent_arc_points = persistent_arc_points;
 
 	Arcs.push_back(new_arc);
 }
@@ -625,7 +623,7 @@ void model_draw_list::render_arc(const arc_effect &arc)
 {
 	g3_start_instance_matrix(&arc.transform);	
 
-	model_render_arc(&arc.v1, &arc.v2, &arc.primary, &arc.secondary, arc.width);
+	model_render_arc(&arc.v1, &arc.v2, arc.persistent_arc_points, &arc.primary, &arc.secondary, arc.width, arc.segment_depth);
 
 	g3_done_instance(true);
 }
@@ -639,51 +637,6 @@ void model_draw_list::render_arcs()
 	}
 
 	gr_zbuffer_set(mode);
-}
-
-void model_draw_list::add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num)
-{
-	insignia_draw_data new_insignia;
-
-	new_insignia.transform = Transformations.get_transform();
-	new_insignia.pm = pm;
-	new_insignia.detail_level = detail_level;
-	new_insignia.bitmap_num = bitmap_num;
-
-	new_insignia.clip = params->is_clip_plane_set();
-	new_insignia.clip_normal = params->get_clip_plane_normal();
-	new_insignia.clip_position = params->get_clip_plane_pos();
-
-	Insignias.push_back(new_insignia);
-}
-
-void model_draw_list::render_insignia(const insignia_draw_data &insignia_info)
-{
-	if ( insignia_info.clip ) {
-		vec3d tmp;
-		vec3d pos;
-
-		vm_matrix4_get_offset(&pos, &insignia_info.transform);
-		vm_vec_sub(&tmp, &pos, &insignia_info.clip_position);
-		vm_vec_normalize(&tmp);
-
-		if ( vm_vec_dot(&tmp, &insignia_info.clip_normal) < 0.0f) {
-			return;
-		}
-	}
-
-	g3_start_instance_matrix(&insignia_info.transform);	
-
-	model_render_insignias(&insignia_info);
-
-	g3_done_instance(true);
-}
-
-void model_draw_list::render_insignias()
-{
-	for ( size_t i = 0; i < Insignias.size(); ++i ) {
-		render_insignia(Insignias[i]);
-	}
 }
 
 void model_draw_list::add_outline(const vertex* vert_array, int n_verts, const color *clr)
@@ -810,11 +763,8 @@ model_draw_list::~model_draw_list() {
 
 void model_render_add_lightning(model_draw_list *scene, const model_render_params* interp, const polymodel *pm, const submodel_instance *smi )
 {
-	int i;
 	float width = 0.9f;
 	color primary, secondary;
-
-	Assert( smi->num_arcs > 0 );
 
 	if ( interp->get_model_flags() & MR_SHOW_OUTLINE_PRESET ) {
 		return;
@@ -825,9 +775,9 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
  		return;
  	}
 
-	for ( i = 0; i < smi->num_arcs; i++ ) {
+	for (auto &arc: smi->electrical_arcs) {
 		// pick a color based upon arc type
-		switch ( smi->arc_type[i] ) {
+		switch ( arc.type ) {
 			// "normal", FreeSpace 1 style arcs
 		case MARC_TYPE_DAMAGED:
 			if ( Random::flip_coin() )	{
@@ -853,14 +803,14 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 		case MARC_TYPE_SCRIPTED:
 		case MARC_TYPE_SHIP:
 			if ( Random::flip_coin() )	{
-				primary = smi->arc_primary_color_1[i];
+				primary = arc.primary_color_1;
 			} else {
-				primary = smi->arc_primary_color_2[i];
+				primary = arc.primary_color_2;
 			}
 
-			secondary = smi->arc_secondary_color[i];
+			secondary = arc.secondary_color;
 
-			width = smi->arc_width[i];
+			width = arc.width;
 
 			break;
 
@@ -887,12 +837,12 @@ void model_render_add_lightning(model_draw_list *scene, const model_render_param
 			break;
 
 		default:
-			UNREACHABLE("Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", smi->arc_type[i]);
+			UNREACHABLE("Unknown arc type of %d found in model_render_add_lightning(), please contact an SCP coder!", arc.type);
 		}
 
 		// render the actual arc segment
 		if (width > 0.0f)
-			scene->add_arc(&smi->arc_pts[i][0], &smi->arc_pts[i][1], &primary, &secondary, width);
+			scene->add_arc(&arc.endpoint_1, &arc.endpoint_2, arc.persistent_arc_points, &primary, &secondary, width, arc.segment_depth);
 	}
 }
 
@@ -1303,7 +1253,7 @@ void model_render_children_buffers(model_draw_list* scene, model_material *rende
 		} 
 	}
 
-	if ( smi != nullptr && smi->num_arcs > 0 ) {
+	if ( smi != nullptr && !smi->electrical_arcs.empty() ) {
 		model_render_add_lightning( scene, interp, pm, smi );
 	}
 
@@ -1623,7 +1573,7 @@ void submodel_render_queue(const model_render_params *render_info, model_draw_li
 		}
 	}
 	
-	if ( pmi && pmi->submodel[submodel_num].num_arcs > 0 )	{
+	if ( pmi && !pmi->submodel[submodel_num].electrical_arcs.empty() )	{
 		model_render_add_lightning( scene, render_info, pm, &pmi->submodel[submodel_num] );
 	}
 
@@ -2077,8 +2027,8 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 				Assert( bank->points != nullptr );
 				int flick;
 
-				if (pmi != nullptr && pmi->submodel[pm->detail[0]].num_arcs > 0) {
-					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].num_arcs + j); //the more damage, the more arcs, the more likely the lights will fail
+				if (pmi != nullptr && !pmi->submodel[pm->detail[0]].electrical_arcs.empty()) {
+					flick = static_rand( timestamp() % 20 ) % (pmi->submodel[pm->detail[0]].electrical_arcs.size() + j); //the more damage, the more arcs, the more likely the lights will fail
 				} else {
 					flick = 1;
 				}
@@ -2430,91 +2380,36 @@ void model_queue_render_thrusters(const model_render_params *interp, const polym
 	}
 }
 
-void model_render_insignias(const insignia_draw_data *insignia_data)
+SCP_vector<vec3d> Arc_segment_points;
+
+void model_render_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte depth_limit)
 {
-	auto pm = insignia_data->pm;
-	int detail_level = insignia_data->detail_level;
-	int bitmap_num = insignia_data->bitmap_num;
+	int size;
+	const vec3d *pvecs;
 
-	// if the model has no insignias, or we don't have a texture, then bail
-	if ( (pm->num_ins <= 0) || (bitmap_num < 0) )
-		return;
+	if (persistent_arc_points) {
+		size = static_cast<int>(persistent_arc_points->size());
+		pvecs = persistent_arc_points->data();
+	} else {
+		Arc_segment_points.clear();
 
-	int idx, s_idx;
-	vertex vecs[3];
-	vec3d t1, t2, t3;
-	int i1, i2, i3;
+		// need to add the first point
+		Arc_segment_points.push_back(*v1);
 
-	material insignia_material;
-	insignia_material.set_depth_bias(1);
+		// this should fill in all of the middle, and the last, points
+		interp_generate_arc_segment(Arc_segment_points, v1, v2, depth_limit, 0);
 
-	// set the proper texture
-	material_set_unlit(&insignia_material, bitmap_num, 0.65f, true, true);
-
-	if ( insignia_data->clip ) {
-		insignia_material.set_clip_plane(insignia_data->clip_normal, insignia_data->clip_position);
+		size = static_cast<int>(Arc_segment_points.size());
+		pvecs = Arc_segment_points.data();
 	}
-
-	// otherwise render them	
-	for(idx=0; idx<pm->num_ins; idx++){	
-		// skip insignias not on our detail level
-		if(pm->ins[idx].detail_level != detail_level){
-			continue;
-		}
-
-		for(s_idx=0; s_idx<pm->ins[idx].num_faces; s_idx++){
-			// get vertex indices
-			i1 = pm->ins[idx].faces[s_idx][0];
-			i2 = pm->ins[idx].faces[s_idx][1];
-			i3 = pm->ins[idx].faces[s_idx][2];
-
-			// transform vecs and setup vertices
-			vm_vec_add(&t1, &pm->ins[idx].vecs[i1], &pm->ins[idx].offset);
-			vm_vec_add(&t2, &pm->ins[idx].vecs[i2], &pm->ins[idx].offset);
-			vm_vec_add(&t3, &pm->ins[idx].vecs[i3], &pm->ins[idx].offset);
-
-			g3_transfer_vertex(&vecs[0], &t1);
-			g3_transfer_vertex(&vecs[1], &t2);
-			g3_transfer_vertex(&vecs[2], &t3);
-
-			// setup texture coords
-			vecs[0].texture_position.u = pm->ins[idx].u[s_idx][0];
-			vecs[0].texture_position.v = pm->ins[idx].v[s_idx][0];
-
-			vecs[1].texture_position.u = pm->ins[idx].u[s_idx][1];
-			vecs[1].texture_position.v = pm->ins[idx].v[s_idx][1];
-
-			vecs[2].texture_position.u = pm->ins[idx].u[s_idx][2];
-			vecs[2].texture_position.v = pm->ins[idx].v[s_idx][2];
-
-			light_apply_rgb( &vecs[0].r, &vecs[0].g, &vecs[0].b, &pm->ins[idx].vecs[i1], &pm->ins[idx].norm[i1], 1.5f );
-			light_apply_rgb( &vecs[1].r, &vecs[1].g, &vecs[1].b, &pm->ins[idx].vecs[i2], &pm->ins[idx].norm[i2], 1.5f );
-			light_apply_rgb( &vecs[2].r, &vecs[2].g, &vecs[2].b, &pm->ins[idx].vecs[i3], &pm->ins[idx].norm[i3], 1.5f );
-			vecs[0].a = vecs[1].a = vecs[2].a = 255;
-
-			// draw the polygon
-			g3_render_primitives_colored_textured(&insignia_material, vecs, 3, PRIM_TYPE_TRIFAN, false);
-		}
-	}
-}
-
-void model_render_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width)
-{
-	Num_arc_segment_points = 0;
-
-	// need need to add the first point
-	memcpy( &Arc_segment_points[Num_arc_segment_points++], v1, sizeof(vec3d) );
-
-	// this should fill in all of the middle, and the last, points
-	interp_render_arc_segment(v1, v2, 0);
 
 	// use primary color for fist pass
 	Assert( primary );
 
-	g3_render_rod(primary, Num_arc_segment_points, Arc_segment_points, arc_width);
+	g3_render_rod(primary, size, pvecs, arc_width);
 
 	if (secondary) {
-		g3_render_rod(secondary, Num_arc_segment_points, Arc_segment_points, arc_width * 0.33f);
+		g3_render_rod(secondary, size, pvecs, arc_width * 0.33f);
 	}
 }
 
@@ -2644,7 +2539,6 @@ void model_render_immediate(const model_render_params* render_info, int model_nu
 	}
 
 	model_list.render_outlines();
-	model_list.render_insignias();
 	model_list.render_arcs();
 	
 	gr_zbias(0);
@@ -2919,7 +2813,7 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 		} else {
 			model_render_buffers(scene, &rendering_material, interp, &pm->submodel[detail_model_num].buffer, pm, detail_model_num, detail_level, tmap_flags);
 
-			if ( pmi != nullptr && pmi->submodel[detail_model_num].num_arcs > 0 ) {
+			if ( pmi != nullptr && !pmi->submodel[detail_model_num].electrical_arcs.empty() ) {
 				model_render_add_lightning( scene, interp, pm, &pmi->submodel[detail_model_num] );
 			}
 		}
@@ -2962,8 +2856,29 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 	}
 
 	// MARKED!
-	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) ) {
-		scene->add_insignia(interp, pm, detail_level, interp->get_insignia_bitmap());
+	if ( !( model_flags & MR_NO_TEXTURING ) && !( model_flags & MR_NO_INSIGNIA) && objnum >= 0 ) {
+		int bitmap_num = interp->get_insignia_bitmap();
+		if ( (!pm->ins.empty()) && (bitmap_num >= 0) ) {
+
+			for (const auto& ins : pm->ins) {
+				// skip insignias not on our detail level
+				if (ins.detail_level != detail_level) {
+					continue;
+				}
+
+				decals::Decal decal;
+				decal.object = &Objects[objnum];
+				decal.position = ins.position;
+				decal.submodel = -1;
+				decal.scale = vec3d{{{ins.diameter, ins.diameter, ins.diameter}}};
+				decal.orig_obj_type = OBJ_SHIP;
+				decal.creation_time = f2fl(Missiontime);
+				decal.lifetime = 1.0f;
+				decal.orientation = ins.orientation;
+				decal.definition_handle = std::make_tuple(bitmap_num, -1, -1);
+				decals::addSingleFrameDecal(std::move(decal));
+			}
+		}
 	}
 
 	if ( (model_flags & MR_AUTOCENTER) && (set_autocen) ) {
@@ -3091,7 +3006,7 @@ void modelinstance_replace_active_texture(polymodel_instance* pmi, const char* o
 
 // renders a model as if in the tech room or briefing UI
 // model_type 1 for ship class, 2 for weapon class, 3 for pof
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos)
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string &pof_filename, float close_zoom, const vec3d *close_pos, const SCP_string& tcolor)
 {
 
 	model_render_params render_info;
@@ -3110,7 +3025,7 @@ bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int 
 			closeup_zoom = sip->closeup_zoom;
 
 			if (sip->uses_team_colors) {
-				render_info.set_team_color(sip->default_team_name, "none", 0, 0);
+				render_info.set_team_color(!tcolor.empty() ? tcolor : sip->default_team_name, "none", 0, 0);
 			}
 
 			if (sip->flags[Ship::Info_Flags::No_lighting]) {

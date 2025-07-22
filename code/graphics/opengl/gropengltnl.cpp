@@ -85,6 +85,7 @@ static opengl_vertex_bind GL_array_binding_data[] =
 		{ vertex_format_data::MODEL_ID,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_ID	},
 		{ vertex_format_data::RADIUS,		1, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::RADIUS	},
 		{ vertex_format_data::UVEC,			3, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::UVEC		},
+		{ vertex_format_data::MATRIX4,		16, GL_FLOAT,			GL_FALSE, opengl_vert_attrib::MODEL_MATRIX },
 	};
 
 struct opengl_buffer_object {
@@ -855,10 +856,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 			Current_shader->program->Uniforms.setTextureUniform("sGlowmap", 1);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_SPEC))
 			Current_shader->program->Uniforms.setTextureUniform("sSpecmap", 2);
-		if (setAllUniforms || (flags & MODEL_SDR_FLAG_ENV)) {
-			Current_shader->program->Uniforms.setTextureUniform("sEnvmap", 3);
-			Current_shader->program->Uniforms.setTextureUniform("sIrrmap", 11);
-		}
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_NORMAL))
 			Current_shader->program->Uniforms.setTextureUniform("sNormalmap", 4);
 		if (setAllUniforms || (flags & MODEL_SDR_FLAG_AMBIENT))
@@ -909,12 +906,6 @@ void opengl_tnl_set_model_material(model_material *material_info)
 					&array_index,
 					2);
 			}
-		}
-
-		if (ENVMAP > 0) {
-			gr_opengl_tcache_set(ENVMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 3);
-			gr_opengl_tcache_set(IRRMAP, TCACHE_TYPE_CUBEMAP, &u_scale, &v_scale, &array_index, 11);
-			Assertion(array_index == 0, "Cube map arrays are not supported yet!");
 		}
 
 		if (material_info->get_texture_map(TM_NORMAL_TYPE) > 0) {
@@ -1189,7 +1180,7 @@ void opengl_bind_vertex_component(const vertex_format_data &vert_component, size
 
 	if ( Current_shader != NULL ) {
 		// grabbing a vertex attribute is dependent on what current shader has been set. i hope no one calls opengl_bind_vertex_layout before opengl_set_current_shader
-		GLint index = opengl_shader_get_attribute(attrib_info.attribute_id);
+		GLint index = attrib_info.attribute_id;
 
 		if ( index >= 0 ) {
 			GL_state.Array.EnableVertexAttrib(index);
@@ -1233,15 +1224,23 @@ void opengl_bind_vertex_array(const vertex_layout& layout) {
 
 		auto attribIndex = attrib_info.attribute_id;
 
-		glEnableVertexAttribArray(attribIndex);
-		glVertexAttribFormat(attribIndex,
-							 bind_info.size,
-							 bind_info.data_type,
-							 bind_info.normalized,
-							 static_cast<GLuint>(component->offset));
+		GLuint add_val_index = 0;
+		for (GLint size = bind_info.size; size > 0; size -=4) {
+			glEnableVertexAttribArray(attribIndex + add_val_index);
+			glVertexAttribFormat(attribIndex + add_val_index,
+				std::min(size, 4),
+				bind_info.data_type,
+				bind_info.normalized,
+				static_cast<GLuint>(component->offset) + add_val_index * 16);
 
-		// Currently, all vertex data comes from one buffer.
-		glVertexAttribBinding(attribIndex, 0);
+			glVertexAttribBinding(attribIndex + add_val_index, static_cast<GLuint>(component->buffer_number));
+
+			add_val_index++;
+		}
+
+		if (component->divisor != 0) {
+			glVertexBindingDivisor(static_cast<GLuint>(component->buffer_number), static_cast<GLuint>(component->divisor));
+		}
 	}
 
 	Stored_vertex_arrays.insert(std::make_pair(layout, vao));
@@ -1265,5 +1264,30 @@ void opengl_bind_vertex_layout(vertex_layout &layout, GLuint vertexBuffer, GLuin
 									vertexBuffer,
 									static_cast<GLintptr>(base_offset),
 									static_cast<GLsizei>(layout.get_vertex_stride()));
+	GL_state.Array.BindElementBuffer(indexBuffer);
+}
+
+void opengl_bind_vertex_layout_multiple(vertex_layout &layout, const SCP_vector<GLuint>& vertexBuffer, GLuint indexBuffer, size_t base_offset) {
+	GR_DEBUG_SCOPE("Bind vertex layout");
+	if (!GLAD_GL_ARB_vertex_attrib_binding) {
+		/*
+		 * This will mean that decals don't render.
+		 * It's possible, but way too much effort to support non-instanced fallback rendering here.
+		 * By my estimation, every GPU you might still run FSO run supports this.
+		 * per mesamatrix.net, even the least-extension supporting mesa drivers all support this extension
+		 * */
+		return;
+	}
+
+	opengl_bind_vertex_array(layout);
+
+	GLuint i = 0;
+	for(const auto& buffer : vertexBuffer) {
+		GL_state.Array.BindVertexBuffer(i,
+			buffer,
+			static_cast<GLintptr>(base_offset),
+			static_cast<GLsizei>(layout.get_vertex_stride(i)));
+		i++;
+	}
 	GL_state.Array.BindElementBuffer(indexBuffer);
 }

@@ -39,7 +39,7 @@ class Editor : public QObject {
 
 	void createNewMission();
 
-	std::string maybeUseAutosave(const std::string& filepath);
+	void maybeUseAutosave(std::string& filepath);
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -188,6 +188,7 @@ class Editor : public QObject {
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 	static void lcl_fred_replace_stuff(QString& text);
+	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
 	SCP_vector<int> getStartingWingLoadoutUseCounts();
 

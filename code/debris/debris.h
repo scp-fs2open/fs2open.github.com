@@ -20,7 +20,7 @@ class object;
 struct CFILE;
 class model_draw_list;
 
-#define MAX_DEBRIS_ARCS 8		// Must be less than MAX_ARC_EFFECTS in model.h
+#define MAX_DEBRIS_ARCS 8
 
 FLAG_LIST(Debris_Flags) {
 	Used,
@@ -30,6 +30,12 @@ FLAG_LIST(Debris_Flags) {
 	NUM_VALUES
 };
 
+struct debris_electrical_arc
+{
+	vec3d endpoint_1;
+	vec3d endpoint_2;
+	TIMESTAMP timestamp;	// When this times out, the spark goes away.  Invalid is not used
+};
 
 typedef struct debris {
 	flagset<Debris_Flags> flags;	// See DEBRIS_??? defines
@@ -43,15 +49,15 @@ typedef struct debris {
 	int		model_num;				// What model this uses
 	int		model_instance_num;		// What model instance this uses - needed for arcs
 	int		submodel_num;			// What submodel this uses
-	TIMESTAMP	next_fireball;		// When to start a fireball
+	TIMESTAMP	arc_next_time;		// When the next damage/emp arc will be created.
 	bool	is_hull;				// indicates whether this is a collideable, destructable piece of debris from the model, or just a generic debris fragment
+	float	max_hull;
 	int		species;				// What species this is from.  -1 if don't care.
-	TIMESTAMP	fire_timeout;		// timestamp that holds time for fireballs to stop appearing
+	TIMESTAMP	arc_timeout;		// timestamp that holds time for arcs to stop appearing
 	TIMESTAMP	sound_delay;		// timestamp to signal when sound should start
 	fix		time_started;			// time when debris was created
 
-	vec3d	arc_pts[MAX_DEBRIS_ARCS][2];	// The endpoints of each arc
-	TIMESTAMP	arc_timestamp[MAX_DEBRIS_ARCS];	// When this times out, the spark goes away.  Invalid is not used
+	SCP_vector<debris_electrical_arc> electrical_arcs;
 	int		arc_frequency;					// Starts at 1000, gets bigger
 
 	int		parent_alt_name;

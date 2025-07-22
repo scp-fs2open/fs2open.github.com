@@ -31,6 +31,8 @@
 #include <jumpnode/jumpnode.h>
 #include <model/modelrender.h>
 #include <parse/parselo.h>
+#include <particle/ParticleEffect.h>
+#include <particle/volumes/ConeVolume.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
 #include <render/batching.h>
@@ -2192,6 +2194,158 @@ ADE_FUNC(openMovie, l_Graphics, "string name, [boolean looping = false, boolean 
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
 }
 
+particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool reversed) {
+	static SCP_map<std::pair<int, bool>, particle::ParticleEffectHandle> custom_texture_effects;
+
+	bool is_builtin_bitmap = bitmap == particle::Anim_bitmap_id_fire || bitmap == particle::Anim_bitmap_id_smoke || bitmap == particle::Anim_bitmap_id_smoke2;
+
+	if (!is_builtin_bitmap) {
+		auto it = custom_texture_effects.find(std::make_pair(bitmap, reversed));
+		if (it != custom_texture_effects.end())
+			return it->second;
+	}
+	
+	particle::ParticleEffect effect(
+		"", //Name
+		::util::UniformFloatRange(1.f), //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
+		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+		::util::UniformFloatRange(), //Velocity Inherit
+		false, //Velocity Inherit absolute?
+		std::make_unique<particle::ConeVolume>(::util::ParsedRandomFloatRange(), 1.f), //Velocity volume
+		::util::UniformFloatRange(1.f), //Velocity volume multiplier
+		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+		std::nullopt, //Orientation-based velocity
+		std::nullopt, //Position-based velocity
+		nullptr, //Position volume
+		particle::ParticleEffectHandle::invalid(), //Trail
+		1.f, //Chance
+		false, //Affected by detail
+		-1.f, //Culling range multiplier
+		false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		reversed, //Is reversed?
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
+		std::nullopt, //Local offset
+		::util::UniformFloatRange(1.f), //Lifetime
+		::util::UniformFloatRange(1.f), //Radius
+		bitmap);
+
+	effect.m_parent_local = true;
+	effect.m_parentLifetime = true;
+	effect.m_parentScale = true;
+
+	particle::ParticleEffectHandle handle = particle::ParticleManager::get()->addEffect(std::move(effect));
+
+	if (!is_builtin_bitmap) {
+		custom_texture_effects.emplace(std::make_pair(bitmap, reversed), handle);
+	}
+
+	return handle;
+}
+
+static int spawnParticles(lua_State *L, bool persistent) {
+	vec3d pos, vel;
+	float lifetime, rad;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pos), l_Vector.Get(&vel), &lifetime, &rad,
+			l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+
+	particle::ParticleEffectHandle handle;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+		case LE_PARTICLE_FIRE: {
+			static auto fire_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, false);
+			static auto fire_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, true);
+			handle = rev ? fire_handle_rev : fire_handle;
+			break;
+		}
+		case LE_PARTICLE_SMOKE: {
+			static auto smoke_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, false);
+			static auto smoke_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, true);
+			handle = rev ? smoke_handle_rev : smoke_handle;
+			break;
+		}
+		case LE_PARTICLE_SMOKE2: {
+			static auto smoke2_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, false);
+			static auto smoke2_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, true);
+			handle = rev ? smoke2_handle_rev : smoke2_handle;
+			break;
+		}
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+			} else {
+				handle = getLegacyScriptingParticleEffect(texture->handle, rev);
+			}
+			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+		}
+	}
+
+	std::unique_ptr<EffectHost> host;
+	if (objh != nullptr && objh->isValid()) {
+		host = std::make_unique<EffectHostObject>(objh->objp(), pos);
+		vel += objh->objp()->phys_info.vel;
+	}
+	else {
+		host = std::make_unique<EffectHostVector>(pos, vmd_identity_matrix, vmd_zero_vector);
+	}
+
+	//Beware that manually creating a particle source like this is REALLY bad.
+	//The only reason I am doing it here is because of the following three reasons:
+	// 1. the effect guarantees to finish in a single frame
+	// 2. we NEED the return particle ptrs for the persistent path
+	// 3. Scripting gets to set certain values at runtime which are usually encoded as a behaviour in the particle effect and thus tabled statically.
+
+	const auto& [parent, parent_sig] = host->getParentObjAndSig();
+
+	particle::ParticleSource source;
+	source.setEffect(handle);
+	source.setHost(std::move(host));
+	source.setTriggerRadius(rad);
+	source.setTriggerVelocity(lifetime);
+
+	if (persistent) {
+		auto spawned_particles = particle::ParticleManager::get()
+									 ->getEffect(handle)
+									 .front()
+									 .processSourcePersistent(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+
+		Assertion(spawned_particles.size() == 1, "Did not spawn a single particle in createPersistentParticle");
+
+		const particle::WeakParticlePtr& p = spawned_particles.front();
+
+		if (!p.expired())
+			return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+		else
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
+	else {
+		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
+}
+
 ADE_FUNC(createPersistentParticle,
 	l_Graphics,
 	"vector Position, vector Velocity, number Lifetime, number Radius, [enumeration Type=PARTICLE_DEBUG, number TracerLength=-1, "
@@ -2204,68 +2358,7 @@ ADE_FUNC(createPersistentParticle,
 	"particle",
 	"Handle to the created particle")
 {
-	particle::particle_info pi;
-	pi.bitmap   = -1;
-	pi.attached_objnum = -1;
-	pi.attached_sig    = -1;
-	pi.reverse         = false;
-
-	// Need to consume tracer_length parameter but it isn't used anymore
-	float temp;
-
-	enum_h* type       = nullptr;
-	bool rev           = false;
-	object_h* objh     = nullptr;
-	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
-	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return ADE_RETURN_NIL;
-
-	if (type != nullptr) {
-		switch (type->index) {
-		case LE_PARTICLE_DEBUG:
-				LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
-				return ADE_RETURN_NIL;
-		case LE_PARTICLE_FIRE:
-				pi.bitmap = particle::Anim_bitmap_id_fire;
-				pi.nframes = particle::Anim_num_frames_fire;
-				break;
-		case LE_PARTICLE_SMOKE:
-				pi.bitmap = particle::Anim_bitmap_id_smoke;
-				pi.nframes = particle::Anim_num_frames_smoke;
-				break;
-		case LE_PARTICLE_SMOKE2:
-				pi.bitmap = particle::Anim_bitmap_id_smoke2;
-				pi.nframes = particle::Anim_num_frames_smoke2;
-				break;
-		case LE_PARTICLE_BITMAP:
-			if (texture == nullptr || !texture->isValid()) {
-				LuaError(L, "Invalid texture specified for createParticle()!");
-				return ADE_RETURN_NIL;
-			} else {
-				pi.bitmap = texture->handle;
-			}
-			break;
-		default:
-			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-			return ADE_RETURN_NIL;
-		}
-	}
-
-	if (rev)
-		pi.reverse = false;
-
-	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = objh->objnum;
-		pi.attached_sig    = objh->sig;
-	}
-
-	particle::WeakParticlePtr p = particle::createPersistent(&pi);
-
-	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
-	else
-		return ADE_RETURN_NIL;
+	return spawnParticles(L, true);
 }
 
 ADE_FUNC(createParticle,
@@ -2278,65 +2371,7 @@ ADE_FUNC(createParticle,
 	"boolean",
 	"true if particle was created, false otherwise")
 {
-	particle::particle_info pi;
-	pi.bitmap   = -1;
-	pi.attached_objnum = -1;
-	pi.attached_sig    = -1;
-	pi.reverse         = false;
-
-	// Need to consume tracer_length parameter but it isn't used anymore
-	float temp;
-
-	enum_h* type       = nullptr;
-	bool rev           = false;
-	object_h* objh     = nullptr;
-	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
-	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return ADE_RETURN_FALSE;
-
-	if (type != nullptr) {
-		switch (type->index) {
-		case LE_PARTICLE_DEBUG:
-			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
-			return ADE_RETURN_NIL;
-		case LE_PARTICLE_FIRE:
-			pi.bitmap = particle::Anim_bitmap_id_fire;
-			pi.nframes = particle::Anim_num_frames_fire;
-			break;
-		case LE_PARTICLE_SMOKE:
-			pi.bitmap = particle::Anim_bitmap_id_smoke;
-			pi.nframes = particle::Anim_num_frames_smoke;
-			break;
-		case LE_PARTICLE_SMOKE2:
-			pi.bitmap = particle::Anim_bitmap_id_smoke2;
-			pi.nframes = particle::Anim_num_frames_smoke2;
-			break;
-		case LE_PARTICLE_BITMAP:
-			if (texture == nullptr || !texture->isValid()) {
-				LuaError(L, "Invalid texture specified for createParticle()!");
-				return ADE_RETURN_NIL;
-			} else {
-				pi.bitmap = texture->handle;
-			}
-			break;
-		default:
-			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-			return ADE_RETURN_NIL;
-		}
-	}
-
-	if (rev)
-		pi.reverse = false;
-
-	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = objh->objnum;
-		pi.attached_sig    = objh->sig;
-	}
-
-	particle::create(&pi);
-
-	return ADE_RETURN_TRUE;
+	return spawnParticles(L, false);
 }
 
 ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)

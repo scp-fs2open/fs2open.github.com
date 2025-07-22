@@ -57,6 +57,7 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
 
+INCLUDE(globals)
 INCLUDE(toolchain)
 include(embed_file)
 
@@ -159,7 +160,6 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
-INCLUDE(globals)
 INCLUDE(platforms)
 include(version)
 

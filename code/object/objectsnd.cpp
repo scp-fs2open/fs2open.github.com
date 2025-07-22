@@ -446,7 +446,6 @@ void obj_snd_do_frame()
 	obj_snd			*osp;
 	object			*objp, *closest_objp;
 	game_snd			*gs;
-	ship				*sp;
 	int				channel;
 	vec3d			source_pos;
 	float				add_distance;
@@ -487,6 +486,8 @@ void obj_snd_do_frame()
 			continue;
 		}
 
+		bool obj_is_ship = (objp->type == OBJ_SHIP);
+
 		obj_snd_source_pos(&source_pos, osp);
 		distance = vm_vec_dist_quick( &source_pos, &View_position );
 
@@ -502,7 +503,7 @@ void obj_snd_do_frame()
 		}
 
 		// save closest distance (used for flyby sound) if this is a small ship (and not the observer)
-		if ( (objp->type == OBJ_SHIP) && (distance < closest_dist) && (objp != observer_obj) ) {
+		if ( (obj_is_ship) && (distance < closest_dist) && (objp != observer_obj) ) {
 			if ( Ship_info[Ships[objp->instance].ship_info_index].is_small_ship() ) {
 				closest_dist = distance;
 				closest_objp = objp;
@@ -512,12 +513,12 @@ void obj_snd_do_frame()
 		speed_vol_multiplier = 1.0f;
 		rot_vol_mult = 1.0f;
 		alive_vol_mult = 1.0f;
-		if ( objp->type == OBJ_SHIP ) {
+		if ( obj_is_ship ) {
 			ship_info *sip = &Ship_info[Ships[objp->instance].ship_info_index];
 
 			// we don't want to start the engine sound unless the ship is
 			// moving (unless flag SIF_BIG_SHIP is set)
-			if ( (osp->flags & OS_ENGINE) && !(sip->is_big_or_huge()) ) {
+			if ( (osp->flags & OS_ENGINE) && (!(sip->is_big_or_huge()) || Unify_minimum_engine_sound) ) {
 				if ( objp->phys_info.max_vel.xyz.z <= 0.0f ) {
 					percent_max = 0.0f;
 				}
@@ -658,15 +659,21 @@ void obj_snd_do_frame()
 		if (!osp->instance.isValid())
 			continue;
 
-		sp = nullptr;
-		if ( objp->type == OBJ_SHIP )
+		bool sound_allowed = true;
+		ship* sp = nullptr; 
+		if (obj_is_ship) {
 			sp = &Ships[objp->instance];
-
+			if (osp->flags & OS_ENGINE) {
+				bool disabled_and_silent = Disabled_or_disrupted_engines_silent && 
+				                           (sp->flags[Ship::Ship_Flags::Disabled] || ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE));
+				sound_allowed = (sp->flags[Ship::Ship_Flags::Engine_sound_on]) && !disabled_and_silent;
+			}
+		}
 
 		channel = ds_get_channel(osp->instance);
 		// for DirectSound3D sounds, re-establish the maximum speed based on the
 		//	speed_vol_multiplier
-		if ( (sp == nullptr) || !(osp->flags & OS_ENGINE) || (sp->flags[Ship::Ship_Flags::Engines_on]) ) {
+		if ( sound_allowed ) {
 			snd_set_volume( osp->instance, gs->volume_range.next() *speed_vol_multiplier*rot_vol_mult*alive_vol_mult );
 		}
 		else {
@@ -677,7 +684,7 @@ void obj_snd_do_frame()
 		vec3d vel = objp->phys_info.vel;
 
 		// Don't play doppler effect for cruisers or capitals
-		if ( sp ) {
+		if (obj_is_ship) {
 			if ( Ship_info[sp->ship_info_index].is_big_or_huge() ) {
 				vel = vmd_zero_vector;
 			}

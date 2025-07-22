@@ -91,7 +91,7 @@ ADE_FUNC(getType, l_Order, NULL, "Gets the type of the order.", "enumeration", "
 
 	switch(ohp->aigp->ai_mode){
 		case AI_GOAL_NONE:
-		case AI_GOAL_PLACEHOLDER_1:
+		case AI_GOAL_SCHROEDINGER:
 		case AI_GOAL_NUM_VALUES:
 			break;
 		case AI_GOAL_DESTROY_SUBSYSTEM:
@@ -227,7 +227,6 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				case AI_GOAL_IGNORE:
 				case AI_GOAL_EVADE_SHIP:
 				case AI_GOAL_STAY_NEAR_SHIP:
-				case AI_GOAL_KEEP_SAFE_DISTANCE:
 				case AI_GOAL_FLY_TO_SHIP:
 				case AI_GOAL_STAY_STILL:
 					if ((newh->objp()->type == OBJ_SHIP) && stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)) {
@@ -239,6 +238,12 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 							set_target_objnum(aip, newh->objnum);
 						}
 					}
+					break;
+
+				case AI_GOAL_REARM_REPAIR:
+				case AI_GOAL_DOCK:
+				case AI_GOAL_UNDOCK:
+					// TODO: these are currently not implemented, but could be implemented in the future
 					break;
 
 				case AI_GOAL_CHASE_WEAPON:
@@ -255,8 +260,20 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 					break;
 
 				case AI_GOAL_CHASE_SHIP_CLASS:
-					// a ship class isn't an in-mission object
-					return ade_set_error(L, "o", l_Object.Set(object_h()));
+					// we can set the ship class from the class of the target
+					if (newh->objp()->type == OBJ_SHIP) {
+						auto class_name = Ship_info[Ships[newh->objp()->instance].ship_info_index].name;
+						if (stricmp(class_name, ohp->aigp->target_name)) {
+							ohp->aigp->target_name = ai_get_goal_target_name(class_name, &ohp->aigp->target_name_index);
+							ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
+
+							if (ohp->odx == 0) {
+								aip->ok_to_target_timestamp = timestamp(0);
+								set_target_objnum(aip, newh->objnum);
+							}
+						}
+					}
+					break;
 
 				case AI_GOAL_WAYPOINTS:
 				case AI_GOAL_WAYPOINTS_ONCE:
@@ -274,20 +291,6 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 					break;
 
 				case AI_GOAL_CHASE_WING:
-					if ((newh->objp()->type == OBJ_SHIP) && stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)) {
-						ship *shipp = &Ships[newh->objp()->instance];
-						if (shipp->wingnum != -1){
-							ohp->aigp->target_name = ai_get_goal_target_name(Wings[shipp->wingnum].name, &ohp->aigp->target_name_index);
-							ohp->aigp->time = (ohp->odx == 0) ? Missiontime : 0;
-
-							if(ohp->odx == 0) {
-								aip->ok_to_target_timestamp = timestamp(0);
-								ai_attack_wing(ohp->objh.objp(),shipp->wingnum);
-							}
-						}
-					}
-					break;
-
 				case AI_GOAL_GUARD_WING:
 					if ((newh->objp()->type == OBJ_SHIP) && stricmp(Ships[newh->objp()->instance].ship_name, ohp->aigp->target_name)) {
 						ship *shipp = &Ships[newh->objp()->instance];
@@ -297,11 +300,16 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 
 							if(ohp->odx == 0) {
 								aip->ok_to_target_timestamp = timestamp(0);
-								ai_set_guard_wing(ohp->objh.objp(),shipp->wingnum);
+
+								if (ohp->aigp->ai_mode == AI_GOAL_CHASE_WING)
+									ai_attack_wing(ohp->objh.objp(),shipp->wingnum);
+								else // AI_GOAL_GUARD_WING
+									ai_set_guard_wing(ohp->objh.objp(), shipp->wingnum);
 							}
 						}
 					}
 					break;
+
 				default:
 					break;
 			}
@@ -311,7 +319,6 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 	switch(ohp->aigp->ai_mode){
 		case AI_GOAL_DESTROY_SUBSYSTEM:
 		case AI_GOAL_CHASE:
-		case AI_GOAL_DOCK:
 		case AI_GOAL_FORM_ON_WING:
 		case AI_GOAL_GUARD:
 		case AI_GOAL_DISABLE_SHIP:
@@ -322,17 +329,22 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 		case AI_GOAL_IGNORE:
 		case AI_GOAL_EVADE_SHIP:
 		case AI_GOAL_STAY_NEAR_SHIP:
-		case AI_GOAL_KEEP_SAFE_DISTANCE:
-		case AI_GOAL_REARM_REPAIR:
 		case AI_GOAL_FLY_TO_SHIP:
+		case AI_GOAL_STAY_STILL:
+		case AI_GOAL_REARM_REPAIR:
+		case AI_GOAL_DOCK:
 		case AI_GOAL_UNDOCK:
 			shipnum = ship_name_lookup(ohp->aigp->target_name);
-			objnum = Ships[shipnum].objnum;
+			objnum = (shipnum >= 0) ? Ships[shipnum].objnum : -1;
 			break;
 
 		case AI_GOAL_CHASE_WEAPON:
 			objnum = Weapons[ohp->aigp->target_instance].objnum;
 			break;
+
+		case AI_GOAL_CHASE_SHIP_CLASS:
+			// a ship class isn't an in-mission object
+			return ade_set_args(L, "o", l_Object.Set(object_h()));
 
 		case AI_GOAL_WAYPOINTS:
 		case AI_GOAL_WAYPOINTS_ONCE:
@@ -349,14 +361,6 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 			}
 			break;
 
-		case AI_GOAL_STAY_STILL:
-			shipnum = ship_name_lookup(ohp->aigp->target_name);
-			if (shipnum != -1){
-				objnum = Ships[shipnum].objnum;
-				break;
-			}
-			break;
-
 		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_GUARD_WING:
 			wingnum = wing_name_lookup(ohp->aigp->target_name);
@@ -365,6 +369,7 @@ ADE_VIRTVAR(Target, l_Order, "object", "Target of the order. Value may also be a
 				objnum = Ships[shipnum].objnum;
 			}
 			break;
+
 		default:
 			break;
 	}

@@ -1,6 +1,6 @@
 //? #version 150
 #include "lighting.sdr" //! #include "lighting.sdr"
-
+#include "gamma.sdr" //! #include "gamma.sdr"
 #include "shadows.sdr" //! #include "shadows.sdr"
 
 out vec4 fragOut0;
@@ -10,6 +10,11 @@ uniform sampler2D NormalBuffer;
 uniform sampler2D PositionBuffer;
 uniform sampler2D SpecBuffer;
 uniform sampler2DArray shadow_map;
+
+#ifdef ENV_MAP
+uniform samplerCube sEnvmap;
+uniform samplerCube sIrrmap;
+#endif
 
 layout (std140) uniform globalDeferredData {
 	mat4 shadow_mv_matrix;
@@ -97,7 +102,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 				discard;
 			}
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
-		} 
+		}
 		else if (lightType == LT_TUBE) {  // Tube light
 			vec3 beamVec = vec3(modelViewMatrix * vec4(0.0, 0.0, -scale.z, 0.0));
 			vec3 beamDir = normalize(beamVec);
@@ -138,7 +143,7 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 				discard;
 			}
 			attenuation = 1.0 - clamp(sqrt(dist / lightRadius), 0.0, 1.0);
-		} 
+		}
 		else if (lightType == LT_CONE) {
 			lightDirOut = lightPosition - position.xyz;
 			float coneDot = dot(normalize(-lightDirOut), coneDir);
@@ -165,46 +170,108 @@ void GetLightInfo(vec3 position, in float alpha, in vec3 reflectDir, out vec3 li
 	}
 }
 
+#ifdef ENV_MAP
+void ComputeEnvLight(float alpha, float ao, vec3 light_dir, vec3 eyeDir, vec3 normal, vec4 baseColor, vec4 specColor, out vec3 envLight) {
+	// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
+	// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
+	// to determine the mip bias.
+	// We use the specular term listed at http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
+	// 1/(pi*alpha^2) * NdotM^((2/alpha^2)-2)
+	// so let s = (2/alpha^2 - 2)
+	// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
+
+	const float ENV_REZ = 512; // Ideally this would be #define'd and shader recompiled with envmap rez changes
+	const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
+
+	float alphaSqr = alpha * alpha;
+	float rough_bias = 0.5 * log2(2/alphaSqr - 1);
+	float mip_bias = REZ_BIAS - rough_bias;
+
+	// Sample light, using mip bias to blur it.
+	vec3 env_light_dir = vec3(modelViewMatrix * vec4(light_dir, 0.0));
+	vec4 specEnvColour = srgb_to_linear(textureLod(sEnvmap, env_light_dir, mip_bias));
+
+	vec3 halfVec = normal;
+
+	// Lots of hacks here to get things to look right. We aren't loading a BRDF split-sum integral texture
+	// or properly calculating IBL levels.
+	// Fresnel calculation as with standard lights.
+
+	vec3 fresnel = mix(specColor.rgb, FresnelSchlick(halfVec, eyeDir, specColor.rgb), specColor.a);
+
+	// Pseudo-IBL, so use k_IBL
+	float k = alpha * alpha/ 2.0f;
+
+	float NdotL = max(dot(light_dir, normal),0);
+
+	float g1vNL = GeometrySchlickGGX(NdotL, k);
+	vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
+
+	vec3 kD = vec3(1.0)-fresnel;
+	kD *= (vec3(1.0) - specColor.rgb);
+	vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(modelViewMatrix * vec4(normal, 0.0))).rgb);
+	vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * ao;
+	envLight = (specEnvLighting + diffEnvLighting) * baseColor.a;
+}
+#endif
+
 void main()
 {
 	vec2 screenPos = gl_FragCoord.xy * vec2(invScreenWidth, invScreenHeight);
-	vec3 position = texture(PositionBuffer, screenPos).xyz;
+	vec4 position_buffer = texture(PositionBuffer, screenPos);
+	vec3 position = position_buffer.xyz;
 
 	if(abs(dot(position, position)) < nearPlane * nearPlane)
 		discard;
 
-	vec3 diffColor = texture(ColorBuffer, screenPos).rgb;
+	vec4 diffuse = texture(ColorBuffer, screenPos);
+	vec3 diffColor = diffuse.rgb;
 	vec4 normalData = texture(NormalBuffer, screenPos);
-	vec4 specColor = texture(SpecBuffer, screenPos);
 	// The vector in the normal buffer could be longer than the unit vector since decal rendering only adds to the normal buffer
 	vec3 normal = normalize(normalData.xyz);
 	float gloss = normalData.a;
 	float roughness = clamp(1.0f - gloss, 0.0f, 1.0f);
 	float alpha = roughness * roughness;
-	float fresnel = specColor.a;
 	vec3 eyeDir = normalize(-position);
-
-	vec3 lightDir;
-	float attenuation;
-	float area_normalisation;
 	vec3 reflectDir = reflect(-eyeDir, normal);
-	GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
+	vec4 specColor = texture(SpecBuffer, screenPos);
 
-	if (enable_shadows) {
-		vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
-		vec4 fragShadowUV[4];
-		fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
-		fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
-		fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
-		fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+	vec4 fragmentColor = vec4(1.0);
 
-		attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
-								neardist, veryneardist);
+	if (lightType == LT_AMBIENT) {
+		float ao = position_buffer.w;
+		fragmentColor.rgb = diffuseLightColor * diffColor * ao;
+
+#ifdef ENV_MAP
+		vec3 envLight;
+		ComputeEnvLight(alpha, ao, reflectDir, eyeDir, normal, diffuse, specColor, envLight);
+		fragmentColor.rgb += envLight;
+#endif
+	}
+	else {
+		float fresnel = specColor.a;
+
+		vec3 lightDir;
+		float attenuation;
+		float area_normalisation;
+		GetLightInfo(position, alpha, reflectDir, lightDir, attenuation, area_normalisation);
+
+		if (enable_shadows) {
+			vec4 fragShadowPos = shadow_mv_matrix * inv_view_matrix * vec4(position, 1.0);
+			vec4 fragShadowUV[4];
+			fragShadowUV[0] = transformToShadowMap(shadow_proj_matrix[0], 0, fragShadowPos);
+			fragShadowUV[1] = transformToShadowMap(shadow_proj_matrix[1], 1, fragShadowPos);
+			fragShadowUV[2] = transformToShadowMap(shadow_proj_matrix[2], 2, fragShadowPos);
+			fragShadowUV[3] = transformToShadowMap(shadow_proj_matrix[3], 3, fragShadowPos);
+
+			attenuation *= getShadowValue(shadow_map, -position.z, fragShadowPos.z, fragShadowUV, fardist, middist,
+									neardist, veryneardist);
+		}
+
+		vec3 halfVec = normalize(lightDir + eyeDir);
+		float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
+		fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	}
 
-	vec3 halfVec = normalize(lightDir + eyeDir);
-	float NdotL = clamp(dot(normal, lightDir), 0.0, 1.0);
-	vec4 fragmentColor = vec4(1.0);
-	fragmentColor.rgb = computeLighting(specColor.rgb, diffColor, lightDir, normal.xyz, halfVec, eyeDir, roughness, fresnel, NdotL).rgb * diffuseLightColor * attenuation * area_normalisation;
 	fragOut0 = max(fragmentColor, vec4(0.0));
 }

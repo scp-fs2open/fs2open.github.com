@@ -315,6 +315,7 @@ namespace
 
 		font->setName(fontName);
 		font->setFilename(fontFilename);
+		font->setFamilyName("Volition Font");
 
 		int font_id = vfntPair.second;
 
@@ -465,7 +466,7 @@ namespace
 				{
 				case VFNT_FONT:
 					if (Unicode_text_mode) {
-						WarningEx(LOCATION, "Bitmap fonts are not supported in Unicode text mode! Font %s will be ignored.", fontName.c_str());
+						Warning(LOCATION, "Bitmap fonts are not supported in Unicode text mode! Font %s will be ignored.", fontName.c_str());
 						skip_to_start_of_string_one_of({"$TrueType:", "$Font:", "#End"});
 					} else {
 						parse_vfnt_font(fontName);

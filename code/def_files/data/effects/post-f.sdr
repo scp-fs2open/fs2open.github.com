@@ -18,6 +18,14 @@ layout (std140) uniform genericData {
 
 	vec3 tint;
 	float dither;
+
+	// these are blank, valid slots for modders to create custom effects 
+	// that can be defined in post_processing.tbl and coded below
+	vec3 custom_effect_vec3_a;
+	float custom_effect_float_a;
+
+	vec3 custom_effect_vec3_b;
+	float custom_effect_float_b;
 };
 
 void main()

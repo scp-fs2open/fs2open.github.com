@@ -163,6 +163,7 @@ class EditorViewport {
 	bool Group_rotate = true;
 	bool Lookat_mode = false;
 	bool Move_ships_when_undocking = true;
+	bool Always_save_display_names = false;
 	bool Error_checker_checks_potential_issues = true;
 	bool Error_checker_checks_potential_issues_once = false;
 

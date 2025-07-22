@@ -30,25 +30,24 @@
 // checking a collision rather than passing a bunch of parameters around. These are
 // not persistant between calls to model_collide
 
-static mc_info		*Mc;				// The mc_info passed into model_collide
-	
-static polymodel	*Mc_pm;			// The polygon model we're checking
-static int			Mc_submodel;	// The current submodel we're checking
+thread_local static mc_info		*Mc;				// The mc_info passed into model_collide
 
-static polymodel_instance *Mc_pmi;
+thread_local static polymodel	*Mc_pm;			// The polygon model we're checking
+thread_local static int			Mc_submodel;	// The current submodel we're checking
 
-static matrix		Mc_orient;		// A matrix to rotate a world point into the current
+thread_local static polymodel_instance *Mc_pmi;
+
+thread_local static matrix		Mc_orient;		// A matrix to rotate a world point into the current
 											// submodel's frame of reference.
-static vec3d		Mc_base;			// A point used along with Mc_orient.
+thread_local static vec3d		Mc_base;			// A point used along with Mc_orient.
 
-static vec3d		Mc_p0;			// The ray origin rotated into the current submodel's frame of reference
-static vec3d		Mc_p1;			// The ray end rotated into the current submodel's frame of reference
-static float		Mc_mag;			// The length of the ray
-static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
+thread_local static vec3d		Mc_p0;			// The ray origin rotated into the current submodel's frame of reference
+thread_local static vec3d		Mc_p1;			// The ray end rotated into the current submodel's frame of reference
+thread_local static float		Mc_mag;			// The length of the ray
+thread_local static vec3d		Mc_direction;	// A vector from the ray's origin to its end, in the current submodel's frame of reference
 
-static vec3d 		**Mc_point_list = NULL;		// A pointer to the current submodel's vertex list
+thread_local static vec3d 		**Mc_point_list = nullptr;		// A pointer to the current submodel's vertex list
 
-static float		Mc_edge_time;
 
 
 void model_collide_free_point_list()
@@ -577,11 +576,11 @@ void model_collide_parse_bsp_flatpoly(bsp_collision_leaf *leaf, SCP_vector<model
 	}
 }
 
-void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int version)
+void model_collide_parse_bsp(bsp_collision_tree *tree, ubyte *bsp_data, int version)
 {
 	TRACE_SCOPE(tracing::ModelParseBSPTree);
 
-	ubyte *p = (ubyte *)model_ptr;
+	ubyte *p = bsp_data;
 	ubyte *next_p;
 
 	int chunk_type = w(p);
@@ -712,7 +711,7 @@ void model_collide_parse_bsp(bsp_collision_tree *tree, void *model_ptr, int vers
 			}
 
 			next_p = p + chunk_size;
-			next_chunk_type = w(next_p);
+			next_chunk_type = OP_EOF;	// should not continue after this chunk
 
 			++i;
 			break;
@@ -1135,7 +1134,6 @@ int model_collide(mc_info *mc_info_obj)
 	Mc_orient = *Mc->orient;
 	Mc_base = *Mc->pos;
 	Mc_mag = vm_vec_dist( Mc->p0, Mc->p1 );
-	Mc_edge_time = FLT_MAX;
 
 	if ( Mc->model_instance_num >= 0 ) {
 		Mc_pmi = model_get_instance(Mc->model_instance_num);

@@ -56,6 +56,15 @@ namespace font
 		float getTextHeight() const override;
 
 		/**
+		 * @brief	Gets the family name of this font
+		 *
+		 * @see FSFont::getFamilyName()
+		 *
+		 * @return	The family name.
+		 */
+		const SCP_string& getFamilyName() const override;
+
+		/**
 		* @brief	Gets the size of the specified string in pixels.
 		*
 		* @param [in]	text  	the text which should be checked.

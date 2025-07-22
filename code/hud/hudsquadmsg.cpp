@@ -44,7 +44,7 @@ static int Msg_key_used;								// local variable which tells if the key being p
 															// with the messaging system was actually used
 static int Msg_key;                         // global which indicates which key was currently pressed
 static bool Msg_key_set_from_scripting; // is true if the key was set from scripting and not from a player keypress
-static int Msg_mode_timestamp;
+static TIMESTAMP Msg_mode_timestamp;
 int Msg_instance;						// variable which holds ship/wing instance to send the message to
 int Msg_shortcut_command;			// holds command when using a shortcut key
 static int Msg_target_objnum;           // id of the current target of the player
@@ -107,8 +107,10 @@ char Squad_msg_title[256] = "";
 mmode_item MsgItems[MAX_MENU_ITEMS];
 int Num_menu_items = -1; // number of items for a message menu
 
-int First_menu_item= -1;							// index of first item in the menu
-SCP_string Lua_sqd_msg_cat;
+static int First_menu_item = -1;							// index of first item in the menu. This tracks what element of comms options collection is displayed as first option, and displays the next 9 options. Changes only by +/- MAX_MENU_ITEMS (10)
+static int Selected_menu_item = First_menu_item;           //!< index of selected item in the menu. Possible index range: 0 - 9, assuming MAX_MENU_ITEMS == 10, and First_menu_item gets initialized
+static bool Display_selector = false;
+static SCP_string Lua_sqd_msg_cat;
 
 #define MAX_KEYS_NO_SCROLL	10
 #define MAX_KEYS_USED		12		// maximum number of keys used for the messaging system
@@ -147,8 +149,9 @@ SCP_vector<player_order> Player_orders = {
 };
 
 const SCP_set<size_t> default_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , PROTECT_TARGET_ITEM , IGNORE_TARGET_ITEM , FORMATION_ITEM , COVER_ME_ITEM , ENGAGE_ENEMY_ITEM , DEPART_ITEM , DISABLE_SUBSYSTEM_ITEM };
+// note: STAY_NEAR_TARGET_ITEM appears in both enemy and friendly sets
 const SCP_set<size_t> enemy_target_messages{ ATTACK_TARGET_ITEM , DISABLE_TARGET_ITEM , DISARM_TARGET_ITEM , IGNORE_TARGET_ITEM , STAY_NEAR_TARGET_ITEM , CAPTURE_TARGET_ITEM , DISABLE_SUBSYSTEM_ITEM };
-const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM };
+const SCP_set<size_t> friendly_target_messages{ PROTECT_TARGET_ITEM , STAY_NEAR_TARGET_ITEM };
 const SCP_set<size_t> target_messages = []() {
 	SCP_set<size_t> setunion;
 	std::set_union(enemy_target_messages.cbegin(), enemy_target_messages.cend(), friendly_target_messages.cbegin(), friendly_target_messages.cend(), std::inserter(setunion, setunion.end()));
@@ -217,8 +220,11 @@ void hud_squadmsg_start()
 
 	Num_menu_items = -1;													// reset the menu items
 	First_menu_item = 0;
+	Selected_menu_item = First_menu_item;                            // make first menu item a selected object
+	Display_selector = false;
+
 	Squad_msg_mode = SM_MODE_TYPE_SELECT;							// start off at the base state
-	Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
+	Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);		// initialize our timer to bogus value
 	Msg_shortcut_command = -1;											// assume no shortcut key being used
 	Msg_target_objnum = Player_ai->target_objnum;				// save the players target object number
 	Msg_targeted_subsys = Player_ai->targeted_subsys;				// save the players currently targted subsystem
@@ -482,6 +488,91 @@ void hud_squadmsg_page_up()
 	if ( First_menu_item > 0 ) {
 		First_menu_item -= MAX_MENU_DISPLAY;
 		Assert (First_menu_item >= 0 );
+	}
+}
+
+//Fuctions that allow selection of specific comms menu items with simple up/down/select buttons
+void hud_squadmsg_selection_move_down() {
+
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//move down
+		++Selected_menu_item;
+		Display_selector = true;
+
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
+
+		//Move to next page if we went outside of current one
+		if (Selected_menu_item == MAX_MENU_DISPLAY 
+			&& (First_menu_item + MAX_MENU_DISPLAY < Num_menu_items))
+		{
+			hud_squadmsg_page_down();
+			Selected_menu_item = 0;
+		}
+
+		//Select the first menu item if we went outside items range, so we can loop around
+		if (First_menu_item + Selected_menu_item >= Num_menu_items) 
+		{
+			First_menu_item = 0;
+			Selected_menu_item = First_menu_item;
+		}
+	}
+}
+
+void hud_squadmsg_selection_move_up() {
+
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//move up
+		--Selected_menu_item;
+		Display_selector = true;
+
+		//play scrolling sound and reset the comms window timeout timer, so the window doesn't disappear while we select our item
+		gamesnd_play_iface(InterfaceSounds::SCROLL);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
+
+		//Move to previous page if it exists
+		if (Selected_menu_item < 0 && First_menu_item > 0)
+		{
+			hud_squadmsg_page_up();
+			Selected_menu_item = MAX_MENU_DISPLAY - 1; //if we're moving to previous page in the first place, we assume it was already populated to the max
+		}
+
+		//Select the last menu item if we went outside items range, so we can loop around
+		else if (Selected_menu_item < 0) 
+		{
+			//Assuming MAX_MENU_DISPLAY = 10, set First_menu_item to the nearest lower multiple of 10
+			//So if we have 85 items in comms menu, looping back from 1st page to last would set First_menu_item to 80
+			//exactly like pageUp/pageDown does
+			First_menu_item = ((Num_menu_items - 1) / MAX_MENU_DISPLAY) * MAX_MENU_DISPLAY;
+			Selected_menu_item = Num_menu_items - 1 - First_menu_item;
+		}
+	}
+}
+
+//function that tricks hud_squadmsg_get_key() into thinking player selected a menu item with a num key press
+//Yes, this is a pretty much a hack, but it's simple and works with every squadmsg type.
+void hud_squadmsg_selection_select() {
+	
+	//Check if comms menu is up
+	if (Player->flags & PLAYER_FLAGS_MSG_MODE)
+	{
+		//Check if selected option is even active
+		if ((MsgItems[Selected_menu_item + First_menu_item].active > 0))
+		{
+			Msg_key_used = 1;
+			Msg_key = Selected_menu_item + 2;	  //+1 because menu items on actual menu start from 1, not 0
+												  //Another +1 because methods that use this later do -1. I'm not sure why they do that, but it works
+			Selected_menu_item = 0; //Reset this value, so the position will reset at the next window
+		}
+		else
+		{
+			gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		}
 	}
 }
 
@@ -892,7 +983,7 @@ scripting::api::lua_enum hud_squadmsg_get_order_scripting_enum(int command)
 
 // Run the order issued hook. When an order is issued we first check if we should override. If so, then we run the hook and return true
 // which will skip the rest of the order code.
-bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* target, ship_subsys* subsys)
+bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* recipientShip, wing* recipientWing, ship* targetShip, ship_subsys* subsys)
 {
 	bool isOverride = false;
 
@@ -905,21 +996,24 @@ bool hud_squadmsg_run_order_issued_hook(int command, ship* sendingShip, ship* re
 			recipient = recipientWing;
 		}
 
+		auto sendingObject = (sendingShip == nullptr) ? nullptr : &Objects[sendingShip->objnum];
+		auto targetObject = (targetShip == nullptr) ? nullptr : &Objects[targetShip->objnum];
+
 		auto paramList = scripting::hook_param_list(
-				scripting::hook_param("Sender", 'o', &Objects[sendingShip->objnum]),
+				scripting::hook_param("Sender", 'o', sendingObject),
 				scripting::hook_param("Recipient", 'o', scripting::api::l_OSWPT.Set(recipient)),
-				scripting::hook_param("Target", 'o', &Objects[target->objnum]),
-				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(&Objects[target->objnum], subsys))),
+				scripting::hook_param("Target", 'o', targetObject),
+				scripting::hook_param("Subsystem", 'o', scripting::api::l_Subsystem.Set(scripting::api::ship_subsys_h(targetObject, subsys))),
 				scripting::hook_param("Order", 'o', scripting::api::l_Enum.Set(scripting::api::enum_h(hud_squadmsg_get_order_scripting_enum(command)))),
 				scripting::hook_param("Name", 's', hud_squadmsg_get_order_name(command).c_str())
 			);
 		if (scripting::hooks::OnHudCommOrderIssued->isOverride(
-				scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+				scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
 				paramList)) {
 			isOverride = true;
 		}
 		scripting::hooks::OnHudCommOrderIssued->run(
-			scripting::hooks::CommOrderConditions{sendingShip, &Objects[target->objnum], &recipient},
+			scripting::hooks::CommOrderConditions{sendingShip, targetObject, &recipient},
 			paramList);
 	}
 
@@ -1098,6 +1192,8 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
+	int int_data = 0;
+	float float_data = 0.0f;
 	ai_lua_parameters lua_target;
 	int message;
 	int target_team, ship_team;				// team id's for the ship getting message and any target the player has
@@ -1319,13 +1415,9 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		
 		case STAY_NEAR_ME_ITEM:
 		case STAY_NEAR_TARGET_ITEM:
-
-			// cannot stay near a hostile ship(?)
-			if ( (command == STAY_NEAR_TARGET_ITEM) && (ship_team != target_team) )
-				break;
-
 			ai_mode = AI_GOAL_STAY_NEAR_SHIP;
 			ai_submode = -1;
+			float_data = 300.0f;	// distance from target ship
 			message = MESSAGE_YESSIR;
 			if (command == STAY_NEAR_ME_ITEM) {
 				target_shipname = ordering_shipp->ship_name;
@@ -1355,7 +1447,7 @@ int hud_squadmsg_send_ship_command( int shipnum, int command, int send_message, 
 		// handle case of messaging one ship.  Deal with messaging all fighters next.
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
-			ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], lua_target);
+			ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, ai_mode, ai_submode, target_shipname, &Ai_info[Ships[shipnum].ai_index], int_data, float_data, lua_target);
 			if (update_history == SQUADMSG_HISTORY_ADD_ENTRY) {
 				hud_add_issued_order(Ships[shipnum].ship_name, command);
 				hud_update_last_order(target_shipname, player_num, special_index); 
@@ -1395,6 +1487,8 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 	int ai_submode;					// ...and submode needed for ship commands
 	ship *target = nullptr;
 	char *target_shipname;
+	int int_data = 0;
+	float float_data = 0.0f;
 	ai_lua_parameters lua_target;
 	int message_sent, message;
 	int target_team, wing_team;				// team for the wing and the player's target
@@ -1579,7 +1673,7 @@ int hud_squadmsg_send_wing_command( int wingnum, int command, int send_message, 
 
 		if (ai_mode != AI_GOAL_NONE) {
 			Assert(ai_submode != -1234567);
-			ai_add_wing_goal_player(ai_goal_type::PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, lua_target);
+			ai_add_wing_goal_player(ai_goal_type::PLAYER_WING, ai_mode, ai_submode, target_shipname, wingnum, int_data, float_data, lua_target);
 
 			if (update_history == SQUADMSG_HISTORY_ADD_ENTRY) {
 				hud_add_issued_order(Wings[wingnum].name, command);
@@ -2518,7 +2612,7 @@ int hud_squadmsg_do_frame( )
 	HUD_reset_clip();		// JAS: Is this needed?
 
 	if ( Msg_key_used || target_changed ) {
-		Msg_mode_timestamp = timestamp(DEFAULT_MSG_TIMEOUT);
+		Msg_mode_timestamp = _timestamp(DEFAULT_MSG_TIMEOUT);
 		return 1;
 	} else
 		return 0;
@@ -2839,6 +2933,7 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 
 	for (int i = 0; i < nitems; i++ ) {
 		int item_num;
+		bool isSelectedItem = (i == Selected_menu_item);
 		char text[255];
 
 		if (!config) {
@@ -2867,22 +2962,30 @@ void HudGaugeSquadMessage::render(float  /*frametime*/, bool config)
 		by += fl2i(Item_h * scale);
 
 		// set the text color
-		if (!config && (MsgItems[First_menu_item+i].active > 0) ) {
+		if (!config && (MsgItems[First_menu_item + i].active > 0)) {
 			setGaugeColor(HUD_C_BRIGHT, config);
-		} else {
+		}
+		else if (isSelectedItem) {
+			setGaugeColor(HUD_C_NORMAL, config);
+		}
+		else {
 			setGaugeColor(HUD_C_DIM, config);
 		}
 
-		// first do the number
 		if (MsgItems[First_menu_item + i].active >= 0) {
-			item_num = (i+1) % MAX_MENU_DISPLAY;
-			renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, NOX("%1d."), item_num);
+			// first print an icon to indicate selected item
+			item_num = (i + 1) % MAX_MENU_DISPLAY;
+			if (isSelectedItem && Display_selector) {
+				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, XSTR(">>", 1887), item_num); //allow modders to change string and add number
+			}
+			// or do the number
+			else {
+				renderPrintfWithGauge(sx, sy, EG_SQ1 + i, scale, config, XSTR("%1d.", 1886), item_num);
+			}
 
 			// then the text
 			font::force_fit_string(text, 255, fl2i(Ship_name_max_width * scale), scale);
-   
 			renderString(sx + fl2i(Item_offset_x * scale), sy, EG_SQ1 + i, text, scale, config);
-
 			sy += fl2i(Item_h * scale);
 		}
 

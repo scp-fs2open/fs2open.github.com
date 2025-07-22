@@ -68,6 +68,7 @@ void deconvert_multiline_string(SCP_string& dest, const CString& str);
 void strip_quotation_marks(CString& str);
 void pad_with_newline(CString& str, int max_size);
 void lcl_fred_replace_stuff(CString& text);
+CString get_display_name_for_text_box(const char *orig_name);
 
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void set_physics_controls();

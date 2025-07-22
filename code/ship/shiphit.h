@@ -7,6 +7,7 @@
  *
 */
 
+#include "weapon/weapon.h"
 
 
 #ifndef _SHIPHIT_H
@@ -34,7 +35,7 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d *hitpos, bool no_explosion = false );
 
-float do_subobj_hit_stuff(object *ship_obj, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot = 1.f);
+std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_obj, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot = 1.f);
 
 // Goober5000
 // (it might be possible to make `target` const, but that would set off another const-cascade)
@@ -45,7 +46,7 @@ extern void ship_apply_tag(ship *ship_p, int tag_level, float tag_time, object *
 // hitpos is in world coordinates.
 // if quadrant is not -1, then that part of the shield takes damage properly.
 // (it might be possible to make `other_obj` const, but that would set off another const-cascade)
-void ship_apply_local_damage(object *ship_obj, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark=true, int submodel_num=-1, const vec3d *hit_normal=nullptr, float hit_dot = 1.f);
+void ship_apply_local_damage(object *ship_obj, object *other_obj, const vec3d *hitpos, float damage, int damage_type_idx, int quadrant, bool create_spark=true, int submodel_num=-1, const vec3d *hit_normal=nullptr, float hit_dot = 1.f, const vec3d* local_hitpos = nullptr);
 
 // This gets called to apply damage when a damaging force hits a ship, but at no 
 // point in particular.  Like from a shockwave.   This routine will see if the

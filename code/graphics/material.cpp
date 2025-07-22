@@ -774,8 +774,6 @@ int model_material::get_shader_runtime_flags() const {
 		flags |= MODEL_SDR_FLAG_GLOW;
 	if (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
 		flags |= MODEL_SDR_FLAG_SPEC;
-	if (ENVMAP > 0)
-		flags |= MODEL_SDR_FLAG_ENV;
 	if (get_texture_map(TM_NORMAL_TYPE) > 0)
 		flags |= MODEL_SDR_FLAG_NORMAL;
 	if (get_texture_map(TM_AMBIENT_TYPE) > 0)

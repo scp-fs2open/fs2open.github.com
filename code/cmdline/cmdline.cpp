@@ -534,6 +534,7 @@ cmdline_parm luadev_arg("-luadev", "Make lua errors non-fatal", AT_NONE);	// Cmd
 cmdline_parm override_arg("-override_data", "Enable override directory", AT_NONE);	// Cmdline_override_data
 cmdline_parm imgui_debug_arg("-imgui_debug", nullptr, AT_NONE);
 cmdline_parm vulkan("-vulkan", nullptr, AT_NONE);
+cmdline_parm multithreading("-threads", nullptr, AT_INT);
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_dis_collisions = 0;
@@ -572,6 +573,7 @@ bool Cmdline_lua_devmode = false;
 bool Cmdline_override_data = false;
 bool Cmdline_show_imgui_debug = false;
 bool Cmdline_vulkan = false;
+int Cmdline_multithreading = 1;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
@@ -2405,6 +2407,10 @@ bool SetCmdlineParams()
 		else {
 			Warning(LOCATION,"-seed must be an integer greater than 0. Invalid input seed will be disregarded.");
 		}
+	}
+
+	if (multithreading.found()) {
+		Cmdline_multithreading = abs(multithreading.get_int());
 	}
 
 	return true; 
