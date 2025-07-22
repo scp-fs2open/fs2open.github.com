@@ -522,7 +522,7 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	else if (The_mission.volumetrics && The_mission.volumetrics->get_enabled() && !override_fog) {
+	if (The_mission.volumetrics && The_mission.volumetrics->get_enabled() && !override_fog) {
 		GR_DEBUG_SCOPE("Volumetric Nebulae");
 		TRACE_SCOPE(tracing::Volumetrics);
 

@@ -259,3 +259,5 @@ CMakePresets.json
 !/code/scripting/lua/LuaConvert.h
 !/code/debugconsole/
 !/docker/build
+CMakeFiles/cmake.check_cache
+CMakeCache.txt
