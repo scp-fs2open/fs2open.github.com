@@ -673,8 +673,10 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 		auto mipmap_w = tex_w;
 		auto mipmap_h = tex_h;
 
-		// should never have mipmap levels if we also have to manually resize
-		if ((mipmap_levels > 1) && resize) {
+		// if we are doing mipmap resizing we need to account for adjusted tex size
+		// (we can end up with only one mipmap level if base_level is high enough so don't check it)
+		if (base_level > 0) {
+			Assertion(resize == false, "Cannot use manual and mipmap resizing at the same time!");
 			Assert(texmem == nullptr);
 
 			// If we have mipmaps then tex_w/h are already adjusted for the base level but that will cause problems with
