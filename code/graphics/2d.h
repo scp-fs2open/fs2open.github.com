@@ -787,6 +787,7 @@ typedef struct screen {
 
 	std::function<int(int handle, int* width, int* height, int* bpp, int* mm_lvl, int flags)> gf_bm_make_render_target;
 	std::function<int(int handle, int face)> gf_bm_set_render_target;
+	std::function<bool(int handle)> gf_bm_is_valid_render_target;
 
 	std::function<void(int)> gf_set_texture_addressing;
 
@@ -1128,6 +1129,8 @@ inline int gr_bm_set_render_target(int n, int face = -1)
 {
 	return gr_screen.gf_bm_set_render_target(n, face);
 }
+
+#define gr_bm_is_valid_render_target				GR_CALL(gr_screen.gf_bm_is_valid_render_target)
 
 #define gr_set_texture_addressing GR_CALL(gr_screen.gf_set_texture_addressing)
 

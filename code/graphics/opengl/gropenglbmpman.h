@@ -34,5 +34,6 @@ bool gr_opengl_bm_data(int handle, bitmap* bm);
 void gr_opengl_bm_save_render_target(int slot);
 int gr_opengl_bm_make_render_target(int n, int *width, int *height, int *bpp, int *mm_lvl, int flags);
 int gr_opengl_bm_set_render_target(int n, int face);
+bool gr_opengl_bm_is_valid_render_target(int bitmap_handle);
 
 #endif // _OGL_BMPMAN_H

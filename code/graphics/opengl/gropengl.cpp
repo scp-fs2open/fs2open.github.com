@@ -1002,6 +1002,7 @@ void gr_opengl_init_function_pointers()
 	gr_screen.gf_bm_data				= gr_opengl_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_opengl_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_opengl_bm_set_render_target;
+	gr_screen.gf_bm_is_valid_render_target	= gr_opengl_bm_is_valid_render_target;
 
 	gr_screen.gf_set_cull			= gr_opengl_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_opengl_set_color_buffer;
