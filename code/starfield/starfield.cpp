@@ -1073,12 +1073,19 @@ void stars_level_close() {
 		}
 	}
 
+	if (gr_screen.irrmap_render_target >= 0) {
+		if ( bm_release(gr_screen.irrmap_render_target, 1) ) {
+			gr_screen.irrmap_render_target = -1;
+		}
+	}
+
 	if (Mission_env_map >= 0) {
 		bm_release(Mission_env_map);
 		Mission_env_map = -1;
 	}
 
 	ENVMAP = Default_env_map;
+	IRRMAP = -1;
 }
 
 
