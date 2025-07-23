@@ -667,9 +667,14 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 }
 
 ADE_FUNC(getModRootName, l_Base, nullptr,
-	"Returns the name of the current mod's root folder.", "string", "The mod root")
+	"Returns the name of the current mod's root folder.", "string", "The mod root or empty string if the mod runs without a -mod line")
 {
-	SCP_string str = Cmdline_mod;
+	const char* mod = Cmdline_mod;
+	if (mod == nullptr) {
+		mod = "";
+	}
+	
+	SCP_string str = mod;
 
 	// Trim any trailing folders so we get just the name of the root mod folder
 	str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
