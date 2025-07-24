@@ -7,6 +7,7 @@
 #include "network/multiui.h"
 #include "scripting/api/objs/option.h"
 #include "scripting/lua/LuaTable.h"
+#include "mod_table/mod_table.h"
 
 namespace scripting {
 namespace api {
@@ -161,6 +162,11 @@ ADE_FUNC(verifyIPAddress, l_Options, "string", "Verifies if a string is a valid 
 	}
 
 	return ade_set_args(L, "b", psnet_is_valid_ip_string(ip));
+}
+
+ADE_FUNC(isInGameOptionsEnabled, l_Options, nullptr, "Returns whether or not in-game options flag is enabled.", "boolean", "True if enabled, false otherwise")
+{
+	return ade_set_args(L, "b", Using_in_game_options);
 }
 
 } // namespace api
