@@ -182,13 +182,12 @@ typedef struct HUD_CONFIG_TYPE {
 	}
 
 	// Get the gauge color, the color based on its type, or white if the gauge is not found
-	color get_gauge_color(const SCP_string& gauge_id, bool check_exact_match = true) const
+	color get_gauge_color(const SCP_string& gauge_id) const
 	{
 		auto it = gauge_colors.find(gauge_id);
 
 		// Got a match? Return it
-		// but only if we are using the exact match
-		if (check_exact_match && it != gauge_colors.end()) {
+		if (it != gauge_colors.end()) {
 			return it->second;
 		}
 
