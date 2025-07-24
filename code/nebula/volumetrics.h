@@ -34,6 +34,8 @@ class volumetric_nebula {
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
 	int oversampling = 2;
+	//How much the edge of the POF should be smoothed to be less hard
+	float smoothing = 0.f;
 	//Resolution of Noise 3D-Texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int noiseResolution = 5;
 
@@ -94,6 +96,8 @@ public:
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
 	const std::tuple<float, float, float>& getNebulaColor() const;
+
+	int getVolumeBitmapSmoothingSteps() const;
 
 	bool getEdgeSmoothing() const;
 	int getSteps() const;
