@@ -322,6 +322,10 @@ void persona_parse()
 			this_persona.flags |= PERSONA_FLAG_NO_AUTOMATIC_ASSIGNMENT;
 	}
 
+	if (optional_string("$Custom data:")) {
+		parse_string_map(this_persona.custom_data, "$end_custom_data", "+Val:");
+	}
+
 	if (!dup) {
 		int persona_index = (int) Personas.size();
 		Personas.push_back(this_persona);
