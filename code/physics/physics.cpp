@@ -1242,7 +1242,7 @@ bool physics_lead_ballistic_trajectory(const vec3d* start, const vec3d* end_pos,
 
 		time = range / (weapon_speed * cosf(angle));
 
-		if (abs(time - best_guess_time) < 0.01f)
+		if (std::abs(time - best_guess_time) < 0.01f)
 			break;
 		else
 			best_guess_time = time;

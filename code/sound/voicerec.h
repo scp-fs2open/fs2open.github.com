@@ -11,7 +11,7 @@
 
 bool VOICEREC_init(HWND hWnd, int event_id, int grammar_id, int command_resource);
 void VOICEREC_deinit();
-void VOICEREC_process_event(HWND hWnd);
+void VOICEREC_process_event();
 
 #endif
 

@@ -14282,6 +14282,8 @@ void sexp_play_sound_from_file(int n)
 	int type = ASF_MENUMUSIC;
 	if (n >= 0)
 	{
+		// TODO: SDL3 => make this work with ds_play somehow to get EFX
+
 		if (eval_sexp(n) != 0)
 			type = ASF_SOUNDFX;
 		n = CDR(n);
