@@ -28,7 +28,7 @@ texture_h::~texture_h()
 	//the textures using load_count. Anything that creates a texture object must also increase load count, unless it is
 	//created in a way that already increases load_count (like bm_load). That way, a texture going out of scope needs to be
 	//released and is safed against memleaks. -Lafiel
-	bm_release(handle);
+	bm_release(handle, 1);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
 texture_h::texture_h(texture_h&& other) noexcept {
@@ -114,7 +114,7 @@ ADE_FUNC(unload, l_Texture, NULL, "Unloads a texture from memory", NULL, NULL)
 	if (!th->isValid())
 		return ADE_RETURN_NIL;
 
-	bm_release(th->handle);
+	bm_release(th->handle, 1);
 
 	//WMC - invalidate this handle
 	th->handle = -1;

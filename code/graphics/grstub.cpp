@@ -274,6 +274,11 @@ int gr_stub_bm_set_render_target(int  /*n*/, int  /*face*/)
 	return 0;
 }
 
+bool gr_stub_bm_is_valid_render_target(int /*bitmap_handle*/)
+{
+	return false;
+}
+
 void gr_stub_bm_create(bitmap_slot* /*slot*/)
 {
 }
@@ -542,6 +547,7 @@ void gr_stub_init_function_pointers() {
 	gr_screen.gf_bm_data				= gr_stub_bm_data;
 	gr_screen.gf_bm_make_render_target	= gr_stub_bm_make_render_target;
 	gr_screen.gf_bm_set_render_target	= gr_stub_bm_set_render_target;
+	gr_screen.gf_bm_is_valid_render_target	= gr_stub_bm_is_valid_render_target;
 
 	gr_screen.gf_set_cull			= gr_stub_set_cull;
 	gr_screen.gf_set_color_buffer	= gr_stub_set_color_buffer;

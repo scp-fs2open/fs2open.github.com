@@ -673,8 +673,10 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 		auto mipmap_w = tex_w;
 		auto mipmap_h = tex_h;
 
-		// should never have mipmap levels if we also have to manually resize
-		if ((mipmap_levels > 1) && resize) {
+		// if we are doing mipmap resizing we need to account for adjusted tex size
+		// (we can end up with only one mipmap level if base_level is high enough so don't check it)
+		if (base_level > 0) {
+			Assertion(resize == false, "ERROR: Cannot use manual and mipmap resizing at the same time!");
 			Assert(texmem == nullptr);
 
 			// If we have mipmaps then tex_w/h are already adjusted for the base level but that will cause problems with
@@ -1113,11 +1115,6 @@ int gr_opengl_tcache_set_internal(int bitmap_handle, int bitmap_type, float *u_s
 
 	GR_DEBUG_SCOPE("Activate texture");
 
-	if (GL_last_detail != Detail.hardware_textures) {
-		GL_last_detail = Detail.hardware_textures;
-		opengl_tcache_flush();
-	}
-
 	auto t = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle, true);
 
 	if (!bm_is_render_target(bitmap_handle) && t->bitmap_handle < 0)
@@ -1166,6 +1163,11 @@ int gr_opengl_tcache_set(int bitmap_handle, int bitmap_type, float *u_scale, flo
 
 	int rc = 0;
 
+	// set output defaults in case of error
+	*u_scale = 1.0f;
+	*v_scale = 1.0f;
+	*array_index = 0;
+
 	if (bitmap_handle < 0) {
 		return 0;
 	}
@@ -1193,7 +1195,14 @@ void opengl_preload_init()
 	if (gr_screen.mode != GR_OPENGL)
 		return;
 
-//	opengl_tcache_flush ();
+	// If texture detail level has changed since last mission load then flush the
+	// cache to allow for texture resizing. We should only get here very early
+	// during mission load (and restart) which should allow for render targets
+	// to be (re)created normally.
+	if (GL_last_detail != Detail.hardware_textures) {
+		GL_last_detail = Detail.hardware_textures;
+		opengl_tcache_flush();
+	}
 }
 
 int gr_opengl_preload(int bitmap_num, int is_aabitmap)

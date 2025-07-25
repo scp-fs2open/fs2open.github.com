@@ -141,6 +141,21 @@ int gr_opengl_bm_set_render_target(int n, int face)
 	return 0;
 }
 
+bool gr_opengl_bm_is_valid_render_target(int bitmap_handle)
+{
+	if (bitmap_handle < 0) {
+		return false;
+	}
+
+	if ( !bm_is_render_target(bitmap_handle) ) {
+		return false;
+	}
+
+	auto ts = bm_get_gr_info<tcache_slot_opengl>(bitmap_handle);
+
+	return (ts->texture_id && (ts->fbo_id >= 0));
+}
+
 bool gr_opengl_bm_data(int  /*n*/, bitmap*  /*bm*/)
 {
 	// Do nothing here

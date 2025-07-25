@@ -811,9 +811,13 @@ void batching_add_line(vec3d *start, vec3d *end, float widthStart, float widthEn
 		return;
 	}
 
-	if (lineTexture < 0)
+	if ( !gr_bm_is_valid_render_target(lineTexture) )
 	{
-		//We only need a single pixel sized texture to render as many lines as we want. 
+		if (lineTexture >= 0) {
+			bm_release(lineTexture, 1);
+		}
+
+		//We only need a single pixel sized texture to render as many lines as we want.
 		//If it doesn't exist yet, then we make one!
 		auto previous_target = gr_screen.rendering_to_texture;
 

@@ -8452,7 +8452,7 @@ void ship_close_cockpit_displays(ship* shipp)
 		}
 
 		if ( Player_displays[i].target >= 0 ) {
-			bm_release(Player_displays[i].target);
+			bm_release(Player_displays[i].target, 1);
 		}
 	}
 
