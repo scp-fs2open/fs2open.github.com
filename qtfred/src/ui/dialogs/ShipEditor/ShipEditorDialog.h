@@ -11,6 +11,7 @@
 #include "ShipSpecialStatsDialog.h"
 #include "ShipTextureReplacementDialog.h"
 #include "ShipTBLViewer.h"
+#include "ShipWeaponsDialog.h"
 #include "ShipPathsDialog.h"
 #include "ShipCustomWarpDialog.h"
 
