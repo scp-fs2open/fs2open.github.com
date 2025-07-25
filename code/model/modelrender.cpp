@@ -2049,17 +2049,17 @@ void model_render_glow_points(const polymodel *pm, const polymodel_instance *pmi
 
 // These scaling functions were adapted from Elecman's code.
 // https://forum.unity.com/threads/this-script-gives-you-objects-screen-size-in-pixels.48966/#post-2107126
-float convert_pixel_size_and_distance_to_diameter(float pixelsize, float distance, float field_of_view_deg, int screen_height)
+float convert_pixel_size_and_distance_to_diameter(float pixelsize, float distance, float field_of_view, int screen_width)
 {
-	float diameter = (pixelsize * distance * field_of_view_deg) / (fl_degrees(screen_height));
+	float diameter = (pixelsize * distance * tanf(field_of_view)) / (screen_width);
 	return diameter;
 }
 
 // These scaling functions were adapted from Elecman's code.
 // https://forum.unity.com/threads/this-script-gives-you-objects-screen-size-in-pixels.48966/#post-2107126
-float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view_deg, int screen_height)
+float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view, int screen_width)
 {
-	float pixel_size = (diameter * fl_degrees(screen_height)) / (distance * field_of_view_deg);
+	float pixel_size = (diameter * screen_width) / (distance * tanf(field_of_view));
 	return pixel_size;
 }
 
@@ -2073,16 +2073,16 @@ float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, floa
 	float current_pixel_size = convert_distance_and_diameter_to_pixel_size(
 		distance_to_eye,
 		diameter,
-		fl_degrees(g3_get_hfov(Eye_fov)),
-		gr_screen.max_h);
+		g3_get_hfov(Eye_fov),
+		gr_screen.max_w);
 
 	float scaled_diameter = diameter;
 	if (current_pixel_size < min_pixel_size) {
 		scaled_diameter = convert_pixel_size_and_distance_to_diameter(
 			min_pixel_size,
 			distance_to_eye,
-			fl_degrees(g3_get_hfov(Eye_fov)),
-			gr_screen.max_h);
+			g3_get_hfov(Eye_fov),
+			gr_screen.max_w);
 	}
 
 	return scaled_diameter;

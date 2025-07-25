@@ -130,8 +130,8 @@ float ParticleEffect::getApproximateVisualSize(const vec3d& pos) const {
 	return convert_distance_and_diameter_to_pixel_size(
 		distance_to_eye,
 		m_radius.avg() * 2.f,
-		fl_degrees(g3_get_hfov(Eye_fov)),
-		gr_screen.max_h);
+		g3_get_hfov(Eye_fov),
+		gr_screen.max_w);
 }
 
 float ParticleEffect::getCurrentFrequencyMult(decltype(modular_curves_definition)::input_type_t source) const {

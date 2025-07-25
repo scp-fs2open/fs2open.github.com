@@ -144,6 +144,9 @@ class RandomRange {
 	 */
 	ValueType avg() const
 	{
+		if (m_constant)
+			return m_minValue;
+
 		if constexpr (has_member(DistributionType, avg())) {
 			return m_distribution.avg();
 		}
