@@ -159,6 +159,7 @@ void trail_render( trail * trailp )
 
 		float speed = vm_vec_mag(&trailp->vel[front]);
 
+		float total_len = speed * ti->max_life;
 		float f_alpha, b_alpha, f_width, b_width;
 
 		float t_front = trailp->val[front] - trailp->val[back];
@@ -185,9 +186,7 @@ void trail_render( trail * trailp )
 		verts[2].world = bbot;
 		verts[3].world = btop;
 
-		float total_len = speed * ti->max_life;
 		float uv_scale = (total_len / speed / (i2fl(ti->spew_duration) / MILLISECONDS_PER_SECOND)) / ti->texture_stretch;
-		uv_scale *= 0.5;
 
 		verts[0].texture_position.u = trailp->val[front] * uv_scale;
 		verts[1].texture_position.u = trailp->val[front] * uv_scale;
