@@ -1151,6 +1151,13 @@ ADE_FUNC(renderSelectModel,
 
 	model_render_params render_info;
 
+	select_effect_params params;
+	params.effect = effect;
+	params.fs2_grid_color = wip->fs2_effect_grid_color;
+	params.fs2_scanline_color = wip->fs2_effect_scanline_color;
+	params.fs2_grid_density = wip->fs2_effect_grid_density;
+	params.fs2_wireframe_color = wip->fs2_effect_wireframe_color;
+
 	draw_model_rotating(&render_info,
 		modelNum,
 		x1,
@@ -1163,7 +1170,7 @@ ADE_FUNC(renderSelectModel,
 		REVOLUTION_RATE,
 		MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,
-		effect);
+		params);
 
 	return ade_set_args(L, "b", true);
 }

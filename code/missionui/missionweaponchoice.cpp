@@ -2813,6 +2813,13 @@ void weapon_select_do(float frametime)
 			modelIdx = model_load(wip->pofbitmap_name, nullptr, ErrorType::FATAL_ERROR);
 		}
 
+		select_effect_params params;
+		params.effect = wip->selection_effect;
+		params.fs2_grid_color = wip->fs2_effect_grid_color;
+		params.fs2_scanline_color = wip->fs2_effect_scanline_color;
+		params.fs2_grid_density = wip->fs2_effect_grid_density;
+		params.fs2_wireframe_color = wip->fs2_effect_wireframe_color;
+
 		model_render_params render_info;
 		draw_model_rotating(&render_info, 
 			modelIdx,
@@ -2826,7 +2833,7 @@ void weapon_select_do(float frametime)
 			REVOLUTION_RATE,
 			MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 			GR_RESIZE_MENU,
-			wip->selection_effect);
+			params);
 	} else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < weapon_info_size());
 		if ( Weapon_anim_class != Selected_wl_class )
