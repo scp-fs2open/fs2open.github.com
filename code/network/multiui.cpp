@@ -4535,7 +4535,7 @@ void multi_create_list_load_campaigns()
 {
 	int idx, file_count;
 	int campaign_type,max_players;
-	char title[255];
+	SCP_string title;
 	char wild_card[10];
 	char **file_list = NULL;
 
@@ -4717,13 +4717,13 @@ void multi_create_list_do()
 // so we can set the data without bothering to check the UI anymore
 void multi_create_list_set_item(int abs_index, int mode) {
 
-	int campaign_type, max_players;
-	char title[NAME_LENGTH + 1];
+	int campaign_type = -1, max_players = 0;
+	SCP_string title;
 	netgame_info ng_temp;
 	netgame_info* ng;
 	multi_create_info* mcip = NULL;
 
-	char* campaign_desc;
+	char* campaign_desc = nullptr;
 
 	// if not on the standalone server
 	if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
@@ -4738,7 +4738,7 @@ void multi_create_list_set_item(int abs_index, int mode) {
 	if (mode == MULTI_CREATE_SHOW_MISSIONS) {
 		strcpy(ng->mission_name, Multi_create_mission_list[abs_index].filename);
 	} else {
-		strcpy(ng->mission_name, Multi_create_campaign_list[abs_index].filename);
+		strcpy(ng->campaign_name, Multi_create_campaign_list[abs_index].filename);
 	}
 
 	// make sure the netgame type is properly set
@@ -4819,23 +4819,21 @@ void multi_create_list_set_item(int abs_index, int mode) {
 
 		// if not on the standalone server
 		if (Net_player->flags & NETINFO_FLAG_AM_MASTER) {
-			memset(title, 0, sizeof(title));
 			// get the campaign info
 			if (!mission_campaign_get_info(ng->campaign_name,
 					title,
 					&campaign_type,
 					&max_players,
 					&campaign_desc,
-					&first_mission)) {
+					&first_mission))
+			{
+				nprintf(("Network", "MC: Failed to get campaign info for '%s'!\n", ng->campaign_name));
 				memset(ng->campaign_name, 0, sizeof(ng->campaign_name));
-				ng->max_players = 0;
 			}
-			// if we successfully got the info
-			else {
-				memset(ng->title, 0, NAME_LENGTH + 1);
-				strcpy_s(ng->title, title);
-				ng->max_players = max_players;
-			}
+
+			memset(ng->title, 0, sizeof(ng->title));
+			strcpy_s(ng->title, title.c_str());
+			ng->max_players = max_players;
 
 			nprintf(("Network", "MC MAX PLAYERS : %d\n", ng->max_players));
 

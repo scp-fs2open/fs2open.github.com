@@ -170,26 +170,17 @@ int local_num_campaigns = 0;
 
 int campaign_file_list_filter(const char *filename)
 {
-	char name[NAME_LENGTH];
-	char *desc = NULL;
+	SCP_string name;
 	int type, max_players;
 
-	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
+	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
 		if ( type == CAMPAIGN_TYPE_SINGLE) {
-			Campaign_names[local_num_campaigns] = vm_strdup(name);
+			Campaign_names[local_num_campaigns] = vm_strdup(name.c_str());
 			local_num_campaigns++;
-
-			// here we *do* free the campaign description because we are not saving the pointer.
-			if (desc != NULL)
-				vm_free(desc);
-
 			return 1;
 		}
 	}
 
-	if (desc != NULL)
-		vm_free(desc);
- 
 	return 0;
 }
 

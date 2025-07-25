@@ -750,7 +750,7 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 	// get mission choice options
 	case MULTI_OPTION_MISSION: {
 		netgame_info ng;
-		char title[NAME_LENGTH+1];
+		SCP_string title;
 		int campaign_type,max_players;
 
 		Assert(Game_mode & GM_STANDALONE_SERVER);
@@ -779,7 +779,6 @@ void multi_options_process_packet(unsigned char *data, header *hinfo)
 
 			// set the netgame max players here if the filename has changed
 			if(strcmp(Netgame.campaign_name,ng.campaign_name) != 0){				
-				memset(title,0,NAME_LENGTH+1);			
 				if(!mission_campaign_get_info(ng.campaign_name,title,&campaign_type,&max_players)){
 					Netgame.max_players = 0;
 				} else {
