@@ -100,6 +100,7 @@ ai_goal_list Ai_goal_names[] =
 	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,			0 },
 	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,		0 },
+	{ "Attack ship type",		AI_GOAL_CHASE_SHIP_TYPE,		0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
@@ -114,6 +115,7 @@ const char *Ai_goal_text(ai_goal_mode goal, int submode)
 	case AI_GOAL_CHASE:
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 		return XSTR( "attack ", 474);
 	case AI_GOAL_DOCK:
 		return XSTR( "dock ", 475);
@@ -513,11 +515,23 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		if ( purge_goal->target_name == NULL )
 			continue;
 
-		// goals operating on ship classes are handled slightly differently
+		// goals operating on ship classes and ship types are handled slightly differently
 		if ( purge_ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
 			// if the target of the purge goal is the same class of ship we are concerned about, then we have a match;
 			// if it is not, then we can continue (see standard ship check below)
 			if ( stricmp(purge_goal->target_name, Ship_info[Ships[ship_index].ship_info_index].name) != 0 )
+				continue;
+		}
+		else if (purge_ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
+			// Get the ship type of the ship we're concerned about
+			int ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
+
+			// If the ship type is invalid, we can't match it, so continue
+			if (ship_type < 0)
+				continue;
+
+			// Check if the target name of the purge goal matches the ship type name
+			if (stricmp(purge_goal->target_name, Ship_types[ship_type].name) != 0)
 				continue;
 		}
 		// standard goals operating on either wings or ships
@@ -1094,6 +1108,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	case OP_AI_CHASE:
 	case OP_AI_CHASE_WING:
 	case OP_AI_CHASE_SHIP_CLASS:
+	case OP_AI_CHASE_SHIP_TYPE:
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
 	case OP_AI_EVADE_SHIP:
@@ -1125,6 +1140,8 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 			aigp->ai_mode = AI_GOAL_CHASE_WING;
 		} else if (op == OP_AI_CHASE_SHIP_CLASS) {
 			aigp->ai_mode = AI_GOAL_CHASE_SHIP_CLASS;
+		} else if (op == OP_AI_CHASE_SHIP_TYPE) {
+			aigp->ai_mode = AI_GOAL_CHASE_SHIP_TYPE;
 		} else if ( op == OP_AI_IGNORE ) {
 			aigp->ai_mode = AI_GOAL_IGNORE;
 		} else if ( op == OP_AI_IGNORE_NEW ) {
@@ -1169,7 +1186,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	}
 
 	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
-	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS
+	if (op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS || op == OP_AI_CHASE_SHIP_TYPE
 		|| op == OP_AI_DISABLE_SHIP || op == OP_AI_DISABLE_SHIP_TACTICAL || op == OP_AI_DISARM_SHIP || op == OP_AI_DISARM_SHIP_TACTICAL ) {
 		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
@@ -1194,6 +1211,7 @@ void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *a
 	if (op == OP_AI_CHASE || 
 		op == OP_AI_CHASE_WING || 
 		op == OP_AI_CHASE_SHIP_CLASS || 
+		op == OP_AI_CHASE_SHIP_TYPE ||
 		op == OP_AI_DISABLE_SHIP || 
 		op == OP_AI_DISABLE_SHIP_TACTICAL || 
 		op == OP_AI_DISARM_SHIP || 
@@ -1379,6 +1397,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 	case OP_AI_CHASE_SHIP_CLASS:
 		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_CHASE_SHIP_CLASS;
+		break;
+	case OP_AI_CHASE_SHIP_TYPE:
+		priority = eval_priority_et_seq(CDDR(node));
+		goalmode = AI_GOAL_CHASE_SHIP_TYPE;
 		break;
 	case OP_AI_EVADE_SHIP:
 		priority = eval_priority_et_seq(CDDR(node));
@@ -1689,7 +1711,20 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
-
+	// and similarly for chasing all ships of a certain ship type
+	if (aigp->ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
+		for (auto so : list_range(&Ship_obj_list)) {
+			auto type_objp = &Objects[so->objnum];
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+			int ship_info_idx = Ships[type_objp->instance].ship_info_index;
+			int class_type = Ship_info[ship_info_idx].class_type;
+			if (class_type >= 0 && !strcmp(aigp->target_name, Ship_types[class_type].name)) {
+				return ai_achievability::ACHIEVABLE;
+			}
+		}
+		return ai_achievability::NOT_KNOWN;
+	}
 
 	return_val = ai_achievability::SATISFIED;
 
@@ -2523,10 +2558,20 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
-		shipnum = ship_info_lookup( current_goal->target_name );
-		Assertion( shipnum >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!" );
-		ai_attack_object( objp, nullptr, shipnum );
+	{
+		int ship_info_index = ship_info_lookup(current_goal->target_name);
+		Assertion(ship_info_index >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!");
+		ai_attack_object(objp, nullptr, ship_info_index);
 		break;
+	}
+	// similarly for chase-ship-type
+	case AI_GOAL_CHASE_SHIP_TYPE:
+	{
+		int class_type = ship_type_name_lookup(current_goal->target_name);
+		Assertion(class_type >= 0, "The target of AI_GOAL_CHASE_SHIP_TYPE must refer to a valid ship type!");
+		ai_attack_object(objp, nullptr, -1, class_type);
+		break;
+	}
 
 	case AI_GOAL_WARP: {
 		mission_do_departure( objp, true );
