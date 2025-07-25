@@ -337,10 +337,21 @@ SCP_string gr_opengl_blob_screen()
 	GLuint pbo = 0;
 
 	GL_state.PushFramebufferState();
-	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
+
+	GLuint source_fbo = 0;
+
+	GLuint render_target = opengl_get_rtt_framebuffer();
+	if (render_target != 0) {
+		source_fbo = render_target;
+	}
+	else if (Cmdline_window_res) {
+		source_fbo = Back_framebuffer;
+	}
+
+	GL_state.BindFrameBuffer(source_fbo, GL_FRAMEBUFFER);
 
 	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
-	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
+	glReadBuffer(source_fbo != 0 ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
 	// now for the data
 	if (Use_PBOs) {
