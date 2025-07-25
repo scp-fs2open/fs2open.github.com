@@ -213,6 +213,8 @@ void CFREDDoc::editor_init_mission() {
 }
 
 bool CFREDDoc::load_mission(const char *pathname, int flags) {
+	Assertion(Locked_sexp_true >= 0 && Locked_sexp_false >= 0, "SEXPs are not yet initialized!");
+
 	// make sure we're in the correct working directory!!!!!!
 	chdir(Fred_base_dir);
 
