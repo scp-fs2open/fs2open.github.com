@@ -161,26 +161,13 @@ void trail_render( trail * trailp )
 
 		float f_alpha, b_alpha, f_width, b_width;
 
-		float t = trailp->val[front] - trailp->val[back];
+		float t_front = trailp->val[front] - trailp->val[back];
+		float t_back = MAX(0.0f, -trailp->val[back]);
 
-		if (trailp->object_died) {
-			if (trailp->val[0] < 0.0f) {
-				f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
-				b_alpha = -trailp->val[back] * (ti->a_start - ti->a_end) + ti->a_end;
-				f_width = t * (ti->w_start - ti->w_end) + ti->w_end;
-				b_width = -trailp->val[back] * (ti->w_start - ti->w_end) + ti->w_end;
-			} else {
-				f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
-				b_alpha = ti->a_end;
-				f_width = t * (ti->w_start - ti->w_end) + ti->w_end;
-				b_width = ti->w_end;
-			}
-		} else {
-			f_alpha = ti->a_start;
-			b_alpha = -trailp->val[back] * (ti->a_start - ti->a_end) + ti->a_end;
-			f_width = ti->w_start;
-			b_width = -trailp->val[back] * (ti->w_start - ti->w_end) + ti->w_end;
-		}
+		f_alpha = t_front * (ti->a_start - ti->a_end) + ti->a_end;
+		b_alpha = t_back * (ti->a_start - ti->a_end) + ti->a_end;
+		f_width = t_front * (ti->w_start - ti->w_end) + ti->w_end;
+		b_width = t_back * (ti->w_start - ti->w_end) + ti->w_end;
 
 		vec3d trail_direction, ftop, fbot, btop, bbot;
 		vm_vec_normalized_dir(&trail_direction, &trailp->pos[back], &trailp->pos[front]);
