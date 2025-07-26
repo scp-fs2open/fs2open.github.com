@@ -7,7 +7,8 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
-//#include "globalincs/alphacolors.h" //Needed for team colors
+#include "team_colors.h"
+#include "globalincs/alphacolors.h" //Needed for team colors
 
 #include "mission/missionparse.h"
 
@@ -333,31 +334,35 @@ ADE_VIRTVAR(Team, l_ParseObject, "team", "The team of the parsed ship.", "team",
 	return ade_set_args(L, "o", l_Team.Set(poh->getObject()->team));
 }
 
-ADE_VIRTVAR(TeamColor, l_ParseObject, "string", "The team color", "string", "The name of the team color or empty if not set or invalid.")
+ADE_VIRTVAR(TeamColor, l_ParseObject, "teamcolor", "The team color. Setting the team color here will not be reflected in the mission if the ship is already created. You must do that on the Ship object instead.", "teamcolor", "The team color handle or nil if not set or invalid.")
 {
 	parse_object_h* poh = nullptr;
-	const char* team_color = nullptr;
-	if (!ade_get_args(L, "o|s", l_ParseObject.GetPtr(&poh), &team_color))
-		return ade_set_error(L, "s", "");
+	int idx = -1;
+	if (!ade_get_args(L, "o|o", l_ParseObject.GetPtr(&poh), l_TeamColor.Get(&idx)))
+		return ADE_RETURN_NIL;
 
 	if (!poh->isValid())
-		return ade_set_error(L, "s", "");
+		return ADE_RETURN_NIL;
 
-	//Set team color
-	if (ADE_SETTING_VAR && team_color != nullptr) {
-
+	// Set team color
+	if (ADE_SETTING_VAR && SCP_vector_inbounds(Team_Names, idx)) {
 		// Verify
-		/*if (Team_Colors.find(team_color) == Team_Colors.end()) {
+		const auto& it = Team_Colors.find(Team_Names[idx]);
+		if (it == Team_Colors.end()) {
 			mprintf(("Invalid team color specified in mission file for ship %s. Not setting!\n", poh->getObject()->name));
 		} else {
-			poh->getObject()->team_color_setting = team_color;
-		}*/
+			poh->getObject()->team_color_setting = Team_Names[idx];
+		}
+	}
 
-		LuaError(L, "Setting team colors is not yet supported!");
-	
-	}	
+	// look up by name
+	for (int i = 0; i < static_cast<int>(Team_Names.size()); ++i) {
+		if (lcase_equal(Team_Names[i], poh->getObject()->team_color_setting)) {
+			return ade_set_args(L, "o", l_TeamColor.Set(i));
+		}
+	}
 
-	return ade_set_args(L, "s", poh->getObject()->team_color_setting);
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
