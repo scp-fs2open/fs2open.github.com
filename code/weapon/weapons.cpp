@@ -10200,7 +10200,7 @@ float weapon_get_apparent_size(const weapon& wp) {
 	
 	return convert_distance_and_diameter_to_pixel_size(
 		dist,
-		wep_objp->radius,
-		fl_degrees(g3_get_hfov(Eye_fov)),
-		gr_screen.max_h) / i2fl(gr_screen.max_h);
+		wep_objp->radius * 2.0f,
+		g3_get_hfov(Eye_fov),
+		gr_screen.max_w) / i2fl(gr_screen.max_w);
 }
