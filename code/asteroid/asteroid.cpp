@@ -2679,7 +2679,10 @@ void asteroid_init()
 	verify_asteroid_splits();
 
 	if (!Asteroid_impact_explosion_ani.isValid()) {
-		Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
+		// this will always be missing on a standalone
+		if ( !Is_standalone ) {
+			Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
+		}
 	}
 
 	if (Asteroid_icon_closeup_model[0] == '\0')
