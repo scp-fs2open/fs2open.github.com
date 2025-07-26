@@ -1170,6 +1170,12 @@ static void shiphit_record_player_killer(const object *killer_objp, player *p)
 			strcpy_s(p->killer_parent_name, "");
 		}
 		break;
+
+	case OBJ_PROP:
+		strcpy_s(p->killer_parent_name, "");
+		p->killer_species = -1;
+		p->killer_parent_name[0] = '\0';
+		break;
 	
 	case OBJ_NONE:
 		if ( Game_mode & GM_MULTIPLAYER ) {
@@ -1327,6 +1333,8 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 		ship_p->next_hit_spark = timestamp(0);		// when a hit spot will spark
 	}
 }
+
+// Need a prop version? Maybe, maybe not
 
 // find the max number of sparks allowed for ship
 // limited for fighter by hull % others by radius.
@@ -1575,6 +1583,7 @@ static void player_died_start(const object *killer_objp)
 		case OBJ_SHIP:
 		case OBJ_DEBRIS:
 		case OBJ_ASTEROID:
+		case OBJ_PROP:
 		case OBJ_NONE:	//	Something that just got deleted due to also dying -- it happened to me! --MK.		
 			other_objp = killer_objp;
 			break;

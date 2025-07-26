@@ -1203,6 +1203,13 @@ add_file_folder("Popup"
 	popup/popupdead.h
 )
 
+# Prop files
+add_file_folder("Prop"
+	prop/prop.cpp
+	prop/prop.h
+	prop/prop_flags.h
+)
+
 # Radar files
 add_file_folder("Radar"
 	radar/radar.cpp
@@ -1467,6 +1474,10 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/player.h
 	scripting/api/objs/promise.cpp
 	scripting/api/objs/promise.h
+	scripting/api/objs/prop.cpp
+	scripting/api/objs/prop.h
+	scripting/api/objs/propclass.cpp
+	scripting/api/objs/propclass.h
 	scripting/api/objs/rank.cpp
 	scripting/api/objs/rank.h
 	scripting/api/objs/redalert.cpp

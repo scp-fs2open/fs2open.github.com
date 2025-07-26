@@ -105,6 +105,9 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 		case OBJ_BEAM:
 			sprintf(buf, "%s beam", Weapon_info[Beams[objh->objp()->instance].weapon_info_index].name);
 			break;
+		case OBJ_PROP:
+			sprintf(buf, "%s prop", "TEMP");
+			break;
 		default:
 			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
 			break;
@@ -540,6 +543,9 @@ ADE_FUNC(
 			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].subtypes[temp].model_number;
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
+		case OBJ_PROP:
+			// do this
+			break;
 		default:
 			return ADE_RETURN_NIL;
 	}
@@ -566,6 +572,8 @@ ADE_FUNC(
 		model_instance_num = Weapons[obj->instance].model_instance_num;
 	} else if (obj->type == OBJ_ASTEROID) {
 		model_instance_num = Asteroids[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_PROP) {
+		model_instance_num = -1; // YOUR MOM
 	}
 
 	mc_info hull_check;
