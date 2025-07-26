@@ -239,6 +239,7 @@ struct Persona {
 	char name[NAME_LENGTH];
 	int flags;
 	int species_bitfield;
+	SCP_map<SCP_string, SCP_string> custom_data;
 };
 
 extern SCP_vector<Persona> Personas;
