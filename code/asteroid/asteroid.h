@@ -179,7 +179,8 @@ void	asteroid_show_brackets();
 void	asteroid_target_closest_danger();
 void asteroid_add_target(object* objp);
 int get_asteroid_index(const char* asteroid_name);
-SCP_vector<SCP_string> get_list_valid_asteroid_subtypes();
+const SCP_vector<SCP_string>& get_list_valid_asteroid_subtypes();
+int get_asteroid_subtype_index_by_name(const SCP_string& name, int asteroid_idx);
 
 // extern for the lab
 void asteroid_load(int asteroid_info_index, int asteroid_subtype);
