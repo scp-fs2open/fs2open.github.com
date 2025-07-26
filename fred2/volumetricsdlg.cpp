@@ -20,6 +20,7 @@ static constexpr std::initializer_list<int> Interactible_fields = {
 	ID_AND_SPIN(STEPS),
 	ID_AND_SPIN(RESOLUTION),
 	ID_AND_SPIN(OVERSAMPLING),
+	ID_AND_SPIN(SMOOTHING),
 	ID_AND_SPIN(HGCOEFF),
 	ID_AND_SPIN(SUN_FALLOFF),
 	ID_AND_SPIN(STEPS_SUN),
@@ -49,6 +50,7 @@ volumetrics_dlg::volumetrics_dlg(CWnd* pParent /*=nullptr*/) : CDialog(volumetri
 	m_steps(15),
 	m_resolution(6),
 	m_oversampling(2),
+	m_smoothing(0.0f),
 	m_henyeyGreenstein(0.2f),
 	m_sunFalloffFactor(1.0f),
 	m_sunSteps(6),
@@ -75,6 +77,7 @@ BOOL volumetrics_dlg::OnInitDialog()
 	static constexpr char* Tooltip_distance = _T("This is how far something has to be in the nebula to be obscured to the maximum opacity.");
 	static constexpr char* Tooltip_steps = _T("If you see banding on ships in the volumetrics, increase this.");
 	static constexpr char* Tooltip_oversampling = _T("Increasing this improves the nebula's edge's smoothness especially for large nebula at low resolutions.");
+	static constexpr char* Tooltip_smoothing = _T("Smoothing controls how soft edges of the hull POF will be in the nebula, defined as a fraction of the nebula size.");
 	static constexpr char* Tooltip_henyey = _T("Values greater than 0 cause a cloud-like light shine-through, values smaller than 0 cause a highly reflective nebula.");
 	static constexpr char* Tooltip_sun_falloff = _T("Values greater than 1 means the nebula's depths are brighter than they ought to be, values smaller than 0 means they're darker.");
 	static constexpr char* Tooltip_steps_sun = _T("If you see banding in the volumetrics' light and shadow, increase this.");
@@ -86,6 +89,8 @@ BOOL volumetrics_dlg::OnInitDialog()
 	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_STEPS), Tooltip_steps);
 	m_toolTip.AddTool(GetDlgItem(IDC_OVERSAMPLING), Tooltip_oversampling);
 	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_OVERSAMPLING), Tooltip_oversampling);
+	m_toolTip.AddTool(GetDlgItem(IDC_SMOOTHING), Tooltip_smoothing);
+	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_SMOOTHING), Tooltip_smoothing);
 	m_toolTip.AddTool(GetDlgItem(IDC_HGCOEFF), Tooltip_henyey);
 	m_toolTip.AddTool(GetDlgItem(IDC_SPIN_HGCOEFF), Tooltip_henyey);
 	m_toolTip.AddTool(GetDlgItem(IDC_SUN_FALLOFF), Tooltip_sun_falloff);
@@ -111,6 +116,7 @@ BOOL volumetrics_dlg::OnInitDialog()
 		m_steps = volumetrics.steps;
 		m_resolution = volumetrics.resolution;
 		m_oversampling = volumetrics.oversampling;
+		m_smoothing = volumetrics.smoothing;
 		m_henyeyGreenstein = volumetrics.henyeyGreensteinCoeff;
 		m_sunFalloffFactor = volumetrics.globalLightDistanceFactor;
 		m_sunSteps = volumetrics.globalLightSteps;
@@ -154,6 +160,7 @@ void volumetrics_dlg::OnClose()
 	volumetrics.steps = m_steps;
 	volumetrics.resolution = m_resolution;
 	volumetrics.oversampling = m_oversampling;
+	volumetrics.smoothing = m_smoothing;
 	volumetrics.henyeyGreensteinCoeff = m_henyeyGreenstein;
 	volumetrics.globalLightDistanceFactor = m_sunFalloffFactor;
 	volumetrics.globalLightSteps= m_sunSteps;
@@ -199,6 +206,8 @@ void volumetrics_dlg::DoDataExchange(CDataExchange* pDX)
 	DDV_MinMaxInt(pDX, m_resolution, 6, 8);
 	DDX_Text(pDX, IDC_OVERSAMPLING, m_oversampling);
 	DDV_MinMaxInt(pDX, m_oversampling, 1, 3);
+	DDX_Text(pDX, IDC_SMOOTHING, m_smoothing);
+	DDV_MinMaxFloat(pDX, m_smoothing, 0.0f, 0.5f);
 	DDX_Text(pDX, IDC_HGCOEFF, m_henyeyGreenstein);
 	DDV_MinMaxFloat(pDX, m_henyeyGreenstein, -1.0f, 1.0f);
 	DDX_Text(pDX, IDC_SUN_FALLOFF, m_sunFalloffFactor);
@@ -250,6 +259,7 @@ BEGIN_MESSAGE_MAP(volumetrics_dlg, CDialog)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS, &volumetrics_dlg::OnDeltaposSpinSteps)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_RESOLUTION, &volumetrics_dlg::OnDeltaposSpinResolution)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_OVERSAMPLING, &volumetrics_dlg::OnDeltaposSpinResolutionOversampling)
+	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_SMOOTHING, &volumetrics_dlg::OnDeltaposSpinSmoothing)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_HGCOEFF, &volumetrics_dlg::OnDeltaposSpinHGCoeff)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_SUN_FALLOFF, &volumetrics_dlg::OnDeltaposSpinSunFalloff)
 	ON_NOTIFY(UDN_DELTAPOS, IDC_SPIN_STEPS_SUN, &volumetrics_dlg::OnDeltaposSpinStepsSun)
@@ -373,6 +383,7 @@ SPINNER_IMPL(SPIN_LINEAR, OpacityDistance, m_opacityDistance, 0.1f, FLT_MAX)
 SPINNER_IMPL(SPIN_LINEAR, Steps, m_steps, 1, 100)
 SPINNER_IMPL(SPIN_LINEAR, Resolution, m_resolution, 5, 8)
 SPINNER_IMPL(SPIN_LINEAR, ResolutionOversampling, m_oversampling, 1, 3)
+SPINNER_IMPL(SPIN_LINEAR, Smoothing, m_smoothing, 0.0f, 0.5f, 0.01f)
 
 SPINNER_IMPL(SPIN_LINEAR, HGCoeff, m_henyeyGreenstein, -1.0f, 1.0f, 0.1f)
 SPINNER_IMPL(SPIN_FACTOR, SunFalloff, m_sunFalloffFactor, 0.001f, 100.0f)
