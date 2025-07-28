@@ -6076,6 +6076,19 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
 		source->finishCreation();
 	}
+
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+		for (const auto& effect : wip->particle_spewers) {
+			if (!effect.isValid())
+				continue;
+
+			auto source = particle::ParticleManager::get()->createSource(effect);
+			auto host = std::make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector);
+			source->setHost(std::move(host));
+			source->finishCreation();
+		}
+	}
+
 }
 
 static void weapon_update_state(weapon* wp)
