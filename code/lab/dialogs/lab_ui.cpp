@@ -144,9 +144,8 @@ void LabUi::build_debris_list()
 				sprintf(node_label, "##DebrisClassIndex%i_%i", debris_idx, subtype_idx);
 				TreeNodeEx(node_label.c_str(),
 					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-					"%s (%s)",
-					info.name,
-					subtype.type_name.c_str());
+					"%s",
+					info.name);
 
 				if (IsItemClicked() && !IsItemToggledOpen()) {
 					getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, subtype_idx);
