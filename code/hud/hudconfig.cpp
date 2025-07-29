@@ -320,9 +320,9 @@ SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 // Names and XSTR IDs for these come from HC_text above
 hc_col HC_colors[NUM_HUD_COLOR_PRESETS] =
 {
-	{0, 255, 0, "", -1},    // Green
-	{67, 123, 203, "", -1}, // Blue
-	{255, 197, 0, "", -1},  // Amber
+	{0, 255, 0, "Green", 1457}, // Green
+	{67, 123, 203, "Blue", 1456}, // Blue
+	{255, 197, 0, "Amber", 1455}, // Ambers
 };
 
 int HC_default_color = HUD_COLOR_PRESET_1;
