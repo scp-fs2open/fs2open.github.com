@@ -786,7 +786,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 					}
 				}
 				subsys->current_hits = 0.0f;
-				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
+				do_subobj_destroyed_stuff( ship_p, subsys, global_damage ? nullptr : hitpos );
 				continue;
 			} else {
 				continue;
@@ -1032,7 +1032,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 
 			// multiplayer clients never blow up subobj stuff on their own
 			if ( (subsystem->current_hits <= 0.0f) && !MULTIPLAYER_CLIENT) {
-				do_subobj_destroyed_stuff( ship_p, subsystem, hitpos );
+				do_subobj_destroyed_stuff( ship_p, subsystem, global_damage ? nullptr : hitpos );
 			}
 
 			if (damage_left <= 0)	{ // no more damage to distribute, so stop checking
