@@ -1371,7 +1371,7 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 			hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
 			// don't draw sparks (using sphere hitpos)
-			float damage_light = (100.0f * damage / heavy_obj->phys_info.mass);
+			float damage_light = (100.0f * damage / light_obj->phys_info.mass);
 			ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, damage_light, heavy_shipp->collision_damage_type_idx,
 									MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
 
