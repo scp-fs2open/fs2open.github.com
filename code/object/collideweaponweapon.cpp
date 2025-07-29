@@ -69,7 +69,7 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		// the erroneous extra time a bomb stays invulnerable without the fix
 		float extra_buggy_time = 0.0f;
-		if (wipA->is_locked_homing())
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipA->is_locked_homing())
 			extra_buggy_time = (wipA->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipA->lifetime;
 		
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipA->is_locked_homing()) && (wpA->homing_object != &obj_used_list)) {
@@ -87,7 +87,7 @@ int collide_weapon_weapon( obj_pair * pair )
 
 		// the erroneous extra time a bomb stays invulnerable without the fix
 		float extra_buggy_time = 0.0f;
-		if (wipB->is_locked_homing())
+		if (!(The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && wipB->is_locked_homing())
 			extra_buggy_time = (wipB->lifetime * LOCKED_HOMING_EXTENDED_LIFE_FACTOR) - wipB->lifetime;
 
 		if ((The_mission.ai_profile->flags[AI::Profile_Flags::Aspect_invulnerability_fix]) && (wipB->is_locked_homing()) && (wpB->homing_object != &obj_used_list)) {
