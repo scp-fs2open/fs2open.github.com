@@ -795,7 +795,10 @@ void post_process_threaded_collisions() {
 		for(auto& [i, processed] : workerThreads) {
 			auto& thread = collision_thread_data_buffer[i];
 
-			if (thread.result_length.load(std::memory_order_acquire) > processed) {
+			size_t queue_length = thread.queue_length.load(std::memory_order_acquire);
+			size_t result_length = thread.result_length.load(std::memory_order_acquire);
+
+			if (result_length > processed) {
 				{
 					std::scoped_lock lock(thread.result_mutex);
 					thread.queue_results.swap(thread.queue_send);
@@ -816,7 +819,7 @@ void post_process_threaded_collisions() {
 				processed += thread.queue_send->size();
 				thread.queue_send->clear();
 			}
-			else if (thread.queue_length.load(std::memory_order_acquire) == 0) {
+			else if (queue_length == 0) {
 				thread.queue_results->clear();
 				workerThreads.erase(i);
 				break;
