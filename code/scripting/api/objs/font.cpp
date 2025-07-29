@@ -36,9 +36,9 @@ bool font_h::isValid() const {
 
 ADE_OBJ(l_Font, font_h, "font", "font handle");
 
-ADE_FUNC(__tostring, l_Font, NULL, "Name of font", "string", "Font filename, or an empty string if the handle is invalid")
+ADE_FUNC(__tostring, l_Font, nullptr, "Name of font", "string", "Font filename, or an empty string if the handle is invalid")
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	if (!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
 		return ade_set_error(L, "s", "");
 
@@ -60,9 +60,9 @@ ADE_FUNC(__eq, l_Font, "font, font", "Checks if the two fonts are equal", "boole
 	return ade_set_args(L, "b", fh1->Get()->getName() == fh2->Get()->getName());
 }
 
-ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", NULL)
+ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><b>Important:</b>This variable is deprecated. Use <i>Name</i> instead.", "string", nullptr)
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	const char* newname = nullptr;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
@@ -78,9 +78,9 @@ ADE_VIRTVAR(Filename, l_Font, "string", "Name of font (including extension)<br><
 	return ade_set_args(L, "s", fh->Get()->getName().c_str());
 }
 
-ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "string", NULL)
+ADE_VIRTVAR(Name, l_Font, "string", "Name of font (including extension)", "string", nullptr)
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	const char* newname = nullptr;
 	if (!ade_get_args(L, "o|s", l_Font.GetPtr(&fh), &newname))
 		return ade_set_error(L, "s", "");
@@ -116,7 +116,7 @@ ADE_VIRTVAR(FamilyName, l_Font, "string", "Family Name of font. Bitmap fonts alw
 
 ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "Font height, or 0 if the handle is invalid")
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	int newheight = -1;
 	if (!ade_get_args(L, "o|i", l_Font.GetPtr(&fh), &newheight))
 		return ade_set_error(L, "i", 0);
@@ -134,7 +134,7 @@ ADE_VIRTVAR(Height, l_Font, "number", "Height of font (in pixels)", "number", "F
 
 ADE_VIRTVAR(TopOffset, l_Font, "number", "The offset this font has from the baseline of textdrawing downwards. (in pixels)", "number", "Font top offset, or 0 if the handle is invalid")
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	float newOffset = -1;
 	if (!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
@@ -152,7 +152,7 @@ ADE_VIRTVAR(TopOffset, l_Font, "number", "The offset this font has from the base
 
 ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font skips downwards after drawing a line of text", "number", "Font bottom offset, or 0 if the handle is invalid")
 {
-	font_h *fh = NULL;
+	font_h* fh = nullptr;
 	float newOffset = -1;
 	if (!ade_get_args(L, "o|f", l_Font.GetPtr(&fh), &newOffset))
 		return ade_set_error(L, "f", 0.0f);
@@ -168,7 +168,25 @@ ADE_VIRTVAR(BottomOffset, l_Font, "number", "The space (in pixels) this font ski
 	return ade_set_args(L, "f", fh->Get()->getBottomOffset());
 }
 
-ADE_FUNC(isValid, l_Font, NULL, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
+ADE_FUNC(hasAutoSize, l_Font, nullptr, "True if FSO will auto size this font, false or nil if not", "boolean", "Detects whether the font has Auto Size activated")
+{
+	font_h* fh = nullptr;
+	if (!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", fh != nullptr && fh->Get()->getAutoScaleBehavior());
+}
+
+ADE_FUNC(hasCanScale, l_Font, nullptr, "True if this font is allowed to scale based on user settings, false or nil if not", "boolean", "Detects whether the font can scale")
+{
+	font_h* fh = nullptr;
+	if (!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "b", fh != nullptr && fh->Get()->getScaleBehavior());
+}
+
+ADE_FUNC(isValid, l_Font, nullptr, "True if valid, false or nil if not", "boolean", "Detects whether handle is valid")
 {
 	font_h *fh = nullptr;
 	if (!ade_get_args(L, "o", l_Font.GetPtr(&fh)))
