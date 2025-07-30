@@ -17,7 +17,12 @@ namespace particle {
 		static void parseBitmaps(ParticleEffect &effect) {
 			if (internal::required_string_if_new("+Filename:", false)) {
 				effect.m_bitmap_list = internal::parseAnimationList(true);
-				effect.m_bitmap_range = ::util::UniformRange<size_t>(0, effect.m_bitmap_list.size() - 1);
+
+				if (effect.m_bitmap_list.empty()) {
+					error_display(1, "No bitmap defined for particle effect!");
+				} else {
+					effect.m_bitmap_range = ::util::UniformRange<size_t>(0, effect.m_bitmap_list.size() - 1);
+				}
 			}
 		}
 
