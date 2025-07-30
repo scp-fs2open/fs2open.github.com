@@ -5144,7 +5144,7 @@ void parse_prop(mission* /*pm*/)
 		}
 
 		if (Fred_running) {
-			Warning(LOCATION, text.c_str());
+			Warning(LOCATION, "%s", text.c_str());
 		} else {
 			mprintf(("MISSIONS: %s", text.c_str()));
 		}
