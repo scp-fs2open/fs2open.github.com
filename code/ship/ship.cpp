@@ -17554,7 +17554,7 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	default:
-		return SCP_string();
+		return {};
 	}
 
 	return outbuf;
