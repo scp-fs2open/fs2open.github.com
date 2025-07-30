@@ -18,6 +18,7 @@
 #include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
+#include "prop/prop.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
@@ -544,7 +545,10 @@ ADE_FUNC(
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
 		case OBJ_PROP:
-			// do this
+			if (Props[obj->instance].has_value()) {
+				model_num = Prop_info[Props[obj->instance].value().prop_info_index].model_num;
+				flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
+			}
 			break;
 		default:
 			return ADE_RETURN_NIL;
@@ -573,7 +577,7 @@ ADE_FUNC(
 	} else if (obj->type == OBJ_ASTEROID) {
 		model_instance_num = Asteroids[obj->instance].model_instance_num;
 	} else if (obj->type == OBJ_PROP) {
-		model_instance_num = -1; // YOUR MOM
+		model_instance_num = Props[obj->instance].value().model_instance_num;
 	}
 
 	mc_info hull_check;

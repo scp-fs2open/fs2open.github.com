@@ -798,7 +798,8 @@ void prop_render(object* obj, model_draw_list* scene)
 // Draft. Props vector uses std::optional to allow for empty slots for deleted props so the indices of the remaining
 // props do not change. In long FRED sessions without saving and loading, this can lead to a lot of empty slots. However,
 // saving and loading the level will naturally compact the props vector by way of clearing and re-adding props.
-void compact_props_vector()
+// EDIT: Now that creating props will use empty prop slots, this may not be needed. Keeping it here for posterity.
+/*void compact_props_vector()
 {
 	SCP_vector<std::optional<prop>> new_props;
 	SCP_unordered_map<int, int> index_remap;
@@ -823,7 +824,7 @@ void compact_props_vector()
 			}
 		}
 	}
-}
+}*/
 
 void props_level_init() {
 	Props.clear();

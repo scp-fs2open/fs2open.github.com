@@ -1358,8 +1358,6 @@ void ship_hit_sparks_no_rotate(object *ship_objp, vec3d *hitpos)
 	}
 }
 
-// Need a prop version? Maybe, maybe not
-
 // find the max number of sparks allowed for ship
 // limited for fighter by hull % others by radius.
 int get_max_sparks(const object* ship_objp)

@@ -672,8 +672,7 @@ void obj_delete_all()
 		obj_delete(i);
 	}
 
-	// If we've removed all objects then we can safely
-	// clear the Props vector TODO maybe remove this?
+	// If we've removed all objects then we can safely clear the Props vector
 	Props.clear();
 
 	mprintf(("Cleanup: Deleted %i objects\n", counter));
@@ -1194,7 +1193,7 @@ void obj_set_flags( object *obj, const flagset<Object::Object_Flags>& new_flags 
 		if ( obj->type == OBJ_OBSERVER ) {
 			return;
 		}
-		// Maybe add PROP here
+
 		// sanity checks
 		if ( (obj->type != OBJ_SHIP) || (obj->instance < 0) ) {
 			return;				// return because we really don't want to set the flag
@@ -1279,7 +1278,6 @@ void obj_move_all_pre(object *objp, float frametime)
 	case OBJ_RAW_POF:
 		break;
 	case OBJ_PROP:
-		// Handle moving submodels maybe?
 		break;
 	case OBJ_NONE:
 		Int3();
@@ -1544,7 +1542,6 @@ void obj_move_all_post(object *objp, float frametime)
 			break;
 
 		case OBJ_PROP:
-			// Not sure if anything will be needed here
 			break;
 
 		case OBJ_NONE:
@@ -1696,7 +1693,7 @@ void obj_move_all(float frametime)
 		// and look_at needs to happen last or the angle may be off by a frame)
 		model_do_intrinsic_motions(objp);
 
-		// PROP probably will need something like this
+		// Future TODO: Props will need a version of this when submodel animation support is added.
 		// For ships, we now have to make sure that all the submodel detail levels remain consistent.
 		if (objp->type == OBJ_SHIP)
 			ship_model_replicate_submodels(objp);

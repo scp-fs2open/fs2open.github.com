@@ -4869,7 +4869,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 	
 	int model_instance_num;
 	int model_num;
-	// ADD PROP HERE
+
 	if (objp->type == OBJ_SHIP) {
 		model_instance_num = Ships[objp->instance].model_instance_num;
 		model_num = Ship_info[Ships[objp->instance].ship_info_index].model_num;

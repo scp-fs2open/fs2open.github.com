@@ -98,7 +98,6 @@ namespace animation {
 		}
 	}
 
-	// ADD PROP HERE
 	template<typename property, property ship::* property_ptr, float property::* subproperty_ptr>
 	static float get_ship_subproperty_float(polymodel_instance* pmi){
 		int objnum = get_pmi_objnum(pmi);
