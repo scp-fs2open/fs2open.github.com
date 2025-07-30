@@ -206,7 +206,7 @@ void LabUi::build_prop_list()
 	}
 }
 
-void LabUi::build_background_list() const
+void LabUi::build_background_list()
 {
 	SCP_vector<SCP_string> t_missions;
 
