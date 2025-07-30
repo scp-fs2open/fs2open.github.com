@@ -5460,7 +5460,7 @@ int CFred_mission_save::save_props()
 
 				required_string_fred("$Class:");
 				parse_comments(2);
-				fout(" %d", p->prop_info_index);
+				fout(" %s", Prop_info[p->prop_info_index].name);
 
 				required_string_fred("$Location:");
 				parse_comments();
