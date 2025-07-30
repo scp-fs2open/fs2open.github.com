@@ -715,8 +715,6 @@ float neb2_get_lod_scale(int objnum)
 	ship *shipp;
 	ship_info *sip;
 
-	// ADD PROP HERE
-
 	// bogus
 	if ( (objnum < 0) 
 		|| (objnum >= MAX_OBJECTS) 
@@ -1103,7 +1101,7 @@ void neb2_get_fog_values(float *fnear, float *ffar, object *objp)
 		return;
 	}
 
-	// ADD PROP HERE
+	// Future TODO: Add fog_start_dist and fog_complete_dist to Props
 	// determine what fog index to use
 	if(objp->type == OBJ_SHIP) {
 		Assert((objp->instance >= 0) && (objp->instance < MAX_SHIPS));
