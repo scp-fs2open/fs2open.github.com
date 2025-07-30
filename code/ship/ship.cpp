@@ -17483,7 +17483,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
-		return SCP_string();
+		return {};
 
 	SCP_string outbuf = order_text;
 
