@@ -2542,23 +2542,20 @@ int get_asteroid_index(const char* asteroid_name)
 	return -1;
 }
 
-// For FRED. Gets a list of unique asteroid subtype names
-SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
+// Returns the list of unique asteroid subtype names.
+// List is cached after the first call since Asteroid_info cannot change during an engine instance.
+const SCP_vector<SCP_string>& get_list_valid_asteroid_subtypes()
 {
-	SCP_vector<SCP_string> list;
+	static SCP_vector<SCP_string> list;
 
-	for (const auto& this_asteroid : Asteroid_info) {
-		if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
-			for (const auto& subtype : this_asteroid.subtypes) {
-				bool exists = false;
-				for (const auto& entry : list) {
-					if (subtype.type_name == entry) {
-						exists = true;
+	if (list.empty()) {
+		for (const auto& this_asteroid : Asteroid_info) {
+			if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
+				for (const auto& subtype : this_asteroid.subtypes) {
+					// Only add unique names
+					if (std::find(list.begin(), list.end(), subtype.type_name) == list.end()) {
+						list.push_back(subtype.type_name);
 					}
-				}
-
-				if (!exists) {
-					list.push_back(subtype.type_name);
 				}
 			}
 		}
@@ -2566,6 +2563,7 @@ SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
 
 	return list;
 }
+
 
 static void verify_asteroid_splits() 
 {
