@@ -115,6 +115,7 @@ int Num_teams;
 fix Entry_delay_time = 0;
 
 int Num_unknown_ship_classes;
+int Num_unknown_prop_classes;
 int Num_unknown_weapon_classes;
 int Num_unknown_loadout_classes;
 
@@ -5128,7 +5129,29 @@ void parse_prop(mission* /*pm*/)
 
 	// Maybe do this by name instead?
 	required_string("$Class:");
-	stuff_int(&p.prop_info_index);
+	SCP_string class_name;
+	stuff_string(class_name, F_NAME);
+	int idx = prop_info_lookup(class_name.c_str());
+	if (idx < 0) {
+		SCP_string text;
+		sprintf(text, "Prop \"%s\" has an invalid prop type (props.tbl probably changed).", p.name);
+
+		if (Prop_info.empty()) {
+			text += "  No props.tbl is loaded. Prop will not be added to the mission!";
+		} else {
+			text += "  Prop will be added to the mission with type 0.";
+			idx = 0;
+		}
+
+		if (Fred_running) {
+			Warning(LOCATION, text.c_str());
+		} else {
+			mprintf(("MISSIONS: %s", text.c_str()));
+		}
+
+		Num_unknown_prop_classes++;
+	}
+	p.prop_info_index = idx;
 
 	required_string("$Location:");
 	stuff_vec3d(&p.position);
@@ -5145,6 +5168,12 @@ void parse_prop(mission* /*pm*/)
 				WarningEx(LOCATION, "Unknown flag in parse prop flags: %s", f.c_str());
 			}
 		}
+	}
+
+	// if idx is still -1 then we have an empty props.tbl so we parse
+	// everything here and just discard it. A warning has already been generated above.
+	if (idx < 0) {
+		return;
 	}
 
 	Parse_props.emplace_back(p);
@@ -6515,6 +6544,7 @@ bool parse_mission(mission *pm, int flags)
 
 	// reset parse error stuff
 	Num_unknown_ship_classes = 0;
+	Num_unknown_prop_classes = 0;
 	Num_unknown_weapon_classes = 0;
 	Num_unknown_loadout_classes = 0;
 
@@ -6554,7 +6584,7 @@ bool parse_mission(mission *pm, int flags)
 	parse_custom_data(pm);
 
 	// if we couldn't load some mod data
-	if ((Num_unknown_ship_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
+	if ((Num_unknown_ship_classes > 0) || (Num_unknown_prop_classes > 0) || ( Num_unknown_loadout_classes > 0 )) {
 		// if running on standalone server, just print to the log
 		if (Game_mode & GM_STANDALONE_SERVER) {
 			mprintf(("Warning!  Could not load %d ship classes!\n", Num_unknown_ship_classes));
@@ -6568,7 +6598,10 @@ bool parse_mission(mission *pm, int flags)
 			if (Num_unknown_ship_classes > 0) {
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d ship class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_ship_classes, (Num_unknown_ship_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
-			else {
+			else if (Num_unknown_prop_classes > 0) {
+				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d prop class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_prop_classes, (Num_unknown_prop_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
+			}
+			else if (Num_unknown_loadout_classes > 0) {
 				sprintf(text, "Warning!\n\nFreeSpace was unable to find %d weapon class%s while loading this mission.  This can happen if you try to play a %s that is incompatible with the current mod.\n\n", Num_unknown_loadout_classes, (Num_unknown_loadout_classes > 1) ? "es" : "", (Game_mode & GM_CAMPAIGN_MODE) ? "campaign" : "mission");
 			}
 

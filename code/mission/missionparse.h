@@ -352,6 +352,7 @@ extern fix	Entry_delay_time;
 extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
+extern int Num_unknown_prop_classes;
 extern int Num_unknown_weapon_classes;
 extern int Num_unknown_loadout_classes;
 
