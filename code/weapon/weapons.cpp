@@ -7987,7 +7987,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 		particleSource->finishCreation();
 	}
 
-	if (impacted_objp != nullptr && (impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)].has_value() || impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)].has_value()) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && !impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
