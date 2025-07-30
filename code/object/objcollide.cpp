@@ -429,8 +429,6 @@ int cpls_aux(vec3d *goal_pos, object *objp2, object *objp)
 		return 0;
 }
 
-//  Maybe consider PROP here too
-
 //	Return true if objp will collide with some large object.
 //	Don't check for an object this ship is docked to.
 int collide_predict_large_ship(object *objp, float distance)
