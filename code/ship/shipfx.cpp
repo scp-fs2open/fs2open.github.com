@@ -1844,7 +1844,13 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 	if ( timestamp_elapsed(half_ship->next_fireball) ) {
 		if ( half_ship->length_left > 0.2f*fl_abs(half_ship->explosion_vel) )	{
 			ship_info *sip = &Ship_info[Ships[half_ship->parent_obj->instance].ship_info_index];
-			
+
+			if ( !sip->split_particles.isValid() ) {
+				// time out forever
+				half_ship->next_fireball = timestamp(-1);
+				return;
+			}
+
 			polymodel* pm = model_get(sip->model_num);
 
 			vec3d model_clip_plane_pt, orig_ship_world_center, temp;
