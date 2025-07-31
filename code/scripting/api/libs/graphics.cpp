@@ -2255,6 +2255,10 @@ static int spawnParticles(lua_State *L, bool persistent) {
 	// Need to consume tracer_length parameter but it isn't used anymore
 	float temp;
 
+	if (Is_standalone) {
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
+
 	enum_h* type       = nullptr;
 	bool rev           = false;
 	object_h* objh     = nullptr;

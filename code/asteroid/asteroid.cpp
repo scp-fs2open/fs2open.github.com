@@ -1750,7 +1750,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			weapon_info *wip;
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
-			if (!wip->impact_weapon_expl_effect.isValid()) {
+			if (!wip->impact_weapon_expl_effect.isValid() && Asteroid_impact_explosion_ani.isValid()) {
 				auto source = particle::ParticleManager::get()->createSource(Asteroid_impact_explosion_ani);
 				source->setHost(std::make_unique<EffectHostVector>(*hitpos, vmd_identity_matrix, vmd_zero_vector));
 				source->finishCreation();

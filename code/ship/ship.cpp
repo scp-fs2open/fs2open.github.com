@@ -2449,6 +2449,11 @@ static ::util::UniformRange<T_range> parse_ship_particle_random_range(const char
 
 particle::ParticleEffectHandle create_ship_legacy_particle_effect(LegacyShipParticleType type, float range, int bitmap, ::util::UniformFloatRange particle_num, ::util::UniformFloatRange radius, ::util::UniformFloatRange lifetime, ::util::UniformFloatRange velocity, float normal_variance, bool useNormal, float velocityInherit)
 {
+	// this is always invalid on standalone so just bail early
+	if (Is_standalone) {
+		return particle::ParticleEffectHandle::invalid();
+	}
+
 	//Unfortunately legacy ship effects did a lot of ad-hoc computation of effect parameters.
 	//To mimic this in the modern system, these ad-hoc parameters are represented as hard-coded modular curves applied to various parts of the effect
 	std::optional<modular_curves_entry> part_number_curve, lifetime_curve, radius_curve, velocity_curve;
