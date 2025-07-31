@@ -3140,6 +3140,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 		return;
 	}
 
+	// if this is a dumbfire weapon then skip it since it's client fired
+	if ( !Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]].is_homing() ) {
+		return;
+	}
+
 	// now build up the packet to send to the player who actually fired.
 	BUILD_HEADER( SECONDARY_FIRED_PLR );
 	ADD_USHORT(starting_sig);
