@@ -389,15 +389,19 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		}
 		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
 			const char	*submode_string = "";
+			const char *mode_string = "";
 			ai_info	*aip;
 
 			extern const char *Mode_text[];
 			aip = &Ai_info[Ships[collide_obj->instance].ai_index];
 
+			if (aip->mode >= 0)
+				mode_string = Mode_text[aip->mode];
+
 			if (aip->mode == AIM_CHASE)
 				submode_string = Submode_text[aip->submode];
 
-			nprintf(("AI", "Player collided with ship %s, AI mode = %s, submode = %s\n", Ships[collide_obj->instance].ship_name, Mode_text[aip->mode], submode_string));
+			nprintf(("AI", "Player collided with ship %s, AI mode = %s, submode = %s\n", Ships[collide_obj->instance].ship_name, mode_string, submode_string));
 		}
 #endif
 	}
