@@ -178,6 +178,44 @@ struct modular_curves_submember_input_full : public modular_curves_submember_inp
 	}
 };
 
+template<const auto& global, auto... grabbers>
+struct modular_curves_global_submember_input {
+protected:
+	template<typename result_type>
+	static inline float number_to_float(const result_type& number) {
+		// if constexpr(std::is_same_v<std::decay_t<result_type>, fix>) // TODO: Make sure we can differentiate fixes from ints.
+		// 	return f2fl(number);
+		// else
+		if constexpr(std::is_integral_v<std::decay_t<result_type>>)
+			return static_cast<float>(number);
+		else if constexpr(std::is_floating_point_v<std::decay_t<result_type>>)
+			return static_cast<float>(number);
+		else {
+			static_assert(!std::is_same_v<result_type, result_type>, "Tried to return non-numeric value");
+			return 0.f;
+		}
+	}
+
+public:
+	template<int /*tuple_idx*/, typename input_type>
+	static inline float grab(const input_type& /*input*/) {
+		if constexpr (sizeof...(grabbers) == 0) {
+			if constexpr (std::is_invocable_v<std::decay_t<decltype(global)>>) {
+				return number_to_float(global());
+			} else {
+				return number_to_float(global);
+			}
+		}
+		else {
+			if constexpr (std::is_invocable_v<std::decay_t<decltype(global)>>) {
+				return modular_curves_submember_input<grabbers...>::template grab<-1, decltype(global())>(global());
+			} else {
+				return modular_curves_submember_input<grabbers...>::template grab<-1, std::decay_t<decltype(global)>>(global);
+			}
+		}
+	}
+};
+
 template<auto grabber_fnc>
 struct modular_curves_functional_input {
   private:
@@ -227,7 +265,7 @@ enum class ModularCurvesMathOperators {
 	addition,
 	subtraction,
 	multiplication,
-	division,
+	division
 };
 
 template <typename first, typename second, auto operation>
