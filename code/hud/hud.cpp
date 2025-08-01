@@ -2174,6 +2174,7 @@ void hud_stop_looped_engine_sounds()
 	if (Player_engine_snd_loop.isValid()) {
 		snd_stop(Player_engine_snd_loop);
 		Player_engine_snd_loop = sound_handle::invalid();
+		throttle_sound_check_id = timestamp(0);
 	}
 }
 
