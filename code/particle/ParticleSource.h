@@ -18,10 +18,7 @@ struct weapon_info;
 enum class WeaponState: uint32_t;
 
 namespace particle {
-/**
- * The origin type
- */
-
+	
 class ParticleEffect;
 struct particle_effect_tag {
 };
