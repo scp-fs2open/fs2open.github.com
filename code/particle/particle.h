@@ -40,6 +40,8 @@ namespace particle
 	// kill all active particles
 	void kill_all();
 
+	size_t get_particle_count();
+
 
 	//============================================================================
 	//=============== LOW-LEVEL SINGLE PARTICLE CREATION CODE ====================

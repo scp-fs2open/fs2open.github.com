@@ -113,6 +113,10 @@ namespace particle
 		Particles.clear();
 	}
 
+	size_t get_particle_count() {
+		return Particles.size() + Persistent_particles.size();
+	}
+
 	void page_in()
 	{
 		if (!Particles_enabled)

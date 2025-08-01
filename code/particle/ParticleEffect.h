@@ -3,6 +3,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
 #include "particle/ParticleVolume.h"
 #include "particle/ParticleSource.h"
 #include "utils/RandomRange.h"
@@ -228,6 +229,11 @@ public:
 		std::pair {"Effects Running", modular_curves_math_input<
 		    modular_curves_submember_input<&ParticleSource::m_effect_is_running, &decltype(ParticleSource::m_effect_is_running)::count>,
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
+			ModularCurvesMathOperators::division>{}},
+		std::pair {"Total Particle Count", modular_curves_global_submember_input<get_particle_count>{}},
+		std::pair {"Particle Usage Score", modular_curves_math_input<
+		    modular_curves_global_submember_input<get_particle_count>,
+			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
 			ModularCurvesMathOperators::division>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
