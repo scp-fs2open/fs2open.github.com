@@ -749,11 +749,11 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	if (should_collide){
 		vm_vec_scale(&impulse, impulse_mag);
 		vm_vec_scale(&delta_rotvel_light, impulse_mag);	
-		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing);
+		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing, light_sip->collision_physics.rotation_mag_max);
 
 		vm_vec_negate(&impulse);
 		vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
-		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true);
+		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true, heavy_sip->collision_physics.rotation_mag_max);
 	}
 
 	// If within certain bounds, we want to add some more rotation towards the "resting orientation" of the ship
