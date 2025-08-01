@@ -25,6 +25,7 @@
 #define TYPE_WING			0x4000
 #define TYPE_WAYPOINT		0x5000
 #define TYPE_SHIP_CLASS		0x6000
+#define TYPE_SHIP_TYPE		0x7000
 #define TYPE_MASK			0xf000
 #define DATA_MASK			0x0fff
 
@@ -508,6 +509,10 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 				flag = 16;	// target is a ship class
 				break;
 
+			case AI_GOAL_CHASE_SHIP_TYPE:
+				flag = 32;
+				break;
+
 			case AI_GOAL_STAY_STILL:
 				flag = 9;  // target is a ship or a waypoint
 				break;
@@ -618,6 +623,15 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			}
 		}
 
+		if (flag & 0x20) { // data is a ship type
+			for (i = 0; i <static_cast<int>(Ship_types.size()); i++) {
+				if (!stricmp(goalp[item].target_name, Ship_types[i].name)) {
+					m_data[item] = i | TYPE_SHIP_TYPE;
+					break;
+				}
+			}
+		}
+
 		switch (mode) {
 			case AI_GOAL_DOCK:
 				m_dock2[item] = -1;
@@ -706,13 +720,22 @@ void ShipGoalsDlg::set_item(int item, int init)
 			break;
 	}
 
-	// for goals that deal with ship classes
+	// for goals that deal with ship classes and types
 	switch (mode) {
 		case AI_GOAL_CHASE_SHIP_CLASS:
 			for (i = 0; i < ship_info_size(); i++) {
 				z = m_object_box[item] -> AddString(Ship_info[i].name);
 				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_CLASS);
 				if (init && (m_data[item] == (i | TYPE_SHIP_CLASS)))
+					m_object[item] = z;
+			}
+			break;
+
+		case AI_GOAL_CHASE_SHIP_TYPE:
+			for (i = 0; i < static_cast<int>(Ship_types.size()); i++) {
+				z = m_object_box[item] -> AddString(Ship_types[i].name);
+				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_TYPE);
+				if (init && (m_data[item] == (i | TYPE_SHIP_TYPE)))
 					m_object[item] = z;
 			}
 			break;
@@ -1016,6 +1039,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_STAY_STILL:
 		case AI_GOAL_CHASE_SHIP_CLASS:
+		case AI_GOAL_CHASE_SHIP_TYPE:
 			break;
 
 		case AI_GOAL_DESTROY_SUBSYSTEM:
@@ -1142,6 +1166,10 @@ void ShipGoalsDlg::update_item(int item, int multi)
 
 		case TYPE_SHIP_CLASS:
 			goalp[item].target_name = ai_get_goal_target_name(Ship_info[m_data[item] & DATA_MASK].name, &not_used);
+			break;
+
+		case TYPE_SHIP_TYPE:
+			goalp[item].target_name = ai_get_goal_target_name(Ship_types[m_data[item] & DATA_MASK].name, &not_used);
 			break;
 
 		case 0:
