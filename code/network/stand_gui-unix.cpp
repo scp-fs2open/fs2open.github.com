@@ -175,19 +175,19 @@ public:
     }
 };
 
-SDL_mutex* webapiCommandQueueMutex = SDL_CreateMutex();
+SDL_Mutex* webapiCommandQueueMutex = SDL_CreateMutex();
 SCP_vector<WebapiCommand*> webapiCommandQueue;
 
 void webapiAddCommand(WebapiCommand *command) {
-    SDL_mutexP(webapiCommandQueueMutex);
+    SDL_LockMutex(webapiCommandQueueMutex);
 
     webapiCommandQueue.push_back(command);
 
-    SDL_mutexV(webapiCommandQueueMutex);
+    SDL_UnlockMutex(webapiCommandQueueMutex);
 }
 
 void webapiExecuteCommands() {
-    SDL_mutexP(webapiCommandQueueMutex);
+    SDL_LockMutex(webapiCommandQueueMutex);
 
     for (SCP_vector<WebapiCommand*>::iterator iter = webapiCommandQueue.begin(); iter != webapiCommandQueue.end();
             ++iter) {
@@ -197,7 +197,7 @@ void webapiExecuteCommands() {
 
     webapiCommandQueue.clear();
 
-    SDL_mutexV(webapiCommandQueueMutex);
+    SDL_UnlockMutex(webapiCommandQueueMutex);
 }
 
 struct LogResource {
@@ -239,7 +239,7 @@ struct LogResource {
 };
 
 
-SDL_mutex *webapi_dataMutex = SDL_CreateMutex();
+SDL_Mutex *webapi_dataMutex = SDL_CreateMutex();
 netgame_info webapi_netgameInfo;
 std::map<short, net_player> webapiNetPlayers;
 float webui_fps;
@@ -656,9 +656,9 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
                 context.requestEntity = json_loads((const char*) &entityBuffer, JSON_DISABLE_EOF_CHECK, &parseError);
 
 
-                SDL_mutexP(webapi_dataMutex);
+                SDL_LockMutex(webapi_dataMutex);
                 result = r->handler(&context);
-                SDL_mutexV(webapi_dataMutex);
+                SDL_UnlockMutex(webapi_dataMutex);
 
                 break;
             }
@@ -771,7 +771,7 @@ void std_set_standalone_fps(float fps) {
 }
 
 void std_do_gui_frame() {
-    SDL_mutexP(webapi_dataMutex);
+    SDL_LockMutex(webapi_dataMutex);
 
     webapi_netgameInfo = Netgame;
 
@@ -794,7 +794,7 @@ void std_do_gui_frame() {
         webuiMissionGoals.push_back(Mission_goals[idx]);
     }
 
-    SDL_mutexV(webapi_dataMutex);
+    SDL_UnlockMutex(webapi_dataMutex);
 
     webapiExecuteCommands();
 }
