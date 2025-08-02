@@ -614,6 +614,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			Player_ship = &Ships[Objects[CurrentObject].instance];
 			ai_paused = 0;
 
+			// Set the ship to play dead so it doesn't move. There is a special carveout to still allow subsystem rotations/translations in the lab, though
 			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
 		}
 		break;
