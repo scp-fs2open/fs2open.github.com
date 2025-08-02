@@ -751,13 +751,15 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// physics should not have to recalculate this, just change into body coords (done in collide_whack)
 	// Cyborg - to complicate this, multiplayer clients should never ever whack non-player ships.
 	if (should_collide){
+		auto light_rot_mag = light_sip ? light_sip->collision_physics.rotation_mag_max : -1.0f;
 		vm_vec_scale(&impulse, impulse_mag);
 		vm_vec_scale(&delta_rotvel_light, impulse_mag);	
-		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing, light_sip->collision_physics.rotation_mag_max);
+		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing, light_rot_mag);
 
+		auto heavy_rot_mag = heavy_sip ? heavy_sip->collision_physics.rotation_mag_max : -1.0f;
 		vm_vec_negate(&impulse);
 		vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
-		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true, heavy_sip->collision_physics.rotation_mag_max);
+		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true, heavy_rot_mag);
 	}
 
 	// If within certain bounds, we want to add some more rotation towards the "resting orientation" of the ship
