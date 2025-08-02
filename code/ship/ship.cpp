@@ -12203,8 +12203,12 @@ void change_ship_type(int n, int ship_type, int by_sexp)
 	animation::anim_set_initial_states(sp);
 
 	//Reassign sound stuff
-	if (!Fred_running)
+	if (!Fred_running) {
+		if (objp == Player_obj) {
+			hud_stop_looped_engine_sounds();
+		}
 		ship_assign_sound(sp);
+	}
 	
 	// Valathil - Reinitialize collision checks
 	obj_remove_collider(OBJ_INDEX(objp));
@@ -16316,6 +16320,9 @@ void ship_assign_sound(ship *sp)
 
 	objp = &Objects[sp->objnum];
 	sip = &Ship_info[sp->ship_info_index];
+
+	// clear out any existing assigned sounds --wookieejedi
+	obj_snd_delete_type(OBJ_INDEX(objp));
 
 	// Do subsystem sounds	
 	moveup = GET_FIRST(&sp->subsys_list);
