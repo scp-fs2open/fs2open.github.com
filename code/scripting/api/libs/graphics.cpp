@@ -2212,10 +2212,10 @@ particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool
 		::util::UniformFloatRange(), //No duration
 		::util::UniformFloatRange (-1.f), //Single particle only
 		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
-		::util::UniformFloatRange(), //Velocity Inherit
+		::util::UniformFloatRange(1.f), //Velocity Inherit
 		false, //Velocity Inherit absolute?
-		std::make_unique<particle::ConeVolume>(::util::ParsedRandomFloatRange(), 1.f), //Velocity volume
-		::util::UniformFloatRange(1.f), //Velocity volume multiplier
+		nullptr, //Velocity volume
+		::util::UniformFloatRange(), //Velocity volume multiplier
 		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
 		std::nullopt, //Orientation-based velocity
 		std::nullopt, //Position-based velocity
@@ -2254,6 +2254,10 @@ static int spawnParticles(lua_State *L, bool persistent) {
 
 	// Need to consume tracer_length parameter but it isn't used anymore
 	float temp;
+
+	if (Is_standalone) {
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
 
 	enum_h* type       = nullptr;
 	bool rev           = false;

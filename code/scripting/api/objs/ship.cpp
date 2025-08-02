@@ -15,6 +15,7 @@
 #include "shipclass.h"
 #include "subsystem.h"
 #include "team.h"
+#include "team_colors.h"
 #include "texture.h"
 #include "vecmath.h"
 #include "weaponclass.h"
@@ -865,6 +866,39 @@ ADE_VIRTVAR(Team, l_Ship, "team", "Ship's team", "team", "Ship team, or invalid 
 	}
 
 	return ade_set_args(L, "o", l_Team.Set(shipp->team));
+}
+
+ADE_VIRTVAR(TeamColor, l_Ship, "teamcolor", "The team color. Note that setting the team color here is instant. If you need a fade, then use the sexp.", "teamcolor", "The team color handle or nil if not set or invalid.")
+{
+	object_h* oh = nullptr;
+	int idx = -1;
+	if (!ade_get_args(L, "o|o", l_Ship.GetPtr(&oh), l_TeamColor.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!oh->isValid())
+		return ADE_RETURN_NIL;
+
+	ship* shipp = &Ships[oh->objp()->instance];
+
+	//Set team color
+	if (ADE_SETTING_VAR && SCP_vector_inbounds(Team_Names, idx)) {
+		// Verify
+		const auto& it = Team_Colors.find(Team_Names[idx]);
+		if (it == Team_Colors.end()) {
+			mprintf(("Invalid team color specified in mission file for ship %s. Not setting!\n", shipp->ship_name));
+		} else {
+			shipp->team_name = Team_Names[idx];
+		}
+	}
+
+	// look up by name
+	for (int i = 0; i < static_cast<int>(Team_Names.size()); ++i) {
+		if (lcase_equal(Team_Names[i], shipp->team_name)) {
+			return ade_set_args(L, "o", l_TeamColor.Set(i));
+		}
+	}
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR_DEPRECATED(PersonaIndex, l_Ship, "number", "Persona index", "number", "The index of the persona from messages.tbl, 0 if no persona is set", gameversion::version(25, 0), "Deprecated in favor of Persona")

@@ -1082,6 +1082,7 @@ typedef struct ship_collision_physics {
 	float bounce{};				// Bounce factor for all other cases
 	float friction{};				// Controls lateral velocity lost when colliding with a large ship
 	float rotation_factor{};		// Affects the rotational energy of collisions... TBH not sure how.
+	float rotation_mag_max{};		// Maximum value of the final rotational velocity resulting from a collision --wookieejedi
 
 	// Speed & angle constraints for a smooth landing
 	// Note that all angles are stored as a dotproduct between normalized vectors instead. This saves us from having
@@ -1771,11 +1772,8 @@ extern void add_shield_point_multi(int objnum, int tri_num, vec3d *hit_pos);
 extern void shield_point_multi_setup();
 extern void shield_hit_close();
 
-// Returns true if the shield presents any opposition to something 
-// trying to force through it.
-// If quadrant is -1, looks at entire shield, otherwise
-// just one quadrant
-int ship_is_shield_up( const object *obj, int quadrant );
+float ship_shield_hitpoint_threshold(const object* obj, bool all_quadrants = false);
+bool ship_is_shield_up(const object *obj, int quadrant);
 
 //=================================================
 void ship_model_replicate_submodels(object *objp);

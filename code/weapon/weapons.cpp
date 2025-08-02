@@ -6076,6 +6076,19 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
 		source->finishCreation();
 	}
+
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+		for (const auto& effect : wip->particle_spewers) {
+			if (!effect.isValid())
+				continue;
+
+			auto source = particle::ParticleManager::get()->createSource(effect);
+			auto host = std::make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector);
+			source->setHost(std::move(host));
+			source->finishCreation();
+		}
+	}
+
 }
 
 static void weapon_update_state(weapon* wp)
@@ -7974,7 +7987,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 		particleSource->finishCreation();
 	}
 
-	if (impacted_objp != nullptr && (impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)].has_value() || impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)].has_value()) && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && !impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -8878,8 +8891,13 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float offset_z_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
 			float switch_ang_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
 			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
-			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE);
-			float anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE) || wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD);
+			// We'll be using both anim_state and anim_state_add if either one has a curve defined, even if the other doesn't,
+			// so we need to make sure they've got sensible defaults, which in this case means 0.
+			float anim_state = 0.f;
+			if (wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE)) {
+				anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			}
 			float anim_state_add = 0.f;
 			if (wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD)) {
 				anim_state_add = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD, *wp, &wp->modular_curves_instance);
@@ -10195,7 +10213,7 @@ float weapon_get_apparent_size(const weapon& wp) {
 	
 	return convert_distance_and_diameter_to_pixel_size(
 		dist,
-		wep_objp->radius,
-		fl_degrees(g3_get_hfov(Eye_fov)),
-		gr_screen.max_h) / i2fl(gr_screen.max_h);
+		wep_objp->radius * 2.0f,
+		g3_get_hfov(Eye_fov),
+		gr_screen.max_w) / i2fl(gr_screen.max_w);
 }

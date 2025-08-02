@@ -164,7 +164,7 @@ extern bool whack_below_limit(float impulse);
 extern void physics_calculate_and_apply_whack(const vec3d *force, const vec3d *pos, physics_info *pi, const matrix *orient, const matrix *inv_moi);
 extern void physics_apply_whack(float orig_impulse, physics_info* pi, const vec3d *delta_rotvel, const vec3d* delta_vel, const matrix* orient);
 extern void physics_apply_shock(vec3d *direction_vec, float pressure, physics_info *pi, matrix *orient, vec3d *min, vec3d *max, float radius);
-extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing);
+extern void physics_collide_whack(vec3d *impulse, vec3d *delta_rotvel, physics_info *pi, matrix *orient, bool is_landing, float max_rotvel = -1.0f);
 int check_rotvel_limit( physics_info *pi );
 extern void physics_add_point_mass_moi(matrix *moi, float mass, vec3d *pos);
 extern bool physics_lead_ballistic_trajectory(const vec3d* start, const vec3d* end_pos, const vec3d* target_vel, float weapon_speed, const vec3d* gravity, vec3d* out_direction);

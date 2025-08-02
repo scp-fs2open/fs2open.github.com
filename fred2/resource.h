@@ -1263,6 +1263,8 @@
 #define IDC_REQUIRED_WEAPONS            1704
 #define IDC_SELECT_DEBRIS               1705
 #define IDC_SELECT_ASTEROID             1706
+#define IDC_SMOOTHING                   1707
+#define IDC_SPIN_SMOOTHING              1708
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774

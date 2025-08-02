@@ -71,7 +71,7 @@ SCP_string hud_color_preset_h::getName() const
 
 bool hud_color_preset_h::isValid() const
 {
-	return preset >= 0 && preset < static_cast<int>(HC_preset_filenames.size());
+	return preset >= 0 && preset < NUM_HUD_COLOR_PRESETS;
 }
 
 //**********HANDLE: hud color preset

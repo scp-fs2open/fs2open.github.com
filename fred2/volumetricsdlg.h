@@ -24,6 +24,7 @@ protected:
 	int m_steps;
 	int m_resolution;
 	int m_oversampling;
+	float m_smoothing;
 	float m_henyeyGreenstein;
 	float m_sunFalloffFactor;
 	int m_sunSteps;
@@ -65,6 +66,7 @@ protected:
 	afx_msg void OnDeltaposSpinSteps(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinResolution(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinResolutionOversampling(NMHDR* pNMHDR, LRESULT* pResult);
+	afx_msg void OnDeltaposSpinSmoothing(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinHGCoeff(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinSunFalloff(NMHDR* pNMHDR, LRESULT* pResult);
 	afx_msg void OnDeltaposSpinStepsSun(NMHDR* pNMHDR, LRESULT* pResult);

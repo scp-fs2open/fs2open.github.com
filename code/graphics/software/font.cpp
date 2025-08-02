@@ -460,13 +460,15 @@ namespace
 			FontType type;
 			SCP_string fontName;
 
+			SCP_vector<SCP_string> skipped_font_names;
+
 			while (parse_type(type, fontName))
 			{
 				switch (type)
 				{
 				case VFNT_FONT:
 					if (Unicode_text_mode) {
-						Warning(LOCATION, "Bitmap fonts are not supported in Unicode text mode! Font %s will be ignored.", fontName.c_str());
+						skipped_font_names.push_back(fontName);
 						skip_to_start_of_string_one_of({"$TrueType:", "$Font:", "#End"});
 					} else {
 						parse_vfnt_font(fontName);
@@ -478,6 +480,14 @@ namespace
 				default:
 					error_display(0, "Unknown font type %d! Get a coder!", (int)type);
 					break;
+				}
+			}
+
+			// check if we skipped any fonts
+			if (!skipped_font_names.empty()) {
+				Warning(LOCATION, "One or more bitmap fonts were skipped because they are not supported in Unicode text mode. The list of fonts is in the debug log.");
+				for (const auto& skippedFont : skipped_font_names) {
+					mprintf(("Warning: Skipped bitmap font: %s\n", skippedFont.c_str()));
 				}
 			}
 

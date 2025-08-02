@@ -413,6 +413,18 @@ void main()
 		baseColor.rgb += emissiveColor.rgb;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
+	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
+		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
+			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
+				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+				glossData = 0;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
+			// If there is no lighting then we copy the color data so far into the emissive.
+			emissiveColor.rgb += baseColor.rgb;
+			aoFactors.x = 0;
+		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+
 	fragOut0 = baseColor;
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED

@@ -138,21 +138,15 @@ void LabUi::build_debris_list()
 				continue;
 			}
 
-			int subtype_idx = 0;
-			for (const auto& subtype : info.subtypes) {
-				SCP_string node_label;
-				sprintf(node_label, "##DebrisClassIndex%i_%i", debris_idx, subtype_idx);
-				TreeNodeEx(node_label.c_str(),
-					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-					"%s (%s)",
-					info.name,
-					subtype.type_name.c_str());
+			SCP_string node_label;
+			sprintf(node_label, "##DebrisClassIndex%i", debris_idx);
+			TreeNodeEx(node_label.c_str(),
+				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+				"%s",
+				info.name);
 
-				if (IsItemClicked() && !IsItemToggledOpen()) {
-					getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, subtype_idx);
-				}
-
-				subtype_idx++;
+			if (IsItemClicked() && !IsItemToggledOpen()) {
+				getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, 0); // Debris subtype is always 0
 			}
 
 			debris_idx++;

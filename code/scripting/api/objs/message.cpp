@@ -23,10 +23,7 @@ ADE_VIRTVAR(Name, l_Persona, "string", "The name of the persona", "string", "The
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ade_set_error(L, "s", "");
 
-	if (Personas.empty())
-		return ade_set_error(L, "s", "");
-
-	if (idx < 0 || idx >= (int)Personas.size())
+	if (!SCP_vector_inbounds(Personas, idx))
 		return ade_set_error(L, "s", "");
 
 	return ade_set_args(L, "s", Personas[idx].name);
@@ -39,9 +36,6 @@ ADE_VIRTVAR(Index, l_Persona, nullptr, nullptr, "number", "The index of the pers
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ade_set_args(L, "i", -1);
 
-	if (Personas.empty())
-		return ade_set_args(L, "i", -1);
-
 	if (!SCP_vector_inbounds(Personas, idx))
 		return ade_set_args(L, "i", -1);
 
@@ -51,14 +45,52 @@ ADE_VIRTVAR(Index, l_Persona, nullptr, nullptr, "number", "The index of the pers
 	return ade_set_args(L, "i", idx + 1);
 }
 
-ADE_FUNC(isValid, l_Persona, NULL, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
+ADE_VIRTVAR(CustomData, l_Persona, nullptr, "Gets the custom data table for this persona", "table", "The persona's custom data table or nil if an error occurs.") 
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Personas, idx))
+		return ADE_RETURN_NIL;
+	
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : Personas[idx].custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Persona, nullptr, "Detects whether the persona has any custom data", "boolean", "true if the persona's custom_data is not empty, false otherwise. Nil if an error occurs.") 
+{
+	int idx = -1;
+
+	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!SCP_vector_inbounds(Personas, idx))
+		return ADE_RETURN_NIL;
+
+	bool result = !Personas[idx].custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(isValid, l_Persona, nullptr, "Detect if the handle is valid", "boolean", "true if valid, false otherwise")
 {
 	int idx = -1;
 
 	if (!ade_get_args(L, "o", l_Persona.Get(&idx)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", idx >= 0 && idx < (int)Personas.size());
+	return ade_set_args(L, "b", SCP_vector_inbounds(Personas, idx));
 }
 
 //**********HANDLE: Message
@@ -88,7 +120,7 @@ ADE_VIRTVAR(Message, l_Message, "string", "The unaltered text of the message, se
 	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "s", "");
 
-	if (ADE_SETTING_VAR && newText != NULL)
+	if (ADE_SETTING_VAR && newText != nullptr)
 	{
 		if (strlen(newText) > MESSAGE_LENGTH)
 			LuaError(L, "New message text is too long, maximum is %d!", MESSAGE_LENGTH);
@@ -151,7 +183,7 @@ ADE_VIRTVAR(Persona, l_Message, "persona", "The persona of the message", "person
 	if (!SCP_vector_inbounds(Messages, idx))
 		return ade_set_error(L, "o", l_Soundfile.Set(soundfile_h()));
 
-	if (ADE_SETTING_VAR && newPersona >= 0 && newPersona < (int)Personas.size())
+	if (ADE_SETTING_VAR && SCP_vector_inbounds(Personas, newPersona))
 	{
 		Messages[idx].persona_index = newPersona;
 	}
@@ -183,13 +215,13 @@ ADE_FUNC(getMessage, l_Message, "[boolean replaceVars = true]", "Gets the text o
 	}
 }
 
-ADE_FUNC(isValid, l_Message, NULL, "Checks if the message handle is valid", "boolean", "true if valid, false otherwise")
+ADE_FUNC(isValid, l_Message, nullptr, "Checks if the message handle is valid", "boolean", "true if valid, false otherwise")
 {
 	int idx = -1;
 	if (!ade_get_args(L, "o", l_Message.Get(&idx)))
 		return ADE_RETURN_FALSE;
 
-	return ade_set_args(L, "b", idx >= 0 && idx < (int) Messages.size());
+	return ade_set_args(L, "b", SCP_vector_inbounds(Messages, idx));
 }
 
 

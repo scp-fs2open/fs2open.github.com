@@ -1847,7 +1847,9 @@ ADE_FUNC(loadMission, l_Mission, "string missionName", "Loads a mission", "boole
 	gr_post_process_set_defaults();
 
 	//NOW do the loading stuff
-	get_mission_info(s, &The_mission, false);
+	if (get_mission_info(s, &The_mission, false))
+		return ADE_RETURN_FALSE;
+
 	game_level_init();
 
 	if(!mission_load(s))

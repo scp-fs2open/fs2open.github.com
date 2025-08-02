@@ -418,7 +418,7 @@ typedef struct {
 // fundamentally similar to do_subobj_hit_stuff, but without many checks inherent to damaging instead of healing
 // most notably this does NOT return "remaining healing" (healing always carries), this is will NOT subtract from hull healing
 
-void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, const vec3d* hitpos, int submodel_num, float healing)
+std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, const vec3d* hitpos, int submodel_num, float healing)
 {
 	vec3d			g_subobj_pos;
 	float			healing_left;
@@ -433,6 +433,8 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 	Assertion(other_obj, "do_subobj_heal_stuff wasn't given a healing object! (weapon/beam/shockwave)");
 
 	ship_p = &Ships[ship_objp->instance];
+
+	std::optional<ConditionData> subsys_impact = std::nullopt;
 
 	if (other_obj->type == OBJ_SHOCKWAVE)
 	{
@@ -602,6 +604,16 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 				// Nuke: this will finally factor it in to heal_to_apply and i wont need to factor it in anywhere after this
 				heal_to_apply = Armor_types[subsystem->armor_type_idx].GetDamage(heal_to_apply, dmg_type_idx, 1.0f, other_obj->type == OBJ_BEAM);
 
+			if (j == 0) {
+				subsys_impact = ConditionData {
+					ImpactCondition(subsystem->armor_type_idx),
+					HitType::SUBSYS,
+					heal_to_apply,
+					subsystem->current_hits,
+					subsystem->max_hits,
+				};
+			}
+
 			subsystem->current_hits += heal_to_apply;
 
 			float* agg_hits = &ship_p->subsys_info[subsystem->system_info->type].aggregate_current_hits;
@@ -626,6 +638,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 				break;
 		}
 	}
+	return std::make_pair(subsys_impact, healing);
 }
 
 // do_subobj_hit_stuff() is called when a collision is detected between a ship and something
@@ -662,7 +675,7 @@ void do_subobj_heal_stuff(const object* ship_objp, const object* other_obj, cons
 //
 //WMC - hull_should_apply armor means that the initial subsystem had no armor, so the hull should apply armor instead.
 
-std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot)
+std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_objp, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot, bool shield_hit)
 {
 	vec3d			g_subobj_pos;
 	float				damage_left, damage_if_hull;
@@ -786,7 +799,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 					}
 				}
 				subsys->current_hits = 0.0f;
-				do_subobj_destroyed_stuff( ship_p, subsys, hitpos );
+				do_subobj_destroyed_stuff( ship_p, subsys, global_damage ? nullptr : hitpos );
 				continue;
 			} else {
 				continue;
@@ -1003,7 +1016,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 				damage_to_apply *= ss_dif_scale;
 			}
 
-			if (j == 0) {
+			if (j == 0 && !shield_hit) {
 				subsys_impact = ConditionData {
 					ImpactCondition(subsystem->armor_type_idx),
 					HitType::SUBSYS,
@@ -1032,7 +1045,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 
 			// multiplayer clients never blow up subobj stuff on their own
 			if ( (subsystem->current_hits <= 0.0f) && !MULTIPLAYER_CLIENT) {
-				do_subobj_destroyed_stuff( ship_p, subsystem, hitpos );
+				do_subobj_destroyed_stuff( ship_p, subsystem, global_damage ? nullptr : hitpos );
 			}
 
 			if (damage_left <= 0)	{ // no more damage to distribute, so stop checking
@@ -2361,9 +2374,14 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 
 	MONITOR_INC( ShipHits, 1 );
 
+	std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
+
 	//	Don't damage player ship in the process of warping out.
 	if ( Player->control_mode >= PCM_WARPOUT_STAGE2 )	{
 		if ( ship_objp == Player_obj ){
+			if (!global_damage) {
+				maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+			}
 			return;
 		}
 	}
@@ -2410,10 +2428,12 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 		}
 	}
 
-	std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
 
 	// If the ship is invulnerable, do nothing
 	if (ship_objp->flags[Object::Object_Flags::Invulnerable])	{
+		if (!global_damage) {
+			maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		}
 		return;
 	}
 
@@ -2425,8 +2445,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				HitType::SHIELD,
 				0.0f,
 				// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
-				MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp))),
-				shield_get_max_quad(ship_objp) - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp)),
+				MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
+				shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 			};
 		} else {
 			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
@@ -2458,8 +2478,8 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 			HitType::SHIELD,
 			0.0f,
 			// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
-			MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp))),
-			shield_get_max_quad(ship_objp) - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp)),
+			MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
+			shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 		};
 
 		if ( damage > 0.0f ) {
@@ -2503,8 +2523,10 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	if ( (damage > 0.0f) )	{
 		bool apply_hull_armor = true;
 
+		bool shield_hit = quadrant >= 0;
+
 		// apply damage to subsystems, and get back any remaining damage that needs to go to the hull
-		auto damage_pair = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor, hit_dot);
+		auto damage_pair = do_subobj_hit_stuff(ship_objp, other_obj, hitpos, submodel_num, damage, &apply_hull_armor, hit_dot, shield_hit);
 
 		damage = damage_pair.second;
 
@@ -2563,13 +2585,15 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 				}
 			}
 
-			impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
-				ImpactCondition(shipp->armor_type_idx),
-				HitType::HULL,
-				damage,
-				ship_objp->hull_strength,
-				shipp->ship_max_hull_strength,
-			};
+			if (!shield_hit) {
+				impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
+					ImpactCondition(shipp->armor_type_idx),
+					HitType::HULL,
+					damage,
+					ship_objp->hull_strength,
+					shipp->ship_max_hull_strength,
+				};
+			}
 
 			// multiplayer clients don't do damage
 			if (((Game_mode & GM_MULTIPLAYER) && MULTIPLAYER_CLIENT)) {
@@ -2709,7 +2733,7 @@ static void ship_do_damage(object *ship_objp, object *other_obj, const vec3d *hi
 	}
 }
 
-static void ship_do_healing(object* ship_objp, const object* other_obj, const vec3d* hitpos, float healing, int submodel_num, int damage_type_idx = -1)
+static void ship_do_healing(object* ship_objp, const object* other_obj, const vec3d* hitpos, float healing, int quadrant, int submodel_num, int damage_type_idx = -1, const vec3d* hit_normal = nullptr, const vec3d* local_hitpos = nullptr)
 {
 	// multiplayer clients dont do healing
 	if (MULTIPLAYER_CLIENT)
@@ -2736,8 +2760,13 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 	
 	MONITOR_INC(ShipHits, 1);
 
+	std::array<std::optional<ConditionData>, NumHitTypes> impact_data = {};
+
 	//	Don't heal player ship in the process of warping out.
 	if ((Player->control_mode >= PCM_WARPOUT_STAGE2) && (ship_objp == Player_obj)) {
+		if (!global_damage) {
+			maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
+		}
 		return;
 	}
 
@@ -2753,22 +2782,44 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 		return;
 	weapon_info* wip = &Weapon_info[wip_index];
 
+	float shield_health;
+	if (quadrant >= 0) {
+		shield_health = MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp, false));
+	} else {
+		//if we haven't hit a shield, assume the shield is fully depleted, because we have no way of knowing what the relevant quadrant would be
+		shield_health = 0.f;
+	}
+
 	// handle shield healing
 	if (!(ship_objp->flags[Object::Object_Flags::No_shields])) {
+		auto shield_impact = ConditionData {
+			ImpactCondition(shipp->shield_armor_type_idx),
+			HitType::SHIELD,
+			0.0f,
+			shield_health,
+			shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp, false),
+		};
+
 		float shield_healing = healing * wip->shield_factor;
 
 		if (shield_healing > 0.0f) {
 			if (shipp->shield_armor_type_idx != -1)
 				shield_healing = Armor_types[shipp->shield_armor_type_idx].GetDamage(shield_healing, damage_type_idx, 1.0f, other_obj_is_beam);
 
+			shield_impact.damage = shield_healing;
 			shield_apply_healing(ship_objp, shield_healing);
 		}
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)] = shield_impact;
 	}
 
 	// now for subsystems and hull
 	if ((healing > 0.0f)) {
 
-		do_subobj_heal_stuff(ship_objp, other_obj, hitpos, submodel_num, healing);
+		auto healing_pair = do_subobj_heal_stuff(ship_objp, other_obj, hitpos, submodel_num, healing);
+
+		healing = healing_pair.second;
+
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SUBSYS)] = healing_pair.first;
 
 		//Do armor stuff
 		if (shipp->armor_type_idx != -1)
@@ -2779,10 +2830,20 @@ static void ship_do_healing(object* ship_objp, const object* other_obj, const ve
 
 		healing *= wip->armor_factor;
 
+		impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
+			ImpactCondition(shipp->armor_type_idx),
+			HitType::HULL,
+			healing,
+			ship_objp->hull_strength,
+			shipp->ship_max_hull_strength,
+		};
+
 		ship_objp->hull_strength += healing;
 		if (ship_objp->hull_strength > shipp->ship_max_hull_strength)
 			ship_objp->hull_strength = shipp->ship_max_hull_strength;
 	}
+
+	maybe_play_conditional_impacts(impact_data, other_obj, ship_objp, true, submodel_num, hitpos, local_hitpos, hit_normal);
 
 	// fix up the ship's sparks :)
 	// turn off a random spark, if its a beam, do this on average twice a second
@@ -2878,8 +2939,8 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 						HitType::SHIELD,
 						0.0f,
 						// we have to do this annoying thing where we reduce the shield health a bit because it turns out the last X percent of a shield doesn't matter
-						MAX(0.0f, ship_objp->shield_quadrant[quadrant] - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp))),
-						shield_get_max_quad(ship_objp) - MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(ship_objp)),
+						MAX(0.0f, ship_objp->shield_quadrant[quadrant] - ship_shield_hitpoint_threshold(ship_objp)),
+						shield_get_max_quad(ship_objp) - ship_shield_hitpoint_threshold(ship_objp),
 					};
 				} else {
 					impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::HULL)] = ConditionData {
@@ -2946,7 +3007,7 @@ void ship_apply_local_damage(object *ship_objp, object *other_obj, const vec3d *
 
 	global_damage = false;
 	if (wip_index >= 0 && Weapon_info[wip_index].wi_flags[Weapon::Info_Flags::Heals]) {
-		ship_do_healing(ship_objp, other_obj, hitpos, damage, submodel_num);
+		ship_do_healing(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, -1, hit_normal, local_hitpos);
 		create_sparks = false;
 	} else {
 		ship_do_damage(ship_objp, other_obj, hitpos, damage, quadrant, submodel_num, damage_type_idx, false, hit_dot, hit_normal, local_hitpos);

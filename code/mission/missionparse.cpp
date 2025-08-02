@@ -6675,7 +6675,11 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 {
 	static SCP_string real_fname_buf;
 	const char *real_fname = nullptr;
-	
+
+	if ( !filename || !strlen(filename) ) {
+		return -1;
+	}
+
 	if (filename_is_full_path) {
 		real_fname = filename;
 	} else {

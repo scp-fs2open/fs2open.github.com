@@ -18,19 +18,7 @@ struct weapon_info;
 enum class WeaponState: uint32_t;
 
 namespace particle {
-/**
- * The origin type
- */
-enum class SourceOriginType {
-	NONE, //!< Invalid origin
-	VECTOR, //!< World-space offset
-	BEAM, //!< A beam
-	OBJECT, //!< An object
-	SUBOBJECT, //!< A subobject
-	TURRET, //!< A turret
-	PARTICLE //!< A particle
-};
-
+	
 class ParticleEffect;
 struct particle_effect_tag {
 };

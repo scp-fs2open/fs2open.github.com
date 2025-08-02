@@ -8,6 +8,7 @@
 #include "scripting/api/objs/intelentry.h"
 #include "scripting/api/objs/shipclass.h"
 #include "scripting/api/objs/shiptype.h"
+#include "scripting/api/objs/team_colors.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wingformation.h"
 
@@ -338,6 +339,38 @@ ADE_FUNC(__len, l_Tables_WingFormations, nullptr, "Number of wing formations", "
 {
 	// add 1 since "Default" is always first
 	return ade_set_args(L, "i", static_cast<int>(Wing_formations.size()) + 1);
+}
+
+//*****SUBLIBRARY: Tables/TeamColors
+ADE_LIB_DERIV(l_Tables_TeamColors, "TeamColors", nullptr, nullptr, l_Tables);
+
+ADE_INDEXER(l_Tables_TeamColors, "number/string IndexOrName", "Array of team colors", "teamcolor", "Team color handle, or invalid handle if name is invalid")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_TeamColor.Set(-1));
+
+	// look up by name
+	for (int i = 0; i < static_cast<int>(Team_Names.size()); ++i) {
+		if (!stricmp(Team_Names[i].c_str(), name)) {
+			return ade_set_args(L, "o", l_TeamColor.Set(i));
+		}
+	}
+
+	// look up by number
+	int idx = atoi(name);
+	if (idx > 0) {
+		idx--; // Lua --> C/C++
+	} else {
+		return ade_set_args(L, "o", l_TeamColor.Set(-1));
+	}
+
+	return ade_set_args(L, "o", l_TeamColor.Set(idx));
+}
+
+ADE_FUNC(__len, l_Tables_TeamColors, nullptr, "Number of  team colors", "number", "Number of team colors")
+{
+	return ade_set_args(L, "i", static_cast<int>(Team_Names.size()));
 }
 
 }
