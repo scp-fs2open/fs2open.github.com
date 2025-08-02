@@ -7,6 +7,7 @@
 #include "lab/renderer/lab_renderer.h"
 #include "lighting/lighting_profiles.h"
 #include "math/bitarray.h"
+#include "model/modelrender.h"
 #include "nebula/neb.h"
 #include "parse/parselo.h"
 #include "particle/particle.h"
@@ -32,10 +33,11 @@ void LabRenderer::onFrame(float frametime) {
 
 		// print out the current pof filename, to help with... something
 		if (strlen(getLabManager()->ModelFilename.c_str())) {
-			gr_get_string_size(&w, &h, getLabManager()->ModelFilename.c_str());
+			SCP_string lab_text = "POF File: " + getLabManager()->ModelFilename + " Detail Level: " + std::to_string(Lab_object_detail_level);
+			gr_get_string_size(&w, &h, lab_text.c_str());
 			gr_set_color_fast(&Color_white);
-			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w,
-				gr_screen.center_offset_y + gr_screen.center_h - h, getLabManager()->ModelFilename.c_str(), GR_RESIZE_NONE);
+			gr_string(gr_screen.center_offset_x + gr_screen.center_w - w - 20, // add a little padding to the right
+				gr_screen.center_offset_y + gr_screen.center_h - h, lab_text.c_str(), GR_RESIZE_NONE);
 		}
 	}
 

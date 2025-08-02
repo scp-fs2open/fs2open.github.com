@@ -27,6 +27,8 @@ extern vec3d Object_position;
 
 extern color Wireframe_color;
 
+extern int Lab_object_detail_level;
+
 typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,
