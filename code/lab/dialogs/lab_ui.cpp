@@ -1029,7 +1029,7 @@ void LabUi::build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, 
 	}
 }
 
-void LabUi::reset_animations(ship* shipp, ship_info* sip) const
+void LabUi::reset_animations()
 {
 	// With full animation support for docking stages and fighter bays it's honestly just easier to reload the current object
 	getLabManager()->changeDisplayedObject(getLabManager()->CurrentMode, getLabManager()->CurrentClass, getLabManager()->CurrentSubtype);
@@ -1093,7 +1093,7 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 		const auto& anim_triggers = sip->animations.getRegisteredTriggers();
 
 		if (Button("Reset animations")) {
-			reset_animations(shipp, sip);
+			reset_animations();
 		}
 
 		if (shipp->weapons.num_primary_banks > 0) {
