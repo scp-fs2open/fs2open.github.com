@@ -54,7 +54,7 @@ class LabUi {
 		weapon_info* wip,
 		int& primary_slot) const;
 	void build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
-	void build_dock_test_options(ship* shipp, ship_info* sip) const;
+	void build_dock_test_options(ship* shipp) const;
 	void build_bay_test_options(ship_info* sip) const;
 	void build_animation_options(ship* shipp, ship_info* sip) const;
 	void create_afterburner_animation_node(
