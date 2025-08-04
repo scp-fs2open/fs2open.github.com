@@ -12125,9 +12125,11 @@ void ai_process_subobjects(int objnum)
 
 	bool in_lab = gameseq_get_state() == GS_STATE_LAB;
 
-	// non-player ships that are playing dead do not process subsystems or turrets
-	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && aip->mode == AIM_PLAY_DEAD)
-		return;
+	// non-player ships that are playing dead do not process subsystems or turrets unless we're in the lab
+	if (gameseq_get_state() != GS_STATE_LAB) {
+		if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && aip->mode == AIM_PLAY_DEAD)
+			return;
+	}
 
 	polymodel_instance *pmi = model_get_instance(shipp->model_instance_num);
 	polymodel *pm = model_get(pmi->model_num);

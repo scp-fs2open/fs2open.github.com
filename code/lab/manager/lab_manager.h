@@ -53,6 +53,8 @@ public:
 
 		cleanup();
 
+		Cmdline_dis_collisions = Saved_cmdline_collisions_value;
+
 		LabRenderer::close();
 
 		// Unload any asteroids that were loaded
