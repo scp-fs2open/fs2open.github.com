@@ -49,6 +49,7 @@ private:
 	// we already received a newer packet than this one for that type of info.
 	int _hull_comparison_frame;						// what frame was the last hull information received?
 	int _shields_comparison_frame;					// what frame was the last shield information received?
+	int _client_info_comparison_frame; 				// what frame was the last cleint info received?
 	SCP_vector<std::pair<int,int>> _subsystems_comparison_frame;	// what frame was the last subsystem information received? (for each subsystem) First is health, second is animation
 	int _ai_comparison_frame;						// what frame was the last ai information received?
 
@@ -59,8 +60,9 @@ public:
 	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
 	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity);
 
-	int get_hull_comparison_frame() { return _hull_comparison_frame; }
-	int get_shields_comparison_frame() { return _shields_comparison_frame; }
+	int get_hull_comparison_frame() const { return _hull_comparison_frame; }
+	int get_shields_comparison_frame() const { return _shields_comparison_frame; }
+	int get_client_info_comparison_frame() const { return _client_info_comparison_frame; }
 	
 	int get_subsystem_health_frame(int i) 
 	{ 
@@ -82,10 +84,11 @@ public:
 	}
 
 
-	int get_ai_comparison_frame() { return _ai_comparison_frame; }
+	int get_ai_comparison_frame() const { return _ai_comparison_frame; }
 
 	void set_hull_comparison_frame(int frame) { _hull_comparison_frame = frame; }
 	void set_shields_comparison_frame(int frame) { _shields_comparison_frame = frame; }
+	void set_client_info_comparison_frame(int frame) { _client_info_comparison_frame = frame; }
 
 	void set_subsystem_health_frame(int i, int frame)
 	{ 
@@ -120,6 +123,7 @@ public:
 		_local_skip_forward = 0;
 		_hull_comparison_frame = -1;
 		_shields_comparison_frame = -1;
+		_client_info_comparison_frame = -1;
 		_source_player_index = -1;
 
 
@@ -149,6 +153,7 @@ public:
 		_local_skip_forward = 0;
 		_hull_comparison_frame = -1;
 		_shields_comparison_frame = -1;
+		_client_info_comparison_frame = -1;
 		_ai_comparison_frame = -1;
 		_source_player_index = -1;
 	}
