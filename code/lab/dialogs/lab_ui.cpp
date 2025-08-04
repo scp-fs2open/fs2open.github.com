@@ -1086,12 +1086,11 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 	}
 }
 
-void LabUi::build_dock_test_options(ship* shipp, ship_info* sip) const
+void LabUi::build_dock_test_options(ship* shipp) const
 {
 	with_TreeNode("Docking Tests")
 	{
-		const ship* dockee_shipp = &Ships[Objects[getLabManager()->CurrentObject].instance];
-		auto dockee_dock_map = get_docking_point_map(Ship_info[dockee_shipp->ship_info_index].model_num);
+		auto dockee_dock_map = get_docking_point_map(Ship_info[shipp->ship_info_index].model_num);
 
 		if (!dockee_dock_map.empty()) {
 
@@ -1415,7 +1414,7 @@ void LabUi::show_object_options() const
 						}
 					}
 
-					build_dock_test_options(shipp, sip);
+					build_dock_test_options(shipp);
 
 					build_bay_test_options(sip);
 
