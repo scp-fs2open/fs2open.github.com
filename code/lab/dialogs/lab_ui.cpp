@@ -1086,7 +1086,7 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 	}
 }
 
-void LabUi::build_dock_test_options(ship* shipp) const
+void LabUi::build_dock_test_options(ship* shipp)
 {
 	with_TreeNode("Docking Tests")
 	{
@@ -1180,7 +1180,7 @@ void LabUi::build_dock_test_options(ship* shipp) const
 	}
 }
 
-void LabUi::build_bay_test_options(ship_info* sip) const
+void LabUi::build_bay_test_options(ship_info* sip)
 {
 	with_TreeNode("Fighterbay Tests")
 	{
