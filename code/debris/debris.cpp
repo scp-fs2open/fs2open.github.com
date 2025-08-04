@@ -568,7 +568,8 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	// Create Debris piece n!
 	if(hull_flag)
 	{
-		// WMC - set lifeleft based on tabeled entries if they are not negative
+		// set lifeleft based on tabled entries if they are not negative 
+		// coded originally by WMC then clean-up added by wookieejedi
 		if(sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 		{
 			db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
