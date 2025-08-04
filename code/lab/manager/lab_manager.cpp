@@ -350,6 +350,17 @@ void LabManager::onFrame(float frametime) {
 			}
 		}
 
+		// Check if we have finished a bay test. If so, delete the bay ship
+		if (BayObject >= 0) {
+			object* bay_objp = &Objects[BayObject];
+			ship* shipp = &Ships[bay_objp->instance];
+			ai_info* aip = &Ai_info[shipp->ai_index];
+			bool hasBayGoal = aip->mode == AIM_BAY_EMERGE || aip->mode == AIM_BAY_DEPART;
+			if (!hasBayGoal) {
+				deleteBayObject();
+			}
+		}
+
 	}
 
 	// get correct revolution rate
@@ -397,8 +408,8 @@ void LabManager::cleanup() {
 		// Remove all beams
 		beam_delete_all();
 
-		// Properly clean up the docker object
-		deleteDockerObject();
+		// Properly clean up the test objects
+		deleteTestObjects();
 
 		// Remove all objects
 		obj_delete_all();
@@ -416,6 +427,7 @@ void LabManager::cleanup() {
 		CurrentClass = -1;
 		DockerDockPoint.clear();
 		DockeeDockPoint.clear();
+		BayPathMask = 0;
 		CurrentPosition = vmd_zero_vector;
 		CurrentOrientation = vmd_identity_matrix;
 		ModelFilename = "";
@@ -423,7 +435,11 @@ void LabManager::cleanup() {
 
 		Lab_object_detail_level = -1;
 	}
+}
 
+void LabManager::deleteTestObjects() {
+	deleteDockerObject();
+	deleteBayObject();
 }
 
 void LabManager::deleteDockerObject() {
@@ -440,9 +456,27 @@ void LabManager::deleteDockerObject() {
 	}
 }
 
+void LabManager::deleteBayObject()
+{
+	if (BayObject >= 0) {
+		object* bay_objp = &Objects[BayObject];
+		ai_info* aip = &Ai_info[Ships[bay_objp->instance].ai_index];
+
+		// This is kind of a hack but it gets the job done
+		// Since we're deleting the bay object we can flag bay doors to close
+		Ships[Objects[CurrentObject].instance].bay_doors_wanting_open = 0;
+		extern void ai_manage_bay_doors(object * pl_objp, ai_info * aip, bool done);
+		ai_manage_bay_doors(bay_objp, aip, true);
+
+		obj_delete(BayObject);
+		BayObject = -1;
+		reset_ai_path_points();
+	}
+}
+
 void LabManager::spawnDockerObject() {
 
-	deleteDockerObject();
+	deleteTestObjects();
 
 	if (DockerDockPoint.empty() || DockeeDockPoint.empty()) {
 		return;
@@ -480,6 +514,49 @@ void LabManager::spawnDockerObject() {
 	new_objp->pos = final_pos;
 }
 
+void LabManager::spawnBayObject()
+{
+
+	deleteTestObjects();
+
+	// Technically this would work but that's not the intention of the test
+	// and suggests something went wrong
+	if (BayPathMask == 0) {
+		return;
+	}
+
+	// Check ship class index
+	if (!SCP_vector_inbounds(Ship_info, BayClass)) {
+		mprintf(("Invalid ship class index %d\n", BayClass));
+		return;
+	}
+
+	object* obj = &Objects[CurrentObject];
+
+	// Spawn near the target
+	vec3d spawn_pos = obj->pos;
+	vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
+	vec3d final_pos;
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+
+	matrix spawn_orient = vmd_identity_matrix;
+
+	BayObject = ship_create(&spawn_orient, &final_pos, BayClass, nullptr, true);
+
+	if (BayObject < 0) {
+		mprintf(("Failed to create bay test object with ship class index %d!\n", BayClass));
+		return;
+	}
+
+	object* new_objp = &Objects[BayObject];
+
+	// Set a more reasonable starting position
+	float offset_radius = obj->radius + new_objp->radius;
+	offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+	new_objp->pos = final_pos;
+}
+
 void LabManager::beginDockingTest() {
 	// Spawn a docker object
 	spawnDockerObject();
@@ -488,6 +565,8 @@ void LabManager::beginDockingTest() {
 		object* new_objp = &Objects[DockerObject];
 		ship* new_shipp = &Ships[new_objp->instance];
 		ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+		// TODO: Get the pos of the first dock path point and set the ship's position to that
 
 		// Ensure AI is ready
 		ai_clear_ship_goals(aip);
@@ -573,6 +652,51 @@ void LabManager::beginUndockingTest() {
 	}
 }
 
+void LabManager::beginBayTest()
+{
+	// Spawn a bay object
+	spawnBayObject();
+
+	if (BayObject < 0)
+		return;
+
+	// Reset the bay status of the current ship
+	ship* shipp = &Ships[Objects[CurrentObject].instance];
+	shipp->bay_doors_wanting_open = 0;
+	shipp->bay_doors_status = MA_POS_NOT_SET;
+
+	if (BayTestMode == BayMode::Arrival) {
+		object* new_objp = &Objects[BayObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		if (ai_acquire_emerge_path(new_objp, CurrentObject, BayPathMask) == -1) {
+			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[Objects[CurrentObject].instance].ship_name)); // Warning instead of print?
+			deleteBayObject();
+			return;
+		}
+	}
+
+	if (BayTestMode == BayMode::Departure) {
+		object* new_objp = &Objects[BayObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+		if (ai_acquire_depart_path(new_objp, CurrentObject, BayPathMask) == -1) {
+			mprintf(("Unable to acquire departure path on anchor ship %s\n", Ships[Objects[CurrentObject].instance].ship_name)); // Warning instead of print?
+			deleteBayObject();
+			return;
+		}
+
+		// Set the object's position to the start of the path
+		new_objp->pos = Path_points[aip->path_start].pos;
+	}
+}
+
 void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype) {
 	// Removing this allows reseting by clicking on the object again,
 	// making it easier to respawn destroyed objects
@@ -608,6 +732,8 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 	DockeeDockPoint.clear();
 	DockerDockPoint.clear();
 
+	BayPathMask = 0;
+
 	switch (CurrentMode) {
 	case LabMode::Ship:
 		CurrentObject = ship_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
@@ -616,7 +742,9 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			Player_ship = &Ships[Objects[CurrentObject].instance];
 			ai_paused = 0;
 
-			// Set the ship to play dead so it doesn't move. There is a special carveout to still allow subsystem rotations/translations in the lab, though
+			// Set the ship to play dead so it doesn't move. For the lab there are two special carveouts:
+			// 1: Allow subsystem rotations/translations
+			// 2: Allow subystems to be processed
 			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
 		}
 		break;

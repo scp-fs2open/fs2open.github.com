@@ -19,6 +19,22 @@ SCP_map<int, SCP_string> get_docking_point_map(int model_index)
 	return result;
 }
 
+SCP_map<int, SCP_string> get_bay_paths_map(int model_index)
+{
+	SCP_map<int, SCP_string> result;
+
+	polymodel* pm = model_get(model_index);
+	if (pm == nullptr || pm->ship_bay->num_paths <= 0)
+		return result;
+
+	for (int i = 0; i < pm->ship_bay->num_paths; ++i) {
+		const char* name = pm->paths[pm->ship_bay->path_indexes[i]].name;
+		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed " + std::to_string(i) + ">");
+	}
+
+	return result;
+}
+
 
 SCP_string get_ship_table_text(ship_info* sip)
 {
