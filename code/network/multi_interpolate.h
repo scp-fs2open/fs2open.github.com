@@ -60,9 +60,9 @@ public:
 	void interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
 	void reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity);
 
-	int get_hull_comparison_frame() { return _hull_comparison_frame; }
-	int get_shields_comparison_frame() { return _shields_comparison_frame; }
-	int get_client_info_comparison_frame() { return _client_info_comparison_frame; }
+	const int get_hull_comparison_frame() { return _hull_comparison_frame; }
+	const int get_shields_comparison_frame() { return _shields_comparison_frame; }
+	const int get_client_info_comparison_frame() { return _client_info_comparison_frame; }
 	
 	int get_subsystem_health_frame(int i) 
 	{ 
@@ -84,7 +84,7 @@ public:
 	}
 
 
-	int get_ai_comparison_frame() { return _ai_comparison_frame; }
+	const int get_ai_comparison_frame() { return _ai_comparison_frame; }
 
 	void set_hull_comparison_frame(int frame) { _hull_comparison_frame = frame; }
 	void set_shields_comparison_frame(int frame) { _shields_comparison_frame = frame; }
