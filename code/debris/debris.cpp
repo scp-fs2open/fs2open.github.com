@@ -37,7 +37,6 @@
 #include "utils/Random.h"
 #include "weapon/weapon.h"
 
-constexpr int MIN_RADIUS_FOR_PERSISTENT_DEBRIS = 50;	// ship radius at which debris from it becomes persistant
 constexpr int DEBRIS_SOUND_DELAY = 2000;				// time to start debris sound after created
 
 int Num_hull_pieces;	// number of hull pieces in existence
@@ -567,22 +566,10 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 	}
 
 	// Create Debris piece n!
-	if ( hull_flag ) {
-		if (Random::next() < (Random::MAX_VALUE/6))	// Make some pieces blow up shortly after explosion.
-			db->lifeleft = 2.0f * (frand()) + 0.5f;
-		else {
-			db->flags.set(Debris_Flags::DoNotExpire);
-			db->lifeleft = -1.0f;		// large hull pieces stay around forever
-		}
-	} else {
-		// small non-hull pieces should stick around longer the larger they are
-		// sqrtf should make sure its never too crazy long
-		db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
-	}
-
-	//WMC - Oh noes, we may need to change lifeleft
 	if(hull_flag)
 	{
+		// set lifeleft based on tabled entries if they are not negative 
+		// coded originally by WMC then clean-up added by wookieejedi
 		if(sip->debris_min_lifetime >= 0.0f && sip->debris_max_lifetime >= 0.0f)
 		{
 			db->lifeleft = (( sip->debris_max_lifetime - sip->debris_min_lifetime ) * frand()) + sip->debris_min_lifetime;
@@ -597,6 +584,22 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 			if(db->lifeleft > sip->debris_max_lifetime)
 				db->lifeleft = sip->debris_max_lifetime;
 		}
+		// By default, make some pieces blow up shortly after explosion.
+		else if (Random::next() < (Random::MAX_VALUE / 6)) 
+		{
+			db->lifeleft = 2.0f * (frand()) + 0.5f;
+		}
+		else 
+		{
+			db->flags.set(Debris_Flags::DoNotExpire);
+			db->lifeleft = -1.0f; // large hull pieces stay around forever
+		}
+	} 
+	else 
+	{
+		// small non-hull pieces should stick around longer the larger they are
+		// sqrtf should make sure its never too crazy long
+		db->lifeleft = (frand() * 2.0f + 0.1f) * sqrtf(radius);
 	}
 
 	// increase lifetime for vaporized debris
@@ -698,7 +701,7 @@ object *debris_create_only(int parent_objnum, int parent_ship_class, int alt_typ
 			db->arc_timeout = TIMESTAMP::immediate();
 		}
 
-		if (parent_objnum >= 0 && Objects[parent_objnum].radius >= MIN_RADIUS_FOR_PERSISTENT_DEBRIS) {
+		if (parent_objnum >= 0 && Objects[parent_objnum].radius >= Min_radius_for_persistent_debris) {
 			db->flags.set(Debris_Flags::DoNotExpire);
 		} else {
 			debris_add_to_hull_list(db);
