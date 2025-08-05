@@ -43,6 +43,8 @@ extern float model_radius;
 extern bool Scene_framebuffer_in_frame;
 color Wireframe_color;
 
+int Lab_object_detail_level = -1; // Used to display the detail level in the lab
+
 extern void interp_generate_arc_segment(SCP_vector<vec3d> &arc_segment_points, const vec3d *v1, const vec3d *v2, ubyte depth_limit, ubyte depth);
 
 int model_render_determine_elapsed_time(int objnum, uint64_t flags);
@@ -2666,6 +2668,11 @@ void model_render_queue(const model_render_params* interp, model_draw_list* scen
 
 	float depth = model_render_determine_depth(objnum, model_num, orient, pos, interp->get_detail_level_lock());
 	int detail_level = model_render_determine_detail(depth, model_num, interp->get_detail_level_lock());
+
+	// Send the detail level to the lab for displaying
+	if (gameseq_get_state() == GS_STATE_LAB) {
+		Lab_object_detail_level = detail_level;
+	}
 
 	// If we're rendering attached weapon models, check against the ships' tabled Weapon Model Draw Distance (which defaults to 200)
 	if ( model_flags & MR_ATTACHED_MODEL && shipp != NULL ) {

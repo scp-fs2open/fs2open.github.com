@@ -4,6 +4,7 @@
 #include "io/key.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
+#include "model/modelrender.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "debris/debris.h"
@@ -419,6 +420,8 @@ void LabManager::cleanup() {
 		CurrentOrientation = vmd_identity_matrix;
 		ModelFilename = "";
 		Player_ship = nullptr;
+
+		Lab_object_detail_level = -1;
 	}
 
 }
