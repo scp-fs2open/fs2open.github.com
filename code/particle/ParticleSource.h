@@ -3,6 +3,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
 #include "object/object.h"
 #include "particle/particle.h"
 #include "io/timer.h"
