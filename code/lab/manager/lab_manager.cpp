@@ -421,7 +421,6 @@ void LabManager::cleanup() {
 		Player_ship = nullptr;
 	}
 
-	Cmdline_dis_collisions = Saved_cmdline_collisions_value;
 }
 
 void LabManager::deleteDockerObject() {

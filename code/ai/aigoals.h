@@ -80,7 +80,7 @@ enum ai_goal_mode : uint8_t
 	AI_GOAL_FLY_TO_SHIP,
 	AI_GOAL_IGNORE_NEW,
 	AI_GOAL_CHASE_SHIP_CLASS,
-	AI_GOAL_PLAY_DEAD_PERSISTENT, // Disables subsystem rotation/translation among other things but there is a carveout for that in the lab only in ship_move_subsystems()
+	AI_GOAL_PLAY_DEAD_PERSISTENT, // Disables subsystem rotation/translation among other things but there is a carveout for that in the lab in ship_move_subsystems() and ai_process_subobjects()
 	AI_GOAL_LUA,
 	AI_GOAL_DISARM_SHIP_TACTICAL,
 	AI_GOAL_DISABLE_SHIP_TACTICAL,
