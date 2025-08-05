@@ -88,7 +88,7 @@ class ParticleSource {
 	const SCP_vector<ParticleEffect>& getEffect() const;
 
 	inline void setEffect(ParticleEffectHandle eff) {
-		Assert(eff.isValid());
+		Assert(eff.isValid() || Is_standalone);
 		m_effect = eff;
 	}
 
