@@ -3,6 +3,7 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
+#include "globalincs/systemvars.h"
 #include "object/object.h"
 #include "particle/particle.h"
 #include "io/timer.h"
@@ -88,7 +89,7 @@ class ParticleSource {
 	const SCP_vector<ParticleEffect>& getEffect() const;
 
 	inline void setEffect(ParticleEffectHandle eff) {
-		Assert(eff.isValid());
+		Assert(eff.isValid() || Is_standalone);
 		m_effect = eff;
 	}
 
