@@ -1452,6 +1452,13 @@ void ship_select_do(float frametime)
 				render_info.set_replacement_textures(ShipSelectModelNum, sip->replacement_textures);
 			}
 
+			select_effect_params params;
+			params.effect = sip->selection_effect;
+			params.fs2_grid_color = sip->fs2_effect_grid_color;
+			params.fs2_scanline_color = sip->fs2_effect_scanline_color;
+			params.fs2_grid_density = sip->fs2_effect_grid_density;
+			params.fs2_wireframe_color = sip->fs2_effect_wireframe_color;
+
 			draw_model_rotating(
 				&render_info, 
 				ShipSelectModelNum,
@@ -1465,7 +1472,7 @@ void ship_select_do(float frametime)
 				rev_rate,
 				MR_AUTOCENTER | MR_NO_FOGGING,
 				GR_RESIZE_MENU,
-				sip->selection_effect);
+				params);
 		}
 	}
 
