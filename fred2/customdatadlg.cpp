@@ -65,7 +65,7 @@ BOOL CustomDataDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// grab the existing list of custom data pairs and duplicate it. We only update it if the user clicks OK.
-	Assert(m_target_data != nullptr);
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
 	m_custom_data = *m_target_data;
 
 	update_data_lister();
@@ -80,7 +80,7 @@ BOOL CustomDataDlg::OnInitDialog()
 void CustomDataDlg::OnButtonOk()
 {
 	// now we set the custom data to our copy
-	Assert(m_target_data != nullptr);
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
 	*m_target_data = m_custom_data;
 
 	CDialog::OnOK();
@@ -316,6 +316,6 @@ void CustomDataDlg::update_help_text(const SCP_string& description)
 
 bool CustomDataDlg::query_modified() const
 {
-	Assert(m_target_data != nullptr);
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
 	return *m_target_data != m_custom_data;
 }
