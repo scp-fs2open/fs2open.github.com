@@ -57,6 +57,10 @@ public:
 	QString getAvgSpeed();
 	void setBoxText(const QString &text, _box_line_edits type);
 	QString & getBoxText(_box_line_edits type);
+	void setFieldTargetNames(const SCP_vector<SCP_string>& target_names);
+	SCP_vector<SCP_string> getTargetNames() const;
+	void setAsteroidTypes(const SCP_vector<SCP_string>& asteroid_types);
+	SCP_vector<SCP_string> getAsteroidTypes() const;
 
 	void update_init();
 	bool validate_data();
@@ -85,15 +89,14 @@ private:
 	QString _inner_max_y;
 	QString _inner_max_z;
 
-	SCP_vector<int>            _field_debris_type;  // debris
+	SCP_vector<int>            _field_debris_type;   // debris types
 	SCP_vector<SCP_string>     _field_asteroid_type; // asteroid types
+	SCP_vector<SCP_string>     _field_target_names;  // target ships
 	field_type_t   _field_type;                                  // active or passive
 	debris_genre_t _debris_genre;                                // ship or asteroid
 	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?
 
 	bool _bypass_errors;
-	int  _cur_field;
-	int  _last_field;
 
 	const int _MIN_BOX_THICKNESS = 400;
 	// for debris combo box indexes
