@@ -136,6 +136,7 @@ public:
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
 	SCP_vector<sexp_container> persistent_containers;	// These containers will be saved at the end of a mission
 	SCP_vector<sexp_container> red_alert_containers;		// state of the containers in the previous mission of a Red Alert scenario.
+	SCP_map<SCP_string, SCP_string> custom_data;        // Custom data for the campaign
 
 	campaign()
 		: desc(nullptr), num_missions(0)

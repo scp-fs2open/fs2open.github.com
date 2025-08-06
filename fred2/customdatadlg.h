@@ -11,7 +11,7 @@
 
 class CustomDataDlg : public CDialog {
   public:
-	CustomDataDlg(CWnd* pParent = nullptr);
+	CustomDataDlg(SCP_map<SCP_string, SCP_string>* data_ptr, CWnd* pParent = nullptr);
 
 	enum {
 		IDD = IDD_EDIT_CUSTOM_DATA
@@ -55,6 +55,7 @@ class CustomDataDlg : public CDialog {
   private:
 	bool query_modified() const;
 
+	SCP_map<SCP_string, SCP_string>* m_target_data = nullptr;
 	SCP_map<SCP_string, SCP_string> m_custom_data;
 
 	// read-only view of data pair keys
