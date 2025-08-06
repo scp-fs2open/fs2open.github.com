@@ -24,6 +24,10 @@ public:
   void closeEvent(QCloseEvent* e) override;
 	void rejectHandler();
 
+private slots:
+
+	void on_asteroidSelectButton_clicked();
+
 private:
 
 	void toggleEnabled(bool enabled);
