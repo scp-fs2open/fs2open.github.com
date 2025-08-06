@@ -235,6 +235,20 @@ void lcl_fred_replace_stuff(CString &text)
 	text.Replace("\\", "$backslash");
 }
 
+CString get_display_name_for_text_box(const char *orig_name)
+{
+	auto p = get_pointer_to_first_hash_symbol(orig_name);
+	if (p)
+	{
+		// use the same logic as in end_string_at_first_hash_symbol, but rewritten for CString
+		CString display_name(orig_name, static_cast<int>(p - orig_name));
+		display_name.TrimRight();
+		return display_name;
+	}
+	else
+		return "<none>";
+}
+
 void fred_preload_all_briefing_icons()
 {
 	for (SCP_vector<briefing_icon_info>::iterator ii = Briefing_icon_info.begin(); ii != Briefing_icon_info.end(); ++ii)

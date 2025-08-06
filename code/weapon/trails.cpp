@@ -160,20 +160,15 @@ void trail_render( trail * trailp )
 		float speed = vm_vec_mag(&trailp->vel[front]);
 
 		float total_len = speed * ti->max_life;
-		float t = vm_vec_dist(&trailp->pos[front], &trailp->pos[back]) / total_len;
-		CLAMP(t, 0.0f, 1.0f);
 		float f_alpha, b_alpha, f_width, b_width;
-		if (trailp->object_died) {
-			f_alpha = t * (ti->a_start - ti->a_end) + ti->a_end;
-			b_alpha = ti->a_end;
-			f_width = t * (ti->w_start - ti->w_end) + ti->w_end;
-			b_width = ti->w_end;
-		} else {
-			f_alpha = ti->a_start;
-			b_alpha = t * (ti->a_end - ti->a_start) + ti->a_start;
-			f_width = ti->w_start;
-			b_width = t * (ti->w_end - ti->w_start) + ti->w_start;
-		}
+
+		float t_front = trailp->val[front] - trailp->val[back];
+		float t_back = MAX(0.0f, -trailp->val[back]);
+
+		f_alpha = t_front * (ti->a_start - ti->a_end) + ti->a_end;
+		b_alpha = t_back * (ti->a_start - ti->a_end) + ti->a_end;
+		f_width = t_front * (ti->w_start - ti->w_end) + ti->w_end;
+		b_width = t_back * (ti->w_start - ti->w_end) + ti->w_end;
 
 		vec3d trail_direction, ftop, fbot, btop, bbot;
 		vm_vec_normalized_dir(&trail_direction, &trailp->pos[back], &trailp->pos[front]);
@@ -195,8 +190,8 @@ void trail_render( trail * trailp )
 
 		verts[0].texture_position.u = trailp->val[front] * uv_scale;
 		verts[1].texture_position.u = trailp->val[front] * uv_scale;
-		verts[2].texture_position.u = trailp->val[back] * uv_scale;
-		verts[3].texture_position.u = trailp->val[back] * uv_scale;
+		verts[2].texture_position.u = MAX(trailp->val[back], 0.0f) * uv_scale;
+		verts[3].texture_position.u = MAX(trailp->val[back], 0.0f) * uv_scale;
 
 		verts[0].texture_position.v = verts[3].texture_position.v = 0.0f;
 		verts[1].texture_position.v = verts[2].texture_position.v = 1.0f;
@@ -372,6 +367,9 @@ void trail_add_segment( trail *trailp, vec3d *pos , const matrix* orient, vec3d*
 
 	if (trailp->single_segment && velocity) {
 		trailp->vel[next] = *velocity;
+		if (next == 0) {
+			trailp->val[next] = -1.0;
+		}
 	} else if (orient != nullptr && trailp->info.spread > 0.0f) {
 		vm_vec_random_in_circle(&trailp->vel[next], &vmd_zero_vector, orient, trailp->info.spread, false, true);
 	} else 
@@ -404,10 +402,15 @@ void trail_move_all(float frametime)
 		time_delta = frametime / trailp->info.max_life;
 
 		if (trailp->single_segment) {
-			if (trailp->object_died) {
-				trailp->pos[0] += trailp->vel[0] * frametime; // only back keeps going...
-				trailp->val[0] += time_delta; 
+			trailp->val[0] += time_delta;
 
+			if (trailp->val[0] > 0.0f) {
+				// finished 'unfurling'
+				// back end moves too now
+				trailp->pos[0] += trailp->vel[0] * frametime;
+			}
+
+			if (trailp->object_died) {
 				if (trailp->val[0] >= trailp->val[1])
 					num_alive_segments = 0; // back has caught up to front and were dead
 				else
@@ -415,13 +418,6 @@ void trail_move_all(float frametime)
 			} else {
 				trailp->pos[1] += trailp->vel[1] * frametime;
 				trailp->val[1] += time_delta;
-
-				if (trailp->val[1] > 1.0f) {
-					// finished 'unfurling'
-					// back end moves too now
-					trailp->pos[0] += trailp->vel[0] * frametime;
-					trailp->val[0] += time_delta;
-				}
 
 				num_alive_segments = 2;
 			}

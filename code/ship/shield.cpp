@@ -904,26 +904,36 @@ void create_shield_explosion_all(object *objp)
 }
 
 /**
+ * Returns the lowest threshold of shield hitpoints that triggers a shield hit
+ *
+ * @return If all_quadrants is true, looks at entire shield, otherwise just one quadrant
+ */
+float ship_shield_hitpoint_threshold(const object* obj, bool all_quadrants) 
+{
+	if (all_quadrants) {
+		// All quadrants
+		auto num_quads = static_cast<float>(obj->shield_quadrant.size());
+		return MAX(2.0f * num_quads, Shield_percent_skips_damage * shield_get_max_strength(obj));
+	} else {
+		// Just one quadrant
+		return MAX(2.0f, Shield_percent_skips_damage * shield_get_max_quad(obj));
+	}
+}
+
+/**
  * Returns true if the shield presents any opposition to something trying to force through it.
  *
  * @return If quadrant is -1, looks at entire shield, otherwise just one quadrant
  */
-int ship_is_shield_up( const object *obj, int quadrant )
+bool ship_is_shield_up(const object *obj, int quadrant)
 {
 	if ( (quadrant >= 0) && (quadrant < static_cast<int>(obj->shield_quadrant.size())))	{
 		// Just check one quadrant
-		if (shield_get_quad(obj, quadrant) > MAX(2.0f, 0.1f * shield_get_max_quad(obj)))	{
-			return 1;
-		}
+		return ( shield_get_quad(obj, quadrant) > ship_shield_hitpoint_threshold(obj, false) );
 	} else {
 		// Check all quadrants
-		float strength = shield_get_strength(obj);
-
-		if ( strength > MAX(2.0f*4.0f, 0.1f * shield_get_max_strength(obj)) )	{
-			return 1;
-		}
+		return ( shield_get_strength(obj) > ship_shield_hitpoint_threshold(obj, true) );
 	}
-	return 0;	// no shield strength
 }
 
 //	return quadrant containing hit_pnt.

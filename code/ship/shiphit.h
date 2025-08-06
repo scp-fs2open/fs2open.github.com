@@ -35,7 +35,7 @@ constexpr float DEATHROLL_ROTVEL_CAP = 6.3f;    // maximum added deathroll rotve
 // function to destroy a subsystem.  Called internally and from multiplayer messaging code
 extern void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d *hitpos, bool no_explosion = false );
 
-std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_obj, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot = 1.f);
+std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_obj, const object *other_obj, const vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor, float hit_dot = 1.f, bool shield_hit = false);
 
 // Goober5000
 // (it might be possible to make `target` const, but that would set off another const-cascade)

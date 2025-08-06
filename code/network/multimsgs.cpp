@@ -3140,6 +3140,11 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 		return;
 	}
 
+	// if this is a dumbfire weapon then skip it since it's client fired
+	if ( !Weapon_info[shipp->weapons.secondary_bank_weapons[current_bank]].is_homing() ) {
+		return;
+	}
+
 	// now build up the packet to send to the player who actually fired.
 	BUILD_HEADER( SECONDARY_FIRED_PLR );
 	ADD_USHORT(starting_sig);
@@ -3433,7 +3438,8 @@ void process_turret_fired_packet( ubyte *data, header *hinfo )
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
+	// NOTE: o_fvec is NOT normalized due to pack/unpack altering values!
+	vm_vector_2_matrix(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.
@@ -8740,7 +8746,8 @@ void process_flak_fired_packet(ubyte *data, header *hinfo)
 	}
 
 	// make an orientation matrix from the o_fvec
-	vm_vector_2_matrix_norm(&orient, &o_fvec, nullptr, nullptr);
+	// NOTE: o_fvec is NOT normalized due to pack/unpack altering values!
+	vm_vector_2_matrix(&orient, &o_fvec, nullptr, nullptr);
 
 	// find this turret, and set the position of the turret that just fired to be where it fired.  Quite a
 	// hack, but should be suitable.

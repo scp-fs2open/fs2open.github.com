@@ -320,9 +320,9 @@ SCP_vector<std::pair<SCP_string, BoundingBox>> HC_gauge_mouse_coords;
 // Names and XSTR IDs for these come from HC_text above
 hc_col HC_colors[NUM_HUD_COLOR_PRESETS] =
 {
-	{0, 255, 0, "", -1},    // Green
-	{67, 123, 203, "", -1}, // Blue
-	{255, 197, 0, "", -1},  // Amber
+	{0, 255, 0, "Green", 1457}, // Green
+	{67, 123, 203, "Blue", 1456}, // Blue
+	{255, 197, 0, "Amber", 1455}, // Ambers
 };
 
 int HC_default_color = HUD_COLOR_PRESET_1;
@@ -1709,6 +1709,8 @@ void hud_config_color_load(const char *name)
 			HUD_config.set_gauge_color(gauge.first, clr);
 		}
 
+		SCP_vector<std::pair<SCP_string, color>> gauge_color_list;
+
 		// Now read in the color values for the gauges
 		int version = 1;
 		if (optional_string("+VERSION 2")) {
@@ -1732,16 +1734,43 @@ void hud_config_color_load(const char *name)
 				case 1: {
 					SCP_string gauge = gauge_map.get_string_id_from_hcf_id(str);
 					if (!gauge.empty()) {
-						HUD_config.set_gauge_color(gauge, clr);
+						gauge_color_list.emplace_back(gauge, clr);
 					}
 					break;
 				}
 				case 2: {
-					HUD_config.set_gauge_color(str, clr);
+					gauge_color_list.emplace_back(str, clr);
 					break;
 				}
 				default: {
 					throw parse::ParseException("Unknown HUD config version: " + std::to_string(version));
+				}
+			}
+		}
+
+		auto is_builtin = [](auto const& p) {
+			return p.first.rfind("Builtin::", 0) == 0;
+		};
+
+		// Move all builtin:: items to the front, keeping original order
+		std::stable_partition(gauge_color_list.begin(), gauge_color_list.end(), is_builtin);
+
+		// Add the colors to the HUD_config
+		for (const auto& gauge_color : gauge_color_list) {
+			HUD_config.set_gauge_color(gauge_color.first, gauge_color.second);
+
+			// If this is a builtin gauge, we also need to set the color for all other gauges of the same type
+			// Builtin gauges are handled first so that any defintions for custom gauges will override the builtin ones later
+			if (is_builtin(gauge_color)) {
+				int type = gauge_map.get_numeric_id_from_string_id(gauge_color.first);
+
+				for (const auto& this_gauge : HC_gauge_map) {
+					if (this_gauge.first == gauge_color.first) {
+						continue;
+					}
+					if (this_gauge.second->getConfigType() == type) {
+						HUD_config.set_gauge_color(this_gauge.first, gauge_color.second);
+					}
 				}
 			}
 		}

@@ -38,6 +38,7 @@
 #include "network/multiutil.h"
 #include "object/objcollide.h"
 #include "object/objectdock.h"
+#include "object/objectshield.h"
 #include "object/objectsnd.h"
 #include "parse/parsehi.h"
 #include "parse/parselo.h"
@@ -680,7 +681,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 
 	switch (pspew_buffer.particle_spew_type) {
 		case PSPEW_DEFAULT:
-			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), 3.f * pspew_buffer.particle_spew_scale);
+			position_vol = std::make_unique<particle::ConeVolume>(::util::UniformFloatRange(-PI_2, PI_2), powf(pspew_buffer.particle_spew_scale, 3.0f));
 			direction = particle::ParticleEffect::ShapeDirection::REVERSE;
 			break;
 		case PSPEW_HELIX: {
@@ -6075,6 +6076,19 @@ static void weapon_set_state(weapon_info* wip, weapon* wp, WeaponState state)
 		source->setHost(make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector));
 		source->finishCreation();
 	}
+
+	if (wip->wi_flags[Weapon::Info_Flags::Particle_spew]) {
+		for (const auto& effect : wip->particle_spewers) {
+			if (!effect.isValid())
+				continue;
+
+			auto source = particle::ParticleManager::get()->createSource(effect);
+			auto host = std::make_unique<EffectHostObject>(&Objects[wp->objnum], vmd_zero_vector);
+			source->setHost(std::move(host));
+			source->finishCreation();
+		}
+	}
+
 }
 
 static void weapon_update_state(weapon* wp)
@@ -7328,8 +7342,6 @@ void weapon_play_impact_sound(const weapon_info *wip, const vec3d *hitpos, bool 
  */
 void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const vec3d *hitpos, bool is_armed, int quadrant)
 {
-	float shield_str;
-
 	// If non-missiles (namely lasers) expire without hitting a ship, don't play impact sound
 	if	( wip->subtype != WP_MISSILE ) {		
 		if ( !hit_obj ) {
@@ -7366,14 +7378,16 @@ void weapon_hit_do_sound(const object *hit_obj, const weapon_info *wip, const ve
 
 	if ( timestamp_elapsed(Weapon_impact_timer) ) {
 
+		float shield_percent;
+
 		if ( hit_obj->type == OBJ_SHIP && quadrant >= 0 ) {
-			shield_str = ship_quadrant_shield_strength(hit_obj, quadrant);
+			shield_percent = shield_get_quad_percent(hit_obj, quadrant);
 		} else {
-			shield_str = 0.0f;
+			shield_percent = 0.0f;
 		}
 
-		// play a shield hit if shields are above 10% max in this quadrant
-		if ( shield_str > 0.1f ) {
+		// play a shield hit if shields are above X% max in this quadrant
+		if ( shield_percent > Shield_percent_skips_damage ) {
 			// Play a shield impact sound effect
 			if ( !(Use_weapon_class_sounds_for_hits_to_player) && (hit_obj == Player_obj)) {
 				snd_play_3d( gamesnd_get_game_sound(GameSounds::SHIELD_HIT_YOU), hitpos, &Eye_position );
@@ -7949,7 +7963,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 	}
 	
 	if (!valid_conditional_impact && wip->impact_weapon_expl_effect.isValid() && armed_weapon) {
-              		auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
+    	auto particleSource = particle::ParticleManager::get()->createSource(wip->impact_weapon_expl_effect);
 
 		particleSource->setHost(weapon_hit_make_effect_host(weapon_objp, impacted_objp, submodel, hitpos, local_hitpos));
 		particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
@@ -7973,7 +7987,7 @@ void maybe_play_conditional_impacts(const std::array<std::optional<ConditionData
 		particleSource->finishCreation();
 	}
 
-	if (impacted_objp != nullptr && impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
+	if (impacted_objp != nullptr && !impact_data[static_cast<std::underlying_type_t<HitType>>(HitType::SHIELD)].has_value() && (!valid_conditional_impact && wip->piercing_impact_effect.isValid() && armed_weapon)) {
 		if ((impacted_objp->type == OBJ_SHIP) || (impacted_objp->type == OBJ_DEBRIS)) {
 
 			int ok_to_draw = 1;
@@ -8877,8 +8891,13 @@ void weapon_render(object* obj, model_draw_list *scene)
 			float offset_z_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_OFFSET_Z_MULT, *wp, &wp->modular_curves_instance);
 			float switch_ang_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_ANG_MULT, *wp, &wp->modular_curves_instance);
 			float switch_rate_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_HEADON_SWITCH_RATE_MULT, *wp, &wp->modular_curves_instance);
-			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE);
-			float anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			bool anim_has_curve = wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE) || wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD);
+			// We'll be using both anim_state and anim_state_add if either one has a curve defined, even if the other doesn't,
+			// so we need to make sure they've got sensible defaults, which in this case means 0.
+			float anim_state = 0.f;
+			if (wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE)) {
+				anim_state = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE, *wp, &wp->modular_curves_instance);
+			}
 			float anim_state_add = 0.f;
 			if (wip->weapon_curves.has_curve(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD)) {
 				anim_state_add = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_ANIM_STATE_ADD, *wp, &wp->modular_curves_instance);
@@ -10194,7 +10213,7 @@ float weapon_get_apparent_size(const weapon& wp) {
 	
 	return convert_distance_and_diameter_to_pixel_size(
 		dist,
-		wep_objp->radius,
-		fl_degrees(g3_get_hfov(Eye_fov)),
-		gr_screen.max_h) / i2fl(gr_screen.max_h);
+		wep_objp->radius * 2.0f,
+		g3_get_hfov(Eye_fov),
+		gr_screen.max_w) / i2fl(gr_screen.max_w);
 }

@@ -2688,6 +2688,7 @@ int CFred_mission_save::save_mission_info()
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Steps:", 1, ";;FSO 23.1.0;;", 15, " %d", The_mission.volumetrics->steps);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Resolution:", 1, ";;FSO 23.1.0;;", 6, " %d", The_mission.volumetrics->resolution);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Oversampling:", 1, ";;FSO 23.1.0;;", 2, " %d", The_mission.volumetrics->oversampling);
+			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Smoothing:", 1, ";;FSO 25.0.0;;", 0.f, " %f", The_mission.volumetrics->smoothing);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Heyney Greenstein Coefficient:", 1, ";;FSO 23.1.0;;", 0.2f, " %f", The_mission.volumetrics->henyeyGreensteinCoeff);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT_F("+Sun Falloff Factor:", 1, ";;FSO 23.1.0;;", 1.0f, " %f", The_mission.volumetrics->globalLightDistanceFactor);
 			FRED_ENSURE_PROPERTY_VERSION_WITH_DEFAULT("+Sun Steps:", 1, ";;FSO 23.1.0;;", 6, " %d", The_mission.volumetrics->globalLightSteps);
@@ -2725,6 +2726,7 @@ int CFred_mission_save::save_mission_info()
 			bypass_comment(";;FSO 23.1.0;; +Steps:");
 			bypass_comment(";;FSO 23.1.0;; +Resolution:");
 			bypass_comment(";;FSO 23.1.0;; +Oversampling:");
+			bypass_comment(";;FSO 25.0.0;; +Smoothing:");
 			bypass_comment(";;FSO 23.1.0;; +Heyney Greenstein Coefficient:");
 			bypass_comment(";;FSO 23.1.0;; +Sun Falloff Factor:");
 			bypass_comment(";;FSO 23.1.0;; +Sun Steps:");
@@ -3478,15 +3480,19 @@ int CFred_mission_save::save_objects()
 
 		// Display name
 		// The display name is only written if there was one at the start to avoid introducing inconsistencies
-		if (save_format != MissionFormat::RETAIL && shipp->has_display_name()) {
+		if (save_format != MissionFormat::RETAIL && (_viewport->Always_save_display_names || shipp->has_display_name())) {
 			char truncated_name[NAME_LENGTH];
 			strcpy_s(truncated_name, shipp->ship_name);
 			end_string_at_first_hash_symbol(truncated_name);
 
 			// Also, the display name is not written if it's just the truncation of the name at the hash
-			if (strcmp(shipp->get_display_name(), truncated_name) != 0) {
-				fout("\n$Display name:");
-				fout_ext(" ", "%s", shipp->display_name.c_str());
+			if (_viewport->Always_save_display_names || strcmp(shipp->get_display_name(), truncated_name) != 0) {
+				if (optional_string_fred("$Display name:", "$Class:")) {
+					parse_comments();
+				} else {
+					fout("\n$Display name:");
+				}
+				fout_ext(" ", "%s", shipp->get_display_name());
 			}
 		}
 
@@ -5019,13 +5025,13 @@ int CFred_mission_save::save_waypoints()
 		if (save_format != MissionFormat::RETAIL) {
 			
 			// The display name is only written if there was one at the start to avoid introducing inconsistencies
-			if (jnp->HasDisplayName()) {
+			if (_viewport->Always_save_display_names || jnp->HasDisplayName()) {
 				char truncated_name[NAME_LENGTH];
 				strcpy_s(truncated_name, jnp->GetName());
 				end_string_at_first_hash_symbol(truncated_name);
 
 				// Also, the display name is not written if it's just the truncation of the name at the hash
-				if (strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
+				if (_viewport->Always_save_display_names || strcmp(jnp->GetDisplayName(), truncated_name) != 0) {
 					if (optional_string_fred("+Display Name:", "$Jump Node:")) {
 						parse_comments();
 					} else {

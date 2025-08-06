@@ -213,7 +213,7 @@ extern void mission_campaign_save_persistent( int type, int index );
 // execute the corresponding mission_campaign_savefile functions.
 
 // get name and type of specified campaign file
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
 
 // get a listing of missions in a campaign
 int mission_campaign_get_mission_list(const char *filename, char **list, int max);

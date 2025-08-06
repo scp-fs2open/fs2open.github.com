@@ -100,13 +100,29 @@ campaign Campaign;
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc, char **first_mission)
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc, char **first_mission)
 {
-	int i, success = 0;
-	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
+	int i, success = false;
+	SCP_string campaign_type;
+	char fname[MAX_FILENAME_LEN];
 
-	Assert( name != NULL );
 	Assert( type != NULL );
+
+	// make sure outputs always have sane values
+	name.clear();
+	*type = -1;
+
+	if (max_players) {
+		*max_players = 0;
+	}
+
+	if (desc) {
+		*desc = nullptr;
+	}
+
+	if (first_mission) {
+		*first_mission = nullptr;
+	}
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	auto fname_len = strlen(fname);
@@ -116,7 +132,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	}
 	Assert(fname_len < MAX_FILENAME_LEN);
 
-	*type = -1;
 	do {
 		try
 		{
@@ -124,23 +139,23 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			reset_parse();
 
 			required_string("$Name:");
-			stuff_string(name, F_NAME, NAME_LENGTH);
-			if (name == NULL) {
+			stuff_string(name, F_NAME);
+			if (name.empty()) {
 				nprintf(("Warning", "No name found for campaign file %s\n", filename));
 				break;
 			}
 
 			required_string("$Type:");
-			stuff_string(campaign_type, F_NAME, NAME_LENGTH);
+			stuff_string(campaign_type, F_NAME);
 
 			for (i = 0; i < MAX_CAMPAIGN_TYPES; i++) {
-				if (!stricmp(campaign_type, campaign_types[i])) {
+				if (!stricmp(campaign_type.c_str(), campaign_types[i])) {
 					*type = i;
 				}
 			}
 
-			if (name == NULL) {
-				Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type);
+			if (*type < 0) {
+				Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type.c_str());
 				break;
 			}
 
@@ -166,7 +181,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 			// if we found a valid campaign type
 			if ((*type) >= 0) {
-				success = 1;
+				success = true;
 			}
 		}
 		catch (const parse::ParseException& e)
@@ -176,7 +191,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 		}
 	} while (0);
 
-	Assert(success);
 	return success;
 }
 
@@ -250,7 +264,7 @@ void mission_campaign_free_list()
 
 int mission_campaign_maybe_add(const char *filename)
 {
-	char name[NAME_LENGTH];
+	SCP_string name;
 	char *desc = NULL;
 	int type, max_players;
 
@@ -261,7 +275,7 @@ int mission_campaign_maybe_add(const char *filename)
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name);
+			Campaign_names[Num_campaigns] = vm_strdup(name.c_str());
 
 			if (MC_desc)
 				Campaign_descs[Num_campaigns] = desc;

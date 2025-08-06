@@ -451,16 +451,7 @@ bool os_foreground()
 // Sleeps for n milliseconds or until app becomes active.
 void os_sleep(uint ms)
 {
-#ifdef __APPLE__
-	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
-	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
-	// we aren't hitting up the system for anything during the process
-	uint then = SDL_GetTicks() + ms;
-
-	while (then > SDL_GetTicks());
-#else
 	SDL_Delay(ms);
-#endif
 }
 
 static bool file_exists(const SCP_string& path) {

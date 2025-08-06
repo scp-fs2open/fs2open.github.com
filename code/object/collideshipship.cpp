@@ -389,15 +389,19 @@ int ship_ship_check_collision(collision_info_struct *ship_ship_hit_info)
 		}
 		if ((collide_obj != NULL) && (Ship_info[Ships[collide_obj->instance].ship_info_index].is_fighter_bomber())) {
 			const char	*submode_string = "";
+			const char *mode_string = "";
 			ai_info	*aip;
 
 			extern const char *Mode_text[];
 			aip = &Ai_info[Ships[collide_obj->instance].ai_index];
 
+			if (aip->mode >= 0)
+				mode_string = Mode_text[aip->mode];
+
 			if (aip->mode == AIM_CHASE)
 				submode_string = Submode_text[aip->submode];
 
-			nprintf(("AI", "Player collided with ship %s, AI mode = %s, submode = %s\n", Ships[collide_obj->instance].ship_name, Mode_text[aip->mode], submode_string));
+			nprintf(("AI", "Player collided with ship %s, AI mode = %s, submode = %s\n", Ships[collide_obj->instance].ship_name, mode_string, submode_string));
 		}
 #endif
 	}
@@ -747,13 +751,15 @@ void calculate_ship_ship_collision_physics(collision_info_struct *ship_ship_hit_
 	// physics should not have to recalculate this, just change into body coords (done in collide_whack)
 	// Cyborg - to complicate this, multiplayer clients should never ever whack non-player ships.
 	if (should_collide){
+		auto light_rot_mag = light_sip ? light_sip->collision_physics.rotation_mag_max : -1.0f;
 		vm_vec_scale(&impulse, impulse_mag);
 		vm_vec_scale(&delta_rotvel_light, impulse_mag);	
-		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing);
+		physics_collide_whack(&impulse, &delta_rotvel_light, &lighter->phys_info, &lighter->orient, ship_ship_hit_info->is_landing, light_rot_mag);
 
+		auto heavy_rot_mag = heavy_sip ? heavy_sip->collision_physics.rotation_mag_max : -1.0f;
 		vm_vec_negate(&impulse);
 		vm_vec_scale(&delta_rotvel_heavy, -impulse_mag);
-		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true);
+		physics_collide_whack(&impulse, &delta_rotvel_heavy, &heavy->phys_info, &heavy->orient, true, heavy_rot_mag);
 	}
 
 	// If within certain bounds, we want to add some more rotation towards the "resting orientation" of the ship
@@ -1371,7 +1377,7 @@ void collide_ship_ship_process(obj_pair * pair, const std::any& collision_data) 
 			hud_shield_quadrant_hit(ship_ship_hit_info.heavy, quadrant_num);
 
 			// don't draw sparks (using sphere hitpos)
-			float damage_light = (100.0f * damage / heavy_obj->phys_info.mass);
+			float damage_light = (100.0f * damage / light_obj->phys_info.mass);
 			ship_apply_local_damage(ship_ship_hit_info.light, ship_ship_hit_info.heavy, &world_hit_pos, damage_light, heavy_shipp->collision_damage_type_idx,
 									MISS_SHIELDS, NO_SPARKS, -1, &ship_ship_hit_info.collision_normal);
 

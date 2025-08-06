@@ -101,6 +101,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	//column one
 	void shipNameChanged();
+	void shipDisplayNameChanged();
 	void shipClassChanged(const int);
 	void aiClassChanged(const int);
 	void teamChanged(const int);

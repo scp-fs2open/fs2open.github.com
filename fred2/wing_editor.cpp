@@ -1189,7 +1189,7 @@ void wing_editor::calc_cue_height()
 	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = (cue.bottom - cue.top) + 10;
+	cue_height = (cue.bottom - cue.top) + 1;
 }
 
 void wing_editor::show_hide_sexp_help()

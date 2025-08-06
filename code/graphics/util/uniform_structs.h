@@ -81,7 +81,6 @@ struct model_uniform_data {
 	matrix4 textureMatrix;
 	matrix4 shadow_mv_matrix;
 	matrix4 shadow_proj_matrix[4];
-	matrix4 envMatrix;
 
 	vec4 color;
 
@@ -139,7 +138,7 @@ struct model_uniform_data {
 	int sMiscmapIndex;
 	float alphaMult;
 	int flags;
-	int pad[1];
+	float pad;
 };
 
 const size_t model_uniform_data_size = sizeof(model_uniform_data);
@@ -180,9 +179,6 @@ struct decal_globals {
 	matrix4 projMatrix;
 	matrix4 invViewMatrix;
 	matrix4 invProjMatrix;
-
-	vec3d ambientLight;
-	float pad0;
 
 	vec2d viewportSize;
 	float pad1[2];
@@ -398,6 +394,12 @@ struct post_data {
 
 	vec3d tint;
 	float dither;
+
+	vec3d custom_effect_vec3_a;
+	float custom_effect_float_a;
+
+	vec3d custom_effect_vec3_b;
+	float custom_effect_float_b;
 };
 
 struct irrmap_data {

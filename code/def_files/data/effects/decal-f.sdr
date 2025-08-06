@@ -10,11 +10,11 @@ out vec4 fragOut0; // Diffuse buffer
 out vec4 fragOut1; // Normal buffer
 out vec4 fragOut2; // Emissive buffer
 
-in flat mat4 invModelMatrix;
-in flat vec3 decalDirection;
-in flat float normal_angle_cutoff;
-in flat float angle_fade_start;
-in flat float alpha_scale;
+flat in mat4 invModelMatrix;
+flat in vec3 decalDirection;
+flat in float normal_angle_cutoff;
+flat in float angle_fade_start;
+flat in float alpha_scale;
 
 uniform sampler2D gDepthBuffer;
 uniform sampler2D gNormalBuffer;
@@ -28,9 +28,6 @@ layout (std140) uniform decalGlobalData {
 	mat4 projMatrix;
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
-
-	vec3 ambientLight;
-	float pad0;
 
 	vec2 viewportSize;
 };
@@ -134,16 +131,6 @@ void main() {
 		} else {
 			// Additive blending
 			diffuse_out = vec4(color.rgb * alpha, 1.0);
-		}
-
-		// The main model shader applies ambient lighting by drawing the ambient part of the texture into the emissive
-		// texture. We do the same here to make sure the decal material is applied correctly
-		if (glow_blend_mode == 0) {
-			// Normal alpha blending
-			emissive_out = vec4(color.rgb * ambientLight, color.a * alpha);
-		} else {
-			// Additive blending
-			emissive_out = vec4(alpha * color.rgb * ambientLight, 1.0);
 		}
 	}
 

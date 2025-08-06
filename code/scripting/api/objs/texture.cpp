@@ -6,14 +6,13 @@
 #define BMPMAN_INTERNAL
 #include "bmpman/bm_internal.h"
 
-
 namespace scripting {
 namespace api {
 
 texture_h::texture_h() = default;
-texture_h::texture_h(int bm, bool refcount) : handle(bm) {
+texture_h::texture_h(int bm, bool refcount, int parent_bm) : handle(bm), parent_handle(parent_bm) {
 	if (refcount && isValid())
-		bm_get_entry(bm)->load_count++;
+		bm_get_entry(parent_bm != -1 ? parent_bm : bm)->load_count++;
 }
 texture_h::~texture_h()
 {
@@ -28,15 +27,22 @@ texture_h::~texture_h()
 	//the textures using load_count. Anything that creates a texture object must also increase load count, unless it is
 	//created in a way that already increases load_count (like bm_load). That way, a texture going out of scope needs to be
 	//released and is safed against memleaks. -Lafiel
-	bm_release(handle);
+	//Note 2: Some textures, notably subframes of animations, aren't first-class bmpman citizens and mustn't be released directly.
+	//Otherwise it is possible (and has been observed in practice) that the parent texture get's deleted before all dependent objects,
+	//causing this release of the dependent object to clear unrelated textures that were assigned the previously freed spots.
+	//So instead, both lock and later unlock the parent texture rather than this child texture. -Lafiel
+	bm_release(parent_handle != -1 ? parent_handle : handle);
 }
 bool texture_h::isValid() const { return bm_is_valid(handle) != 0; }
+
 texture_h::texture_h(texture_h&& other) noexcept {
 	*this = std::move(other);
 }
 texture_h& texture_h::operator=(texture_h&& other) noexcept {
-	if (this != &other)
+	if (this != &other) {
 		std::swap(handle, other.handle);
+		std::swap(parent_handle, other.parent_handle);
+	}
 	return *this;
 }
 
@@ -92,7 +98,7 @@ ADE_INDEXER(l_Texture, "number",
 	//Get actual texture handle
 	frame = first + frame;
 
-	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame)));
+	return ade_set_args(L, "o", l_Texture.Set(texture_h(frame, true, first)));
 }
 
 ADE_FUNC(isValid, l_Texture, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -138,6 +144,8 @@ ADE_FUNC(destroyRenderTarget, l_Texture, nullptr, "Destroys a texture's render t
 	}
 
 	bm_release_rendertarget(th->handle);
+
+	th->handle = -1;
 
 	return ADE_RETURN_NIL;
 }

@@ -78,7 +78,7 @@ extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash 
 extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
 extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
-extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+extern int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash = false);
 
 extern void consolidate_double_characters(char *str, char ch);
 
@@ -329,11 +329,11 @@ void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
     destination.set(flag, temp);
 }
 
-extern int check_for_string(const char *pstr);
-extern int check_for_string_raw(const char *pstr);
-extern int check_for_eof();
-extern int check_for_eof_raw();
-extern int check_for_eoln();
+extern bool check_for_string(const char *pstr);
+extern bool check_for_string_raw(const char *pstr);
+extern bool check_for_eof();
+extern bool check_for_eof_raw();
+extern bool check_for_eoln();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, size_t size);

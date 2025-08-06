@@ -712,7 +712,7 @@
 #define IDC_REINFORCEMENT               1323
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
-#define IDC_ALT_NAME                    1325
+#define IDC_DISPLAY_NAME                1325
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -1263,6 +1263,8 @@
 #define IDC_REQUIRED_WEAPONS            1704
 #define IDC_SELECT_DEBRIS               1705
 #define IDC_SELECT_ASTEROID             1706
+#define IDC_SMOOTHING                   1707
+#define IDC_SPIN_SMOOTHING              1708
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1462,6 +1464,7 @@
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
+#define ID_ALWAYS_SAVE_DISPLAY_NAMES    33001
 #define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004

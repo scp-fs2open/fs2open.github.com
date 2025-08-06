@@ -32,7 +32,6 @@ layout (std140) uniform modelData {
 	mat4 textureMatrix;
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[4];
-	mat4 envMatrix;
 
 	vec4 color;
 
@@ -50,6 +49,7 @@ layout (std140) uniform modelData {
 	int n_lights;
 	float defaultGloss;
 
+	//EXCLUSIVELY used for non-deferred rendering
 	vec3 ambientFactor;
 	int desaturate;
 
@@ -85,22 +85,16 @@ layout (std140) uniform modelData {
 	float fardist;
 
 	int sGlowmapIndex;
-
 	int sSpecmapIndex;
 	int sNormalmapIndex;
 	int sAmbientmapIndex;
+
 	int sMiscmapIndex;
-
 	float alphaMult;
-
 	int flags;
 };
 
 in VertexOutput {
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-	vec3 envReflect;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-
 	mat3 tangentMatrix;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
@@ -126,10 +120,6 @@ uniform sampler2DArray sGlowmap;
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_SPEC
 uniform sampler2DArray sSpecmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_SPEC
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-uniform samplerCube sEnvmap;
-uniform samplerCube sIrrmap;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_NORMAL
 uniform sampler2DArray sNormalmap;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_NORMAL
@@ -187,7 +177,7 @@ void GetLightInfo(int i, out vec3 lightDir, out float attenuation)
 vec3 CalculateLighting(vec3 normal, vec3 diffuseMaterial, vec3 specularMaterial, float gloss, float fresnel, float shadow, float aoFactor)
 {
 	vec3 eyeDir = vec3(normalize(-vertIn.position).xyz);
-	vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactor; // ambientFactor^2 due to legacy OpenGL compatibility behavior
+	vec3 lightAmbient = ambientFactor * aoFactor;
 	vec3 lightDiffuse = vec3(0.0, 0.0, 0.0);
 	vec3 lightSpecular = vec3(0.0, 0.0, 0.0);
 	#pragma optionNV unroll all
@@ -342,19 +332,7 @@ void main()
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_MISC
 
 	// Lights aren't applied when we are rendering to the G-buffers since that gets handled later
-	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
-			// Ambient lighting still needs to be done since that counts as an "emissive" color
-			vec3 lightAmbient = (emissionFactor + ambientFactor * ambientFactor) * aoFactors.x; // ambientFactor^2 due to legacy OpenGL compatibility behavior
-			emissiveColor.rgb += baseColor.rgb * lightAmbient;
-		#prereplace ELSE_FLAG //MODEL_SDR_FLAG_LIGHT
-			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
-				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
-			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
-			// If there is no lighting then we copy the color data so far into the
-			emissiveColor.rgb += baseColor.rgb;
-		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
-	#prereplace ELSE_FLAG //MODEL_SDR_FLAG_DEFERRED
+	#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_DEFERRED
 		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
 			float shadow = 1.0;
 			#prereplace IF_FLAG MODEL_SDR_FLAG_SHADOWS
@@ -367,54 +345,6 @@ void main()
 			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
 		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
-
-	#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
-		#prereplace IF_FLAG MODEL_SDR_FLAG_LIGHT
-			// Bit of a hack here, pretend we're doing blinn-phong shading and use a (modified version of) the derivation from
-			// Plausible Blinn-Phong Reflection of Standard Cube MIP-Maps - McGuire et al.
-			// to determine the mip bias.
-			// We use the specular term listed at http://graphicrants.blogspot.com/2013/08/specular-brdf-reference.html
-			// 1/(pi*alpha^2) * NdotM^((2/alpha^2)-2)
-			// so let s = (2/alpha^2 - 2)
-			// 1/2 log(s + 1) = 1/2 log(2/alpha^2 -1)
-
-			const float ENV_REZ = 512; // Ideally this would be #define'd and shader recompiled with envmap rez changes
-			const float REZ_BIAS = log2(ENV_REZ * sqrt(3));
-
-			float roughness = clamp(1.0f - glossData, 0.0f, 1.0f);
-			float alpha = roughness * roughness;
-			float alphaSqr = alpha * alpha;
-			float rough_bias = 0.5 * log2(2/alphaSqr - 1);
-			float mip_bias = REZ_BIAS - rough_bias;
-
-			// Sample light, using mip bias to blur it.
-			vec3 light_dir = reflect(-eyeDir, normal);
-			vec3 env_light_dir = vec3(envMatrix * vec4(light_dir, 0.0));
-			vec4 specEnvColour = srgb_to_linear(textureLod(sEnvmap, env_light_dir, mip_bias));
-
-			vec3 halfVec = normal;
-
-			// Lots of hacks here to get things to look right. We aren't loading a BRDF split-sum integral texture 
-			// or properly calculating IBL levels.
-			// Fresnel calculation as with standard lights.
-
-			vec3 fresnel = mix(specColor.rgb, FresnelSchlick(halfVec, eyeDir, specColor.rgb), specColor.a);
-
-			// Pseudo-IBL, so use k_IBL 
-			float k = alpha * alpha/ 2.0f;
-
-			float NdotL = max(dot(light_dir, normal),0);
-
-			float g1vNL = GeometrySchlickGGX(NdotL, k);
-			vec3 specEnvLighting = specEnvColour.rgb * fresnel * g1vNL;
-
-			vec3 kD = vec3(1.0)-fresnel;
-			kD *= (vec3(1.0) - specColor.rgb);
-			vec3 diffEnvColor = srgb_to_linear(texture(sIrrmap, vec3(envMatrix * vec4(normal, 0.0))).rgb);
-			vec3 diffEnvLighting = kD * baseColor.rgb * diffEnvColor * aoFactors.x;
-			emissiveColor.rgb += (specEnvLighting + diffEnvLighting) * baseColor.a;
-		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
-	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_GLOW
 		vec3 glowColor = texture(sGlowmap, vec3(texCoord, float(sGlowmapIndex))).rgb;
@@ -483,10 +413,22 @@ void main()
 		baseColor.rgb += emissiveColor.rgb;
 	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
 
+	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
+		#prereplace IF_NOT_FLAG MODEL_SDR_FLAG_LIGHT
+			#prereplace IF_FLAG MODEL_SDR_FLAG_SPEC
+				baseColor.rgb += pow(1.0 - clamp(dot(eyeDir, normal), 0.0, 1.0), 5.0 * clamp(glossData, 0.01, 1.0)) * specColor.rgb;
+				glossData = 0;
+			#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_SPEC
+			// If there is no lighting then we copy the color data so far into the emissive.
+			emissiveColor.rgb += baseColor.rgb;
+			aoFactors.x = 0;
+		#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_LIGHT
+	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_DEFERRED
+
 	fragOut0 = baseColor;
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_DEFERRED
-		fragOut1 = vec4(vertIn.position.xyz, 1.0);
+		fragOut1 = vec4(vertIn.position.xyz, aoFactors.x);
 		fragOut2 = vec4(normal, glossData);
 		fragOut3 = vec4(specColor.rgb, fresnelFactor);
 		fragOut4 = emissiveColor;

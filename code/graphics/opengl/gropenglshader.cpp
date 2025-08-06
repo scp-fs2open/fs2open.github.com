@@ -190,6 +190,8 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
+
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},

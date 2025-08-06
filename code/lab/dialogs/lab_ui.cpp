@@ -138,21 +138,15 @@ void LabUi::build_debris_list()
 				continue;
 			}
 
-			int subtype_idx = 0;
-			for (const auto& subtype : info.subtypes) {
-				SCP_string node_label;
-				sprintf(node_label, "##DebrisClassIndex%i_%i", debris_idx, subtype_idx);
-				TreeNodeEx(node_label.c_str(),
-					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
-					"%s (%s)",
-					info.name,
-					subtype.type_name.c_str());
+			SCP_string node_label;
+			sprintf(node_label, "##DebrisClassIndex%i", debris_idx);
+			TreeNodeEx(node_label.c_str(),
+				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+				"%s",
+				info.name);
 
-				if (IsItemClicked() && !IsItemToggledOpen()) {
-					getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, subtype_idx);
-				}
-
-				subtype_idx++;
+			if (IsItemClicked() && !IsItemToggledOpen()) {
+				getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, 0); // Debris subtype is always 0
 			}
 
 			debris_idx++;
@@ -1035,37 +1029,10 @@ void LabUi::build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, 
 	}
 }
 
-void LabUi::reset_animations(ship* shipp, ship_info* sip) const
+void LabUi::reset_animations()
 {
-	polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
-
-	for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
-		if (triggered_primary_banks[i]) {
-			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, i)
-				.start(animation::ModelAnimationDirection::RWD);
-			triggered_primary_banks[i] = false;
-		}
-	}
-
-	for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
-		if (triggered_secondary_banks[i]) {
-			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, i)
-				.start(animation::ModelAnimationDirection::RWD);
-			triggered_secondary_banks[i] = false;
-		}
-	}
-
-	for (auto& entry : manual_animations) {
-		if (entry.second) {
-			sip->animations.getAll(shipp_pmi, entry.first).start(animation::ModelAnimationDirection::RWD);
-			entry.second = false;
-		}
-	}
-
-	for (const auto& entry : manual_animation_triggers) {
-		auto animation_type = entry.first;
-		sip->animations.getAll(shipp_pmi, animation_type).start(animation::ModelAnimationDirection::RWD);
-	}
+	// With full animation support for docking stages and fighter bays it's honestly just easier to reload the current object
+	getLabManager()->changeDisplayedObject(getLabManager()->CurrentMode, getLabManager()->CurrentClass, getLabManager()->CurrentSubtype);
 }
 
 void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
@@ -1076,10 +1043,35 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 		})) {
 		with_TreeNode(label.c_str())
 		{
+			int count = 1;
 			for (const auto& anim_trigger : anim_triggers) {
 				if (anim_trigger.type == trigger_type) {
 
-					if (Button(anim_trigger.name.c_str())) {
+					SCP_string button_label = anim_trigger.name;
+					switch (trigger_type) {
+					case animation::ModelAnimationTriggerType::DockBayDoor:
+						button_label += "Trigger Bay Door Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage1:
+						button_label += "Trigger Docking Stage 1 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage2:
+						button_label += "Trigger Docking Stage 2 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage3:
+						button_label += "Trigger Docking Stage 3 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docked:
+						button_label += "Trigger Docked Animation " + std::to_string(count++);
+						break;
+					default:
+						// We really shouldn't be here, but just in case
+						Assertion(false, "Unexpected animation trigger type %d", static_cast<int>(trigger_type));
+						button_label += "Trigger Animation " + std::to_string(count++);
+						break;
+					}
+
+					if (Button(button_label.c_str())) {
 						auto& scripted_triggers = manual_animation_triggers[trigger_type];
 						auto direction = scripted_triggers[anim_trigger.name];
 						do_triggered_anim(trigger_type,
@@ -1101,7 +1093,7 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 		const auto& anim_triggers = sip->animations.getRegisteredTriggers();
 
 		if (Button("Reset animations")) {
-			reset_animations(shipp, sip);
+			reset_animations();
 		}
 
 		if (shipp->weapons.num_primary_banks > 0) {
@@ -1141,6 +1133,9 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage3,
 			"Docking stage 3##anims");
+		maybe_show_animation_category(anim_triggers,
+			animation::ModelAnimationTriggerType::Docked,
+			"Docked animations##anims");
 	}
 }
 

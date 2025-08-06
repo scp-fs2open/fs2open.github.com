@@ -151,16 +151,6 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->gammaSpec = 0;
 		data_out->alphaGloss = 0;
 	}
-
-	if (ENVMAP > 0) {
-		if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
-			data_out->envGloss = 1;
-		} else {
-			data_out->envGloss = 0;
-		}
-
-		data_out->envMatrix = gr_env_texture_matrix;
-	}
 	
 	if (material.get_texture_map(TM_NORMAL_TYPE) > 0) {
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));

@@ -60,7 +60,7 @@ class LabUi {
 		ship_info* sip) const;
 	void build_model_info_box_actual(ship_info* sip, polymodel* pm) const;
 	void build_team_color_combobox() const;
-	void reset_animations(ship* shipp, ship_info* sip) const;
+	static void reset_animations();
 	void do_triggered_anim(animation::ModelAnimationTriggerType type,
 		const SCP_string& name,
 		bool direction,

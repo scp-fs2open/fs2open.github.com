@@ -100,8 +100,6 @@ void main()
 		vec3 sampleposition = position / nebSize + 0.5;
 		vec4 volume_sample = textureGrad(volume_tex, sampleposition, gradX, gradY);
 
-		float stepsize_current = min(max(stepsize, volume_sample.x * udfScale), mintMax - stept);
-
 #ifdef DO_EDGE_SMOOTHING
 		//Average 3D texel with texels on corner, in an attempt to reduce jagged edges.
 		float stepcolor_alpha = volume_sample.a;
@@ -120,6 +118,8 @@ void main()
 #else
 		float stepcolor_alpha = volume_sample.a;
 #endif
+
+		float stepsize_current = min(max(stepsize, step(stepcolor_alpha, 0.01) * volume_sample.x * udfScale), mintMax - stept);
 
 		float stepalpha = -(pow(alphalim, 1.0 / (opacitydistance / stepsize_current)) - 1.0f) * stepcolor_alpha;
 		//All the following computations are just required if we have a stepcoloralpha that is non-zero.
@@ -151,7 +151,7 @@ void main()
 			//Emissive
 			cumnebdist += stepcolor_alpha * stepsize_current;
 			vec3 emissive_lod = textureLod(emissive, fragTexCoord.xy, clamp(cumnebdist * emissiveSpreadFactor, 0, float(textureQueryLevels(emissive) - 1))).rgb;
-			vec3 stepcolor_emissive = emissive_lod.rgb * pow(alphalim, 1.0 / (opacitydistance / ((depth - stept) * emissiveFalloff + 0.01))) * emissiveIntensity;
+			vec3 stepcolor_emissive = clamp(emissive_lod.rgb * pow(alphalim, 1.0 / (opacitydistance / ((depth - stept) * emissiveFalloff + 0.01))) * emissiveIntensity, 0, 1);
 
 			//Step finish
 			vec3 stepcolor = clamp(stepcolor_diffuse + stepcolor_emissive, 0, 1);
@@ -165,7 +165,5 @@ void main()
 			break;
 	}
 
-	cumcolor += cumOMAlpha * color_in.rgb;
-
-	fragOut0 = vec4(cumcolor, 1);
+	fragOut0 = vec4(cumOMAlpha * color_in.rgb + ((1.0 - cumOMAlpha) * cumcolor), 1);
 }

@@ -11,6 +11,8 @@
 
 #ifdef WIN32
 #include <windows.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
 #endif
 
 namespace threading {
@@ -68,7 +70,7 @@ namespace threading {
 		SCP_vector<SYSTEM_LOGICAL_PROCESSOR_INFORMATION> infoBuffer(length / sizeof(SYSTEM_LOGICAL_PROCESSOR_INFORMATION));
 		DWORD error = glpi(infoBuffer.data(), &length);
 
-		if (error != 0)
+		if (error == 0)
 			return get_number_of_physical_cores_fallback();
 
 		size_t num_cores = 0;
@@ -83,6 +85,27 @@ namespace threading {
 		}
 		else {
 			return num_cores;
+		}
+	}
+#elif defined __APPLE__
+	static size_t get_number_of_physical_cores() {
+		int rval = 0;
+		int num = 0;
+		size_t numSize = sizeof(num);
+
+		// apple silicon (performance cores only)
+		rval = sysctlbyname("hw.perflevel0.physicalcpu", &num, &numSize, nullptr, 0);
+
+		// intel
+		if (rval != 0) {
+			rval = sysctlbyname("hw.physicalcpu", &num, &numSize, nullptr, 0);
+		}
+
+		if (rval == 0 && num > 0) {
+			return num;
+		} else {
+			// invalid results, try fallback
+			return get_number_of_physical_cores_fallback();
 		}
 	}
 #elif defined SCP_UNIX
@@ -136,7 +159,10 @@ namespace threading {
 
 	void init_task_pool() {
 		if (Cmdline_multithreading == 0) {
-			num_threads = get_number_of_physical_cores() - 1;
+			//At least given the current collision-detection threading, 8 cores (if available) seems like a sweetspot, with more cores adding too much overhead.
+			//This could be improved in the future.
+			//This could also be made task-dependant, if stuff like parallelized loading benefits from more cores.
+			num_threads = std::min(get_number_of_physical_cores() - 1, static_cast<size_t>(7));
 		}
 		else {
 			num_threads = Cmdline_multithreading - 1;

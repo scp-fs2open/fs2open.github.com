@@ -1191,26 +1191,26 @@ int multi_oo_pack_client_data(ubyte *data, ship* shipp)
 	// look for locked slots
 	for (auto & lock : shipp->missile_locks) {
 		if (lock.locked) {
+			// Check to see if this lock will force us over the max.
+			if ((packet_size + sizeof(count) + (OO_LOCK_SIZE * (count+1))) >= OO_MAX_CLIENT_DATA_SIZE) {
+				break;
+			}
+
 			lock_list.push_back(lock.obj->net_signature);
 			// if the subsystem is a nullptr within the lock, send nullptr to the server.
 			if (lock.subsys == nullptr) {
 				subsystems.push_back(OOC_INDEX_NULLPTR_SUBSYSEM);
 			} // otherwise, just send the subsystem index.
 			else {
-				subsystems.push_back( (ubyte)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
+				subsystems.push_back( (ushort)std::distance( GET_FIRST(&Ships[lock.obj->instance].subsys_list), lock.subsys) );
 			}
 				
 			count++;
-
-			// Check to see if the *next* lock will force us over the max.
-			if (((count + 1) * OO_LOCK_SIZE + 1) >= OO_MAX_CLIENT_DATA_SIZE) {
-				break;
-			}
 		}
 	}
 
 	// add the data we just found, in the correct order. (so the simulation will be as exact as possible)
-	ADD_DATA(count);
+	ADD_USHORT(count);
 
 	for (int i = 0; i < (int)lock_list.size(); i++) {
 		ADD_USHORT(lock_list[i]);
@@ -1588,27 +1588,37 @@ int multi_oo_pack_data(net_player *pl, object *objp, ushort oo_flags, ubyte *dat
 }
 
 // unpack information for a client, return bytes processed
-int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
+int multi_oo_unpack_client_data(net_player* pl, ubyte* data, bool keep_data)
 {
-	ushort in_flags;
-	ship* shipp = nullptr;
-	object* objp = nullptr;
-	int offset = 0;
-
 	if (pl == nullptr)
 		Error(LOCATION, "Invalid net_player pointer passed to multi_oo_unpack_client\n");
 
+	int offset = 0;
+
+	// read flag info
+	ushort in_flags;
 	memcpy(&in_flags, data, sizeof(ubyte));
 	offset++;
 
-	// get the player ship and object
-	if ((pl->m_player->objnum >= 0) && (Objects[pl->m_player->objnum].type == OBJ_SHIP) && (Objects[pl->m_player->objnum].instance >= 0)) {
+	ship* shipp = nullptr;
+	object* objp = nullptr;
+	ai_info* aip = nullptr;
+
+	// get the player object and ship
+	if (pl->m_player->objnum >= 0) {
 		objp = &Objects[pl->m_player->objnum];
+	}
+
+	if ((objp != nullptr) && (objp->type == OBJ_SHIP) && (objp->instance >= 0)) {
 		shipp = &Ships[objp->instance];
+
+		if (shipp->ai_index != -1) {
+			aip = &Ai_info[shipp->ai_index];
+		}
 	}
 
 	// if we have a valid netplayer pointer
-	if ((pl != nullptr) && !(pl->flags & NETINFO_FLAG_RESPAWNING) && !(pl->flags & NETINFO_FLAG_LIMBO)) {
+	if (keep_data && !(pl->flags & NETINFO_FLAG_RESPAWNING) && !(pl->flags & NETINFO_FLAG_LIMBO)) {
 		// primary fired
 		pl->m_player->ci.fire_primary_count = 0;
 
@@ -1645,8 +1655,8 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 		}
 
 		// other locking information
-		if ((shipp != nullptr) && (shipp->ai_index != -1)) {
-			Ai_info[shipp->ai_index].ai_flags.set(AI::AI_Flags::Seek_lock, (in_flags & OOC_TARGET_SEEK_LOCK) != 0);
+		if (aip != nullptr) {
+			aip->ai_flags.set(AI::AI_Flags::Seek_lock, (in_flags & OOC_TARGET_SEEK_LOCK) != 0);
 		}
 
 		// afterburner status
@@ -1658,38 +1668,43 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 	// client targeting information	
 	ushort tnet_sig;
 	ushort t_subsys, l_subsys;
-	object* tobj;
 
 	// get the data
 	GET_USHORT(tnet_sig);
 	GET_USHORT(t_subsys);
 	GET_USHORT(l_subsys);
 
-	// try and find the targeted object
-	tobj = nullptr;
-	if (tnet_sig != 0) {
-		tobj = multi_get_network_object(tnet_sig);
-	}
-	// maybe fill in targeted object values
-	if ((tobj != nullptr) && (pl != nullptr) && (pl->m_player->objnum != -1)) {
-		// assign the target object
-		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
-			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].target_objnum = OBJ_INDEX(tobj);
-		}
-		pl->s_info.target_objnum = OBJ_INDEX(tobj);
+	if (keep_data){
+		// try and find the targeted object
+		object* tobj = nullptr;
 
-		// assign subsystems if possible					
-		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
-			Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = nullptr;
-			if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-				Ai_info[Ships[Objects[pl->m_player->objnum].instance].ai_index].targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
+		if (tnet_sig != 0) {
+			tobj = multi_get_network_object(tnet_sig);
+		}
+
+		// maybe fill in targeted object values
+		if ((tobj != nullptr) && (objp != nullptr)) {
+			// assign the target object
+			if (aip != nullptr) {
+				aip->target_objnum = OBJ_INDEX(tobj);
 			}
-		}
+			pl->s_info.target_objnum = OBJ_INDEX(tobj);
 
-		pl->m_player->locking_subsys = nullptr;
-		if (Objects[pl->m_player->objnum].type == OBJ_SHIP) {
-			if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
-				pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+			// assign subsystems if possible
+			if (aip != nullptr) {
+				aip->targeted_subsys = nullptr;
+
+				if ((t_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
+					aip->targeted_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], t_subsys);
+				}
+			}
+
+			pl->m_player->locking_subsys = nullptr;
+
+			if (shipp != nullptr) {
+				if ((l_subsys != OOC_INDEX_NULLPTR_SUBSYSEM) && (tobj->type == OBJ_SHIP)) {
+					pl->m_player->locking_subsys = ship_get_indexed_subsys(&Ships[tobj->instance], l_subsys);
+				}
 			}
 		}
 	}
@@ -1700,6 +1715,11 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 	// Get how many locks were in the packet.
 	GET_USHORT(count);
 
+	// we can finally bail if not keeping the data here, now that we know how long this section is supposed to be.
+	if (!keep_data) {
+		offset += (count * OO_LOCK_SIZE);
+		return offset;
+	}
 
 	lock_info temp_lock_info;
 	ship_clear_lock(&temp_lock_info);
@@ -1717,6 +1737,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 	for (int i = 0; i < count; i++) {
 		GET_USHORT(multilock_target_net_signature);
 		GET_USHORT(subsystem_index);
+
 		temp_lock_info.obj = multi_get_network_object(multilock_target_net_signature);
 
 		if (temp_lock_info.obj != nullptr && shipp != nullptr) {
@@ -1726,9 +1747,11 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 			} // otherwise look it up to store the lock onto the subsystem
 			else {
 				ship_subsys* ml_target_subsysp = GET_FIRST(&Ships[temp_lock_info.obj->instance].subsys_list);
+
 				for (int j = 0; j < subsystem_index; j++) {
 					ml_target_subsysp = GET_NEXT(ml_target_subsysp);
 				}
+
 				temp_lock_info.subsys = ml_target_subsysp;
 			}
 			// store the lock.
@@ -1738,6 +1761,7 @@ int multi_oo_unpack_client_data(net_player* pl, ubyte* data)
 			shipp->missile_locks.push_back(temp_lock_info);
 		}
 	}
+
 	return offset;
 }
 
@@ -1816,7 +1840,7 @@ int multi_oo_unpack_data(net_player* pl, ubyte* data, int seq_num, int time_delt
 
 	// if this is from a player, read his button info
 	if(MULTIPLAYER_MASTER){
-		int r0 = multi_oo_unpack_client_data(pl, data + offset);		
+		int r0 = multi_oo_unpack_client_data(pl, data + offset, seq_num > Interp_info[objnum].get_client_info_comparison_frame());
 		offset += r0;
 	}
 

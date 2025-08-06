@@ -27,6 +27,8 @@ extern vec3d Object_position;
 
 extern color Wireframe_color;
 
+extern int Lab_object_detail_level;
+
 typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,
@@ -254,7 +256,6 @@ class model_draw_list
 	SCP_vector<int> Render_keys;
 
 	SCP_vector<arc_effect> Arcs;
-	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
 	graphics::util::UniformBuffer _dataBuffer;
@@ -287,9 +288,6 @@ public:
 	void add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth);
 	void render_arcs();
 
-	void add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num);
-	void render_insignias();
-
 	void add_outline(const vertex* vert_array, int n_verts, const color *clr);
 	void render_outlines();
 
@@ -312,11 +310,10 @@ void submodel_render_queue(const model_render_params* render_info, model_draw_li
 void model_render_buffers(model_draw_list* scene, model_material* rendering_material, const model_render_params* interp, const vertex_buffer* buffer, const polymodel* pm, int mn, int detail_level, uint tmap_flags);
 bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint64_t flags);
 void model_render_arc(const vec3d* v1, const vec3d* v2, const SCP_vector<vec3d> *persistent_arc_points, const color* primary, const color* secondary, float arc_width, ubyte depth_limit);
-void model_render_insignias(const insignia_draw_data* insignia);
 void model_render_set_wireframe_color(const color* clr);
 bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "");
 
-float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view_deg, int screen_height);
+float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view, int screen_width);
 
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 

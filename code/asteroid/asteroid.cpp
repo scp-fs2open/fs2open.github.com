@@ -1750,7 +1750,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 			weapon_info *wip;
 			wip = &Weapon_info[Weapons[other_obj->instance].weapon_info_index];
 			// If the weapon didn't play any impact animation, play custom asteroid impact animation
-			if (!wip->impact_weapon_expl_effect.isValid()) {
+			if (!wip->impact_weapon_expl_effect.isValid() && Asteroid_impact_explosion_ani.isValid()) {
 				auto source = particle::ParticleManager::get()->createSource(Asteroid_impact_explosion_ani);
 				source->setHost(std::make_unique<EffectHostVector>(*hitpos, vmd_identity_matrix, vmd_zero_vector));
 				source->finishCreation();
@@ -2542,23 +2542,20 @@ int get_asteroid_index(const char* asteroid_name)
 	return -1;
 }
 
-// For FRED. Gets a list of unique asteroid subtype names
-SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
+// Returns the list of unique asteroid subtype names.
+// List is cached after the first call since Asteroid_info cannot change during an engine instance.
+const SCP_vector<SCP_string>& get_list_valid_asteroid_subtypes()
 {
-	SCP_vector<SCP_string> list;
+	static SCP_vector<SCP_string> list;
 
-	for (const auto& this_asteroid : Asteroid_info) {
-		if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
-			for (const auto& subtype : this_asteroid.subtypes) {
-				bool exists = false;
-				for (const auto& entry : list) {
-					if (subtype.type_name == entry) {
-						exists = true;
+	if (list.empty()) {
+		for (const auto& this_asteroid : Asteroid_info) {
+			if (this_asteroid.type != ASTEROID_TYPE_DEBRIS) {
+				for (const auto& subtype : this_asteroid.subtypes) {
+					// Only add unique names
+					if (std::find(list.begin(), list.end(), subtype.type_name) == list.end()) {
+						list.push_back(subtype.type_name);
 					}
-				}
-
-				if (!exists) {
-					list.push_back(subtype.type_name);
 				}
 			}
 		}
@@ -2566,6 +2563,7 @@ SCP_vector<SCP_string> get_list_valid_asteroid_subtypes()
 
 	return list;
 }
+
 
 static void verify_asteroid_splits() 
 {
@@ -2679,7 +2677,10 @@ void asteroid_init()
 	verify_asteroid_splits();
 
 	if (!Asteroid_impact_explosion_ani.isValid()) {
-		Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
+		// this will always be missing on a standalone
+		if ( !Is_standalone ) {
+			Error(LOCATION, "Missing valid asteroid impact explosion definition in asteroid.tbl!");
+		}
 	}
 
 	if (Asteroid_icon_closeup_model[0] == '\0')

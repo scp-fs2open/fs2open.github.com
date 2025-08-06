@@ -2,20 +2,17 @@
 in vec4 vertPosition;
 in mat4 vertModelMatrix;
 
-out flat mat4 invModelMatrix;
-out flat vec3 decalDirection;
-out flat float normal_angle_cutoff;
-out flat float angle_fade_start;
-out flat float alpha_scale;
+flat out mat4 invModelMatrix;
+flat out vec3 decalDirection;
+flat out float normal_angle_cutoff;
+flat out float angle_fade_start;
+flat out float alpha_scale;
 
 layout (std140) uniform decalGlobalData {
 	mat4 viewMatrix;
 	mat4 projMatrix;
 	mat4 invViewMatrix;
 	mat4 invProjMatrix;
-
-	vec3 ambientLight;
-	float pad0;
 
 	vec2 viewportSize;
 };
@@ -40,6 +37,6 @@ void main() {
     modelMatrix[2][3] = 0.0;
 
     invModelMatrix = inverse(modelMatrix);
-    decalDirection = mat3(viewMatrix) * vec3(modelMatrix[0][2], modelMatrix[1][2], modelMatrix[2][2]);
+    decalDirection = mat3(viewMatrix) * modelMatrix[2].xyz;
 	gl_Position = projMatrix * viewMatrix * modelMatrix * vertPosition;
 }
