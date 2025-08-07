@@ -6,9 +6,7 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 CheckBoxListDialog::CheckBoxListDialog(QWidget* parent) : QDialog(parent), ui(new Ui::CheckBoxListDialog)
 {
@@ -70,6 +68,4 @@ QVector<bool> CheckBoxListDialog::getCheckedStates() const
 	return states;
 }
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

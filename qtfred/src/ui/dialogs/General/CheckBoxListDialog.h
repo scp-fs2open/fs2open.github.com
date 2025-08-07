@@ -4,9 +4,7 @@
 #include <QDialog>
 #include <QCheckBox>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class CheckBoxListDialog;
@@ -26,6 +24,4 @@ class CheckBoxListDialog : public QDialog {
 	QVector<QCheckBox*> _checkboxes;
 };
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
