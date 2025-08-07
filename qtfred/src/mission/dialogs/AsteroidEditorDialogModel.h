@@ -4,6 +4,10 @@
 
 #include "asteroid/asteroid.h"
 
+#include <QString>
+#include <QVector>
+#include <utility>
+
 namespace fso {
 namespace fred {
 namespace dialogs {

@@ -6,6 +6,7 @@ namespace dialogs {
 
 AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
+	_bypass_errors(false),
 	_enable_asteroids(false),
 	_enable_inner_bounds(false),
 	_enable_enhanced_checking(false),
@@ -24,8 +25,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_inner_min_z(""),
 	_inner_max_x(""),
 	_inner_max_y(""),
-	_inner_max_z(""),
-	_bypass_errors(false)
+	_inner_max_z("")
 {
 	initializeData();
 }
@@ -433,8 +433,8 @@ QString & AsteroidEditorDialogModel::getBoxText(_box_line_edits type)
 void AsteroidEditorDialogModel::setAsteroidSelections(const QVector<bool>& selected)
 {
 	SCP_vector<SCP_string> selectedTypes;
-	for (int i = 0; i < asteroidOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < asteroidOptions.size(); ++i) {
+		if (selected.at(i)) {
 			selectedTypes.push_back(asteroidOptions[i]);
 		}
 	}
@@ -455,8 +455,8 @@ QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getAsteroidSelectio
 void AsteroidEditorDialogModel::setDebrisSelections(const QVector<bool>& selected)
 {
 	SCP_vector<int> selectedTypes;
-	for (int i = 0; i < debrisOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < debrisOptions.size(); ++i) {
+		if (selected.at(i)) {
 			selectedTypes.push_back(debrisOptions[i].second);
 		}
 	}
@@ -478,8 +478,8 @@ void AsteroidEditorDialogModel::setShipSelections(const QVector<bool>& selected)
 {
 	SCP_vector<SCP_string> selectedTypes;
 
-	for (int i = 0; i < shipOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < shipOptions.size(); ++i) {
+		if (selected.at(i)) {
 			selectedTypes.push_back(shipOptions[i]);
 		}
 	}
