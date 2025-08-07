@@ -17432,6 +17432,7 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 		// These goals need no special handling
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 	case AI_GOAL_GUARD_WING:
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
@@ -17465,7 +17466,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
-		return SCP_string();
+		return {};
 
 	SCP_string outbuf = order_text;
 
@@ -17489,6 +17490,7 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 		if (aigp->target_name) {
 			outbuf += XSTR("any ", -1);
 			outbuf += target_name;
@@ -17496,6 +17498,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf = XSTR("no orders", 495);
 		}
 		break;
+
 
 	case AI_GOAL_CHASE:
 	case AI_GOAL_DOCK:
@@ -17534,7 +17537,7 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	default:
-		return SCP_string();
+		return {};
 	}
 
 	return outbuf;

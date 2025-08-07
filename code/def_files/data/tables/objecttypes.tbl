@@ -110,9 +110,9 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing")	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "attack any" "attack ship class" "attack ship type" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing")	
 	+Accept Player Orders:	YES											
-	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "depart" "disable subsys" )		
+	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "attack ship type" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
 	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
 	+Guards attack this:	YES											
@@ -138,9 +138,9 @@ $Fog:
 	+Start dist:			10.0										
 	+Compl dist:			500.0										
 $AI:																	
-	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "attack any" "attack ship class" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing" )	
+	+Valid goals:			( "fly to ship" "attack ship" "waypoints" "waypoints once" "depart" "attack subsys" "attack wing" "guard ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "attack any" "attack ship class" "attack ship type" "ignore ship" "ignore ship (new)" "guard wing" "evade ship" "stay still" "play dead" "play dead (persistent)" "stay near ship" "keep safe dist" "form on wing" )	
 	+Accept Player Orders:	YES											
-	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "depart" "disable subsys" )		
+	+Player Orders:			( "attack ship" "disable ship" "disable ship (tactical)" "disarm ship" "disarm ship (tactical)" "guard ship" "ignore ship" "ignore ship (new)" "form on wing" "cover me" "attack any" "attack ship class" "attack ship type" "depart" "disable subsys" )		
 	+Auto attacks:			YES											
 	+Actively Pursues:		( "navbuoy" "sentry gun" "escape pod" "cargo" "support" "fighter" "bomber" "transport" "freighter" "awacs" "gas miner" "cruiser" "corvette" "capital" "super cap" "drydock" "knossos device" )																
 	+Guards attack this:	YES											
