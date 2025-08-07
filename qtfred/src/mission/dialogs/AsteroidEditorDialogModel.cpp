@@ -102,6 +102,12 @@ void AsteroidEditorDialogModel::initializeData()
 
 void AsteroidEditorDialogModel::update_internal_field()
 {
+	// if asteroids are not enabled, just clear the field and return
+	if (!_enable_asteroids) {
+		_a_field = {};
+		return;
+	}
+	
 	// Do some quick data conversion
 	int num_asteroids = _enable_asteroids ? _num_asteroids : 0;
 	CLAMP(num_asteroids, 0, MAX_ASTEROIDS);
