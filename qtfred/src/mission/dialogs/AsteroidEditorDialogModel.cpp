@@ -9,7 +9,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_enable_asteroids(false),
 	_enable_inner_bounds(false),
 	_enable_enhanced_checking(false),
-	_num_asteroids(0),
+	_num_asteroids(1),
 	_avg_speed(""),
 	_min_x(""),
 	_min_y(""),
@@ -56,10 +56,10 @@ void AsteroidEditorDialogModel::initializeData()
 	
 	_num_asteroids = _a_field.num_initial_asteroids;
 	if (!_enable_asteroids) {
-		_num_asteroids = 0; // fallback
+		_num_asteroids = 1; // fallback
 	}
 
-	CLAMP(_num_asteroids, 0, MAX_ASTEROIDS);
+	CLAMP(_num_asteroids, 1, MAX_ASTEROIDS);
 
 	_avg_speed = QString::number(static_cast<int>(vm_vec_mag(&_a_field.vel)));
 
@@ -104,7 +104,7 @@ void AsteroidEditorDialogModel::initializeData()
 
 void AsteroidEditorDialogModel::setFieldEnabled(bool enabled)
 {
-	_enable_asteroids = enabled;
+	modify(_enable_asteroids, enabled);
 }
 
 bool AsteroidEditorDialogModel::getFieldEnabled()
@@ -114,7 +114,7 @@ bool AsteroidEditorDialogModel::getFieldEnabled()
 
 void AsteroidEditorDialogModel::setInnerBoxEnabled(bool enabled)
 {
-	_enable_inner_bounds = enabled;
+	modify(_enable_inner_bounds, enabled);
 }
 
 bool AsteroidEditorDialogModel::getInnerBoxEnabled()
@@ -124,7 +124,7 @@ bool AsteroidEditorDialogModel::getInnerBoxEnabled()
 
 void AsteroidEditorDialogModel::setEnhancedEnabled(bool enabled)
 {
-	_enable_enhanced_checking = enabled;
+	modify(_enable_enhanced_checking, enabled);
 }
 
 bool AsteroidEditorDialogModel::getEnhancedEnabled()
