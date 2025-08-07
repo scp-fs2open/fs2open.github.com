@@ -159,7 +159,7 @@ namespace particle
 
 		part->pos = info->pos;
 		part->velocity = info->vel;
-		part->age = 0.0f;
+		part->age = info->starting_age;
 		part->max_life = info->lifetime;
 		part->radius = info->rad;
 		part->bitmap = info->bitmap;
