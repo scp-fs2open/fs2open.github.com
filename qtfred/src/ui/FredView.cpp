@@ -743,9 +743,18 @@ void FredView::on_actionWaypoint_Paths_triggered(bool) {
 }
 void FredView::on_actionShips_triggered(bool)
 {
-	auto editorDialog = new dialogs::ShipEditorDialog(this, _viewport);
-	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
-	editorDialog->show();
+	if (!_shipEditorDialog) {
+		_shipEditorDialog = new dialogs::ShipEditorDialog(this, _viewport);
+		_shipEditorDialog->setAttribute(Qt::WA_DeleteOnClose);
+		// When the user closes it, reset our pointer so we can open a new one later
+		connect(_shipEditorDialog, &QObject::destroyed, this, [this]() {
+			_shipEditorDialog = nullptr;
+		});
+		_shipEditorDialog->show();
+	} else {
+		_shipEditorDialog->raise();
+		_shipEditorDialog->activateWindow();
+	}
 
 }
 void FredView::on_actionCampaign_triggered(bool) {
