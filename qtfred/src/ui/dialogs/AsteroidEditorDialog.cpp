@@ -49,6 +49,7 @@ AsteroidEditorDialog::~AsteroidEditorDialog() = default;
 
 void AsteroidEditorDialog::accept()
 {
+	// If apply() returns true, close the dialog
 	if (_model->apply()) {
 		QDialog::accept();
 	}
@@ -57,185 +58,24 @@ void AsteroidEditorDialog::accept()
 
 void AsteroidEditorDialog::reject()
 {
-	// Ask the user & run your handler logic
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
 	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
 		QDialog::reject(); // actually close
 	}
 	// else: do nothing, don't close
 }
 
-// funnel all Window X presses through reject
 void AsteroidEditorDialog::closeEvent(QCloseEvent* e)
 {
 	reject();
 	e->ignore(); // Don't let the base class close the window
 }
 
-void AsteroidEditorDialog::on_okAndCancelButtons_accepted()
-{
-	accept();
-}
-
-void AsteroidEditorDialog::on_okAndCancelButtons_rejected()
-{
-	reject();
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_minX_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_X);
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_minY_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Y);
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_minZ_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Z);
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_maxX_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_X);
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_maxY_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Y);
-}
-
-void AsteroidEditorDialog::on_lineEdit_ibox_maxZ_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Z);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_minX_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_X);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_minY_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Y);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_minZ_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Z);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_maxX_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_X);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_maxY_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Y);
-}
-
-void AsteroidEditorDialog::on_lineEdit_obox_maxZ_textEdited(const QString& text)
-{
-	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Z);
-}
-
-void AsteroidEditorDialog::on_lineEditAvgSpeed_textEdited(const QString& text)
-{
-	_model->setAvgSpeed(text);
-}
-
-void AsteroidEditorDialog::on_radioButtonActiveField_toggled(bool checked)
-{
-	if (checked) {
-		_model->setFieldType(FT_ACTIVE);
-		_model->setDebrisGenre(DG_ASTEROID); // only allow asteroids in active fields
-		updateUi();
-	}
-}
-
-void AsteroidEditorDialog::on_radioButtonPassiveField_toggled(bool checked)
-{
-	if (checked) {
-		_model->setFieldType(FT_PASSIVE);
-		updateUi();
-	}
-}
-
-void AsteroidEditorDialog::on_radioButtonAsteroid_toggled(bool checked)
-{
-	if (checked) {
-		_model->setDebrisGenre(DG_ASTEROID);
-		updateUi();
-	}
-}
-
-void AsteroidEditorDialog::on_radioButtonDebris_toggled(bool checked)
-{
-	if (checked) {
-		_model->setDebrisGenre(DG_DEBRIS);
-		updateUi();
-	}
-}
-
-void AsteroidEditorDialog::on_enabled_toggled(bool enabled)
-{
-	_model->setFieldEnabled(enabled);
-	updateUi();
-}
-
-void AsteroidEditorDialog::on_innerBoxEnabled_toggled(bool enabled)
-{
-	_model->setInnerBoxEnabled(enabled);
-	updateUi();
-}
-
-void AsteroidEditorDialog::on_enhancedFieldEnabled_toggled(bool enabled)
-{
-	_model->setEnhancedEnabled(enabled);
-}
-
-void AsteroidEditorDialog::on_spinBoxNumber_valueChanged(int num_asteroids)
-{
-	_model->setNumAsteroids(num_asteroids);
-}
-
-void AsteroidEditorDialog::on_asteroidSelectButton_clicked()
-{
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Asteroid Types");
-	dlg.setOptions(_model->getAsteroidSelections());
-
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setAsteroidSelections(dlg.getCheckedStates());
-	}
-}
-
-void AsteroidEditorDialog::on_debrisSelectButton_clicked()
-{
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Debris Types");
-	dlg.setOptions(_model->getDebrisSelections());
-
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setDebrisSelections(dlg.getCheckedStates());
-	}
-}
-
-void AsteroidEditorDialog::on_shipSelectButton_clicked()
-{
-	CheckBoxListDialog dlg(this);
-	dlg.setCaption("Select Ship Debris Types");
-	dlg.setOptions(_model->getShipSelections());
-	if (dlg.exec() == QDialog::Accepted) {
-		_model->setShipSelections(dlg.getCheckedStates());
-	}
-}
-
 void AsteroidEditorDialog::initializeUi()
 {
-	util::SignalBlockers blockers(this);
+	util::SignalBlockers blockers(this); // block signals while we set up the UI
 	
 	// Checkboxes
 	ui->enabled->setChecked(_model->getFieldEnabled());
@@ -278,7 +118,7 @@ void AsteroidEditorDialog::initializeUi()
 
 void AsteroidEditorDialog::updateUi()
 {
-	util::SignalBlockers blockers(this);
+	util::SignalBlockers blockers(this); // block signals while we update the UI
 	
 	bool overall_enabled = _model->getFieldEnabled();
 	bool asteroids_enabled = overall_enabled && _model->getDebrisGenre() == DG_ASTEROID;
@@ -297,10 +137,6 @@ void AsteroidEditorDialog::updateUi()
 	// Radio buttons for debris genre
 	ui->radioButtonAsteroid->setEnabled(overall_enabled);
 	ui->radioButtonDebris->setEnabled(overall_enabled && !field_is_active);
-
-	// Push buttons for object types
-	ui->asteroidSelectButton->setEnabled(overall_enabled && asteroids_enabled);
-	ui->debrisSelectButton->setEnabled(overall_enabled && debris_enabled && !field_is_active);
 
 	// Spin box
 	ui->spinBoxNumber->setEnabled(overall_enabled);
@@ -324,13 +160,178 @@ void AsteroidEditorDialog::updateUi()
 	ui->lineEdit_ibox_maxY->setEnabled(overall_enabled && inner_box_enabled);
 	ui->lineEdit_ibox_maxZ->setEnabled(overall_enabled && inner_box_enabled);
 
+	// Push buttons for object types
+	ui->asteroidSelectButton->setEnabled(overall_enabled && asteroids_enabled);
+	ui->debrisSelectButton->setEnabled(overall_enabled && debris_enabled && !field_is_active);
+
 	// Push buttons for ship targets
 	ui->shipSelectButton->setEnabled(overall_enabled && field_is_active);
 
 	// Update the radio buttons as these do depend on the field type
 	ui->radioButtonAsteroid->setChecked(_model->getDebrisGenre() == DG_ASTEROID);
 	ui->radioButtonDebris->setChecked(_model->getDebrisGenre() == DG_DEBRIS);
+}
 
+void AsteroidEditorDialog::on_okAndCancelButtons_accepted()
+{
+	accept();
+}
+
+void AsteroidEditorDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
+}
+
+void AsteroidEditorDialog::on_enabled_toggled(bool enabled)
+{
+	_model->setFieldEnabled(enabled);
+	updateUi();
+}
+
+void AsteroidEditorDialog::on_innerBoxEnabled_toggled(bool enabled)
+{
+	_model->setInnerBoxEnabled(enabled);
+	updateUi();
+}
+
+void AsteroidEditorDialog::on_enhancedFieldEnabled_toggled(bool enabled)
+{
+	_model->setEnhancedEnabled(enabled);
+}
+
+void AsteroidEditorDialog::on_radioButtonActiveField_toggled(bool checked)
+{
+	if (checked) {
+		_model->setFieldType(FT_ACTIVE);
+		_model->setDebrisGenre(DG_ASTEROID); // only allow asteroids in active fields
+		updateUi();
+	}
+}
+
+void AsteroidEditorDialog::on_radioButtonPassiveField_toggled(bool checked)
+{
+	if (checked) {
+		_model->setFieldType(FT_PASSIVE);
+		updateUi();
+	}
+}
+
+void AsteroidEditorDialog::on_radioButtonAsteroid_toggled(bool checked)
+{
+	if (checked) {
+		_model->setDebrisGenre(DG_ASTEROID);
+		updateUi();
+	}
+}
+
+void AsteroidEditorDialog::on_radioButtonDebris_toggled(bool checked)
+{
+	if (checked) {
+		_model->setDebrisGenre(DG_DEBRIS);
+		updateUi();
+	}
+}
+
+void AsteroidEditorDialog::on_spinBoxNumber_valueChanged(int num_asteroids)
+{
+	_model->setNumAsteroids(num_asteroids);
+}
+
+void AsteroidEditorDialog::on_lineEditAvgSpeed_textEdited(const QString& text)
+{
+	_model->setAvgSpeed(text);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_minX_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_X);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_minY_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Y);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_minZ_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Z);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_maxX_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_X);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_maxY_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Y);
+}
+
+void AsteroidEditorDialog::on_lineEdit_obox_maxZ_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Z);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_minX_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_X);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_minY_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Y);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_minZ_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Z);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_maxX_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_X);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_maxY_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Y);
+}
+
+void AsteroidEditorDialog::on_lineEdit_ibox_maxZ_textEdited(const QString& text)
+{
+	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Z);
+}
+
+void AsteroidEditorDialog::on_asteroidSelectButton_clicked()
+{
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Asteroid Types");
+	dlg.setOptions(_model->getAsteroidSelections());
+
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setAsteroidSelections(dlg.getCheckedStates());
+	}
+}
+
+void AsteroidEditorDialog::on_debrisSelectButton_clicked()
+{
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Debris Types");
+	dlg.setOptions(_model->getDebrisSelections());
+
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setDebrisSelections(dlg.getCheckedStates());
+	}
+}
+
+void AsteroidEditorDialog::on_shipSelectButton_clicked()
+{
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Ship Debris Types");
+	dlg.setOptions(_model->getShipSelections());
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setShipSelections(dlg.getCheckedStates());
+	}
 }
 
 } // namespace dialogs
