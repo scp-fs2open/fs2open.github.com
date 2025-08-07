@@ -18,68 +18,17 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	ui(new Ui::AsteroidEditorDialog()),
 	_model(new AsteroidEditorDialogModel(this, viewport))
 {
-	connect(this, &QDialog::accepted, _model.get(), &AsteroidEditorDialogModel::apply);
-	connect(ui->okAndCancelButtons, &QDialogButtonBox::rejected, this, &AsteroidEditorDialog::rejectHandler);
-
+	this->setFocus();
 	ui->setupUi(this);
 
 	// set our internal values, update the UI
 	initializeUi();
 	updateUi();
 
-	// Now connect all our signals
-
-	// checkboxes
-	connect(ui->enabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleEnabled);
-	connect(ui->innerBoxEnabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleInnerBoxEnabled);
-	connect(ui->enhancedFieldEnabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleEnhancedEnabled);
-
-	// (come in) spinners
-	ui->spinBoxNumber->setRange(1, MAX_ASTEROIDS);
-	ui->spinBoxNumber->setValue(_model->getNumAsteroids());
-	// only connect once we're done setting values or unwanted signal's will be sent
-	connect(ui->spinBoxNumber, QOverload<int>::of(&QSpinBox::valueChanged), this, \
-			&AsteroidEditorDialog::asteroidNumberChanged);
-
-
-	// radio buttons
-	connect(ui->radioButtonActiveField, &QRadioButton::toggled, this, &AsteroidEditorDialog::setFieldActive);
-	connect(ui->radioButtonPassiveField, &QRadioButton::toggled, this, &AsteroidEditorDialog::setFieldPassive);
-	connect(ui->radioButtonAsteroid, &QRadioButton::toggled, this, &AsteroidEditorDialog::setGenreAsteroid);
-	connect(ui->radioButtonDebris, &QRadioButton::toggled, this, &AsteroidEditorDialog::setGenreDebris);
-
-	// lineEdit signals/slots
-	connect(ui->lineEdit_obox_minX, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMinX);
-	connect(ui->lineEdit_obox_minY, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMinY);
-	connect(ui->lineEdit_obox_minZ, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMinZ);
-	connect(ui->lineEdit_obox_maxX, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMaxX);
-	connect(ui->lineEdit_obox_maxY, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMaxY);
-	connect(ui->lineEdit_obox_maxZ, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextOMaxZ);
-	connect(ui->lineEdit_ibox_minX, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMinX);
-	connect(ui->lineEdit_ibox_minY, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMinY);
-	connect(ui->lineEdit_ibox_minZ, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMinZ);
-	connect(ui->lineEdit_ibox_maxX, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMaxX);
-	connect(ui->lineEdit_ibox_maxY, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMaxY);
-	connect(ui->lineEdit_ibox_maxZ, &QLineEdit::textEdited, this, \
-			&AsteroidEditorDialog::changedBoxTextIMaxZ);
-
-	connect(ui->lineEditAvgSpeed, &QLineEdit::textEdited, this, \
-	        &AsteroidEditorDialog::changedBoxAvgSpeed);
-
 	// setup validators for text input
 	_box_validator.setNotation(QDoubleValidator::StandardNotation);
 	_box_validator.setDecimals(1);
+
 	ui->lineEdit_obox_minX->setValidator(&_box_validator);
 	ui->lineEdit_obox_minY->setValidator(&_box_validator);
 	ui->lineEdit_obox_minZ->setValidator(&_box_validator);
@@ -98,136 +47,156 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 AsteroidEditorDialog::~AsteroidEditorDialog() = default;
 
+void AsteroidEditorDialog::accept()
+{
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
+}
+
+void AsteroidEditorDialog::reject()
+{
+	// Ask the user & run your handler logic
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
+// funnel all Window X presses through reject
 void AsteroidEditorDialog::closeEvent(QCloseEvent* e)
 {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
+	reject();
+	e->ignore(); // Don't let the base class close the window
 }
 
-void AsteroidEditorDialog::rejectHandler()
+void AsteroidEditorDialog::on_okAndCancelButtons_accepted()
 {
-	this->close();
+	accept();
 }
 
-QString & AsteroidEditorDialog::getBoxText(AsteroidEditorDialogModel::_box_line_edits type)
+void AsteroidEditorDialog::on_okAndCancelButtons_rejected()
 {
-	return _model->getBoxText(type);
+	reject();
 }
 
-void AsteroidEditorDialog::changedBoxTextIMinX(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_minX_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_X);
 }
 
-void AsteroidEditorDialog::changedBoxTextIMinY(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_minY_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Y);
 }
 
-void AsteroidEditorDialog::changedBoxTextIMinZ(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_minZ_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MIN_Z);
 }
 
-void AsteroidEditorDialog::changedBoxTextIMaxX(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_maxX_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_X);
 }
 
-void AsteroidEditorDialog::changedBoxTextIMaxY(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_maxY_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Y);
 }
 
-void AsteroidEditorDialog::changedBoxTextIMaxZ(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_ibox_maxZ_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_I_MAX_Z);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMinX(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_minX_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_X);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMinY(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_minY_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Y);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMinZ(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_minZ_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MIN_Z);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMaxX(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_maxX_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_X);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMaxY(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_maxY_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Y);
 }
 
-void AsteroidEditorDialog::changedBoxTextOMaxZ(const QString &text)
+void AsteroidEditorDialog::on_lineEdit_obox_maxZ_textEdited(const QString& text)
 {
 	_model->setBoxText(text, AsteroidEditorDialogModel::_O_MAX_Z);
 }
 
-QString& AsteroidEditorDialog::getAvgSpeedText()
-{
-	return _model->getAvgSpeed();
-}
-
-void AsteroidEditorDialog::changedBoxAvgSpeed(const QString& text)
+void AsteroidEditorDialog::on_lineEditAvgSpeed_textEdited(const QString& text)
 {
 	_model->setAvgSpeed(text);
 }
 
-void AsteroidEditorDialog::setFieldActive()
+void AsteroidEditorDialog::on_radioButtonActiveField_toggled(bool checked)
 {
-	_model->setFieldType(FT_ACTIVE);
-	setGenreAsteroid();  // only allow asteroids in active fields
-	updateUi();
+	if (checked) {
+		_model->setFieldType(FT_ACTIVE);
+		_model->setDebrisGenre(DG_ASTEROID); // only allow asteroids in active fields
+		updateUi();
+	}
 }
 
-void AsteroidEditorDialog::setFieldPassive()
+void AsteroidEditorDialog::on_radioButtonPassiveField_toggled(bool checked)
 {
-	_model->setFieldType(FT_PASSIVE);
-	updateUi();
+	if (checked) {
+		_model->setFieldType(FT_PASSIVE);
+		updateUi();
+	}
 }
 
-void AsteroidEditorDialog::setGenreAsteroid()
+void AsteroidEditorDialog::on_radioButtonAsteroid_toggled(bool checked)
 {
-	_model->setDebrisGenre(DG_ASTEROID);
-	updateUi();
+	if (checked) {
+		_model->setDebrisGenre(DG_ASTEROID);
+		updateUi();
+	}
 }
 
-void AsteroidEditorDialog::setGenreDebris()
+void AsteroidEditorDialog::on_radioButtonDebris_toggled(bool checked)
 {
-	_model->setDebrisGenre(DG_DEBRIS);
-	updateUi();
+	if (checked) {
+		_model->setDebrisGenre(DG_DEBRIS);
+		updateUi();
+	}
 }
 
-void AsteroidEditorDialog::toggleEnabled(bool enabled)
+void AsteroidEditorDialog::on_enabled_toggled(bool enabled)
 {
 	_model->setFieldEnabled(enabled);
 	updateUi();
 }
 
-void AsteroidEditorDialog::toggleInnerBoxEnabled(bool enabled)
+void AsteroidEditorDialog::on_innerBoxEnabled_toggled(bool enabled)
 {
 	_model->setInnerBoxEnabled(enabled);
 	updateUi();
 }
 
-void AsteroidEditorDialog::toggleEnhancedEnabled(bool enabled)
+void AsteroidEditorDialog::on_enhancedFieldEnabled_toggled(bool enabled)
 {
 	_model->setEnhancedEnabled(enabled);
 }
 
-void AsteroidEditorDialog::asteroidNumberChanged(int num_asteroids)
+void AsteroidEditorDialog::on_spinBoxNumber_valueChanged(int num_asteroids)
 {
 	_model->setNumAsteroids(num_asteroids);
 }
@@ -266,6 +235,8 @@ void AsteroidEditorDialog::on_shipSelectButton_clicked()
 
 void AsteroidEditorDialog::initializeUi()
 {
+	util::SignalBlockers blockers(this);
+	
 	// Checkboxes
 	ui->enabled->setChecked(_model->getFieldEnabled());
 	ui->innerBoxEnabled->setChecked(_model->getInnerBoxEnabled());
@@ -286,20 +257,23 @@ void AsteroidEditorDialog::initializeUi()
 	ui->lineEditAvgSpeed->setText(_model->getAvgSpeed());
 
 	// Outer box
-	ui->lineEdit_obox_minX->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_X));
-	ui->lineEdit_obox_minY->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_Y));
-	ui->lineEdit_obox_minZ->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_Z));
-	ui->lineEdit_obox_maxX->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_X));
-	ui->lineEdit_obox_maxY->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_Y));
-	ui->lineEdit_obox_maxZ->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_Z));
+	ui->lineEdit_obox_minX->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_X));
+	ui->lineEdit_obox_minY->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_Y));
+	ui->lineEdit_obox_minZ->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MIN_Z));
+	ui->lineEdit_obox_maxX->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_X));
+	ui->lineEdit_obox_maxY->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_Y));
+	ui->lineEdit_obox_maxZ->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_O_MAX_Z));
 
 	// Inner box
-	ui->lineEdit_ibox_minX->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_X));
-	ui->lineEdit_ibox_minY->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_Y));
-	ui->lineEdit_ibox_minZ->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_Z));
-	ui->lineEdit_ibox_maxX->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_X));
-	ui->lineEdit_ibox_maxY->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_Y));
-	ui->lineEdit_ibox_maxZ->setText(getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_Z));
+	ui->lineEdit_ibox_minX->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_X));
+	ui->lineEdit_ibox_minY->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_Y));
+	ui->lineEdit_ibox_minZ->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MIN_Z));
+	ui->lineEdit_ibox_maxX->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_X));
+	ui->lineEdit_ibox_maxY->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_Y));
+	ui->lineEdit_ibox_maxZ->setText(_model->getBoxText(AsteroidEditorDialogModel::_box_line_edits::_I_MAX_Z));
+
+	// Housekeeping
+	ui->spinBoxNumber->setRange(1, MAX_ASTEROIDS);
 }
 
 void AsteroidEditorDialog::updateUi()
