@@ -7,9 +7,7 @@
 #include "ui_AsteroidEditorDialog.h"
 #include <mission/util.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* viewport) :
 	QDialog(parent),
@@ -334,6 +332,4 @@ void AsteroidEditorDialog::on_shipSelectButton_clicked()
 	}
 }
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
