@@ -430,24 +430,7 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>okAndCancelButtons</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::AsteroidEditorDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>337</x>
-     <y>317</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>337</x>
-     <y>169</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <buttongroups>
   <buttongroup name="radioAsteroidDebris"/>
   <buttongroup name="radioActivePassive"/>
