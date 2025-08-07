@@ -21,19 +21,20 @@ public:
   ~AsteroidEditorDialog() override;
 
   protected:
-  void closeEvent(QCloseEvent* e) override;
+    void closeEvent(QCloseEvent* e) override;
 	void rejectHandler();
 
 private slots:
 
 	void on_asteroidSelectButton_clicked();
+	void on_debrisSelectButton_clicked();
+	void on_shipSelectButton_clicked();
 
 private:
 
 	void toggleEnabled(bool enabled);
 	void toggleInnerBoxEnabled(bool enabled);
 	void toggleEnhancedEnabled(bool enabled);
-	void toggleAsteroid(AsteroidEditorDialogModel::_roid_types colour, bool enabled);
 
 	void asteroidNumberChanged(int num_asteroids);
 
@@ -41,6 +42,9 @@ private:
 	void setFieldPassive();
 	void setGenreAsteroid();
 	void setGenreDebris();
+
+	void changedBoxAvgSpeed(const QString& text);
+	QString& getAvgSpeedText();
 
 	void changedBoxTextIMinX(const QString &text);
 	void changedBoxTextIMinY(const QString &text);
@@ -54,10 +58,10 @@ private:
 	void changedBoxTextOMaxX(const QString &text);
 	void changedBoxTextOMaxY(const QString &text);
 	void changedBoxTextOMaxZ(const QString &text);
-	QString & getBoxText(AsteroidEditorDialogModel::_box_line_edits type);
+	QString& getBoxText(AsteroidEditorDialogModel::_box_line_edits type);
 
-	void updateComboBox(int idx, int debris_type);
-	void updateUI();
+	void initializeUi();
+	void updateUi();
 
 	EditorViewport* _viewport = nullptr;
 	Editor* _editor = nullptr;

@@ -10,7 +10,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_enable_inner_bounds(false),
 	_enable_enhanced_checking(false),
 	_num_asteroids(0),
-	_avg_speed(0),
+	_avg_speed(""),
 	_min_x(""),
 	_min_y(""),
 	_min_z(""),
@@ -27,19 +27,12 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_debris_genre(DG_ASTEROID),
 	_bypass_errors(false)
 {
-	/*for (auto i = 0ul; i < ship_debris_idx_lookup.size(); ++i) {
-		debris_inverse_idx_lookup.emplace(ship_debris_idx_lookup[i], i);
-	}
-	// note that normal asteroids use the same index field! Need to add dummy entries for them as well
-	for (auto i = 0; i < NUM_ASTEROID_SIZES; ++i) {
-		debris_inverse_idx_lookup.emplace(i, 0);
-	}*/
 	initializeData();
 }
 
 bool AsteroidEditorDialogModel::apply()
 {
-	update_init();
+	update_internal_field();
 	if (!AsteroidEditorDialogModel::validate_data()) {
 		return false;
 	}
@@ -68,7 +61,7 @@ void AsteroidEditorDialogModel::initializeData()
 
 	CLAMP(_num_asteroids, 0, MAX_ASTEROIDS);
 
-	_avg_speed = static_cast<int>(_a_field.speed);
+	_avg_speed = QString::number(static_cast<int>(vm_vec_mag(&_a_field.vel)));
 
 	// Convert coords to strings
 	_min_x = QString::number(_a_field.min_bound.xyz.x, 'f', 1);
@@ -92,14 +85,29 @@ void AsteroidEditorDialogModel::initializeData()
 	_field_asteroid_type = _a_field.field_asteroid_type;
 	_field_target_names = _a_field.target_names;
 
+	// Initialize asteroid options
+	auto list = get_list_valid_asteroid_subtypes(); // returns SCP_vector<SCP_string>
+
+	// Initialize asteroid options
+	for (const auto& name : list) {
+		asteroidOptions.push_back(name);
+	}
+
+	// Initialize debris options
+	for (size_t i = 0; i < Asteroid_info.size(); ++i) {
+		if (Asteroid_info[i].type == -1) {
+			debrisOptions.push_back({Asteroid_info[i].name, static_cast<int>(i)});
+		}
+	}
+
 }
 
-void AsteroidEditorDialogModel::setEnabled(bool enabled)
+void AsteroidEditorDialogModel::setFieldEnabled(bool enabled)
 {
 	_enable_asteroids = enabled;
 }
 
-bool AsteroidEditorDialogModel::getEnabled()
+bool AsteroidEditorDialogModel::getFieldEnabled()
 {
 	return _enable_asteroids;
 }
@@ -122,56 +130,6 @@ void AsteroidEditorDialogModel::setEnhancedEnabled(bool enabled)
 bool AsteroidEditorDialogModel::getEnhancedEnabled()
 {
 	return _enable_enhanced_checking;
-}
-
-void AsteroidEditorDialogModel::setAsteroidEnabled(_roid_types type, bool enabled)
-{
-	/*Assertion(type >= 0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-
-	SCP_string name = "Brown";
-	if (type == _AST_BLUE) {
-		name = "Blue";
-	} else if (type == _AST_ORANGE) {
-		name = "Orange";
-	}
-
-	bool in_list = false;
-	for (const auto& asteroid : _field_asteroid_type) {
-		if (name == asteroid) {
-			in_list = true;
-		}
-	}
-
-	// If enabling and it's not enabled then add it
-	if (enabled && !in_list) {
-		_field_asteroid_type.push_back(name);
-	}
-
-	// If disabling and it's in the lsit then remove it
-	if (!enabled && in_list) {
-		_field_asteroid_type.erase(std::remove(_field_asteroid_type.begin(), _field_asteroid_type.end(), name), _field_asteroid_type.end());
-	}*/
-}
-
-bool AsteroidEditorDialogModel::getAsteroidEnabled(_roid_types type)
-{
-	/*Assertion(type >= 0 && type < NUM_ASTEROID_SIZES, "Invalid Asteroid checkbox type: %i\n", type);
-
-	SCP_string name = "Brown";
-	if (type == _AST_BLUE) {
-		name = "Blue";
-	} else if (type == _AST_ORANGE) {
-		name = "Orange";
-	}
-
-	bool enabled = false;
-	for (auto asteroid : _field_asteroid_type) {
-		if (name == asteroid) {
-			enabled = true;
-		}
-	}
-
-	return (enabled);*/
 }
 
 void AsteroidEditorDialogModel::setNumAsteroids(int num_asteroids)
@@ -226,24 +184,84 @@ void AsteroidEditorDialogModel::setBoxText(const QString &text, _box_line_edits 
 	}
 }
 
-void AsteroidEditorDialogModel::setFieldTargetNames(const SCP_vector<SCP_string>& target_names)
+QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getShipSelections()
 {
-	modify(_field_target_names, target_names);
+	// Ships can be placed while the Asteroid field editor is open so we need to initialize this every time
+	shipOptions.clear();
+	for (int i = 0; i < MAX_SHIPS; i++) {
+		if (Ships[i].objnum >= 0) {
+			SCP_string name = Ships[i].ship_name;
+			shipOptions.push_back(name);
+		}
+	}
+	
+	QVector<std::pair<QString, bool>> options;
+	for (const auto& name : shipOptions) {
+		bool enabled = SCP_vector_contains(_field_target_names, name);
+		options.append({QString::fromStdString(name), enabled});
+	}
+	return options;
 }
 
-SCP_vector<SCP_string> AsteroidEditorDialogModel::getTargetNames() const
+void AsteroidEditorDialogModel::setShipSelections(const QVector<bool>& selected)
 {
-	return _field_target_names;
+	SCP_vector<SCP_string> selectedTypes;
+
+
+	for (int i = 0; i < shipOptions.size(); ++i) {
+		if (selected[i]) {
+			selectedTypes.push_back(shipOptions[i]);
+		}
+	}
+
+	modify(_field_target_names, selectedTypes);
+
+	// Now we can clear the shipOptions vector since we're done with it
+	shipOptions.clear();
 }
 
-void AsteroidEditorDialogModel::setAsteroidTypes(const SCP_vector<SCP_string>& asteroid_types)
+QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getAsteroidSelections() const
 {
-	modify(_field_asteroid_type, asteroid_types);
+	QVector<std::pair<QString, bool>> options;
+	for (const auto& name : asteroidOptions) {
+		bool enabled = SCP_vector_contains(_field_asteroid_type, name);
+		options.append({QString::fromStdString(name), enabled});
+	}
+	return options;
 }
 
-SCP_vector<SCP_string> AsteroidEditorDialogModel::getAsteroidTypes() const
+void AsteroidEditorDialogModel::setAsteroidSelections(const QVector<bool>& selected)
 {
-	return _field_asteroid_type;
+	SCP_vector<SCP_string> selectedTypes;
+	for (int i = 0; i < asteroidOptions.size(); ++i) {
+		if (selected[i]) {
+			selectedTypes.push_back(asteroidOptions[i]);
+		}
+	}
+	
+	modify(_field_asteroid_type, selectedTypes);
+}
+
+QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getDebrisSelections() const
+{
+	QVector<std::pair<QString, bool>> options;
+	for (const auto& setting : debrisOptions) {
+		bool enabled = SCP_vector_contains(_field_debris_type, setting.second);
+		options.append({QString::fromStdString(setting.first), enabled});
+	}
+	return options;
+}
+
+void AsteroidEditorDialogModel::setDebrisSelections(const QVector<bool>& selected)
+{
+	SCP_vector<int> selectedTypes;
+	for (int i = 0; i < debrisOptions.size(); ++i) {
+		if (selected[i]) {
+			selectedTypes.push_back(debrisOptions[i].second);
+		}
+	}
+
+	modify(_field_debris_type, selectedTypes);
 }
 
 void AsteroidEditorDialogModel::setDebrisGenre(debris_genre_t genre)
@@ -266,37 +284,19 @@ field_type_t AsteroidEditorDialogModel::getFieldType()
 	return _field_type;
 }
 
-void AsteroidEditorDialogModel::setFieldDebrisType(int idx, int debris_type)
-{
-	if (!SCP_vector_inbounds(_field_debris_type, idx)) {
-			_field_debris_type.push_back(ship_debris_idx_lookup.at(debris_type));
-	} else {
-			modify(_field_debris_type[idx], ship_debris_idx_lookup.at(debris_type));
-	}
-}
-
-int AsteroidEditorDialogModel::getFieldDebrisType(int idx)
-{
-	if (!SCP_vector_inbounds(_field_debris_type, idx)) {
-			return 0;
-	} else {
-			return debris_inverse_idx_lookup.at(_field_debris_type[idx]);
-	}
-}
-
-void AsteroidEditorDialogModel::setAvgSpeed(int speed)
+void AsteroidEditorDialogModel::setAvgSpeed(QString speed)
 {
 	modify(_avg_speed, speed);
 }
 
-QString AsteroidEditorDialogModel::getAvgSpeed()
+QString& AsteroidEditorDialogModel::getAvgSpeed()
 {
-	return QString::number(_avg_speed);
+	return _avg_speed;
 }
 
 bool AsteroidEditorDialogModel::validate_data()
 {
-	/*if (!_enable_asteroids) {
+	if (!_enable_asteroids) {
 		return true;
 	}
 	else {
@@ -415,14 +415,6 @@ bool AsteroidEditorDialogModel::validate_data()
 			}
 		}
 
-		// Compress the debris field vector
-		if (_a_field.field_debris_type.size() > 0) {
-			_a_field.field_debris_type.erase(std::remove_if(_a_field.field_debris_type.begin(),
-												 _a_field.field_debris_type.end(),
-												 [](int value) { return value < 0; }),
-				_a_field.field_debris_type.end());
-		}
-
 		// for a ship debris (i.e. passive) field, need at least one debris type is selected
 		if (_a_field.field_type == FT_PASSIVE) {
 			if (_a_field.debris_genre == DG_DEBRIS) {
@@ -441,12 +433,12 @@ bool AsteroidEditorDialogModel::validate_data()
 			}
 		}
 
-	}*/
+	}
 
 	return true;
 }
 
-void AsteroidEditorDialogModel::update_init()
+void AsteroidEditorDialogModel::update_internal_field()
 {
 	int num_asteroids;
 
@@ -460,7 +452,7 @@ void AsteroidEditorDialogModel::update_init()
 	}
 
 	vec3d vel_vec = vmd_x_vector;
-	vm_vec_scale(&vel_vec, static_cast<float>(_avg_speed));
+	vm_vec_scale(&vel_vec, static_cast<float>(_avg_speed.toInt()));
 	modify(_a_field.vel, vel_vec);
 
 	// save the box coords
@@ -483,25 +475,16 @@ void AsteroidEditorDialogModel::update_init()
 
 	// debris
 	if ((_field_type == FT_PASSIVE) && (_debris_genre == DG_DEBRIS)) {
-		for (size_t idx = 0; idx < _field_debris_type.size(); ++idx) {
-			if (SCP_vector_inbounds(_a_field.field_debris_type, idx)) {
-				modify(_a_field.field_debris_type[idx], _field_debris_type[idx]);
-			} else {
-				_a_field.field_debris_type.push_back(_field_debris_type[idx]);
-			}
-		}
+		modify(_a_field.field_debris_type, _field_debris_type);
 	}
 
 	// asteroids
 	if (_debris_genre == DG_ASTEROID) {
-		for (size_t idx = 0; idx < _field_asteroid_type.size(); ++idx) {
-			if (SCP_vector_inbounds(_a_field.field_asteroid_type, idx)) {
-				modify(_a_field.field_asteroid_type[idx], _field_asteroid_type[idx]);
-			} else {
-				_a_field.field_asteroid_type.push_back(_field_asteroid_type[idx]);
-			}
-		}
+		modify(_a_field.field_asteroid_type, _field_asteroid_type);
 	}
+
+	// target ships
+	modify(_a_field.target_names, _field_target_names);
 
 	modify(_a_field.has_inner_bound, _enable_inner_bounds);
 

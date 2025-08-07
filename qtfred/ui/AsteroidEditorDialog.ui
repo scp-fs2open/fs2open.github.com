@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1033</width>
-    <height>408</height>
+    <height>377</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -130,7 +130,7 @@
               </widget>
              </item>
              <item>
-              <widget class="QRadioButton" name="radioButtonShip">
+              <widget class="QRadioButton" name="radioButtonDebris">
                <property name="text">
                 <string>Debris</string>
                </property>
@@ -342,25 +342,24 @@
            </widget>
           </item>
           <item>
-           <widget class="QListWidget" name="targetListBox"/>
+           <widget class="QPushButton" name="shipSelectButton">
+            <property name="text">
+             <string>Select Target Ships</string>
+            </property>
+           </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_4">
-            <item>
-             <widget class="QPushButton" name="targetAddButton">
-              <property name="text">
-               <string>Add Ship</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="targetRemoveButton">
-              <property name="text">
-               <string>Remove Ship</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </widget>
@@ -398,8 +397,8 @@
          </property>
          <property name="maximumSize">
           <size>
-           <width>500</width>
-           <height>200</height>
+           <width>16777215</width>
+           <height>16777215</height>
           </size>
          </property>
          <property name="text">
@@ -415,7 +414,7 @@
     </layout>
    </item>
    <item row="3" column="0">
-    <widget class="QDialogButtonBox" name="dialogButtonBox">
+    <widget class="QDialogButtonBox" name="okAndCancelButtons">
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
@@ -433,7 +432,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>dialogButtonBox</sender>
+   <sender>okAndCancelButtons</sender>
    <signal>accepted()</signal>
    <receiver>fso::fred::dialogs::AsteroidEditorDialog</receiver>
    <slot>accept()</slot>
@@ -450,7 +449,7 @@
   </connection>
  </connections>
  <buttongroups>
-  <buttongroup name="radioActivePassive"/>
   <buttongroup name="radioAsteroidDebris"/>
+  <buttongroup name="radioActivePassive"/>
  </buttongroups>
 </ui>
