@@ -28,41 +28,39 @@ public:
 		_O_MAX_Y,
 		_O_MAX_Z,
 	};
-	enum _roid_types {
-		_AST_BROWN  =0,
-		_AST_BLUE   =1,
-		_AST_ORANGE =2,
-	};
 
 	bool apply() override;
 	void reject() override;
 
-	void setEnabled(bool enabled);
-	bool getEnabled();
+	void setFieldEnabled(bool enabled);
+	bool getFieldEnabled();
 	void setInnerBoxEnabled(bool enabled);
 	bool getInnerBoxEnabled();
 	void setEnhancedEnabled(bool enabled);
 	bool getEnhancedEnabled();
-	void setAsteroidEnabled(_roid_types type, bool enabled);
-	bool getAsteroidEnabled(_roid_types type);
 	void setNumAsteroids(int num_asteroids);
 	int  getNumAsteroids();
+	void setAvgSpeed(QString speed);
+	QString& getAvgSpeed();
+
+	void setBoxText(const QString& text, _box_line_edits type);
+	QString& getBoxText(_box_line_edits type);
+
+	QVector<std::pair<QString, bool>> getAsteroidSelections() const;
+	void setAsteroidSelections(const QVector<bool>& selected);
+
+	QVector<std::pair<QString, bool>> getDebrisSelections() const;
+	void setDebrisSelections(const QVector<bool>& selected);
+
+	QVector<std::pair<QString, bool>> getShipSelections();
+	void setShipSelections(const QVector<bool>& selected);
+
 	void setDebrisGenre(debris_genre_t genre);
 	debris_genre_t getDebrisGenre();
 	void setFieldType(field_type_t type);
 	field_type_t getFieldType();
-	void setFieldDebrisType(int idx, int num_asteroids);
-	int  getFieldDebrisType(int idx);
-	void setAvgSpeed(int speed);
-	QString getAvgSpeed();
-	void setBoxText(const QString &text, _box_line_edits type);
-	QString & getBoxText(_box_line_edits type);
-	void setFieldTargetNames(const SCP_vector<SCP_string>& target_names);
-	SCP_vector<SCP_string> getTargetNames() const;
-	void setAsteroidTypes(const SCP_vector<SCP_string>& asteroid_types);
-	SCP_vector<SCP_string> getAsteroidTypes() const;
-
-	void update_init();
+	
+	void update_internal_field();
 	bool validate_data();
 
 private:
@@ -74,7 +72,6 @@ private:
 	bool  _enable_inner_bounds;
 	bool  _enable_enhanced_checking;
 	int   _num_asteroids;
-	int   _avg_speed;
 
 	QString _min_x;
 	QString _min_y;
@@ -88,22 +85,25 @@ private:
 	QString _inner_max_x;
 	QString _inner_max_y;
 	QString _inner_max_z;
+	QString _avg_speed;
 
-	SCP_vector<int>            _field_debris_type;   // debris types
 	SCP_vector<SCP_string>     _field_asteroid_type; // asteroid types
+	SCP_vector<int>            _field_debris_type;   // debris types
 	SCP_vector<SCP_string>     _field_target_names;  // target ships
-	field_type_t   _field_type;                                  // active or passive
-	debris_genre_t _debris_genre;                                // ship or asteroid
-	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?
+
+	field_type_t   _field_type;   // active or passive
+	debris_genre_t _debris_genre; // ship or asteroid
+
+	asteroid_field _a_field; // working copy of the asteroid field
+
+	// Helper vectors for the checkbox dialog
+	SCP_vector<SCP_string>                 asteroidOptions; // asteroid options for the checkbox dialog
+	SCP_vector<std::pair<SCP_string, int>> debrisOptions;   // debris options for the checkbox dialog.. for this one we include the index in the pair so we can use it to map
+	SCP_vector<SCP_string>                 shipOptions;     // ship options for the checkbox dialog
 
 	bool _bypass_errors;
 
 	const int _MIN_BOX_THICKNESS = 400;
-	// for debris combo box indexes
-	// -1 == none, 3 == terran debris (small), etc to 11 == shivan debris (large)
-	const std::array<int, 10> ship_debris_idx_lookup{ {-1, 3, 4, 5, 6, 7, 8, 9, 10, 11} };
-	// and the inverse as a map + roids - populate in ctor
-	std::unordered_map<int, int> debris_inverse_idx_lookup;
 };
 
 } // namespace dialogs
