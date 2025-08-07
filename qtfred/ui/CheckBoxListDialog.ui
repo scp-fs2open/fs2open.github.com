@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>CheckBoxListDialog</class>
- <widget class="QDialog" name="CheckBoxListDialog">
+ <class>fso::fred::dialogs::CheckBoxListDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::CheckBoxListDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -25,7 +25,7 @@
         <x>0</x>
         <y>0</y>
         <width>197</width>
-        <height>244</height>
+        <height>245</height>
        </rect>
       </property>
       <layout class="QVBoxLayout" name="verticalLayoutCheckboxes"/>
@@ -46,7 +46,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>CheckBoxListDialog</receiver>
+   <receiver>fso::fred::dialogs::CheckBoxListDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -62,7 +62,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>CheckBoxListDialog</receiver>
+   <receiver>fso::fred::dialogs::CheckBoxListDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
