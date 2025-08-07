@@ -5,9 +5,7 @@
 #include <mission/dialogs/AsteroidEditorDialogModel.h>
 #include <ui/FredView.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class AsteroidEditorDialog;
@@ -18,18 +16,18 @@ class AsteroidEditorDialog : public QDialog
 	Q_OBJECT
 public:
 	AsteroidEditorDialog(FredView* parent, EditorViewport* viewport);
-  ~AsteroidEditorDialog() override;
+	~AsteroidEditorDialog() override;
 
-  void accept() override;
-  void reject() override;
+	void accept() override;
+	void reject() override;
 
-  protected:
-    void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+protected:
+	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
 
 // Utilize Qt's "slots" feature to automatically connect UI elements to functions with less code in the initializer
 // As a benefit this also requires zero manual signal setup in the .ui file (which is less obvious to those unfamiliar with Qt)
 // The naming convention here is on_<object name>_<signal name>(). Easy to read and understand.
-  private slots:
+private slots:
 	// dialog controls
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
@@ -68,7 +66,7 @@ public:
 	void on_debrisSelectButton_clicked();
 	void on_shipSelectButton_clicked();
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
@@ -84,6 +82,4 @@ private:
 };
 
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

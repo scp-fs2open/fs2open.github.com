@@ -1,11 +1,10 @@
 #include "mission/dialogs/AsteroidEditorDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport),
+	_bypass_errors(false),
 	_enable_asteroids(false),
 	_enable_inner_bounds(false),
 	_enable_enhanced_checking(false),
@@ -24,8 +23,7 @@ AsteroidEditorDialogModel::AsteroidEditorDialogModel(QObject* parent, EditorView
 	_inner_min_z(""),
 	_inner_max_x(""),
 	_inner_max_y(""),
-	_inner_max_z(""),
-	_bypass_errors(false)
+	_inner_max_z("")
 {
 	initializeData();
 }
@@ -94,7 +92,7 @@ void AsteroidEditorDialogModel::initializeData()
 	// Initialize debris options
 	for (size_t i = 0; i < Asteroid_info.size(); ++i) {
 		if (Asteroid_info[i].type == -1) {
-			debrisOptions.push_back({Asteroid_info[i].name, static_cast<int>(i)});
+			debrisOptions.emplace_back(std::make_pair(Asteroid_info[i].name, static_cast<int>(i)));
 		}
 	}
 
@@ -323,7 +321,7 @@ void AsteroidEditorDialogModel::setFieldEnabled(bool enabled)
 	modify(_enable_asteroids, enabled);
 }
 
-bool AsteroidEditorDialogModel::getFieldEnabled()
+bool AsteroidEditorDialogModel::getFieldEnabled() const
 {
 	return _enable_asteroids;
 }
@@ -333,7 +331,7 @@ void AsteroidEditorDialogModel::setInnerBoxEnabled(bool enabled)
 	modify(_enable_inner_bounds, enabled);
 }
 
-bool AsteroidEditorDialogModel::getInnerBoxEnabled()
+bool AsteroidEditorDialogModel::getInnerBoxEnabled() const
 {
 	return _enable_inner_bounds;
 }
@@ -343,7 +341,7 @@ void AsteroidEditorDialogModel::setEnhancedEnabled(bool enabled)
 	modify(_enable_enhanced_checking, enabled);
 }
 
-bool AsteroidEditorDialogModel::getEnhancedEnabled()
+bool AsteroidEditorDialogModel::getEnhancedEnabled() const
 {
 	return _enable_enhanced_checking;
 }
@@ -373,12 +371,12 @@ void AsteroidEditorDialogModel::setNumAsteroids(int num_asteroids)
 	modify(_num_asteroids, num_asteroids);
 }
 
-int AsteroidEditorDialogModel::getNumAsteroids()
+int AsteroidEditorDialogModel::getNumAsteroids() const
 {
 	return _num_asteroids;
 }
 
-void AsteroidEditorDialogModel::setAvgSpeed(QString speed)
+void AsteroidEditorDialogModel::setAvgSpeed(const QString& speed)
 {
 	modify(_avg_speed, speed);
 }
@@ -433,8 +431,8 @@ QString & AsteroidEditorDialogModel::getBoxText(_box_line_edits type)
 void AsteroidEditorDialogModel::setAsteroidSelections(const QVector<bool>& selected)
 {
 	SCP_vector<SCP_string> selectedTypes;
-	for (int i = 0; i < asteroidOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < asteroidOptions.size(); ++i) {
+		if (selected.at(static_cast<int>(i))) {
 			selectedTypes.push_back(asteroidOptions[i]);
 		}
 	}
@@ -455,8 +453,8 @@ QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getAsteroidSelectio
 void AsteroidEditorDialogModel::setDebrisSelections(const QVector<bool>& selected)
 {
 	SCP_vector<int> selectedTypes;
-	for (int i = 0; i < debrisOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < debrisOptions.size(); ++i) {
+		if (selected.at(static_cast<int>(i))) {
 			selectedTypes.push_back(debrisOptions[i].second);
 		}
 	}
@@ -478,8 +476,8 @@ void AsteroidEditorDialogModel::setShipSelections(const QVector<bool>& selected)
 {
 	SCP_vector<SCP_string> selectedTypes;
 
-	for (int i = 0; i < shipOptions.size(); ++i) {
-		if (selected[i]) {
+	for (size_t i = 0; i < shipOptions.size(); ++i) {
+		if (selected.at(static_cast<int>(i))) {
 			selectedTypes.push_back(shipOptions[i]);
 		}
 	}
@@ -494,9 +492,9 @@ QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getShipSelections()
 {
 	// Ships can be placed while the Asteroid field editor is open so we need to initialize this every time
 	shipOptions.clear();
-	for (int i = 0; i < MAX_SHIPS; i++) {
-		if (Ships[i].objnum >= 0) {
-			SCP_string name = Ships[i].ship_name;
+	for (auto& ship : Ships) {
+		if (ship.objnum >= 0) {
+			SCP_string name = ship.ship_name;
 			shipOptions.push_back(name);
 		}
 	}
@@ -509,6 +507,4 @@ QVector<std::pair<QString, bool>> AsteroidEditorDialogModel::getShipSelections()
 	return options;
 }
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

@@ -4,9 +4,11 @@
 
 #include "asteroid/asteroid.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+#include <QString>
+#include <QVector>
+#include <utility>
+
+namespace fso::fred::dialogs {
 
 class AsteroidEditorDialogModel: public AbstractDialogModel {
 Q_OBJECT
@@ -35,13 +37,13 @@ public:
 
 	// toggles
 	void setFieldEnabled(bool enabled);
-	bool getFieldEnabled();
+	bool getFieldEnabled() const;
 
 	void setInnerBoxEnabled(bool enabled);
-	bool getInnerBoxEnabled();
+	bool getInnerBoxEnabled() const;
 
 	void setEnhancedEnabled(bool enabled);
-	bool getEnhancedEnabled();
+	bool getEnhancedEnabled() const;
 
 	// field types
 	void setFieldType(field_type_t type);
@@ -52,9 +54,9 @@ public:
 
 	// basic values
 	void setNumAsteroids(int num_asteroids);
-	int  getNumAsteroids();
+	int  getNumAsteroids() const;
 
-	void setAvgSpeed(QString speed);
+	void setAvgSpeed(const QString& speed);
 	QString& getAvgSpeed();
 
 	// box values
@@ -123,6 +125,4 @@ private:
 	SCP_vector<SCP_string>                 shipOptions;     // ship options for the checkbox dialog
 };
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
