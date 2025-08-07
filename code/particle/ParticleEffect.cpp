@@ -343,6 +343,12 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 				info.lifetime = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
 			else
 				info.lifetime = m_lifetime.next() * lifetimeMultiplier;
+
+			info.lifetime -= (interp * f2fl(Frametime));
+			// I do not want to feed zeroes into this thing, because we're going to be dividing by it a lot later
+			if (fl_near_zero(info.lifetime))
+				info.lifetime = -1.f;
+
 			info.lifetime_from_animation = m_keep_anim_length_if_available;
 		}
 		info.size_lifetime_curve = m_size_lifetime_curve;
