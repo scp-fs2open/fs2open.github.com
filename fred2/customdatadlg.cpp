@@ -22,8 +22,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CustomDataDlg dialog
 
-CustomDataDlg::CustomDataDlg(CWnd* pParent /*=nullptr*/)
-	: CDialog(CustomDataDlg::IDD, pParent)
+CustomDataDlg::CustomDataDlg(SCP_map<SCP_string, SCP_string>* data_ptr, CWnd* pParent /*=nullptr*/)
+	: CDialog(CustomDataDlg::IDD, pParent), m_target_data(data_ptr)
 {
 }
 
@@ -65,7 +65,8 @@ BOOL CustomDataDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// grab the existing list of custom data pairs and duplicate it. We only update it if the user clicks OK.
-	m_custom_data = The_mission.custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	m_custom_data = *m_target_data;
 
 	update_data_lister();
 
@@ -79,7 +80,8 @@ BOOL CustomDataDlg::OnInitDialog()
 void CustomDataDlg::OnButtonOk()
 {
 	// now we set the custom data to our copy
-	The_mission.custom_data = m_custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	*m_target_data = m_custom_data;
 
 	CDialog::OnOK();
 }
@@ -314,5 +316,6 @@ void CustomDataDlg::update_help_text(const SCP_string& description)
 
 bool CustomDataDlg::query_modified() const
 {
-	return The_mission.custom_data != m_custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	return *m_target_data != m_custom_data;
 }

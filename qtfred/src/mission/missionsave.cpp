@@ -2351,6 +2351,24 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		fout(" %d\n", Campaign.flags);
 	}
 
+	if (save_format != MissionFormat::RETAIL && !Campaign.custom_data.empty()) {
+		if (optional_string_fred("$begin_custom_data_map")) {
+			parse_comments(2);
+		} else {
+			fout("\n$begin_custom_data_map");
+		}
+
+		for (const auto& pair : Campaign.custom_data) {
+			fout("\n   +Val: %s %s", pair.first.c_str(), pair.second.c_str());
+		}
+
+		if (optional_string_fred("$end_custom_data_map")) {
+			parse_comments();
+		} else {
+			fout("\n$end_custom_data_map");
+		}
+	}
+
 	// write out the ships and weapons which the player can start the campaign with
 	optional_string_fred("+Starting Ships: (");
 	parse_comments(2);

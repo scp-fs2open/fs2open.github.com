@@ -3035,6 +3035,29 @@ ADE_FUNC(jumpToMission, l_Campaign, "string filename, [boolean hub]", "Jumps to 
 	return ade_set_args(L, "b", success);
 }
 
+ADE_VIRTVAR(CustomData, l_Campaign, nullptr, "Gets the custom data table for this campaign", "table", "The campaign's custom data table") 
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "Setting Custom Data is not supported");
+	}
+
+	auto table = luacpp::LuaTable::create(L);
+
+	for (const auto& pair : Campaign.custom_data)
+	{
+		table.addValue(pair.first, pair.second);
+	}
+
+	return ade_set_args(L, "t", &table);	
+}
+
+ADE_FUNC(hasCustomData, l_Campaign, nullptr, "Detects whether the campaign has any custom data", "boolean", "true if the campaign's custom_data is not empty, false otherwise") 
+{
+
+	bool result = !Campaign.custom_data.empty();
+	return ade_set_args(L, "b", result);
+}
+
 // TODO: add a proper indexer type that returns a handle
 // something like ca.Mission[filename/index]
 
