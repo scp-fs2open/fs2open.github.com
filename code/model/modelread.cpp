@@ -3035,12 +3035,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		int size;
 		
 		cfclose(ss_fp);
-		ss_fp = cfopen(debug_name, "rb");
+		ss_fp = cfopen(debug_name, "rb", CF_TYPE_TABLES);
 		if ( ss_fp )	{
 			size = cfilelength(ss_fp);
 			cfclose(ss_fp);
 			if ( size <= 0 )	{
-				_unlink(debug_name);
+				cf_delete(debug_name, CF_TYPE_TABLES);
 			}
 		}
 	}
