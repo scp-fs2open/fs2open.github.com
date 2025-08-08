@@ -3044,14 +3044,13 @@ void process_cargo_hidden_packet( ubyte *data, header *hinfo )
 #define SFPF_TARGET_LOCKED		(1<<5)
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*starting_count*/, int num_fired, int allow_swarm )
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, tracking_info &tinfo, int num_fired, int allow_swarm )
 {
 	int packet_size, net_player_num;
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
 	object *objp;
 	ushort target_net_signature;
 	int s_index;
-	ai_info *aip;
 
 	// Assert ( starting_count < UCHAR_MAX );
 
@@ -3063,8 +3062,6 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 			return;
 		}
 	}
-
-	aip = &Ai_info[shipp->ai_index];
 
 	current_bank = (ubyte)shipp->weapons.current_secondary_bank;
 	Assert( (current_bank < MAX_SHIP_SECONDARY_BANKS) );
@@ -3086,7 +3083,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 		sinfo |= SFPF_DUAL_FIRE;
 	}
 
-	if ( aip->current_target_is_locked ){
+	if ( tinfo.locked ){
 		sinfo |= SFPF_TARGET_LOCKED;
 	}
 
@@ -3095,14 +3092,14 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	// add the ship's target and any targeted subsystem
 	target_net_signature = 0;
 	s_index = -1;
-	if ( aip->target_objnum != -1) {
-		target_net_signature = Objects[aip->target_objnum].net_signature;
-		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			s_index = ship_get_subsys_index( aip->targeted_subsys );
+	if (tinfo.objnum != -1) {
+		target_net_signature = Objects[tinfo.objnum].net_signature;
+		if ( (Objects[tinfo.objnum].type == OBJ_SHIP) && (tinfo.subsys != nullptr) ) {
+			s_index = ship_get_subsys_index( tinfo.subsys );
 		}
 
-		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
-			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
+		if ( Objects[tinfo.objnum].type == OBJ_WEAPON ) {
+			Assert(Weapon_info[Weapons[Objects[tinfo.objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
 		}
 
 	}
