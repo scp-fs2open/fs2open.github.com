@@ -618,6 +618,11 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		sci->rot_defined = true;
 	}
 
+	sprintf(buf, "%sShockwave Rotation Is Relative To Parent:", pre_char);
+	if(optional_string(buf.c_str())) {
+		stuff_boolean(&sci->rot_parent_relative);
+	}
+
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_string(sci->pof_name, F_NAME, MAX_FILENAME_LEN);
