@@ -108,8 +108,7 @@ bool rejectOrCloseHandler(__UNUSED QDialog* dialog,
 		}
 
 		if (button == fso::fred::DialogButton::Yes) {
-			model->apply();
-			return true;
+			return model->apply(); // only close if apply was successful
 		}
 		if (button == fso::fred::DialogButton::No) {
 			model->reject();
