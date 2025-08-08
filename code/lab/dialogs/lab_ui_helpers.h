@@ -5,6 +5,8 @@
 
 SCP_map<int, SCP_string> get_docking_point_map(int model_index);
 
+SCP_map<int, SCP_string> get_bay_paths_map(int model_index);
+
 SCP_string get_ship_table_text(ship_info* sip);
 
 SCP_string get_weapon_table_text(weapon_info* wip);
