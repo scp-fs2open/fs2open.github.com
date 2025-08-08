@@ -19,6 +19,10 @@ namespace fred {
 class Editor;
 class RenderWidget;
 
+namespace dialogs {
+class ShipEditorDialog;
+}
+
 namespace Ui {
 class FredView;
 }
@@ -205,6 +209,8 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	Editor* fred = nullptr;
 	EditorViewport* _viewport = nullptr;
+
+	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;
