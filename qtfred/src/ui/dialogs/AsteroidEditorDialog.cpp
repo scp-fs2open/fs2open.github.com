@@ -23,10 +23,10 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	ui(new Ui::AsteroidEditorDialog()),
 	_model(new AsteroidEditorDialogModel(this, viewport))
 {
-	connect(this, &QDialog::accepted, _model.get(), &AsteroidEditorDialogModel::apply);
-	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &AsteroidEditorDialog::rejectHandler);
 	ui->setupUi(this);
 	_model->update_init();
+	connect(this, &QDialog::accepted, _model.get(), &AsteroidEditorDialogModel::apply);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &AsteroidEditorDialog::rejectHandler);
 
 	// checkboxes
 	connect(ui->enabled, &QCheckBox::toggled, this, &AsteroidEditorDialog::toggleEnabled);
