@@ -8,6 +8,7 @@
 
 #include <QCloseEvent>
 #include <QStringListModel>
+#include <mission/util.h>
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -202,7 +203,7 @@ void ShipWeaponsDialog::on_aiButton_clicked() {
 	}
 }
 
-void ShipWeaponsDialog::on_aiButton_clicked()
+void ShipWeaponsDialog::on_buttonClose_clicked()
 {
 	accept();
 }
