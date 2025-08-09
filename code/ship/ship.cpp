@@ -13408,7 +13408,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 									vm_vec_normalized_dir(&firing_vec, &predicted_target_pos, &obj->pos);
 								}
 
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (std_convergence_flagged || (auto_convergence_flagged && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
@@ -13435,12 +13435,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vm_vec_normalized_dir(&firing_vec, &target_vec, &firing_pos);
 
 								// set orientation
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (sip->flags[Ship::Info_Flags::Gun_convergence]) {
 								// model file defined convergence
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							}
 
 							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
@@ -14281,7 +14281,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			{
 				vec3d firing_vec;
 				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 			}
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside

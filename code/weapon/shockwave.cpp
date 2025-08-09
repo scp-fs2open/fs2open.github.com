@@ -174,7 +174,7 @@ int shockwave_create(int parent_objnum, const vec3d* pos, const shockwave_create
 	orient = vmd_identity_matrix;
 	vm_angles_2_matrix(&orient, &sw->rot_angles);
 	if (sci->rot_parent_relative) {
-		
+		orient = orient * Objects[parent_objnum].orient;
 	}
 
     flagset<Object::Object_Flags> tmp_flags;
