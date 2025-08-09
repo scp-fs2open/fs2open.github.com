@@ -80,7 +80,7 @@ class BankTreeModel : public QAbstractItemModel {
 		const QModelIndex& parent) const override;
 	bool
 	dropMimeData(const QMimeData* data, Qt::DropAction action, int row, int column, const QModelIndex& parent) override;
-	void setWeapon(const QModelIndex& index, int data) const;
+	void setWeapon(const QModelIndex& index, int data);
 	QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
 	bool setData(const QModelIndex& index, const QVariant& value, int role = Qt::EditRole) override;

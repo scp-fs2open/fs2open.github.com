@@ -250,7 +250,9 @@ bool BankTreeModel::setData(const QModelIndex& index, const QVariant& value, int
 		return false;
 	}
 	bool result = item->setData(index.column(), value);
-
+	QVector<int> roles;
+	roles.append(role);
+	QAbstractItemModel::dataChanged(index, index, roles);
 	return result;
 }
 
@@ -348,14 +350,17 @@ bool BankTreeModel::dropMimeData(const QMimeData* data,
 		setWeapon(parent, id);
 	}
 	return true;
+
 }
 
-void BankTreeModel::setWeapon(const QModelIndex& index, int data) const
+void BankTreeModel::setWeapon(const QModelIndex& index, int data)
 {
 	auto item = dynamic_cast<BankTreeBank*>(this->getItem(index));
 	Assert(item != nullptr);
 	if (item != nullptr) {
 		item->setWeapon(data);
+		QVector<int> roles;
+		QAbstractItemModel::dataChanged(index, index, roles);
 	}
 }
 

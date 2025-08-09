@@ -40,6 +40,10 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 	ui->treeBanks->setModel(bankModel);
 	ui->listWeapons->setModel(weapons);
 
+	connect(ui->treeBanks->selectionModel()->model(),
+		&QAbstractItemModel::dataChanged,
+		this,
+		&ShipWeaponsDialog::updateUI);
 	//Update the UI whenever selections change
 	connect(ui->treeBanks->selectionModel(),
 		&QItemSelectionModel::selectionChanged,
@@ -145,6 +149,10 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 			dialogMode = 0;
 		}
 		//Reconnect beacuse the model has changed
+		connect(ui->treeBanks->selectionModel()->model(),
+			&QAbstractItemModel::dataChanged,
+			this,
+			&ShipWeaponsDialog::updateUI);
 		connect(ui->treeBanks->selectionModel(),
 			&QItemSelectionModel::selectionChanged,
 			this,
