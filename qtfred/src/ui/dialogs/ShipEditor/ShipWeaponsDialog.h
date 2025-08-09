@@ -33,13 +33,21 @@ class ShipWeaponsDialog : public QDialog {
 	explicit ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit);
 	~ShipWeaponsDialog() override;
 
+	void accept() override;
+	void reject() override;
+
   protected:
 	void closeEvent(QCloseEvent*) override;
 
   private slots:
-	void on_AIButton_clicked();
+	void on_buttonClose_clicked();
+	void on_aiButton_clicked();
 	void on_setAllButton_clicked();
-	void on_TBLButton_clicked();
+	void on_tblButton_clicked();
+	void on_radioPrimary_toggled(bool checked);
+	void on_radioSecondary_toggled(bool checked);
+	void on_radioTertiary_toggled(bool checked);
+	void on_aiCombo_currentIndexChanged(int index);
 
   private:
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;

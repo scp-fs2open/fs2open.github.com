@@ -21,7 +21,7 @@ struct Banks {
 	int getAiClass() const;
 	void setAiClass(int);
 	bool m_isMultiEdit;
-	int getInitalAI();
+	int getInitalAI() const;
   private:
 	SCP_string name;
 	ship_subsys* subsys;
@@ -77,9 +77,9 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 
 	void initSecondary(int inst, bool first);
 	void initializeData(bool multi);
-	int m_isMultiEdit;
+	bool m_isMultiEdit;
 	int m_ship;
-	int big = 1;
+	bool big = true;
 	SCP_vector<Banks*> PrimaryBanks;
 	SCP_vector<Banks*> SecondaryBanks;
 	// SCP_vector<Banks*> TertiaryBanks;

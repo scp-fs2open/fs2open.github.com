@@ -72,7 +72,7 @@
          </widget>
         </item>
         <item>
-         <widget class="QPushButton" name="TBLButton">
+         <widget class="QPushButton" name="tblButton">
           <property name="text">
            <string>View Table</string>
           </property>
@@ -150,10 +150,10 @@
    <item>
     <layout class="QHBoxLayout" name="AILayout">
      <item>
-      <widget class="QComboBox" name="AICombo"/>
+      <widget class="QComboBox" name="aiCombo"/>
      </item>
      <item>
-      <widget class="QPushButton" name="AIButton">
+      <widget class="QPushButton" name="aiButton">
        <property name="text">
         <string>Change AI</string>
        </property>

@@ -49,18 +49,17 @@ int Banks::getAiClass() const
 void Banks::setAiClass(int newClass)
 {
 	if (m_isMultiEdit) {
-		object* ptr;
-		int inst;
-		ptr = GET_FIRST(&obj_used_list);
+		object* ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-				inst = ptr->instance;
+				int inst = ptr->instance;
 				if (name == "Pilot") {
 					Ships[inst].ai_index = newClass;
 				} else {
 					subsys->weapons.ai_class = newClass;
 				}
 			}
+			ptr = GET_NEXT(ptr);
 		}
 	} else {
 		if (name == "Pilot") {
@@ -70,7 +69,7 @@ void Banks::setAiClass(int newClass)
 		}
 	}
 }
-int Banks::getInitalAI()
+int Banks::getInitalAI() const
 {
 	return initalAI;
 }
@@ -130,30 +129,29 @@ void ShipWeaponsDialogModel::initializeData(bool isMultiEdit)
 	m_isMultiEdit = isMultiEdit;
 	PrimaryBanks.clear();
 	SecondaryBanks.clear();
-	int inst;
-	bool first = true;
-	object* ptr;
 
 	m_ship = _editor->cur_ship;
 	if (m_ship == -1)
 		m_ship = Objects[_editor->currentObject].instance;
 
 	if (m_isMultiEdit) {
-		ptr = GET_FIRST(&obj_used_list);
+		object* ptr = GET_FIRST(&obj_used_list);
+		bool first = true;
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-				inst = ptr->instance;
+				int inst = ptr->instance;
 				if (!(Ship_info[Ships[inst].ship_info_index].is_big_or_huge()))
-					big = 0;
+					big = false;
 				initPrimary(inst, first);
 				initSecondary(inst, first);
 				// initTertiary(inst, first);
 				first = false;
 			}
+			ptr = GET_NEXT(ptr);
 		}
 	} else {
 		if (!(Ship_info[Ships[m_ship].ship_info_index].is_big_or_huge()))
-			big = 0;
+			big = false;
 		initPrimary(m_ship, true);
 		initSecondary(m_ship, true);
 	}
@@ -196,12 +194,12 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-			if (PrimaryBanks[0]->getByBankId(i)->getWeaponId() != Ships[inst].weapons.primary_bank_weapons[i]) {
-				PrimaryBanks[0]->getByBankId(i)->setWeapon(-2);
+		for (int i = 0; i < PrimaryBanks[0]->getBanks().size(); i++) {
+			if (PrimaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.primary_bank_weapons[i]) {
+				PrimaryBanks[0]->getBanks()[i]->setWeapon(-2);
 			}
-			if (PrimaryBanks[0]->getByBankId(i)->getAmmo() != Ships[inst].weapons.primary_bank_ammo[i]) {
-				PrimaryBanks[0]->getByBankId(i)->setAmmo(-2);
+			if (PrimaryBanks[0]->getBanks()[i]->getAmmo() != Ships[inst].weapons.primary_bank_ammo[i]) {
+				PrimaryBanks[0]->getBanks()[i]->setAmmo(-2);
 			}
 		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
@@ -211,12 +209,12 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : PrimaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < MAX_SHIP_PRIMARY_BANKS; i++) {
-							if (banks->getByBankId(i)->getWeaponId() != pss->weapons.primary_bank_weapons[i]) {
-								banks->getByBankId(i)->setWeapon(-2);
+						for (int i = 0; i < banks->getBanks().size(); i++) {
+							if (banks->getBanks()[i]->getWeaponId() != pss->weapons.primary_bank_weapons[i]) {
+								banks->getBanks()[i]->setWeapon(-2);
 							}
-							if (banks->getByBankId(i)->getAmmo() != pss->weapons.primary_bank_ammo[i]) {
-								banks->getByBankId(i)->setAmmo(-2);
+							if (banks->getBanks()[i]->getAmmo() != pss->weapons.primary_bank_ammo[i]) {
+								banks->getBanks()[i]->setAmmo(-2);
 							}
 						}
 					}
@@ -263,12 +261,12 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
-			if (SecondaryBanks[0]->getByBankId(i)->getWeaponId() != Ships[inst].weapons.secondary_bank_weapons[i]) {
-				SecondaryBanks[0]->getByBankId(i)->setWeapon(-2);
+		for (int i = 0; i < SecondaryBanks[0]->getBanks().size(); i++) {
+			if (SecondaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.secondary_bank_weapons[i]) {
+				SecondaryBanks[0]->getBanks()[i]->setWeapon(-2);
 			}
-			if (SecondaryBanks[0]->getByBankId(i)->getAmmo() != Ships[inst].weapons.secondary_bank_ammo[i]) {
-				SecondaryBanks[0]->getByBankId(i)->setAmmo(-2);
+			if (SecondaryBanks[0]->getBanks()[i]->getAmmo() != Ships[inst].weapons.secondary_bank_ammo[i]) {
+				SecondaryBanks[0]->getBanks()[i]->setAmmo(-2);
 			}
 		}
 		ship_subsys* ssl = &Ships[inst].subsys_list;
@@ -278,7 +276,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : SecondaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < MAX_SHIP_SECONDARY_BANKS; i++) {
+						for (int i = 0; i < banks->getBanks().size(); i++) {
 							if (banks->getByBankId(i)->getWeaponId() != pss->weapons.secondary_bank_weapons[i]) {
 								banks->getByBankId(i)->setWeapon(-2);
 							}
@@ -338,14 +336,13 @@ void ShipWeaponsDialogModel::saveShip(int inst)
 bool ShipWeaponsDialogModel::apply()
 {
 	if (m_isMultiEdit) {
-		object* ptr;
-		int inst;
-		ptr = GET_FIRST(&obj_used_list);
+		object* ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (ptr->flags[Object::Object_Flags::Marked])) {
-				inst = ptr->instance;
+				int inst = ptr->instance;
 				saveShip(inst);
 			}
+			ptr = GET_NEXT(ptr);
 		}
 	} else {
 		saveShip(m_ship);
