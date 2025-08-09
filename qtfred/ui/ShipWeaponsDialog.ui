@@ -202,22 +202,5 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>buttonClose</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipWeaponsDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>490</x>
-     <y>322</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>340</x>
-     <y>335</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
