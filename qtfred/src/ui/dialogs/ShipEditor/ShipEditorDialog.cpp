@@ -846,7 +846,9 @@ void ShipEditorDialog::on_deleteButton_clicked()
 }
 void ShipEditorDialog::on_weaponsButton_clicked()
 {
-		//TODO
+	auto dialog = new dialogs::ShipWeaponsDialog(this, _viewport, getIfMultipleShips());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 	{
