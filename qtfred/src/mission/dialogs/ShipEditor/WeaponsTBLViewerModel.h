@@ -2,9 +2,7 @@
 
 #include "../AbstractDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 class WeaponsTBLViewerModel : public AbstractDialogModel {
   private:
 	SCP_string text;
@@ -17,6 +15,4 @@ class WeaponsTBLViewerModel : public AbstractDialogModel {
 
 	SCP_string getText() const;
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
