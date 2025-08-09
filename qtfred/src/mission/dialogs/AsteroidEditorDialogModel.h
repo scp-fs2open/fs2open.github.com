@@ -4,9 +4,11 @@
 
 #include "asteroid/asteroid.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+#include <QString>
+#include <QVector>
+#include <utility>
+
+namespace fso::fred::dialogs {
 
 class AsteroidEditorDialogModel: public AbstractDialogModel {
 Q_OBJECT
@@ -15,63 +17,90 @@ public:
 	AsteroidEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
 	enum _box_line_edits {
-		_I_MIN_X =0,
-		_I_MIN_Y,
-		_I_MIN_Z,
-		_I_MAX_X,
-		_I_MAX_Y,
-		_I_MAX_Z,
-		_O_MIN_X,
+		_O_MIN_X = 0,
 		_O_MIN_Y,
 		_O_MIN_Z,
 		_O_MAX_X,
 		_O_MAX_Y,
 		_O_MAX_Z,
-	};
-	enum _roid_types {
-		_AST_BROWN  =0,
-		_AST_BLUE   =1,
-		_AST_ORANGE =2,
+		_I_MIN_X,
+		_I_MIN_Y,
+		_I_MIN_Z,
+		_I_MAX_X,
+		_I_MAX_Y,
+		_I_MAX_Z,
 	};
 
+	// overrides
 	bool apply() override;
 	void reject() override;
 
-	void setEnabled(bool enabled);
-	bool getEnabled();
+	// toggles
+	void setFieldEnabled(bool enabled);
+	bool getFieldEnabled() const;
+
 	void setInnerBoxEnabled(bool enabled);
-	bool getInnerBoxEnabled();
+	bool getInnerBoxEnabled() const;
+
 	void setEnhancedEnabled(bool enabled);
-	bool getEnhancedEnabled();
-	void setAsteroidEnabled(_roid_types type, bool enabled);
-	bool getAsteroidEnabled(_roid_types type);
-	void setNumAsteroids(int num_asteroids);
-	int  getNumAsteroids();
-	void setDebrisGenre(debris_genre_t genre);
-	debris_genre_t getDebrisGenre();
+	bool getEnhancedEnabled() const;
+
+	// field types
 	void setFieldType(field_type_t type);
 	field_type_t getFieldType();
-	void setFieldDebrisType(int idx, int num_asteroids);
-	int  getFieldDebrisType(int idx);
-	void setAvgSpeed(int speed);
-	QString getAvgSpeed();
-	void setBoxText(const QString &text, _box_line_edits type);
-	QString & getBoxText(_box_line_edits type);
 
-	void update_init();
-	bool validate_data();
+	void setDebrisGenre(debris_genre_t genre);
+	debris_genre_t getDebrisGenre();
+
+	// basic values
+	void setNumAsteroids(int num_asteroids);
+	int  getNumAsteroids() const;
+
+	void setAvgSpeed(const QString& speed);
+	QString& getAvgSpeed();
+
+	// box values
+	void setBoxText(const QString& text, _box_line_edits type);
+	QString& getBoxText(_box_line_edits type);
+
+	// object selections
+	QVector<std::pair<QString, bool>> getAsteroidSelections() const;
+	void setAsteroidSelections(const QVector<bool>& selected);
+
+	QVector<std::pair<QString, bool>> getDebrisSelections() const;
+	void setDebrisSelections(const QVector<bool>& selected);
+
+	QVector<std::pair<QString, bool>> getShipSelections();
+	void setShipSelections(const QVector<bool>& selected);
 
 private:
 
-	void showErrorDialogNoCancel(const SCP_string& message);
 	void initializeData();
+	void update_internal_field();
+	bool validate_data();
+	void showErrorDialogNoCancel(const SCP_string& message);
 
+	// boilerplate
+	bool _bypass_errors;
+	const int _MIN_BOX_THICKNESS = 400;
+
+	// working copy of the asteroid field
+	asteroid_field _a_field;
+
+	// toggles
 	bool  _enable_asteroids;
 	bool  _enable_inner_bounds;
 	bool  _enable_enhanced_checking;
-	int   _num_asteroids;
-	int   _avg_speed;
 
+	// field types
+	field_type_t _field_type;     // active or passive
+	debris_genre_t _debris_genre; // debris or asteroid
+
+	// basic values
+	int   _num_asteroids;
+	QString _avg_speed;
+
+	// box values
 	QString _min_x;
 	QString _min_y;
 	QString _min_z;
@@ -85,24 +114,15 @@ private:
 	QString _inner_max_y;
 	QString _inner_max_z;
 
-	SCP_vector<int>            _field_debris_type;  // debris
+	// object selections
 	SCP_vector<SCP_string>     _field_asteroid_type; // asteroid types
-	field_type_t   _field_type;                                  // active or passive
-	debris_genre_t _debris_genre;                                // ship or asteroid
-	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?
+	SCP_vector<int>            _field_debris_type;   // debris types
+	SCP_vector<SCP_string>     _field_target_names;  // target ships
 
-	bool _bypass_errors;
-	int  _cur_field;
-	int  _last_field;
-
-	const int _MIN_BOX_THICKNESS = 400;
-	// for debris combo box indexes
-	// -1 == none, 3 == terran debris (small), etc to 11 == shivan debris (large)
-	const std::array<int, 10> ship_debris_idx_lookup{ {-1, 3, 4, 5, 6, 7, 8, 9, 10, 11} };
-	// and the inverse as a map + roids - populate in ctor
-	std::unordered_map<int, int> debris_inverse_idx_lookup;
+	// Helper vectors for the checkbox dialog
+	SCP_vector<SCP_string>                 asteroidOptions; // asteroid options for the checkbox dialog
+	SCP_vector<std::pair<SCP_string, int>> debrisOptions;   // debris options for the checkbox dialog.. for this one we include the index in the pair so we can use it to map
+	SCP_vector<SCP_string>                 shipOptions;     // ship options for the checkbox dialog
 };
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

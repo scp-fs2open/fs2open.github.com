@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>675</width>
-    <height>423</height>
+    <width>1033</width>
+    <height>377</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -35,6 +35,12 @@
          <property name="enabled">
           <bool>true</bool>
          </property>
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="accessibleName">
           <string>Field Properties</string>
          </property>
@@ -42,95 +48,122 @@
           <string>Field Properties</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_4">
+          <item row="0" column="0">
+           <widget class="QGroupBox" name="fieldType">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
+            </property>
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
+            <property name="title">
+             <string>Field Type</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QRadioButton" name="radioButtonActiveField">
+               <property name="text">
+                <string>Active Field</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">radioActivePassive</string>
+               </attribute>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButtonPassiveField">
+               <property name="text">
+                <string>Passive Field</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">radioActivePassive</string>
+               </attribute>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
           <item row="3" column="0">
-           <widget class="QRadioButton" name="radioButtonAsteroid">
-            <property name="text">
-             <string>Asteroid</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">radioAsteroidDebris</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="7" column="2">
-           <widget class="QComboBox" name="debris1"/>
-          </item>
-          <item row="9" column="2">
-           <widget class="QComboBox" name="debris2"/>
-          </item>
-          <item row="1" column="2">
-           <widget class="QRadioButton" name="radioButtonPassiveField">
-            <property name="text">
-             <string>Passive Field</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">radioActivePassive</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="5" column="0">
-           <widget class="QCheckBox" name="checkBoxBrown">
-            <property name="text">
-             <string>Brown</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="2">
-           <widget class="QRadioButton" name="radioButtonShip">
-            <property name="text">
-             <string>Debris</string>
-            </property>
-            <attribute name="buttonGroup">
-             <string notr="true">radioAsteroidDebris</string>
-            </attribute>
-           </widget>
-          </item>
-          <item row="12" column="0">
-           <widget class="QLabel" name="labelAvgSpeed">
-            <property name="text">
-             <string>Avg Speed:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="0">
-           <widget class="QLabel" name="labelNumber">
-            <property name="text">
-             <string>Number:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="11" column="2">
-           <widget class="QSpinBox" name="spinBoxNumber"/>
-          </item>
-          <item row="7" column="0">
-           <widget class="QCheckBox" name="checkBoxBlue">
-            <property name="text">
-             <string>Blue</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="0">
-           <widget class="QCheckBox" name="checkBoxOrange">
-            <property name="text">
-             <string>Orange</string>
-            </property>
-           </widget>
-          </item>
-          <item row="12" column="2">
-           <widget class="QLineEdit" name="lineEditAvgSpeed"/>
+           <layout class="QFormLayout" name="propertiesWidgets">
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="spinBoxNumber"/>
+            </item>
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelNumber">
+              <property name="text">
+               <string>Number:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelAvgSpeed">
+              <property name="text">
+               <string>Avg Speed:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QLineEdit" name="lineEditAvgSpeed"/>
+            </item>
+           </layout>
           </item>
           <item row="1" column="0">
-           <widget class="QRadioButton" name="radioButtonActiveField">
-            <property name="text">
-             <string>Active Field</string>
+           <widget class="QGroupBox" name="objectType">
+            <property name="title">
+             <string>Object Type</string>
             </property>
-            <attribute name="buttonGroup">
-             <string notr="true">radioActivePassive</string>
-            </attribute>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QRadioButton" name="radioButtonAsteroid">
+               <property name="text">
+                <string>Asteroid</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">radioAsteroidDebris</string>
+               </attribute>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButtonDebris">
+               <property name="text">
+                <string>Debris</string>
+               </property>
+               <attribute name="buttonGroup">
+                <string notr="true">radioAsteroidDebris</string>
+               </attribute>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
-          <item row="5" column="2">
-           <widget class="QComboBox" name="debris0"/>
+          <item row="2" column="0">
+           <widget class="QGroupBox" name="objectSelection">
+            <property name="title">
+             <string>Object Selection</string>
+            </property>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QPushButton" name="asteroidSelectButton">
+               <property name="text">
+                <string>Select Asteroid Types</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="debrisSelectButton">
+               <property name="text">
+                <string>Select Debris Types</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
           </item>
          </layout>
         </widget>
@@ -141,10 +174,17 @@
           <string>Outer Box</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_2">
-          <item row="0" column="0">
-           <widget class="QLabel" name="label_obox_minX">
+          <item row="7" column="0">
+           <widget class="QLabel" name="label_obox_minZ">
             <property name="text">
-             <string>Min X:</string>
+             <string>Min Z:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_obox_maxY">
+            <property name="text">
+             <string>Max Y:</string>
             </property>
            </widget>
           </item>
@@ -155,8 +195,12 @@
             </property>
            </widget>
           </item>
-          <item row="7" column="1">
-           <widget class="QLineEdit" name="lineEdit_obox_minZ"/>
+          <item row="9" column="0">
+           <widget class="QLabel" name="label_obox_maxZ">
+            <property name="text">
+             <string>Max Z:</string>
+            </property>
+           </widget>
           </item>
           <item row="3" column="0">
            <widget class="QLabel" name="label_obox_maxX">
@@ -165,70 +209,61 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="lineEdit_obox_minX"/>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_obox_maxY">
+          <item row="0" column="0">
+           <widget class="QLabel" name="label_obox_minX">
             <property name="text">
-             <string>Max Y:</string>
+             <string>Min X:</string>
             </property>
            </widget>
-          </item>
-          <item row="9" column="0">
-           <widget class="QLabel" name="label_obox_maxZ">
-            <property name="text">
-             <string>Max Z:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="1">
-           <widget class="QLineEdit" name="lineEdit_obox_minY"/>
-          </item>
-          <item row="7" column="0">
-           <widget class="QLabel" name="label_obox_minZ">
-            <property name="text">
-             <string>Min Z:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="9" column="1">
-           <widget class="QLineEdit" name="lineEdit_obox_maxZ"/>
           </item>
           <item row="3" column="1">
            <widget class="QLineEdit" name="lineEdit_obox_maxX"/>
           </item>
+          <item row="4" column="1">
+           <widget class="QLineEdit" name="lineEdit_obox_minY"/>
+          </item>
           <item row="5" column="1">
            <widget class="QLineEdit" name="lineEdit_obox_maxY"/>
+          </item>
+          <item row="0" column="1">
+           <widget class="QLineEdit" name="lineEdit_obox_minX"/>
+          </item>
+          <item row="9" column="1">
+           <widget class="QLineEdit" name="lineEdit_obox_maxZ"/>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLineEdit" name="lineEdit_obox_minZ"/>
           </item>
          </layout>
         </widget>
        </item>
        <item>
         <widget class="QGroupBox" name="innerBox">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
          <property name="title">
           <string>Inner Box</string>
          </property>
          <layout class="QGridLayout" name="gridLayout_3">
+          <item row="1" column="1">
+           <widget class="QLineEdit" name="lineEdit_ibox_minX"/>
+          </item>
+          <item row="5" column="1">
+           <widget class="QLineEdit" name="lineEdit_ibox_minY"/>
+          </item>
           <item row="3" column="1">
            <widget class="QLineEdit" name="lineEdit_ibox_maxX"/>
           </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="label_ibox_minY">
+          <item row="0" column="0" colspan="2">
+           <widget class="QCheckBox" name="innerBoxEnabled">
             <property name="text">
-             <string>Min Y:</string>
+             <string>Enabled</string>
             </property>
            </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="label_ibox_minX">
-            <property name="text">
-             <string>Min X:</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="lineEdit_ibox_minX"/>
           </item>
           <item row="7" column="0">
            <widget class="QLabel" name="label_ibox_minZ">
@@ -237,15 +272,6 @@
             </property>
            </widget>
           </item>
-          <item row="9" column="1">
-           <widget class="QLineEdit" name="lineEdit_ibox_maxZ"/>
-          </item>
-          <item row="5" column="1">
-           <widget class="QLineEdit" name="lineEdit_ibox_minY"/>
-          </item>
-          <item row="7" column="1">
-           <widget class="QLineEdit" name="lineEdit_ibox_minZ"/>
-          </item>
           <item row="9" column="0">
            <widget class="QLabel" name="label_ibox_maxZ">
             <property name="text">
@@ -253,8 +279,18 @@
             </property>
            </widget>
           </item>
-          <item row="6" column="1">
-           <widget class="QLineEdit" name="lineEdit_ibox_maxY"/>
+          <item row="5" column="0">
+           <widget class="QLabel" name="label_ibox_minY">
+            <property name="text">
+             <string>Min Y:</string>
+            </property>
+           </widget>
+          </item>
+          <item row="9" column="1">
+           <widget class="QLineEdit" name="lineEdit_ibox_maxZ"/>
+          </item>
+          <item row="7" column="1">
+           <widget class="QLineEdit" name="lineEdit_ibox_minZ"/>
           </item>
           <item row="6" column="0">
            <widget class="QLabel" name="label_ibox_maxY">
@@ -270,12 +306,60 @@
             </property>
            </widget>
           </item>
-          <item row="0" column="0" colspan="2">
-           <widget class="QCheckBox" name="innerBoxEnabled">
+          <item row="1" column="0">
+           <widget class="QLabel" name="label_ibox_minX">
             <property name="text">
-             <string>Enabled</string>
+             <string>Min X:</string>
             </property>
            </widget>
+          </item>
+          <item row="6" column="1">
+           <widget class="QLineEdit" name="lineEdit_ibox_maxY"/>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="targets">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>1</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="title">
+          <string>Targets</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_2">
+          <item>
+           <widget class="QLabel" name="targetHelpText">
+            <property name="text">
+             <string>(If no targets are specified, all rocks/chunks will target the first capital ship in the mission, even if that ship is not on th escort list.)</string>
+            </property>
+            <property name="wordWrap">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="shipSelectButton">
+            <property name="text">
+             <string>Select Target Ships</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>40</height>
+             </size>
+            </property>
+           </spacer>
           </item>
          </layout>
         </widget>
@@ -283,69 +367,54 @@
       </layout>
      </item>
      <item>
-      <widget class="QGroupBox" name="groupBox">
-       <property name="title">
-        <string/>
-       </property>
-       <widget class="QCheckBox" name="enhancedFieldEnabled">
-        <property name="geometry">
-         <rect>
-          <x>20</x>
-          <y>10</y>
-          <width>653</width>
-          <height>20</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="text">
-         <string>Use ehnanced spawn checking</string>
-        </property>
-       </widget>
-       <widget class="QLabel" name="label">
-        <property name="geometry">
-         <rect>
-          <x>40</x>
-          <y>30</y>
-          <width>450</width>
-          <height>40</height>
-         </rect>
-        </property>
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="minimumSize">
-         <size>
-          <width>0</width>
-          <height>40</height>
-         </size>
-        </property>
-        <property name="maximumSize">
-         <size>
-          <width>500</width>
-          <height>200</height>
-         </size>
-        </property>
-        <property name="text">
-         <string>(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)</string>
-        </property>
-        <property name="wordWrap">
-         <bool>true</bool>
-        </property>
-       </widget>
-      </widget>
+      <layout class="QFormLayout" name="formLayout">
+       <item row="0" column="0">
+        <widget class="QCheckBox" name="enhancedFieldEnabled">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="text">
+          <string>Use ehnanced spawn checking</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="1">
+        <widget class="QLabel" name="enhancedFieldHelpText">
+         <property name="sizePolicy">
+          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+           <horstretch>0</horstretch>
+           <verstretch>0</verstretch>
+          </sizepolicy>
+         </property>
+         <property name="minimumSize">
+          <size>
+           <width>0</width>
+           <height>40</height>
+          </size>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="text">
+          <string>(By default player range is checked in addition to the player view cone for spawning asteroids. In small fields you may want to override this behavior.)</string>
+         </property>
+         <property name="wordWrap">
+          <bool>true</bool>
+         </property>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
    <item row="3" column="0">
-    <widget class="QDialogButtonBox" name="dialogButtonBox">
+    <widget class="QDialogButtonBox" name="okAndCancelButtons">
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
@@ -361,26 +430,9 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>dialogButtonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::AsteroidEditorDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>337</x>
-     <y>317</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>337</x>
-     <y>169</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <buttongroups>
-  <buttongroup name="radioActivePassive"/>
   <buttongroup name="radioAsteroidDebris"/>
+  <buttongroup name="radioActivePassive"/>
  </buttongroups>
 </ui>
