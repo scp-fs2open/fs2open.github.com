@@ -19,6 +19,7 @@
 #include "BriefingEditorDlg.h"
 #include "resource.h"
 #include "ShipEditorDlg.h"
+#include "propdlg.h"
 #include "WaypointPathDlg.h"
 #include "JumpNodeDlg.h"
 #include "wing_editor.h"
@@ -180,6 +181,7 @@ extern HCURSOR h_cursor_rotate; //!< Cursor resource (icon) used for rotational 
 
 extern CWnd*                Prev_window;            //!< The currently active window
 extern CShipEditorDlg       Ship_editor_dialog;     //!< The ship editor instance
+extern prop_dlg             Prop_editor_dialog;     //!< The prop editor instance
 extern wing_editor          Wing_editor_dialog;     //!< The wing editor instance
 extern waypoint_path_dlg    Waypoint_editor_dialog; //!< The waypoint editor instance
 extern jumpnode_dlg			Jumpnode_editor_dialog; //!< The jumpnode editor instance
@@ -191,6 +193,7 @@ extern CFREDApp theApp; //!< The application instance
 
 extern window_data Main_wnd_data;
 extern window_data Ship_wnd_data;
+extern window_data Prop_wnd_data;
 extern window_data Wing_wnd_data;
 extern window_data Object_wnd_data;
 extern window_data Mission_goals_wnd_data;
