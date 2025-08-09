@@ -1,15 +1,15 @@
 #pragma once
-#include <QListView>
-#include <QMouseEvent>
+#include <weapon/weapon.h>
+
 #include <QApplication>
 #include <QDrag>
+#include <QListView>
 #include <QMimeData>
+#include <QMouseEvent>
 #include <QPainter>
-#include <weapon/weapon.h>
-namespace fso {
-namespace fred {
+namespace fso::fred {
 struct WeaponItem {
-	WeaponItem(const int id, const QString& name);
+	WeaponItem(const int id, QString name);
 	const QString name;
 	const int id;
 };
@@ -17,7 +17,7 @@ class WeaponModel : public QAbstractListModel {
 	Q_OBJECT
   public:
 	WeaponModel(int type);
-	~WeaponModel();
+	~WeaponModel() override;
 	int rowCount(const QModelIndex& parent = QModelIndex()) const override;
 	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override;
 	QMimeData* mimeData(const QModelIndexList& indexes) const override;
@@ -29,11 +29,10 @@ class weaponList : public QListView {
 	weaponList(QWidget* parent);
 
   protected:
-	void mousePressEvent(QMouseEvent* event);
-	void mouseMoveEvent(QMouseEvent* event);
+	void mousePressEvent(QMouseEvent* event) override;
+	void mouseMoveEvent(QMouseEvent* event) override;
 	QPoint dragStartPosition;
 
   private:
 };
-}
-} // namespace fso
+} // namespace fso::fred

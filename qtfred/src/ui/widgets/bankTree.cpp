@@ -1,6 +1,5 @@
 #include "bankTree.h"
-namespace fso {
-namespace fred {
+namespace fso::fred {
 bankTree::bankTree(QWidget* parent) : QTreeView(parent)
 {
 	setAcceptDrops(true);
@@ -42,7 +41,7 @@ void bankTree::selectionChanged(const QItemSelection& selected, const QItemSelec
 	QItemSelection deselect(deselected);
 	if (selected.empty()) {
 		QTreeView::selectionChanged(selected, deselected);
-		if (selectionModel()->selectedIndexes().size() == 0) {
+		if (selectionModel()->selectedIndexes().empty()) {
 			typeSelected = -1;
 		}
 		return;
@@ -101,5 +100,4 @@ int bankTree::getTypeSelected() const
 {
 	return typeSelected;
 }
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

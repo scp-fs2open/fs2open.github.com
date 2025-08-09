@@ -1,8 +1,7 @@
 #include "ShipWeaponsDialogModel.h"
-namespace fso {
-namespace fred {
-Banks::Banks(const SCP_string& _name, int aiIndex, int _ship, int multiedit, ship_subsys* _subsys)
-	: m_isMultiEdit(multiedit) ,name(_name), subsys(_subsys), initalAI(aiIndex), ship(_ship)
+namespace fso::fred {
+Banks::Banks(SCP_string _name, int aiIndex, int _ship, int multiedit, ship_subsys* _subsys)
+	: m_isMultiEdit(multiedit), name(std::move(_name)), subsys(_subsys), initalAI(aiIndex), ship(_ship)
 {
 	aiClass = aiIndex;
 }
@@ -34,7 +33,7 @@ bool Banks::empty() const
 {
 	return banks.empty();
 }
-const SCP_vector<Bank*> Banks::getBanks() const
+SCP_vector<Bank*> Banks::getBanks() const
 {
 	return banks;
 }
@@ -209,7 +208,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : PrimaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < static_cast<int> (banks->getBanks().size()); i++) {
+						for (int i = 0; i < static_cast<int>(banks->getBanks().size()); i++) {
 							if (banks->getBanks()[i]->getWeaponId() != pss->weapons.primary_bank_weapons[i]) {
 								banks->getBanks()[i]->setWeapon(-2);
 							}
@@ -261,7 +260,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < static_cast<int> (SecondaryBanks[0]->getBanks().size()); i++) {
+		for (int i = 0; i < static_cast<int>(SecondaryBanks[0]->getBanks().size()); i++) {
 			if (SecondaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.secondary_bank_weapons[i]) {
 				SecondaryBanks[0]->getBanks()[i]->setWeapon(-2);
 			}
@@ -276,7 +275,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : SecondaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < static_cast<int> (banks->getBanks().size()); i++) {
+						for (int i = 0; i < static_cast<int>(banks->getBanks().size()); i++) {
 							if (banks->getByBankId(i)->getWeaponId() != pss->weapons.secondary_bank_weapons[i]) {
 								banks->getByBankId(i)->setWeapon(-2);
 							}
@@ -372,5 +371,4 @@ SCP_vector<Banks*> ShipWeaponsDialogModel::getSecondaryBanks() const
 }
 */
 } // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

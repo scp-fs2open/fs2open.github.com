@@ -4,9 +4,7 @@
 
 #include <QtWidgets/QDialog>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class ShipTBLViewer;
@@ -26,11 +24,8 @@ class WeaponsTBLViewer : public QDialog {
 	std::unique_ptr<WeaponsTBLViewerModel> _model;
 	EditorViewport* _viewport;
 
-
 	int sc;
 
 	void updateUI();
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

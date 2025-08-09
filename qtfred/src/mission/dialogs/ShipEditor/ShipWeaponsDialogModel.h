@@ -4,11 +4,10 @@
 
 #include <weapon/weapon.h>
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 struct Bank;
 struct Banks {
-	Banks(const SCP_string& name, int aiIndex, int ship,int multiedit, ship_subsys* subsys = nullptr);
+	Banks(SCP_string name, int aiIndex, int ship, int multiedit, ship_subsys* subsys = nullptr);
 
   public:
 	void add(Bank*);
@@ -17,11 +16,12 @@ struct Banks {
 	int getShip() const;
 	ship_subsys* getSubsys() const;
 	bool empty() const;
-	const SCP_vector<Bank*> getBanks() const;
+	SCP_vector<Bank*> getBanks() const;
 	int getAiClass() const;
 	void setAiClass(int);
 	bool m_isMultiEdit;
 	int getInitalAI() const;
+
   private:
 	SCP_string name;
 	ship_subsys* subsys;
@@ -85,5 +85,4 @@ class ShipWeaponsDialogModel : public AbstractDialogModel {
 	// SCP_vector<Banks*> TertiaryBanks;
 };
 } // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

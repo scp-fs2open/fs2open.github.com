@@ -1,7 +1,6 @@
 #include "weaponList.h"
 
-namespace fso {
-namespace fred {
+namespace fso::fred {
 weaponList::weaponList(QWidget* parent) : QListView(parent) {}
 
 void weaponList::mousePressEvent(QMouseEvent* event)
@@ -21,11 +20,11 @@ void weaponList::mouseMoveEvent(QMouseEvent* event)
 	if (!idx.isValid()) {
 		return;
 	}
-	QDrag* drag = new QDrag(this);
+	auto drag = new QDrag(this);
 	QModelIndexList idxs;
 	idxs.append(idx);
 	QMimeData* mimeData = model()->mimeData(idxs);
-	QPixmap* iconPixmap = new QPixmap();
+	auto iconPixmap = new QPixmap();
 	QPainter painter(iconPixmap);
 	painter.setFont(QFont("Arial"));
 	painter.drawText(QPoint(100, 100), model()->data(idx, Qt::DisplayRole).toString());
@@ -99,6 +98,5 @@ QMimeData* WeaponModel::mimeData(const QModelIndexList& indexes) const
 
 	return mimeData;
 }
-WeaponItem::WeaponItem(const int inID, const QString& inName) : name(inName), id(inID) {}
-} // namespace fred
-} // namespace fso
+WeaponItem::WeaponItem(const int inID, QString inName) : name(std::move(inName)), id(inID) {}
+} // namespace fso::fred

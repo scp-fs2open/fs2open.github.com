@@ -1,11 +1,11 @@
 #pragma once
 #include "mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h"
+
 #include <QAbstractItemModel>
-namespace fso {
-namespace fred {
+namespace fso::fred {
 class BankTreeItem {
   public:
-	explicit BankTreeItem(BankTreeItem* parentItem = nullptr, const QString& inName = "");
+	explicit BankTreeItem(BankTreeItem* parentItem = nullptr, QString inName = "");
 	virtual ~BankTreeItem();
 	virtual QVariant data(int column) const = 0;
 	void appendChild(BankTreeItem* child);
@@ -91,5 +91,4 @@ class BankTreeModel : public QAbstractItemModel {
 	BankTreeItem* getItem(const QModelIndex index) const;
 	static void setupModelData(const SCP_vector<Banks*>& data, BankTreeItem* parent);
 };
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

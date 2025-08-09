@@ -2,10 +2,8 @@
 
 #include <qmimedata.h>
 #include <weapon/weapon.h>
-namespace fso {
-namespace fred {
-BankTreeItem::BankTreeItem(BankTreeItem* parentItem, const QString& inName) : name(inName), m_parentItem(parentItem) {
-}
+namespace fso::fred {
+BankTreeItem::BankTreeItem(BankTreeItem* parentItem, QString inName) : name(std::move(inName)), m_parentItem(parentItem) {}
 BankTreeItem::~BankTreeItem()
 {
 	qDeleteAll(m_childItems);
@@ -127,14 +125,14 @@ void BankTreeBank::setAmmo(int value)
 
 BankTreeLabel::BankTreeLabel(const QString& inName, Banks* inBanks, BankTreeItem* parentItem)
 	: BankTreeItem(parentItem, inName), banks(inBanks)
-{}
+{
+}
 
 QVariant BankTreeLabel::data(int column) const
 {
 	switch (column) {
 	case 0:
-		return name + " (" + Ai_class_names[banks->getAiClass()] +
-			   ")";
+		return name + " (" + Ai_class_names[banks->getAiClass()] + ")";
 		break;
 	default:
 		return {};
@@ -144,20 +142,20 @@ QVariant BankTreeLabel::data(int column) const
 Qt::ItemFlags BankTreeLabel::getFlags(int column) const
 {
 	Q_UNUSED(column);
-		return Qt::ItemIsSelectable;
+	return Qt::ItemIsSelectable;
 }
 
 void BankTreeLabel::setAIClass(int value)
 {
 	Assert(banks != nullptr);
-		banks->setAiClass(value);
+	banks->setAiClass(value);
 }
 
 bool BankTreeLabel::setData(int column, const QVariant& value)
 {
-		Q_UNUSED(column);
-		setAIClass(value.toInt());
-		return true;
+	Q_UNUSED(column);
+	setAIClass(value.toInt());
+	return true;
 }
 
 bool BankTreeBank::setData(int column, const QVariant& value)
@@ -339,7 +337,7 @@ bool BankTreeModel::dropMimeData(const QMimeData* data,
 	if (action == Qt::IgnoreAction)
 		return true;
 
-	if (!(row != -1 || parent.isValid()))
+	if (row == -1 && !parent.isValid())
 		return false;
 
 	QByteArray encodedData = data->data("application/weaponid");
@@ -350,7 +348,6 @@ bool BankTreeModel::dropMimeData(const QMimeData* data,
 		setWeapon(parent, id);
 	}
 	return true;
-
 }
 
 void BankTreeModel::setWeapon(const QModelIndex& index, int data)
@@ -404,5 +401,4 @@ int BankTreeModel::checktype(const QModelIndex index) const
 	}
 	return type;
 }
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred

@@ -1,8 +1,7 @@
 #include "WeaponsTBLViewerModel.h"
+
 #include <weapon/weapon.h>
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 WeaponsTBLViewerModel::WeaponsTBLViewerModel(QObject* parent, EditorViewport* viewport, int wc)
 	: AbstractDialogModel(parent, viewport)
 {
@@ -34,8 +33,8 @@ void WeaponsTBLViewerModel::initializeData(const int wc)
 			line[strlen(line) - 1] = 0;
 
 		for (i = j = 0; line[i]; i++) {
-			if (line[i] == '/' && line[i + 1] == '/') 
-				break;			
+			if (line[i] == '/' && line[i + 1] == '/')
+				break;
 			if (line[i] == '/' && line[i + 1] == '*') {
 				comment = 1;
 				i++;
@@ -148,6 +147,4 @@ SCP_string WeaponsTBLViewerModel::getText() const
 {
 	return text;
 }
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

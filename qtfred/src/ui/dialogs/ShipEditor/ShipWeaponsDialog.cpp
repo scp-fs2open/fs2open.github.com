@@ -1,27 +1,24 @@
 #include "ShipWeaponsDialog.h"
 
-#include "ui_ShipWeaponsDialog.h"
 #include "WeaponsTBLViewer.h"
+#include "ui_ShipWeaponsDialog.h"
 
+#include <mission/util.h>
 #include <ui/util/SignalBlockers.h>
 #include <weapon/weapon.h>
 
 #include <QCloseEvent>
 #include <QStringListModel>
-#include <mission/util.h>
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, bool isMultiEdit)
 	: QDialog(parent), ui(new Ui::ShipWeaponsDialog()), _model(new ShipWeaponsDialogModel(this, viewport, isMultiEdit)),
 	  _viewport(viewport)
 {
 	ui->setupUi(this);
 
+	// connect(this, &QDialog::accepted, _model.get(), &ShipWeaponsDialogModel::apply);
 
-	//connect(this, &QDialog::accepted, _model.get(), &ShipWeaponsDialogModel::apply);
-	
-	//Build the model of ship weapons and set inital mode.
+	// Build the model of ship weapons and set inital mode.
 	if (!_model->getPrimaryBanks().empty()) {
 		const util::SignalBlockers blockers(this);
 		bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
@@ -44,7 +41,7 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		&QAbstractItemModel::dataChanged,
 		this,
 		&ShipWeaponsDialog::updateUI);
-	//Update the UI whenever selections change
+	// Update the UI whenever selections change
 	connect(ui->treeBanks->selectionModel(),
 		&QItemSelectionModel::selectionChanged,
 		this,
@@ -54,24 +51,26 @@ ShipWeaponsDialog::ShipWeaponsDialog(QDialog* parent, EditorViewport* viewport, 
 		this,
 		&ShipWeaponsDialog::updateUI);
 
-	//Setup ai combo box
-	//connect(ui->AICombo,
-		//static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		//this,
-		//&ShipWeaponsDialog::aiClassChanged);
+	// Setup ai combo box
+	// connect(ui->AICombo,
+	// static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+	// this,
+	//&ShipWeaponsDialog::aiClassChanged);
 
-	//Resize Bank view
+	// Resize Bank view
 	ui->treeBanks->expandAll();
 	ui->treeBanks->header()->setSectionResizeMode(QHeaderView::ResizeToContents);
 	updateUI();
 }
 
-ShipWeaponsDialog::~ShipWeaponsDialog() {
+ShipWeaponsDialog::~ShipWeaponsDialog()
+{
 	delete bankModel;
 	delete weapons;
 }
 
-void ShipWeaponsDialog::accept() {
+void ShipWeaponsDialog::accept()
+{
 	// If apply() returns true, close the dialog
 	if (_model->apply()) {
 		QDialog::accept();
@@ -79,7 +78,8 @@ void ShipWeaponsDialog::accept() {
 	// else: validation failed, don’t close
 }
 
-void ShipWeaponsDialog::reject() {
+void ShipWeaponsDialog::reject()
+{
 	// Asks the user if they want to save changes, if any
 	// If they do, it runs _model->apply() and returns the success value
 	// If they don't, it runs _model->reject() and returns true
@@ -100,7 +100,8 @@ void ShipWeaponsDialog::on_setAllButton_clicked()
 		bankModel->setWeapon(index, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
 	}
 }
-void ShipWeaponsDialog::on_tblButton_clicked() {
+void ShipWeaponsDialog::on_tblButton_clicked()
+{
 	if (ui->listWeapons->currentIndex().data(Qt::UserRole).toInt() >= 0) {
 		auto dialog = new WeaponsTBLViewer(this, _viewport, ui->listWeapons->currentIndex().data(Qt::UserRole).toInt());
 		dialog->show();
@@ -108,17 +109,20 @@ void ShipWeaponsDialog::on_tblButton_clicked() {
 		return;
 	}
 }
-void ShipWeaponsDialog::on_radioPrimary_toggled(bool checked) {
+void ShipWeaponsDialog::on_radioPrimary_toggled(bool checked)
+{
 	modeChanged(checked, 0);
 }
 void ShipWeaponsDialog::on_radioSecondary_toggled(bool checked)
 {
 	modeChanged(checked, 1);
 }
-void ShipWeaponsDialog::on_radioTertiary_toggled(bool checked) {
+void ShipWeaponsDialog::on_radioTertiary_toggled(bool checked)
+{
 	modeChanged(checked, 2);
 }
-void ShipWeaponsDialog::on_aiCombo_currentIndexChanged(int index) {
+void ShipWeaponsDialog::on_aiCombo_currentIndexChanged(int index)
+{
 	aiClassChanged(index);
 }
 void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
@@ -148,7 +152,7 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 			bankModel = new BankTreeModel(_model->getPrimaryBanks(), this);
 			dialogMode = 0;
 		}
-		//Reconnect beacuse the model has changed
+		// Reconnect beacuse the model has changed
 		connect(ui->treeBanks->selectionModel()->model(),
 			&QAbstractItemModel::dataChanged,
 			this,
@@ -169,7 +173,7 @@ void ShipWeaponsDialog::modeChanged(const bool enabled, const int mode)
 void ShipWeaponsDialog::updateUI()
 {
 	const util::SignalBlockers blockers(this);
-	//Radio Buttons
+	// Radio Buttons
 	ui->radioPrimary->setEnabled(!_model->getPrimaryBanks().empty());
 	ui->radioSecondary->setEnabled(!_model->getSecondaryBanks().empty());
 	ui->radioTertiary->setEnabled(false);
@@ -201,11 +205,13 @@ void ShipWeaponsDialog::updateUI()
 	}
 }
 
-void ShipWeaponsDialog::aiClassChanged(const int index) {
+void ShipWeaponsDialog::aiClassChanged(const int index)
+{
 	m_currentAI = ui->aiCombo->itemData(index).toInt();
 }
 
-void ShipWeaponsDialog::on_aiButton_clicked() {
+void ShipWeaponsDialog::on_aiButton_clicked()
+{
 	for (auto& index : ui->treeBanks->selectionModel()->selectedIndexes()) {
 		bankModel->setData(index, m_currentAI);
 	}
@@ -216,6 +222,4 @@ void ShipWeaponsDialog::on_buttonClose_clicked()
 	accept();
 }
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

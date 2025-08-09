@@ -6,9 +6,7 @@
 
 #include <QCloseEvent>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 WeaponsTBLViewer::WeaponsTBLViewer(QWidget* parent, EditorViewport* viewport, int wc)
 	: QDialog(parent), ui(new Ui::ShipTBLViewer()), _model(new WeaponsTBLViewerModel(this, viewport, wc)),
 	  _viewport(viewport)
@@ -34,6 +32,4 @@ void WeaponsTBLViewer::updateUI()
 	util::SignalBlockers blockers(this);
 	ui->TBLData->setPlainText(_model->getText().c_str());
 }
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

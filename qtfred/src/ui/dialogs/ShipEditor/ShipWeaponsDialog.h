@@ -10,9 +10,7 @@
 #include <QtCore/QItemSelection>
 #include <QtWidgets/QDialog>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class ShipWeaponsDialog;
@@ -49,7 +47,7 @@ class ShipWeaponsDialog : public QDialog {
 	void on_radioTertiary_toggled(bool checked);
 	void on_aiCombo_currentIndexChanged(int index);
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipWeaponsDialog> ui;
 	std::unique_ptr<ShipWeaponsDialogModel> _model;
 	/**
@@ -66,7 +64,5 @@ class ShipWeaponsDialog : public QDialog {
 	int m_currentAI = 0;
 	void aiClassChanged(const int index);
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
 #endif
