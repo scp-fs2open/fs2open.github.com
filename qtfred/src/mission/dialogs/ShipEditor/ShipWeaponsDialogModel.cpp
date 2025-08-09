@@ -194,7 +194,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < PrimaryBanks[0]->getBanks().size(); i++) {
+		for (int i = 0; i < static_cast<int>(PrimaryBanks[0]->getBanks().size()); i++) {
 			if (PrimaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.primary_bank_weapons[i]) {
 				PrimaryBanks[0]->getBanks()[i]->setWeapon(-2);
 			}
@@ -209,7 +209,7 @@ void ShipWeaponsDialogModel::initPrimary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : PrimaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < banks->getBanks().size(); i++) {
+						for (int i = 0; i < static_cast<int> (banks->getBanks().size()); i++) {
 							if (banks->getBanks()[i]->getWeaponId() != pss->weapons.primary_bank_weapons[i]) {
 								banks->getBanks()[i]->setWeapon(-2);
 							}
@@ -261,7 +261,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			}
 		}
 	} else {
-		for (int i = 0; i < SecondaryBanks[0]->getBanks().size(); i++) {
+		for (int i = 0; i < static_cast<int> (SecondaryBanks[0]->getBanks().size()); i++) {
 			if (SecondaryBanks[0]->getBanks()[i]->getWeaponId() != Ships[inst].weapons.secondary_bank_weapons[i]) {
 				SecondaryBanks[0]->getBanks()[i]->setWeapon(-2);
 			}
@@ -276,7 +276,7 @@ void ShipWeaponsDialogModel::initSecondary(int inst, bool first)
 			if (psub->type == SUBSYSTEM_TURRET) {
 				for (auto banks : SecondaryBanks) {
 					if (banks->getSubsys() == pss) {
-						for (int i = 0; i < banks->getBanks().size(); i++) {
+						for (int i = 0; i < static_cast<int> (banks->getBanks().size()); i++) {
 							if (banks->getByBankId(i)->getWeaponId() != pss->weapons.secondary_bank_weapons[i]) {
 								banks->getByBankId(i)->setWeapon(-2);
 							}
