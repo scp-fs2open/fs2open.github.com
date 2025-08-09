@@ -998,6 +998,10 @@ void multi_pxo_ban_clicked();
 void multi_pxo_init(int use_last_channel, bool api_access)
 {
 	if (!api_access) {
+		// clear screen
+		gr_reset_clip();
+		gr_clear();
+
 		// load the background bitmap
 		Multi_pxo_bitmap = bm_load(Multi_pxo_bitmap_fname[gr_screen.res]);
 		if (Multi_pxo_bitmap < 0) {
