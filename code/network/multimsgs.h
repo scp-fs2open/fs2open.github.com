@@ -30,6 +30,7 @@ class ship_subsys;
 struct log_entry;
 struct beam_fire_info;
 namespace animation { enum class ModelAnimationDirection; }
+struct tracking_info;
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
@@ -270,7 +271,7 @@ void send_game_info_packet( void );
 void send_leave_game_packet(short player_id = -1,int kicked_reason = -1,net_player *target = NULL);
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting_count, int num_fired, int allow_swarm );
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, tracking_info &tinfo, int num_fired, int allow_swarm );
 
 // send a packet indicating a countermeasure was fired
 void send_countermeasure_fired_packet( object *objp, int cmeasure_count, int rand_val );

@@ -938,6 +938,13 @@ extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, prec
 
 #define WEAPON_INDEX(wp)			(int)(wp-Weapons)
 
+typedef struct tracking_info {
+	ship_subsys *subsys;
+	int objnum;
+	bool locked;
+
+	tracking_info() : subsys(nullptr), objnum(-1), locked(false) {}
+} tracking_info;
 
 int weapon_info_lookup(const char *name);
 int weapon_info_get_index(const weapon_info *wip);
@@ -989,6 +996,11 @@ int weapon_create( const vec3d *pos,
 		0.f
 	});
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
+
+inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, tracking_info &tinfo)
+{
+	weapon_set_tracking_info(weapon_objnum, parent_objnum, tinfo.objnum, tinfo.locked, tinfo.subsys);
+}
 
 // gets the substitution pattern pointer for a given weapon
 // src_turret may be null
