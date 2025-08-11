@@ -4,6 +4,7 @@
 #include "io/key.h"
 #include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
+#include "model/modelrender.h"
 #include "object/object.h"
 #include "object/objectdock.h"
 #include "debris/debris.h"
@@ -419,9 +420,10 @@ void LabManager::cleanup() {
 		CurrentOrientation = vmd_identity_matrix;
 		ModelFilename = "";
 		Player_ship = nullptr;
+
+		Lab_object_detail_level = -1;
 	}
 
-	Cmdline_dis_collisions = Saved_cmdline_collisions_value;
 }
 
 void LabManager::deleteDockerObject() {
@@ -614,6 +616,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 			Player_ship = &Ships[Objects[CurrentObject].instance];
 			ai_paused = 0;
 
+			// Set the ship to play dead so it doesn't move. There is a special carveout to still allow subsystem rotations/translations in the lab, though
 			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
 		}
 		break;

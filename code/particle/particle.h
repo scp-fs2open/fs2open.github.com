@@ -62,6 +62,7 @@ namespace particle
 		vec3d pos = vmd_zero_vector;
 		vec3d vel = vmd_zero_vector;
 		float lifetime = -1.0f;
+		float starting_age = 0.0f;
 		float rad = -1.0f;
 		int bitmap = -1;
 		int nframes = -1;

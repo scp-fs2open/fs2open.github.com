@@ -173,6 +173,7 @@ bool Disable_intro_movie;
 bool Show_locked_status_scramble_missions;
 bool Disable_expensive_turret_target_check;
 float Shield_percent_skips_damage;
+float Min_radius_for_persistent_debris;
 
 
 #ifdef WITH_DISCORD
@@ -1551,6 +1552,10 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
+			if (optional_string("$Minimum ship radius for persistent debris:")) {
+				stuff_float(&Min_radius_for_persistent_debris);
+			}
+
 			// end of options ----------------------------------------
 
 			// if we've been through once already and are at the same place, force a move
@@ -1788,6 +1793,7 @@ void mod_table_reset()
 	Show_locked_status_scramble_missions = false;
 	Disable_expensive_turret_target_check = false;
 	Shield_percent_skips_damage = 0.1f;
+	Min_radius_for_persistent_debris = 50.0f;
 }
 
 void mod_table_set_version_flags()

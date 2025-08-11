@@ -666,6 +666,10 @@ void CFred_mission_save::save_ai_goals(ai_goal *goalp, int ship)
 					str = "ai-chase-ship-class";
 					break;
 
+				case AI_GOAL_CHASE_SHIP_TYPE:
+					str = "ai-chase-ship-type";
+					break;
+
 				case AI_GOAL_GUARD:
 					str = "ai-guard";
 					break;
@@ -1348,6 +1352,24 @@ int CFred_mission_save::save_campaign_file(const char *pathname)
 		optional_string_fred("$Flags:");
 		parse_comments();
 		fout(" %d\n", Campaign.flags);
+	}
+
+	if (Mission_save_format != FSO_FORMAT_RETAIL && !Campaign.custom_data.empty()) {
+		if (optional_string_fred("$begin_custom_data_map")) {
+			parse_comments(2);
+		} else {
+			fout("\n$begin_custom_data_map");
+		}
+
+		for (const auto& pair : Campaign.custom_data) {
+			fout("\n   +Val: %s %s", pair.first.c_str(), pair.second.c_str());
+		}
+
+		if (optional_string_fred("$end_custom_data_map")) {
+			parse_comments();
+		} else {
+			fout("\n$end_custom_data_map");
+		}
 	}
 
 	// write out the ships and weapons which the player can start the campaign with

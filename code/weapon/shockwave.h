@@ -83,6 +83,7 @@ typedef struct shockwave_create_info {
 	int radius_curve_idx;   // curve for shockwave radius over time
 	angles rot_angles;
 	bool rot_defined;		// if the modder specified rot_angles
+	bool rot_parent_relative = false;
 	bool damage_overridden;  // did this have shockwave damage specifically set or not
 
 	int damage_type_idx;

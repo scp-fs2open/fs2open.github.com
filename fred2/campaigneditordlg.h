@@ -115,6 +115,7 @@ protected:
 	afx_msg void OnChangeSubstituteMainHall();
 	afx_msg void OnChangeDebriefingPersona();
 	afx_msg void OnCustomTechDB();
+	afx_msg void OnCustomData();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };

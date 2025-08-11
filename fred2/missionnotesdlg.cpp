@@ -725,7 +725,7 @@ void CMissionNotesDlg::OnCustomData()
 {
 	UpdateData(TRUE);
 
-	CustomDataDlg dlg;
+	CustomDataDlg dlg(&The_mission.custom_data, this);
 	dlg.DoModal();
 
 	UpdateData(FALSE);

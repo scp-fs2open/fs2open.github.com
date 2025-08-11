@@ -29,6 +29,9 @@ bool ParticleSource::isValid() const {
 }
 
 void ParticleSource::finishCreation() {
+	if (Is_standalone)
+		return;
+
 	m_host->setupProcessing();
 
 	for (const auto& effect : ParticleManager::get()->getEffect(m_effect)) {

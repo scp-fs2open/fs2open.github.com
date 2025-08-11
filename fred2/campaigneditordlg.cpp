@@ -103,6 +103,7 @@ BEGIN_MESSAGE_MAP(campaign_editor, CFormView)
 	ON_EN_CHANGE(IDC_SUBSTITUTE_MAIN_HALL, OnChangeSubstituteMainHall)
 	ON_EN_CHANGE(IDC_DEBRIEFING_PERSONA, OnChangeDebriefingPersona)
 	ON_BN_CLICKED(IDC_CUSTOM_TECH_DB, OnCustomTechDB)
+	ON_BN_CLICKED(IDC_OPEN_CUSTOM_DATA, OnCustomData)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -949,6 +950,16 @@ void campaign_editor::OnCustomTechDB()
 		Campaign.flags |= CF_CUSTOM_TECH_DATABASE;
 	else
 		Campaign.flags &= ~CF_CUSTOM_TECH_DATABASE;
+}
+
+void campaign_editor::OnCustomData()
+{
+	UpdateData(TRUE);
+
+	CustomDataDlg dlg(&Campaign.custom_data, this);
+	dlg.DoModal();
+
+	UpdateData(FALSE);
 }
 
 CString campaign_editor::GetPathWithoutFile() const

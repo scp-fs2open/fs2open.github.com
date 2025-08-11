@@ -13408,7 +13408,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 									vm_vec_normalized_dir(&firing_vec, &predicted_target_pos, &obj->pos);
 								}
 
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (std_convergence_flagged || (auto_convergence_flagged && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
@@ -13435,12 +13435,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vm_vec_normalized_dir(&firing_vec, &target_vec, &firing_pos);
 
 								// set orientation
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (sip->flags[Ship::Info_Flags::Gun_convergence]) {
 								// model file defined convergence
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							}
 
 							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
@@ -14281,7 +14281,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			{
 				vec3d firing_vec;
 				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 			}
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
@@ -17432,6 +17432,7 @@ static const char* ship_get_ai_target_display_name(int goal, const char* name)
 		// These goals need no special handling
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 	case AI_GOAL_GUARD_WING:
 	case AI_GOAL_WAYPOINTS:
 	case AI_GOAL_WAYPOINTS_ONCE:
@@ -17465,7 +17466,7 @@ SCP_string ship_return_orders(ship* sp)
 
 	auto order_text = Ai_goal_text(aigp->ai_mode, aigp->ai_submode);
 	if (order_text == nullptr)
-		return SCP_string();
+		return {};
 
 	SCP_string outbuf = order_text;
 
@@ -17489,6 +17490,7 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 		if (aigp->target_name) {
 			outbuf += XSTR("any ", -1);
 			outbuf += target_name;
@@ -17496,6 +17498,7 @@ SCP_string ship_return_orders(ship* sp)
 			outbuf = XSTR("no orders", 495);
 		}
 		break;
+
 
 	case AI_GOAL_CHASE:
 	case AI_GOAL_DOCK:
@@ -17534,7 +17537,7 @@ SCP_string ship_return_orders(ship* sp)
 		break;
 
 	default:
-		return SCP_string();
+		return {};
 	}
 
 	return outbuf;
@@ -20001,9 +20004,11 @@ void ship_move_subsystems(object *objp)
 	Assertion(objp->type == OBJ_SHIP, "ship_move_subsystems should only be called for ships!  objp type = %d", objp->type);
 	auto shipp = &Ships[objp->instance];
 	
-	// non-player ships that are playing dead do not process subsystems or turrets
-	if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && Ai_info[shipp->ai_index].mode == AIM_PLAY_DEAD)
-		return;
+	// non-player ships that are playing dead do not process subsystems or turrets unless we're in the lab
+	if (gameseq_get_state() != GS_STATE_LAB) {
+		if ((!(objp->flags[Object::Object_Flags::Player_ship]) || Player_use_ai) && Ai_info[shipp->ai_index].mode == AIM_PLAY_DEAD)
+			return;
+	}
 
 	for (auto pss = GET_FIRST(&shipp->subsys_list); pss != END_OF_LIST(&shipp->subsys_list); pss = GET_NEXT(pss))
 	{

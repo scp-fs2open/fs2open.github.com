@@ -518,6 +518,10 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			stuff_int( &(Campaign.flags) );
 		}
 
+		if (optional_string("$begin_custom_data_map")) {
+			parse_string_map(Campaign.custom_data, "$end_custom_data_map", "+Val:");
+		}
+
 		// parse the optional ship/weapon information
 		mission_campaign_get_sw_info();
 
@@ -1259,6 +1263,7 @@ void mission_campaign_clear()
 	memset(Campaign.name, 0, NAME_LENGTH);
 	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
 	Campaign.type = 0;
+	Campaign.custom_data.clear();
 	Campaign.flags = CF_DEFAULT_VALUE;
 	Campaign.num_missions = 0;
 	Campaign.num_missions_completed = 0;

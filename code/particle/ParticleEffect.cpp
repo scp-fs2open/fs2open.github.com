@@ -339,12 +339,16 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		info.length = m_length.next() * lengthMultiplier;
 		if (m_hasLifetime) {
 			if (m_parentLifetime)
-				// if we were spawned by a particle, parentLifetime is the parent's remaining liftime and m_lifetime is a factor of that
+				// if we were spawned by a particle, parentLifetime is the parent's remaining lifetime and m_lifetime is a factor of that
 				info.lifetime = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
 			else
 				info.lifetime = m_lifetime.next() * lifetimeMultiplier;
+
 			info.lifetime_from_animation = m_keep_anim_length_if_available;
 		}
+		
+		info.starting_age = interp * f2fl(Frametime);
+		
 		info.size_lifetime_curve = m_size_lifetime_curve;
 		info.vel_lifetime_curve = m_vel_lifetime_curve;
 

@@ -618,6 +618,11 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		sci->rot_defined = true;
 	}
 
+	sprintf(buf, "%sShockwave Rotation Is Relative To Parent:", pre_char);
+	if(optional_string(buf.c_str())) {
+		stuff_boolean(&sci->rot_parent_relative);
+	}
+
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_string(sci->pof_name, F_NAME, MAX_FILENAME_LEN);
@@ -7265,7 +7270,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				// fire the beam
 				beam_fire(&fire_info);
 			} else {
-				vm_vector_2_matrix_norm(&orient, &tvec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&orient, &tvec, &objp->orient.vec.uvec, &objp->orient.vec.rvec);
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], true);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
