@@ -41,6 +41,7 @@ struct splash_screen {
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
+extern bool Skybox_internal_depth_consistency;
 extern bool Fixed_turret_collisions;
 extern bool Fixed_missile_detonation;
 extern bool Damage_impacted_subsystem_first;
