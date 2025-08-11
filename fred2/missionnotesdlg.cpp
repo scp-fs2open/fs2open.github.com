@@ -318,14 +318,14 @@ void CMissionNotesDlg::OnOK()
 	lcl_fred_replace_stuff(m_squad_name);
 
 	// puts "$End Notes:" on a different line to ensure it's not interpreted as part of a comment
-	pad_with_newline(m_mission_notes, NOTES_LENGTH - 1);
+	pad_with_newline(m_mission_notes);
 
 	string_copy(The_mission.name, m_mission_title, NAME_LENGTH - 1, 1);
-	string_copy(The_mission.author, m_designer_name, true);
+	The_mission.author = m_designer_name;
 	string_copy(The_mission.loading_screen[GR_640], m_loading_640, NAME_LENGTH - 1, 1);
 	string_copy(The_mission.loading_screen[GR_1024], m_loading_1024, NAME_LENGTH - 1, 1);
-	deconvert_multiline_string(The_mission.notes, m_mission_notes, NOTES_LENGTH - 1);
-	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc, MISSION_DESC_LENGTH - 1);
+	deconvert_multiline_string(The_mission.notes, m_mission_notes);
+	deconvert_multiline_string(The_mission.mission_desc, m_mission_desc);
 
 	// copy squad stuff
 	if(m_squad_name == CString(NO_SQUAD)){
@@ -392,10 +392,10 @@ BOOL CMissionNotesDlg::OnInitDialog()
 	m_designer_name_orig = m_designer_name = _T(The_mission.author.c_str());
 	m_created = _T(The_mission.created);
 	m_modified = _T(The_mission.modified);
-	convert_multiline_string(m_mission_notes_orig, The_mission.notes);
-	convert_multiline_string(m_mission_notes, The_mission.notes);
-	convert_multiline_string(m_mission_desc_orig, The_mission.mission_desc);
-	convert_multiline_string(m_mission_desc, The_mission.mission_desc);
+	convert_multiline_string(m_mission_notes_orig, The_mission.notes.get());
+	convert_multiline_string(m_mission_notes, The_mission.notes.get());
+	convert_multiline_string(m_mission_desc_orig, The_mission.mission_desc.get());
+	convert_multiline_string(m_mission_desc, The_mission.mission_desc.get());
 	m_red_alert = (The_mission.flags[Mission::Mission_Flags::Red_alert]) ? 1 : 0;
 	m_scramble = (The_mission.flags[Mission::Mission_Flags::Scramble]) ? 1 : 0;
 	m_full_war = Mission_all_attack;
