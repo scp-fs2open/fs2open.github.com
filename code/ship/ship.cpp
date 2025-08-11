@@ -13836,7 +13836,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 {
-	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
+	int			n, weapon_idx, j, bank, bank_adjusted, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -13846,6 +13846,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	polymodel	*pm;
 	vec3d		missile_point, pnt, firing_pos;
 	bool has_fired = false;		// Used to determine whether to fire the scripting hook
+	tracking_info tinfo;
 
 	Assert( obj != NULL );
 
@@ -13932,14 +13933,13 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
-		starting_bank_count = swp->secondary_bank_ammo[bank];
 	}
 
 	if (ship_fire_secondary_detonate(obj, swp)) {
 		// in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
 		// to client code to set the detonate timer to 0.
 		if ( MULTIPLAYER_MASTER ) {
-			send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
+			send_secondary_fired_packet( shipp, 0, tinfo, 1, allow_swarm );
 		}
 	
 		//	For all banks, if ok to fire a weapon, make it wait a bit.
@@ -14112,10 +14112,6 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			return 0;		// we can make a quick out here!!!
 		}
 
-		int target_objnum;
-		ship_subsys *target_subsys;
-		int locked;
-
 		if ( obj == Player_obj || ( MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
@@ -14132,39 +14128,35 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				}
 
 				if (lock_data.obj != nullptr) {
-					target_objnum = OBJ_INDEX(lock_data.obj);
-					target_subsys = lock_data.subsys;
-					locked = 1;
+					tinfo.objnum = OBJ_INDEX(lock_data.obj);
+					tinfo.subsys = lock_data.subsys;
+					tinfo.locked = true;
 				} else {
-					target_objnum = -1;
-					target_subsys = nullptr;
-					locked = 0;
+					tinfo.objnum = -1;
+					tinfo.subsys = nullptr;
+					tinfo.locked = false;
 				}
-			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
-				target_objnum = aip->target_objnum;
-				target_subsys = aip->targeted_subsys;
-				locked = aip->current_target_is_locked;
 			} else {
-				target_objnum = -1;
-				target_subsys = nullptr;
-				locked = 0;
+				tinfo.objnum = aip->target_objnum;
+				tinfo.subsys = aip->targeted_subsys;
+				tinfo.locked = aip->current_target_is_locked == 1;
 			}
 		} else if (wip->multi_lock && !aip->ai_missile_locks_firing.empty()) {
-			target_objnum = aip->ai_missile_locks_firing.back().first;
-			target_subsys = aip->ai_missile_locks_firing.back().second;
-			locked = 1;
+			tinfo.objnum = aip->ai_missile_locks_firing.back().first;
+			tinfo.subsys = aip->ai_missile_locks_firing.back().second;
+			tinfo.locked = true;
 			aip->ai_missile_locks_firing.pop_back();
 		} else {
-			target_objnum = aip->target_objnum;
-			target_subsys = aip->targeted_subsys;
-			locked = aip->current_target_is_locked;
+			tinfo.objnum = aip->target_objnum;
+			tinfo.subsys = aip->targeted_subsys;
+			tinfo.locked = aip->current_target_is_locked == 1;
 		}
 
 		num_slots = pm->missile_banks[bank].num_slots;
 		float target_radius = 0.f;
 
-		if (target_objnum >= 0) {
-			target_radius = Objects[target_objnum].radius;
+		if (tinfo.objnum >= 0) {
+			target_radius = Objects[tinfo.objnum].radius;
 		}
 
 		auto launch_curve_data = WeaponLaunchCurveData {
@@ -14286,7 +14278,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked, false, 0.f, nullptr, launch_curve_data);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, 0.f, nullptr, launch_curve_data);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
@@ -14298,7 +14290,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
-				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), target_objnum, locked, target_subsys);
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
 				has_fired = true;
 
 				// create the muzzle flash effect
@@ -14362,7 +14354,7 @@ done_secondary:
 		// Cyborg17 - If this is a rollback shot, the server will let the player know within the packet.
 		if ( MULTIPLAYER_MASTER ) {			
 			Assert(starting_sig != 0);
-			send_secondary_fired_packet( shipp, starting_sig, starting_bank_count, num_fired, allow_swarm );			
+			send_secondary_fired_packet( shipp, starting_sig, tinfo, num_fired, allow_swarm );
 		}
 
 		// Handle Player only stuff, including stats and client secondary packets
