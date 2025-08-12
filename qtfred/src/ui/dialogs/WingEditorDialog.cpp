@@ -18,20 +18,19 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 {
 	ui->setupUi(this);
 
-	// Temporary: set window title to verify it’s loading
 	setWindowTitle(tr("Wing Editor"));
 	
 	// Whenever the model reports changes, refresh the UI
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &WingEditorDialog::updateUi);
 	connect(_model.get(), &WingEditorDialogModel::wingChanged, this, [this] {
-		refreshAllDynamicCombos(); // leader/targets
-		updateUi();             // values + enables
+		refreshAllDynamicCombos();
+		updateUi();
 	});
 
 	// Whenever the tree is manipulated, update the proper UI elements
-	//connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
-		//_model->setArrivalFormula(oldNode, newNode);
-	//});
+	connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
+		_model->setArrivalTree(oldNode, newNode); //TODO this signal seems broken
+	});
 	connect(ui->arrivalTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
 		ui->helpText->setPlainText(help);
 	});
@@ -39,9 +38,9 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		ui->HelpTitle->setText(help);
 	});
 
-	//connect(ui->departureTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
-		//_model->setDepartureFormula(oldNode, newNode);
-	//});
+	connect(ui->departureTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
+		_model->setDepartureTree(oldNode, newNode); // TODO this signal seems broken
+	});
 	connect(ui->departureTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
 		ui->helpText->setPlainText(help);
 	});
@@ -49,9 +48,6 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		ui->HelpTitle->setText(help);
 	});
 
-	// TODO: Remove when wiring model
-	// Example: disable controls until model is connected
-	// ui->wingNameEdit->setEnabled(false);
 	refreshAllDynamicCombos();
 	updateUi();
 
@@ -90,10 +86,9 @@ void WingEditorDialog::updateUi()
 
 	ui->arrivalTree->initializeEditor(_viewport->editor, this);
 	ui->arrivalTree->load_tree(_model->getArrivalTree());
-	if (ui->arrivalTree->select_sexp_node != -1) { //TODO what is this?
+	if (ui->arrivalTree->select_sexp_node != -1) {
 		ui->arrivalTree->hilite_item(ui->arrivalTree->select_sexp_node);
 	}
-
 	ui->noArrivalWarpCheckBox->setChecked(_model->getNoArrivalWarpFlag());
 	ui->noArrivalWarpAdjustCheckbox->setChecked(_model->getNoArrivalWarpAdjustFlag());
 
@@ -103,6 +98,9 @@ void WingEditorDialog::updateUi()
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
 	ui->departureTree->initializeEditor(_viewport->editor, this);
 	ui->departureTree->load_tree(_model->getDepartureTree());
+	if (ui->departureTree->select_sexp_node != -1) {
+		ui->departureTree->hilite_item(ui->departureTree->select_sexp_node);
+	}
 	ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarpFlag());
 	ui->noDepartureWarpAdjustCheckbox->setChecked(_model->getNoDepartureWarpAdjustFlag());
 
@@ -277,7 +275,7 @@ void WingEditorDialog::refreshLeaderCombo()
 {
 	util::SignalBlockers blockers(this);
 	ui->wingLeaderCombo->clear();
-	auto [sel, names] = _model->getLeaderList(); // {currentIndex, vector<string> of member names}
+	auto [sel, names] = _model->getLeaderList();
 	for (int i = 0; i < (int)names.size(); ++i) {
 		ui->wingLeaderCombo->addItem(QString::fromUtf8(names[i].c_str()), i);
 	}
@@ -320,7 +318,7 @@ void WingEditorDialog::refreshArrivalTargetCombo()
 {
 	util::SignalBlockers blockers(this);
 	ui->arrivalTargetCombo->clear();
-	auto items = _model->getArrivalTargetList(); // vector<pair<int,string>>
+	auto items = _model->getArrivalTargetList();
 	for (auto& [id, label] : items) {
 		ui->arrivalTargetCombo->addItem(QString::fromUtf8(label.c_str()), id);
 	}
@@ -330,7 +328,7 @@ void WingEditorDialog::refreshDepartureTargetCombo()
 {
 	util::SignalBlockers blockers(this);
 	ui->departureTargetCombo->clear();
-	auto items = _model->getDepartureTargetList(); // vector<pair<int,string>>
+	auto items = _model->getDepartureTargetList();
 	for (auto& [id, label] : items) {
 		ui->departureTargetCombo->addItem(QString::fromUtf8(label.c_str()), id);
 	}
@@ -529,6 +527,9 @@ void WingEditorDialog::on_arrivalDelaySpinBox_valueChanged(int value)
 void WingEditorDialog::on_minDelaySpinBox_valueChanged(int value)
 {
 	_model->setMinWaveDelay(value);
+
+	util::SignalBlockers blockers(this);
+	ui->maxDelaySpinBox->setMinimum(value);
 }
 
 void WingEditorDialog::on_maxDelaySpinBox_valueChanged(int value)
@@ -592,10 +593,10 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree)
+/*void WingEditorDialog::on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree)
 {
 	_model->setArrivalTree(oldTree, newTree);
-}
+}*/
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
 {
@@ -670,10 +671,10 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-void WingEditorDialog::on_departureTree_rootNodeFormulaChanged(int oldTree, int newTree)
+/*void WingEditorDialog::on_departureTree_rootNodeFormulaChanged(int oldTree, int newTree)
 {
 	_model->setDepartureTree(oldTree, newTree);
-}
+}*/
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)
 {
@@ -683,10 +684,6 @@ void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)
 void WingEditorDialog::on_noDepartureWarpAdjustCheckbox_toggled(bool checked)
 {
 	_model->setNoDepartureWarpAdjustFlag(checked);
-}
-
-void temp() {
-
 }
 
 } // namespace fso::fred::dialogs

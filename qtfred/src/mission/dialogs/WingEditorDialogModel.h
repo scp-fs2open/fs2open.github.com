@@ -15,6 +15,9 @@
 
 namespace fso::fred::dialogs {
 
+	//TODO: This dialog currently works on the wing data directly instead of model members
+	// so it does not support temporary changes. This will need to be changed in a future PR
+
 /**
  * @brief QTFred's Wing Editor's Model
  */
@@ -42,8 +45,6 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		bool departureNeedsTarget() const;
 		int getMaxWaveThreshold() const;
 		int getMinArrivalDistance() const;
-
-		SCP_vector<SCP_string> getCurrentSelectableWings(); //unused?
 
 		std::pair<int, SCP_vector<SCP_string>> getLeaderList(); //used
 		std::vector<std::pair<int, std::string>> getHotkeyList() const;
@@ -100,7 +101,6 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setArrivalDistance(int newDistance);
 		std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
 		void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
-		// void setCustomWarpIn(int warpIn);
 		int getArrivalTree() const;
 		void setArrivalTree(int /*oldTree*/, int newTree);
 		bool getNoArrivalWarpFlag() const;
@@ -117,7 +117,6 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setDepartureTarget(int targetIndex);
 		std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
 		void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
-		// void setCustomWarpOut(int warpOut);
 		int getDepartureTree() const;
 		void setDepartureTree(int /*oldTree*/, int newTree);
 		bool getNoDepartureWarpFlag() const;
@@ -130,7 +129,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 
 	private slots:
 		void onEditorSelectionChanged(int); // currentObjectChanged
-	private:
+
+	private: // NOLINT(readability-redundant-access-specifiers)
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
 		std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum) const;
