@@ -51,7 +51,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_arrivalDistanceSpinBox_valueChanged(int value);
 		void on_restrictArrivalPathsButton_clicked();
 		void on_customWarpinButton_clicked();
-		//void on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree);
+		void on_arrivalTree_nodeChanged(int newTree);
 		void on_noArrivalWarpCheckBox_toggled(bool checked);
 		void on_noArrivalWarpAdjustCheckbox_toggled(bool checked);
 
@@ -61,9 +61,15 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_departureTargetCombo_currentIndexChanged(int /*index*/);
 		void on_restrictDeparturePathsButton_clicked();
 		void on_customWarpoutButton_clicked();
-		//void on_departureTree_rootNodeFormulaChanged(int oldTree, int newTree);
+		void on_departureTree_nodeChanged(int newTree);
 		void on_noDepartureWarpCheckBox_toggled(bool checked);
 		void on_noDepartureWarpAdjustCheckbox_toggled(bool checked);
+
+		// Sexp help text
+		void on_arrivalTree_helpChanged(const QString& help);
+		void on_arrivalTree_miniHelpChanged(const QString& help);
+		void on_departureTree_helpChanged(const QString& help);
+		void on_departureTree_miniHelpChanged(const QString& help);
 
 	private:
 		std::unique_ptr<Ui::WingEditorDialog> ui;
