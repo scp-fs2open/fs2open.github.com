@@ -102,7 +102,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
 		void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
 		int getArrivalTree() const;
-		void setArrivalTree(int /*oldTree*/, int newTree);
+		void setArrivalTree(int newTree);
 		bool getNoArrivalWarpFlag() const;
 		void setNoArrivalWarpFlag(bool flagIn);
 		bool getNoArrivalWarpAdjustFlag() const;
@@ -118,7 +118,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
 		void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
 		int getDepartureTree() const;
-		void setDepartureTree(int /*oldTree*/, int newTree);
+		void setDepartureTree(int newTree);
 		bool getNoDepartureWarpFlag() const;
 		void setNoDepartureWarpFlag(bool flagIn);
 		bool getNoDepartureWarpAdjustFlag() const;
@@ -129,6 +129,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 
 	private slots:
 		void onEditorSelectionChanged(int); // currentObjectChanged
+		void onEditorMissionChanged(); // missionChanged
 
 	private: // NOLINT(readability-redundant-access-specifiers)
 		void reloadFromCurWing();

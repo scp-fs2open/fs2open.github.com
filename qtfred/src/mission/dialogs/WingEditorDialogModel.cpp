@@ -16,6 +16,7 @@ WingEditorDialogModel::WingEditorDialogModel(QObject* parent, EditorViewport* vi
 	prepareSquadLogoList();
 
 	connect(_editor, &Editor::currentObjectChanged, this, &WingEditorDialogModel::onEditorSelectionChanged);
+	connect(_editor, &Editor::missionChanged, this, &WingEditorDialogModel::onEditorMissionChanged);
 }
 
 void WingEditorDialogModel::onEditorSelectionChanged(int)
@@ -23,6 +24,10 @@ void WingEditorDialogModel::onEditorSelectionChanged(int)
 	reloadFromCurWing();
 }
 
+void WingEditorDialogModel::onEditorMissionChanged()
+{
+	reloadFromCurWing();
+}
 
 void WingEditorDialogModel::reloadFromCurWing()
 {
@@ -1001,14 +1006,12 @@ int WingEditorDialogModel::getArrivalTree() const
 	return w->arrival_cue;
 }
 
-void WingEditorDialogModel::setArrivalTree(int /*oldTree*/, int newTree)
+void WingEditorDialogModel::setArrivalTree(int newTree)
 {
 	if (!wingIsValid())
 		return;
 
 	auto* w = getCurrentWing();
-
-	// TODO not sure what oldTree was for, ignoring for now
 
 	modify(w->arrival_cue, newTree);
 }
@@ -1242,15 +1245,12 @@ int WingEditorDialogModel::getDepartureTree() const
 	return w->departure_cue;
 }
 
-void WingEditorDialogModel::setDepartureTree(int oldTree, int newTree)
+void WingEditorDialogModel::setDepartureTree(int newTree)
 {
 	if (!wingIsValid())
 		return;
 
 	auto* w = getCurrentWing();
-
-	//if (oldTree != w->departure_cue)
-		//modify(w->departure_cue, newTree);
 
 	modify(w->departure_cue, newTree);
 }

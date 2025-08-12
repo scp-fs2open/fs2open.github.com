@@ -27,27 +27,6 @@ WingEditorDialog::WingEditorDialog(FredView* parent, EditorViewport* viewport)
 		updateUi();
 	});
 
-	// Whenever the tree is manipulated, update the proper UI elements
-	connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
-		_model->setArrivalTree(oldNode, newNode); //TODO this signal seems broken
-	});
-	connect(ui->arrivalTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
-		ui->helpText->setPlainText(help);
-	});
-	connect(ui->arrivalTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) {
-		ui->HelpTitle->setText(help);
-	});
-
-	connect(ui->departureTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int oldNode, int newNode) {
-		_model->setDepartureTree(oldNode, newNode); // TODO this signal seems broken
-	});
-	connect(ui->departureTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
-		ui->helpText->setPlainText(help);
-	});
-	connect(ui->departureTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) {
-		ui->HelpTitle->setText(help);
-	});
-
 	refreshAllDynamicCombos();
 	updateUi();
 
@@ -593,10 +572,10 @@ void WingEditorDialog::on_customWarpinButton_clicked()
 	dlg.exec();
 }
 
-/*void WingEditorDialog::on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree)
+void WingEditorDialog::on_arrivalTree_nodeChanged(int newTree)
 {
-	_model->setArrivalTree(oldTree, newTree);
-}*/
+	_model->setArrivalTree(newTree); //TODO This seems broken in a wierd way. Will need followup
+}
 
 void WingEditorDialog::on_noArrivalWarpCheckBox_toggled(bool checked)
 {
@@ -671,10 +650,10 @@ void WingEditorDialog::on_customWarpoutButton_clicked()
 	dlg.exec();
 }
 
-/*void WingEditorDialog::on_departureTree_rootNodeFormulaChanged(int oldTree, int newTree)
+void WingEditorDialog::on_departureTree_nodeChanged(int newTree)
 {
-	_model->setDepartureTree(oldTree, newTree);
-}*/
+	_model->setDepartureTree(newTree); //TODO This seems broken in a wierd way. Will need followup
+}
 
 void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)
 {
@@ -684,6 +663,31 @@ void WingEditorDialog::on_noDepartureWarpCheckBox_toggled(bool checked)
 void WingEditorDialog::on_noDepartureWarpAdjustCheckbox_toggled(bool checked)
 {
 	_model->setNoDepartureWarpAdjustFlag(checked);
+}
+
+void WingEditorDialog::on_arrivalTree_helpChanged(const QString& help)
+{
+	ui->helpText->setPlainText(help);
+}
+
+void WingEditorDialog::on_arrivalTree_miniHelpChanged(const QString& help)
+{
+	ui->HelpTitle->setText(help);
+}
+
+void WingEditorDialog::on_departureTree_helpChanged(const QString& help)
+{
+	ui->helpText->setPlainText(help);
+}
+
+void WingEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
+{
+	ui->HelpTitle->setText(help);
+}
+
+void temp()
+{
+
 }
 
 } // namespace fso::fred::dialogs
