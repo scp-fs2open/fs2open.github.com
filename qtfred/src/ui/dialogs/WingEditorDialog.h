@@ -32,7 +32,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_formationCombo_currentIndexChanged(int /*index*/);
 		void on_formationScaleSpinBox_valueChanged(double value);
 		void on_alignFormationButton_clicked();
-		void on_wingFlagsButton_clicked();
+		void on_setSquadLogoButton_clicked();
 
 		// Top section, third column
 		void on_prevWingButton_clicked();
@@ -40,9 +40,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_deleteWingButton_clicked();
 		void on_disbandWingButton_clicked();
 		void on_initialOrdersButton_clicked();
-
-		// Middle section
-		void on_setSquadLogoButton_clicked();
+		void on_wingFlagsButton_clicked();
 
 		// Arrival controls
 		void on_arrivalLocationCombo_currentIndexChanged(int /*index*/);
@@ -51,7 +49,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void on_maxDelaySpinBox_valueChanged(int value);
 		void on_arrivalTargetCombo_currentIndexChanged(int /*index*/);
 		void on_arrivalDistanceSpinBox_valueChanged(int value);
-		void on_restrictArrivalPathButton_clicked();
+		void on_restrictArrivalPathsButton_clicked();
 		void on_customWarpinButton_clicked();
 		void on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree);
 		void on_noArrivalWarpCheckBox_toggled(bool checked);
