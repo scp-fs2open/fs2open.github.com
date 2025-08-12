@@ -34,7 +34,7 @@ void WingEditorDialogModel::reloadFromCurWing()
 	_currentWingIndex = w;
 
 	if (w < 0 || Wings[w].wave_count == 0) {
-		// no wing selected/valid — disable or clear fields
+		// No wing selected
 		modify(_currentWingIndex, -1);
 		modify(_currentWingName, SCP_string());
 		return;
@@ -43,7 +43,6 @@ void WingEditorDialogModel::reloadFromCurWing()
 	const auto& wing = Wings[w];
 	modify(_currentWingIndex, w);
 	modify(_currentWingName, SCP_string(wing.name));
-	// TODO: copy values from `wing` into your model fields & emit changed signals
 
 	Q_EMIT wingChanged();
 }
@@ -103,7 +102,7 @@ void WingEditorDialogModel::prepareSquadLogoList()
 bool WingEditorDialogModel::isPlayerWing() const
 {
 	if (!wingIsValid()) {
-		return false; // TODO make isSafeForWing() function
+		return false;
 	}
 
 	return _editor->wing_is_player_wing(_currentWingIndex);
@@ -112,7 +111,7 @@ bool WingEditorDialogModel::isPlayerWing() const
 bool WingEditorDialogModel::containsPlayerStart() const
 {
 	if (!wingIsValid()) {
-		return false; // TODO make isSafeForWing() function
+		return false;
 	}
 
 	return _editor->wing_contains_player_start(_currentWingIndex);
@@ -251,22 +250,6 @@ int WingEditorDialogModel::getMinArrivalDistance() const
 	return 0;
 }
 
-SCP_vector<SCP_string> WingEditorDialogModel::getCurrentSelectableWings()
-{
-	// going to make an exception for this function.  Going to just send the list as a secondary thing that gets added
-	// to the rest of the combobox
-	SCP_vector<SCP_string> wingNames;
-
-	for (const auto& wing : Wings) {
-		// strlen is slow.... and that's all I was trying to check anyway
-		if (wing.name[0] != '\0') {
-			wingNames.emplace_back(wing.name);
-		}
-	}
-
-	return wingNames;
-}
-
 std::pair<int, SCP_vector<SCP_string>> WingEditorDialogModel::getLeaderList()
 {
 	std::pair<int, SCP_vector<SCP_string>> out;
@@ -353,7 +336,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 
 	const bool requireDockBay = (w->arrival_location == ArrivalLocation::FROM_DOCK_BAY);
 
-	// Add "special" anchors (Any friendly/hostile/etc.), both all-ships and players-only variants
+	// Add special anchors (Any friendly/hostile/etc); both all ships and players only variants
 	if (!requireDockBay) {
 		char buf[NAME_LENGTH + 15];
 		for (int restrict_to_players = 0; restrict_to_players < 2; ++restrict_to_players) {
@@ -364,7 +347,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 		}
 	}
 
-	// Add ships (and player starts) that are NOT currently marked
+	// Add ships and player starts that are NOT currently marked
 	for (object* objp = GET_FIRST(&obj_used_list); objp != END_OF_LIST(&obj_used_list); objp = GET_NEXT(objp)) {
 		if ((objp->type != OBJ_SHIP && objp->type != OBJ_START) || objp->flags[Object::Object_Flags::Marked]) {
 			continue;
@@ -389,7 +372,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureTarg
 	if (!w)
 		return items;
 
-	// Only dock-bay departures need a specific target
+	// Only dockbay departures need a specific target
 	if (w->departure_location != DepartureLocation::TO_DOCK_BAY)
 		return items;
 
@@ -469,7 +452,6 @@ void WingEditorDialogModel::setNumberOfWaves(int num)
 	// you read that right, I don't see a limit for the number of waves.
 	// Original Fred had a UI limit of 99, but yolo
 	if (num < 1) {
-		//QMessageBox::warning(this, "Invalid Number of Waves", "The number of waves must be at least 1.");
 		num = 1;
 	}
 	auto* w = getCurrentWing();
@@ -568,7 +550,7 @@ void WingEditorDialogModel::setFormationScale(float newScale)
 	auto* w = getCurrentWing();
 
 	if (newScale < 0.0f) {
-		newScale = 0.0f; // TODO Unsure if formation scale has a minimum value
+		newScale = 0.0f; // Unsure if formation scale has a minimum value
 	}
 
 	modify(w->formation_scale, newScale);
@@ -582,7 +564,8 @@ void WingEditorDialogModel::alignWingFormation()
 	auto wingp = getCurrentWing();
 	auto leader_objp = &Objects[Ships[wingp->ship_index[0]].objnum];
 
-	// TODO make all changes to the model temporary and only apply them on close/next/previous
+	// TODO Handle this when the dialog supports temporary changes in the future
+	//make all changes to the model temporary and only apply them on close/next/previous
 	//auto old_formation = wingp->formation;
 	//auto old_formation_scale = wingp->formation_scale;
 
@@ -622,7 +605,7 @@ void WingEditorDialogModel::setSquadLogo(SCP_string filename)
 	auto* w = getCurrentWing();
 
 	if (filename.size() >= TOKEN_LENGTH) {
-		return; // too long
+		return;
 	}
 
 	strcpy_s(w->wing_squad_filename, filename.c_str());
@@ -758,10 +741,17 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 	auto* w = getCurrentWing();
 	modify(w->arrival_location, newArrivalType);
 
-	// If the new arrival type is a dock bay,clear warp in parameters
+	// If the new arrival type is a dock bay, clear warp in parameters
 	// else, clear arrival paths
 	if (newArrivalType == ArrivalLocation::FROM_DOCK_BAY) {
-		// TODO clear warp in parameters
+		for (int si = 0; si < MAX_SHIPS; ++si) {
+			if (Ships[si].objnum < 0)
+				continue;
+			if (Ships[si].wingnum != _currentWingIndex)
+				continue;
+
+			Ships[si].warpin_params_index = -1;
+		}
 	} else {
 		modify(w->arrival_path_mask, 0);
 	}
@@ -1089,7 +1079,14 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 	// If the new departure type is a dock bay,clear warp out parameters
 	// else, clear departure paths
 	if (newDepartureType == DepartureLocation::TO_DOCK_BAY) {
-		// TODO clear warp out parameters
+		for (int si = 0; si < MAX_SHIPS; ++si) {
+			if (Ships[si].objnum < 0)
+				continue;
+			if (Ships[si].wingnum != _currentWingIndex)
+				continue;
+
+			Ships[si].warpout_params_index = -1;
+		}
 	} else {
 		modify(w->departure_path_mask, 0);
 	}
@@ -1245,14 +1242,15 @@ int WingEditorDialogModel::getDepartureTree() const
 	return w->departure_cue;
 }
 
-void WingEditorDialogModel::setDepartureTree(int /*oldTree*/, int newTree)
+void WingEditorDialogModel::setDepartureTree(int oldTree, int newTree)
 {
 	if (!wingIsValid())
 		return;
 
 	auto* w = getCurrentWing();
 
-	// TODO not sure what oldTree was for, ignoring for now
+	//if (oldTree != w->departure_cue)
+		//modify(w->departure_cue, newTree);
 
 	modify(w->departure_cue, newTree);
 }
