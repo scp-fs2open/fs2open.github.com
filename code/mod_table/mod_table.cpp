@@ -27,6 +27,7 @@
 
 int Directive_wait_time;
 bool True_loop_argument_sexps;
+bool Skybox_internal_depth_consistency;
 bool Fixed_turret_collisions;
 bool Fixed_missile_detonation;
 bool Damage_impacted_subsystem_first;
@@ -1137,6 +1138,10 @@ void parse_mod_table(const char *filename)
 
 			}
 
+			if (optional_string("$Skybox internal depth consistency:")) {
+				stuff_boolean(&Skybox_internal_depth_consistency);
+			}
+
 			optional_string("#OTHER SETTINGS");
 
 			if (optional_string("$Fixed Turret Collisions:")) {
@@ -1640,6 +1645,7 @@ void mod_table_reset()
 {
 	Directive_wait_time = 3000;
 	True_loop_argument_sexps = false;
+	Skybox_internal_depth_consistency = false;
 	Fixed_turret_collisions = false;
 	Fixed_missile_detonation = false;
 	Damage_impacted_subsystem_first = false;
@@ -1820,5 +1826,6 @@ void mod_table_set_version_flags()
 		Use_model_eyepoint_normals = true;
 		Fix_asteroid_bounding_box_check = true;
 		Disable_expensive_turret_target_check = true;
+		Skybox_internal_depth_consistency = true;
 	}
 }
