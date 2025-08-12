@@ -28,8 +28,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		WingEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	
 		// The model in this dialog directly applies changes to the mission, so apply and reject are superfluous	
-		bool apply() { return true; }
-		void reject() {}
+		bool apply() override { return true; }
+		void reject() override {}
 
 		int getCurrentWingIndex() const { return _currentWingIndex; };
 
@@ -46,11 +46,11 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		int getMaxWaveThreshold() const;
 		int getMinArrivalDistance() const;
 
-		std::pair<int, SCP_vector<SCP_string>> getLeaderList(); //used
-		std::vector<std::pair<int, std::string>> getHotkeyList() const;
-		std::vector<std::pair<int, std::string>> getFormationList() const;
-		std::vector<std::pair<int, std::string>> getArrivalLocationList() const;
-		std::vector<std::pair<int, std::string>> getDepartureLocationList() const;
+		std::pair<int, SCP_vector<SCP_string>> getLeaderList() const;
+		static std::vector<std::pair<int, std::string>> getHotkeyList();
+		static std::vector<std::pair<int, std::string>> getFormationList();
+		static std::vector<std::pair<int, std::string>> getArrivalLocationList();
+		static std::vector<std::pair<int, std::string>> getDepartureLocationList();
 		std::vector<std::pair<int, std::string>> getArrivalTargetList() const;
 		std::vector<std::pair<int, std::string>> getDepartureTargetList() const;
 		std::vector<std::string> getSquadLogoList() const { return squadLogoList; };
@@ -74,7 +74,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setFormationScale(float newScale);
 		void alignWingFormation();
 		SCP_string getSquadLogo() const;
-		void setSquadLogo(SCP_string filename);
+		void setSquadLogo(const SCP_string& filename);
 
 		// Top section, third column
 		void selectPreviousWing();
@@ -134,7 +134,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 	private: // NOLINT(readability-redundant-access-specifiers)
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
-		std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum) const;
+		static std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum);
 		void prepareSquadLogoList();
 
 		int _currentWingIndex = -1;

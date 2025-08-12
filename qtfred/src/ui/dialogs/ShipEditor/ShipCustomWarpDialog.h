@@ -58,6 +58,6 @@ class ShipCustomWarpDialog : public QDialog {
 	 */
 	void animChanged();
 
-	void setupConnections(bool departure);
+	void setupConnections();
 };
 } // namespace fso::fred::dialogs

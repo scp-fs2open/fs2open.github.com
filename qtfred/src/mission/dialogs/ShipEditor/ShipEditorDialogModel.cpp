@@ -1361,9 +1361,9 @@ namespace fso {
 				}
 			}
 
-			bool ShipEditorDialogModel::wing_is_player_wing(const int wing)
+			bool ShipEditorDialogModel::wing_is_player_wing(const int wing) const
 			{
-				return Editor::wing_is_player_wing(wing);
+				return _editor->wing_is_player_wing(wing);
 			}
 
 			const std::set<size_t> &ShipEditorDialogModel::getShipOrders() const
