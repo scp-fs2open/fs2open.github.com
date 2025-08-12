@@ -5365,9 +5365,9 @@ int CFred_mission_save::save_wings()
 		}
 
 		auto get_flag_name = [](Ship::Wing_Flags flag) -> const char* {
-			for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
-				if (Parse_wing_flags[i].def == flag) {
-					return Parse_wing_flags[i].name;
+			for (size_t k = 0; k < Num_parse_wing_flags; ++k) {
+				if (Parse_wing_flags[k].def == flag) {
+					return Parse_wing_flags[k].name;
 				}
 			}
 			return nullptr;

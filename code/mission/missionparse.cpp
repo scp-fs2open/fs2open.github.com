@@ -4792,19 +4792,19 @@ void parse_wing(mission *pm)
 	if (optional_string("+Flags:")) {
 		auto count = stuff_string_list(wing_flag_strings, Num_parse_wing_flags);
 
-		for (i = 0; i < count; i++) {
-			auto tok = wing_flag_strings[i];
+		for (size_t j = 0; j < count; j++) {
+			auto tok = wing_flag_strings[j];
 			bool matched = false;
-			for (size_t j = 0; j < Num_parse_wing_flags; ++j) {
-				if (!stricmp(tok, Parse_wing_flags[j].name)) {
-					wingp->flags.set(Parse_wing_flags[j].def);
+			for (auto& Parse_wing_flag : Parse_wing_flags) {
+				if (!stricmp(tok, Parse_wing_flag.name)) {
+					wingp->flags.set(Parse_wing_flag.def);
 					matched = true;
 					break;
 				}
 			}
 
 			if (!matched) {
-				Warning(LOCATION, "Unknown wing flag '%s' — skipping.", tok);
+				Warning(LOCATION, "Unknown wing flag '%s', skipping!", tok);
 			}
 		}
 	}

@@ -15,7 +15,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
-	setupConnections(departure);
+	setupConnections();
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -47,7 +47,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 		_model.reset(new ShipCustomWarpDialogModel(this, viewport, departure));
 	}
 
-	setupConnections(departure);
+	setupConnections();
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -59,7 +59,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 	resize(QDialog::sizeHint());
 }
 
-void ShipCustomWarpDialog::setupConnections(bool departure)
+void ShipCustomWarpDialog::setupConnections()
 {
 	connect(this, &QDialog::accepted, _model.get(), &ShipCustomWarpDialogModel::apply);
 

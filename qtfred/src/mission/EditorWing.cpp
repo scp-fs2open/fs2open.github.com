@@ -436,13 +436,13 @@ bool Editor::wing_is_player_wing(int wing)
 	// Multiplayer wing check
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		if (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS) {
-			for (int i = 0; i < MAX_TVT_WINGS; i++) {
-				if (wing == TVT_wings[i])
+			for (int twing : TVT_wings) {
+				if (wing == twing)
 					return true;
 			}
 		} else {
-			for (int i = 0; i < MAX_STARTING_WINGS; i++) {
-				if (wing == Starting_wings[i])
+			for (int swing : Starting_wings) {
+				if (wing == swing)
 					return true;
 			}
 		}
@@ -463,7 +463,7 @@ bool Editor::wing_contains_player_start(int wing)
 		   Ships[Player_start_shipnum].objnum >= 0 && Ships[Player_start_shipnum].wingnum == wing;
 }
 
-WingNameCheck Editor::validate_wing_name(const SCP_string& new_name, int ignore_wing) const
+WingNameCheck Editor::validate_wing_name(const SCP_string& new_name, int ignore_wing)
 {
 	WingNameCheck r{false, WingNameError::None, {}};
 	if (new_name.empty()) {
@@ -509,8 +509,8 @@ WingNameCheck Editor::validate_wing_name(const SCP_string& new_name, int ignore_
 	}
 
 	// Target priority groups
-	for (size_t i = 0; i < Ai_tp_list.size(); ++i) {
-		if (!stricmp(new_name.c_str(), Ai_tp_list[i].name)) {
+	for (auto& ai : Ai_tp_list) {
+		if (!stricmp(new_name.c_str(), ai.name)) {
 			r.error = WingNameError::DuplicateTargetPriority;
 			r.message = "This wing name is already used by a target priority group.";
 			return r;

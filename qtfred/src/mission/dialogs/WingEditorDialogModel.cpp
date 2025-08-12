@@ -1,5 +1,4 @@
 #include "WingEditorDialogModel.h"
-#include <QMessageBox>
 #include "FredApplication.h"
 #include <unordered_set>
 #include "iff_defs/iff_defs.h"
@@ -65,8 +64,7 @@ wing* WingEditorDialogModel::getCurrentWing() const
 	return &Wings[_currentWingIndex];
 }
 
-std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask,
-	int anchorShipnum) const
+std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum)
 {
 	std::vector<std::pair<SCP_string, bool>> out;
 
@@ -119,7 +117,7 @@ bool WingEditorDialogModel::containsPlayerStart() const
 		return false;
 	}
 
-	return _editor->wing_contains_player_start(_currentWingIndex);
+	return Editor::wing_contains_player_start(_currentWingIndex);
 }
 
 bool WingEditorDialogModel::wingAllFighterBombers() const
@@ -255,23 +253,25 @@ int WingEditorDialogModel::getMinArrivalDistance() const
 	return 0;
 }
 
-std::pair<int, SCP_vector<SCP_string>> WingEditorDialogModel::getLeaderList()
+std::pair<int, SCP_vector<SCP_string>> WingEditorDialogModel::getLeaderList() const
 {
-	std::pair<int, SCP_vector<SCP_string>> out;
-	if (_currentWingIndex < 0)
-		return out;
+	std::pair<int, SCP_vector<SCP_string>> items;
+	if (!wingIsValid())
+		return items;
 
-	out.first = ::Wings[_currentWingIndex].special_ship;
-	for (int x = 0; x < ::Wings[_currentWingIndex].wave_count; ++x) {
-		int si = ::Wings[_currentWingIndex].ship_index[x];
+	auto w = getCurrentWing();
+
+	items.first = w->special_ship;
+	for (int x = 0; x < w->wave_count; ++x) {
+		int si = w->ship_index[x];
 		if (si >= 0 && si < MAX_SHIPS) {
-			out.second.emplace_back(Ships[si].ship_name);
+			items.second.emplace_back(Ships[si].ship_name);
 		}
 	}
-	return out;
+	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getHotkeyList() const
+std::vector<std::pair<int, std::string>> WingEditorDialogModel::getHotkeyList()
 {
 	std::vector<std::pair<int, std::string>> items;
 	items.emplace_back(-1, "None");
@@ -287,7 +287,7 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getHotkeyList() 
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getFormationList() const
+std::vector<std::pair<int, std::string>> WingEditorDialogModel::getFormationList()
 {
 	std::vector<std::pair<int, std::string>> items;
 	items.emplace_back(-1, "Default");
@@ -299,18 +299,20 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getFormationList
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalLocationList() const
+std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalLocationList()
 {
 	std::vector<std::pair<int, std::string>> items;
+	items.reserve(MAX_ARRIVAL_NAMES);
 	for (int i = 0; i < MAX_ARRIVAL_NAMES; i++) {
 		items.emplace_back(i, Arrival_location_names[i]);
 	}
 	return items;
 }
 
-std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureLocationList() const
+std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureLocationList()
 {
 	std::vector<std::pair<int, std::string>> items;
+	items.reserve(MAX_DEPARTURE_NAMES);
 	for (int i = 0; i < MAX_DEPARTURE_NAMES; i++) {
 		items.emplace_back(i, Departure_location_names[i]);
 	}
@@ -321,7 +323,7 @@ static bool shipHasDockBay(int ship_info_index)
 {
 	if (ship_info_index < 0 || ship_info_index >= (int)::Ship_info.size())
 		return false;
-	auto mn = ::Ship_info[ship_info_index].model_num;
+	auto mn = Ship_info[ship_info_index].model_num;
 	if (mn < 0)
 		return false;
 	auto pm = model_get(mn);
@@ -359,12 +361,12 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getArrivalTarget
 		}
 
 		const int ship_idx = objp->instance;
-		const int sclass = ::Ships[ship_idx].ship_info_index;
+		const int sclass = Ships[ship_idx].ship_info_index;
 
 		if (requireDockBay && !shipHasDockBay(sclass))
 			continue;
 
-		items.emplace_back(ship_idx, ::Ships[ship_idx].ship_name);
+		items.emplace_back(ship_idx, Ships[ship_idx].ship_name);
 	}
 
 	return items;
@@ -387,12 +389,12 @@ std::vector<std::pair<int, std::string>> WingEditorDialogModel::getDepartureTarg
 		}
 
 		const int ship_idx = objp->instance;
-		const int sclass = ::Ships[ship_idx].ship_info_index;
+		const int sclass = Ships[ship_idx].ship_info_index;
 
 		if (!shipHasDockBay(sclass))
 			continue;
 
-		items.emplace_back(ship_idx, ::Ships[ship_idx].ship_name);
+		items.emplace_back(ship_idx, Ships[ship_idx].ship_name);
 	}
 
 	return items;
@@ -597,12 +599,11 @@ SCP_string WingEditorDialogModel::getSquadLogo() const
 		return "";
 
 	const auto w = getCurrentWing();
-	SCP_string filename = w->wing_squad_filename;
 
-	return filename;
+	return w->wing_squad_filename;
 }
 
-void WingEditorDialogModel::setSquadLogo(SCP_string filename)
+void WingEditorDialogModel::setSquadLogo(const SCP_string& filename)
 {
 	if (!wingIsValid())
 		return;
@@ -749,13 +750,13 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 	// If the new arrival type is a dock bay, clear warp in parameters
 	// else, clear arrival paths
 	if (newArrivalType == ArrivalLocation::FROM_DOCK_BAY) {
-		for (int si = 0; si < MAX_SHIPS; ++si) {
-			if (Ships[si].objnum < 0)
+		for (auto& ship : Ships) {
+			if (ship.objnum < 0)
 				continue;
-			if (Ships[si].wingnum != _currentWingIndex)
+			if (ship.wingnum != _currentWingIndex)
 				continue;
 
-			Ships[si].warpin_params_index = -1;
+			ship.warpin_params_index = -1;
 		}
 	} else {
 		modify(w->arrival_path_mask, 0);
@@ -1082,13 +1083,13 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 	// If the new departure type is a dock bay,clear warp out parameters
 	// else, clear departure paths
 	if (newDepartureType == DepartureLocation::TO_DOCK_BAY) {
-		for (int si = 0; si < MAX_SHIPS; ++si) {
-			if (Ships[si].objnum < 0)
+		for (auto& ship : Ships) {
+			if (ship.objnum < 0)
 				continue;
-			if (Ships[si].wingnum != _currentWingIndex)
+			if (ship.wingnum != _currentWingIndex)
 				continue;
 
-			Ships[si].warpout_params_index = -1;
+			ship.warpout_params_index = -1;
 		}
 	} else {
 		modify(w->departure_path_mask, 0);

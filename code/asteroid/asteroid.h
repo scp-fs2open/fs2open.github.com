@@ -16,7 +16,6 @@
 #include "globalincs/pstypes.h"
 #include "object/object_flags.h"
 #include "io/timer.h"
-#include "math/vecmat.h"
 
 class object;
 class polymodel;
@@ -131,7 +130,7 @@ typedef enum {
 	FT_PASSIVE
 } field_type_t;
 
-struct asteroid_field {
+typedef	struct asteroid_field {
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
 	float	bound_rad;
@@ -148,24 +147,7 @@ struct asteroid_field {
 	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
 
 	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
-
-	asteroid_field()
-	{
-		num_initial_asteroids = 0; // disable the field by default
-		speed = 0.0f;
-		vm_vec_make(&min_bound, -1000.0f, -1000.0f, -1000.0f);
-		vm_vec_make(&max_bound, 1000.0f, 1000.0f, 1000.0f);
-		vm_vec_make(&inner_min_bound, -500.0f, -500.0f, -500.0f);
-		vm_vec_make(&inner_max_bound, 500.0f, 500.0f, 500.0f);
-		has_inner_bound = false;
-		field_type = FT_ACTIVE;
-		debris_genre = DG_ASTEROID;
-		enhanced_visibility_checks = false;
-		bound_rad = 0.0f;
-		vel = ZERO_VECTOR;
-		// the vectors default-construct to empty
-	}
-};
+} asteroid_field;
 
 extern SCP_vector< asteroid_info > Asteroid_info;
 extern asteroid Asteroids[MAX_ASTEROIDS];

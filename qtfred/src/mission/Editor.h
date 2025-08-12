@@ -176,11 +176,11 @@ class Editor : public QObject {
 
 	bool query_single_wing_marked();
 
-	static bool wing_is_player_wing(int);
+	bool wing_is_player_wing(int);
 
 	static bool wing_contains_player_start(int);
 
-	WingNameCheck validate_wing_name(const SCP_string& new_name, int ignore_wing = -1) const;
+	static WingNameCheck validate_wing_name(const SCP_string& new_name, int ignore_wing = -1);
 
 	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
