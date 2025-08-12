@@ -21,6 +21,23 @@
 namespace fso {
 namespace fred {
 
+enum class WingNameError {
+	None,
+	Empty,
+	TooLong,
+	DuplicateWing,
+	DuplicateShip,
+	DuplicateTargetPriority,
+	DuplicateWaypointList,
+	DuplicateJumpNode,
+};
+
+struct WingNameCheck {
+	bool ok;
+	WingNameError error;
+	std::string message; // human-readable for dialogs
+};
+
 /*! Game editor.
  * Handles everything needed to edit the game,
  * without any knowledge of the actual GUI framework stack.
@@ -160,6 +177,12 @@ class Editor : public QObject {
 	bool query_single_wing_marked();
 
 	static bool wing_is_player_wing(int);
+
+	static bool wing_contains_player_start(int);
+
+	WingNameCheck validate_wing_name(const SCP_string& new_name, int ignore_wing = -1) const;
+
+	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.

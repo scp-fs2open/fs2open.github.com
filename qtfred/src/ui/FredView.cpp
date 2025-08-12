@@ -12,6 +12,7 @@
 #include <qevent.h>
 #include <FredApplication.h>
 #include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
+#include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
@@ -756,6 +757,19 @@ void FredView::on_actionShips_triggered(bool)
 		_shipEditorDialog->activateWindow();
 	}
 
+}
+void FredView::on_actionWings_triggered(bool)
+{
+	if (!_wingEditorDialog) {
+		_wingEditorDialog = new dialogs::WingEditorDialog(this, _viewport);
+		_wingEditorDialog->setAttribute(Qt::WA_DeleteOnClose);
+		// When the user closes it, reset our pointer so we can open a new one later
+		connect(_wingEditorDialog, &QObject::destroyed, this, [this]() { _wingEditorDialog = nullptr; });
+		_wingEditorDialog->show();
+	} else {
+		_wingEditorDialog->raise();
+		_wingEditorDialog->activateWindow();
+	}
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes

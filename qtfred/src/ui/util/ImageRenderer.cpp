@@ -55,6 +55,8 @@ bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 
 	// Build QImage by copying to own memory
 	if (hasAlpha) {
+		// RGBA8888 is what the FSO helper writes; if colors look swapped on your platform,
+		// call outImage = outImage.rgbSwapped();
 		QImage tmp(reinterpret_cast<const uchar*>(buffer.constData()), w, h, QImage::Format_RGBA8888);
 		outImage = tmp.copy();
 	} else {
