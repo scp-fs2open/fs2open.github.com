@@ -1,5 +1,6 @@
 #include "WingEditorDialog.h"
 #include "General/CheckBoxListDialog.h"
+#include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
 
 #include "ui_WingEditorDialog.h"
@@ -76,9 +77,7 @@ void WingEditorDialog::updateUi()
 	// Top section, second column
 	ui->formationCombo->setCurrentIndex(ui->formationCombo->findData(_model->getFormationId()));
 	ui->formationScaleSpinBox->setValue(_model->getFormationScale());
-
-	// Middle section
-	updateLogoPreview(_model->getSquadronLogo());
+	updateLogoPreview();
 
 	// Arrival controls
 	ui->arrivalLocationCombo->setCurrentIndex(static_cast<int>(_model->getArrivalType()));
@@ -109,10 +108,11 @@ void WingEditorDialog::updateUi()
 	enableOrDisableControls();
 }
 
-void WingEditorDialog::updateLogoPreview(const std::string& filename)
+void WingEditorDialog::updateLogoPreview()
 {
 	QImage img;
 	QString err;
+	const auto filename = _model->getSquadLogo();
 	if (fso::fred::util::loadImageToQImage(filename, img, &err)) {
 		// scale to the preview area
 		const auto pix = QPixmap::fromImage(img).scaled(ui->squadLogoImage->size(), Qt::KeepAspectRatio, Qt::SmoothTransformation);
@@ -405,10 +405,31 @@ void WingEditorDialog::on_alignFormationButton_clicked()
 
 void WingEditorDialog::on_setSquadLogoButton_clicked()
 {
-	// const QString filename = QFileDialog::getOpenFileName(this, "Select Squadron Logo", "", "Image Files (*.png *.jpg
-	// *.jpeg *.bmp *.tga);;All Files (*)"); if (!filename.isEmpty()) { _model->setSquadronLogo(filename.toStdString());
-	// updateLogoPreview(filename.toStdString());
-	//}
+	const auto files = _model->getSquadLogoList();
+	if (files.empty()) {
+		QMessageBox::information(this, "Select Squad Image", "No images found.");
+		return;
+	}
+
+	QStringList qnames;
+	qnames.reserve(static_cast<int>(files.size()));
+	for (const auto& s : files)
+		qnames << QString::fromStdString(s);
+
+	ImagePickerDialog dlg(this);
+	dlg.setWindowTitle("Select Squad Image");
+	dlg.allowUnset(true);
+	dlg.setImageFilenames(qnames);
+
+	// Optional: preselect current
+	dlg.setInitialSelection(QString::fromStdString(_model->getSquadLogo()));
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	const std::string chosen = dlg.selectedFile().toUtf8();
+	_model->setSquadLogo(chosen);
+	updateLogoPreview();
 }
 
 void WingEditorDialog::on_prevWingButton_clicked()

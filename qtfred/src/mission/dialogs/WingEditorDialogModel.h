@@ -6,6 +6,7 @@
 #include <globalincs/linklist.h>
 #include <ship/ship.h>
 #include <playerman/player.h> // for max hotkeys
+#include <playerman/managepilot.h> // for squad logos
 #include "ui/widgets/sexp_tree.h"
 
 #include "globalincs/pstypes.h"
@@ -51,6 +52,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		std::vector<std::pair<int, std::string>> getDepartureLocationList() const;
 		std::vector<std::pair<int, std::string>> getArrivalTargetList() const;
 		std::vector<std::pair<int, std::string>> getDepartureTargetList() const;
+		std::vector<std::string> getSquadLogoList() const { return squadLogoList; };
 
 		// Top section, first column
 		SCP_string getWingName() const;
@@ -70,7 +72,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		float getFormationScale() const;
 		void setFormationScale(float newScale);
 		void alignWingFormation();
-		SCP_string getSquadronLogo() const;
+		SCP_string getSquadLogo() const;
 		void setSquadLogo(SCP_string filename);
 
 		// Top section, third column
@@ -131,9 +133,12 @@ class WingEditorDialogModel : public AbstractDialogModel {
 	private:
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
-		std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum) const;
+		std::vector<std::pair<SCP_string, bool>> getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum) const;
+		void prepareSquadLogoList();
 
 		int _currentWingIndex = -1;
 		SCP_string _currentWingName;
+
+		SCP_vector<SCP_string> squadLogoList;
 };
 } // namespace fso::fred::dialogs

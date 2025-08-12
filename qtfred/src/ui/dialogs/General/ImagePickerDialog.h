@@ -32,6 +32,7 @@ class ImagePickerDialog : public QDialog {
 	void rebuildList();
 	QIcon iconFor(const QString& name);
 
+  private:
 	QLineEdit* _filterEdit{nullptr};
 	QListWidget* _list{nullptr};
 	QPushButton* _okBtn{nullptr};

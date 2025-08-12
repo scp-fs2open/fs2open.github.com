@@ -13,6 +13,7 @@ WingEditorDialogModel::WingEditorDialogModel(QObject* parent, EditorViewport* vi
 	: AbstractDialogModel(parent, viewport)
 {
 	reloadFromCurWing();
+	prepareSquadLogoList();
 
 	connect(_editor, &Editor::currentObjectChanged, this, &WingEditorDialogModel::onEditorSelectionChanged);
 }
@@ -88,6 +89,15 @@ std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsF
 	}
 
 	return out;
+}
+
+void WingEditorDialogModel::prepareSquadLogoList()
+{
+	pilot_load_squad_pic_list();
+
+	for (int i = 0; i < Num_pilot_squad_images; i++) {
+		squadLogoList.emplace_back(Pilot_squad_image_names[i]);
+	}
 }
 
 bool WingEditorDialogModel::isPlayerWing() const
@@ -593,7 +603,7 @@ void WingEditorDialogModel::alignWingFormation()
 	_editor->updateAllViewports();
 }
 
-SCP_string WingEditorDialogModel::getSquadronLogo() const
+SCP_string WingEditorDialogModel::getSquadLogo() const
 {
 	if (!wingIsValid())
 		return "";
