@@ -60,6 +60,36 @@ wing* WingEditorDialogModel::getCurrentWing() const
 	return &Wings[_currentWingIndex];
 }
 
+std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask,
+	int anchorShipnum) const
+{
+	std::vector<std::pair<SCP_string, bool>> out;
+
+	if (anchorShipnum < 0 || !ship_has_dock_bay(anchorShipnum))
+		return out;
+
+	const int sii = Ships[anchorShipnum].ship_info_index;
+	const int model_num = Ship_info[sii].model_num;
+	auto* pm = model_get(model_num);
+	if (!pm || !pm->ship_bay)
+		return out;
+
+	const int num_paths = pm->ship_bay->num_paths;
+	const auto* idx = pm->ship_bay->path_indexes;
+
+	const bool all_allowed = (mask == 0);
+	out.reserve(static_cast<size_t>(num_paths));
+
+	for (int i = 0; i < num_paths; ++i) {
+		const int path_id = idx[i];
+		const char* name = pm->paths[path_id].name;
+		const bool allowed = all_allowed ? true : ((mask & (1u << i)) != 0);
+		out.emplace_back(name ? SCP_string{name} : SCP_string{"<unnamed path>"}, allowed);
+	}
+
+	return out;
+}
+
 bool WingEditorDialogModel::isPlayerWing() const
 {
 	if (!wingIsValid()) {
@@ -563,12 +593,30 @@ void WingEditorDialogModel::alignWingFormation()
 	_editor->updateAllViewports();
 }
 
-void WingEditorDialogModel::showWingFlagsDialog()
+SCP_string WingEditorDialogModel::getSquadronLogo() const
+{
+	if (!wingIsValid())
+		return "";
+
+	const auto w = getCurrentWing();
+	SCP_string filename = w->wing_squad_filename;
+
+	return filename;
+}
+
+void WingEditorDialogModel::setSquadLogo(SCP_string filename)
 {
 	if (!wingIsValid())
 		return;
-	//fred_main_wing_flags_dialog(_currentWingIndex, _viewport);
-	//_editor->updateAllViewports();
+
+	auto* w = getCurrentWing();
+
+	if (filename.size() >= TOKEN_LENGTH) {
+		return; // too long
+	}
+
+	strcpy_s(w->wing_squad_filename, filename.c_str());
+	set_modified();
 }
 
 void WingEditorDialogModel::selectPreviousWing()
@@ -635,15 +683,52 @@ void WingEditorDialogModel::disbandCurrentWing()
 	reloadFromCurWing();
 }
 
-SCP_string WingEditorDialogModel::getSquadronLogo() const
+std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getWingFlags() const
+{
+	std::vector<std::pair<SCP_string, bool>> flags;
+	if (!wingIsValid())
+		return flags;
+
+	const auto* w = getCurrentWing();
+
+	for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
+		auto flagDef = Parse_wing_flags[i];
+
+		// Skip flags that have checkboxes elsewhere in the dialog
+		if (flagDef.def == Ship::Wing_Flags::No_arrival_warp || flagDef.def == Ship::Wing_Flags::No_departure_warp ||
+			flagDef.def == Ship::Wing_Flags::Same_arrival_warp_when_docked ||
+			flagDef.def == Ship::Wing_Flags::Same_departure_warp_when_docked) {
+			continue;
+		}
+
+		bool checked = w->flags[flagDef.def];
+		flags.emplace_back(flagDef.name, checked);
+	}
+
+	return flags;
+}
+
+void WingEditorDialogModel::setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags)
 {
 	if (!wingIsValid())
-		return "";
+		return;
 
-	const auto w = getCurrentWing();
-	SCP_string filename = w->wing_squad_filename;
+	auto* w = getCurrentWing();
 
-	return filename;
+	for (const auto& [name, checked] : newFlags) {
+		// Find the matching flagDef by name
+		for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
+			if (!stricmp(name.c_str(), Parse_wing_flags[i].name)) {
+				if (checked)
+					w->flags.set(Parse_wing_flags[i].def);
+				else
+					w->flags.remove(Parse_wing_flags[i].def);
+				break;
+			}
+		}
+	}
+
+	set_modified();
 }
 
 ArrivalLocation WingEditorDialogModel::getArrivalType() const
@@ -668,7 +753,7 @@ void WingEditorDialogModel::setArrivalType(ArrivalLocation newArrivalType)
 	if (newArrivalType == ArrivalLocation::FROM_DOCK_BAY) {
 		// TODO clear warp in parameters
 	} else {
-		// TODO clear arrival paths
+		modify(w->arrival_path_mask, 0);
 	}
 
 	// If the new arrival type does not need a target, clear it
@@ -816,6 +901,10 @@ void WingEditorDialogModel::setArrivalTarget(int targetIndex)
 		targetIndex = -1;
 	}
 
+	if (w->arrival_anchor == targetIndex) {
+		return; // no change
+	}
+
 	modify(w->arrival_anchor, targetIndex);
 
 	// Set the distance to minimum if current is smaller
@@ -823,6 +912,8 @@ void WingEditorDialogModel::setArrivalTarget(int targetIndex)
 	if (minDistance < w->arrival_distance) {
 		setArrivalDistance(0);
 	}
+
+	modify(w->arrival_path_mask, 0);
 }
 
 int WingEditorDialogModel::getArrivalDistance() const
@@ -851,6 +942,54 @@ void WingEditorDialogModel::setArrivalDistance(int newDistance)
 	}
 
 	modify(w->arrival_distance, newDistance);
+}
+
+std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getArrivalPaths() const
+{
+	if (!wingIsValid())
+		return {};
+
+	const auto* w = getCurrentWing();
+	if (w->arrival_location != ArrivalLocation::FROM_DOCK_BAY)
+		return {};
+
+	return getDockBayPathsForWingMask(w->arrival_path_mask, w->arrival_anchor);
+}
+
+void WingEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
+{
+	if (!wingIsValid())
+		return;
+
+	auto* w = getCurrentWing();
+
+	if (w->arrival_location != ArrivalLocation::FROM_DOCK_BAY)
+		return;
+
+	const int anchor = w->arrival_anchor;
+	if (anchor < 0 || !ship_has_dock_bay(anchor))
+		return;
+
+	// Rebuild mask in the same order we produced the list
+	int mask = 0;
+	int num_allowed = 0;
+
+	for (size_t i = 0; i < chosen.size(); ++i) {
+		if (chosen[i].second) {
+			mask |= (1 << static_cast<int>(i));
+			++num_allowed;
+		}
+	}
+
+	// if all are allowed, store 0
+	if (num_allowed == static_cast<int>(chosen.size())) {
+		mask = 0;
+	}
+
+	if (mask != w->arrival_path_mask) {
+		w->arrival_path_mask = mask;
+		set_modified();
+	}
 }
 
 int WingEditorDialogModel::getArrivalTree() const
@@ -894,6 +1033,7 @@ void WingEditorDialogModel::setNoArrivalWarpFlag(bool flagIn)
 	} else {
 		w->flags.remove(Ship::Wing_Flags::No_arrival_warp);
 	}
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoArrivalWarpAdjustFlag() const
@@ -909,12 +1049,14 @@ void WingEditorDialogModel::setNoArrivalWarpAdjustFlag(bool flagIn)
 {
 	if (!wingIsValid())
 		return;
+
 	auto* w = getCurrentWing();
 	if (flagIn) {
 		w->flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked);
 	} else {
 		w->flags.remove(Ship::Wing_Flags::Same_arrival_warp_when_docked);
 	}
+	set_modified();
 }
 
 DepartureLocation WingEditorDialogModel::getDepartureType() const
@@ -939,7 +1081,7 @@ void WingEditorDialogModel::setDepartureType(DepartureLocation newDepartureType)
 	if (newDepartureType == DepartureLocation::TO_DOCK_BAY) {
 		// TODO clear warp out parameters
 	} else {
-		// TODO clear departure paths
+		modify(w->departure_path_mask, 0);
 	}
 
 	// If the new departure type does not need a target, clear it
@@ -1028,7 +1170,60 @@ void WingEditorDialogModel::setDepartureTarget(int targetIndex)
 		targetIndex = -1; // invalid choice -> clear
 	}
 
+	if (w->departure_anchor == targetIndex) {
+		return; // no change
+	}
+
 	modify(w->departure_anchor, targetIndex);
+	modify(w->departure_path_mask, 0);
+}
+
+std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDeparturePaths() const
+{
+	if (!wingIsValid())
+		return {};
+
+	const auto* w = getCurrentWing();
+	if (w->departure_location != DepartureLocation::TO_DOCK_BAY)
+		return {};
+
+	return getDockBayPathsForWingMask(w->departure_path_mask, w->departure_anchor);
+}
+
+void WingEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& chosen)
+{
+	if (!wingIsValid())
+		return;
+
+	auto* w = getCurrentWing();
+
+	if (w->departure_location != DepartureLocation::TO_DOCK_BAY)
+		return;
+
+	const int anchor = w->departure_anchor;
+	if (anchor < 0 || !ship_has_dock_bay(anchor))
+		return;
+
+	// Rebuild mask in the same order we produced the list
+	int mask = 0;
+	int num_allowed = 0;
+
+	for (size_t i = 0; i < chosen.size(); ++i) {
+		if (chosen[i].second) {
+			mask |= (1 << static_cast<int>(i));
+			++num_allowed;
+		}
+	}
+
+	// if all are allowed, store 0
+	if (num_allowed == static_cast<int>(chosen.size())) {
+		mask = 0;
+	}
+
+	if (mask != w->departure_path_mask) {
+		w->departure_path_mask = mask;
+		set_modified();
+	}
 }
 
 int WingEditorDialogModel::getDepartureTree() const
@@ -1065,12 +1260,14 @@ void WingEditorDialogModel::setNoDepartureWarpFlag(bool flagIn)
 {
 	if (!wingIsValid())
 		return;
+
 	auto* w = getCurrentWing();
 	if (flagIn) {
 		w->flags.set(Ship::Wing_Flags::No_departure_warp);
 	} else {
 		w->flags.remove(Ship::Wing_Flags::No_departure_warp);
 	}
+	set_modified();
 }
 
 bool WingEditorDialogModel::getNoDepartureWarpAdjustFlag() const
@@ -1086,232 +1283,14 @@ void WingEditorDialogModel::setNoDepartureWarpAdjustFlag(bool flagIn)
 {
 	if (!wingIsValid())
 		return;
+
 	auto* w = getCurrentWing();
 	if (flagIn) {
 		w->flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked);
 	} else {
 		w->flags.remove(Ship::Wing_Flags::Same_departure_warp_when_docked);
 	}
-}
-
-bool WingEditorDialogModel::getReinforcementFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::Reinforcement];
-}
-
-bool WingEditorDialogModel::getCountingGoalsFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::Ignore_count];
-}
-
-bool WingEditorDialogModel::getArrivalMusicFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_arrival_music];
-}
-
-bool WingEditorDialogModel::getArrivalMessageFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_arrival_message];
-}
-
-bool WingEditorDialogModel::getFirstWaveMessageFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_first_wave_message];
-}
-
-bool WingEditorDialogModel::getDynamicGoalsFlag()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_dynamic];
-}
-
-bool WingEditorDialogModel::setReinforcementFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	// TODO: This may need to add/remove the reinforcement flags for the inidividual ships.
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::Reinforcement);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::Reinforcement);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::Reinforcement];
-}
-
-bool WingEditorDialogModel::setCountingGoalsFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::Ignore_count);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::Ignore_count);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::Ignore_count];
-}
-
-bool WingEditorDialogModel::setArrivalMusicFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::No_arrival_music);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::No_arrival_music);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_arrival_music];
-}
-
-bool WingEditorDialogModel::setArrivalMessageFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::No_arrival_message);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::No_arrival_message);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_arrival_message];
-}
-
-bool WingEditorDialogModel::setFirstWaveMessageFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::No_first_wave_message);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::No_first_wave_message);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_first_wave_message];
-}
-
-bool WingEditorDialogModel::setDynamicGoalsFlag(bool flagIn)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	if (flagIn) {
-		Wings[_currentWingIndex].flags.set(Ship::Wing_Flags::No_dynamic);
-	} else {
-		Wings[_currentWingIndex].flags.remove(Ship::Wing_Flags::No_dynamic);
-	}
-
-	return Wings[_currentWingIndex].flags[Ship::Wing_Flags::No_dynamic];
-}
-
-SCP_string WingEditorDialogModel::setSquadLogo(SCP_string filename)
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return "";
-
-	if (filename.size() >= TOKEN_LENGTH) {
-		SCP_string messageOut = "This file name is too long, the maximum is 31 characters.";
-
-		QMessageBox msgBox;
-		msgBox.setText(messageOut.c_str());
-		msgBox.setStandardButtons(QMessageBox::Ok);
-		msgBox.exec();
-
-		return "";
-	}
-
-	strcpy_s(Wings[_currentWingIndex].wing_squad_filename, filename.c_str());
-	return Wings[_currentWingIndex].wing_squad_filename;
-}
-
-bool WingEditorDialogModel::resetArrivalPaths()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	Wings[_currentWingIndex].arrival_path_mask = 0;
-
-	return true;
-}
-
-bool WingEditorDialogModel::resetDeparturePaths()
-{
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS)
-		return false;
-
-	Wings[_currentWingIndex].departure_path_mask = 0;
-
-	return true;
-}
-
-bool WingEditorDialogModel::setArrivalPath(std::pair<int, bool> pathStatusIn)
-{
-	// shouldn't even be here...
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS ||
-		Wings[_currentWingIndex].arrival_location != ArrivalLocation::FROM_DOCK_BAY)
-		return !pathStatusIn.second;
-
-	// bad arrival target
-	if (Wings[_currentWingIndex].arrival_anchor < 0 ||
-		Wings[_currentWingIndex].arrival_anchor >= MAX_SHIPS ||
-		Ships[Wings[_currentWingIndex].arrival_anchor].ship_name[0] == '\0') //TODO test this
-		return !pathStatusIn.second;
-
-	auto anchorShipModel = model_get(Ship_info[Ships[Wings[_currentWingIndex].arrival_anchor].ship_info_index].model_num);
-
-	const int pathIndex = pathStatusIn.first;
-
-	// not enough paths
-	if (!anchorShipModel || !anchorShipModel->ship_bay || pathIndex < 0 || pathIndex >= anchorShipModel->ship_bay->num_paths) {
-		return !pathStatusIn.second;
-	}
-
-	//
-}
-
-bool WingEditorDialogModel::setDeparturePath(std::pair<int, bool> pathStatusIn)
-{
-	// shouldn't even be here...
-	if (_currentWingIndex < 0 || _currentWingIndex >= MAX_WINGS ||
-		Wings[_currentWingIndex].departure_location != DepartureLocation::TO_DOCK_BAY)
-		return !pathStatusIn.second;
-
-	// bad arrival target
-	if (Wings[_currentWingIndex].departure_anchor < 0 || Wings[_currentWingIndex].departure_anchor >= MAX_SHIPS ||
-		Ships[Wings[_currentWingIndex].departure_anchor].ship_name[0] == '\0') // TODO test this
-		return !pathStatusIn.second;
-
-	auto anchorShipModel = model_get(Ship_info[Ships[Wings[_currentWingIndex].arrival_anchor].ship_info_index].model_num);
-
-	const int pathIndex = pathStatusIn.first;
-
-	// not enough paths
-	if (!anchorShipModel || !anchorShipModel->ship_bay || pathIndex < 0 || pathIndex >= anchorShipModel->ship_bay->num_paths) {
-		return !pathStatusIn.second;
-	}
+	set_modified();
 }
 
 } // namespace fso::fred::dialogs

@@ -27,6 +27,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		bool apply() { return true; }
 		void reject() {}
 
+		int getCurrentWingIndex() const { return _currentWingIndex; };
+
 		bool wingIsValid() const;
 
 		bool isPlayerWing() const;
@@ -68,16 +70,18 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		float getFormationScale() const;
 		void setFormationScale(float newScale);
 		void alignWingFormation();
-		void showWingFlagsDialog();
+		SCP_string getSquadronLogo() const;
+		void setSquadLogo(SCP_string filename);
 
 		// Top section, third column
 		void selectPreviousWing();
 		void selectNextWing();
 		void deleteCurrentWing();
 		void disbandCurrentWing();
-
-		// Second section
-		SCP_string getSquadronLogo() const;
+		// Initial orders is handled by its own dialog, so no model function here
+		std::vector<std::pair<SCP_string, bool>> getWingFlags() const;
+		void setWingFlags(const std::vector<std::pair<SCP_string, bool>>& newFlags);
+		
 
 		// Arrival controls
 		ArrivalLocation getArrivalType() const;
@@ -92,7 +96,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setArrivalTarget(int targetIndex);
 		int getArrivalDistance() const;
 		void setArrivalDistance(int newDistance);
-		// void setArrivalPaths(SCP_vector<std::pair<int, bool>> pathStatusIn);
+		std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
+		void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
 		// void setCustomWarpIn(int warpIn);
 		int getArrivalTree() const;
 		void setArrivalTree(int /*oldTree*/, int newTree);
@@ -108,7 +113,8 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setDepartureDelay(int delayIn);
 		int getDepartureTarget() const;
 		void setDepartureTarget(int targetIndex);
-		// void setDeparturePaths(SCP_vector<std::pair<int, bool>> pathStatusIn);
+		std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
+		void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& newFlags);
 		// void setCustomWarpOut(int warpOut);
 		int getDepartureTree() const;
 		void setDepartureTree(int /*oldTree*/, int newTree);
@@ -116,29 +122,6 @@ class WingEditorDialogModel : public AbstractDialogModel {
 		void setNoDepartureWarpFlag(bool flagIn);
 		bool getNoDepartureWarpAdjustFlag() const;
 		void setNoDepartureWarpAdjustFlag(bool flagIn);
-
-		SCP_string setSquadLogo(SCP_string filename);
-
-		bool getReinforcementFlag();
-		bool getCountingGoalsFlag();
-		bool getArrivalMusicFlag();
-		bool getArrivalMessageFlag();
-		bool getFirstWaveMessageFlag();
-		bool getDynamicGoalsFlag();
-
-		bool setReinforcementFlag(bool flagIn);
-		bool setCountingGoalsFlag(bool flagIn);
-		bool setArrivalMusicFlag(bool flagIn);
-		bool setArrivalMessageFlag(bool flagIn);
-		bool setFirstWaveMessageFlag(bool flagIn);
-		bool setDynamicGoalsFlag(bool flagIn);
-
-		SCP_vector<std::pair<SCP_string, bool>> getArrivalPathStatus();
-		SCP_vector<std::pair<SCP_string, bool>> getDeparturePathStatus();
-		bool setArrivalPath(std::pair<int, bool> pathStatusIn);
-		bool resetArrivalPaths();
-		bool resetDeparturePaths();
-		bool setDeparturePath(std::pair<int, bool> pathStatusIn);
 
 	signals:
 		void wingChanged();
@@ -148,6 +131,7 @@ class WingEditorDialogModel : public AbstractDialogModel {
 	private:
 		void reloadFromCurWing();
 		wing* getCurrentWing() const;
+		std::vector<std::pair<SCP_string, bool>> WingEditorDialogModel::getDockBayPathsForWingMask(uint32_t mask, int anchorShipnum) const;
 
 		int _currentWingIndex = -1;
 		SCP_string _currentWingName;

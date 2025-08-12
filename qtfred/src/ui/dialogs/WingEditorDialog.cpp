@@ -1,4 +1,6 @@
 #include "WingEditorDialog.h"
+#include "General/CheckBoxListDialog.h"
+#include "ShipEditor/ShipGoalsDialog.h"
 
 #include "ui_WingEditorDialog.h"
 
@@ -401,11 +403,11 @@ void WingEditorDialog::on_alignFormationButton_clicked()
 	_model->alignWingFormation();
 }
 
-void WingEditorDialog::on_wingFlagsButton_clicked()
+void WingEditorDialog::on_setSquadLogoButton_clicked()
 {
-	//WingFlagsDialog dlg(this, _model->getWingFlags());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setWingFlags(dlg.getFlags());
+	// const QString filename = QFileDialog::getOpenFileName(this, "Select Squadron Logo", "", "Image Files (*.png *.jpg
+	// *.jpeg *.bmp *.tga);;All Files (*)"); if (!filename.isEmpty()) { _model->setSquadronLogo(filename.toStdString());
+	// updateLogoPreview(filename.toStdString());
 	//}
 }
 
@@ -435,19 +437,58 @@ void WingEditorDialog::on_disbandWingButton_clicked()
 
 void WingEditorDialog::on_initialOrdersButton_clicked()
 {
-	//InitialOrdersDialog dlg(this, _model->getInitialOrders());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setInitialOrders(dlg.getOrders());
-	//}
+	if (!_model->wingIsValid()) {
+		QMessageBox::warning(this, "Initial Orders", "No valid wing selected.");
+		return;
+	}
+
+	const int wingIndex = _model->getCurrentWingIndex(); // or your equivalent getter
+	if (wingIndex < 0) {
+		QMessageBox::warning(this, "Initial Orders", "No valid wing selected.");
+		return;
+	}
+
+	// block for empty wings (matches old FRED behavior where goals apply to the wing’s ships)
+	if (Wings[wingIndex].wave_count <= 0) {
+		QMessageBox::information(this, "Initial Orders", "This wing has no ships (wave_count == 0).");
+		return;
+	}
+
+	// Open the existing ShipGoals dialog in wing mode
+	fso::fred::dialogs::ShipGoalsDialog dlg(this, _viewport, false, -1, wingIndex);
+
+	dlg.exec();
 }
 
-void WingEditorDialog::on_setSquadLogoButton_clicked()
+void WingEditorDialog::on_wingFlagsButton_clicked()
 {
-	//const QString filename = QFileDialog::getOpenFileName(this, "Select Squadron Logo", "", "Image Files (*.png *.jpg *.jpeg *.bmp *.tga);;All Files (*)");
-	//if (!filename.isEmpty()) {
-		//_model->setSquadronLogo(filename.toStdString());
-		//updateLogoPreview(filename.toStdString());
-	//}
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Wing Flags");
+
+	// Get our flag list and convert it to Qt's internal types
+	auto wingFlags = _model->getWingFlags();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+
+	for (const auto& flag : wingFlags) {
+		checkbox_list.append({flag.first.c_str(), flag.second});
+	}
+
+	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8();
+			updatedFlags.emplace_back(std::make_pair(name, returned_values[i]));
+		}
+
+		_model->setWingFlags(updatedFlags);
+	}
 }
 
 void WingEditorDialog::on_arrivalLocationCombo_currentIndexChanged(int /*index*/)
@@ -485,12 +526,35 @@ void WingEditorDialog::on_arrivalDistanceSpinBox_valueChanged(int value)
 	_model->setArrivalDistance(value);
 }
 
-void WingEditorDialog::on_restrictArrivalPathButton_clicked()
+void WingEditorDialog::on_restrictArrivalPathsButton_clicked()
 {
-	//RestrictPathsDialog dlg(this, _model->getArrivalPathRestrictions());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setArrivalPathRestrictions(dlg.getRestrictions());
-	//}
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Wing Flags");
+
+	// Get our path list and convert it to Qt's internal types
+	auto wingFlags = _model->getArrivalPaths();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+
+	for (const auto& flag : wingFlags) {
+		checkbox_list.append({flag.first.c_str(), flag.second});
+	}
+
+	dlg.setOptions(checkbox_list);
+
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8();
+			updatedFlags.emplace_back(std::make_pair(name, returned_values[i]));
+		}
+
+		_model->setArrivalPaths(updatedFlags);
+	}
 }
 
 void WingEditorDialog::on_customWarpinButton_clicked()
@@ -537,10 +601,33 @@ void WingEditorDialog::on_departureTargetCombo_currentIndexChanged(int /*index*/
 
 void WingEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
-	//RestrictPathsDialog dlg(this, _model->getDeparturePathRestrictions());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setDeparturePathRestrictions(dlg.getRestrictions());
-	//}
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Select Wing Flags");
+
+	// Get our path list and convert it to Qt's internal types
+	auto wingFlags = _model->getDeparturePaths();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+
+	for (const auto& flag : wingFlags) {
+		checkbox_list.append({flag.first.c_str(), flag.second});
+	}
+
+	dlg.setOptions(checkbox_list);
+
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8();
+			updatedFlags.emplace_back(std::make_pair(name, returned_values[i]));
+		}
+
+		_model->setDeparturePaths(updatedFlags);
+	}
 }
 
 void WingEditorDialog::on_customWarpoutButton_clicked()
