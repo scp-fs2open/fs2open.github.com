@@ -1928,7 +1928,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 		gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-		gr_set_color(255,0,0);
+		gr_set_color(0,128,0);
 
 		if (effect_params.effect == 1) { // FS1 effect
 			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1, MIN(time*0.5f,2.0f));
