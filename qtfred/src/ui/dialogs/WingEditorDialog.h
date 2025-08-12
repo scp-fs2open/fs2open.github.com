@@ -88,7 +88,7 @@ class WingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 		void refreshDepartureTargetCombo();
 		void refreshAllDynamicCombos();
 
-		void updateLogoPreview(const std::string& filename);
+		void updateLogoPreview();
 };
 
 } // namespace fso::fred::dialogs

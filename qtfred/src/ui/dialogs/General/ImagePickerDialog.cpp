@@ -87,6 +87,7 @@ void ImagePickerDialog::onOk()
 
 QIcon ImagePickerDialog::iconFor(const QString& name)
 {
+	// Cached?
 	if (_thumbCache.contains(name)) {
 		return {_thumbCache.value(name)};
 	}
