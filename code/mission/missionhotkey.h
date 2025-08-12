@@ -13,8 +13,11 @@
 #define __MISSIONHOTKEY_H__
 
 #include "globalincs/globals.h"
+#include "playerman/player.h"
 
 #define MAX_LINES MAX_SHIPS // retail was 200, bump it to match MAX_SHIPS
+
+extern int Key_sets[MAX_KEYED_TARGETS];
 
 // Types of items that can be in the hotkey list
 enum class HotkeyLineType
