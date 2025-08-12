@@ -2,6 +2,7 @@
 #include "General/CheckBoxListDialog.h"
 #include "General/ImagePickerDialog.h"
 #include "ShipEditor/ShipGoalsDialog.h"
+#include "ShipEditor/ShipCustomWarpDialog.h"
 
 #include "ui_WingEditorDialog.h"
 
@@ -580,10 +581,15 @@ void WingEditorDialog::on_restrictArrivalPathsButton_clicked()
 
 void WingEditorDialog::on_customWarpinButton_clicked()
 {
-	//CustomWarpDialog dlg(this, _model->getArrivalWarpinInfo());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setArrivalWarpinInfo(dlg.getWarpInfo());
-	//}
+	if (!_model->wingIsValid())
+		return;
+
+	auto dlg = fso::fred::dialogs::ShipCustomWarpDialog(this,
+		_viewport,
+		false,
+		_model->getCurrentWingIndex(),
+		true);
+	dlg.exec();
 }
 
 void WingEditorDialog::on_arrivalTree_rootNodeFormulaChangedd(int oldTree, int newTree)
@@ -653,10 +659,15 @@ void WingEditorDialog::on_restrictDeparturePathsButton_clicked()
 
 void WingEditorDialog::on_customWarpoutButton_clicked()
 {
-	//CustomWarpDialog dlg(this, _model->getDepartureWarpoutInfo());
-	//if (dlg.exec() == QDialog::Accepted) {
-		//_model->setDepartureWarpoutInfo(dlg.getWarpInfo());
-	//}
+	if (!_model->wingIsValid())
+		return;
+
+	auto dlg = fso::fred::dialogs::ShipCustomWarpDialog(this,
+		_viewport,
+		true,
+		_model->getCurrentWingIndex(),
+		true);
+	dlg.exec();
 }
 
 void WingEditorDialog::on_departureTree_rootNodeFormulaChanged(int oldTree, int newTree)
