@@ -46,6 +46,10 @@ bool Use_3d_overhead_ship;
 overhead_style Default_overhead_ship_style;
 int Default_ship_select_effect;
 int Default_weapon_select_effect;
+color Default_fs2_effect_grid_color;
+color Default_fs2_effect_scanline_color;
+color Default_fs2_effect_wireframe_color;
+int Default_fs2_effect_grid_density;
 int Default_fiction_viewer_ui;
 bool Enable_external_shaders;
 bool Enable_external_default_scripts;
@@ -1217,6 +1221,44 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Using 3D weapon icons\n"));
 			}
 
+			if (optional_string("$FS2 effect grid color:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				CLAMP(rgb[0], 0, 255);
+				CLAMP(rgb[1], 0, 255);
+				CLAMP(rgb[2], 0, 255);
+				gr_init_color(&Default_fs2_effect_grid_color, rgb[0], rgb[1], rgb[2]);
+			}
+
+			if (optional_string("$FS2 effect scanline color:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				CLAMP(rgb[0], 0, 255);
+				CLAMP(rgb[1], 0, 255);
+				CLAMP(rgb[2], 0, 255);
+				gr_init_color(&Default_fs2_effect_scanline_color, rgb[0], rgb[1], rgb[2]);
+			}
+
+			if (optional_string("$FS2 effect grid density:")) {
+				int tmp;
+				stuff_int(&tmp);
+				// only set value if it is above 0
+				if (tmp > 0) {
+					Default_fs2_effect_grid_density = tmp;
+				} else {
+					Warning(LOCATION, "The $FS2 effect grid density must be above 0.\n");
+				}
+			}
+
+			if (optional_string("$FS2 effect wireframe color:")) {
+				int rgb[3];
+				stuff_int_list(rgb, 3);
+				CLAMP(rgb[0], 0, 255);
+				CLAMP(rgb[1], 0, 255);
+				CLAMP(rgb[2], 0, 255);
+				gr_init_color(&Default_fs2_effect_wireframe_color, rgb[0], rgb[1], rgb[2]);
+			}
+
 			if (optional_string("$Use 3d overhead ship:")) {
 				stuff_boolean(&Use_3d_overhead_ship);
 				if (Use_3d_overhead_ship)
@@ -1658,6 +1700,10 @@ void mod_table_reset()
 	Always_show_directive_value_count = false;
 	Default_ship_select_effect = 2;
 	Default_weapon_select_effect = 2;
+	gr_init_color(&Default_fs2_effect_grid_color, 0, 200, 0);
+	gr_init_color(&Default_fs2_effect_scanline_color, 0, 255, 0);
+	Default_fs2_effect_grid_density = 7; // Default original value
+	gr_init_color(&Default_fs2_effect_wireframe_color, 80, 49, 160);
 	Default_overhead_ship_style = OH_TOP_VIEW;
 	Default_fiction_viewer_ui = -1;
 	Enable_external_shaders = false;

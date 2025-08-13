@@ -1262,6 +1262,13 @@ ADE_FUNC(renderSelectModel,
 		render_info.set_replacement_textures(modelNum, sip->replacement_textures);
 	}
 
+	select_effect_params params;
+	params.effect = effect;
+	params.fs2_grid_color = sip->fs2_effect_grid_color;
+	params.fs2_scanline_color = sip->fs2_effect_scanline_color;
+	params.fs2_grid_density = sip->fs2_effect_grid_density;
+	params.fs2_wireframe_color = sip->fs2_effect_wireframe_color;
+
 	draw_model_rotating(&render_info,
 		modelNum,
 		x1,
@@ -1274,7 +1281,7 @@ ADE_FUNC(renderSelectModel,
 		rev_rate,
 		MR_AUTOCENTER | MR_NO_FOGGING,
 		GR_RESIZE_NONE,
-		effect);
+		params);
 
 	return ade_set_args(L, "b", true);
 }
