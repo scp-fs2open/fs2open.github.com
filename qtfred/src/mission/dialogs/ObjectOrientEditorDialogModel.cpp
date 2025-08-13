@@ -147,9 +147,9 @@ bool ObjectOrientEditorDialogModel::apply()
 		vm_extract_angles_matrix(&object_ang, &obj.orient);
 
 		vec3d refDeg = (_setMode == SetMode::Relative) ? vmd_zero_vector
-													   : vec3d{{normalize_degrees(fl_degrees(object_ang.p)),
+													   : vec3d{{{normalize_degrees(fl_degrees(object_ang.p)),
 															 normalize_degrees(fl_degrees(object_ang.b)),
-															 normalize_degrees(fl_degrees(object_ang.h))}};
+															 normalize_degrees(fl_degrees(object_ang.h))}}};
 
 		if (!is_close(refDeg.xyz.x, normalize_degrees(_orientationDeg.xyz.x)) ||
 			!is_close(refDeg.xyz.y, normalize_degrees(_orientationDeg.xyz.y)) ||
