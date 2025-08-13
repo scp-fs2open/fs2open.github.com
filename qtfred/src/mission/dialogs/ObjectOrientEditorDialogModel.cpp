@@ -35,14 +35,14 @@ void ObjectOrientEditorDialogModel::initializeData()
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (_editor->getNumMarked() != 1 || OBJ_INDEX(ptr) != _editor->currentObject) {
 			if ((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) {
-				_pointToObjectList.push_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
+				_pointToObjectList.emplace_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
 			} else if (ptr->type == OBJ_WAYPOINT) {
 				int waypoint_num;
 				waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
 				Assertion(wp_list != nullptr, "Waypoint list was nullptr!");
 				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 
-				_pointToObjectList.push_back(ObjectEntry(text, OBJ_INDEX(ptr)));
+				_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
 			} else if ((ptr->type == OBJ_POINT) || (ptr->type == OBJ_JUMP_NODE)) {
 			} else {
 				Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
@@ -108,8 +108,8 @@ float ObjectOrientEditorDialogModel::round1(float v)
 	return std::round(v * 10.0f) / 10.0f;
 }
 
-ObjectOrientEditorDialogModel::ObjectEntry::ObjectEntry(const SCP_string& in_name, int in_objIndex)
-	: name(in_name), objIndex(in_objIndex)
+ObjectOrientEditorDialogModel::ObjectEntry::ObjectEntry(SCP_string in_name, int in_objIndex)
+	: name(std::move(in_name)), objIndex(in_objIndex)
 {
 }
 

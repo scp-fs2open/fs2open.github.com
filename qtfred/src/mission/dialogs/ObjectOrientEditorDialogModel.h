@@ -22,7 +22,7 @@ class ObjectOrientEditorDialogModel : public AbstractDialogModel {
 	struct ObjectEntry {
 		SCP_string name;
 		int objIndex = -1;
-		ObjectEntry(const SCP_string& name, int objIndex);
+		ObjectEntry(SCP_string name, int objIndex);
 	};
 
 	enum class PointToMode {
