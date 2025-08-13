@@ -10,6 +10,11 @@ enum class LabTurretAimType {
 	INITIAL,
 };
 
+enum class BayMode {
+	Arrival,
+	Departure,
+};
+
 class LabUi {
   public:
 	bool show_thrusters = false; // So that it can be toggled on/off based on the lab mode being changed
@@ -49,6 +54,8 @@ class LabUi {
 		weapon_info* wip,
 		int& primary_slot) const;
 	void build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
+	static void build_dock_test_options(ship* shipp);
+	static void build_bay_test_options(ship_info* sip);
 	void build_animation_options(ship* shipp, ship_info* sip) const;
 	void create_afterburner_animation_node(
 		const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers) const;
