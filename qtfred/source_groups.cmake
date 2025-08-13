@@ -161,8 +161,16 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
 )
+add_file_folder("Source/UI/General"
+	src/ui/dialogs/General/CheckBoxListDialog.cpp
+	src/ui/dialogs/General/CheckBoxListDialog.h
+	src/ui/dialogs/General/ImagePickerDialog.cpp
+	src/ui/dialogs/General/ImagePickerDialog.h
+)
 
 add_file_folder("Source/UI/Util"
+	src/ui/util/ImageRenderer.cpp
+	src/ui/util/ImageRenderer.h
 	src/ui/util/menu.cpp
 	src/ui/util/menu.h
 	src/ui/util/SignalBlockers.cpp
@@ -186,6 +194,7 @@ add_file_folder("UI"
 	ui/BackgroundEditor.ui
 	ui/BriefingEditorDialog.ui
 	ui/CampaignEditorDialog.ui
+	ui/CheckBoxListDialog.ui
 	ui/CommandBriefingDialog.ui
 	ui/CustomWingNamesDialog.ui
     ui/EventEditorDialog.ui
