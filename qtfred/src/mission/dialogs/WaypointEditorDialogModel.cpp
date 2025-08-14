@@ -89,7 +89,7 @@ bool WaypointEditorDialogModel::validateData()
 
 	// wing name collision
 	for (auto& wing : Wings) {
-		if (!stricmp(Wings->name, _currentName.c_str())) {
+		if (!stricmp(wing.name, _currentName.c_str())) {
 			showErrorDialogNoCancel("This waypoint path name is already being used by a wing");
 			return false;
 		}
