@@ -88,8 +88,8 @@ bool WaypointEditorDialogModel::validateData()
 	}
 
 	// wing name collision
-	for (int i = 0; i < MAX_WINGS; i++) {
-		if (!stricmp(Wings[i].name, _currentName.c_str())) {
+	for (auto& wing : Wings) {
+		if (!stricmp(Wings->name, _currentName.c_str())) {
 			showErrorDialogNoCancel("This waypoint path name is already being used by a wing");
 			return false;
 		}
@@ -111,8 +111,8 @@ bool WaypointEditorDialogModel::validateData()
 	// We don't need to check teams.  "Unknown" is a valid name and also an IFF.
 
 	// target priority group name collision
-	for (int i = 0; i < (int)Ai_tp_list.size(); i++) {
-		if (!stricmp(_currentName.c_str(), Ai_tp_list[i].name)) {
+	for (auto& ai : Ai_tp_list) {
+		if (!stricmp(_currentName.c_str(), ai.name)) {
 			showErrorDialogNoCancel("This waypoint path name is already being used by a target priority group");
 			return false;
 		}
