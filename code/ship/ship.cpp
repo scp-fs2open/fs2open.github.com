@@ -15574,6 +15574,9 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 	if (subsys == nullptr)
 		return -1;
 
+	if (subsys->parent_objnum < 0)
+		return -1;
+
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
