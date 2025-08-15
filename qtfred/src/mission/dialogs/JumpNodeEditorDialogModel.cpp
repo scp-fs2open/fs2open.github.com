@@ -9,11 +9,6 @@
 
 namespace fso::fred::dialogs {
 
-static inline int clamp255(int v)
-{
-	return std::max(0, std::min(255, v));
-}
-
 JumpNodeEditorDialogModel::JumpNodeEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
 {
