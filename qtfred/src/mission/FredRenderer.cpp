@@ -506,7 +506,8 @@ void FredRenderer::display_ship_info(int cur_object_index) {
 						else
 							strcpy_s(buf, "Briefing icon");
 					} else if (objp->type == OBJ_JUMP_NODE) {
-						strcpy_s(buf, "Jump Node");
+						CJumpNode* jnp = jumpnode_get_by_objnum(OBJ_INDEX(objp));
+						sprintf(buf, "%s\n%s", jnp->GetName(), jnp->GetDisplayName());
 					} else
 						Assert(0);
 				}

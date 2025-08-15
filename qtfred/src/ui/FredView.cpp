@@ -16,6 +16,7 @@
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/JumpNodeEditorDialog.h>
 #include <ui/dialogs/CampaignEditorDialog.h>
 #include <ui/dialogs/MissionGoalsDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
@@ -741,6 +742,12 @@ void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
+void FredView::on_actionJump_Nodes_triggered(bool)
+{
+	auto editorDialog = new dialogs::JumpNodeEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
 void FredView::on_actionShips_triggered(bool)
 {
 	if (!_shipEditorDialog) {
@@ -860,7 +867,12 @@ void FredView::handleObjectEditor(int objNum) {
 			fred->selectObject(objNum);
 
 			// Use the existing slot for this to avoid duplicating code
-			on_actionWaypoint_Paths_triggered(false);
+			if (Objects[objNum].type == OBJ_JUMP_NODE) {
+				on_actionJump_Nodes_triggered(false);
+			} else if (Objects[objNum].type == OBJ_WAYPOINT) {
+				// If this is a waypoint, we need to show the waypoint editor
+				on_actionWaypoint_Paths_triggered(false);
+			}
 		} else if (Objects[objNum].type == OBJ_POINT) {
 			return;
 		} else {
