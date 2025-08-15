@@ -86,6 +86,10 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.cpp
 	src/mission/dialogs/ShipEditor/ShipTBLViewerModel.h
+	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.cpp
+	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h
+	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.cpp
+	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.h
 	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipCustomWarpDialogModel.h
@@ -156,10 +160,16 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipTBLViewer.h
 	src/ui/dialogs/ShipEditor/ShipTBLViewer.cpp
+	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.cpp
+	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.h
+	src/ui/dialogs/ShipEditor/BankModel.cpp
+	src/ui/dialogs/ShipEditor/BankModel.h
 	src/ui/dialogs/ShipEditor/ShipPathsDialog.h
 	src/ui/dialogs/ShipEditor/ShipPathsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
+	src/ui/dialogs/ShipEditor/WeaponsTBLViewer.cpp
+	src/ui/dialogs/ShipEditor/WeaponsTBLViewer.h
 )
 add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/CheckBoxListDialog.cpp
@@ -186,6 +196,10 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
+	src/ui/widgets/weaponList.cpp
+	src/ui/widgets/weaponList.h
+	src/ui/widgets/bankTree.cpp
+	src/ui/widgets/bankTree.h
 )
 
 add_file_folder("UI"
@@ -220,6 +234,7 @@ add_file_folder("UI"
 	ui/ShipTBLViewer.ui
 	ui/ShipPathsDialog.ui
 	ui/ShipCustomWarpDialog.ui
+	ui/ShipWeaponsDialog.ui
 )
 
 add_file_folder("Resources"
