@@ -120,8 +120,8 @@ void JumpNodeEditorDialogModel::buildNodeList()
 {
 	_nodes.clear();
 	int idx = 0;
-	for (auto it = Jump_nodes.begin(); it != Jump_nodes.end(); ++it) {
-		_nodes.emplace_back(it->GetName(), idx++);
+	for (auto& node : Jump_nodes) {
+		_nodes.emplace_back(node.GetName(), idx++);
 	}
 }
 
@@ -133,7 +133,7 @@ bool JumpNodeEditorDialogModel::validateData()
 		auto start = s.find_first_not_of(" \t\r\n");
 		auto end = s.find_last_not_of(" \t\r\n");
 		if (start == SCP_string::npos)
-			return SCP_string();
+			return {};
 		return s.substr(start, end - start + 1);
 	};
 
@@ -150,8 +150,8 @@ bool JumpNodeEditorDialogModel::validateData()
 	}
 
 	// Wing name collision
-	for (int i = 0; i < MAX_WINGS; ++i) {
-		if (!stricmp(Wings[i].name, name.c_str())) {
+	for (auto& wing : Wings) {
+		if (!stricmp(wing.name, name.c_str())) {
 			showErrorDialogNoCancel("This jump node name is already being used by a wing.");
 			return false;
 		}
@@ -168,8 +168,8 @@ bool JumpNodeEditorDialogModel::validateData()
 	}
 
 	// AI target priority group collision
-	for (size_t i = 0; i < Ai_tp_list.size(); ++i) {
-		if (!stricmp(name.c_str(), Ai_tp_list[i].name)) {
+	for (auto& ai : Ai_tp_list) {
+		if (!stricmp(name.c_str(), ai.name)) {
 			showErrorDialogNoCancel("This jump node name is already being used by a target priority group.");
 			return false;
 		}
