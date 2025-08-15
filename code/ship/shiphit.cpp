@@ -176,11 +176,13 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 			} else {
 				subsys_local_pos = psub->pnt;
 			}
+			vec3d normalized_center_to_subsys = center_to_subsys;
+			vm_vec_normalize(&normalized_center_to_subsys);
 			// spawn particle effect
 			auto source = particle::ParticleManager::get()->createSource(death_effect);
-			source->setHost(make_unique<EffectHostObject>(ship_objp, subsys_local_pos, ship_objp->orient));
+			source->setHost(make_unique<EffectHostObject>(ship_objp, subsys_local_pos, vmd_identity_matrix));
 			source->setTriggerRadius(psub->radius);
-			source->setNormal(center_to_subsys);
+			source->setNormal(normalized_center_to_subsys);
 			source->finishCreation();
 		} else if (ship_objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
