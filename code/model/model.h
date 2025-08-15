@@ -293,6 +293,8 @@ public:
 
 	float density;
 
+	particle::ParticleEffectHandle death_effect;
+
     void reset();
 
     model_subsystem();

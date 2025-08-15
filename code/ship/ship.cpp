@@ -5458,6 +5458,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		required_string("$end_custom_strings");
 	}
 
+	if (optional_string("$Default Subsystem Death Effect:")) {
+		sip->default_subsys_death_effect = particle::util::parseEffect(sip->name);
+	}
+
 	int n_subsystems = 0;
 	int n_excess_subsystems = 0;
 	int cont_flag = 1;
@@ -5739,6 +5743,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in %s '%s'.", sp->subobj_name, info_type_name, sip->name);
 					}
 				}
+			}
+
+			if (optional_string("$Subsystem Death Effect:")) {
+				sp->death_effect = particle::util::parseEffect(sip->name);
 			}
 
 			if (optional_string("$Debris Density:")) {

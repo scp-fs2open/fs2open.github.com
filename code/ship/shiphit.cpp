@@ -157,7 +157,32 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 
 	// create fireballs when subsys destroy for large ships.
 	if (!(subsys->flags[Ship::Subsystem_Flags::Vanished, Ship::Subsystem_Flags::No_disappear]) && !no_explosion) {
-		if (ship_objp->radius > 100.0f) {
+		vec3d center_to_subsys;
+		vm_vec_sub(&center_to_subsys, &g_subobj_pos, &ship_objp->pos);
+
+		particle::ParticleEffectHandle death_effect;
+
+		if (psub->death_effect.isValid()) {
+			death_effect = psub->death_effect;
+		} else {
+			death_effect = sip->default_subsys_death_effect;
+		}
+
+		if (death_effect.isValid()) {
+			vec3d subsys_local_pos;
+			if (psub->subobj_num >= 0) {
+				// the vmd_zero_vector here should probably be psub->pnt instead, but this matches the behavior of get_subsystem_world_pos
+				model_instance_local_to_global_point(&subsys_local_pos, &vmd_zero_vector, ship_p->model_instance_num, psub->subobj_num);
+			} else {
+				subsys_local_pos = psub->pnt;
+			}
+			// spawn particle effect
+			auto source = particle::ParticleManager::get()->createSource(death_effect);
+			source->setHost(make_unique<EffectHostObject>(&ship_objp, subsys_local_pos));
+			source->setTriggerRadius(psub->radius);
+			source->setNormal(center_to_subsys);
+			source->finishCreation();
+		} else if (ship_objp->radius > 100.0f) {
 			// number of fireballs determined by radius of subsys
 			int num_fireballs;
 			if ( psub->radius < 3 ) {
@@ -166,8 +191,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 				 num_fireballs = 5;
 			}
 
-			vec3d temp_vec, center_to_subsys, rand_vec;
-			vm_vec_sub(&center_to_subsys, &g_subobj_pos, &ship_objp->pos);
+			vec3d temp_vec, rand_vec;
 			for (i=0; i<num_fireballs; i++) {
 				if (i==0) {
 					// make first fireball at hitpos
