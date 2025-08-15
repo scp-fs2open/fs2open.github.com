@@ -1691,7 +1691,7 @@ void ship_info::move(ship_info&& other)
 	animations = std::move(other.animations);
 	cockpit_animations = std::move(other.cockpit_animations);
 
-	default_subsys_death_effect = std::move(other.default_subsys_death_effect);
+	default_subsys_death_effect = other.default_subsys_death_effect;
 }
 
 ship_info &ship_info::operator= (ship_info&& other) noexcept
