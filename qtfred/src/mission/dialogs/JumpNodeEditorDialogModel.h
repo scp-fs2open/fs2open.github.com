@@ -43,7 +43,7 @@ class JumpNodeEditorDialogModel : public AbstractDialogModel {
 	void onSelectedObjectMarkingChanged(int, bool);
 	void onMissionChanged();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
 	void buildNodeList();
 	bool validateData();
