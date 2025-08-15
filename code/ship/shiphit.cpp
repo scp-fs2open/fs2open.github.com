@@ -178,7 +178,7 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 			}
 			// spawn particle effect
 			auto source = particle::ParticleManager::get()->createSource(death_effect);
-			source->setHost(make_unique<EffectHostObject>(&ship_objp, subsys_local_pos));
+			source->setHost(make_unique<EffectHostObject>(ship_objp, subsys_local_pos, ship_objp->orient));
 			source->setTriggerRadius(psub->radius);
 			source->setNormal(center_to_subsys);
 			source->finishCreation();
@@ -332,9 +332,11 @@ void do_subobj_destroyed_stuff( ship *ship_p, ship_subsys *subsys, const vec3d* 
 			));
 	}
 
+	bool no_fireballs = psub->death_effect.isValid() || sip->default_subsys_death_effect.isValid();
+
 	if (!(subsys->flags[Ship::Subsystem_Flags::No_disappear])) {
 		if (psub->subobj_num > -1) {
-			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion);
+			shipfx_blow_off_subsystem(ship_objp, ship_p, subsys, &g_subobj_pos, no_explosion, no_fireballs);
 			subsys->submodel_instance_1->blown_off = true;
 		}
 
