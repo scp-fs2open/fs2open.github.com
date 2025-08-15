@@ -141,6 +141,9 @@ SCP_vector<cc_line> Cc_lines;
 // Backups for use when user closes the config menu without saving
 SCP_vector<CCI> Control_config_backup;
 
+// The current preset that the user is working on and will likely want to save to
+static SCP_string Current_preset_name;
+
 // Undo system
 Undo_system Undo_controls;
 
@@ -1291,11 +1294,12 @@ bool control_config_accept(bool API_Access)
 			char* cstr; // Must be a char *, because popup_input may return nullptr and std::string don't like it
 
 		retry:;
+			SCP_string default_string = (Current_preset_name.empty()) ? Player->callsign : Current_preset_name;
 			cstr = popup_input(flags,
-				"Confirm new custom preset name.\n\nThe name must not be empty.\n\n Press [Enter] to accept, [Esc] to "
-				"abort to config menu.",
+				XSTR( "Confirm new custom preset name.\n\nThe name must not be empty or a default preset.\n\n Press [Enter] to accept, [Esc] to abort to config menu.", 1867),
 				32 - 6,
-				Player->callsign);
+				default_string.c_str(),
+				"-_");
 			if (cstr == nullptr) {
 				// Abort
 				gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1316,14 +1320,13 @@ bool control_config_accept(bool API_Access)
 			});
 
 			if (it != Control_config_presets.end()) {
-				popup(flags, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
+				popup(flags | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "You may not overwrite a default preset.  Please choose another name.");
 				goto retry;
 			}
 
 			// Check if a preset file with name already exists.  If so, prompt the user
 			CFILE* fp = cfopen((str + ".json").c_str(),
 				"r",
-				CFILE_NORMAL,
 				CF_TYPE_PLAYER_BINDS,
 				false,
 				CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
@@ -1331,11 +1334,11 @@ bool control_config_accept(bool API_Access)
 				cfclose(fp);
 				int n = popup(flags,
 					2,
-					POPUP_OK,
 					POPUP_CANCEL,
+					POPUP_OK,
 					"'%s'\n Already exists!\n Press OK to overwrite existing preset, or CANCEL to input another name",
 					str.c_str());
-				if ((n == 1) || (n == -1)) {
+				if ((n == 0) || (n == -1)) {
 					// If Cancel button was pressed, or popup dismissed:
 					// retry
 					gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1345,7 +1348,7 @@ bool control_config_accept(bool API_Access)
 
 			// Pack the current bindings into a preset, then save the file
 			CC_preset preset;
-			preset.name = str;
+			preset.name = std::move(str);
 			std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 			Control_config_presets.push_back(preset);
 			save_preset_file(preset, true);
@@ -1354,11 +1357,19 @@ bool control_config_accept(bool API_Access)
 			// consistant ordering
 			Control_config_presets.resize(1);
 			load_preset_files();
+
+			// finally, save the new preset so that changes will get saved to this preset
+			Current_preset_name = preset.name;
 		} else {
 			return false;
 		}
 	}
 	
+	// adds scripting hook for 'On Control Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnControlConfigMenuClosed->isActive()) {
+		scripting::hooks::OnControlConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', true)));
+	}
+
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
 		gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
@@ -1374,8 +1385,8 @@ void control_config_cancel_exit(bool API_Access)
 	// Check if any changes were made
 	if (!API_Access && (control_config_get_current_preset() == Control_config_presets.end())) {
 		// Changes were made, prompt the user first.
-		int flags = PF_TITLE_WHITE;
-		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, "You have unsaved changes.\n\n\n Do you wish to continue without saving?");
+		int flags = PF_TITLE_WHITE | PF_USE_NEGATIVE_ICON | PF_USE_AFFIRMATIVE_ICON;
+		int choice = popup(flags, 2, POPUP_NO, POPUP_YES, XSTR( "You have unsaved changes.\n\n\n Do you wish to continue without saving?", 1866));
 
 		switch (choice) {
 			case -1:	// Aborted
@@ -1395,6 +1406,11 @@ void control_config_cancel_exit(bool API_Access)
 
 	// Restore all bindings with the backup
 	std::move(Control_config_backup.begin(), Control_config_backup.end(), Control_config.begin());
+
+	// adds scripting hook for 'On Control Config Menu Closed' --wookieejedi
+	if (scripting::hooks::OnControlConfigMenuClosed->isActive()) {
+		scripting::hooks::OnControlConfigMenuClosed->run(scripting::hook_param_list(scripting::hook_param("OptionsAccepted", 'b', false)));
+	}
 
 	if (!API_Access) {
 		gameseq_post_event(GS_EVENT_PREVIOUS_STATE);
@@ -1537,9 +1553,11 @@ void control_config_init(bool API_Access)
 	// Init preset cycling system
 	auto preset_it = control_config_get_current_preset();
 	if (preset_it == Control_config_presets.end()) {
+		Current_preset_name.clear();
 		Defaults_cycle_pos = 0;
 
 	} else {
+		Current_preset_name = preset_it->name;
 		Defaults_cycle_pos = static_cast<unsigned int>(std::distance(Control_config_presets.begin(), preset_it));
 	}
 
@@ -1651,6 +1669,9 @@ void control_config_close(bool API_Access)
 	Cc_lines.clear();
 	Conflicts.clear();
 	Undo_controls.clear();
+
+	// Clear this, just to be tidy
+	Current_preset_name.clear();
 }
 
 SCP_vector<CC_preset>::iterator control_config_get_current_preset(bool invert_agnostic) {
@@ -1746,7 +1767,7 @@ bool control_config_delete_preset(CC_preset preset) {
 	return delete_preset_file(preset);
 }
 
-bool control_config_create_new_preset(SCP_string newName)
+bool control_config_create_new_preset(const SCP_string& newName, bool overwrite)
 {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
@@ -1759,13 +1780,14 @@ bool control_config_create_new_preset(SCP_string newName)
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 
 	// Pack the current bindings into a preset, then save the file
 	CC_preset preset;
 	preset.name = newName;
+	preset.type = Preset_t::pst;
 	std::copy(Control_config.begin(), Control_config.end(), std::back_inserter(preset.bindings));
 
 	// Done with the file
@@ -1794,7 +1816,7 @@ bool control_config_create_new_preset(SCP_string newName)
 	return false; //should be unreachable, but just in case
 }
 
-bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
+bool control_config_clone_preset(const CC_preset& preset, const SCP_string& newName, bool overwrite) {
 
 	// Check if a hardcoded preset with name already exists. If so, complain to user and force retry
 	auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(), [newName](CC_preset& p) {
@@ -1806,7 +1828,7 @@ bool control_config_clone_preset(CC_preset preset, SCP_string newName) {
 	}
 
 	// Check if a preset file with name already exists.
-	if ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0) {
+	if (!overwrite && ((cf_exists_full((newName + ".json").c_str(), CF_TYPE_PLAYER_BINDS)) != 0)) {
 		return false;
 	}
 
@@ -1896,7 +1918,7 @@ int control_config_draw_list(int select_tease_line) {
 	char buf[256];  // c_str buffer
 	int font_height = gr_get_font_height();
 
-	for (line = Scroll_offset; cc_line_query_visible(line); ++line) {
+	for (line = Scroll_offset; cc_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX); ++line) {
 		z = Cc_lines[line].cc_index;
 
 		// screen coordinate y = list box origin y + (this item's relative y - topmost item's relative y)
@@ -2091,7 +2113,7 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		}
 
 		if ((ctrl == BANK_WHEN_PRESSED || ctrl == GLIDE_WHEN_PRESSED) && (Last_key >= 0) && (k <= 0) &&
-			!keyd_pressed[Last_key]) {
+			!key_is_pressed(Last_key)) {
 			// If the selected cc_item is BANK_WHEN_PRESSED or GLIDE_WHEN_PRESSED, and
 			// If the polled key is a modifier, and
 			// k was consumed, and
@@ -2123,9 +2145,12 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && (j < JOY_TOTAL_BUTTONS)) {
 			// Bind the joy button
 			Assert(!Control_config[ctrl].is_axis());
-			control_config_bind(ctrl, CC_bind(static_cast<CID>(joy), j), item, API_Access);
 
-			strcpy_s(bound_string, Joy_button_text[j]);
+			CC_bind joy_bind(static_cast<CID>(joy), j);
+
+			control_config_bind(ctrl, joy_bind, item, API_Access);
+
+			strcpy_s(bound_string, joy_bind.textify().c_str());
 			done = true;
 		}
 
@@ -2159,9 +2184,10 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 
 					if (mouse_down(mouse_bind)) {
 						Assert(!Control_config[ctrl].is_axis());
+
 						control_config_bind(ctrl, mouse_bind, item, API_Access);
 
-						strcpy_s(bound_string, Joy_button_text[i]);
+						strcpy_s(bound_string, mouse_bind.textify().c_str());
 						done = true;
 
 						break;
@@ -2779,6 +2805,8 @@ void control_check_indicate()
 
 int check_control_used(int id, int key)
 {
+	// Make sure mouse_down() is only called once during any logic path, 
+	// or the mousewheel may be decayed multiple times!!
 	int mask;
 	static int last_key = 0;
 	auto & item = Control_config[id];
@@ -2802,8 +2830,8 @@ int check_control_used(int id, int key)
 
 	if (item.type == CC_TYPE_CONTINUOUS) {
 		
-		// this is awful, need to make a reverse lookup table to do button -> control instead of this control -> button
-		// nonsense.
+		// this is awful, need to make a reverse lookup table to do 
+		// button -> control instead of this control -> button nonsense.
 		if ((joy_down(item.first) || joy_down_count(item.first, 1)) ||
 			(joy_down(item.second) || joy_down_count(item.second, 1))) {
 			// Joy button bound to this control was pressed, control activated
@@ -2813,19 +2841,19 @@ int check_control_used(int id, int key)
 
 		if ((mouse_down(item.first) || mouse_down_count(item.first, 1)) ||
 			(mouse_down(item.second) || mouse_down_count(item.second, 1))) {
-			// Joy button bound to this control was pressed, control activated
+			// Mouse button bound to this control was pressed, control activated
 			control_used(id);
 			return 1;
 		}
 
 		// check what current modifiers are pressed
 		mask = 0;
-		if (keyd_pressed[KEY_LSHIFT] || key_down_count(KEY_LSHIFT) || keyd_pressed[KEY_RSHIFT] || key_down_count(KEY_RSHIFT)) {
+		if (key_is_pressed(KEY_LSHIFT, true) || key_is_pressed(KEY_RSHIFT, true)) {
 			// Any shift key is pressed, add KEY_SHIFTED mask
 			mask |= KEY_SHIFTED;
 		}
 
-		if (keyd_pressed[KEY_LALT] || key_down_count(KEY_LALT) || keyd_pressed[KEY_RALT] || key_down_count(KEY_RALT)) {
+		if (key_is_pressed(KEY_LALT, true) || key_is_pressed(KEY_RALT, true)) {
 			// Any alt key is pressed, add KEY_ALTED to the mask
 			mask |= KEY_ALTED;
 		}
@@ -2841,7 +2869,7 @@ int check_control_used(int id, int key)
 
 			z &= KEY_MASK;
 
-			if (keyd_pressed[z] || key_down_count(z)) {
+			if (key_is_pressed(z, true)) {
 				// Key combo is pressed, control activated
 				control_used(id);
 				return 1;
@@ -2857,6 +2885,22 @@ int check_control_used(int id, int key)
 		//mprintf(("Key used %d\n", key));
 		control_used(id);
 		return 1;
+	}
+
+	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
+	if (item.type == CC_TYPE_TRIGGER) {
+
+		int first_btn = 1 << item.first.get_btn();
+		int second_btn = 1 << item.second.get_btn();
+
+		if ( (first_btn >= LOWEST_MOUSE_WHEEL && first_btn <= HIGHEST_MOUSE_WHEEL) ||
+			 (second_btn >= LOWEST_MOUSE_WHEEL && second_btn <= HIGHEST_MOUSE_WHEEL) ) {
+			if ( mouse_down(item.first) || mouse_down(item.second) ) {
+				// Mouse wheel bound to this trigger control was pressed, control activated
+				control_used(id);
+				return 1;
+			}
+		}
 	}
 
 	return 0;

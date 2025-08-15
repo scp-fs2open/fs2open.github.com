@@ -545,7 +545,7 @@ int GetFSPilotData(vmt_stats_struct *fs_pilot, const char *pilot_name, const cha
 // Send an ACK to the server
 void AckServer(unsigned int sig)
 {
-	udp_packet_header ack_pack;
+	udp_packet_header ack_pack{};
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 

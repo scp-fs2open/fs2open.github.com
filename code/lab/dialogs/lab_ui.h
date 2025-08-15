@@ -4,8 +4,21 @@
 #include "model/animation/modelanimation.h"
 #include "species_defs/species_defs.h"
 
+enum class LabTurretAimType {
+	RANDOM,
+	UVEC,
+	INITIAL,
+};
+
+enum class BayMode {
+	Arrival,
+	Departure,
+};
+
 class LabUi {
   public:
+	bool show_thrusters = false; // So that it can be toggled on/off based on the lab mode being changed
+
 	void create_ui();
 	void object_changed();
 	void closeUi();
@@ -13,9 +26,12 @@ class LabUi {
   private:
 	void build_options_menu();
 	void build_ship_list() const;
-	void build_species_entry(species_info species_def, int species_idx) const;
+	void build_species_entry(const species_info &species_def, int species_idx) const;
 	void build_weapon_list() const;
 	void build_weapon_subtype_list() const;
+	static void build_object_list();
+	static void build_asteroid_list();
+	static void build_debris_list();
 	void build_background_list() const;
 	void show_render_options();
 	void show_object_options() const;
@@ -25,7 +41,6 @@ class LabUi {
 	void build_texture_quality_combobox();
 	void build_antialiasing_combobox();
 	void build_tone_mapper_combobox();
-	void build_table_info_txtbox(ship_info* sip) const;
 	void build_model_info_box(ship_info* sip, polymodel* pm) const;
 	void build_subsystem_list(object* objp, ship* shipp) const;
 	void build_subsystem_list_entry(SCP_string& subsys_name,
@@ -39,6 +54,8 @@ class LabUi {
 		weapon_info* wip,
 		int& primary_slot) const;
 	void build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, int& secondary_slot) const;
+	static void build_dock_test_options(ship* shipp);
+	static void build_bay_test_options(ship_info* sip);
 	void build_animation_options(ship* shipp, ship_info* sip) const;
 	void create_afterburner_animation_node(
 		const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers) const;
@@ -50,7 +67,7 @@ class LabUi {
 		ship_info* sip) const;
 	void build_model_info_box_actual(ship_info* sip, polymodel* pm) const;
 	void build_team_color_combobox() const;
-	void reset_animations(ship* shipp, ship_info* sip) const;
+	static void reset_animations();
 	void do_triggered_anim(animation::ModelAnimationTriggerType type,
 		const SCP_string& name,
 		bool direction,
@@ -79,6 +96,7 @@ class LabUi {
 	bool show_damage_lightning = false;
 	bool animate_subsystems = false;
 	bool hide_post_processing = false;
+	bool no_particles = false;
 	bool diffuse_map = true;
 	bool glow_map = true;
 	bool spec_map = true;
@@ -92,10 +110,10 @@ class LabUi {
 	bool use_wireframe_rendering = false;
 	bool no_lighting = false;
 	bool show_full_detail = false;
-	bool show_thrusters = false;
 	bool show_afterburners = false;
 	bool show_weapons = false;
 	bool show_emissive_lighting = false;
+	bool show_particles = true;
 	
-	tl::optional<vec3d> volumetrics_pos_backup = tl::nullopt;
+	std::optional<vec3d> volumetrics_pos_backup = std::nullopt;
 };

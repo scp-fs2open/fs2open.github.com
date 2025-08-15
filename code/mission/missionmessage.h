@@ -59,6 +59,8 @@ extern SCP_vector<message_extra> Message_waves;
 extern SCP_vector<SCP_string> Builtin_moods;
 extern int Current_mission_mood;
 extern float Command_announces_enemy_arrival_chance;
+extern bool Always_loop_head_anis;
+extern bool Use_newer_head_ani_suffix;
 
 // Builtin messages
 
@@ -70,8 +72,18 @@ typedef struct builtin_message {
 	int         priority;
 	int         timing;
 	int         fallback;
+	bool        used_strdup;
+
+	builtin_message(const char* _name, int _occurrence_chance, int _max_count, int _min_delay, int _priority, int _timing, int _fallback, bool _used_strdup);
+	// since we need a destructor, we need the other four special member functions as well
+	~builtin_message();
+	builtin_message(const builtin_message& other);
+	builtin_message& operator=(const builtin_message& other);
+	builtin_message(builtin_message&& other) noexcept = default;
+	builtin_message& operator=(builtin_message&& other) noexcept = default;
 } builtin_message;
 
+// If these are changed or updated be sure to update the map in scripting/api/libs/mission.cpp and the connected lua enumerations!
 #define BUILTIN_MESSAGE_TYPES                                                                    \
 /* Orders */                                                                                     \
 X(ATTACK_TARGET,       "Attack Target",        100, -1,  0,     NORMAL, ANYTIME, YESSIR),        \
@@ -96,7 +108,7 @@ X(PRAISE,              "Praise",                50, 10,  60000, HIGH, SOON, NONE
 X(HIGH_PRAISE,         "High Praise",           50, -1,  0,     HIGH, SOON, PRAISE),             \
                                                                                                  \
 /* Wingmate status */                                                                            \
-X(BACKUP,              "Backup",               100, -1,  0,     LOW, SOON, NONE),                \
+X(BACKUP,              "Backup",               100, -1,   5000, LOW, SOON, NONE),                \
 X(HELP,                "Help",                 100, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(WINGMAN_SCREAM,      "Death",                 50, 10,  60000, HIGH, IMMEDIATE, NONE),          \
 X(PRAISE_SELF,         "Praise Self",           10,  4,  60000, HIGH, SOON, NONE),               \
@@ -115,7 +127,7 @@ X(SUPPORT_KILLED,      "Support Killed",       100, -1,  0,     HIGH, SOON, NONE
                                                                                                  \
 /* Global status */                                                                              \
 X(ALL_ALONE,           "All Alone",             50, -1,  0,     HIGH, ANYTIME, NONE),            \
-X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  0,     LOW, SOON, NONE),                \
+X(ARRIVE_ENEMY,        "Arrive Enemy",         100, -1,  30000, LOW, SOON, NONE),                \
 X(OOPS,                "Oops 1",               100, -1,  0,     HIGH, ANYTIME, NONE),            \
 X(HAMMER_SWINE,        "Traitor",              100, -1,  0,     HIGH, ANYTIME, NONE),            \
                                                                                                  \
@@ -134,11 +146,12 @@ X(STRAY,               "Stray",                100, -1,  0,     LOW, SOON, NONE)
 
 enum {
   #define X(NAME, ...) MESSAGE_ ## NAME
-	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES, MAX_BUILTIN_MESSAGE_TYPES
+	MESSAGE_NONE = -1, BUILTIN_MESSAGE_TYPES,
 	#undef X
+	Num_Message_Types
 };
 
-extern builtin_message Builtin_messages[MAX_BUILTIN_MESSAGE_TYPES];
+extern SCP_vector<builtin_message> Builtin_messages;
 
 int get_builtin_message_type(const char* name);
 
@@ -226,6 +239,7 @@ struct Persona {
 	char name[NAME_LENGTH];
 	int flags;
 	int species_bitfield;
+	SCP_map<SCP_string, SCP_string> custom_data;
 };
 
 extern SCP_vector<Persona> Personas;
@@ -239,11 +253,12 @@ void	message_parse(MessageFormat format);
 void	persona_parse();
 
 void	messages_init();
+void	message_types_init();
 void	message_mission_shutdown();
 void	message_queue_process();
 int	message_is_playing();
 void	message_maybe_distort();
-void	message_kill_all( int kill_all );
+void	message_kill_all( bool kill_all );
 
 void	message_pause_all();
 void	message_resume_all();
@@ -253,7 +268,7 @@ void	message_queue_message(int message_num, int priority, int timing, const char
 // functions which send messages to player -- called externally
 void	message_send_unique(const char *id, const void *data, int source, int priority, int group, int delay, int event_num_to_cancel = -1);
 
-bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target, int multi_team_filter);
+bool	message_send_builtin(int type, ship* sender, ship* subject, int multi_target = -1, int multi_team_filter = -1);
 
 // functions to deal with personas
 int message_persona_name_lookup(const char* name);
@@ -265,7 +280,7 @@ void message_pagein_mission_messages();
 int message_filter_multi(int id);
 
 // Goober5000
-bool message_filename_is_generic(char *filename);
+bool message_filename_is_generic(const char *filename);
 
 // m!m
 void message_load_wave(int index, const char *filename);

@@ -318,7 +318,7 @@ int png_read_bitmap(const char* real_filename, ubyte* image_data, int* bpp, int 
 	if (p) *p = 0;
 	strcat_s(filename, ".png");
 
-	status.cfp = cfopen(filename, "rb", CFILE_NORMAL, cf_type);
+	status.cfp = cfopen(filename, "rb", cf_type);
 
 	if (status.cfp == NULL)
 		return PNG_ERROR_READING;

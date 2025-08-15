@@ -244,6 +244,8 @@ BOOL CFREDApp::InitInstance() {
 	Draw_outlines_on_selected_ships = GetProfileInt("Preferences", "Draw outlines on selected ships", 1) != 0;
 	Point_using_uvec = GetProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	Draw_outline_at_warpin_position = GetProfileInt("Preferences", "Draw outline at warpin position", 0) != 0;
+	Always_save_display_names = GetProfileInt("Preferences", "Always save display names", 0) != 0;
+	Error_checker_checks_potential_issues = GetProfileInt("Preferences", "Error checker checks potential issues", 1) != 0;
 
 	read_window("Main window", &Main_wnd_data);
 	read_window("Ship window", &Ship_wnd_data);
@@ -446,10 +448,21 @@ BOOL CFREDApp::OnIdle(LONG lCount) {
 	game_do_frame();  // do stuff that needs doing, whether we render or not.
 	show_control_mode();
 
-	if (!Update_window)
-		return FALSE;
+	// At some point between 2002 and 2006, the Update_window code was removed, but since we don't have FRED history from that period,
+	// we don't know the exact rationale.  However, since FRED appears to have no difficulty rendering every frame, and since there may
+	// be parts of FRED that don't set Update_window when they need to (for example, the background editor), let's keep this disabled.
+	//if (!Update_window)
+	//	return FALSE;
 
 	render_frame();	// "do the rendering!"  Renders image to offscreen buffer
+
+	// if you hit the next Assert, find Hoffoss or Allender.  If neither here, then comment it out.
+	Assert(Update_window >= 0);
+	if (Update_window) {
+		// here the code used to copy the offscreen buffer to the screen
+		Update_window--;
+	}
+
 	process_pending_messages();
 
 	FrameCount++;
@@ -524,6 +537,8 @@ void CFREDApp::write_ini_file(int degree) {
 	WriteProfileInt("Preferences", "Draw outlines on selected ships", Draw_outlines_on_selected_ships ? 1 : 0);
 	WriteProfileInt("Preferences", "Point using uvec", Point_using_uvec);
 	WriteProfileInt("Preferences", "Draw outline at warpin position", Draw_outline_at_warpin_position ? 1 : 0);
+	WriteProfileInt("Preferences", "Always save display names", Always_save_display_names ? 1 : 0);
+	WriteProfileInt("Preferences", "Error checker checks potential issues", Error_checker_checks_potential_issues ? 1 : 0);
 
 	if (!degree) {
 		record_window_data(&Waypoint_wnd_data, &Waypoint_editor_dialog);
@@ -677,6 +692,9 @@ void update_map_window() {
 		return;
 
 	render_frame();	// "do the rendering!"
+
+	if (Update_window > 0)
+		Update_window--;
 
 	show_control_mode();
 	process_pending_messages();

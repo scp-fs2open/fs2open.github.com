@@ -106,6 +106,7 @@ public:
 	int				pos;					// what x position on level it's on (Fred)
 	int				flags;
 	SCP_string		main_hall;				// which main hall the player is in - converted to SCP_string by CommanderDJ
+	SCP_string		substitute_main_hall;	// really only needed for FRED
 	ubyte			debrief_persona_index;	// which persona is used for ranks/badges - Goober5000
 	scoring_struct	stats;
 };
@@ -121,7 +122,7 @@ public:
 	int		num_missions;							// number of missions in the campaign
 	int		num_missions_completed;					// number of missions in the campaign that have been flown
 	int		current_mission;						// the current mission that the player is playing.  Only valid during the mission
-	int		next_mission;							// number of the next mission to fly when comtinuing the campaign.  Always valid
+	int		next_mission;							// number of the next mission to fly when continuing the campaign.  Always valid
 	int		prev_mission;							// mission that we just came from.  Always valid
 	int		loop_enabled;							// whether mission loop is chosen - true during a loop, false otherwise
 	int		loop_mission;							// mission number of misssion loop (if any)
@@ -135,6 +136,7 @@ public:
 	SCP_vector<sexp_variable> red_alert_variables;		// state of the variables in the previous mission of a Red Alert scenario.
 	SCP_vector<sexp_container> persistent_containers;	// These containers will be saved at the end of a mission
 	SCP_vector<sexp_container> red_alert_containers;		// state of the containers in the previous mission of a Red Alert scenario.
+	SCP_map<SCP_string, SCP_string> custom_data;        // Custom data for the campaign
 
 	campaign()
 		: desc(nullptr), num_missions(0)
@@ -173,7 +175,7 @@ void player_loadout_init();
 void mission_campaign_init( void );
 
 // load up and initialize a new campaign
-int mission_campaign_load(const char* filename, const char* full_path = nullptr, player* pl = nullptr, int load_savefile = 1, bool reset_stats = true);
+int mission_campaign_load(const char* filename, const char* full_path = nullptr, player* pl = nullptr, int load_savefile = 1);
 
 bool campaign_is_ignored(const char *filename);
 
@@ -212,7 +214,7 @@ extern void mission_campaign_save_persistent( int type, int index );
 // execute the corresponding mission_campaign_savefile functions.
 
 // get name and type of specified campaign file
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc = nullptr, char **first_mission = nullptr);
 
 // get a listing of missions in a campaign
 int mission_campaign_get_mission_list(const char *filename, char **list, int max);
@@ -245,7 +247,7 @@ void mission_campaign_skip_to_next();
 void mission_campaign_exit_loop();
 
 // jump to specified mission
-void mission_campaign_jump_to_mission(const char* name, bool no_skip = false);
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip = false);
 
 // stuff for the end of the campaign of the single player game
 void mission_campaign_end_init();

@@ -153,22 +153,31 @@ int Stars_background_inited = 0;			// if we're inited
 int Nmodel_num = -1;							// model num
 int Nmodel_instance_num = -1;					// model instance num
 matrix Nmodel_orient = IDENTITY_MATRIX;			// model orientation
-int Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
+uint64_t Nmodel_flags = DEFAULT_NMODEL_FLAGS;		// model flags
 int Nmodel_bitmap = -1;						// model texture
+float Nmodel_alpha = 1.0f;					// model transparency
 
 bool Dynamic_environment = false;
 
 bool Motion_debris_override = false;
 bool Motion_debris_enabled = true;
 
+static void parse_motion_debris_func()
+{
+	bool enabled;
+	stuff_boolean(&enabled);
+	Motion_debris_enabled = enabled;
+}
+
 auto MotionDebrisOption = options::OptionBuilder<bool>("Graphics.MotionDebris",
                      std::pair<const char*, int>{"Motion Debris", 1713},
                      std::pair<const char*, int>{"Enable or disable visible motion debris", 1714})
                      .category(std::make_pair("Graphics", 1825))
-                     .bind_to_once(&Motion_debris_enabled)
-                     .default_val(true)
+                     .bind_to(&Motion_debris_enabled)
+                     .default_func([]() { return Motion_debris_enabled;})
                      .level(options::ExpertLevel::Advanced)
                      .importance(67)
+                     .parser(parse_motion_debris_func)
                      .finish();
 
 static int Default_env_map = -1;
@@ -819,7 +828,7 @@ void stars_pre_level_init(bool clear_backgrounds)
 
 	stars_clear_instances();
 
-	stars_set_background_model(NULL, NULL);
+	stars_set_background_model(nullptr, nullptr);
 	stars_set_background_orientation();
 
 	// mark all starfield and sun bitmaps as unused for this mission and release any current bitmaps
@@ -1144,7 +1153,7 @@ DCF(stars,"Set parameters for starfield")
 	
 	} else if (arg == "tail") {
 		dc_stuff_float(&val_f);
-		CLAMP(val_f, 0.0, 1.0);
+		CLAMP(val_f, 0.0f, 1.0f);
 		Star_amount = val_f;
 		
 		dc_printf("Star_amount set to %f\n", Star_amount);
@@ -1162,7 +1171,7 @@ DCF(stars,"Set parameters for starfield")
 	
 	} else if (arg == "cap") {
 		dc_stuff_float(&val_f);
-		CLAMP(val_f, 0.0, 255);
+		CLAMP(val_f, 0.0f, 255.0f);
 		Star_cap = val_f;
 		
 		dc_printf("Star_cap set to %f\n", Star_cap);
@@ -1333,7 +1342,7 @@ void stars_draw_sun(int show_sun)
 
 		material mat_params;
 		material_set_unlit(&mat_params, bitmap_id, 0.999f, true, false);
-		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale);
+		g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, true);
 		Sun_drew++;
 
 // 		if ( !g3_draw_bitmap(&sun_vex, 0, 0.05f * Suns[idx].scale_x * local_scale, TMAP_FLAG_TEXTURED) )
@@ -1454,7 +1463,7 @@ void stars_draw_sun_glow(int sun_n)
 	//g3_draw_bitmap(&sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, TMAP_FLAG_TEXTURED);
 	material mat_params;
 	material_set_unlit(&mat_params, bitmap_id, 0.5f, true, false);
-	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale);
+	g3_render_rect_screen_aligned_2d(&mat_params, &sun_vex, 0, 0.10f * Suns[sun_n].scale_x * local_scale, true);
 
 	if (bm->flare) {
 		vec3d light_dir;
@@ -1611,12 +1620,12 @@ void subspace_render()
 	}
 
 	if ( Subspace_model_inner < 0 )	{
-		Subspace_model_inner = model_load( "subspace_small.pof", 0, nullptr );
+		Subspace_model_inner = model_load( "subspace_small.pof" );
 		Assert(Subspace_model_inner >= 0);
 	}
 
 	if ( Subspace_model_outer < 0 )	{
-		Subspace_model_outer = model_load( "subspace_big.pof", 0, nullptr );
+		Subspace_model_outer = model_load( "subspace_big.pof" );
 		Assert(Subspace_model_outer >= 0);
 	}
 
@@ -1675,7 +1684,7 @@ void subspace_render()
 
 	gr_zbuffer_set(GR_ZBUFF_NONE);
 
-	int render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
+	uint64_t render_flags = MR_NO_LIGHTING | MR_ALL_XPARENT;
 
 	Interp_subspace = 1;
 	Interp_subspace_offset_u = 1.0f - subspace_offset_u;
@@ -1715,7 +1724,7 @@ void subspace_render()
 
 	glow_pos.xyz.x = 0.0f;
 	glow_pos.xyz.y = 0.0f;
-	glow_pos.xyz.z = 100.0f;
+	glow_pos.xyz.z = 1.0f;
 
 	//gr_set_bitmap(Subspace_glow_bitmap, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, 1.0f);
 	material mat_params;
@@ -1723,13 +1732,13 @@ void subspace_render()
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
-	glow_pos.xyz.z = -100.0f;
+	glow_pos.xyz.z = -1.0f;
 
 	g3_rotate_faraway_vertex(&glow_vex, &glow_pos);
 	//g3_draw_bitmap(&glow_vex, 0, 17.0f + 0.5f * Noise[framenum], TMAP_FLAG_TEXTURED);
-	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, 17.0f + 0.5f * Noise[framenum]);
+	g3_render_rect_screen_aligned_2d(&mat_params, &glow_vex, 0, (17.0f + 0.5f * Noise[framenum]) * 0.01f, true);
 
 	Interp_subspace = 0;
 	gr_zbuffer_set(saved_gr_zbuffering);
@@ -1761,7 +1770,7 @@ void stars_draw_stars()
 
 	int tmp_num_stars = 0;
 
-	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_LEVEL;
+	tmp_num_stars = (Detail.num_stars * Num_stars) / MAX_DETAIL_VALUE;
 	CLAMP(tmp_num_stars, 0, Num_stars);
 
 	auto path = graphics::paths::PathRenderer::instance();
@@ -2055,10 +2064,10 @@ void stars_page_in()
 	// Initialize the subspace stuff
 
 	if (Game_subspace_effect || (The_mission.flags[Mission::Mission_Flags::Preload_subspace])) {
-		Subspace_model_inner = model_load("subspace_small.pof", 0, nullptr);
+		Subspace_model_inner = model_load("subspace_small.pof");
 		Assert(Subspace_model_inner >= 0);
 
-		Subspace_model_outer = model_load("subspace_big.pof", 0, nullptr);
+		Subspace_model_outer = model_load("subspace_big.pof");
 		Assert(Subspace_model_outer >= 0);
 
 		polymodel *pm;
@@ -2306,32 +2315,38 @@ void stars_draw_background()
 	}
 
 	// draw the model at the player's eye with no z-buffering
-	render_info.set_alpha(1.0f);
+	if (Nmodel_alpha < 1.0f)
+		render_info.set_alpha_mult(Nmodel_alpha);
 	render_info.set_flags(Nmodel_flags | MR_SKYBOX);
 
+	if (Nmodel_instance_num >= 0)
+		render_info.set_replacement_textures(model_get_instance(Nmodel_instance_num)->texture_replace);
+
+	// if No Z-Buffer is on in FRED then check mod flag to see 
+	// if skybox submodels should still have proper z-sorting
+	// wookieejedi
+	bool special_z_buff = ((Nmodel_flags & MR_NO_ZBUFFER) && Skybox_internal_depth_consistency);
+	if (special_z_buff) {
+		render_info.set_flags(Nmodel_flags & ~MR_NO_ZBUFFER);
+	}
+
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
+
+	if (special_z_buff) {
+		gr_zbuffer_clear(TRUE);
+	}
 }
 
-// call this to set a specific model as the background model
-void stars_set_background_model(const char *model_name, const char *texture_name, int flags)
+void stars_set_background_model(int new_model, int new_bitmap, uint64_t flags, float alpha)
 {
-	int new_model = -1;
-	int new_bitmap = -1;
-
 	if (gr_screen.mode == GR_STUB) {
 		return;
 	}
 
-	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
-		new_model = model_load(model_name, 0, nullptr, -1);
-
-		if (texture_name != nullptr && *texture_name != '\0') {
-			new_bitmap = bm_load(texture_name);
-		}
-	}
+	CLAMP(alpha, 0.0f, 1.0f);
 
 	// see if we are actually changing anything
-	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags) {
+	if (Nmodel_num == new_model && Nmodel_bitmap == new_bitmap && Nmodel_flags == flags && Nmodel_alpha == alpha) {
 		return;
 	}
 
@@ -2339,7 +2354,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 		bm_unload(Nmodel_bitmap);
 		Nmodel_bitmap = -1;
 	}
-	
+
 	if (Nmodel_num >= 0) {
 		model_unload(Nmodel_num);
 		Nmodel_num = -1;
@@ -2353,6 +2368,7 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	Nmodel_flags = flags;
 	Nmodel_num = new_model;
 	Nmodel_bitmap = new_bitmap;
+	Nmodel_alpha = alpha;
 
 	if (Nmodel_num >= 0) {
 		model_page_in_textures(Nmodel_num);
@@ -2365,6 +2381,27 @@ void stars_set_background_model(const char *model_name, const char *texture_name
 	stars_invalidate_environment_map();
 }
 
+// call this to set a specific model as the background model
+void stars_set_background_model(const char* model_name, const char* texture_name, uint64_t flags, float alpha)
+{
+	int new_model = -1;
+	int new_bitmap = -1;
+
+	if (gr_screen.mode == GR_STUB) {
+		return;
+	}
+
+	if (model_name != nullptr && *model_name != '\0' && stricmp(model_name, "none") != 0) {
+		new_model = model_load(model_name, nullptr, ErrorType::NONE);
+
+		if (texture_name != nullptr && *texture_name != '\0') {
+			new_bitmap = bm_load(texture_name);
+		}
+	}
+
+	stars_set_background_model(new_model, new_bitmap, flags, alpha);
+}
+
 // call this to set a specific orientation for the background
 void stars_set_background_orientation(const matrix *orient)
 {
@@ -2373,6 +2410,12 @@ void stars_set_background_orientation(const matrix *orient)
 	} else {
 		Nmodel_orient = *orient;
 	}
+}
+
+void stars_set_background_alpha(float alpha)
+{
+	CLAMP(alpha, 0.0f, 1.0f);
+	Nmodel_alpha = alpha;
 }
 
 // lookup a starfield bitmap, return index or -1 on fail

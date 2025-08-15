@@ -1,11 +1,13 @@
 #pragma once
 
-#include <linb/any.hpp>
+#include <any>
 
 class object;
 class ship;
 struct weapon;
 class ship_subsys;
+struct object_ship_wing_point_team;
+enum class ArrivalLocation;
 
 #define HOOK_DEFINE_CONDITIONS static const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>> conditions
 
@@ -13,7 +15,7 @@ namespace scripting {
 
 class EvaluatableCondition {
 public:
-	virtual bool evaluate(const linb::any& /*conditionContext*/) const {
+	virtual bool evaluate(const std::any& /*conditionContext*/) const {
 		return false;
 	};
 
@@ -52,7 +54,7 @@ struct ShipSourceConditions {
 struct CollisionConditions {
 	HOOK_DEFINE_CONDITIONS;
 	struct ParticipatingObjects {
-		const object* objp_a, * objp_b;
+		const object *objp_a, *objp_b;
 	} participating_objects;
 };
 
@@ -85,8 +87,8 @@ struct ObjectDeathConditions {
 struct ShipArriveConditions {
 	HOOK_DEFINE_CONDITIONS;
 	const ship* spawned_shipp;
-	int arrival_location; // As of yet unused
-	const object* spawn_anchor_objp; // As of yet unused
+	ArrivalLocation arrival_location; // As of yet unused
+	const object* spawn_anchor_objp;  // As of yet unused
 };
 
 struct WeaponCreatedConditions {
@@ -128,7 +130,19 @@ struct ObjectDrawConditions {
 	const object* drawn_from_objp;
 };
 
-}
+struct KeyPressConditions {
+	HOOK_DEFINE_CONDITIONS;
+	int keycode;
+};
+
+struct CommOrderConditions {
+	HOOK_DEFINE_CONDITIONS;
+	const ship* source;
+	const object* target;
+	const object_ship_wing_point_team* reciever; // As of yet unused
+};
+
+} // namespace hooks
 }
 
 #undef HOOK_DEFINE_CONDITIONS

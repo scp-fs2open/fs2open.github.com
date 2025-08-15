@@ -496,6 +496,7 @@
 #define IDC_SBITMAP                     1189
 #define IDC_ASCT1_VARIABLES_COMBO1      1189
 #define IDC_WEAPON_VARIABLES_COMBO      1189
+#define IDC_WHICH_TO_SYNC               1189
 #define IDC_ASCT1_CLASS_COMBO2          1190
 #define IDC_BACKGROUND_NUM              1190
 #define IDC_WING_DISPLAY_FILTER         1191
@@ -569,6 +570,8 @@
 #define IDC_FILTER_SHIPS                1213
 #define IDC_IFF_LIST                    1214
 #define IDC_WING_FORMATION_SCALE        1215
+#define IDC_SET_ABSOLUTE                1216
+#define IDC_SET_RELATIVE                1217
 #define IDC_ALL                         1218
 #define IDC_CLEAR                       1219
 #define IDC_INVERT                      1220
@@ -709,7 +712,7 @@
 #define IDC_REINFORCEMENT               1323
 #define IDC_MAIN_HALL                   1323
 #define IDC_DEBRIEFING_PERSONA          1324
-#define IDC_ALT_NAME                    1325
+#define IDC_DISPLAY_NAME                1325
 #define IDC_DOCK1                       1327
 #define IDC_INNER_MIN_X                 1327
 #define IDC_DOCK2                       1328
@@ -958,7 +961,7 @@
 #define IDC_SUBSPACE                    1493
 #define IDC_UPDATE                      1494
 #define IDC_DESC                        1495
-#define IDC_MISSISON_LOOP_DESC          1495
+#define IDC_MISSION_LOOP_DESC           1495
 #define IDC_NO_PROMOTION                1496
 #define IDC_DESC2                       1496
 #define ID_CANCEL                       1497
@@ -1038,7 +1041,7 @@
 #define IDC_BEAM_FREE_ALL_BY_DEFAULT    1544
 #define IDC_NEB2_TOGGLE_TRAILS          1544
 #define IDC_ST_OVERRIDE_NEB             1545
-#define IDC_MAINHALL_LABEL              1545
+#define IDC_SUBSTITUTE_MAIN_HALL        1545
 #define IDC_3D_WARP_EFFECT              1545
 #define IDC_NEB2_FOG_R                  1545
 #define IDC_MISSION_OPTIONS             1546
@@ -1119,7 +1122,6 @@
 #define IDC_SYNC_PERSONAS               1582
 #define IDC_TOGGLE_START_CHASE          1583
 #define IDC_RESTRICT_PATHS_LABEL        1584
-#define IDC_LBL_NOTE                    1584
 #define IDC_PATH_LIST                   1585
 #define IDC_LISTITEM                    1586
 #define IDC_ENTRY_FORMAT_DESC           1588
@@ -1139,6 +1141,8 @@
 #define IDC_ALT_CLASS_DOWN              1603
 #define IDC_ALT_CLASS_INSERT            1604
 #define IDC_PRELOAD_SUBSPACE            1605
+#define IDC_DONT_CHANGE_POSITION        1606
+#define IDC_DONT_CHANGE_ORIENTATION     1607
 #define IDC_SKY_FLAG_NO_LIGHTING        1609
 #define IDC_SKY_FLAG                    1610
 #define IDC_SKY_FLAG_XPARENT            1610
@@ -1164,7 +1168,6 @@
 #define IDC_GROUP_MESSAGES              1628
 #define IDC_INCLUDE_SENDER              1629
 #define IDC_DISABLE_ETS                 1630
-#define IDC_IMMOBILE                    1631
 #define IDC_DISABLE_ETS2                1632
 #define IDC_CLOAKED                     1632
 #define IDC_NEB2_NEAR_MULTIPLIER        1632
@@ -1258,6 +1261,10 @@
 #define IDC_NOISE_RESOLUTION            1702
 #define IDC_SPIN_NOISE_RESOLUTION       1703
 #define IDC_REQUIRED_WEAPONS            1704
+#define IDC_SELECT_DEBRIS               1705
+#define IDC_SELECT_ASTEROID             1706
+#define IDC_SMOOTHING                   1707
+#define IDC_SPIN_SMOOTHING              1708
 #define IDC_SEXP_POPUP_LIST             32770
 #define ID_FILE_MISSIONNOTES            32771
 #define ID_DUPLICATE                    32774
@@ -1450,13 +1457,15 @@
 #define ID_SHOW_STARTS                  32991
 #define ID_TOGGLE_VIEWPOINT             32992
 #define ID_VIEW_OUTLINE_AT_WARPIN       32993
+#define ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES 32994
 #define ID_CPGN_FILE_NEW                32995
 #define ID_CPGN_FILE_OPEN               32996
 #define ID_CPGN_FILE_SAVE               32997
 #define ID_CPGN_FILE_SAVE_AS            32998
 #define ID_SHOW_STARFRIELD              32999
 #define ID_REVERT                       33000
-#define ID_HIDE_OBJECTS                 33002
+#define ID_ALWAYS_SAVE_DISPLAY_NAMES    33001
+#define ID_HIDE_MARKED_OBJECTS          33002
 #define ID_SHOW_HIDDEN_OBJECTS          33003
 #define ID_GROUP_SET                    33004
 #define ID_EXPAND_ALL                   33005
@@ -1517,6 +1526,8 @@
 #define ID_PREV_SUBSYS                  33060
 #define ID_CANCEL_SUBSYS                33061
 #define ID_HIGHLIGHT_SUBSYS             33062
+#define ID_EDIT_LOCK_MARKED_OBJECTS     33063
+#define ID_EDIT_UNLOCK_ALL_OBJECTS      33064
 #define ID_SHOW_DOCK_POINTS             33065
 #define ID_SHOW_PATHS                   33066
 #define ID_DUMP_STATS                   33067

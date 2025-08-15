@@ -235,7 +235,7 @@ inline int ade_get_args(lua_State* L, const char* fmt, Args&&... args)
 		// WMC - Try and get at function name from upvalue
 		if (!get_args_lfunction && !lua_isnone(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX))) {
 			if (lua_type(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)) == LUA_TSTRING)
-				strcpy_s(state.funcname, lua_tostring(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
+				strcpy_s(state.funcname, lua_tostring_nullsafe(L, lua_upvalueindex(ADE_FUNCNAME_UPVALUE_INDEX)));
 		}
 
 		// WMC - Totally unknown function

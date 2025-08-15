@@ -62,7 +62,7 @@ extern fov_t Proj_fov;					// Projection matrix fov (for HT&L)
  */
 void g3_set_fov(fov_t zoom);
 
-float g3_get_hfov(const fov_t& fov);
+float g3_get_hfov(const fov_t& fov, bool visible_fov = true);
 
 /**
  * Set view from camera
@@ -236,7 +236,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 void g3_render_rect_screen_aligned_rotated(material *mat_params, vertex *pnt, float angle, float rad);
 
 void g3_render_rect_screen_aligned(material *mat_params, vertex *pnt, int orient, float rad, float depth = 0.0f);
-void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad);
+void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad, bool isFaraway = false);
 
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float width, float height);
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height);
@@ -287,7 +287,7 @@ public:
 	}
 
 	void initialize(uint number, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
-	void initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
+	void initialize(ubyte *bsp_data, int bsp_data_size, float min_ray_width, float max_ray_width = 0, const vec3d* dir = &vmd_zero_vector, const vec3d* pcenter = &vmd_zero_vector, float outer = PI2, float inner = 0.0f, ubyte max_r = 255, ubyte max_g = 255, ubyte max_b = 255, ubyte min_r = 255, ubyte min_g = 255, ubyte min_b = 255);
 	void render(int texture, float rad, float intinsity, float life);
 };
 #endif

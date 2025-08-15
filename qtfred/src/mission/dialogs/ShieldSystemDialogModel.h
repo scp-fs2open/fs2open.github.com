@@ -34,8 +34,6 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
  private:
 	void initializeData();
 
-	template<typename T>
-	void modify(T &a, const T &b);
 
 	std::vector<SCP_string> _shipTypeOptions;
 	std::vector<SCP_string> _teamOptions;
@@ -44,14 +42,6 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	int		_currTeam;
 	int		_currType;
 };
-
-template<typename T>
-inline void ShieldSystemDialogModel::modify(T &a, const T &b) {
-	if (a != b) {
-		a = b;
-		modelChanged();
-	}
-}
 
 }
 }

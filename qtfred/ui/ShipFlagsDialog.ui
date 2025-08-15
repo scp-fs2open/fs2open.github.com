@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>421</width>
-    <height>664</height>
+    <height>745</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -376,12 +376,25 @@
       </layout>
      </item>
      <item>
-      <widget class="fso::fred::ShipFlagCheckbox" name="noMoveCheckbox">
+      <widget class="fso::fred::ShipFlagCheckbox" name="noChangePosCheckbox">
        <property name="toolTip">
-        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not move under any circumstances&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not change position until destroyed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
        </property>
        <property name="text">
-        <string>Does Not Move</string>
+        <string>Does Not Change Position</string>
+       </property>
+       <property name="tristate">
+        <bool>true</bool>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="fso::fred::ShipFlagCheckbox" name="noChangeOrientCheckbox">
+       <property name="toolTip">
+        <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Ship should not change orientation until destroyed&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+       </property>
+       <property name="text">
+        <string>Does Not Change Orientation</string>
        </property>
        <property name="tristate">
         <bool>true</bool>
@@ -693,22 +706,6 @@
     <hint type="destinationlabel">
      <x>251</x>
      <y>509</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipFlagsDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>389</x>
-     <y>563</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>375</x>
-     <y>515</y>
     </hint>
    </hints>
   </connection>

@@ -18,6 +18,8 @@
 #include "math/vecmat.h"
 #include "mission/missioncampaign.h"
 #include "particle/particle.h"
+#include "particle/ParticleEffect.h"
+#include "particle/volumes/LegacyAACuboidVolume.h"
 #include "popup/popupdead.h"
 #include "ship/ship.h"
 #include "starfield/starfield.h"
@@ -34,11 +36,45 @@ static TIMESTAMP Supernova_timestamp;
 static TIMESTAMP Supernova_fade_to_white_timestamp;
 static TIMESTAMP Supernova_particle_timestamp;
 
+static particle::ParticleEffectHandle Supernova_particle_effect;
+
 auto Supernova_status = SUPERNOVA_STAGE::NONE;
 
 // --------------------------------------------------------------------------------------------------------------------------
 // SUPERNOVA FUNCTIONS
 //
+
+static particle::ParticleEffectHandle supernova_init_particle() {
+	return particle::ParticleManager::get()->addEffect(particle::ParticleEffect(
+			"", //Name
+			::util::UniformFloatRange(2.f, 5.f), //Particle num
+			particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+			::util::UniformFloatRange(), //No duration
+			::util::UniformFloatRange (-1.f), //Single particle only
+			particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+			::util::UniformFloatRange(1.f), //Velocity Inherit
+			false, //Velocity Inherit absolute?
+			make_unique<particle::LegacyAACuboidVolume>(0.75f, 1.f, true), //Velocity volume
+			::util::UniformFloatRange(25.f, 50.f), //Velocity volume multiplier
+			particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+			std::nullopt, //Orientation-based velocity
+			std::nullopt, //Position-based velocity
+			nullptr, //Position volume
+			particle::ParticleEffectHandle::invalid(), //Trail
+			1.f, //Chance
+			true, //Affected by detail
+			1.f, //Culling range multiplier
+			true, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+			false, //Don't reverse animation
+			false, //parent local
+			false, //ignore velocity inherit if parented
+			false, //position velocity inherit absolute?
+			std::nullopt, //Local velocity offset
+			std::nullopt, //Local offset
+			::util::UniformFloatRange(0.6f, 1.f), //Lifetime
+			::util::UniformFloatRange(0.5f, 1.25f), //Radius
+			particle::Anim_bitmap_id_fire)); //Bitmap
+}
 
 // level init
 // (if this function is modified, check that its use in supernova_stop() is still valid)
@@ -49,6 +85,9 @@ void supernova_level_init()
 	Supernova_timestamp = TIMESTAMP::invalid();
 	Supernova_fade_to_white_timestamp = TIMESTAMP::invalid();
 	Supernova_particle_timestamp = TIMESTAMP::immediate();
+
+	static particle::ParticleEffectHandle supernova_particle = supernova_init_particle();
+	Supernova_particle_effect = supernova_particle;
 
 	Supernova_status = SUPERNOVA_STAGE::NONE;
 }
@@ -115,16 +154,8 @@ void supernova_do_particles()
 		vm_vec_sub(&norm, &Player_obj->pos, &sun_temp);
 		vm_vec_normalize(&norm);
 
-		particle::particle_emitter whee;
-		whee.max_life = 1.0f;
-		whee.min_life = 0.6f;
-		whee.max_vel = 50.0f;
-		whee.min_vel = 25.0f;
-		whee.normal_variance = 0.75f;
-		whee.num_high = 5;
-		whee.num_low = 2;
-		whee.min_rad = 0.5f;
-		whee.max_rad = 1.25f;
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &norm);
 
 		// emit
 		for(idx=0; idx<10; idx++) {
@@ -134,24 +165,28 @@ void supernova_do_particles()
 			// rotate into world space
 			vm_vec_unrotate(&a, &ta, &Player_obj->orient);
 			vm_vec_add2(&a, &Player_obj->pos);
-			whee.pos = a;
-			whee.vel = norm;
-			vm_vec_scale(&whee.vel, 30.0f);
-			vm_vec_add2(&whee.vel, &Player_obj->phys_info.vel);
-			whee.normal = norm;
-			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
+
+			vec3d vel = norm;
+			vm_vec_scale(&vel, 30.0f);
+			vm_vec_add2(&vel, &Player_obj->phys_info.vel);
 
 			vm_vec_unrotate(&b, &tb, &Player_obj->orient);
 			vm_vec_add2(&b, &Player_obj->pos);
-			whee.pos = b;
-			particle::emit(&whee, particle::PARTICLE_FIRE, 0);
+
+			auto source = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
+			source->setHost(make_unique<EffectHostVector>(a, orient, vel));
+			source->finishCreation();
+
+			auto source2 = particle::ParticleManager::get()->createSource(Supernova_particle_effect);
+			source2->setHost(make_unique<EffectHostVector>(b, orient, vel));
+			source2->finishCreation();
 		}
 	}
 }
 
 // call once per frame
 float sn_shudder = 0.45f;
-DCF_FLOAT2(sn_shud, sn_shudder, 0.0, FLT_MAX, "Sets camera shudder rate for being in supernova shockwave (default is 0.45)");
+DCF_FLOAT2(sn_shud, sn_shudder, 0.0f, FLT_MAX, "Sets camera shudder rate for being in supernova shockwave (default is 0.45)");
 
 void supernova_process()
 {
@@ -267,10 +302,10 @@ bool supernova_camera_cut()
 // get view params from supernova
 float sn_distance = 300.0f;				// shockwave moving at 1000/ms ?
 float sn_cam_distance = 25.0f;
-DCF_FLOAT2(sn_dist, sn_distance, 0.0, FLT_MAX, "Sets supernova shockwave distance (default is 300.0f)");
+DCF_FLOAT2(sn_dist, sn_distance, 0.0f, FLT_MAX, "Sets supernova shockwave distance (default is 300.0f)");
 
 
-DCF_FLOAT2(sn_cam_dist, sn_cam_distance, 0.0, FLT_MAX, "Sets supernova camera distance (default is 25.0f)");
+DCF_FLOAT2(sn_cam_dist, sn_cam_distance, 0.0f, FLT_MAX, "Sets supernova camera distance (default is 25.0f)");
 
 void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 {
@@ -315,9 +350,8 @@ void supernova_get_eye(vec3d *eye_pos, matrix *eye_orient)
 		float pct = ((SUPERNOVA_HIT_TIME - Supernova_time_left) / SUPERNOVA_CAMERA_MOVE_DURATION);
 		vm_vec_scale_add2(&at, &move, sn_distance * pct);
 
-		vm_vec_sub(&view, &at, &Supernova_camera_pos);
-		vm_vec_normalize(&view);
-		vm_vector_2_matrix(&Supernova_camera_orient, &view, NULL, NULL);
+		vm_vec_normalized_dir(&view, &at, &Supernova_camera_pos);
+		vm_vector_2_matrix_norm(&Supernova_camera_orient, &view, nullptr, nullptr);
 		//cam->set_rotation(&Supernova_camera_orient);
 		*eye_orient = Supernova_camera_orient;
 	}

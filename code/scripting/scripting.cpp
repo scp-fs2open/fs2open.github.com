@@ -19,6 +19,7 @@
 #include "parse/parselo.h"
 #include "scripting/doc_html.h"
 #include "scripting/doc_json.h"
+#include "scripting/doc_luastub.h"
 #include "scripting/global_hooks.h"
 #include "scripting/scripting_doc.h"
 #include "ship/ship.h"
@@ -32,6 +33,7 @@ using namespace scripting;
 script_state Script_system("FS2_Open Scripting");
 bool Output_scripting_meta = false;
 bool Output_scripting_json = false;
+bool Output_scripting_luastub = false;
 bool Scripting_game_init_run = false;
 
 flag_def_list Script_conditions[] = 
@@ -117,7 +119,7 @@ void script_parse_table(const char* filename)
 void script_parse_lua_script(const char *filename) {
 	using namespace luacpp;
 
-	CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_TABLES);
+	CFILE *cfp = cfopen(filename, "rb", CF_TYPE_TABLES);
 	if(cfp == nullptr)
 	{
 		Warning(LOCATION, "Could not open lua script file '%s'", filename);
@@ -137,9 +139,9 @@ void script_parse_lua_script(const char *filename) {
 
 		script_function func;
 		func.language = SC_LUA;
-		func.function = function;
+		func.function = std::move(function);
 
-		Script_system.AddGameInitFunction(func);
+		Script_system.AddGameInitFunction(std::move(func));
 	} catch (const LuaException& e) {
 		LuaError(Script_system.GetLuaSession(), "Failed to parse %s: %s", filename, e.what());
 	}
@@ -154,7 +156,7 @@ void script_init()
 	mprintf(("SCRIPTING: Beginning Lua initialization...\n"));
 	Script_system.CreateLuaState();
 
-	if (Output_scripting_meta || Output_scripting_json) {
+	if (Output_scripting_meta || Output_scripting_json || Output_scripting_luastub) {
 		const auto doc = Script_system.OutputDocumentation([](const SCP_string& error) {
 			mprintf(("Scripting documentation: Error while parsing\n%s(This is only relevant for coders)\n\n",
 				error.c_str()));
@@ -168,6 +170,10 @@ void script_init()
 			mprintf(("SCRIPTING: Outputting scripting metadata in JSON format...\n"));
 			scripting::output_json_doc(doc, "scripting.json");
 		}
+		if (Output_scripting_luastub) {
+			mprintf(("SCRIPTING: Outputting scripting metadata in LUA Stub format...\n"));
+			scripting::output_luastub_doc(doc, "scripting.lua");
+		}
 	}
 
 	mprintf(("SCRIPTING: Beginning main hook parse sequence....\n"));
@@ -175,7 +181,7 @@ void script_init()
 	parse_modular_table(NOX("*-sct.tbm"), script_parse_table);
 	mprintf(("SCRIPTING: Parsing pure Lua scripts\n"));
 	parse_modular_table(NOX("*-sct.lua"), script_parse_lua_script);
-	mprintf(("SCRIPTING: Inititialization complete.\n"));
+	mprintf(("SCRIPTING: Initialization complete.\n"));
 }
 /*
 //WMC - Doesn't work as debug console interferes with any non-alphabetic chars.
@@ -239,10 +245,29 @@ static bool global_condition_valid(const script_condition& condition)
 			return false;
 		if (Current_key_down == 0)
 			return false;
-		// WMC - could be more efficient, but whatever.
-		if (stricmp(textify_scancode_universal(Current_key_down), condition.condition_string.c_str()) != 0)
-			return false;
-		break;
+
+		//Remove key masks that the API does not check against
+		int key_down_modifier = ~KEY_CTRLED & ~KEY_MASK & Current_key_down;
+
+		//Pretend that debug is the same as cheat
+		if (key_down_modifier & KEY_DEBUGGED)
+			key_down_modifier = (key_down_modifier & ~KEY_DEBUGGED) | KEY_DEBUGGED1;
+
+		//For reasons only known to Volition, LCtrl and RCtrl are differentiated in name, while Alt and Shift are not.
+		//As only the first of these identical names will be matched, replace the R versions with the L versions
+		int key_down = Current_key_down & KEY_MASK;
+		switch(key_down) {
+			case KEY_RALT:
+				key_down = KEY_LALT;
+				break;
+			case KEY_RSHIFT:
+				key_down = KEY_LSHIFT;
+				break;
+			default:
+				break;
+		}
+
+		return condition.condition_cached_value == (key_down | key_down_modifier);
 	}
 
 	case CHC_VERSION: {
@@ -327,6 +352,52 @@ int cache_condition(ConditionalType type, const SCP_string& value){
 		{
 			return 0;
 		}
+	}
+	case CHC_KEYPRESS:
+	{
+		int keycode = 0;
+		//Technically, keys can be also CTRLED and DEBUGGED, but since the API never made a distinction, they will not be cached and filtered later
+		if (value.find("Cheat") != SCP_string::npos)
+		{
+			keycode |= KEY_DEBUGGED1;
+		}
+		if (value.find("Alt") != SCP_string::npos)
+		{
+			keycode |= KEY_ALTED;
+		}
+		if (value.find("Shift") != SCP_string::npos)
+		{
+			keycode |= KEY_SHIFTED;
+		}
+
+		//Now, if Alt / Shift is ONLY the modifer, remove them here. If they are the only key pressed, the modifier still needs to be enabled, but the key also needs matching
+		SCP_string key_copy = value;
+		if (key_copy.rfind("Cheat-", 0) == 0){
+			key_copy = key_copy.substr(6);
+		}
+		if (key_copy.rfind("Alt-", 0) == 0){
+			key_copy = key_copy.substr(4);
+		}
+		if (key_copy.rfind("Shift-", 0) == 0){
+			key_copy = key_copy.substr(6);
+		}
+
+		bool foundKey = false;
+		for (int key = 0; key < NUM_KEYS; key++){
+			extern const char *Scan_code_text_english[];
+			if (stricmp(Scan_code_text_english[key], key_copy.c_str()) == 0) {
+				keycode |= key & KEY_MASK;
+				foundKey = true;
+				break;
+			}
+		}
+
+		if (!foundKey) {
+			Warning(LOCATION, "No key %s found for %s in conditional hook! The hook will not trigger!", key_copy.c_str(), value.c_str());
+			return -1;
+		}
+
+		return keycode;
 	}
 	default:
 		return -1;
@@ -417,7 +488,7 @@ void script_state::UnloadImages()
 	ScriptImages.clear();
 }
 
-int script_state::RunCondition(int action_type, linb::any local_condition_data)
+int script_state::RunCondition(int action_type, const std::any& local_condition_data)
 {
 	TRACE_SCOPE(tracing::LuaHooks);
 	int num = 0;
@@ -443,7 +514,7 @@ int script_state::RunCondition(int action_type, linb::any local_condition_data)
 	return num;
 }
 
-bool script_state::IsConditionOverride(int action_type, linb::any local_condition_data)
+bool script_state::IsConditionOverride(int action_type, const std::any& local_condition_data)
 {
 	auto action_it = ConditionalHooks.find(action_type);
 	if (action_it == ConditionalHooks.end())
@@ -565,7 +636,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		char *filename = alloc_block("[[", "]]");
 
 		//Load from file
-		CFILE *cfp = cfopen(filename, "rb", CFILE_NORMAL, CF_TYPE_SCRIPTS );
+		CFILE *cfp = cfopen(filename, "rb", CF_TYPE_SCRIPTS );
 
 		//WMC - use filename instead of debug_str so that the filename gets passed.
 		function_name = filename;
@@ -621,7 +692,7 @@ void script_state::ParseChunkSub(script_function& script_func, const char* debug
 		auto function = LuaFunction::createFromCode(LuaState, source, function_name);
 		function.setErrorFunction(LuaFunction::createFromCFunction(LuaState, ade_friendly_error));
 
-		script_func.function = function;
+		script_func.function = std::move(function);
 	} catch (const LuaException& e) {
 		LuaError(GetLuaSession(), "%s", e.what());
 	}
@@ -768,7 +839,7 @@ ConditionalType scripting_string_to_condition(const char* condition)
 	return CHC_NONE;
 }
 
-bool script_action::ConditionsValid(const linb::any& local_condition_data) const {
+bool script_action::ConditionsValid(const std::any& local_condition_data) const {
 	for (const auto& global_condition : global_conditions) {
 		if (!global_condition_valid(global_condition))
 			return false;
@@ -866,7 +937,7 @@ bool script_state::ParseCondition(const char *filename)
 			bool found = false;
 			pause_parse();
 			SCP_vm_unique_ptr<char> parse{ vm_strdup(local_condition.c_str()) };
-			reset_parse(parse.get());
+			reset_parse(parse.get());	// coverity[escape:FALSE] - this is okay because the pointer escape only lasts until unpause_parse() restores the old state
 			for (const auto& potential_condition : currHook->_conditions) {
 				SCP_string bufCond;
 				sprintf(bufCond, "$%s:", potential_condition.first.c_str());

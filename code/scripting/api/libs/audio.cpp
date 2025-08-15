@@ -216,7 +216,7 @@ ADE_FUNC(playGameSound,
 	}
 }
 
-ADE_FUNC(playInterfaceSound, l_Audio, "sound index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
+ADE_FUNC(playInterfaceSound, l_Audio, "number index", "Plays a sound from #Interface Sounds in sounds.tbl", "boolean", "True if sound was played, false if not")
 {
 	int idx;
 	if(!ade_get_args(L, "i", &idx))
@@ -414,6 +414,15 @@ ADE_FUNC(pauseVoiceMessages,
 	} else {
 		message_resume_all();
 	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(killVoiceMessages, l_Audio, nullptr, "Kills all currently playing voice messages.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	message_kill_all(true);
 
 	return ADE_RETURN_NIL;
 }

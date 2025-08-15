@@ -289,19 +289,20 @@ void parse_lightning_table(const char* filename)
 			// texture
 			if (optional_string("+b_texture:")) {
 				stuff_string(name, F_NAME, sizeof(name));
-				if (!Fred_running) {
+				if (!Fred_running && stricmp(name, "none") && stricmp(name, "<none>")) {
 					bolt_p->texture = bm_load(name);
+					if (bolt_p->texture < 0)
+						error_display(0, "Unable to load texture %s for bolt %s.", name, bolt_p->name);
 				}
 			}
-
-			if (!Fred_running && (bolt_p->texture < 0))
-				error_display(1, "Bolt %s has no texture defined.", bolt_p->name);
 
 			// glow
 			if (optional_string("+b_glow:")) {
 				stuff_string(name, F_NAME, sizeof(name));
-				if (!Fred_running) {
+				if (!Fred_running && stricmp(name, "none") && stricmp(name, "<none>")) {
 					bolt_p->glow = bm_load(name);
+					if (bolt_p->glow < 0)
+						error_display(0, "Unable to load glow %s for bolt %s.", name, bolt_p->name);
 				}
 			}
 
@@ -780,7 +781,7 @@ bool nebl_bolt(int type, vec3d *start, vec3d *strike, bool play_sound)
 	vm_vec_scale_add(&bolt->midpoint, &Nebl_bolt_start, &dir, 0.5f);
 
 	bolt_len = vm_vec_normalize(&dir);
-	vm_vector_2_matrix(&Nebl_bolt_dir, &dir, NULL, NULL);
+	vm_vector_2_matrix_norm(&Nebl_bolt_dir, &dir, nullptr, nullptr);
 
 	// global type for generating the bolt
 	Nebl_type = bi;
@@ -1072,7 +1073,6 @@ void nebl_render_section(bolt_type *bi, l_section *a, l_section *b)
 // generate a section
 void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_section *c, l_section *cap, int pinch_a, int pinch_b)
 {
-	vec3d dir;
 	vec3d dir_normal;
 	matrix m;
 	size_t idx;	
@@ -1081,9 +1081,8 @@ void nebl_generate_section(bolt_type *bi, float width, l_node *a, l_node *b, l_s
 	vertex tempv;
 
 	// direction matrix
-	vm_vec_sub(&dir, &a->pos, &b->pos);
-	vm_vec_copy_normalize(&dir_normal, &dir);
-	vm_vector_2_matrix(&m, &dir_normal, NULL, NULL);
+	vm_vec_normalized_dir(&dir_normal, &a->pos, &b->pos);
+	vm_vector_2_matrix_norm(&m, &dir_normal, nullptr, nullptr);
 
 	// distance to player
 	float bang_dist = vm_vec_dist_quick(&Eye_position, &a->pos);
@@ -1228,9 +1227,8 @@ void nebl_jitter(l_bolt *b)
 	bi = &Bolt_types[b->type];
 
 	// get the bolt direction
-	vm_vec_sub(&temp, &b->strike, &b->start);
-	length = vm_vec_normalize_quick(&temp);
-	vm_vector_2_matrix(&m, &temp, NULL, NULL);
+	length = vm_vec_normalized_dir(&temp, &b->strike, &b->start);
+	vm_vector_2_matrix_norm(&m, &temp, nullptr, nullptr);
 
 	// jitter all nodes on the main trunk
 	moveup = b->head;

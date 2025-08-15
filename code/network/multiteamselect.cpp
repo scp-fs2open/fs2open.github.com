@@ -11,31 +11,32 @@
 
 
 #include "network/multiteamselect.h"
-#include "network/multi.h"
-#include "missionui/chatbox.h"
-#include "gamesnd/gamesnd.h"
-#include "io/key.h"
-#include "globalincs/linklist.h"
 #include "gamesequence/gamesequence.h"
+#include "gamesnd/gamesnd.h"
+#include "globalincs/alphacolors.h"
+#include "globalincs/linklist.h"
 #include "graphics/font.h"
-#include "network/multiutil.h"
+#include "io/key.h"
+#include "io/mouse.h"
+#include "menuui/snazzyui.h"
+#include "mission/missionparse.h"
+#include "missionui/chatbox.h"
 #include "missionui/missionscreencommon.h"
 #include "missionui/missionshipchoice.h"
 #include "missionui/missionweaponchoice.h"
 #include "missionui/missionbrief.h"
-#include "network/multimsgs.h"
-#include "menuui/snazzyui.h"
-#include "io/mouse.h"
-#include "popup/popup.h"
-#include "network/multiui.h"
+#include "network/multi.h"
 #include "network/multi_endgame.h"
-#include "globalincs/alphacolors.h"
-#include "playerman/player.h"
-#include "ship/ship.h"
-#include "weapon/weapon.h"
+#include "network/multimsgs.h"
+#include "network/multiui.h"
+#include "network/multiutil.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "mission/missionparse.h"
+#include "playerman/player.h"
+#include "popup/popup.h"
+#include "ship/ship.h"
+#include "utils/string_utils.h"
+#include "weapon/weapon.h"
 
 
 // ------------------------------------------------------------------------------------------------------
@@ -347,10 +348,6 @@ int Multi_ts_hotspot_index = -1;
 #define TS_DUMP_TO_LIST										3
 #define TS_SWAP_PLAYER_PLAYER								4
 #define TS_MOVE_PLAYER										5
-
-// packet codes
-#define TS_CODE_LOCK_TEAM									0						// the specified team's slots are locked
-#define TS_CODE_PLAYER_UPDATE								1						// a player slot update for the specified team
 
 // team data
 #define MULTI_TS_FLAG_NONE									-2						// slot is _always_ empty
@@ -1033,9 +1030,13 @@ void multi_ts_lock_pressed()
 	}
 	
 	if(Netgame.type_flags & NG_TYPE_TEAM){
-		Assert(Net_player->flags & NETINFO_FLAG_TEAM_CAPTAIN);
+		if (!(Net_player->flags & NETINFO_FLAG_TEAM_CAPTAIN)) {
+			return;
+		}
 	} else {
-		Assert(Net_player->flags & NETINFO_FLAG_GAME_HOST);
+		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+			return;
+		}
 	}
 	gamesnd_play_iface(InterfaceSounds::USER_SELECT);
 
@@ -1242,12 +1243,31 @@ void multi_ts_blit_wings()
 	}	
 }
 
+bool multi_ts_is_player_in_slot(int slot_idx)
+{
+	Assertion(slot_idx >= 0 && slot_idx < MAX_WSS_SLOTS, "Slot index is out of bounds!");
+	Assertion(Net_player != nullptr, "Cannot check the slot for the player because the player is null!");
+
+	return (Multi_ts_team[Net_player->p_info.team].multi_ts_player[slot_idx] != nullptr);
+}
+
+bool multi_ts_is_player_allowed_in_slot(int slot_idx)
+{
+	Assertion(slot_idx >= 0 && slot_idx < MAX_WSS_SLOTS, "Slot index is out of bounds!");
+	Assertion(Net_player != nullptr, "Cannot check the slot for the player because the player is null!");
+
+	p_object * pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[slot_idx]].instance].ship_name);			
+	if ((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])) {
+		return false;
+	}
+	return true;
+}
+
 // blit all of the player callsigns under the correct ships
 void multi_ts_blit_wing_callsigns()
 {
 	int idx,callsign_w;
 	char callsign[CALLSIGN_LEN+2];
-	p_object *pobj;
 
 	// blit them all blindly for now
 	for(idx=0;idx<MAX_WSS_SLOTS;idx++){		
@@ -1257,13 +1277,12 @@ void multi_ts_blit_wing_callsigns()
 		}		
 
 		// if there is a player in the slot
-		if(Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx] != NULL){
+		if (multi_ts_is_player_in_slot(idx)) {
 			// make sure the string fits
 			strcpy_s(callsign,Multi_ts_team[Net_player->p_info.team].multi_ts_player[idx]->m_player->callsign);
 		} else {
-			// determine if this is a locked AI ship
-			pobj = mission_parse_get_arrival_ship(Ships[Objects[Multi_ts_team[Net_player->p_info.team].multi_ts_objnum[idx]].instance].ship_name);			
-            if ((pobj == NULL) || !(pobj->flags[Mission::Parse_Object_Flags::OF_Player_start])) {
+			// determine if this is a locked AI ship		
+            if (!multi_ts_is_player_allowed_in_slot(idx)) {
 				strcpy_s(callsign, NOX("<"));
 				strcat_s(callsign, XSTR("AI",738));  // [[ Artificial Intellegence ]]						
 				strcat_s(callsign, NOX(">"));
@@ -1510,18 +1529,18 @@ void multi_ts_blit_ship_info()
 	// blit the ship type
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Type",740), GR_RESIZE_MENU);
-	if((sip->type_str != NULL) && strlen(sip->type_str)){
+	if(sip->type_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->type_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the ship length
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Length",741), GR_RESIZE_MENU);
-	if((sip->ship_length != NULL) && strlen(sip->ship_length)){
+	if(sip->ship_length){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->ship_length.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1536,45 +1555,45 @@ void multi_ts_blit_ship_info()
 	// blit the maneuverability
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Maneuverability",744), GR_RESIZE_MENU);
-	if((sip->maneuverability_str != NULL) && strlen(sip->maneuverability_str)){
+	if(sip->maneuverability_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->maneuverability_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the armor
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Armor",745), GR_RESIZE_MENU);
-	if((sip->armor_str != NULL) && strlen(sip->armor_str)){
+	if(sip->armor_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->armor_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the gun mounts 
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Gun Mounts",746), GR_RESIZE_MENU);
-	if((sip->gun_mounts != NULL) && strlen(sip->gun_mounts)){
+	if(sip->gun_mounts){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->gun_mounts.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the missile banke
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Missile Banks",747), GR_RESIZE_MENU);
-	if((sip->missile_banks != NULL) && strlen(sip->missile_banks)){
+	if(sip->missile_banks){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->missile_banks.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
 	// blit the manufacturer
 	gr_set_color_fast(&Color_normal);
 	gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, XSTR("Manufacturer",748), GR_RESIZE_MENU);
-	if((sip->manufacturer_str != NULL) && strlen(sip->manufacturer_str)){
+	if(sip->manufacturer_str){
 		gr_set_color_fast(&Color_bright);
-		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str, GR_RESIZE_MENU);
+		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD] + 150, y_start, sip->manufacturer_str.get(), GR_RESIZE_MENU);
 	}
 	y_start += line_height;
 
@@ -1586,7 +1605,6 @@ void multi_ts_blit_ship_info()
 		gr_string(Multi_ts_ship_info_coords[gr_screen.res][MULTI_TS_X_COORD], y_start, Multi_ts_ship_info_lines[idx], GR_RESIZE_MENU);
 		y_start += line_height;
 	}
-	
 }
 
 
@@ -2549,7 +2567,6 @@ void multi_ts_select_ship()
 {
 	int n_lines;
 	int n_chars[MAX_BRIEF_LINES];
-	char ship_desc[1000];
 	const char *p_str[MAX_BRIEF_LINES];
 	char *token;
 	
@@ -2581,14 +2598,11 @@ void multi_ts_select_ship()
 	// split the text info up	
 	
 	Assert(Multi_ts_select_ship_class >= 0);
-//	Assert((Ship_info[Multi_ts_select_ship_class].desc != NULL) && strlen(Ship_info[Multi_ts_select_ship_class].desc));
-	if (Ship_info[Multi_ts_select_ship_class].desc != NULL)
+	if (Ship_info[Multi_ts_select_ship_class].desc)
 	{
-
 		// strip out newlines
-		memset(ship_desc,0,1000);
-		strcpy_s(ship_desc,Ship_info[Multi_ts_select_ship_class].desc);
-		token = strtok(ship_desc,"\n");
+		auto ship_desc = util::unique_copy(Ship_info[Multi_ts_select_ship_class].desc.get(), true);
+		token = strtok(ship_desc.get(), "\n");
 		if(token != NULL){
 			strcpy_s(Multi_ts_ship_info_text,token);
 			while(token != NULL){
@@ -2622,7 +2636,7 @@ void multi_ts_select_ship()
 }
 
 // handle all details when the commit button is pressed (including possibly reporting errors/popups)
-void multi_ts_commit_pressed()
+commit_pressed_status multi_ts_commit_pressed()
 {					
 	// if my team's slots are still not "locked", we cannot commit unless we're the only player in the game
 	if(!Multi_ts_team[Net_player->p_info.team].multi_players_locked){
@@ -2630,37 +2644,43 @@ void multi_ts_commit_pressed()
 		// skip this for red-alert missions too since nothing is selectable
 		if ( !red_alert_mission() && (multi_num_players() != 1) ) {
 			popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("Players have not yet been assigned to their ships",751));
-			return;
+			return commit_pressed_status::MULTI_PLAYERS_NO_SHIPS;
 		} else {
 			Multi_ts_team[Net_player->p_info.team].multi_players_locked = 1;
 		}
 	}
+	commit_pressed_status rc = commit_pressed_status::GENERAL_FAIL;
 
 	// check to see if its not ok for this player to commit
 	switch(multi_ts_ok_to_commit()){
 	// yes, it _is_ ok to commit
 	case 0:
-		commit_pressed();
+		rc = commit_pressed();
 		break;
 
 	// player has not assigned all necessary ships
 	case 1: 	
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NOT_ALL_ASSIGNED;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("You have not yet assigned all necessary ships",752));
 		break;
 	
 	// there are ships without primary weapons
 	case 2: 
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NO_PRIMARY;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without primary weapons!",753));
 		break;
 
 	// there are ships without secondary weapons
 	case 3: 
 		gamesnd_play_iface(InterfaceSounds::GENERAL_FAIL);
+		rc = commit_pressed_status::MULTI_NO_SECONDARY;
 		popup(PF_USE_AFFIRMATIVE_ICON | PF_BODY_BIG,1,POPUP_OK, XSTR("There are ships without secondary weapons!",754));
 		break;
 	}
+
+	return rc;
 }
 
 // is it ok for this player to commit 

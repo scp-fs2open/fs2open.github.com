@@ -66,6 +66,20 @@ public:
 	int zoom_area_width = -1;
 	int zoom_area_height = -1;
 
+	// allow fishies! (and headz...)
+	bool allow_fish = false;
+	SCP_string l_fish_anim;
+	SCP_string r_fish_anim;
+	int headz_index = -1;
+	SCP_string headz_anim;
+	SCP_string headz_background;
+	interface_snd_id headz_sound_index = InterfaceSounds::VASUDAN_BUP;
+
+	bool render_title = true;
+	bool render_version = true;
+
+	interface_snd_id ambient_sound = InterfaceSounds::MAIN_HALL_AMBIENT;
+
 	// intercom defines -------------------
 
 	// # of intercom sounds
@@ -136,7 +150,7 @@ public:
 	SCP_vector<SCP_vector<int> > door_anim_coords;
 
 	// sounds for each region (open/close)
-	SCP_vector<SCP_vector<interface_snd_id> > door_sounds;
+	SCP_vector<std::pair<interface_snd_id, interface_snd_id>> door_sounds;
 
 	// pan values for the door sounds
 	SCP_vector<float> door_sound_pan;
@@ -165,6 +179,7 @@ extern SCP_vector< SCP_vector<main_hall_defines> > Main_hall_defines;
 
 extern bool Main_hall_poll_key;
 
+extern SCP_string Enforced_main_hall;
 
 // initialize the main hall proper 
 void main_hall_init(const SCP_string &main_hall_name);
@@ -204,8 +219,10 @@ int main_hall_get_overlay_resolution_index();
 // what main hall we're on
 int main_hall_id();
 
-// Vasudan?
-bool main_hall_is_vasudan();
+bool main_hall_allows_fish();
+bool main_hall_allows_headz();
+// Vasudan? (defaults to the current main hall, but now allows checking another specified main hall)
+bool main_hall_is_retail_vasudan(const main_hall_defines* hall = nullptr);
 
 // start the ambient sounds playing in the main hall
 void main_hall_start_ambient();
@@ -214,12 +231,14 @@ void main_hall_reset_ambient_vol();
 
 void main_hall_do_multi_ready();
 
-// make the vasudan main hall funny
-void main_hall_vasudan_funny();
+// toggle vasudan headz cheat animation
+void main_hall_set_door_headz(bool init = false);
 
 void main_hall_pause();
 void main_hall_unpause();
 
 void main_hall_toggle_help(bool enable);
+
+void main_hall_start_fishies();
 
 #endif

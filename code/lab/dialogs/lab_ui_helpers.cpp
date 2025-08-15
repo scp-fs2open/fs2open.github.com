@@ -3,6 +3,38 @@
 #include "cfile/cfile.h"
 #include "lab/labv2_internal.h"
 
+SCP_map<int, SCP_string> get_docking_point_map(int model_index)
+{
+	SCP_map<int, SCP_string> result;
+
+	polymodel* pm = model_get(model_index);
+	if (pm == nullptr || pm->n_docks <= 0)
+		return result;
+
+	for (int i = 0; i < pm->n_docks; ++i) {
+		const char* name = pm->docking_bays[i].name;
+		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed " + std::to_string(i) + ">");
+	}
+
+	return result;
+}
+
+SCP_map<int, SCP_string> get_bay_paths_map(int model_index)
+{
+	SCP_map<int, SCP_string> result;
+
+	polymodel* pm = model_get(model_index);
+	if (pm == nullptr || pm->ship_bay->num_paths <= 0)
+		return result;
+
+	for (int i = 0; i < pm->ship_bay->num_paths; ++i) {
+		const char* name = pm->paths[pm->ship_bay->path_indexes[i]].name;
+		result[i] = (name && *name) ? SCP_string(name) : SCP_string("<unnamed " + std::to_string(i) + ">");
+	}
+
+	return result;
+}
+
 
 SCP_string get_ship_table_text(ship_info* sip)
 {
@@ -109,6 +141,254 @@ SCP_string get_ship_table_text(ship_info* sip)
 					i++;
 
 				if (!stricmp(line2 + i, sip->name)) {
+					memset(file_text, 0, sizeof(file_text));
+					snprintf(file_text,
+						sizeof(file_text) - 1,
+						"--  %s  -------------------------------\r\n",
+						tbl_file_names[n].c_str());
+					result += file_text;
+					found = 1;
+				}
+			}
+
+			if (found) {
+				result += line;
+				result += "\r\n";
+			}
+		}
+
+		cfclose(fp);
+	}
+
+	return result;
+}
+
+SCP_string get_weapon_table_text(weapon_info* wip)
+{
+	char line[256], line2[256], file_text[82];
+	int i, j, n, found = 0, comment = 0, num_files = 0;
+	SCP_vector<SCP_string> tbl_file_names;
+	SCP_string result;
+
+	auto fp = cfopen("weapons.tbl", "r");
+	Assert(fp);
+
+	while (cfgets(line, 255, fp)) {
+		while (line[strlen(line) - 1] == '\n')
+			line[strlen(line) - 1] = 0;
+
+		for (i = j = 0; line[i]; i++) {
+			if (line[i] == '/' && line[i + 1] == '/')
+				break;
+
+			if (line[i] == '/' && line[i + 1] == '*') {
+				comment = 1;
+				i++;
+				continue;
+			}
+
+			if (line[i] == '*' && line[i + 1] == '/') {
+				comment = 0;
+				i++;
+				continue;
+			}
+
+			if (!comment)
+				line2[j++] = line[i];
+		}
+
+		line2[j] = 0;
+		if (!strnicmp(line2, "$Name:", 6)) {
+			drop_trailing_white_space(line2);
+			found = 0;
+			i = 6;
+
+			while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
+				i++;
+
+			if (!stricmp(line2 + i, wip->name)) {
+				result += "-- weapons.tbl -------------------------------\r\n";
+				found = 1;
+			}
+		}
+
+		if (found) {
+			result += line;
+			result += "\r\n";
+		}
+	}
+
+	cfclose(fp);
+
+	num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-wep.tbm"), CF_SORT_REVERSE);
+
+	for (n = 0; n < num_files; n++) {
+		tbl_file_names[n] += ".tbm";
+
+		fp = cfopen(tbl_file_names[n].c_str(), "r");
+		Assert(fp);
+
+		memset(line, 0, sizeof(line));
+		memset(line2, 0, sizeof(line2));
+		found = 0;
+		comment = 0;
+
+		while (cfgets(line, 255, fp)) {
+			while (line[strlen(line) - 1] == '\n')
+				line[strlen(line) - 1] = 0;
+
+			for (i = j = 0; line[i]; i++) {
+				if (line[i] == '/' && line[i + 1] == '/')
+					break;
+
+				if (line[i] == '/' && line[i + 1] == '*') {
+					comment = 1;
+					i++;
+					continue;
+				}
+
+				if (line[i] == '*' && line[i + 1] == '/') {
+					comment = 0;
+					i++;
+					continue;
+				}
+
+				if (!comment)
+					line2[j++] = line[i];
+			}
+
+			line2[j] = 0;
+			if (!strnicmp(line2, "$Name:", 6)) {
+				drop_trailing_white_space(line2);
+				found = 0;
+				i = 6;
+
+				while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
+					i++;
+
+				if (!stricmp(line2 + i, wip->name)) {
+					memset(file_text, 0, sizeof(file_text));
+					snprintf(file_text,
+						sizeof(file_text) - 1,
+						"--  %s  -------------------------------\r\n",
+						tbl_file_names[n].c_str());
+					result += file_text;
+					found = 1;
+				}
+			}
+
+			if (found) {
+				result += line;
+				result += "\r\n";
+			}
+		}
+
+		cfclose(fp);
+	}
+
+	return result;
+}
+
+SCP_string get_asteroid_table_text(const asteroid_info* aip)
+{
+	char line[256], line2[256], file_text[82];
+	int i, j, n, found = 0, comment = 0, num_files = 0;
+	SCP_vector<SCP_string> tbl_file_names;
+	SCP_string result;
+
+	auto fp = cfopen("asteroid.tbl", "r");
+	if (!fp)
+		return "No asteroids.tbl found.\r\n";
+
+	while (cfgets(line, 255, fp)) {
+		while (line[strlen(line) - 1] == '\n')
+			line[strlen(line) - 1] = 0;
+
+		for (i = j = 0; line[i]; i++) {
+			if (line[i] == '/' && line[i + 1] == '/')
+				break;
+			if (line[i] == '/' && line[i + 1] == '*') {
+				comment = 1;
+				i++;
+				continue;
+			}
+			if (line[i] == '*' && line[i + 1] == '/') {
+				comment = 0;
+				i++;
+				continue;
+			}
+			if (!comment)
+				line2[j++] = line[i];
+		}
+
+		line2[j] = 0;
+		if (!strnicmp(line2, "$Name:", 6)) {
+			drop_trailing_white_space(line2);
+			found = 0;
+			i = 6;
+
+			while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
+				i++;
+
+			if (!stricmp(line2 + i, aip->name)) {
+				result += "-- asteroid.tbl -------------------------------\r\n";
+				found = 1;
+			}
+		}
+
+		if (found) {
+			result += line;
+			result += "\r\n";
+		}
+	}
+
+	cfclose(fp);
+
+	num_files = cf_get_file_list(tbl_file_names, CF_TYPE_TABLES, NOX("*-ast.tbm"), CF_SORT_REVERSE);
+
+	for (n = 0; n < num_files; n++) {
+		tbl_file_names[n] += ".tbm";
+
+		fp = cfopen(tbl_file_names[n].c_str(), "r");
+		if (!fp)
+			continue;
+
+		memset(line, 0, sizeof(line));
+		memset(line2, 0, sizeof(line2));
+		found = 0;
+		comment = 0;
+
+		while (cfgets(line, 255, fp)) {
+			while (line[strlen(line) - 1] == '\n')
+				line[strlen(line) - 1] = 0;
+
+			for (i = j = 0; line[i]; i++) {
+				if (line[i] == '/' && line[i + 1] == '/')
+					break;
+				if (line[i] == '/' && line[i + 1] == '*') {
+					comment = 1;
+					i++;
+					continue;
+				}
+				if (line[i] == '*' && line[i + 1] == '/') {
+					comment = 0;
+					i++;
+					continue;
+				}
+				if (!comment)
+					line2[j++] = line[i];
+			}
+
+			line2[j] = 0;
+			if (!strnicmp(line2, "$Name:", 6)) {
+				drop_trailing_white_space(line2);
+				found = 0;
+				i = 6;
+
+				while (line2[i] == ' ' || line2[i] == '\t' || line2[i] == '@')
+					i++;
+
+				if (!stricmp(line2 + i, aip->name)) {
 					memset(file_text, 0, sizeof(file_text));
 					snprintf(file_text,
 						sizeof(file_text) - 1,

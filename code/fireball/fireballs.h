@@ -33,14 +33,19 @@ class asteroid_info;
 #define FIREBALL_EXPLOSION_LARGE1	4		// Used for the big explosion when a ship breaks into pieces
 #define FIREBALL_EXPLOSION_LARGE2	5		// Used for the big explosion when a ship breaks into pieces
 
-#define MAX_FIREBALL_TYPES			32		// The maximum number of fireballs that can be defined
 #define NUM_DEFAULT_FIREBALLS		6
 
 #define MAX_FIREBALL_LOD						4
 
 #define FIREBALL_NUM_LARGE_EXPLOSIONS 2
 
-extern int fireball_used[MAX_FIREBALL_TYPES];
+// Gamma39er: Flare animation enum. Add new animation types here.
+enum class warp_style
+{
+	CLASSIC,
+	ENHANCED,
+	CINEMATIC
+};
 
 // all this moved here by Goober5000 because it makes more sense in the H file
 typedef struct fireball_lod {
@@ -57,6 +62,20 @@ typedef struct fireball_info {
 	float				exp_color[3];	// red, green, blue
 
 	bool	use_3d_warp;
+	bool    warp_flash;
+	bool	fireball_used;
+
+	warp_style warp_flare_style;
+	warp_style warp_model_style;
+
+	// Customize how large the warp and it's flare are.
+	float warp_size_ratio;
+	float flare_size_ratio;
+	float flicker_magnitude;
+
+	// Cinematic Warp stuff
+	float   rot_anim[3];
+	float   frame_anim[3];
 
 	char	warp_glow[NAME_LENGTH];
 	int		warp_glow_bitmap;
@@ -66,8 +85,7 @@ typedef struct fireball_info {
 	int		warp_model_id;
 } fireball_info;
 
-extern fireball_info Fireball_info[MAX_FIREBALL_TYPES];
-extern int Num_fireball_types;
+extern SCP_vector<fireball_info> Fireball_info;
 
 // flag values for fireball struct flags member
 #define	FBF_WARP_CLOSE_SOUND_PLAYED		(1<<0)
@@ -146,11 +164,10 @@ float fireball_wormhole_intensity( fireball *fb );
 // Goober5000
 extern bool Knossos_warp_ani_used;
 
-extern bool Fireball_use_3d_warp;
-
-extern bool Fireball_warp_flash;
-
 // Cyborg - get a count of how many valid fireballs are in the mission.
 int fireball_get_count();
+
+// Goober5000 - stuffs fireballs and checks that indexes are in bounds
+void stuff_fireball_index_list(SCP_vector<int> &list, const char *name);
 
 #endif /* _FIREBALLS_H */

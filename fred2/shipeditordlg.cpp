@@ -113,6 +113,7 @@ CShipEditorDlg::CShipEditorDlg(CWnd* pParent /*=NULL*/)
 {
 	//{{AFX_DATA_INIT(CShipEditorDlg)
 	m_ship_name = _T("");
+	m_ship_display_name = _T("");
 	m_cargo1 = _T("");
 	m_ship_class_combo_index = -1;
 	m_team = -1;
@@ -158,7 +159,10 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_DEPARTURE_TREE, m_departure_tree);
 	DDX_Control(pDX, IDC_PLAYER_SHIP, m_player_ship);
 	DDX_Text(pDX, IDC_SHIP_NAME, m_ship_name);
+	DDV_MaxChars(pDX, m_ship_name, NAME_LENGTH - 1);
+	DDX_Text(pDX, IDC_DISPLAY_NAME, m_ship_display_name);
 	DDX_CBString(pDX, IDC_SHIP_CARGO1, m_cargo1);
+	DDV_MaxChars(pDX, m_cargo1, NAME_LENGTH - 1);
 	DDX_CBIndex(pDX, IDC_SHIP_CLASS, m_ship_class_combo_index);
 	DDX_CBIndex(pDX, IDC_SHIP_TEAM, m_team);
 	DDX_CBIndex(pDX, IDC_ARRIVAL_LOCATION, m_arrival_location);
@@ -171,8 +175,6 @@ void CShipEditorDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_DEPARTURE_TARGET, m_departure_target);
 	DDX_CBIndex(pDX, IDC_SHIP_PERSONA, m_persona);	
 	//}}AFX_DATA_MAP
-	DDV_MaxChars(pDX, m_ship_name, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_cargo1, NAME_LENGTH - 1);
 
 	if (pDX->m_bSaveAndValidate) {  // get dialog control values
 		GetDlgItem(IDC_ARRIVAL_DELAY)->GetWindowText(str);
@@ -210,6 +212,7 @@ BEGIN_MESSAGE_MAP(CShipEditorDlg, CDialog)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_ARRIVAL_TREE, OnEndlabeleditArrivalTree)
 	ON_NOTIFY(TVN_ENDLABELEDIT, IDC_DEPARTURE_TREE, OnEndlabeleditDepartureTree)
 	ON_BN_CLICKED(IDC_GOALS, OnGoals)
+	ON_EN_CHANGE(IDC_SHIP_NAME, OnChangeShipName)
 	ON_CBN_SELCHANGE(IDC_SHIP_CLASS, OnSelchangeShipClass)
 	ON_BN_CLICKED(IDC_INITIAL_STATUS, OnInitialStatus)
 	ON_BN_CLICKED(IDC_WEAPONS, OnWeapons)
@@ -507,9 +510,11 @@ void CShipEditorDlg::initialize_data(int full_update)
 		
 		if (!multi_edit) {
 			Assert((ship_count == 1) && (base_ship >= 0));
-			m_ship_name = Ships[base_ship].ship_name;			
+			m_ship_name = Ships[base_ship].ship_name;
+			m_ship_display_name = Ships[base_ship].has_display_name() ? Ships[base_ship].get_display_name() : "<none>";
 		} else {
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 		}
 
 		m_update_arrival = m_update_departure = 1;
@@ -559,21 +564,21 @@ void CShipEditorDlg::initialize_data(int full_update)
 								cue_init = 1;
 								a_cue = Ships[i].arrival_cue;
 								d_cue = Ships[i].departure_cue;
-								m_arrival_location = Ships[i].arrival_location;
+								m_arrival_location = static_cast<int>(Ships[i].arrival_location);
 								m_arrival_dist.init(Ships[i].arrival_distance);
 								m_arrival_target = Ships[i].arrival_anchor;
 								m_arrival_delay.init(Ships[i].arrival_delay);
-								m_departure_location = Ships[i].departure_location;
+								m_departure_location = static_cast<int>(Ships[i].departure_location);
 								m_departure_delay.init(Ships[i].departure_delay);
 								m_departure_target = Ships[i].departure_anchor;
 
 							} else {
 								cue_init++;
-								if (Ships[i].arrival_location != m_arrival_location){
+								if (static_cast<int>(Ships[i].arrival_location) != m_arrival_location){
 									m_arrival_location = -1;
 								}
 
-								if (Ships[i].departure_location != m_departure_location){
+								if (static_cast<int>(Ships[i].departure_location) != m_departure_location){
 									m_departure_location = -1;
 								}
 
@@ -721,6 +726,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		if (player_count > 1) {  // multiple player ships selected
 			Assert(base_player >= 0);
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 			m_player_ship.SetCheck(TRUE);
 			objp = GET_FIRST(&obj_used_list);
 			while (objp != END_OF_LIST(&obj_used_list)) {
@@ -747,12 +753,14 @@ void CShipEditorDlg::initialize_data(int full_update)
 			Assert((player_count == 1) && !multi_edit);
 			player_ship = Objects[cur_object_index].instance;
 			m_ship_name = Ships[player_ship].ship_name;
+			m_ship_display_name = Ships[player_ship].has_display_name() ? Ships[player_ship].get_display_name() : "<none>";
 			m_ship_class_combo_index = ship_class_to_combo_index(Ships[player_ship].ship_info_index);
 			m_team = Ships[player_ship].team;
 			m_player_ship.SetCheck(TRUE);
 
 		} else {  // no ships or players selected..
 			m_ship_name = _T("");
+			m_ship_display_name = _T("");
 			m_ship_class_combo_index = -1;
 			m_team = -1;
 			m_persona = -1;
@@ -785,7 +793,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 	box = (CComboBox *) GetDlgItem(IDC_ARRIVAL_TARGET);
 	// must put the appropriate ships into the list depending on arrival location
-	if ( m_arrival_location != ARRIVE_FROM_DOCK_BAY ){
+	if ( m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY) ){
 		management_add_ships_to_combo( box, SHIPS_2_COMBO_SPECIAL | SHIPS_2_COMBO_ALL_SHIPS );
 	} else {
 		management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
@@ -815,7 +823,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 	box = (CComboBox *)GetDlgItem(IDC_DEPARTURE_TARGET);
 	// must put the appropriate ships into the list depending on departure location
-	if ( m_departure_location == DEPART_AT_DOCK_BAY ){
+	if ( m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY) ){
 		management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 	} else {
 		box->ResetContent();
@@ -887,7 +895,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 			GetDlgItem(IDC_ARRIVAL_DISTANCE)->EnableWindow(FALSE);
 			GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 		}
-		if (m_arrival_location == ARRIVE_FROM_DOCK_BAY) {
+		if (m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) {
 			GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(enable);
 			GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 		} else {
@@ -901,7 +909,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		} else {
 			GetDlgItem(IDC_DEPARTURE_TARGET)->EnableWindow(FALSE);
 		}
-		if (m_departure_location == DEPART_AT_DOCK_BAY) {
+		if (m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY)) {
 			GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(enable);
 			GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 		} else {
@@ -924,6 +932,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 
 	if (total_count) {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(!multi_edit);
+		GetDlgItem(IDC_DISPLAY_NAME)->EnableWindow(!multi_edit);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(TRUE);
 		GetDlgItem(IDC_SHIP_ALT)->EnableWindow(TRUE);
 		GetDlgItem(IDC_INITIAL_STATUS)->EnableWindow(TRUE);
@@ -935,6 +944,7 @@ void CShipEditorDlg::initialize_data(int full_update)
 		GetDlgItem(IDC_SPECIAL_HITPOINTS)->EnableWindow(TRUE);
 	} else {
 		GetDlgItem(IDC_SHIP_NAME)->EnableWindow(FALSE);
+		GetDlgItem(IDC_DISPLAY_NAME)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_CLASS)->EnableWindow(FALSE);
 		GetDlgItem(IDC_SHIP_ALT)->EnableWindow(FALSE);
 		GetDlgItem(IDC_INITIAL_STATUS)->EnableWindow(FALSE);
@@ -1082,7 +1092,22 @@ int CShipEditorDlg::update_data(int redraw)
 
 	} else if (single_ship >= 0) {  // editing a single ship
 		m_ship_name.TrimLeft(); 
-		m_ship_name.TrimRight(); 
+		m_ship_name.TrimRight();
+		if (m_ship_name.IsEmpty()) {
+			if (bypass_errors)
+				return 1;
+
+			bypass_errors = 1;
+			z = MessageBox("A ship name cannot be empty\n"
+				"Press OK to restore old name", "Error", MB_ICONEXCLAMATION | MB_OKCANCEL);
+
+			if (z == IDCANCEL)
+				return -1;
+
+			m_ship_name = _T(Ships[single_ship].ship_name);
+			UpdateData(FALSE);
+		}
+
 		ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) && (single_ship != ptr->instance)) {
@@ -1230,11 +1255,6 @@ int CShipEditorDlg::update_data(int redraw)
 					strcpy_s(Reinforcements[i].name, str);
 				}
 
-			if (Ships[single_ship].has_display_name()) {
-				Ships[single_ship].flags.remove(Ship::Ship_Flags::Has_display_name);
-				Ships[single_ship].display_name = "";
-			}
-
 			Update_window = 1;
 		}
 	}
@@ -1270,6 +1290,22 @@ int CShipEditorDlg::update_ship(int ship)
 	CString str;
 	CComboBox *box;
 	int persona;
+
+	// the display name was precalculated, so now just assign it
+	if (m_ship_display_name == m_ship_name || m_ship_display_name.CompareNoCase("<none>") == 0)
+	{
+		if (Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+			set_modified();
+		Ships[ship].display_name = "";
+		Ships[ship].flags.remove(Ship::Ship_Flags::Has_display_name);
+	}
+	else
+	{
+		if (!Ships[ship].flags[Ship::Ship_Flags::Has_display_name])
+			set_modified();
+		Ships[ship].display_name = m_ship_display_name;
+		Ships[ship].flags.set(Ship::Ship_Flags::Has_display_name);
+	}
 
 	// THIS DIALOG IS THE SOME OF THE WORST CODE I HAVE EVER SEEN IN MY ENTIRE LIFE. 
 	// IT TOOK A RIDICULOUSLY LONG AMOUNT OF TIME TO ADD 2 FUNCTIONS. OMG
@@ -1345,9 +1381,9 @@ int CShipEditorDlg::update_ship(int ship)
 	if (Ships[ship].wingnum < 0) {
 
 		if (m_arrival_location != -1)
-			MODIFY(Ships[ship].arrival_location, m_arrival_location);
+			MODIFY(Ships[ship].arrival_location, static_cast<ArrivalLocation>(m_arrival_location));
 		if (m_departure_location != -1)
-			MODIFY(Ships[ship].departure_location, m_departure_location);
+			MODIFY(Ships[ship].departure_location, static_cast<DepartureLocation>(m_departure_location));
 
 		if (!multi_edit || m_update_arrival) {  // should we update the arrival cue?
 			if (Ships[ship].arrival_cue >= 0)
@@ -1372,7 +1408,7 @@ int CShipEditorDlg::update_ship(int ship)
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
-			if (((m_arrival_location != ARRIVE_FROM_DOCK_BAY) && (m_arrival_location != ARRIVE_AT_LOCATION)) && (z >= 0) && !(z & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
+			if (((m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY)) && (m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION))) && (z >= 0) && !(z & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 			d = int(std::min(500.0f, 2.0f * Objects[Ships[ship].objnum].radius));
 				if ((Ships[ship].arrival_distance < d) && (Ships[ship].arrival_distance > -d)) {
 					str.Format("Ship must arrive at least %d meters away from target.\n"
@@ -1616,6 +1652,18 @@ void CShipEditorDlg::OnGoals()
 	if (!multi_edit && !query_initial_orders_empty(Ai_info[Ships[single_ship].ai_index].goals))
 		if ((Ships[single_ship].wingnum >= 0) && (query_initial_orders_conflict(Ships[single_ship].wingnum)))
 			MessageBox("This ship's wing also has initial orders", "Possible conflict");
+}
+
+void CShipEditorDlg::OnChangeShipName()
+{
+	// sync the edit box to the variable
+	UpdateData(TRUE);
+
+	// automatically determine or reset the display name
+	m_ship_display_name = get_display_name_for_text_box(m_ship_name);
+
+	// sync the variable to the edit box
+	UpdateData(FALSE);
 }
 
 void CShipEditorDlg::OnSelchangeShipClass() 
@@ -1923,7 +1971,7 @@ void CShipEditorDlg::calc_cue_height()
 	CRect cue;
 
 	GetDlgItem(IDC_CUE_FRAME)->GetWindowRect(cue);
-	cue_height = (cue.bottom - cue.top) + 10;
+	cue_height = (cue.bottom - cue.top) + 1;
 }
 
 void CShipEditorDlg::show_hide_sexp_help()
@@ -1986,7 +2034,7 @@ void CShipEditorDlg::OnSelchangeArrivalLocation()
 		}
 
 		// determine which items we should put into the arrival target combo box
-		if ( m_arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY) ) {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_SPECIAL | SHIPS_2_COMBO_ALL_SHIPS );
@@ -1997,7 +2045,7 @@ void CShipEditorDlg::OnSelchangeArrivalLocation()
 		GetDlgItem(IDC_ARRIVAL_TARGET)->EnableWindow(FALSE);
 	}
 
-	if (m_arrival_location == ARRIVE_FROM_DOCK_BAY)	{
+	if (m_arrival_location == static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))	{
 		GetDlgItem(IDC_RESTRICT_ARRIVAL)->EnableWindow(TRUE);
 		GetDlgItem(IDC_CUSTOM_WARPIN_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -2022,7 +2070,7 @@ void CShipEditorDlg::OnSelchangeDepartureLocation()
 
 		// we need to build up the list box content based on the departure type.  When
 		// from a docking bay, only show ships in the list which have them.  Show all ships otherwise
-		if ( m_departure_location == DEPART_AT_DOCK_BAY ) {
+		if ( m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY) ) {
 			management_add_ships_to_combo( box, SHIPS_2_COMBO_DOCKING_BAY_ONLY );
 		} else {
 			// I think that this section is currently illegal
@@ -2033,7 +2081,7 @@ void CShipEditorDlg::OnSelchangeDepartureLocation()
 		box->EnableWindow(FALSE);
 	}
 
-	if (m_departure_location == DEPART_AT_DOCK_BAY)	{
+	if (m_departure_location == static_cast<int>(DepartureLocation::TO_DOCK_BAY))	{
 		GetDlgItem(IDC_RESTRICT_DEPARTURE)->EnableWindow(TRUE);
 		GetDlgItem(IDC_CUSTOM_WARPOUT_PARAMS)->EnableWindow(FALSE);
 	} else {
@@ -2432,7 +2480,7 @@ void CShipEditorDlg::OnRestrictArrival()
 	// grab stuff from GUI
 	UpdateData(TRUE);
 
-	if (m_arrival_location != ARRIVE_FROM_DOCK_BAY)
+	if (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))
 	{
 		Int3();
 		return;
@@ -2476,7 +2524,7 @@ void CShipEditorDlg::OnRestrictDeparture()
 	// grab stuff from GUI
 	UpdateData(TRUE);
 
-	if (m_departure_location != DEPART_AT_DOCK_BAY)
+	if (m_departure_location != static_cast<int>(DepartureLocation::TO_DOCK_BAY))
 	{
 		Int3();
 		return;

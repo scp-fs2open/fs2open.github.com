@@ -46,6 +46,9 @@ void mission_hotkey_mf_add( int set, int objnum, int how_to_add );
 
 void mission_hotkey_exit();
 
+// function to reset the hotkey list
+void hotkey_lines_reset_all();
+
 // function to build the hotkey listing
 void hotkey_build_listing();
 

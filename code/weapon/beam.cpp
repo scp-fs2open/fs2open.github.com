@@ -292,17 +292,8 @@ static void beam_set_state(weapon_info* wip, beam* bm, WeaponState state)
 	if ((map_entry != wip->state_effects.end()) && map_entry->second.isValid())
 	{
 		auto source = particle::ParticleManager::get()->createSource(map_entry->second);
-
-		object* objp = &Objects[bm->objnum];
-		source.moveToBeam(objp);
-		source.setWeaponState(bm->weapon_state);
-		// make a "fake" but still possibly useful velocity
-		vec3d vel;
-		vm_vec_normalized_dir(&vel, &bm->last_start, &bm->last_shot);
-		vel *= wip->max_speed;
-		source.setVelocity(&vel);
-
-		source.finish();
+		source->setHost(make_unique<EffectHostBeam>(&Objects[bm->objnum]));
+		source->finishCreation();
 	}
 }
 
@@ -458,12 +449,12 @@ int beam_fire(beam_fire_info *fire_info)
 	new_item->range = wip->b_info.range;
 	new_item->damage_threshold = wip->b_info.damage_threshold;
 	new_item->bank = fire_info->bank;
-	new_item->Beam_muzzle_stamp = -1;
 	new_item->beam_glow_frame = 0.0f;
 	new_item->firingpoint = (fire_info->bfi_flags & BFIF_FLOATING_BEAM) ? -1 : fire_info->turret->turret_next_fire_pos;
 	new_item->last_start = fire_info->starting_pos;
 	new_item->type5_rot_speed = wip->b_info.t5info.continuous_rot;
 	new_item->rotates = wip->b_info.beam_type == BeamType::OMNI && wip->b_info.t5info.continuous_rot_axis != Type5BeamRotAxis::UNSPECIFIED;
+	new_item->modular_curves_instance = wip->beam_curves.create_instance();
 
 	if (fire_info->bfi_flags & BFIF_FORCE_FIRING)
 		new_item->flags |= BF_FORCE_FIRING;
@@ -525,7 +516,7 @@ int beam_fire(beam_fire_info *fire_info)
 	} else {
 		float burst_rot = 0.0f;
 		if (new_item->type == BeamType::OMNI && !wip->b_info.t5info.burst_rot_pattern.empty()) {
-			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index];
+			burst_rot = wip->b_info.t5info.burst_rot_pattern[fire_info->burst_index % wip->b_info.t5info.burst_rot_pattern.size()];
 		}
 		beam_get_binfo(new_item, fire_info->accuracy, wip->b_info.beam_shots,fire_info->burst_seed, burst_rot, fire_info->per_burst_rotation);			// to fill in b_info	- the set of directional aim vectors
 	}	
@@ -566,6 +557,38 @@ int beam_fire(beam_fire_info *fire_info)
 
 	// start the warmup phase
 	beam_start_warmup(new_item);
+
+	//Do particles
+	if (wip->b_info.beam_muzzle_effect.isValid()) {
+		auto source = particle::ParticleManager::get()->createSource(wip->b_info.beam_muzzle_effect);
+
+		std::unique_ptr<EffectHost> host;
+		if (new_item->objp == nullptr) {
+			vec3d beam_dir = new_item->last_shot - new_item->last_start;
+			matrix orient;
+			vm_vector_2_matrix(&orient, &beam_dir);
+
+			host = std::make_unique<EffectHostVector>(new_item->last_start, orient, vmd_zero_vector);
+		}
+		else if (new_item->subsys == nullptr || new_item->firingpoint < 0) {
+			vec3d beam_dir = new_item->last_shot - new_item->last_start;
+			matrix orient;
+			vm_vector_2_matrix(&orient, &beam_dir);
+
+			vec3d local_pos = new_item->last_start - new_item->objp->pos;
+			vm_vec_rotate(&local_pos, &local_pos, &new_item->objp->orient);
+			orient = new_item->objp->orient * orient;
+
+			host = std::make_unique<EffectHostObject>(new_item->objp, local_pos, orient);
+		}
+		else {
+			host = std::make_unique<EffectHostTurret>(new_item->objp, new_item->subsys->system_info->turret_gun_sobj, new_item->firingpoint);
+		}
+
+		source->setHost(std::move(host));
+		source->setTriggerRadius(wip->b_info.beam_muzzle_radius);
+		source->finishCreation();
+	}
 
 	return objnum;
 }
@@ -692,7 +715,7 @@ int beam_fire_targeting(fighter_beam_fire_info *fire_info)
 }
 
 // return an object index of the guy who's firing this beam
-int beam_get_parent(object *bm)
+int beam_get_parent(const object *bm)
 {
 	beam *b;
 
@@ -721,7 +744,7 @@ int beam_get_parent(object *bm)
 }
 
 // return weapon_info_index of beam
-int beam_get_weapon_info_index(object *bm)
+int beam_get_weapon_info_index(const object *bm)
 {
 	Assert(bm->type == OBJ_BEAM);
 	if (bm->type != OBJ_BEAM) {
@@ -929,19 +952,27 @@ void beam_type_slashing_move(beam *b)
 // targeting type beams functions
 void beam_type_targeting_move(beam *b)
 {	
-	vec3d temp;
+	// If floating and targeting, synthesize orientation from known points
+	// because the object could be validly nullptr as when fired in the lab
+	if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+		// Compute forward vector from start to target
+		vec3d fvec;
+		vm_vec_sub(&fvec, &b->target_pos1, &b->last_start);
+		vm_vec_normalize_safe(&fvec);
 
-	// ugh
-	if ( (b->objp == NULL) || (b->objp->instance < 0) ) {
-		Int3();
-		return;
+		// Final beam endpoint
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &fvec, b->range);
+	} else {
+		Assertion(b->objp != nullptr, "Targeting beam does not have a valid parent object!");
+		Assertion(b->objp->instance >= 0, "Targeting beam parent object instance is invalid!");
+
+		// Standard case: beam fired from a real object
+		// start point
+		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
+		vm_vec_add2(&b->last_start, &b->objp->pos);
+		// end point
+		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 	}
-
-	// targeting type beams only last one frame so we never have to "move" them.			
-	temp = b->local_fire_postion;
-	vm_vec_unrotate(&b->last_start, &temp, &b->objp->orient);
-	vm_vec_add2(&b->last_start, &b->objp->pos);	
-	vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
 }
 
 // antifighter type beam functions
@@ -1012,13 +1043,22 @@ void beam_type_normal_move(beam *b)
 {
 	vec3d turret_norm;
 
-	if (b->subsys == NULL) {	// If we're a free-floating beam, there's nothing to calculate here.
-		return;
+	if (b->subsys == nullptr) {
+		// If we're a floating beam and targeting coords then we don't have a subsystem to get a normal from, so we'll calculate it.
+		if ((b->flags & BF_FLOATING_BEAM) && (b->flags & BF_TARGETING_COORDS)) {
+			// Build normal from target_pos1 and last_start
+			vm_vec_sub(&turret_norm, &b->target_pos1, &b->last_start);
+			vm_vec_normalize_safe(&turret_norm);
+		}
+		// Otherwise, there's nothing to calculate here.
+		else {
+			return;
+		}
+	} else {
+		// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
+		// get the "originating point" of the beam for this frame. essentially bashes last_start
+		beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 	}
-
-	// LEAVE THIS HERE OTHERWISE MUZZLE GLOWS DRAW INCORRECTLY WHEN WARMING UP OR DOWN
-	// get the "originating point" of the beam for this frame. essentially bashes last_start
-	beam_get_global_turret_gun_info(b->objp, b->subsys, &b->last_start, false, &turret_norm, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
 
 	// if the "warming up" timestamp has not expired
 	if((b->warmup_stamp != -1) || (b->warmdown_stamp != -1)){
@@ -1077,18 +1117,32 @@ void beam_type_omni_move(beam* b)
 	vec3d actual_dir;
 	bool no_sweep = vm_vec_dot(&b->binfo.dir_a, &b->binfo.dir_b) > 0.9999f;
 
+	float rotation_amount;
+	if (Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx >= 0) {
+		rotation_amount = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.rot_curve_idx].GetValue(BEAM_T(b)) * PI2;
+	} else {
+		rotation_amount = (b->life_total - b->life_left) * b->type5_rot_speed;
+	}
+
 	if (b->rotates) {
-		vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, (b->life_total - b->life_left) * b->type5_rot_speed, &zero_vec, &b->binfo.rot_axis); 
+		vm_rot_point_around_line(&newdir_a, &b->binfo.dir_a, rotation_amount, &zero_vec, &b->binfo.rot_axis); 
 		if (no_sweep)
 			actual_dir = newdir_a;
 		else 
-			vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, (b->life_total - b->life_left) * b->type5_rot_speed, &zero_vec, &b->binfo.rot_axis);
+			vm_rot_point_around_line(&newdir_b, &b->binfo.dir_b, rotation_amount, &zero_vec, &b->binfo.rot_axis);
 	}
 
 	if (no_sweep)
 		actual_dir = newdir_a;
-	else
-		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, BEAM_T(b));
+	else {
+		float slash_completion;
+		if (Weapon_info[b->weapon_info_index].b_info.t5info.slash_pos_curve_idx >= 0) {
+			slash_completion = Curves[Weapon_info[b->weapon_info_index].b_info.t5info.slash_pos_curve_idx].GetValue(BEAM_T(b));
+		} else {
+			slash_completion = BEAM_T(b);
+		}
+		vm_vec_interp_constant(&actual_dir, &newdir_a, &newdir_b, slash_completion);
+	}
 
 	// now recalculate shot_point to be shooting through our new point
 	vm_vec_scale_add(&b->last_shot, &b->last_start, &actual_dir, b->range);
@@ -1397,6 +1451,7 @@ void beam_render(beam *b, float u_offset)
 	float u_scale;	// beam tileing -Bobboau
 	beam_weapon_section_info *bwsi;
 	beam_weapon_info *bwi;
+	weapon_info *wip;
 
 	memset( h1, 0, sizeof(vertex) * 4 );
 
@@ -1416,7 +1471,8 @@ void beam_render(beam *b, float u_offset)
 	//int cull = gr_set_cull(0);
 
 
-	bwi = &Weapon_info[b->weapon_info_index].b_info;
+	wip = &Weapon_info[b->weapon_info_index];
+	bwi = &wip->b_info;
 
 	// if this beam tracks its own u_offset, use that instead
 	if (bwi->flags[Weapon::Beam_Info_Flags::Track_own_texture_tiling]) {
@@ -1424,9 +1480,10 @@ void beam_render(beam *b, float u_offset)
 		b->u_offset_local += flFrametime;		// increment *after* we grab the offset so that the first frame will always be at offset=0
 	}
 
-	float alpha_mult = 1.0f;
-	if (bwi->beam_alpha_curve_idx >= 0)
-		alpha_mult *= Curves[bwi->beam_alpha_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
+	float width_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_WIDTH_MULT, *b, &b->modular_curves_instance);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::BEAM_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::BEAM_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	float length = vm_vec_dist(&b->last_start, &b->last_shot);					// beam tileing -Bobboau
 	float per = 1.0f;
@@ -1451,7 +1508,7 @@ void beam_render(beam *b, float u_offset)
 			continue;
 
 		// calculate the beam points
-		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker);
+		scale = frand_range(1.0f - bwsi->flicker, 1.0f + bwsi->flicker) * width_mult;
 		beam_calc_facing_pts(&top1, &bottom1, &fvec, &b->last_start, bwsi->width * scale * b->current_width_factor, bwsi->z_add);	
 		beam_calc_facing_pts(&top2, &bottom2, &fvec, &b->last_shot, bwsi->width * scale * scale * b->current_width_factor, bwsi->z_add);
 
@@ -1496,10 +1553,15 @@ void beam_render(beam *b, float u_offset)
 		int framenum = 0;
 
 		if (bwsi->texture.num_frames > 1) {
-			b->beam_section_frame[s_idx] += flFrametime;
-
-			framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(bwsi->texture.num_frames - 1) * anim_state);
+			} else {
+				b->beam_section_frame[s_idx] += flFrametime;
+				framenum = bm_get_anim_frame(bwsi->texture.first_frame, b->beam_section_frame[s_idx], bwsi->texture.total_time, true);
+			}
 		}
+
+		CLAMP(framenum, 0, bwsi->texture.num_frames - 1);
 
 		float fade = 0.9999f;
 
@@ -1522,83 +1584,6 @@ void beam_render(beam *b, float u_offset)
 
 	// turn backface culling back on
 	//gr_set_cull(cull);
-}
-
-// generate particles for the muzzle glow
-int hack_time = 100;
-DCF(h_time, "Sets the hack time for beam muzzle glow (Default is 100)")
-{
-	dc_stuff_int(&hack_time);
-}
-
-void beam_generate_muzzle_particles(beam *b)
-{
-	int particle_count;
-	int idx;
-	weapon_info *wip;
-	vec3d turret_norm, turret_pos, particle_pos, particle_dir;
-	matrix m;
-
-	// if our hack stamp has expired
-	if(!((b->Beam_muzzle_stamp == -1) || timestamp_elapsed(b->Beam_muzzle_stamp))){
-		return;
-	}
-
-	// never generate anything past about 1/5 of the beam fire time	
-	if(b->warmup_stamp == -1){
-		return;
-	}
-
-	// get weapon info
-	wip = &Weapon_info[b->weapon_info_index];
-
-	// no specified particle for this beam weapon
-	if (wip->b_info.beam_particle_ani.first_frame < 0)
-		return;
-
-	
-	// reset the hack stamp
-	b->Beam_muzzle_stamp = timestamp(hack_time);
-
-	// randomly generate 10 to 20 particles
-	particle_count = Random::next(wip->b_info.beam_particle_count+1);
-
-	// get turret info - position and normal
-	turret_pos = b->last_start;
-	if (b->subsys != NULL) {
-		turret_norm = b->subsys->system_info->turret_norm;	
-	} else {
-		vm_vec_normalized_dir(&turret_norm, &b->last_shot, &b->last_start);
-	}
-
-	// randomly perturb a vector within a cone around the normal
-	vm_vector_2_matrix(&m, &turret_norm, NULL, NULL);
-	for(idx=0; idx<particle_count; idx++){
-		// get a random point in the cone
-		vm_vec_random_cone(&particle_dir, &turret_norm, wip->b_info.beam_particle_angle, &m);
-		vm_vec_scale_add(&particle_pos, &turret_pos, &particle_dir, wip->b_info.beam_muzzle_radius * frand_range(0.75f, 0.9f));
-
-		// now generate some interesting values for the particle
-		float p_time_ref = wip->b_info.beam_life + ((float)wip->b_info.beam_warmup / 1000.0f);		
-		float p_life = frand_range(p_time_ref * 0.5f, p_time_ref * 0.7f);
-		float p_vel = (wip->b_info.beam_muzzle_radius / p_life) * frand_range(0.85f, 1.2f);
-		vm_vec_scale(&particle_dir, -p_vel);
-		if (b->objp != NULL) {
-			vm_vec_add2(&particle_dir, &b->objp->phys_info.vel);	//move along with our parent
-		}
-
-		particle::particle_info pinfo;
-		pinfo.pos = particle_pos;
-		pinfo.vel = particle_dir;
-		pinfo.lifetime = p_life;
-		pinfo.attached_objnum = -1;
-		pinfo.attached_sig = 0;
-		pinfo.rad = wip->b_info.beam_particle_radius;
-		pinfo.reverse = 1;
-		pinfo.type = particle::PARTICLE_BITMAP;
-		pinfo.optional_data = wip->b_info.beam_particle_ani.first_frame;
-		particle::create(&pinfo);
-	}
 }
 
 static float get_muzzle_glow_alpha(beam* b)
@@ -1648,19 +1633,31 @@ void beam_render_muzzle_glow(beam *b)
 
 	// don't show the muzzle glow for players in the cockpit unless show_ship_model is on, provided Render_player_mflash isn't on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
-	bool player_show_ship_model = b->objp == Player_obj && Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
+	bool player_show_ship_model = (
+		b->objp != nullptr // Can validly be nullptr for floating beams!
+		&& b->objp == Player_obj  
+		&& Ship_info[Ships[b->objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model] 
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
 	if ((b->flags & BF_IS_FIGHTER_BEAM) && (b->objp == Player_obj && !Render_player_mflash && in_cockpit_view && !player_show_ship_model)) {
 		return;
 	}
+
+	bool radius_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_RADIUS_MULT);
+	float radius_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_RADIUS_MULT, *b, &b->modular_curves_instance);
+	bool alpha_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_ALPHA_MULT);
+	float alpha_mult = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ALPHA_MULT, *b, &b->modular_curves_instance);
+	bool anim_has_curve = wip->beam_curves.has_curve(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE);
+	float anim_state = wip->beam_curves.get_output(weapon_info::BeamCurveOutputs::GLOW_ANIM_STATE, *b, &b->modular_curves_instance);
 
 	// if the beam is warming up, scale the glow
 	if (b->warmup_stamp != -1) {		
 		// get warmup pct
 		pct = BEAM_WARMUP_PCT(b);
 		rand_val = 1.0f;
-	} else
+	}
 	// if the beam is warming down
-	if (b->warmdown_stamp != -1) {
+	else if (b->warmdown_stamp != -1)
+	{
 		// get warmup pct
 		pct = 1.0f - BEAM_WARMDOWN_PCT(b);
 		rand_val = 1.0f;
@@ -1671,16 +1668,27 @@ void beam_render_muzzle_glow(beam *b)
 		rand_val = frand_range(0.90f, 1.0f);
 	}
 
-	rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+	if (radius_has_curve) {
+		rad = wip->b_info.beam_muzzle_radius * radius_mult;
+	} else {
+		rad = wip->b_info.beam_muzzle_radius * pct * rand_val;
+	}
 
 	// don't bother trying to draw if there is no radius
 	if (rad <= 0.0f)
 		return;
 
-	float alpha = get_muzzle_glow_alpha(b);
+	float alpha;
+	if (alpha_has_curve) {
+		alpha = alpha_mult;
+	} else {
+		alpha = get_muzzle_glow_alpha(b);
+	}
 
 	if (alpha <= 0.0f)
 		return;
+
+	alpha = MIN(alpha, 1.f);
 
 	if (bwi->directional_glow == true){
 		vertex h1[4];
@@ -1741,18 +1749,26 @@ void beam_render_muzzle_glow(beam *b)
 		int framenum = 0;
 
 		if ( bwi->beam_glow.num_frames > 1 ) {
-			b->beam_glow_frame += flFrametime;
-
-			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(bwi->beam_glow.num_frames - 1) * anim_state);
+			} else {
+				b->beam_glow_frame += flFrametime;
+				framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			}
 		}
+
+		CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
 
 		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
 		// draw a poly
 		//g3_draw_poly(4, verts, TMAP_FLAG_TEXTURED | TMAP_FLAG_CORRECT | TMAP_HTL_3D_UNLIT);
 
+		if (!alpha_has_curve) {
+			alpha = alpha * pct;
+		}
 		material material_info;
-		material_set_unlit_emissive(&material_info, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		material_set_unlit_emissive(&material_info, bwi->beam_glow.first_frame + framenum, alpha, 2.0f);
 		g3_render_primitives_textured(&material_info, h1, 4, PRIM_TYPE_TRIFAN, false);
 
 	} else {
@@ -1762,18 +1778,26 @@ void beam_render_muzzle_glow(beam *b)
 
 		int framenum = 0;
 
-		if ( bwi->beam_glow.num_frames > 1 ) {
-			b->beam_glow_frame += flFrametime;
-
-			framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+		if (bwi->beam_glow.num_frames > 1) {
+			if (anim_has_curve) {
+				framenum = fl2i(i2fl(bwi->beam_glow.num_frames - 1) * anim_state);
+			} else {
+				b->beam_glow_frame += flFrametime;
+				framenum = bm_get_anim_frame(bwi->beam_glow.first_frame, b->beam_glow_frame, bwi->beam_glow.total_time, true);
+			}
 		}
+
+		CLAMP(framenum, 0, bwi->beam_glow.num_frames - 1);
 
 		//gr_set_bitmap(bwi->beam_glow.first_frame + framenum, GR_ALPHABLEND_FILTER, GR_BITBLT_MODE_NORMAL, alpha * pct);
 
+		if (!alpha_has_curve) {
+			alpha = alpha * pct;
+		}
 		// draw 1 bitmap
 		//g3_draw_bitmap(&pt, 0, rad, tmap_flags);
 		material mat_params;
-		material_set_unlit_emissive(&mat_params, bwi->beam_glow.first_frame + framenum, alpha * pct, 2.0f);
+		material_set_unlit_emissive(&mat_params, bwi->beam_glow.first_frame + framenum, alpha, 2.0f);
 		g3_render_rect_screen_aligned(&mat_params, &pt, 0, rad, 0.0f);
 
 		// maybe draw more
@@ -1830,14 +1854,22 @@ void beam_render_all()
 		}
 
 		// render the muzzle glow
-		beam_render_muzzle_glow(moveup);		
-
-		// maybe generate some muzzle particles
-		beam_generate_muzzle_particles(moveup);
+		beam_render_muzzle_glow(moveup);
 
 		// next item
 		moveup = GET_NEXT(moveup);
 	}	
+}
+
+// Delete all active beams
+void beam_delete_all()
+{
+	beam* b = GET_FIRST(&Beam_used_list);
+	while (b != END_OF_LIST(&Beam_used_list)) {
+		beam* next = GET_NEXT(b);
+		beam_delete(b);
+		b = next;
+	}
 }
 
 // output top and bottom vectors
@@ -2162,7 +2194,7 @@ int beam_get_model(object *objp)
 		if(Asteroids[objp->instance].asteroid_type < 0){
 			return -1;
 		}
-		return Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[pof];
+		return Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[pof].model_number;
 
 	default:
 		// this shouldn't happen too often
@@ -2382,7 +2414,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 
 	// get a model # to work with
 	model_num = beam_get_model(b->target);
-	if ((model_num < 0) && !(b->flags & BF_TARGETING_COORDS)) {
+	if ((model_num < 0) && !(b->flags & BF_TARGETING_COORDS) && b->type != BeamType::OMNI) {
 		return;
 	}
 
@@ -2391,7 +2423,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 	if(b->weapon_info_index < 0){
 		return;
 	}
-	bwi = &Weapon_info[b->weapon_info_index].b_info;
+
+	auto& wi = Weapon_info[b->weapon_info_index];
+	bwi = &wi.b_info;
 
 	// stuff num shots even though its only used for antifighter beam weapons
 	b->binfo.shot_count = (ubyte)num_shots;
@@ -2438,6 +2472,11 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 		// point 1
 		vm_vec_sub(&b->binfo.dir_a, &pos1, &turret_point);
 		vm_vec_normalize(&b->binfo.dir_a);
+
+		if (b->target && wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY)) {
+			float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
+			pos2 += b->target->phys_info.vel * velocity_mult;
+		}
 
 		// point 2
 		vm_vec_sub(&b->binfo.dir_b, &pos2, &turret_point);
@@ -2495,12 +2534,12 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				target_pos = b->target_pos1;
 			else
 				UNREACHABLE("Turret beam fired without a target or target coordinates?");
-			vm_vec_sub(&fvec, &target_pos, &turret_point);
+			vm_vec_normalized_dir(&fvec, &target_pos, &turret_point);
 			vm_vec_unrotate(&uvec, &b->subsys->system_info->turret_norm, &b->objp->orient);
-			vm_vector_2_matrix(&orient, &fvec, &uvec);
+			vm_vector_2_matrix_norm(&orient, &fvec, &uvec);
 		} else if (b->flags & BF_TARGETING_COORDS) {
 			// targeting coords already set up turret_norm with target_pos above
-			vm_vector_2_matrix(&orient, &turret_norm);
+			vm_vector_2_matrix_norm(&orient, &turret_norm);
 		} 
 
 		vec3d rand1_on = vm_vec_new(0.f, 0.f, 0.f); 
@@ -2563,6 +2602,11 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				per_burst_rot_axis = b->target->pos;
 			if (bwi->t5info.burst_rot_axis == Type5BeamRotAxis::CENTER)
 				burst_rot_axis = b->target->pos;
+
+			if (wi.beam_curves.has_curve(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY)) {
+				float velocity_mult = wi.beam_curves.get_output(weapon_info::BeamCurveOutputs::END_POSITION_BY_VELOCITY, *b, &b->modular_curves_instance);
+				pos2 += b->target->phys_info.vel * velocity_mult;
+			}
 			
 		} else { // No usable target
 			vec3d center = vm_vec_new(0.f, 0.f, 0.f);
@@ -2574,7 +2618,7 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 				vm_vec_random_in_circle(&pos1, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.end_pos != Type5BeamPos::CENTER)
-				vm_vec_random_in_circle(&pos2, &center, &orient, 1.f, bwi->t5info.start_pos == Type5BeamPos::RANDOM_OUTSIDE);
+				vm_vec_random_in_circle(&pos2, &center, &orient, 1.f, bwi->t5info.end_pos == Type5BeamPos::RANDOM_OUTSIDE);
 
 			if (bwi->t5info.no_translate || bwi->t5info.end_pos == Type5BeamPos::SAME_RANDOM)
 				pos2 = pos1;
@@ -2654,9 +2698,9 @@ void beam_get_binfo(beam *b, float accuracy, int num_shots, int burst_seed, floa
 			// randomness
 			vm_vec_random_in_sphere(&random_offset, &vmd_zero_vector, 1.f, false, true);
 			random_offset *= scale_factor;
-			random_offset.xyz.x *= bwi->t5info.start_pos_rand.xyz.x;
-			random_offset.xyz.y *= bwi->t5info.start_pos_rand.xyz.y;
-			random_offset.xyz.z *= bwi->t5info.start_pos_rand.xyz.z;
+			random_offset.xyz.x *= bwi->t5info.end_pos_rand.xyz.x;
+			random_offset.xyz.y *= bwi->t5info.end_pos_rand.xyz.y;
+			random_offset.xyz.z *= bwi->t5info.end_pos_rand.xyz.z;
 			offset += random_offset;
 
 			// rotate
@@ -2757,8 +2801,8 @@ void beam_aim(beam *b)
 	if (!(b->flags & BF_TARGETING_COORDS)) {
 		// targeting type beam weapons have no target
 		if (b->target == NULL) {
-			Assert(b->type == BeamType::TARGETING);
-			if(b->type != BeamType::TARGETING){
+			Assert(b->type == BeamType::TARGETING || b->type == BeamType::OMNI);
+			if(b->type != BeamType::TARGETING && b->type != BeamType::OMNI){
 				return;
 			}
 		}
@@ -2900,11 +2944,7 @@ void beam_aim(beam *b)
 		break;
 
 	case BeamType::TARGETING:
-		// start point
-		vm_vec_unrotate(&b->last_start, &b->local_fire_postion, &b->objp->orient);
-		vm_vec_add2(&b->last_start, &b->objp->pos);
-		// end point
-		vm_vec_scale_add(&b->last_shot, &b->last_start, &b->objp->orient.vec.fvec, b->range);
+		beam_type_targeting_move(b);
 		break;
 
 	case BeamType::NORMAL_FIRE:
@@ -2985,11 +3025,10 @@ void beam_jitter_aim(beam *b, float aim)
 
 	// shot aim is a direct linear factor of the target model's radius.
 	// so, pick a random point on the circle
-	vm_vec_sub(&forward, &b->last_shot, &b->last_start);
-	vm_vec_normalize_quick(&forward);
+	vm_vec_normalized_dir(&forward, &b->last_shot, &b->last_start);
 	
 	// vector
-	vm_vector_2_matrix(&m, &forward, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, &forward, nullptr, nullptr);
 
 	// get a random vector on the circle, but somewhat biased towards the center
 	vm_vec_random_in_circle(&circle, &b->last_shot, &m, aim * b->target->radius, false, true);
@@ -3013,7 +3052,7 @@ int beam_collide_ship(obj_pair *pair)
 	ship *shipp;
 	ship_info *sip;
 	weapon_info *bwi;
-	mc_info mc, mc_shield, mc_hull_enter, mc_hull_exit;
+	mc_info mc_hull_enter, mc_hull_exit, mc_shield, *mc;
 	int model_num;
 	float width;
 
@@ -3089,41 +3128,49 @@ int beam_collide_ship(obj_pair *pair)
 
 	// Goober5000 - I tried to make collision code much saner... here begin the (major) changes
 
-	// set up collision structs, part 1
-	mc.model_instance_num = shipp->model_instance_num;
-	mc.model_num = model_num;
-	mc.submodel_num = -1;
-	mc.orient = &ship_objp->orient;
-	mc.pos = &ship_objp->pos;
-	mc.p0 = &a_beam->last_start;
-	mc.p1 = &a_beam->last_shot;
+	// set up collision struct
+	mc_hull_enter.model_instance_num = shipp->model_instance_num;
+	mc_hull_enter.model_num = model_num;
+	mc_hull_enter.submodel_num = -1;
+	mc_hull_enter.orient = &ship_objp->orient;
+	mc_hull_enter.pos = &ship_objp->pos;
+	mc_hull_enter.p0 = &a_beam->last_start;
+	mc_hull_enter.p1 = &a_beam->last_shot;
 
 	// maybe do a sphereline
 	if (width > ship_objp->radius * BEAM_AREA_PERCENT) {
-		mc.radius = width * 0.5f;
-		mc.flags = MC_CHECK_SPHERELINE;
+		mc_hull_enter.radius = width * 0.5f;
+		mc_hull_enter.flags = MC_CHECK_SPHERELINE;
 	} else {
-		mc.flags = MC_CHECK_RAY;
+		mc_hull_enter.flags = MC_CHECK_RAY;
 	}
 
-	// set up collision structs, part 2
-	mc_shield = mc;
-	mc_hull_enter = mc;
-	mc_hull_exit = mc;
-	
-	// reverse this vector so that we check for exit holes as opposed to entrance holes
-	mc_hull_exit.p1 = &a_beam->last_start;
-	mc_hull_exit.p0 = &a_beam->last_shot;
+	// check all three kinds of collisions ---
+	int shield_collision, hull_enter_collision, hull_exit_collision;
 
-	// set flags
-	mc_shield.flags |= MC_CHECK_SHIELD;
+	if (pm->shield.ntris > 0) {
+		mc_shield = mc_hull_enter;
+		mc_shield.flags |= MC_CHECK_SHIELD;
+
+		shield_collision = model_collide(&mc_shield);
+	} else {
+		shield_collision = 0;
+	}
+
+	if (beam_will_tool_target(a_beam, ship_objp)) {
+		mc_hull_exit = mc_hull_enter;
+		mc_hull_exit.flags |= MC_CHECK_MODEL;
+
+		// reverse this vector so that we check for exit holes as opposed to entrance holes
+		std::swap(mc_hull_exit.p0, mc_hull_exit.p1);
+		hull_exit_collision = model_collide(&mc_hull_exit);
+	} else {
+		hull_exit_collision = 0;
+	}
+
 	mc_hull_enter.flags |= MC_CHECK_MODEL;
-	mc_hull_exit.flags |= MC_CHECK_MODEL;
-
-	// check all three kinds of collisions
-	int shield_collision = (pm->shield.ntris > 0) ? model_collide(&mc_shield) : 0;
-	int hull_enter_collision = model_collide(&mc_hull_enter);
-	int hull_exit_collision = (beam_will_tool_target(a_beam, ship_objp)) ? model_collide(&mc_hull_exit) : 0;
+	hull_enter_collision = model_collide(&mc_hull_enter);
+	// ---
 
     // If we have a range less than the "far" range, check if the ray actually hit within the range
     if (a_beam->range < BEAM_FAR_LENGTH
@@ -3193,7 +3240,7 @@ int beam_collide_ship(obj_pair *pair)
 			// do the hit effect
 			if (shield_collision) {
 				if (mc_shield.shield_hit_tri != -1) {
-					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point);
+					add_shield_point(OBJ_INDEX(ship_objp), mc_shield.shield_hit_tri, &mc_shield.hit_point, bwi->shield_impact_effect_radius);
 				}
 			} else {
 				/* TODO */;
@@ -3211,14 +3258,16 @@ int beam_collide_ship(obj_pair *pair)
 	// see which impact we use
 	if (shield_collision && valid_hit_occurred)
 	{
-		mc = mc_shield;
+		mc = &mc_shield;
 		Assert(quadrant_num >= 0);
 	}
 	else if (hull_enter_collision)
 	{
-		mc = mc_hull_enter;
+		mc = &mc_hull_enter;
 		valid_hit_occurred = 1;
 	}
+	else
+		mc = nullptr;
 
 	// if we got a hit
 	if (valid_hit_occurred)
@@ -3226,7 +3275,7 @@ int beam_collide_ship(obj_pair *pair)
 		// since we might have two collisions handled the same way, let's loop over both of them
 		mc_info *mc_array[2];
 		int mc_size = 1;
-		mc_array[0] = &mc;
+		mc_array[0] = mc;
 		if (hull_exit_collision)
 		{
 			mc_array[1] = &mc_hull_exit;
@@ -3747,6 +3796,37 @@ bool beam_sort_collisions_func(const beam_collision &b1, const beam_collision &b
 	return (b1.cinfo.hit_dist < b2.cinfo.hit_dist);
 }
 
+static std::unique_ptr<EffectHost> beam_hit_make_effect_host(const beam* b, const object* impacted_obj, int impacted_submodel, const vec3d* hitpos, const vec3d* local_hitpos) {
+	vec3d beam_dir;
+	vm_vec_normalized_dir(&beam_dir, &b->last_shot, &b->last_start);
+
+	if (impacted_obj->type != OBJ_SHIP) {
+		//Fall back to Vector. Since we don't have a ship, it's quite likely whatever we're hitting will immediately die, so don't try to attach a particle source.
+		matrix beamOrientation;
+		vm_vector_2_matrix_norm(&beamOrientation, &beam_dir);
+
+		auto vector_host = std::make_unique<EffectHostVector>(*hitpos, beamOrientation, vmd_zero_vector);
+		vector_host->setRadius(impacted_obj->radius);
+		return vector_host;
+	}
+	else {
+		vec3d local_norm;
+		model_instance_global_to_local_dir(&local_norm, &beam_dir, object_get_model(impacted_obj), object_get_model_instance(impacted_obj), impacted_submodel, &impacted_obj->orient);
+
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &local_norm);
+
+		if (impacted_submodel < 0) {
+			//Fall back to object
+			return std::make_unique<EffectHostObject>(impacted_obj, *local_hitpos, orient);
+		}
+		else {
+			//Full subobject
+			return std::make_unique<EffectHostSubmodel>(impacted_obj, impacted_submodel, *local_hitpos, orient);
+		}
+	}
+}
+
 // handle a hit on a specific object
 void beam_handle_collisions(beam *b)
 {	
@@ -3867,7 +3947,7 @@ void beam_handle_collisions(beam *b)
 				model_instance_local_to_global_dir(&worldNormal,
 											  &b->f_collisions[idx].cinfo.hit_normal,
 											  shipp->model_instance_num,
-											  b->f_collisions[idx].cinfo.submodel_num,
+											  b->f_collisions[idx].cinfo.hit_submodel,
 											  &Objects[target].orient);
 			} else {
 				// Just assume that we don't need to handle model subobjects here
@@ -3876,129 +3956,78 @@ void beam_handle_collisions(beam *b)
 
 			if (wi->flash_impact_weapon_expl_effect.isValid()) {
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->flash_impact_weapon_expl_effect);
-				particleSource.moveToObject(&Objects[target], &temp_local_pos);
-				particleSource.setOrientationNormal(&worldNormal);
-
-				vec3d fvec;
-				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-
-				if (!IS_VEC_NULL(&fvec)) {
-					particleSource.setOrientationFromVec(&fvec);
-				}
-
-				particleSource.finish();
+				particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
+				particleSource->setNormal(worldNormal);
+				particleSource->setTriggerRadius(width);
+				particleSource->finishCreation();
 			}
 
 			if(do_expl){
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
-				particleSource.moveToObject(&Objects[target], &temp_local_pos);
-				particleSource.setOrientationNormal(&worldNormal);
-
-				vec3d fvec;
-				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-
-				if (!IS_VEC_NULL(&fvec)) {
-					particleSource.setOrientationFromVec(&fvec);
-				}
-
-				particleSource.finish();
+				particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
+				particleSource->setNormal(worldNormal);
+				particleSource->setTriggerRadius(width);
+				particleSource->finishCreation();
 			}
 
 			if (wi->piercing_impact_effect.isValid()) {
-				vec3d fvec;
-				vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
 
-				if(!IS_VEC_NULL(&fvec)){
-					// get beam direction
+				// get beam direction
 
-					int ok_to_draw = 0;
-					
-					if (beam_will_tool_target(b, &Objects[target])) {
-						ok_to_draw = 1;
+				int ok_to_draw = 0;
 
-						if (Objects[target].type == OBJ_SHIP) {
-							ship *shipp = &Ships[Objects[target].instance];
-														
-							if (shipp->armor_type_idx != -1) {
-								if (Armor_types[shipp->armor_type_idx].GetPiercingType(wi->damage_type_idx) == SADTF_PIERCING_RETAIL) {
-									ok_to_draw = 0;
-								}
+				if (beam_will_tool_target(b, &Objects[target])) {
+					ok_to_draw = 1;
+
+					if (Objects[target].type == OBJ_SHIP) {
+						ship *shipp = &Ships[Objects[target].instance];
+
+						if (shipp->armor_type_idx != -1) {
+							if (Armor_types[shipp->armor_type_idx].GetPiercingType(wi->damage_type_idx) == SADTF_PIERCING_RETAIL) {
+								ok_to_draw = 0;
 							}
-						}
-					} else {
-						ok_to_draw = 0;
-
-						if (Objects[target].type == OBJ_SHIP) {
-							float draw_limit, hull_pct;
-							int dmg_type_idx, piercing_type;
-
-							ship *shipp = &Ships[Objects[target].instance];
-
-							hull_pct = Objects[target].hull_strength / shipp->ship_max_hull_strength;
-							dmg_type_idx = wi->damage_type_idx;
-							draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
-							
-							if (shipp->armor_type_idx != -1) {
-								piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
-								if (piercing_type == SADTF_PIERCING_DEFAULT) {
-									draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
-								} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
-									draw_limit = -1.0f;
-								}
-							}
-
-							if ((draw_limit != -1.0f) && (hull_pct <= draw_limit))
-								ok_to_draw = 1;
 						}
 					}
+				} else {
+					ok_to_draw = 0;
 
-					if (ok_to_draw){
-						vm_vec_normalize_quick(&fvec);
-						
-						// stream of fire for big ships
-						if (width <= Objects[target].radius * BEAM_AREA_PERCENT) {
-							auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
-							particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-							particleSource.setOrientationFromNormalizedVec(&fvec);
-							particleSource.setOrientationNormal(&worldNormal);
+					if (Objects[target].type == OBJ_SHIP) {
+						float draw_limit, hull_pct;
+						int dmg_type_idx, piercing_type;
 
-							particleSource.finish();
+						ship *shipp = &Ships[Objects[target].instance];
+
+						hull_pct = Objects[target].hull_strength / shipp->ship_max_hull_strength;
+						dmg_type_idx = wi->damage_type_idx;
+						draw_limit = Ship_info[shipp->ship_info_index].piercing_damage_draw_limit;
+
+						if (shipp->armor_type_idx != -1) {
+							piercing_type = Armor_types[shipp->armor_type_idx].GetPiercingType(dmg_type_idx);
+							if (piercing_type == SADTF_PIERCING_DEFAULT) {
+								draw_limit = Armor_types[shipp->armor_type_idx].GetPiercingLimit(dmg_type_idx);
+							} else if ((piercing_type == SADTF_PIERCING_NONE) || (piercing_type == SADTF_PIERCING_RETAIL)) {
+								draw_limit = -1.0f;
+							}
 						}
+
+						if ((draw_limit != -1.0f) && (hull_pct <= draw_limit))
+							ok_to_draw = 1;
+					}
+				}
+
+				if (ok_to_draw){
+					// stream of fire for big ships
+					if (width <= Objects[target].radius * BEAM_AREA_PERCENT) {
+						auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
+
+						particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
+						particleSource->setNormal(worldNormal);
+						particleSource->setTriggerRadius(width);
+						particleSource->finishCreation();
 					}
 				}
 			}
 			// <-- KOMET_EXT
-		} else {
-			if(draw_effects && apply_beam_physics && !physics_paused){
-				// maybe draw an explosion, if we aren't hitting shields
-				if ((wi->impact_weapon_expl_effect.isValid()) && (b->f_collisions[idx].quadrant < 0)) {
-					vec3d worldNormal;
-					if (Objects[target].type == OBJ_SHIP) {
-						auto shipp = &Ships[Objects[target].instance];
-						model_instance_local_to_global_dir(&worldNormal,
-													  &b->f_collisions[idx].cinfo.hit_normal,
-													  shipp->model_instance_num,
-													  b->f_collisions[idx].cinfo.submodel_num,
-													  &Objects[target].orient);
-					} else {
-						// Just assume that we don't need to handle model subobjects here
-						vm_vec_unrotate(&worldNormal, &b->f_collisions[idx].cinfo.hit_normal, &Objects[target].orient);
-					}
-
-					auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
-					particleSource.moveTo(&b->f_collisions[idx].cinfo.hit_point_world);
-					particleSource.setOrientationNormal(&worldNormal);
-
-					vec3d fvec;
-					vm_vec_sub(&fvec, &b->last_shot, &b->last_start);
-
-					if (!IS_VEC_NULL(&fvec)) {
-						particleSource.setOrientationFromVec(&fvec);
-					}
-
-					particleSource.finish();
-				}
-			}
 		}
 
 		if(!physics_paused){
@@ -4008,7 +4037,7 @@ void beam_handle_collisions(beam *b)
 			{
 				vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 				vm_vec_normalize(&force);
-				force *= wi->mass;
+				force *= wi->mass * wi->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, Objects[target]), &b->modular_curves_instance);
 
 				// hit the debris - the debris hit code takes care of checking for MULTIPLAYER_CLIENT, etc
 				debris_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
@@ -4043,12 +4072,14 @@ void beam_handle_collisions(beam *b)
 
 							if (trgt->hull_strength < 0) {
 								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-								weapon_hit(trgt, NULL, &trgt->pos);
+								bool armed = weapon_hit(trgt, nullptr, &trgt->pos);
+								maybe_play_conditional_impacts({}, trgt, nullptr, armed, -1, &trgt->pos);
 							}
 						} else {
 							if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 								Weapons[trgt->instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-								weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+								bool armed = weapon_hit(trgt, nullptr, &trgt->pos);
+								maybe_play_conditional_impacts({}, trgt, nullptr, armed, -1, &trgt->pos);
 							}
 						}
 						
@@ -4060,7 +4091,8 @@ void beam_handle_collisions(beam *b)
 
 					if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 						Weapons[Objects[target].instance].weapon_flags.set(Weapon::Weapon_Flags::Destroyed_by_weapon);
-						weapon_hit(&Objects[target], NULL, &Objects[target].pos);
+						bool armed = weapon_hit(&Objects[target], nullptr, &Objects[target].pos);
+						maybe_play_conditional_impacts({}, &Objects[target], nullptr, armed, -1, &Objects[target].pos);
 					}
 				}
 				break;
@@ -4070,7 +4102,7 @@ void beam_handle_collisions(beam *b)
 				if (!(Game_mode & GM_MULTIPLAYER) || MULTIPLAYER_MASTER) {
 					vec3d force = b->last_shot - b->last_start; // Valathil - use the beam direction as the force direction (like a high pressure water jet)
 					vm_vec_normalize(&force);
-					force *= wi->mass;
+					force *= wi->mass * wi->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, Objects[target]), &b->modular_curves_instance);
 
 					asteroid_hit(&Objects[target], &Objects[b->objnum], &b->f_collisions[idx].cinfo.hit_point_world, wi->damage, &force);
 				}
@@ -4167,25 +4199,23 @@ int beam_ok_to_fire(beam *b)
 		vm_vec_sub(&aim_dir, &b->last_shot, &b->last_start);
 		vm_vec_normalize(&aim_dir);
 
-		if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
-			vec3d turret_normal;
-
-			if (b->flags & BF_IS_FIGHTER_BEAM) {
-				turret_normal = b->objp->orient.vec.fvec;
-			} else {
+		if (!(b->flags & BF_IS_FIGHTER_BEAM)) {
+			if (The_mission.ai_profile->flags[AI::Profile_Flags::Force_beam_turret_fov]) {
+				vec3d turret_normal;
 				model_instance_local_to_global_dir(&turret_normal, &b->subsys->system_info->turret_norm, Ships[b->objp->instance].model_instance_num, b->subsys->system_info->subobj_num, &b->objp->orient, true);
-			}
 
-			if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
-				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-				return 0;
+				if (!(turret_fov_test(b->subsys, &turret_normal, &aim_dir))) {
+					nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+					return 0;
+				}
 			}
-		} else {
-			vec3d turret_dir, turret_pos;
-			beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, false, &turret_dir, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
-			if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
-				nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
-				return 0;
+			else {
+				vec3d turret_dir, turret_pos;
+				beam_get_global_turret_gun_info(b->objp, b->subsys, &turret_pos, false, &turret_dir, true, nullptr, (b->flags & BF_IS_FIGHTER_BEAM) != 0);
+				if (vm_vec_dot(&aim_dir, &turret_dir) < b->subsys->system_info->turret_fov) {
+					nprintf(("BEAM", "BEAM : powering beam down because of FOV condition!\n"));
+					return 0;
+				}
 			}
 		}
 
@@ -4251,7 +4281,7 @@ void beam_apply_whack(beam *b, object *objp, vec3d *hit_point)
 			whack = b_whack_big;
 		}
 	}else{
-		whack = wip->mass;
+		whack = wip->mass * wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::MASS_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 	}
 
 	// whack direction
@@ -4295,12 +4325,12 @@ float beam_get_ship_damage(beam *b, object *objp, vec3d* hitpos)
 	}
 
 	float damage = wip->damage;
-
-	if (wip->damage_curve_idx >= 0)
-		damage *= Curves[wip->damage_curve_idx].GetValue((b->life_total - b->life_left) / b->life_total);
+	damage *= wip->beam_hit_curves.get_output(weapon_info::BeamHitCurveOutputs::DAMAGE_MULT, std::forward_as_tuple(*b, *objp), &b->modular_curves_instance);
 
 	// same team. yikes
-	if ( (b->team == Ships[objp->instance].team) && (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
+	if ( (b->team == Ships[objp->instance].team)
+			&& (The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] >= 0.f)
+			&& (damage > The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level]) ) {
 		damage = The_mission.ai_profile->beam_friendly_damage_cap[Game_skill_level] * attenuation;
 	} else {
 		// normal damage
@@ -4351,6 +4381,18 @@ int beam_will_tool_target(beam *b, object *objp)
 	// if the beam is going to apply more damage in about 1 and a half than the ship can take
 	damage_in_a_few_seconds = (TOOLTIME / (float)BEAM_DAMAGE_TIME) * wip->damage;
 	return (damage_in_a_few_seconds > total_strength);
+}
+
+float beam_get_warmup_lifetime_pct(const beam& b) {
+	return BEAM_WARMUP_PCT((&b));
+}
+
+float beam_get_warmdown_lifetime_pct(const beam& b) {
+	return BEAM_WARMDOWN_PCT((&b));
+}
+
+float beam_get_warmdown_age(const beam& b) {
+	return ((float)timestamp_since(b.warmdown_stamp)) / MILLISECONDS_PER_SECOND;
 }
 
 float beam_accuracy = 1.0f;

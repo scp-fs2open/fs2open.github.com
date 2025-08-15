@@ -21,6 +21,7 @@
 #include "globalincs/version.h"
 #include "io/key.h"
 #include "localization/localize.h"
+#include "menuui/barracks.h"
 #include "menuui/mainhallmenu.h"
 #include "menuui/playermenu.h"
 #include "mission/missioncampaign.h"
@@ -77,16 +78,6 @@ const char *Player_select_background_mask_bitmap[GR_NUM_RESOLUTIONS] = {
 // #define PLAYER_SELECT_PALETTE			NOX("ChoosePilotPalette")	// palette for the screen
 
 #define PLAYER_SELECT_MAIN_HALL_OVERLAY		NOX("MainHall1")			// main hall help overlay
-
-// convenient struct for handling all button controls
-struct barracks_buttons {
-	const char *filename;
-	int x, y, xt, yt;
-	int hotspot;
-	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
-
-	barracks_buttons(const char *name, int x1, int y1, int xt1, int yt1, int h) : filename(name), x(x1), y(y1), xt(xt1), yt(yt1), hotspot(h) {}
-};
 
 static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SELECT_BUTTONS] = {
 	{ // GR_640
@@ -327,13 +318,13 @@ void player_select_init()
 
 	// add some text
 	w = &Player_select_window;
-	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].xt, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].yt, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].xt, Player_select_buttons[gr_screen.res][CLONE_BUTTON].yt, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].xt, Player_select_buttons[gr_screen.res][DELETE_BUTTON].yt, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Create", 1034, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_x, Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CREATE_PILOT_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Clone", 1040, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_x, Player_select_buttons[gr_screen.res][CLONE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][CLONE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Remove", 1038, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_x, Player_select_buttons[gr_screen.res][DELETE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][DELETE_BUTTON].button, UI_XSTR_COLOR_GREEN);
 
-	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].xt, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].yt, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);	
-	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].xt, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].yt, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);	
-	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].xt, Player_select_buttons[gr_screen.res][MULTI_BUTTON].yt, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);	
+	w->add_XSTR("Select", 1039, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_x, Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].text_y, &Player_select_buttons[gr_screen.res][ACCEPT_BUTTON].button, UI_XSTR_COLOR_PINK);
+	w->add_XSTR("Single", 1041, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_x, Player_select_buttons[gr_screen.res][SINGLE_BUTTON].text_y, &Player_select_buttons[gr_screen.res][SINGLE_BUTTON].button, UI_XSTR_COLOR_GREEN);
+	w->add_XSTR("Multi", 1042, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_x, Player_select_buttons[gr_screen.res][MULTI_BUTTON].text_y, &Player_select_buttons[gr_screen.res][MULTI_BUTTON].button, UI_XSTR_COLOR_GREEN);
 	for(i=0; i<PLAYER_SELECT_NUM_TEXT; i++) {
 		w->add_XSTR(&Player_select_text[gr_screen.res][i]);
 	}
@@ -394,6 +385,7 @@ void player_select_init()
 
 // no need to reset this to false because we only ever see player_select once per game run
 static bool Startup_warning_dialog_displayed = false;
+static bool Save_file_warning_displayed = false;
 
 void player_select_do()
 {
@@ -405,6 +397,11 @@ void player_select_do()
 		sprintf(text, XSTR ("Warning!\n\nThe currently active mod has generated %d warnings and/or errors during program startup.  These could have been caused by anything from incorrectly formatted table files to corrupt models.\n\nWhile FreeSpace Open will attempt to compensate for these issues, it cannot guarantee a trouble-free gameplay experience.\n\nPlease contact the authors of the mod for assistance.", 1640), Global_warning_count + Global_error_count);
 		popup(PF_TITLE_BIG | PF_TITLE_RED | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, text);
 		Startup_warning_dialog_displayed = true;
+	}
+
+	if (!Ingame_options_save_found && Using_in_game_options && !Save_file_warning_displayed) {
+		popup(PF_BODY_BIG | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, XSTR("A new settings file has been created for the current game or mod. You may want to check the options menu to ensure everything is set to your liking.", 1854));
+		Save_file_warning_displayed = true;
 	}
 		
 	// set the input box at the "virtual" line 0 to be active so the player can enter a callsign
@@ -1379,7 +1376,7 @@ DCF(bastion, "Temporarily sets the player to be on the Bastion (or any other mai
 }
 
 SCP_vector<SCP_string> Player_tips;
-int Player_tips_shown = 0;
+bool Player_tips_shown = false;
 
 // tooltips
 void parse_tips_table(const char* filename)
@@ -1388,6 +1385,9 @@ void parse_tips_table(const char* filename)
 	{
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
+
+		if (optional_string("$Start Tips at Index:"))
+			stuff_int(&Player_tips_start_index);
 
 		while (!optional_string("#end")) {
 			required_string("+Tip:");
@@ -1406,6 +1406,8 @@ void parse_tips_table(const char* filename)
 	}
 }
 
+int Player_tips_start_index = -1; // index of -1 results in default behavior to pick a random starting index
+
 void player_tips_init()
 {
 	// first parse the default table
@@ -1413,6 +1415,12 @@ void player_tips_init()
 
 	// parse any modular tables
 	parse_modular_table("*-tip.tbm", parse_tips_table);
+
+	// check optional starting index --wookieejedi
+	if (Player_tips_start_index >= static_cast<int>(Player_tips.size())) {
+		Warning(LOCATION, "Player Tips Start Index of %i is larger than the maximum index of " SIZE_T_ARG ". Using default behavior instead.\n", Player_tips_start_index, Player_tips.size());
+		Player_tips_start_index = -1;
+	}
 }
 
 void player_tips_popup()
@@ -1430,13 +1438,19 @@ void player_tips_popup()
 	}
 
 	// only show tips once per instance of FreeSpace
-	if(Player_tips_shown == 1) {
+	if(Player_tips_shown) {
 		return;
 	}
-	Player_tips_shown = 1;
+	Player_tips_shown = true;
 
-	// randomly pick one
-	tip = Random::next((int)Player_tips.size());
+	// pick which tip to start at
+	if (Player_tips_start_index >= 0 && Player_tips_start_index < static_cast<int>(Player_tips.size())) {
+		// mod specified which entry to start with --wookieejedi
+		tip = Player_tips_start_index;
+	} else {
+		// default is to randomly pick one
+		tip = Random::next(static_cast<int>(Player_tips.size()));
+	}
 
 	SCP_string all_txt;
 

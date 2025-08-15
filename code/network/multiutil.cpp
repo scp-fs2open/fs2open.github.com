@@ -522,7 +522,7 @@ int find_player_socket(PSNET_SOCKET_RELIABLE sock)
 
 // multi_find_player_by_object returns a player num (reference by Net_players[x]) when given a object *.
 // used to find netplayers in game when only the object is known
-int multi_find_player_by_object( object *objp )
+int multi_find_player_by_object( const object *objp )
 {
 	int i, objnum;
 
@@ -2936,11 +2936,7 @@ int multi_get_connection_speed()
 	int cspeed;
 	const char *connection_speed;
 
-#ifdef _WIN32	
-	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "");	
-#else
 	connection_speed = os_config_read_string(nullptr, "ConnectionSpeed", "Fast");
-#endif
 
 	if ( !stricmp(connection_speed, NOX("Slow")) ) {
 		cspeed = CONNECTION_SPEED_288;
@@ -2952,8 +2948,10 @@ int multi_get_connection_speed()
 		cspeed = CONNECTION_SPEED_CABLE;
 	} else if ( !stricmp(connection_speed, NOX("Fast")) ) {
 		cspeed = CONNECTION_SPEED_T1;
+	} else if (!stricmp(connection_speed, NOX("None"))) {
+		cspeed = CONNECTION_SPEED_T1;	// default to Fast, per the os_config_read_string() call; per #define in multi.h, None doesn't really mean anything
 	} else {
-		cspeed = CONNECTION_SPEED_NONE;
+		cspeed = CONNECTION_SPEED_NONE;	// this will now no longer be returned unless the connection speed string is invalid
 	}
 
 	return cspeed;
@@ -2998,7 +2996,7 @@ void multi_update_valid_missions()
 	}
 	
 	// attempt to open the valid mission config file
-	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CFILE_NORMAL, CF_TYPE_DATA);
+	in = cfopen(MULTI_VALID_MISSION_FILE, "rt", CF_TYPE_DATA);
 
 	if (in != nullptr) {
 		// read in all listed missions
@@ -3071,7 +3069,7 @@ void multi_update_valid_missions()
 	}
 
 	// now rewrite the outfile with the new mission info
-	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CFILE_NORMAL, CF_TYPE_DATA);
+	in = cfopen(MULTI_VALID_MISSION_FILE, "wt", CF_TYPE_DATA);
 	if(in == nullptr){
 		// if we're a standalone, kill the validate dialog
 		if(Game_mode & GM_STANDALONE_SERVER){

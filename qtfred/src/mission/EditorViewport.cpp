@@ -178,7 +178,7 @@ void EditorViewport::select_objects(const Marking_box& box) {
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		valid = 1;
-		if (ptr->flags[Object::Object_Flags::Hidden]) {
+		if (ptr->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
 			valid = 0;
 		}
 
@@ -450,14 +450,16 @@ void EditorViewport::game_do_frame(const int cur_object_index) {
 		break;
 
 	case 2: // Control viewpoint object
-		process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
-		object_moved(&Objects[view_obj]);
-		control_pos = Objects[view_obj].pos;
-		control_orient = Objects[view_obj].orient;
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			process_controls(&Objects[view_obj].pos, &Objects[view_obj].orient, f2fl(Frametime), key);
+			object_moved(&Objects[view_obj]);
+			control_pos = Objects[view_obj].pos;
+			control_orient = Objects[view_obj].orient;
+		}
 		break;
 
 	case 1: //	Control the current object's location and orientation
-		if (query_valid_object(cur_object_index)) {
+		if (query_valid_object(cur_object_index) && !Objects[cur_object_index].flags[Object::Object_Flags::Locked_from_editing]) {
 			vec3d delta_pos, leader_old_pos;
 			matrix leader_orient, leader_transpose, tmp;
 			object* leader;
@@ -595,11 +597,13 @@ void EditorViewport::level_controlled() {
 		break;
 
 	case 2: // Control viewpoint object
-		level_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		///! \todo Notify.
-		editor->missionChanged();
-		//FREDDoc_ptr->autosave("level object");
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			level_object(&Objects[view_obj].orient);
+			object_moved(&Objects[view_obj]);
+			///! \todo Notify.
+			editor->missionChanged();
+			//FREDDoc_ptr->autosave("level object");
+		}
 		break;
 
 	case 1: //	Control the current object's location and orientation
@@ -655,11 +659,13 @@ void EditorViewport::verticalize_controlled() {
 		break;
 
 	case 2: // Control viewpoint object
-		verticalize_object(&Objects[view_obj].orient);
-		object_moved(&Objects[view_obj]);
-		///! \todo notify.
-		//FREDDoc_ptr->autosave("align object");
-		editor->missionChanged();
+		if (!Objects[view_obj].flags[Object::Object_Flags::Locked_from_editing]) {
+			verticalize_object(&Objects[view_obj].orient);
+			object_moved(&Objects[view_obj]);
+			///! \todo notify.
+			//FREDDoc_ptr->autosave("align object");
+			editor->missionChanged();
+		}
 		break;
 
 	case 1: //	Control the current object's location and orientation
@@ -741,7 +747,7 @@ int EditorViewport::object_check_collision(object* objp, vec3d* p0, vec3d* p1, v
 		}
 	}
 
-	if (objp->flags[Object::Object_Flags::Hidden]) {
+	if (objp->flags[Object::Object_Flags::Hidden, Object::Object_Flags::Locked_from_editing]) {
 		return 0;
 	}
 
@@ -787,7 +793,7 @@ int EditorViewport::select_object(int cx, int cy) {
         best = Briefing_dialog->check_mouse_hit(cx, cy);
         if (best >= 0)
         {
-            if (Selection_lock && !(Objects[best].flags & OF_MARKED))
+            if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked])) || Objects[best].flags[Object::Object_Flags::Locked_from_editing])
             {
                 return -1;
             }
@@ -825,7 +831,7 @@ int EditorViewport::select_object(int cx, int cy) {
 	}
 
 	if (best >= 0) {
-		if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
+		if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked]) || Objects[best].flags[Object::Object_Flags::Locked_from_editing]) {
 			return -1;
 		}
 		return best;
@@ -846,7 +852,7 @@ int EditorViewport::select_object(int cx, int cy) {
 		}
 	}
 
-	if (Selection_lock && !(Objects[best].flags[Object::Object_Flags::Marked])) {
+	if ((Selection_lock && !Objects[best].flags[Object::Object_Flags::Marked]) || Objects[best].flags[Object::Object_Flags::Locked_from_editing]) {
 		return -1;
 	}
 

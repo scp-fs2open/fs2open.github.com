@@ -37,7 +37,4 @@ void observer_init();
 int observer_create(matrix *orient, vec3d *pos);  // returns objnum
 void observer_delete(object *obj);
 
-// get the eye position and orientation for the passed observer object
-void observer_get_eye(vec3d *eye_pos, matrix *eye_orient, object *obj);
-
 #endif

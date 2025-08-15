@@ -174,7 +174,8 @@ void main()
 	for(int i = 0; i < samples; i++) {
 		vec4 localPos = texelFetch(texPos, texel, i);
 		//Calculate local weight from distance Voxel, but if the distance is 0 (i.e. no model at all), set weight to 1 to allow stuff like background emissive
-		float localWeight = max(step(-0.001, dist), 
+		//However, if the median distance is 0, only deal with current texel if it's local distance is 0 as well
+		float localWeight = max(step(-0.001, dist) * step(-0.001, localPos.z),
 			smoothstep(dist + dist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), dist + dist * texelWidthFactor * voxelDepth, localPos.z) *
 			smoothstep(dist - dist * texelWidthFactor * voxelDepth, dist + dist * texelWidthFactor * (voxelDepth + voxelDepthFalloff), localPos.z)
 			);
@@ -190,7 +191,7 @@ void main()
 
 	fragOut0 = color / weight;
 	fragOut1 = pos / weight;
-	fragOut2 = normalize(normal);
+	fragOut2 = vec4(normalize(normal.xyz), normal.a / weight);
 	fragOut3 = specular / weight;
 	fragOut4 = emissive / weight;
 	gl_FragDepth = depth / weight;

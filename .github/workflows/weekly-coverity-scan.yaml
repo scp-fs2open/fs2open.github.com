@@ -18,8 +18,9 @@ env:
 jobs:
   build:
     name: Build FSO With Coverity Wrapper
+    if: github.repository == 'scp-fs2open/fs2open.github.com'
     runs-on: ${{ matrix.config.os }}
-    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
+    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     strategy:
       fail-fast: false
       matrix:
@@ -47,7 +48,7 @@ jobs:
       - name: Configure CMake for FSO
         env:
           CONFIGURATION: Release
-          compiler: gcc-9
+          COMPILER: gcc-9
           ENABLE_QTFRED: OFF
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
 
@@ -65,4 +66,8 @@ jobs:
       - name: Upload to Coverity
         run: |
           cd build
-          curl --form token=${{ env.coverity_token }} --form email=${{ env.coverity_email }} --form file=@cov-scan.tgz --form version="$(git rev-parse HEAD)" --form description="Automatic GHA scan" 'https://scan.coverity.com/builds?project=scp-fs2open/fs2open.github.com'
+          curl -X POST -d token=${{ env.coverity_token }} -d email=${{ env.coverity_email }} -d file_name="'cov-scan.tgz'" -d version=${{ github.ref }} -d description="Automatic GHA scan" 'https://scan.coverity.com/projects/870/builds/init' | tee response
+          upload_url=$(jq -r '.url' response)
+          build_id=$(jq -r '.build_id' response)
+          curl -X PUT --header 'Content-Type: application/json' --upload-file cov-scan.tgz $upload_url
+          curl -X PUT -d token=${{ env.coverity_token }} https://scan.coverity.com/projects/870/builds/$build_id/enqueue

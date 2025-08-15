@@ -1,6 +1,6 @@
 #include "ReinforcementsEditorDialog.h"
 #include "ui_ReinforcementsDialog.h"
-
+#include "mission/util.h"
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
@@ -22,7 +22,9 @@ namespace dialogs {
 
 		connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ReinforcementsDialog::updateUI);
 		connect(this, &QDialog::accepted, _model.get(), &ReinforcementsDialogModel::apply);
-		connect(this, &QDialog::rejected, _model.get(), &ReinforcementsDialogModel::reject);			
+		connect(ui->okAndCancelButtonBox,
+			&QDialogButtonBox::rejected,
+			this, &ReinforcementsDialog::rejectHandler);			
 
 
 		connect(ui->delayLineEdit,
@@ -117,7 +119,7 @@ namespace dialogs {
 	{
 		SCP_vector<SCP_string> listOut;
 		for (auto& currentItem : ui->chosenShipsList->selectedItems()){
-			listOut.push_back(currentItem->text().toStdString());
+			listOut.emplace_back(currentItem->text().toStdString());
 		}
 	
 		if (ui->chosenShipsList->selectedItems().count() > 0) {
@@ -154,7 +156,7 @@ namespace dialogs {
 		for (int i = 0; i < ui->chosenShipsList->count(); i++) {
 			auto current = ui->chosenShipsList->item(i);
 			if (current->isSelected()) {
-				selectedItems.push_back(current->text().toStdString());
+				selectedItems.emplace_back(current->text().toStdString());
 			}
 		}
 
@@ -171,7 +173,7 @@ namespace dialogs {
 		for (int i = 0; i < ui->possibleShipsList->count(); i++) {
 			auto current = ui->possibleShipsList->item(i);
 			if (current->isSelected()) {
-				selectedItems.push_back(current->text().toStdString());
+				selectedItems.emplace_back(current->text().toStdString());
 			}
 		}
 
@@ -197,7 +199,16 @@ namespace dialogs {
 
 	ReinforcementsDialog::~ReinforcementsDialog() {} // NOLINT
 
-	void ReinforcementsDialog::closeEvent(QCloseEvent* ){}
+	void ReinforcementsDialog::closeEvent(QCloseEvent* e){
+		if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+			e->ignore();
+		};
+	}
+
+	void ReinforcementsDialog::rejectHandler()
+	{
+		this->close();
+	}
 
 }
 }

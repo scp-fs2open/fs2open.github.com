@@ -23,6 +23,8 @@
 #include <sddl.h>
 #endif
 
+bool Ingame_options_save_found = true;
+
 namespace
 {
 	// ------------------------------------------------------------------------------------------------------------
@@ -44,7 +46,7 @@ namespace
 
 	bool get_user_sid(SCP_string& outStr)
 	{
-		HANDLE hToken = NULL;
+		HANDLE hToken = nullptr;
 		if (OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken) == FALSE)
 		{
 			mprintf(("Failed to get process token! Error Code: %d\n", (int)GetLastError()));
@@ -53,7 +55,7 @@ namespace
 		}
 
 		DWORD dwBufferSize;
-		GetTokenInformation(hToken, TokenUser, NULL, 0, &dwBufferSize);
+		GetTokenInformation(hToken, TokenUser, nullptr, 0, &dwBufferSize);
 
 		PTOKEN_USER ptkUser = (PTOKEN_USER) new byte[dwBufferSize];
 
@@ -70,7 +72,7 @@ namespace
 			return false;
 		}
 
-		LPTSTR sidName = NULL;
+		LPTSTR sidName = nullptr;
 		if (ConvertSidToStringSid(ptkUser->User.Sid, &sidName) == 0)
 		{
 			mprintf(("Failed to convert SID structure to string! Error Code: %d\n", (int)GetLastError()));
@@ -180,7 +182,7 @@ namespace
 
 	void registry_write_string(const char *section, const char *name, const char *value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwDisposition;
 		char keyname[1024];
 		LONG lResult;
@@ -194,10 +196,10 @@ namespace
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
 			0,						// DWORD reserved
-			NULL,						// Object class
+			nullptr,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
-			NULL,						// Default security attributes
+			nullptr,						// Default security attributes
 			&hKey,						// Location to store key
 			&dwDisposition);			// Location to store status of key
 
@@ -228,7 +230,7 @@ namespace
 
 	void registry_write_uint(const char *section, const char *name, uint value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwDisposition;
 		char keyname[1024];
 		LONG lResult;
@@ -242,10 +244,10 @@ namespace
 		lResult = RegCreateKeyEx(useHKey,						// Where to add it
 			keyname,					// name of key
 			0,							// DWORD reserved
-			NULL,						// Object class
+			nullptr,						// Object class
 			REG_OPTION_NON_VOLATILE,	// Save to disk
 			KEY_ALL_ACCESS,				// Allows all changes
-			NULL,						// Default security attributes
+			nullptr,						// Default security attributes
 			&hKey,						// Location to store key
 			&dwDisposition);			// Location to store status of key
 
@@ -289,7 +291,7 @@ namespace
 	static char registry_tmp_string_data[1024];
 	const char * registry_read_string(const char *section, const char *name, const char *default_value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwType, dwLen;
 		char keyname[1024];
 		LONG lResult;
@@ -317,7 +319,7 @@ namespace
 		dwLen = 1024;
 		lResult = RegQueryValueEx(hKey,									// Handle to key
 			name,									// The values name
-			NULL,									// DWORD reserved
+			nullptr,									// DWORD reserved
 			&dwType,								// What kind it is
 			(ubyte *)&registry_tmp_string_data,				// value to set
 			&dwLen);								// How many bytes to set
@@ -339,7 +341,7 @@ namespace
 	// be passed, and if 'name' isn't found, then returns default_value
 	uint registry_read_uint(const char *section, const char *name, uint default_value)
 	{
-		HKEY hKey = NULL;
+		HKEY hKey = nullptr;
 		DWORD dwType, dwLen;
 		char keyname[1024];
 		LONG lResult;
@@ -368,7 +370,7 @@ namespace
 		dwLen = 4;
 		lResult = RegQueryValueEx(hKey,				// Handle to key
 			name,				// The values name
-			NULL,				// DWORD reserved
+			nullptr,				// DWORD reserved
 			&dwType,			// What kind it is
 			(ubyte *)&tmp_val,	// value to set
 			&dwLen);			// How many bytes to set
@@ -398,7 +400,7 @@ static time_t filetime_to_timet(const FILETIME& ft)
 	return ull.QuadPart / 10000000ULL - 11644473600ULL;
 }
 
-static time_t key_mod_time(bool alternate_path) {
+static std::optional<time_t> key_mod_time(bool alternate_path) {
 	char keyname[1024];
 
 	HKEY useHKey = get_registry_keyname(keyname, nullptr, alternate_path);
@@ -412,6 +414,9 @@ static time_t key_mod_time(bool alternate_path) {
 
 	if (lResult != ERROR_SUCCESS) {
 		::RegCloseKey(hKey);
+		if (lResult == ERROR_FILE_NOT_FOUND) {
+			return std::nullopt;
+		}
 		return 0;
 	}
 
@@ -436,11 +441,20 @@ static time_t key_mod_time(bool alternate_path) {
 	return filetime_to_timet(time);
 }
 
-time_t os_registry_get_last_modification_time() {
+std::optional<time_t> os_registry_get_last_modification_time() {
+
 	auto standard_time = key_mod_time(false);
 	auto alternate_time = key_mod_time(true);
 
-	return std::max(standard_time, alternate_time);
+	if (standard_time.has_value() && alternate_time.has_value()) {
+		return std::max(standard_time.value(), alternate_time.value());
+	} else if (alternate_time.has_value()) {
+		return alternate_time.value();
+	} else if (standard_time.has_value()) {
+		return standard_time.value();
+	} else {
+		return std::nullopt;
+	}
 }
 
 #endif
@@ -464,6 +478,7 @@ const char *Osreg_app_name = "FreeSpace2";
 const char *Osreg_title = "FreeSpace 2";
 
 const char *Osreg_config_file_name = "fs2_open.ini";
+SCP_string Mod_options_file_name = "data/retail_fs2_settings.ini";
 
 #define DEFAULT_SECTION "Default"
 
@@ -475,17 +490,17 @@ typedef struct KeyValue
 	struct KeyValue *next;
 } KeyValue;
 
-typedef struct Section
+typedef struct IniSection
 {
 	char *name;
 
 	struct KeyValue *pairs;
-	struct Section *next;
-} Section;
+	struct IniSection *next;
+} IniSection;
 
 typedef struct Profile
 {
-	struct Section *sections;
+	struct IniSection *sections;
 } Profile;
 
 // For string config functions
@@ -504,14 +519,14 @@ static char *read_line_from_file(FILE *fp)
 	eol = 0;
 
 	do {
-		if (buf == NULL) {
-			return NULL;
+		if (buf == nullptr) {
+			return nullptr;
 		}
 
-		if (fgets(buf_start, 80, fp) == NULL) {
+		if (fgets(buf_start, 80, fp) == nullptr) {
 			if (buf_start == buf) {
 				vm_free(buf);
-				return NULL;
+				return nullptr;
 			}
 			else {
 				*buf_start = 0;
@@ -542,8 +557,8 @@ static char *trim_string(char *str)
 {
 	char *ptr;
 
-	if (str == NULL)
-		return NULL;
+	if (str == nullptr)
+		return nullptr;
 
 	/* kill any comment */
 	ptr = strchr(str, ';');
@@ -578,7 +593,7 @@ static char *trim_string(char *str)
 
 static Profile *profile_read(const char *file)
 {
-	FILE *fp = NULL;
+	FILE *fp = nullptr;
 	char *str;
 
 	if (os_is_legacy_mode()) {
@@ -596,35 +611,35 @@ static Profile *profile_read(const char *file)
 		fp = fopen(os_get_config_path(file).c_str(), "rt");
 	}
 
-	if (fp == NULL)
-		return NULL;
+	if (fp == nullptr)
+		return nullptr;
 
 	Profile *profile = (Profile *)vm_malloc(sizeof(Profile));
-	profile->sections = NULL;
+	profile->sections = nullptr;
 
-	Section **sp_ptr = &(profile->sections);
-	Section *sp = NULL;
+	IniSection **sp_ptr = &(profile->sections);
+	IniSection *sp = nullptr;
 
-	KeyValue **kvp_ptr = NULL;
+	KeyValue **kvp_ptr = nullptr;
 
-	while ((str = read_line_from_file(fp)) != NULL) {
+	while ((str = read_line_from_file(fp)) != nullptr) {
 		char *ptr = trim_string(str);
 
 		if (*ptr == '[') {
 			ptr++;
 
 			char *pend = strchr(ptr, ']');
-			if (pend != NULL) {
+			if (pend != nullptr) {
 				// if (pend[1]) { /* trailing garbage! */ }
 
 				*pend = 0;
 
 				if (*ptr) {
-					sp = (Section *)vm_malloc(sizeof(Section));
-					sp->next = NULL;
+					sp = (IniSection *)vm_malloc(sizeof(IniSection));
+					sp->next = nullptr;
 
 					sp->name = vm_strdup(ptr);
-					sp->pairs = NULL;
+					sp->pairs = nullptr;
 
 					*sp_ptr = sp;
 					sp_ptr = &(sp->next);
@@ -636,10 +651,10 @@ static Profile *profile_read(const char *file)
 		else {
 			if (*ptr) {
 				char *key = ptr;
-				char *value = NULL;
+				char *value = nullptr;
 
 				ptr = strchr(ptr, '=');
-				if (ptr != NULL) {
+				if (ptr != nullptr) {
 					*ptr = 0;
 					ptr++;
 
@@ -647,13 +662,13 @@ static Profile *profile_read(const char *file)
 				} // else { /* random garbage! */ }
 
 				if (key && *key && value /* && *value */) {
-					if (sp != NULL) {
+					if (sp != nullptr) {
 						KeyValue *kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
 
 						kvp->key = vm_strdup(key);
 						kvp->value = vm_strdup(value);
 
-						kvp->next = NULL;
+						kvp->next = nullptr;
 
 						*kvp_ptr = kvp;
 						kvp_ptr = &(kvp->next);
@@ -672,15 +687,15 @@ static Profile *profile_read(const char *file)
 
 static void profile_free(Profile *profile)
 {
-	if (profile == NULL)
+	if (profile == nullptr)
 		return;
 
-	Section *sp = profile->sections;
-	while (sp != NULL) {
-		Section *st = sp;
+	IniSection *sp = profile->sections;
+	while (sp != nullptr) {
+		IniSection *st = sp;
 		KeyValue *kvp = sp->pairs;
 
-		while (kvp != NULL) {
+		while (kvp != nullptr) {
 			KeyValue *kvt = kvp;
 
 			vm_free(kvp->key);
@@ -701,27 +716,27 @@ static void profile_free(Profile *profile)
 
 static Profile *profile_update(Profile *profile, const char *section, const char *key, const char *value)
 {
-	if (profile == NULL) {
+	if (profile == nullptr) {
 		profile = (Profile *)vm_malloc(sizeof(Profile));
 
-		profile->sections = NULL;
+		profile->sections = nullptr;
 	}
 
 	KeyValue *kvp;
 
-	Section **sp_ptr = &(profile->sections);
-	Section *sp = profile->sections;
+	IniSection **sp_ptr = &(profile->sections);
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		if (strcmp(section, sp->name) == 0) {
 			KeyValue **kvp_ptr = &(sp->pairs);
 			kvp = sp->pairs;
 
-			while (kvp != NULL) {
+			while (kvp != nullptr) {
 				if (strcmp(key, kvp->key) == 0) {
 					vm_free(kvp->value);
 
-					if (value == NULL) {
+					if (value == nullptr) {
 						*kvp_ptr = kvp->next;
 
 						vm_free(kvp->key);
@@ -739,10 +754,10 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 				kvp = kvp->next;
 			}
 
-			if (value != NULL) {
+			if (value != nullptr) {
 				/* key not found */
 				kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
-				kvp->next = NULL;
+				kvp->next = nullptr;
 				kvp->key = vm_strdup(key);
 				kvp->value = vm_strdup(value);
 			}
@@ -758,12 +773,12 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 	}
 
 	/* section not found */
-	sp = (Section *)vm_malloc(sizeof(Section));
-	sp->next = NULL;
+	sp = (IniSection *)vm_malloc(sizeof(IniSection));
+	sp->next = nullptr;
 	sp->name = vm_strdup(section);
 
 	kvp = (KeyValue *)vm_malloc(sizeof(KeyValue));
-	kvp->next = NULL;
+	kvp->next = nullptr;
 	kvp->key = vm_strdup(key);
 	kvp->value = vm_strdup(value);
 
@@ -776,16 +791,16 @@ static Profile *profile_update(Profile *profile, const char *section, const char
 
 static char *profile_get_value(Profile *profile, const char *section, const char *key)
 {
-	if (profile == NULL)
-		return NULL;
+	if (profile == nullptr)
+		return nullptr;
 
-	Section *sp = profile->sections;
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		if (stricmp(section, sp->name) == 0) {
 			KeyValue *kvp = sp->pairs;
 
-			while (kvp != NULL) {
+			while (kvp != nullptr) {
 				if (strcmp(key, kvp->key) == 0) {
 					return kvp->value;
 				}
@@ -797,31 +812,31 @@ static char *profile_get_value(Profile *profile, const char *section, const char
 	}
 
 	/* not found */
-	return NULL;
+	return nullptr;
 }
 
 static void profile_save(Profile *profile, const char *file)
 {
-	FILE *fp = NULL;
+	FILE *fp = nullptr;
 	char tmp[MAX_PATH] = "";
 	char tmp2[MAX_PATH] = "";
 
-	if (profile == NULL)
+	if (profile == nullptr)
 		return;
 
 	fp = fopen(os_get_config_path(file).c_str(), "wt");
 
-	if (fp == NULL)
+	if (fp == nullptr)
 		return;
 
-	Section *sp = profile->sections;
+	IniSection *sp = profile->sections;
 
-	while (sp != NULL) {
+	while (sp != nullptr) {
 		sprintf(tmp, NOX("[%s]\n"), sp->name);
 		fputs(tmp, fp);
 
 		KeyValue *kvp = sp->pairs;
-		while (kvp != NULL) {
+		while (kvp != nullptr) {
 			sprintf(tmp2, NOX("%s=%s\n"), kvp->key, kvp->value);
 			fputs(tmp2, fp);
 			kvp = kvp->next;
@@ -838,25 +853,125 @@ static void profile_save(Profile *profile, const char *file)
 // os registry functions -------------------------------------------------------------
 
 static Profile* Osreg_profile = nullptr;
+static Profile* Mod_settings_profile = nullptr;
 
 // initialize the registry. setup default keys to use
-void os_init_registry_stuff(const char *company, const char *app)
+void os_init_registry_stuff(const char* company, const char* app)
 {
 	if (company) {
 		strcpy_s(szCompanyName, company);
-	}
-	else {
+	} else {
 		strcpy_s(szCompanyName, Osreg_company_name);
 	}
 
 	if (app) {
 		strcpy_s(szAppName, app);
-	}
-	else {
+	} else {
 		strcpy_s(szAppName, Osreg_app_name);
 	}
 
 	Osreg_profile = profile_read(Osreg_config_file_name);
+
+	// Handle mod specific settings and in-game options through a mod specific file
+	// This gets the mod file using the mod cmdline string, stripping Launcher version data
+	// so that mod settings are mod-version agnostic but still specific to a unique mod.
+	if (Cmdline_mod != nullptr) {
+		SCP_string str = Cmdline_mod;
+		// Trim any trailing folders so we get just the name of the root mod folder
+		str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));
+		
+		// Now trim off any Knossos versioning details so that settings are not mod version specific
+		// This is a little silly because Knossos and KNet sometimes append other stuff to the mod folder
+		// like "-DevEnv". So what we do here is go section by section across the string using "-" as a
+		// delimiter. If that section is not the semantic version for the mod we discard it. Once we find
+		// the semantic version, we know we're done. Drop the version and we have the full mod folder string.
+		// This allows for mods that have a "-" in the folder string while also handling any number of trailing
+		// data sections.
+		auto isSemanticVersion = [](const SCP_string& input) {
+			int dotCount = 0;
+			bool isNumeric = true;
+
+			for (char c : input) {
+				if (c == '.') {
+					dotCount++;
+				} else if (!(c >= '0' && c <= '9')) {
+					isNumeric = false;
+					break;
+				}
+			}
+
+			// I don't think true Semantic versioning allows for additional dots
+			// and anything after a dash would be handled in a previous run of this lambda
+			// but in our limited use-case here, allowing for 2 or more dots is probably fine.
+			// The point is to find the version so we have a reference point in the string
+			// so the exact format isn't super important here.
+			return (dotCount >= 2 && isNumeric);
+		};
+
+		auto getLastSection = [](const SCP_string& input)
+		{
+			// Find the position of the last dash in the string
+			size_t pos = input.rfind('-');
+			// Extract the substring before the last dash (if found)
+			SCP_string result = (pos != SCP_string::npos) ? input.substr(pos + 1) : input;
+
+			return result;
+		};
+
+		int count = 0;
+
+		// The count is used here as a limiter. If we don't find the semantic version after a
+		// few tries then we are probably running the game outside of the Knossos/KNet environment. 
+		// So after that we should give up and go with the string we have.
+		while (!isSemanticVersion(getLastSection(str)) && (count <= 4)) {
+			size_t dashPos = str.rfind("-");
+			str = (dashPos != std::string::npos) ? str.substr(0, dashPos) : str;
+			count++;
+		}
+
+		// Now we know we have just the mod root and the version. So drop the version and we're done!
+		size_t pos = str.rfind("-");
+		str = (pos != std::string::npos) ? str.substr(0, pos) : str;
+
+		// Make sure we have a usable string
+		if (str.length() > 0) {
+			// Append "_settings.ini" and use the data/ directory
+			Mod_options_file_name = "data/" + str + "_settings.ini";
+
+			// Test if the new save file exists
+			FILE* file = fopen(os_get_config_path(Mod_options_file_name).c_str(), "r");
+			if (file != nullptr) {
+				fclose(file);
+			} else {
+				Ingame_options_save_found = false;
+			}
+		} else {
+			// If we can't find the mod specific string then fallback to the fs2_open ini
+			// We don't set Ingame_options_save_found to false here because if we do that
+			// then we are assuming we have a proper save file to use later during runtime,
+			// but in this case we do not.
+			Mod_options_file_name = Osreg_config_file_name;
+		}
+	}
+
+	mprintf(("Setting local mod settings ini file to '%s'\n", Mod_options_file_name.c_str()));
+
+	// If the mod settings file doesn't exist create it if it doesn't so that the
+	// Mod_options_profile can be written to later during runtime.
+	FILE* fp = fopen(os_get_config_path(Mod_options_file_name).c_str(), "a");
+	if (fp != nullptr) {
+		fclose(fp);
+	} else {
+		Ingame_options_save_found = false;
+	}
+
+	// Load the mod settings profile if we have one, otherwise pull the settings from the
+	// fs2_open.ini to start with.
+	if (Ingame_options_save_found) {
+		Mod_settings_profile = profile_read(Mod_options_file_name.c_str());
+	} else {
+		Mod_settings_profile = profile_read(Osreg_config_file_name);
+	}
 
 	Os_reg_inited = 1;
 }
@@ -866,39 +981,55 @@ void os_deinit_registry_stuff()
 		profile_free(Osreg_profile);
 		Osreg_profile = nullptr;
 	}
+
+	if (Mod_settings_profile != nullptr) {
+		profile_free(Mod_settings_profile);
+		Mod_settings_profile = nullptr;
+	}
 }
-bool os_config_has_value(const char* section, const char* name) {
+bool os_config_has_value(const char* section, const char* name, bool use_mod_file)
+{
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, nullptr) != nullptr;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
+
 	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
 	return ptr != nullptr;
 }
 
-const char *os_config_read_string(const char *section, const char *name, const char *default_value)
+const char* os_config_read_string(const char* section, const char* name, const char* default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_string(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
+
 	nprintf(("Registry", "os_config_read_string(): section = \"%s\", name = \"%s\", default value: \"%s\"\n",
 		(section) ? section : DEFAULT_SECTION, name, (default_value) ? default_value : NOX("NULL")));
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		strncpy(tmp_string_data, ptr, 1023);
 		default_value = tmp_string_data;
 	}
@@ -906,64 +1037,80 @@ const char *os_config_read_string(const char *section, const char *name, const c
 	return default_value;
 }
 
-unsigned int os_config_read_uint(const char *section, const char *name, unsigned int default_value)
+unsigned int os_config_read_uint(const char* section, const char* name, unsigned int default_value, bool use_mod_file)
 {
 #ifdef WIN32
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		// No config file, fall back to registy
 		return registry_read_uint(section, name, default_value);
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	char *ptr = profile_get_value(Osreg_profile, section, name);
+	char* ptr = profile_get_value(profile, section, name);
 
-	if (ptr != NULL) {
+	if (ptr != nullptr) {
 		default_value = atoi(ptr);
 	}
 
 	return default_value;
 }
 
-void os_config_write_string(const char *section, const char *name, const char *value)
+void os_config_write_string(const char* section, const char* name, const char* value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_string(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, value);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, value);
+	profile_save(profile, file);
 }
 
-void os_config_write_uint(const char *section, const char *name, unsigned int value)
+void os_config_write_uint(const char* section, const char* name, unsigned int value, bool use_mod_file)
 {
 #ifdef WIN32
 	// When there is no config file then it shouldn't be created because that would "hide" all previous settings
 	// Instead fall back to writing the settings to the config file
-	if (Osreg_profile == nullptr) {
+	if (!use_mod_file && Osreg_profile == nullptr) {
 		registry_write_uint(section, name, value);
 		return;
 	}
 #endif
+	Profile* profile = Osreg_profile;
+	const char* file = Osreg_config_file_name;
+	if (use_mod_file) {
+		profile = Mod_settings_profile;
+		file = Mod_options_file_name.c_str();
+	}
 
-	if (section == NULL)
+	if (section == nullptr)
 		section = DEFAULT_SECTION;
 
 	char buf[21];
 
 	snprintf(buf, 20, "%u", value);
 
-	Osreg_profile = profile_update(Osreg_profile, section, name, buf);
-	profile_save(Osreg_profile, Osreg_config_file_name);
+	profile = profile_update(profile, section, name, buf);
+	profile_save(profile, file);
 }
 

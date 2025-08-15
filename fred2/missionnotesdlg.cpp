@@ -109,8 +109,8 @@ void CMissionNotesDlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_RED_ALERT, m_red_alert);
 	DDX_Check(pDX, IDC_SCRAMBLE, m_scramble);
 	DDX_Text(pDX, IDC_RESPAWNS, m_num_respawns);
-	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxUInt(pDX, m_num_respawns, 0, 99);
+	DDX_Text(pDX, IDC_MAX_RESPAWN_DELAY, m_max_respawn_delay);
 	DDV_MinMaxInt(pDX, m_max_respawn_delay, -1, 999);
 	DDX_Check(pDX, IDC_SUPPORT_ALLOWED, m_disallow_support);
 	DDX_Check(pDX, IDC_NO_PROMOTION, m_no_promotion);
@@ -725,7 +725,7 @@ void CMissionNotesDlg::OnCustomData()
 {
 	UpdateData(TRUE);
 
-	CustomDataDlg dlg;
+	CustomDataDlg dlg(&The_mission.custom_data, this);
 	dlg.DoModal();
 
 	UpdateData(FALSE);

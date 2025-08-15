@@ -38,36 +38,40 @@ bool FormWingDialogModel::apply() {
 		}
 	}
 
-	auto ptr = GET_FIRST(&obj_used_list);
-	while (ptr != END_OF_LIST(&obj_used_list)) {
-		if ((ptr->type == OBJ_SHIP) || (ptr->type == OBJ_START)) {
-			auto i = ptr->instance;
-			if (!strnicmp(_name.c_str(), Ships[i].ship_name, _name.size())) {
-				char* namep;
+	auto len = _name.length();
+	for (auto ptr : list_range(&obj_used_list)) {
+		if ((ptr->type != OBJ_SHIP) && (ptr->type != OBJ_START))
+			continue;
+		int i = ptr->instance;
 
-				namep = Ships[i].ship_name + _name.size();
-				if (*namep == ' ') {
-					namep++;
-					while (*namep) {
-						if (!isdigit(*namep)) {
-							break;
-						}
-
-						namep++;
-					}
-				}
-
-				if (!*namep) {
-					_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-																"Error",
-																"This wing name is already being used by a ship",
-																{ DialogButton::Ok });
-					return false;
-				}
-			}
+		// if this ship is actually going to be in the wing, and if it *can* be in a wing
+		// (i.e. it will not be taken out later), then skip the name check
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			int ship_type = ship_query_general_type(i);
+			if (ship_type >= 0 && Ship_types[ship_type].flags[Ship::Type_Info_Flags::AI_can_form_wing])
+				continue;
 		}
 
-		ptr = GET_NEXT(ptr);
+		// see if this ship name matches what a ship in the wing would be
+		if (!strnicmp(_name.c_str(), Ships[i].ship_name, len)) {
+			auto namep = Ships[i].ship_name + len;
+			if (*namep == ' ') {
+				namep++;
+				while (*namep) {
+					if (!isdigit(*namep))
+						break;
+					namep++;
+				}
+			}
+
+			if (!*namep) {
+				_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+					"Error",
+					"This wing name is already being used by a ship",
+					{ DialogButton::Ok });
+				return false;
+			}
+		}
 	}
 
 	// We don't need to check teams.  "Unknown" is a valid name and also an IFF.

@@ -43,6 +43,21 @@ event_editor *Event_editor_dlg = NULL; // global reference needed by event tree 
 // this is just useful for comparing modified EAs to unmodified ones
 static event_annotation default_ea;
 
+int safe_stricmp(const char* one, const char* two)
+{
+	if (!one && !two)
+		return 0;
+
+	if (!one)
+		return -1;
+
+	if (!two)
+		return 1;
+
+	return stricmp(one, two);
+}
+
+
 /////////////////////////////////////////////////////////////////////////////
 // event_editor dialog
 
@@ -102,12 +117,18 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_CHAINED, m_chained);
 	DDX_Check(pDX, IDC_USE_MSECS, m_use_msecs);
 	DDX_Text(pDX, IDC_OBJ_TEXT, m_obj_text);
+	DDV_MaxChars(pDX, m_obj_text, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_OBJ_KEY_TEXT, m_obj_key_text);
+	DDV_MaxChars(pDX, m_obj_key_text, NAME_LENGTH - 1);
 	DDX_CBString(pDX, IDC_AVI_FILENAME, m_avi_filename);
+	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_MESSAGE_NAME, m_message_name);
+	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
 	DDX_Text(pDX, IDC_MESSAGE_TEXT, m_message_text);
+	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
 	DDX_CBIndex(pDX, IDC_PERSONA_NAME, m_persona);
 	DDX_CBString(pDX, IDC_WAVE_FILENAME, m_wave_filename);
+	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 	DDX_LBIndex(pDX, IDC_MESSAGE_LIST, m_cur_msg);
 	DDX_Check(pDX, IDC_MISSION_LOG_TRUE, m_log_true);
 	DDX_Check(pDX, IDC_MISSION_LOG_FALSE, m_log_false);
@@ -131,13 +152,6 @@ void event_editor::DoDataExchange(CDataExchange* pDX)
 	}
 	DDX_CBIndex(pDX, IDC_MESSAGE_TEAM, m_message_team);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_obj_text, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_obj_key_text, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_message_name, NAME_LENGTH - 1);
-	DDV_MaxChars(pDX, m_message_text, MESSAGE_LENGTH - 1);
-	DDV_MaxChars(pDX, m_avi_filename, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(event_editor, CDialog)
@@ -449,17 +463,15 @@ void event_editor::OnOK()
 
 int event_editor::query_modified()
 {
-	int i;
-	char *ptr, buf[MESSAGE_LENGTH];
-
 	UpdateData(TRUE);
+
 	if (modified)
 		return 1;
 
 	if (Mission_events.size() != m_events.size())
 		return 1;
 
-	for (i=0; i<(int)m_events.size(); i++) {
+	for (size_t i = 0; i < m_events.size(); ++i) {
 		if (!lcase_equal(m_events[i].name, Mission_events[i].name))
 			return 1;
 		if (m_events[i].repeat_count != Mission_events[i].repeat_count)
@@ -482,46 +494,29 @@ int event_editor::query_modified()
 			return 1;
 	}
 
-	if (m_cur_msg < 0)
-		return 0;
-
-	if ((int)m_messages.size() != Num_messages - Num_builtin_messages)
+	if (static_cast<int>(m_messages.size()) != Num_messages - Num_builtin_messages) {
 		return 1;
-
-	ptr = (char *) (LPCTSTR) m_message_name;
-	for (i=0; i<Num_builtin_messages; i++)
-		if (!stricmp(ptr, Messages[i].name))
-			return 1;
-
-	for (i=0; i<(int)m_messages.size(); i++) {
-
-		if ((i != m_cur_msg) && (!stricmp(ptr, m_messages[m_cur_msg].name)))
-			return 1;
 	}
 
-	if (stricmp(ptr, m_messages[m_cur_msg].name))
-		return 1;  // name is different and allowed to update
+	for (size_t i = 0; i < m_messages.size(); ++i) {
+		auto& local = m_messages[i];
+		auto& ref = Messages[Num_builtin_messages + i];
 
-	string_copy(buf, m_message_text, MESSAGE_LENGTH - 1);
-	if (stricmp(buf, m_messages[m_cur_msg].message))
-		return 1;
-
-	string_copy(buf, m_message_note, MESSAGE_LENGTH - 1);
-	if (stricmp(buf, m_messages[m_cur_msg].note.c_str()))
-		return 1;
-
-	ptr = (char *) (LPCTSTR) m_avi_filename;
-	if (advanced_stricmp(ptr, m_messages[m_cur_msg].avi_info.name))
-		return 1;
-
-	ptr = (char *) (LPCTSTR) m_wave_filename;
-	if (advanced_stricmp(ptr, m_messages[m_cur_msg].wave_info.name))
-		return 1;
-
-	// check to see if persona changed.  use -1 since we stuck a "None" for persona
-	// at the beginning of the list.
-	if ( (m_persona - 1 ) != m_messages[m_cur_msg].persona_index )
-		return 1;
+		if (stricmp(local.name, ref.name) != 0)
+			return 1;
+		if (stricmp(local.message, ref.message) != 0)
+			return 1;
+		if (!lcase_equal(local.note, ref.note))
+			return 1;
+		if (local.persona_index != ref.persona_index)
+			return 1;
+		if (local.multi_team != ref.multi_team)
+			return 1;
+		if (safe_stricmp(local.avi_info.name, ref.avi_info.name) != 0)
+			return 1;
+		if (safe_stricmp(local.wave_info.name, ref.avi_info.name) != 0)
+			return 1;
+	}
 
 	return 0;
 }
@@ -557,7 +552,7 @@ void event_editor::OnButtonOk()
 			SCP_string buf = "<" + event.name + ">";
 
 			// force it to not be too long
-			if (SCP_truncate(buf, NAME_LENGTH))
+			if (SCP_truncate(buf, NAME_LENGTH - 1))
 				buf.back() = '>';
 
 			names.emplace_back(event.name, buf);

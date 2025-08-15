@@ -15,56 +15,81 @@ ADE_OBJ(l_Model, model_h, "model", "3D Model (POF) handle");
 
 polymodel *model_h::Get() const
 {
-	return model;
+	return isValid() ? model_get(model_num) : nullptr;
 }
 int model_h::GetID() const
 {
-	return model ? model->id : -1;
+	return isValid() ? model_num : -1;
 }
 bool model_h::isValid() const
 {
-	return (model != nullptr);
+	return (model_num >= 0) && (model_get(model_num) != nullptr);	// note: the model ID can exceed MAX_POLYGON_MODELS because the modulo is taken
 }
 model_h::model_h(int n_modelnum)
-{
-	if (n_modelnum >= 0)
-		model = model_get(n_modelnum);
-	else
-		model = nullptr;
-}
+	: model_num(n_modelnum)
+{}
 model_h::model_h(polymodel *n_model)
-	: model(n_model)
-{
-}
+	: model_h(n_model->id)
+{}
 model_h::model_h()
-	: model(nullptr)
-{
-}
+	: model_h(-1)
+{}
 
 
 ADE_OBJ(l_Submodel, submodel_h, "submodel", "Handle to a submodel");
 
-submodel_h::submodel_h()
-	: model(nullptr), submodel_num(-1)
+submodel_h::submodel_h(int n_modelnum, int n_submodelnum)
+	: model_num(n_modelnum), submodel_num(n_submodelnum)
 {}
 submodel_h::submodel_h(polymodel *n_model, int n_submodelnum)
-	: model(n_model), submodel_num(n_submodelnum)
-{
-}
-submodel_h::submodel_h(int n_modelnum, int n_submodelnum)
-	: submodel_num(n_submodelnum)
-{
-	model = model_get(n_modelnum);
-}
-polymodel *submodel_h::GetModel() const { return isValid() ? model : nullptr; }
-int submodel_h::GetModelID() const { return isValid() ? model->id : -1; }
-bsp_info* submodel_h::GetSubmodel() const { return isValid() ? &model->submodel[submodel_num] : nullptr; }
+	: submodel_h(n_model->id, n_submodelnum)
+{}
+submodel_h::submodel_h()
+	: submodel_h(-1, -1)
+{}
+polymodel *submodel_h::GetModel() const { return isValid() ? model_get(model_num) : nullptr; }
+int submodel_h::GetModelID() const { return isValid() ? model_num : -1; }
+bsp_info* submodel_h::GetSubmodel() const { return isValid() ? &model_get(model_num)->submodel[submodel_num] : nullptr; }
 int submodel_h::GetSubmodelIndex() const { return isValid() ? submodel_num : -1; }
 bool submodel_h::isValid() const
 {
-	return model != nullptr && submodel_num >= 0 && submodel_num < model->n_models;
+	if (model_num >= 0 && submodel_num >= 0)
+	{
+		auto model = model_get(model_num);
+		if (model != nullptr && submodel_num < model->n_models)
+			return true;
+	}
+	return false;
 }
 
+
+ADE_FUNC(__eq, l_Model, "model, model", "Checks if two model handles refer to the same model", "boolean", "True if models are equal")
+{
+	model_h* mdl1;
+	model_h* mdl2;
+
+	if (!ade_get_args(L, "oo", l_Model.GetPtr(&mdl1), l_Model.GetPtr(&mdl2)))
+		return ADE_RETURN_NIL;
+
+	if (mdl1->GetID() == mdl2->GetID())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_FUNC(__eq, l_Submodel, "submodel, submodel", "Checks if two submodel handles refer to the same submodel", "boolean", "True if submodels are equal")
+{
+	submodel_h* smh1;
+	submodel_h* smh2;
+
+	if (!ade_get_args(L, "oo", l_Submodel.GetPtr(&smh1), l_Submodel.GetPtr(&smh2)))
+		return ADE_RETURN_NIL;
+
+	if (smh1->GetModelID() == smh2->GetModelID() && smh1->GetSubmodelIndex() == smh2->GetSubmodelIndex())
+		return ADE_RETURN_TRUE;
+
+	return ADE_RETURN_FALSE;
+}
 
 ADE_VIRTVAR(Submodels, l_Model, nullptr, "Model submodels", "submodels", "Model submodels, or an invalid submodels handle if the model handle is invalid")
 {
@@ -77,80 +102,87 @@ ADE_VIRTVAR(Submodels, l_Model, nullptr, "Model submodels", "submodels", "Model 
 		return ade_set_error(L, "o", l_ModelSubmodels.Set(model_h()));
 
 	if (ADE_SETTING_VAR)
-		LuaError(L, "Attempt to use Incomplete Feature: Modelsubmodels copy");
+		LuaError(L, "Assigning submodels is not supported");
 
 	return ade_set_args(L, "o", l_ModelSubmodels.Set(model_h(pm)));
 }
 
 ADE_VIRTVAR(Textures, l_Model, nullptr, "Model textures", "textures", "Model textures, or an invalid textures handle if the model handle is invalid")
 {
-	model_h *mdl = NULL;
-	model_h *oth = NULL;
-	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_ModelTextures.GetPtr(&oth)))
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_ModelTextures.Set(model_h()));
 
 	polymodel *pm = mdl->Get();
-	if(pm == NULL)
+	if (!pm)
 		return ade_set_error(L, "o", l_ModelTextures.Set(model_h()));
 
-	if(ADE_SETTING_VAR && oth && oth->isValid()) {
-		//WMC TODO: Copy code
-		LuaError(L, "Attempt to use Incomplete Feature: Modeltextures copy");
-	}
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning textures is not supported");
 
 	return ade_set_args(L, "o", l_ModelTextures.Set(model_h(pm)));
 }
 
 ADE_VIRTVAR(Thrusters, l_Model, nullptr, "Model thrusters", "thrusters", "Model thrusters, or an invalid thrusters handle if the model handle is invalid")
 {
-	model_h *mdl = NULL;
-	model_h *oth = NULL;
-	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_ModelThrusters.GetPtr(&oth)))
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_ModelThrusters.Set(model_h()));
 
 	polymodel *pm = mdl->Get();
-	if(pm == NULL)
+	if (!pm)
 		return ade_set_error(L, "o", l_ModelThrusters.Set(model_h()));
 
-	if(ADE_SETTING_VAR && oth && oth->isValid()) {
-		LuaError(L, "Attempt to use Incomplete Feature: Thrusters copy");
-	}
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning thrusters is not supported");
 
 	return ade_set_args(L, "o", l_ModelThrusters.Set(model_h(pm)));
 }
 
+ADE_VIRTVAR(GlowPointBanks, l_Model, nullptr, "Model glow point banks", "glowpointbanks", "Model glow point banks, or an invalid glowpointbanks handle if the model handle is invalid")
+{
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
+		return ade_set_error(L, "o", l_ModelGlowpointbanks.Set(model_h()));
+
+	polymodel *pm = mdl->Get();
+	if (!pm)
+		return ade_set_error(L, "o", l_ModelGlowpointbanks.Set(model_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning glow point banks is not supported");
+
+	return ade_set_args(L, "o", l_ModelGlowpointbanks.Set(model_h(pm)));
+}
+
 ADE_VIRTVAR(Eyepoints, l_Model, nullptr, "Model eyepoints", "eyepoints", "Array of eyepoints, or an invalid eyepoints handle if the model handle is invalid")
 {
-	model_h *mdl = NULL;
-	model_h *eph = NULL;
-	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_ModelEyepoints.GetPtr(&eph)))
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_ModelEyepoints.Set(model_h()));
 
 	polymodel *pm = mdl->Get();
-	if(pm == NULL)
+	if (!pm)
 		return ade_set_error(L, "o", l_ModelEyepoints.Set(model_h()));
 
-	if(ADE_SETTING_VAR && eph && eph->isValid()) {
-		LuaError(L, "Attempt to use Incomplete Feature: Eyepoints copy");
-	}
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning eye points is not supported");
 
 	return ade_set_args(L, "o", l_ModelEyepoints.Set(model_h(pm)));
 }
 
 ADE_VIRTVAR(Dockingbays, l_Model, nullptr, "Model docking bays", "dockingbays", "Array of docking bays, or an invalid dockingbays handle if the model handle is invalid")
 {
-	model_h *mdl = NULL;
-	model_h *dbh = NULL;
-	if(!ade_get_args(L, "o|o", l_Model.GetPtr(&mdl), l_ModelDockingbays.GetPtr(&dbh)))
+	model_h *mdl = nullptr;
+	if (!ade_get_args(L, "o", l_Model.GetPtr(&mdl)))
 		return ade_set_error(L, "o", l_ModelDockingbays.Set(model_h()));
 
 	polymodel *pm = mdl->Get();
-	if(pm == NULL)
+	if (!pm)
 		return ade_set_error(L, "o", l_ModelDockingbays.Set(model_h()));
 
-	if(ADE_SETTING_VAR && dbh && dbh->isValid()) {
-		LuaError(L, "Attempt to use Incomplete Feature: Docking bays copy");
-	}
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning docking bays is not supported");
 
 	return ade_set_args(L, "o", l_ModelDockingbays.Set(model_h(pm)));
 }
@@ -527,11 +559,7 @@ ADE_FUNC(__len, l_ModelSubmodels, nullptr, "Number of submodels on model", "numb
 	if (!ade_get_args(L, "o", l_ModelSubmodels.GetPtr(&msh)))
 		return ade_set_error(L, "i", 0);
 
-	if (!msh->isValid())
-		return ade_set_error(L, "i", 0);
-
 	polymodel *pm = msh->Get();
-
 	if (!pm)
 		return ade_set_error(L, "i", 0);
 
@@ -542,10 +570,15 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 {
 	model_h *msh = nullptr;
 	int index = -1;
+	polymodel *pm = nullptr;
 
 	if (lua_isnumber(L, 2))
 	{
 		if (!ade_get_args(L, "oi", l_ModelSubmodels.GetPtr(&msh), &index))
+			return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+		pm = msh->Get();
+		if (!pm)
 			return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
 		index--; // Lua --> C/C++
@@ -557,16 +590,18 @@ ADE_INDEXER(l_ModelSubmodels, "submodel", "number|string IndexOrName", "submodel
 		if (!ade_get_args(L, "os", l_ModelSubmodels.GetPtr(&msh), &name))
 			return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
 
-		index = model_find_submodel_index(msh->GetID(), name);
+		pm = msh->Get();
+		if (!pm)
+			return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+		index = model_find_submodel_index(pm->id, name);
 	}
-
-	if (!msh->isValid())
-		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
-
-	polymodel *pm = msh->Get();
 
 	if (index < 0 || index >= pm->n_models)
 		return ade_set_error(L, "o", l_Submodel.Set(submodel_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting submodels is not supported");
 
 	return ade_set_args(L, "o", l_Submodel.Set(submodel_h(pm, index)));
 }
@@ -587,18 +622,14 @@ ADE_OBJ(l_ModelTextures, model_h, "textures", "Array of textures");
 ADE_FUNC(__len, l_ModelTextures, NULL, "Number of textures on model", "number", "Number of model textures")
 {
 	model_h *mth;
-	if(!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
-		return ade_set_error(L, "i", 0);
-
-	if(!mth->isValid())
+	if (!ade_get_args(L, "o", l_ModelTextures.GetPtr(&mth)))
 		return ade_set_error(L, "i", 0);
 
 	polymodel *pm = mth->Get();
-
-	if(pm == NULL)
+	if (!pm)
 		return ade_set_error(L, "i", 0);
 
-	return ade_set_args(L, "i", TM_NUM_TYPES*pm->n_textures);
+	return ade_set_args(L, "i", TM_NUM_TYPES * pm->n_textures);
 }
 
 ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "texture", "Model textures, or invalid modeltextures handle if model handle is invalid")
@@ -611,8 +642,7 @@ ADE_INDEXER(l_ModelTextures, "texture", "number Index/string TextureName", "text
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	polymodel *pm = mth->Get();
-
-	if (!mth->isValid() || s == NULL || pm == NULL)
+	if (s == nullptr || pm == nullptr)
 		return ade_set_error(L, "o", l_Texture.Set(texture_h()));
 
 	texture_info *tinfo = NULL;
@@ -667,63 +697,37 @@ ADE_OBJ(l_ModelEyepoints, model_h, "eyepoints", "Array of model eye points");
 
 ADE_FUNC(__len, l_ModelEyepoints, NULL, "Gets the number of eyepoints on this model", "number", "Number of eyepoints on this model or 0 on error")
 {
-	model_h *eph = NULL;
+	model_h *eph = nullptr;
 	if (!ade_get_args(L, "o", l_ModelEyepoints.GetPtr(&eph)))
-	{
 		return ade_set_error(L, "i", 0);
-	}
-
-	if (!eph->isValid())
-	{
-		return ade_set_error(L, "i", 0);
-	}
 
 	polymodel *pm = eph->Get();
-
-	if (pm == NULL)
-	{
+	if (!pm)
 		return ade_set_error(L, "i", 0);
-	}
 
 	return ade_set_args(L, "i", pm->n_view_positions);
 }
 
 ADE_INDEXER(l_ModelEyepoints, "eyepoint", "Gets an eyepoint handle", "eyepoint", "eye handle or invalid handle on error")
 {
-	model_h *eph = NULL;
+	model_h *mdl = nullptr;
 	int index = -1;
-	eye_h *eh = NULL;
 
-	if (!ade_get_args(L, "oi|o", l_ModelEyepoints.GetPtr(&eph), &index, l_Eyepoint.GetPtr(&eh)))
-	{
+	if (!ade_get_args(L, "oi", l_ModelEyepoints.GetPtr(&mdl), &index))
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
-	}
 
-	if (!eph->isValid())
-	{
+	polymodel *pm = mdl->Get();
+	if (!pm)
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
-	}
-
-	polymodel *pm = eph->Get();
-
-	if (pm == NULL)
-	{
-		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
-	}
 
 	index--; // Lua -> FS2
-
 	if (index < 0 || index >= pm->n_view_positions)
-	{
 		return ade_set_error(L, "o", l_Eyepoint.Set(eye_h()));
-	}
 
-	if (ADE_SETTING_VAR && eh && eh->isValid())
-	{
-		LuaError(L, "Attempted to use incomplete feature: Eyepoint copy");
-	}
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning eye points is not supported");
 
-	return ade_set_args(L, "o", l_Eyepoint.Set(eye_h(eph->GetID(), index)));
+	return ade_set_args(L, "o", l_Eyepoint.Set(eye_h(pm->id, index)));
 }
 
 ADE_FUNC(isValid, l_ModelEyepoints, NULL, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
@@ -740,16 +744,12 @@ ADE_OBJ(l_ModelThrusters, model_h, "thrusters", "The thrusters of a model");
 
 ADE_FUNC(__len, l_ModelThrusters, NULL, "Number of thruster banks on the model", "number", "Number of thrusterbanks")
 {
-	model_h *trh;
-	if(!ade_get_args(L, "o", l_ModelThrusters.GetPtr(&trh)))
+	model_h *mdl;
+	if (!ade_get_args(L, "o", l_ModelThrusters.GetPtr(&mdl)))
 		return ade_set_error(L, "i", -1);
 
-	if(!trh->isValid())
-		return ade_set_error(L, "i", -1);
-
-	polymodel *pm = trh->Get();
-
-	if(pm == NULL)
+	polymodel *pm = mdl->Get();
+	if (!pm)
 		return ade_set_error(L, "i", -1);
 
 	return ade_set_args(L, "i", pm->n_thrusters);
@@ -757,35 +757,24 @@ ADE_FUNC(__len, l_ModelThrusters, NULL, "Number of thruster banks on the model",
 
 ADE_INDEXER(l_ModelThrusters, "number Index", "Array of all thrusterbanks on this thruster", "thrusterbank", "Handle to the thrusterbank or invalid handle if index is invalid")
 {
-	model_h *trh = NULL;
-	const char* s    = nullptr;
-	thrusterbank_h newThr;
+	model_h *mdl = nullptr;
+	int idx = -1;
 
-	if (!ade_get_args(L, "os|o", l_ModelThrusters.GetPtr(&trh), &s, l_Thrusterbank.Get(&newThr)))
+	if (!ade_get_args(L, "oi", l_ModelThrusters.GetPtr(&mdl), &idx))
 		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
 
-	polymodel *pm = trh->Get();
-
-	if (!trh->isValid() || s == NULL || pm == NULL)
+	polymodel *pm = mdl->Get();
+	if (!pm)
 		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
 
-	//Determine index
-	int idx = atoi(s) - 1;	//Lua->FS2
-
+	idx--;	//Lua->FS2
 	if (idx < 0 || idx >= pm->n_thrusters)
 		return ade_set_error(L, "o", l_Thrusterbank.Set(thrusterbank_h()));
 
-	thruster_bank* bank = &pm->thrusters[idx];
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning thruster banks is not supported");
 
-	if (ADE_SETTING_VAR && trh != NULL)
-	{
-		if (newThr.isValid())
-		{
-			pm->thrusters[idx] = *(newThr.Get());
-		}
-	}
-
-	return ade_set_args(L, "o", l_Thrusterbank.Set(bank));
+	return ade_set_args(L, "o", l_Thrusterbank.Set(thrusterbank_h(pm->id, idx)));
 }
 
 ADE_FUNC(isValid, l_ModelThrusters, NULL, "Detects whether handle is valid", "boolean", "true if valid, false if handle is invalid, nil if a syntax/type error occurs")
@@ -800,20 +789,28 @@ ADE_FUNC(isValid, l_ModelThrusters, NULL, "Detects whether handle is valid", "bo
 //**********HANDLE: thrusterbank
 ADE_OBJ(l_Thrusterbank, thrusterbank_h, "thrusterbank", "A model thrusterbank");
 
-thrusterbank_h::thrusterbank_h() {
-	bank = NULL;
-}
-thrusterbank_h::thrusterbank_h(thruster_bank* ba) {
-	bank = ba;
-}
-thruster_bank* thrusterbank_h::Get() const {
+thrusterbank_h::thrusterbank_h(int in_model_num, int in_thrusterbank_index)
+	: modelh(in_model_num), thrusterbank_index(in_thrusterbank_index)
+{}
+thrusterbank_h::thrusterbank_h()
+	: modelh(), thrusterbank_index(-1)
+{}
+thruster_bank* thrusterbank_h::Get() const
+{
 	if (!isValid())
-		return NULL;
+		return nullptr;
 
-	return bank;
+	// coverity[returned_null:FALSE] - isValid() specifically checks for modelh.Get() returning null
+	return &modelh.Get()->thrusters[thrusterbank_index];
 }
-bool thrusterbank_h::isValid() const {
-	return bank != NULL;
+bool thrusterbank_h::isValid() const
+{
+	if (thrusterbank_index < 0)
+		return false;
+	auto model = modelh.Get();
+	if (!model)
+		return false;
+	return thrusterbank_index < model->n_thrusters;
 }
 
 ADE_FUNC(__len, l_Thrusterbank, NULL, "Number of thrusters on this thrusterbank", "number", "Number of thrusters on this bank or 0 if handle is invalid")
@@ -832,38 +829,27 @@ ADE_FUNC(__len, l_Thrusterbank, NULL, "Number of thrusters on this thrusterbank"
 
 ADE_INDEXER(l_Thrusterbank, "number Index", "Array of glowpoint", "glowpoint", "Glowpoint, or invalid glowpoint handle on failure")
 {
-	thrusterbank_h *tbh = NULL;
-	const char* s       = nullptr;
-	glowpoint_h *glh = NULL;
+	thrusterbank_h *tbh = nullptr;
+	int idx = -1;
 
-	if (!ade_get_args(L, "os|o", l_Thrusterbank.GetPtr(&tbh), &s, l_Glowpoint.GetPtr(&glh)))
-		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
-
-	if (!tbh->isValid() || s==NULL)
+	if (!ade_get_args(L, "oi", l_Thrusterbank.GetPtr(&tbh), &idx))
 		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
 
 	thruster_bank* bank = tbh->Get();
+	if (!bank)
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
 
-	//Determine index
-	int idx = atoi(s) - 1;	//Lua->FS2
-
+	idx--; // Lua -> FS2
 	if (idx < 0 || idx >= bank->num_points)
 		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
 
-	glow_point* glp = &bank->points[idx];
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning glow points is not supported");
 
-	if (ADE_SETTING_VAR && glh != NULL)
-	{
-		if (glh->isValid())
-		{
-			bank->points[idx] = *(glh->Get());
-		}
-	}
-
-	return ade_set_args(L, "o", l_Glowpoint.Set(glp));
+	return ade_set_args(L, "o", l_Glowpoint.Set(glowpoint_h(tbh->modelh.GetID(), -1, tbh->thrusterbank_index, idx)));
 }
 
-ADE_FUNC(isValid, l_Thrusterbank, NULL, "Detectes if this handle is valid", "boolean", "true if this handle is valid, false otherwise")
+ADE_FUNC(isValid, l_Thrusterbank, nullptr, "Detects if this handle is valid", "boolean", "true if this handle is valid, false otherwise")
 {
 	thrusterbank_h* trh;
 	if(!ade_get_args(L, "o", l_Thrusterbank.GetPtr(&trh)))
@@ -875,69 +861,231 @@ ADE_FUNC(isValid, l_Thrusterbank, NULL, "Detectes if this handle is valid", "boo
 	return ade_set_args(L, "b", trh->isValid());
 }
 
+//**********HANDLE: glow point banks
+ADE_OBJ(l_ModelGlowpointbanks, model_h, "glowpointbanks", "Array of model glow point banks");
+
+ADE_FUNC(__len, l_ModelGlowpointbanks, nullptr, "Gets the number of glow point banks on this model", "number", "Number of glow point banks on this model or 0 on error")
+{
+	model_h *modelh = nullptr;
+	if (!ade_get_args(L, "o", l_ModelGlowpointbanks.GetPtr(&modelh)))
+		return ade_set_error(L, "i", 0);
+
+	polymodel *pm = modelh->Get();
+	if (!pm)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", pm->n_glow_point_banks);
+}
+
+ADE_INDEXER(l_ModelGlowpointbanks, "glowpointbank", "Gets a glow point bank handle", "glowpointbank", "glowpointbank handle or invalid handle on error")
+{
+	model_h *modelh = nullptr;
+	int index = -1;
+
+	if (!ade_get_args(L, "oi", l_ModelGlowpointbanks.GetPtr(&modelh), &index))
+		return ade_set_error(L, "o", l_Glowpointbank.Set(glowpointbank_h()));
+
+	polymodel *pm = modelh->Get();
+	if (!pm)
+		return ade_set_error(L, "o", l_Glowpointbank.Set(glowpointbank_h()));
+
+	index--; // Lua -> FS2
+	if (index < 0 || index >= pm->n_glow_point_banks)
+		return ade_set_error(L, "o", l_Glowpointbank.Set(glowpointbank_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning glow point banks is not supported");
+
+	return ade_set_args(L, "o", l_Glowpointbank.Set(glowpointbank_h(pm->id, index)));
+}
+
+ADE_FUNC(isValid, l_ModelGlowpointbanks, nullptr, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
+{
+	model_h *modelh;
+	if(!ade_get_args(L, "o", l_ModelGlowpointbanks.GetPtr(&modelh)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", modelh->isValid());
+}
+
+//**********HANDLE: glow point bank
+ADE_OBJ(l_Glowpointbank, glowpointbank_h, "glowpointbank", "A model glow point bank");
+
+glowpointbank_h::glowpointbank_h(int in_model_num, int in_glowpointbank_index)
+	: modelh(in_model_num), glowpointbank_index(in_glowpointbank_index)
+{}
+glowpointbank_h::glowpointbank_h()
+	: modelh(), glowpointbank_index(-1)
+{}
+glow_point_bank* glowpointbank_h::Get() const
+{
+	if (!isValid())
+		return nullptr;
+
+	// coverity[returned_null:FALSE] - isValid() specifically checks for modelh.Get() returning null
+	return &modelh.Get()->glow_point_banks[glowpointbank_index];
+}
+bool glowpointbank_h::isValid() const
+{
+	if (glowpointbank_index < 0)
+		return false;
+	auto model = modelh.Get();
+	if (!model)
+		return false;
+	return glowpointbank_index < model->n_glow_point_banks;
+}
+
+ADE_FUNC(__len, l_Glowpointbank, nullptr, "Gets the number of glow points in this bank", "number", "Number of glow points in this bank or 0 on error")
+{
+	glowpointbank_h *gpbh = nullptr;
+	if (!ade_get_args(L, "o", l_Glowpointbank.GetPtr(&gpbh)))
+		return ade_set_error(L, "i", 0);
+
+	auto gpb = gpbh->Get();
+	if (!gpb)
+		return ade_set_error(L, "i", 0);
+
+	return ade_set_args(L, "i", gpb->num_points);
+}
+
+ADE_INDEXER(l_Glowpointbank, "glowpoint", "Gets a glow point handle", "glowpoint", "glowpoint handle or invalid handle on error")
+{
+	glowpointbank_h *gpbh = nullptr;
+	int index = -1;
+
+	if (!ade_get_args(L, "oi", l_Glowpointbank.GetPtr(&gpbh), &index))
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+
+	auto gpb = gpbh->Get();
+	if (!gpb)
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+
+	index--; // Lua -> FS2
+	if (index < 0 || index >= gpb->num_points)
+		return ade_set_error(L, "o", l_Glowpoint.Set(glowpoint_h()));
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning glow points is not supported");
+
+	return ade_set_args(L, "o", l_Glowpoint.Set(glowpoint_h(gpbh->modelh.GetID(), gpbh->glowpointbank_index, -1, index)));
+}
+
+// **********
+// NOTE: Any fields or functions of glowpointbank will need to take glowpoint_bank_overrides into account
+// **********
+
+ADE_FUNC(isValid, l_Glowpointbank, nullptr, "Detects whether handle is valid or not", "boolean", "true if valid false otherwise")
+{
+	glowpointbank_h* gpbh = nullptr;
+	if (!ade_get_args(L, "o", l_Glowpointbank.GetPtr(&gpbh)))
+		return ADE_RETURN_FALSE;
+
+	return ade_set_args(L, "b", gpbh->isValid());
+}
+
 //**********HANDLE: glowpoint
 ADE_OBJ(l_Glowpoint, glowpoint_h, "glowpoint", "A model glowpoint");
 
-glowpoint_h::glowpoint_h() {
-}
-glowpoint_h::glowpoint_h(glow_point* np) {
-	point = np;
-}
-glow_point* glowpoint_h::Get() const {
-	if (!isValid())
-		return NULL;
+glowpoint_h::glowpoint_h(int in_model_num, int in_glowpointbank_index, int in_thrusterbank_index, int in_glowpoint_index)
+	: glowpointbankh(in_model_num, in_glowpointbank_index), thrusterbankh(in_model_num, in_thrusterbank_index), glowpoint_index(in_glowpoint_index)
+{}
+glowpoint_h::glowpoint_h()
+	: glowpoint_h(-1, -1, -1, -1)
+{}
+glow_point* glowpoint_h::Get() const
+{
+	if (glowpoint_index < 0)
+		return nullptr;
 
-	return point;
+	auto gbank = glowpointbankh.Get();
+	if (gbank)
+	{
+		if (glowpoint_index < gbank->num_points)
+			return &gbank->points[glowpoint_index];
+		else
+			return nullptr;
+	}
+	auto tbank = thrusterbankh.Get();
+	if (tbank)
+	{
+		if (glowpoint_index < tbank->num_points)
+			return &tbank->points[glowpoint_index];
+		else
+			return nullptr;
+	}
+
+	return nullptr;
 }
-bool glowpoint_h::isValid() const {
-	return point != NULL;
+bool glowpoint_h::isValid() const
+{
+	if (glowpoint_index < 0)
+		return false;
+
+	auto gbank = glowpointbankh.Get();
+	if (gbank)
+		return (glowpoint_index < gbank->num_points);
+
+	auto tbank = thrusterbankh.Get();
+	if (tbank)
+		return (glowpoint_index < tbank->num_points);
+
+	return false;
 }
 
 ADE_VIRTVAR(Position, l_Glowpoint, nullptr, "The (local) vector to the position of the glowpoint", "vector", "The local vector to the glowpoint or nil if invalid")
 {
-	glowpoint_h *glh = NULL;
-	vec3d newVec;
+	glowpoint_h *glh = nullptr;
 
-	if(!ade_get_args(L, "o|o", l_Glowpoint.GetPtr(&glh), l_Vector.Get(&newVec)))
+	if (!ade_get_args(L, "o", l_Glowpoint.GetPtr(&glh)))
 		return ADE_RETURN_NIL;
 
-	if (!glh->isValid())
+	auto point = glh->Get();
+	if (!point)
 		return ADE_RETURN_NIL;
-
-	vec3d vec = glh->point->pnt;
 
 	if (ADE_SETTING_VAR)
-	{
-		glh->point->pnt = newVec;
-	}
+		LuaError(L, "This property is read-only");
 
-	return ade_set_args(L, "o", l_Vector.Set(vec));
+	return ade_set_args(L, "o", l_Vector.Set(point->pnt));
+}
+
+ADE_VIRTVAR(Normal, l_Glowpoint, nullptr, "The normal of the glowpoint", "vector", "The normal of the glowpoint or nil if invalid")
+{
+	glowpoint_h *glh = nullptr;
+
+	if (!ade_get_args(L, "o", l_Glowpoint.GetPtr(&glh)))
+		return ADE_RETURN_NIL;
+
+	auto point = glh->Get();
+	if (!point)
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "This property is read-only");
+
+	return ade_set_args(L, "o", l_Vector.Set(point->norm));
 }
 
 ADE_VIRTVAR(Radius, l_Glowpoint, nullptr, "The radius of the glowpoint", "number", "The radius of the glowpoint or -1 if invalid")
 {
-	glowpoint_h* glh = NULL;
-	float newVal;
+	glowpoint_h* glh = nullptr;
 
-	if(!ade_get_args(L, "o|f", l_Glowpoint.GetPtr(&glh), &newVal))
+	if (!ade_get_args(L, "o", l_Glowpoint.GetPtr(&glh)))
 		return ade_set_error(L, "f", -1.0f);
 
-	if (!glh->isValid())
+	auto point = glh->Get();
+	if (!point)
 		return ade_set_error(L, "f", -1.0f);
-
-	float radius = glh->point->radius;
 
 	if (ADE_SETTING_VAR)
-	{
-		glh->point->radius = newVal;
-	}
+		LuaError(L, "This property is read-only");
 
-	return ade_set_args(L, "f", radius);
+	return ade_set_args(L, "f", point->radius);
 }
 
 ADE_FUNC(isValid, l_Glowpoint, NULL, "Returns whether this handle is valid or not", "boolean", "True if handle is valid, false otherwise")
 {
-	glowpoint_h glh = NULL;
+	glowpoint_h glh;
 
 	if(!ade_get_args(L, "o", l_Glowpoint.Get(&glh)))
 		return ADE_RETURN_FALSE;
@@ -950,16 +1098,17 @@ ADE_OBJ(l_ModelDockingbays, model_h, "dockingbays", "The docking bays of a model
 
 ADE_INDEXER(l_ModelDockingbays, "dockingbay", "Gets a dockingbay handle from this model. If a string is given then a dockingbay with that name is searched.", "dockingbay", "Handle or invalid handle on error")
 {
-	model_h *dbhp = NULL;
+	model_h *dbhp = nullptr;
 	int index = -1;
-	dockingbay_h *newVal = NULL;
+	polymodel *pm = nullptr;
 
 	if (lua_isnumber(L, 2))
 	{
-		if (!ade_get_args(L, "oi|o", l_ModelDockingbays.GetPtr(&dbhp), &index, l_Dockingbay.GetPtr(&newVal)))
+		if (!ade_get_args(L, "oi", l_ModelDockingbays.GetPtr(&dbhp), &index))
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
-		if (!dbhp->isValid())
+		pm = dbhp->Get();
+		if (!pm)
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
 		index--; // Lua --> C/C++
@@ -968,23 +1117,21 @@ ADE_INDEXER(l_ModelDockingbays, "dockingbay", "Gets a dockingbay handle from thi
 	{
 		const char* name = nullptr;
 
-		if (!ade_get_args(L, "os|o", l_ModelDockingbays.GetPtr(&dbhp), &name, l_Dockingbay.GetPtr(&newVal)))
-		{
-			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
-		}
-
-		if (!dbhp->isValid() && name != NULL)
+		if (!ade_get_args(L, "os", l_ModelDockingbays.GetPtr(&dbhp), &name))
 			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
 
-		index = model_find_dock_name_index(dbhp->GetID(), name);
+		pm = dbhp->Get();
+		if (!pm || !name)
+			return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
+
+		index = model_find_dock_name_index(pm->id, name);
 	}
-
-	polymodel *pm = dbhp->Get();
 
 	if (index < 0 || index >= pm->n_docks)
-	{
 		return ade_set_error(L, "o", l_Dockingbay.Set(dockingbay_h()));
-	}
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Assigning docking bays is not supported");
 
 	return ade_set_args(L, "o", l_Dockingbay.Set(dockingbay_h(pm, index)));
 }
@@ -999,6 +1146,7 @@ ADE_FUNC(__len, l_ModelDockingbays, NULL, "Retrieves the number of dockingbays o
 	if (!dbhp->isValid())
 		return ade_set_error(L, "i", 0);
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return ade_set_args(L, "i", dbhp->Get()->n_docks);
 }
 
@@ -1012,6 +1160,7 @@ bool dockingbay_h::isValid() const
 	if (!modelh.isValid())
 		return false;
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return dock_id >= 0 && dock_id < modelh.Get()->n_docks;
 }
 dock_bay* dockingbay_h::getDockingBay() const
@@ -1019,6 +1168,7 @@ dock_bay* dockingbay_h::getDockingBay() const
 	if (!isValid())
 		return nullptr;
 
+	// coverity[returned_null:FALSE] - isValid() specifically checks for model_get() returning null
 	return &modelh.Get()->docking_bays[dock_id];
 }
 
@@ -1145,10 +1295,10 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 	vm_vec_avg(&docker_dock_pos_local, &docker_bay->pnt[0], &docker_bay->pnt[1]);
 
 	// Get the up-vector of the docking bay
-	vm_vec_sub(&dock_up_dir, &dockee_bay->pnt[1], &dockee_bay->pnt[0]);
+	vm_vec_normalized_dir(&dock_up_dir, &dockee_bay->pnt[1], &dockee_bay->pnt[0]);
 
 	// Compute the orientation
-	vm_vector_2_matrix(&final_orient, &dockee_bay->norm[0], &dock_up_dir, NULL);
+	vm_vector_2_matrix_norm(&final_orient, &dockee_bay->norm[0], &dock_up_dir, nullptr);
 
 	// Rotate the docker position into the right orientation
 	vm_vec_unrotate(&docker_dock_pos, &docker_dock_pos_local, &final_orient);
@@ -1162,16 +1312,16 @@ ADE_FUNC(computeDocker, l_Dockingbay, "dockingbay",
 	return ade_set_args(L, "oo", l_Vector.Set(final_pos),l_Matrix.Set(matrix_h(&final_orient)));
 }
 
-ADE_FUNC(isValid, l_Dockingbay, NULL, "Detects whether is valid or not", "number", "<i>true</i> if valid, <i>false</i> otherwise")
+ADE_FUNC(isValid, l_Dockingbay, nullptr, "Detects whether is valid or not", "boolean", "true if valid, false otherwise")
 {
-	dockingbay_h* dbh = NULL;
+	dockingbay_h* dbh = nullptr;
 
 	if (!ade_get_args(L, "o", l_Dockingbay.GetPtr(&dbh)))
 	{
 		return ADE_RETURN_FALSE;
 	}
 
-	if (dbh == NULL)
+	if (dbh == nullptr)
 	{
 		return ADE_RETURN_FALSE;
 	}

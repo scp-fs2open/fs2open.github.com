@@ -130,6 +130,8 @@ void gr_opengl_flip()
 	if (Cmdline_gl_finish)
 		glFinish();
 
+	Assertion(GL_state.ValidForFlip(), "OpenGL state is invalid!");
+
 	current_viewport->swapBuffers();
 
 	opengl_tcache_frame();
@@ -278,7 +280,11 @@ void gr_opengl_print_screen(const char *filename)
 
     _mkdir(os_get_config_path("screenshots").c_str());
 
-//	glReadBuffer(GL_FRONT);
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
+
+	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
+	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
 	// now for the data
 	if (Use_PBOs) {
@@ -292,7 +298,6 @@ void gr_opengl_print_screen(const char *filename)
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
 		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
-		glReadBuffer(GL_FRONT);
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
@@ -319,6 +324,8 @@ void gr_opengl_print_screen(const char *filename)
 		glDeleteBuffers(1, &pbo);
 	}
 
+	GL_state.PopFramebufferState();
+
 	if (pixels != NULL) {
 		vm_free(pixels);
 	}
@@ -328,6 +335,23 @@ SCP_string gr_opengl_blob_screen()
 {
 	GLubyte* pixels = nullptr;
 	GLuint pbo = 0;
+
+	GL_state.PushFramebufferState();
+
+	GLuint source_fbo = 0;
+
+	GLuint render_target = opengl_get_rtt_framebuffer();
+	if (render_target != 0) {
+		source_fbo = render_target;
+	}
+	else if (Cmdline_window_res) {
+		source_fbo = Back_framebuffer;
+	}
+
+	GL_state.BindFrameBuffer(source_fbo, GL_FRAMEBUFFER);
+
+	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
+	glReadBuffer(source_fbo != 0 ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
 	// now for the data
 	if (Use_PBOs) {
@@ -341,7 +365,6 @@ SCP_string gr_opengl_blob_screen()
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, pbo);
 		glBufferData(GL_PIXEL_PACK_BUFFER, (gr_screen.max_w * gr_screen.max_h * 4), NULL, GL_STATIC_READ);
 
-		glReadBuffer(GL_FRONT);
 		glReadPixels(0, 0, gr_screen.max_w, gr_screen.max_h, GL_RGBA, GL_UNSIGNED_INT_8_8_8_8_REV, NULL);
 
 		// map the image data so that we can save it to file
@@ -366,6 +389,8 @@ SCP_string gr_opengl_blob_screen()
 		glBindBuffer(GL_PIXEL_PACK_BUFFER, 0);
 		glDeleteBuffers(1, &pbo);
 	}
+
+	GL_state.PopFramebufferState();
 
 	if (pixels != nullptr) {
 		vm_free(pixels);
@@ -618,7 +643,7 @@ void gr_opengl_get_region(int  /*front*/, int w, int h, ubyte *data)
 
 }
 
-int gr_opengl_save_screen()
+int  gr_opengl_save_screen()
 {
 	int i;
 	ubyte *sptr = NULL, *dptr = NULL;
@@ -640,7 +665,12 @@ int gr_opengl_save_screen()
 	}
 
 	GLboolean save_state = GL_state.DepthTest(GL_FALSE);
-	glReadBuffer(GL_FRONT_LEFT);
+
+	GL_state.PushFramebufferState();
+	GL_state.BindFrameBuffer(Cmdline_window_res ? Back_framebuffer : 0, GL_FRAMEBUFFER);
+
+	//Reading from the front buffer here seems to no longer work correctly; that just reads back all zeros
+	glReadBuffer(Cmdline_window_res ? GL_COLOR_ATTACHMENT0 : GL_FRONT);
 
 	if ( Use_PBOs ) {
 		GLubyte *pixels = NULL;
@@ -713,6 +743,7 @@ int gr_opengl_save_screen()
 		GL_saved_screen_id = bm_create(32, gr_screen.max_w, gr_screen.max_h, GL_saved_screen, 0);
 	}
 
+	GL_state.PopFramebufferState();
 	GL_state.DepthTest(save_state);
 
 	return GL_saved_screen_id;
@@ -787,10 +818,15 @@ void gr_opengl_zbias(int bias)
 
 void gr_opengl_set_line_width(float width)
 {
-	if (width <= 1.0f) {
-		GL_state.SetLineWidth(width);
+	if (gr_lua_context_active()) {
+		gr_lua_screen.line_width = width;
+	} else {
+		if (width <= 1.0f) {
+			GL_state.SetLineWidth(width);
+		}
+
+		gr_screen.line_width = width;
 	}
-	gr_screen.line_width = width;
 }
 
 int opengl_check_for_errors(const char *err_at)
@@ -875,7 +911,9 @@ int opengl_init_display_device()
 		attrs.title = Window_title;
 	}
 
-	if (Using_in_game_options) {
+	if (Cmdline_enable_vr) {
+		// Force Windowed mode in VR
+	} else if (Using_in_game_options) {
 		switch (Gr_configured_window_state) {
 		case os::ViewportState::Windowed:
 			// That's the default
@@ -1202,9 +1240,6 @@ static bool printNextDebugMessage() {
 #endif
 
 static void init_extensions() {
-	// if S3TC compression is found, then "GL_ARB_texture_compression" must be an extension
-	Use_compressed_textures = GLAD_GL_EXT_texture_compression_s3tc;
-	Texture_compression_available = true;
 	// Swifty put this in, but it's not doing anything. Once he uses it, he can uncomment it.
 	//int use_base_vertex = Is_Extension_Enabled(OGL_ARB_DRAW_ELEMENTS_BASE_VERTEX);
 
@@ -1412,8 +1447,8 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		  GL_max_renderbuffer_size,
 		  GL_max_renderbuffer_size ));
 
-	mprintf(( "  Can use compressed textures: %s\n", Use_compressed_textures ? NOX("YES") : NOX("NO") ));
-	mprintf(( "  Texture compression available: %s\n", Texture_compression_available ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  S3TC texture support: %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO") ));
+	mprintf(( "  BPTC texture support: %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO") ));
 	mprintf(( "  Post-processing enabled: %s\n", (Gr_post_processing_enabled) ? "YES" : "NO"));
 	mprintf(( "  Using %s texture filter.\n", (GL_mipmap_filter) ? NOX("trilinear") : NOX("bilinear") ));
 
@@ -1465,7 +1500,10 @@ bool gr_opengl_is_capable(gr_capability capability)
 		return GLAD_GL_ARB_texture_compression_bptc != 0;
 	case gr_capability::CAPABILITY_LARGE_SHADER:
 		return !Cmdline_no_large_shaders;
+	case gr_capability::CAPABILITY_INSTANCED_RENDERING:
+		return GLAD_GL_ARB_vertex_attrib_binding;
 	}
+
 
 	return false;
 }

@@ -4,17 +4,24 @@
 
 #include "globalincs/pstypes.h"
 #include "particle/ParticleEffect.h"
-#include "particle/ParticleSource.h"
-#include "particle/ParticleSourceWrapper.h"
 #include "utils/id.h"
 
+#include "particle/hosts/EffectHostBeam.h"
+#include "particle/hosts/EffectHostObject.h"
+#include "particle/hosts/EffectHostParticle.h"
+#include "particle/hosts/EffectHostSubmodel.h"
+#include "particle/hosts/EffectHostTurret.h"
+#include "particle/hosts/EffectHostVector.h"
+
+#include "particle/ParticleSource.h"
+
 namespace particle {
-struct particle_effect_tag {
-};
+
 /**
  * The particle index type.
  */
-using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
+
+class ParticleSource;
 
 /**
  * @brief Manages high-level particle effects and sources
@@ -26,7 +33,7 @@ using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
  */
 class ParticleManager {
  private:
-	SCP_vector<std::shared_ptr<ParticleEffect>> m_effects; //!< All parsed effects
+	SCP_vector<SCP_vector<ParticleEffect>> m_effects; //!< All parsed effects
 
 	SCP_vector<ParticleSource> m_sources; //!< The currently active sources
 
@@ -42,6 +49,8 @@ class ParticleManager {
 	 */
 	static std::unique_ptr<ParticleManager> m_manager;
 
+	static void parseConfigFiles();
+
 	/**
 	 * @brief Creates a source and returns a pointer to it
 	 *
@@ -52,7 +61,7 @@ class ParticleManager {
 	 */
 	ParticleSource* createSource();
  public:
-	ParticleManager() {}
+	ParticleManager();
 
 	/**
 	 * @brief Initializes the effect system
@@ -81,13 +90,13 @@ class ParticleManager {
 	 * @param effectID The id of the effect to retrieve
 	 * @return The particle effect pointer, will not be @c nullptr
 	 */
-	inline ParticleEffectPtr getEffect(ParticleEffectHandle effectID)
+	inline const SCP_vector<ParticleEffect>& getEffect(ParticleEffectHandle effectID) const
 	{
 		Assertion(effectID.value() >= 0 &&
 		              effectID.value() < static_cast<ParticleEffectHandle::impl_type>(m_effects.size()),
 		          "Particle effect index " PTRDIFF_T_ARG " is invalid!", effectID.value());
 
-		return m_effects[effectID.value()].get();
+		return m_effects[effectID.value()];
 	}
 
 	/**
@@ -96,7 +105,7 @@ class ParticleManager {
 	 * @note If possible, only call this once and then store the index. The lookup is being done by a sequential search
 	 * which means it's pretty slow.
 	 *
-	 * @param name The name of the effect that is being searchd, may not be empty
+	 * @param name The name of the effect that is being searched, may not be empty
 	 * @return The index of the effect
 	 */
 	ParticleEffectHandle getEffectByName(const SCP_string& name);
@@ -106,7 +115,14 @@ class ParticleManager {
 	 * @param effect The effect to add
 	 * @return The index of the added effect
 	 */
-	ParticleEffectHandle addEffect(ParticleEffectPtr effect);
+	ParticleEffectHandle addEffect(ParticleEffect&& effect);
+
+	/**
+	 * @brief Adds a composite effect
+	 * @param effect The effects of the composite effect to add
+	 * @return The index of the added effect
+	 */
+	ParticleEffectHandle addEffect(SCP_vector<ParticleEffect>&& effect);
 
 	/**
 	 * @brief Does one processing step of the particle manager
@@ -132,22 +148,10 @@ class ParticleManager {
 	 * @param index The index of the effect
 	 * @return A wrapper class which allows access to the created sources
 	 */
-	ParticleSourceWrapper createSource(ParticleEffectHandle index);
+	ParticleSource* createSource(ParticleEffectHandle index);
 };
 
 namespace internal {
-/**
- * @brief Parses an effect element
- *
- * This can either be the name of an existing effect or a new effect which is created in-place. If forcedType is
- * specified then the effect will have the specified type or an error will be generated.
- *
- * @param forcedType The type the effect should have, EffectType::Invalid can be specified for any effect type
- * @param name The name of the created effect, an empty string means no special name
- * @return The index of the added effect
- */
-ParticleEffectHandle parseEffectElement(EffectType forcedType = EffectType::Invalid, const SCP_string& name = "");
-
 /**
  * @brief Utility function for required_string
  *

@@ -288,8 +288,10 @@ add_file_folder("Default files\\\\data\\\\maps"
 )
 
 add_file_folder("Default files\\\\data\\\\scripts"
+	def_files/data/scripts/cfile_include.lua
 	def_files/data/scripts/cfile_require.lua
 	def_files/data/scripts/dkjson.lua
+	def_files/data/scripts/forwarders.lua
 )
 
 add_file_folder("Default files\\\\data\\\\tables"
@@ -391,23 +393,25 @@ add_file_folder("GlobalIncs"
 	globalincs/alphacolors.h
 	globalincs/crashdump.cpp
 	globalincs/crashdump.h
+	globalincs/flagset.h
 	globalincs/fsmemory.h
 	globalincs/globals.h
 	globalincs/linklist.h
 	globalincs/pstypes.h
 	globalincs/safe_strings.cpp
 	globalincs/safe_strings.h
+	globalincs/scp_defines.h
 	globalincs/systemvars.cpp
 	globalincs/systemvars.h
 	globalincs/toolchain.h
+	globalincs/type_traits.h
 	globalincs/undosys.cpp
 	globalincs/undosys.h
 	globalincs/utility.h
 	globalincs/version.cpp
 	globalincs/version.h
+	globalincs/vmallocator.cpp
 	globalincs/vmallocator.h
-	globalincs/scp_defines.h
-	globalincs/flagset.h
 )
 
 IF (WIN32)
@@ -1033,6 +1037,8 @@ add_file_folder("Observer"
 )
 
 add_file_folder("Options"
+	options/default_settings_table.cpp
+	options/default_settings_table.h
 	options/Ingame_Options.cpp
 	options/Ingame_Options.h
 	options/Ingame_Options_internal.h
@@ -1072,6 +1078,8 @@ add_file_folder("Parse"
 	parse/encrypt.h
 	parse/generic_log.cpp
 	parse/generic_log.h
+	parse/md5_hash.cpp
+	parse/md5_hash.h
 	parse/parsehi.cpp
 	parse/parsehi.h
 	parse/parselo.cpp
@@ -1099,38 +1107,45 @@ add_file_folder("Parse\\\\SEXP"
 
 # Particle files
 add_file_folder("Particle"
+	particle/EffectHost.h
 	particle/particle.cpp
 	particle/particle.h
+	particle/ParticleEffect.cpp
 	particle/ParticleEffect.h
 	particle/ParticleManager.cpp
 	particle/ParticleManager.h
+	particle/ParticleParse.cpp
 	particle/ParticleSource.cpp
 	particle/ParticleSource.h
-	particle/ParticleSourceWrapper.cpp
-	particle/ParticleSourceWrapper.h
+	particle/ParticleVolume.h
 )
 
-add_file_folder("Particle\\\\Effects"
-	particle/effects/BeamPiercingEffect.cpp
-	particle/effects/BeamPiercingEffect.h
-	particle/effects/CompositeEffect.cpp
-	particle/effects/CompositeEffect.h
-	particle/effects/ConeShape.h
-	particle/effects/GenericShapeEffect.h
-	particle/effects/ParticleEmitterEffect.cpp
-	particle/effects/ParticleEmitterEffect.h
-	particle/effects/SingleParticleEffect.cpp
-	particle/effects/SingleParticleEffect.h
-	particle/effects/SphereShape.h
-	particle/effects/VolumeEffect.cpp
-	particle/effects/VolumeEffect.h
+add_file_folder("Particle\\\\Hosts"
+	particle/hosts/EffectHostBeam.cpp
+	particle/hosts/EffectHostBeam.h
+	particle/hosts/EffectHostObject.cpp
+	particle/hosts/EffectHostObject.h
+	particle/hosts/EffectHostParticle.cpp
+	particle/hosts/EffectHostParticle.h
+	particle/hosts/EffectHostSubmodel.cpp
+	particle/hosts/EffectHostSubmodel.h
+	particle/hosts/EffectHostTurret.cpp
+	particle/hosts/EffectHostTurret.h
+	particle/hosts/EffectHostVector.cpp
+	particle/hosts/EffectHostVector.h
 )
 
-add_file_folder("Particle\\\\Util"
-	particle/util/EffectTiming.cpp
-	particle/util/EffectTiming.h
-	particle/util/ParticleProperties.cpp
-	particle/util/ParticleProperties.h
+add_file_folder("Particle\\\\Volumes"
+	particle/volumes/ConeVolume.cpp
+	particle/volumes/ConeVolume.h
+	particle/volumes/LegacyAACuboidVolume.cpp
+	particle/volumes/LegacyAACuboidVolume.h
+	particle/volumes/PointVolume.cpp
+	particle/volumes/PointVolume.h
+	particle/volumes/RingVolume.cpp
+	particle/volumes/RingVolume.h
+	particle/volumes/SpheroidVolume.cpp
+	particle/volumes/SpheroidVolume.h
 )
 
 # PcxUtils files
@@ -1143,6 +1158,8 @@ add_file_folder("PcxUtils"
 add_file_folder("Physics"
 	physics/physics.cpp
 	physics/physics.h
+	physics/physics_state.cpp
+	physics/physics_state.h
 )
 
 # PilotFile files
@@ -1160,6 +1177,8 @@ add_file_folder("PilotFile"
 	pilotfile/pilotfile_convert.h
 	pilotfile/plr.cpp
 	pilotfile/plr_convert.cpp
+	pilotfile/plr_hudprefs.cpp
+	pilotfile/plr_hudprefs.h
 )
 
 # Playerman files
@@ -1216,6 +1235,10 @@ add_file_folder("ScpUi"
 	scpui/IncludeNodeHandler.h
 	scpui/rocket_ui.cpp
 	scpui/rocket_ui.h
+	scpui/RocketDecorators.cpp
+	scpui/RocketDecorators.h
+	scpui/RocketDecoratorsInstancer.cpp
+	scpui/RocketDecoratorsInstancer.h
 	scpui/RocketFileInterface.cpp
 	scpui/RocketFileInterface.h
 	scpui/RocketLuaSystemInterface.cpp
@@ -1243,10 +1266,13 @@ add_file_folder("Scripting"
 	scripting/ade_args.h
 	scripting/ade_doc.cpp
 	scripting/ade_doc.h
+	scripting/ade_external_serializer.h
 	scripting/doc_html.cpp
 	scripting/doc_html.h
 	scripting/doc_json.cpp
 	scripting/doc_json.h
+	scripting/doc_luastub.cpp
+	scripting/doc_luastub.h
 	scripting/doc_parser.cpp
 	scripting/doc_parser.h
 	scripting/global_hooks.cpp
@@ -1294,6 +1320,8 @@ add_file_folder("Scripting\\\\Api\\\\Libs"
 	scripting/api/libs/controls.h
 	scripting/api/libs/engine.cpp
 	scripting/api/libs/engine.h
+	scripting/api/libs/globals.cpp
+	scripting/api/libs/globals.h
 	scripting/api/libs/graphics.cpp
 	scripting/api/libs/graphics.h
 	scripting/api/libs/hookvars.cpp
@@ -1343,6 +1371,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/cmd_brief.h
 	scripting/api/objs/cockpit_display.cpp
 	scripting/api/objs/cockpit_display.h
+	scripting/api/objs/comm_order.cpp
+	scripting/api/objs/comm_order.h
 	scripting/api/objs/control_binding.cpp
 	scripting/api/objs/control_binding.h
 	scripting/api/objs/control_config.cpp
@@ -1383,6 +1413,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/gamehelp.h
 	scripting/api/objs/gamestate.cpp
 	scripting/api/objs/gamestate.h
+	scripting/api/objs/goal.cpp
+	scripting/api/objs/goal.h
 	scripting/api/objs/hudconfig.cpp
 	scripting/api/objs/hudconfig.h
 	scripting/api/objs/hudgauge.cpp
@@ -1467,6 +1499,8 @@ add_file_folder("Scripting\\\\Api\\\\Objs"
 	scripting/api/objs/subsystem.h
 	scripting/api/objs/team.cpp
 	scripting/api/objs/team.h
+	scripting/api/objs/team_colors.cpp
+	scripting/api/objs/team_colors.h
 	scripting/api/objs/techroom.cpp
 	scripting/api/objs/techroom.h
 	scripting/api/objs/texture.cpp
@@ -1665,12 +1699,15 @@ add_file_folder("Utils"
 	utils/HeapAllocator.h
 	utils/id.h
 	utils/join_string.h
+	utils/modular_curves.h
 	utils/Random.cpp
 	utils/Random.h
 	utils/RandomRange.h
 	utils/string_utils.cpp
 	utils/string_utils.h
 	utils/strings.h
+	utils/threading.cpp
+	utils/threading.h
 	utils/tuples.h
 	utils/unicode.cpp
 	utils/unicode.h

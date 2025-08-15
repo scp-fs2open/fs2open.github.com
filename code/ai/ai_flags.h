@@ -32,6 +32,8 @@ namespace AI {
 		Unload_primaries,			//	Fire primaries as fast as possible!
 		Trying_unsuccessfully_to_warp,	// Trying to warp, but can't warp at the moment
 		Free_afterburner_use,		// Use afterburners while following waypoints or flying towards objects
+		Waypoints_no_formation,		// wont get into formation when running waypoints as part of a wing
+
 
 		NUM_VALUES
 	};
@@ -41,7 +43,7 @@ namespace AI {
 		Dockee_index_valid,	// when set, index field for dockee is valid
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
 		Subsys_needs_fixup,	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
-		Goal_override,		// paired with AIG_TYPE_DYNAMIC to mean this goal overrides any other goal
+		Goal_override,		// paired with ai_goal_type::DYNAMIC to mean this goal overrides any other goal
 		Purge,				// purge this goal next time we process
 		Goals_purged,		// this goal has already caused other goals to get purged
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
@@ -99,6 +101,10 @@ namespace AI {
         Fix_heat_seeker_stealth_bug,
         Fix_linked_primary_bug,
 		Fix_ramming_stationary_targets_bug,
+		Fix_avoid_shockwave_bugs,   // a) waiting until a homing weapon actually homes before evading;
+		                            // b) picking the correct expected impact position for capships;
+		                            // c) not clearing shockwave_object for ships;
+		                            // d) checking the explosion damage of the correct ship
         Force_beam_turret_fov,
 		Free_afterburner_use,
         Glide_decay_requires_thrust,
@@ -135,10 +141,11 @@ namespace AI {
 		All_nonshielded_ships_can_manage_ets,
 		Fightercraft_nonshielded_ships_can_manage_ets,
 		Ships_playing_dead_dont_manage_ets,
-		Better_collision_avoidance,
+		Better_combat_collision_avoidance,
+		Better_guard_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,
-		Friendlies_use_countermeasure_firechance,
+		Unify_usage_countermeasure_firechance,
 		Improved_subsystem_attack_pathing,
 		Fixed_ship_weapon_collision,
 		No_shield_damage_from_ship_collisions,
@@ -160,6 +167,18 @@ namespace AI {
 		Player_orders_afterburn_hard,
 		Hudsquadmsg_tactical_disarm_disable,
 		Align_to_target_when_guarding_still,
+		Debris_respects_big_damage,
+		Dont_limit_change_in_speed_due_to_physics_whack,
+		Guards_ignore_protected_attackers,
+		Fix_standard_strafe,
+		Standard_strafe_used_more,
+		Unify_usage_ai_shield_manage_delay,
+		Fix_AI_shield_management_bug,
+		AI_balances_shields_when_attacked,
+		Disable_ai_transferring_energy,
+		Freespace_1_missile_behavior,
+		ETS_uses_power_output,
+		ETS_energy_same_regardless_of_system_presence,
 
 		NUM_VALUES
 	};

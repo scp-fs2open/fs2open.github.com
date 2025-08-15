@@ -387,7 +387,7 @@ void techroom_select_new_entry()
 
 				// Make sure model is loaded
 				if (VALID_FNAME(wip->tech_model)) {
-					Techroom_modelnum = model_load(wip->tech_model, 0, nullptr, 0);
+					Techroom_modelnum = model_load(wip->tech_model, nullptr, ErrorType::WARNING);
 				}
 
 				if (Techroom_modelnum >= 0) {
@@ -457,7 +457,7 @@ void techroom_render_desc(int xo, int yo, int ho)
 		int more_txt_x = Tech_desc_coords[gr_screen.res][0] + (Tech_desc_coords[gr_screen.res][2]/2) - 10;	// FIXME should move these to constants since they don't move
 		int more_txt_y = Tech_desc_coords[gr_screen.res][1] + Tech_desc_coords[gr_screen.res][3];				// located below brief text, centered
 		int w, h;
-		gr_get_string_size(&w, &h, XSTR("more", 1469), static_cast<int>(strlen(XSTR("more", 1469))));
+		gr_get_string_size(&w, &h, XSTR("more", 1469), 1.0f, static_cast<int>(strlen(XSTR("more", 1469))));
 		gr_set_color_fast(&Color_black);
 		gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 		gr_set_color_fast(&Color_more_indicator);
@@ -632,7 +632,7 @@ void techroom_ships_render(float frametime)
 	gr_set_proj_matrix(Proj_fov, gr_screen.clip_aspect, Min_draw_distance, Max_draw_distance);
 	gr_set_view_matrix(&Eye_position, &Eye_matrix);
 
-	uint render_flags = MR_AUTOCENTER;
+	uint64_t render_flags = MR_AUTOCENTER;
 
 	if(noLighting)
 		render_flags |= MR_NO_LIGHTING;
@@ -848,7 +848,7 @@ void techroom_change_tab(int num)
 						// this ship should be displayed, fill out the entry struct
 						temp_entry.index = (int)std::distance(Ship_info.begin(), it);
 						temp_entry.name = *it->tech_title ? it->tech_title : it->get_display_name();
-						temp_entry.desc = it->tech_desc;
+						temp_entry.desc = it->tech_desc.get();
 
                         Ship_list.push_back(temp_entry);
                     }
@@ -890,7 +890,7 @@ void techroom_change_tab(int num)
 					{ 
 						// we have a weapon that should be in the tech db, so fill out specific info
 						temp_entry.index = i;
-						temp_entry.desc = wi.tech_desc;
+						temp_entry.desc = wi.tech_desc.get();
 						temp_entry.name = wi.tech_title[0] ? wi.tech_title : wi.get_display_name();
 						// copy the weapon animation filename
 						strncpy(temp_entry.tech_anim_filename, wi.tech_anim_filename, MAX_FILENAME_LEN - 1);

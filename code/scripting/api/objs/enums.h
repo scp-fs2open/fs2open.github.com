@@ -7,7 +7,7 @@
 #include "globalincs/pstypes.h"
 #include "scripting/ade_api.h"
 
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace scripting {
 namespace api {
@@ -22,7 +22,12 @@ enum lua_enum : int32_t {
 	LE_MOUSE_MIDDLE_BUTTON,
 	LE_MOUSE_X1_BUTTON,
 	LE_MOUSE_X2_BUTTON,
+	LE_FLIGHTMODE_FLIGHTCURSOR,
+	LE_FLIGHTMODE_SHIPLOCKED,
 	LE_ORDER_ATTACK,
+	LE_ORDER_ATTACK_WING,
+	LE_ORDER_ATTACK_SHIP_CLASS,
+	LE_ORDER_ATTACK_SHIP_TYPE,
 	LE_ORDER_ATTACK_ANY,
 	LE_ORDER_DEPART,
 	LE_ORDER_DISABLE,
@@ -34,6 +39,7 @@ enum lua_enum : int32_t {
 	LE_ORDER_FLY_TO,
 	LE_ORDER_FORM_ON_WING,
 	LE_ORDER_GUARD,
+	LE_ORDER_GUARD_WING,
 	LE_ORDER_IGNORE,
 	LE_ORDER_IGNORE_NEW,
 	LE_ORDER_KEEP_SAFE_DISTANCE,
@@ -45,9 +51,7 @@ enum lua_enum : int32_t {
 	LE_ORDER_UNDOCK,
 	LE_ORDER_WAYPOINTS,
 	LE_ORDER_WAYPOINTS_ONCE,
-	LE_ORDER_ATTACK_WING,
-	LE_ORDER_GUARD_WING,
-	LE_ORDER_ATTACK_SHIP_CLASS,
+	LE_ORDER_LUA,
 	LE_PARTICLE_DEBUG,
 	LE_PARTICLE_BITMAP,
 	LE_PARTICLE_FIRE,
@@ -171,6 +175,18 @@ enum lua_enum : int32_t {
 	LE_SCROLLBACK_SOURCE_SATISFIED,
 	LE_SCROLLBACK_SOURCE_COMMAND,
 	LE_SCROLLBACK_SOURCE_NETPLAYER,
+	LE_MULTI_TYPE_COOP,
+	LE_MULTI_TYPE_TEAM,
+	LE_MULTI_TYPE_DOGFIGHT,
+	LE_MULTI_TYPE_SQUADWAR,
+	LE_MULTI_OPTION_RANK,
+	LE_MULTI_OPTION_LEAD,
+	LE_MULTI_OPTION_ANY,
+	LE_MULTI_OPTION_HOST,
+	LE_MULTI_GAME_TYPE_OPEN,
+	LE_MULTI_GAME_TYPE_PASSWORD,
+	LE_MULTI_GAME_TYPE_RANK_ABOVE,
+	LE_MULTI_GAME_TYPE_RANK_BELOW,
 	LE_SEXP_TRUE,
 	LE_SEXP_FALSE,
 	LE_SEXP_KNOWN_FALSE,
@@ -179,14 +195,87 @@ enum lua_enum : int32_t {
 	LE_SEXP_NAN,
 	LE_SEXP_NAN_FOREVER,
 	LE_SEXP_CANT_EVAL,
+	LE_COMMIT_SUCCESS,
+	LE_COMMIT_FAIL,
+	LE_COMMIT_PLAYER_NO_WEAPONS,
+	LE_COMMIT_NO_REQUIRED_WEAPON,
+	LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE,
+	LE_COMMIT_BANK_GAP_ERROR,
+	LE_COMMIT_PLAYER_NO_SLOT,
+	LE_COMMIT_MULTI_PLAYERS_NO_SHIPS,
+	LE_COMMIT_MULTI_NOT_ALL_ASSIGNED,
+	LE_COMMIT_MULTI_NO_PRIMARY,
+	LE_COMMIT_MULTI_NO_SECONDARY,
+	LE_SQUAD_MESSAGE_ATTACK_TARGET,
+	LE_SQUAD_MESSAGE_DISABLE_TARGET,
+	LE_SQUAD_MESSAGE_DISARM_TARGET,
+	LE_SQUAD_MESSAGE_PROTECT_TARGET,
+	LE_SQUAD_MESSAGE_IGNORE_TARGET,
+	LE_SQUAD_MESSAGE_FORMATION,
+	LE_SQUAD_MESSAGE_COVER_ME,
+	LE_SQUAD_MESSAGE_ENGAGE_ENEMY,
+	LE_SQUAD_MESSAGE_CAPTURE_TARGET,
+	LE_SQUAD_MESSAGE_REARM_REPAIR_ME,
+	LE_SQUAD_MESSAGE_ABORT_REARM_REPAIR,
+	LE_SQUAD_MESSAGE_STAY_NEAR_ME,
+	LE_SQUAD_MESSAGE_STAY_NEAR_TARGET,
+	LE_SQUAD_MESSAGE_KEEP_SAFE_DIST,
+	LE_SQUAD_MESSAGE_DEPART,
+	LE_SQUAD_MESSAGE_DISABLE_SUBSYSTEM,
+	LE_SQUAD_MESSAGE_LUA_AI,
+	LE_BUILTIN_MESSAGE_ATTACK_TARGET,
+	LE_BUILTIN_MESSAGE_DISABLE_TARGET,
+	LE_BUILTIN_MESSAGE_DISARM_TARGET,
+	LE_BUILTIN_MESSAGE_ATTACK_SUBSYSTEM,
+	LE_BUILTIN_MESSAGE_PROTECT_TARGET,
+	LE_BUILTIN_MESSAGE_FORM_ON_MY_WING,
+	LE_BUILTIN_MESSAGE_COVER_ME,
+	LE_BUILTIN_MESSAGE_IGNORE,
+	LE_BUILTIN_MESSAGE_ENGAGE,
+	LE_BUILTIN_MESSAGE_WARP_OUT,
+	LE_BUILTIN_MESSAGE_DOCK_YES,
+	LE_BUILTIN_MESSAGE_YESSIR,
+	LE_BUILTIN_MESSAGE_NOSIR,
+	LE_BUILTIN_MESSAGE_NO_TARGET,
+	LE_BUILTIN_MESSAGE_CHECK_6,
+	LE_BUILTIN_MESSAGE_PLAYER_DIED,
+	LE_BUILTIN_MESSAGE_PRAISE,
+	LE_BUILTIN_MESSAGE_HIGH_PRAISE,
+	LE_BUILTIN_MESSAGE_BACKUP,
+	LE_BUILTIN_MESSAGE_HELP,
+	LE_BUILTIN_MESSAGE_WINGMAN_SCREAM,
+	LE_BUILTIN_MESSAGE_PRAISE_SELF,
+	LE_BUILTIN_MESSAGE_REARM_REQUEST,
+	LE_BUILTIN_MESSAGE_REPAIR_REQUEST,
+	LE_BUILTIN_MESSAGE_PRIMARIES_LOW,
+	LE_BUILTIN_MESSAGE_REARM_PRIMARIES,
+	LE_BUILTIN_MESSAGE_REARM_WARP,
+	LE_BUILTIN_MESSAGE_ON_WAY,
+	LE_BUILTIN_MESSAGE_ALREADY_ON_WAY,
+	LE_BUILTIN_MESSAGE_REPAIR_DONE,
+	LE_BUILTIN_MESSAGE_REPAIR_ABORTED,
+	LE_BUILTIN_MESSAGE_SUPPORT_KILLED,
+	LE_BUILTIN_MESSAGE_ALL_ALONE,
+	LE_BUILTIN_MESSAGE_ARRIVE_ENEMY,
+	LE_BUILTIN_MESSAGE_OOPS,
+	LE_BUILTIN_MESSAGE_HAMMER_SWINE,
+	LE_BUILTIN_MESSAGE_AWACS_75,
+	LE_BUILTIN_MESSAGE_AWACS_25,
+	LE_BUILTIN_MESSAGE_STRAY_WARNING,
+	LE_BUILTIN_MESSAGE_STRAY_WARNING_FINAL,
+	LE_BUILTIN_MESSAGE_INSTRUCTOR_HIT,
+	LE_BUILTIN_MESSAGE_INSTRUCTOR_ATTACK,
+	LE_BUILTIN_MESSAGE_ALL_CLEAR,
+	LE_BUILTIN_MESSAGE_PERMISSION,
+	LE_BUILTIN_MESSAGE_STRAY,
 	ENUM_NEXT_INDEX,
 	ENUM_COMBINATION,
 	ENUM_INVALID
 };
 
 struct lua_enum_def_list : public flag_def_list_new<lua_enum> {
-	tl::optional<int32_t> value;
-	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(tl::nullopt) {}
+	std::optional<int32_t> value;
+	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(std::nullopt) {}
 	constexpr lua_enum_def_list(const char* enum_name, lua_enum flag, int32_t val, bool used) : flag_def_list_new<lua_enum>{ enum_name, flag, used, false }, value(val) {}
 };
 
@@ -196,13 +285,13 @@ extern const size_t Num_enumerations;
 struct enum_h {
 private:
 	enum class last_combine_op { NATIVE, AND, OR };
-	tl::optional<SCP_string> name;
+	std::optional<SCP_string> name;
 	last_combine_op last_op = last_combine_op::NATIVE;
 
 public:
 	lua_enum index;
 	bool is_constant;
-	tl::optional<int32_t> value;
+	std::optional<int32_t> value;
 
 	enum_h();
 
@@ -215,8 +304,8 @@ public:
 	friend enum_h operator&(const enum_h& l, const enum_h& other);
 	friend enum_h operator|(const enum_h& l, const enum_h& other);
 
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
+	static void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
+	static void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 };
 
 

@@ -132,8 +132,8 @@ void parse_ssm(const char *filename)
 				{
 					int temp = atoi(unique_id);
 
-					if ((temp < 0) || (temp >= Num_fireball_types))
-						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, Num_fireball_types - 1, s->name);
+					if (!SCP_vector_inbounds(Fireball_info, temp))
+						error_display(0, "Fireball index [%d] out of range (should be 0-%d) for SSM strike [%s]", temp, static_cast<int>(Fireball_info.size()) - 1, s->name);
 					else
 						s->fireball_type = temp;
 				}
@@ -261,7 +261,7 @@ void ssm_init()
 	validate_SSM_entries();
 }
 
-void ssm_get_random_start_pos(vec3d *out, vec3d *start, matrix *orient, size_t ssm_index)
+void ssm_get_random_start_pos(vec3d *out, const vec3d *start, const matrix *orient, size_t ssm_index)
 {
 	vec3d temp;
 	ssm_info *s = &Ssm_info[ssm_index];
@@ -305,7 +305,8 @@ void ssm_level_init()
 }
 
 // start a subspace missile effect
-void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info *override, int team)
+// (it might be possible to make `target` const, but that would set off another const-cascade)
+void ssm_create(object *target, const vec3d *start, size_t ssm_index, const ssm_firing_info *override, int team)
 {	
 	ssm_strike ssm;
 	matrix dir;
@@ -340,10 +341,8 @@ void ssm_create(object *target, vec3d *start, size_t ssm_index, ssm_firing_info 
 		// forward orientation
 		vec3d temp;
 
-		vm_vec_sub(&temp, &target->pos, start);
-		vm_vec_normalize(&temp);
-
-		vm_vector_2_matrix(&dir, &temp, NULL, NULL);
+		vm_vec_normalized_dir(&temp, &target->pos, start);
+		vm_vector_2_matrix_norm(&dir, &temp, nullptr, nullptr);
 
 		// stuff info
 		ssm.sinfo.count = count;
@@ -430,9 +429,8 @@ void ssm_process()
 						vec3d temp;
 						matrix orient;
 
-						vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-						vm_vec_normalize(&temp);
-						vm_vector_2_matrix(&orient, &temp, nullptr, nullptr);
+						vm_vec_normalized_dir(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+						vm_vector_2_matrix_norm(&orient, &temp, nullptr, nullptr);
 
 						// are we a beam? -MageKing17
 						if (wip->wi_flags[Weapon::Info_Flags::Beam]) {
@@ -465,7 +463,7 @@ void ssm_process()
 							}
 						} else {
 							// fire the missile and flash the screen
-							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, 1);
+							weapon_objnum = weapon_create(&moveup->sinfo.start_pos[idx], &orient, si->weapon_info_index, -1, -1, true);
 
 							if (weapon_objnum >= 0) {
 								Weapons[Objects[weapon_objnum].instance].team = moveup->sinfo.ssm_team;
@@ -484,9 +482,8 @@ void ssm_process()
 					vec3d temp;
 					matrix orient;
 
-                    vm_vec_sub(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
-					vm_vec_normalize(&temp);
-					vm_vector_2_matrix(&orient, &temp, NULL, NULL);
+                    vm_vec_normalized_dir(&temp, &moveup->sinfo.target->pos, &moveup->sinfo.start_pos[idx]);
+					vm_vector_2_matrix_norm(&orient, &temp, nullptr, nullptr);
 					moveup->fireballs[idx] = fireball_create(&moveup->sinfo.start_pos[idx], si->fireball_type, FIREBALL_WARP_EFFECT, -1, si->warp_radius, false, &vmd_zero_vector, si->warp_time, 0, &orient);
 				}
 			}

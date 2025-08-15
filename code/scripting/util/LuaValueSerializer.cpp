@@ -74,7 +74,7 @@ json_t* LuaValueSerializer::tableToJsonArray(const luacpp::LuaTable& table)
 		if (!table.getValue(i, arrayVal)) {
 			json_array_append_new(jsonArray, json_null());
 		} else {
-			LuaValueSerializer valueSerializer(arrayVal);
+			LuaValueSerializer valueSerializer(std::move(arrayVal));
 			json_array_append_new(jsonArray, valueSerializer.toJson());
 		}
 	}

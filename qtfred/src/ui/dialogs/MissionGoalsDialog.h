@@ -28,6 +28,7 @@ public:
 
  protected:
 	void closeEvent(QCloseEvent* event) override;
+   void rejectHandler();
 
  private:
 	void updateUI();

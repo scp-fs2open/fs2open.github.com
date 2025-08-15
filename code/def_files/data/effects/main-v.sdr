@@ -34,7 +34,6 @@ layout (std140) uniform modelData {
 	mat4 textureMatrix;
 	mat4 shadow_mv_matrix;
 	mat4 shadow_proj_matrix[4];
-	mat4 envMatrix;
 
 	vec4 color;
 
@@ -102,10 +101,6 @@ uniform samplerBuffer transform_tex;
 #prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_TRANSFORM
 
 out VertexOutput {
-#prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-	vec3 envReflect;
-#prereplace ENDIF_FLAG_COMPILED MODEL_SDR_FLAG_ENV
-
 	mat3 tangentMatrix;
 
 #prereplace IF_FLAG_COMPILED MODEL_SDR_FLAG_FOG
@@ -192,12 +187,6 @@ void main()
 	vec3 t = normalize(mat3(modelViewMatrix) * mat3(orient) * vertTangent.xyz);
 	vec3 b = cross(normal, t) * vertTangent.w;
 	vertOut.tangentMatrix = mat3(t, b, normal);
-
-	#prereplace IF_FLAG MODEL_SDR_FLAG_ENV
-		// Environment mapping reflection vector.
-		vec3 envReflect = reflect(normalize(position.xyz), normal);
-		vertOut.envReflect = vec3(envMatrix * vec4(envReflect, 0.0));
-	#prereplace ENDIF_FLAG //MODEL_SDR_FLAG_ENV
 
 	#prereplace IF_FLAG MODEL_SDR_FLAG_FOG
 		vertOut.fogDist = clamp((gl_Position.z - fogStart) * 0.75 * fogScale, 0.0, 1.0);

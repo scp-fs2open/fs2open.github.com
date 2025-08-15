@@ -183,8 +183,10 @@ factor_table ftables;
 // time compression/dilation values - Goober5000
 // (Volition sez "can't compress below 0.25"... not sure if
 // this is arbitrary or dictated by code)
-#define MAX_TIME_MULTIPLIER		64
-#define MAX_TIME_DIVIDER		4
+constexpr int MAX_TIME_MULTIPLIER = 64;
+constexpr int MAX_TIME_DIVIDER    =  4;
+constexpr int MAX_TIME_MULTIPLIER_RETAIL = 4;
+constexpr int MAX_TIME_DIVIDER_RETAIL   =  1;
 
 char CheatBuffer[CHEAT_BUFFER_LEN+1];
 
@@ -215,12 +217,9 @@ static struct Cheat cheatsTable[] = {
 
 
 int Tool_enabled = 0;
-bool Perspective_locked=false;
 
 extern int AI_watch_object;
 extern int Countermeasures_enabled;
-
-extern float do_subobj_hit_stuff(object *ship_obj, object *other_obj, vec3d *hitpos, int submodel_num, float damage, bool *hull_should_apply_armor);
 
 extern void mission_goal_mark_all_true( int type );
 
@@ -336,11 +335,16 @@ int Normal_key_set[] = {
 
 	TOGGLE_GLIDING,
 	CYCLE_PRIMARY_WEAPON_SEQUENCE,
+	CYCLE_PRIMARY_WEAPON_PATTERN,
 	CUSTOM_CONTROL_1,
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+		
+	COMMS_MENU_MOVE_UP,
+	COMMS_MENU_MOVE_DOWN,
+	COMMS_MENU_SELECT
 };
 
 int Dead_key_set[] = {
@@ -480,7 +484,11 @@ int Non_critical_key_set[] = {
     CUSTOM_CONTROL_2,
     CUSTOM_CONTROL_3,
 	CUSTOM_CONTROL_4,
-	CUSTOM_CONTROL_5
+	CUSTOM_CONTROL_5,
+
+	COMMS_MENU_MOVE_UP,
+	COMMS_MENU_MOVE_DOWN,
+	COMMS_MENU_SELECT
 };
 
 int Ignored_keys[CCFG_MAX];
@@ -749,28 +757,24 @@ void process_debug_keys(int k)
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_COMMA:
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_COMMA:
 			if ( Game_mode & GM_NORMAL ) {
-				if ( Game_time_compression > (F1_0/MAX_TIME_DIVIDER) ) {
-					change_time_compression(0.5);
-				} else {
-					gamesnd_play_error_beep();
+				if (Game_time_compression > (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER))) {
+					change_time_compression(0.5f);
+					break;
 				}
-			} else {
-				gamesnd_play_error_beep();
 			}
+			gamesnd_play_error_beep();
 			break;
 
 		// Goober5000: handle as normal here
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_PERIOD:
 		case KEY_DEBUGGED1 + KEY_SHIFTED + KEY_PERIOD:
 			if ( Game_mode & GM_NORMAL ) {
-				if ( Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER) ) {
-					change_time_compression(2);
-				} else {
-					gamesnd_play_error_beep();
+				if (Game_time_compression < (F1_0 * (Cmdline_retail_time_compression_range ? MAX_TIME_MULTIPLIER_RETAIL : MAX_TIME_MULTIPLIER))) {
+					change_time_compression(2.0f);
+					break;
 				}
-			} else {
-				gamesnd_play_error_beep();
 			}
+			gamesnd_play_error_beep();
 			break;
 
 		//	Kill! the currently targeted ship.
@@ -800,11 +804,8 @@ void process_debug_keys(int k)
 		// play the next mission message
 		case KEY_DEBUGGED + KEY_V:		
 			extern int Message_debug_index;
-			extern int Num_messages_playing;
 			// stop any other messages
-			if(Num_messages_playing){
-				message_kill_all(1);
-			}
+			message_kill_all(true);
 
 			// next message
 			if(Message_debug_index >= Num_messages - 1){
@@ -823,11 +824,8 @@ void process_debug_keys(int k)
 		// play the previous mission message
 		case KEY_DEBUGGED + KEY_SHIFTED + KEY_V:
 			extern int Message_debug_index;
-			extern int Num_messages_playing;
 			// stop any other messages
-			if(Num_messages_playing){
-				message_kill_all(1);
-			}
+			message_kill_all(true);
 
 			// go maybe go down one
 			if(Message_debug_index == Num_builtin_messages - 1){
@@ -1267,17 +1265,17 @@ void process_debug_keys(int k)
 		case KEY_PADMINUS: {
 			int init_flag = 0;
 
-			if ( keyd_pressed[KEY_1] )	{
+			if ( key_is_pressed(KEY_1) ) {
 				init_flag = 1;
 				HUD_color_red -= 4;
 			} 
 
-			if ( keyd_pressed[KEY_2] )	{
+			if ( key_is_pressed(KEY_2) ) {
 				init_flag = 1;
 				HUD_color_green -= 4;
-			} 
+			}
 
-			if ( keyd_pressed[KEY_3] )	{
+			if ( key_is_pressed(KEY_3) ) {
 				init_flag = 1;
 				HUD_color_blue -= 4;
 			} 
@@ -1296,17 +1294,17 @@ void process_debug_keys(int k)
 		case KEY_PADPLUS: {
 			int init_flag = 0;
 
-			if ( keyd_pressed[KEY_1] )	{
+			if ( key_is_pressed(KEY_1) ) {
 				init_flag = 1;
 				HUD_color_red += 4;
 			} 
 
-			if ( keyd_pressed[KEY_2] )	{
+			if ( key_is_pressed(KEY_2) ) {
 				init_flag = 1;
 				HUD_color_green += 4;
 			} 
 
-			if ( keyd_pressed[KEY_3] )	{
+			if ( key_is_pressed(KEY_3) ) {
 				init_flag = 1;
 				HUD_color_blue += 4;
 			} 
@@ -1460,7 +1458,7 @@ void process_player_ship_keys(int k)
 	// moved this line to beginning of function since hotkeys now encompass
 	// F5 - F12.  We can return after using F11 as a hotkey.
 	ppsk_hotkeys(masked_k);
-	if (keyd_pressed[KEY_DEBUG_KEY]){
+	if (key_is_pressed(KEY_DEBUG_KEY)){
 		return;
 	}
 
@@ -1623,15 +1621,14 @@ void game_process_cheats(int k)
 	}
 	if(detectedCheatCode == CHEAT_CODE_FISH){
 		// only enable in the Vasudan main hall
-		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
-			extern void fishtank_start();
-			fishtank_start();
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_allows_fish()) {
+			main_hall_start_fishies();
 		}
 	}
 	if(detectedCheatCode == CHEAT_CODE_HEADZ){
 		// only enable in the Vasudan main hall
-		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_is_vasudan()) {
-			main_hall_vasudan_funny();
+		if ((gameseq_get_state() == GS_STATE_MAIN_MENU) && main_hall_allows_headz()) {
+			main_hall_set_door_headz();
 		}
 	}
 	if(detectedCheatCode ==  CHEAT_CODE_SKIP && (gameseq_get_state() == GS_STATE_MAIN_MENU)){
@@ -1826,12 +1823,21 @@ int button_function_critical(int n, net_player *p = NULL)
 					polymodel *pm = model_get( sip->model_num );
 					count = (int)ftables.getNext( pm->gun_banks[ swp->current_primary_bank ].num_slots, swp->primary_bank_slot_count[ swp->current_primary_bank ] );
 					swp->primary_bank_slot_count[ swp->current_primary_bank ] = count;
-					shipp->last_fired_point[ swp->current_primary_bank ] += count - ( shipp->last_fired_point[ swp->current_primary_bank ] % count);
-					shipp->last_fired_point[ swp->current_primary_bank ] -= 1;
-					shipp->last_fired_point[ swp->current_primary_bank ] %= swp->primary_bank_slot_count[ swp->current_primary_bank ];
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
 				}
 			}
 			break;
+
+		case CYCLE_PRIMARY_WEAPON_PATTERN: {
+				ship* shipp = &Ships[objp->instance];
+				ship_weapon* swp = &shipp->weapons;
+				ship_info* sip = &Ship_info[shipp->ship_info_index];
+				if (sip->flags[Ship::Info_Flags::Dyn_primary_linking]) {
+					int new_pattern = (swp->dynamic_firing_pattern[swp->current_primary_bank] + 1) % (sip->dyn_firing_patterns_allowed[swp->current_primary_bank].size());
+					swp->dynamic_firing_pattern[swp->current_primary_bank] = new_pattern;
+					swp->primary_firepoint_next_to_fire_index[swp->current_primary_bank] = 0;
+				}
+			} break;
 
 		// cycle to next primary weapon
 		case CYCLE_NEXT_PRIMARY:
@@ -2223,31 +2229,27 @@ int button_function_demo_valid(int n)
 		break;
 
 	case TIME_SLOW_DOWN:
-		if ( Game_mode & GM_NORMAL ) {
+		ret = 1;
+		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
 			// Goober5000 - time dilation only available in cheat mode (see above);
 			// now you can do it with or without pressing the tilde, per Kazan's request
-			if ( ((Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0/MAX_TIME_DIVIDER)))) && !Time_compression_locked) {
+			if ((Game_time_compression > F1_0) || (Cheats_enabled && (Game_time_compression > (F1_0 / (Cmdline_retail_time_compression_range ? MAX_TIME_DIVIDER_RETAIL : MAX_TIME_DIVIDER))))) {
 				change_time_compression(0.5f);
-			} else {
-				gamesnd_play_error_beep();
+				break;
 			}
-		} else {
-			gamesnd_play_error_beep();
 		}
-		ret = 1;
+		gamesnd_play_error_beep();
 		break;
 
 	case TIME_SPEED_UP:
-		if ( Game_mode & GM_NORMAL ) {
-			if ( (Game_time_compression < (F1_0*MAX_TIME_MULTIPLIER)) && !Time_compression_locked ) {
-				change_time_compression(2.0f);
-			} else {
-				gamesnd_play_error_beep();
-			}
-		} else {
-			gamesnd_play_error_beep();
-		}
 		ret = 1;
+		if ( Game_mode & GM_NORMAL && !Time_compression_locked ) {
+			if (Game_time_compression < (F1_0 * (Cmdline_retail_time_compression_range ? MAX_TIME_MULTIPLIER_RETAIL : MAX_TIME_MULTIPLIER))) {
+				change_time_compression(2.0f);
+				break;
+			}
+		}
+		gamesnd_play_error_beep();
 		break;
 	}
 
@@ -2386,6 +2388,7 @@ int button_function(int n)
 	 */
 	switch (n) {
 		case CYCLE_PRIMARY_WEAPON_SEQUENCE:
+		case CYCLE_PRIMARY_WEAPON_PATTERN:
 		case CYCLE_NEXT_PRIMARY:	// cycle to next primary weapon
 		case CYCLE_PREV_PRIMARY:	// cycle to previous primary weapon
 		case CYCLE_SECONDARY:		// cycle to next secondary weapon
@@ -2844,6 +2847,18 @@ int button_function(int n)
 		// toggle the squadmate messaging menu
 		case SQUADMSG_MENU:
 			hud_squadmsg_toggle();				// leave the details to the messaging code!!!
+			break;
+			 
+		case COMMS_MENU_MOVE_DOWN:
+			hud_squadmsg_selection_move_down();
+			break;
+
+		case COMMS_MENU_MOVE_UP:
+			hud_squadmsg_selection_move_up();
+			break;
+
+		case COMMS_MENU_SELECT:
+			hud_squadmsg_selection_select();
 			break;
 
 		// show the mission goals screen

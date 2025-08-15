@@ -22,18 +22,6 @@
 #include "render/batching.h"
 #include "ship/ship.h"
 
-bool Fireball_warp_flash = false;
-
-static auto WarpFlashOption __UNUSED = options::OptionBuilder<bool>("Graphics.WarpFlash",
-                     std::pair<const char*, int>{"Warp Flash", 1768},
-                     std::pair<const char*, int>{"Show flash upon warp open or close", 1769})
-                     .category(std::make_pair("Graphics", 1825))
-                     .default_val(true)
-                     .level(options::ExpertLevel::Advanced)
-                     .bind_to_once(&Fireball_warp_flash)
-                     .importance(65)
-                     .finish();
-
 void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 {
 	vec3d norm;
@@ -54,7 +42,7 @@ void warpin_batch_draw_face( int texture, vertex *v1, vertex *v2, vertex *v3 )
 	batching_add_tri(texture, vertlist); // TODO render as emissive
 }
 
-void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id)
+void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, vec3d *pos, int texture_bitmap_num, float radius, float life_percent, float flare_rad, float flicker_magnitude, float max_radius, bool warp_3d, int warp_glow_bitmap, int warp_ball_bitmap, int warp_model_id, bool warp_flash)
 {
 	vec3d center;
 	vec3d vecs[5];
@@ -68,17 +56,12 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 	verts[1] = verts[2] = verts[3] = verts[4] = verts[0];
 
 	if (warp_glow_bitmap >= 0) {
+		float r = flare_rad;
 
-		float r = radius;
 		// Add in noise 
 		int noise_frame = fl2i(Missiontime/15.0f) % NOISE_NUM_FRAMES;
 
-		r *= (0.40f + Noise[noise_frame] * 0.30f);
-
-		// Bobboau's warp thingie, toggled by cmdline
-		if (Fireball_warp_flash) {
-			r += powf((2.0f * life_percent) - 1.0f, 24.0f) * max_radius * 1.5f;
-		}
+		r *= (0.40f + Noise[noise_frame] * flicker_magnitude);
 
 		vecs[4] = center;
 		verts[4].texture_position.u = 0.5f; verts[4].texture_position.v = 0.5f; 
@@ -95,7 +78,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 	if ( (warp_model_id >= 0) && (warp_3d) ) {
 		model_render_params render_info;
 
-		float scale = radius / 25.0f;
+		float scale = radius;
 
 		vec3d warp_scale;
 
@@ -159,7 +142,7 @@ void warpin_queue_render(model_draw_list *scene, object *obj, matrix *orient, ve
 		warpin_batch_draw_face( texture_bitmap_num, &verts[0], &verts[3], &verts[4] );
 	}
 
-	if (warp_ball_bitmap >= 0 && Fireball_warp_flash) {
+	if (warp_ball_bitmap >= 0 && warp_flash) {
 		flash_ball warp_ball(20, .1f,.25f, &orient->vec.fvec, pos, 4.0f, 0.5f);
 
 		float adg = (2.0f * life_percent) - 1.0f;

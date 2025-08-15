@@ -9,20 +9,51 @@ namespace hooks {
 const std::shared_ptr<Hook<>> OnGameInit = Hook<>::Factory("On Game Init",
 	"Executed at the start of the engine after all game data has been loaded.",
 	{},
-	tl::nullopt,
+	std::nullopt,
 	CHA_GAMEINIT);
 
 const std::shared_ptr<Hook<>> OnSplashEnd = Hook<>::Factory("On Splash End",
 	"Executed just after the splash screen fades out.",
 	{});
 
-const std::shared_ptr<Hook<>> OnIntroAboutToPlay = Hook<>::Factory("On Intro About To Play",
+const std::shared_ptr<OverridableHook<>> OnIntroAboutToPlay = OverridableHook<>::Factory("On Intro About To Play",
 	"Executed just before the intro movie is played.",
 	{});
 
+const std::shared_ptr<OverridableHook<>> OnMovieAboutToPlay = OverridableHook<>::Factory("On Movie About To Play",
+	"Executed just before any cutscene movie is played.",
+	{
+		{"Filename", "string", "The filename of the movie that is about to play."},
+		{"ViaTechRoom", "boolean", "Whether the movie player was invoked through the tech room."},
+	});
+
+const std::shared_ptr<Hook<>> OnOptionsTabChanged = Hook<>::Factory("On Options Menu Tab Changed",
+	"Executed whenever a tab is changed within the Options Menu.",
+	{
+		{"TabNumber", "number", "The number of the tab that has been changed to, with 0 = Options Tab, 1 = Multi Tab, and 2 = Details Tab. "},
+	});
+
+const std::shared_ptr<Hook<>> OnOptionsMenuClosed = Hook<>::Factory("On Options Menu Closed",
+	"Executed whenever the Options Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnHUDConfigMenuClosed = Hook<>::Factory("On HUD Config Menu Closed",
+	"Executed whenever the HUD Config Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
+const std::shared_ptr<Hook<>> OnControlConfigMenuClosed = Hook<>::Factory("On Controls Config Menu Closed",
+	"Executed whenever the Control Config Menu is closed.",
+	{
+		{"OptionsAccepted", "boolean", "Whether or not the options are being accepted and saved. Value is true if the options are accepted/saved, false if the options are discarded and not accepted/saved. "},
+	});
+
 const std::shared_ptr<OverridableHook<>> OnStateStart = OverridableHook<>::Factory("On State Start",
 	"Executed whenever a new state is entered.",
-	{ 
+	{
 		{"OldState", "gamestate", "The gamestate that was executing."}, 
 		{"NewState", "gamestate", "The gamestate that will be executing."}
 	});
@@ -31,9 +62,14 @@ const std::shared_ptr<Hook<>> OnLoadScreen = Hook<>::Factory("On Load Screen",
 	"Executed regularly during loading of a mission.",
 	{ {"Progress", "number", "A number from 0 to 1 indicating how far along the loading process the game is."}});
 
+const std::shared_ptr<Hook<>> OnLoadComplete =
+	Hook<>::Factory("On Load Complete", "Executed once a mission load has completed.", {});
+
 const std::shared_ptr<Hook<>> OnCampaignMissionAccept = Hook<>::Factory("On Campaign Mission Accept",
 	"Invoked after a campaign mission once the player accepts the result and moves on to the next mission instead of replaying it.",
-	{});
+	{
+		{"Mission", "string", "The filename of the mission that was just accepted."}
+	});
 
 const std::shared_ptr<Hook<>> OnBriefStage = Hook<>::Factory("On Briefing Stage",
 	"Invoked for each briefing stage what it is shown.",
@@ -58,13 +94,23 @@ const std::shared_ptr<Hook<ControlActionConditions>> OnActionStopped = Hook<Cont
 	"Invoked whenever a user action is no longer invoked through control input.",
 	{ {"Action", "string", "The name of the action that was stopped."} });
 
-const std::shared_ptr<Hook<>> OnKeyPressed = Hook<>::Factory("On Key Pressed",
-	"Invoked whenever a key is pressed.",
-	{ {"Key", "string", "The scancode of the key that has been pressed."} });
+const std::shared_ptr<OverridableHook<KeyPressConditions>> OnKeyPressed = OverridableHook<KeyPressConditions>::Factory("On Key Pressed",
+	"Invoked whenever a key is pressed. If overridden, FSO behaves as if this key has simply not been pressed. "
+	"The only thing that FSO will do with this key if overridden is fire the corresponding OnKeyReleased hook once the key is released. "
+	"Be especially careful if overriding modifier keys (such as Alt and Shift) with this.",
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."}
+	});
 
-const std::shared_ptr<Hook<>> OnKeyReleased = Hook<>::Factory("On Key Released",
+const std::shared_ptr<Hook<KeyPressConditions>> OnKeyReleased = Hook<KeyPressConditions>::Factory("On Key Released",
 	"Invoked whenever a key is released.",
-	{ {"Key", "string", "The scancode of the key that has been released."} });
+	{
+		{"Key", "string", "The scancode of the key that has been pressed."},
+		{"RawKey", "string", "The scancode of the key that has been pressed, without modifiers applied."},
+		{"TimeHeld", "number", "The time that this key has been held down in milliseconds. Can be 0 if input latency fluctuates."},
+		{"WasOverridden", "boolean", "Whether or not the key press corresponding to this release was overridden."}
+	});
 
 const std::shared_ptr<Hook<>> OnMouseMoved = Hook<>::Factory("On Mouse Moved",
 	"Invoked whenever the mouse is moved.",
@@ -350,6 +396,18 @@ const std::shared_ptr<OverridableHook<>> OnHudCommMenuOpened = OverridableHook<>
 		{"Player", "object", "The player object."}
 	});
 
+const std::shared_ptr<OverridableHook<CommOrderConditions>> OnHudCommOrderIssued = OverridableHook<CommOrderConditions>::Factory(
+	"On HUD Comm Order Issued",
+	"Invoked when the player issues an order through the squad message menu.",
+	{
+		{"Sender", "ship", "The ship that sent the order. Usually the player."},
+		{"Recipient", "oswpt", "The recipient of the order."},
+		{"Target", "ship", "The target if the order, if any. Usually the Player's current target."},
+		{"Subsystem", "subsystem", "The target subsystem, if any. Usually the Player's current target."},
+		{"Order", "enumeration", "The order issued. Will be one of the SQUAD_MESSAGE enumerations."},
+		{"Name", "string", "The name of the order as it appears in the squad message menu. Useful for LuaAI orders."}
+	});
+
 const std::shared_ptr<OverridableHook<>> OnHudCommMenuClosed = OverridableHook<>::Factory("On HUD Comm Menu Closed",
 	"Invoked when the HUD comm menu, or squad message menu, is hidden.",
 	{
@@ -362,7 +420,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnHudDraw = Overrid
 		{"Self", "object", "The object from which the scene is viewed."},
 		{"Player", "object", "The player object."} 
 	},
-	tl::nullopt,
+	std::nullopt,
 	CHA_HUDDRAW);
 
 const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = OverridableHook<ObjectDrawConditions>::Factory("On Object Render",
@@ -374,7 +432,7 @@ const std::shared_ptr<OverridableHook<ObjectDrawConditions>> OnObjectRender = Ov
 const std::shared_ptr<Hook<>> OnSimulation = Hook<>::Factory("On Simulation",
 	"Invoked every time that FSO processes physics and AI.",
 	{},
-	tl::nullopt,
+	std::nullopt,
 	CHA_SIMULATION);
 
 const std::shared_ptr<OverridableHook<>> OnDialogInit = OverridableHook<>::Factory("On Dialog Init",
@@ -401,7 +459,8 @@ const std::shared_ptr<OverridableHook<>> OnDialogFrame = OverridableHook<>::Fact
 	{
 		{"Submit", "function(number | string | nil result) -> nil", "A callback function that should be called if the popup resolves. Should be string only if it is an input popup. Pass nil to abort."},
 		{"IsDeathPopup", "boolean", "True if this popup is an in-mission death popup and should be styled as such."},
-		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."}
+		{"Freeze", "boolean", "If not nil and true, the popup should not process any inputs but just render."},
+		{"Text", "string", "The dialog text as it may have been updated this frame"}
 	});
 
 const std::shared_ptr<Hook<>> OnDialogClose = Hook<>::Factory("On Dialog Close",
@@ -414,6 +473,15 @@ const std::shared_ptr<Hook<>> OnCheat = Hook<>::Factory("On Cheat",
 	"Called when a cheat is used",
 	{
 		{ "Cheat", "string", "The cheat code the user typed" },
+	});
+
+const std::shared_ptr<OverridableHook<>> OnMissionGoalStatusChanged = scripting::OverridableHook<>::Factory(
+	"On Mission Goal Status Changed", "Called when a goal is marked as failed or completed.",
+	{
+		{"Name", "string", "The name of the goal."},
+		{"Description", "string", "The description of the goal."},
+		{"Type", "number", "The goal type. 1 for Primary, 2 for secondary, 3 for bonus."},
+		{"State", "boolean", "True if the goal was completed, false if it was failed."},
 	});
 
 const std::shared_ptr<Hook<>> OnMissionAboutToEndHook = Hook<>::Factory("On Mission About To End",

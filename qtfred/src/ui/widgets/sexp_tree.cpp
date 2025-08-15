@@ -158,8 +158,7 @@ QStringList SexpTreeEditorInterface::getMissionGoals(const QString&  /*reference
 	list.reserve((int)Mission_goals.size());
 
 	for (const auto &goal: Mission_goals) {
-		auto temp_name = goal.name;
-		SCP_truncate(temp_name, NAME_LENGTH);
+		auto temp_name = SCP_string(goal.name, 0, NAME_LENGTH - 1);
 		list << temp_name.c_str();
 	}
 
@@ -170,8 +169,7 @@ QStringList SexpTreeEditorInterface::getMissionEvents(const QString&  /*referenc
 	list.reserve((int)Mission_events.size());
 
 	for (const auto &event: Mission_events) {
-		auto temp_name = event.name;
-		SCP_truncate(temp_name, NAME_LENGTH);
+		auto temp_name = SCP_string(event.name, 0, NAME_LENGTH - 1);
 		list << temp_name.c_str();
 	}
 
@@ -1404,6 +1402,10 @@ int sexp_tree::get_default_value(sexp_list_item* item, char* text_buf, int op, i
 		str = "<container value>";
 		break;
 
+	case OPF_MESSAGE_TYPE:
+		str = Builtin_messages[0].name;
+		break;
+
 	default:
 		str = "<new default required!>";
 		break;
@@ -1514,6 +1516,7 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 	case OPF_CONTAINER_VALUE:
 	case OPF_WING_FORMATION:
 	case OPF_CHILD_LUA_ENUM:
+	case OPF_MESSAGE_TYPE:
 		return 1;
 
 	case OPF_SHIP:
@@ -1666,9 +1669,17 @@ int sexp_tree::query_default_argument_available(int op, int i) {
 		}
 		return 0;
 
-	case OPF_ASTEROID_DEBRIS:
-		if ((Asteroid_info.size() - NUM_ASTEROID_POFS) > 0) {
+	case OPF_ASTEROID_TYPES:
+		if (!get_list_valid_asteroid_subtypes().empty()) {
 			return 1;
+		}
+		return 0;
+
+	case OPF_DEBRIS_TYPES:
+		for (const auto& this_asteroid : Asteroid_info) {
+			if (this_asteroid.type == ASTEROID_TYPE_DEBRIS) {
+				return 1;
+			}
 		}
 		return 0;
 
@@ -3444,8 +3455,12 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 		list = nullptr;
 		break;
 
-	case OPF_ASTEROID_DEBRIS:
-		list = get_listing_opf_asteroid_debris();
+	case OPF_ASTEROID_TYPES:
+		list = get_listing_opf_asteroid_types();
+		break;
+
+	case OPF_DEBRIS_TYPES:
+		list = get_listing_opf_debris_types();
 		break;
 
 	case OPF_WING_FORMATION:
@@ -3466,6 +3481,10 @@ sexp_list_item* sexp_tree::get_listing_opf(int opf, int parent_node, int arg_ind
 
 	case OPF_LUA_GENERAL_ORDER:
 		list = get_listing_opf_lua_general_orders();
+		break;
+
+	case OPF_MESSAGE_TYPE:
+		list = get_listing_opf_message_types();
 		break;
 
 	case OPF_CHILD_LUA_ENUM:
@@ -4367,7 +4386,7 @@ sexp_list_item* sexp_tree::get_listing_opf_font() {
 	sexp_list_item head;
 
 	for (i = 0; i < font::FontManager::numberOfFonts(); i++) {
-		head.add_data(const_cast<char*>(font::FontManager::getFont(i)->getName().c_str()));
+		head.add_data(font::FontManager::getFont(i)->getName().c_str());
 	}
 
 	return head.next;
@@ -4547,7 +4566,7 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_wing_shiponteam_point() {
 	for (i = 0; i < (int)Iff_info.size(); i++) {
 		SCP_string tmp;
 		sprintf(tmp, "<any %s>", Iff_info[i].iff_name);
-		std::transform(begin(tmp), end(tmp), begin(tmp), [](char c) { return (char)::tolower(c); });
+		SCP_tolower(tmp);
 		head.add_data(tmp.c_str());
 	}
 
@@ -4668,6 +4687,9 @@ sexp_list_item* sexp_tree::get_listing_opf_ship_type() {
 
 	for (i = 0; i < Ship_types.size(); i++) {
 		head.add_data(Ship_types[i].name);
+	}
+	if (Fighter_bomber_valid) {
+		head.add_data(Fighter_bomber_type_name);
 	}
 
 	return head.next;
@@ -4865,11 +4887,22 @@ sexp_list_item* sexp_tree::get_listing_opf_subsystem_or_none(int parent_node, in
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, int arg_index) {
+sexp_list_item* sexp_tree::get_listing_opf_subsys_or_generic(int parent_node, int arg_index)
+{
 	sexp_list_item head;
+	char buffer[NAME_LENGTH];
 
-	head.add_data(SEXP_ALL_ENGINES_STRING);
-	head.add_data(SEXP_ALL_TURRETS_STRING);
+	for (int i = 0; i < SUBSYSTEM_MAX; ++i)
+	{
+		// it's not clear what the "activator" subsystem was intended to do, so let's not display it by default
+		if (i != SUBSYSTEM_NONE && i != SUBSYSTEM_UNKNOWN && i != SUBSYSTEM_ACTIVATION)
+		{
+			sprintf(buffer, SEXP_ALL_GENERIC_SUBSYSTEM_STRING, Subsystem_types[i]);
+			SCP_tolower(buffer);
+			head.add_data(buffer);
+		}
+	}
+	head.add_data(SEXP_ALL_SUBSYSTEMS_STRING);
 	head.add_list(get_listing_opf_subsystem(parent_node, arg_index));
 
 	return head.next;
@@ -5177,16 +5210,41 @@ sexp_list_item* sexp_tree::get_listing_opf_lua_general_orders()
 	return head.next;
 }
 
-sexp_list_item* sexp_tree::get_listing_opf_asteroid_debris()
+sexp_list_item* sexp_tree::get_listing_opf_message_types()
+{
+	sexp_list_item head;
+
+	for (const auto& val : Builtin_messages) {
+		head.add_data(val.name);
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_asteroid_types()
 {
 	sexp_list_item head;
 
 	head.add_data(SEXP_NONE_STRING);
 
-	for (int i = 0; i < (int)Asteroid_info.size(); i++) {
-		// first three asteroids are not debris-Mjn
-		if (i > (NUM_ASTEROID_SIZES - 1)) {
-			head.add_data(Asteroid_info[i].name);
+	auto list = get_list_valid_asteroid_subtypes();
+
+	for (const auto& this_asteroid : list) {
+		head.add_data(this_asteroid.c_str());
+	}
+
+	return head.next;
+}
+
+sexp_list_item *sexp_tree::get_listing_opf_debris_types()
+{
+	sexp_list_item head;
+
+	head.add_data(SEXP_NONE_STRING);
+
+	for (const auto& this_asteroid : Asteroid_info) {
+		if (this_asteroid.type == ASTEROID_TYPE_DEBRIS) {
+			head.add_data(this_asteroid.name);
 		}
 	}
 
@@ -5264,9 +5322,9 @@ sexp_list_item *sexp_tree::get_listing_opf_fireball()
 {
 	sexp_list_item head;
 
-	for (int i = 0; i < Num_fireball_types; ++i)
+	for (const auto &fi: Fireball_info)
 	{
-		char *unique_id = Fireball_info[i].unique_id;
+		auto unique_id = fi.unique_id;
 
 		if (strlen(unique_id) > 0)
 			head.add_data(unique_id);
@@ -6055,7 +6113,14 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-						// unlike the above operators, these are deprecated
+
+					// hide these operators per GitHub issue #6400
+					case OP_GET_VARIABLE_BY_INDEX:
+					case OP_SET_VARIABLE_BY_INDEX:
+					case OP_COPY_VARIABLE_FROM_INDEX:
+					case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+					// unlike the various campaign operators, these are deprecated
 					case OP_HITS_LEFT_SUBSYSTEM:
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
@@ -6074,6 +6139,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_ADD_BACKGROUND_BITMAP:
 					case OP_ADD_SUN_BITMAP:
 					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+					case OP_KEY_RESET:
+					case OP_SET_ASTEROID_FIELD:
+					case OP_SET_DEBRIS_FIELD:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -6127,7 +6195,14 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 						case OP_TECH_REMOVE_INTEL_XSTR:
 						case OP_TECH_RESET_TO_DEFAULT:
 #endif*/
-						// unlike the above operators, these are deprecated
+
+					// hide these operators per GitHub issue #6400
+					case OP_GET_VARIABLE_BY_INDEX:
+					case OP_SET_VARIABLE_BY_INDEX:
+					case OP_COPY_VARIABLE_FROM_INDEX:
+					case OP_COPY_VARIABLE_BETWEEN_INDEXES:
+
+					// unlike the various campaign operators, these are deprecated
 					case OP_HITS_LEFT_SUBSYSTEM:
 					case OP_CUTSCENES_SHOW_SUBTITLE:
 					case OP_ORDER:
@@ -6146,6 +6221,9 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_ADD_BACKGROUND_BITMAP:
 					case OP_ADD_SUN_BITMAP:
 					case OP_JUMP_NODE_SET_JUMPNODE_NAME:
+					case OP_KEY_RESET:
+					case OP_SET_ASTEROID_FIELD:
+					case OP_SET_DEBRIS_FIELD:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}

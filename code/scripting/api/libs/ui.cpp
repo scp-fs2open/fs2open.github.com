@@ -18,7 +18,6 @@
 #include "menuui/playermenu.h"
 #include "menuui/readyroom.h"
 #include "mission/missionmessage.h"
-#include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionparse.h"
 #include "missionui/fictionviewer.h"
@@ -29,13 +28,19 @@
 #include "mission/missiongoals.h"
 #include "mission/missioncampaign.h"
 #include "mission/missionhotkey.h"
+#include "missionui/chatbox.h"
 #include "missionui/redalert.h"
 #include "missionui/missionpause.h"
 #include "mod_table/mod_table.h"
 #include "network/chat_api.h"
 #include "network/multi.h"
+#include "network/multiui.h"
+#include "network/multi_endgame.h"
 #include "network/multiteamselect.h"
+#include "network/multi_pause.h"
 #include "network/multi_pxo.h"
+#include "network/multimsgs.h"
+#include "network/multi_ingame.h"
 #include "pilotfile/pilotfile.h"
 #include "playerman/managepilot.h"
 #include "radar/radarsetup.h"
@@ -43,25 +48,26 @@
 #include "weapon/weapon.h"
 #include "scpui/SoundPlugin.h"
 #include "scpui/rocket_ui.h"
-#include "scripting/api/objs/control_config.h"
-#include "scripting/api/objs/techroom.h"
-#include "scripting/api/objs/loop_brief.h"
-#include "scripting/api/objs/redalert.h"
-#include "scripting/api/objs/fictionviewer.h"
-#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/briefing.h"
-#include "scripting/api/objs/debriefing.h"
-#include "scripting/api/objs/shipwepselect.h"
-#include "scripting/api/objs/missionhotkey.h"
-#include "scripting/api/objs/gamehelp.h"
-#include "scripting/api/objs/missionlog.h"
-#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/cmd_brief.h"
 #include "scripting/api/objs/color.h"
+#include "scripting/api/objs/control_config.h"
+#include "scripting/api/objs/debriefing.h"
 #include "scripting/api/objs/enums.h"
-#include "scripting/api/objs/player.h"
+#include "scripting/api/objs/fictionviewer.h"
+#include "scripting/api/objs/gamehelp.h"
+#include "scripting/api/objs/goal.h"
+#include "scripting/api/objs/hudconfig.h"
+#include "scripting/api/objs/loop_brief.h"
 #include "scripting/api/objs/medals.h"
+#include "scripting/api/objs/missionhotkey.h"
+#include "scripting/api/objs/missionlog.h"
 #include "scripting/api/objs/multi_objects.h"
+#include "scripting/api/objs/player.h"
 #include "scripting/api/objs/rank.h"
+#include "scripting/api/objs/redalert.h"
+#include "scripting/api/objs/shipwepselect.h"
+#include "scripting/api/objs/techroom.h"
 #include "scripting/api/objs/texture.h"
 #include "scripting/api/objs/vecmath.h"
 #include "scripting/lua/LuaTable.h"
@@ -127,13 +133,15 @@ ADE_FUNC(enableInput,
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(disableInput, l_UserInterface, "", "Disables UI input", "boolean", "true if successful")
+ADE_FUNC(disableInput, l_UserInterface, nullptr, "Disables UI input", nullptr, "nothing")
 {
+	SCP_UNUSED(L);
+	
 	scpui::disableInput();
 	game_flush();
 	Main_hall_poll_key = true;
 
-	return ADE_RETURN_TRUE;
+	return ADE_RETURN_NIL;
 }
 
 ADE_VIRTVAR(ColorTags,
@@ -295,8 +303,10 @@ ADE_LIB_DERIV(l_UserInterface_PilotSelect, "PilotSelect", nullptr,
               "API for accessing values specific to the Pilot Select UI.",
               l_UserInterface);
 
-ADE_VIRTVAR(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
-            "The maximum number of pilots")
+ADE_VIRTVAR_DEPRECATED(MAX_PILOTS, l_UserInterface_PilotSelect, nullptr, "Gets the maximum number of possible pilots.", "number",
+	"The maximum number of pilots",
+	gameversion::version(25, 0, 0, 0),
+	"This variable has moved to the GlobalVariabls library.")
 {
 	return ade_set_args(L, "i", MAX_PILOTS);
 }
@@ -312,7 +322,7 @@ ADE_VIRTVAR(ErrorCount, l_UserInterface_PilotSelect, nullptr, "The amount of err
 }
 
 ADE_FUNC(enumeratePilots, l_UserInterface_PilotSelect, nullptr,
-         "Lists all pilots available for the pilot selection<br>", "string[]",
+         "Lists all pilots available for the pilot selection<br>", "table",
          "A table containing the pilots (without a file extension) or nil on error")
 {
 	using namespace luacpp;
@@ -455,6 +465,15 @@ ADE_FUNC(startMusic, l_UserInterface_MainHall, nullptr, "Starts the mainhall mus
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(stopMusic, l_UserInterface_MainHall, "boolean Fade=false", "Stops the mainhall music. True to fade, false to stop immediately.", nullptr, "nothing")
+{
+	bool fade = false;
+	if (!ade_get_args(L, "|b", &fade))
+		return ADE_RETURN_NIL;
+	main_hall_stop_music(fade);
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(toggleHelp,
 	l_UserInterface_MainHall,
 	"boolean",
@@ -472,13 +491,39 @@ ADE_FUNC(toggleHelp,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(setMainhall, l_UserInterface_MainHall, "string mainhall, boolean enforce", "The name of the mainhall to try to set. Will immediately change if the player is currently in the mainhall menu. "
+	"Use enforce to set this as the mainhall on next mainhall load if setting from outside the mainhall menu. NOTE: If enforce is true then the player will always return back to this mainhall forever. "
+	"Call this with a blank string and enforce false to unset enforce without changing the current mainhall that is loaded.", nullptr, "nothing")
+{
+	const char* name = nullptr;
+	bool enforce = false;
+	if (!ade_get_args(L, "s|b", &name, &enforce)) {
+		return ADE_RETURN_NIL;
+	}
+
+	if (enforce) {
+		Enforced_main_hall = name;
+	} else {
+		Enforced_main_hall.clear();
+	}
+
+	if (gameseq_get_state() == GS_STATE_MAIN_MENU) {
+		if (name[0] != '\0') {
+			main_hall_close();
+			main_hall_init(name);
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 //**********SUBLIBRARY: UserInterface/Barracks
 ADE_LIB_DERIV(l_UserInterface_Barracks, "Barracks", nullptr,
               "API for accessing values specific to the Barracks UI.",
               l_UserInterface);
 
 ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available pilot images.",
-         "string[]", "The list of pilot filenames or nil on error")
+         "table", "The list of pilot filenames or nil on error")
 {
 	pilot_load_pic_list();
 
@@ -492,7 +537,7 @@ ADE_FUNC(listPilotImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 }
 
 ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of the available squad images.",
-         "string[]", "The list of squad filenames or nil on error")
+         "table", "The list of squad filenames or nil on error")
 {
 	pilot_load_squad_pic_list();
 
@@ -505,15 +550,16 @@ ADE_FUNC(listSquadImages, l_UserInterface_Barracks, nullptr, "Lists the names of
 	return ade_set_args(L, "t", &out);
 }
 
-ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection", "Accept the given player as the current player",
+ADE_FUNC(acceptPilot, l_UserInterface_Barracks, "player selection, [boolean changeState]", "Accept the given player as the current player. Set second argument to false to prevent returning to the mainhall",
          "boolean", "true on success, false otherwise")
 {
 	player_h* plh;
-	if (!ade_get_args(L, "o", l_Player.GetPtr(&plh))) {
+	bool changeState = true;
+	if (!ade_get_args(L, "o|b", l_Player.GetPtr(&plh), &changeState)) {
 		return ADE_RETURN_FALSE;
 	}
 
-	barracks_accept_pilot(plh->get());
+	barracks_accept_pilot(plh->get(), changeState);
 	return ADE_RETURN_TRUE;
 }
 
@@ -573,7 +619,7 @@ ADE_FUNC(getCampaignList,
 	l_UserInterface_Campaign,
 	nullptr,
 	"Get the campaign name and description lists",
-	"string[], string[], string[]",
+	"table, table, table",
 	"Three tables with the names, file names, and descriptions of the campaigns")
 {
 	luacpp::LuaTable nameTable        = luacpp::LuaTable::create(L);
@@ -775,14 +821,57 @@ ADE_FUNC(skipTraining,
 ADE_FUNC(commitToMission,
 	l_UserInterface_Brief,
 	nullptr,
-	"Commits to the current mission with current loadout data, and starts the mission. Returns an integer to represent "
-	"built-in errors or 0 if successful. 1 = general error, 2 = a player ship has no weapons, 3 = the required weapon was not found "
-	"loaded on a ship, 4 = 2 or more required weapons were not found loaded on a ship, 5 = a gap in a ship's weapon banks was discovered "
-	"and all empty banks must be at the bottom of the list, 6 = a player has no ship selected",
-	"number error",
+	"Commits to the current mission with current loadout data, and starts the mission. Returns one of the COMMIT_ enums to indicate any errors.",
+	"enumeration",
 	"the error value")
 {
-	return ade_set_args(L, "i", static_cast<int>(commit_pressed(true)));
+	commit_pressed_status rc;
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		rc = multi_ts_commit_pressed();
+	} else {
+		rc = commit_pressed();
+	}
+
+	lua_enum eh_idx = ENUM_INVALID;
+	switch (rc) {
+	case commit_pressed_status::GENERAL_FAIL:
+		eh_idx = LE_COMMIT_FAIL;
+		break;
+	case commit_pressed_status::PLAYER_NO_WEAPONS:
+		eh_idx = LE_COMMIT_PLAYER_NO_WEAPONS;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON;
+		break;
+	case commit_pressed_status::NO_REQUIRED_WEAPON_MULTIPLE:
+		eh_idx = LE_COMMIT_NO_REQUIRED_WEAPON_MULTIPLE;
+		break;
+	case commit_pressed_status::BANK_GAP_ERROR:
+		eh_idx = LE_COMMIT_BANK_GAP_ERROR;
+		break;
+	case commit_pressed_status::PLAYER_NO_SLOT:
+		eh_idx = LE_COMMIT_PLAYER_NO_SLOT;
+		break;
+	case commit_pressed_status::MULTI_PLAYERS_NO_SHIPS:
+		eh_idx = LE_COMMIT_MULTI_PLAYERS_NO_SHIPS;
+		break;
+	case commit_pressed_status::MULTI_NOT_ALL_ASSIGNED:
+		eh_idx = LE_COMMIT_MULTI_NOT_ALL_ASSIGNED;
+		break;
+	case commit_pressed_status::MULTI_NO_PRIMARY:
+		eh_idx = LE_COMMIT_MULTI_NO_PRIMARY;
+		break;
+	case commit_pressed_status::MULTI_NO_SECONDARY:
+		eh_idx = LE_COMMIT_MULTI_NO_SECONDARY;
+		break;
+	case commit_pressed_status::SUCCESS:
+	default:
+		eh_idx = LE_COMMIT_SUCCESS;
+		break;
+	}
+
+	return ade_set_args(L, "o", l_Enum.Set(enum_h(eh_idx)));
 }
 
 ADE_FUNC(renderBriefingModel,
@@ -968,9 +1057,9 @@ ADE_INDEXER(l_Briefing_Goals,
 	idx--;
 
 	if ((idx < 0) || idx >= (int)Mission_goals.size())
-		return ade_set_args(L, "o", l_Goals.Set(-1));
+		return ade_set_args(L, "o", l_Goal.Set(-1));
 
-	return ade_set_args(L, "o", l_Goals.Set(idx));
+	return ade_set_args(L, "o", l_Goal.Set(idx));
 }
 
 ADE_FUNC(__len, l_Briefing_Goals, nullptr, "The number of goals in the mission", "number", "The number of goals.")
@@ -1439,6 +1528,10 @@ ADE_INDEXER(l_Ship_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Ss_pool[idx] = 0;
 		} else {
@@ -1473,6 +1566,10 @@ ADE_INDEXER(l_Weapon_Pool,
 	idx--; // Convert to Lua's 1 based index system
 
 	if (ADE_SETTING_VAR) {
+		if (Game_mode & GM_MULTIPLAYER) {
+			LuaError(L, "This property may not be modified in multiplayer.");
+			return ADE_RETURN_NIL;
+		}
 		if (amount < 0) {
 			Wl_pool[idx] = 0;
 		} else {
@@ -1559,6 +1656,48 @@ ADE_INDEXER(l_Loadout_Ships,
 ADE_FUNC(__len, l_Loadout_Ships, nullptr, "The number of loadout ships", "number", "The number of loadout ships.")
 {
 	return ade_set_args(L, "i", MAX_WING_BLOCKS*MAX_WING_SLOTS);
+}
+
+ADE_FUNC(sendShipRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromType, number ToType, number FromSlotIndex, number ToSlotIndex, number ShipClassIndex",
+	"Sends a request to the host to change a ship slot. From/To types are 0 for Ship Slot, 1 for Player Slot, 2 for Pool",
+	nullptr,
+	nullptr)
+{
+	int fromType; //2 for pool, 1 for player, 0 for slot
+	int toType;  // 2 for pool, 1 for player, 0 for slot
+	int fromSlot;
+	int toSlot;
+	int shipClassIdx;
+	if (!ade_get_args(L, "iiiii", &fromType, &toType, &fromSlot, &toSlot, &shipClassIdx))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	multi_ts_drop(fromType, --fromSlot, toType, --toSlot,  --shipClassIdx);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendWeaponRequestPacket,
+	l_UserInterface_ShipWepSelect,
+	"number FromBank, number ToBank, number fromPoolWepIdx, number toPoolWepIdx, number shipSlot",
+	"Sends a request to the host to change a ship slot.",
+	nullptr,
+	nullptr)
+{
+	int fromBank;
+	int toBank;
+	int fromList;
+	int toList;
+	int shipSlot;
+	if (!ade_get_args(L, "iiiii", &fromBank, &toBank, &fromList, &toList, &shipSlot))
+		return ADE_RETURN_NIL;
+
+	// --revelant points to convert from lua indecies to c
+	wl_drop(--fromBank, --fromList, --toBank, --toList, --shipSlot);
+
+	return ADE_RETURN_NIL;
 }
 
 //**********SUBLIBRARY: UserInterface/TechRoom
@@ -1651,7 +1790,7 @@ ADE_INDEXER(l_UserInterface_Cutscenes,
 	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_TechRoomCutscene.Set(cutscene_info_h(-1)));
 
-	// coverity[uninit_use_in_call] - name is assigned via ade_get_args
+	// coverity[uninit_use_in_call:FALSE] - name is assigned via ade_get_args
 	int idx = get_cutscene_index_by_name(name);
 
 	if (idx < 0) {
@@ -1683,7 +1822,17 @@ ADE_VIRTVAR(Music, l_UserInterface_Credits, nullptr, "The credits music filename
 		LuaError(L, "This property is read only.");
 	}
 
-	return ade_set_args(L, "s", credits_get_music_filename(Credits_music_name));
+	const char *credits_wavfile_name = nullptr;
+
+	// try substitute music first
+	if (*Credits_substitute_music_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_substitute_music_name);
+
+	// fall back to regular music
+	if (!credits_wavfile_name)
+		credits_wavfile_name = credits_get_music_filename(Credits_music_name);
+
+	return ade_set_args(L, "s", credits_wavfile_name);
 }
 
 ADE_VIRTVAR(NumImages, l_UserInterface_Credits, nullptr, "The total number of credits images", "number", "The number of images")
@@ -1812,6 +1961,7 @@ ADE_FUNC(initHotkeysList,
 
 	reset_hotkeys();
 	hotkey_set_selected_line(1);
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 
 	// We want to allow the API to handle expanding wings on its own,
@@ -1970,10 +2120,8 @@ ADE_FUNC(initMissionLog, l_UserInterface_MissionLog, nullptr, "Initializes the M
 {
 	SCP_UNUSED(L);
 
-	Log_scrollback_vec.clear(); // Make sure the vector is empty before we start
-
-	//explicitely do not split lines!
-	message_log_init_scrollback(0, false);
+	//explicitly do not split lines!
+	mission_log_init_scrollback(0, false);
 
 	return ADE_RETURN_NIL;
 }
@@ -1982,7 +2130,7 @@ ADE_FUNC(closeMissionLog, l_UserInterface_MissionLog, nullptr, "Clears the Missi
 {
 	SCP_UNUSED(L);
 
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 
 	return ADE_RETURN_NIL;
 }
@@ -1999,7 +2147,7 @@ ADE_INDEXER(l_Log_Entries,
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 	idx--; //Convert to Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= (int)Log_scrollback_vec.size()))
+	if ((idx < 0) || (idx >= mission_log_scrollback_num_lines()))
 		return ade_set_error(L, "o", l_Log_Entry.Set(log_entry_h()));
 
 	return ade_set_args(L, "o", l_Log_Entry.Set(log_entry_h(idx)));
@@ -2007,7 +2155,7 @@ ADE_INDEXER(l_Log_Entries,
 
 ADE_FUNC(__len, l_Log_Entries, nullptr, "The number of mission log entries", "number", "The number of log entries.")
 {
-	return ade_set_args(L, "i", (int)Log_scrollback_vec.size());
+	return ade_set_args(L, "i", mission_log_scrollback_num_lines());
 }
 
 ADE_LIB_DERIV(l_Log_Messages, "Log_Messages", nullptr, nullptr, l_UserInterface_MissionLog);
@@ -2111,17 +2259,18 @@ ADE_FUNC(usePreset,
 
 ADE_FUNC(createPreset,
 	l_UserInterface_ControlConfig,
-	"string Name",
+	"string Name, [boolean overwrite]",
 	"Creates a new preset with the given name. Returns true if successful, false otherwise.",
 	"boolean",
 	"The return status")
 {
 	const char* preset;
-	ade_get_args(L, "s", &preset);
+	bool overwrite = false;
+	ade_get_args(L, "s|b", &preset, &overwrite);
 
 	SCP_string name = preset;
 
-	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name)));
+	return ade_set_args(L, "b", std::move(control_config_create_new_preset(name, overwrite)));
 }
 
 ADE_FUNC(undoLastChange,
@@ -2252,19 +2401,20 @@ ADE_LIB_DERIV(l_UserInterface_HUDConfig,
 
 ADE_FUNC(initHudConfig,
 	l_UserInterface_HUDConfig,
-	"[number X, number Y, number Width]",
+	"[number X, number Y, number Width, number height]",
 	"Initializes the HUD Configuration data. Must be used before HUD Configuration data accessed. "
 	"X and Y are the coordinates where the HUD preview will be drawn when drawHudConfig is used. "
-	"Width is the pixel width to draw the gauges preview.",
+	"Width is the pixel width to draw the gauges preview. Height is the pixel height to draw the gauges preview.",
 	nullptr,
 	nullptr)
 {
 	int x = 0;
 	int y = 0;
 	int w = 0;
-	ade_get_args(L, "|iii", &x, &y, &w);
+	int h = 0;
+	ade_get_args(L, "|iiii", &x, &y, &w, &h);
 
-	hud_config_init(true, x, y, w);
+	hud_config_init(true, x, y, w, h);
 
 	return ADE_RETURN_NIL;
 }
@@ -2303,10 +2453,26 @@ ADE_FUNC(drawHudConfig,
 
 	hud_config_do_frame(0.0f, true, mx, my);
 
-	if (HC_gauge_hot >= 0) {
+	if (!HC_gauge_hot.empty()) {
 		return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_hot)));
 	} else {
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
+	}
+}
+
+ADE_FUNC(getCurrentHudName,
+	l_UserInterface_HUDConfig,
+	nullptr,
+	"Returns the name of the current HUD configuration.",
+	"string",
+	"The name of the current HUD configuration.")
+{
+	SCP_UNUSED(L);
+
+	if (SCP_vector_inbounds(HC_available_huds, HC_chosen_hud)) {
+		return ade_set_args(L, "s", HC_available_huds[HC_chosen_hud].second.c_str());
+	} else {
+		return ade_set_args(L, "s", "Default Hud");
 	}
 }
 
@@ -2325,6 +2491,33 @@ ADE_FUNC(selectAllGauges,
 	return ADE_RETURN_NIL;
 }
 
+ADE_FUNC(selectNoGauges, l_UserInterface_HUDConfig, nullptr, "Sets no gauges as selected.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_none();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectNextHud, l_UserInterface_HUDConfig, nullptr, "Selects the next available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(selectPrevHud, l_UserInterface_HUDConfig, nullptr, "Selects the previous available HUD", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	hud_config_select_hud(false);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(setToDefault,
 	l_UserInterface_HUDConfig,
 	"string Filename",
@@ -2332,7 +2525,7 @@ ADE_FUNC(setToDefault,
 	nullptr,
 	nullptr)
 {
-	const char* filename = "hud_3.hcf";
+	const char* filename = HC_default_preset_file.c_str();
 	ade_get_args(L, "|s", &filename);
 
 	hud_config_select_all_toggle(0, true);
@@ -2398,15 +2591,15 @@ ADE_INDEXER(l_HUD_Gauges,
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 	idx--; // Convert from Lua's 1 based index system
 
-	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
+	if ((idx < 0) || (idx >= static_cast<int>(HC_gauge_map.size())))
 		return ade_set_error(L, "o", l_Gauge_Config.Set(gauge_config_h()));
 
-	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(idx)));
+	return ade_set_args(L, "o", l_Gauge_Config.Set(gauge_config_h(HC_gauge_map[idx].first)));
 }
 
 ADE_FUNC(__len, l_HUD_Gauges, nullptr, "The number of gauge configs", "number", "The number of gauge configs.")
 {
-	return ade_set_args(L, "i", NUM_HUD_GAUGES);
+	return ade_set_args(L, "i", static_cast<int>(HC_gauge_map.size()));
 }
 
 ADE_LIB_DERIV(l_HUD_Presets, "GaugePresets", nullptr, nullptr, l_UserInterface_HUDConfig);
@@ -2430,6 +2623,29 @@ ADE_INDEXER(l_HUD_Presets,
 ADE_FUNC(__len, l_HUD_Presets, nullptr, "The number of hud presets", "number", "The number of hud presets.")
 {
 	return ade_set_args(L, "i", HC_preset_filenames.size());
+}
+
+ADE_LIB_DERIV(l_HUD_Color_Presets, "GaugeColorPresets", nullptr, nullptr, l_UserInterface_HUDConfig);
+ADE_INDEXER(l_HUD_Color_Presets,
+	"number Index",
+	"Array of HUD Color Presets",
+	"hud_color_preset",
+	"hud_color_preset handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+	idx--; // Convert from Lua's 1 based index system
+
+	if ((idx < 0) || (idx >= NUM_HUD_COLOR_PRESETS))
+		return ade_set_error(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h()));
+
+	return ade_set_args(L, "o", l_HUD_Color_Preset.Set(hud_color_preset_h(idx)));
+}
+
+ADE_FUNC(__len, l_HUD_Color_Presets, nullptr, "The number of hud color presets", "number", "The number of hud color presets.")
+{
+	return ade_set_args(L, "i", NUM_HUD_COLOR_PRESETS);
 }
 
 //**********SUBLIBRARY: UserInterface/PauseScreen
@@ -2558,7 +2774,7 @@ ADE_FUNC(getChat,
 
 	LuaTable chats = LuaTable::create(L);
 
-	int i = 0;
+	int i = 1;
 	for (auto& line : Multi_pxo_chat) {
 		
 		char callsign[CALLSIGN_LEN];
@@ -2640,7 +2856,7 @@ ADE_FUNC(getPlayerChannel,
 	"string",
 	"Searches for a player and returns if they were found and the channel they are on. Channel is an empty string if "
 	"channel is private or player is not found.",
-	"string string",
+	"string, string",
 	"The response string and the player's channel")
 {
 	const char* plr_name;
@@ -2763,7 +2979,7 @@ ADE_FUNC(__len, l_PXO_Channels, nullptr, "The number of channels available", "nu
 	return ade_set_args(L, "i", static_cast<int>(Multi_pxo_channels.size()));
 }
 
-ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, nullptr, "Joins the specified private channel", nullptr, nullptr)
+ADE_FUNC(joinPrivateChannel, l_UserInterface_MultiPXO, "string channel", "Joins the specified private channel", nullptr, nullptr)
 {
 	const char* channel;
 	if (!ade_get_args(L, "s", &channel))
@@ -2803,6 +3019,976 @@ ADE_FUNC(getHelpText, l_UserInterface_MultiPXO, nullptr, "Gets the help text lin
 	multi_pxo_help_free();
 
 	return ade_set_args(L, "t", pages);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiGeneral
+ADE_LIB_DERIV(l_UserInterface_MultiGeneral,
+	"MultiGeneral",
+	nullptr,
+	"API for accessing general data related to all Multi UIs with the exception of the PXO Lobby.",
+	l_UserInterface);
+
+ADE_VIRTVAR(StatusText, l_UserInterface_MultiGeneral, nullptr, "The current status text", "string", "the status text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_notify_text);
+}
+
+ADE_VIRTVAR(InfoText, l_UserInterface_MultiGeneral, nullptr, "The current info text", "string", "the info text")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "s", Multi_common_all_text);
+}
+
+ADE_FUNC(getNetGame,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"The handle to the netgame. Note that the netgame will be invalid if a multiplayer game has not been joined or created.",
+	"netgame",
+	"The netgame handle")
+{
+	SCP_UNUSED(L);
+	return ade_set_args(L, "o", l_NetGame.Set(net_game_h()));
+}
+
+ADE_LIB_DERIV(l_Net_Players, "NetPlayers", nullptr, nullptr, l_UserInterface_MultiGeneral);
+ADE_INDEXER(l_Net_Players,
+	"number Index",
+	"Array of net players",
+	"net_player",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || (idx >= MAX_PLAYERS))
+		return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h()));
+
+	return ade_set_args(L, "o", l_NetPlayer.Set(net_player_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Players, nullptr, "The number of net players", "number", "The number of players.")
+{
+	return ade_set_args(L, "i", MAX_PLAYERS);
+}
+
+ADE_FUNC(getChat,
+	l_UserInterface_MultiGeneral,
+	nullptr,
+	"Gets the entire chat as a table of tables each with the following values: "
+	"Callsign - the name of the message sender, "
+	"Message - the message text, "
+	"Color - the color the text should be according to the player id",
+	"table",
+	"A table of chat strings")
+{
+	SCP_UNUSED(L);
+
+	using namespace luacpp;
+
+	LuaTable chats = LuaTable::create(L);
+
+	int i = 1;
+	SCP_string text = "";
+	SCP_string callsign = "";
+	color* clr = nullptr;
+
+	auto createChatEntry = [L, &i, &chats](const SCP_string& this_text, const SCP_string& this_callsign, const color* this_clr) {
+			auto item = luacpp::LuaTable::create(L);
+			item.addValue("Callsign", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_callsign.c_str()));
+			item.addValue("Message", luacpp::LuaValue::createValue(Script_system.GetLuaSession(), this_text.c_str()));
+			item.addValue("Color", l_Color.Set(*this_clr));
+			chats.addValue(i++, item);
+	};
+
+
+	bool send = false;
+	for (auto& chat : Brief_chat) {
+
+		// In API mode we don't need to worry about line splits
+		// so reconnect all indented lines into a single chat line and
+		// let the API's UI deal with the rest.
+		// But first send the previous chat line, if any, to the lua table
+		// now that we know we're done concatenating indented lines.
+		if (!chat.indent) {
+			if (send){
+				createChatEntry(text, callsign, clr);
+
+				//Sent, so now clear and start over
+				text.clear();
+				callsign.clear();
+				clr = nullptr;
+			}
+
+			text = chat.text;
+			callsign = chat.callsign;
+			clr = Color_netplayer[chat.player_id];
+
+			send = true;
+		} else {
+			text += chat.text;
+		}
+	}
+
+	// We might have one more line to add
+	if (send) {
+		createChatEntry(text, callsign, clr);
+	}
+
+	return ade_set_args(L, "t", chats);
+}
+
+ADE_FUNC(sendChat,
+	l_UserInterface_MultiGeneral,
+	"string",
+	"Sends a string to the current game's IRC chat. Limited to 125 characters. Anything after that is dropped.",
+	nullptr,
+	nullptr)
+{
+	const char* msg;
+	if (!ade_get_args(L, "s", &msg))
+		return ADE_RETURN_NIL;
+
+	char temp[CHATBOX_MAX_LEN];
+	strncpy(temp, msg, CHATBOX_MAX_LEN);
+	temp[CHATBOX_MAX_LEN - 1] = '\0';
+
+	chatbox_send_msg(temp);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(quitGame,
+	l_UserInterface_MultiGeneral,
+	nullptr, "Quits the game for the current player and returns them to the PXO lobby", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	if (Game_mode & GM_MULTIPLAYER) {
+		multi_quit_game(PROMPT_ALL);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setPlayerState, l_UserInterface_MultiGeneral, nullptr, "Sets the current player's network state based on the current game state.", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	int state = gameseq_get_state();
+
+	// We really only need to handle this for game states that the lua API
+	// completely replaces; Where the state_init() code doesn't actually run
+	// but it won't hurt to include others.
+	// This may not be an exhaustive list. Feel free to add more.
+	switch (state) {
+	case GS_STATE_BRIEFING:
+		Net_player->state = NETPLAYER_STATE_BRIEFING;
+		break;
+	case GS_STATE_CMD_BRIEF:
+		Net_player->state = NETPLAYER_STATE_CMD_BRIEFING;
+		break;
+	case GS_STATE_SHIP_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_WEAPON_SELECT:
+		Net_player->state = NETPLAYER_STATE_WEAPON_SELECT;
+		break;
+	case GS_STATE_RED_ALERT:
+		Net_player->state = NETPLAYER_STATE_RED_ALERT;
+		break;
+	case GS_STATE_DEBRIEF:
+		Net_player->state = NETPLAYER_STATE_DEBRIEF;
+		break;
+	case GS_STATE_FICTION_VIEWER:
+		Net_player->state = NETPLAYER_STATE_FICTION_VIEWER;
+		break;
+	case GS_STATE_MULTI_HOST_SETUP:
+		Net_player->state = NETPLAYER_STATE_HOST_SETUP;
+		break;
+	case GS_STATE_MULTI_MISSION_SYNC:
+		Net_player->state = NETPLAYER_STATE_MISSION_SYNC;
+		break;
+	case GS_STATE_TEAM_SELECT:
+		Net_player->state = NETPLAYER_STATE_SHIP_SELECT;
+		break;
+	case GS_STATE_MULTI_CLIENT_SETUP:
+		Net_player->state = NETPLAYER_STATE_JOINED;
+		break;
+	default:
+		break;
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiJoinGame
+ADE_LIB_DERIV(l_UserInterface_MultiJoinGame,
+	"MultiJoinGame",
+	nullptr,
+	"API for accessing data related to the Multi Join Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to begin a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiJoin,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Makes sure everything is done correctly to end a multi join session.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Runs the network required commands to update the lists once and handle join requests",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_game_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(refresh, l_UserInterface_MultiJoinGame, nullptr, "Force refreshing the games list", nullptr, nullptr)
+{
+	SCP_UNUSED(L);
+
+	broadcast_game_query();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(createGame,
+	l_UserInterface_MultiJoinGame,
+	nullptr,
+	"Starts creating a new game and moves to the new UI",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_join_create_game();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(sendJoinRequest,
+	l_UserInterface_MultiJoinGame,
+	"[boolean AsObserver]",
+	"Sends a join game request",
+	"boolean",
+	"True if successful, false otherwise")
+{
+
+	bool observer = false;
+	ade_get_args(L, "|b", &observer);
+
+	if (Active_games.empty()) {
+		multi_common_add_notify(XSTR("No games found!", 757));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_selected_item == nullptr) {
+		multi_common_add_notify(XSTR("No game selected!", 758));
+		return ADE_RETURN_FALSE;
+	} else if (Multi_join_sent_stamp.isValid() && !ui_timestamp_elapsed(Multi_join_sent_stamp)) {
+		multi_common_add_notify(XSTR("Still waiting on previous join request!", 759));
+	} else {
+		// otherwise, if he's already played PXO games, warn him
+
+		if (Player->flags & PLAYER_FLAGS_HAS_PLAYED_PXO) {
+			if (!multi_join_warn_pxo()) {
+				return ADE_RETURN_FALSE;
+			}
+		}
+
+		// send a join request packet
+		multi_join_send_join_request(observer);
+		return ADE_RETURN_TRUE;
+	}
+
+	return ADE_RETURN_FALSE;
+}
+
+ADE_LIB_DERIV(l_Active_Games, "ActiveGames", nullptr, nullptr, l_UserInterface_MultiJoinGame);
+ADE_INDEXER(l_Active_Games,
+	"number Index",
+	"Array of active games",
+	"active_game",
+	"active game handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if ((idx < 0) || idx >= static_cast<int>(Active_games.size()))
+		return ade_set_args(L, "o", l_Active_Game.Set(active_game_h()));
+
+	return ade_set_args(L, "o", l_Active_Game.Set(active_game_h(idx)));
+}
+
+ADE_FUNC(__len,
+	l_Active_Games,
+	nullptr,
+	"The number of active games available",
+	"number",
+	"The number of active games.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Active_games.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiStartGame
+ADE_LIB_DERIV(l_UserInterface_MultiStartGame,
+	"MultiStartGame",
+	nullptr,
+	"API for accessing data related to the Multi Start Game UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiStart,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Initializes the Create Game methods and variables",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiStart,
+	l_UserInterface_MultiStartGame,
+	"boolean Start_or_Quit",
+	"Finalizes the new game settings and moves to the host game UI if true or cancels if false. Defaults to true.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		multi_start_game_close(true);
+	} else {
+		multi_quit_game(PROMPT_NONE);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiStartGame,
+	nullptr,
+	"Runs the network required commands to update the status text",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_start_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setName,
+	l_UserInterface_MultiStartGame,
+	"string Name",
+	"Sets the game's name",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	const char* name;
+	if (!ade_get_args(L, "s", &name))
+		return ADE_RETURN_FALSE;
+
+	if (strlen(name) > MAX_GAMENAME_LEN + 1) {
+		return ADE_RETURN_FALSE;
+	}
+
+	strcpy_s(Multi_sg_netgame->name, name);
+
+	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(setGameType,
+	l_UserInterface_MultiStartGame,
+	"enumeration type=MULTI_GAME_TYPE_OPEN, [string | number password_or_rank_index]",
+	"Sets the game's type and, optionally, the password or rank index.",
+	"boolean",
+	"True if successful, false otherwise")
+{
+	enum_h* game = nullptr;
+	const char* password = nullptr;
+	int rank_idx = 0;
+	if (!ade_get_args(L, "o", l_Enum.GetPtr(&game))) {
+		return ADE_RETURN_FALSE;
+	}
+
+	switch (game->index) {
+	case LE_MULTI_GAME_TYPE_OPEN:
+		Multi_sg_netgame->mode = NG_MODE_OPEN;
+		break;
+	case LE_MULTI_GAME_TYPE_PASSWORD:
+		Multi_sg_netgame->mode = NG_MODE_PASSWORD;
+		if (!ade_get_args(L, "*s", &password)) {
+			return ADE_RETURN_FALSE;
+		}
+		if ((password == nullptr) || (strlen(password) > MAX_PASSWD_LEN + 1)) {
+			return ADE_RETURN_FALSE;
+		}
+		strcpy_s(Multi_sg_netgame->passwd, password);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_ABOVE:
+		Multi_sg_netgame->mode = NG_MODE_RANK_ABOVE;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	case LE_MULTI_GAME_TYPE_RANK_BELOW:
+		Multi_sg_netgame->mode = NG_MODE_RANK_BELOW;
+		if (!ade_get_args(L, "*i", &rank_idx)) {
+			return ADE_RETURN_FALSE;
+		}
+		Multi_sg_netgame->rank_base = verify_rank(rank_idx);
+		break;
+	default:
+		return ADE_RETURN_FALSE;
+		break;
+	}
+
+	return ADE_RETURN_TRUE;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiHostSetup
+ADE_LIB_DERIV(l_UserInterface_MultiHostSetup,
+	"MultiHostSetup",
+	nullptr,
+	"API for accessing data related to the Multi Host Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the host setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiHostSetup,
+	l_UserInterface_MultiHostSetup,
+	"boolean Commit_or_Quit",
+	"Closes Multi Host Setup. True to commit, false to quit.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (choice) {
+		int idx = -1;
+		if (Netgame.campaign_mode == MULTI_CREATE_SHOW_MISSIONS)
+			for (size_t i = 0; i < Multi_create_mission_list.size(); i++) {
+				if (strcmp(Multi_create_mission_list[i].filename, Netgame.mission_name) == 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		else {
+			for (size_t i = 0; i < Multi_create_campaign_list.size(); i++) {
+				if (strcmp(Multi_create_campaign_list[i].filename, Netgame.mission_name) == 0) {
+					idx = static_cast<int>(i);
+					break;
+				}
+			}
+		}
+		if (multi_create_ok_to_commit(idx)) {
+			//Some of this seems redundant but that's what the retail UI does!
+			multi_create_accept_hit(Netgame.campaign_mode, idx);
+		}
+	} else {
+		multi_quit_game(PROMPT_HOST);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiHostSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_create_game_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Net_Missions, "NetMissions", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Missions,
+	"number Index",
+	"Array of net missions",
+	"net_mission",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_mission_list, idx))
+		return ade_set_args(L, "o", l_NetMission.Set(net_mission_h()));
+
+	return ade_set_args(L, "o", l_NetMission.Set(net_mission_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Missions, nullptr, "The number of net missions", "number", "The number of missions.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_mission_list.size()));
+}
+
+ADE_LIB_DERIV(l_Net_Campaigns, "NetCampaigns", nullptr, nullptr, l_UserInterface_MultiHostSetup);
+ADE_INDEXER(l_Net_Campaigns,
+	"number Index",
+	"Array of net campaigns",
+	"net_campaign",
+	"net player handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Multi_create_campaign_list, idx))
+		return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h()));
+
+	return ade_set_args(L, "o", l_NetCampaign.Set(net_campaign_h(idx)));
+}
+
+ADE_FUNC(__len, l_Net_Campaigns, nullptr, "The number of net campaigns", "number", "The number of campaigns.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Multi_create_campaign_list.size()));
+}
+
+//**********SUBLIBRARY: UserInterface/MultiClientSetup
+ADE_LIB_DERIV(l_UserInterface_MultiClientSetup,
+	"MultiClientSetup",
+	nullptr,
+	"API for accessing data related to the Multi Client Setup UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Makes sure everything is done correctly to begin the client setup ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiClientSetup,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Cancels Multi Client Setup and leaves the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_quit_game(PROMPT_CLIENT);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiClientSetup,
+	nullptr,
+	"Runs the network required commands to update the lists and run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_game_client_setup_do_frame(true);
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiSync
+ADE_LIB_DERIV(l_UserInterface_MultiSync,
+	"MultiSync",
+	nullptr,
+	"API for accessing data related to the Multi Sync UI.",
+	l_UserInterface);
+
+ADE_FUNC(initMultiSync,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Makes sure everything is done correctly to begin the multi sync ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeMultiSync,
+	l_UserInterface_MultiSync, "boolean QuitGame",
+	"Closes MultiSync. If QuitGame is true then it cancels and leaves the game automatically.",
+	nullptr,
+	nullptr)
+{
+	bool choice = true;
+	if (!ade_get_args(L, "b", &choice))
+		return ADE_RETURN_NIL;
+
+	if (!choice) {
+		multi_sync_close(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+	}
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Runs the network required commands to run the chat",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_sync_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(startCountdown, l_UserInterface_MultiSync, nullptr,
+	"Starts the Launch Mission Countdown that, when finished, will move all players into the mission.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+	
+	multi_sync_start_countdown();
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(getCountdownTime,
+	l_UserInterface_MultiSync,
+	nullptr,
+	"Gets the current countdown time. Will be -1 before the countdown starts otherwise will be the num seconds until missions starts.",
+	"number",
+	"The countdown in seconds")
+{
+	SCP_UNUSED(L);
+
+	return ade_set_args(L, "i", Multi_sync_countdown);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPreJoin
+ADE_LIB_DERIV(l_UserInterface_MultiPreJoin,
+	"MultiPreJoin",
+	nullptr,
+	"API for accessing data related to the Pre Join UI.",
+	l_UserInterface);
+
+ADE_FUNC(initPreJoin,
+	l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Makes sure everything is done correctly to init the pre join ui.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_select_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_LIB_DERIV(l_Join_Ship_Choices, "JoinShipChoices", nullptr, nullptr, l_UserInterface_MultiPreJoin);
+ADE_INDEXER(l_Join_Ship_Choices,
+	"number Index",
+	"Array of ship choices. Ingame Join must be inited first",
+	"net_join_choice",
+	"net choice handle, or invalid handle if index is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "*i", &idx))
+		return ade_set_error(L, "s", "");
+
+	// convert from lua index
+	idx--;
+
+	if (!SCP_vector_inbounds(Ingame_ship_choices, idx))
+		return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h()));
+
+	return ade_set_args(L, "o", l_Join_Ship_Choice.Set(join_ship_choices_h(idx)));
+}
+
+ADE_FUNC(__len, l_Join_Ship_Choices, nullptr, "The number of ship choices", "number", "The number of ships.")
+{
+	return ade_set_args(L, "i", static_cast<int>(Ingame_ship_choices.size()));
+}
+
+ADE_FUNC(closePreJoin,
+	l_UserInterface_MultiPreJoin,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or cancel the pre join. True to accept, False to quit",
+	"boolean",
+	"returns true if successful, false otherwise")
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	bool result;
+	if (accept) {
+		result = multi_ingame_join_accept(true);
+	} else {
+		multi_quit_game(PROMPT_CLIENT);
+		result = true;
+	}
+
+	Ingame_ship_choices.clear();
+	Ingame_ship_choices.shrink_to_fit();
+
+	return ade_set_args(L, "b", result);
+}
+
+ADE_FUNC(runNetwork, l_UserInterface_MultiPreJoin,
+	nullptr,
+	"Runs the network required commands.", "number", "The seconds left until pre join times out")
+{
+	SCP_UNUSED(L);
+
+	multi_ingame_join_calc_avail(true);
+	int time = multi_ingame_handle_timeout(true);
+
+	return ade_set_args(L, "i", time);
+}
+
+//**********SUBLIBRARY: UserInterface/MultiPauseScreen
+ADE_LIB_DERIV(l_UserInterface_MultiPauseScreen,
+	"MultiPauseScreen",
+	nullptr,
+	"API for accessing data related to the Pause Screen UI.",
+	l_UserInterface);
+
+ADE_VIRTVAR(isPaused,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Returns true if the game is paused, false otherwise",
+	"boolean",
+	"true if paused, false if unpaused")
+{
+	if (ADE_SETTING_VAR) {
+		LuaError(L, "This property is read only.");
+	}
+
+	return ade_set_args(L, "b", Multi_paused);
+}
+
+ADE_VIRTVAR(Pauser,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"The callsign of who paused the game. Empty string if invalid",
+	"string",
+	"the callsign")
+{
+	SCP_UNUSED(L);
+	
+	if ((Multi_pause_pauser != NULL) && (Multi_pause_pauser->m_player != NULL)) {
+		return ade_set_args(L, "s", Multi_pause_pauser->m_player->callsign);
+	}
+
+	return ade_set_args(L, "s", "");
+}
+
+ADE_FUNC(requestUnpause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Sends a request to unpause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_request(0);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(initPause,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Makes sure everything is done correctly to pause the game.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closePause,
+	l_UserInterface_MultiPauseScreen,
+	"[boolean EndMission]",
+	"Makes sure everything is done correctly to unpause the game. If end mission is true then it tries to end the mission.",
+	nullptr,
+	nullptr)
+{
+	bool end_mission = false;
+	ade_get_args(L, "*b", &end_mission);
+
+	multi_pause_close(end_mission, true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiPauseScreen,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_pause_do(true);
+
+	return ADE_RETURN_NIL;
+}
+
+//**********SUBLIBRARY: UserInterface/MultiDogfightDebrief
+ADE_LIB_DERIV(l_UserInterface_MultiDogfightDebrief,
+	"MultiDogfightDebrief",
+	nullptr,
+	"API for accessing data related to the Dogfight Debrief UI.",
+	l_UserInterface);
+
+ADE_FUNC(getDogfightScores,
+	l_UserInterface_MultiDogfightDebrief,
+	"net_player",
+	"The handle to the dogfight scores",
+	"dogfight_scores",
+	"The dogfight scores handle")
+{
+	net_player_h player;
+	if (!ade_get_args(L, "o", l_NetPlayer.Get(&player)))
+		return ADE_RETURN_NIL;
+
+	return ade_set_args(L, "o", l_Dogfight_Scores.Set(dogfight_scores_h(player.getIndex())));
+}
+
+ADE_FUNC(initDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Makes sure everything is done correctly to init the dogfight scores.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_init(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(closeDebrief,
+	l_UserInterface_MultiDogfightDebrief,
+	"[boolean Accept]",
+	"Makes sure everything is done correctly to accept or close the debrief. True to accept, False to quit",
+	nullptr,
+	nullptr)
+{
+	bool accept = false;
+	ade_get_args(L, "*b", &accept);
+
+	if (accept) {
+		multi_debrief_accept_hit();
+	} else {
+		multi_debrief_esc_hit();
+	}
+	multi_df_debrief_close(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(runNetwork,
+	l_UserInterface_MultiDogfightDebrief,
+	nullptr,
+	"Runs the network required commands.",
+	nullptr,
+	nullptr)
+{
+	SCP_UNUSED(L);
+
+	multi_df_debrief_do(true);
+
+	return ADE_RETURN_NIL;
 }
 
 } // namespace api

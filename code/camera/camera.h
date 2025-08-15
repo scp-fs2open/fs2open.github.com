@@ -10,7 +10,7 @@
 
 #include <string>
 
-#include <mpark/variant.hpp>
+#include <variant>
 
 #define CAM_STATIONARY_FOV			(1<<0)
 #define CAM_STATIONARY_ORI			(1<<1)
@@ -28,7 +28,7 @@ struct asymmetric_fov {
 	friend asymmetric_fov operator+ (const asymmetric_fov&, const float&);
 	friend asymmetric_fov operator- (const asymmetric_fov&, const float&);
 };
-using fov_t = mpark::variant<float, asymmetric_fov>;
+using fov_t = std::variant<float, asymmetric_fov>;
 fov_t operator* (const fov_t&, const float&);
 fov_t operator+ (const fov_t&, const float&);
 fov_t operator- (const fov_t&, const float&);
@@ -179,7 +179,6 @@ void cam_init();
 void cam_close();
 void cam_do_frame(float frametime);
 camid cam_create(const char *n_name=NULL, vec3d *n_pos=NULL, matrix *n_ori=NULL, object *n_object=NULL, int n_submodel_parent=-1);
-camid cam_create(const char *n_name, vec3d *n_pos, vec3d *n_norm, object *n_object=NULL, int n_submodel_parent=-1);
 void cam_delete(camid cid);
 bool cam_set_camera(camid cid);
 void cam_reset_camera();

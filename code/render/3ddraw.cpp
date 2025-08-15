@@ -500,8 +500,10 @@ void g3_render_rect_oriented(material* mat_info, vec3d *pos, matrix *ori, float 
 
 void g3_render_rect_oriented(material* mat_info, vec3d *pos, vec3d *norm, float width, float height)
 {
+	Assertion(norm != nullptr && vm_vec_is_normalized(norm), "input vector must be normalized!");
+
 	matrix m;
-	vm_vector_2_matrix(&m, norm, NULL, NULL);
+	vm_vector_2_matrix_norm(&m, norm, nullptr, nullptr);
 
 	g3_render_rect_oriented_internal(mat_info, pos, &m, width, height);
 }
@@ -672,7 +674,7 @@ void g3_render_rect_scaler(material *mat_params, vertex *va, vertex *vb)
 
 // adapted from g3_draw_bitmap()
 //void render_oriented_bitmap_2d(int texture, float alpha, bool blending, vertex *pnt, int orient, float rad)
-void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad)
+void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int orient, float rad, bool isFaraway)
 {
 	vertex va, vb;
 	float t, w, h;
@@ -703,14 +705,18 @@ void g3_render_rect_screen_aligned_2d(material *mat_params, vertex *pnt, int ori
 	if ( pnt->flags & PF_OVERFLOW )
 		return;
 
-	t = (width * gr_screen.clip_width * 0.5f) / pnt->world.xyz.z;
+	t = width * gr_screen.clip_width * 0.5f;
+	if (!isFaraway)
+		t /= pnt->world.xyz.z;
 	w = t*Matrix_scale.xyz.x;
 
-	t = (height * gr_screen.clip_height * 0.5f) / pnt->world.xyz.z;
+	t = height * gr_screen.clip_height * 0.5f;
+	if (!isFaraway)
+		t /= pnt->world.xyz.z;
 	h = t*Matrix_scale.xyz.y;
 
 	float z, sw;
-	z = pnt->world.xyz.z - rad / 2.0f;
+	z = isFaraway ? 100000 : pnt->world.xyz.z - rad / 2.0f;
 	if ( z <= 0.0f ) {
 		z = 0.0f;
 		sw = 0.0f;
@@ -887,7 +893,7 @@ void g3_render_laser_2d(material *mat_params, vec3d *headp, float head_width, ve
 		w = len_2d;
 
 	} else {
-		a = atan2_safe(taily - heady, tailx - headx);
+		a = atan2(taily - heady, tailx - headx);
 
 		w = len_2d;
 
@@ -1327,12 +1333,15 @@ void flash_ball::parse_bsp(int offset, ubyte *bsp_data){
 	}
 }
 
+extern const ubyte* Macro_ubyte_bounds;
 
-void flash_ball::initialize(ubyte *bsp_data, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
+void flash_ball::initialize(ubyte *bsp_data, int bsp_data_size, float min_ray_width, float max_ray_width, const vec3d* dir, const vec3d* pcenter, float outer, float inner, ubyte max_r, ubyte max_g, ubyte max_b, ubyte min_r, ubyte min_g, ubyte min_b)
 {
 	center = *pcenter;
 	vm_vec_negate(&center);
-	parse_bsp(0,bsp_data);
+	Macro_ubyte_bounds = bsp_data + bsp_data_size;
+	parse_bsp(0, bsp_data);
+	Macro_ubyte_bounds = nullptr;
 	center = vmd_zero_vector;
 
 	uint i;

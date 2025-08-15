@@ -31,6 +31,8 @@
 #include <jumpnode/jumpnode.h>
 #include <model/modelrender.h>
 #include <parse/parselo.h>
+#include <particle/ParticleEffect.h>
+#include <particle/volumes/ConeVolume.h>
 #include <render/3d.h>
 #include <render/3dinternal.h>
 #include <render/batching.h>
@@ -51,6 +53,21 @@ static bool WarnedBadThicknessLine = false;
 
 namespace scripting {
 namespace api {
+
+// Sets the graphics context to the Lua context on creation and resets it back to the main context on destruction
+// Ensures that no matter how the parent function is exited the context is reset properly
+struct LuaScreenContext {
+	LuaScreenContext() noexcept
+	{
+		gr_lua_screen.active = true;
+	}
+	~LuaScreenContext() noexcept
+	{
+		gr_lua_screen.active = false;
+	}
+	LuaScreenContext(const LuaScreenContext&) = delete;
+	LuaScreenContext& operator=(const LuaScreenContext&) = delete;
+};
 
 model_draw_list *Current_scene = nullptr;
 
@@ -95,11 +112,6 @@ ADE_FUNC(__len, l_Graphics_Cameras, NULL, "Gets number of cameras", "number", "N
 //****SUBLIBRARY: Graphics/Fonts
 ADE_LIB_DERIV(l_Graphics_Fonts, "Fonts", nullptr, "Font library", l_Graphics);
 
-ADE_FUNC(__len, l_Graphics_Fonts, NULL, "Number of loaded fonts", "number", "Number of loaded fonts")
-{
-	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
-}
-
 ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded fonts", "font", "Font handle, or invalid font handle if index is invalid")
 {
 	if (lua_isnumber(L, 2))
@@ -116,7 +128,7 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 		}
 
-		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(index - 1))));
+		return ade_set_args(L, "o", l_Font.Set(font_h(index - 1)));
 	}
 	else
 	{
@@ -125,22 +137,31 @@ ADE_INDEXER(l_Graphics_Fonts, "number/string IndexOrFilename", "Array of loaded 
 		if(!ade_get_args(L, "*s", &s))
 			return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(s))));
+		return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFontIndex(s))));
 	}
 }
 
-ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", NULL)
+ADE_FUNC(__len, l_Graphics_Fonts, nullptr, "Number of loaded fonts", "number", "Number of loaded fonts")
 {
-	font_h *newFh = NULL;
+	return ade_set_args(L, "i", font::FontManager::numberOfFonts());
+}
+
+ADE_VIRTVAR(CurrentFont, l_Graphics, "font", "Current font", "font", nullptr)
+{
+	font_h *newFh = nullptr;
 
 	if(!ade_get_args(L, "*|o", l_Font.GetPtr(&newFh)))
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
+	LuaScreenContext context;
+
 	if(ADE_SETTING_VAR && newFh->isValid()) {
-		font::FontManager::setCurrentFont(newFh->Get());
+		font::FontManager::setCurrentFontIndex(newFh->GetIndex());
 	}
 
-	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getCurrentFont())));
+	int font = font::FontManager::getCurrentFontIndex();
+
+	return ade_set_args(L, "o", l_Font.Set(font_h(font)));
 }
 
 //****SUBLIBRARY: Graphics/PostEffects
@@ -357,7 +378,7 @@ ADE_FUNC(isMenuStretched, l_Graphics, NULL, "Returns whether the standard interf
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
-	return ade_set_args(L, "b", Cmdline_stretch_menu != 0);
+	return ade_set_args(L, "b", Cmdline_stretch_menu);
 }
 
 ADE_FUNC(getScreenWidth, l_Graphics, NULL, "Gets screen width", "number", "Width in pixels, or 0 if graphics are not initialized yet")
@@ -422,6 +443,26 @@ ADE_FUNC(getCurrentCamera, l_Graphics, "[boolean]", "Gets the current camera han
 		current = Main_camera;
 
 	return ade_set_args(L, "o", l_Camera.Set(current));
+}
+
+ADE_FUNC(getEyePosition, l_Graphics, nullptr, "Where the viewer's eye is at in World coordinates", "vector", "a vector containing the eye position")
+{
+	return ade_set_args(L, "o", l_Vector.Set(Eye_position));
+}
+
+ADE_FUNC(getEyeOrientation, l_Graphics, nullptr, "Where the viewer's eye is pointing in World coordinates", "orientation", "a matrix containing the eye orientation")
+{
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&Eye_matrix)));
+}
+
+ADE_FUNC(getEyeFOV, l_Graphics, "[boolean visible_fov=true]", "What the viewer's FOV is, in radians.  If visible_fov is true, the visible field of view (for culling) "
+	"is returned; if false, the camera field of view (for rendering) is returned.  For non-VR setups, these two numbers are the same.",
+	"number", "a number containing the eye fov")
+{
+	bool visible_fov = true;
+	ade_get_args(L, "|b", &visible_fov);
+
+	return ade_set_args(L, "f", g3_get_hfov(Eye_fov, visible_fov));
 }
 
 ADE_FUNC(getVectorFromCoords, l_Graphics,
@@ -524,8 +565,8 @@ ADE_FUNC(setCamera, l_Graphics, "[camera Camera]", "Sets current camera, or rese
 
 ADE_FUNC(setColor,
 	l_Graphics,
-	"number|color /* red value or color object */, number Green, number Blue, [number Alpha]",
-	"Sets 2D drawing color; each color number should be from 0 (darkest) to 255 (brightest)",
+	"number|color /* red value or color object */, [number Green, number Blue, number Alpha]",
+	"Sets 2D drawing color for the active context; each color number should be from 0 (darkest) to 255 (brightest)",
 	nullptr,
 	nullptr)
 {
@@ -547,6 +588,8 @@ ADE_FUNC(setColor,
 		ade_get_args(L, "o", l_Color.Get(&col));
 	}
 
+	LuaScreenContext context;
+
 	gr_set_color_fast(&col);
 
 	return ADE_RETURN_NIL;
@@ -554,8 +597,8 @@ ADE_FUNC(setColor,
 
 ADE_FUNC(getColor,
 	l_Graphics,
-	"boolean",
-	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
+	"[boolean]",
+	"Gets the active 2D drawing color from the active context. False to return raw rgb, true to return a color object. Defaults to false.",
 	"number, number, number, number | color",
 	"rgba color which is currently in use for 2D drawing")
 {
@@ -565,16 +608,18 @@ ADE_FUNC(getColor,
 	bool rc = false;
 	ade_get_args(L, "|b", &rc);
 
-	color cur = gr_screen.current_color;
+	LuaScreenContext context;
+	
+	const color cur = GR_CURRENT_COLOR;
 
 	if (!rc) {
-		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
+		return ade_set_args(L, "iiii", static_cast<int>(cur.red), static_cast<int>(cur.green), static_cast<int>(cur.blue), static_cast<int>(cur.alpha));
 	} else {
 		return ade_set_args(L, "o", l_Color.Set(cur));
 	}
 }
 
-ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
+ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width for lines for the active context. This call might fail if the specified width is not supported by the graphics implementation. Then the width will be the nearest supported value.", "boolean", "true if succeeded, false otherwise")
 {
 	if(!Gr_inited)
 		return ADE_RETURN_FALSE;
@@ -588,12 +633,14 @@ ADE_FUNC(setLineWidth, l_Graphics, "[number width=1.0]", "Sets the line width fo
 		return ADE_RETURN_FALSE;
 	}
 
+	LuaScreenContext context;
+
 	gr_set_line_width(width);
 
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle", NULL, NULL)
+ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Filled=true]", "Draws a circle using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -603,6 +650,8 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 
 	if(!ade_get_args(L, "iii|b", &ra,&x,&y,&fill))
 		return ADE_RETURN_NIL;
+
+	LuaScreenContext context;
 
 	if (fill) {
 		//WMC - Circle takes...diameter.
@@ -614,7 +663,7 @@ ADE_FUNC(drawCircle, l_Graphics, "number Radius, number X, number Y, [boolean Fi
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc", NULL, NULL)
+ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAngle, number EndAngle, [boolean Filled=true]", "Draws an arc using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -627,12 +676,14 @@ ADE_FUNC(drawArc, l_Graphics, "number Radius, number X, number Y, number StartAn
 		return ADE_RETURN_NIL;
 	}
 
+	LuaScreenContext context;
+
 	gr_arc(x,y, ra, angle_start, angle_end, fill, lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a curve", NULL, NULL)
+ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a curve using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -642,6 +693,8 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	if(!ade_get_args(L, "iii|i", &x,&y,&ra, &dir))
 		return ADE_RETURN_NIL;
 
+	LuaScreenContext context;
+
 	//WMC - direction should be settable at a certain point via enumerations.
 	//Not gonna deal with it now.
 	gr_curve(x, y, ra, dir, lua_ResizeMode);
@@ -649,7 +702,7 @@ ADE_FUNC(drawCurve, l_Graphics, "number X, number Y, number Radius", "Draws a cu
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) with the CurrentColor that steadily fades out", NULL, NULL)
+ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) that steadily fades out using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return 0;
@@ -659,12 +712,14 @@ ADE_FUNC(drawGradientLine, l_Graphics, "number X1, number Y1, number X2, number 
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
+	LuaScreenContext context;
+
 	gr_gradient(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) with CurrentColor", NULL, NULL)
+ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Draws a line from (x1,y1) to (x2,y2) using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -674,12 +729,14 @@ ADE_FUNC(drawLine, l_Graphics, "number X1, number Y1, number X2, number Y2", "Dr
 	if(!ade_get_args(L, "iiii", &x1, &y1, &x2, &y2))
 		return ADE_RETURN_NIL;
 
+	LuaScreenContext context;
+
 	gr_line(x1,y1,x2,y2,lua_ResizeMode);
 
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColor", NULL, NULL)
+ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Draws a pixel using active context values (like color or width).", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -688,6 +745,8 @@ ADE_FUNC(drawPixel, l_Graphics, "number X, number Y", "Sets pixel to CurrentColo
 
 	if(!ade_get_args(L, "ii", &x, &y))
 		return ADE_RETURN_NIL;
+
+	LuaScreenContext context;
 
 	gr_pixel(x,y,lua_ResizeMode);
 
@@ -698,7 +757,7 @@ ADE_FUNC(drawPolygon,
 	l_Graphics,
 	"texture Texture, [vector Position /* Default is null vector */, orientation Orientation=nil, number Width=1.0, "
 	"number Height=1.0]",
-	"Draws a polygon. May not work properly in hooks other than On Object Render.",
+	"Draws a polygon using active context values (like color or width). May not work properly in hooks other than On Object Render.",
 	nullptr,
 	nullptr)
 {
@@ -712,6 +771,8 @@ ADE_FUNC(drawPolygon,
 
 	if (!tdx->isValid())
 		return ADE_RETURN_FALSE;
+
+	LuaScreenContext context;
 
 	matrix *orip = &vmd_identity_matrix;
 	if(mh != NULL)
@@ -737,6 +798,8 @@ ADE_FUNC(drawPolygon,
 
 void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0.f) 
 {
+	LuaScreenContext context;
+	
 	if(f)
 	{
 		gr_set_bitmap(0);  // gr_rect will use the last bitmaps info, so set to zero to flush any previous alpha state
@@ -779,7 +842,7 @@ void drawRectInternal(int x1, int x2, int y1, int y2, bool f = true, float a = 0
 
 }
 
-ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
+ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2, [boolean Filled=true, number angle=0.0]", "Draws a rectangle using active context values (like color or width). May be rotated by passing the angle parameter in radians.", nullptr, nullptr)
 {
 	if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -798,7 +861,7 @@ ADE_FUNC(drawRectangle, l_Graphics, "number X1, number Y1, number X2, number Y2,
 
 ADE_FUNC(drawRectangleCentered, l_Graphics, 
 	"number X, number Y, number Width, number Height, [boolean Filled=true, number angle=0.0]", 
-	"Draws a rectangle centered at X,Y with CurrentColor. May be rotated by passing the angle parameter in radians.", nullptr, nullptr) 
+	"Draws a rectangle centered at X,Y using active context values (like color or width). May be rotated by passing the angle parameter in radians.", nullptr, nullptr) 
 {
 		if(!Gr_inited)
 		return ADE_RETURN_NIL;
@@ -820,11 +883,13 @@ ADE_FUNC(drawRectangleCentered, l_Graphics,
 	return ADE_RETURN_NIL;
 }
 
-ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position. May not work properly in hooks other than On Object Render.", "boolean", "True if successful, false or nil otherwise")
+ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draws a sphere with radius Radius at world vector Position using active context values (like color). May not work properly in hooks other than On Object Render.", "boolean", "True if successful, false or nil otherwise")
 {
 	float rad = 1.0f;
 	vec3d pos = vmd_zero_vector;
 	ade_get_args(L, "|fo", &rad, l_Vector.Get(&pos));
+
+	LuaScreenContext context;
 
 	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame) {
@@ -863,10 +928,11 @@ ADE_FUNC(drawSphere, l_Graphics, "[number Radius = 1.0, vector Position]", "Draw
 		gr_end_proj_matrix();
 		g3_end_frame();
 	}
+
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination. "
+ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean translucent=true, number thickness=1.0, number thicknessEnd=thickness]", "Draws a line from origin to destination using active context values (like color). "
 "The line may be translucent or solid. Translucent lines will NOT use the alpha value, instead being more transparent the darker the color is. "
 "The thickness at the start can be different from the thickness at the end, to draw a line that tapers or expands.", nullptr, nullptr)
 {
@@ -878,6 +944,8 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 
 	if (!ade_get_args(L, "oo|bff", l_Vector.GetPtr(&v1), l_Vector.GetPtr(&v2), &translucent, &thickness, &thicknessEnd))
 		return ADE_RETURN_NIL;
+
+	LuaScreenContext context;
 
 	if (thickness < 0) thickness = 0;
 	if (thicknessEnd < 0) thicknessEnd = thickness;
@@ -894,9 +962,7 @@ ADE_FUNC(draw3dLine, l_Graphics, "vector origin, vector destination, [boolean tr
 		return ADE_RETURN_NIL;
 	}
 
-	color &clr = gr_screen.current_color;
-
-	batching_add_line(v1, v2, thickness, thicknessEnd, clr, translucent);
+	batching_add_line(v1, v2, thickness, thicknessEnd, GR_CURRENT_COLOR, translucent);
 
 	return ADE_RETURN_NIL;
 }
@@ -1035,7 +1101,7 @@ ADE_FUNC(drawModelOOR, l_Graphics, "model Model, vector Position, orientation Or
 // Aardwolf's targeting brackets function
 ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, number padding=5]",
          "Gets the edge positions of targeting brackets for the specified object. The brackets will only be drawn if "
-         "draw is true or the default value of draw is used. Brackets are drawn with the current color. The brackets "
+         "draw is true or the default value of draw is used. Brackets are drawn with the current active context color. The brackets "
          "will have a padding (distance from the actual bounding box); the default value (used elsewhere in FS2) is 5.  "
          "Note: this method does NOT use CurrentResizeMode.",
          "number, number, number, number",
@@ -1045,7 +1111,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		return ADE_RETURN_NIL;
 	}
 
-	object_h *objh = NULL;
+	object_h *objh = nullptr;
 	bool draw_box = true;
 	int padding = 5;
 
@@ -1061,13 +1127,14 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 		return ADE_RETURN_NIL;
 	}
 
-	object *targetp = objh->objp;
+	LuaScreenContext context;
+
+	object *targetp = objh->objp();
 
 	int x1,x2,y1,y2;
 	int bound_rc, pof;
 	int modelnum;
 	bool entered_frame = false;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	if ( !(g3_in_frame( ) > 0 ) )
 	{
@@ -1109,18 +1176,19 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 			break;
 		case OBJ_ASTEROID:
 			pof = Asteroids[targetp->instance].asteroid_subtype;
-			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].model_num[pof];
+			modelnum = Asteroid_info[Asteroids[targetp->instance].asteroid_type].subtypes[pof].model_number;
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
-		case OBJ_JUMP_NODE:
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == targetp)
-					break;
+		case OBJ_JUMP_NODE: {
+			auto jnp = jumpnode_get_by_objp(targetp);
+			if (!jnp) {
+				x1 = y1 = x2 = y2 = 0;
+				break;
 			}
-
 			modelnum = jnp->GetModelNumber();
 			bound_rc = model_find_2d_bound_min( modelnum, &targetp->orient, &targetp->pos,&x1,&y1,&x2,&y2 );
 			break;
+		}
 		default: //Someone passed an invalid pointer.
 			if ( entered_frame )
 				g3_end_frame( );
@@ -1146,7 +1214,7 @@ ADE_FUNC(drawTargetingBrackets, l_Graphics, "object Object, [boolean draw=true, 
 ADE_FUNC(
     drawSubsystemTargetingBrackets, l_Graphics, "subsystem subsys, [boolean draw=true, boolean setColor=false]",
     "Gets the edge position of the targeting brackets drawn for a subsystem as if they were drawn on the HUD. Only "
-    "actually draws the brackets if <i>draw</i> is true, optionally sets the color the as if it was drawn on the HUD",
+    "actually draws the brackets if <i>draw</i> is true, optionally sets the color if it was drawn on the HUD using active context color",
     "number, number, number, number",
     "Left, top, right, and bottom positions of the brackets, or nil if invalid or off-screen")
 {
@@ -1154,7 +1222,7 @@ ADE_FUNC(
 		return ADE_RETURN_NIL;
 	}
 
-	ship_subsys_h *sshp = NULL;
+	ship_subsys_h *sshp = nullptr;
 	bool draw = true;
 	bool set_color = false;
 
@@ -1166,6 +1234,8 @@ ADE_FUNC(
 	{
 		return ADE_RETURN_NIL;
 	}
+
+	LuaScreenContext context;
 
 	bool entered_frame = false;
 
@@ -1196,7 +1266,7 @@ ADE_FUNC(
 
 ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true, boolean setColor=false]",
          "Draws an off-screen indicator for the given object. The indicator will not be drawn if draw=false, but the "
-         "coordinates will be returned in either case. The indicator will be drawn using the current color if "
+         "coordinates will be returned in either case. The indicator will be drawn using the current active context color. if "
          "setColor=true and using the IFF color of the object if setColor=false.",
          "number, number",
          "Coordinates of the indicator (at the very edge of the screen), or nil if object is on-screen")
@@ -1218,7 +1288,9 @@ ADE_FUNC(drawOffscreenIndicator, l_Graphics, "object Object, [boolean draw=true,
 		return ADE_RETURN_NIL;
 	}
 
-	object *targetp = objh->objp;
+	LuaScreenContext context;
+
+	object *targetp = objh->objp();
 	bool in_frame = g3_in_frame() > 0;
 
 	if (!in_frame)
@@ -1297,6 +1369,8 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		return ade_set_error(L, "i", 0);
 
 	int resize_mode = lua_ResizeMode;
+
+	LuaScreenContext context;
 
 	// if the frame has changed since the last drawString call, reset the string position
 	if (PreviousFrametimeOverall != game_get_overall_frametime())
@@ -1404,7 +1478,7 @@ static int drawString_sub(lua_State *L, bool use_resize_arg)
 		for(const auto &line: lines)
 		{
 			//Draw the string
-			gr_string(x, curr_y, s + line.first, resize_mode, line.second);
+			gr_string(x, curr_y, s + line.first, resize_mode, 1.0f, line.second);
 
 			//Increment line height
 			curr_y += line_ht;
@@ -1428,7 +1502,7 @@ ADE_FUNC(drawString, l_Graphics, "string|boolean Message, [number X1, number Y1,
 	"Text will automatically move onto new lines, if x2/y2 is specified."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
-	"have been drawn yet",
+	"have been drawn yet. Uses active context values (like color and font).",
 	"number",
 	"Number of lines drawn, or 0 on failure")
 {
@@ -1440,7 +1514,7 @@ ADE_FUNC(drawStringResized, l_Graphics, "enumeration ResizeMode, string|boolean 
 	"Text will automatically move onto new lines, if x2/y2 is specified, however the line spacing will probably not be correct."
 	"Additionally, calling drawString with only a string argument will automatically"
 	"draw that string below the previously drawn string (or 0,0 if no strings"
-	"have been drawn yet",
+	"have been drawn yet. Uses active context values (like color and font).",
 	"number",
 	"Number of lines drawn, or 0 on failure")
 {
@@ -1487,6 +1561,8 @@ ADE_FUNC(getStringWidth, l_Graphics, "string String", "Gets string width", "numb
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
+	LuaScreenContext context;
+
 	int w;
 	gr_get_string_size(&w, nullptr, s);
 
@@ -1502,6 +1578,8 @@ ADE_FUNC(getStringHeight, l_Graphics, "string String", "Gets string height", "nu
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "i", 0);
 
+	LuaScreenContext context;
+
 	int h;
 	gr_get_string_size(nullptr, &h, s);
 
@@ -1516,6 +1594,8 @@ ADE_FUNC(getStringSize, l_Graphics, "string String", "Gets string width and heig
 	const char* s;
 	if(!ade_get_args(L, "s", &s))
 		return ade_set_error(L, "ii", 0, 0);
+
+	LuaScreenContext context;
 
 	int w, h;
 	gr_get_string_size(&w, &h, s);
@@ -1636,6 +1716,8 @@ ADE_FUNC(drawImage,
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
 
+	LuaScreenContext context;
+
 	int idx;
 	int x1 = 0;
 	int y1 = 0;
@@ -1725,6 +1807,8 @@ ADE_FUNC(drawImageCentered,
 	"Whether image was drawn") {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
+
+	LuaScreenContext context;
 
 	int idx;
 	int x = 0;
@@ -1816,6 +1900,8 @@ ADE_FUNC_DEPRECATED(drawMonochromeImage,
 {
 	if(!Gr_inited)
 		return ade_set_error(L, "b", false);
+
+	LuaScreenContext context;
 
 	int idx;
 	int x,y;
@@ -1954,7 +2040,7 @@ ADE_FUNC(loadModel, l_Graphics, "string Filename", "Loads the model - will not s
 	if (s[0] == '\0')
 		return ade_set_error(L, "o", l_Model.Set(model_h(-1)));
 
-	model_num = model_load(s, 0, NULL);
+	model_num = model_load(s);
 
 	return ade_set_args(L, "o", l_Model.Set(model_h(model_num)));
 }
@@ -2058,14 +2144,20 @@ ADE_FUNC(hasViewmode, l_Graphics, "enumeration", "Specifies if the current viemo
 	return ade_set_args(L, "b", (Viewer_mode & bit) != 0);
 }
 
-ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
+ADE_FUNC(setClip, l_Graphics, "number x, number y, number width, number height, [enumeration ResizeMode]", "Sets the clipping region to the specified rectangle. Most drawing functions are able to handle the offset.", "boolean", "true if successful, false otherwise")
 {
 	int x, y, width, height;
+	enum_h resize_arg;
 
-	if (!ade_get_args(L, "iiii", &x, &y, &width, &height))
+	if (!ade_get_args(L, "iiii|o", &x, &y, &width, &height, l_Enum.Get(&resize_arg)))
 		return ADE_RETURN_FALSE;
 
-	gr_set_clip(x, y, width, height, lua_ResizeMode);
+	int resize_mode = lua_ResizeMode;
+
+	if (resize_arg.isValid() && resize_arg.index >= LE_GR_RESIZE_NONE && resize_arg.index <= LE_GR_RESIZE_MENU_NO_OFFSET)
+		resize_mode = resize_arg.index - LE_GR_RESIZE_NONE;
+
+	gr_set_clip(x, y, width, height, resize_mode);
 
 	return ADE_RETURN_TRUE;
 }
@@ -2077,20 +2169,20 @@ ADE_FUNC(resetClip, l_Graphics, NULL, "Resets the clipping region that might hav
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
+ADE_FUNC(openMovie, l_Graphics, "string name, [boolean looping = false, boolean withAudio = false]",
          "Opens the movie with the specified name. If the name has an extension it will be removed. This function will "
          "try all movie formats supported by the engine and use the first that is found.",
          "movie_player", "The cutscene player handle or invalid handle if cutscene could not be opened.")
 {
 	const char* name = nullptr;
 	bool looping = false;
-	if (!ade_get_args(L, "s|b", &name, &looping)) {
+	bool with_audio = false;
+	if (!ade_get_args(L, "s|bb", &name, &looping, &with_audio)) {
 		return ade_set_error(L, "o", l_MoviePlayer.Set(movie_player_h()));
 	}
 
-	// Audio is disabled for scripted movies at the moment
 	cutscene::PlaybackProperties props;
-	props.with_audio = false;
+	props.with_audio = with_audio;
 	props.looping = looping;
 
 	auto player = cutscene::Player::newPlayer(name, props);
@@ -2100,6 +2192,162 @@ ADE_FUNC(openMovie, l_Graphics, "string name, boolean looping = false",
 	}
 
 	return ade_set_args(L, "o", l_MoviePlayer.Set(movie_player_h(std::move(player))));
+}
+
+particle::ParticleEffectHandle getLegacyScriptingParticleEffect(int bitmap, bool reversed) {
+	static SCP_map<std::pair<int, bool>, particle::ParticleEffectHandle> custom_texture_effects;
+
+	bool is_builtin_bitmap = bitmap == particle::Anim_bitmap_id_fire || bitmap == particle::Anim_bitmap_id_smoke || bitmap == particle::Anim_bitmap_id_smoke2;
+
+	if (!is_builtin_bitmap) {
+		auto it = custom_texture_effects.find(std::make_pair(bitmap, reversed));
+		if (it != custom_texture_effects.end())
+			return it->second;
+	}
+	
+	particle::ParticleEffect effect(
+		"", //Name
+		::util::UniformFloatRange(1.f), //Particle num
+		particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+		::util::UniformFloatRange(), //No duration
+		::util::UniformFloatRange (-1.f), //Single particle only
+		particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+		::util::UniformFloatRange(1.f), //Velocity Inherit
+		false, //Velocity Inherit absolute?
+		nullptr, //Velocity volume
+		::util::UniformFloatRange(), //Velocity volume multiplier
+		particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+		std::nullopt, //Orientation-based velocity
+		std::nullopt, //Position-based velocity
+		nullptr, //Position volume
+		particle::ParticleEffectHandle::invalid(), //Trail
+		1.f, //Chance
+		false, //Affected by detail
+		-1.f, //Culling range multiplier
+		false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+		reversed, //Is reversed?
+		false, //parent local
+		false, //ignore velocity inherit if parented
+		false, //position velocity inherit absolute?
+		std::nullopt, //Local velocity offset
+		std::nullopt, //Local offset
+		::util::UniformFloatRange(1.f), //Lifetime
+		::util::UniformFloatRange(1.f), //Radius
+		bitmap);
+
+	effect.m_parent_local = true;
+	effect.m_parentLifetime = true;
+	effect.m_parentScale = true;
+
+	particle::ParticleEffectHandle handle = particle::ParticleManager::get()->addEffect(std::move(effect));
+
+	if (!is_builtin_bitmap) {
+		custom_texture_effects.emplace(std::make_pair(bitmap, reversed), handle);
+	}
+
+	return handle;
+}
+
+static int spawnParticles(lua_State *L, bool persistent) {
+	vec3d pos, vel;
+	float lifetime, rad;
+
+	// Need to consume tracer_length parameter but it isn't used anymore
+	float temp;
+
+	if (Is_standalone) {
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
+
+	enum_h* type       = nullptr;
+	bool rev           = false;
+	object_h* objh     = nullptr;
+	texture_h* texture = nullptr;
+	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pos), l_Vector.Get(&vel), &lifetime, &rad,
+			l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+
+	particle::ParticleEffectHandle handle;
+
+	if (type != nullptr) {
+		switch (type->index) {
+		case LE_PARTICLE_DEBUG:
+			LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+		case LE_PARTICLE_FIRE: {
+			static auto fire_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, false);
+			static auto fire_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_fire, true);
+			handle = rev ? fire_handle_rev : fire_handle;
+			break;
+		}
+		case LE_PARTICLE_SMOKE: {
+			static auto smoke_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, false);
+			static auto smoke_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke, true);
+			handle = rev ? smoke_handle_rev : smoke_handle;
+			break;
+		}
+		case LE_PARTICLE_SMOKE2: {
+			static auto smoke2_handle = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, false);
+			static auto smoke2_handle_rev = getLegacyScriptingParticleEffect(particle::Anim_bitmap_id_smoke2, true);
+			handle = rev ? smoke2_handle_rev : smoke2_handle;
+			break;
+		}
+		case LE_PARTICLE_BITMAP:
+			if (texture == nullptr || !texture->isValid()) {
+				LuaError(L, "Invalid texture specified for createParticle()!");
+				return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+			} else {
+				handle = getLegacyScriptingParticleEffect(texture->handle, rev);
+			}
+			break;
+		default:
+			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+		}
+	}
+
+	std::unique_ptr<EffectHost> host;
+	if (objh != nullptr && objh->isValid()) {
+		host = std::make_unique<EffectHostObject>(objh->objp(), pos);
+		vel += objh->objp()->phys_info.vel;
+	}
+	else {
+		host = std::make_unique<EffectHostVector>(pos, vmd_identity_matrix, vmd_zero_vector);
+	}
+
+	//Beware that manually creating a particle source like this is REALLY bad.
+	//The only reason I am doing it here is because of the following three reasons:
+	// 1. the effect guarantees to finish in a single frame
+	// 2. we NEED the return particle ptrs for the persistent path
+	// 3. Scripting gets to set certain values at runtime which are usually encoded as a behaviour in the particle effect and thus tabled statically.
+
+	const auto& [parent, parent_sig] = host->getParentObjAndSig();
+
+	particle::ParticleSource source;
+	source.setEffect(handle);
+	source.setHost(std::move(host));
+	source.setTriggerRadius(rad);
+	source.setTriggerVelocity(lifetime);
+
+	if (persistent) {
+		auto spawned_particles = particle::ParticleManager::get()
+									 ->getEffect(handle)
+									 .front()
+									 .processSourcePersistent(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+
+		Assertion(spawned_particles.size() == 1, "Did not spawn a single particle in createPersistentParticle");
+
+		const particle::WeakParticlePtr& p = spawned_particles.front();
+
+		if (!p.expired())
+			return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
+		else
+			return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
+	else {
+		particle::ParticleManager::get()->getEffect(handle).front().processSource(0, source, 0, vel, parent, parent_sig, lifetime, rad, 1);
+		return persistent ? ADE_RETURN_NIL : ADE_RETURN_FALSE;
+	}
 }
 
 ADE_FUNC(createPersistentParticle,
@@ -2114,67 +2362,7 @@ ADE_FUNC(createPersistentParticle,
 	"particle",
 	"Handle to the created particle")
 {
-	particle::particle_info pi;
-	pi.type            = particle::PARTICLE_DEBUG;
-	pi.optional_data   = -1;
-	pi.attached_objnum = -1;
-	pi.attached_sig    = -1;
-	pi.reverse         = false;
-
-	// Need to consume tracer_length parameter but it isn't used anymore
-	float temp;
-
-	enum_h* type       = nullptr;
-	bool rev           = false;
-	object_h* objh     = nullptr;
-	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
-	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return ADE_RETURN_NIL;
-
-	if (type != nullptr) {
-		switch (type->index) {
-		case LE_PARTICLE_DEBUG:
-			pi.type = particle::PARTICLE_DEBUG;
-			break;
-		case LE_PARTICLE_FIRE:
-			pi.type = particle::PARTICLE_FIRE;
-			break;
-		case LE_PARTICLE_SMOKE:
-			pi.type = particle::PARTICLE_SMOKE;
-			break;
-		case LE_PARTICLE_SMOKE2:
-			pi.type = particle::PARTICLE_SMOKE2;
-			break;
-		case LE_PARTICLE_BITMAP:
-			if (texture == nullptr || !texture->isValid()) {
-				LuaError(L, "Invalid texture specified for createParticle()!");
-				return ADE_RETURN_NIL;
-			} else {
-				pi.optional_data = texture->handle;
-				pi.type          = particle::PARTICLE_BITMAP;
-			}
-			break;
-		default:
-			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-			return ADE_RETURN_NIL;
-		}
-	}
-
-	if (rev)
-		pi.reverse = false;
-
-	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig    = objh->objp->signature;
-	}
-
-	particle::WeakParticlePtr p = particle::createPersistent(&pi);
-
-	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
-	else
-		return ADE_RETURN_NIL;
+	return spawnParticles(L, true);
 }
 
 ADE_FUNC(createParticle,
@@ -2187,64 +2375,7 @@ ADE_FUNC(createParticle,
 	"boolean",
 	"true if particle was created, false otherwise")
 {
-	particle::particle_info pi;
-	pi.type            = particle::PARTICLE_DEBUG;
-	pi.optional_data   = -1;
-	pi.attached_objnum = -1;
-	pi.attached_sig    = -1;
-	pi.reverse         = false;
-
-	// Need to consume tracer_length parameter but it isn't used anymore
-	float temp;
-
-	enum_h* type       = nullptr;
-	bool rev           = false;
-	object_h* objh     = nullptr;
-	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooff|ofboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
-	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return ADE_RETURN_FALSE;
-
-	if (type != nullptr) {
-		switch (type->index) {
-		case LE_PARTICLE_DEBUG:
-			pi.type = particle::PARTICLE_DEBUG;
-			break;
-		case LE_PARTICLE_FIRE:
-			pi.type = particle::PARTICLE_FIRE;
-			break;
-		case LE_PARTICLE_SMOKE:
-			pi.type = particle::PARTICLE_SMOKE;
-			break;
-		case LE_PARTICLE_SMOKE2:
-			pi.type = particle::PARTICLE_SMOKE2;
-			break;
-		case LE_PARTICLE_BITMAP:
-			if (texture == nullptr || !texture->isValid()) {
-				LuaError(L, "Invalid texture specified for createParticle()!");
-				return ADE_RETURN_NIL;
-			} else {
-				pi.optional_data = texture->handle;
-				pi.type          = particle::PARTICLE_BITMAP;
-			}
-			break;
-		default:
-			LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-			return ADE_RETURN_NIL;
-		}
-	}
-
-	if (rev)
-		pi.reverse = false;
-
-	if (objh != nullptr && objh->isValid()) {
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig    = objh->objp->signature;
-	}
-
-	particle::create(&pi);
-
-	return ADE_RETURN_TRUE;
+	return spawnParticles(L, false);
 }
 
 ADE_FUNC(killAllParticles, l_Graphics, nullptr, "Clears all particles from a mission", nullptr, nullptr)
@@ -2303,6 +2434,24 @@ ADE_FUNC(createColor,
 ADE_FUNC(isVR, l_Graphics, nullptr, "Queries whether or not FSO is currently trying to render to a head-mounted VR display.", "boolean", "true if FSO is currently outputting frames to a VR headset.")
 {
 	return ade_set_args(L, "b", openxr_enabled());
+}
+
+ADE_VIRTVAR(FsoContextOverride, l_Graphics, "boolean", "Whether or not the lua graphics system uses FSO's context or its own. "
+	"This affects things like the current color, line width, and font. Use with caution.",
+	"boolean",
+	"True if using FSO's internal context, false if using the lua context")
+{
+	bool val = false;
+
+	if (!ade_get_args(L, "*|b", &val))
+		return ade_set_error(L, "b", gr_lua_screen.force_fso_context);
+
+	if (ADE_SETTING_VAR) {
+		mprintf(("Lua graphics is now using %s context\n", val ? "FSO's" : "Lua's"));
+		gr_lua_screen.force_fso_context = val;
+	}
+
+	return ade_set_args(L, "b", gr_lua_screen.force_fso_context);
 }
 
 } // namespace api

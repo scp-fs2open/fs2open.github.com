@@ -9,7 +9,7 @@ class HudGaugeScripting: public HudGauge {
   public:
 	HudGaugeScripting();
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 
 	void initName(SCP_string name);
 

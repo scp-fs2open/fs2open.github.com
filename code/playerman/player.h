@@ -223,8 +223,22 @@ extern player Players[MAX_PLAYERS];
 extern int Player_num;								// player num of person playing on this machine
 extern player *Player;								// pointer to my information
 
-extern int Player_use_ai;
+extern bool Player_use_ai;
 extern angles chase_slew_angles;					// The viewing angles in which viewer_slew_angles will chase to.
+
+extern angles Player_flight_cursor;
+
+enum class FlightMode {
+	ShipLocked = 0,
+	FlightCursor = 1,
+};
+
+extern FlightMode Player_flight_mode;
+extern float Flight_cursor_extent;
+extern float Flight_cursor_deadzone;
+
+extern bool Perspective_locked;
+extern bool Slew_locked;
 
 extern void player_init();							// initialization per level
 extern void player_level_init();
@@ -254,7 +268,7 @@ void player_set_squad_bitmap(player *p, const char *fnamem, bool ismulti);
 // set squadron
 void player_set_squad(player *p, char *squad_name);
 
-int player_inspect_cargo(float frametime, char *outstr);
+bool player_inspect_cargo(float frametime, char *outstr);
 
 extern int use_descent;						// player is using descent-style physics
 extern void toggle_player_object();		// toggles between descent-style ship and player ship

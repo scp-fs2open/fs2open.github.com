@@ -130,6 +130,18 @@ int collide_debris_ship( obj_pair * pair )
 					ship_damage = MIN(ship_damage, cap_percent_damage * shipp->ship_max_hull_strength);
 				}
 
+				if (Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Big_damage] &&
+					The_mission.ai_profile->flags[AI::Profile_Flags::Debris_respects_big_damage]) {
+
+					// scale based on hull
+					float hull_pct = ship_objp->hull_strength / shipp->ship_max_hull_strength;
+					if (hull_pct > 0.1f) {
+						ship_damage *= hull_pct;
+					} else {
+						ship_damage = 0.0f;
+					}
+				}
+
 				// apply damage to debris
 				// no need for force, already handled in calculate_ship_ship_collision_physics
 				debris_hit( debris_objp, ship_objp, &hitpos, debris_damage, nullptr);		// speed => damage

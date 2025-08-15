@@ -11,6 +11,7 @@
 
 #include "globalincs/pstypes.h"
 #include "radar/radarsetup.h"
+#include "gamesnd/gamesnd.h"
 
 class object;
 struct blip;
@@ -25,8 +26,8 @@ class HudGaugeRadarDradis: public HudGaugeRadar
 	int target_brackets;
 	int unknown_contact_icon;
 
-	float sweep_duration; // in seconds
-	float sweep_percent;
+	int sweep_duration; // in milliseconds
+	float sweep_angle;
 
 	matrix view_perturb;
 	vec3d Orb_eye_position;
@@ -79,7 +80,7 @@ public:
 	void doneDrawingHtl();
 	void drawOutlinesHtl();
 	void setupViewHtl();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void plotBlip(blip* b, vec3d *pos, float *alpha);
 

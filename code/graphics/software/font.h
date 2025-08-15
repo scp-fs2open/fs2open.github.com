@@ -31,7 +31,7 @@ namespace font
 	* @param max_width number of pixels to limit string to (less than or equal to).
 	* @return			The width of the string
 	*/
-	int force_fit_string(char *str, int max_str, int max_width);
+	int force_fit_string(char *str, int max_str, int max_width, float scale = 1.0f);
 
 	/**
 	* @brief Inites the font system
@@ -42,6 +42,13 @@ namespace font
 	void init();
 
 	/**
+	 * @brief Verifies which font options should be available
+	 *
+	 * Removes options if they are not valid for the current font definitions,
+	 */
+	void checkFontOptions();
+
+	/**
 	* @brief Closes the Font system
 	*
 	* Deallocates all allocated memory for the fonts and the respective font data.
@@ -49,13 +56,12 @@ namespace font
 	void close();
 
 	/**
-	* Retrieves the font which is located at index @c font_num and sets this font
-	* as the current font
-	* @param font_num The new font number, may not be an illegal font number
+	* Sets this font number as the current font
+	* @param font_num The new font number; may not be an illegal font number
 	*/
 	inline void set_font(int fontnum)
 	{
-		FontManager::setCurrentFont(FontManager::getFont(fontnum));
+		FontManager::setCurrentFontIndex(fontnum);
 	}
 
 	/**

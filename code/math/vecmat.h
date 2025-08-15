@@ -145,7 +145,11 @@ void vm_vec_sub2(vec3d *dest, const vec3d *src);
 //averages n vectors
 vec3d *vm_vec_avg_n(vec3d *dest, int n, const vec3d src[]);
 
+//Calculates the componentwise minimum of the two vectors
+void vm_vec_min(vec3d* dest, const vec3d* src0, const vec3d* src1);
 
+//Calculates the componentwise maximum of the two vectors
+void vm_vec_max(vec3d* dest, const vec3d* src0, const vec3d* src1);
 //averages two vectors. returns ptr to dest
 //dest can equal either source
 vec3d *vm_vec_avg(vec3d *dest, const vec3d *src0, const vec3d *src1);
@@ -178,6 +182,11 @@ void vm_vec_scale_add2(vec3d *dest, const vec3d *src, float k);
 //scales a vector in place, taking n/d for scale.  returns ptr to vector
 //dest *= n/d
 void vm_vec_scale2(vec3d *dest, float n, float d);
+
+// interpolate between two vectors
+// dest = k * (src1 - src0)
+// Might be helpful to think of vec0 as the before, and vec1 as the after
+void vm_vec_linear_interpolate(vec3d* dest, const vec3d* src0, const vec3d* src1, float k);
 
 bool vm_vec_equal(const vec2d &self, const vec2d &other);
 
@@ -224,8 +233,9 @@ float vm_vec_copy_normalize(vec3d *dest, const vec3d *src);
 float vm_vec_normalize(vec3d *v);
 
 //	This version of vector normalize checks for the null vector before normalization.
-//	If it is detected, it generates a Warning() and returns the vector 1, 0, 0.
-float vm_vec_normalize_safe(vec3d *v);
+//	If it is detected, it returns the vector 1, 0, 0 (or 0, 0, 0 if fallbackToZeroVec is true)..
+float vm_vec_copy_normalize_safe(vec3d *dest, const vec3d *src, bool fallbackToZeroVec = false);
+float vm_vec_normalize_safe(vec3d *v, bool fallbackToZeroVec = false);
 
 //return the normalized direction vector between two points
 //dest = normalized(end - start).  Returns mag of direction vector
@@ -312,7 +322,7 @@ matrix *vm_vector_2_matrix(matrix *m, const vec3d *fvec, const vec3d *uvec = nul
  *
  * @sa vm_vector_2_matrix
  */
-matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = NULL, const vec3d *rvec = NULL);
+matrix *vm_vector_2_matrix_norm(matrix *m, const vec3d *fvec, const vec3d *uvec = nullptr, const vec3d *rvec = nullptr);
 
 //rotates a vector through a matrix. returns ptr to dest vector
 vec3d *vm_vec_rotate(vec3d *dest, const vec3d *src, const matrix *m);
@@ -480,9 +490,6 @@ void vm_angular_move_forward_vec(const vec3d *goal_fvec, const matrix *orient, c
 // Find the bounding sphere for a set of points (center and radius are output parameters)
 void vm_find_bounding_sphere(const vec3d *pnts, int num_pnts, vec3d *center, float *radius);
 
-// Version of atan2() that is safe for optimized builds
-float atan2_safe(float x, float y);
-
 // Translates from world coordinates to body coordinates
 vec3d* vm_rotate_vec_to_body(vec3d *body_vec, const vec3d *world_vec, const matrix *orient);
 
@@ -594,12 +601,6 @@ vec4 vm_vec3_to_ve4(const vec3d& vec, float w = 1.0f);
 
 // calculates the best rvec to match another orient while maintaining a given fvec
 void vm_match_bank(vec3d* out_rvec, const vec3d* goal_fvec, const matrix* match_orient);
-
-// Cyborg17 - Rotational interpolation between two angle structs in radians, given a rotational velocity, in radians.
-// src0 is the starting angle struct, src1 is the ending angle struct, interp_perc must be a float between 0.0f and 1.0f.
-// rot_vel is only used to determine the rotation direction. Assumes that it is not a full 2PI rotation in any axis.  
-// You will get strange results otherwise.
-void vm_interpolate_angles_quick(angles* dest0, angles* src0, angles* src1, float interp_perc);
 
 // Interpolate between two matrices, using t as a percentage progress between them.
 // Intended values for t are [0.0f, 1.0f], but values outside this range are allowed,

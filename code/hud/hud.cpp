@@ -198,6 +198,49 @@ void hud_maybe_display_subspace_notify();
 int hud_maybe_render_emp_icon();
 void hud_init_emp_icon();
 
+static bool hud_config_use_iff_color(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_LEAD_INDICATOR:
+	case HUD_ORIENTATION_TEE:
+	case HUD_HOSTILE_TRIANGLE:
+	case HUD_TARGET_TRIANGLE:
+	case HUD_OFFSCREEN_INDICATOR:
+	case HUD_MISSILE_WARNING_ARROW:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool hud_config_can_popup(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_ETS_GAUGE:
+	case HUD_AUTO_TARGET:
+	case HUD_AUTO_SPEED:
+	case HUD_WEAPONS_GAUGE:
+	case HUD_ESCORT_VIEW:
+	case HUD_TARGET_MINI_ICON:
+	case HUD_DAMAGE_GAUGE:
+	case HUD_CMEASURE_GAUGE:
+	case HUD_KILLS_GAUGE:
+		return true;
+	default:
+		return false;
+	}
+}
+
+static bool hud_config_use_tag_color(int gauge_index)
+{
+	switch (gauge_index) {
+	case HUD_MISSILE_WARNING_ARROW:
+		return true;
+	default:
+		return false;
+	}
+}
+
 //	Saturate a value in minv..maxv.
 void saturate(int *i, int minv, int maxv)
 {
@@ -247,8 +290,8 @@ static int Damage_flash_bright;
 static int Damage_flash_timer;
 
 HudGauge::HudGauge():
-base_w(0), base_h(0), gauge_config(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
-active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
+base_w(0), base_h(0), gauge_type(-1), font_num(font::FONT1), lock_color(false), sexp_lock_color(false), reticle_follow(false),
+active(false), off_by_default(false), sexp_override(false), pop_up(false), disabled_views(0), scripting_render_override(false), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false),
 texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
@@ -258,6 +301,13 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 	flash_duration = timestamp(1);
 	flash_next = timestamp(1);
 	flash_status = false;
+
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = ""; //gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
 
 	popup_timer = timestamp(1);
 
@@ -271,12 +321,12 @@ texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 }
 
 HudGauge::HudGauge(int _gauge_object, int _gauge_config, bool _slew, bool _message, int _disabled_views, int r, int g, int b):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
+base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(_gauge_object), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(_message),
-disabled_views(_disabled_views), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
+disabled_views(_disabled_views), scripting_render_override(false), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(false), textoffset_x(0), textoffset_y(0), texture_target(-1),
 canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
-	Assert(gauge_config <= NUM_HUD_GAUGES && gauge_config >= 0);
+	Assertion(_gauge_config <= NUM_HUD_GAUGES && _gauge_config >= 0, "Gauge has an invalid config ID!");
 
 	position[0] = 0;
 	position[1] = 0;
@@ -297,6 +347,14 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 	texture_target_fname[0] = '\0';
 
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = gauge_map.get_string_id_from_numeric_id(_gauge_config);
+	config_name = gauge_map.get_hcf_name_from_string_id(gauge_config_id);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+
 	custom_name[0] = '\0';
 	custom_text = "";
 	default_text = "";
@@ -307,10 +365,10 @@ canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 
 // constructor for custom gauges
 HudGauge::HudGauge(int _gauge_config, bool _slew, int r, int g, int b, char* _custom_name, char* _custom_text, char* frame_fname, int txtoffset_x, int txtoffset_y):
-base_w(0), base_h(0), gauge_config(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
+base_w(0), base_h(0), gauge_type(_gauge_config), gauge_object(HUD_OBJECT_CUSTOM), font_num(font::FONT1), lock_color(false), sexp_lock_color(false),
 reticle_follow(_slew), active(false), off_by_default(false), sexp_override(false), pop_up(false), message_gauge(false),
-disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), only_render_in_chase_view(false), render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x),
-textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
+disabled_views(VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY), scripting_render_override(false), can_popup(false), use_iff_color(false), use_tag_color(false), only_render_in_chase_view(false), 
+render_for_cockpit_toggle(0), custom_gauge(true), textoffset_x(txtoffset_x), textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), target_w(-1), target_h(-1)
 {
 	position[0] = 0;
 	position[1] = 0;
@@ -325,6 +383,20 @@ textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), targe
 	flash_next = timestamp(1);
 	flash_status = false;
 
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gauge_config_id = create_custom_gauge_id(_custom_name);
+	can_popup = hud_config_can_popup(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_iff_color = hud_config_use_iff_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+	use_tag_color = hud_config_use_tag_color(gauge_map.get_numeric_id_from_string_id(gauge_config_id));
+
+	//Set the gauge type for color backup lookup
+	HUD_config.set_gauge_type(gauge_config_id, gauge_type);
+
+	// Custom gauges are always default visible and popup false for now
+	HUD_config.set_gauge_visibility(gauge_config_id, true);
+	HUD_config.set_gauge_popup(gauge_config_id, false);
+
 	popup_timer = timestamp(1);
 
 	texture_target_fname[0] = '\0';
@@ -334,6 +406,8 @@ textoffset_y(txtoffset_y), texture_target(-1), canvas_w(-1), canvas_h(-1), targe
 	} else {
 		custom_name[0] = '\0';
 	}
+
+	config_name = custom_name;
 
 	if(_custom_text) {
 		custom_text = _custom_text;
@@ -388,6 +462,36 @@ void HudGauge::initFont(int input_font_num)
 	if (input_font_num >= 0 && input_font_num < font::FontManager::numberOfFonts()) {
 		font_num = input_font_num;
 	}
+}
+
+SCP_string HudGauge::getConfigName() const
+{
+	return config_name;
+}
+
+SCP_string HudGauge::getConfigId() const
+{
+	return gauge_config_id;
+}
+
+bool HudGauge::getConfigUseIffColor() const
+{
+	return use_iff_color;
+}
+
+bool HudGauge::getConfigCanPopup() const
+{
+	return can_popup;
+}
+
+bool HudGauge::getConfigUseTagColor() const
+{
+	return use_tag_color;
+}
+
+bool HudGauge::getVisibleInConfig() const
+{
+	return visible_in_config;
 }
 
 int HudGauge::getFont() const
@@ -480,68 +584,98 @@ void HudGauge::setFont()
 	font::set_font(font_num);
 }
 
-void HudGauge::setGaugeColor(int bright_index)
+void HudGauge::setGaugeColor(int bright_index, bool config)
 {
 	int alpha;
 
-	// if we're drawing it as bright
-	if(bright_index != HUD_C_NONE){
-		switch(bright_index){
-		case HUD_C_DIM:
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
-
-		case HUD_C_NORMAL:
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
-
-		case HUD_C_BRIGHT:
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
-
-		// intensity
-		default: 
-			Assert((bright_index >= 0) && (bright_index < HUD_NUM_COLOR_LEVELS));
-			if(bright_index < 0){
-				bright_index = 0;
-			}
-			if(bright_index >= HUD_NUM_COLOR_LEVELS){
-				bright_index = HUD_NUM_COLOR_LEVELS - 1;
+	if (config) {
+		color use_color;
+		use_color = HUD_config.get_gauge_color(gauge_config_id);
+		
+		if (HUD_config.is_gauge_visible(gauge_config_id)) {
+			if (use_iff_color) {
+				// Ditto for target tagging color
+				if (use_tag_color) {
+					use_color = *iff_get_color(IFF_COLOR_TAGGED, 0);
+				} else {
+					use_color = Color_bright_red;
+				}
 			}
 
-			// alpha = 255 - (255 / (bright_index + 1));
-			// alpha = (int)((float)alpha * 1.5f);
-			int level = 255 / (HUD_NUM_COLOR_LEVELS);
-			alpha = level * bright_index;
-			if(alpha > 255){
+			if ((HC_gauge_selected == gauge_config_id) || HC_select_all) {
 				alpha = 255;
+			} else if (HC_gauge_hot == gauge_config_id) {
+				alpha = 200;
+			} else {
+				alpha = 150;
 			}
-			if(alpha < 0){
-				alpha = 0;
-			}
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
+			gr_set_color_fast(&use_color);
+		} else {
+			// if its off, make it dark gray
+			gr_init_alphacolor(&use_color, 127, 127, 127, 64);
+			gr_set_color_fast(&use_color);
 		}
 	} else {
-		switch(maybeFlashSexp()) {
-		case 0:
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
-		case 1:			
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-			break;
-		default:
-			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
-		}
-	}
+		// if we're drawing it as bright
+		if (bright_index != HUD_C_NONE) {
+			switch (bright_index) {
+			case HUD_C_DIM:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
 
-	gr_set_color_fast(&gauge_color);	
+			case HUD_C_NORMAL:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
+
+			case HUD_C_BRIGHT:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
+
+			// intensity
+			default:
+				Assert((bright_index >= 0) && (bright_index < HUD_NUM_COLOR_LEVELS));
+				if (bright_index < 0) {
+					bright_index = 0;
+				}
+				if (bright_index >= HUD_NUM_COLOR_LEVELS) {
+					bright_index = HUD_NUM_COLOR_LEVELS - 1;
+				}
+
+				// alpha = 255 - (255 / (bright_index + 1));
+				// alpha = (int)((float)alpha * 1.5f);
+				int level = 255 / (HUD_NUM_COLOR_LEVELS);
+				alpha = level * bright_index;
+				if (alpha > 255) {
+					alpha = 255;
+				}
+				if (alpha < 0) {
+					alpha = 0;
+				}
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
+			}
+		} else {
+			switch (maybeFlashSexp()) {
+			case 0:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
+			case 1:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+				break;
+			default:
+				alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
+				gr_init_alphacolor(&gauge_color, gauge_color.red, gauge_color.green, gauge_color.blue, alpha);
+			}
+		}
+
+		gr_set_color_fast(&gauge_color);
+	}
 }
 
 bool HudGauge::isCustom() const
@@ -571,7 +705,7 @@ float HudGauge::getAspectQuotient() const
 
 int HudGauge::getConfigType() const
 {
-	return gauge_config;
+	return gauge_type;
 }
 
 int HudGauge::getObjectType() const
@@ -622,6 +756,11 @@ void HudGauge::initCockpit_view_choice(int cockpit_view_choice)
 	render_for_cockpit_toggle = cockpit_view_choice;
 }
 
+void HudGauge::initVisible_in_config(bool visible)
+{
+	visible_in_config = visible;
+}
+
 bool HudGauge::isOffbyDefault() const
 {
 	return off_by_default;
@@ -635,6 +774,16 @@ bool HudGauge::isActive() const
 void HudGauge::updateSexpOverride(bool sexp)
 {
 	sexp_override = sexp;
+}
+
+bool HudGauge::getScriptingOverride() const
+{
+	return scripting_render_override;
+}
+
+void HudGauge::updateScriptingOverride(bool toggle)
+{
+	scripting_render_override = toggle;
 }
 
 void HudGauge::updatePopUp(bool pop_up_flag)
@@ -716,106 +865,127 @@ void HudGauge::onFrame(float  /*frametime*/)
 	
 }
 
-void HudGauge::render(float  /*frametime*/)
+void HudGauge::render(float /*frametime*/, bool config)
 {
 	if(!custom_gauge) {
 		return;
 	}
 
-	setGaugeColor();
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		// Commenting out this code below will disable custom gauges from being selectable and individually colorable
+		int bmw, bmh;
+		bm_get_info(custom_frame.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	if( !custom_text.empty() ) {
-		char *text = new char[custom_text.size()+1];
-		strcpy(text, custom_text.c_str());
-
-		hud_num_make_mono(text, font_num);
-		renderString(position[0] + textoffset_x, position[1] + textoffset_y, text);
-
-		delete[] text;
+		SCP_string modified_text = custom_text;
+		hud_num_make_mono(modified_text.data(), font_num); 
+		renderString(x + fl2i(textoffset_x * scale), y + fl2i(textoffset_y * scale), modified_text.c_str(), scale, config);
 	}
 
 	if(custom_frame.first_frame > -1) {
-		renderBitmap(custom_frame.first_frame + custom_frame_offset, position[0], position[1]);
+		renderBitmap(custom_frame.first_frame + custom_frame_offset, x, y, scale, config);
 	}
 }
 
-void HudGauge::renderString(int x, int y, const char *str)
+void HudGauge::renderString(int x, int y, const char *str, float scale, bool config)
 {
 	int nx = 0, ny = 0;
+	int resize = GR_RESIZE_FULL;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
 	if (HUD_shadows) {
+		color cur = gr_screen.current_color;
 		gr_set_color_fast(&Color_black);
-		gr_string(x + nx + 1, y + ny + 1, str);
-		gr_set_color_fast(&gauge_color);
+		gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
+		gr_set_color_fast(&cur);
 	}
 
-	gr_string(x + nx, y + ny, str);
+	gr_string(x + nx, y + ny, str, resize, scale);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderString(int x, int y, int gauge_id, const char *str)
+void HudGauge::renderString(int x, int y, int gauge_id, const char *str, float scale, bool config)
 {
 	int nx = 0, ny = 0;
+	int resize = GR_RESIZE_FULL;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
 
 	if ( gauge_id > -2 ) {
 		if (HUD_shadows) {
+			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
-			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, GR_RESIZE_FULL);
-			gr_set_color_fast(&gauge_color);
+			emp_hud_string(x + nx + 1, y + ny + 1, gauge_id, str, resize, scale);
+			gr_set_color_fast(&cur);
 		}
-		emp_hud_string(x + nx, y + ny, gauge_id, str, GR_RESIZE_FULL);
+		emp_hud_string(x + nx, y + ny, gauge_id, str, resize, scale);
 	} else {
 		if (HUD_shadows) {
+			color cur = gr_screen.current_color;
 			gr_set_color_fast(&Color_black);
-			gr_string(x + nx + 1, y + ny + 1, str);
-			gr_set_color_fast(&gauge_color);
+			gr_string(x + nx + 1, y + ny + 1, str, resize, scale);
+			gr_set_color_fast(&cur);
 		}
-		gr_string(x + nx, y + ny, str);
+		gr_string(x + nx, y + ny, str, resize, scale);
 	}
 
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s)
+void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char *s, float scale, bool config)
 {
 	int w, h;
 
-	gr_get_string_size(&w, &h, s);
-	renderString(x + ((area_width - w) / 2), y, s);
+	gr_get_string_size(&w, &h, s, scale);
+	renderString(x + ((area_width - w) / 2), y, s, scale, config);
 }
 
-void HudGauge::renderPrintf(int x, int y, const char* format, ...)
+void HudGauge::renderPrintf(int x, int y, float scale, bool config, const char* format, ...)
 {
 	char tmp[256] = "";
 	va_list args;
@@ -826,10 +996,10 @@ void HudGauge::renderPrintf(int x, int y, const char* format, ...)
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, tmp);
+	renderString(x, y, tmp, scale, config);
 }
 
-void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
+void HudGauge::renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, const char* format, ...)
 {
 	char tmp[256] = "";
 	va_list args;
@@ -840,10 +1010,10 @@ void HudGauge::renderPrintf(int x, int y, int gauge_id, const char* format, ...)
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, gauge_id, tmp);
+	renderString(x, y, gauge_id, tmp, scale, config);
 }
 
-void HudGauge::renderBitmapColor(int frame, int x, int y)
+void HudGauge::renderBitmapColor(int frame, int x, int y, float scale, bool config) const
 {
 	int nx = 0, ny = 0;
 
@@ -853,27 +1023,33 @@ void HudGauge::renderBitmapColor(int frame, int x, int y)
 
 	emp_hud_jitter(&x, &y);
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	int resize = GR_RESIZE_FULL;
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
 	gr_set_bitmap(frame);
-	gr_bitmap(x + nx, y + ny);
+	gr_bitmap(x + nx, y + ny, resize, false, scale);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderBitmap(int x, int y)
+void HudGauge::renderBitmap(int x, int y, float scale, bool config) const
 {
 	int nx = 0, ny = 0;
 
@@ -882,34 +1058,41 @@ void HudGauge::renderBitmap(int x, int y)
 	}
 
 	emp_hud_jitter(&x, &y);
+	
+	int resize = GR_RESIZE_FULL;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 	
-	gr_aabitmap(x + nx, y + ny);
+	gr_aabitmap(x + nx, y + ny, resize, false, scale);
 
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderBitmap(int frame, int x, int y)
+void HudGauge::renderBitmap(int frame, int x, int y, float scale, bool config) const
 {
 	gr_set_bitmap(frame);
-	renderBitmap(x, y);
+	renderBitmap(x, y, scale, config);
 }
 
-void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy)
+// Note that w, h, sx, and sy whould be unscaled values!
+void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int sy, float scale, bool config) const
 {
 	int nx = 0, ny = 0; 
 	
@@ -919,119 +1102,150 @@ void HudGauge::renderBitmapEx(int frame, int x, int y, int w, int h, int sx, int
 
 	emp_hud_jitter(&x, &y); 
 
+	int resize = GR_RESIZE_FULL;
+
 	gr_set_bitmap(frame);
 
-	if( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
-	gr_aabitmap_ex(x + nx, y + ny, w, h, sx, sy);
+	gr_aabitmap_ex(x + nx, y + ny, w, h, sx, sy, resize, false, scale);
 
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderLine(int x1, int y1, int x2, int y2)
+void HudGauge::renderLine(int x1, int y1, int x2, int y2, bool config) const
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	int resize = GR_RESIZE_FULL;
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
-	gr_line(x1+nx, y1+ny, x2+nx, y2+ny);
+	gr_line(x1 + nx, y1 + ny, x2 + nx, y2 + ny, resize);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderGradientLine(int x1, int y1, int x2, int y2)
+void HudGauge::renderGradientLine(int x1, int y1, int x2, int y2, bool config) const
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if(reticle_follow) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	int resize = GR_RESIZE_FULL;
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
-	gr_gradient(x1+nx, y1+ny, x2+nx, y2+ny);
+	gr_gradient(x1 + nx, y1 + ny, x2 + nx, y2 + ny, resize);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderRect(int x, int y, int w, int h)
+ void HudGauge::renderRect(int x, int y, int w, int h, bool config) const
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
+	int resize = GR_RESIZE_FULL;
 
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
 
-	gr_rect(x+nx, y+ny, w, h);
+	gr_rect(x + nx, y + ny, w, h, resize);
 	gr_reset_screen_scale();
 }
 
-void HudGauge::renderCircle(int x, int y, int diameter, bool filled) 
+void HudGauge::renderCircle(int x, int y, int diameter, bool filled, bool config) const
 {
 	int nx = 0, ny = 0;
 
-	if ( gr_screen.rendering_to_texture != -1 ) {
-		gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
-	} else {
-		if ( reticle_follow ) {
-			nx = HUD_nose_x;
-			ny = HUD_nose_y;
-
-			gr_resize_screen_pos(&nx, &ny);
-			gr_set_screen_scale(base_w, base_h);
-			gr_unsize_screen_pos(&nx, &ny);
+	int resize = GR_RESIZE_FULL;
+	
+	if (!config) {
+		if (gr_screen.rendering_to_texture != -1) {
+			gr_set_screen_scale(canvas_w, canvas_h, -1, -1, target_w, target_h, target_w, target_h, true);
 		} else {
-			gr_set_screen_scale(base_w, base_h);
+			if (reticle_follow) {
+				nx = HUD_nose_x;
+				ny = HUD_nose_y;
+
+				gr_resize_screen_pos(&nx, &ny);
+				gr_set_screen_scale(base_w, base_h);
+				gr_unsize_screen_pos(&nx, &ny);
+			} else {
+				gr_set_screen_scale(base_w, base_h);
+			}
 		}
+	} else {
+		resize = HC_resize_mode;
 	}
+
 	if (filled) {
-		gr_circle(x + nx, y + ny, diameter);
+		gr_circle(x + nx, y + ny, diameter, resize);
 	} else {
-		gr_unfilled_circle(x + nx, y + ny, diameter);
+		gr_unfilled_circle(x + nx, y + ny, diameter, resize);
 	}
 	
 	gr_reset_screen_scale();
@@ -1201,10 +1415,14 @@ bool HudGauge::canRender() const
 		}
 	}
 
-	if (gauge_config == HUD_ETS_GAUGE) {
+	if (gauge_type == HUD_ETS_GAUGE) {
 		if (Ships[Player_obj->instance].flags[Ship::Ship_Flags::No_ets]) {
 			return false;
 		}
+	}
+
+	if (scripting_render_override) {
+		return false;
 	}
 
 	return true;
@@ -1780,33 +1998,44 @@ void HudGaugeMissionTime::pageIn()
 	bm_page_in_aabitmap(time_gauge.first_frame, time_gauge.num_frames );
 }
 
-void HudGaugeMissionTime::render(float  /*frametime*/)
+void HudGaugeMissionTime::render(float /*frametime*/, bool config)
 {
-	float mission_time, time_comp;
-	int minutes=0;
-	int seconds=0;
+	float mission_time = 0.0f;
 	
-	mission_time = f2fl(Missiontime) + (float)The_mission.HUD_timer_padding;  // convert to seconds
+	if (!config) {
+		mission_time = f2fl(Missiontime) + static_cast<float>(The_mission.HUD_timer_padding); // convert to seconds
+	}
 	
-	minutes=(int)(mission_time/60);
-	seconds=(int)mission_time%60;
+	int minutes = fl2i(mission_time / 60);
+	int seconds = fl2i(mission_time) % 60;
 
-	setGaugeColor();
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(time_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// blit background frame
 	if ( time_gauge.first_frame >= 0 ) {
-		renderBitmap(time_gauge.first_frame, position[0], position[1]);				
+		renderBitmap(time_gauge.first_frame, x, y, scale, config);				
 	}
 
 	// print out mission time in MM:SS format
-	renderPrintf(position[0] + time_text_offsets[0], position[1] + time_text_offsets[1], NOX("%02d:%02d"), minutes, seconds);
+	renderPrintf(x + fl2i(time_text_offsets[0] * scale), y + fl2i(time_text_offsets[1] * scale), scale, config, NOX("%02d:%02d"), minutes, seconds);
 
 	// display time compression as xN
-	time_comp = f2fl(Game_time_compression);
+	float time_comp = f2fl(Game_time_compression);
 	if ( time_comp < 1 ) {
-		renderPrintf(position[0] + time_val_offsets[0], position[1] + time_val_offsets[1], /*XSTR( "x%.1f", 215), time_comp)*/ NOX("%.2f"), time_comp);
+		renderPrintf(x + fl2i(time_val_offsets[0] * scale), y + fl2i(time_val_offsets[1] * scale), scale, config, /*XSTR( "x%.1f", 215), time_comp)*/ NOX("%.2f"), time_comp);
 	} else {
-		renderPrintf(position[0] + time_val_offsets[0], position[1] + time_val_offsets[1], XSTR( "x%.0f", 216), time_comp);
+		renderPrintf(x + fl2i(time_val_offsets[0] * scale), y + fl2i(time_val_offsets[1] * scale), scale, config, XSTR( "x%.0f", 216), time_comp);
 	}
 }
 
@@ -1866,7 +2095,7 @@ void hud_render_gauges(int cockpit_display_num, float frametime)
 
 		render_target = ship_start_render_cockpit_display(cockpit_display_num);
 
-		if ( render_target <= 0 ) {
+		if ( render_target < 0 ) {
 			return;
 		}
 	} else {
@@ -1946,6 +2175,7 @@ void hud_stop_looped_engine_sounds()
 		snd_stop(Player_engine_snd_loop);
 		Player_engine_snd_loop = sound_handle::invalid();
 	}
+	throttle_sound_check_id = timestamp(THROTTLE_SOUND_CHECK_INTERVAL);
 }
 
 #define ZERO_PERCENT			0.01f
@@ -2124,82 +2354,105 @@ void HudGaugeDamage::pageIn()
 	bm_page_in_aabitmap(damage_bottom.first_frame, damage_bottom.num_frames);
 }
 
-void HudGaugeDamage::render(float  /*frametime*/)
+void HudGaugeDamage::render(float  /*frametime*/, bool config)
 {
-	model_subsystem	*psub;
-	ship_subsys			*pss;
-	int					screen_integrity, num, best_str, best_index;
-	float					strength, shield, integrity;
-	hud_subsys_damage	hud_subsys_list[SUBSYSTEM_MAX];	
-
 	if ( damage_top.first_frame == -1 ) {
 		return;
 	}
 
-	if ( (The_mission.game_type & MISSION_TYPE_TRAINING) && Training_message_visible ){
-		return;
+	if (!config) {
+		if ((The_mission.game_type & MISSION_TYPE_TRAINING) && Training_message_visible) {
+			return;
+		}
+
+		if (timestamp_elapsed(Damage_flash_timer)) {
+			Damage_flash_timer = timestamp(DAMAGE_FLASH_TIME);
+			Damage_flash_bright = !Damage_flash_bright;
+		}
 	}
 
-	if ( timestamp_elapsed(Damage_flash_timer) ) {
-		Damage_flash_timer = timestamp(DAMAGE_FLASH_TIME);
-		Damage_flash_bright = !Damage_flash_bright;
-	}
+	int num = 0;
+	hud_subsys_damage hud_subsys_list[SUBSYSTEM_MAX];
+	if (!config) {
+		ship_subsys* pss;
+		for (pss = GET_FIRST(&Player_ship->subsys_list); pss != END_OF_LIST(&Player_ship->subsys_list);
+			pss = GET_NEXT(pss)) {
+			auto psub = pss->system_info;
+			float strength = ship_get_subsystem_strength(Player_ship, psub->type);
+			if (always_display || strength < 1) {
+				int subsys_integrity;
+				// display the actual health of this specific subsystem --wookieejedi
+				if (pss->max_hits > 0) {
+					// get percentage if this subsystem has hitpoints to begin with
+					subsys_integrity = fl2i((pss->current_hits / pss->max_hits) * 100);
+				} else {
+					// subsystems with no starting hitpoints can never be damaged, so they are always full health
+					subsys_integrity = 1;
+				}
+				if (subsys_integrity == 0) {
+					if (strength > 0) {
+						subsys_integrity = 1;
+					}
+				}
 
-	num = 0;
-	for ( pss = GET_FIRST(&Player_ship->subsys_list); pss !=END_OF_LIST(&Player_ship->subsys_list); pss = GET_NEXT(pss) ) {
-		psub = pss->system_info;
-		strength = ship_get_subsystem_strength(Player_ship, psub->type);
-		if ( always_display || strength < 1 ) {
-			// display the actual health of this specific subsystem --wookieejedi
-			if (pss->max_hits > 0) {
-				// get percentage if this subsystem has hitpoints to begin with
-				screen_integrity = fl2i((pss->current_hits / pss->max_hits) * 100);
-			} else {
-				// subsystems with no starting hitpoints can never be damaged, so they are always full health
-				screen_integrity = 1;
-			}
-			if ( screen_integrity == 0 ) {
-				if ( strength > 0 ) {
-					screen_integrity = 1;
+				if (strlen(psub->alt_dmg_sub_name))
+					hud_subsys_list[num].name = psub->alt_dmg_sub_name;
+				else {
+					hud_subsys_list[num].name = ship_subsys_get_name(pss);
+				}
+
+				hud_subsys_list[num].str = subsys_integrity;
+				hud_subsys_list[num].type = psub->type;
+				num++;
+
+				if (strength < Pl_hud_subsys_info[psub->type].last_str) {
+					Pl_hud_subsys_info[psub->type].flash_duration_timestamp = timestamp(SUBSYS_DAMAGE_FLASH_DURATION);
+				}
+				Pl_hud_subsys_info[psub->type].last_str = strength;
+
+				// Don't display more than the max number of damaged subsystems.
+				if (num >= SUBSYSTEM_MAX) {
+					break;
 				}
 			}
-
-			if (strlen(psub->alt_dmg_sub_name))
-				hud_subsys_list[num].name = psub->alt_dmg_sub_name;
-			else {
-				hud_subsys_list[num].name = ship_subsys_get_name(pss);
-			}
-
-			hud_subsys_list[num].str  = screen_integrity;
-			hud_subsys_list[num].type = psub->type;
-			num++;
-
-			if ( strength < Pl_hud_subsys_info[psub->type].last_str ) {
-				Pl_hud_subsys_info[psub->type].flash_duration_timestamp = timestamp(SUBSYS_DAMAGE_FLASH_DURATION);
-			}
-			Pl_hud_subsys_info[psub->type].last_str = strength;
-
-			// Don't display more than the max number of damaged subsystems.
-			if (num >= SUBSYSTEM_MAX)
-			{
-				break;
-			}
 		}
+	// Fill the box with dummy data for config rendering
+	} else {
+		hud_subsys_list[0].name = "Communications";
+		hud_subsys_list[0].str = 75;
+		hud_subsys_list[0].type = SUBSYSTEM_COMMUNICATION;
+
+		hud_subsys_list[1].name = "Engine";
+		hud_subsys_list[1].str = 50;
+		hud_subsys_list[1].type = SUBSYSTEM_ENGINE;
+
+		hud_subsys_list[2].name = "Weapons";
+		hud_subsys_list[2].str = 25;
+		hud_subsys_list[2].type = SUBSYSTEM_WEAPONS;
+		num = 3;
+	}
+
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
 	// Build a list of damage values to display and then actually display them in a second pass
 	// This allows to hide the gauge when there is no damage
 	SCP_vector<DamageInfo> info_lines;
 
-	auto sx = position[0] + subsys_integ_start_offsets[0];
-	auto sy = position[1] + subsys_integ_start_offsets[1];
-	auto bx = position[0];
-	auto by = position[1] + middle_frame_start_offset_y;
+	auto sx = x + fl2i(subsys_integ_start_offsets[0] * scale);
+	auto sy = y + fl2i(subsys_integ_start_offsets[1] * scale);
+	auto bx = x;
+	auto by = y +fl2i(middle_frame_start_offset_y * scale);
 
 	int type;
 	for ( int i = 0; i < num; i++ ) {
-		best_str = 1000;
-		best_index = -1;
+		int best_str = 1000;
+		int best_index = -1;
 		for ( int j = 0; j < num-i; j++ ) {
 			if ( hud_subsys_list[j].str < best_str ) {
 				best_str = hud_subsys_list[j].str;
@@ -2217,7 +2470,7 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		info.background_y = by;
 
 		type = hud_subsys_list[best_index].type;
-		if ( !timestamp_elapsed( Pl_hud_subsys_info[type].flash_duration_timestamp ) ) {
+		if (!config && !timestamp_elapsed( Pl_hud_subsys_info[type].flash_duration_timestamp ) ) {
 			if ( timestamp_elapsed(next_flash) ) {
 				flash_status = !flash_status;
 				next_flash = timestamp(SUBSYS_DAMAGE_FLASH_INTERVAL);
@@ -2260,17 +2513,17 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		hud_num_make_mono(buf, font_num);
 
 		int w, h;
-		gr_get_string_size(&w, &h, buf);
+		gr_get_string_size(&w, &h, buf, scale);
 
-		info.value_x = position[0] + subsys_integ_val_offset_x - w;
+		info.value_x = x + fl2i(subsys_integ_val_offset_x * scale) - w;
 		info.value_y = sy;
 		info.strength = best_str;
 
 		info.name_x = sx;
 		info.name_y = sy;
 
-		by += line_h;
-		sy += line_h;
+		by += fl2i(line_h * scale);
+		sy += fl2i(line_h * scale);
 
 		info_lines.push_back(info);
 
@@ -2280,13 +2533,17 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		}
 	}
 
-	hud_get_target_strength(Player_obj, &shield, &integrity);
-	screen_integrity = fl2i(integrity*100);
+	int screen_integrity = 100;
+	if (!config) {
+		float shield, integrity;
+		hud_get_target_strength(Player_obj, &shield, &integrity);
+		screen_integrity = fl2i(integrity * 100);
+	}
 
 	// Show hull integrity if it's below 100% or if a subsystem is damaged
 	// The second case is just to make the display look complete
 	// The third case is there to make the gauge appear only if needed if the right option is set
-	if ( always_display || screen_integrity < 100 || !info_lines.empty() ) {
+	if ( config || always_display || screen_integrity < 100 || !info_lines.empty() ) {
 		DamageInfo info;
 
 		info.name = XSTR( "Hull Integrity", 220);
@@ -2301,17 +2558,17 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		hud_num_make_mono(buf, font_num);
 
 		int w, h;
-		gr_get_string_size(&w, &h, buf);
+		gr_get_string_size(&w, &h, buf, scale);
 
 		if ( screen_integrity < 30 ) {
 			info.color_override = &Color_red;
 		}
 
-		info.name_x = position[0] + hull_integ_offsets[0];
-		info.name_y = position[1] + hull_integ_offsets[1];
+		info.name_x = x + fl2i(hull_integ_offsets[0] * scale);
+		info.name_y = y + fl2i(hull_integ_offsets[1] * scale);
 
-		info.value_x = position[0] + hull_integ_val_offset_x - w;
-		info.value_y = position[1] + hull_integ_offsets[1];
+		info.value_x = x + fl2i(hull_integ_val_offset_x * scale) - w;
+		info.value_y = y + fl2i(hull_integ_offsets[1] * scale);
 
 		// Insert at the top since hull is always first
 		info_lines.insert(info_lines.begin(), info);
@@ -2322,20 +2579,20 @@ void HudGaugeDamage::render(float  /*frametime*/)
 		return;
 	}
 
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
 	// Draw the top of the damage pop-up
-	renderBitmap(damage_top.first_frame, position[0], position[1]);
-	renderString(position[0] + header_offsets[0], position[1] + header_offsets[1], XSTR( "damage", 218));
+	renderBitmap(damage_top.first_frame, x, y, scale, config);
+	renderString(x + fl2i(header_offsets[0] * scale), y + fl2i(header_offsets[1] * scale), XSTR( "damage", 218), scale, config);
 
 	// These variables keep track of where the background was drawn last so we can draw the bottom correctly
-	int last_bx = position[0];
-	int last_by = position[1] + middle_frame_start_offset_y;
+	int last_bx = x; // Not scaled here because it is scaled above
+	int last_by = y + fl2i(middle_frame_start_offset_y * scale);
 	for (auto& line : info_lines) {
 		if (line.draw_background) {
-			renderBitmap(damage_middle.first_frame, line.background_x, line.background_y);
+			renderBitmap(damage_middle.first_frame, line.background_x, line.background_y, scale, config);
 			last_bx = line.background_x;
-			last_by = line.background_y + line_h; // Add line_h here so that the footer is properly aligned
+			last_by = line.background_y + fl2i(line_h * scale); // Add line_h here so that the footer is properly aligned
 		}
 
 		char buf[128];
@@ -2348,14 +2605,22 @@ void HudGaugeDamage::render(float  /*frametime*/)
 			setGaugeColor(line.bright_index);
 		}
 
-		renderString(line.name_x, line.name_y, line.name.c_str());
-		renderString(line.value_x, line.value_y, buf);
+		renderString(line.name_x, line.name_y, line.name.c_str(), scale, config);
+		renderString(line.value_x, line.value_y, buf, scale, config);
 
-		setGaugeColor();
+		setGaugeColor(HUD_C_NONE, config);
 	}
 
-	setGaugeColor();
-	renderBitmap(damage_bottom.first_frame, last_bx, last_by + bottom_bg_offset);
+	setGaugeColor(HUD_C_NONE, config);
+	renderBitmap(damage_bottom.first_frame, last_bx, last_by + fl2i(bottom_bg_offset * scale), scale, config);
+
+	// Now that we know the height of the gauge, set the mouse coordinates for the config menu
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(damage_top.first_frame, &bmw, nullptr);
+		bm_get_info(damage_bottom.first_frame, nullptr, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, last_by + fl2i((bottom_bg_offset + bmh) * scale));
+	}
 }
 
 /** 
@@ -2450,7 +2715,7 @@ int hud_anim_render(hud_anim *ha, float frametime, int draw_alpha, int loop, int
 		if ( draw_alpha ){
 			gr_aabitmap(ha->sx, ha->sy, resize_mode, mirror, scale_factor);
 		} else {
-			gr_bitmap(ha->sx, ha->sy, resize_mode);
+			gr_bitmap(ha->sx, ha->sy, resize_mode, mirror, scale_factor);
 		}
 	}
 
@@ -2543,29 +2808,41 @@ int HudGaugeTextWarnings::maybeTextFlash()
 	return flash_flags;
 }
 
-void HudGaugeTextWarnings::render(float  /*frametime*/)
+void HudGaugeTextWarnings::render(float  /*frametime*/, bool config)
 {
 	// note: Hud_text_flash globally allocated, address can't be NULL
-	if ( timestamp_elapsed(Hud_text_flash_timer) || Hud_text_flash[0] == '\0' ) {
+	if ( !config && (timestamp_elapsed(Hud_text_flash_timer) || Hud_text_flash[0] == '\0') ) {
 		return;
+	}
+
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
 	int w, h;
 
 	// string size
-	gr_get_string_size(&w, &h, Hud_text_flash);
+	gr_get_string_size(&w, &h, config ? XSTR("Collision", 1431) : Hud_text_flash, scale);
+
+	if (config) {
+		hud_config_set_mouse_coords(gauge_config_id, fl2i(i2fl(x) - (i2fl(w) / 2.0f) - 1.0f), x + fl2i(i2fl(w) / 2.0f) + 2, y - 1, y + h + 1);
+	}
 
 	// set color
-	if(maybeTextFlash()){
-		setGaugeColor(HUD_C_DIM);
+	if(!config && maybeTextFlash()){
+		setGaugeColor(HUD_C_DIM, config);
 		
 		// draw the box	
-		renderRect( (int)( (float)position[0] - (float)w / 2.0f - 1.0f), (int)((float)position[1] - 1.0f), w + 2, h + 1);
+		renderRect(fl2i(i2fl(x) - (i2fl(w) / 2.0f) - 1.0f), y - 1, w + 2, h + 1, config);
 	}
 
 	// string
-	setGaugeColor(HUD_C_BRIGHT);
-	renderString(fl2i((float)position[0] - ((float)w / 2.0f)), position[1], Hud_text_flash);
+	setGaugeColor(HUD_C_BRIGHT, config);
+	renderString(fl2i(i2fl(x) - (i2fl(w) / 2.0f)), y, config ? XSTR("Collision", 1431) : Hud_text_flash, scale, config);
 }
 
 HudGaugeKills::HudGaugeKills():
@@ -2601,31 +2878,41 @@ void HudGaugeKills::pageIn()
 /**
  * @brief Display the kills gauge on the HUD
  */
-void HudGaugeKills::render(float  /*frametime*/)
+void HudGaugeKills::render(float /*frametime*/, bool config)
 {
 	if ( Kills_gauge.first_frame < 0 ) {
 		return;
 	}
 
-	setGaugeColor();
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Kills_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	setGaugeColor(HUD_C_NONE, config);
 
 	// Draw background
-	renderBitmap(Kills_gauge.first_frame, position[0], position[1]);	
-	renderString(position[0] + text_offsets[0], position[1] + text_offsets[1], XSTR( "kills:", 223));
+	renderBitmap(Kills_gauge.first_frame, x, y, scale, config);	
+	renderString(x + fl2i(text_offsets[0] * scale), y + fl2i(text_offsets[1] * scale), XSTR( "kills:", 223), scale, config);
 
 	// Display how many kills the player has so far
 	char num_kills_string[32];
-	int	w,h;
-
-	if ( !Player ) {
-		Int3();
-		return;
+	if (!config) {
+		Assertion(Player, "Player is invalid. Cannot get kill count.");
+		sprintf(num_kills_string, "%d", Player->stats.m_kill_count_ok);
+	} else {
+		sprintf(num_kills_string, "%d", 1000);
 	}
 
-	sprintf(num_kills_string, "%d", Player->stats.m_kill_count_ok);
-
-	gr_get_string_size(&w, &h, num_kills_string);
-	renderString(position[0]+text_value_offsets[0]-w, position[1]+text_value_offsets[1], num_kills_string);
+	int w, h;
+	gr_get_string_size(&w, &h, num_kills_string, scale);
+	renderString(x + fl2i(text_value_offsets[0] * scale) - w, y + fl2i(text_value_offsets[1] * scale), num_kills_string, scale, config);
 }
 
 HudGaugeLag::HudGaugeLag():
@@ -2675,31 +2962,41 @@ bool HudGaugeLag::maybeFlashLag(bool flash_fast)
 	return draw_bright;
 }
 
-void HudGaugeLag::render(float  /*frametime*/)
+void HudGaugeLag::render(float /*frametime*/, bool config)
 {
-	int lag_status;
-
-	if( !(Game_mode & GM_MULTIPLAYER) ){
+	if(!config && !(Game_mode & GM_MULTIPLAYER) ){
 		return;
 	}
 
 	if ( Netlag_icon.first_frame == -1 ) {
-		Int3();
 		return;
 	}
 
-	lag_status = multi_query_lag_status();
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Netlag_icon.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	int lag_status = config ? 0 : multi_query_lag_status();
 
 	switch(lag_status) {
 	case 0:
 		// Draw the net lag icon flashing
-		startFlashLag();
-		if(maybeFlashLag()){
+		if (!config) {
+			startFlashLag();
+		}
+		if(!config && maybeFlashLag()){
 			setGaugeColor(HUD_C_BRIGHT);
 		} else {
-			setGaugeColor();
+			setGaugeColor(HUD_C_NONE, config);
 		}
-		renderBitmap(Netlag_icon.first_frame, position[0], position[1]);
+		renderBitmap(Netlag_icon.first_frame, x, y, scale, config);
 		break;
 	case 1:
 		// Draw the disconnected icon flashing fast
@@ -2708,7 +3005,7 @@ void HudGaugeLag::render(float  /*frametime*/)
 		} else {
 			setGaugeColor();
 		}
-		renderBitmap(Netlag_icon.first_frame+1, position[0], position[1]);
+		renderBitmap(Netlag_icon.first_frame+1, x, y, scale, config);
 		break;
 	default:
 		// Nothing to draw
@@ -2844,43 +3141,39 @@ int hud_get_dock_time( object *docker_objp )
 /**
  * @brief Locate the closest support ship which is trying to dock with player
  * 
- * @param objnum Object number of player
+ * @param objp Object of player
  * @return Number of support ship, -1 if there is no support ship currently trying to dock
  */
-int hud_support_find_closest( int objnum )
+int hud_support_find_closest( object *objp )
 {
-	ai_info		*aip;
-	object		*objp;
-	int i;
-
-	objp = &Objects[objnum];
+	// invalid if player is dead or a ghost
+	if (objp->flags[Object::Object_Flags::Should_be_dead] || objp->type != OBJ_SHIP)
+		return -1;
 
 	for (auto sop: list_range(&Ship_obj_list)) {
 		if (Objects[sop->objnum].flags[Object::Object_Flags::Should_be_dead])
 			continue;
 
-		if ( Ship_info[Ships[Objects[sop->objnum].instance].ship_info_index].flags[Ship::Info_Flags::Support] ) {
-			int pship_index, sindex;
+		auto shipp = &Ships[Objects[sop->objnum].instance];
+		if ( Ship_info[shipp->ship_info_index].flags[Ship::Info_Flags::Support] ) {
 
 			// make sure support ship is not dying
-            auto shipp = &Ships[Objects[sop->objnum].instance];
-            
 			if ( !(shipp->flags[Ship::Ship_Flags::Dying] || shipp->flags[Ship::Ship_Flags::Exploded]) ) {
-
-				Assert( objp->type == OBJ_SHIP );
-				aip = &Ai_info[Ships[Objects[sop->objnum].instance].ai_index];
-				pship_index = objp->instance;
+				auto aip = &Ai_info[shipp->ai_index];
 
 				// we must check all goals for this support ship -- not just the first one
-				for ( i = 0; i < MAX_AI_GOALS; i++ ) {
+				for ( int i = 0; i < MAX_AI_GOALS; i++ ) {
 
 					// we can use == in the next statement (and should) since a ship will only ever be
 					// following one order at a time.
 					if ( aip->goals[i].ai_mode == AI_GOAL_REARM_REPAIR ) {
 						Assert( aip->goals[i].target_name );
-						sindex = ship_name_lookup( aip->goals[i].target_name );
-						if ( sindex == pship_index )
-							return sop->objnum;
+
+						auto entry = ship_registry_get( aip->goals[i].target_name );
+						if (entry && entry->status == ShipStatus::PRESENT) {
+							if ( entry->shipnum == objp->instance )
+								return sop->objnum;
+						}
 					}
 				}
 			}
@@ -2902,7 +3195,7 @@ void hud_support_view_update()
 
 	// If we haven't determined yet who the rearm ship is, try to!
 	if (Hud_support_objnum == -1) {
-		Hud_support_objnum = hud_support_find_closest( OBJ_INDEX(Player_obj) );
+		Hud_support_objnum = hud_support_find_closest( Player_obj );
 		if ( Hud_support_objnum >= 0 ) {
 			Hud_support_obj_sig = Objects[Hud_support_objnum].signature;
 			Hud_support_target_sig = Player_obj->signature;
@@ -2970,59 +3263,70 @@ void HudGaugeSupport::pageIn()
 	bm_page_in_aabitmap( background.first_frame, background.num_frames);
 }
 
-void HudGaugeSupport::render(float  /*frametime*/)
+void HudGaugeSupport::render(float /*frametime*/, bool config)
 {
-	int	show_time, w, h;
-	char	outstr[64];
-
 	if (background.first_frame < 0)
 		return;
 
-	if ( !Hud_support_view_active ) {
-		return;
-	}
-
-	// Don't render this gauge for multiplayer observers
-	if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))){
-		return;
-	}
-
-	if ( Hud_support_objnum >= 0 ) {
-		// Check to see if support ship is still alive
-		if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
+	if (!config) {
+		if ( !Hud_support_view_active ) {
 			return;
+		}
+
+		// Don't render this gauge for multiplayer observers
+		if((Game_mode & GM_MULTIPLAYER) && ((Net_player->flags & NETINFO_FLAG_OBSERVER) || (Player_obj->type == OBJ_OBSERVER))){
+			return;
+		}
+
+		if ( Hud_support_objnum >= 0 ) {
+			// Check to see if support ship is still alive
+			if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
+				return;
+			}
 		}
 	}
 
+	int w, h;
 	bm_get_info(background.first_frame, &w, &h);
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(w * scale), y, y + fl2i(h * scale));
+	}
+
 	// Set hud color
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
-	renderBitmap(background.first_frame, position[0], position[1]);	
+	renderBitmap(background.first_frame, x, y, scale, config);	
 
-	renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR( "support", 224));
+	renderString(x + fl2i(Header_offsets[0] * scale), y + fl2i(Header_offsets[1] * scale), XSTR( "support", 224), scale, config);
 
-	if ( Hud_support_view_fade > 1 ) {
+	if (!config && Hud_support_view_fade > 1 ) {
 		if ( !timestamp_elapsed(Hud_support_view_fade) ) {
 			if ( Hud_support_view_abort){
-				renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, XSTR( "aborted", 225));
+				renderStringAlignCenter(x, y + text_val_offset_y, w, XSTR( "aborted", 225));
 			} else {
-				renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, XSTR( "complete", 1407));
+				renderStringAlignCenter(x, y + text_val_offset_y, w, XSTR( "complete", 1407));
 			}
 		}
 		return;
 	}
 
-	show_time = 0;
-	if (Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
+	// Decide what text to display for the support gauge.
+	// Config always shows "Dock in: TIME"
+	int show_time = 0;
+	char outstr[64];
+	if (!config && Player_ai->ai_flags[AI::AI_Flags::Being_repaired]) {
 		Assert(Player_ship->ship_max_hull_strength > 0);
 		
 		if (!enable_rearm_timer)
 		{
-			int i;
 			bool repairing = false;
-			for (i = 0; i < SUBSYSTEM_MAX; i++)
+			for (int i = 0; i < SUBSYSTEM_MAX; i++)
 			{
 				if (Player_ship->subsys_info[i].type_count > 0) 
 				{
@@ -3045,9 +3349,9 @@ void HudGaugeSupport::render(float  /*frametime*/)
 			{
 				int min, sec, hund;
 		
-				min = (int)Player_rearm_eta / 60;
-				sec = (int)Player_rearm_eta % 60;
-				hund = (int)(Player_rearm_eta * 100) % 100;
+				min = fl2i(Player_rearm_eta / 60);
+				sec = fl2i(Player_rearm_eta) % 60;
+				hund = fl2i(Player_rearm_eta * 100) % 100;
 
 				sprintf(outstr, "%02d:%02d.%02d", min, sec, hund);
 			}
@@ -3056,14 +3360,14 @@ void HudGaugeSupport::render(float  /*frametime*/)
 				strcpy_s(outstr, XSTR("Waiting...", 1603));
 			}	
 		}
-		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
+		renderStringAlignCenter(x, y + text_val_offset_y, w, outstr);
 	}
-	else if (Player_ai->ai_flags[AI::AI_Flags::Repair_obstructed]) {
+	else if (!config && Player_ai->ai_flags[AI::AI_Flags::Repair_obstructed]) {
 		strcpy_s(outstr, XSTR( "obstructed", 229));
-		renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
+		renderStringAlignCenter(x, y + text_val_offset_y, w, outstr);
 	} else {
-		if ( Hud_support_objnum == -1 ) {
-			if (The_mission.support_ships.arrival_location == ARRIVE_FROM_DOCK_BAY)
+		if (!config && Hud_support_objnum == -1 ) {
+			if (The_mission.support_ships.arrival_location == ArrivalLocation::FROM_DOCK_BAY)
 			{
 				strcpy_s(outstr, XSTR( "exiting hangar", 1622));
 			}
@@ -3071,13 +3375,16 @@ void HudGaugeSupport::render(float  /*frametime*/)
 			{
 				strcpy_s(outstr, XSTR( "warping in", 230));
 			}
-			renderStringAlignCenter(position[0], position[1] + text_val_offset_y, w, outstr);
+			renderStringAlignCenter(x, y + text_val_offset_y, w, outstr);
 		} else {
-			ai_info *aip;
+			ai_info *aip = nullptr;
 
-			// Display "busy" when support ship isn't actually enroute to me
-			aip = &Ai_info[Ships[Objects[Hud_support_objnum].instance].ai_index];
-			if ( aip->goal_objnum != OBJ_INDEX(Player_obj) ) {
+			if (!config) {
+				// Display "busy" when support ship isn't actually enroute to me
+				aip = &Ai_info[Ships[Objects[Hud_support_objnum].instance].ai_index];
+			}
+
+			if (!config && aip->goal_objnum != OBJ_INDEX(Player_obj) ) {
 				strcpy_s(outstr, XSTR( "busy", 231));
 				show_time = 0;
 
@@ -3086,34 +3393,39 @@ void HudGaugeSupport::render(float  /*frametime*/)
 				show_time = 1;
 			}		
 
-			renderString(position[0] + text_dock_offset_x, position[1] + text_val_offset_y, outstr);
+			renderString(x + fl2i(text_dock_offset_x * scale), y + fl2i(text_val_offset_y * scale), outstr, scale, config);
 		}
 	}
 
-	if ( show_time ) {
+	if (config || show_time ) {
 		int seconds, minutes;
 
-		Assert( Hud_support_objnum != -1 );
+		if (!config) {
+			Assert(Hud_support_objnum != -1);
 
-		// Ensure support ship is still alive
-		if ( (Objects[Hud_support_objnum].signature != Hud_support_obj_sig) || (Hud_support_target_sig != Player_obj->signature) ) {
-			seconds = 0;
-		} else {
-			seconds = hud_get_dock_time( &Objects[Hud_support_objnum] );
-		}
+			// Ensure support ship is still alive
+			if ((Objects[Hud_support_objnum].signature != Hud_support_obj_sig) ||
+				(Hud_support_target_sig != Player_obj->signature)) {
+				seconds = 0;
+			} else {
+				seconds = hud_get_dock_time(&Objects[Hud_support_objnum]);
+			}
 
-		if ( seconds >= 0 ) {
-			minutes = seconds/60;
-			seconds = seconds%60;
-			if ( minutes > 99 ) {
+			if (seconds >= 0) {
+				minutes = seconds / 60;
+				seconds = seconds % 60;
+				if (minutes > 99) {
+					minutes = 99;
+					seconds = 99;
+				}
+			} else {
 				minutes = 99;
 				seconds = 99;
 			}
 		} else {
-			minutes = 99;
-			seconds = 99;
+			seconds = minutes = 0;
 		}
-		renderPrintf(position[0] + text_dock_val_offset_x, position[1] + text_val_offset_y, NOX("%02d:%02d"), minutes, seconds);
+		renderPrintf(x + fl2i(text_dock_val_offset_x * scale), y + fl2i(text_val_offset_y * scale), scale, config, NOX("%02d:%02d"), minutes, seconds);
 	}
 }
 
@@ -3234,7 +3546,9 @@ int hud_gauge_active(int gauge_index)
 		return 0;
 	}
 
-	return hud_config_show_flag_is_set(gauge_index);
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	return HUD_config.is_gauge_visible(gauge_map.get_string_id_from_numeric_id(gauge_index));
 }
 
 /**
@@ -3243,7 +3557,9 @@ int hud_gauge_active(int gauge_index)
 int hud_gauge_is_popup(int gauge_index)
 {
 	Assert(gauge_index >=0 && gauge_index < NUM_HUD_GAUGES);
-	return hud_config_popup_flag_is_set(gauge_index);
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+	SCP_string gauge = gauge_map.get_string_id_from_numeric_id(gauge_index);
+	return HUD_config.is_gauge_popup(gauge);
 }
 
 /**
@@ -3311,8 +3627,10 @@ void hud_gauge_start_flash(int gauge_index)
  */
 void hud_set_gauge_color(int gauge_index, int bright_index)
 {
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
 	int flash_status = hud_gauge_maybe_flash(gauge_index);
-	color *use_color = &HUD_config.clr[gauge_index];
+	color use_color = HUD_config.get_gauge_color(gauge_map.get_string_id_from_numeric_id(gauge_index));
 	int alpha;
 
 	// If we're drawing it as bright
@@ -3320,17 +3638,17 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 		switch(bright_index){
 		case HUD_C_DIM:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		case HUD_C_NORMAL:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		case HUD_C_BRIGHT:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 
 		// Intensity
@@ -3353,27 +3671,27 @@ void hud_set_gauge_color(int gauge_index, int bright_index)
 			if(alpha < 0){
 				alpha = 0;
 			}
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		}
 	} else {
 		switch(flash_status) {
 		case 0:
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_DIM_HI : HUD_NEW_ALPHA_DIM;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		case 1:			
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_BRIGHT_HI : HUD_NEW_ALPHA_BRIGHT;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		default:			
 			alpha = HUD_high_contrast ? HUD_NEW_ALPHA_NORMAL_HI : HUD_NEW_ALPHA_NORMAL;
-			gr_init_alphacolor(use_color, use_color->red, use_color->green, use_color->blue, alpha);
+			gr_init_alphacolor(&use_color, use_color.red, use_color.green, use_color.blue, alpha);
 			break;
 		}
 	}
 
-	gr_set_color_fast(use_color);	
+	gr_set_color_fast(&use_color);	
 }
 
 /**
@@ -3554,26 +3872,38 @@ bool HudGaugeObjectiveNotify::maybeFlashNotify(bool flash_fast)
 	return draw_bright;
 }
 
-void HudGaugeObjectiveNotify::render(float  /*frametime*/)
+void HudGaugeObjectiveNotify::render(float /*frametime*/, bool config)
 {
-	renderSubspace();
-	renderRedAlert();
-	renderObjective();
+	renderSubspace(config);
+	renderRedAlert(config);
+	renderObjective(config);
 }
 
-void HudGaugeObjectiveNotify::renderSubspace()
+void HudGaugeObjectiveNotify::renderSubspace(bool config)
 {
-	int w, h;
-	int warp_aborted = 0;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	if ( (Player->control_mode != PCM_WARPOUT_STAGE1) && (Player->control_mode != PCM_WARPOUT_STAGE2) && (Player->control_mode != PCM_WARPOUT_STAGE3) 
+	// Skip this in config mode because we default to rendering the objective display instead
+	// but provide full config and scaling support here for completeness in case we make it configurable in the future
+	if (config) {
+		return;
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+	}
+
+	bool warp_aborted = false;
+	if (!config && (Player->control_mode != PCM_WARPOUT_STAGE1) && (Player->control_mode != PCM_WARPOUT_STAGE2) && (Player->control_mode != PCM_WARPOUT_STAGE3) 
 		&& (Sexp_hud_display_warpout <= 0) ) {
 		if ( !timestamp_elapsed(HUD_abort_subspace_timer) ) {
-			warp_aborted = 1;
+			warp_aborted = true;
 		}
 	}
 
-	if ( !hud_subspace_notify_active() ) {
+	if (!config && !hud_subspace_notify_active() ) {
 		return;
 	}
 
@@ -3582,30 +3912,47 @@ void HudGaugeObjectiveNotify::renderSubspace()
 	}
 
 	// Blit the background	
-	setGaugeColor();
-	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);
+	setGaugeColor(HUD_C_NONE, config);
+	renderBitmap(Objective_display_gauge.first_frame, x, y, scale, config);
 
-	startFlashNotify();
-	maybeFlashNotify() ? setGaugeColor(HUD_C_BRIGHT) : setGaugeColor();
+	if (!config) {
+		startFlashNotify();
+		maybeFlashNotify() ? setGaugeColor(HUD_C_BRIGHT) : setGaugeColor();
+	} else {
+		setGaugeColor(HUD_C_NONE, config);
+	}
 
+	int w, h;
 	bm_get_info(Objective_display_gauge.first_frame, &w, &h);
 
-	renderStringAlignCenter(position[0], position[1] + Subspace_text_offset_y, w, XSTR( "subspace drive", 233));
+	renderStringAlignCenter(x, y + fl2i(Subspace_text_offset_y * scale), fl2i(w * scale), XSTR( "subspace drive", 233), scale, config);
 	if ( warp_aborted ) {
-		renderStringAlignCenter(position[0], position[1] + Subspace_text_val_offset_y, w, XSTR( "aborted", 225));
+		renderStringAlignCenter(x, y + fl2i(Subspace_text_val_offset_y * scale), fl2i(w * scale), XSTR("aborted", 225), scale, config);
 	} else {
-		renderStringAlignCenter(position[0], position[1] + Subspace_text_val_offset_y, w, XSTR( "engaged", 234));
+		renderStringAlignCenter(x, y + fl2i(Subspace_text_val_offset_y * scale), fl2i(w * scale), XSTR("engaged", 234), scale, config);
 	}
 }
 
 /**
  * @todo Play a sound?
  */
-void HudGaugeObjectiveNotify::renderRedAlert()
+void HudGaugeObjectiveNotify::renderRedAlert(bool config)
 {
-	int w, h;
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	if ( !red_alert_in_progress() ) {
+	// Skip this in config mode because we default to rendering the objective display instead
+	// but provide full config and scaling support here for completeness in case we make it configurable in the future
+	if (config) {
+		return;
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));*/
+	}
+
+	if (!config && !red_alert_in_progress() ) {
 		return;
 	}
 
@@ -3613,40 +3960,51 @@ void HudGaugeObjectiveNotify::renderRedAlert()
 		return;
 	}
 
-	if ( hud_subspace_notify_active() ) {
+	if (!config && hud_subspace_notify_active() ) {
 		return;
 	}
 
-	if ( hud_objective_notify_active() ) {
+	if (!config && hud_objective_notify_active() ) {
 		return;
 	}
 
 	// Blit the background
 	gr_set_color_fast(&Color_red);		// Color box red, because it's an emergency
 
-	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);
+	renderBitmap(Objective_display_gauge.first_frame, x, y, scale, config);
 
-	startFlashNotify();
-	if(maybeFlashNotify()) {
-		gr_set_color_fast(&Color_red);
-	} else {
-		gr_set_color_fast(&Color_bright_red);
+	if (!config) {
+		startFlashNotify();
+		if (maybeFlashNotify()) {
+			gr_set_color_fast(&Color_red);
+		} else {
+			gr_set_color_fast(&Color_bright_red);
+		}
 	}
 
+	int w, h;
 	bm_get_info(Objective_display_gauge.first_frame, &w, &h);
 
-	renderStringAlignCenter(position[0], position[1] + Red_text_offset_y, w, XSTR( "downloading new", 235));
-	renderStringAlignCenter(position[0], position[1] + Red_text_val_offset_y, w, XSTR( "orders...", 236));
+	renderStringAlignCenter(x, y + fl2i(Red_text_offset_y * scale), fl2i(w * scale), XSTR( "downloading new", 235), scale, config);
+	renderStringAlignCenter(x, y + fl2i(Red_text_val_offset_y * scale), fl2i(w * scale), XSTR( "orders...", 236), scale, config);
 
 	// TODO: play a sound?
 }
 
-void HudGaugeObjectiveNotify::renderObjective()
+void HudGaugeObjectiveNotify::renderObjective(bool config)
 {
-	int w, h;
-	char buf[128];
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
 
-	if ( timestamp_elapsed(Objective_display.display_timer) ) {
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Objective_display_gauge.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+	}
+
+	if (!config && timestamp_elapsed(Objective_display.display_timer) ) {
 		return;
 	}
 
@@ -3659,53 +4017,62 @@ void HudGaugeObjectiveNotify::renderObjective()
 	}
 	
 	// Blit the background
-	setGaugeColor();
-	renderBitmap(Objective_display_gauge.first_frame, position[0], position[1]);	
+	setGaugeColor(HUD_C_NONE, config);
+	renderBitmap(Objective_display_gauge.first_frame, x, y, scale, config);	
 
-	startFlashNotify();
-	if(maybeFlashNotify()){
-		setGaugeColor(HUD_C_BRIGHT);
-	} else {
-		setGaugeColor();
+	if (!config) {
+		startFlashNotify();
+		if (maybeFlashNotify()) {
+			setGaugeColor(HUD_C_BRIGHT);
+		} else {
+			setGaugeColor();
+		}
 	}
 
+	int w, h;
 	bm_get_info(Objective_display_gauge.first_frame, &w, &h);
 
+	int goal_type = config? 1 : Objective_display.goal_type;
+	int goal_status = config? 1: Objective_display.goal_status;
+	int goal_nresolved = config? 1: Objective_display.goal_nresolved;
+	int goal_ntotal = config? 3: Objective_display.goal_ntotal;
+
 	// Draw the correct goal type
-	switch(Objective_display.goal_type) {
+	switch(goal_type) {
 	case PRIMARY_GOAL:
-		renderStringAlignCenter(position[0], position[1] + Objective_text_offset_y, w, XSTR( "primary objective", 237));
+		renderStringAlignCenter(x, y + fl2i(Objective_text_offset_y * scale), fl2i(w * scale), XSTR( "primary objective", 237), scale, config);
 		break;
 	case SECONDARY_GOAL:
-		renderStringAlignCenter(position[0], position[1] + Objective_text_offset_y, w, XSTR( "secondary objective", 238));
+		renderStringAlignCenter(x, y + fl2i(Objective_text_offset_y * scale), fl2i(w * scale), XSTR( "secondary objective", 238), scale, config);
 		break;
 	case BONUS_GOAL:
-		renderStringAlignCenter(position[0], position[1] + Objective_text_offset_y, w, XSTR( "bonus objective", 239));
+		renderStringAlignCenter(x, y + fl2i(Objective_text_offset_y * scale), fl2i(w * scale), XSTR( "bonus objective", 239), scale, config);
 		break;
 	}
 
 	// Show the status
-	switch(Objective_display.goal_type) {
+	switch(goal_type) {
 	case PRIMARY_GOAL:
 	case SECONDARY_GOAL:
-		switch(Objective_display.goal_status) {
+		char buf[128];
+		switch(goal_status) {
 		case GOAL_FAILED:
-			sprintf(buf, XSTR( "failed (%d/%d)", 240), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
-			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
+			sprintf(buf, XSTR( "failed (%d/%d)", 240), goal_nresolved, goal_ntotal);
+			renderStringAlignCenter(x, y + fl2i(Objective_text_val_offset_y * scale), fl2i(w * scale), buf, scale, config);
 			break;
 		default:
-			sprintf(buf, XSTR( "complete (%d/%d)", 241), Objective_display.goal_nresolved, Objective_display.goal_ntotal);
-			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, buf);
+			sprintf(buf, XSTR( "complete (%d/%d)", 241), goal_nresolved, goal_ntotal);
+			renderStringAlignCenter(x, y + fl2i(Objective_text_val_offset_y * scale), fl2i(w * scale), buf, scale, config);
 			break;
 		}		
 		break;
 	case BONUS_GOAL:
-		switch(Objective_display.goal_status) {
+		switch(goal_status) {
 		case GOAL_FAILED:
-			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, XSTR( "failed", 242));
+			renderStringAlignCenter(x, y + fl2i(Objective_text_val_offset_y * scale), fl2i(w * scale), XSTR( "failed", 242), scale, config);
 			break;
 		default:
-			renderStringAlignCenter(position[0], position[1] + Objective_text_val_offset_y, w, XSTR( "complete", 226));
+			renderStringAlignCenter(x, y + fl2i(Objective_text_val_offset_y * scale), fl2i(w * scale), XSTR( "complete", 226), scale, config);
 			break;
 		}		
 		break;
@@ -3754,10 +4121,6 @@ int hud_objective_notify_active()
  * @details Since the player's view vector may be different from the ship's forward vector,
  * we calculate the offset of those two in pixels and store the x and y offsets in
  * variables HUD_nose_x and HUD_nose_y (Swifty)
- *
- * @param viewer_obj Object, likely to be player
- * @param wiggedy_wack
- * @param eye_orient 
  */
 void HUD_set_offsets()
 {
@@ -3767,6 +4130,8 @@ void HUD_set_offsets()
 	} else {
 		HUD_get_nose_coordinates(&HUD_nose_x, &HUD_nose_y);
 	}
+
+	hud_reticle_set_flight_cursor_offset();
 }
 
 /**
@@ -3914,7 +4279,9 @@ void hud_page_in()
 
 HudGauge* hud_get_custom_gauge(const char* name, bool check_all_gauges)
 {
-	auto player_sip = Player_ship->ship_info_index < 0 ? nullptr : &Ship_info[Player_ship->ship_info_index];
+	ship_info *player_sip = nullptr;
+	if (Player_ship && Player_ship->ship_info_index >= 0)
+		player_sip = &Ship_info[Player_ship->ship_info_index];
 
 	// go through all gauges for all ships and defaults
 	if (check_all_gauges) {
@@ -3977,14 +4344,29 @@ int hud_get_default_gauge_index(const char *name)
 	return -1;
 }
 
-HudGauge *hud_get_gauge(const char *name)
+HudGauge *hud_get_gauge(const char *name, bool check_all_custom_gauges)
 {
-	auto gauge = hud_get_custom_gauge(name);
+	auto gauge = hud_get_custom_gauge(name, check_all_custom_gauges);
 	if (gauge == nullptr)
 	{
 		int idx = hud_get_default_gauge_index(name);
 		if (idx >= 0 && idx < (int)default_hud_gauges.size())
 			gauge = default_hud_gauges[idx].get();
+	}
+
+	// If we still haven't found it then we might be using ship specific builtin gauges and not a default_hud_gauge
+	if (gauge == nullptr) {
+		ship_info* player_sip = nullptr;
+		if (Player_ship && Player_ship->ship_info_index >= 0)
+			player_sip = &Ship_info[Player_ship->ship_info_index];
+
+		if (player_sip != nullptr) {
+			for (auto& ship_gauge : player_sip->hud_gauges) {
+				if (!stricmp(name, ship_gauge->getConfigName().c_str())) {
+					gauge = ship_gauge.get();
+				}
+			}
+		}
 	}
 	return gauge;
 }
@@ -4002,17 +4384,38 @@ bool HudGaugeMultiMsg::canRender() const
 /**
  * @brief Render multiplayer text message currently being entered, if any
  */
-void HudGaugeMultiMsg::render(float  /*frametime*/)
+void HudGaugeMultiMsg::render(float /*frametime*/, bool config)
 {
 	char txt[MULTI_MSG_MAX_TEXT_LEN+20];
 
 	// clear the text
 	memset(txt,0,MULTI_MSG_MAX_TEXT_LEN+20);
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
 	// if there is valid multiplayer message text to be displayed
-	if(multi_msg_message_text(txt)){
-		gr_set_color_fast(&Color_normal);
-		renderString(position[0], position[1], txt);
+	if(config || multi_msg_message_text(txt)){
+		if (!config) {
+			gr_set_color_fast(&Color_normal);
+		} else {
+			// This gauge uses the same settings as the message output gauge right now.
+			// That may change in the future, in which case the code below can be restored.
+			// Until then, we can do nothing here.
+			/*strcpy(txt, "This is a multiplayer message");
+			int w, h;
+			gr_get_string_size(&w, &h, txt, scale);
+			hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
+
+			setGaugeColor(HUD_C_NONE, config);*/
+			return;
+		}
+		renderString(x, y, txt, scale, config);
 	}
 }
 
@@ -4021,8 +4424,28 @@ HudGauge(HUD_OBJECT_VOICE_STATUS, HUD_MESSAGE_LINES, false, true, VM_EXTERNAL | 
 {
 }
 
-void HudGaugeVoiceStatus::render(float  /*frametime*/)
+void HudGaugeVoiceStatus::render(float /*frametime*/, bool config)
 {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+	
+	// This gauge uses the same settings as the message output gauge right now.
+	// That may change in the future, in which case the code below can be restored.
+	// Until then, we can do nothing here.
+	if (config) {
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+
+		int w, h;
+		gr_get_string_size(&w, &h, XSTR("[playing voice]", 245), scale);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
+
+		setGaugeColor(HUD_C_NONE, config);
+
+		renderString(x, y, XSTR("[playing voice]", 245), scale, config);*/
+		return;
+	}
+	
 	if(!(Game_mode & GM_MULTIPLAYER)){
 		return;
 	}
@@ -4032,17 +4455,17 @@ void HudGaugeVoiceStatus::render(float  /*frametime*/)
 	// the player has been denied the voice token
 	case MULTI_VOICE_STATUS_DENIED:
 		// show a red indicator or something
-		renderString(position[0], position[1], XSTR( "[voice denied]", 243));
+		renderString(x, y, XSTR("[voice denied]", 243), scale, config);
 		break;
 
 	// the player is currently recording
 	case MULTI_VOICE_STATUS_RECORDING:
-		renderString(position[0], position[1], XSTR( "[recording voice]", 244));
+		renderString(x, y, XSTR("[recording voice]", 244), scale, config);
 		break;
 		
 	// the player is current playing back voice from someone
 	case MULTI_VOICE_STATUS_PLAYING:
-		renderString(position[0], position[1], XSTR( "[playing voice]", 245));
+		renderString(x, y, XSTR("[playing voice]", 245), scale, config);
 		break;
 
 	// nothing voice related is happening on my machine
@@ -4061,8 +4484,28 @@ HudGauge(HUD_OBJECT_PING, HUD_LAG_GAUGE, false, false, 0, 255, 255, 255)
 /**
  * @brief Render multiplayer ping time to the server, if appropriate
  */
-void HudGaugePing::render(float  /*frametime*/)
+void HudGaugePing::render(float /*frametime*/, bool config)
 {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	// This gauge uses the same settings as the message output gauge right now.
+	// That may change in the future, in which case the code below can be restored.
+	// Until then, we can do nothing here.
+	if (config) {
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+
+		int w, h;
+		gr_get_string_size(&w, &h, XSTR("> 1 sec",628), scale);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
+
+		setGaugeColor(HUD_C_NONE, config);
+
+		renderString(x, y, XSTR("> 1 sec",628), scale, config);*/
+		return;
+	}
+	
 	// If we shouldn't be displaying a ping time, return here
 	if(!multi_show_ingame_ping()){
 		return;
@@ -4084,7 +4527,7 @@ void HudGaugePing::render(float  /*frametime*/)
 
 			// Blit the string out
 			hud_set_default_color();
-			renderString(position[0], position[1], ping_str);
+			renderString(x, y, ping_str, scale, config);
 		}
 	}
 }
@@ -4094,20 +4537,37 @@ HudGauge(HUD_OBJECT_SUPERNOVA, HUD_DIRECTIVES_VIEW, false, false, 0, 255, 255, 2
 {
 }
 
-void HudGaugeSupernova::render(float  /*frametime*/)
+void HudGaugeSupernova::render(float /*frametime*/, bool config)
 {
-	if (!supernova_active()) {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	SCP_string txt = XSTR("Supernova Warning: %.2f s", 1639);
+	if (Lcl_pl) {
+		txt = "Wybuch supernowej: %.2f s";
+	}
+
+	// This gauge uses the same settings as the message output gauge right now.
+	// That may change in the future, in which case the code below can be restored.
+	// Until then, we can do nothing here.
+	if (config) {
+		return;
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+
+		int w, h;
+		gr_get_string_size(&w, &h, txt.c_str(), 245), scale);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);*/
+	}
+
+	if (!config && !supernova_active()) {
 		return;
 	}
 
-	auto time_left = supernova_hud_time_left();
+	auto time_left = config ? 100.0f : supernova_hud_time_left();
 
 	gr_set_color_fast(&Color_bright_red);
-	if (Lcl_pl) {
-		renderPrintf(position[0], position[1], "Wybuch supernowej: %.2f s", time_left);
-	} else {
-		renderPrintf(position[0], position[1], XSTR( "Supernova Warning: %.2f s", 1639), time_left);
-	}
+	renderPrintf(x, y, scale, config, txt.c_str(), time_left);
 }
 
 HudGaugeFlightPath::HudGaugeFlightPath():
@@ -4130,20 +4590,23 @@ void HudGaugeFlightPath::initHalfSize(int w, int h)
 	Marker_half[1] = h;
 }
 
-void HudGaugeFlightPath::render(float  /*frametime*/)
+void HudGaugeFlightPath::render(float /*frametime*/, bool config)
 {
-	object *obj;
-	vec3d p0,v;
-	vertex v0;
-	int sx, sy;
+	
+	// Not currently rendered in config mode
+	if (config) {
+		return;
+	}
 
 	bool in_frame = g3_in_frame() > 0;
 	if(!in_frame) {
 		g3_start_frame(0);
 	}
 
-	obj = Player_obj;
+	auto obj = Player_obj;
 
+	vec3d p0, v;
+	vertex v0;
 	vm_vec_scale_add( &v, &obj->phys_info.vel, &obj->orient.vec.fvec, 1.0f );
 	vm_vec_normalize( &v );
 			
@@ -4156,6 +4619,7 @@ void HudGaugeFlightPath::render(float  /*frametime*/)
 
 		if (!(v0.flags & PF_OVERFLOW)) {
 			if ( Marker.first_frame >= 0 ) {
+				int sx, sy;
 				sx = fl2i(v0.screen.xyw.x);
 				sy = fl2i(v0.screen.xyw.y);
 

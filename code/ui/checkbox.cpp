@@ -156,7 +156,7 @@ void UI_CHECKBOX::process(int focus)
 		position = 2;
 
 	if (focus)
-		if ( (oldposition == 2) && (keyd_pressed[KEY_SPACEBAR] || keyd_pressed[KEY_ENTER]) )
+		if ( (oldposition == 2) && (key_is_pressed(KEY_SPACEBAR) || key_is_pressed(KEY_ENTER)) )
 			position = 2;
 
 	pressed_down = 0;

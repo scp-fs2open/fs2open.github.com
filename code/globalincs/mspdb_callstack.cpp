@@ -216,6 +216,11 @@ DWORD WINAPI SCP_mspdbcs_DumpStackThread( LPVOID pv )
 	stackFrame.AddrPC.Offset = context.Rip;
 	stackFrame.AddrStack.Offset = context.Rsp;
 	stackFrame.AddrFrame.Offset = context.Rbp;
+#elif defined(_M_ARM64)
+	dwMachType = IMAGE_FILE_MACHINE_ARM64;
+	stackFrame.AddrPC.Offset = context.Pc;
+	stackFrame.AddrStack.Offset = context.Sp;
+	stackFrame.AddrFrame.Offset = context.Fp;
 #else
 #		error UNKNOWN ARCHITECTURE
 #endif

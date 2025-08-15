@@ -11,7 +11,7 @@
 
 #include <qevent.h>
 #include <FredApplication.h>
-#include <ui/dialogs/ShipEditorDialog.h>
+#include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
@@ -136,6 +136,8 @@ void FredView::setEditor(Editor* editor, EditorViewport* viewport) {
 			[this]() { ui->actionRestore_Camera_Pos->setEnabled(!IS_VEC_NULL(&_viewport->saved_cam_orient.vec.fvec)); });
 
 	connect(this, &FredView::viewIdle, this, [this]() { ui->actionMove_Ships_When_Undocking->setChecked(_viewport->Move_ships_when_undocking); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionAlways_Save_Display_Names->setChecked(_viewport->Always_save_display_names); });
+	connect(this, &FredView::viewIdle, this, [this]() { ui->actionError_Checker_Checks_Potential_Issues->setChecked(_viewport->Error_checker_checks_potential_issues); });
 }
 
 void FredView::loadMissionFile(const QString& pathName) {
@@ -143,7 +145,10 @@ void FredView::loadMissionFile(const QString& pathName) {
 	try {
 		QApplication::setOverrideCursor(QCursor(Qt::WaitCursor));
 
-		fred->loadMission(pathName.toStdString());
+		auto pathToLoad = pathName.toStdString();
+		fred->maybeUseAutosave(pathToLoad);
+
+		fred->loadMission(pathToLoad);
 
 		QApplication::restoreOverrideCursor();
 	} catch (const fso::fred::mission_load_error&) {
@@ -547,6 +552,12 @@ void FredView::on_actionHide_Marked_Objects_triggered(bool  /*enabled*/) {
 void FredView::on_actionShow_All_Hidden_Objects_triggered(bool  /*enabled*/) {
 	fred->showHiddenObjects();
 }
+void FredView::on_actionLock_Marked_Objects_triggered(bool  /*enabled*/) {
+	fred->lockMarkedObjects();
+}
+void FredView::on_actionUnlock_All_Objects_triggered(bool  /*enabled*/) {
+	fred->unlockAllObjects();
+}
 void FredView::onUpdateViewSpeeds() {
 	ui->actionx1->setChecked(_viewport->physics_speed == 1);
 	ui->actionx2->setChecked(_viewport->physics_speed == 2);
@@ -694,8 +705,9 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 
 	_inKeyReleaseHandler = false;
 }
-void FredView::on_actionEvents_triggered(bool) {
+void FredView::on_actionMission_Events_triggered(bool) {
 	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
@@ -712,29 +724,44 @@ void FredView::onShipClassSelected(int ship_class) {
 }
 void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
+	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
 	asteroidFieldEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
 void FredView::on_actionMission_Specs_triggered(bool) {
 	auto missionSpecEditor = new dialogs::MissionSpecDialog(this, _viewport);
+	missionSpecEditor->setAttribute(Qt::WA_DeleteOnClose);
 	missionSpecEditor->show();
 }
 void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	auto editorDialog = new dialogs::WaypointEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionShips_triggered(bool)
 {
-	auto editorDialog = new dialogs::ShipEditorDialog(this, _viewport);
-	editorDialog->show();
+	if (!_shipEditorDialog) {
+		_shipEditorDialog = new dialogs::ShipEditorDialog(this, _viewport);
+		_shipEditorDialog->setAttribute(Qt::WA_DeleteOnClose);
+		// When the user closes it, reset our pointer so we can open a new one later
+		connect(_shipEditorDialog, &QObject::destroyed, this, [this]() {
+			_shipEditorDialog = nullptr;
+		});
+		_shipEditorDialog->show();
+	} else {
+		_shipEditorDialog->raise();
+		_shipEditorDialog->activateWindow();
+	}
 
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
 	auto editorCampaign = new dialogs::CampaignEditorDialog(this, _viewport);
+	editorCampaign->setAttribute(Qt::WA_DeleteOnClose);
 	editorCampaign->show();
 }
 void FredView::on_actionObjects_triggered(bool) {
@@ -742,14 +769,17 @@ void FredView::on_actionObjects_triggered(bool) {
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
 	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionReinforcements_triggered(bool) {
 	auto editorDialog = new dialogs::ReinforcementsDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionLoadout_triggered(bool) {
 	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
 void FredView::on_actionVariables_triggered(bool) {
@@ -857,6 +887,7 @@ void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
 }
 void FredView::orientEditorTriggered() {
 	auto dialog = new dialogs::ObjectOrientEditorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	// This is a modal dialog
 	dialog->exec();
 }
@@ -974,6 +1005,7 @@ bool FredView::showModalDialog(IBaseDialog* dlg) {
 void FredView::on_actionSelectionList_triggered(bool) {
 	auto dialog = new dialogs::SelectionDialog(this, _viewport);
 	// This is a modal dialog
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->exec();
 }
 void FredView::on_actionOrbitSelected_triggered(bool enabled) {
@@ -1110,36 +1142,48 @@ void FredView::on_actionCancel_Subsystem_triggered(bool) {
 void FredView::on_actionMove_Ships_When_Undocking_triggered(bool) {
 	_viewport->Move_ships_when_undocking = !_viewport->Move_ships_when_undocking;
 }
+void FredView::on_actionAlways_Save_Display_Names_triggered(bool) {
+	_viewport->Always_save_display_names = !_viewport->Always_save_display_names;
+}
+void FredView::on_actionError_Checker_Checks_Potential_Issues_triggered(bool) {
+	_viewport->Error_checker_checks_potential_issues = !_viewport->Error_checker_checks_potential_issues;
+}
 void FredView::on_actionError_Checker_triggered(bool) {
 	fred->global_error_check();
 }
 void FredView::on_actionAbout_triggered(bool) {
-	dialogs::AboutDialog dialog(this);
-	dialog.exec();
+	auto dialog = new dialogs::AboutDialog(this);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionBackground_triggered(bool) {
-	dialogs::BackgroundEditorDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::BackgroundEditorDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionShield_System_triggered(bool) {
-	dialogs::ShieldSystemDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::ShieldSystemDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
-	dialogs::VoiceActingManager dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::VoiceActingManager(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
-void FredView::on_actionMission_Objectives_triggered(bool) {
-	dialogs::MissionGoalsDialog dialog(this, _viewport);
-	dialog.exec();
+void FredView::on_actionMission_Goals_triggered(bool) {
+	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 void FredView::on_actionFiction_Viewer_triggered(bool) {
-	dialogs::FictionViewerDialog dialog(this, _viewport);
-	dialog.exec();
+	auto dialog = new dialogs::FictionViewerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 
 } // namespace fred

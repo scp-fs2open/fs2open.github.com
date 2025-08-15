@@ -273,6 +273,21 @@ void output_json_doc(const ScriptingDocumentation& doc, const SCP_string& filena
 		json_object_set_new(root.get(), "conditions", conditionArray);
 	}
 	{
+		json_t* optionsArray = json_array();
+
+		for (const auto& option : doc.options) {
+			json_t* optionsObject = json_object();
+
+			json_object_set_new(optionsObject, "title", json_string(option.title.c_str()));
+			json_object_set_new(optionsObject, "key", json_string(option.key.c_str()));
+			json_object_set_new(optionsObject, "description", json_string(option.description.c_str()));
+
+			json_array_append_new(optionsArray, optionsObject);
+		}
+
+		json_object_set_new(root.get(), "options", optionsArray);
+	}
+	{
 		json_t* enumObject = json_object();
 
 		for (const auto& enumVal : doc.enumerations) {

@@ -167,6 +167,8 @@ SCP_vector<SCP_string> Parse_names;
 
 SCP_vector<texture_replace> Fred_texture_replacements;
 
+SCP_unordered_set<int> Fred_migrated_immobile_ships;
+
 int Num_path_restrictions;
 path_restriction_t Path_restrictions[MAX_PATH_RESTRICTIONS];
 
@@ -242,7 +244,7 @@ const char *Icon_names[MIN_BRIEF_ICONS] = {
 
 // definitions for arrival locations for ships/wings
 const char *Arrival_location_names[MAX_ARRIVAL_NAMES] = {
-	"Hyperspace", "Near Ship", "In front of ship", "Docking Bay",
+	"Hyperspace", "Near Ship", "In front of ship", "In back of ship", "Above ship", "Below ship", "To left of ship", "To right of ship", "Docking Bay",
 };
 
 const char *Departure_location_names[MAX_DEPARTURE_NAMES] = {
@@ -311,6 +313,8 @@ flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "afterburners-locked",			Mission::Parse_Object_Flags::SF_Afterburner_locked,		true, false },
     { "force-shields-on",				Mission::Parse_Object_Flags::OF_Force_shields_on,		true, false },
     { "immobile",						Mission::Parse_Object_Flags::OF_Immobile,				true, false },
+    { "don't-change-position",			Mission::Parse_Object_Flags::OF_Dont_change_position,	true, false },
+    { "don't-change-orientation",		Mission::Parse_Object_Flags::OF_Dont_change_orientation,	true, false },
     { "no-ets",							Mission::Parse_Object_Flags::SF_No_ets,					true, false },
     { "cloaked",						Mission::Parse_Object_Flags::SF_Cloaked,				true, false },
     { "ship-locked",					Mission::Parse_Object_Flags::SF_Ship_locked,			true, false },
@@ -374,7 +378,9 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
     { Mission::Parse_Object_Flags::SF_Lock_all_turrets_initially,	"Lock all turrets on this ship at mission start or on arrival."},
     { Mission::Parse_Object_Flags::SF_Afterburner_locked,			"Will stop a ship from firing their afterburner."},
     { Mission::Parse_Object_Flags::OF_Force_shields_on,				"Shields will be activated regardless of other flags."},
-    { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Immobile,						"Will not let a ship change position or orientation. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Dont_change_position,			"Will not let a ship change position. Upon destruction the ship will still do the death roll and explosion."},
+    { Mission::Parse_Object_Flags::OF_Dont_change_orientation,		"Will not let a ship change orientation. Upon destruction the ship will still do the death roll and explosion."},
     { Mission::Parse_Object_Flags::SF_No_ets,						"Will not allow a ship to alter its ETS system."},
     { Mission::Parse_Object_Flags::SF_Cloaked,						"This ship will not be rendered."},
     { Mission::Parse_Object_Flags::SF_Ship_locked,					"Prevents the player from changing the ship class on loadout screen."},
@@ -429,10 +435,9 @@ fix Mission_end_time;
 // WARNING : do NOT call this function on the server - it will overwrite goals, etc
 #define MISSION_CHECKSUM_SIZE (NAME_LENGTH + NAME_LENGTH + 4 + DATE_TIME_LENGTH + DATE_TIME_LENGTH)
 
-// timers used to limit arrival messages and music
+// a timer used to limit arrival music
 #define ARRIVAL_MUSIC_MIN_SEPARATION	60000
-#define ARRIVAL_MESSAGE_MIN_SEPARATION 30000
-
+// a random delay before announcing enemy arrivals
 #define ARRIVAL_MESSAGE_DELAY_MIN		2000
 #define ARRIVAL_MESSAGE_DELAY_MAX		3000
 
@@ -440,6 +445,8 @@ static int Allow_arrival_music_timestamp;
 static int Allow_arrival_message_timestamp;
 static int Arrival_message_delay_timestamp;
 static int Arrival_message_subject;
+
+static int Allow_backup_message_timestamp;
 
 // multi TvT
 static int Allow_arrival_music_timestamp_m[2];
@@ -452,7 +459,7 @@ bool post_process_mission(mission *pm);
 int allocate_subsys_status();
 void parse_common_object_data(p_object	*objp);
 void parse_asteroid_fields(mission *pm);
-int mission_set_arrival_location(int anchor, int location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
+int mission_set_arrival_location(int anchor, ArrivalLocation location, int distance, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient);
 int get_anchor(const char *name);
 void mission_parse_set_up_initial_docks();
 void mission_parse_set_arrival_locations();
@@ -486,7 +493,8 @@ const std::shared_ptr<scripting::Hook<scripting::hooks::ShipDepartConditions>> O
  const std::shared_ptr<scripting::Hook<>> OnLoadoutAboutToParseHook = scripting::Hook<>::Factory("On Loadout About To Parse",
 	"Called during mission load just before parsing the team loadout.",{});
 
-mission_custom_string* get_custom_string_by_name(SCP_string name) {
+custom_string* get_custom_string_by_name(SCP_string name)
+ {
 	for (size_t i = 0; i < The_mission.custom_strings.size(); i++) {
 		if (The_mission.custom_strings[i].name == name) {
 			return &The_mission.custom_strings[i];
@@ -1510,6 +1518,14 @@ void parse_briefing(mission * /*pm*/, int flags)
 			if (optional_string("$no_grid"))
 				bs->draw_grid = false;
 
+			if (optional_string("$grid_color:")) {
+				int rgba[4] = {0, 0, 0, 0};
+				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				gr_init_alphacolor(&bs->grid_color, rgba[0], rgba[1], rgba[2], rgba[3]);
+			} else {
+				bs->grid_color = Color_briefing_grid;
+			}
+
 			if ( optional_string("$num_lines:") ) {
 				stuff_int(&bs->num_lines);
 
@@ -1961,7 +1977,7 @@ int parse_create_object(p_object *pobjp, bool standalone_ship)
 	// warp it in (moved from parse_create_object_sub)
 	if ((Game_mode & GM_IN_MISSION) && (!Fred_running) && (!Game_restoring))
 	{
-		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ARRIVE_FROM_DOCK_BAY))
+		if ((Ships[objp->instance].wingnum < 0) && (pobjp->arrival_location != ArrivalLocation::FROM_DOCK_BAY))
 		{
 			shipfx_warpin_start(objp);
 		}
@@ -1988,9 +2004,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	ship_info *sip;
 	subsys_status *sssp;
 	ship_weapon *wp;
-
-	// texture replacements
-	polymodel *pm;
 
 	MONITOR_INC(NumShipArrivals, 1);
 
@@ -2091,6 +2104,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	shipp->cargo1 = p_objp->cargo1;
+	strcpy_s(shipp->cargo_title, p_objp->cargo_title);
 
 	shipp->arrival_location = p_objp->arrival_location;
 	shipp->arrival_distance = p_objp->arrival_distance;
@@ -2250,7 +2264,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 		// set up the ai goals for this object.
 		for (sexp = CDR(p_objp->ai_goals); sexp != -1; sexp = CDR(sexp))
-			ai_add_ship_goal_sexp(sexp, AIG_TYPE_EVENT_SHIP, aip);
+			ai_add_ship_goal_sexp(sexp, ai_goal_type::EVENT_SHIP, aip);
 
 		// free the sexpression nodes only for non-wing ships.  wing code will handle its own case
 		if (p_objp->wingnum < 0)
@@ -2297,6 +2311,15 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 				}
 			}
 
+			// double check the Pilot subsystem...
+			if (!ptr && !Fred_running)
+			{
+				// if we somehow ended up with more banks than this ship actually has, clear the excess
+				// (this can happen if the mission was edited by hand)
+				while (k > sip->num_primary_banks)
+					wp->primary_bank_weapons[--k] = -1;
+			}
+
 			if (Fred_running)
 			{
 				// only do this for the Pilot subsystem
@@ -2341,6 +2364,15 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 					wp->secondary_bank_weapons[k] = sssp->secondary_banks[j];
 					++k;
 				}
+			}
+
+			// double check the Pilot subsystem...
+			if (!ptr && !Fred_running)
+			{
+				// if we somehow ended up with more banks than this ship actually has, clear the excess
+				// (this can happen if the mission was edited by hand)
+				while (k > sip->num_secondary_banks)
+					wp->secondary_bank_weapons[--k] = -1;
 			}
 
 			if (Fred_running)
@@ -2422,6 +2454,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		}
 
 		ptr->subsys_cargo_name = sssp->subsys_cargo_name;
+		strcpy_s(ptr->subsys_cargo_title, sssp->subsys_cargo_title);
 
 		if (sssp->ai_class != SUBSYS_STATUS_NO_CHANGE)
 			ptr->weapons.ai_class = sssp->ai_class;
@@ -2435,9 +2468,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// with
 	if (Fred_running)
 	{
-		Objects[objnum].phys_info.speed = (float) p_objp->initial_velocity;
-		Objects[objnum].hull_strength = (float) p_objp->initial_hull;
-		Objects[objnum].shield_quadrant[0] = (float) p_objp->initial_shields;
+		Objects[objnum].phys_info.speed = i2fl(p_objp->initial_velocity);
+		Objects[objnum].hull_strength = i2fl(p_objp->initial_hull);
+		Objects[objnum].shield_quadrant[0] = i2fl(p_objp->initial_shields);
 
 	}
 	else
@@ -2445,10 +2478,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		int max_allowed_sparks, num_sparks, iLoop;
 
 		Objects[objnum].hull_strength = p_objp->initial_hull * shipp->ship_max_hull_strength / 100.0f;
-		for (iLoop = 0; iLoop<Objects[objnum].n_quadrants; iLoop++)
-		{
-			Objects[objnum].shield_quadrant[iLoop] = (float) (shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f);
-		}
+		float quad_strength = shipp->max_shield_recharge * p_objp->initial_shields * shield_get_max_quad(&Objects[objnum]) / 100.0f;
+		for (auto &quadrant : Objects[objnum].shield_quadrant)
+			quadrant = quad_strength;
 
 		// initial velocities now do not apply to ships which warp in after mission starts
 		// WMC - Make it apply for ships with IN_PLACE_ANIM type
@@ -2471,7 +2503,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		// create sparks on a ship whose hull is damaged.  We will create two sparks for every 20%
 		// of hull damage done.  100 means no sparks.  between 80 and 100 do two sparks.  60 and 80 is
 		// four, etc.
-		pm = model_get(sip->model_num);
+		auto pm = model_get(sip->model_num);
 		max_allowed_sparks = get_max_sparks(&Objects[objnum]);
 		num_sparks = (int)((100.0f - p_objp->initial_hull) / 5.0f);
 		if (num_sparks > max_allowed_sparks)
@@ -2496,15 +2528,13 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			// if this ship isn't in a wing, determine its arrival location
 			if (shipp->wingnum == -1)
 			{
-				int location;
-
 				// multiplayer clients set the arrival location of ships to be at location since their
 				// position has already been determined.  Don't actually set the variable since we
 				// don't want the warp effect to show if coming from a dock bay.
-				location = p_objp->arrival_location;
+				auto location = p_objp->arrival_location;
 
 				if (MULTIPLAYER_CLIENT)
-					location = ARRIVE_AT_LOCATION;
+					location = ArrivalLocation::AT_LOCATION;
 
 				anchor_objnum = mission_set_arrival_location(p_objp->arrival_anchor, location, p_objp->arrival_distance, objnum, p_objp->arrival_path_mask, NULL, NULL);
 
@@ -2577,14 +2607,45 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 		if (entry->status == ShipStatus::INVALID) {
 			Warning(LOCATION, "Potential bug: ship registry status for %s is INVALID", shipp->ship_name);
 		}
-		if (entry->pobj_num < 0) {
-			Warning(LOCATION, "Potential bug: ship registry parse object for %s is not assigned", shipp->ship_name);
-		} else if (entry->pobj_num != POBJ_INDEX(p_objp)) {
-			Warning(LOCATION, "Potential bug: ship registry parse object for %s is different from its expected value", shipp->ship_name);
-		}
 
-		entry->pobj_num = POBJ_INDEX(p_objp);
+		// arriving support ships have unique housekeeping and are not in Parse_objects
+		if (p_objp == Arriving_support_ship) {
+			if (entry->pobj_num < -1 || entry->pobj_num >= 0) {
+				Warning(LOCATION, "Potential bug: an arriving support ship %s has a bogus pobj_num index %d", shipp->ship_name, entry->pobj_num);
+				entry->pobj_num = -1;
+			}
+		}
+		else {
+			int pobj_num = POBJ_INDEX(p_objp);
+			if (!SCP_vector_inbounds(Parse_objects, pobj_num)) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is not listed in Parse_objects", shipp->ship_name);
+				entry->pobj_num = -1;
+			}
+			else if (entry->pobj_num == -1) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is not assigned", shipp->ship_name);
+				entry->pobj_num = pobj_num;
+			}
+			else if (!SCP_vector_inbounds(Parse_objects, entry->pobj_num)) {
+				Warning(LOCATION, "Potential bug: ship registry parse object for %s is out of bounds", shipp->ship_name);
+				entry->pobj_num = pobj_num;
+			}
+			else if (entry->pobj_num != pobj_num) {
+				Warning(LOCATION, "Potential bug: ship registry parse object index for %s (%d) is different from its expected value (%d)", shipp->ship_name, entry->pobj_num, pobj_num);
+				entry->pobj_num = pobj_num;
+			}
+		}
 	}
+
+	// now that everything has been set up, do some sanity checks
+#ifndef NDEBUG
+	{
+		auto pm = model_get(sip->model_num);
+		Assertion(pm->n_guns == sip->num_primary_banks, "For %s (%s), the number of primary banks in the ship class does not match the number of gun banks in the model!", sip->name, pm->filename);
+		Assertion(shipp->weapons.num_primary_banks <= pm->n_guns, "For %s (%s), the number of primary banks in the ship is greater than the number of gun banks in the model!", shipp->ship_name, pm->filename);
+		Assertion(pm->n_missiles == sip->num_secondary_banks, "For %s (%s), the number of secondary banks in the ship class does not match the number of missile banks in the model!", sip->name, pm->filename);
+		Assertion(shipp->weapons.num_secondary_banks <= pm->n_missiles, "For %s (%s), the number of secondary banks in the ship is greater than the number of missile banks in the model!", shipp->ship_name, pm->filename);
+	}
+#endif
 
 	return objnum;
 }
@@ -2697,6 +2758,12 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_departure_warp])
         shipp->flags.set(Ship::Ship_Flags::No_departure_warp);
 
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
+        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
+
+    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
+        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
+
     if (parse_flags[Mission::Parse_Object_Flags::SF_Locked]) {
         shipp->flags.set(Ship::Ship_Flags::Ship_locked);
         shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
@@ -2791,20 +2858,33 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
     if (parse_flags[Mission::Parse_Object_Flags::OF_Force_shields_on])
         shipp->flags.set(Ship::Ship_Flags::Force_shields_on);
 
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_position])
+        objp->flags.set(Object::Object_Flags::Dont_change_position);
+
+    if (parse_flags[Mission::Parse_Object_Flags::OF_Dont_change_orientation])
+        objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+
     if (parse_flags[Mission::Parse_Object_Flags::OF_Immobile])
-        objp->flags.set(Object::Object_Flags::Immobile);
+    {
+        // handle "soft deprecation" of Immobile by setting the two half-flags, but only in FRED
+        // (FRED has dialog support for the two half-flags but not the legacy Immobile flag)
+        if (Fred_running)
+        {
+            objp->flags.set(Object::Object_Flags::Dont_change_position);
+            objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+
+            // keep track of migrated ships
+            Fred_migrated_immobile_ships.insert(objp->instance);
+        }
+        else
+            objp->flags.set(Object::Object_Flags::Immobile);
+    }
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_No_ets])
         shipp->flags.set(Ship::Ship_Flags::No_ets);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Cloaked])
         shipp->flags.set(Ship::Ship_Flags::Cloaked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Ship_locked])
-        shipp->flags.set(Ship::Ship_Flags::Ship_locked);
-
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Weapons_locked])
-        shipp->flags.set(Ship::Ship_Flags::Weapons_locked);
 
     if (parse_flags[Mission::Parse_Object_Flags::SF_Scramble_messages])
         shipp->flags.set(Ship::Ship_Flags::Scramble_messages);
@@ -3131,23 +3211,34 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 		stuff_string(name, F_NAME, NAME_LENGTH);
 	}
 
+	if (optional_string("$Cargo Title:"))
+	{
+		stuff_string(p_objp->cargo_title, F_NAME, NAME_LENGTH);
+	}
+
 	parse_common_object_data(p_objp);  // get initial conditions and subsys status
 
-	find_and_stuff("$Arrival Location:", &p_objp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	if (temp >= 0)
+		p_objp->arrival_location = static_cast<ArrivalLocation>(temp);
 
 	if (optional_string("+Arrival Distance:"))
 	{
 		stuff_int(&p_objp->arrival_distance);
 
 		// Goober5000
-		if ((p_objp->arrival_distance <= 0) && ((p_objp->arrival_location == ARRIVE_NEAR_SHIP) || (p_objp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		if ((p_objp->arrival_distance <= 0) && (
+			   (p_objp->arrival_location == ArrivalLocation::NEAR_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (p_objp->arrival_location == ArrivalLocation::BELOW_SHIP)
+			|| (p_objp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (p_objp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
 			Warning(LOCATION, "Arrival distance for ship %s cannot be %d.  Setting to 1.\n", p_objp->name, p_objp->arrival_distance);
 			p_objp->arrival_distance = 1;
 		}
 	}
 
-	if (p_objp->arrival_location != ARRIVE_AT_LOCATION)
+	if (p_objp->arrival_location != ArrivalLocation::AT_LOCATION)
 	{
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -3180,9 +3271,11 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 	required_string("$Arrival Cue:");
 	p_objp->arrival_cue = get_sexp_main();
 
-	find_and_stuff("$Departure Location:", &p_objp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	find_and_stuff("$Departure Location:", &temp, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	if (temp >= 0)
+		p_objp->departure_location = static_cast<DepartureLocation>(temp);
 
-	if (p_objp->departure_location != DEPART_AT_LOCATION)
+	if (p_objp->departure_location != DepartureLocation::AT_LOCATION)
 	{
 		required_string("$Departure Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -3564,7 +3657,6 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
 void mission_parse_handle_late_arrivals(p_object *p_objp)
 {
 	ship_info *sip = NULL;
-	model_subsystem *subsystems = NULL;
 
 	// only for objects which show up after the start of a mission
 	if (p_objp->created_object != NULL)
@@ -3574,12 +3666,8 @@ void mission_parse_handle_late_arrivals(p_object *p_objp)
 
 	sip = &Ship_info[p_objp->ship_class];
 
-	if (sip->n_subsystems > 0) {
-		subsystems = &sip->subsystems[0];
-	}
-
 	// we need the model to process the texture set, so go ahead and load it now
-	sip->model_num = model_load(sip->pof_file, sip->n_subsystems, subsystems);
+	sip->model_num = model_load(sip->pof_file, sip);
 }
 
 // Goober5000 - I split this because 1) it's clearer; and 2) initially multiple docked ships would have been
@@ -3720,7 +3808,6 @@ void parse_common_object_data(p_object *p_objp)
 		if (optional_string("$Damage:"))
 			stuff_float(&Subsys_status[i].percent);
 
-		Subsys_status[i].subsys_cargo_name = 0;
 		if (optional_string("+Cargo Name:")) {
 			char cargo_name[NAME_LENGTH];
 			stuff_string(cargo_name, F_NAME, NAME_LENGTH);
@@ -3736,6 +3823,10 @@ void parse_common_object_data(p_object *p_objp)
 				}
 			}
 			Subsys_status[i].subsys_cargo_name = index;
+		}
+
+		if (optional_string("+Cargo Title:")) {
+			stuff_string(Subsys_status[i].subsys_cargo_title, F_NAME, NAME_LENGTH);
 		}
 
 		if (optional_string("+AI Class:"))
@@ -4124,7 +4215,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 
 		// if wing is coming from docking bay, then be sure that ship we are arriving from actually exists
 		// (or will exist).
-		if ( wingp->arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( wingp->arrival_anchor >= 0 );
 			auto anchor_ship_entry = ship_registry_get(Parse_names[wingp->arrival_anchor]);
 
@@ -4564,21 +4655,28 @@ void parse_wing(mission *pm)
 		stuff_float(&wingp->formation_scale);
 	}
 
-	find_and_stuff("$Arrival Location:", &wingp->arrival_location, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	int temp;
+	find_and_stuff("$Arrival Location:", &temp, F_NAME, Arrival_location_names, Num_arrival_names, "Arrival Location");
+	if (temp >= 0)
+		wingp->arrival_location = static_cast<ArrivalLocation>(temp);
 
 	if ( optional_string("+Arrival Distance:") )
 	{
 		stuff_int( &wingp->arrival_distance );
 
 		// Goober5000
-		if ((wingp->arrival_distance <= 0) && ((wingp->arrival_location == ARRIVE_NEAR_SHIP) || (wingp->arrival_location == ARRIVE_IN_FRONT_OF_SHIP)))
+		if ((wingp->arrival_distance <= 0) && (
+			   (wingp->arrival_location == ArrivalLocation::NEAR_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::IN_FRONT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::ABOVE_SHIP) || (wingp->arrival_location == ArrivalLocation::BELOW_SHIP)
+			|| (wingp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP) || (wingp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP) ))
 		{
 			Warning(LOCATION, "Arrival distance for wing %s cannot be %d.  Setting to 1.\n", wingp->name, wingp->arrival_distance);
 			wingp->arrival_distance = 1;
 		}
 	}
 
-	if ( wingp->arrival_location != ARRIVE_AT_LOCATION )
+	if ( wingp->arrival_location != ArrivalLocation::AT_LOCATION )
 	{
 		required_string("$Arrival Anchor:");
 		stuff_string(name, F_NAME, NAME_LENGTH);
@@ -4611,9 +4709,11 @@ void parse_wing(mission *pm)
 	required_string("$Arrival Cue:");
 	wingp->arrival_cue = get_sexp_main();
 	
-	find_and_stuff("$Departure Location:", &wingp->departure_location, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	find_and_stuff("$Departure Location:", &temp, F_NAME, Departure_location_names, Num_arrival_names, "Departure Location");
+	if (temp >= 0)
+		wingp->departure_location = static_cast<DepartureLocation>(temp);
 
-	if ( wingp->departure_location != DEPART_AT_LOCATION )
+	if ( wingp->departure_location != DepartureLocation::AT_LOCATION )
 	{
 		required_string("$Departure Anchor:");
 		stuff_string( name, F_NAME, NAME_LENGTH );
@@ -4749,7 +4849,7 @@ void parse_wing(mission *pm)
 		// this will assign the goals to the wings as well as to any ships in the wing that have been
 		// already created.
 		for ( sexp = CDR(wing_goals); sexp != -1; sexp = CDR(sexp) )
-			ai_add_wing_goal_sexp(sexp, AIG_TYPE_EVENT_WING, wingp);  // used by Fred
+			ai_add_wing_goal_sexp(sexp, ai_goal_type::EVENT_WING, wingp);  // used by Fred
 
 		free_sexp2(wing_goals);  // free up sexp nodes for reuse, since they aren't needed anymore.
 	}
@@ -4873,7 +4973,7 @@ void resolve_path_masks(int anchor, int *path_mask)
 
 		// Load the anchor ship model with subsystems and all; it'll need to be done for this mission anyway
 		ship_info *sip = &Ship_info[parent_pobjp->ship_class];
-		modelnum = model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		modelnum = model_load(sip->pof_file, sip);
 
 		// resolve names to indexes
 		*path_mask = 0;
@@ -5208,7 +5308,7 @@ void parse_event(mission *pm)
 	}
 
 	if (optional_string("+Event Flags:")) {
-		parse_string_flag_list(&event->flags, Mission_event_flags, Num_mission_event_flags);
+		parse_string_flag_list(event->flags, Mission_event_flags, Num_mission_event_flags);
 	}
 
 	if( optional_string("+Event Log Flags:") ) {
@@ -5216,13 +5316,12 @@ void parse_event(mission *pm)
 		
 		stuff_string_list(buffer); 
 		for (int i = 0; i < (int)buffer.size(); i++) {
-			int add_flag = 1; 
 
 			for (int j = 0; j < MAX_MISSION_EVENT_LOG_FLAGS; j++) {
 				if (!stricmp(buffer[i].c_str(), Mission_event_log_flags[j])) {
-					// bitshift add_flag so that it equals the index of the flag in Mission_event_log_flags[]
-					add_flag = add_flag << j; 
-					event->mission_log_flags |= add_flag;
+					// add the flag to the variable, bitshifted by the index used in Mission_event_log_flags[]
+					event->mission_log_flags |= 1 << j; 
+					break;
 				}
 			}
 		}
@@ -5776,14 +5875,13 @@ void parse_bitmaps(mission *pm)
 
 void parse_asteroid_fields(mission *pm)
 {
-	int i, count;
+	int i;
 
 	Assert(pm != NULL);
 
 	Asteroid_field.num_initial_asteroids = 0;
 
 	i = 0;
-	count = 0;
 
 	if (!optional_string("#Asteroid Fields"))
 		return;
@@ -5810,68 +5908,82 @@ void parse_asteroid_fields(mission *pm)
 			Asteroid_field.debris_genre = (debris_genre_t)type;
 		}
 
-		Asteroid_field.field_debris_type[0] = -1;
-		Asteroid_field.field_debris_type[1] = -1;
-		Asteroid_field.field_debris_type[2] = -1;
+		Asteroid_field.field_debris_type.clear();
+		Asteroid_field.field_asteroid_type.clear();
 
 		// Debris types
 		if (Asteroid_field.debris_genre == DG_DEBRIS) {
 
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < MAX_RETAIL_DEBRIS_TYPES; j++) {
 				if (optional_string("+Field Debris Type:")) {
-					stuff_int(&Asteroid_field.field_debris_type[j]);
-					count++;
+					int subtype;
+					stuff_int(&subtype);
+					Asteroid_field.field_debris_type.push_back(subtype);
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype;
-					subtype = get_asteroid_index(ast_name.c_str());
-					if (subtype >= 0) {
-						Asteroid_field.field_debris_type[j] = subtype;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
-					}
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+				int subtype;
+				subtype = get_asteroid_index(ast_name.c_str());
+				if (subtype >= 0) {
+					Asteroid_field.field_debris_type.push_back(subtype);
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid debris %s!", pm->name, ast_name.c_str());
 				}
 			}
 
 		// Asteroid types
 		} else {
 
+			// Retail asteroid subtypes
+			SCP_string colors[NUM_ASTEROID_SIZES] = {"Brown", "Blue", "Orange"};
+
 			// Obsolete and only for backwards compatibility
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
+			for (int j = 0; j < NUM_ASTEROID_SIZES; j++) {
 				if (optional_string("+Field Debris Type:")) {
 					int subtype;
 					stuff_int(&subtype);
-					Asteroid_field.field_debris_type[subtype] = 1;
-					count++;
+					Asteroid_field.field_asteroid_type.push_back(colors[subtype]);
 				}
 			}
 
 			// Get asteroids by name
-			for (int j = 0; j < MAX_ACTIVE_DEBRIS_TYPES; j++) {
-				if (optional_string("+Field Debris Type Name:")) {
-					SCP_string ast_name;
-					stuff_string(ast_name, F_NAME);
-					int subtype = get_asteroid_index(ast_name.c_str());
-					// If the returned index is valid but not one of the first three then it's a debris type instead of asteroid
-					if ((subtype >= 0) && (subtype < NUM_ASTEROID_SIZES)) {
-						Asteroid_field.field_debris_type[subtype] = 1;
-						count++;
-					} else {
-						WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
+			while (optional_string("+Field Debris Type Name:")) {
+				SCP_string ast_name;
+				stuff_string(ast_name, F_NAME);
+
+				// Old saving for asteroids was bugged and saved the asteroid size rather than the subtype color
+				// so we'll compensate for that here
+				for (size_t k = 0; k < NUM_ASTEROID_SIZES; k++) {
+					// if we get the name for small/medium/large asteroid then convert it to retail colors
+					if (stricmp(ast_name.c_str(), Asteroid_info[k].name) == 0) {
+						ast_name = colors[k];
+						break;
 					}
+				}
+
+				auto list = get_list_valid_asteroid_subtypes();
+
+				//validate the asteroid subtype name
+				bool valid = false;
+				for (const auto& entry : list) {
+					if (ast_name == entry) {
+						valid = true;
+						break;
+					}
+				}
+
+				if (valid){
+					Asteroid_field.field_asteroid_type.push_back(ast_name);
+				} else {
+					WarningEx(LOCATION, "Mission %s\n Invalid asteroid %s!", pm->name, ast_name.c_str());
 				}
 			}
 		}
-
-		Asteroid_field.num_used_field_debris_types = count;
 
 		bool invalid_asteroids = false;
 		for (int& ast_type : Asteroid_field.field_debris_type) {
@@ -5885,9 +5997,11 @@ void parse_asteroid_fields(mission *pm)
 			Warning(LOCATION, "The Asteroid field contains invalid entries!");
 
 		// backward compatibility
-		if ( (Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.num_used_field_debris_types == 0) ) {
-			Asteroid_field.field_debris_type[0] = 0;
-			Asteroid_field.num_used_field_debris_types = 1;
+		// Is this a good idea? This doesn't seem like a good idea. What is this compatibility actually for??
+		// If you've defined an asteroid field but didn't define any 'roids, then tough luck. Fix your mission.
+		// If this is for a retail mission then this needs to be hardcoded for that specific mission file probably. - Mjn
+		if ((Asteroid_field.debris_genre == DG_ASTEROID) && (Asteroid_field.field_asteroid_type.empty())) {
+			Asteroid_field.field_asteroid_type.push_back("Brown");
 		}
 
 		required_string("$Average Speed:");
@@ -6115,7 +6229,7 @@ void parse_custom_data(mission* pm)
 
 	if (optional_string("$begin_custom_strings")) {
 		while (optional_string("$Name:")) {
-			mission_custom_string cs;
+			custom_string cs;
 
 			// The name of the string
 			stuff_string(cs.name, F_NAME);
@@ -6277,6 +6391,10 @@ bool post_process_mission(mission *pm)
 
 	// the player_start_shipname had better exist at this point!
 	auto player_start_entry = ship_registry_get(Player_start_shipname);
+	if (!player_start_entry) {
+		Warning(LOCATION, "Player start ship '%s' does not exist!", Player_start_shipname);		// maybe the mission was hand-edited :P
+		return false;
+	}
 	Player_start_shipnum = player_start_entry->shipnum;
 	Assert( Player_start_shipnum != -1 );
 	Player_start_pobject = player_start_entry->p_objp();
@@ -6303,7 +6421,7 @@ bool post_process_mission(mission *pm)
 
 	// Kazan - player use AI at start?
 	if (pm->flags[Mission::Mission_Flags::Player_start_ai])
-		Player_use_ai = 1;
+		Player_use_ai = true;
 
 	// Assign squadron information
 	if (!Fred_running && (Player != nullptr) && (pm->squad_name[0] != '\0') && (Game_mode & GM_CAMPAIGN_MODE) && !(Game_mode & GM_MULTIPLAYER)) {
@@ -6508,6 +6626,7 @@ bool post_process_mission(mission *pm)
 
 	Allow_arrival_music_timestamp=timestamp(0);
 	Allow_arrival_message_timestamp=timestamp(0);
+	Allow_backup_message_timestamp=timestamp(0);
 	Arrival_message_delay_timestamp = timestamp(-1);
 	Arrival_message_subject = -1;
 
@@ -6533,6 +6652,21 @@ bool post_process_mission(mission *pm)
 
 	apply_default_custom_data(pm);
 
+	if (Preload_briefing_icon_models) {
+		int team = 0;
+		if (MULTI_TEAM) {
+			team = Net_player->p_info.team;
+		}
+		const auto &br = Briefings[team].stages;
+		for (i = 0; i < Briefings[team].num_stages; i++) {
+			const auto &stage = br[i];
+			for (int j = 0; j < stage.num_icons; j++) {
+				ship_info *sip = &Ship_info[stage.icons[j].ship_class];
+				stage.icons[j].modelnum = model_load(sip->pof_file, sip);
+			}
+		}
+	}
+
 	// success
 	return true;
 }
@@ -6541,7 +6675,11 @@ int get_mission_info(const char *filename, mission *mission_p, bool basic, bool 
 {
 	static SCP_string real_fname_buf;
 	const char *real_fname = nullptr;
-	
+
+	if ( !filename || !strlen(filename) ) {
+		return -1;
+	}
+
 	if (filename_is_full_path) {
 		real_fname = filename;
 	} else {
@@ -6694,6 +6832,7 @@ void mission_init(mission *pm)
 	mission_parse_reset_callsign();
 	ai_lua_reset_general_orders();
 
+	Parse_names.clear();
 	Num_path_restrictions = 0;
 	Num_ai_dock_names = 0;
 	ai_clear_goal_target_names();
@@ -6774,7 +6913,7 @@ bool parse_main(const char *mission_name, int flags)
 	do {
 		// don't do this for imports
 		if (!(flags & MPF_IMPORT_FSM)) {
-			CFILE *ftemp = cfopen(mission_name, "rt", CFILE_NORMAL, CF_TYPE_MISSIONS);
+			CFILE *ftemp = cfopen(mission_name, "rt", CF_TYPE_MISSIONS);
 
 			// fail situation.
 			if (!ftemp) {
@@ -6856,7 +6995,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 	// get the starting index into the ship_index array of the first ship whose location we need set.
 
 	index = wingp->current_count - num_to_set;
-	if ( (wingp->arrival_location == ARRIVE_FROM_DOCK_BAY) || (wingp->arrival_location == ARRIVE_AT_LOCATION) ) {
+	if ( (wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY) || (wingp->arrival_location == ArrivalLocation::AT_LOCATION) ) {
 		while ( index < wingp->current_count ) {
 			object *objp;
 
@@ -6908,7 +7047,7 @@ void mission_set_wing_arrival_location( wing *wingp, int num_to_set )
 					));
 			}
 
-			if (wingp->arrival_location != ARRIVE_FROM_DOCK_BAY) {
+			if (wingp->arrival_location != ArrivalLocation::FROM_DOCK_BAY) {
 				shipfx_warpin_start(objp);
 			}
 		}
@@ -7330,13 +7469,13 @@ bool mission_check_ship_yet_to_arrive(const char *name)
  * Sets the arrival location of a parse object according to the arrival location of the object.
  * @return objnum of anchor ship if there is one, -1 otherwise.
  */
-int mission_set_arrival_location(int anchor, int location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
+int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist, int objnum, int path_mask, vec3d *new_pos, matrix *new_orient)
 {
 	int shipnum, anchor_objnum;
 	vec3d anchor_pos, rand_vec, new_fvec;
 	matrix orient;
 
-	if ( location == ARRIVE_AT_LOCATION )
+	if ( location == ArrivalLocation::AT_LOCATION )
 		return -1;
 
 	Assert(anchor >= 0);
@@ -7367,7 +7506,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	// arrive at its placed location
 	if (shipnum < 0)
 	{
-		Assert ( location != ARRIVE_FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
+		Assert ( location != ArrivalLocation::FROM_DOCK_BAY );		// bogus data somewhere!!!  get mwa
 		nprintf (("allender", "couldn't find ship for arrival anchor -- using location ship created at"));
 		return -1;
 	}
@@ -7379,7 +7518,7 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 	anchor_pos = Objects[anchor_objnum].pos;
 
 	// if arriving from docking bay, then set ai mode and call function as per AL's instructions.
-	if ( location == ARRIVE_FROM_DOCK_BAY ) {
+	if ( location == ArrivalLocation::FROM_DOCK_BAY ) {
 		// if we get an error, just let the ship arrive(?)
 		if ( ai_acquire_emerge_path(&Objects[objnum], anchor_objnum, path_mask) == -1 ) {
 			// get MWA or AL -- not sure what to do here when we cannot acquire a path
@@ -7401,13 +7540,15 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		// this ship should have.  Arriving near a ship we use a random normalized vector
 		// scaled by the distance given by the designer.  Arriving in front of a ship means
 		// entering the battle in the view cone.
-		if ( location == ARRIVE_NEAR_SHIP ) {
+		if ( location == ArrivalLocation::NEAR_SHIP ) {
 			// get a random vector -- use static randvec if in multiplayer
 			if ( Game_mode & GM_NORMAL )
 				vm_vec_rand_vec_quick(&rand_vec);
 			else
 				static_randvec( Objects[objnum].net_signature, &rand_vec );
-		} else if ( location == ARRIVE_IN_FRONT_OF_SHIP ) {
+		} else if ( location == ArrivalLocation::IN_FRONT_OF_SHIP || location == ArrivalLocation::IN_BACK_OF_SHIP
+			     || location == ArrivalLocation::ABOVE_SHIP || location == ArrivalLocation::BELOW_SHIP
+			     || location == ArrivalLocation::TO_LEFT_OF_SHIP || location == ArrivalLocation::TO_RIGHT_OF_SHIP ) {
 			vec3d t1, t2, t3;
 			int r1, r2;
 			float x;
@@ -7433,6 +7574,17 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 			vm_vec_add(&rand_vec, &t1, &t2);
 			vm_vec_add2(&rand_vec, &t3);
 			vm_vec_normalize(&rand_vec);
+
+			// vertical axis: rotate to up (around X axis)
+			if (location == ArrivalLocation::ABOVE_SHIP || location == ArrivalLocation::BELOW_SHIP)
+				vm_rot_point_around_line(&rand_vec, &rand_vec, PI_2, &vmd_zero_vector, &vmd_x_vector);
+			// lateral axis: rotate to right (backwards around Y axis)
+			else if (location == ArrivalLocation::TO_LEFT_OF_SHIP || location == ArrivalLocation::TO_RIGHT_OF_SHIP)
+				vm_rot_point_around_line(&rand_vec, &rand_vec, -PI_2, &vmd_zero_vector, &vmd_y_vector);
+
+			// for the opposite directions, just flip the vector around
+			if (location == ArrivalLocation::IN_BACK_OF_SHIP || location == ArrivalLocation::BELOW_SHIP || location == ArrivalLocation::TO_LEFT_OF_SHIP)
+				vm_vec_negate(&rand_vec);
 		} else {
 			UNREACHABLE("Unknown location type discovered when trying to parse %s -- Please let an SCP coder know!", Ships[shipnum].ship_name);
 		}
@@ -7450,8 +7602,8 @@ int mission_set_arrival_location(int anchor, int location, int dist, int objnum,
 		//
 		// calculate the new fvec of the ship arriving and use only that to get the matrix.  isn't a big
 		// deal not getting bank.
-		vm_vec_sub(&new_fvec, &anchor_pos, &Objects[objnum].pos );
-		vm_vector_2_matrix( &orient, &new_fvec, NULL, NULL );
+		vm_vec_normalized_dir(&new_fvec, &anchor_pos, &Objects[objnum].pos );
+		vm_vector_2_matrix_norm( &orient, &new_fvec, nullptr, nullptr );
 		Objects[objnum].orient = orient;
 	}
 
@@ -7542,7 +7694,7 @@ int mission_did_ship_arrive(p_object *objp, bool force_arrival)
 
 		// check to see if this ship is to arrive via a docking bay.  If so, and the ship to arrive from
 		// doesn't exist, don't create.
-		if ( objp->arrival_location == ARRIVE_FROM_DOCK_BAY ) {
+		if ( objp->arrival_location == ArrivalLocation::FROM_DOCK_BAY ) {
 			Assert( objp->arrival_anchor >= 0 );
 			auto anchor_ship_entry = ship_registry_get(Parse_names[objp->arrival_anchor]);
 
@@ -7838,7 +7990,7 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 				{
 					Arrival_message_delay_timestamp_m[multi_team_filter] = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
 				}
-				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+				Allow_arrival_message_timestamp_m[multi_team_filter] = timestamp(Builtin_messages[MESSAGE_ARRIVE_ENEMY].min_delay);
 						
 				// send to the proper team
 				message_send_builtin(MESSAGE_ARRIVE_ENEMY, nullptr, nullptr, -1, multi_team_filter);
@@ -7857,14 +8009,17 @@ bool mission_maybe_make_wing_arrive(int wingnum, bool force_arrival)
 					Arrival_message_delay_timestamp = timestamp_rand(ARRIVAL_MESSAGE_DELAY_MIN, ARRIVAL_MESSAGE_DELAY_MAX);
 					Arrival_message_subject = wingp->ship_index[0];
 				}
-				Allow_arrival_message_timestamp = timestamp(ARRIVAL_MESSAGE_MIN_SEPARATION);
+				Allow_arrival_message_timestamp = timestamp(Builtin_messages[MESSAGE_ARRIVE_ENEMY].min_delay);
 			}
 		}
 		// everything else
-		else {
+		else if (timestamp_elapsed(Allow_backup_message_timestamp)) {
 			rship = ship_get_random_ship_in_wing(wingnum, SHIP_GET_UNSILENCED);
 			if (rship >= 0) {
-				message_send_builtin(MESSAGE_BACKUP, &Ships[rship], nullptr, -1, -1);
+				auto sent = message_send_builtin(MESSAGE_BACKUP, &Ships[rship], nullptr, -1, -1);
+				if (sent) {
+					Allow_backup_message_timestamp = timestamp(Builtin_messages[MESSAGE_BACKUP].min_delay);
+				}
 			}
 		}
 
@@ -7882,7 +8037,8 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 {
 	Assert(objp->type == OBJ_SHIP);
 	bool beginning_departure;
-	int location, anchor, path_mask;
+	DepartureLocation location;
+	int anchor, path_mask;
 	ship *shipp = &Ships[objp->instance];
 	ai_info *aip = &Ai_info[shipp->ai_index];
 
@@ -7947,7 +8103,7 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 
 	// if departing to a docking bay, try to find the anchor ship to depart to.  If not found, then
 	// just make it warp out like anything else.
-	if (location == DEPART_AT_DOCK_BAY)
+	if (location == DepartureLocation::TO_DOCK_BAY)
 	{
 		Assert(anchor >= 0);
 		auto anchor_ship_entry = ship_registry_get(Parse_names[anchor]);
@@ -8047,7 +8203,7 @@ void mission_eval_departures()
 			// AL 12-30-97: Added SF_CANNOT_WARP to check
 			// Goober5000 - fixed so that it WILL eval when SF_CANNOT_WARP if departing to dockbay
 			// wookieejedi - fixed so it accounts for break and never warp too
-			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DEPART_AT_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
+			if ( shipp->is_dying_or_departing() || ( !(ship_can_warp_full_check(shipp)) && (shipp->departure_location != DepartureLocation::TO_DOCK_BAY)) || ship_subsys_disrupted(shipp, SUBSYSTEM_ENGINE) ) {
 				continue;
 			}
 
@@ -8164,6 +8320,7 @@ int allocate_subsys_status()
 	Subsys_status[Subsys_index].ai_class = SUBSYS_STATUS_NO_CHANGE;
 
 	Subsys_status[Subsys_index].subsys_cargo_name = 0;	// "Nothing"
+	Subsys_status[Subsys_index].subsys_cargo_title[0] = '\0';
 
 	return Subsys_index++;
 }
@@ -8309,6 +8466,8 @@ int get_special_anchor(const char *name)
 
 	strcpy_s(tmp, name+5);
 	iff_name = strtok(tmp, " >");
+	if (iff_name == nullptr)
+		return -1;
 
 	// hack substitute "hostile" for "enemy"
 	if (!stricmp(iff_name, "enemy"))
@@ -8508,7 +8667,7 @@ void mission_bring_in_support_ship( object *requester_objp )
 	{
 		ship_registry_entry entry(pobj->name);
 		entry.status = ShipStatus::NOT_YET_PRESENT;
-		entry.pobj_num = POBJ_INDEX(pobj);
+		entry.pobj_num = -1;	// since it's not in Parse_objects
 
 		Ship_registry.push_back(entry);
 		Ship_registry_map[pobj->name] = static_cast<int>(Ship_registry.size() - 1);
@@ -8862,11 +9021,11 @@ bool check_for_23_3_data()
 			return true;
 	}
 
-	if (The_mission.custom_data.size() > 0) {
+	if (!The_mission.custom_data.empty()) {
 		return true;
 	}
 
-	if (The_mission.custom_strings.size() > 0) {
+	if (!The_mission.custom_strings.empty()) {
 		return true;
 	}
 
@@ -8891,5 +9050,47 @@ bool check_for_23_3_data()
 		}
 	}
 
+	return false;
+}
+
+bool check_for_24_1_data()
+{
+	for (int wingnum = 0; wingnum < Num_wings; wingnum++)
+	{
+		if (Wings[wingnum].arrival_location == ArrivalLocation::IN_BACK_OF_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::ABOVE_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::BELOW_SHIP
+			|| Wings[wingnum].arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || Wings[wingnum].arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
+			return true;
+	}
+
+	for (const auto& so : list_range(&Ship_obj_list))
+	{
+		auto shipp = &Ships[Objects[so->objnum].instance];
+
+		if (shipp->arrival_location == ArrivalLocation::IN_BACK_OF_SHIP || shipp->arrival_location == ArrivalLocation::ABOVE_SHIP || shipp->arrival_location == ArrivalLocation::BELOW_SHIP
+			|| shipp->arrival_location == ArrivalLocation::TO_LEFT_OF_SHIP || shipp->arrival_location == ArrivalLocation::TO_RIGHT_OF_SHIP)
+			return true;
+
+		if (shipp->cargo_title[0] != '\0')
+			return true;
+		for (const auto& ss : list_range(&shipp->subsys_list))
+		{
+			if (ss->subsys_cargo_title[0] != '\0')
+				return true;
+		}
+	}
+
+	return (Asteroid_field.debris_genre == DG_DEBRIS && !Asteroid_field.field_debris_type.empty()) ||
+		   (Asteroid_field.debris_genre == DG_ASTEROID && !Asteroid_field.field_asteroid_type.empty());
+}
+
+bool check_for_24_3_data()
+{
+	for (int i = 0; i < Num_teams; i++) {
+		for (int j = 0; j < Briefings[i].num_stages; j++) {
+			if (!gr_compare_color_values(Briefings[i].stages[j].grid_color, Color_briefing_grid)) {
+				return true;
+			}
+		}
+	}
 	return false;
 }

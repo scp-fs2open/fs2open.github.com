@@ -6,6 +6,12 @@
 
 #include <limits>
 
+void removeFontMultiplierOption();
+
+float get_font_scale_factor();
+
+float calculate_auto_font_size(float current_size);
+
 namespace font
 {
 	/**
@@ -31,16 +37,19 @@ namespace font
 	class FSFont
 	{
 	private:
-		SCP_string name;	//!< The name of this font
-		SCP_string filename; //!< The file name used to retrieve this font
+		SCP_string name = "<Invalid>";	//!< The name of this font
+		SCP_string filename;			//!< The file name used to retrieve this font
+		SCP_string familyName;          //!< The family name of the font. Will be "volition font" for bitmap fonts
 
 	protected:
-		float offsetTop;		//!< The offset at the top of a line of text
-		float offsetBottom;	//!< The offset at the bottom of a line of text
+		bool autoScale = false;			//!< If the font is allowed to auto scale. Only used for VFNT fonts as NVG fonts do the auto scale calculation during parse time
+		bool canScale = false;			//!< If the font is allowed to scale with the user font multiplier
+		float offsetTop = 0.0f;			//!< The offset at the top of a line of text
+		float offsetBottom = 0.0f;		//!< The offset at the bottom of a line of text
 
-		float _height;
-		float _ascender;
-		float _descender;
+		float _height = 0.0f;
+		float _ascender = 0.0f;
+		float _descender = 0.0f;
 
 		void checkFontMetrics();
 
@@ -51,14 +60,14 @@ namespace font
 		*
 		* @date	23.11.2011
 		*/
-		FSFont();
+		FSFont() = default;
 
 		/**
 		* @brief	Destructor.
 		*
 		* @date	23.11.2011
 		*/
-		virtual ~FSFont();
+		virtual ~FSFont() = default;
 
 		/**
 		* @brief	Sets the name of this font.
@@ -79,6 +88,15 @@ namespace font
 		void setFilename(const SCP_string& newName);
 
 		/**
+		 * @brief	Sets the family name of this font.
+		 *
+		 * @date	17.6.2025
+		 *
+		 * @param	newName		The new famly name.
+		 */
+		void setFamilyName(const SCP_string& newName);
+
+		/**
 		* @brief	Gets the name of this font.
 		*
 		* @date	23.11.2011
@@ -95,6 +113,15 @@ namespace font
 		* @return	The name.
 		*/
 		const SCP_string& getFilename() const;
+
+		/**
+		 * @brief	Gets the family name of this font. Will be "Volition font" for bitmap fonts
+		 *
+		 * @date	17.6.2025
+		 *
+		 * @return	The family name.
+		 */
+		virtual const SCP_string& getFamilyName() const;
 
 		/**
 		* @brief	Gets the type of this font.
@@ -138,9 +165,28 @@ namespace font
 		* @param textLen		Length of the text. Use -1 if the string should be checked until the next \0 character.
 		* @param [out]	width 	If non-null, the width.
 		* @param [out]	height	If non-null, the height.
+		* @param scaleMultiplier The scale to use to apply scaling in addition to user settings
 		*/
 		virtual void getStringSize(const char *text, size_t textLen = std::numeric_limits<size_t>::max(),
-								   int resize_mode = -1, float *width = NULL, float *height = NULL) const = 0;
+								   int resize_mode = -1, float *width = nullptr, float *height = nullptr, float scaleMultiplier = 1.0f) const = 0;
+
+		/**
+		* @brief    Gets the auto scaling behavior of this font
+		*
+		* @date     24.1.2025
+		*
+		* @return   The auto scaling behavior
+		*/
+		[[nodiscard]] bool getAutoScaleBehavior() const;
+
+		/**
+		 * @brief	Gets the scaling behavior of this font
+		 *
+		 * @date	28.8.2024
+		 *
+		 * @return	The scaling behavior
+		 */
+		[[nodiscard]] bool getScaleBehavior() const;
 
 		/**
 		* @brief	Gets the offset of this font from the top of the drawing line
@@ -159,6 +205,24 @@ namespace font
 		* @return	The bottom offset.
 		*/
 		float getBottomOffset() const;
+
+		/**
+		* @brief    Sets the auto scaling behavior for VFNTs
+		*
+		* @date     24.1.2025
+		*
+		* @param    autoScale whether or not this font can auto scale with screen resolution
+		*/
+		void setAutoScaleBehavior(bool autoScale);
+
+		/**
+		 * @brief	Sets the scaling behavior
+		 *
+		 * @date	28.8.2024
+		 *
+		 * @param	scale whether or not this font can scale with the font multiplier
+		 */
+		void setScaleBehavior(bool scale);
 
 
 		/**

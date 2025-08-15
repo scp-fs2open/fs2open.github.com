@@ -123,7 +123,7 @@ void change_time_compression(float multiplier);
 // call this to set frametime properly (once per frame)
 void game_set_frametime(int state);
 
-// overall frametime of game, indepedent of mission timer
+// overall frametime of game in fix units (seconds * 65536), independent of mission timer
 fix game_get_overall_frametime();
 
 // Used to halt all looping game sounds
@@ -194,6 +194,9 @@ int game_hacked_data();
 // calls to be executed when the game is put in or restored from minimized or inactive state
 void game_pause();
 void game_unpause();
+
+extern bool Pre_player_entry;
+extern bool game_actually_playing();
 
 //WMC - Stuff for scripting, these make the game go
 extern camid Main_camera;

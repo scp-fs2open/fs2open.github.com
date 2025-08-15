@@ -90,6 +90,8 @@ struct header;
 #define INGAME_WING_DEPARTED					2			// wing is gone -- never to be seen again
 #define INGAME_WING_PRESENT					3			// wing is in mission
 
+// holds the objum into Objects for UI API mode
+extern SCP_vector<int> Ingame_ship_choices;
 
 // --------------------------------------------------------------------------------------------------
 // INGAME JOIN SERVER FUNCTIONS
@@ -137,7 +139,7 @@ void multi_ingame_sync_close();
 //
 
 // ingame join ship selection screen init
-void multi_ingame_select_init();
+void multi_ingame_select_init(bool API_Access = false);
 
 // ingame join ship selection screen do
 void multi_ingame_select_do();
@@ -145,6 +147,17 @@ void multi_ingame_select_do();
 // ingame join ship selection screen close
 void multi_ingame_select_close();
 
+// ingame try to accept and join
+bool multi_ingame_join_accept(bool API_Access = false);
+
+// handle all timeout details
+int multi_ingame_handle_timeout(bool API_Access = false);
+
+// create the ship list
+void multi_ingame_join_calc_avail(bool API_Access = false);
+
+// Set the selected ship index
+void multi_ingame_set_selected(int index);
 
 // --------------------------------------------------------------------------------------------------
 // PACKET HANDLER functions

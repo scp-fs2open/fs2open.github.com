@@ -51,7 +51,8 @@ void ship_flags_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_KAMIKAZE, m_kamikaze);
 	DDX_Control(pDX, IDC_INVULNERABLE, m_invulnerable);
 	DDX_Control(pDX, IDC_TARGETABLE_AS_BOMB, m_targetable_as_bomb);
-	DDX_Control(pDX, IDC_IMMOBILE, m_immobile);
+	DDX_Control(pDX, IDC_DONT_CHANGE_POSITION, m_dont_change_position);
+	DDX_Control(pDX, IDC_DONT_CHANGE_ORIENTATION, m_dont_change_orientation);
 	DDX_Control(pDX, IDC_IGNORE_COUNT, m_ignore_count);
 	DDX_Control(pDX, IDC_HIDDEN_FROM_SENSORS, m_hidden);
 	DDX_Control(pDX, IDC_PRIMITIVE_SENSORS, m_primitive_sensors);
@@ -115,7 +116,8 @@ BEGIN_MESSAGE_MAP(ship_flags_dlg, CDialog)
 	ON_BN_CLICKED(IDC_IGNORE_COUNT, OnIgnoreCount)
 	ON_BN_CLICKED(IDC_INVULNERABLE, OnInvulnerable)
 	ON_BN_CLICKED(IDC_TARGETABLE_AS_BOMB, OnTargetableAsBomb)
-	ON_BN_CLICKED(IDC_IMMOBILE, OnImmobile)
+	ON_BN_CLICKED(IDC_DONT_CHANGE_POSITION, OnDontChangePosition)
+	ON_BN_CLICKED(IDC_DONT_CHANGE_ORIENTATION, OnDontChangeOrientation)
 	ON_BN_CLICKED(IDC_KAMIKAZE, OnKamikaze)
 	ON_BN_CLICKED(IDC_NO_ARRIVAL_MUSIC, OnNoArrivalMusic)
 	ON_BN_CLICKED(IDC_NO_DYNAMIC, OnNoDynamic)
@@ -159,7 +161,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 {
 	int j, first;
 	int protect_ship = 0, beam_protect_ship = 0, flak_protect_ship = 0, laser_protect_ship = 0, missile_protect_ship = 0;
-	int ignore_count = 0, reinforcement = 0, cargo_known = 0, immobile = 0;
+	int ignore_count = 0, reinforcement = 0, cargo_known = 0, dont_change_position = 0, dont_change_orientation = 0;
 	int destroy_before_mission = 0, no_arrival_music = 0, escort = 0, invulnerable = 0, targetable_as_bomb = 0;
 	int hidden_from_sensors = 0, primitive_sensors = 0, no_subspace_drive = 0, affected_by_gravity = 0;
 	int toggle_subsystem_scanning = 0, scannable = 0, kamikaze = 0, no_dynamic = 0, red_alert_carry = 0;
@@ -190,7 +192,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 					missile_protect_ship = (objp->flags[Object::Object_Flags::Missile_protected]) ? 1 : 0;
 					invulnerable = (objp->flags[Object::Object_Flags::Invulnerable]) ? 1 : 0;
 					targetable_as_bomb = (objp->flags[Object::Object_Flags::Targetable_as_bomb]) ? 1 : 0;
-					immobile = (objp->flags[Object::Object_Flags::Immobile]) ? 1 : 0;
+					dont_change_position = (objp->flags[Object::Object_Flags::Dont_change_position]) ? 1 : 0;
+					dont_change_orientation = (objp->flags[Object::Object_Flags::Dont_change_orientation]) ? 1 : 0;
 					hidden_from_sensors = (shipp->flags[Ship::Ship_Flags::Hidden_from_sensors]) ? 1 : 0;
 					primitive_sensors = (shipp->flags[Ship::Ship_Flags::Primitive_sensors]) ? 1 : 0;
 					no_subspace_drive = (shipp->flags[Ship::Ship_Flags::No_subspace_drive]) ? 1 : 0;
@@ -252,7 +255,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 					missile_protect_ship = tristate_set(objp->flags[Object::Object_Flags::Missile_protected], missile_protect_ship);
 					invulnerable = tristate_set(objp->flags[Object::Object_Flags::Invulnerable], invulnerable);
 					targetable_as_bomb = tristate_set(objp->flags[Object::Object_Flags::Targetable_as_bomb], targetable_as_bomb);
-					immobile = tristate_set(objp->flags[Object::Object_Flags::Immobile], immobile);
+					dont_change_position = tristate_set(objp->flags[Object::Object_Flags::Dont_change_position], dont_change_position);
+					dont_change_orientation = tristate_set(objp->flags[Object::Object_Flags::Dont_change_orientation], dont_change_orientation);
 					hidden_from_sensors = tristate_set(shipp->flags[Ship::Ship_Flags::Hidden_from_sensors], hidden_from_sensors);
 					primitive_sensors = tristate_set(shipp->flags[Ship::Ship_Flags::Primitive_sensors], primitive_sensors);
 					no_subspace_drive = tristate_set(shipp->flags[Ship::Ship_Flags::No_subspace_drive], no_subspace_drive);
@@ -327,7 +331,8 @@ BOOL ship_flags_dlg::OnInitDialog()
 	m_escort.SetCheck(escort);
 	m_invulnerable.SetCheck(invulnerable);
 	m_targetable_as_bomb.SetCheck(targetable_as_bomb);
-	m_immobile.SetCheck(immobile);
+	m_dont_change_position.SetCheck(dont_change_position);
+	m_dont_change_orientation.SetCheck(dont_change_orientation);
 	m_hidden.SetCheck(hidden_from_sensors);
 	m_primitive_sensors.SetCheck(primitive_sensors);
 	m_no_subspace_drive.SetCheck(no_subspace_drive);
@@ -578,19 +583,35 @@ void ship_flags_dlg::update_ship(int shipnum)
 			break;
 	}
 
-	switch (m_immobile.GetCheck()) {
+	switch (m_dont_change_position.GetCheck()) {
 		case 1:
-			if ( !(objp->flags[Object::Object_Flags::Immobile]) )
+			if ( !(objp->flags[Object::Object_Flags::Dont_change_position]) )
 				set_modified();
 
-			objp->flags.set(Object::Object_Flags::Immobile);
+			objp->flags.set(Object::Object_Flags::Dont_change_position);
 			break;
 
 		case 0:
-			if ( objp->flags[Object::Object_Flags::Immobile] )
+			if ( objp->flags[Object::Object_Flags::Dont_change_position] )
 				set_modified();
 
-			objp->flags.remove(Object::Object_Flags::Immobile);
+			objp->flags.remove(Object::Object_Flags::Dont_change_position);
+			break;
+	}
+
+	switch (m_dont_change_orientation.GetCheck()) {
+		case 1:
+			if ( !(objp->flags[Object::Object_Flags::Dont_change_orientation]) )
+				set_modified();
+
+			objp->flags.set(Object::Object_Flags::Dont_change_orientation);
+			break;
+
+		case 0:
+			if ( objp->flags[Object::Object_Flags::Dont_change_orientation] )
+				set_modified();
+
+			objp->flags.remove(Object::Object_Flags::Dont_change_orientation);
 			break;
 	}
 
@@ -1216,12 +1237,21 @@ void ship_flags_dlg::OnTargetableAsBomb()
 	}
 }
 
-void ship_flags_dlg::OnImmobile() 
+void ship_flags_dlg::OnDontChangePosition()
 {
-	if (m_immobile.GetCheck() == 1) {
-		m_immobile.SetCheck(0);
+	if (m_dont_change_position.GetCheck() == 1) {
+		m_dont_change_position.SetCheck(0);
 	} else {
-		m_immobile.SetCheck(1);
+		m_dont_change_position.SetCheck(1);
+	}
+}
+
+void ship_flags_dlg::OnDontChangeOrientation()
+{
+	if (m_dont_change_orientation.GetCheck() == 1) {
+		m_dont_change_orientation.SetCheck(0);
+	} else {
+		m_dont_change_orientation.SetCheck(1);
 	}
 }
 

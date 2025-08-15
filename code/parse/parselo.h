@@ -38,6 +38,8 @@ extern int Token_found_flag;
 #define	EOLN			(char)0x0a
 #define CARRIAGE_RETURN (char)0x0d
 
+enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
+
 #define	F_NAME					1
 #define	F_DATE					2
 #define	F_NOTES					3
@@ -49,7 +51,8 @@ extern int Token_found_flag;
 #define	F_MESSAGE				9	// this is now obsolete for mission messages - all messages in missions should now use $MessageNew and stuff strings as F_MULTITEXT
 #define	F_MULTITEXT				10
 #define F_RAW					11	// for any internal parsing use. Just strips whitespace and copies the text.
-#define F_LNAME					12	//Filenames
+#define F_LNAME					12	// Filenames
+#define F_TRIMMED				13	// Like F_NAME etc., but without leading and trailing whitespace
 
 #define PARSE_BUF_SIZE			4096
 
@@ -75,7 +78,7 @@ extern bool end_string_at_first_hash_symbol(char *src, bool ignore_doubled_hash 
 extern bool end_string_at_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
 extern char *get_pointer_to_first_hash_symbol(char *src, bool ignore_doubled_hash = false);
 extern const char *get_pointer_to_first_hash_symbol(const char *src, bool ignore_doubled_hash = false);
-extern int get_index_of_first_hash_symbol(SCP_string &src, bool ignore_doubled_hash = false);
+extern int get_index_of_first_hash_symbol(const SCP_string &src, bool ignore_doubled_hash = false);
 
 extern void consolidate_double_characters(char *str, char ch);
 
@@ -125,7 +128,7 @@ extern int optional_string_one_of(int arg_count, ...);
 
 // required
 extern int required_string(const char *pstr);
-extern int required_string_either(const char *str1, const char *str2);
+extern int required_string_either(const char *str1, const char *str2, bool advance = false);
 extern int required_string_one_of(int arg_count, ...);
 
 // stuff
@@ -152,6 +155,8 @@ extern char* alloc_block(const char* startstr, const char* endstr, int extra_cha
 // the default string length if using the F_NAME case.
 extern char *stuff_and_malloc_string(int type, const char *terminators = nullptr);
 extern void stuff_malloc_string(char **dest, int type, const char *terminators = nullptr);
+extern void stuff_string(std::unique_ptr<char[]> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
+extern void stuff_string(SCP_vm_unique_ptr<char> &outstr, int type, bool null_if_empty, const char *terminators = nullptr);
 extern bool check_first_non_whitespace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern bool check_first_non_grayspace_char(const char *str, char ch_to_look_for, char **after_ch = nullptr);
 extern int stuff_float(float *f, bool optional = false);
@@ -162,7 +167,26 @@ extern int stuff_int_optional(int *i);
 extern int stuff_float_optional(float *f);
 extern void stuff_string_list(SCP_vector<SCP_string>& slp);
 extern size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings);
-extern void parse_string_flag_list(int *dest, flag_def_list defs[], size_t defs_size);
+extern void parse_string_flag_list(int &dest, flag_def_list defs[], size_t defs_size);
+
+// If this data is going to be parsed multiple times (like for mission load), then the dest variable
+// needs to be cleared in between parses, otherwise we keep bad data.
+// For tbm files, it must not be reset.
+template <class T>
+void parse_string_flag_list(SCP_set<T> &dest, flag_def_list_templated<T> defs[], size_t defs_size)
+{
+	SCP_vector<SCP_string> slp;
+	stuff_string_list(slp);
+
+	for (auto &str : slp)
+	{
+		for (size_t j = 0; j < defs_size; j++)
+		{
+			if (!stricmp(str.c_str(), defs[j].name))
+				dest.insert(defs[j].def);
+		}
+	}
+}
 
 
 // A templated version of parse_string_flag_list, to go along with the templated flag_def_list_new.
@@ -233,7 +257,8 @@ void stuff_flagset(T *dest) {
     diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
-extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE);
+extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
+extern void stuff_int_list(SCP_vector<int> &ilp, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
 extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
@@ -258,21 +283,43 @@ extern void stuff_boolean_flag(int *i, int flag, bool a_to_eol=true);
 extern bool parse_boolean(const char *token, bool*b);
 
 template <class T>
-int string_lookup(const char* str1, T strlist, size_t max, const char* description = nullptr, bool say_errors = false)
+int string_lookup(const char* str1, const T& strlist, size_t max, const char* description = nullptr, bool say_errors = false, bool print_list = false)
 {
 	for (size_t i=0; i<max; i++)
 	{
 		Assert(strlen(strlist[i]) != 0); //-V805
 
 		if (!stricmp(str1, strlist[i]))
-			return (int)i;
+			return static_cast<int>(i);
 	}
 
 	if (say_errors)
-		error_display(0, "Unable to find [%s] in %s list.\n", str1, description ? description : "unnamed");
+	{
+		const char* suffix;
+		SCP_string list;
+
+		if (print_list)
+		{
+			list = ":\n";
+			for (size_t i=0; i<max; i++)
+			{
+				list += "    ";
+				list += strlist[i];
+				list += "\n";
+			}
+			suffix = list.c_str();
+		}
+		else
+			suffix = ".\n";
+
+		error_display(0, "Unable to find \"%s\" in %s list%s", str1, description ? description : "unnamed", suffix);
+	}
 
 	return -1;
 }
+
+int string_lookup(const char* str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
+int string_lookup(const SCP_string& str1, const SCP_vector<SCP_string>& strlist, const char* description = nullptr, bool say_errors = false, bool print_list = false);
 
 template<class Flags, class Flagset>
 void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
@@ -282,11 +329,11 @@ void stuff_boolean_flag(Flagset& destination, Flags flag, bool a_to_eol = true)
     destination.set(flag, temp);
 }
 
-extern int check_for_string(const char *pstr);
-extern int check_for_string_raw(const char *pstr);
-extern int check_for_eof();
-extern int check_for_eof_raw();
-extern int check_for_eoln();
+extern bool check_for_string(const char *pstr);
+extern bool check_for_string_raw(const char *pstr);
+extern bool check_for_eof();
+extern bool check_for_eof_raw();
+extern bool check_for_eoln();
 
 // from aicode.cpp
 extern void parse_float_list(float *plist, size_t size);
@@ -317,7 +364,7 @@ extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool a
 extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
-char *split_str_once(char *src, int max_pixel_w);
+char *split_str_once(char *src, int max_pixel_w, float scale = 1.0f);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  int* n_chars,

@@ -3,7 +3,7 @@
 #include "ui/dialogs/FictionViewerDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
-
+#include "mission/util.h"
 namespace fso {
 namespace fred {
 namespace dialogs {
@@ -23,7 +23,7 @@ FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewp
 	ui->voiceFileEdit->setMaxLength(_model->getMaxVoiceFileLength());
 
 	connect(this, &QDialog::accepted, _model.get(), &FictionViewerDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &FictionViewerDialogModel::reject);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &FictionViewerDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &FictionViewerDialog::updateUI);
 
@@ -109,25 +109,15 @@ void FictionViewerDialog::keyPressEvent(QKeyEvent* event) {
 	QDialog::keyPressEvent(event);
 }
 
-void FictionViewerDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-			{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void FictionViewerDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
+void FictionViewerDialog::rejectHandler()
+{
+	this->close();
+}
 }
 }
 }

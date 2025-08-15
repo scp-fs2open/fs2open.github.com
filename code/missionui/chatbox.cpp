@@ -402,28 +402,49 @@ size_t chatbox_get_msg_target_length(char *msg)
 
 }
 
+// send a msg to the game chat
+void chatbox_send_msg(char* msg)
+{
+	// check if this message is supposed to have a recipient
+	int target = chatbox_get_msg_target_type(msg);
+
+	// tack on the null terminator in the boundary case
+	size_t x = strlen(msg);
+	if (x >= CHATBOX_MAX_LEN) {
+		msg[CHATBOX_MAX_LEN - 1] = '\0';
+	}
+
+	// if I'm the server, then broadcast the packet
+	chatbox_recall_add(msg);
+	if (target != MULTI_MSG_EXPR) {
+		send_game_chat_packet(Net_player, msg, target);
+	} else {
+		// copy the name of the player the message is being sent to
+		char temp[CHATBOX_MAX_LEN];
+		size_t target_length = chatbox_get_msg_target_length(msg);
+		strncpy(temp, msg + 1, target_length - 2);
+		temp[target_length - 2] = '\0';
+		send_game_chat_packet(Net_player, msg, target, nullptr, temp);
+	}
+
+	chatbox_add_line(msg, MY_NET_PLAYER_NUM);
+}
+
 // automatically split up any input text, send it, and leave the remainder 
 void chatbox_autosplit_line()
 {
-	char msg[150];
-	char temp[150];
-	int msg_pixel_width;
-	int target;
-	size_t target_length = 0;
+	char msg[CHATBOX_MAX_LEN];
 	
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
-	memset(msg,0,150);
+	memset(msg, 0, CHATBOX_MAX_LEN);
 	Chat_inputbox.get_text(msg);
-	const char* remainder = "";
-
-	// check if this message is supposed to have a recipient
-	target = chatbox_get_msg_target_type(msg); 
-	target_length = chatbox_get_msg_target_length(msg); 
+	const char* remainder = ""; 
 
 	// determine if the width of the string in pixels is > than the inputbox width -- if so,
 	// then send the message
-	gr_get_string_size(&msg_pixel_width, NULL, msg);
+	int msg_pixel_width;
+	gr_get_string_size(&msg_pixel_width, nullptr, msg);
 	// if ( msg_pixel_width >= (Chatbox_inputbox_w - Player->short_callsign_width) ) {
 	if ( msg_pixel_width >= (Chatbox_inputbox_w - 25)) {
 		auto last_space = strrchr(msg, ' ');
@@ -433,22 +454,16 @@ void chatbox_autosplit_line()
 		} else {
 			remainder = "";
 		}	
-		// if I'm the server, then broadcast the packet		
-		chatbox_recall_add(msg);
+		
+		chatbox_send_msg(msg);
 
-		if (target != MULTI_MSG_EXPR) {
-  			send_game_chat_packet(Net_player, msg, target);
-		}
-		else {
-			// copy the name of the player the message is being sent to
-			strncpy(temp, msg+1, target_length-2);
-			temp[target_length-2] = '\0';
-			send_game_chat_packet(Net_player, msg, target, NULL, temp);
-		}
-		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
+		// check if this message is supposed to have a recipient
+		int target = chatbox_get_msg_target_type(msg);
 
 		if (target != MULTI_MSG_ALL) {
 			// we need to add the target the message is going to before we add the rest of the string
+			char temp[CHATBOX_MAX_LEN];
+			size_t target_length = chatbox_get_msg_target_length(msg);
 			strncpy(temp, msg, target_length);
  			temp[target_length] = ' '; 
  			temp[target_length+1] = '\0'; 
@@ -460,26 +475,7 @@ void chatbox_autosplit_line()
 			Chat_inputbox.set_text(remainder);
 		}
 	} else if((Chat_inputbox.pressed() && (msg[0] != '\0')) || (strlen(msg) >= CHATBOX_MAX_LEN)) { 
-		// tack on the null terminator in the boundary case
-		size_t x = strlen(msg);
-		if(x >= CHATBOX_MAX_LEN){
-			msg[CHATBOX_MAX_LEN-1] = '\0';
-		}
-	
-		// if I'm the server, then broadcast the packet		
-		chatbox_recall_add(msg);
-		if (target != MULTI_MSG_EXPR) {
-  			send_game_chat_packet(Net_player, msg, target);
-		}
-		else {
-			// copy the name of the player the message is being sent to
-			strncpy(temp, msg+1, target_length-2);
-			temp[target_length-2] = '\0';
-			send_game_chat_packet(Net_player, msg, target, NULL, temp);
-		}
-
-		chatbox_add_line(msg, MY_NET_PLAYER_NUM);
-
+		chatbox_send_msg(msg);
 		// display any remainder of text on the next line
 		Chat_inputbox.set_text(remainder);		
 	}	
@@ -767,6 +763,11 @@ void chatbox_add_line(const char *msg, int pid, int add_id)
 	const char* p_str[3]; // for the initial line (unindented)
 	int n_lines = split_str(msg, Chatbox_disp_w, n_chars, p_str, 3, CHATBOX_STRING_LEN);
 	Assertion(n_lines != -1, "Chat split string returned an invalid number of lines, please report!");	
+
+	// will happen if msg is all whitespace, in which case we should ignore it
+	if (n_lines == 0) {
+		return;
+	}
 
 	// copy in the chars
 	strcpy_s(chat.text, p_str[0]);

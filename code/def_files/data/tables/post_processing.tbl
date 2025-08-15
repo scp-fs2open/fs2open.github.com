@@ -63,5 +63,14 @@ $AlwaysOn:		false
 $Default:		0.0								
 $Div:			50								
 $Add:			0								
-												
+
+$Name:			tint
+$Uniform:		tint
+$Define:		FLAG_TINT
+$AlwaysOn: 		false
+$Default:		0.0
+$Div:			1
+$Add:			0
+$RGB:           0.2,0.2,0.2
+									
 #End											

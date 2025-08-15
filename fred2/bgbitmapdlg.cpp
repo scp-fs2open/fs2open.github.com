@@ -121,7 +121,8 @@ void bg_bitmap_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Text(pDX, IDC_SBITMAP_B, b_bank);
 	DDV_MinMaxInt(pDX, b_bank, 0, 359);
 	DDX_Text(pDX, IDC_SBITMAP_H, b_heading);
-	DDV_MinMaxInt(pDX, b_heading, 0, 359);	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
+	DDV_MinMaxInt(pDX, b_heading, 0, 359);
+	DDX_Text(pDX, IDC_SBITMAP_SCALE_X, b_scale_x);
 	DDV_MinMaxFloat(pDX, b_scale_x, .001f, 18.0f);
 	DDX_Text(pDX, IDC_SBITMAP_SCALE_Y, b_scale_y);
 	DDV_MinMaxFloat(pDX, b_scale_y, .001f, 18.0f);

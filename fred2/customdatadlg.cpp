@@ -22,8 +22,8 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CustomDataDlg dialog
 
-CustomDataDlg::CustomDataDlg(CWnd* pParent /*=nullptr*/)
-	: CDialog(CustomDataDlg::IDD, pParent)
+CustomDataDlg::CustomDataDlg(SCP_map<SCP_string, SCP_string>* data_ptr, CWnd* pParent /*=nullptr*/)
+	: CDialog(CustomDataDlg::IDD, pParent), m_target_data(data_ptr)
 {
 }
 
@@ -65,7 +65,8 @@ BOOL CustomDataDlg::OnInitDialog()
 	CDialog::OnInitDialog();
 
 	// grab the existing list of custom data pairs and duplicate it. We only update it if the user clicks OK.
-	m_custom_data = The_mission.custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	m_custom_data = *m_target_data;
 
 	update_data_lister();
 
@@ -79,7 +80,8 @@ BOOL CustomDataDlg::OnInitDialog()
 void CustomDataDlg::OnButtonOk()
 {
 	// now we set the custom data to our copy
-	The_mission.custom_data = m_custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	*m_target_data = m_custom_data;
 
 	CDialog::OnOK();
 }
@@ -218,14 +220,14 @@ bool CustomDataDlg::edit_boxes_have_valid_data(bool dup_key_ok)
 	if (!data_edit_box_has_valid_data()) {
 		return false;
 	}
-	if (!key_edit_box_has_valid_data()) {
+	if (!key_edit_box_has_valid_data(dup_key_ok)) {
 		return false;
 	}
 
 	return true;
 }
 
-bool CustomDataDlg::key_edit_box_has_valid_data()
+bool CustomDataDlg::key_edit_box_has_valid_data(bool dup_key_ok)
 {
 
 	CEdit* key_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_KEY);
@@ -246,7 +248,13 @@ bool CustomDataDlg::key_edit_box_has_valid_data()
 	if (m_lister_keys.size() > 0) {
 
 		const int index = m_data_lister.GetCurSel();
-		const auto& this_key = m_lister_keys[index];
+		SCP_string this_key = "";
+
+		// If we're here then we're updating a pair and the key can be "duplicated"
+		// because it's not actually being changed
+		if (dup_key_ok && SCP_vector_inbounds(m_lister_keys, index)) {
+			this_key = m_lister_keys[index];
+		}
 
 		if (strcmp(this_key.c_str(), key_str)) {
 			for (const auto& pair : m_custom_data) {
@@ -308,5 +316,6 @@ void CustomDataDlg::update_help_text(const SCP_string& description)
 
 bool CustomDataDlg::query_modified() const
 {
-	return The_mission.custom_data != m_custom_data;
+	Assertion(m_target_data != nullptr, "Custom Data target is nullptr. Get a coder!");
+	return *m_target_data != m_custom_data;
 }

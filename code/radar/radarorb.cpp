@@ -380,49 +380,57 @@ void HudGaugeRadarOrb::drawOutlinesHtl()
     g3_done_instance(true);
 }
 
-void HudGaugeRadarOrb::render(float  /*frametime*/)
+void HudGaugeRadarOrb::render(float  /*frametime*/, bool config)
 {
-	float	sensors_str;
-	int ok_to_blit_radar;
-
 	//WMC - This strikes me as a bit hackish
 	bool g3_yourself = !g3_in_frame();
 	if(g3_yourself)
 		g3_start_frame(1);
 
-	ok_to_blit_radar = 1;
+	int ok_to_blit_radar = 1;
 
-	sensors_str = ship_get_subsystem_strength( Player_ship, SUBSYSTEM_SENSORS );
+	if (!config) {
+		float sensors_str = ship_get_subsystem_strength(Player_ship, SUBSYSTEM_SENSORS);
 
-	if ( ship_subsys_disrupted(Player_ship, SUBSYSTEM_SENSORS) ) {
-		sensors_str = MIN_SENSOR_STR_TO_RADAR-1;
-	}
-
-	// note that on lowest skill level, there is no radar effects due to sensors damage
-	if (((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced) {
-		Radar_static_playing = false;
-		Radar_static_next = TIMESTAMP::never();
-		Radar_death_timer = TIMESTAMP::never();
-		Radar_avail_prev_frame = true;
-	} else if ( sensors_str < MIN_SENSOR_STR_TO_RADAR ) {
-		if ( Radar_avail_prev_frame ) {
-			Radar_death_timer = _timestamp(2000);
-			Radar_static_next = TIMESTAMP::immediate();
+		if (ship_subsys_disrupted(Player_ship, SUBSYSTEM_SENSORS)) {
+			sensors_str = MIN_SENSOR_STR_TO_RADAR - 1;
 		}
-		Radar_avail_prev_frame = false;
-	} else {
-		Radar_death_timer = TIMESTAMP::never();
-		if ( Radar_static_next.isNever() )
-			Radar_static_next = TIMESTAMP::immediate();
+
+		// note that on lowest skill level, there is no radar effects due to sensors damage
+		if (((Game_skill_level == 0) || (sensors_str > SENSOR_STR_RADAR_NO_EFFECTS)) && !Sensor_static_forced) {
+			Radar_static_playing = false;
+			Radar_static_next = TIMESTAMP::never();
+			Radar_death_timer = TIMESTAMP::never();
+			Radar_avail_prev_frame = true;
+		} else if (sensors_str < MIN_SENSOR_STR_TO_RADAR) {
+			if (Radar_avail_prev_frame) {
+				Radar_death_timer = _timestamp(2000);
+				Radar_static_next = TIMESTAMP::immediate();
+			}
+			Radar_avail_prev_frame = false;
+		} else {
+			Radar_death_timer = TIMESTAMP::never();
+			if (Radar_static_next.isNever())
+				Radar_static_next = TIMESTAMP::immediate();
+		}
+
+		if (timestamp_elapsed(Radar_death_timer)) {
+			ok_to_blit_radar = 0;
+		}
 	}
 
-	if ( timestamp_elapsed(Radar_death_timer) ) {
-		ok_to_blit_radar = 0;
-	}
+	setGaugeColor(HUD_C_NONE, config);
+	blitGauge(config);
+	drawRange(config);
 
-	setGaugeColor();
-	blitGauge();
-	drawRange();
+	// For now config view stops here but it should be doable to have
+	// this render the orb outlines using the next two functions eventually
+	if (config) {
+		if(g3_yourself)
+			g3_end_frame();
+
+		return;
+	}
 
     setupViewHtl();
     drawOutlinesHtl();
@@ -463,10 +471,21 @@ void HudGaugeRadarOrb::render(float  /*frametime*/)
 		g3_end_frame();
 }
 
-void HudGaugeRadarOrb::blitGauge()
+void HudGaugeRadarOrb::blitGauge(bool config)
 {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Radar_gauge.first_frame + 1, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + static_cast<int>(bmw * scale), y, y + static_cast<int>(bmh * scale));
+	}
+	
 	if (Radar_gauge.first_frame + 1 >= 0)
-		renderBitmap(Radar_gauge.first_frame+1, position[0], position[1] );
+		renderBitmap(Radar_gauge.first_frame+1, x, y, scale, config );
 }
 
 void HudGaugeRadarOrb::pageIn()

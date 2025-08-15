@@ -506,6 +506,12 @@ int get_ship_hotkeys(int n)
 	return Hotkey_bits[Hotkey_lines[n].index];
 }
 
+void hotkey_lines_reset_all() {
+	for (auto& line : Hotkey_lines) {
+		line = hotkey_line();
+	}
+}
+
 // add a line of hotkey smuck to end of list
 int hotkey_line_add(const char *text, HotkeyLineType type, int index, int y)
 {
@@ -1014,6 +1020,7 @@ void mission_hotkey_init()
 
 	Scroll_offset = 0;
 	Selected_line = 1;
+	hotkey_lines_reset_all();
 	hotkey_build_listing();
 }
 
@@ -1217,7 +1224,7 @@ void mission_hotkey_do_frame(float  /*frametime*/)
 
 	font::set_font(font::FONT1);
 	int line = Scroll_offset;
-	while (hotkey_line_query_visible(line)) {
+	while (hotkey_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		//int z = Hotkey_lines[line].index;
 		int y = Hotkey_list_coords[gr_screen.res][1] + Hotkey_lines[line].y - Hotkey_lines[Scroll_offset].y;
 		int hotkeys = 0;

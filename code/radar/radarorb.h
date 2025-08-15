@@ -44,7 +44,7 @@ public:
 
 	void blipDrawDistorted(blip *b, vec3d *pos);
 	void blipDrawFlicker(blip *b, vec3d *pos);
-	void blitGauge();
+	void blitGauge(bool config);
 	void drawBlips(int blip_type, int bright, int distort);
 	void drawBlipsSorted(int distort);
 	void drawContact(vec3d *pnt, int rad);
@@ -55,7 +55,7 @@ public:
 	void drawOutlinesHtl();
 	void setupViewHtl();
 	int calcAlpha(vec3d* pt);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 	void plotBlip(blip *b, vec3d *scaled_pos);
 };

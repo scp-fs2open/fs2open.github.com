@@ -391,7 +391,7 @@ object* dock_find_dock_root(object *objp)
 	return fastest_objp;
 }
 
-void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* world_hit_pos, object* objp)
+void dock_calculate_and_apply_whack_docked_object(const vec3d* impulse, const vec3d* world_hit_pos, object* objp)
 {
 	Assertion((objp != nullptr) && (impulse != nullptr) && (world_hit_pos != nullptr),
 		"dock_whack_docked_object invalid argument(s)");
@@ -450,7 +450,6 @@ void dock_calculate_and_apply_whack_docked_object(vec3d* impulse, const vec3d* w
 		&local_delta_rotvel,
 		&root_delta_vel,
 		&root_objp->orient);
-
 }
 
 
@@ -634,13 +633,11 @@ void dock_check_find_docked_object_helper(object *objp, dock_function_info *info
 
 void dock_calc_docked_mins_maxs_helper(object *objp, dock_function_info *infop)
 {
-	polymodel *pm;
 	vec3d parent_relative_mins, parent_relative_maxs;
 
 	// find the model used by this object
-	int modelnum = object_get_model(objp);
-	Assert(modelnum >= 0);
-	pm = model_get(modelnum);
+	auto pm = object_get_model(objp);
+	Assert(pm);
 
 	// special case: we are already in the correct frame of reference
 	if (objp == infop->parameter_variables.objp_value)
@@ -843,6 +840,15 @@ void object_remove_arriving_stage2_ndl_flag_helper(object *objp, dock_function_i
 {
 	if (! Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
 		Ships[objp->instance].flags.remove(Ship::Ship_Flags::Arriving_stage_2_dock_follower);
+}
+
+void dock_find_dock_leader_helper(object *objp, dock_function_info *infop)
+{
+	if (Ships[objp->instance].flags[Ship::Ship_Flags::Dock_leader])
+	{
+		infop->maintained_variables.objp_value = objp;
+		infop->early_return_condition = true;
+	}
 }
 
 void dock_calc_total_moi_helper(object* objp, dock_function_info* infop)

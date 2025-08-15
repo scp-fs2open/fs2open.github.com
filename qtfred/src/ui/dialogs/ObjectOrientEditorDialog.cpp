@@ -6,7 +6,7 @@
 #include "ui_ObjectOrientationDialog.h"
 
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 
 namespace fso {
@@ -19,7 +19,7 @@ ObjectOrientEditorDialog::ObjectOrientEditorDialog(FredView* parent, EditorViewp
 	ui->setupUi(this);
 
 	connect(this, &QDialog::accepted, _model.get(), &ObjectOrientEditorDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &ObjectOrientEditorDialogModel::reject);
+	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ObjectOrientEditorDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ObjectOrientEditorDialog::updateUI);
 
@@ -67,23 +67,15 @@ ObjectOrientEditorDialog::ObjectOrientEditorDialog(FredView* parent, EditorViewp
 ObjectOrientEditorDialog::~ObjectOrientEditorDialog() {
 }
 
-void ObjectOrientEditorDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-			{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
+void ObjectOrientEditorDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
+}
 
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void ObjectOrientEditorDialog::rejectHandler()
+{
+	this->close();
 }
 
 void ObjectOrientEditorDialog::updateUI() {

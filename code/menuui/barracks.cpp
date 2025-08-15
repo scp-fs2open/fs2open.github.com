@@ -185,17 +185,6 @@ struct barracks_bitmaps {
 	int b;
 };
 
-struct barracks_buttons {
-	const char *filename;
-	int x, y;
-	int text_x, text_y;	// this is where the text label is
-	int hotspot;
-	int repeat;
-	UI_BUTTON button;  // because we have a class inside this struct, we need the constructor below..
-
-	barracks_buttons(const char *name, int x1, int y1, int x2, int y2, int h, int r = 0) : filename(name), x(x1), y(y1), text_x(x2), text_y(y2), hotspot(h), repeat(r) {}
-};
-
 static int Background_bitmap = -1;
 static UI_WINDOW Ui_window;
 static UI_BUTTON List_region;
@@ -462,25 +451,32 @@ void barracks_init_stats(scoring_struct *stats)
 	// Goober5000 - make sure we have room for all ships
 	Assert((Num_stat_lines + Ship_info.size()) < Max_stat_lines);
 
+	// wookieejedi - Show kills by ship type, but if using display name
+	// then consolidate values for similarly named entries
+	std::map<SCP_string, int, SCP_string_lcase_less_than> kill_map;
 	i = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); i++, ++it) {
 		if (stats->kills[i]) {
-			Assert(Num_stat_lines < Max_stat_lines);
-
-			// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
-			if (Num_stat_lines >= Max_stat_lines)
-			{
-				break;
-			}
-
-			Assert(strlen(it->name) + 1 < STAT_COLUMN1_W);
-			sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), it->name);
-			sprintf(Stats[Num_stat_lines], "%d", stats->kills[i]);
-			Num_stat_lines++;
-
-			// work out the total score from ship kills
+			// wookieejedi - consolidate by display name or ship class name
+			const char* name_key = it->get_display_name();
+			Assert(strlen(name_key) + 1 < STAT_COLUMN1_W);
+			kill_map[name_key] += stats->kills[i];
 			score_from_kills += stats->kills[i] * it->score;
 		}
+	}
+
+	// wookieejedi - now display the kills per ship type
+	for (const auto& [name, count] : kill_map) {
+		Assert(Num_stat_lines < Max_stat_lines);
+		// Goober5000 - in case above Assert isn't triggered (such as in non-debug builds)
+		if (Num_stat_lines >= Max_stat_lines) {
+			break;
+		}
+
+		Assert(name.length() + 1 < STAT_COLUMN1_W);
+		sprintf(Stat_labels[Num_stat_lines], NOX("%s:"), name.c_str());
+		sprintf(Stats[Num_stat_lines], "%d", count);
+		Num_stat_lines++;
 	}
 
 	// add the score from kills
@@ -575,7 +571,11 @@ int barracks_new_pilot_selected()
 
 	// init stuff to reflect new pilot
 	int i;
-	barracks_init_stats(&Cur_pilot->stats);
+	scoring_struct pstats;
+
+	Pilot.export_stats(&pstats);
+	barracks_init_stats(&pstats);
+
 	strcpy_s(stripped, Cur_pilot->image_filename);
 	barracks_strip_pcx(stripped);
 	for (i=0; i<Num_pilot_images; i++) {
@@ -694,7 +694,7 @@ int barracks_pilot_accepted()
 	return 0;
 }
 
-void barracks_accept_pilot(player* plr) {
+void barracks_accept_pilot(player* plr, bool changeState) {
 	// set pilot image
 	if (Game_mode & GM_MULTIPLAYER) {
 		player_set_squad_bitmap(plr, plr->m_squad_filename, true);
@@ -712,7 +712,10 @@ void barracks_accept_pilot(player* plr) {
 	multi_options_init_globals();
 
 	os_config_write_string(nullptr, "LastPlayer", plr->callsign);
-	gameseq_post_event(GS_EVENT_MAIN_MENU);
+
+	if (changeState) {
+		gameseq_post_event(GS_EVENT_MAIN_MENU);
+	}
 }
 
 // scroll up barracks pilot list one line

@@ -99,6 +99,14 @@ struct ivec2 {
 	int x, y;
 };
 
+inline bool operator<(const ivec3& l, const ivec3& r){
+	return l.x < r.x || (l.x == r.x && (l.y < r.y || (l.y == r.y && l.z < r.z)));
+}
+
+inline bool operator<(const ivec2& l, const ivec2& r){
+	return l.x < r.x || (l.x == r.x && l.y < r.y);
+}
+
 namespace scripting {
 	class ade_table_entry;
 }
@@ -117,9 +125,6 @@ typedef struct vec3d {
 		} xyz;
 		float a1d[3];
 	};
-
-	void serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size);
-	void deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset);
 } vec3d;
 
 typedef struct vec2d {
@@ -215,15 +220,19 @@ struct particle_pnt {
 	vec3d up;
 };
 
+// for compiler compatibility, even though C++17 supports omitting the template type...
+
 //def_list
-struct flag_def_list {
+template<typename T>
+struct flag_def_list_templated {
 	const char *name;
-	int def;
+	T def;
 	ubyte var;
 };
+using flag_def_list = flag_def_list_templated<int>;
 
 //A list of parse names for a flag enum
-template<class T>
+template<typename T>
 struct flag_def_list_new {
     const char* name;			// The parseable representation of this flag
     T def;				// The flag definition for this flag
@@ -256,6 +265,8 @@ typedef struct coord2d {
 
 extern int Global_warning_count;
 extern int Global_error_count;
+
+enum class ErrorType : ubyte { NONE = 0, WARNING, FATAL_ERROR };
 
 #include "osapi/outwnd.h"
 
@@ -297,6 +308,20 @@ constexpr bool LoggingEnabled = false;
 		ASSUME( expr );\
 	} while (false)
 #endif
+
+template <typename T>
+bool CallAssert(bool val, const char *msg, const char *filename, int linenum, T assertMsgFunc)
+{
+	if (!val)
+		assertMsgFunc(msg, filename, linenum, nullptr);
+	ASSUME(val);
+	return true;
+}
+#if defined(NDEBUG)
+#	define AssertExpr(expr) (true)
+#else
+#	define AssertExpr(expr) CallAssert(expr, #expr, __FILE__, __LINE__, os::dialogs::AssertMessage)
+#endif
 /*******************NEVER COMMENT Assert ************************************************/
 
 // Goober5000 - define Verify for use in both release and debug mode
@@ -319,11 +344,14 @@ constexpr bool LoggingEnabled = false;
 	#define Int3() debug_int3(__FILE__, __LINE__)
 #endif	// NDEBUG
 
+
+// the older MIN and MAX macros were vulnerable to performance issues since they duplicated their tokens
+
 #ifndef MIN
-#define MIN(a,b) (((a) < (b)) ? (a) : (b))
+#define MIN(a,b) std::min(a,b)
 #endif
 #ifndef MAX
-#define MAX(a,b) (((a) > (b)) ? (a) : (b))
+#define MAX(a,b) std::max(a,b)
 #endif
 
 
@@ -375,17 +403,13 @@ const size_t INVALID_SIZE = static_cast<size_t>(-1);
 #define INTEL_FLOAT(x)	(*x)
 #endif // BYTE_ORDER
 
+// since a lot of header files will try to #define TRUE and FALSE,
+// making them constexpr here doesn't gain us much
 #define TRUE	1
 #define FALSE	0
 
-
-// lod checker for (modular) table parsing
-typedef struct lod_checker {
-	char filename[MAX_FILENAME_LEN];
-	int num_lods;
-	int override;
-} lod_checker;
-
+// the trailing underscores are to avoid conflicts with previously #define'd tokens
+enum class TriStateBool : int { FALSE_ = 0, TRUE_ = 1, UNKNOWN_ = -1 };
 
 // Callback Loading function.
 // If you pass a function to this, that function will get called
@@ -411,18 +435,15 @@ extern void game_busy(const char *filename = NULL);
 
 const char *XSTR(const char *str, int index, bool force_lookup = false);
 
-// Caps V between MN and MX.
-template <class T> void CAP( T& v, T mn, T mx )
-{
-	if ( v < mn ) {
-		v = mn;
-	} else if ( v > mx ) {
-		v = mx;
-	}
-}
+// The older CLAMP macro was vulnerable to performance issues since it duplicated its tokens.  (The older CAP was a function.)  Technically
+// the new macro duplicates the LHS, but that should be ok.
 
-// faster version of CAP()
-#define CLAMP(x, min, max) do { if ( (x) < (min) ) (x) = (min); else if ((x) > (max)) (x) = (max); } while(false)
+// Ensure that x is at least min and at most max.
+#define CLAMP(x, min, max) { x = std::clamp(x, min, max); }
+
+// Ensure that x is at least min and at most max.
+#define CAP(v, mn, mx) CLAMP(v, mn, mx)
+
 
 //=========================================================
 // Memory management functions
@@ -453,7 +474,7 @@ public:
 //  - is not "none"
 //  - is not "<none>"
 inline bool VALID_FNAME(const char* x) {
-	return (x[0] != '\0') && stricmp(x, "none") != 0 && stricmp(x, "<none>") != 0;
+	return (x != nullptr) && (x[0] != '\0') && stricmp(x, "none") != 0 && stricmp(x, "<none>") != 0;
 }
 /**
  * @brief Checks if the specified string may be a valid file name

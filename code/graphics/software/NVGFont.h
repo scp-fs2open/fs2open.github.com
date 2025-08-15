@@ -9,18 +9,18 @@ namespace font
 	class NVGFont : public FSFont
 	{
 	private:
-		int m_handle;
-		float m_letterSpacing;
-		float m_size;
-		float m_tabWidth;
+		int m_handle = -1;
+		float m_letterSpacing = 0.0f;
+		float m_size = 12.0f;
+		float m_tabWidth = 20.0f;
 
-		font* m_specialCharacters;
+		font* m_specialCharacters = nullptr;
 
 		float m_lineHeight = 0.0f;
 
 	public:
-		NVGFont();
-		~NVGFont() override;
+		NVGFont() = default;
+		~NVGFont() override = default;
 
 		int getHandle() const { return m_handle; }
 		float getSize() const { return m_size; }
@@ -39,7 +39,7 @@ namespace font
 		float getTextHeight() const override;
 
 		void getStringSize(const char *text, size_t textLen, int resize_mode,
-			float *width, float *height) const override;
+			float *width, float *height, float scaleMultiplier = 1.0f) const override;
 
 		void computeFontMetrics() override;
 

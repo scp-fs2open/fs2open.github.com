@@ -30,7 +30,7 @@
 #include <map>
 
 // Extern functions/variables
-extern int		Player_use_ai;
+extern bool Player_use_ai;
 extern int get_wing_index(object *objp, int wingnum);
 extern object * get_wing_leader(int wingnum);
 extern int Cmdline_autopilot_interruptable;
@@ -66,7 +66,7 @@ int start_dist;
 void autopilot_ai_waypoint_goal_fixup(ai_goal* aigp)
 {
 	// this function sets wp_index properly;
-	aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
+	aigp->wp_list_index = find_matching_waypoint_list_index(aigp->target_name);
 }
 
 
@@ -111,13 +111,15 @@ const vec3d *NavPoint::GetPosition()
 {
 	if (flags & NP_WAYPOINT)
 	{
-		waypoint *wpt = find_waypoint_at_index((waypoint_list*) target_obj, waypoint_num-1);
-		Assert(wpt != NULL);
+		auto wpt = find_waypoint_at_indexes(target_index, waypoint_num-1);
+		Assert(wpt != nullptr);
+		if (wpt == nullptr)
+			return &vmd_zero_vector;
 		return wpt->get_pos();
 	}
 	else
 	{
-		return &Objects[((ship*) target_obj)->objnum].pos;
+		return &Objects[target_index].pos;
 	}
 }
 
@@ -239,7 +241,7 @@ bool StartAutopilot()
 			// is support ship trying to rearm-repair
 			if ( ai_find_goal_index( support_ship_aip->goals, AI_GOAL_REARM_REPAIR ) == -1 ) {
 				// no, so tell it to depart
-				ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WARP, -1, NULL, support_ship_aip );
+				ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_WARP, -1, nullptr, support_ship_aip );
 			} else {
 				// yes
 				send_autopilot_msgID(NP_MSG_FAIL_SUPPORT_WORKING);
@@ -268,7 +270,7 @@ bool StartAutopilot()
 		LockAPConv = _timestamp(); // lock convergence instantly
 	else
 		LockAPConv = _timestamp(3 * MILLISECONDS_PER_SECOND); // 3 seconds before we lock convergence
-	Player_use_ai = 1;
+	Player_use_ai = true;
 	set_time_compression(1);
 	lock_time_compression(true);
 
@@ -298,15 +300,16 @@ bool StartAutopilot()
 	autopilot_wings.clear();
 
 	// vars for usage w/ cinematic
-	vec3d pos, norm1, perp, tpos, rpos = Player_obj->pos, zero;
+	vec3d pos, perp, tpos, rpos = Player_obj->pos, zero;
 	memset(&zero, 0, sizeof(vec3d));
 
 
 	// instantly turn player toward tpos
 	if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
 	{
-		vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-		vm_vector_2_matrix(&Player_obj->orient, &norm1, NULL, NULL);
+		vec3d norm1;
+		vm_vec_normalized_dir(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+		vm_vector_2_matrix_norm(&Player_obj->orient, &norm1, nullptr, nullptr);
 	}
 
 	for (i = 0; i < MAX_SHIPS; i++)
@@ -393,10 +396,12 @@ bool StartAutopilot()
 				radius = Objects[Ships[i].objnum].radius;
 			}
 
+			// instantly turn the ship to match the direction player is looking
 			if (The_mission.flags[Mission::Mission_Flags::Use_ap_cinematics])
-			{// instantly turn the ship to match the direction player is looking
-				//vm_vec_sub(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
-				vm_vector_2_matrix(&Objects[Ships[i].objnum].orient, &norm1, NULL, NULL);
+			{
+				vec3d norm1;
+				vm_vec_normalized_dir(&norm1, Navs[CurrentNav].GetPosition(), &Player_obj->pos);
+				vm_vector_2_matrix_norm(&Objects[Ships[i].objnum].orient, &norm1, nullptr, nullptr);
 			}
 
 			// snap wings into formation
@@ -462,12 +467,12 @@ bool StartAutopilot()
 			{ 
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), &Ai_info[Ships[i].ai_index] );
 					//fixup has to wait until after wing goals
 				}
 				else
 				{
-					ai_add_ship_goal_player( AIG_TYPE_PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, &Ai_info[Ships[i].ai_index] );
+					ai_add_ship_goal_player( ai_goal_type::PLAYER_SHIP, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, &Ai_info[Ships[i].ai_index] );
 				}
 
 			}
@@ -483,15 +488,15 @@ bool StartAutopilot()
 			{	
 				//ai_add_ship_goal_player( int type, int mode, int submode, char *shipname, ai_info *aip );
 
-				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_STAY_NEAR_SHIP, 0, target_shipname, wingnum );
-				//ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
+				//ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_STAY_NEAR_SHIP, 0, target_shipname, wingnum );
+				//ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, target_shipname, wingnum );
 				//ai_clear_ship_goals( &(Ai_info[Ships[num].ai_index]) );
 				
 				ai_clear_wing_goals( &Wings[i] );
 				if (Navs[CurrentNav].flags & NP_WAYPOINT)
 				{
 					
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name(), i );
+					ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_WAYPOINTS_ONCE, 0, Waypoint_lists[Navs[CurrentNav].target_index].get_name(), i );
 
 					// "fix up" the goal
 					for (j = 0; j < MAX_AI_GOALS; j++)
@@ -505,7 +510,7 @@ bool StartAutopilot()
 				}
 				else
 				{
-					ai_add_wing_goal_player( AIG_TYPE_PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, ((ship*)Navs[CurrentNav].target_obj)->ship_name, i );
+					ai_add_wing_goal_player( ai_goal_type::PLAYER_WING, AI_GOAL_FLY_TO_SHIP, 0, Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name, i );
 
 				}
 			}
@@ -853,7 +858,7 @@ void EndAutoPilot()
 
 	set_time_compression(1);
 	lock_time_compression(false);
-	Player_use_ai = 0;
+	Player_use_ai = false;
 	//Clear AI Goals
 
 	if (CinematicStarted) // clear cinematic if we need to
@@ -874,12 +879,12 @@ void EndAutoPilot()
 	if (Navs[CurrentNav].flags & NP_WAYPOINT)
 	{
 		goal = AI_GOAL_WAYPOINTS_ONCE;
-		goal_name = ((waypoint_list*)Navs[CurrentNav].target_obj)->get_name();
+		goal_name = Waypoint_lists[Navs[CurrentNav].target_index].get_name();
 	}
 	else
 	{
 		goal = AI_GOAL_FLY_TO_SHIP;
-		goal_name = ((ship*)Navs[CurrentNav].target_obj)->ship_name;
+		goal_name = Ships[Objects[Navs[CurrentNav].target_index].instance].ship_name;
 	}
 
 	// assign ship goals
@@ -1094,9 +1099,9 @@ void NavSystem_Do()
 
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_obj != NULL))
+			if ((Navs[i].flags & NP_SHIP) && (Navs[i].target_index >= 0))
 			{
-				if (((ship*)Navs[i].target_obj)->objnum == -1)
+				if (Objects[Navs[i].target_index].flags[Object::Object_Flags::Should_be_dead])
 				{
 					if (CurrentNav == i)
 						CurrentNav = -1;
@@ -1108,7 +1113,7 @@ void NavSystem_Do()
 		// check if we're reached a Node
 		for (i = 0; i < MAX_NAVPOINTS; i++)
 		{
-			if (Navs[i].target_obj != NULL)
+			if (Navs[i].target_index >= 0)
 			{
 				if (Navs[i].flags & NP_VALIDTYPE && DistanceTo(i) < 1000)
 					Navs[i].flags |= NP_VISITED;
@@ -1392,7 +1397,7 @@ bool AddNav_Ship(const char *Nav, const char *TargetName, int flags)
 	{
 		if (Ships[i].objnum != -1 && !stricmp(TargetName, Ships[i].ship_name))
 		{
-			tnav.target_obj = (void *)&Ships[i];		
+			tnav.target_index = Ships[i].objnum;
 		}
 	}
 
@@ -1433,7 +1438,7 @@ bool AddNav_Waypoint(const char *Nav, const char *WP_Path, int node, int flags)
 
 	Assert(!(tnav.flags & NP_SHIP));
 
-	tnav.target_obj = find_matching_waypoint_list(WP_Path);
+	tnav.target_index = find_matching_waypoint_list_index(WP_Path);
 	tnav.waypoint_num = node;
 
 	// copy it into it's location

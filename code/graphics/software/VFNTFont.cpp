@@ -33,8 +33,14 @@ namespace font
 		return this->fontPtr;
 	}
 
+	const SCP_string& VFNTFont::getFamilyName() const
+	{
+		static const SCP_string volitionFontName = "Volition Font";
+		return volitionFontName;
+	}
+
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
-	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1) const
+	void VFNTFont::getStringSize(const char *text, size_t textSize, int /* resize_mode */, float *w1, float *h1, float scaleMultiplier) const
 	{
 		int longest_width;
 		int width, spacing;
@@ -94,11 +100,14 @@ namespace font
 			}
 		}
 
+		float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
+		scale_factor *= scaleMultiplier;
+
 		if (h1)
-			*h1 = i2fl(h);
+			*h1 = i2fl(h) * scale_factor;
 
 		if (w1)
-			*w1 = i2fl(longest_width);
+			*w1 = i2fl(longest_width) * scale_factor;
 	}
 
 	font::font() : kern_data(NULL),
@@ -113,32 +122,32 @@ namespace font
 	font::~font()
 	{
 		if (this->kern_data) {
-			vm_free(this->kern_data);
+			delete [] this->kern_data;
 			this->kern_data = NULL;
 		}
 
 		if (this->char_data) {
-			vm_free(this->char_data);
+			delete [] this->char_data;
 			this->char_data = NULL;
 		}
 
 		if (this->pixel_data) {
-			vm_free(this->pixel_data);
+			delete [] this->pixel_data;
 			this->pixel_data = NULL;
 		}
 
 		if (this->bm_data) {
-			vm_free(this->bm_data);
+			delete [] this->bm_data;
 			this->bm_data = NULL;
 		}
 
 		if (this->bm_u) {
-			vm_free(this->bm_u);
+			delete [] this->bm_u;
 			this->bm_u = NULL;
 		}
 
 		if (this->bm_v) {
-			vm_free(this->bm_v);
+			delete [] this->bm_v;
 			this->bm_v = NULL;
 		}
 	}

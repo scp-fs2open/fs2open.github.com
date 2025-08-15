@@ -75,6 +75,16 @@ class object;
 #define TYPE_REPAIR_REARM_ITEM 4
 #define TYPE_REPAIR_REARM_ABORT_ITEM 5
 
+typedef struct mmode_item {
+	int instance;    // instance in Ships/Wings array of this menu item
+	int active;      // active items are in bold text (1) -- inactive items greyed out (0) -- hidden objects not rendered (-1)
+	SCP_string text; // text to display on the menu
+} mmode_item;
+
+extern char Squad_msg_title[256];
+extern mmode_item MsgItems[MAX_MENU_ITEMS];
+extern int Num_menu_items; // number of items for a message menu
+
 typedef struct player_order {
 private:
 	//Needed, because legacy order-id's were not assigned in order
@@ -93,7 +103,7 @@ public:
 	inline void localize() { localized_name = XSTR(hud_name.c_str(), hud_xstr); }
 } player_order;
 
-extern std::vector<player_order> Player_orders;
+extern SCP_vector<player_order> Player_orders;
 
 // following defines are the set of possible commands that can be given to a ship.  A mission designer
 // might not allow some messages
@@ -180,8 +190,15 @@ void hud_enemymsg_toggle();						// debug function to allow messaging of enemies
 // Added for voicer implementation
 void hud_squadmsg_do_mode( int mode );
 
+// functions for menu item selection with simple up/down/select buttons
+void hud_squadmsg_selection_move_down();
+void hud_squadmsg_selection_move_up();
+void hud_squadmsg_selection_select();
+
 // Added for checking message validity - Mjn
 bool hud_squadmsg_ship_order_valid(int shipnum, int order);
+
+void Hud_set_lua_key(int selection);
 
 class HudGaugeSquadMessage: public HudGauge
 {
@@ -197,6 +214,7 @@ protected:
 
 	int Pgup_offsets[2];
 	int Pgdn_offsets[2];
+	int Ship_name_max_width;
 
 	int flash_timer[2];
 	bool flash_flag;
@@ -211,8 +229,9 @@ public:
 	void initItemOffsetX(int x);
 	void initPgUpOffsets(int x, int y);
 	void initPgDnOffsets(int x, int y);
+	void initShipNameMaxWidth(int w);
 
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	bool canRender() const override;
 	void pageIn() override;
 	void initialize() override;

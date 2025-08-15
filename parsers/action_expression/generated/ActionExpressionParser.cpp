@@ -1,5 +1,5 @@
 
-// Generated from /media/cache/code/asarium/fs2open.github.com/parsers/action_expression/ActionExpression.g4 by ANTLR 4.8
+// Generated from ActionExpression.g4 by ANTLR 4.13.2
 
 
 #include "ActionExpressionVisitor.h"
@@ -8,14 +8,110 @@
 
 
 using namespace antlrcpp;
+
 using namespace antlr4;
 
-ActionExpressionParser::ActionExpressionParser(TokenStream *input) : Parser(input) {
-  _interpreter = new atn::ParserATNSimulator(this, _atn, _decisionToDFA, _sharedContextCache);
+namespace {
+
+struct ActionExpressionParserStaticData final {
+  ActionExpressionParserStaticData(std::vector<std::string> ruleNames,
+                        std::vector<std::string> literalNames,
+                        std::vector<std::string> symbolicNames)
+      : ruleNames(std::move(ruleNames)), literalNames(std::move(literalNames)),
+        symbolicNames(std::move(symbolicNames)),
+        vocabulary(this->literalNames, this->symbolicNames) {}
+
+  ActionExpressionParserStaticData(const ActionExpressionParserStaticData&) = delete;
+  ActionExpressionParserStaticData(ActionExpressionParserStaticData&&) = delete;
+  ActionExpressionParserStaticData& operator=(const ActionExpressionParserStaticData&) = delete;
+  ActionExpressionParserStaticData& operator=(ActionExpressionParserStaticData&&) = delete;
+
+  std::vector<antlr4::dfa::DFA> decisionToDFA;
+  antlr4::atn::PredictionContextCache sharedContextCache;
+  const std::vector<std::string> ruleNames;
+  const std::vector<std::string> literalNames;
+  const std::vector<std::string> symbolicNames;
+  const antlr4::dfa::Vocabulary vocabulary;
+  antlr4::atn::SerializedATNView serializedATN;
+  std::unique_ptr<antlr4::atn::ATN> atn;
+};
+
+::antlr4::internal::OnceFlag actionexpressionParserOnceFlag;
+#if ANTLR4_USE_THREAD_LOCAL_CACHE
+static thread_local
+#endif
+std::unique_ptr<ActionExpressionParserStaticData> actionexpressionParserStaticData = nullptr;
+
+void actionexpressionParserInitialize() {
+#if ANTLR4_USE_THREAD_LOCAL_CACHE
+  if (actionexpressionParserStaticData != nullptr) {
+    return;
+  }
+#else
+  assert(actionexpressionParserStaticData == nullptr);
+#endif
+  auto staticData = std::make_unique<ActionExpressionParserStaticData>(
+    std::vector<std::string>{
+      "expression_main", "expression", "parenthesis_expression", "value_expression", 
+      "literal_expression", "variable_reference_expression", "random_range_expression", 
+      "vec3d_constructor"
+    },
+    std::vector<std::string>{
+      "", "'+'", "'-'", "", "", "'~('", "'('", "')'", "", "'.'"
+    },
+    std::vector<std::string>{
+      "", "PLUS", "MINUS", "FLOAT", "INT", "RAND_L_PAREN", "L_PAREN", "R_PAREN", 
+      "IDENTIFIER", "DOT", "STRING", "SPACE", "OTHER"
+    }
+  );
+  static const int32_t serializedATNSegment[] = {
+  	4,1,12,64,2,0,7,0,2,1,7,1,2,2,7,2,2,3,7,3,2,4,7,4,2,5,7,5,2,6,7,6,2,7,
+  	7,7,1,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,3,1,25,8,1,1,1,1,1,1,1,5,1,30,8,1,
+  	10,1,12,1,33,9,1,1,2,1,2,1,2,1,2,1,3,1,3,3,3,41,8,3,1,4,1,4,1,5,1,5,1,
+  	5,5,5,48,8,5,10,5,12,5,51,9,5,1,6,1,6,1,6,1,6,1,6,1,7,1,7,1,7,1,7,1,7,
+  	1,7,1,7,0,1,2,8,0,2,4,6,8,10,12,14,0,2,1,0,1,2,2,0,3,4,10,10,61,0,16,
+  	1,0,0,0,2,24,1,0,0,0,4,34,1,0,0,0,6,40,1,0,0,0,8,42,1,0,0,0,10,44,1,0,
+  	0,0,12,52,1,0,0,0,14,57,1,0,0,0,16,17,3,2,1,0,17,18,5,0,0,1,18,1,1,0,
+  	0,0,19,20,6,1,-1,0,20,25,3,6,3,0,21,25,3,12,6,0,22,25,3,4,2,0,23,25,3,
+  	10,5,0,24,19,1,0,0,0,24,21,1,0,0,0,24,22,1,0,0,0,24,23,1,0,0,0,25,31,
+  	1,0,0,0,26,27,10,1,0,0,27,28,7,0,0,0,28,30,3,2,1,2,29,26,1,0,0,0,30,33,
+  	1,0,0,0,31,29,1,0,0,0,31,32,1,0,0,0,32,3,1,0,0,0,33,31,1,0,0,0,34,35,
+  	5,6,0,0,35,36,3,2,1,0,36,37,5,7,0,0,37,5,1,0,0,0,38,41,3,8,4,0,39,41,
+  	3,14,7,0,40,38,1,0,0,0,40,39,1,0,0,0,41,7,1,0,0,0,42,43,7,1,0,0,43,9,
+  	1,0,0,0,44,49,5,8,0,0,45,46,5,9,0,0,46,48,5,8,0,0,47,45,1,0,0,0,48,51,
+  	1,0,0,0,49,47,1,0,0,0,49,50,1,0,0,0,50,11,1,0,0,0,51,49,1,0,0,0,52,53,
+  	5,5,0,0,53,54,3,2,1,0,54,55,3,2,1,0,55,56,5,7,0,0,56,13,1,0,0,0,57,58,
+  	5,6,0,0,58,59,3,2,1,0,59,60,3,2,1,0,60,61,3,2,1,0,61,62,5,7,0,0,62,15,
+  	1,0,0,0,4,24,31,40,49
+  };
+  staticData->serializedATN = antlr4::atn::SerializedATNView(serializedATNSegment, sizeof(serializedATNSegment) / sizeof(serializedATNSegment[0]));
+
+  antlr4::atn::ATNDeserializer deserializer;
+  staticData->atn = deserializer.deserialize(staticData->serializedATN);
+
+  const size_t count = staticData->atn->getNumberOfDecisions();
+  staticData->decisionToDFA.reserve(count);
+  for (size_t i = 0; i < count; i++) { 
+    staticData->decisionToDFA.emplace_back(staticData->atn->getDecisionState(i), i);
+  }
+  actionexpressionParserStaticData = std::move(staticData);
+}
+
+}
+
+ActionExpressionParser::ActionExpressionParser(TokenStream *input) : ActionExpressionParser(input, antlr4::atn::ParserATNSimulatorOptions()) {}
+
+ActionExpressionParser::ActionExpressionParser(TokenStream *input, const antlr4::atn::ParserATNSimulatorOptions &options) : Parser(input) {
+  ActionExpressionParser::initialize();
+  _interpreter = new atn::ParserATNSimulator(this, *actionexpressionParserStaticData->atn, actionexpressionParserStaticData->decisionToDFA, actionexpressionParserStaticData->sharedContextCache, options);
 }
 
 ActionExpressionParser::~ActionExpressionParser() {
   delete _interpreter;
+}
+
+const atn::ATN& ActionExpressionParser::getATN() const {
+  return *actionexpressionParserStaticData->atn;
 }
 
 std::string ActionExpressionParser::getGrammarFileName() const {
@@ -23,11 +119,15 @@ std::string ActionExpressionParser::getGrammarFileName() const {
 }
 
 const std::vector<std::string>& ActionExpressionParser::getRuleNames() const {
-  return _ruleNames;
+  return actionexpressionParserStaticData->ruleNames;
 }
 
-dfa::Vocabulary& ActionExpressionParser::getVocabulary() const {
-  return _vocabulary;
+const dfa::Vocabulary& ActionExpressionParser::getVocabulary() const {
+  return actionexpressionParserStaticData->vocabulary;
+}
+
+antlr4::atn::SerializedATNView ActionExpressionParser::getSerializedATN() const {
+  return actionexpressionParserStaticData->serializedATN;
 }
 
 
@@ -51,7 +151,7 @@ size_t ActionExpressionParser::Expression_mainContext::getRuleIndex() const {
 }
 
 
-antlrcpp::Any ActionExpressionParser::Expression_mainContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Expression_mainContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitExpression_main(this);
   else
@@ -62,7 +162,11 @@ ActionExpressionParser::Expression_mainContext* ActionExpressionParser::expressi
   Expression_mainContext *_localctx = _tracker.createInstance<Expression_mainContext>(_ctx, getState());
   enterRule(_localctx, 0, ActionExpressionParser::RuleExpression_main);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -126,7 +230,7 @@ size_t ActionExpressionParser::ExpressionContext::getRuleIndex() const {
 }
 
 
-antlrcpp::Any ActionExpressionParser::ExpressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::ExpressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitExpression(this);
   else
@@ -149,7 +253,11 @@ ActionExpressionParser::ExpressionContext* ActionExpressionParser::expression(in
 
     size_t _la = 0;
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     unrollRecursionContexts(parentContext);
   });
   try {
@@ -182,6 +290,8 @@ ActionExpressionParser::ExpressionContext* ActionExpressionParser::expression(in
       break;
     }
 
+    default:
+      break;
     }
     _ctx->stop = _input->LT(-1);
     setState(31);
@@ -248,7 +358,7 @@ size_t ActionExpressionParser::Parenthesis_expressionContext::getRuleIndex() con
 }
 
 
-antlrcpp::Any ActionExpressionParser::Parenthesis_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Parenthesis_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitParenthesis_expression(this);
   else
@@ -259,7 +369,11 @@ ActionExpressionParser::Parenthesis_expressionContext* ActionExpressionParser::p
   Parenthesis_expressionContext *_localctx = _tracker.createInstance<Parenthesis_expressionContext>(_ctx, getState());
   enterRule(_localctx, 4, ActionExpressionParser::RuleParenthesis_expression);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -301,7 +415,7 @@ size_t ActionExpressionParser::Value_expressionContext::getRuleIndex() const {
 }
 
 
-antlrcpp::Any ActionExpressionParser::Value_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Value_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitValue_expression(this);
   else
@@ -312,7 +426,11 @@ ActionExpressionParser::Value_expressionContext* ActionExpressionParser::value_e
   Value_expressionContext *_localctx = _tracker.createInstance<Value_expressionContext>(_ctx, getState());
   enterRule(_localctx, 6, ActionExpressionParser::RuleValue_expression);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -373,7 +491,7 @@ size_t ActionExpressionParser::Literal_expressionContext::getRuleIndex() const {
 }
 
 
-antlrcpp::Any ActionExpressionParser::Literal_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Literal_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitLiteral_expression(this);
   else
@@ -385,7 +503,11 @@ ActionExpressionParser::Literal_expressionContext* ActionExpressionParser::liter
   enterRule(_localctx, 8, ActionExpressionParser::RuleLiteral_expression);
   size_t _la = 0;
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -393,9 +515,7 @@ ActionExpressionParser::Literal_expressionContext* ActionExpressionParser::liter
     setState(42);
     _la = _input->LA(1);
     if (!((((_la & ~ 0x3fULL) == 0) &&
-      ((1ULL << _la) & ((1ULL << ActionExpressionParser::FLOAT)
-      | (1ULL << ActionExpressionParser::INT)
-      | (1ULL << ActionExpressionParser::STRING))) != 0))) {
+      ((1ULL << _la) & 1048) != 0))) {
     _errHandler->recoverInline(this);
     }
     else {
@@ -441,7 +561,7 @@ size_t ActionExpressionParser::Variable_reference_expressionContext::getRuleInde
 }
 
 
-antlrcpp::Any ActionExpressionParser::Variable_reference_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Variable_reference_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitVariable_reference_expression(this);
   else
@@ -452,7 +572,11 @@ ActionExpressionParser::Variable_reference_expressionContext* ActionExpressionPa
   Variable_reference_expressionContext *_localctx = _tracker.createInstance<Variable_reference_expressionContext>(_ctx, getState());
   enterRule(_localctx, 10, ActionExpressionParser::RuleVariable_reference_expression);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -513,7 +637,7 @@ size_t ActionExpressionParser::Random_range_expressionContext::getRuleIndex() co
 }
 
 
-antlrcpp::Any ActionExpressionParser::Random_range_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Random_range_expressionContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitRandom_range_expression(this);
   else
@@ -524,7 +648,11 @@ ActionExpressionParser::Random_range_expressionContext* ActionExpressionParser::
   Random_range_expressionContext *_localctx = _tracker.createInstance<Random_range_expressionContext>(_ctx, getState());
   enterRule(_localctx, 12, ActionExpressionParser::RuleRandom_range_expression);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -576,7 +704,7 @@ size_t ActionExpressionParser::Vec3d_constructorContext::getRuleIndex() const {
 }
 
 
-antlrcpp::Any ActionExpressionParser::Vec3d_constructorContext::accept(tree::ParseTreeVisitor *visitor) {
+std::any ActionExpressionParser::Vec3d_constructorContext::accept(tree::ParseTreeVisitor *visitor) {
   if (auto parserVisitor = dynamic_cast<ActionExpressionVisitor*>(visitor))
     return parserVisitor->visitVec3d_constructor(this);
   else
@@ -587,7 +715,11 @@ ActionExpressionParser::Vec3d_constructorContext* ActionExpressionParser::vec3d_
   Vec3d_constructorContext *_localctx = _tracker.createInstance<Vec3d_constructorContext>(_ctx, getState());
   enterRule(_localctx, 14, ActionExpressionParser::RuleVec3d_constructor);
 
+#if __cplusplus > 201703L
+  auto onExit = finally([=, this] {
+#else
   auto onExit = finally([=] {
+#endif
     exitRule();
   });
   try {
@@ -615,7 +747,7 @@ ActionExpressionParser::Vec3d_constructorContext* ActionExpressionParser::vec3d_
 
 bool ActionExpressionParser::sempred(RuleContext *context, size_t ruleIndex, size_t predicateIndex) {
   switch (ruleIndex) {
-    case 1: return expressionSempred(dynamic_cast<ExpressionContext *>(context), predicateIndex);
+    case 1: return expressionSempred(antlrcpp::downCast<ExpressionContext *>(context), predicateIndex);
 
   default:
     break;
@@ -633,100 +765,10 @@ bool ActionExpressionParser::expressionSempred(ExpressionContext *_localctx, siz
   return true;
 }
 
-// Static vars and initialization.
-std::vector<dfa::DFA> ActionExpressionParser::_decisionToDFA;
-atn::PredictionContextCache ActionExpressionParser::_sharedContextCache;
-
-// We own the ATN which in turn owns the ATN states.
-atn::ATN ActionExpressionParser::_atn;
-std::vector<uint16_t> ActionExpressionParser::_serializedATN;
-
-std::vector<std::string> ActionExpressionParser::_ruleNames = {
-  "expression_main", "expression", "parenthesis_expression", "value_expression", 
-  "literal_expression", "variable_reference_expression", "random_range_expression", 
-  "vec3d_constructor"
-};
-
-std::vector<std::string> ActionExpressionParser::_literalNames = {
-  "", "'+'", "'-'", "", "", "'~('", "'('", "')'", "", "'.'"
-};
-
-std::vector<std::string> ActionExpressionParser::_symbolicNames = {
-  "", "PLUS", "MINUS", "FLOAT", "INT", "RAND_L_PAREN", "L_PAREN", "R_PAREN", 
-  "IDENTIFIER", "DOT", "STRING", "SPACE", "OTHER"
-};
-
-dfa::Vocabulary ActionExpressionParser::_vocabulary(_literalNames, _symbolicNames);
-
-std::vector<std::string> ActionExpressionParser::_tokenNames;
-
-ActionExpressionParser::Initializer::Initializer() {
-	for (size_t i = 0; i < _symbolicNames.size(); ++i) {
-		std::string name = _vocabulary.getLiteralName(i);
-		if (name.empty()) {
-			name = _vocabulary.getSymbolicName(i);
-		}
-
-		if (name.empty()) {
-			_tokenNames.push_back("<INVALID>");
-		} else {
-      _tokenNames.push_back(name);
-    }
-	}
-
-  _serializedATN = {
-    0x3, 0x608b, 0xa72a, 0x8133, 0xb9ed, 0x417c, 0x3be7, 0x7786, 0x5964, 
-    0x3, 0xe, 0x42, 0x4, 0x2, 0x9, 0x2, 0x4, 0x3, 0x9, 0x3, 0x4, 0x4, 0x9, 
-    0x4, 0x4, 0x5, 0x9, 0x5, 0x4, 0x6, 0x9, 0x6, 0x4, 0x7, 0x9, 0x7, 0x4, 
-    0x8, 0x9, 0x8, 0x4, 0x9, 0x9, 0x9, 0x3, 0x2, 0x3, 0x2, 0x3, 0x2, 0x3, 
-    0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x5, 0x3, 0x1b, 0xa, 0x3, 
-    0x3, 0x3, 0x3, 0x3, 0x3, 0x3, 0x7, 0x3, 0x20, 0xa, 0x3, 0xc, 0x3, 0xe, 
-    0x3, 0x23, 0xb, 0x3, 0x3, 0x4, 0x3, 0x4, 0x3, 0x4, 0x3, 0x4, 0x3, 0x5, 
-    0x3, 0x5, 0x5, 0x5, 0x2b, 0xa, 0x5, 0x3, 0x6, 0x3, 0x6, 0x3, 0x7, 0x3, 
-    0x7, 0x3, 0x7, 0x7, 0x7, 0x32, 0xa, 0x7, 0xc, 0x7, 0xe, 0x7, 0x35, 0xb, 
-    0x7, 0x3, 0x8, 0x3, 0x8, 0x3, 0x8, 0x3, 0x8, 0x3, 0x8, 0x3, 0x9, 0x3, 
-    0x9, 0x3, 0x9, 0x3, 0x9, 0x3, 0x9, 0x3, 0x9, 0x3, 0x9, 0x2, 0x3, 0x4, 
-    0xa, 0x2, 0x4, 0x6, 0x8, 0xa, 0xc, 0xe, 0x10, 0x2, 0x4, 0x3, 0x2, 0x3, 
-    0x4, 0x4, 0x2, 0x5, 0x6, 0xc, 0xc, 0x2, 0x3f, 0x2, 0x12, 0x3, 0x2, 0x2, 
-    0x2, 0x4, 0x1a, 0x3, 0x2, 0x2, 0x2, 0x6, 0x24, 0x3, 0x2, 0x2, 0x2, 0x8, 
-    0x2a, 0x3, 0x2, 0x2, 0x2, 0xa, 0x2c, 0x3, 0x2, 0x2, 0x2, 0xc, 0x2e, 
-    0x3, 0x2, 0x2, 0x2, 0xe, 0x36, 0x3, 0x2, 0x2, 0x2, 0x10, 0x3b, 0x3, 
-    0x2, 0x2, 0x2, 0x12, 0x13, 0x5, 0x4, 0x3, 0x2, 0x13, 0x14, 0x7, 0x2, 
-    0x2, 0x3, 0x14, 0x3, 0x3, 0x2, 0x2, 0x2, 0x15, 0x16, 0x8, 0x3, 0x1, 
-    0x2, 0x16, 0x1b, 0x5, 0x8, 0x5, 0x2, 0x17, 0x1b, 0x5, 0xe, 0x8, 0x2, 
-    0x18, 0x1b, 0x5, 0x6, 0x4, 0x2, 0x19, 0x1b, 0x5, 0xc, 0x7, 0x2, 0x1a, 
-    0x15, 0x3, 0x2, 0x2, 0x2, 0x1a, 0x17, 0x3, 0x2, 0x2, 0x2, 0x1a, 0x18, 
-    0x3, 0x2, 0x2, 0x2, 0x1a, 0x19, 0x3, 0x2, 0x2, 0x2, 0x1b, 0x21, 0x3, 
-    0x2, 0x2, 0x2, 0x1c, 0x1d, 0xc, 0x3, 0x2, 0x2, 0x1d, 0x1e, 0x9, 0x2, 
-    0x2, 0x2, 0x1e, 0x20, 0x5, 0x4, 0x3, 0x4, 0x1f, 0x1c, 0x3, 0x2, 0x2, 
-    0x2, 0x20, 0x23, 0x3, 0x2, 0x2, 0x2, 0x21, 0x1f, 0x3, 0x2, 0x2, 0x2, 
-    0x21, 0x22, 0x3, 0x2, 0x2, 0x2, 0x22, 0x5, 0x3, 0x2, 0x2, 0x2, 0x23, 
-    0x21, 0x3, 0x2, 0x2, 0x2, 0x24, 0x25, 0x7, 0x8, 0x2, 0x2, 0x25, 0x26, 
-    0x5, 0x4, 0x3, 0x2, 0x26, 0x27, 0x7, 0x9, 0x2, 0x2, 0x27, 0x7, 0x3, 
-    0x2, 0x2, 0x2, 0x28, 0x2b, 0x5, 0xa, 0x6, 0x2, 0x29, 0x2b, 0x5, 0x10, 
-    0x9, 0x2, 0x2a, 0x28, 0x3, 0x2, 0x2, 0x2, 0x2a, 0x29, 0x3, 0x2, 0x2, 
-    0x2, 0x2b, 0x9, 0x3, 0x2, 0x2, 0x2, 0x2c, 0x2d, 0x9, 0x3, 0x2, 0x2, 
-    0x2d, 0xb, 0x3, 0x2, 0x2, 0x2, 0x2e, 0x33, 0x7, 0xa, 0x2, 0x2, 0x2f, 
-    0x30, 0x7, 0xb, 0x2, 0x2, 0x30, 0x32, 0x7, 0xa, 0x2, 0x2, 0x31, 0x2f, 
-    0x3, 0x2, 0x2, 0x2, 0x32, 0x35, 0x3, 0x2, 0x2, 0x2, 0x33, 0x31, 0x3, 
-    0x2, 0x2, 0x2, 0x33, 0x34, 0x3, 0x2, 0x2, 0x2, 0x34, 0xd, 0x3, 0x2, 
-    0x2, 0x2, 0x35, 0x33, 0x3, 0x2, 0x2, 0x2, 0x36, 0x37, 0x7, 0x7, 0x2, 
-    0x2, 0x37, 0x38, 0x5, 0x4, 0x3, 0x2, 0x38, 0x39, 0x5, 0x4, 0x3, 0x2, 
-    0x39, 0x3a, 0x7, 0x9, 0x2, 0x2, 0x3a, 0xf, 0x3, 0x2, 0x2, 0x2, 0x3b, 
-    0x3c, 0x7, 0x8, 0x2, 0x2, 0x3c, 0x3d, 0x5, 0x4, 0x3, 0x2, 0x3d, 0x3e, 
-    0x5, 0x4, 0x3, 0x2, 0x3e, 0x3f, 0x5, 0x4, 0x3, 0x2, 0x3f, 0x40, 0x7, 
-    0x9, 0x2, 0x2, 0x40, 0x11, 0x3, 0x2, 0x2, 0x2, 0x6, 0x1a, 0x21, 0x2a, 
-    0x33, 
-  };
-
-  atn::ATNDeserializer deserializer;
-  _atn = deserializer.deserialize(_serializedATN);
-
-  size_t count = _atn.getNumberOfDecisions();
-  _decisionToDFA.reserve(count);
-  for (size_t i = 0; i < count; i++) { 
-    _decisionToDFA.emplace_back(_atn.getDecisionState(i), i);
-  }
+void ActionExpressionParser::initialize() {
+#if ANTLR4_USE_THREAD_LOCAL_CACHE
+  actionexpressionParserInitialize();
+#else
+  ::antlr4::internal::call_once(actionexpressionParserOnceFlag, actionexpressionParserInitialize);
+#endif
 }
-
-ActionExpressionParser::Initializer ActionExpressionParser::_init;

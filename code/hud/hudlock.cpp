@@ -279,13 +279,26 @@ void HudGaugeLock::renderOld(float frametime)
 // lock_point_pos should be the world coordinates of the target being locked. Assuming all the 
 // necessary locking calculations are done for this frame, this function will compute 
 // where the indicator should be relative to the player's viewpoint and will render accordingly.
-void HudGaugeLock::render(float frametime)
+void HudGaugeLock::render(float frametime, bool config)
 {
-	size_t i;
-	lock_info *current_lock;
+	float scale = 1.0;
 
-	vertex lock_point;
-	int sx, sy;
+	// This gauge does not accept config settings so we don't have to render it right now.
+	// That may change in the future, in which case the code below can be restored.
+	if (config) {
+		// The coords don't really get converted here but we still get scale based on the screen size which we need
+		/* int x = 0, y = 0;
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+
+		int w;
+		int h;
+		// Will need actual coords for the below if we activate this gauge in config
+		hud_config_set_mouse_coords(gauge_config_id, x, x + w, y, y + h);
+
+		setGaugeColor(HUD_C_NONE, config);*/
+
+		return;
+	}
 
 	// check to see if there are any missile to fire.. we don't want to show the 
 	// lock indicator if there are missiles to fire.
@@ -299,58 +312,59 @@ void HudGaugeLock::render(float frametime)
 	gr_set_screen_scale(base_w, base_h);
 
 	// go through all present lock indicators
-	for ( i = 0; i < Player_ship->missile_locks.size(); ++i ) {
-		current_lock = &Player_ship->missile_locks[i];
+	for (auto& current_lock : Player_ship->missile_locks){
 
-		if ( !current_lock->indicator_visible ) {
+		if ( !current_lock.indicator_visible ) {
 			continue;
 		}
 
 		// Get the target's current position on the screen. If he's not on there,
 		// we're not going to draw the lock indicator even if he's in front 
 		// of our ship, so bail out. 
-		g3_rotate_vertex(&lock_point, &current_lock->world_pos); 
+		vertex lock_point;
+		g3_rotate_vertex(&lock_point, &current_lock.world_pos); 
 		g3_project_vertex(&lock_point);
 
 		if (lock_point.codes & PF_OVERFLOW) {
 			continue;
 		}
 
-		hud_set_iff_color(current_lock->obj);
+		hud_set_iff_color(current_lock.obj);
 
 		// We have the coordinates of the lock indicator relative to the target in our "virtual frame" 
 		// so, we calculate where it should be drawn based on the player's viewpoint.
-		if ( current_lock->locked ) {
+		int sx, sy;
+		if ( current_lock.locked ) {
 			sx = fl2i(lock_point.screen.xyw.x); 
 			sy = fl2i(lock_point.screen.xyw.y);
 			gr_unsize_screen_pos(&sx, &sy);
 
 			// show the rotating triangles if target is locked
-			renderLockTrianglesNew(sx, sy, frametime, current_lock);
+			renderLockTrianglesNew(sx, sy, frametime, &current_lock);
 		} else {
 			const float scaling_factor = (gr_screen.clip_center_x < gr_screen.clip_center_y)
 											 ? (gr_screen.clip_center_x / VIRTUAL_FRAME_HALF_WIDTH)
 											 : (gr_screen.clip_center_y / VIRTUAL_FRAME_HALF_HEIGHT);
-			sx = fl2i(lock_point.screen.xyw.x) - fl2i(i2fl(current_lock->current_target_sx - current_lock->indicator_x) * scaling_factor);
-			sy = fl2i(lock_point.screen.xyw.y) - fl2i(i2fl(current_lock->current_target_sy - current_lock->indicator_y) * scaling_factor);
+			sx = fl2i(lock_point.screen.xyw.x) - fl2i(i2fl(current_lock.current_target_sx - current_lock.indicator_x) * scaling_factor);
+			sy = fl2i(lock_point.screen.xyw.y) - fl2i(i2fl(current_lock.current_target_sy - current_lock.indicator_y) * scaling_factor);
 			gr_unsize_screen_pos(&sx, &sy);
 		}
 
-		Lock_gauge.sx = sx - Lock_gauge_half_w;
-		Lock_gauge.sy = sy - Lock_gauge_half_h;
-		if( current_lock->locked ){
-			current_lock->lock_gauge_time_elapsed = 0.0f;
-			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
-			hud_anim_render(&Lock_gauge, 0.0f, 1);
+		Lock_gauge.sx = sx - fl2i(Lock_gauge_half_w * scale);
+		Lock_gauge.sy = sy - fl2i(Lock_gauge_half_h * scale);
+		if( current_lock.locked ){
+			current_lock.lock_gauge_time_elapsed = 0.0f;
+			Lock_gauge.time_elapsed = current_lock.lock_gauge_time_elapsed;
+			hud_anim_render(&Lock_gauge, 0.0f, 1, 1, 0, 0, GR_RESIZE_FULL, false, scale);
 		} else {
 			// manually track the animation time, since we may have more than one lock
-			current_lock->lock_gauge_time_elapsed += frametime;
-			if (current_lock->lock_gauge_time_elapsed > Lock_gauge.total_time) {
-				current_lock->lock_gauge_time_elapsed = 0.0f;
+			current_lock.lock_gauge_time_elapsed += frametime;
+			if (current_lock.lock_gauge_time_elapsed > Lock_gauge.total_time) {
+				current_lock.lock_gauge_time_elapsed = 0.0f;
 			}
-			Lock_gauge.time_elapsed = current_lock->lock_gauge_time_elapsed;
+			Lock_gauge.time_elapsed = current_lock.lock_gauge_time_elapsed;
 
-			hud_anim_render(&Lock_gauge, 0.0f, 1);
+			hud_anim_render(&Lock_gauge, 0.0f, 1, 1, 0, 0, GR_RESIZE_FULL, false, scale);
 		}
 	}
 

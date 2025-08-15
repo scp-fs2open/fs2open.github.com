@@ -23,11 +23,11 @@ ADE_VIRTVAR(Target, l_Asteroid, "object", "Asteroid target object; may be object
 	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Object.Set(object_h()));
 
-	asteroid *asp = &Asteroids[oh->objp->instance];
+	asteroid *asp = &Asteroids[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR && th != NULL) {
 		if(th->isValid())
-			asp->target_objnum = OBJ_INDEX(th->objp);
+			asp->target_objnum = th->objnum;
 		else
 			asp->target_objnum = -1;
 	}
@@ -53,12 +53,12 @@ ADE_FUNC(kill, l_Asteroid, "[ship killer=nil, vector hitpos=nil]", "Kills the as
 		return ADE_RETURN_NIL;
 
 	if (!hitpos)
-		hitpos = &victim->objp->pos;
+		hitpos = &victim->objp()->pos;
 
 	if (killer)
-		asteroid_hit(victim->objp, killer->objp, hitpos, victim->objp->hull_strength + 1, nullptr);
+		asteroid_hit(victim->objp(), killer->objp(), hitpos, victim->objp()->hull_strength + 1, nullptr);
 	else
-		asteroid_hit(victim->objp, NULL,         hitpos, victim->objp->hull_strength + 1, nullptr);
+		asteroid_hit(victim->objp(), NULL,           hitpos, victim->objp()->hull_strength + 1, nullptr);
 
 	return ADE_RETURN_TRUE;
 }

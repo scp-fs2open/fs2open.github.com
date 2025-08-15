@@ -7,6 +7,8 @@
  *
 */ 
 
+#include "globalincs/globals.h"
+#include "mod_table/mod_table.h"
 
 
 #ifndef __MISSION_WEAPON_CHOICE_H__
@@ -16,25 +18,6 @@ class p_object;
 struct wss_unit;
 class ship_weapon;
 struct team_data;
-
-// mask regions for icons in the scrollable lists
-#define ICON_PRIMARY_0				28
-#define ICON_PRIMARY_1				29
-#define ICON_PRIMARY_2				30
-#define ICON_PRIMARY_3				31
-#define ICON_SECONDARY_0			10
-#define ICON_SECONDARY_1			11
-#define ICON_SECONDARY_2			12
-#define ICON_SECONDARY_3			13
-
-// mask regions for icons that sit above the ship
-#define ICON_SHIP_PRIMARY_0		32
-#define ICON_SHIP_PRIMARY_1		33
-#define ICON_SHIP_PRIMARY_2		34
-#define ICON_SHIP_SECONDARY_0		35
-#define ICON_SHIP_SECONDARY_1		36
-#define ICON_SHIP_SECONDARY_2		37
-#define ICON_SHIP_SECONDARY_3		38
 
 #define WEAPON_DESC_MAX_LINES			7				// max lines in the description incl. title
 #define WEAPON_DESC_MAX_LENGTH		50				// max chars per line of description text
@@ -76,7 +59,8 @@ void draw_3d_overhead_view(int model_num,
 	int bank_prim_offset = 106,
 	int bank_sec_offset = -50,
 	int bank_y_offset = 12,
-	overhead_style style = Default_overhead_ship_style);
+	overhead_style style = Default_overhead_ship_style,
+	const SCP_string& tcolor = "");
 
 void	wl_update_parse_object_weapons(p_object *pobjp, wss_unit *slot);
 int	wl_update_ship_weapons(int objnum, wss_unit *slot);

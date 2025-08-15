@@ -193,7 +193,7 @@ namespace antlr4 {
     /// <seealso cref= #notifyErrorListeners </seealso>
     virtual size_t getNumberOfSyntaxErrors();
 
-    virtual Ref<TokenFactory<CommonToken>> getTokenFactory() override;
+    virtual TokenFactory<CommonToken>* getTokenFactory() override;
 
     /// <summary>
     /// Tell our token source and error strategy about a new way to create tokens. </summary>
@@ -448,12 +448,6 @@ namespace antlr4 {
     tree::ParseTreeTracker _tracker;
 
   private:
-    /// This field maps from the serialized ATN string to the deserialized <seealso cref="ATN"/> with
-    /// bypass alternatives.
-    ///
-    /// <seealso cref= ATNDeserializationOptions#isGenerateRuleBypassTransitions() </seealso>
-    static std::map<std::vector<uint16_t>, atn::ATN> bypassAltsAtnCache;
-
     /// When setTrace(true) is called, a reference to the
     /// TraceListener is stored here so it can be easily removed in a
     /// later call to setTrace(false). The listener itself is

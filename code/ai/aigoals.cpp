@@ -53,8 +53,14 @@ struct ship_registry_entry;
 // PURGE_GOALS_ONE_SHIP for goals which should only purge other goals in the one ship.
 // Goober5000 - note that the new disable and disarm goals (AI_GOAL_DISABLE_SHIP_TACTICAL and
 // AI_GOAL_DISARM_SHIP_TACTICAL) do not purge ANY goals, not even the ones in the one ship
-#define PURGE_GOALS_ALL_SHIPS		(AI_GOAL_IGNORE | AI_GOAL_DISABLE_SHIP | AI_GOAL_DISARM_SHIP)
-#define PURGE_GOALS_ONE_SHIP		(AI_GOAL_IGNORE_NEW)
+inline bool purge_goals_all_ships(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_IGNORE || ai_mode == AI_GOAL_DISABLE_SHIP || ai_mode == AI_GOAL_DISARM_SHIP;
+}
+inline bool purge_goals_one_ship(ai_goal_mode ai_mode)
+{
+	return ai_mode == AI_GOAL_IGNORE_NEW;
+}
 
 // goals given from the player to other ships in the game are also handled in this
 // code
@@ -86,7 +92,7 @@ ai_goal_list Ai_goal_names[] =
 	{ "Guard wing",				AI_GOAL_GUARD_WING,				0 },
 	{ "Evade ship",				AI_GOAL_EVADE_SHIP,				0 },
 	{ "Stay near ship",			AI_GOAL_STAY_NEAR_SHIP,			0 },
-	{ "keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
+	{ "Keep safe dist",			AI_GOAL_KEEP_SAFE_DISTANCE,		0 },
 	{ "Rearm ship",				AI_GOAL_REARM_REPAIR,			0 },
 	{ "Stay still",				AI_GOAL_STAY_STILL,				0 },
 	{ "Play dead",				AI_GOAL_PLAY_DEAD,				0 },
@@ -94,6 +100,7 @@ ai_goal_list Ai_goal_names[] =
 	{ "Attack weapon",			AI_GOAL_CHASE_WEAPON,			0 },
 	{ "Fly to ship",			AI_GOAL_FLY_TO_SHIP,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,		0 },
+	{ "Attack ship type",		AI_GOAL_CHASE_SHIP_TYPE,		0 },
 };
 
 int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
@@ -102,12 +109,13 @@ int Num_ai_goals = sizeof(Ai_goal_names) / sizeof(ai_goal_list);
 // HUD what a ship's current orders are.  If the AI goal doesn't correspond to something that
 // ought to be printable, then NULL is used.
 // JAS: Converted to a function in order to externalize the strings
-const char *Ai_goal_text(int goal, int submode)
+const char *Ai_goal_text(ai_goal_mode goal, int submode)
 {
 	switch(goal)	{
 	case AI_GOAL_CHASE:
 	case AI_GOAL_CHASE_WING:
 	case AI_GOAL_CHASE_SHIP_CLASS:
+	case AI_GOAL_CHASE_SHIP_TYPE:
 		return XSTR( "attack ", 474);
 	case AI_GOAL_DOCK:
 		return XSTR( "dock ", 475);
@@ -135,22 +143,22 @@ const char *Ai_goal_text(int goal, int submode)
 		return XSTR( "rearm ", 484);
 	case AI_GOAL_FLY_TO_SHIP:
 		return XSTR( "rendezvous with ", 1597);
-	case AI_GOAL_LUA:
+	case AI_GOAL_LUA:	{
 		auto mode = ai_lua_find_mode(submode);
 		if (mode == nullptr)
 			return nullptr;
 		return mode->hudText;
 	}
-
-	// Avoid compiler warning
-	return nullptr;
+	default:
+		return nullptr;
+	}
 }
 
 /**
  * Reset all fields to their uninitialized defaults.  But if this is being called before adding a new goal, the function will set the correct signature and time.
  * Similarly the added mode, submode, and type can be assigned.
  */
-void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode, int type)
+void ai_goal_reset(ai_goal *aigp, bool adding_goal, ai_goal_mode ai_mode, int ai_submode, ai_goal_type type)
 {
 	if (ai_mode != AI_GOAL_NONE)
 		Assertion(adding_goal, "If a goal mode is being assigned, the adding_goal parameter must be true so that the signature and mission time can be set");
@@ -166,7 +174,7 @@ void ai_goal_reset(ai_goal *aigp, bool adding_goal, int ai_mode, int ai_submode,
 	aigp->target_name = nullptr;
 	aigp->target_name_index = -1;
 
-	aigp->wp_list = nullptr;
+	aigp->wp_list_index = -1;
 
 	aigp->target_instance = -1;
 	aigp->target_signature = -1;
@@ -215,13 +223,13 @@ void ai_maybe_add_form_goal(wing* wingp)
 				if (Netgame.type_flags & NG_TYPE_TEAM) {
 					const ship_registry_entry* ship_regp = ship_registry_get(Ships[wingp->ship_index[j]].ship_name);
 					wingnum = TVT_wings[ship_regp->p_objp()->team];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
 				} else {
 					wingnum = Starting_wings[0];
-					ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
+					ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Ships[Wings[wingnum].ship_index[Wings[wingnum].special_ship]].ship_name, aip);
 				}
 			} else if (!(Game_mode & GM_MULTIPLAYER)) {
-				ai_add_ship_goal_player(AIG_TYPE_PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
+				ai_add_ship_goal_player(ai_goal_type::PLAYER_SHIP, AI_GOAL_FORM_ON_WING, -1, Player_ship->ship_name, aip);
 			}
 		}
 	}
@@ -280,13 +288,13 @@ void ai_post_process_mission()
  * Determines if a goal is valid for a particular type of ship
  *
  * @param ship Ship type to test
- * @param ai_goal_type Goal type to test
+ * @param ai_mode Goal type to test
  */
-int ai_query_goal_valid( int ship, int ai_goal_type )
+int ai_query_goal_valid( int ship, ai_goal_mode ai_mode )
 {
 	int accepted;
 
-	if (ai_goal_type == AI_GOAL_NONE || ai_goal_type == AI_GOAL_LUA)
+	if (ai_mode == AI_GOAL_NONE || ai_mode == AI_GOAL_LUA)
 		return 1;  // anything can have no orders or Lua'd orders.
 
 	accepted = 0;
@@ -296,7 +304,8 @@ int ai_query_goal_valid( int ship, int ai_goal_type )
 	int ship_type = Ship_info[Ships[ship].ship_info_index].class_type;
 	if(ship_type > -1)
 	{
-		if(ai_goal_type & Ship_types[ship_type].ai_valid_goals) {
+		const auto &set = Ship_types[ship_type].ai_valid_goals;
+		if (set.find(ai_mode) != set.end()) {
 			accepted = 1;
 		}
 	}
@@ -341,7 +350,7 @@ void ai_remove_ship_goal( ai_info *aip, int index )
 			}
 		}
 
-		aip->active_goal = AI_GOAL_NONE;
+		aip->active_goal = AI_ACTIVE_GOAL_NONE;
 	}
 
 	ai_goal_reset(&aip->goals[index]);
@@ -358,7 +367,7 @@ void ai_clear_ship_goals( ai_info *aip )
 	for (i = 0; i < MAX_AI_GOALS; i++)
 		ai_remove_ship_goal( aip, i );			// resets active_goal and default behavior
 
-	aip->active_goal = AI_GOAL_NONE;					// for good measure
+	aip->active_goal = AI_ACTIVE_GOAL_NONE;					// for good measure
 
 	// next line moved here on 8/5/97 by MWA
 	// Don't reset player ai (and hence target)
@@ -458,9 +467,8 @@ void ai_mission_wing_goal_complete( int wingnum, ai_goal *remove_goalp )
 
 void ai_mission_goal_complete( ai_info *aip )
 {
-	// if the active goal is dynamic or none, just return.  (AI_GOAL_NONE is probably an error, but
-	// I don't think that this is a problem)
-	if ( (aip->active_goal == AI_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) )
+	// if the active goal is dynamic or none, just return.
+	if ( (aip->active_goal == AI_ACTIVE_GOAL_NONE) || (aip->active_goal == AI_ACTIVE_GOAL_DYNAMIC) )
 		return;
 
 	ai_remove_ship_goal( aip, aip->active_goal );
@@ -497,9 +505,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 
 	purge_goal = goal_list;
 	for ( i = 0; i < MAX_AI_GOALS; purge_goal++, i++ ) {
-		int purge_ai_mode, purge_wing;
-
-		purge_ai_mode = purge_goal->ai_mode;
+		auto purge_ai_mode = purge_goal->ai_mode;
 
 		// don't need to process AI_GOAL_NONE
 		if ( purge_ai_mode == AI_GOAL_NONE )
@@ -509,17 +515,29 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 		if ( purge_goal->target_name == NULL )
 			continue;
 
-		// goals operating on ship classes are handled slightly differently
+		// goals operating on ship classes and ship types are handled slightly differently
 		if ( purge_ai_mode == AI_GOAL_CHASE_SHIP_CLASS ) {
 			// if the target of the purge goal is the same class of ship we are concerned about, then we have a match;
 			// if it is not, then we can continue (see standard ship check below)
 			if ( stricmp(purge_goal->target_name, Ship_info[Ships[ship_index].ship_info_index].name) != 0 )
 				continue;
 		}
+		else if (purge_ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
+			// Get the ship type of the ship we're concerned about
+			int ship_type = Ship_info[Ships[ship_index].ship_info_index].class_type;
+
+			// If the ship type is invalid, we can't match it, so continue
+			if (ship_type < 0)
+				continue;
+
+			// Check if the target name of the purge goal matches the ship type name
+			if (stricmp(purge_goal->target_name, Ship_types[ship_type].name) != 0)
+				continue;
+		}
 		// standard goals operating on either wings or ships
 		else {
 			// determine if the purge goal is acting either on the ship or the ship's wing.
-			purge_wing = wing_name_lookup( purge_goal->target_name, 1 );
+			int purge_wing = wing_name_lookup( purge_goal->target_name, 1 );
 
 			// if the target of the purge goal is a ship (purge_wing will be -1), then if the names
 			// don't match, we can continue;  if the wing is valid, don't process if the wing numbers
@@ -536,7 +554,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// ignore goals should get rid of any kind of attack goal
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
-				if ( purge_ai_mode & (AI_GOAL_DISABLE_SHIP | AI_GOAL_DISABLE_SHIP_TACTICAL | AI_GOAL_DISARM_SHIP | AI_GOAL_DISARM_SHIP_TACTICAL | AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS | AI_GOAL_DESTROY_SUBSYSTEM) )
+				if (ai_goal_is_disable_or_disarm(purge_ai_mode) || ai_goal_is_specific_chase(purge_ai_mode) || (purge_ai_mode == AI_GOAL_DESTROY_SUBSYSTEM))
 					purge_goal->flags.set(AI::Goal_Flags::Purge);
 				break;
 
@@ -544,7 +562,7 @@ void ai_goal_purge_invalid_goals( ai_goal *aigp, ai_goal *goal_list, ai_info *ai
 			// (but not tactical disarm/disable)
 			case AI_GOAL_DISARM_SHIP:
 			case AI_GOAL_DISABLE_SHIP:
-				if ( purge_ai_mode & (AI_GOAL_CHASE | AI_GOAL_CHASE_WING | AI_GOAL_CHASE_SHIP_CLASS) ) {
+				if (ai_goal_is_specific_chase(purge_ai_mode)) {
 					int ai_ship_type;
 
 					// for wings we grab the ship type of the wing leader
@@ -585,7 +603,7 @@ void ai_goal_purge_all_invalid_goals(ai_goal *aigp)
 	ship_obj *sop;
 
 	// only purge goals if a new goal is one of the types in next statement
-	if (!(aigp->ai_mode & PURGE_GOALS_ALL_SHIPS))
+	if (!purge_goals_all_ships(aigp->ai_mode))
 		return;
 	
 	for (sop = GET_FIRST(&Ship_obj_list); sop != END_OF_LIST(&Ship_obj_list); sop = GET_NEXT(sop))
@@ -728,18 +746,20 @@ void ai_goal_fixup_dockpoints(ai_info *aip, ai_goal *aigp)
 // from the mission goals (i.e. those goals which come from events) in that we don't
 // use sexpressions for goals from the player...so we enumerate all the parameters
 
-void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_name, ai_goal *aigp, const ai_lua_parameters& lua_target )
+void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *target_name, ai_goal *aigp, int int_data, float float_data, const ai_lua_parameters& lua_target )
 {
-	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
+	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
 	ai_goal_reset(aigp, true, mode, submode, type);
 
+	aigp->int_data = int_data;
+	aigp->float_data = float_data;
 	aigp->lua_ai_target = lua_target;
 
 	if ( mode == AI_GOAL_WARP ) {
 		if (submode >= 0) {
-			aigp->wp_list = find_waypoint_list_at_index(submode);
-			Assert(aigp->wp_list != NULL);
+			aigp->wp_list_index = submode;
+			Assert(find_waypoint_list_at_index(aigp->wp_list_index) != nullptr);
 		}
 	}
 
@@ -766,7 +786,7 @@ void ai_add_goal_sub_player(int type, int mode, int submode, const char *target_
 	else if ( mode == AI_GOAL_FORM_ON_WING )
 		aigp->priority = PLAYER_PRIORITY_SUPPORT_LOW;
 
-	else if ( aigp->type == AIG_TYPE_PLAYER_WING )
+	else if ( aigp->type == ai_goal_type::PLAYER_WING )	// NOLINT(readability-braces-around-statements)
 		aigp->priority = PLAYER_PRIORITY_WING;			// player wing goals not as high as ship goals
 	else
 		aigp->priority = PLAYER_PRIORITY_SHIP;
@@ -818,9 +838,9 @@ int ai_goal_num(ai_goal *goals)
 }
 
 
-void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, const char *target_name, ai_goal *aigp )
+void ai_add_goal_sub_scripting(ai_goal_type type, ai_goal_mode mode, int submode, int priority, const char *target_name, ai_goal *aigp, int int_data, float float_data)
 {
-	Assert ( (type == AIG_TYPE_PLAYER_WING) || (type == AIG_TYPE_PLAYER_SHIP) );
+	Assert ( (type == ai_goal_type::PLAYER_WING) || (type == ai_goal_type::PLAYER_SHIP) );
 
 	ai_goal_reset(aigp, true, mode, submode, type);
 
@@ -833,16 +853,18 @@ void ai_add_goal_sub_scripting(int type, int mode, int submode, int priority, co
 		aigp->target_name = ai_get_goal_target_name( target_name, &aigp->target_name_index );
 
 	aigp->priority = priority;
+	aigp->int_data = int_data;
+	aigp->float_data = float_data;
 }
 
-void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char *shipname, ai_info *aip)
+void ai_add_ship_goal_scripting(ai_goal_mode mode, int submode, int priority, const char *shipname, ai_info *aip, int int_data, float float_data)
 {
 	int empty_index;
 	ai_goal *aigp;
 
 	empty_index = ai_goal_find_empty_slot(aip->goals, aip->active_goal);
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_scripting(AIG_TYPE_PLAYER_SHIP, mode, submode, priority, shipname, aigp);
+	ai_add_goal_sub_scripting(ai_goal_type::PLAYER_SHIP, mode, submode, priority, shipname, aigp, int_data, float_data);
 
 	//WMC - hack to get docking setup correctly
 	if ( mode == AI_GOAL_DOCK ) {
@@ -859,14 +881,14 @@ void ai_add_ship_goal_scripting(int mode, int submode, int priority, const char 
 // is issued to ship or wing (from player),  mode is AI_GOAL_*. submode is the submode the
 // ship should go into.  shipname is the object of the action.  aip is the ai_info pointer
 // of the ship receiving the order
-void ai_add_ship_goal_player( int type, int mode, int submode, const char *shipname, ai_info *aip, const ai_lua_parameters& lua_target)
+void ai_add_ship_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, ai_info *aip, int int_data, float float_data, const ai_lua_parameters& lua_target)
 {
 	int empty_index;
 	ai_goal *aigp;
 
 	empty_index = ai_goal_find_empty_slot( aip->goals, aip->active_goal );
 	aigp = &aip->goals[empty_index];
-	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, lua_target );
+	ai_add_goal_sub_player( type, mode, submode, shipname, aigp, int_data, float_data, lua_target );
 
 	// if the goal is to dock, then we must determine which dock points on the two ships to use.
 	// If the target of the dock is a cargo type container, then we should use DOCK_TYPE_CARGO
@@ -880,7 +902,7 @@ void ai_add_ship_goal_player( int type, int mode, int submode, const char *shipn
 
 // adds a goal from the player to the given wing (which in turn will add it to the proper
 // ships in the wing
-void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipname, int wingnum, const ai_lua_parameters& lua_target)
+void ai_add_wing_goal_player(ai_goal_type type, ai_goal_mode mode, int submode, const char *shipname, int wingnum, int int_data, float float_data, const ai_lua_parameters& lua_target)
 {
 	int i, empty_index;
 	wing *wingp = &Wings[wingnum];
@@ -891,7 +913,7 @@ void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipn
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], lua_target );
+			ai_add_ship_goal_player( type, mode, submode, shipname, &Ai_info[Ships[num].ai_index], int_data, float_data, lua_target );
 		}
 	}
 
@@ -899,14 +921,15 @@ void ai_add_wing_goal_player( int type, int mode, int submode, const char *shipn
 	// there are more waves to come.  We use the same method here as when adding a goal to
 	// a ship -- find the first empty entry.  If none exists, take the oldest entry and replace it.
 	empty_index = ai_goal_find_empty_slot( wingp->ai_goals, -1 );
-	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], lua_target );
+	ai_add_goal_sub_player( type, mode, submode, shipname, &wingp->ai_goals[empty_index], int_data, float_data, lua_target );
 }
 
 
 // common routine to add a sexpression mission goal to the appropriate goal structure.
-void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, const char *actor_name )
+void ai_add_goal_sub_sexp( int sexp, ai_goal_type type, ai_info *aip, ai_goal *aigp, const char *actor_name )
 {
 	int node, dummy, op;
+	bool priority_is_nan = false, priority_is_nan_forever = false;
 
 	Assert ( Sexp_nodes[sexp].first != -1 );
 	node = Sexp_nodes[sexp].first;
@@ -932,7 +955,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
 
 
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_WAYPOINTS;
 		if ( op == OP_AI_WAYPOINTS_ONCE )
 			aigp->ai_mode = AI_GOAL_WAYPOINTS_ONCE;
@@ -950,9 +973,9 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		// store the name of the subsystem in the docker.name field for now -- this field must get
 		// fixed up when the goal is valid since we need to locate the subsystem on the ship's model
-		aigp->docker.name = ai_get_goal_target_name(CTEXT(CDR(CDR(node))), &dummy);
+		aigp->docker.name = ai_get_goal_target_name(CTEXT(CDDR(node)), &dummy);
 		aigp->flags.set(AI::Goal_Flags::Subsys_needs_fixup);
-		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(node)))) );
+		aigp->priority = eval_num(CDDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DISABLE_SHIP:
@@ -960,7 +983,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->ai_mode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_ENGINE;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DISARM_SHIP:
@@ -968,27 +991,27 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		aigp->ai_mode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
 		aigp->ai_submode = -SUBSYSTEM_TURRET;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_WARP_OUT:
 		aigp->ai_mode = AI_GOAL_WARP;
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 		// the following goal is obsolete, but here for compatibility
 	case OP_AI_WARP:
 		aigp->ai_mode = AI_GOAL_WARP;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_UNDOCK:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// Goober5000 - optional undock with something
-		if (CDR(CDR(node)) != -1)
-			aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(CDR(node))), &aigp->target_name_index );
+		if (CDDR(node) != -1)
+			aigp->target_name = ai_get_goal_target_name( CTEXT(CDDR(node)), &aigp->target_name_index );
 
 		aigp->ai_mode = AI_GOAL_UNDOCK;
 		aigp->ai_submode = AIS_UNDOCK_0;
@@ -998,7 +1021,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	{
 		aigp->ai_mode = AI_GOAL_REARM_REPAIR;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// this goal needs some extra setup
 		// if this doesn't work, the goal will be immediately removed
@@ -1016,36 +1039,36 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	case OP_AI_STAY_STILL:
 		aigp->ai_mode = AI_GOAL_STAY_STILL;
 		aigp->target_name = ai_get_goal_target_name(CTEXT(CDR(node)), &aigp->target_name_index);  // waypoint path name;
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 		break;
 
 	case OP_AI_DOCK:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->docker.name = ai_add_dock_name(CTEXT(CDR(CDR(node))));
-		aigp->dockee.name = ai_add_dock_name(CTEXT(CDR(CDR(CDR(node)))));
-		aigp->priority = atoi( CTEXT(CDR(CDR(CDR(CDR(node))))) );
+		aigp->docker.name = ai_add_dock_name(CTEXT(CDDR(node)));
+		aigp->dockee.name = ai_add_dock_name(CTEXT(CDDDR(node)));
+		aigp->priority = eval_num(CDDDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		aigp->ai_mode = AI_GOAL_DOCK;
 		aigp->ai_submode = AIS_DOCK_0;		// be sure to set the submode
 		break;
 
 	case OP_AI_CHASE_ANY:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_CHASE_ANY;
 		break;
 
 	case OP_AI_PLAY_DEAD:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_PLAY_DEAD;
 		break;
 
 	case OP_AI_PLAY_DEAD_PERSISTENT:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_PLAY_DEAD_PERSISTENT;
 		break;
 
 	case OP_AI_KEEP_SAFE_DISTANCE:
-		aigp->priority = atoi( CTEXT(CDR(node)) );
+		aigp->priority = eval_num(CDR(node), priority_is_nan, priority_is_nan_forever);
 		aigp->ai_mode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 
@@ -1055,7 +1078,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		bool is_nan, is_nan_forever;
 
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDDR(node)) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		// distance from ship
 		if ( CDDDR(node) < 0 )
@@ -1085,13 +1108,14 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	case OP_AI_CHASE:
 	case OP_AI_CHASE_WING:
 	case OP_AI_CHASE_SHIP_CLASS:
+	case OP_AI_CHASE_SHIP_TYPE:
 	case OP_AI_GUARD:
 	case OP_AI_GUARD_WING:
 	case OP_AI_EVADE_SHIP:
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
 		aigp->target_name = ai_get_goal_target_name( CTEXT(CDR(node)), &aigp->target_name_index );
-		aigp->priority = atoi( CTEXT(CDR(CDR(node))) );
+		aigp->priority = eval_num(CDDR(node), priority_is_nan, priority_is_nan_forever);
 
 		if ( op == OP_AI_CHASE ) {
 			aigp->ai_mode = AI_GOAL_CHASE;
@@ -1116,6 +1140,8 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 			aigp->ai_mode = AI_GOAL_CHASE_WING;
 		} else if (op == OP_AI_CHASE_SHIP_CLASS) {
 			aigp->ai_mode = AI_GOAL_CHASE_SHIP_CLASS;
+		} else if (op == OP_AI_CHASE_SHIP_TYPE) {
+			aigp->ai_mode = AI_GOAL_CHASE_SHIP_TYPE;
 		} else if ( op == OP_AI_IGNORE ) {
 			aigp->ai_mode = AI_GOAL_IGNORE;
 		} else if ( op == OP_AI_IGNORE_NEW ) {
@@ -1141,7 +1167,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 				localnode = CDR(localnode);
 			}
 
-			aigp->priority = atoi( CTEXT(localnode) );
+			aigp->priority = eval_num(localnode, priority_is_nan, priority_is_nan_forever);
 
 			aigp->lua_ai_target = { std::move(target), luaAIMode->sexp.getSEXPArgumentList(CDR(localnode)) };
 		}
@@ -1150,13 +1176,17 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 		}
 	}
 
-	if ( aigp->priority > MAX_GOAL_PRIORITY ) {
-		nprintf (("AI", "bashing sexpression priority of goal %s from %d to %d.\n", CTEXT(node), aigp->priority, MAX_GOAL_PRIORITY));
+	if ( priority_is_nan || priority_is_nan_forever ) {
+		Warning(LOCATION, "add-goal tried to add %s with a NaN priority; aborting...", Sexp_nodes[CAR(sexp)].text);
+		ai_goal_reset(aigp);
+		return;
+	} else if ( aigp->priority > MAX_GOAL_PRIORITY ) {
+		nprintf (("AI", "bashing add-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, aigp->priority, MAX_GOAL_PRIORITY));
 		aigp->priority = MAX_GOAL_PRIORITY;
 	}
 
 	// Goober5000 - we now have an extra optional chase argument to allow chasing our own team
-	if ( op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS
+	if (op == OP_AI_CHASE || op == OP_AI_CHASE_WING || op == OP_AI_CHASE_SHIP_CLASS || op == OP_AI_CHASE_SHIP_TYPE
 		|| op == OP_AI_DISABLE_SHIP || op == OP_AI_DISABLE_SHIP_TACTICAL || op == OP_AI_DISARM_SHIP || op == OP_AI_DISARM_SHIP_TACTICAL ) {
 		if (is_sexp_true(CDDDR(node)))
 			aigp->flags.set(AI::Goal_Flags::Target_own_team);
@@ -1181,6 +1211,7 @@ void ai_add_goal_sub_sexp( int sexp, int type, ai_info *aip, ai_goal *aigp, cons
 	if (op == OP_AI_CHASE || 
 		op == OP_AI_CHASE_WING || 
 		op == OP_AI_CHASE_SHIP_CLASS || 
+		op == OP_AI_CHASE_SHIP_TYPE ||
 		op == OP_AI_DISABLE_SHIP || 
 		op == OP_AI_DISABLE_SHIP_TACTICAL || 
 		op == OP_AI_DISARM_SHIP || 
@@ -1227,9 +1258,10 @@ int ai_find_goal_index( ai_goal* aigp, int mode, int submode, int priority )
 
 /* Remove a goal from the given goals structure
  * Returns the index of the goal that it clears out.
- * This is important so that if active_goal == index you can set AI_GOAL_NONE
+ * This is important so that if active_goal == index you can set AI_ACTIVE_GOAL_NONE.
+ * NOTE: Callers should check the value of remove_more.  If it is true, the function should be called again.
  */
-int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
+int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp, bool &remove_more )
 {
 	/* Sanity check */
 	Assert( Sexp_nodes[ sexp ].first != -1 );
@@ -1245,115 +1277,154 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	/* The operator to use */
 	int op = get_operator_const( node );
 
+	// since this logic is common to all goals removed by the remove-goal sexp
+	auto eval_priority_et_seq = [sexp, &remove_more](int n, int priority_if_no_n = -1)->int
+	{
+		bool _priority_is_nan = false, _priority_is_nan_forever = false;
+
+		int _priority = (n >= 0) ? eval_num(n, _priority_is_nan, _priority_is_nan_forever) : priority_if_no_n;
+		n = CDR(sexp);	// we want the first node after the goal sub-tree
+
+		if (_priority_is_nan || _priority_is_nan_forever)
+		{
+			Warning(LOCATION, "remove-goal tried to remove %s with a NaN priority; the priority will not be used for goal comparison", Sexp_nodes[CAR(sexp)].text);
+			_priority = -1;
+		}
+		else if (_priority > MAX_GOAL_PRIORITY)
+		{
+			nprintf(("AI", "bashing remove-goal sexpression priority of goal %s from %d to %d.\n", Sexp_nodes[CAR(sexp)].text, _priority, MAX_GOAL_PRIORITY));
+			_priority = MAX_GOAL_PRIORITY;
+		}
+
+		if (n >= 0)
+		{
+			remove_more = is_sexp_true(n);
+			n = CDR(n);
+		}
+
+		if (n >= 0)
+		{
+			if (is_sexp_true(n))
+				_priority = -1;
+			n = CDR(n);
+		}
+
+		return _priority;
+	};
+
 	/* We now need to determine what the mode and submode values are*/
 	switch( op )
 	{
 	case OP_AI_WAYPOINTS_ONCE:
 		goalmode = AI_GOAL_WAYPOINTS_ONCE;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_WAYPOINTS:
 		goalmode = AI_GOAL_WAYPOINTS;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DESTROY_SUBSYS:
 		goalmode = AI_GOAL_DESTROY_SUBSYSTEM;
-		priority = ( CDR( CDR( CDR(node) ) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( CDR( node ) ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDDR(node));
 		break;
 	case OP_AI_DISABLE_SHIP:
 	case OP_AI_DISABLE_SHIP_TACTICAL:
 		goalmode = (op == OP_AI_DISABLE_SHIP) ? AI_GOAL_DISABLE_SHIP : AI_GOAL_DISABLE_SHIP_TACTICAL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DISARM_SHIP:
 	case OP_AI_DISARM_SHIP_TACTICAL:
 		goalmode = (op == OP_AI_DISARM_SHIP) ? AI_GOAL_DISARM_SHIP : AI_GOAL_DISARM_SHIP_TACTICAL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_WARP_OUT:
 		goalmode = AI_GOAL_WARP;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_WARP:
 		goalmode = AI_GOAL_WARP;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_UNDOCK:
 		goalmode = AI_GOAL_UNDOCK;
 		goalsubmode = AIS_UNDOCK_0;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_STAY_STILL:
 		goalmode = AI_GOAL_STAY_STILL;
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		break;
 	case OP_AI_DOCK:
 		goalmode = AI_GOAL_DOCK;
 		goalsubmode = AIS_DOCK_0;
-		priority = ( CDR( CDR( CDR( CDR(node) ) ) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( CDR( CDR( node ) ) ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDDDR(node));
 		break;
 	case OP_AI_CHASE_ANY:
 		goalmode = AI_GOAL_CHASE_ANY;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_PLAY_DEAD:
 	case OP_AI_PLAY_DEAD_PERSISTENT:
 		goalmode = (op == OP_AI_PLAY_DEAD) ? AI_GOAL_PLAY_DEAD : AI_GOAL_PLAY_DEAD_PERSISTENT;
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		break;
 	case OP_AI_KEEP_SAFE_DISTANCE:
-		priority = ( CDR(node) >= 0 ) ? atoi( CTEXT( CDR( node ) ) ) : -1;
+		priority = eval_priority_et_seq(CDR(node));
 		goalmode = AI_GOAL_KEEP_SAFE_DISTANCE;
 		break;
 	case OP_AI_CHASE:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		if ( wing_name_lookup( CTEXT( CDR( node ) ), 1 ) != -1 )
 			goalmode = AI_GOAL_CHASE_WING;
 		else
 			goalmode = AI_GOAL_CHASE;
 		break;
 	case OP_AI_GUARD:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		if ( wing_name_lookup( CTEXT( CDR( node ) ), 1 ) != -1 )
 			goalmode = AI_GOAL_GUARD_WING;
 		else
 			goalmode = AI_GOAL_GUARD;
 		break;
 	case OP_AI_GUARD_WING:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_GUARD_WING;
 		break;
 	case OP_AI_CHASE_WING:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_CHASE_WING;
 		break;
 	case OP_AI_CHASE_SHIP_CLASS:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_CHASE_SHIP_CLASS;
 		break;
+	case OP_AI_CHASE_SHIP_TYPE:
+		priority = eval_priority_et_seq(CDDR(node));
+		goalmode = AI_GOAL_CHASE_SHIP_TYPE;
+		break;
 	case OP_AI_EVADE_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_EVADE_SHIP;
 		break;
 	case OP_AI_STAY_NEAR_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_STAY_NEAR_SHIP;
 		break;
 	case OP_AI_IGNORE:
 	case OP_AI_IGNORE_NEW:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = (op == OP_AI_IGNORE) ? AI_GOAL_IGNORE : AI_GOAL_IGNORE_NEW;
 		break;
 	case OP_AI_FORM_ON_WING:
-		priority = 99;
+		priority = eval_priority_et_seq(-1, 99);
 		goalmode = AI_GOAL_FORM_ON_WING;
 		break;
 	case OP_AI_FLY_TO_SHIP:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_FLY_TO_SHIP;
 		break;
 	case OP_AI_REARM_REPAIR:
-		priority = ( CDR( CDR(node) ) >= 0 ) ? atoi( CTEXT( CDR( CDR( node ) ) ) ) : -1;
+		priority = eval_priority_et_seq(CDDR(node));
 		goalmode = AI_GOAL_REARM_REPAIR;
 		break;
 	default:
@@ -1369,7 +1440,7 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 				localnode = CDR(localnode);
 			}
 
-			priority = localnode >= 0 ? atoi( CTEXT(localnode) ) : -1;
+			priority = eval_priority_et_seq(localnode);
 		}
 		else {
 			UNREACHABLE("Invalid SEXP-OP %s (number %d) for an AI goal!", Sexp_nodes[node].text, op);
@@ -1381,7 +1452,10 @@ int ai_remove_goal_sexp_sub( int sexp, ai_goal* aigp )
 	int goalindex = ai_find_goal_index( aigp, goalmode, goalsubmode, priority );
 
 	if ( goalindex == -1 )
+	{
+		remove_more = false;
 		return -1; /* no more to do; */
+	}
 
 	/* Clear out the contents of the goal. We can't use ai_remove_ship_goal since it needs ai_info and
 	 * we've only got ai_goals */
@@ -1395,6 +1469,7 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 {
 	int i;
 	int goalindex = -1;
+	bool remove_more = false;
 
 	// remove the ai goal for any ship that is currently arrived in the game (only if fred isn't running)
 	if ( !Fred_running ) {
@@ -1402,9 +1477,13 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 			int num = wingp->ship_index[i];
 			if ( num == -1 )			// ship must have been destroyed or departed
 				continue;
-			goalindex = ai_remove_goal_sexp_sub( sexp, Ai_info[Ships[num].ai_index].goals );
-			if ( Ai_info[Ships[num].ai_index].active_goal == goalindex )
-				Ai_info[Ships[num].ai_index].active_goal = AI_GOAL_NONE;
+			auto aip = &Ai_info[Ships[num].ai_index];
+
+			do {
+				goalindex = ai_remove_goal_sexp_sub(sexp, aip->goals, remove_more);
+				if (aip->active_goal == goalindex)
+					aip->active_goal = AI_ACTIVE_GOAL_NONE;
+			} while (remove_more);
 		}
 	}
 
@@ -1412,13 +1491,15 @@ void ai_remove_wing_goal_sexp(int sexp, wing *wingp)
 	// there are more waves to come
 	if ((wingp->num_waves - wingp->current_wave > 0) || Fred_running) 
 	{
-		ai_remove_goal_sexp_sub( sexp, wingp->ai_goals );
+		do {
+			ai_remove_goal_sexp_sub(sexp, wingp->ai_goals, remove_more);
+		} while (remove_more);
 	}
 }
 
 // adds an ai goal for an individual ship
 // type determines who has issues this ship a goal (i.e. the player/mission event/etc)
-void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
+void ai_add_ship_goal_sexp( int sexp, ai_goal_type type, ai_info *aip )
 {
 	int gindex;
 
@@ -1427,7 +1508,7 @@ void ai_add_ship_goal_sexp( int sexp, int type, ai_info *aip )
 }
 
 // code to add ai goals to wings.
-void ai_add_wing_goal_sexp(int sexp, int type, wing *wingp)
+void ai_add_wing_goal_sexp(int sexp, ai_goal_type type, wing *wingp)
 {
 	int i;
 
@@ -1473,7 +1554,7 @@ void ai_add_goal_ship_internal( ai_info *aip, int goal_type, char *name, int  /*
 	aigp = &(aip->goals[gindex]);
 	ai_goal_reset(aigp, true);
 
-	aigp->type = AIG_TYPE_DYNAMIC;
+	aigp->type = ai_goal_type::DYNAMIC;
 	aigp->flags.set(AI::Goal_Flags::Goal_override);
 
 	switch ( goal_type ) {
@@ -1605,10 +1686,10 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// check to see if we have a valid list.  If not, then try to set one up.  If that
 	// fails, then we must pitch this order
 	if ( (aigp->ai_mode == AI_GOAL_WAYPOINTS_ONCE) || (aigp->ai_mode == AI_GOAL_WAYPOINTS) ) {
-		if ( aigp->wp_list == NULL ) {
-			aigp->wp_list = find_matching_waypoint_list(aigp->target_name);
+		if ( aigp->wp_list_index < 0 ) {
+			aigp->wp_list_index = find_matching_waypoint_list_index(aigp->target_name);
 
-			if ( aigp->wp_list == NULL ) {
+			if ( aigp->wp_list_index < 0 ) {
 				Warning(LOCATION, "Unknown waypoint list %s - not found in mission file.  Killing ai goal", aigp->target_name );
 				return ai_achievability::NOT_ACHIEVABLE;
 			}
@@ -1630,7 +1711,20 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 		}
 		return ai_achievability::NOT_KNOWN;
 	}
-
+	// and similarly for chasing all ships of a certain ship type
+	if (aigp->ai_mode == AI_GOAL_CHASE_SHIP_TYPE) {
+		for (auto so : list_range(&Ship_obj_list)) {
+			auto type_objp = &Objects[so->objnum];
+			if (type_objp->type != OBJ_SHIP || type_objp->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+			int ship_info_idx = Ships[type_objp->instance].ship_info_index;
+			int class_type = Ship_info[ship_info_idx].class_type;
+			if (class_type >= 0 && !strcmp(aigp->target_name, Ship_types[class_type].name)) {
+				return ai_achievability::ACHIEVABLE;
+			}
+		}
+		return ai_achievability::NOT_KNOWN;
+	}
 
 	return_val = ai_achievability::SATISFIED;
 
@@ -1860,11 +1954,11 @@ ai_achievability ai_mission_goal_achievable( int objnum, ai_goal *aigp )
 	// Goober5000 - see note at PURGE_GOALS_ALL_SHIPS... this is bizarre
 	if ((status == SHIP_STATUS_ARRIVED) && !(aigp->flags[AI::Goal_Flags::Goals_purged]))
 	{
-		if (aigp->ai_mode & PURGE_GOALS_ALL_SHIPS) {
+		if (purge_goals_all_ships(aigp->ai_mode)) {
 			ai_goal_purge_all_invalid_goals(aigp);
 			aigp->flags.set(AI::Goal_Flags::Goals_purged);
 		}
-		else if (aigp->ai_mode & PURGE_GOALS_ONE_SHIP) {
+		else if (purge_goals_one_ship(aigp->ai_mode)) {
 			ai_goal_purge_invalid_goals(aigp, aip->goals, aip, -1);
 			aigp->flags.set(AI::Goal_Flags::Goals_purged);
 		}
@@ -2344,7 +2438,7 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 			flags |= WPF_REPEAT;
 		if (current_goal->flags[AI::Goal_Flags::Waypoints_in_reverse])
 			flags |= WPF_BACKTRACK;
-		ai_start_waypoints(objp, current_goal->wp_list, flags, current_goal->int_data);
+		ai_start_waypoints(objp, current_goal->wp_list_index, flags, current_goal->int_data);
 		break;
 	}
 
@@ -2464,10 +2558,20 @@ void ai_process_mission_orders( int objnum, ai_info *aip )
 
 	// chase-ship-class is chase-any but restricted to a subset of ships
 	case AI_GOAL_CHASE_SHIP_CLASS:
-		shipnum = ship_info_lookup( current_goal->target_name );
-		Assertion( shipnum >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!" );
-		ai_attack_object( objp, nullptr, shipnum );
+	{
+		int ship_info_index = ship_info_lookup(current_goal->target_name);
+		Assertion(ship_info_index >= 0, "The target of AI_GOAL_CHASE_SHIP_CLASS must refer to a valid ship class!");
+		ai_attack_object(objp, nullptr, ship_info_index);
 		break;
+	}
+	// similarly for chase-ship-type
+	case AI_GOAL_CHASE_SHIP_TYPE:
+	{
+		int class_type = ship_type_name_lookup(current_goal->target_name);
+		Assertion(class_type >= 0, "The target of AI_GOAL_CHASE_SHIP_TYPE must refer to a valid ship type!");
+		ai_attack_object(objp, nullptr, -1, class_type);
+		break;
+	}
 
 	case AI_GOAL_WARP: {
 		mission_do_departure( objp, true );

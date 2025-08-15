@@ -32,15 +32,6 @@ namespace
 	SCP_vector<::particle::particle> Particles;
 	SCP_vector<ParticlePtr> Persistent_particles;
 
-	int Anim_bitmap_id_fire = -1;
-	int Anim_num_frames_fire = -1;
-
-	int Anim_bitmap_id_smoke = -1;
-	int Anim_num_frames_smoke = -1;
-
-	int Anim_bitmap_id_smoke2 = -1;
-	int Anim_num_frames_smoke2 = -1;
-
 	static int Particles_enabled = 1;
 
 	float get_current_alpha(vec3d* pos, float rad)
@@ -74,21 +65,19 @@ namespace
 
 		return alpha;
 	}
-
-	inline int get_percent(int count)
-	{
-		if (count == 0)
-			return 0;
-
-		// this should basically return a scale like:
-		//  50, 75, 100, 125, 150, ...
-		// based on value of 'count' (detail level)
-		return (50 + (25 * (count - 1)));
-	}
 }
 
 namespace particle
 {
+	int Anim_bitmap_id_fire = -1;
+	int Anim_num_frames_fire = -1;
+
+	int Anim_bitmap_id_smoke = -1;
+	int Anim_num_frames_smoke = -1;
+
+	int Anim_bitmap_id_smoke2 = -1;
+	int Anim_num_frames_smoke2 = -1;
+
 	// Reset everything between levels
 	void init()
 	{
@@ -124,6 +113,10 @@ namespace particle
 		Particles.clear();
 	}
 
+	size_t get_particle_count() {
+		return Particles.size() + Persistent_particles.size();
+	}
+
 	void page_in()
 	{
 		if (!Particles_enabled)
@@ -153,7 +146,7 @@ namespace particle
 			world_pos += Objects[info->attached_objnum].pos;
 		}
 		// treat particles on lower detail levels as 'further away' for the purposes of culling
-		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(NUM_DEFAULT_DETAIL_LEVELS - Detail.num_particles));
+		float adjusted_dist = vm_vec_dist(&Eye_position, &world_pos) * powf(2.5f, (float)(static_cast<int>(DefaultDetailPreset::Num_detail_presets) - Detail.num_particles));
 		// treat bigger particles as 'closer'
 		adjusted_dist /= info->rad;
 		float cull_start_dist = 1000.f;
@@ -166,11 +159,10 @@ namespace particle
 
 		part->pos = info->pos;
 		part->velocity = info->vel;
-		part->age = 0.0f;
+		part->age = info->starting_age;
 		part->max_life = info->lifetime;
 		part->radius = info->rad;
-		part->type = info->type;
-		part->optional_data = info->optional_data;
+		part->bitmap = info->bitmap;
 		part->attached_objnum = info->attached_objnum;
 		part->attached_sig = info->attached_sig;
 		part->reverse = info->reverse;
@@ -181,66 +173,22 @@ namespace particle
 		part->size_lifetime_curve = info->size_lifetime_curve;
 		part->vel_lifetime_curve = info->vel_lifetime_curve;
 
-		switch (info->type)
-		{
-		case PARTICLE_BITMAP:
-		case PARTICLE_BITMAP_PERSISTENT:
-		{
-			Assertion(bm_is_valid(info->optional_data), "Invalid bitmap handle passed to particle create.");
+		if (info->nframes < 0) {
+			Assertion(bm_is_valid(info->bitmap), "Invalid bitmap handle passed to particle create.");
 
-			bm_get_info(info->optional_data, NULL, NULL, NULL, &part->nframes, &fps);
+			bm_get_info(info->bitmap, nullptr, nullptr, nullptr, &part->nframes, &fps);
 
 			if (part->nframes > 1 && info->lifetime_from_animation)
 			{
 				// Recalculate max life for ani's
 				part->max_life = i2fl(part->nframes) / i2fl(fps);
 			}
-
-			break;
 		}
-
-		case PARTICLE_FIRE:
-		{
-			if (Anim_bitmap_id_fire < 0)
-			{
+		else {
+			if (part->bitmap < 0)
 				return false;
-			}
 
-			part->optional_data = Anim_bitmap_id_fire;
-			part->nframes = Anim_num_frames_fire;
-
-			break;
-		}
-
-		case PARTICLE_SMOKE:
-		{
-			if (Anim_bitmap_id_smoke < 0)
-			{
-				return false;
-			}
-
-			part->optional_data = Anim_bitmap_id_smoke;
-			part->nframes = Anim_num_frames_smoke;
-
-			break;
-		}
-
-		case PARTICLE_SMOKE2:
-		{
-			if (Anim_bitmap_id_smoke2 < 0)
-			{
-				return false;
-			}
-
-			part->optional_data = Anim_bitmap_id_smoke2;
-			part->nframes = Anim_num_frames_smoke2;
-
-			break;
-		}
-
-		default:
-			part->nframes = 1;
-			break;
+			part->nframes = info->nframes;
 		}
 
 		return true;
@@ -252,7 +200,7 @@ namespace particle
 			return;
 		}
 
-		Particles.push_back(part);
+		Particles.push_back(std::move(part));
 	}
 
 	// Creates a single particle. See the PARTICLE_?? defines for types.
@@ -269,25 +217,22 @@ namespace particle
 		return WeakParticlePtr(new_particle);
 	}
 
-	void create(vec3d* pos,
-				vec3d* vel,
+	void create(const vec3d* pos,
+				const vec3d* vel,
 				float lifetime,
 				float rad,
-				ParticleType type,
-				int optional_data,
-				object* objp,
+				int bitmap,
+				const object* objp,
 				bool reverse) {
 		particle_info pinfo;
-
-		Assertion((type >= 0) && (type < NUM_PARTICLE_TYPES), "Invalid particle type %d specified!", type);
 
 		// setup old data
 		pinfo.pos = *pos;
 		pinfo.vel = *vel;
 		pinfo.lifetime = lifetime;
 		pinfo.rad = rad;
-		pinfo.type = type;
-		pinfo.optional_data = optional_data;
+		pinfo.bitmap = bitmap;
+		pinfo.nframes = -1;
 
 		// setup new data
 		if (objp == NULL) {
@@ -465,7 +410,7 @@ namespace particle
 		int framenum;
 		int cur_frame;
 		if (part->nframes > 1) {
-			framenum = bm_get_anim_frame(part->optional_data, part->age, part->max_life, part->looping);
+			framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
 			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
 		}
 		else
@@ -473,45 +418,31 @@ namespace particle
 			cur_frame = 0;
 		}
 
-		if (part->type == PARTICLE_DEBUG)
-		{
-			if (part->optional_data >= 0)
-				gr_set_color((part->optional_data >> 16) & 0xff, (part->optional_data >> 8) & 0xff, part->optional_data & 0xff);
-			else
-				gr_set_color(255, 0, 0);
-			g3_draw_sphere_ez(&p_pos, part->radius);
-		}
-		else
-		{
-			framenum = part->optional_data;
+		framenum = part->bitmap;
 
-			Assert( cur_frame < part->nframes );
+		Assert( cur_frame < part->nframes );
 
-			float radius = part->radius;
-			if (part->size_lifetime_curve >= 0) {
-				radius *= Curves[part->size_lifetime_curve].GetValue(part->age / part->max_life);
-			}
-
-			if (part->length != 0.0f) {
-				vec3d p0 = part->pos;
-
-				vec3d p1;
-				vm_vec_copy_normalize(&p1, &part->velocity);
-				p1 *= part->length;
-				p1 += part->pos;
-
-				batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
-			}
-			else {
-				// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
-				batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
-			}
-
-
-			return true;
+		float radius = part->radius;
+		if (part->size_lifetime_curve >= 0) {
+			radius *= Curves[part->size_lifetime_curve].GetValue(part->age / part->max_life);
 		}
 
-		return false;
+		if (part->length != 0.0f) {
+			vec3d p0 = part->pos;
+
+			vec3d p1;
+			vm_vec_copy_normalize_safe(&p1, &part->velocity);
+			p1 *= part->length;
+			p1 += part->pos;
+
+			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
+		}
+		else {
+			// it will subtract Physics_viewer_bank, so without the flag we counter that and make it screen-aligned again
+			batching_add_volume_bitmap_rotated(framenum + cur_frame, &pos, part->use_angle ? part->angle : Physics_viewer_bank, radius, alpha);
+		}
+
+		return true;
 	}
 
 	void render_all()
@@ -533,84 +464,5 @@ namespace particle
 			render_particle(&part);
 		}
 
-	}
-
-	//============================================================================
-	//============== HIGH-LEVEL PARTICLE SYSTEM CREATION CODE ====================
-	//============================================================================
-
-	// Use a structure rather than pass a ton of parameters to particle_emit
-	/*
-    typedef struct particle_emitter {
-    int		num_low;			// Lowest number of particles to create
-    int		num_high;			// Highest number of particles to create
-    vec3d	pos;				// Where the particles emit from
-    vec3d	vel;				// Initial velocity of all the particles
-    float	lifetime;			// How long the particles live
-    vec3d	normal;				// What normal the particle emit arond
-    float	normal_variance;	// How close they stick to that normal 0=good, 1=360 degree
-    float	min_vel;			// How fast the slowest particle can move
-    float	max_vel;			// How fast the fastest particle can move
-    float	min_rad;			// Min radius
-    float	max_rad;			// Max radius
-    } particle_emitter;
-    */
-
-	// Creates a bunch of particles. You pass a structure
-	// rather than a bunch of parameters.
-	void emit(particle_emitter* pe, ParticleType type, int optional_data, float range)
-	{
-		int i, n;
-
-		if (!Particles_enabled)
-			return;
-
-		int n1, n2;
-
-		// Account for detail
-		int percent = get_percent(Detail.num_particles);
-
-		//Particle rendering drops out too soon.  Seems to be around 150 m.  Is it detail level controllable?  I'd like it to be 500-1000
-		float min_dist = 125.0f;
-		float dist = vm_vec_dist_quick(&pe->pos, &Eye_position) / range;
-		if (dist > min_dist)
-		{
-			percent = fl2i(i2fl(percent) * min_dist / dist);
-			if (percent < 1)
-			{
-				return;
-			}
-		}
-		//mprintf(( "Dist = %.1f, percent = %d%%\n", dist, percent ));
-
-		n1 = (pe->num_low * percent) / 100;
-		n2 = (pe->num_high * percent) / 100;
-
-		// How many to emit?
-		n = Random::next(n1, n2);
-
-		if (n < 1) return;
-
-
-		for (i = 0; i < n; i++)
-		{
-			// Create a particle
-			vec3d tmp_vel;
-			vec3d normal;                // What normal the particle emit arond
-
-			float radius = ((pe->max_rad - pe->min_rad) * frand()) + pe->min_rad;
-
-			float speed = ((pe->max_vel - pe->min_vel) * frand()) + pe->min_vel;
-
-			float life = ((pe->max_life - pe->min_life) * frand()) + pe->min_life;
-
-			normal.xyz.x = pe->normal.xyz.x + (frand() * 2.0f - 1.0f) * pe->normal_variance;
-			normal.xyz.y = pe->normal.xyz.y + (frand() * 2.0f - 1.0f) * pe->normal_variance;
-			normal.xyz.z = pe->normal.xyz.z + (frand() * 2.0f - 1.0f) * pe->normal_variance;
-			vm_vec_normalize_safe(&normal);
-			vm_vec_scale_add(&tmp_vel, &pe->vel, &normal, speed);
-
-			create(&pe->pos, &tmp_vel, life, radius, type, optional_data);
-		}
 	}
 }

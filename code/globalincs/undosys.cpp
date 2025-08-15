@@ -27,7 +27,7 @@ void Undo_system::clamp_stacks() {
 	// This while() shouldn't ever be triggered, but this is a safety to prevent any weird edge-cases.
 	while (redo_stack.size() > max_undos) {
 		delete redo_stack.front();
-		undo_stack.pop_front();
+		redo_stack.pop_front();
 	}
 }
 

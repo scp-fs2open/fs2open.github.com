@@ -20,9 +20,6 @@ const size_t SIZE_OF_ASCII_TABLE = 128;
 extern int shifted_ascii_table[SIZE_OF_ASCII_TABLE];
 extern int ascii_table[SIZE_OF_ASCII_TABLE];
 
-extern ubyte keyd_pressed[NUM_KEYS];
-
-
 // O/S level hooks...
 void key_init();
 void key_level_init();
@@ -39,12 +36,14 @@ SDL_Scancode fs2_to_sdl( int scancode );
 int key_to_ascii(int keycode );
 int key_inkey();
 
+bool key_is_pressed(int keycode, bool include_since_last_count = false);
+
 // global flag that will enable/disable the backspace key from stopping execution
 //extern int Backspace_debug;
 
 uint key_get_shift_status();
 int key_down_count(int scancode);
-int key_checkch();
+bool key_checkch();
 
 extern SCP_string CheatUsed;
 extern int Cheats_enabled;

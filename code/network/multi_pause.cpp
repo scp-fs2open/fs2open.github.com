@@ -311,7 +311,7 @@ int multi_pause_eat_keys()
 // PAUSE UI FUNCTIONS
 //
 
-void multi_pause_init()
+void multi_pause_init(bool API_Access)
 {
 	int i;
 
@@ -346,35 +346,46 @@ void multi_pause_init()
 		if ( Multi_paused_screen_id == -1 )
 			Multi_paused_screen_id = gr_save_screen();
 
-		// create ui window
-		Multi_paused_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
-		Multi_paused_window.set_mask_bmap(Multi_paused_bg_mask[gr_screen.res]);
-		Multi_paused_background = bm_load(Multi_paused_bg_fname[gr_screen.res]);
+		if (!API_Access) {
+			// create ui window
+			Multi_paused_window.create(0, 0, gr_screen.max_w_unscaled, gr_screen.max_h_unscaled, 0);
+			Multi_paused_window.set_mask_bmap(Multi_paused_bg_mask[gr_screen.res]);
+			Multi_paused_background = bm_load(Multi_paused_bg_fname[gr_screen.res]);
 
-		for (i=0; i<MULTI_PAUSED_NUM_BUTTONS; i++) {
-			// create the button
-			Multi_paused_buttons[gr_screen.res][i].button.create(&Multi_paused_window, "", Multi_paused_buttons[gr_screen.res][i].x, Multi_paused_buttons[gr_screen.res][i].y, 1, 1, 0, 1);
+			for (i = 0; i < MULTI_PAUSED_NUM_BUTTONS; i++) {
+				// create the button
+				Multi_paused_buttons[gr_screen.res][i].button.create(&Multi_paused_window,
+					"",
+					Multi_paused_buttons[gr_screen.res][i].x,
+					Multi_paused_buttons[gr_screen.res][i].y,
+					1,
+					1,
+					0,
+					1);
 
-			// set the highlight action
-			Multi_paused_buttons[gr_screen.res][i].button.set_highlight_action(common_play_highlight_sound);
+				// set the highlight action
+				Multi_paused_buttons[gr_screen.res][i].button.set_highlight_action(common_play_highlight_sound);
 
-			// set the ani
-			Multi_paused_buttons[gr_screen.res][i].button.set_bmaps(Multi_paused_buttons[gr_screen.res][i].filename);
+				// set the ani
+				Multi_paused_buttons[gr_screen.res][i].button.set_bmaps(
+					Multi_paused_buttons[gr_screen.res][i].filename);
 
-			// set the hotspot
-			Multi_paused_buttons[gr_screen.res][i].button.link_hotspot(Multi_paused_buttons[gr_screen.res][i].hotspot);
-		}	
+				// set the hotspot
+				Multi_paused_buttons[gr_screen.res][i].button.link_hotspot(
+					Multi_paused_buttons[gr_screen.res][i].hotspot);
+			}
 
-		// add text
-		for(i=0; i<MULTI_PAUSED_NUM_TEXT; i++){
-			Multi_paused_window.add_XSTR(&Multi_paused_text[gr_screen.res][i]);
-		}
-		
-		// close any instances of a chatbox
-		chatbox_close();
+			// add text
+			for (i = 0; i < MULTI_PAUSED_NUM_TEXT; i++) {
+				Multi_paused_window.add_XSTR(&Multi_paused_text[gr_screen.res][i]);
+			}
 
-		// intialize our custom chatbox
-		chatbox_create(CHATBOX_FLAG_MULTI_PAUSED);		
+			// close any instances of a chatbox
+			chatbox_close();
+
+			// intialize our custom chatbox
+			chatbox_create(CHATBOX_FLAG_MULTI_PAUSED);
+		}		
 	}
 
 	Multi_paused = 1;
@@ -383,7 +394,7 @@ void multi_pause_init()
 	multi_reset_timestamps();
 }
 
-void multi_pause_do()
+void multi_pause_do(bool API_Access)
 {
 	int k;
 	
@@ -400,17 +411,21 @@ void multi_pause_do()
 			gr_restore_screen(Multi_paused_screen_id);
 		}
 
-		// set the background image
-		if (Multi_paused_background >= 0) {
-			gr_set_bitmap(Multi_paused_background);
-			gr_bitmap(0, 0, GR_RESIZE_MENU);
+		if (!API_Access) {
+			// set the background image
+			if (Multi_paused_background >= 0) {
+				gr_set_bitmap(Multi_paused_background);
+				gr_bitmap(0, 0, GR_RESIZE_MENU);
+			}
 		}
 
 		// if we're inside of popup code right now, don't process the window
 		if(!popup_active()){
 			// process chatbox and window stuff
 			k = chatbox_process();
-			k = Multi_paused_window.process(k);	
+			if (!API_Access) {
+				k = Multi_paused_window.process(k);
+			}
 		
 			switch (k) {
 			case KEY_ESC:			
@@ -420,34 +435,39 @@ void multi_pause_do()
 			}
 		}
 
-		// check for any button presses
-		multi_pause_check_buttons();
+		if (!API_Access) {
+			// check for any button presses
+			multi_pause_check_buttons();
 
-		// render the callsign of the guy who paused
-		multi_pause_render_callsign();
-				
-		// render the chatbox
-		chatbox_render();
-		
-		// draw tooltips
-		// Multi_paused_window.draw_tooltip();
-		Multi_paused_window.draw();
+			// render the callsign of the guy who paused
+			multi_pause_render_callsign();
 
-		// display the voice status indicator
-		multi_common_voice_display_status();
+			// render the chatbox
+			chatbox_render();
 
-		// don't flip screen if we are in the popup code right now
-		if (!popup_active()) {
-			gr_flip();
+			// draw tooltips
+			// Multi_paused_window.draw_tooltip();
+			Multi_paused_window.draw();
+
+			// display the voice status indicator
+			multi_common_voice_display_status();
+
+			// don't flip screen if we are in the popup code right now
+			if (!popup_active()) {
+				gr_flip();
+			}
 		}
 	}
 	// standalone pretty much does nothing here
 	else {
-		os_sleep(1);
+		//API does it's own sleep, so avoid this here to avoid UI stallouts
+		if (!API_Access) {
+			os_sleep(1);
+		}
 	}
 }
 
-void multi_pause_close(int end_mission)
+void multi_pause_close(int end_mission, bool API_Access)
 {
 	if ( !Multi_paused )
 		return;
@@ -467,7 +487,9 @@ void multi_pause_close(int end_mission)
 			Multi_paused_background = -1;
 		}
 
-		Multi_paused_window.destroy();		
+		if (!API_Access) {
+			Multi_paused_window.destroy();
+		}	
 		game_flush();
 
 		// unpause all the music

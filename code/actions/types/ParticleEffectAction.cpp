@@ -3,6 +3,8 @@
 
 #include "math/vecmat.h"
 #include "parse/parselo.h"
+#include "particle/hosts/EffectHostObject.h"
+#include "particle/ParticleManager.h"
 #include "ship/ship.h"
 
 #include <utility>
@@ -37,10 +39,8 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	vec3d local_pos;
 	matrix local_orient;
 	if (locals.hostSubobject != -1) {
-		auto instance = object_get_model_instance(locals.host.objp);
-		Assertion(instance != -1, "Model instances are required if a host subobject is specified.");
-
-		auto pmi = model_get_instance(instance);
+		auto pmi = object_get_model_instance(locals.host.objp());
+		Assertion(pmi != nullptr, "Model instances are required if a host subobject is specified.");
 		auto pm = model_get(pmi->model_num);
 
 		model_instance_local_to_global_point_orient(&local_pos,
@@ -58,11 +58,11 @@ ActionResult ParticleEffectAction::execute(ProgramLocals& locals) const
 	local_pos += locals.variables.getValue({"locals", "position"}).getVector();
 
 	auto direction = locals.variables.getValue({"locals", "direction"}).getVector();
+	matrix orientation;
+	vm_vector_2_matrix_norm(&orientation, &direction);	// direction is normalized in SetDirectionAction::execute
 
-	source.moveToObject(locals.host.objp, &local_pos);
-	source.setOrientationFromNormalizedVec(&direction, true);
-
-	source.finish();
+	source->setHost(make_unique<EffectHostObject>(locals.host.objp(), local_pos, orientation, true));
+	source->finishCreation();
 
 	return ActionResult::Finished;
 }

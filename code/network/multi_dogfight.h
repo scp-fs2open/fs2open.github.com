@@ -7,6 +7,8 @@
  *
 */
 
+#include "playerman/player.h"
+
 
 
 #ifndef __FS2_MULTIPLAYER_DOGFIGHT_HEADER_FILE
@@ -19,6 +21,16 @@
 struct net_player;
 class object;
 
+// players when the screen started - we need to store this explicity so that even after players leave, we can display
+// the full kill matrix
+typedef struct multi_df_score {
+	char callsign[CALLSIGN_LEN + 1]; // callsign for this guy
+	scoring_struct stats;            // stats for the guy
+	int np_index;                    // absolute index into the netplayers array
+} multi_df_score;
+
+extern multi_df_score Multi_df_score[MAX_PLAYERS];
+extern int Multi_df_score_count;
 
 // ----------------------------------------------------------------------------------------------------
 // MULTI DOGFIGHT FUNCTIONS
@@ -28,15 +40,15 @@ class object;
 void multi_df_level_pre_enter();
 
 // evaluate a kill in dogfight by a netplayer
-void multi_df_eval_kill(net_player *killer, object *dead_obj);
+void multi_df_eval_kill(const net_player *killer, const object *dead_obj);
 
 // debrief
-void multi_df_debrief_init();
+void multi_df_debrief_init(bool API_Access = false);
 
 // do frame
-void multi_df_debrief_do();
+void multi_df_debrief_do(bool API_Access = false);
 
 // close
-void multi_df_debrief_close();
+void multi_df_debrief_close(bool API_Access = false);
 
 #endif

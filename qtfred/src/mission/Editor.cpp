@@ -19,6 +19,7 @@
 #include <starfield/nebula.h>
 #include <object/objectdock.h>
 #include <localization/fhash.h>
+#include <scripting/global_hooks.h>
 
 #include "iff_defs/iff_defs.h" // iff_init
 #include "object/object.h" // obj_init
@@ -33,6 +34,7 @@
 
 #include "object.h"
 #include "management.h"
+#include "util.h"
 #include "FredApplication.h"
 
 namespace {
@@ -65,10 +67,12 @@ std::pair<int, sexp_src> query_referenced_in_ai_goals(sexp_ref_type type, const 
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Attack",					AI_GOAL_CHASE,				0 },
+	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
+	{ "Guard",					AI_GOAL_GUARD,				0 },
+	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
@@ -93,11 +97,6 @@ char Fred_callsigns[MAX_SHIPS][NAME_LENGTH + 1];
 char Fred_alt_names[MAX_SHIPS][NAME_LENGTH + 1];
 
 extern void allocate_parse_text(size_t size);
-
-extern int Nmodel_num;
-extern int Nmodel_instance_num;
-extern matrix Nmodel_orient;
-extern int Nmodel_bitmap;
 
 namespace fso {
 namespace fred {
@@ -128,6 +127,59 @@ void Editor::update() {
 	// Do updates for all renderers
 	for (auto& viewport : _viewports) {
 		viewport->game_do_frame(currentObject);
+	}
+}
+
+void Editor::maybeUseAutosave(std::string& filepath)
+{
+	// first, just grab the info of this mission
+	if (!parse_main(filepath.c_str(), MPF_ONLY_MISSION_INFO))
+		return;
+	SCP_string created = The_mission.created;
+	CFileLocation res = cf_find_file_location(filepath.c_str(), CF_TYPE_ANY);
+	time_t modified = res.m_time;
+	if (!res.found)
+	{
+		UNREACHABLE("Couldn't find path '%s' even though parse_main() succeeded!", filepath.c_str());
+		return;
+	}
+
+	// now check all the autosaves
+	SCP_string backup_name;
+	CFileLocation backup_res;
+	for (int i = 1; i <= MISSION_BACKUP_DEPTH; ++i)
+	{
+		backup_name = MISSION_BACKUP_NAME;
+		char extension[5];
+		sprintf(extension, ".%.3d", i);
+		backup_name += extension;
+
+		backup_res = cf_find_file_location(backup_name.c_str(), CF_TYPE_MISSIONS);
+		if (backup_res.found && parse_main(backup_res.full_name.c_str(), MPF_ONLY_MISSION_INFO))
+		{
+			SCP_string this_created = The_mission.created;
+			time_t this_modified = backup_res.m_time;
+
+			if (created == this_created && this_modified > modified)
+				break;
+		}
+
+		backup_name.clear();
+	}
+
+	// maybe load from the backup instead
+	if (!backup_name.empty())
+	{
+		SCP_string prompt = "Autosaved file ";
+		prompt += backup_name;
+		prompt += " has a file modification time more recent than the specified file.  Do you want to load the autosave instead?";
+
+		auto z = _lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Question,
+																	"Recover from autosave",
+																	prompt.c_str(),
+																	{ DialogButton::Yes, DialogButton::No });
+		if (z == DialogButton::Yes)
+			filepath = backup_res.full_name;	// replace the specified file with the autosave file
 	}
 }
 
@@ -218,6 +270,26 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 															  "Mission File Format",
 															  msg,
 															  { DialogButton::Ok });
+	}
+
+	// message 4: check for "immobile" flag migration
+	if (!Fred_migrated_immobile_ships.empty()) {
+		SCP_string msg = "The \"immobile\" ship flag has been superseded by the \"don't-change-position\", and \"don't-change-orientation\" flags.  "
+			"All ships which previously had \"Does Not Move\" checked in the ship flags editor will now have both \"Does Not Change Position\" and "
+			"\"Does Not Change Orientation\" checked.  After you close this dialog, the error checker will check for any potential issues, including "
+			"issues involving these flags.\n\nThe following ships have been migrated:";
+
+		for (int shipnum : Fred_migrated_immobile_ships) {
+			msg += "\n\t";
+			msg += Ships[shipnum].ship_name;
+		}
+
+		truncate_message_lines(msg, 30);
+		_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Information,
+														"Ship Flag Migration",
+														msg,
+														{ DialogButton::Ok });
+		_lastActiveViewport->Error_checker_checks_potential_issues_once = true;
 	}
 
 	obj_merge_created_list();
@@ -330,6 +402,12 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 	missionLoaded(filepath);
 
+	// This hook will allow for scripts to know when a mission has been loaded
+	// which will then allow them to update any LuaEnums that may be related to sexps
+	if (scripting::hooks::FredOnMissionLoad->isActive()) {
+		scripting::hooks::FredOnMissionLoad->run();
+	}
+
 	return true;
 }
 void Editor::unmark_all() {
@@ -423,13 +501,11 @@ void Editor::clearMission(bool fast_reload) {
 
 	time_t currentTime;
 	time(&currentTime);
-	auto tm_info = localtime(&currentTime);
-	char time_buffer[26];
-	strftime(time_buffer, 26, "%Y-%m-%d %H:%M:%S", tm_info);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = userName;
-	strcpy_s(The_mission.created, time_buffer);
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
@@ -481,6 +557,7 @@ void Editor::clearMission(bool fast_reload) {
 	}
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -741,6 +818,32 @@ void Editor::showHiddenObjects() {
 
 	updateAllViewports();
 }
+void Editor::lockMarkedObjects() {
+	object* ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		if (ptr->flags[Object::Object_Flags::Marked]) {
+			ptr->flags.set(Object::Object_Flags::Locked_from_editing);
+			unmarkObject(OBJ_INDEX(ptr));
+		}
+
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllViewports();
+}
+void Editor::unlockAllObjects() {
+	object* ptr;
+
+	ptr = GET_FIRST(&obj_used_list);
+	while (ptr != END_OF_LIST(&obj_used_list)) {
+		ptr->flags.remove(Object::Object_Flags::Locked_from_editing);
+		ptr = GET_NEXT(ptr);
+	}
+
+	updateAllViewports();
+}
 int Editor::create_waypoint(vec3d* pos, int waypoint_instance) {
 	int obj = waypoint_add(pos, waypoint_instance);
 
@@ -992,7 +1095,8 @@ int Editor::common_object_delete(int obj) {
 		Objects[obj].type = OBJ_NONE;
 
 		// now call the destructor
-		Jump_nodes.erase(jnp);
+		if (jnp != Jump_nodes.end())
+			Jump_nodes.erase(jnp);
 
 		// now restore the jump node type so that the below unmark and obj_delete will work
 		Objects[obj].type = OBJ_JUMP_NODE;
@@ -1438,11 +1542,15 @@ void Editor::update_texture_replacements(const char* old_name, const char* new_n
 			strcpy_s(ii->ship_name, new_name);
 	}
 }
-int Editor::rename_ship(int ship, char* name) {
+int Editor::rename_ship(int ship, const char* name) {
 	int i;
 
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
+
+	// we may not need to rename it
+	if (strcmp(Ships[ship].ship_name, name) == 0)
+		return 0;
 
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
@@ -2045,7 +2153,7 @@ int Editor::global_error_check_impl() {
 				return -1;
 			}
 
-			if (Ships[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Ships[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Ships[i].arrival_anchor < 0) {
 					if (error("Ship \"%s\" requires a valid arrival target", Ships[i].ship_name)) {
 						return 1;
@@ -2053,7 +2161,7 @@ int Editor::global_error_check_impl() {
 				}
 			}
 
-			if (Ships[i].departure_location != DEPART_AT_LOCATION) {
+			if (Ships[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Ships[i].departure_anchor < 0) {
 					if (error("Ship \"%s\" requires a valid departure target", Ships[i].ship_name)) {
 						return 1;
@@ -2261,7 +2369,7 @@ int Editor::global_error_check_impl() {
 				return -1;
 			}
 
-			if (Wings[i].arrival_location != ARRIVE_AT_LOCATION) {
+			if (Wings[i].arrival_location != ArrivalLocation::AT_LOCATION) {
 				if (Wings[i].arrival_anchor < 0) {
 					if (error("Wing \"%s\" requires a valid arrival target", Wings[i].name)) {
 						return 1;
@@ -2269,7 +2377,7 @@ int Editor::global_error_check_impl() {
 				}
 			}
 
-			if (Wings[i].departure_location != DEPART_AT_LOCATION) {
+			if (Wings[i].departure_location != DepartureLocation::AT_LOCATION) {
 				if (Wings[i].departure_anchor < 0) {
 					if (error("Wing \"%s\" requires a valid departure target", Wings[i].name)) {
 						return 1;
@@ -2535,45 +2643,57 @@ int Editor::internal_error(const char* msg, ...) {
 
 	return -1;
 }
-int Editor::fred_check_sexp(int sexp, int type, const char* msg, ...) {
-	SCP_string buf, sexp_buf, error_buf, bad_node_str;
+int Editor::fred_check_sexp(int sexp, int type, const char* location, ...) {
+	SCP_string location_buf, sexp_buf, error_buf, bad_node_str, issue_msg;
 	int err = 0, z, faulty_node;
 	va_list args;
 
-	va_start(args, msg);
-	vsprintf(buf, msg, args);
+	va_start(args, location);
+	vsprintf(location_buf, location, args);
 	va_end(args);
 
 	if (sexp == -1)
 		return 0;
 
 	z = check_sexp_syntax(sexp, type, 1, &faulty_node);
-	if (!z)
-		return 0;
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
-	truncate_message_lines(sexp_buf, 30);
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
-	if (!bad_node_str.empty()) {	// the previous function adds a space at the end
-		bad_node_str.pop_back();
+		sprintf(error_buf, "Error in %s: %s\n\n%s\n\n(Bad node appears to be: %s)", location_buf.c_str(), sexp_error_message(z), sexp_buf.c_str(), bad_node_str.c_str());
+
+		if (z < 0 && z > -100)
+			err = 1;
+
+		if (err)
+			return internal_error("%s", error_buf.c_str());
+
+		if (error("%s", error_buf.c_str()))
+			return 1;
 	}
 
-	sprintf(error_buf,
-			"Error in %s: %s\n\nIn sexpression: %s\n\n(Bad node appears to be: %s)",
-			buf.c_str(),
-			sexp_error_message(z),
-			sexp_buf.c_str(),
-			bad_node_str.c_str());
+	if (_lastActiveViewport->Error_checker_checks_potential_issues || _lastActiveViewport->Error_checker_checks_potential_issues_once)
+		z = check_sexp_potential_issues(sexp, &faulty_node, issue_msg);
+	if (z)
+	{
+		convert_sexp_to_string(sexp_buf, sexp, SEXP_ERROR_CHECK_MODE);
+		truncate_message_lines(sexp_buf, 30);
 
-	if (z < 0 && z > -100)
-		err = 1;
+		stuff_sexp_text_string(bad_node_str, faulty_node, SEXP_ERROR_CHECK_MODE);
+		if (!bad_node_str.empty())		// the previous function adds a space at the end
+			bad_node_str.pop_back();
 
-	if (err)
-		return internal_error("%s", error_buf.c_str());
+		sprintf(error_buf, "Potential issue detected in %s:\n\n%s\n\n%s\n\n(Suspect node appears to be: %s)", location_buf.c_str(), issue_msg.c_str(), sexp_buf.c_str(), bad_node_str.c_str());
 
-	if (error("%s", error_buf.c_str()))
-		return 1;
+		if (_lastActiveViewport->dialogProvider->showButtonDialog(DialogType::Warning, "Warning", error_buf.c_str(), { DialogButton::Ok, DialogButton::Cancel }) != DialogButton::Ok)
+			return 1;
+	}
+	_lastActiveViewport->Error_checker_checks_potential_issues_once = false;
 
 	return 0;
 }
@@ -2791,6 +2911,9 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 
 			break;
 		}
+
+		default:
+			break;
 		}
 
 		switch (goals[i].ai_mode) {
@@ -2802,7 +2925,6 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wing assigned to guard a different team";
 			}
-
 			break;
 
 		case AI_GOAL_CHASE:
@@ -2818,19 +2940,21 @@ const char* Editor::error_check_initial_orders(ai_goal* goals, int ship, int win
 				else
 					return "Wings assigned to attack same team";
 			}
+			break;
 
+		default:
 			break;
 		}
 	}
 
 	return NULL;
 }
-const char* Editor::get_order_name(int order) {
+const char* Editor::get_order_name(ai_goal_mode order) {
 	if (order == AI_GOAL_NONE)  // special case
 		return "None";
 
 	for (auto& entry : Ai_goal_list)
-		if (entry.def & order)
+		if (entry.def == order)
 			return entry.name;
 
 	return "???";
@@ -3197,6 +3321,19 @@ void Editor::lcl_fred_replace_stuff(QString& text)
 	text.replace(";", "$semicolon");
 	text.replace("/", "$slash");
 	text.replace("\\", "$backslash");
+}
+
+SCP_string Editor::get_display_name_for_text_box(const SCP_string &orig_name)
+{
+	auto index = get_index_of_first_hash_symbol(orig_name);
+	if (index >= 0)
+	{
+		SCP_string display_name(orig_name);
+		end_string_at_first_hash_symbol(display_name);
+		return display_name;
+	}
+	else
+		return "<none>";
 }
 
 SCP_vector<int> Editor::getStartingWingLoadoutUseCounts() {

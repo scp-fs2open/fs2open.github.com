@@ -6,7 +6,7 @@ namespace animation {
 
 	struct ModelAnimationPropertyDriverTarget {
 		float ModelAnimation::instance_data::* target;
-		tl::optional<float ModelAnimation::instance_data::*> clamp;
+		std::optional<float ModelAnimation::instance_data::*> clamp;
 	};
 
 	//Drivers for any PMI

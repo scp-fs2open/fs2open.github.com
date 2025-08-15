@@ -37,6 +37,7 @@
 #include "io/timer.h"
 #include "inetfile/inetgetfile.h"
 #include "cfile/cfilesystem.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/parselo.h"
 #include "stats/scoring.h"
@@ -997,6 +998,10 @@ void multi_pxo_ban_clicked();
 void multi_pxo_init(int use_last_channel, bool api_access)
 {
 	if (!api_access) {
+		// clear screen
+		gr_reset_clip();
+		gr_clear();
+
 		// load the background bitmap
 		Multi_pxo_bitmap = bm_load(Multi_pxo_bitmap_fname[gr_screen.res]);
 		if (Multi_pxo_bitmap < 0) {
@@ -1350,8 +1355,14 @@ void multi_pxo_do_normal(bool api_access)
 					case 0:
 						nprintf(("Network","PXO CANCEL\n"));
 
-						// flip his "pxo" bit temporarily and push him to the join game screen
+						// flip player "pxo" off and push to the join game screen,
+						// they will have to follow the instructions above to toggle PXO back on
+						// and since player is accepting, we need to persist changes
 						Multi_options_g.pxo = false;
+						options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", false);
+						if (Using_in_game_options) {
+							options::OptionsManager::instance()->persistChanges();
+						}
 						// Net_game_tcp_mode = NET_TCP;
 						gameseq_post_event(GS_EVENT_MULTI_JOIN_GAME);
 						break;
@@ -1553,7 +1564,7 @@ static int open_url(const char *url)
 	}
 
 #ifdef _WIN32
-	int rval = (int) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
+	intptr_t rval = (intptr_t) ShellExecuteA(NULL, open_cmd, s_url, NULL, NULL, SW_SHOWNORMAL);
 
 	if (rval <= 32) {
 		return -1;
@@ -3202,6 +3213,11 @@ void multi_pxo_chat_process()
 	char msg[512];
 	int msg_pixel_width;
 
+	// Bail if the input box is not ready to go
+	if (!Multi_pxo_chat_input.is_valid()) {
+		return;
+	}
+
 	// if the chat line is getting too long, fire off the message, putting the last
 	// word on the next input line.
 	memset(msg, 0, 512);
@@ -3448,7 +3464,7 @@ void multi_pxo_set_end_of_motd()
 	
 	// write out the motd for next time
 	if(strlen(Pxo_motd)){
-		CFILE *out = cfopen("oldmotd.txt", "wb", CFILE_NORMAL, CF_TYPE_DATA);
+		CFILE *out = cfopen("oldmotd.txt", "wb", CF_TYPE_DATA);
 		if(out != NULL){
 			// write all the text
 			cfwrite(&new_chksum, sizeof(new_chksum), 1, out);
@@ -4682,7 +4698,7 @@ void multi_pxo_help_load()
 
 	// read in the text file
 	in = NULL;
-	in = cfopen(MULTI_PXO_HELP_FILE,"rt",CFILE_NORMAL,CF_TYPE_DATA);			
+	in = cfopen(MULTI_PXO_HELP_FILE,"rt",CF_TYPE_DATA);			
 	Assert(in != NULL);
 	if(in == NULL){
 		return;
@@ -5028,7 +5044,7 @@ void multi_pxo_ban_parse_banner_file()
 	char urls[10][512];
 	int num_banners, idx;
 
-	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CFILE_NORMAL, CF_TYPE_MULTI_CACHE);
+	CFILE *in = cfopen(PXO_BANNERS_CONFIG_FILE, "rt", CF_TYPE_MULTI_CACHE);
 
 	// bad
 	if(in == NULL){

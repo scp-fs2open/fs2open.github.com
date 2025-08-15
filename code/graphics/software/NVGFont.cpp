@@ -3,6 +3,7 @@
 #include "graphics/paths/PathRenderer.h"
 
 #include "mod_table/mod_table.h"
+#include "options/Option.h"
 
 #include "localization/localize.h"
 
@@ -75,16 +76,6 @@ namespace font
 		return length;
 	}
 
-	NVGFont::NVGFont() : m_handle(-1), m_letterSpacing(0.0f), m_size(12.0f), m_tabWidth(20.0f)
-	{
-
-	}
-
-	NVGFont::~NVGFont()
-	{
-
-	}
-	
 	void NVGFont::setHandle(int handle)
 	{
 		Assertion(handle >= 0, "Invalid font handle passed!");
@@ -121,7 +112,7 @@ namespace font
 	}
 
 	extern int get_char_width_old(font* fnt, ubyte c1, ubyte c2, int *width, int* spacing);
-	void NVGFont::getStringSize(const char *text, size_t textLen, int resize_mode, float *width, float *height) const
+	void NVGFont::getStringSize(const char *text, size_t textLen, int resize_mode, float *width, float *height, float scaleMultiplier) const
 	{
 		using namespace graphics::paths;
 
@@ -130,8 +121,11 @@ namespace font
 		path->saveState();
 		path->resetState();
 
+		float scale_factor = (canScale && !Fred_running) ? get_font_scale_factor() : 1.0f;
+		scale_factor *= scaleMultiplier;
+
 		path->fontFaceId(m_handle);
-		path->fontSize(m_size);
+		path->fontSize(m_size * scale_factor);
 		path->textLetterSpacing(m_letterSpacing);
 		path->textAlign(static_cast<TextAlign>(ALIGN_TOP | ALIGN_LEFT));
 

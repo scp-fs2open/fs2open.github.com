@@ -13,7 +13,7 @@ namespace animation {
 		static std::shared_ptr<ModelAnimationMoveable> parser();
 		ModelAnimationMoveableOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient);
 
-		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) override;
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 
@@ -21,13 +21,13 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		angles m_defaultPosOrient;
 		angles m_velocity;
-		tl::optional<angles> m_acceleration;
+		std::optional<angles> m_acceleration;
 
 	public:
 		static std::shared_ptr<ModelAnimationMoveable> parser();
-		ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const tl::optional<angles>& acceleration);
+		ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const std::optional<angles>& acceleration);
 
-		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) override;
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 
@@ -35,27 +35,27 @@ namespace animation {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		vec3d m_defaultOffset;
 		vec3d m_velocity;
-		tl::optional<vec3d> m_acceleration;
+		std::optional<vec3d> m_acceleration;
 
 	  public:
 		static std::shared_ptr<ModelAnimationMoveable> parser();
-		ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const tl::optional<vec3d>& acceleration);
+		ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const std::optional<vec3d>& acceleration);
 
-		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) override;
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 
 	class ModelAnimationMoveableAxisRotation : public ModelAnimationMoveable {
 		std::shared_ptr<ModelAnimationSubmodel> m_submodel;
 		float m_velocity;
-		tl::optional<float> m_acceleration;
+		std::optional<float> m_acceleration;
 		vec3d m_axis;
 
 	public:
 		static std::shared_ptr<ModelAnimationMoveable> parser();
-		ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const tl::optional<float>& acceleration, const vec3d& axis);
+		ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const std::optional<float>& acceleration, const vec3d& axis);
 
-		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) override;
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 
@@ -65,7 +65,7 @@ namespace animation {
 		struct moveable_chainlink {
 			std::shared_ptr<ModelAnimationSubmodel> submodel;
 			std::shared_ptr<ik_constraint> constraint;
-			tl::optional<angles> acceleration;
+			std::optional<angles> acceleration;
 		};
 		
 		std::vector<moveable_chainlink> m_chain;
@@ -74,7 +74,7 @@ namespace animation {
 		static std::shared_ptr<ModelAnimationMoveable> parser();
 		ModelAnimationMoveableIK(std::vector<moveable_chainlink> chain, float time);
 
-		void update(polymodel_instance* pmi, const std::vector<linb::any>& args) override;
+		void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) override;
 		void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) override;
 	};
 	

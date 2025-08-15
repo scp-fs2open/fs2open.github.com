@@ -66,8 +66,8 @@ void multi_log_write_trailer()
 // write out some info about stuff
 void multi_log_write_update()
 {
-	time_t diff = difftime(time(NULL), Multi_log_open_systime);
-	time_t hours, mins, seconds;
+	long diff = d2lr(difftime(time(nullptr), Multi_log_open_systime));
+	long hours, mins, seconds;
 
 	// figure out some time values
 	hours = diff / 3600;

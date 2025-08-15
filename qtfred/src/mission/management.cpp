@@ -41,8 +41,6 @@ extern bool Xstr_inited;
 
 extern void allocate_parse_text(size_t size);
 
-extern void brief_init_colors();
-
 extern void ssm_init();    // Need this to populate Ssm_info so OPF_SSM_CLASS does something. -MageKing17
 
 extern void cmdline_debug_print_cmdline();
@@ -125,26 +123,12 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 
 	std::unique_ptr<QtGraphicsOperations> graphicsOps(new QtGraphicsOperations(editor));
 	gr_init(std::move(graphicsOps));
+	gr_set_gamma(3.0f);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
-	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
-	// system if a special mod_table option is set
-	if (Enable_scripts_in_fred) {
-		listener(SubSystem::Scripting);
-		script_init();            //WMC
-	}
-
 	listener(SubSystem::Fonts);
 	font::init();                    // loads up all fonts
-
-	gr_set_gamma(3.0f);
-
-	listener(SubSystem::Keyboard);
-	key_init();
-
-	listener(SubSystem::Mouse);
-	mouse_init();
 
 	listener(SubSystem::Particles);
 	curves_init();
@@ -165,32 +149,59 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::BriefingIcons);
 	brief_icons_init();
 
-	// for fred specific replacement texture stuff
-	Fred_texture_replacements.clear();
-
 	listener(SubSystem::HudCommOrders);
 	hud_init_comm_orders();        // Goober5000
+
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
+	listener(SubSystem::Ranks);
+	rank_init();
+
+	listener(SubSystem::Traitor);
+	traitor_init();
+
+	listener(SubSystem::Medals);
+	medals_init();            // get medal names for sexpression usage
+
+	listener(SubSystem::Cutscenes);
+	cutscene_init();
+
+	listener(SubSystem::Keyboard);
+	key_init();
+
+	listener(SubSystem::Mouse);
+	mouse_init();
+
+	listener(SubSystem::Models);
+	model_init();
+	virtual_pof_init();
+
+	listener(SubSystem::EventMusic);
+	event_music_init();
 
 	listener(SubSystem::AlphaColors);
 	alpha_colors_init();
 
-	listener(SubSystem::MissionBrief);
-	mission_brief_common_init();
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
+	listener(SubSystem::ModelAnimations);
+	animation::ModelAnimationParseHelper::parseTables();
 
 	// Initialize SEXPs. Must happen before ship init for LuaAI
 	listener(SubSystem::SEXPs);
 	sexp_startup();
 
-	listener(SubSystem::ModelAnimations);
-	animation::ModelAnimationParseHelper::parseTables();
-
 	listener(SubSystem::Objects);
 	obj_init();
 
-	listener(SubSystem::Models);
-	model_init();
-	model_free_all();                // Free all existing models
-	virtual_pof_init();
+	listener(SubSystem::Armor);
+	armor_init();
 
 	listener(SubSystem::AI);
 	ai_init();
@@ -198,22 +209,14 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::AIProfiles);
 	ai_profiles_init();
 
-	listener(SubSystem::Armor);
-	armor_init();
-
 	listener(SubSystem::Weapon);
 	weapon_init();
-
-	listener(SubSystem::Medals);
-	medals_init();            // get medal names for sexpression usage
 
 	listener(SubSystem::Glowpoints);
 	glowpoint_init();
 
 	listener(SubSystem::Ships);
 	ship_init();
-
-	listener(SubSystem::Parse);
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();
@@ -224,23 +227,15 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Asteroids);
 	asteroid_init();
 
-	listener(SubSystem::LightingProfiles);
-	lighting_profiles::load_profiles();
-
-	listener(SubSystem::Traitor);
-	traitor_init();
-
-	// get fireball IDs for sexpression usage
-	// (we don't need to init the entire system via fireball_init, we just need the information)
-	fireball_parse_tbl();
-
-	// initialize and activate external string hash table
-	// make sure to do here so that we don't parse the table files into the hash table - waste of space
-	fhash_init();
-	fhash_activate();
+	listener(SubSystem::MissionBrief);
+	mission_brief_common_init();
 
 	listener(SubSystem::Nebulas);
 	neb2_init();                        // fullneb stuff
+
+	// neb lightning
+	listener(SubSystem::NebulaLightning);
+	nebl_init();
 
 	listener(SubSystem::Stars);
 	stars_init();
@@ -248,46 +243,19 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Ssm);
 	ssm_init();        // The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
 
-	brief_init_colors();
-	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
-
-	listener(SubSystem::EventMusic);
-	event_music_init();
-
-	listener(SubSystem::FictionViewer);
-	fiction_viewer_reset();
-
-	listener(SubSystem::CommandBriefing);
-	cmd_brief_reset();
-	Show_waypoints = TRUE;
-
-	listener(SubSystem::Cutscenes);
-	cutscene_init();
+	listener(SubSystem::LightingProfiles);
+	lighting_profiles::load_profiles();
 
 	listener(SubSystem::Mainhalls);
 	main_hall_table_init();
 
-	listener(SubSystem::Ranks);
-	rank_init();
-
-	// mission creation requires the existence of a timestamp snapshot
-	timer_start_frame();
-
-	listener(SubSystem::Campaign);
-	mission_campaign_clear();
-
-	// neb lightning
-	listener(SubSystem::NebulaLightning);
-	nebl_init();
-
-	listener(SubSystem::FFmpeg);
-	libs::ffmpeg::initialize();
-
-	// wookieejedi
-	// load in the controls and defaults including the controlconfigdefault.tbl
-	// this allows the sexp tree in key-pressed to actually match what the game will use
-	// especially useful when a custom Controlconfigdefaults.tbl is used
-	control_config_common_init();
+	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
+	// system if a special mod_table option is set
+	if (Enable_scripts_in_fred) {
+		listener(SubSystem::Scripting);
+		// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
+		script_init();            //WMC
+	}
 
 	listener(SubSystem::ScriptingInitHook);
 	Script_system.RunInitFunctions();
@@ -304,6 +272,34 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	if (scripting::hooks::OnSplashEnd->isActive()) {
 		scripting::hooks::OnSplashEnd->run();
 	}
+
+	listener(SubSystem::FFmpeg);
+	libs::ffmpeg::initialize();
+
+
+	// for fred specific replacement texture stuff
+	Fred_texture_replacements.clear();
+
+	Show_waypoints = TRUE;
+
+	// initialize and activate external string hash table
+	// make sure to do here so that we don't parse the table files into the hash table - waste of space
+	fhash_init();
+	fhash_activate();
+
+	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
+
+	listener(SubSystem::FictionViewer);
+	fiction_viewer_reset();
+
+	listener(SubSystem::CommandBriefing);
+	cmd_brief_reset();
+
+	// mission creation requires the existence of a timestamp snapshot
+	timer_start_frame();
+
+	listener(SubSystem::Campaign);
+	mission_campaign_clear();
 
 	return true;
 }

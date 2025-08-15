@@ -77,6 +77,8 @@ blip	Blip_dim_list[MAX_BLIP_TYPES];			// linked list of dim blips
 blip	Blips[MAX_BLIPS];								// blips pool
 int	N_blips;											// next blip index to take from pool
 
+SCP_map<int, TIMESTAMP> Blip_last_update;	// map of objnums to timestamps
+
 float	Radar_bright_range;					// range at which we start dimming the radar blips
 TIMESTAMP	Radar_calc_bright_dist_timer;		// timestamp at which we recalc Radar_bright_range
 
@@ -149,7 +151,6 @@ void radar_plot_object( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	// don't process anything here.  Somehow, a jumpnode object caused this function
 	// to get entered on server side.
@@ -197,13 +198,10 @@ void radar_plot_object( object *objp )
 		
 		case OBJ_JUMP_NODE:
 		{
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == objp)
-					break;
-			}
+			auto jnp = jumpnode_get_by_objp(objp);
 			
-			// don't plot hidden jump nodes
-			if ( jnp->IsHidden() )
+			// don't plot missing or hidden jump nodes
+			if ( !jnp || jnp->IsHidden() )
 				return;
 
 			// filter jump nodes here if required
@@ -243,11 +241,7 @@ void radar_plot_object( object *objp )
 
 	// Retrieve the eye orientation so we can position the blips relative to it
 	matrix eye_orient;
-
-	if (Player_obj->type == OBJ_SHIP) 
-		ship_get_eye(&tempv, &eye_orient, Player_obj, false , false);
-	else
-		eye_orient = Player_obj->orient;
+	object_get_eye(&tempv, &eye_orient, Player_obj, false);
 
 	// JAS -- new way of getting the rotated point that doesn't require this to be
 	// in a g3_start_frame/end_frame block.
@@ -279,6 +273,8 @@ void radar_plot_object( object *objp )
 		return;
 	}
 
+	int objnum = OBJ_INDEX(objp);
+
 	b = &Blips[N_blips];
 	b->rad = 0;
 	b->flags = 0;
@@ -287,7 +283,7 @@ void radar_plot_object( object *objp )
 	blip_bright = (dist <= Radar_bright_range);
 
 	// flag the blip as a current target if it is
-	if (OBJ_INDEX(objp) == Player_ai->target_objnum)
+	if (objnum == Player_ai->target_objnum)
 	{
 		b->flags |= BLIP_CURRENT_TARGET;
 		blip_bright = 1;
@@ -305,9 +301,12 @@ void radar_plot_object( object *objp )
 	b->radar_color_image_2d = -1;
 	b->radar_image_size = -1;
 	b->radar_projection_size = 1.0f;
-	b->last_update = TIMESTAMP::never();
 	b->dist = dist;
-	b->objp = objp;
+	b->objnum = objnum;
+
+	auto it = Blip_last_update.find(objnum);
+	if (it == Blip_last_update.end())
+		Blip_last_update.emplace(objnum, TIMESTAMP::never());
 
 
 	// see if blip should be drawn distorted
@@ -346,6 +345,8 @@ void radar_plot_object( object *objp )
 
 void radar_mission_init()
 {
+	Blip_last_update.clear();
+
 	for (int i=0; i<MAX_RADAR_COLORS; i++ )	{
 		for (int j=0; j<MAX_RADAR_LEVELS; j++ )	{
 			if (radar_iff_color[i][j][0] >= 0) {
@@ -428,7 +429,7 @@ void HudGaugeRadar::initDistanceInfinityOffsets(int x, int y)
 	Radar_dist_offsets[RR_INFINITY][1] = y;
 }
 
-void HudGaugeRadar::render(float  /*frametime*/)
+void HudGaugeRadar::render(float  /*frametime*/, bool /*config*/)
 {
 }
 
@@ -454,27 +455,37 @@ void HudGaugeRadar::initialize()
 	HudGauge::initialize();
 }
 
-void HudGaugeRadar::drawRange()
+void HudGaugeRadar::drawRange(bool config)
 {
 	// hud_set_bright_color();
-	setGaugeColor(HUD_C_BRIGHT);
+	setGaugeColor(HUD_C_BRIGHT, config);
 
-	switch ( HUD_config.rp_dist ) {
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+	}
+
+	int range = config ? RR_INFINITY : HUD_config.rp_dist;
+
+	switch ( range ) {
 
 	case RR_SHORT:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_SHORT][0], position[1] + Radar_dist_offsets[RR_SHORT][1], "%s", XSTR( "2k", 467));
+		renderPrintf(x + fl2i(Radar_dist_offsets[RR_SHORT][0] * scale), y + fl2i(Radar_dist_offsets[RR_SHORT][1] * scale), scale, config, "%s", XSTR( "2k", 467));
 		break;
 
 	case RR_LONG:
-		renderPrintf(position[0] + Radar_dist_offsets[RR_LONG][0], position[1] + Radar_dist_offsets[RR_LONG][1], "%s", XSTR( "10k", 468));
+		renderPrintf(x + fl2i(Radar_dist_offsets[RR_LONG][0] * scale), y + fl2i(Radar_dist_offsets[RR_LONG][1] * scale), scale, config, "%s", XSTR( "10k", 468));
 		break;
 
 	case RR_INFINITY:
 		if (Unicode_text_mode) {
 			// This escape sequence is the UTF-8 encoding of the infinity symbol. We can't use u8 yet since VS2013 doesn't support it
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "\xE2\x88\x9E");
+			renderPrintf(x + fl2i(Radar_dist_offsets[RR_INFINITY][0] * scale), y + fl2i(Radar_dist_offsets[RR_INFINITY][1] * scale), scale, config, "\xE2\x88\x9E");
 		} else {
-			renderPrintf(position[0] + Radar_dist_offsets[RR_INFINITY][0], position[1] + Radar_dist_offsets[RR_INFINITY][1], "%c", Radar_infinity_icon);
+			renderPrintf(x + fl2i(Radar_dist_offsets[RR_INFINITY][0] * scale), y + fl2i(Radar_dist_offsets[RR_INFINITY][1] * scale), scale, config, "%c", Radar_infinity_icon);
 		}
 		break;
 
@@ -505,7 +516,6 @@ RadarVisibility radar_is_visible( object *objp )
 	vec3d pos, tempv;
 	float awacs_level, dist, max_radar_dist;
 	vec3d world_pos = objp->pos;
-	SCP_list<CJumpNode>::iterator jnp;
 
 	// get team-wide awacs level for the object if not ship
 	int ship_is_visible = 0;
@@ -543,13 +553,10 @@ RadarVisibility radar_is_visible( object *objp )
 		
 		case OBJ_JUMP_NODE:
 		{
-			for (jnp = Jump_nodes.begin(); jnp != Jump_nodes.end(); ++jnp) {
-				if(jnp->GetSCPObject() == objp)
-					break;
-			}
+			auto jnp = jumpnode_get_by_objp(objp);
 			
-			// don't plot hidden jump nodes
-			if ( jnp->IsHidden() )
+			// don't plot missing or hidden jump nodes
+			if ( !jnp || jnp->IsHidden() )
 				return NOT_VISIBLE;
 
 			// filter jump nodes here if required

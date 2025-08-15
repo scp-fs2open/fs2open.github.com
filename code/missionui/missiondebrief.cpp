@@ -310,7 +310,6 @@ UI_XSTR Debrief_strings[GR_NUM_RESOLUTIONS][NUM_DEBRIEF_TEXT] = {
 
 
 char Debrief_current_callsign[CALLSIGN_LEN+10];
-player *Debrief_player;
 
 static UI_WINDOW Debrief_ui_window;
 static UI_BUTTON List_region;
@@ -1119,7 +1118,6 @@ void debrief_multi_list_init()
 	// switch stats display to this newly selected player
 	set_player_stats(Multi_list[0].net_player_index);
 	strcpy_s(Debrief_current_callsign, Multi_list[0].callsign);	
-	Debrief_player = Player;
 }
 
 void debrief_multi_list_scroll_up()
@@ -1172,7 +1170,6 @@ void debrief_multi_list_draw()
 				// switch stats display to this newly selected player
 				set_player_stats(Multi_list[idx].net_player_index);
 				strcpy_s(Debrief_current_callsign, Multi_list[idx].callsign);	
-				Debrief_player = Net_players[Multi_list[idx].net_player_index].m_player;				
 				break;
 			}
 		}
@@ -1510,24 +1507,16 @@ void debrief_stats_render()
 	
 	switch ( Current_stage ) {
 		case DEBRIEF_MISSION_STATS:
-			i = Current_stage - 1;
-			if ( i < 0 )
-				i = 0;
-
 			// display mission completion time
 			debrief_render_mission_time(y);
-
 			y += 2*font_height;
-			show_stats_label(i, 0, y, font_height);
-			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
+
+			show_stats_label(StatsType::MISSION_STATS, 0, y, font_height);
+			show_stats_numbers(StatsType::MISSION_STATS, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
 		case DEBRIEF_ALLTIME_STATS:
-			i = Current_stage - 1;
-			if ( i < 0 )
-				i = 0;
-
-			show_stats_label(i, 0, y, font_height);
-			show_stats_numbers(i, Debrief_text_x2[gr_screen.res], y, font_height);
+			show_stats_label(StatsType::ALL_TIME_EVER_STATS, 0, y, font_height);
+			show_stats_numbers(StatsType::ALL_TIME_EVER_STATS, Debrief_text_x2[gr_screen.res], y, font_height);
 			break;
 
 		case DEBRIEF_ALLTIME_KILLS:
@@ -1719,8 +1708,6 @@ void debrief_button_pressed(int num)
 void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 {
 	int i;
-	//ushort *kill_arr;
-	int *kill_arr;	//DTP max ships
 	debrief_stats_kill_info	*kill_info;
 
 	Assert(Current_stage < DEBRIEF_NUM_STATS_PAGES);
@@ -1732,31 +1719,32 @@ void debrief_setup_ship_kill_stats(int  /*stage_num*/)
 		Debrief_stats_kills = new debrief_stats_kill_info[Ship_info.size()];
 	}
 
-	Assert(Debrief_player != NULL);
+	auto stats_type = ( Current_stage == DEBRIEF_MISSION_KILLS ) ? StatsType::MISSION_STATS : StatsType::ALL_TIME_EVER_STATS;
 
-	// kill_ar points to an array of MAX_SHIP_TYPE ints
-	if ( Current_stage == DEBRIEF_MISSION_KILLS ) {
-		kill_arr = Debrief_player->stats.m_okKills;
-	} else {		
-		kill_arr = Debrief_player->stats.kills;
-	}
-
+	// wookieejedi - Show kills by ship type, but if using display name
+	// then consolidate values for similarly named entries
+	std::map<SCP_string, int, SCP_string_lcase_less_than> kill_map;
 	Num_text_lines = 0;
 	i = 0;
 	for ( auto it = Ship_info.begin(); it != Ship_info.end(); i++, ++it ) {
+		int num_kills = stats_get_kills(stats_type, i);
 
 		// code used to add in mission kills, but the new system assumes that the player will accept, so
 		// all time stats already have mission stats added in.
-		if ( kill_arr[i] <= 0 ){
+		if ( num_kills <= 0 ){
 			continue;
 		}
 
+		// wookieejedi - consolidate by display name or ship class name
+		const char* name_key = it->get_display_name();
+		kill_map[name_key] += num_kills;
+	}
 
+	// wookieejedi - now copy into Debrief_stats_kills[] for display
+	for (const auto& [name, count] : kill_map) {
 		kill_info = &Debrief_stats_kills[Num_text_lines++];
-
-		kill_info->num = kill_arr[i];
-
-		strcpy_s(kill_info->text, it->name);
+		kill_info->num = count;
+		strcpy_s(kill_info->text, name.c_str());
 		strcat_s(kill_info->text, NOX(":"));
 	}
 
@@ -1786,7 +1774,6 @@ void debrief_check_buttons()
 			// switch stats display to this newly selected player
 			set_player_stats(Multi_list[z].net_player_index);
 			strcpy_s(Debrief_current_callsign, Multi_list[z].callsign);
-			Debrief_player = Net_players[Multi_list[z].net_player_index].m_player;
 			Multi_list_select = z;
 			debrief_setup_ship_kill_stats(Current_stage);
 			gamesnd_play_iface(InterfaceSounds::USER_SELECT);
@@ -1976,8 +1963,6 @@ void debrief_init(bool API_Access)
 //	rank_bitmaps_load();
 
 	strcpy_s(Debrief_current_callsign, Player->callsign);
-	Debrief_player = Player;
-//	Debrief_current_net_player_index = debrief_multi_list[0].net_player_index;
 
 	// Only setup Debrief_stages and Recommendations if not running through API access.
 	if (!API_Access) {
@@ -2029,21 +2014,23 @@ void debrief_init(bool API_Access)
 		multi_debrief_init();
 
 		// if i'm not the host of the game, disable the multi kick button
-		if (!(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
+		if (!API_Access && !(Net_player->flags & NETINFO_FLAG_GAME_HOST)) {
 			Buttons[gr_screen.res][MULTI_KICK].button.disable();
 		}
 	} else {
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
-		Buttons[gr_screen.res][MULTI_KICK].button.disable();
-		Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
-		Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
-		Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();		
-		Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		if (!API_Access) {
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.disable();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.disable();
+			Buttons[gr_screen.res][MULTI_KICK].button.disable();
+			Buttons[gr_screen.res][PLAYER_SCROLL_UP].button.hide();
+			Buttons[gr_screen.res][PLAYER_SCROLL_DOWN].button.hide();
+			Buttons[gr_screen.res][MULTI_PINFO_POPUP].button.hide();
+			Buttons[gr_screen.res][MULTI_KICK].button.hide();
+		}
 	}
 
-	if (!Award_active) {
+	if (!API_Access && !Award_active) {
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.disable();
 		Buttons[gr_screen.res][MEDALS_BUTTON].button.hide();
 	}
@@ -2115,11 +2102,13 @@ void debrief_close(bool API_Access)
 	}
 
 	// unload bitmaps
-	if (Background_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Background_bitmap >= 0) {
 		bm_release(Background_bitmap);
 	}
 
-	if (Award_bg_bitmap >= 0){
+	// Not used by the API
+	if (!API_Access && Award_bg_bitmap >= 0) {
 		bm_release(Award_bg_bitmap);
 	}
 
@@ -2135,8 +2124,10 @@ void debrief_close(bool API_Access)
 		bm_release(Badge_bitmap);
 	}
 
-	Debrief_ui_window.destroy();
-	common_free_interface_palette(); // restore game palette
+	if (!API_Access) {
+		Debrief_ui_window.destroy();
+		common_free_interface_palette(); // restore game palette
+	}
 	show_stats_close();
 
 	if (Game_mode & GM_MULTIPLAYER){
@@ -2219,7 +2210,7 @@ void debrief_draw_award_text()
 	curr_y = start_y;
 
 	// draw the strings
-	for (i=0; i<Debrief_award_text_num_lines; i++) {
+	for (i=0; i<Debrief_award_text_num_lines && i < AWARD_TEXT_MAX_LINES; i++) {
 		gr_get_string_size(&sw, NULL, Debrief_award_text[i]);
 		x = (Medal_bitmap < 0) ? (Debrief_award_text_coords[gr_screen.res][0] + (field_width - sw) / 2) : Debrief_award_text_coords[gr_screen.res][0];
 		if (i==AWARD_TEXT_MAX_LINES-1) x += 7;				// hack because of the shape of the box

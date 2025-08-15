@@ -1,6 +1,7 @@
 #include "CustomWingNamesDialog.h"
 
 #include "ui_CustomWingNamesDialog.h"
+#include <mission/util.h>
 
 namespace fso {
 namespace fred {
@@ -12,7 +13,7 @@ CustomWingNamesDialog::CustomWingNamesDialog(QWidget* parent, EditorViewport* vi
     ui->setupUi(this);
 
 	connect(this, &QDialog::accepted, _model.get(), &CustomWingNamesDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &CustomWingNamesDialogModel::reject);
+	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &CustomWingNamesDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &CustomWingNamesDialog::updateUI);
 	
@@ -41,25 +42,15 @@ CustomWingNamesDialog::CustomWingNamesDialog(QWidget* parent, EditorViewport* vi
 CustomWingNamesDialog::~CustomWingNamesDialog() {
 }
 
-void CustomWingNamesDialog::closeEvent(QCloseEvent * event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-		{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void CustomWingNamesDialog::closeEvent(QCloseEvent * e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
 }
-
+void CustomWingNamesDialog::rejectHandler()
+{
+	this->close();
+}
 void CustomWingNamesDialog::updateUI() {
 	// Update starting wings
 	ui->startingWing_1->setText(_model->getStartingWing(0).c_str());

@@ -13,6 +13,7 @@
 #define __MISSIONBRIEFCOMMON_H__
 
 #include "globalincs/globals.h"
+#include "globalincs/alphacolors.h"
 
 #include "anim/packunpack.h"
 #include "graphics/generic.h"
@@ -64,6 +65,8 @@
 #define ICON_TRANSPORT						34
 
 #define BRIEF_ICON_TYPES					3
+
+extern float Briefing_Icon_Scale_Factor;
 
 //If any types are added here then be sure to update BRIEF_ICON_TYPES
 typedef struct briefing_icon_info {
@@ -158,14 +161,16 @@ public:
 	int			num_lines;
 	brief_line	*lines;
 	bool		draw_grid;
+	color		grid_color;
 
 	brief_stage( ) 
-		: text( ), camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(NULL), num_lines(0), lines(NULL),
-		  draw_grid( true )
+		: camera_time( 0 ), flags( 0 ), formula( -1 ), num_icons(0), icons(nullptr), num_lines(0), lines(nullptr),
+		  draw_grid(true)
 	{ 
 		voice[ 0 ] = 0;
 		camera_pos = vmd_zero_vector;
 		camera_orient = vmd_identity_matrix;
+		grid_color = Color_briefing_grid;
 	}
 };
 

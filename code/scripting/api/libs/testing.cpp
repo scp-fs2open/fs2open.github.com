@@ -125,70 +125,19 @@ ADE_FUNC_DEPRECATED(createParticle,
 	gameversion::version(19, 0, 0, 0),
 	"Not available in the testing library anymore. Use gr.createPersistentParticle instead.")
 {
-	particle::particle_info pi;
-	pi.type = particle::PARTICLE_DEBUG;
-	pi.optional_data = -1;
-	pi.attached_objnum = -1;
-	pi.attached_sig = -1;
-	pi.reverse = 0;
-
 	// Need to consume tracer_length parameter but it isn't used anymore
+	vec3d pos, vel;
+	float lifetime, rad;
 	float temp;
 
 	enum_h *type = NULL;
 	bool rev=false;
 	object_h *objh=NULL;
 	texture_h* texture = nullptr;
-	if (!ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pi.pos), l_Vector.Get(&pi.vel), &pi.lifetime, &pi.rad,
-	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh)))
-		return ADE_RETURN_NIL;
+	ade_get_args(L, "ooffo|fboo", l_Vector.Get(&pos), l_Vector.Get(&vel), &lifetime, &rad,
+	                  l_Enum.GetPtr(&type), &temp, &rev, l_Texture.GetPtr(&texture), l_Object.GetPtr(&objh));
 
-	if(type != NULL)
-	{
-		switch(type->index)
-		{
-			case LE_PARTICLE_DEBUG:
-				pi.type = particle::PARTICLE_DEBUG;
-				break;
-			case LE_PARTICLE_FIRE:
-				pi.type = particle::PARTICLE_FIRE;
-				break;
-			case LE_PARTICLE_SMOKE:
-				pi.type = particle::PARTICLE_SMOKE;
-				break;
-			case LE_PARTICLE_SMOKE2:
-				pi.type = particle::PARTICLE_SMOKE2;
-				break;
-			case LE_PARTICLE_BITMAP:
-			    if (texture == nullptr || !texture->isValid()) {
-				    LuaError(L, "Invalid texture specified for createParticle()!");
-				    return ADE_RETURN_NIL;
-			    } else {
-				    pi.optional_data = texture->handle;
-				    pi.type          = particle::PARTICLE_BITMAP;
-			    }
-			    break;
-			default:
-				LuaError(L, "Invalid particle enum for createParticle(). Can only support PARTICLE_* enums!");
-				return ADE_RETURN_NIL;
-		}
-	}
-
-	if(rev)
-		pi.reverse = 0;
-
-	if(objh != NULL && objh->isValid())
-	{
-		pi.attached_objnum = OBJ_INDEX(objh->objp);
-		pi.attached_sig = objh->objp->signature;
-	}
-
-	particle::WeakParticlePtr p = particle::createPersistent(&pi);
-
-	if (!p.expired())
-		return ade_set_args(L, "o", l_Particle.Set(particle_h(p)));
-	else
-		return ADE_RETURN_NIL;
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getStack, l_Testing, NULL, "Generates an ADE stackdump", "string", "Current Lua stack")

@@ -11,7 +11,6 @@
 #include "ANTLRErrorListener.h"
 #include "support/CPPUtils.h"
 #include "CommonToken.h"
-#include "support/StringUtils.h"
 
 #include "Lexer.h"
 
@@ -136,7 +135,7 @@ size_t Lexer::popMode() {
 }
 
 
-Ref<TokenFactory<CommonToken>> Lexer::getTokenFactory() {
+TokenFactory<CommonToken>* Lexer::getTokenFactory() {
   return _factory;
 }
 
@@ -284,7 +283,7 @@ size_t Lexer::getNumberOfSyntaxErrors() {
 void Lexer::InitializeInstanceFields() {
   _syntaxErrors = 0;
   token = nullptr;
-  _factory = CommonTokenFactory::DEFAULT;
+  _factory = CommonTokenFactory::DEFAULT.get();
   tokenStartCharIndex = INVALID_INDEX;
   tokenStartLine = 0;
   tokenStartCharPositionInLine = 0;

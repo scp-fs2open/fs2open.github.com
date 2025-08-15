@@ -3,6 +3,7 @@
 
 #include "hudgauge.h"
 #include "hud/hudscripting.h"
+#include "scripting/api/objs/color.h"
 #include "font.h"
 #include "texture.h"
 
@@ -21,7 +22,7 @@ ADE_FUNC(isCustom, l_HudGauge, nullptr, "Custom HUD Gauge status", "boolean", "R
 	return ade_set_args(L, "b", gauge->isCustom());
 }
 
-ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or blank if this is a default gauge, or nil if handle is invalid")
+ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Custom HUD Gauge name, or nil if this is a default gauge or the handle is invalid")
 {
 	HudGauge* gauge;
 
@@ -37,7 +38,7 @@ ADE_VIRTVAR(Name, l_HudGauge, "string", "Custom HUD Gauge name", "string", "Cust
 	return ade_set_args(L, "s", gauge->getCustomGaugeName());
 }
 
-ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or blank if this is a default gauge, or nil if handle is invalid")
+ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Custom HUD Gauge text, or nil if this is a default gauge or the handle is invalid")
 {
 	HudGauge* gauge;
 	const char* text = nullptr;
@@ -54,6 +55,46 @@ ADE_VIRTVAR(Text, l_HudGauge, "string", "Custom HUD Gauge text", "string", "Cust
 	}
 
 	return ade_set_args(L, "s", gauge->getCustomGaugeText());
+}
+
+ADE_VIRTVAR(ConfigType, l_HudGauge, "string", "The config type (such as \"LEAD_INDICATOR\") of this HUD Gauge", "string", "HUD Gauge config type, or nil if this gauge does not have a config type (custom gauges and some default gauges do not) or if the handle is invalid")
+{
+	HudGauge* gauge;
+
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the hud gauge config type is not supported");
+
+	int type = gauge->getConfigType();
+	if (type >= 0 && type < NUM_HUD_GAUGES)
+		return ade_set_args(L, "s", Legacy_HUD_gauges[type].hud_gauge_text);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_VIRTVAR(ObjectType, l_HudGauge, "string", "The object type (such as \"Lead indicator\") of this HUD Gauge", "string", "HUD Gauge object type, or nil if this gauge does not have an object type or if the handle is invalid")
+{
+	HudGauge* gauge;
+
+	if (!ade_get_args(L, "o", l_HudGauge.Get(&gauge)))
+		return ADE_RETURN_NIL;
+
+	if (ADE_SETTING_VAR)
+		LuaError(L, "Setting the hud gauge object type is not supported");
+
+	int type = gauge->getObjectType();
+	if (type == HUD_OBJECT_CUSTOM)
+		return ade_set_args(L, "s", "Custom");
+
+	for (int i = 0; i < Num_hud_gauge_types; i++)
+	{
+		if (type == Hud_gauge_types[i].def)
+			return ade_set_args(L, "s", Hud_gauge_types[i].name);
+	}
+
+	return ADE_RETURN_NIL;
 }
 
 ADE_FUNC(getBaseResolution, l_HudGauge, nullptr, "Returns the base width and base height (which may be different from the screen width and height) used by the specified HUD gauge.",
@@ -111,7 +152,7 @@ ADE_FUNC(getFont, l_HudGauge, nullptr, "Returns the font used by the specified H
 	if (font_num < 0 || font_num >= font::FontManager::numberOfFonts())
 		return ade_set_error(L, "o", l_Font.Set(font_h()));
 
-	return ade_set_args(L, "o", l_Font.Set(font_h(font::FontManager::getFont(font_num))));
+	return ade_set_args(L, "o", l_Font.Set(font_h(font_num)));
 }
 
 ADE_FUNC(getOriginAndOffset, l_HudGauge, nullptr, "Returns the origin and offset of the specified HUD gauge as specified in the table.",
@@ -148,6 +189,88 @@ ADE_FUNC(isHiRes, l_HudGauge, nullptr, "Returns whether this is a hi-res HUD gau
 		return ADE_RETURN_NIL;
 
 	return ade_set_args(L, "b", gauge->isHiRes());
+}
+
+ADE_FUNC(getColor,
+	l_HudGauge,
+	nullptr,
+	"Gets the active 2D drawing color. False to return raw rgb, true to return a color object. Defaults to false.",
+	"number, number, number, number | color",
+	"The current color, in red, green, blue, and alpha components from 0 to 255")
+{
+	HudGauge* gauge;
+	bool rc = false;
+	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &rc))
+		return ADE_RETURN_NIL;
+
+	auto &c = gauge->getColor();
+
+	if (rc) {
+		return ade_set_args(L, "o", l_Color.Set(c));
+	}else{
+		return ade_set_args(L, "iiii", static_cast<int>(c.red), static_cast<int>(c.green), static_cast<int>(c.blue), static_cast<int>(c.alpha));
+	}
+}
+
+ADE_FUNC(setColor,
+	l_HudGauge,
+	"number|color /* red value or color object */, [number Green, number Blue, number Alpha]",
+	"Sets the current color used by this HUD gauge.  Numbers must be 0-255 in red/green/blue/alpha components; alpha is optional.",
+	nullptr, nullptr)
+{
+	HudGauge* gauge = nullptr;
+	int r, g, b, a = -1;
+
+	if (lua_isnumber(L, 2)) {
+		if (!ade_get_args(L, "oiii|i", l_HudGauge.Get(&gauge) , &r, &g, &b, &a))
+			return ADE_RETURN_NIL;
+
+		if (a < 0)
+			a = (HUD_color_alpha + 1) * 16; // from sexp_hud_set_color()
+		else
+			CLAMP(a, 0, 255);
+
+		CLAMP(r, 0, 255);
+		CLAMP(g, 0, 255);
+		CLAMP(b, 0, 255);
+	} else {
+		color col;
+		gr_init_alphacolor(&col, 0, 0, 0, 255);
+
+		ade_get_args(L, "oo", l_HudGauge.Get(&gauge), l_Color.Get(&col));
+
+		r = col.red;
+		g = col.green;
+		b = col.blue;
+		a = col.alpha;
+	}
+
+	if (gauge == nullptr) {
+		return ADE_RETURN_NIL;
+	}
+
+	gauge->sexpLockConfigColor(false);
+	gauge->updateColor(static_cast<ubyte>(r), static_cast<ubyte>(g), static_cast<ubyte>(b), static_cast<ubyte>(a));
+	gauge->sexpLockConfigColor(true);
+
+	return ADE_RETURN_NIL;
+}
+
+ADE_FUNC(setRenderOverride,
+	l_HudGauge,
+	"boolean",
+	"Sets a rendering override to enable or disable rendering of this gauge. This takes precedence over all other gauge toggles!",
+	"boolean",
+	"True to enable the override and stop the gauge from rendering, false otherwise")
+{
+	HudGauge* gauge;
+	bool override = false;
+	if (!ade_get_args(L, "o|b", l_HudGauge.Get(&gauge), &override))
+		return ADE_RETURN_NIL;
+
+	gauge->updateScriptingOverride(override);
+
+	return ade_set_args(L, "b", gauge->getScriptingOverride());
 }
 
 ADE_VIRTVAR(RenderFunction,

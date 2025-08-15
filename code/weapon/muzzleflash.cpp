@@ -24,20 +24,17 @@
 // muzzle flash info - read from a table
 typedef struct mflash_blob_info {
 	char name[MAX_FILENAME_LEN];
-	int anim_id;
 	float offset;
 	float radius;
 
 	mflash_blob_info( const mflash_blob_info& mbi )
 	{
 		strcpy_s( name, mbi.name );
-		anim_id = mbi.anim_id;
 		offset = mbi.offset;
 		radius = mbi.radius;
 	}
 
 	mflash_blob_info() :
-		anim_id( -1 ),
 		offset( 0.0 ),
 		radius( 0.0 )
 	{ 
@@ -47,7 +44,6 @@ typedef struct mflash_blob_info {
 	mflash_blob_info& operator=( const mflash_blob_info& r )
 	{
 		strcpy_s( name, r.name );
-		anim_id = r.anim_id;
 		offset = r.offset;
 		radius = r.radius;
 
@@ -57,11 +53,9 @@ typedef struct mflash_blob_info {
 
 typedef struct mflash_info {
 	char name[MAX_FILENAME_LEN];
-	int	 used_this_level;
 	SCP_vector<mflash_blob_info> blobs;
 
-	mflash_info() 
-		: used_this_level( 0 )
+	mflash_info()
 	{ 
 		name[ 0 ] = '\0';
 	}
@@ -69,14 +63,12 @@ typedef struct mflash_info {
 	mflash_info( const mflash_info& mi )
 	{
 		strcpy_s( name, mi.name );
-		used_this_level = mi.used_this_level;
 		blobs = mi.blobs;
 	}
 
 	mflash_info& operator=( const mflash_info& r )
 	{
 		strcpy_s( name, r.name );
-		used_this_level = r.used_this_level;
 		blobs = r.blobs;
 
 		return *this;
@@ -88,7 +80,9 @@ SCP_vector<mflash_info> Mflash_info;
 
 // ---------------------------------------------------------------------------------------------------------------------
 // MUZZLE FLASH FUNCTIONS
-// 
+//
+
+static const SCP_string mflash_particle_prefix = ";MflashParticle;";
 
 void parse_mflash_tbl(const char *filename)
 {
@@ -158,6 +152,60 @@ void parse_mflash_tbl(const char *filename)
 	}
 }
 
+static void convert_mflash_to_particle() {
+	Curve new_curve = Curve(";MuzzleFlashMinSizeScalingCurve");
+	new_curve.keyframes.emplace_back(curve_keyframe{vec2d{ -0.00001f , 0.f}, CurveInterpFunction::Polynomial, -1.0f, 1.0f}); //just for numerical safety if we ever get an actual size of 0...
+	new_curve.keyframes.emplace_back(curve_keyframe{vec2d{ Min_pizel_size_muzzleflash, 1.f }, CurveInterpFunction::Constant, 0.0f, 1.0f});
+	Curves.emplace_back(std::move(new_curve));
+	modular_curves_entry scaling_curve {(static_cast<int>(Curves.size()) - 1), ::util::UniformFloatRange(1.f), ::util::UniformFloatRange(0.f), false};
+
+	for (const auto& mflash : Mflash_info) {
+		SCP_vector<particle::ParticleEffect> subparticles;
+
+		for (const auto& blob : mflash.blobs) {
+			subparticles.emplace_back(
+				mflash_particle_prefix + mflash.name, //Name
+				::util::UniformFloatRange(1.f), //Particle num
+				particle::ParticleEffect::Duration::ONETIME, //Single Particle Emission
+				::util::UniformFloatRange(), //No duration
+				::util::UniformFloatRange (-1.f), //Single particle only
+				particle::ParticleEffect::ShapeDirection::ALIGNED, //Particle direction
+				::util::UniformFloatRange(1.f), //Velocity Inherit
+				false, //Velocity Inherit absolute?
+				nullptr, //Velocity volume
+				::util::UniformFloatRange(), //Velocity volume multiplier
+				particle::ParticleEffect::VelocityScaling::NONE, //Velocity directional scaling
+				std::nullopt, //Orientation-based velocity
+				std::nullopt, //Position-based velocity
+				nullptr, //Position volume
+				particle::ParticleEffectHandle::invalid(), //Trail
+				1.f, //Chance
+				false, //Affected by detail
+				-1.f, //Culling range multiplier
+				false, //Disregard Animation Length. Must be true for everything using particle::Anim_bitmap_X
+				false, //Don't reverse animation
+				true, //parent local
+				true, //ignore velocity inherit if parented
+				false, //position velocity inherit absolute?
+				std::nullopt, //Local velocity offset
+				vec3d{{{0, 0, blob.offset}}}, //Local offset
+				::util::UniformFloatRange(-1.f), //Lifetime
+				::util::UniformFloatRange(blob.radius), //Radius
+				bm_load_animation(blob.name));
+
+			if (Min_pizel_size_muzzleflash > 0) {
+				subparticles.back().m_modular_curves.add_curve("Apparent Visual Size At Emitter", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, scaling_curve);
+			}
+		}
+
+		particle::ParticleManager::get()->addEffect(std::move(subparticles));
+	}
+
+	//Clean up no longer required data
+	Mflash_info.clear();
+	Mflash_info.shrink_to_fit();
+}
+
 // initialize muzzle flash stuff for the whole game
 void mflash_game_init()
 {
@@ -166,166 +214,11 @@ void mflash_game_init()
 
 	// look for any modular tables
 	parse_modular_table(NOX("*-mfl.tbm"), parse_mflash_tbl);
+
+	//This should really happen at parse time, but that requires modular particle effects which aren't yet a thing
+	convert_mflash_to_particle();
 }
 
-void mflash_mark_as_used(int index)
-{
-	if (index < 0)
-		return;
-
-	Assert( index < (int)Mflash_info.size() );
-
-	Mflash_info[index].used_this_level++;
-}
-
-void mflash_page_in(bool load_all)
-{
-	uint i, idx;
-	int num_frames, fps;
-
-	// load up all anims
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		// skip if it's not used
-		if ( !load_all && !Mflash_info[i].used_this_level )
-			continue;
-
-		// blobs
-		size_t original_num_blobs = Mflash_info[i].blobs.size();
-		int original_idx = 1;
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); ) {
-			mflash_blob_info* mfbip = &Mflash_info[i].blobs[idx];
-			mfbip->anim_id = bm_load_either(mfbip->name, &num_frames, &fps, NULL, true);
-			if ( mfbip->anim_id >= 0 ) {
-				bm_page_in_xparent_texture( mfbip->anim_id );
-				++idx;
-			}
-			else {
-				Warning(LOCATION, "Muzleflash \"%s\", blob [%d/" SIZE_T_ARG "]\nMuzzleflash blob \"%s\" not found!  Deleting.", 
-					Mflash_info[i].name, original_idx, original_num_blobs, Mflash_info[i].blobs[idx].name);
-				Mflash_info[i].blobs.erase( Mflash_info[i].blobs.begin() + idx );
-			}
-			++original_idx;
-		}
-	}
-}
-
-// initialize muzzle flash stuff for the level
-void mflash_level_init()
-{
-	uint i, idx;
-
-	// reset all anim usage for this level
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			Mflash_info[i].used_this_level = 0;
-		}
-	}
-}
-
-// shutdown stuff for the level
-void mflash_level_close()
-{
-	uint i, idx;
-
-	// release all anims
-	for ( i = 0; i < Mflash_info.size(); i++) {
-		// blobs
-		for ( idx = 0; idx < Mflash_info[i].blobs.size(); idx++) {
-			if ( Mflash_info[i].blobs[idx].anim_id < 0 )
-				continue;
-
-			bm_release( Mflash_info[i].blobs[idx].anim_id );
-			Mflash_info[i].blobs[idx].anim_id = -1;
-		}
-	}
-}
-
-// create a muzzle flash on the guy
-void mflash_create(const vec3d *gun_pos, const vec3d *gun_dir, const physics_info *pip, int mflash_type, const object *local)
-{	
-	// mflash *mflashp;
-	mflash_info *mi;
-	mflash_blob_info *mbi;
-	uint idx;
-
-	// standalone server should never create trails
-	if(Game_mode & GM_STANDALONE_SERVER){
-		return;
-	}
-
-	// illegal value
-	if ( (mflash_type < 0) || (mflash_type >= (int)Mflash_info.size()) )
-		return;
-
-	// create the actual animations	
-	mi = &Mflash_info[mflash_type];
-
-	if (local != NULL) {
-		int attached_objnum = OBJ_INDEX(local);
-
-		// This muzzle flash is in local space, so its world position must be derived to apply scaling.
-		vec3d gun_world_pos;
-		vm_vec_unrotate(&gun_world_pos, gun_pos, &Objects[attached_objnum].orient);
-		vm_vec_add2(&gun_world_pos, &Objects[attached_objnum].pos);
-
-		for (idx = 0; idx < mi->blobs.size(); idx++) {
-			mbi = &mi->blobs[idx];
-
-			// bogus anim
-			if (mbi->anim_id < 0)
-				continue;
-
-			// fire it up
-			particle::particle_info p;
-			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
-			vm_vec_zero(&p.vel);
-			//vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.type = particle::PARTICLE_BITMAP;
-			p.optional_data = mbi->anim_id;
-			p.attached_objnum = attached_objnum;
-			p.attached_sig = local->signature;
-
-			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&gun_world_pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
-
-			particle::create(&p);
-		}
-	} else {
-		for (idx = 0; idx < mi->blobs.size(); idx++) {
-			mbi = &mi->blobs[idx];
-
-			// bogus anim
-			if (mbi->anim_id < 0)
-				continue;
-
-			// fire it up
-			particle::particle_info p;
-			vm_vec_scale_add(&p.pos, gun_pos, gun_dir, mbi->offset);
-			vm_vec_scale_add(&p.vel, &pip->rotvel, &pip->vel, 1.0f);
-			p.type = particle::PARTICLE_BITMAP;
-			p.optional_data = mbi->anim_id;
-			p.attached_objnum = -1;
-			p.attached_sig = 0;
-
-			// Scale the radius of the muzzle flash effect so that it always appears some minimum width in pixels.
-			p.rad = model_render_get_diameter_clamped_to_min_pixel_size(&p.pos, mbi->radius * 2.0f, Min_pizel_size_muzzleflash) / 2.0f;
-
-			particle::create(&p);
-		}
-	}		
-}
-
-// lookup type by name
-int mflash_lookup(const char *name)
-{	
-	uint idx;
-
-	// look it up
-	for (idx = 0; idx < Mflash_info.size(); idx++) {
-		if ( !stricmp(name, Mflash_info[idx].name) )
-			return idx;
-	}
-
-	// couldn't find it
-	return -1;	
+particle::ParticleEffectHandle mflash_lookup(const char *name) {
+	return particle::ParticleManager::get()->getEffectByName(mflash_particle_prefix + name);
 }

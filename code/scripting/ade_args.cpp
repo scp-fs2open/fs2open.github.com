@@ -38,7 +38,7 @@ bool get_single_arg(lua_State* L, const get_args_state& state, char fmt, const c
 	Assertion(fmt == 's', "Invalid character '%c' for string type!", fmt);
 
 	if (lua_isstring(L, state.nargs)) {
-		auto value = lua_tostring(L, state.nargs);
+		auto value = lua_tostring_nullsafe(L, state.nargs);
 
 		if (Unicode_text_mode) {
 			// Validate the string when we are in unicode mode to ensure that FSO doesn't just crash when a

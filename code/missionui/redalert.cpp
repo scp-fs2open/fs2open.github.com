@@ -517,32 +517,36 @@ void red_alert_bash_weapons(const red_alert_ship_status *ras, ship_weapon *swp)
 		return;
 	}
 
-	// modified to accommodate ballistics - Goober5000
-	list_size = (int)ras->primary_weapons.size();
-	CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
-	for (i = 0; i < list_size; i++) {
-		Assert( ras->primary_weapons[i].index >= 0 );
+	if (!ras->primary_weapons.empty()) {
+		// modified to accommodate ballistics - Goober5000
+		list_size = static_cast<int>(ras->primary_weapons.size());
+		CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
+		for (i = 0; i < list_size; i++) {
+			Assert( ras->primary_weapons[i].index >= 0 );
 
-		swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
-		swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
+			swp->primary_bank_weapons[i] = ras->primary_weapons[i].index;
+			swp->primary_bank_ammo[i] = ras->primary_weapons[i].count;
 
-		if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
-			// adjust to correct ammo count, per red_alert_store_weapons()
-			swp->primary_bank_ammo[i] -= 2;
+			if (Weapon_info[swp->primary_bank_weapons[i]].wi_flags[Weapon::Info_Flags::Ballistic]) {
+				// adjust to correct ammo count, per red_alert_store_weapons()
+				swp->primary_bank_ammo[i] -= 2;
+			}
 		}
+		swp->num_primary_banks = list_size;
 	}
-	swp->num_primary_banks = list_size;
 
-	// bash secondary weapons
-	list_size = (int)ras->secondary_weapons.size();
-	CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
-	for (i = 0; i < list_size; i++) {
-		Assert( ras->secondary_weapons[i].index >= 0 );
+	if (!ras->secondary_weapons.empty()) {
+		// bash secondary weapons
+		list_size = static_cast<int>(ras->secondary_weapons.size());
+		CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
+		for (i = 0; i < list_size; i++) {
+			Assert( ras->secondary_weapons[i].index >= 0 );
 
-		swp->secondary_bank_weapons[i] = ras->secondary_weapons[i].index;
-		swp->secondary_bank_ammo[i] = ras->secondary_weapons[i].count;
+			swp->secondary_bank_weapons[i] = ras->secondary_weapons[i].index;
+			swp->secondary_bank_ammo[i] = ras->secondary_weapons[i].count;
+		}
+		swp->num_secondary_banks = list_size;
 	}
-	swp->num_secondary_banks = list_size;
 }
 
 void red_alert_bash_weapons(const red_alert_ship_status *ras, p_object *pobjp)
@@ -572,33 +576,39 @@ void red_alert_bash_weapons(const red_alert_ship_status *ras, p_object *pobjp)
 		return;
 	}
 
-	// bash primary weapons
-	list_size = (int)ras->primary_weapons.size();
-	CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
-	for (i = 0; i < list_size; i++)
+	if (!ras->primary_weapons.empty())
 	{
-		Assert( ras->primary_weapons[i].index >= 0 );
-		sssp->primary_banks[i] = ras->primary_weapons[i].index;
-
-		if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+		// bash primary weapons
+		list_size = static_cast<int>(ras->primary_weapons.size());
+		CLAMP(list_size, 0, MAX_SHIP_PRIMARY_BANKS);
+		for (i = 0; i < list_size; i++)
 		{
-			float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
-			sssp->primary_ammo[i] = (int)std::lround(100.0f * (ras->primary_weapons[i].count - 2) / max_count);
+			Assert( ras->primary_weapons[i].index >= 0 );
+			sssp->primary_banks[i] = ras->primary_weapons[i].index;
+
+			if (Weapon_info[sssp->primary_banks[i]].wi_flags[Weapon::Info_Flags::Ballistic])
+			{
+				float max_count = sip->primary_bank_ammo_capacity[i] / Weapon_info[sssp->primary_banks[i]].cargo_size;
+				sssp->primary_ammo[i] = fl2i(std::lround(100.0f * (ras->primary_weapons[i].count - 2) / max_count));
+			}
+			else
+				sssp->primary_ammo[i] = 100;
 		}
-		else
-			sssp->primary_ammo[i] = 100;
 	}
 
-	// bash secondary weapons
-	list_size = (int)ras->secondary_weapons.size();
-	CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
-	for (i = 0; i < list_size; i++)
+	if (!ras->secondary_weapons.empty())
 	{
-		Assert( ras->secondary_weapons[i].index >= 0 );
-		sssp->secondary_banks[i] = ras->secondary_weapons[i].index;
+		// bash secondary weapons
+		list_size = static_cast<int>(ras->secondary_weapons.size());
+		CLAMP(list_size, 0, MAX_SHIP_SECONDARY_BANKS);
+		for (i = 0; i < list_size; i++)
+		{
+			Assert( ras->secondary_weapons[i].index >= 0 );
+			sssp->secondary_banks[i] = ras->secondary_weapons[i].index;
 
-		float max_count = sip->secondary_bank_ammo_capacity[i] / Weapon_info[sssp->secondary_banks[i]].cargo_size;
-		sssp->secondary_ammo[i] = (int)std::lround(100.0f * ras->secondary_weapons[i].count / max_count);
+			float max_count = sip->secondary_bank_ammo_capacity[i] / Weapon_info[sssp->secondary_banks[i]].cargo_size;
+			sssp->secondary_ammo[i] = fl2i(std::lround(100.0f * ras->secondary_weapons[i].count / max_count));
+		}
 	}
 }
 
@@ -613,28 +623,32 @@ void red_alert_bash_subsys_status(const red_alert_ship_status *ras, ship *shipp)
 		return;
 	}
 
-	ss = GET_FIRST(&shipp->subsys_list);
-	while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
-		// using at() here for the bounds check, although out-of-bounds should
-		// probably never happen here
-		try {
-			ss->current_hits = ras->subsys_current_hits.at(count);
-		} catch (const std::out_of_range&) {
-			break;
-		}
+	if (!ras->subsys_current_hits.empty()) {
+		ss = GET_FIRST(&shipp->subsys_list);
+		while ( ss != END_OF_LIST( &shipp->subsys_list ) ) {
+			// using at() here for the bounds check, although out-of-bounds should
+			// probably never happen here
+			try {
+				ss->current_hits = ras->subsys_current_hits.at(count);
+			} catch (const std::out_of_range&) {
+				break;
+			}
 
-		if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
-			ss->submodel_instance_1->blown_off = true;
-		}
+			if (ss->current_hits <= 0 && ss->submodel_instance_1 != nullptr) {
+				ss->submodel_instance_1->blown_off = true;
+			}
 
-		ss = GET_NEXT( ss );
-		count++;
+			ss = GET_NEXT( ss );
+			count++;
+		}
 	}
 
-	list_size = (int)ras->subsys_aggregate_current_hits.size();
-	CLAMP(list_size, 0, SUBSYSTEM_MAX);
-	for (i = 0; i < list_size; i++) {
-		shipp->subsys_info[i].aggregate_current_hits = ras->subsys_aggregate_current_hits[i];
+	if (!ras->subsys_aggregate_current_hits.empty()) {
+		list_size = static_cast<int>(ras->subsys_aggregate_current_hits.size());
+		CLAMP(list_size, 0, SUBSYSTEM_MAX);
+		for (i = 0; i < list_size; i++) {
+			shipp->subsys_info[i].aggregate_current_hits = ras->subsys_aggregate_current_hits[i];
+		}
 	}
 }
 
@@ -936,6 +950,14 @@ void red_alert_bash_ship_status()
 
 				// assign the wave number to the wing
 				wingp->current_wave = rws->latest_wave;
+				
+				// make sure that num_waves can accommodate the new value of current_wave.
+				// this would happen if the mission we are entering has too few waves.
+				if (wingp->num_waves < wingp->current_wave)
+				{
+					mprintf(("Red alert warning: wing %s in the current mission has fewer waves than in the last mission.  Bashing the number of waves from %i to %i.\n", wingp->name, wingp->num_waves, wingp->current_wave));
+					wingp->num_waves = wingp->current_wave;
+				}
 
 				if (rws->latest_wave > 1)
 				{

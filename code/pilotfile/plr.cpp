@@ -10,11 +10,13 @@
 #include "localization/localize.h"
 #include "menuui/techmenu.h"
 #include "network/multi.h"
+#include "options/OptionsManager.h"
 #include "osapi/osregistry.h"
 #include "parse/sexp_container.h"
 #include "pilotfile/pilotfile.h"
 #include "pilotfile/BinaryFileHandler.h"
 #include "pilotfile/JSONFileHandler.h"
+#include "pilotfile/plr_hudprefs.h"
 #include "playerman/managepilot.h"
 #include "playerman/player.h"
 #include "scripting/hook_api.h"
@@ -181,18 +183,40 @@ void pilotfile::plr_write_info()
 
 void pilotfile::plr_read_hud()
 {
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
 	int strikes = 0;
 	// flags
-	HUD_config.show_flags = handler->readInt("show_flags");
-	HUD_config.show_flags2 = handler->readInt("show_flags2");
+	int show_flags = handler->readInt("show_flags");
+	int show_flags2 = handler->readInt("show_flags2");
 
-	HUD_config.popup_flags = handler->readInt("popup_flags");
-	HUD_config.popup_flags2 = handler->readInt("popup_flags2");
+	int popup_flags = handler->readInt("popup_flags");
+	int popup_flags2 = handler->readInt("popup_flags2");
+
+	// Convert show_flags (0-31) and show_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (show_flags & (1 << i)) : (show_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_visibility(gauge_id, is_set);
+		}
+	}
+
+	// Convert popup_flags (0-31) and popup_flags2 (32-63)
+	for (int i = 0; i < 64; i++) {
+		bool is_set = (i < 32) ? (popup_flags & (1 << i)) : (popup_flags2 & (1 << (i - 32)));
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+
+		if (!gauge_id.empty()) {
+			HUD_config.set_gauge_popup(gauge_id, is_set);
+		}
+	}
 
 	// settings
-	HUD_config.num_msg_window_lines = handler->readUByte("num_msg_window_lines");
+	SCP_UNUSED(handler->readUByte("num_msg_window_lines"));// Deprecated but still read for file compatibility 3/7/2025
+	SCP_UNUSED(handler->readInt("rp_flags"));// Deprecated but still read for file compatibility 3/7/2025
 
-	HUD_config.rp_flags = handler->readInt("rp_flags");
 	HUD_config.rp_dist = handler->readInt("rp_dist");
 	if (HUD_config.rp_dist < 0 || HUD_config.rp_dist >= RR_MAX_RANGES) {
 		ReleaseWarning(LOCATION, "Player file has invalid radar range %d, setting to default.\n", HUD_config.rp_dist);
@@ -202,9 +226,9 @@ void pilotfile::plr_read_hud()
 
 	// basic colors
 	HUD_config.main_color = handler->readInt("main_color");
-	if (HUD_config.main_color < 0 || HUD_config.main_color >= HUD_COLOR_SIZE) {
+	if (HUD_config.main_color < 0 || HUD_config.main_color >= NUM_HUD_COLOR_PRESETS) {
 		ReleaseWarning(LOCATION, "Player file has invalid main color selection %i, setting to default.\n", HUD_config.main_color);
-		HUD_config.main_color = HUD_COLOR_GREEN;
+		HUD_config.main_color = HUD_COLOR_PRESET_1;
 		strikes++;
 	}
 
@@ -219,11 +243,15 @@ void pilotfile::plr_read_hud()
 		ReleaseWarning(LOCATION, "Player file has too many hud config errors, and is likely corrupted. Please verify and save your settings in the hud config menu.");
 	}
 
-	hud_config_set_color(HUD_config.main_color);
+	// This seemed to be previously used to ensure a valid color was set
+	// but under the new method we can rely on the getter to return a valid color
+	// in all cases. So comment this out to prevent forcing a default color on
+	// custom gauges that rely on color by their gauge type
+	//hud_config_set_color(HUD_config.main_color);
 
 	// gauge-specific colors
 	auto num_gauges = handler->startArrayRead("hud_gauges");
-	for (size_t idx = 0; idx < num_gauges; idx++, handler->nextArraySection()) {
+	for (int idx = 0; idx < static_cast<int>(num_gauges); idx++, handler->nextArraySection()) {
 		ubyte red = handler->readUByte("red");
 		ubyte green = handler->readUByte("green");
 		ubyte blue = handler->readUByte("blue");
@@ -234,31 +262,62 @@ void pilotfile::plr_read_hud()
 			continue;
 		}
 
-		HUD_config.clr[idx].red = red;
-		HUD_config.clr[idx].green = green;
-		HUD_config.clr[idx].blue = blue;
-		HUD_config.clr[idx].alpha = alpha;
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		if (!gauge_id.empty()) {
+			color clr;
+			gr_init_alphacolor(&clr, red, green, blue, alpha);
+			HUD_config.set_gauge_color(gauge_id, clr);
+		}
 	}
 	handler->endArrayRead();
 }
 
 void pilotfile::plr_write_hud()
 {
-	int idx;
-
 	handler->startSectionWrite(Section::HUD);
 
-	// flags
-	handler->writeInt("show_flags", HUD_config.show_flags);
-	handler->writeInt("show_flags2", HUD_config.show_flags2);
+	// Get gauge mappings instance
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
 
-	handler->writeInt("popup_flags", HUD_config.popup_flags);
-	handler->writeInt("popup_flags2", HUD_config.popup_flags2);
+	// Initialize bitfields
+	int show_flags = 0, show_flags2 = 0;
+	int popup_flags = 0, popup_flags2 = 0;
+
+	// Convert show_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_visible(gauge_id)) {
+			if (i < 32) {
+				show_flags |= (1 << i);
+			} else {
+				show_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Convert popup_flags_map to bitfield
+	for (int i = 0; i < 64; i++) {
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(i);
+		if (!gauge_id.empty() && HUD_config.is_gauge_popup(gauge_id)) {
+			if (i < 32) {
+				popup_flags |= (1 << i);
+			} else {
+				popup_flags2 |= (1 << (i - 32));
+			}
+		}
+	}
+
+	// Write converted bitfields
+	handler->writeInt("show_flags", show_flags);
+	handler->writeInt("show_flags2", show_flags2);
+
+	handler->writeInt("popup_flags", popup_flags);
+	handler->writeInt("popup_flags2", popup_flags2);
 
 	// settings
-	handler->writeUByte("num_msg_window_lines", HUD_config.num_msg_window_lines);
+	handler->writeUByte("num_msg_window_lines", 0);// Deprecated but still written for file compatibility 3/7/2025
+	handler->writeInt("rp_flags", 0);// Deprecated but still written for file compatibility 3/7/2025
 
-	handler->writeInt("rp_flags", HUD_config.rp_flags);
 	handler->writeInt("rp_dist", HUD_config.rp_dist);
 
 	// basic colors
@@ -267,13 +326,17 @@ void pilotfile::plr_write_hud()
 
 	// gauge-specific colors
 	handler->startArrayWrite("hud_gauges", NUM_HUD_GAUGES);
-	for (idx = 0; idx < NUM_HUD_GAUGES; idx++) {
+	for (int idx = 0; idx < NUM_HUD_GAUGES; idx++) {
 		handler->startSectionWrite(Section::Unnamed);
 
-		handler->writeUByte("red", HUD_config.clr[idx].red);
-		handler->writeUByte("green", HUD_config.clr[idx].green);
-		handler->writeUByte("blue", HUD_config.clr[idx].blue);
-		handler->writeUByte("alpha", HUD_config.clr[idx].alpha);
+		// Get the gauge string ID from numeric ID
+		SCP_string gauge_id = gauge_map.get_string_id_from_numeric_id(idx);
+		color clr = HUD_config.get_gauge_color(gauge_id);
+
+		handler->writeUByte("red", clr.red);
+		handler->writeUByte("green", clr.green);
+		handler->writeUByte("blue", clr.blue);
+		handler->writeUByte("alpha", clr.alpha);
 
 		handler->endSectionWrite();
 	}
@@ -415,12 +478,19 @@ void pilotfile::plr_read_multiplayer()
 	p->m_local_options.flags = handler->readInt("local_flags");
 	p->m_local_options.obj_update_level = handler->readInt("obj_update_level");
 
+	// Make sure multi options from player file are reflected by the OptionsManager
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.LocalBroadcast", (p->m_local_options.flags & MLO_FLAG_LOCAL_BROADCAST));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.FlushCache", (p->m_local_options.flags & MLO_FLAG_FLUSH_CACHE));
+	options::OptionsManager::instance()->set_ingame_binary_option("Multi.TransferMissions", (p->m_local_options.flags & MLO_FLAG_XFER_MULTIDATA));
+
 	// netgame protocol
 	Multi_options_g.protocol = handler->readInt("protocol");
 
 	if (Multi_options_g.protocol == NET_VMT) {
 		Multi_options_g.protocol = NET_TCP;
 		Multi_options_g.pxo = true;
+		// also update PXO in-game value
+		options::OptionsManager::instance()->set_ingame_binary_option("Multi.TogglePXO", Multi_options_g.pxo);
 	} else if (Multi_options_g.protocol != NET_TCP) {
 		Multi_options_g.protocol = NET_TCP;
 	}
@@ -715,7 +785,7 @@ void pilotfile::plr_read_controls()
 		SCP_string buf = handler->readString("preset");
 
 		auto it = std::find_if(Control_config_presets.begin(), Control_config_presets.end(),
-							   [buf](const CC_preset& preset) { return preset.name == buf; });
+							   [&buf](const CC_preset& preset) { return preset.name == buf; });
 
 		if (it == Control_config_presets.end()) {
 			Assertion(!Control_config_presets.empty(), "[PLR] Error reading Controls! Control_config_presets empty! Get a coder!");
@@ -797,87 +867,88 @@ void pilotfile::plr_read_settings()
 {
 	clamped_range_warnings.clear();
 	// sound/voice/music
-	if (!Using_in_game_options) {
-		float temp_volume = handler->readFloat("master_sound_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
-		snd_set_effects_volume(temp_volume);
+	float temp_volume = handler->readFloat("master_sound_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Effects Volume");
+	snd_set_effects_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Effects", Master_sound_volume);
 
-		temp_volume = handler->readFloat("master_event_music_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
-		event_music_set_volume(temp_volume);
+	temp_volume = handler->readFloat("master_event_music_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Music Volume");
+	event_music_set_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Music", Master_event_music_volume);
 
-		temp_volume = handler->readFloat("aster_voice_volume");
-		clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
-		snd_set_voice_volume(temp_volume);
+	temp_volume = handler->readFloat("aster_voice_volume");
+	clamp_value_with_warn(&temp_volume, 0.f, 1.f, "Voice Volume");
+	snd_set_voice_volume(temp_volume);
+	options::OptionsManager::instance()->set_ingame_range_option("Audio.Voice", Master_voice_volume);
 
-		Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the
-		// correct offset
-		handler->readFloat("master_sound_volume");
-		handler->readFloat("master_event_music_volume");
-		handler->readFloat("aster_voice_volume");
-
-		handler->readInt("briefing_voice_enabled");
-	}
+	Briefing_voice_enabled = handler->readInt("briefing_voice_enabled") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Audio.BriefingVoice", Briefing_voice_enabled);
 
 	// skill level
 	Game_skill_level = handler->readInt("game_skill_level");
 	clamp_value_with_warn(&Game_skill_level, 0, 4, "Skill Level");
+	options::OptionsManager::instance()->set_ingame_range_option("Game.SkillLevel", Game_skill_level);
 
 	// input options
-	if (!Using_in_game_options) {
-		Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
-		Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
-		clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
-		Joy_sensitivity    = handler->readInt("joy_sensitivity");
-		clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
-		Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
-		clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	Use_mouse_to_fly   = handler->readInt("use_mouse_to_fly") != 0;
+	options::OptionsManager::instance()->set_ingame_binary_option("Input.UseMouse", Use_mouse_to_fly);
 
-		// detail
-		Detail.setting           = handler->readInt("setting");
-		clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
-		Detail.nebula_detail     = handler->readInt("nebula_detail");
-		clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
-		Detail.detail_distance   = handler->readInt("detail_distance");
-		clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
-		Detail.hardware_textures = handler->readInt("hardware_textures");
-		clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
-		Detail.num_small_debris  = handler->readInt("num_small_debris");
-		clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
-		Detail.num_particles     = handler->readInt("num_particles");
-		clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
-		Detail.num_stars         = handler->readInt("num_stars");
-		clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
-		Detail.shield_effects    = handler->readInt("shield_effects");
-		clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
-		Detail.lighting          = handler->readInt("lighting");
-		clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
-		Detail.targetview_model  = handler->readInt("targetview_model");
-		Detail.planets_suns      = handler->readInt("planets_suns");
-		Detail.weapon_extras     = handler->readInt("weapon_extras");
-	} else {
-		// The values are set by the in-game menu but we still need to read the int from the file to maintain the correct offset
-		handler->readInt("use_mouse_to_fly");
-		handler->readInt("mouse_sensitivity");
-		handler->readInt("joy_sensitivity");
-		handler->readInt("joy_dead_zone_size");
+	Mouse_sensitivity  = handler->readInt("mouse_sensitivity");
+	clamp_value_with_warn(&Mouse_sensitivity, 0, 9, "Mouse Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.MouseSensitivity", Mouse_sensitivity);
 
-		// detail
-		handler->readInt("setting");
-		handler->readInt("nebula_detail");
-		handler->readInt("detail_distance");
-		handler->readInt("hardware_textures");
-		handler->readInt("num_small_debris");
-		handler->readInt("num_particles");
-		handler->readInt("num_stars");
-		handler->readInt("shield_effects");
-		handler->readInt("lighting");
-		handler->readInt("targetview_model");
-		handler->readInt("planets_suns");
-		handler->readInt("weapon_extras");
-	}
+	Joy_sensitivity    = handler->readInt("joy_sensitivity");
+	clamp_value_with_warn(&Joy_sensitivity, 0, 9, "Joystick Sensitivity");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickSensitivity", Joy_sensitivity);
+
+	Joy_dead_zone_size = handler->readInt("joy_dead_zone_size");
+	clamp_value_with_warn(&Joy_dead_zone_size, 0, 45, "Joystick Deadzone");
+	options::OptionsManager::instance()->set_ingame_range_option("Input.JoystickDeadZome", Joy_dead_zone_size);
+
+	// detail
+	//Preset not handled by OptionsManager
+	int setting_value           = handler->readInt("setting");
+	clamp_value_with_warn(&setting_value, -1, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1, "Detail Level Preset");
+	Detail.setting = static_cast<DefaultDetailPreset>(setting_value);
+
+	Detail.nebula_detail     = handler->readInt("nebula_detail");
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.NebulaDetail", Detail.nebula_detail);
+
+	Detail.detail_distance   = handler->readInt("detail_distance");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_VALUE, "Model Detail");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Detail", Detail.detail_distance);
+
+	Detail.hardware_textures = handler->readInt("hardware_textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_VALUE, "3D Hardware Textures");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Texture", Detail.hardware_textures);
+
+	Detail.num_small_debris  = handler->readInt("num_small_debris");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_VALUE, "Impact Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.SmallDebris", Detail.num_small_debris);
+
+	Detail.num_particles     = handler->readInt("num_particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_VALUE, "Particles");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Particles", Detail.num_particles);
+
+	Detail.num_stars         = handler->readInt("num_stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_VALUE, "Stars");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Stars", Detail.num_stars);
+
+	Detail.shield_effects    = handler->readInt("shield_effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_VALUE, "Shield Hit Effects");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.ShieldEffects", Detail.shield_effects);
+
+	Detail.lighting          = handler->readInt("lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_VALUE, "Lighting");
+	options::OptionsManager::instance()->set_ingame_multi_option("Graphics.Lighting", Detail.lighting);
+
+	//Rest not handled by OptionsManager
+	Detail.targetview_model  = handler->readInt("targetview_model");
+	Detail.planets_suns      = handler->readInt("planets_suns");
+	Detail.weapon_extras     = handler->readInt("weapon_extras");
+
 	if (!clamped_range_warnings.empty()) {
 		ReleaseWarning(LOCATION, "The following values in the pilot file were out of bounds and were automatically reset:\n%s\nPlease check your settings!\n", clamped_range_warnings.c_str());
 		clamped_range_warnings.clear();
@@ -912,23 +983,26 @@ void pilotfile::plr_write_settings()
 	handler->writeInt("joy_dead_zone_size", Joy_dead_zone_size);
 
 	// detail
-	clamp_value_with_warn(&Detail.setting, -1, NUM_DEFAULT_DETAIL_LEVELS - 1, "Detail Level Preset");
-	handler->writeInt("setting", Detail.setting);
-	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_LEVEL, "Nebula Detail");
+	int setting_value = static_cast<int>(Detail.setting); // Convert enum to int for clamping
+	clamp_value_with_warn(&setting_value, -1, static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1, "Detail Level Preset");
+	Detail.setting = static_cast<DefaultDetailPreset>(setting_value); // Convert back to enum
+	handler->writeInt("setting", setting_value);
+
+	clamp_value_with_warn(&Detail.nebula_detail, 0, MAX_DETAIL_VALUE, "Nebula Detail");
 	handler->writeInt("nebula_detail", Detail.nebula_detail);
-	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_LEVEL, "Model Detail");
+	clamp_value_with_warn(&Detail.detail_distance, 0, MAX_DETAIL_VALUE, "Model Detail");
 	handler->writeInt("detail_distance", Detail.detail_distance);
-	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_LEVEL, "3D Hardware Textures");
+	clamp_value_with_warn(&Detail.hardware_textures, 0, MAX_DETAIL_VALUE, "3D Hardware Textures");
 	handler->writeInt("hardware_textures", Detail.hardware_textures);
-	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_LEVEL, "Impact Effects");
+	clamp_value_with_warn(&Detail.num_small_debris, 0, MAX_DETAIL_VALUE, "Impact Effects");
 	handler->writeInt("num_small_debris", Detail.num_small_debris);
-	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_LEVEL, "Particles");
+	clamp_value_with_warn(&Detail.num_particles, 0, MAX_DETAIL_VALUE, "Particles");
 	handler->writeInt("num_particles", Detail.num_particles);
-	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_LEVEL, "Stars");
+	clamp_value_with_warn(&Detail.num_stars, 0, MAX_DETAIL_VALUE, "Stars");
 	handler->writeInt("num_stars", Detail.num_stars);
-	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_LEVEL, "Shield Hit Effects");
+	clamp_value_with_warn(&Detail.shield_effects, 0, MAX_DETAIL_VALUE, "Shield Hit Effects");
 	handler->writeInt("shield_effects", Detail.shield_effects);
-	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_LEVEL, "Lighting");
+	clamp_value_with_warn(&Detail.lighting, 0, MAX_DETAIL_VALUE, "Lighting");
 	handler->writeInt("lighting", Detail.lighting);
 	handler->writeInt("targetview_model", Detail.targetview_model);
 	handler->writeInt("planets_suns", Detail.planets_suns);
@@ -966,7 +1040,7 @@ void pilotfile::plr_reset_data(bool reset_all)
 	scoring_special_t blank_score;
 
 	all_time_stats = blank_score;
-	multi_stats = blank_score;
+	multi_stats = std::move(blank_score);
 
 	// clear variables
 	p->variables.clear();
@@ -1036,7 +1110,7 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if ( !fp ) {
 		mprintf(("PLR => Unable to open '%s' for reading!\n", filename.c_str()));
@@ -1146,6 +1220,13 @@ bool pilotfile::load_player(const char* callsign, player* _p, bool force_binary)
 	}
 	handler->endSectionRead();
 
+	mprintf(("HUDPREFS => Loading extended player HUD preferences...\n"));
+	hud_config_load_player_prefs(callsign); 
+
+	// Probably don't need to persist these to disk but it'll make sure on next boot we start with these player options set
+	// The github tests don't know what to do with the ini file so I guess we'll skip this for now
+	//options::OptionsManager::instance()->persistChanges();
+
 	// restore the callsign into the Player structure
 	strcpy_s(p->callsign, callsign);
 
@@ -1207,7 +1288,7 @@ bool pilotfile::save_player(player *_p)
 	filename += ".json";
 
 	// open it, hopefully...
-	auto fp = cfopen(filename.c_str(), "wb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "wb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {
@@ -1258,6 +1339,9 @@ bool pilotfile::save_player(player *_p)
 
 	handler->flush();
 
+	mprintf(("HUDPREFS => Saving player HUD preferences (testing)...\n"));
+	hud_config_save_player_prefs(p->callsign);
+
 	// Done!
 	mprintf(("PLR => Saving complete!\n"));
 
@@ -1280,7 +1364,7 @@ bool pilotfile::verify(const char *fname, int *rank, char *valid_language, int* 
 		return false;
 	}
 
-	auto fp = cfopen(filename.c_str(), "rb", CFILE_NORMAL, CF_TYPE_PLAYERS, false,
+	auto fp = cfopen(filename.c_str(), "rb", CF_TYPE_PLAYERS, false,
 	                 CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if ( !fp ) {

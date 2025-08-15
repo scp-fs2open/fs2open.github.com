@@ -70,6 +70,8 @@ SCP_vector<polymodel_instance*> Polygon_model_instances;
 
 SCP_vector<bsp_collision_tree> Bsp_collision_tree_list;
 
+const ubyte* Macro_ubyte_bounds = nullptr;
+
 static int model_initted = 0;
 
 #ifndef NDEBUG
@@ -491,12 +493,13 @@ void get_user_prop_value(char *buf, char *value)
 	while ( isspace(*p) || (*p == '=') )		// skip white space and equal sign
 		p++;
 	p1 = p;
-	while ( !iscntrl(*p1) )
+	while ( !iscntrl(*p1) )						// copy until we get to a control character
 		p1++;
 	c = *p1;
 	*p1 = '\0';
 	strcpy(value, p);
 	*p1 = c;
+	drop_trailing_white_space(value);			// trim ending whitespace, just as we trimmed leading whitespace
 }
 
 // routine to parse out a vec3d from a user property field of an object
@@ -1113,20 +1116,17 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		}
 	}
 #ifndef NDEBUG
-	char bname[_MAX_FNAME];
-
 	if ( !ss_warning_shown_mismatch) {
-		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		// Lets still give a comment about it and not just erase it
 		Warning(LOCATION,"Not all subsystems in model \"%s\" have a record in ships.tbl.\nThis can cause game to crash.\n\nList of subsystems not found from table is in log file.\n", model_get(model_num)->filename );
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 		ss_warning_shown_mismatch = true;
-	} else
+	}
 #endif
-		mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
+	mprintf(("Subsystem %s in model %s was not found in ships.tbl!\n", subobj_name, model_get(model_num)->filename));
 
 #ifndef NDEBUG
 	if ( ss_fp )	{
+		char bname[FILESPEC_LENGTH];
 		_splitpath(model_filename, NULL, NULL, bname, NULL);
 		mprintf(("A subsystem was found in model %s that does not have a record in ships.tbl.\nA list of subsystems for this ship will be dumped to:\n\ndata%stables%s%s.subsystems for inclusion\ninto ships.tbl.\n", model_filename, DIR_SEPARATOR_STR, DIR_SEPARATOR_STR, bname));
 		char tmp_buffer[128];
@@ -1134,7 +1134,6 @@ void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num,
 		cfputs(tmp_buffer, ss_fp);
 	}
 #endif
-
 }
 
 void print_family_tree(polymodel *obj)
@@ -1373,16 +1372,24 @@ void determine_submodel_movement(bool is_rotation, const char *filename, bsp_inf
 		if (in(p, props, axis_string))
 		{
 			if (get_user_vec3d_value(p + 20, movement_axis, true, sm->name, filename))
-				vm_vec_normalize(movement_axis);
+			{
+				if (!fl_near_zero(vm_vec_mag(movement_axis)))
+					vm_vec_normalize(movement_axis);
+				else
+				{
+					Warning(LOCATION, "%s on submodel '%s' on ship %s has a magnitude near zero!", axis_string, sm->name, filename);
+					*movement_type = MOVEMENT_TYPE_NONE;
+				}
+			}
 			else
 			{
-				Warning(LOCATION, "Failed to parse %s on subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+				Warning(LOCATION, "Failed to parse %s on submodel '%s' on ship %s!", axis_string, sm->name, filename);
 				*movement_type = MOVEMENT_TYPE_NONE;
 			}
 		}
 		else
 		{
-			Warning(LOCATION, "A %s was not specified for subsystem '%s' on ship %s!", axis_string, sm->name, filename);
+			Warning(LOCATION, "A %s was not specified for submodel '%s' on ship %s!", axis_string, sm->name, filename);
 			*movement_type = MOVEMENT_TYPE_NONE;
 		}
 	}
@@ -1486,8 +1493,9 @@ void do_movement_sanity_checks(bsp_info *sm, bsp_info *parent_sm, const char *fi
 
 	extract_movement_info(sm, is_rotation, movement_axis_id, movement_axis, movement_type);
 
-	// make sure this is a validly normalized axis
-	if (vm_vec_mag(movement_axis) < 0.999f || vm_vec_mag(movement_axis) > 1.001f)
+	// make sure this is a validly normalized axis - also catch axes that are unspecified or 0,0,0
+	// (it would be nice to warn here, but the signal to noise ratio is extremely poor)
+	if (!vm_vec_is_normalized(movement_axis))
 		*movement_type = MOVEMENT_TYPE_NONE;
 
 	// maybe use the FOR to manipulate the axes
@@ -1575,7 +1583,7 @@ void resolve_submodel_index(const polymodel *pm, const char *requester, const ch
 	submodel_index = -1;
 }
 
-modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, int ferror, model_read_deferred_tasks& subsystemParseList)
+modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& subsystemParseList)
 {
 	CFILE *fp;
 	int version;
@@ -1586,9 +1594,9 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	fp = cfopen(filename,"rb");
 
 	if (!fp) {
-		if (ferror == 1) {
+		if (error_type == ErrorType::FATAL_ERROR) {
 			Error( LOCATION, "Can't open model file <%s>", filename );
-		} else if (ferror == 0) {
+		} else if (error_type == ErrorType::WARNING) {
 			Warning( LOCATION, "Can't open model file <%s>", filename );
 		}
 
@@ -1602,13 +1610,13 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// code to get a filename to write out subsystem information for each model that
 	// is read.  This info is essentially debug stuff that is used to help get models
 	// into the game quicker
-#if 0
+#ifndef NDEBUG
 	{
-		char bname[_MAX_FNAME];
+		char bname[FILESPEC_LENGTH];
 
 		_splitpath(filename, NULL, NULL, bname, NULL);
 		sprintf(debug_name, "%s.subsystems", bname);
-		ss_fp = cfopen(debug_name, "wb", CFILE_NORMAL, CF_TYPE_TABLES );
+		ss_fp = cfopen(debug_name, "wb", CF_TYPE_TABLES );
 		if ( !ss_fp )	{
 			mprintf(( "Can't open debug file for writing subsystems for %s\n", filename));
 		} else {
@@ -1649,8 +1657,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 	memset( &pm->view_positions, 0, sizeof(pm->view_positions) );
 
-	// reset insignia counts
-	pm->num_ins = 0;
+	// reset insignia
+	pm->ins.clear();
 
 	// reset glow points!! - Goober5000
 	pm->n_glow_point_banks = 0;
@@ -1695,12 +1703,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
                 Assertion(pm->n_models >= 1, "Models without any submodels are not supported!");
 
 				// Check for unrealistic radii
-				if ( pm->rad <= 0.1f )
+				if ( pm->rad <= 0.00001f )
 				{
-					Warning(LOCATION, "Model <%s> has a radius <= 0.1f\n", filename);
+					Warning(LOCATION, "Model <%s> has a radius <= 0.00001f\n", filename);
 				}
 
-				pm->submodel = new bsp_info[pm->n_models];
+				pm->submodel = new bsp_info[MAX(1,pm->n_models)];
 
 				//Assert(pm->n_models <= MAX_SUBMODELS);
 
@@ -1882,8 +1890,8 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				cfread_string_len(props, MAX_PROP_LEN, fp);			// and the user properties
 
 				// Check for unrealistic radii
-				if ( sm->rad <= 0.1f ) {
-					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.1f\n", sm->name, filename);
+				if ( sm->rad <= 0.00001f ) {
+					Warning(LOCATION, "Submodel <%s> in model <%s> has a radius <= 0.00001f\n", sm->name, filename);
 				}
 				
 				// sanity first!
@@ -1934,19 +1942,24 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 				if (in(p, props, "$special")) {
 					char type[64];
+					SCP_string type_desc;
+					sprintf(type_desc, "$special property (for submodel %s) allowed token", sm->name);
 
 					get_user_prop_value(p+9, type);
-					if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+					const char* type_list[] = { "subsystem", "no_movement", "no_rotate", "no_translate" };
+					int type_index = string_lookup(type, type_list, 4, type_desc.c_str(), true, true);
+
+					if (type_index == 0) {	// if we have a subsystem, put it into the list!
 						subsystemParseList.model_subsystems.emplace(sm->name, model_read_deferred_tasks::model_subsystem_parse{ n, sm->rad, sm->offset, props });
 					} else {
-						if ( !stricmp(type, "no_rotate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 2 || type_index == 1) {	// this doesn't rotate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->rotation_type = MOVEMENT_TYPE_NONE;
 						} else {
 							// if submodel rotates (via bspgen), then there is either a subsys or special=no_rotate
 							Assert( sm->rotation_type != MOVEMENT_TYPE_REGULAR );
 						}
-						if ( !stricmp(type, "no_translate") || !stricmp(type, "no_movement") ) {
+						if (type_index == 3 || type_index == 1) {	// this doesn't translate
 							// mark those submodels which should not move - i.e., those with no subsystem
 							sm->translation_type = MOVEMENT_TYPE_NONE;
 						} else {
@@ -2053,45 +2066,38 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				}
 
 				// KeldorKatarn, with modifications
-				if (in(p, props, "$uvec")) {
-					matrix submodel_orient;
+				{
+					bool has_fvec = false, has_uvec = false, has_rvec = false;
+					vec3d fvec, uvec, rvec;
 
-					if (get_user_vec3d_value(p + 5, &submodel_orient.vec.uvec, false, sm->name, pm->filename)) {
-
-						if (in(p, props, "$fvec")) {
-
-							if (get_user_vec3d_value(p + 5, &submodel_orient.vec.fvec, false, sm->name, pm->filename)) {
-
-								vm_vec_normalize(&submodel_orient.vec.uvec);
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-
-								vm_vec_cross(&submodel_orient.vec.rvec, &submodel_orient.vec.uvec, &submodel_orient.vec.fvec);
-								vm_vec_cross(&submodel_orient.vec.fvec, &submodel_orient.vec.rvec, &submodel_orient.vec.uvec);
-
-								vm_vec_normalize(&submodel_orient.vec.fvec);
-								vm_vec_normalize(&submodel_orient.vec.rvec);
-
-								vm_orthogonalize_matrix(&submodel_orient);
-
-								sm->frame_of_reference = submodel_orient;
-
-							} else {
-								Warning(LOCATION,
-									"Submodel '%s' of model '%s' has an improperly formatted $fvec declaration in its properties."
-									"\n\n$fvec should be followed by 3 numbers separated with commas.",
-									sm->name, filename);
-							}
-						} else {
-							Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define both an up vector and a forward vector", sm->name);
-						}
-					} else {
-						Warning(LOCATION,
-							"Submodel '%s' of model '%s' has an improperly formatted $uvec declaration in its properties."
-							"\n\n$uvec should be followed by 3 numbers separated with commas.",
-							sm->name, filename);
-					}
-				} else {
+					// default
 					sm->frame_of_reference = parent_sm ? parent_sm->frame_of_reference : vmd_identity_matrix;
+
+					// parse what we can
+					auto vectors = { std::make_tuple("$fvec", &fvec, &has_fvec), std::make_tuple("$uvec", &uvec, &has_uvec), std::make_tuple("$rvec", &rvec, &has_rvec) };
+					for (auto &item : vectors)
+					{
+						if (in(p, props, std::get<0>(item)))
+						{
+							if (get_user_vec3d_value(p + 5, std::get<1>(item), false, sm->name, pm->filename))
+								*std::get<2>(item) = true;
+							else
+								Warning(LOCATION, "Submodel '%s' of model '%s' has an improperly formatted %s declaration in its properties.\n\n%s should be followed by 3 numbers separated with commas.", sm->name, filename, std::get<0>(item), std::get<0>(item));
+						}
+					}
+
+					// make a matrix if we have at least the fvec
+					if (has_fvec)
+					{
+						vm_vector_2_matrix(&sm->frame_of_reference, &fvec, has_uvec ? &uvec : nullptr, has_rvec ? &rvec : nullptr);
+
+						// if the look_at_offset is still the default value (hasn't been set by submodel properties), assume that
+						// by specifying the submodel orientation matrix we are also specifying the "looking" direction
+						if (sm->look_at_offset == -1.0f)
+							sm->look_at_offset = 0.0f;
+					}
+					else if (has_uvec || has_rvec)
+						Warning(LOCATION, "Improper custom orientation matrix for subsystem %s; you must define an $fvec", sm->name);
 				}
 
 				{
@@ -2106,7 +2112,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				{
 					sm->bsp_data_size = cfread_int(fp);
 					if (sm->bsp_data_size > 0) {
-						sm->bsp_data = (ubyte*)vm_malloc(sm->bsp_data_size);
+						sm->bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 						cfread(sm->bsp_data, 1, sm->bsp_data_size, fp);
 						swap_bsp_data(pm, sm->bsp_data);
 					}
@@ -2119,7 +2125,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 					sm->bsp_data_size = cfread_int(fp);
 
 					if (sm->bsp_data_size > 0) {
-						auto bsp_data = reinterpret_cast<ubyte *>(vm_malloc(sm->bsp_data_size));
+						auto bsp_data = reinterpret_cast<ubyte*>(vm_malloc(sm->bsp_data_size));
 
 						cfread(bsp_data, 1, sm->bsp_data_size, fp);
 
@@ -2314,12 +2320,6 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						cfread_string_len( props, MAX_PROP_LEN, fp );
 						if (in(p, props, "$name")) {
 							get_user_prop_value(p+5, bay->name);
-
-							auto length = strlen(bay->name);
-							if ((length > 0) && is_white_space(bay->name[length-1])) {
-								nprintf(("Model", "model '%s' has trailing whitespace on bay name '%s'; this will be trimmed\n", pm->filename, bay->name));
-								drop_trailing_white_space(bay->name);
-							}
 							if (strlen(bay->name) == 0) {
 								nprintf(("Model", "model '%s' has an empty name specified for docking point %d\n", pm->filename, i));
 							}
@@ -2374,8 +2374,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						for (j = 0; j < bay->num_slots; j++) {
 							cfread_vector( &(bay->pnt[j]), fp );
 							cfread_vector( &(bay->norm[j]), fp );
-							if(vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
-								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal. ", filename, bay->name);
+
+							if (vm_vec_mag(&(bay->norm[j])) <= 0.0f) {
+								Warning(LOCATION, "Model '%s' dock point '%s' has a null normal.  Generating a normal in the forward Z direction.", filename, bay->name);
+								bay->norm[j] = vmd_z_vector;
+							} else {
+								vm_vec_normalize(&(bay->norm[j]));
 							}
 						}
 
@@ -2631,11 +2635,16 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						Assert(pm->num_split_plane <= MAX_SPLIT_PLANE);
 					} else if (in(p, props_spcl, "$special")) {
 						char type[64];
+						SCP_string type_desc;
+						sprintf(type_desc, "$special property (for special point %s) allowed token", name);
 
 						get_user_prop_value(p+9, type);
-						if ( !stricmp(type, "subsystem") ) {	// if we have a subsystem, put it into the list!
+						const char *type_list[] = { "subsystem", "shieldpoint" };
+						int type_index = string_lookup(type, type_list, 2, type_desc.c_str(), true, true);
+
+						if (type_index == 0) {	// if we have a subsystem, put it into the list!
 							subsystemParseList.model_subsystems.emplace(&name[1], model_read_deferred_tasks::model_subsystem_parse{ -1, radius, pnt, props_spcl }); // skip the first '$' character of the name
-						} else if ( !stricmp(type, "shieldpoint") ) {
+						} else if (type_index == 1) {
 							pm->shield_points.push_back(pnt);
 						}
 					} else if (in(name, "$enginelarge") || in(name, "$enginehuge")) 
@@ -2662,8 +2671,14 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 				//mprintf(0,"  num textures = %d\n",n);
 				for (i=0; i<n; i++ )
 				{
-					char tmp_name[256];
+					char tmp_name[127];
 					cfread_string_len(tmp_name,127,fp);
+					constexpr int max_buffer_size = MAX_FILENAME_LEN - 8;	// leave room for the longest suffix, "-reflect"
+					if (strlen(tmp_name) >= max_buffer_size)
+					{
+						Warning(LOCATION, "Model '%s', texture '%s' filename is too long!  Truncating to %d characters.", pm->filename, tmp_name, max_buffer_size - 1);
+						tmp_name[max_buffer_size - 1] = '\0';
+					}
 					model_load_texture(pm, i, tmp_name);
 					//mprintf(0,"<%s>\n",name_buf);
 				}
@@ -2784,66 +2799,88 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 						pm->view_positions[i].parent = cfread_int( fp );
 						cfread_vector( &pm->view_positions[i].pnt, fp );
 						cfread_vector( &pm->view_positions[i].norm, fp );
+						// normalize, and just point it forward if this fails
+						if (!vm_maybe_normalize(&pm->view_positions[i].norm, &pm->view_positions[i].norm))
+							pm->view_positions[i].norm = vmd_z_vector;
 					}
 				}
 				break;			
 
-			case ID_INSG:				
-				int num_ins, num_verts, num_faces, idx, idx2, idx3;			
-				
+			case ID_INSG: {
 				// get the # of insignias
-				num_ins = cfread_int(fp);
-				pm->num_ins = num_ins;
-				
+				int num_ins = cfread_int(fp);
+				pm->ins = SCP_vector<insignia>(num_ins);
+
 				// read in the insignias
-				for(idx=0; idx<num_ins; idx++){
+				for (int idx = 0; idx < num_ins; idx++){
+					insignia& ins = pm->ins[idx];
+
 					// get the detail level
-					pm->ins[idx].detail_level = cfread_int(fp);
-					if (pm->ins[idx].detail_level < 0) {
-						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, pm->ins[idx].detail_level);
+					ins.detail_level = cfread_int(fp);
+					if (ins.detail_level < 0) {
+						Warning(LOCATION, "Model '%s': insignia uses an invalid LOD (%i)\n", pm->filename, ins.detail_level);
 					}
 
 					// # of faces
-					num_faces = cfread_int(fp);
-					pm->ins[idx].num_faces = num_faces;
-					Assert(num_faces <= MAX_INS_FACES);
+					int num_faces = cfread_int(fp);
 
 					// # of vertices
-					num_verts = cfread_int(fp);
-					Assert(num_verts <= MAX_INS_VECS);
+					int num_verts = cfread_int(fp);
+					SCP_vector<vec3d> vertices(num_verts);
 
 					// read in all the vertices
-					for(idx2=0; idx2<num_verts; idx2++){
-						cfread_vector(&pm->ins[idx].vecs[idx2], fp);
+					for(int idx2 = 0; idx2 < num_verts; idx2++){
+						cfread_vector(&vertices[idx2], fp);
 					}
 
+					vec3d offset;
 					// read in world offset
-					cfread_vector(&pm->ins[idx].offset, fp);
+					cfread_vector(&offset, fp);
+
+					vec3d min {{{FLT_MAX, FLT_MAX, FLT_MAX}}};
+					vec3d max {{{-FLT_MAX, -FLT_MAX, -FLT_MAX}}};
+					vec3d avg_total = ZERO_VECTOR;
+					vec3d avg_normal = ZERO_VECTOR;
 
 					// read in all the faces
-					for(idx2=0; idx2<pm->ins[idx].num_faces; idx2++){						
+					for(int idx2 = 0; idx2 < num_faces; idx2++){
+						std::array<int, 3> faces;
 						// read in 3 vertices
-						for(idx3=0; idx3<3; idx3++){
-							pm->ins[idx].faces[idx2][idx3] = cfread_int(fp);
-							pm->ins[idx].u[idx2][idx3] = cfread_float(fp);
-							pm->ins[idx].v[idx2][idx3] = cfread_float(fp);
+						for(int idx3 = 0; idx3 < 3; idx3++){
+							faces[idx3] = cfread_int(fp);
+
+							//UV coords are no longer needed
+							cfread_float(fp);
+							cfread_float(fp);
 						}
-						vec3d tempv;
 
+						const vec3d& v1 = vertices[faces[0]];
+						const vec3d& v2 = vertices[faces[1]];
+						const vec3d& v3 = vertices[faces[2]];
+
+						vec3d normal;
 						//get three points (rotated) and compute normal
+						vm_vec_perp(&normal, &v1, &v2, &v3);
 
-						vm_vec_perp(&tempv, 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][0]], 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][1]], 
-							&pm->ins[idx].vecs[pm->ins[idx].faces[idx2][2]]);
+						vm_vec_min(&min, &min, &v1);
+						vm_vec_min(&min, &min, &v2);
+						vm_vec_min(&min, &min, &v3);
+						vm_vec_max(&max, &max, &v1);
+						vm_vec_max(&max, &max, &v2);
+						vm_vec_max(&max, &max, &v3);
 
-						vm_vec_normalize_safe(&tempv);
-
-						pm->ins[idx].norm[idx2] = tempv;
+						vec3d avg = (v1 + v2 + v3) * (1.0f / 3.0f);
+						avg_total += avg;
+						avg_normal += normal;
 //						mprintf(("insignorm %.2f %.2f %.2f\n",pm->ins[idx].norm[idx2].xyz.x, pm->ins[idx].norm[idx2].xyz.y, pm->ins[idx].norm[idx2].xyz.z));
-
 					}
-				}					
+
+					ins.position = avg_total / static_cast<float>(num_faces) + offset;
+					vec3d bb = max - min;
+					ins.diameter = std::max({bb.xyz.x, bb.xyz.y, bb.xyz.z});
+					vm_vector_2_matrix(&ins.orientation, &avg_normal, &vmd_z_vector);
+				}
+				}
 				break;
 
 			// autocentering info
@@ -2925,6 +2962,7 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 
 			// if we couldn't find it, we shouldn't move
 			if (sm->look_at_submodel < 0) {
+				Warning(LOCATION, "Could not find $look_at target for %s %s!", pm->filename, sm->name);
 				sm->rotation_type = MOVEMENT_TYPE_NONE;
 			}
 			// are we navel-gazing?
@@ -2984,10 +3022,10 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	// For several revisions, Pof Tools was writing invalid eyepoint data. We cannot guarantee that this will catch all instances,
 	// but should at least head off potential crashes before they happen
 	for (i = 0; i < pm->n_view_positions; ++i) {
-		if (pm->view_positions[i].parent < 0 || pm->view_positions[i].parent >= pm->n_models) {
+		if (pm->view_positions[i].parent >= pm->n_models) {
 			nprintf(("Warning", "Model %s has an invalid eye position %i. Use a recent version of Pof Tools to fix the model.\n", pm->filename, i));
 			pm->view_positions[i].parent = 0;
-			pm->view_positions[i].norm = {{{1.0f, 0.0f, 0.0f}}};
+			pm->view_positions[i].norm = {{{0.0f, 0.0f, 1.0f}}};
 			pm->view_positions[i].pnt = ZERO_VECTOR;
 		}
 	}
@@ -2997,12 +3035,12 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 		int size;
 		
 		cfclose(ss_fp);
-		ss_fp = cfopen(debug_name, "rb");
+		ss_fp = cfopen(debug_name, "rb", CF_TYPE_TABLES);
 		if ( ss_fp )	{
 			size = cfilelength(ss_fp);
 			cfclose(ss_fp);
 			if ( size <= 0 )	{
-				_unlink(debug_name);
+				cf_delete(debug_name, CF_TYPE_TABLES);
 			}
 		}
 	}
@@ -3014,25 +3052,25 @@ modelread_status read_model_file_no_subsys(polymodel * pm, const char* filename,
 	return modelread_status::SUCCESS_REAL;
 }
 
-modelread_status read_model_file(polymodel* pm, const char* filename, int ferror, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
+modelread_status read_model_file(polymodel* pm, const char* filename, ErrorType error_type, model_read_deferred_tasks& deferredTasks, model_parse_depth depth = {})
 {
 	modelread_status status;
 
 	//See if this is a modular, virtual pof, and if so, parse it from there
-	if (read_virtual_model_file(pm, filename, std::move(depth), ferror, deferredTasks)) {
+	if (read_virtual_model_file(pm, filename, std::move(depth), error_type, deferredTasks)) {
 		status = modelread_status::SUCCESS_VIRTUAL;
 	}
 	else {
-		status = read_model_file_no_subsys(pm, filename, ferror, deferredTasks);
+		status = read_model_file_no_subsys(pm, filename, error_type, deferredTasks);
 	}
 
 	return status;
 }
 
 //reads a binary file containing a 3d model
-modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, model_read_deferred_tasks& deferredTasks)
+modelread_status read_and_process_model_file(polymodel* pm, const char* filename, int n_subsystems, model_subsystem* subsystems, ErrorType error_type, model_read_deferred_tasks& deferredTasks)
 {
-	modelread_status status = read_model_file(pm, filename, ferror, deferredTasks);
+	modelread_status status = read_model_file(pm, filename, error_type, deferredTasks);
 
 	//By now, we have finished reading this model. If it was virtual, we might have accumulated cache.
 	//This is now a tradeoff between speed and memory usage. To further accelerate loading, the cache can be kept until all models are loaded, but there is a risk that this cache will be very big.
@@ -3121,7 +3159,7 @@ modelread_status read_and_process_model_file(polymodel* pm, const char* filename
 
 
 //Goober
-void model_load_texture(polymodel *pm, int i, char *file)
+void model_load_texture(polymodel *pm, int i, const char *file)
 {
 	// NOTE: it doesn't help to use more than MAX_FILENAME_LEN here as bmpman will use that restriction
 	//       we also have to make sure there is always a trailing NUL since overflow doesn't add it
@@ -3265,14 +3303,14 @@ int model_load(ship_info* sip, bool prefer_tech_model)
 	if (prefer_tech_model && VALID_FNAME(sip->pof_file_tech)) {
 		// This cannot load into sip->subsystems, as this will overwrite the subsystems model_num to the
 		// techroom model, which is decidedly wrong for the mission itself.
-		return model_load(sip->pof_file_tech, 0, nullptr);
+		return model_load(sip->pof_file_tech);
 	} else {
-		return model_load(sip->pof_file, sip->n_subsystems, &sip->subsystems[0]);
+		return model_load(sip->pof_file, sip);
 	}
 }
 
 //returns the number of this model
-int model_load(const  char* filename, int n_subsystems, model_subsystem* subsystems, int ferror, int duplicate)
+int model_load(const  char* filename, ship_info* sip, ErrorType error_type, bool allow_redundant_load)
 {
 	int i, num;
 	polymodel *pm = NULL;
@@ -3280,11 +3318,19 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	if ( !model_initted )
 		model_init();
 
+	int n_subsystems = 0;
+	model_subsystem* subsystems = nullptr;
+
+	if (sip != nullptr) {
+		n_subsystems = sip->n_subsystems;
+		subsystems = sip->subsystems;
+	}
+
 	num = -1;
 
 	for (i=0; i< MAX_POLYGON_MODELS; i++)	{
 		if ( Polygon_models[i] )	{
-			if (!stricmp(filename , Polygon_models[i]->filename) && !duplicate) {
+			if (!stricmp(filename , Polygon_models[i]->filename) && !allow_redundant_load) {
 				// Model already loaded; just return.
 				Polygon_models[i]->used_this_mission++;
 				return Polygon_models[i]->id;
@@ -3305,6 +3351,9 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	if (!VALID_FNAME(filename)) {
 		return -1;
 	}
+	pause_parse();
+	Mp = Parse_text;
+	strcpy_s(Current_filename, filename);
 
 	TRACE_SCOPE(tracing::LoadModelFile);
 
@@ -3343,12 +3392,13 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	model_read_deferred_tasks deferredTasks;
 
-	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, ferror, deferredTasks) == modelread_status::FAIL)	{
+	if (read_and_process_model_file(pm, filename, n_subsystems, subsystems, error_type, deferredTasks) == modelread_status::FAIL)	{
 		if (pm != NULL) {
 			delete pm;
 		}
-
 		Polygon_models[num] = NULL;
+
+		unpause_parse();
 		return -1;
 	}
 
@@ -3415,6 +3465,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 
 	//==============================
 	// Find all the lower detail versions of the hires model
+	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> lower_to_higher_detail_submodels;
 	for (i=0; i<pm->n_models; i++ )	{
 		int j;
 		size_t l1;
@@ -3492,6 +3543,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 					if (dl2 >= sm1->num_details ) sm1->num_details = dl2+1;
 					sm1->details[dl2] = j;
   				    mprintf(( "Submodel '%s' is detail level %d of '%s'\n", sm2->name, dl2 + 1, sm1->name ));
+					lower_to_higher_detail_submodels.emplace(sm2->name, sm1->name);
 				}
 			}
 		}
@@ -3501,15 +3553,33 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 				sm1->num_details = 0;
 			}
 		}
-
 	}
+
+#ifndef NDEBUG
+	// make sure no lower detail submodels were actually made subsystems
+	for (const auto& pair : lower_to_higher_detail_submodels) {
+		auto lower_ss = deferredTasks.model_subsystems.find(pair.first);
+		if (lower_ss != deferredTasks.model_subsystems.end()) {
+			auto higher_ss = deferredTasks.model_subsystems.find(pair.second);
+			if (higher_ss != deferredTasks.model_subsystems.end()) {
+				auto lower_ss_name = lower_ss->first.c_str();
+				auto higher_ss_name = higher_ss->first.c_str();
+				Warning(LOCATION, "%s is a lower-detail submodel of %s, but both are configured as subsystems.  Subsystem properties should be removed from lower-detail "
+					"submodels, as this causes them to be recognized as extra subsystems.", lower_ss_name, higher_ss_name);
+			}
+		}
+	}
+#endif
 
 	TRACE_SCOPE(tracing::ModelParseAllBSPTrees);
 
 	for (i = 0; i < pm->n_models; ++i) {
 		pm->submodel[i].collision_tree_index = model_create_bsp_collision_tree();
 		bsp_collision_tree* tree             = model_get_bsp_collision_tree(pm->submodel[i].collision_tree_index);
+
+		Macro_ubyte_bounds = pm->submodel[i].bsp_data + pm->submodel[i].bsp_data_size;
 		model_collide_parse_bsp(tree, pm->submodel[i].bsp_data, pm->version);
+		Macro_ubyte_bounds = nullptr;
 	}
 
 	// Find the core_radius... the minimum of 
@@ -3536,6 +3606,7 @@ int model_load(const  char* filename, int n_subsystems, model_subsystem* subsyst
 	model_set_subsys_path_nums(pm, n_subsystems, subsystems);
 	model_set_bay_path_nums(pm);
 
+	unpause_parse();
 	return pm->id;
 }
 
@@ -3842,10 +3913,15 @@ polymodel * model_get(int model_num)
 	Assertion( Polygon_models[num], "No model with id %d found. Please backtrace and investigate.\n", num );
 	Assertion( Polygon_models[num]->id == model_num, "Index collision between model %s and requested model %d. Please backtrace and investigate.\n", Polygon_models[num]->filename, model_num );
 
-	if (num < 0 || num > MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
+	if (num < 0 || num >= MAX_POLYGON_MODELS || !Polygon_models[num] || Polygon_models[num]->id != model_num)
 		return NULL;
 
 	return Polygon_models[num];
+}
+
+int num_model_instances()
+{
+	return static_cast<int>(Polygon_model_instances.size());
 }
 
 polymodel_instance* model_get_instance(int model_instance_num)
@@ -4026,7 +4102,7 @@ int subobj_find_2d_bound(float radius ,matrix * /*orient*/, vec3d * pos,int *x1,
 
 
 // Given a rotating submodel, find the local and world axes of rotation.
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient)
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient)
 {
 	Assert(pm->id == pmi->model_num);
 	bsp_info *sm = &pm->submodel[submodel_num];
@@ -4705,7 +4781,7 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4742,7 +4818,7 @@ void model_instance_global_to_local_point(vec3d* outpnt, const vec3d* mpnt, cons
 
 	*outpnt = resultPnt;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -4758,7 +4834,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 	constexpr int preallocatedStackDepth = 5;
 	const matrix* preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new const matrix*[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4787,7 +4863,7 @@ void model_instance_global_to_local_dir(vec3d* out_dir, const vec3d* in_dir, con
 
 	*out_dir = resultDir;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -4797,7 +4873,7 @@ void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorien
 	constexpr int preallocatedStackDepth = 5;
 	std::tuple<const matrix*, const vec3d*, const vec3d*> preallocatedStack[preallocatedStackDepth];
 
-	auto submodelStack = pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
+	auto submodelStack = submodel_num < 0 || pm->submodel[submodel_num].depth <= preallocatedStackDepth ? preallocatedStack : new std::tuple<const matrix*, const vec3d*, const vec3d*>[pm->submodel[submodel_num].depth];
 	int stackCounter = 0;
 
 	int mn = submodel_num;
@@ -4832,7 +4908,7 @@ void model_instance_global_to_local_point_orient(vec3d* outpnt, matrix* outorien
 	*outpnt = resultPnt;
 	*outorient = resultMat;
 
-	if (pm->submodel[submodel_num].depth > preallocatedStackDepth)
+	if (submodel_num >= 0 && pm->submodel[submodel_num].depth > preallocatedStackDepth)
 		delete[] submodelStack;
 }
 
@@ -4865,7 +4941,7 @@ void model_get_moving_submodel_list(SCP_vector<int> &submodel_vector, const obje
 		if (model_instance_num < 0) {
 			return;
 		}
-		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].model_num[Asteroids[objp->instance].asteroid_subtype];
+		model_num = Asteroid_info[Asteroids[objp->instance].asteroid_type].subtypes[Asteroids[objp->instance].asteroid_subtype].model_number;
 	}
 	else {
 		return;
@@ -5121,7 +5197,7 @@ void model_do_intrinsic_motions(object *objp)
 	// we are handling a specific object
 	if (objp)
 	{
-		int model_instance_num = object_get_model_instance(objp);
+		int model_instance_num = object_get_model_instance_num(objp);
 		if (model_instance_num >= 0)
 		{
 			auto obj_it = Intrinsic_motions.find(model_instance_num);
@@ -5148,17 +5224,17 @@ void model_do_intrinsic_motions(object *objp)
 	}
 }
 
-void model_instance_clear_arcs(polymodel *pm, polymodel_instance *pmi)
+void model_instance_clear_arcs(const polymodel *pm, polymodel_instance *pmi)
 {
 	Assert(pm->id == pmi->model_num);
 
 	for (int i = 0; i < pm->n_models; ++i) {
-		pmi->submodel[i].num_arcs = 0;		// Turn off any electric arcing effects
+		pmi->submodel[i].electrical_arcs.clear();		// Turn off any electric arcing effects
 	}
 }
 
 // Adds an electrical arcing effect to a submodel
-void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_model_num, vec3d *v1, vec3d *v2, int arc_type, color *primary_color_1, color *primary_color_2, color *secondary_color, float width )
+void model_instance_add_arc(const polymodel *pm, polymodel_instance *pmi, int sub_model_num, const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, ubyte arc_type, const color *primary_color_1, const color *primary_color_2, const color *secondary_color, float width, ubyte segment_depth)
 {
 	Assert(pm->id == pmi->model_num);
 
@@ -5173,19 +5249,20 @@ void model_instance_add_arc(polymodel *pm, polymodel_instance *pmi, int sub_mode
 	if ( sub_model_num >= pm->n_models ) return;
 	auto smi = &pmi->submodel[sub_model_num];
 
-	if ( smi->num_arcs < MAX_ARC_EFFECTS )	{
-		smi->arc_type[smi->num_arcs] = (ubyte)arc_type;
-		smi->arc_pts[smi->num_arcs][0] = *v1;
-		smi->arc_pts[smi->num_arcs][1] = *v2;
+	smi->electrical_arcs.emplace_back();
+	auto &new_arc = smi->electrical_arcs.back();
 
-		if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
-			smi->arc_primary_color_1[smi->num_arcs] = *primary_color_1;
-			smi->arc_primary_color_2[smi->num_arcs] = *primary_color_2;
-			smi->arc_secondary_color[smi->num_arcs] = *secondary_color;
-			smi->arc_width[smi->num_arcs] = width;
-		}
+	new_arc.type = arc_type;
+	new_arc.endpoint_1 = *v1;
+	new_arc.endpoint_2 = *v2;
+	new_arc.persistent_arc_points = persistent_arc_points;
+	new_arc.segment_depth = segment_depth;
 
-		smi->num_arcs++;
+	if (arc_type == MARC_TYPE_SHIP || arc_type == MARC_TYPE_SCRIPTED) {
+		new_arc.primary_color_1 = *primary_color_1;
+		new_arc.primary_color_2 = *primary_color_2;
+		new_arc.secondary_color = *secondary_color;
+		new_arc.width = width;
 	}
 }
 
@@ -5373,7 +5450,7 @@ int model_create_bsp_collision_tree()
 		return (int)i;
 	}
 
-	bsp_collision_tree tree;
+	bsp_collision_tree tree{};
 
 	tree.used = true;
 	Bsp_collision_tree_list.push_back(tree);
@@ -5672,6 +5749,7 @@ void swap_bsp_data( polymodel * pm, void * model_ptr )
 				Int3();		// Bad chunk type!
 			return;
 		}
+		if (end) break;
 
 		p += chunk_size;
 		chunk_type = INTEL_INT( w(p));	//tigital
@@ -5843,7 +5921,7 @@ void parse_glowpoint_table(const char *filename)
 			}
 
 			if (optional_string("$Texture:")) {
-				char glow_texture_name[32];
+				char glow_texture_name[NAME_LENGTH];
 				stuff_string(glow_texture_name, F_NAME, NAME_LENGTH);
 
 				gpo.glow_bitmap_override = true;
@@ -5860,10 +5938,18 @@ void parse_glowpoint_table(const char *filename)
 						nprintf(("Model", "Glowpoint preset %s texture num is %d\n", gpo.name, gpo.glow_bitmap));
 					}
 
-					char glow_texture_neb_name[256];
-					strncpy(glow_texture_neb_name, glow_texture_name, 256);
-					strcat(glow_texture_neb_name, "-neb");
-					gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					if (strlen(glow_texture_name) > MAX_FILENAME_LEN - 4 - 1)
+					{
+						nprintf(("Model", "Texture '%s' referenced by glowpoint preset '%s' is too long for the -neb suffix!\n", glow_texture_name, gpo.name));
+						gpo.glow_neb_bitmap = -1;
+					}
+					else
+					{
+						char glow_texture_neb_name[MAX_FILENAME_LEN];
+						strcpy_s(glow_texture_neb_name, glow_texture_name);
+						strcat_s(glow_texture_neb_name, "-neb");
+						gpo.glow_neb_bitmap = bm_load(glow_texture_neb_name);
+					}
 
 					if (gpo.glow_neb_bitmap < 0)
 					{
@@ -6191,8 +6277,8 @@ uint align_bsp_data(ubyte* bsp_in, ubyte* bsp_out, uint bsp_size)
 		}
 
 		//Chunk size validation, if fails change it to copy the remaining data in chain
-		auto max_size = end - bsp_in;
-		if (bsp_chunk_size > max_size) {
+		std::ptrdiff_t max_size = end - bsp_in;
+		if (static_cast<std::ptrdiff_t>(bsp_chunk_size) > max_size) {
 			Warning(LOCATION, "Invalid BSP Chunk size detected during BSP data align: Chunk Type: %d, Chunk Size: %d, Max Size: %d", bsp_chunk_type, bsp_chunk_size, static_cast<uint>(max_size));
 			bsp_chunk_size = static_cast<uint>(max_size);
 		}

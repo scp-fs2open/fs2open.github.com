@@ -58,12 +58,8 @@ ADE_FUNC(getFilename, l_SoundEntry, NULL, "Returns the filename of this sound. I
 	if (!ade_get_args(L, "o", l_SoundEntry.GetPtr(&seh)))
 		return ade_set_error(L, "s", "");
 
-	if (seh == NULL || !seh->isValid())
+	if (seh == NULL || !seh->isValid() || seh->Get()->sound_entries.empty())
 		return ade_set_error(L, "s", "");
-
-	Assertion(!seh->Get()->sound_entries.empty(),
-			  "Sound entry vector of sound %s is empty! This should not happen. Get a coder!",
-			  seh->Get()->name.c_str());
 
 	return ade_set_args(L, "s", seh->Get()->sound_entries[0].filename);
 }

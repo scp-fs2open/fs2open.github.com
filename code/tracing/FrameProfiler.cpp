@@ -51,6 +51,7 @@ void process_begin(SCP_vector<profile_sample>& samples, const trace_event& evt) 
 	new_sample.children_sample_time = 0;
 	new_sample.num_children = 0;
 	new_sample.parent = parent;
+	new_sample.num_parents = (parent >= 0) ? 1 : 0;
 
 	samples.push_back(new_sample);
 }
@@ -109,7 +110,7 @@ void process_end(SCP_vector<profile_sample>& samples, const trace_event& evt) {
 	for (int i = 0; i < (int) samples.size(); i++) {
 		if (samples[i].open_profiles) {
 			samples[i].num_children--;
-			samples[i].num_children = MAX(samples[i].num_children, 0);
+			samples[i].num_children = MAX(samples[i].num_children, 0u);
 		}
 	}
 }

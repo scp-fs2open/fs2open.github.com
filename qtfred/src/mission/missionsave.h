@@ -27,8 +27,6 @@ struct sexp_container;
 namespace fso {
 namespace fred {
 
-#define BACKUP_DEPTH    9
-
 enum class MissionFormat {
 	RETAIL = 0, STANDARD = 1, COMPATIBILITY_MODE = 2
 };
@@ -517,6 +515,11 @@ class CFred_mission_save {
 	 * @returns A negative value if an error occurred
 	 */
 	int save_wings();
+
+	/**
+	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while handling newlines properly
+	 */
+	void fout_raw_comment(const char *comment_start);
 
 	char* raw_ptr = nullptr;
 	SCP_vector<SCP_string> fso_ver_comment;

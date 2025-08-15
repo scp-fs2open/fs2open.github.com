@@ -25,6 +25,15 @@ class AbstractDialogModel: public QObject {
 	Editor* _editor = nullptr;
 	EditorViewport* _viewport = nullptr;
 
+	template <typename T>
+	/**
+	 * @brief Copies rvalue to the lvalue while setting the modified variable.
+	 */
+	void modify(T& a, const T& b);
+
+	bool _modified = false;
+	void set_modified();
+
  public:
 	AbstractDialogModel(QObject* parent, EditorViewport* viewport);
 
@@ -42,6 +51,10 @@ class AbstractDialogModel: public QObject {
 	 */
 	virtual void reject() = 0;
 
+
+	bool query_modified() const;
+
+
  signals:
 	/**
 	 * @brief Signal emitted when the model has changed caused by an update operation
@@ -50,6 +63,16 @@ class AbstractDialogModel: public QObject {
 	 */
 	void modelChanged();
 };
+
+template <typename T>
+inline void AbstractDialogModel::modify(T& a, const T& b)
+{
+	if (a != b) {
+		a = b;
+		set_modified();
+		modelChanged();
+	}
+}
 
 }
 }

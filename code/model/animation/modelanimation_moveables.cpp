@@ -6,7 +6,7 @@ namespace animation {
 	ModelAnimationMoveableOrientation::ModelAnimationMoveableOrientation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient) :
 		m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient) { }
 
-	void ModelAnimationMoveableOrientation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+	void ModelAnimationMoveableOrientation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable orientation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -15,7 +15,7 @@ namespace animation {
 		auto& anim = m_instances[pmi->id].animation;
 
 		try {
-			auto p = linb::any_cast<int>(args[0]), h = linb::any_cast<int>(args[1]), b = linb::any_cast<int>(args[2]);
+			auto p = std::any_cast<int>(args[0]), h = std::any_cast<int>(args[1]), b = std::any_cast<int>(args[2]);
 
 			anim->forceRecalculate(pmi);
 
@@ -24,7 +24,7 @@ namespace animation {
 			
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
-		catch(const linb::bad_any_cast& e){
+		catch (const std::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update orientation moveable: %s", e.what());
 		}
 	}
@@ -52,10 +52,10 @@ namespace animation {
 	}
 
 
-	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const tl::optional<angles>& acceleration) :
+	ModelAnimationMoveableRotation::ModelAnimationMoveableRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const angles& defaultOrient, const angles& velocity, const std::optional<angles>& acceleration) :
 			m_submodel(std::move(submodel)), m_defaultPosOrient(defaultOrient), m_velocity(velocity), m_acceleration(acceleration) { }
 
-	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+	void ModelAnimationMoveableRotation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable rotation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -64,7 +64,7 @@ namespace animation {
 		auto& anim = m_instances[pmi->id].animation;
 
 		try {
-			auto p = linb::any_cast<int>(args[0]), h = linb::any_cast<int>(args[1]), b = linb::any_cast<int>(args[2]);
+			auto p = std::any_cast<int>(args[0]), h = std::any_cast<int>(args[1]), b = std::any_cast<int>(args[2]);
 
 
 			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
@@ -84,7 +84,7 @@ namespace animation {
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
-		catch(const linb::bad_any_cast& e){
+		catch (const std::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
 		}
 	}
@@ -101,7 +101,7 @@ namespace animation {
 		
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, orient, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, tl::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentRotation(submodel, m_defaultPosOrient, m_velocity, std::nullopt, m_acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
 		
 		anim->setAnimation(sequence);
 
@@ -117,7 +117,7 @@ namespace animation {
 		angles velocity;
 		stuff_angles_deg_phb(&velocity);
 
-		tl::optional<angles> acceleration;
+		std::optional<angles> acceleration;
 		if (optional_string("+Acceleration:")) {
 			angles parse;
 			stuff_angles_deg_phb(&parse);
@@ -132,10 +132,10 @@ namespace animation {
 	}
 
 
-	ModelAnimationMoveableTranslation::ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const tl::optional<vec3d>& acceleration) :
+	ModelAnimationMoveableTranslation::ModelAnimationMoveableTranslation(std::shared_ptr<ModelAnimationSubmodel> submodel, const vec3d& defaultOffset, const vec3d& velocity, const std::optional<vec3d>& acceleration) :
 		  m_submodel(std::move(submodel)), m_defaultOffset(defaultOffset), m_velocity(velocity), m_acceleration(acceleration) { }
 
-	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+	void ModelAnimationMoveableTranslation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable translation with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -144,7 +144,7 @@ namespace animation {
 		auto& anim = m_instances[pmi->id].animation;
 
 		try {
-			auto x = linb::any_cast<int>(args[0]), y = linb::any_cast<int>(args[1]), z = linb::any_cast<int>(args[2]);
+			auto x = std::any_cast<int>(args[0]), y = std::any_cast<int>(args[1]), z = std::any_cast<int>(args[2]);
 
 
 			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
@@ -164,7 +164,7 @@ namespace animation {
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
-		catch(const linb::bad_any_cast& e){
+		catch (const std::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update translation moveable: %s", e.what());
 		}
 	}
@@ -178,7 +178,7 @@ namespace animation {
 
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOffset(submodel, m_defaultOffset, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(submodel, m_defaultOffset, m_velocity, tl::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentTranslation(std::move(submodel), m_defaultOffset, m_velocity, std::nullopt, m_acceleration, ModelAnimationSegmentTranslation::CoordinateSystem::COORDS_PARENT, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS)));
 
 		anim->setAnimation(sequence);
 
@@ -194,7 +194,7 @@ namespace animation {
 		vec3d velocity;
 		stuff_vec3d(&velocity);
 
-		tl::optional<vec3d> acceleration;
+		std::optional<vec3d> acceleration;
 		if (optional_string("+Acceleration:")) {
 			vec3d parse;
 			stuff_vec3d(&parse);
@@ -209,10 +209,10 @@ namespace animation {
 	}
 
 
-	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const tl::optional<float>& acceleration, const vec3d& axis) :
+	ModelAnimationMoveableAxisRotation::ModelAnimationMoveableAxisRotation(std::shared_ptr<ModelAnimationSubmodel> submodel, const float& velocity, const std::optional<float>& acceleration, const vec3d& axis) :
 			m_submodel(std::move(submodel)), m_velocity(velocity), m_acceleration(acceleration), m_axis(axis) { }
 
-	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+	void ModelAnimationMoveableAxisRotation::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.empty()){
 			Error(LOCATION,"Tried updating moveable axis rotation with too few (%d of 1) arguments!", (int) args.size());
 			return;
@@ -221,7 +221,7 @@ namespace animation {
 		auto& anim = m_instances[pmi->id].animation;
 
 		try {
-			auto ang = linb::any_cast<int>(args[0]);
+			auto ang = std::any_cast<int>(args[0]);
 			
 			auto& sequence = *std::static_pointer_cast<ModelAnimationSegmentSerial>(anim->m_animation);
 			auto& setOrientation = *std::static_pointer_cast<ModelAnimationSegmentSetOrientation>(sequence.m_segments[0]);
@@ -250,7 +250,7 @@ namespace animation {
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
-		catch(const linb::bad_any_cast& e){
+		catch(const std::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
 		}
 	}
@@ -264,7 +264,7 @@ namespace animation {
 
 		auto sequence = std::shared_ptr<ModelAnimationSegmentSerial>(new ModelAnimationSegmentSerial());
 		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentSetOrientation(submodel, vmd_identity_matrix, ModelAnimationCoordinateRelation::RELATIVE_COORDS)));
-		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0.0f, m_velocity, tl::nullopt, m_acceleration, m_axis)));
+		sequence->addSegment(std::shared_ptr<ModelAnimationSegment>(new ModelAnimationSegmentAxisRotation(submodel, 0.0f, m_velocity, std::nullopt, m_acceleration, m_axis)));
 
 		anim->setAnimation(sequence);
 
@@ -281,7 +281,7 @@ namespace animation {
 		stuff_float(&velocity);
 		velocity = fl_radians(velocity);
 
-		tl::optional<float> acceleration;
+		std::optional<float> acceleration;
 		if (optional_string("+Acceleration:")) {
 			float parse;
 			stuff_float(&parse);
@@ -299,7 +299,7 @@ namespace animation {
 	ModelAnimationMoveableIK::ModelAnimationMoveableIK(std::vector<moveable_chainlink> chain, float time) :
 		m_time(time), m_chain(std::move(chain)) { }
 
-	void ModelAnimationMoveableIK::update(polymodel_instance* pmi, const std::vector<linb::any>& args) {
+	void ModelAnimationMoveableIK::update(polymodel_instance* pmi, const SCP_vector<std::any>& args) {
 		if(args.size() < 3){
 			Error(LOCATION,"Tried updating moveable IK with too few (%d of 3) arguments!", (int) args.size());
 			return;
@@ -308,11 +308,11 @@ namespace animation {
 		auto& anim = m_instances[pmi->id].animation;
 
 		try {
-			auto x = linb::any_cast<int>(args[0]), y = linb::any_cast<int>(args[1]), z = linb::any_cast<int>(args[2]);
+			auto x = std::any_cast<int>(args[0]), y = std::any_cast<int>(args[1]), z = std::any_cast<int>(args[2]);
 
-			tl::optional<matrix> orient;
+			std::optional<matrix> orient;
 			if(args.size() >= 6 && args[3].type() == typeid(int)) {
-				auto p = linb::any_cast<int>(args[3]), h = linb::any_cast<int>(args[4]), b = linb::any_cast<int>(args[5]);
+				auto p = std::any_cast<int>(args[3]), h = std::any_cast<int>(args[4]), b = std::any_cast<int>(args[5]);
 				
 				matrix rot;
 				angles ang{ fl_radians(p), fl_radians(b), fl_radians(h) };
@@ -345,7 +345,7 @@ namespace animation {
 
 			anim->start(pmi, ModelAnimationDirection::FWD);
 		}
-		catch(const linb::bad_any_cast& e){
+		catch(const std::bad_any_cast& e){
 			Error(LOCATION, "Argument error trying to update rotation moveable: %s", e.what());
 		}
 	}
@@ -370,14 +370,14 @@ namespace animation {
 			startPos += parentSet->getSubmodel(m_chain[i].submodel)->findSubmodel(pmi).second->offset;
 		}
 		
-		auto segment = std::shared_ptr<ModelAnimationSegmentIK>(new ModelAnimationSegmentIK(startPos, tl::nullopt));
+		auto segment = std::make_shared<ModelAnimationSegmentIK>(startPos, std::nullopt);
 		segment->m_segment = parallelIK;
 		
 		for(const auto& link : m_chain) {
 			auto submodel = parentSet->getSubmodel(link.submodel);
-			auto rotation = std::shared_ptr<ModelAnimationSegmentRotation>(new ModelAnimationSegmentRotation(submodel, tl::optional<angles>({0,0,0}), tl::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS));
+			auto rotation = std::make_shared<ModelAnimationSegmentRotation>(submodel, std::optional<angles>({0,0,0}), std::nullopt, m_time, link.acceleration, ModelAnimationCoordinateRelation::ABSOLUTE_COORDS);
 			parallelIK->addSegment(rotation);
-			segment->m_chain.push_back({submodel, link.constraint, rotation});
+			segment->m_chain.push_back({submodel, link.constraint, std::move(rotation)});
 		}
 		
 		sequence->addSegment(segment);
@@ -397,7 +397,7 @@ namespace animation {
 		while (optional_string("$Chain Link:")) {
 			auto submodel = ModelAnimationParseHelper::parseSubmodel();
 
-			tl::optional<angles> acceleration;
+			std::optional<angles> acceleration;
 			if (optional_string("+Acceleration:")) {
 				angles accel;
 				stuff_angles_deg_phb(&accel);
@@ -432,7 +432,7 @@ namespace animation {
 			} else
 				constraint = std::shared_ptr<ik_constraint>(new ik_constraint());
 
-			chain.push_back({submodel, constraint, acceleration});
+			chain.push_back({std::move(submodel), constraint, acceleration});
 		}
 		
 		return std::shared_ptr<ModelAnimationMoveable>(new ModelAnimationMoveableIK(chain, time));

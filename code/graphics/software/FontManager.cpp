@@ -11,107 +11,130 @@
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
 #include "localization/localize.h"
+#include "options/Option.h"
 
 namespace font
 {
-
 	SCP_map<SCP_string, TrueTypeFontData> FontManager::allocatedData;
 	SCP_map<SCP_string, std::unique_ptr<font>> FontManager::vfntFontData;
 	SCP_vector<std::unique_ptr<FSFont>> FontManager::fonts;
 
-	FSFont* FontManager::currentFont = NULL;
+	int FontManager::currentFontIndex = -1;
 
 	FSFont* FontManager::getFont(const SCP_string& name)
 	{
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++)
+		for (auto &iter: fonts)
 		{
-			if ((*iter)->getName() == name)
-				return iter->get();
-		}
-
-		return NULL;
-	}
-
-	FSFont* FontManager::getFontByFilename(const SCP_string& filename) 
-	{
-		for (auto & iter : fonts) 
-		{
-			if (iter->getFilename() == filename)
+			if (lcase_equal(iter->getName(), name))
 				return iter.get();
 		}
+
 		return nullptr;
+	}
+
+	FSFont* FontManager::getFontByFilename(const SCP_string& filename)
+	{
+		for (auto &iter: fonts)
+		{
+			if (lcase_equal(iter->getFilename(), filename))
+				return iter.get();
+		}
+
+		return nullptr;
+	}
+
+	FSFont* FontManager::getFont(int index)
+	{
+		if (!isFontNumberValid(index))
+			return nullptr;
+
+		return fonts[index].get();
 	}
 
 	FSFont *FontManager::getCurrentFont()
 	{
-		return currentFont;
+		int id = gr_lua_context_active() ? gr_lua_screen.current_font_index : currentFontIndex;
+		return getFont(id);
 	}
 
 	int FontManager::getCurrentFontIndex()
 	{
-		if (!FontManager::isReady())
+		int id = gr_lua_context_active() ? gr_lua_screen.current_font_index : currentFontIndex;
+		if (!isFontNumberValid(id))
 			return -1;
 
-		return FontManager::getFontIndex(currentFont);
+		return id;
 	}
 
 	int FontManager::getFontIndex(const SCP_string& name)
 	{
 		int index = 0;
 
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
+		for (const auto &iter: fonts)
 		{
-			if ((*iter)->getName() == name)
+			if (lcase_equal(iter->getName(), name))
 				return index;
+			index++;
 		}
 
 		return -1;
 	}
 
-	int FontManager::getFontIndex(FSFont *font)
+	int FontManager::getFontIndexByFilename(const SCP_string& filename)
 	{
-		if (font == NULL)
-			return -1;
-
 		int index = 0;
 
-		for (SCP_vector<std::unique_ptr<FSFont>>::iterator iter = fonts.begin(); iter != fonts.end(); iter++, index++)
+		for (const auto &iter: fonts)
 		{
-			if (iter->get() == font)
+			if (lcase_equal(iter->getFilename(), filename))
 				return index;
+			index++;
 		}
 
 		return -1;
+	}
+
+	bool FontManager::hasScalingFonts()
+	{
+		return std::any_of(fonts.begin(), fonts.end(), [](const std::unique_ptr<FSFont>& font) {
+			const auto& thisFont = font.get();
+			return thisFont->getScaleBehavior();
+		});
 	}
 
 	int FontManager::numberOfFonts()
 	{
-		return (int)fonts.size();
+		return static_cast<int>(fonts.size());
 	}
 
 	bool FontManager::isReady()
 	{
-		return currentFont != NULL;
+		return isFontNumberValid(currentFontIndex);
 	}
 
 	bool FontManager::isFontNumberValid(int id)
 	{
-		return id >= 0 && id < (int)fonts.size();
+		return SCP_vector_inbounds(fonts, id);
 	}
 
-	void FontManager::setCurrentFont(FSFont *font)
+	void FontManager::setCurrentFontIndex(int id)
 	{
-		Assertion(font != NULL, "New font pointer may not be NULL!");
-		currentFont = font;
+		Assertion(isFontNumberValid(id), "New font index must be valid!");
+		if (gr_lua_context_active()) {
+			gr_lua_screen.current_font_index = id;
+		} else {
+			currentFontIndex = id;
+		}
 	}
 
 	font* FontManager::loadFontOld(const SCP_string& typeface)
 	{
-		if (vfntFontData.find(typeface) != vfntFontData.end())
+		auto iter = vfntFontData.find(typeface);
+		if (iter != vfntFontData.end())
 		{
-			font* data = vfntFontData[typeface].get();
+			font* data = iter->second.get();
 
-			Assert(data != NULL);
+			Assert(data != nullptr);
 
 			return data;
 		}
@@ -122,28 +145,30 @@ namespace font
 
 		lcl_add_dir_to_path_with_filename(typeface_lcl);
 
-		fp = cfopen(typeface_lcl.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		fp = cfopen(typeface_lcl.c_str(), "rb", CF_TYPE_ANY);
 
 		// fallback if not found
 		if ( !fp )
 		{
-			fp = cfopen(typeface.c_str(), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+			fp = cfopen(typeface.c_str(), "rb", CF_TYPE_ANY);
 		}
 
-		if (fp == NULL)
+		if ( !fp )
 		{
 			mprintf(("Unable to find font file \"%s\"\n", typeface.c_str()));
-			return NULL;
+			return nullptr;
 		}
 
 		std::unique_ptr<font> fnt(new font());
-		if (!fnt)
+
+		if (typeface.size() <= MAX_FILENAME_LEN - 1)
+			strcpy_s(fnt->filename, typeface.c_str());
+		else
 		{
-			mprintf(("Unable to allocate memory for \"%s\"\n", typeface.c_str()));
-			return NULL;
+			strncpy_s(fnt->filename, typeface.c_str(), MAX_FILENAME_LEN - 1);
+			fnt->filename[MAX_FILENAME_LEN - 1] = '\0';
 		}
 
-		strcpy_s(fnt->filename, typeface.c_str());
 		cfread(&fnt->id, 4, 1, fp);
 		cfread(&fnt->version, sizeof(int), 1, fp);
 		cfread(&fnt->num_chars, sizeof(int), 1, fp);
@@ -167,16 +192,14 @@ namespace font
 		fnt->pixel_data_size = INTEL_INT(fnt->pixel_data_size); //-V570
 
 		if (fnt->kern_data_size)	{
-			fnt->kern_data = (font_kernpair *)vm_malloc(fnt->kern_data_size);
-			Assert(fnt->kern_data != NULL);
+			fnt->kern_data = new font_kernpair[fnt->kern_data_size];
 			cfread(fnt->kern_data, fnt->kern_data_size, 1, fp);
 		}
 		else {
-			fnt->kern_data = NULL;
+			fnt->kern_data = nullptr;
 		}
 		if (fnt->char_data_size)	{
-			fnt->char_data = (font_char *)vm_malloc(fnt->char_data_size);
-			Assert(fnt->char_data != NULL);
+			fnt->char_data = new font_char[fnt->char_data_size];
 			cfread(fnt->char_data, fnt->char_data_size, 1, fp);
 
 			for (int i = 0; i<fnt->num_chars; i++) {
@@ -188,15 +211,14 @@ namespace font
 			}
 		}
 		else {
-			fnt->char_data = NULL;
+			fnt->char_data = nullptr;
 		}
 		if (fnt->pixel_data_size)	{
-			fnt->pixel_data = (ubyte *)vm_malloc(fnt->pixel_data_size);
-			Assert(fnt->pixel_data != NULL);
+			fnt->pixel_data = new ubyte[fnt->pixel_data_size];
 			cfread(fnt->pixel_data, fnt->pixel_data_size, 1, fp);
 		}
 		else {
-			fnt->pixel_data = NULL;
+			fnt->pixel_data = nullptr;
 		}
 		cfclose(fp);
 
@@ -222,9 +244,9 @@ namespace font
 
 		fnt->bm_w = w;
 		fnt->bm_h = h;
-		fnt->bm_data = (ubyte *)vm_malloc(fnt->bm_w*fnt->bm_h);
-		fnt->bm_u = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
-		fnt->bm_v = (int *)vm_malloc(sizeof(int)*fnt->num_chars);
+		fnt->bm_data = new ubyte[fnt->bm_w * fnt->bm_h];
+		fnt->bm_u = new int[fnt->num_chars];
+		fnt->bm_v = new int[fnt->num_chars];
 
 		memset(fnt->bm_data, 0, fnt->bm_w * fnt->bm_h);
 
@@ -238,7 +260,8 @@ namespace font
 				x = 0;
 				y += fnt->h + 2;
 				if (y + fnt->h > fnt->bm_h) {
-					Error(LOCATION, "Font too big!\n");
+					Warning(LOCATION, "Font %s too big!\n", fnt->filename);
+					return nullptr;
 				}
 			}
 			fnt->bm_u[i] = x;
@@ -262,18 +285,18 @@ namespace font
 
 		auto ptr = fnt.get();
 
-		vfntFontData[typeface] = std::move(fnt);
+		vfntFontData.emplace(typeface, std::move(fnt));
 
 		return ptr;
 	}
 
-	VFNTFont *FontManager::loadVFNTFont(const SCP_string& name)
+	std::pair<VFNTFont*, int> FontManager::loadVFNTFont(const SCP_string& name)
 	{
 		font* font = FontManager::loadFontOld(name);
 
-		if (font == NULL)
+		if (font == nullptr)
 		{
-			return NULL;
+			return { nullptr, -1 };
 		}
 		else
 		{
@@ -281,53 +304,195 @@ namespace font
 
 			auto ptr = vfnt.get();
 
-			fonts.push_back(std::move(vfnt));
+			fonts.emplace_back(std::move(vfnt));
 
-			return ptr;
+			return { ptr, static_cast<int>(fonts.size() - 1) };
 		}
 	}
 
-	NVGFont *FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
+	// This function will extract the font family name (Name ID 1) from TrueType font data.
+	// It handles UCS-2 (UTF-16BE) to UTF-8 conversion.
+	static SCP_string extractFamilyNameFromTTF(const TrueTypeFontData& fontData)
 	{
-		if (allocatedData.find(fileName) == allocatedData.end())
-		{
-			CFILE *fontFile = cfopen(const_cast<char*>(fileName.c_str()), "rb", CFILE_NORMAL, CF_TYPE_ANY);
+		try {
+			// TTF/OTF fonts start the table directory at byte 12.
+			constexpr size_t table_offset = 12;
 
-			if (fontFile == NULL)
-			{
-				mprintf(("Couldn't open font file \"%s\"\n", fileName.c_str()));
-				return NULL;
+			const ubyte* data = fontData.data.get();
+			const size_t size = fontData.size;
+
+			if (size < table_offset) {
+				throw std::runtime_error("Font data too small for table offset");
 			}
 
-			size_t size = static_cast<size_t>(cfilelength(fontFile));
+			// Offset to the start of the table directory (after SFNT header)
+			const uint8_t* tableDir = data + table_offset;
+
+			// Read numTables (ushort at offset 4 in SFNT header)
+			// The SFNT header bytes are big-endian
+			uint16_t numTables = (static_cast<uint16_t>(data[4]) << 8) | static_cast<uint16_t>(data[5]);
+
+			const uint8_t* nameTable = nullptr;
+
+			// Each table entry is 16 bytes
+			constexpr size_t tableEntrySize = 16;
+			const size_t tableDirSize = static_cast<size_t>(numTables) * tableEntrySize;
+			if (size < table_offset + tableDirSize) {
+				throw std::runtime_error("Table directory extends past file size");
+			}
+
+			// Iterate through table directory entries to find the 'name' table
+			for (int i = 0; i < numTables; ++i) {
+				const uint8_t* entry = tableDir + i * tableEntrySize;
+
+				// Ensure entry access is within range
+				if (entry + 12 >= data + size) {
+					throw std::runtime_error("Table entry access out of bounds");
+				}
+
+				// Read table tag (4 bytes)
+				uint32_t tag = (static_cast<uint32_t>(entry[0]) << 24) | (static_cast<uint32_t>(entry[1]) << 16) |
+							   (static_cast<uint32_t>(entry[2]) << 8) | static_cast<uint32_t>(entry[3]);
+
+				// Check if it's the 'name' table (tag 0x6E616D65)
+				if (tag == 0x6E616D65) {
+					// Read offset to the 'name' table (4 bytes, big-endian)
+					uint32_t offset = (static_cast<uint32_t>(entry[8]) << 24) |
+									  (static_cast<uint32_t>(entry[9]) << 16) |
+									  (static_cast<uint32_t>(entry[10]) << 8) | static_cast<uint32_t>(entry[11]);
+
+					if (offset >= static_cast<uint32_t>(size)) {
+						throw std::runtime_error("Name table offset beyond file size");
+					}
+
+					nameTable = data + offset;
+					break;
+				}
+			}
+
+			if (!nameTable || nameTable + 6 > data + size) {
+				throw std::runtime_error("Name table header is missing or truncated");
+			}
+
+			// Name table header - All values are big-endian
+			uint16_t count = (static_cast<uint16_t>(nameTable[2]) << 8) | static_cast<uint16_t>(nameTable[3]);
+			uint16_t stringOffset = (static_cast<uint16_t>(nameTable[4]) << 8) | static_cast<uint16_t>(nameTable[5]);
+
+			constexpr size_t recordSize = 12;
+			const uint8_t* recordBase = nameTable + 6;
+
+			if (recordBase + count * recordSize > data + size) {
+				throw std::runtime_error("Name records extend beyond font data");
+			}
+
+			// Iterate through name records
+			for (int i = 0; i < count; ++i) {
+				const uint8_t* record =
+					recordBase + i * recordSize; // 6 bytes for name table header, 12 bytes per record
+
+				// Read metadata for the record
+				uint16_t platformID = (static_cast<uint16_t>(record[0]) << 8) | static_cast<uint16_t>(record[1]);
+				uint16_t encodingID = (static_cast<uint16_t>(record[2]) << 8) | static_cast<uint16_t>(record[3]);
+				uint16_t nameID = (static_cast<uint16_t>(record[6]) << 8) | static_cast<uint16_t>(record[7]);
+				uint16_t length = (static_cast<uint16_t>(record[8]) << 8) | static_cast<uint16_t>(record[9]);
+				uint16_t offset = (static_cast<uint16_t>(record[10]) << 8) | static_cast<uint16_t>(record[11]);
+
+				// We are looking for Name ID 1 (Font Family Name)
+				// Prefer Unicode (Platform ID 0, 3) or Apple Roman (Platform ID 1) if available
+				if (nameID == 1) {
+					// Check for Unicode (Platform ID 0, Encoding ID 3 or 4) or (Platform ID 3, Encoding ID 1)
+					// or Mac Roman (Platform ID 1, Encoding ID 0)
+					bool isUnicode = (platformID == 0 && (encodingID == 3 || encodingID == 4)) ||
+									 (platformID == 3 && encodingID == 1);
+					bool isMacRoman = (platformID == 1 && encodingID == 0);
+
+					if (isUnicode || isMacRoman) {
+						const uint8_t* nameString = nameTable + stringOffset + offset;
+						SCP_string familyName;
+
+						// Bounds check to prevent reading past the end of the font metadata
+						if (nameString + length > data + size) {
+							throw std::runtime_error("Name string extends past font data");
+						}
+
+						if (isUnicode) {
+							// UCS-2 (UTF-16BE) to UTF-8 conversion
+							// This assumes standard UCS-2, which is UTF-16BE for basic multilingual plane.
+							for (int j = 0; j < length; j += 2) {
+								uint16_t unicodeChar = (static_cast<uint16_t>(nameString[j]) << 8) |
+													   static_cast<uint16_t>(nameString[j + 1]);
+
+								if (unicodeChar <= 0x7F) { // 1-byte UTF-8
+									familyName += static_cast<char>(unicodeChar);
+								} else if (unicodeChar <= 0x7FF) { // 2-byte UTF-8
+									familyName += static_cast<char>(0xC0 | (unicodeChar >> 6));
+									familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+								} else { // 3-byte UTF-8
+									familyName += static_cast<char>(0xE0 | (unicodeChar >> 12));
+									familyName += static_cast<char>(0x80 | ((unicodeChar >> 6) & 0x3F));
+									familyName += static_cast<char>(0x80 | (unicodeChar & 0x3F));
+								}
+								// For supplementary planes (4-byte UTF-8, characters > 0xFFFF),
+								// this simple conversion is not sufficient and would require surrogate pair handling.
+								// Most common font names will be in BMP (Basic Multilingual Plane) according to my
+								// research - Mjn
+							}
+						} else { // Mac Roman (single byte) - this encoding is less common but supported easily enough
+							for (int j = 0; j < length; ++j) {
+								familyName += static_cast<char>(nameString[j]);
+							}
+						}
+						return familyName;
+					}
+				}
+			}
+
+			throw std::runtime_error("No suitable family name found");
+		} catch (const std::exception& e) {
+			mprintf(("Failed to extract font name: %s\n", e.what()));
+			return "";
+		} catch (...) {
+			mprintf(("Failed to extract font name: Unknown exception\n"));
+			return "";
+		}
+	}
+
+	std::pair<NVGFont*, int> FontManager::loadNVGFont(const SCP_string& fileName, float fontSize)
+	{
+		auto iter = allocatedData.find(fileName);
+		if (iter == allocatedData.end())
+		{
+			CFILE *fontFile = cfopen(fileName.c_str(), "rb", CF_TYPE_ANY);
+
+			if (fontFile == nullptr)
+			{
+				mprintf(("Couldn't open font file \"%s\"\n", fileName.c_str()));
+				return { nullptr, -1 };
+			}
+
+			int size = cfilelength(fontFile);
 
 			std::unique_ptr<ubyte[]> fontData(new ubyte[size]);
 
-			if (!fontData)
-			{
-				mprintf(("Couldn't allocate " SIZE_T_ARG " bytes for reading font file \"%s\"!\n", size, fileName.c_str()));
-				cfclose(fontFile);
-				return NULL;
-			}
-
-			if (!cfread(fontData.get(), (int)size, 1, fontFile))
+			if (!cfread(fontData.get(), size, 1, fontFile))
 			{
 				mprintf(("Error while reading font data from \"%s\"\n", fileName.c_str()));
 				cfclose(fontFile);
-				return NULL;
+				return { nullptr, -1 };
 			}
 
 			cfclose(fontFile);
 
 			TrueTypeFontData newData;
 
-			newData.size = size;
+			newData.size = static_cast<size_t>(size);
 			std::swap(newData.data, fontData);
 
-			allocatedData.insert(std::make_pair(fileName, std::move(newData)));
+			auto pair = allocatedData.emplace(fileName, std::move(newData));
+			iter = pair.first;
 		}
 
-		auto data = &allocatedData.find(fileName)->second;
+		auto data = &iter->second;
 
 		auto path = graphics::paths::PathRenderer::instance();
 
@@ -335,19 +500,20 @@ namespace font
 		
 		if (handle < 0)
 		{
-			mprintf(("Couldn't couldn't create font for file \"%s\"\n", fileName.c_str()));
-			return NULL;
+			mprintf(("Couldn't create font for file \"%s\"\n", fileName.c_str()));
+			return { nullptr, -1 };
 		}
 
 		std::unique_ptr<NVGFont> nvgFont(new NVGFont());
 		nvgFont->setHandle(handle);
 		nvgFont->setSize(fontSize);
+		nvgFont->setFamilyName(extractFamilyNameFromTTF(*data));
 
 		auto ptr = nvgFont.get();
 
-		fonts.push_back(std::move(nvgFont));
+		fonts.emplace_back(std::move(nvgFont));
 
-		return ptr;
+		return { ptr, static_cast<int>(fonts.size() - 1) };
 	}
 
 	void FontManager::init()
@@ -360,6 +526,6 @@ namespace font
 		vfntFontData.clear();
 		fonts.clear();
 
-		currentFont = NULL;
+		currentFontIndex = -1;
 	}
 }

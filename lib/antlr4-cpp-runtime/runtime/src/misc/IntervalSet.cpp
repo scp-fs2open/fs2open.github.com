@@ -13,7 +13,7 @@
 using namespace antlr4;
 using namespace antlr4::misc;
 
-IntervalSet const IntervalSet::COMPLETE_CHAR_SET = 
+IntervalSet const IntervalSet::COMPLETE_CHAR_SET =
     IntervalSet::of(Lexer::MIN_CHAR_VALUE, Lexer::MAX_CHAR_VALUE);
 
 IntervalSet const IntervalSet::EMPTY_SET;
@@ -37,7 +37,7 @@ IntervalSet& IntervalSet::operator=(const IntervalSet& other) {
 }
 
 IntervalSet& IntervalSet::operator=(IntervalSet&& other) {
-  _intervals = move(other._intervals);
+  _intervals = std::move(other._intervals);
   return *this;
 }
 
@@ -112,7 +112,7 @@ void IntervalSet::add(const Interval &addition) {
 
 IntervalSet IntervalSet::Or(const std::vector<IntervalSet> &sets) {
   IntervalSet result;
-  for (auto &s : sets) {
+  for (const auto &s : sets) {
     result.addAll(s);
   }
   return result;
@@ -265,18 +265,13 @@ bool IntervalSet::contains(size_t el) const {
 }
 
 bool IntervalSet::contains(ssize_t el) const {
-  if (_intervals.empty())
+  if (_intervals.empty() || el < _intervals.front().a || el > _intervals.back().b) {
     return false;
-
-  if (el < _intervals[0].a) // list is sorted and el is before first interval; not here
-    return false;
-
-  for (auto &interval : _intervals) {
-    if (el >= interval.a && el <= interval.b) {
-      return true; // found in this interval
-    }
   }
-  return false;
+
+  return std::binary_search(_intervals.begin(), _intervals.end(), Interval(el, el), [](const Interval &lhs, const Interval &rhs) {
+    return lhs.b < rhs.a;
+  });
 }
 
 bool IntervalSet::isEmpty() const {
@@ -306,7 +301,7 @@ ssize_t IntervalSet::getMinElement() const {
     return Token::INVALID_TYPE;
   }
 
-  return _intervals[0].a;
+  return _intervals.front().a;
 }
 
 std::vector<Interval> const& IntervalSet::getIntervals() const {
@@ -315,7 +310,7 @@ std::vector<Interval> const& IntervalSet::getIntervals() const {
 
 size_t IntervalSet::hashCode() const {
   size_t hash = MurmurHash::initialize();
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     hash = MurmurHash::update(hash, interval.a);
     hash = MurmurHash::update(hash, interval.b);
   }
@@ -349,7 +344,7 @@ std::string IntervalSet::toString(bool elemAreChar) const {
   }
 
   bool firstEntry = true;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     if (!firstEntry)
       ss << ", ";
     firstEntry = false;
@@ -379,10 +374,6 @@ std::string IntervalSet::toString(bool elemAreChar) const {
   return ss.str();
 }
 
-std::string IntervalSet::toString(const std::vector<std::string> &tokenNames) const {
-  return toString(dfa::Vocabulary::fromTokenNames(tokenNames));
-}
-
 std::string IntervalSet::toString(const dfa::Vocabulary &vocabulary) const {
   if (_intervals.empty()) {
     return "{}";
@@ -395,7 +386,7 @@ std::string IntervalSet::toString(const dfa::Vocabulary &vocabulary) const {
   }
 
   bool firstEntry = true;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     if (!firstEntry)
       ss << ", ";
     firstEntry = false;
@@ -420,10 +411,6 @@ std::string IntervalSet::toString(const dfa::Vocabulary &vocabulary) const {
   return ss.str();
 }
 
-std::string IntervalSet::elementName(const std::vector<std::string> &tokenNames, ssize_t a) const {
-  return elementName(dfa::Vocabulary::fromTokenNames(tokenNames), a);
-}
-
 std::string IntervalSet::elementName(const dfa::Vocabulary &vocabulary, ssize_t a) const {
   if (a == -1) {
     return "<EOF>";
@@ -436,7 +423,7 @@ std::string IntervalSet::elementName(const dfa::Vocabulary &vocabulary, ssize_t 
 
 size_t IntervalSet::size() const {
   size_t result = 0;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     result += size_t(interval.b - interval.a + 1);
   }
   return result;
@@ -444,7 +431,7 @@ size_t IntervalSet::size() const {
 
 std::vector<ssize_t> IntervalSet::toList() const {
   std::vector<ssize_t> result;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     ssize_t a = interval.a;
     ssize_t b = interval.b;
     for (ssize_t v = a; v <= b; v++) {
@@ -456,7 +443,7 @@ std::vector<ssize_t> IntervalSet::toList() const {
 
 std::set<ssize_t> IntervalSet::toSet() const {
   std::set<ssize_t> result;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     ssize_t a = interval.a;
     ssize_t b = interval.b;
     for (ssize_t v = a; v <= b; v++) {
@@ -468,7 +455,7 @@ std::set<ssize_t> IntervalSet::toSet() const {
 
 ssize_t IntervalSet::get(size_t i) const {
   size_t index = 0;
-  for (auto &interval : _intervals) {
+  for (const auto &interval : _intervals) {
     ssize_t a = interval.a;
     ssize_t b = interval.b;
     for (ssize_t v = a; v <= b; v++) {

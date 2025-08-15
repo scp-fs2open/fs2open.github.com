@@ -58,7 +58,7 @@ ADE_FUNC(listFiles, l_CFile, "string directory, string filter",
          "Lists all the files in the specified directory matching a filter. The filter must have the format "
          "\"*<rest>\" (the wildcard has to appear at the start), \"<subfolder>/*<rest>\" (to check subfolder(s)) "
          "or \"*/*<rest>\" (for a glob search).",
-         "string[]", "A table with all matching files or nil on error")
+         "table", "A table with all matching files or nil on error")
 {
 	using namespace luacpp;
 
@@ -118,8 +118,6 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 	if(!ade_get_args(L, "s|ss", &n_filename, &n_mode, &n_path))
 		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
-	int type = CFILE_NORMAL;
-
 	int path = CF_TYPE_ANY;
 	if(n_path != NULL && strlen(n_path))
 		path = cfile_get_path_type(n_path);
@@ -130,7 +128,7 @@ ADE_FUNC(openFile, l_CFile, "string Filename, [string Mode=\"r\", string Path = 
 	if((path == CF_TYPE_ANY) && (strchr(n_mode,'w') || strchr(n_mode,'+') || strchr(n_mode,'a')))
 		return ade_set_error(L, "o", l_File.Set(cfile_h()));
 
-	CFILE *cfp = cfopen(n_filename, n_mode, type, path);
+	CFILE *cfp = cfopen(n_filename, n_mode, path);
 
 	if(!cf_is_valid(cfp))
 		return ade_set_error(L, "o", l_File.Set(cfile_h()));

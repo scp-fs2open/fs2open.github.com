@@ -207,7 +207,7 @@ void parse_rank_table(const char* filename)
 						continue;
 					}
 				}
-				rank_p->promotion_text[persona] = buf;
+				rank_p->promotion_text[persona] = std::move(buf);
 			}
 
 			if (rank_p->promotion_text.find(-1) == rank_p->promotion_text.end())
@@ -339,7 +339,7 @@ void parse_traitor_tbl(const char* filename)
 						continue;
 					}
 				}
-				Traitor.debriefing_text[persona] = text;
+				Traitor.debriefing_text[persona] = std::move(text);
 			}
 
 			if (optional_string("$Voice:"))
@@ -368,12 +368,12 @@ void parse_traitor_tbl(const char* filename)
 				stuff_string(rec, F_MULTITEXT);
 
 				traitor_override_t traitor;
-				traitor.name = name;
-				traitor.text = text;
-				traitor.recommendation_text = rec;
+				traitor.name = std::move(name);
+				traitor.text = std::move(text);
+				traitor.recommendation_text = std::move(rec);
 				strcpy_s(traitor.voice_filename, file);
 
-				Traitor_overrides.push_back(traitor);
+				Traitor_overrides.push_back(std::move(traitor));
 			}
 		}
 	}
@@ -817,11 +817,11 @@ void scoring_level_close(int accepted)
 }
 
 // STATS damage, assists recording stuff
-void scoring_add_damage(object *ship_objp,object *other_obj,float damage)
+void scoring_add_damage(const object *ship_objp, const object *other_obj, float damage)
 {
 	int found_slot, signature;
 	int lowest_index,idx;
-	object *use_obj;
+	const object *use_obj;
 	ship *sp;
 
 	// multiplayer clients bail here
@@ -915,7 +915,7 @@ void scoring_add_damage(object *ship_objp,object *other_obj,float damage)
 char Scoring_debug_text[4096];
 
 // evaluate a kill on a ship
-int scoring_eval_kill(object *ship_objp)
+int scoring_eval_kill(const object *ship_objp)
 {		
 	float max_damage_pct;		// the pct% of total damage the max damage object did
 	int max_damage_index;		// the index into the dying ship's damage_ship[] array corresponding the greatest amount of damage
@@ -1392,7 +1392,7 @@ void scoring_eval_assists(ship *sp,int killer_sig, bool is_enemy_player)
 }
 
 // eval a hit on an object (for primary and secondary hit purposes)
-void scoring_eval_hit(object *hit_obj, object *other_obj,int from_blast)
+void scoring_eval_hit(const object *hit_obj, const object *other_obj, int from_blast)
 {	
 	// multiplayer clients bail here
 	if(MULTIPLAYER_CLIENT){

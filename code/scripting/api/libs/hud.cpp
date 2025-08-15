@@ -14,6 +14,7 @@
 #include "hud/hudtarget.h"
 #include "playerman/player.h"
 #include "ship/ship.h"
+#include "freespace.h"
 
 extern int Training_obj_num_display_lines;
 
@@ -24,7 +25,7 @@ namespace api {
 //**********LIBRARY: HUD library
 ADE_LIB(l_HUD, "HUD", "hu", "HUD library");
 
-ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Current HUD draw status", "boolean", "If the HUD is drawn or not")
+ADE_VIRTVAR(HUDDrawn, l_HUD, "boolean", "Whether the HUD is toggled on, i.e. is the HUD enabled.  See also hu.isOnHudDrawCalled()", "boolean", "Whether the HUD can be drawn")
 {
 	bool to_draw = false;
 
@@ -110,7 +111,9 @@ ADE_FUNC(getHUDConfigShowStatus, l_HUD, "number|string gaugeNameOrIndex", "Gets 
 	if ((idx < 0) || (idx >= (int)default_hud_gauges.size()))
 		return ADE_RETURN_NIL;
 
-	if (hud_config_show_flag_is_set(idx))
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	if (HUD_config.is_gauge_visible(gauge_map.get_string_id_from_numeric_id(idx)))
 		return ADE_RETURN_TRUE;
 	else
 		return ADE_RETURN_FALSE;
@@ -148,7 +151,9 @@ ADE_FUNC(setHUDGaugeColor, l_HUD,
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_FALSE;
 
-	gr_init_alphacolor(&HUD_config.clr[idx], r, g, b, a);
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	gr_init_alphacolor(&HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(idx)], r, g, b, a);
 
 	return ADE_RETURN_TRUE;
 }
@@ -168,7 +173,9 @@ ADE_FUNC(getHUDGaugeColor,
 	if ((idx < 0) || (idx >= NUM_HUD_GAUGES))
 		return ADE_RETURN_NIL;
 
-	color cur = HUD_config.clr[idx];
+	const HC_gauge_mappings& gauge_map = HC_gauge_mappings::get_instance();
+
+	color cur = HUD_config.gauge_colors[gauge_map.get_string_id_from_numeric_id(idx)];
 
 	if (!rc) {
 		return ade_set_args(L, "iiii", (int)cur.red, (int)cur.green, (int)cur.blue, (int)cur.alpha);
@@ -320,7 +327,7 @@ ADE_FUNC(getTargetDistance, l_HUD, "object targetee, [vector targeter_position]"
 		}
 	}
 
-	auto dist = hud_find_target_distance(targetee_h->objp, targeter_pos);
+	auto dist = hud_find_target_distance(targetee_h->objp(), targeter_pos);
 	return ade_set_args(L, "f", dist);
 }
 
@@ -332,6 +339,11 @@ ADE_FUNC(getDirectiveLines, l_HUD, nullptr, "Returns the number of lines display
 ADE_FUNC(isCommMenuOpen, l_HUD, nullptr, "Returns whether the HUD comm menu is currently being displayed", "boolean", "Whether the comm menu is open")
 {
 	return ade_set_args(L, "b", (Player->flags & PLAYER_FLAGS_MSG_MODE) != 0);
+}
+
+ADE_FUNC(isOnHudDrawCalled, l_HUD, nullptr, "Returns whether the On Hud Draw hook is called this frame.  This is useful for scripting logic that is relevant to HUD drawing but is not part of the On Hud Draw hook", "boolean", "Whether the On Hud Draw hook is called this frame")
+{
+	return ade_set_args(L, "b", game_actually_playing() && !Pre_player_entry && !(Game_mode & GM_STANDALONE_SERVER) && !(Viewer_mode & (VM_EXTERNAL | VM_DEAD_VIEW | VM_WARP_CHASE | VM_PADLOCK_ANY)));
 }
 
 ADE_VIRTVAR(toggleCockpits, l_HUD, "boolean", "Gets or sets whether the the cockpit model will be rendered.", "boolean", "true if being rendered, false otherwise")

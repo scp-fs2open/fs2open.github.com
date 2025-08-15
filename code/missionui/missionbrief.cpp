@@ -1230,7 +1230,7 @@ void brief_render(float frametime)
 			int more_txt_x = Brief_text_coords[gr_screen.res][0] + (Brief_max_line_width[gr_screen.res]/2) - 10;
 			int more_txt_y = Brief_text_coords[gr_screen.res][1] + Brief_text_coords[gr_screen.res][3] - 2;				// located below brief text, centered
 
-			gr_get_string_size(&w, &h, XSTR("more", 1469), (int)strlen(XSTR("more", 1469)));
+			gr_get_string_size(&w, &h, XSTR("more", 1469), 1.0f, (int)strlen(XSTR("more", 1469)));
 			gr_set_color_fast(&Color_black);
 			gr_rect(more_txt_x-2, more_txt_y, w+3, h, GR_RESIZE_MENU);
 			gr_set_color_fast(&Color_more_indicator);
@@ -1393,7 +1393,7 @@ int brief_setup_closeup(brief_icon *bi, bool api_access)
 	if (!api_access) {
 		if (Closeup_icon->modelnum < 0) {
 			if (sip == nullptr) {
-				Closeup_icon->modelnum = model_load(pof_filename, 0, nullptr);
+				Closeup_icon->modelnum = model_load(pof_filename);
 			} else {
 				Closeup_icon->modelnum = model_load(sip, true);
 				Closeup_icon->model_instance_num = model_create_instance(model_objnum_special::OBJNUM_NONE, Closeup_icon->modelnum);
@@ -1516,9 +1516,9 @@ void brief_check_for_anim(bool api_access, int api_x, int api_y)
 		brief_common_get_icon_dimensions(&iw, &ih, bi);
 
 		// could be a scaled icon
-		if (bi->scale_factor != 1.0f) {
-			iw = static_cast<int>(iw * bi->scale_factor);
-			ih = static_cast<int>(ih * bi->scale_factor);
+		if (bi->scale_factor != 1.0f || Briefing_Icon_Scale_Factor != 1.0f) {
+			iw = static_cast<int>(iw * bi->scale_factor * Briefing_Icon_Scale_Factor);
+			ih = static_cast<int>(ih * bi->scale_factor * Briefing_Icon_Scale_Factor);
 		}
 
 		if ( mx < bi->x ) continue;

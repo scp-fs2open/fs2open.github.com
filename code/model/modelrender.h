@@ -27,6 +27,8 @@ extern vec3d Object_position;
 
 extern color Wireframe_color;
 
+extern int Lab_object_detail_level;
+
 typedef enum {
 	TECH_SHIP,
 	TECH_WEAPON,
@@ -62,7 +64,7 @@ extern int model_interp_get_texture(const texture_info *tinfo, int elapsed_time)
 
 class model_render_params
 {
-	uint Model_flags;
+	uint64_t Model_flags;
 	uint Debug_flags;
 
 	int Objnum;
@@ -83,10 +85,7 @@ class model_render_params
 
 	int Insignia_bitmap;
 
-	const int *Replacement_textures;
-	bool Manage_replacement_textures; // This is set when we are rendering a model without an associated ship object;
-									  // in that case, model_render_params is responsible for allocating and destroying
-									  // the Replacement_textures array (this is handled elsewhere otherwise)
+	std::shared_ptr<const model_texture_replace> Replacement_textures;
 
 	bool Team_color_set;
 	team_color Current_team_color;
@@ -109,9 +108,8 @@ class model_render_params
 	model_render_params& operator=(const model_render_params&) = delete;
 public:
 	model_render_params();
-	~model_render_params();
 
-	void set_flags(uint flags);
+	void set_flags(uint64_t flags);
 	void set_debug_flags(uint flags);
 	void set_object_number(int num);
 	void set_detail_level_lock(int detail_level_lock);
@@ -122,7 +120,7 @@ public:
 	void set_alpha(float alpha);
 	void set_forced_bitmap(int bitmap);
 	void set_insignia_bitmap(int bitmap);
-	void set_replacement_textures(const int *textures);
+	void set_replacement_textures(std::shared_ptr<const model_texture_replace> textures);
 	void set_replacement_textures(int modelnum, const SCP_vector<texture_replace>& replacement_textures);
 	void set_team_color(const team_color &clr);
 	void set_team_color(const SCP_string &team, const SCP_string &secondaryteam, fix timestamp, int fadetime);
@@ -137,7 +135,7 @@ public:
 	bool is_alpha_mult_set() const;
 	bool uses_thick_outlines() const;
 
-	uint get_model_flags() const;
+	uint64_t get_model_flags() const;
 	uint get_debug_flags() const;
 	int get_object_number() const;
 	int get_detail_level_lock() const;
@@ -149,7 +147,7 @@ public:
 	float get_alpha() const;
 	int get_forced_bitmap() const;
 	int get_insignia_bitmap() const;
-	const int* get_replacement_textures() const;
+	std::shared_ptr<const model_texture_replace> get_replacement_textures() const;
 	const team_color& get_team_color() const;
 	const vec3d& get_clip_plane_pos() const;
 	const vec3d& get_clip_plane_normal() const;
@@ -168,6 +166,9 @@ struct arc_effect
 	color primary;
 	color secondary;
 	float width;
+	ubyte segment_depth;
+
+	const SCP_vector<vec3d> *persistent_arc_points;
 };
 
 struct insignia_draw_data
@@ -255,7 +256,6 @@ class model_draw_list
 	SCP_vector<int> Render_keys;
 
 	SCP_vector<arc_effect> Arcs;
-	SCP_vector<insignia_draw_data> Insignias;
 	SCP_vector<outline_draw> Outlines;
 
 	graphics::util::UniformBuffer _dataBuffer;
@@ -285,11 +285,8 @@ public:
 	void pop_transform();
 	void set_scale(const vec3d *scale = NULL);
 
-	void add_arc(const vec3d *v1, const vec3d *v2, const color *primary, const color *secondary, float arc_width);
+	void add_arc(const vec3d *v1, const vec3d *v2, const SCP_vector<vec3d> *persistent_arc_points, const color *primary, const color *secondary, float arc_width, ubyte segment_depth);
 	void render_arcs();
-
-	void add_insignia(const model_render_params *params, const polymodel *pm, int detail_level, int bitmap_num);
-	void render_insignias();
 
 	void add_outline(const vertex* vert_array, int n_verts, const color *clr);
 	void render_outlines();
@@ -311,11 +308,12 @@ void model_render_queue(const model_render_params* render_info, model_draw_list*
 void submodel_render_immediate(const model_render_params* render_info, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void submodel_render_queue(const model_render_params* render_info, model_draw_list* scene, const polymodel* pm, const polymodel_instance* pmi, int submodel_num, const matrix* orient, const vec3d* pos);
 void model_render_buffers(model_draw_list* scene, model_material* rendering_material, const model_render_params* interp, const vertex_buffer* buffer, const polymodel* pm, int mn, int detail_level, uint tmap_flags);
-bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint flags);
-void model_render_arc(const vec3d* v1, const vec3d* v2, const color* primary, const color* secondary, float arc_width);
-void model_render_insignias(const insignia_draw_data* insignia);
+bool model_render_check_detail_box(const vec3d* view_pos, const polymodel* pm, int submodel_num, uint64_t flags);
+void model_render_arc(const vec3d* v1, const vec3d* v2, const SCP_vector<vec3d> *persistent_arc_points, const color* primary, const color* secondary, float arc_width, ubyte depth_limit);
 void model_render_set_wireframe_color(const color* clr);
-bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector);
+bool render_tech_model(tech_render_type model_type, int x1, int y1, int x2, int y2, float zoom, bool lighting, int class_idx, const matrix* orient, const SCP_string& pof_filename = "", float closeup_zoom = 0, const vec3d* closeup_pos = &vmd_zero_vector, const SCP_string& tcolor = "");
+
+float convert_distance_and_diameter_to_pixel_size(float distance, float diameter, float field_of_view, int screen_width);
 
 float model_render_get_diameter_clamped_to_min_pixel_size(const vec3d* pos, float diameter, float min_pixel_size);
 

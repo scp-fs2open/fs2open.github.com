@@ -2,7 +2,7 @@
 
 #include "globalincs/pstypes.h"
 
-#include <mpark/variant.hpp>
+#include <variant>
 
 namespace actions {
 namespace expression {
@@ -85,10 +85,10 @@ class Value {
 
 		if (currentType == expectedType) {
 			// No conversion necessary
-			return mpark::get<T>(m_value);
+			return std::get<T>(m_value);
 		}
 
-		return mpark::visit(detail::implicit_conversion<T>{}, m_value);
+		return std::visit(detail::implicit_conversion<T>{}, m_value);
 	}
 
 	friend bool operator==(const Value& lhs, const Value& rhs);
@@ -97,7 +97,7 @@ class Value {
 	friend std::ostream& operator<<(std::ostream& os, const Value& value);
 
   private:
-	mpark::variant<mpark::monostate, int, float, vec3d, SCP_string> m_value;
+	std::variant<std::monostate, int, float, vec3d, SCP_string> m_value;
 };
 
 } // namespace expression

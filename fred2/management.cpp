@@ -122,10 +122,13 @@ CCriticalSection CS_cur_object_index;
 ai_goal_list Ai_goal_list[] = {
 	{ "Waypoints",				AI_GOAL_WAYPOINTS,			0 },
 	{ "Waypoints once",			AI_GOAL_WAYPOINTS_ONCE,		0 },
-	{ "Attack",					AI_GOAL_CHASE | AI_GOAL_CHASE_WING,	0 },
+	{ "Attack",					AI_GOAL_CHASE,				0 },
+	{ "Attack",					AI_GOAL_CHASE_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Attack any ship",		AI_GOAL_CHASE_ANY,			0 },
 	{ "Attack ship class",		AI_GOAL_CHASE_SHIP_CLASS,	0 },
-	{ "Guard",					AI_GOAL_GUARD | AI_GOAL_GUARD_WING, 0 },
+	{ "Attack ship type",		AI_GOAL_CHASE_SHIP_TYPE,	0 },
+	{ "Guard",					AI_GOAL_GUARD,				0 },
+	{ "Guard",					AI_GOAL_GUARD_WING,			0 },	// duplicate needed because we can no longer use bitwise operators
 	{ "Disable ship",			AI_GOAL_DISABLE_SHIP,		0 },
 	{ "Disable ship (tactical)",AI_GOAL_DISABLE_SHIP_TACTICAL, 0 },
 	{ "Disarm ship",			AI_GOAL_DISARM_SHIP,		0 },
@@ -232,7 +235,19 @@ void lcl_fred_replace_stuff(CString &text)
 	text.Replace("\\", "$backslash");
 }
 
-void brief_init_colors();
+CString get_display_name_for_text_box(const char *orig_name)
+{
+	auto p = get_pointer_to_first_hash_symbol(orig_name);
+	if (p)
+	{
+		// use the same logic as in end_string_at_first_hash_symbol, but rewritten for CString
+		CString display_name(orig_name, static_cast<int>(p - orig_name));
+		display_name.TrimRight();
+		return display_name;
+	}
+	else
+		return "<none>";
+}
 
 void fred_preload_all_briefing_icons()
 {
@@ -313,21 +328,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
  	Cmdline_window = 1;
 
 	gr_init(std::move(graphicsOps), GR_OPENGL, 640, 480, 32);
+	gr_set_gamma(3.0f);
 
 	io::mouse::CursorManager::get()->showCursor(false);
 
-	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
-	// system if a special mod_table option is set
-	if (Enable_scripts_in_fred) {
-		script_init();			//WMC
-	}
-
 	font::init();					// loads up all fonts  
-
-	gr_set_gamma(3.0f);
-	
-	key_init();
-	mouse_init();
 
 	curves_init();
 	particle::ParticleManager::init();
@@ -338,6 +343,82 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	gamesnd_parse_soundstbl(false);
 
 	brief_icons_init();
+
+	hud_init_comm_orders();		// Goober5000
+
+	// wookieejedi
+	// load in the controls and defaults including the controlconfigdefault.tbl
+	// this allows the sexp tree in key-pressed to actually match what the game will use
+	// especially useful when a custom Controlconfigdefaults.tbl is used
+	control_config_common_init();
+
+	rank_init();
+	traitor_init();
+	medals_init();			// get medal names for sexpression usage
+
+	key_init();
+	mouse_init();
+
+	model_init();
+	virtual_pof_init();
+
+	event_music_init();
+
+	alpha_colors_init();
+
+	// get fireball IDs for sexpression usage
+	// (we don't need to init the entire system via fireball_init, we just need the information)
+	fireball_parse_tbl();
+
+	animation::ModelAnimationParseHelper::parseTables();
+
+	sexp_startup(); // Must happen before ship init for LuaAI
+
+	obj_init();
+	armor_init();
+	ai_init();
+	ai_profiles_init();
+	weapon_init();
+	glowpoint_init();
+	ship_init();
+
+	techroom_intel_init();
+	hud_positions_init();
+
+	asteroid_init();
+	mission_brief_common_init();
+
+	neb2_init();						// fullneb stuff
+	nebl_init();						// neb lightning
+	stars_init();
+	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
+
+	lighting_profiles::load_profiles();
+
+	// To avoid breaking current mods which do not support scripts in FRED we only initialize the scripting
+	// system if a special mod_table option is set
+	if (Enable_scripts_in_fred) {
+		// Note: Avoid calling any non-script functions after this line and before OnGameInit->run(), lest they run before scripting has completely initialized.
+		script_init();			//WMC
+	}
+
+	Script_system.RunInitFunctions();
+	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
+	if (scripting::hooks::OnGameInit->isActive()) {
+		scripting::hooks::OnGameInit->run();
+	}
+	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
+	if (scripting::hooks::OnSplashScreen->isActive()) {
+		scripting::hooks::OnSplashScreen->run();
+	}
+
+	// A non-deprecated hook that runs after the splash screen has faded out.
+	if (scripting::hooks::OnSplashEnd->isActive()) {
+		scripting::hooks::OnSplashEnd->run();
+	}
+
+	libs::ffmpeg::initialize();
+
 
 	// for fred specific replacement texture stuff
 	Fred_texture_replacements.clear();
@@ -358,49 +439,17 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	strcpy_s(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
 	Voice_export_selection = 0;
 
-	hud_init_comm_orders();		// Goober5000
+	Show_waypoints = TRUE;
 
-	alpha_colors_init();
-	
-	mission_brief_common_init();	
-
-	sexp_startup(); // Must happen before ship init for LuaAI
-
-	animation::ModelAnimationParseHelper::parseTables();
-	obj_init();
-	model_free_all();				// Free all existing models
-	virtual_pof_init();
-	ai_init();
-	ai_profiles_init();
-	armor_init();
-	weapon_init();
-	medals_init();			// get medal names for sexpression usage
-	glowpoint_init();
-	ship_init();
-	techroom_intel_init();
-	hud_positions_init();
-	asteroid_init();
-	lighting_profiles::load_profiles();
-	traitor_init();
-
-	// get fireball IDs for sexpression usage
-	// (we don't need to init the entire system via fireball_init, we just need the information)
-	fireball_parse_tbl();
 
 	// initialize and activate external string hash table
 	// make sure to do here so that we don't parse the table files into the hash table - waste of space
 	fhash_init();
 	fhash_activate();
 
-	neb2_init();						// fullneb stuff
-	stars_init();
-	ssm_init();		// The game calls this after stars_init(), and we need Ssm_info initialized for OPF_SSM_CLASS. -MageKing17
-	brief_init_colors();
 	fred_preload_all_briefing_icons(); //phreak.  This needs to be done or else the briefing icons won't show up
-	event_music_init();
 	fiction_viewer_reset();
 	cmd_brief_reset();
-	Show_waypoints = TRUE;
 
 	// mission creation requires the existence of a timestamp snapshot
 	timer_start_frame();
@@ -408,38 +457,11 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mission_campaign_clear();
 	create_new_mission();
 
-	// neb lightning
-	nebl_init();
-
-	libs::ffmpeg::initialize();
-
-
-	// wookieejedi
-	// load in the controls and defaults including the controlconfigdefault.tbl
-	// this allows the sexp tree in key-pressed to actually match what the game will use
-	// especially useful when a custom Controlconfigdefaults.tbl is used
-	control_config_common_init();
-
 	gr_reset_clip();
 	g3_start_frame(0);
 	g3_set_view_matrix(&eye_pos, &eye_orient, 0.5f);
 	
 	Fred_main_wnd -> init_tools();
-
-	Script_system.RunInitFunctions();
-	Scripting_game_init_run = true;	// set this immediately before OnGameInit so that OnGameInit *itself* will run
-	if (scripting::hooks::OnGameInit->isActive()) {
-		scripting::hooks::OnGameInit->run();
-	}
-	//Technically after the splash screen, but the best we can do these days. Since the override is hard-deprecated, we don't need to check it.
-	if (scripting::hooks::OnSplashScreen->isActive()) {
-		scripting::hooks::OnSplashScreen->run();
-	}
-
-	// A non-deprecated hook that runs after the splash screen has faded out.
-	if (scripting::hooks::OnSplashEnd->isActive()) {
-		scripting::hooks::OnSplashEnd->run();
-	}
 
 	return true;
 }
@@ -810,11 +832,14 @@ void clear_mission(bool fast_reload)
 			}
 		}
 	}
-	t = CTime::GetCurrentTime();
+
+	time_t currentTime;
+	time(&currentTime);
+	auto timeinfo = localtime(&currentTime);
 
 	strcpy_s(The_mission.name, "Untitled");
 	The_mission.author = str;
-	strcpy_s(The_mission.created, t.Format("%x at %X"));
+	time_to_mission_info_string(timeinfo, The_mission.created, DATE_TIME_LENGTH - 1);
 	strcpy_s(The_mission.modified, The_mission.created);
 	strcpy_s(The_mission.notes, "This is a FRED2_OPEN created mission.");
 	strcpy_s(The_mission.mission_desc, "Put mission description here");
@@ -865,6 +890,7 @@ void clear_mission(bool fast_reload)
 	set_physics_controls();
 
 	Event_annotations.clear();
+	Fred_migrated_immobile_ships.clear();
 
 	// free memory from all parsing so far -- see also the stop_parse() in player_select_close() which frees all tbls found during game_init()
 	stop_parse();
@@ -1253,7 +1279,8 @@ int common_object_delete(int obj)
 		Objects[obj].type = OBJ_NONE;
 		
 		// now call the destructor
-		Jump_nodes.erase(jnp);
+		if (jnp != Jump_nodes.end())
+			Jump_nodes.erase(jnp);
 
 		// now restore the jump node type so that the below unmark and obj_delete will work
 		Objects[obj].type = OBJ_JUMP_NODE;
@@ -1689,12 +1716,16 @@ int get_docking_list(int model_index)
 }
 
 // DA 1/7/99 These ship names are not variables
-int rename_ship(int ship, char *name)
+int rename_ship(int ship, const char *name)
 {
 	int i;
 
 	Assert(ship >= 0);
 	Assert(strlen(name) < NAME_LENGTH);
+
+	// we may not need to rename it
+	if (strcmp(Ships[ship].ship_name, name) == 0)
+		return 0;
 
 	update_sexp_references(Ships[ship].ship_name, name);
 	ai_update_goal_references(sexp_ref_type::SHIP, Ships[ship].ship_name, name);
@@ -2218,7 +2249,7 @@ char *object_name(int obj)
 	return "*unknown*";
 }
 
-const char *get_order_name(int order)
+const char *get_order_name(ai_goal_mode order)
 {
 	int i;
 
@@ -2226,7 +2257,7 @@ const char *get_order_name(int order)
 		return "None";
 
 	for (i=0; i<Ai_goal_list_size; i++)
-		if (Ai_goal_list[i].def & order)
+		if (Ai_goal_list[i].def == order)
 			return Ai_goal_list[i].name;
 
 	return "???";
@@ -2534,4 +2565,9 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 		if (!stricmp(ii->ship_name, old_name))
 			strcpy_s(ii->ship_name, new_name);
 	}
+}
+
+void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len)
+{
+	std::strftime(dest, dest_max_len, "%x at %X", src);
 }

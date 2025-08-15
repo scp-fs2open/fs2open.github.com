@@ -44,7 +44,6 @@ namespace Weapon {
 		Default_in_tech_database,			// this entry's default tech database status, as specified in weapons.tbl; used when the tech db is "reset to default" - Goober5000
 		Local_ssm,							// localized ssm. ship that fires ssm is in mission.  ssms also warp back in during mission
 		Tagged_only,						// can only fire if target is tagged
-		Cycle,								// will only fire from (shots (defalts to 1)) points at a time
 		Small_only,							// can only be used against small ships like fighters or bombers
 		Same_turret_cooldown,				// the weapon has the same cooldown time on turrets
 		Mr_no_lighting,						// don't render with lighting, regardless of user options
@@ -96,6 +95,8 @@ namespace Weapon {
 		No_fred,							// not available in fred
 		Detonate_on_expiration,				// Secondary weapons always detonate when their lifetime runs out, but now primary weapons can too
 		Ignores_countermeasures,			// The weapon will never be affected by countermeasures
+		Freespace_1_missile_behavior,		// Bundles several observed behaviors missiles had in the freespace 1 release
+		Dogfight_weapon,                    // Dogfight weapons are intended as balanced variants for multiplayer. This flag can be used to filter them out when necessary.
 
         NUM_VALUES
 	};
@@ -114,6 +115,19 @@ namespace Weapon {
 		Multi_homing_update_needed, // this is a newly spawned homing weapon which needs to update client machines
 		Multi_Update_Sent,			// Marks this missile as already being updated once by the server
 		Begun_detonation,			// The engine has set this weapon to detonate momentarily
+		No_thruster,                // Disable rendering thrusters for this weapon instance
+		Glowmaps_disabled,			// No glowmaps for this weapon instance
+		Draw_as_wireframe,			// Render wireframe for this weapon instance
+		Render_full_detail,			// Render full detail for this weapon instance
+		Render_without_light,		// Render without light for this weapon instance
+		Render_without_diffuse,		// Render without diffuse for this weapon instance
+		Render_without_glowmap,		// Render without glowmap for this weapon instance
+		Render_without_normalmap,	// Render without normal map for this weapon instance
+		Render_without_heightmap,	// Render without height map for this weapon instance
+		Render_without_ambientmap,	// Render without ambient for this weapon instance
+		Render_without_specmap,		// Render without spec for this weapon instance
+		Render_without_reflectmap,	// Render without reflect for this weapon instance
+
 
 		NUM_VALUES
 	};

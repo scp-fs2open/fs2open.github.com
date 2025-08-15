@@ -550,6 +550,15 @@ void output_html_doc(const ScriptingDocumentation& doc, const SCP_string& filena
 
 	fputs("</dd>", fp);
 
+	//***Options
+	fputs("<dt><b>In Game Options</b></dt>", fp);
+	fputs("<dd><dl>", fp);
+	for (const auto& option : doc.options) {
+		fprintf(fp, "<dt><b>%s</b></dt>", option.title.c_str());
+		fprintf(fp, "<dd><b>Key:</b> %s</dd>", option.key.c_str());
+		fprintf(fp, "<dd><b>Description:</b> %s</dd>", option.description.c_str());
+	}
+
 	//***Enumerations
 	fprintf(fp, "<dt id=\"Enumerations\"><h2>Enumerations</h2></dt>");
 	for (const auto& enumeration : doc.enumerations) {

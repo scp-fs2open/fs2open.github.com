@@ -30,7 +30,7 @@ ade_type_info merge_alternatives(const ade_type_info& left, const ade_type_info&
 		elements.insert(elements.end(), right.elements().begin(), right.elements().end());
 	}
 
-	return ade_type_info(ade_type_alternative(elements));
+	return { ade_type_alternative(std::move(elements)) };
 }
 
 class BaseVisitor : public ArgumentListVisitor {
@@ -135,8 +135,8 @@ class ArglistVisitor : public BaseVisitor {
 		for (size_t i = 0; i < n; i++) {
 			antlrcpp::Any childResult = context->children[i]->accept(this);
 
-			if (childResult.isNotNull()) {
-				argTypes.push_back(childResult.as<ade_type_info>());
+			if (childResult.has_value()) {
+				argTypes.push_back(std::any_cast<ade_type_info>(childResult));
 			}
 		}
 
@@ -144,11 +144,11 @@ class ArglistVisitor : public BaseVisitor {
 	}
 
   protected:
-	antlrcpp::Any aggregateResult(antlrcpp::Any any, const antlrcpp::Any& nextResult) override
+	antlrcpp::Any aggregateResult(antlrcpp::Any any, antlrcpp::Any nextResult) override
 	{
-		if (any.isNull()) {
+		if (!any.has_value()) {
 		}
-		return AbstractParseTreeVisitor::aggregateResult(any, nextResult);
+		return AbstractParseTreeVisitor::aggregateResult(std::move(any), nextResult);
 	}
 };
 
@@ -164,7 +164,7 @@ class TypeVisitor : public BaseVisitor {
 	}
 	antlrcpp::Any visitVarargs_or_simple_type(ArgumentListParser::Varargs_or_simple_typeContext* context) override
 	{
-		auto retType = visit(context->simple_type()).as<ade_type_info>();
+		auto retType = std::any_cast<ade_type_info>(visit(context->simple_type()));
 		if (context->VARARGS_SPECIFIER() != nullptr) {
 			return ade_type_info(ade_type_varargs(std::move(retType)));
 		}
@@ -177,7 +177,7 @@ class TypeVisitor : public BaseVisitor {
 	}
 	antlrcpp::Any visitStandalone_type(ArgumentListParser::Standalone_typeContext* context) override
 	{
-		const auto typeValue = visitChildren(context).as<ade_type_info>();
+		const auto typeValue = std::any_cast<ade_type_info>(visitChildren(context));
 
 		// We can't properly distinguish between alternate types and tuple types in aggregateResult so instead we do
 		// that here. For a single type, we just return that type
@@ -192,45 +192,45 @@ class TypeVisitor : public BaseVisitor {
 
 	antlrcpp::Any visitFunction_type(ArgumentListParser::Function_typeContext* context) override
 	{
-		auto retType = visit(context->type()).as<ade_type_info>();
+		auto retType = std::any_cast<ade_type_info>(visit(context->type()));
 
 		ArglistVisitor arglistVisitor;
-		auto argTypes = context->func_arglist()->accept(&arglistVisitor).as<SCP_vector<ade_type_info>>();
+		auto argTypes = std::any_cast<SCP_vector<ade_type_info>>(context->func_arglist()->accept(&arglistVisitor));
 
 		return ade_type_info(ade_type_function(std::move(retType), std::move(argTypes)));
 	}
 
 	antlrcpp::Any visitMap_type(ArgumentListParser::Map_typeContext* context) override
 	{
-		const auto keyType = visit(context->type(0)).as<ade_type_info>();
-		const auto valueType = visit(context->type(1)).as<ade_type_info>();
+		auto keyType = std::any_cast<ade_type_info>(visit(context->type(0)));
+		auto valueType = std::any_cast<ade_type_info>(visit(context->type(1)));
 
-		return ade_type_info(ade_type_map(keyType, valueType));
+		return ade_type_info(ade_type_map(std::move(keyType), std::move(valueType)));
 	}
 
 	antlrcpp::Any visitIterator_type(ArgumentListParser::Iterator_typeContext* context) override
 	{
-		const auto valueType = visit(context->type()).as<ade_type_info>();
+		auto valueType = std::any_cast<ade_type_info>(visit(context->type()));
 
-		return ade_type_info(ade_type_iterator(valueType));
+		return ade_type_info(ade_type_iterator(std::move(valueType)));
 	}
 
 	antlrcpp::Any visitErrorNode(antlr4::tree::ErrorNode* /*node*/) override { return ade_type_info("<error type>"); }
 
   protected:
-	antlrcpp::Any aggregateResult(antlrcpp::Any previous, const antlrcpp::Any& nextResult) override
+	antlrcpp::Any aggregateResult(antlrcpp::Any previous, antlrcpp::Any nextResult) override
 	{
 		// This happens while visiting terminals, ignore those
-		if (nextResult.isNull()) {
+		if (!nextResult.has_value()) {
 			return previous;
 		}
 
-		if (previous.isNotNull()) {
-			const auto& previousType = previous.as<ade_type_info>();
-			const auto& nextType     = nextResult.as<ade_type_info>();
+		if (previous.has_value()) {
+			auto previousType = std::any_cast<ade_type_info>(previous);
+			auto nextType     = std::any_cast<ade_type_info>(nextResult);
 			return merge_alternatives(previousType, nextType);
 		} else {
-			return nextResult.as<ade_type_info>();
+			return std::any_cast<ade_type_info>(nextResult);
 		}
 	}
 };
@@ -238,7 +238,7 @@ class TypeVisitor : public BaseVisitor {
 antlrcpp::Any scripting::ArglistVisitor::visitFunc_arg(ArgumentListParser::Func_argContext* context)
 {
 	TypeVisitor typeVisit;
-	auto argType = context->type()->accept(&typeVisit).as<ade_type_info>();
+	auto argType = std::any_cast<ade_type_info>(context->type()->accept(&typeVisit));
 	argType.setName(context->ID()->getText());
 
 	return argType;
@@ -270,7 +270,7 @@ class ArgumentCollectorVisitor : public BaseVisitor {
 
 		TypeVisitor typeVisit;
 		const auto typeAny = context->type()->accept(&typeVisit);
-		argdef.type        = typeAny.as<ade_type_info>();
+		argdef.type        = std::any_cast<ade_type_info>(typeAny);
 
 		if (context->ID() != nullptr) {
 			argdef.name = context->ID()->getText();
@@ -279,7 +279,7 @@ class ArgumentCollectorVisitor : public BaseVisitor {
 		if (context->value() != nullptr) {
 			ValueVisitor valueVisit;
 			const auto valueAny = context->value()->accept(&valueVisit);
-			argdef.def_val      = valueAny.as<SCP_string>();
+			argdef.def_val      = std::any_cast<SCP_string>(valueAny);
 			argdef.optional     = true;
 		}
 
@@ -499,7 +499,7 @@ bool type_parser::parse(const SCP_string& type)
 		TypeVisitor typeVisitor;
 		const auto typeAny = tree->accept(&typeVisitor);
 
-		_parsedType = typeAny.as<ade_type_info>();
+		_parsedType = std::any_cast<ade_type_info>(typeAny);
 	}
 
 	return errListener.diagnostics.empty();

@@ -7,7 +7,7 @@ out vec4 fragOut5;
 void main()
 {
 	fragOut0 = vec4(0.0, 0.0, 0.0, 1.0); // color
-	fragOut1 = vec4(0.0, 0.0, -1000000.0, 1.0); // position
+	fragOut1 = vec4(0.0, 0.0, -1000000.0, 0.0); // position
 	fragOut2 = vec4(0.0, 0.0, 0.0, 1.0); // normal
 	fragOut3 = vec4(0.0, 0.0, 0.0, 0.0); // specular
 	fragOut4 = vec4(0.0, 0.0, 0.0, 1.0); // emissive

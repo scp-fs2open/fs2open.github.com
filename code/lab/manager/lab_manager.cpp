@@ -2,18 +2,27 @@
 #include "lab/manager/lab_manager.h"
 #include "lab/renderer/lab_renderer.h"
 #include "io/key.h"
-#include "asteroid/asteroid.h"
+#include "math/staticrand.h"
 #include "missionui/missionscreencommon.h"
+#include "model/modelrender.h"
+#include "object/object.h"
+#include "object/objectdock.h"
 #include "debris/debris.h"
+#include "ship/ship.h"
 #include "ship/shipfx.h"
+#include "particle/particle.h"
 #include "weapon/muzzleflash.h"
 #include "weapon/beam.h"
+#include "ai/aigoals.h"
 
 #include "freespace.h"
 
 #include "extensions/ImGuizmo.h"
 #include "io/mouse.h"
-#include "weapon/weapon.h"
+
+//Turret firing forward declarations
+void ai_turret_execute_behavior(const ship* shipp, ship_subsys* ss);
+extern void beam_delete(beam* b);
 
 
 void lab_exit() {
@@ -40,12 +49,16 @@ LabManager::LabManager() {
 	shockwave_level_init();
 	ship_level_init();
 	shipfx_flash_init();
-	mflash_page_in(true);
 	weapon_level_init();
 	beam_level_init();
 	particle::init();
+	init_ai_system();
 
 	ai_paused = 1;
+
+	// No collisions because the Lab is a lie and collisions will be bad
+	Saved_cmdline_collisions_value = Cmdline_dis_collisions;
+	Cmdline_dis_collisions = 1;
 
 	// do some other setup
 	// External weapon displays require a call to weapons_page_in, which in turn requires team data to be set
@@ -99,7 +112,7 @@ void LabManager::resetGraphicsSettings() {
 void LabManager::onFrame(float frametime) {
 	if (gr_screen.mode == GR_OPENGL)
 		ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplSDL2_NewFrame();
+	ImGui_ImplSDL2_NewFrame(gr_screen.max_w, gr_screen.max_h);
 	ImGui::NewFrame();
 
 	Renderer->onFrame(frametime);
@@ -227,7 +240,7 @@ void LabManager::onFrame(float frametime) {
 		auto obj = &Objects[CurrentObject];
 		bool weapons_firing = false;
 		for (auto i = 0; i < Ships[obj->instance].weapons.num_primary_banks; ++i) {
-			if (FirePrimaries & (1 << i)) {
+			if (FirePrimaries[i]) {
 				weapons_firing = true;
 				Ships[obj->instance].weapons.current_primary_bank = i;
 
@@ -240,12 +253,114 @@ void LabManager::onFrame(float frametime) {
 		Ships[obj->instance].flags.set(Ship::Ship_Flags::Trigger_down, weapons_firing);
 
 		for (auto i = 0; i < Ships[obj->instance].weapons.num_secondary_banks; ++i) {
-			if (FireSecondaries & (1 << i)) {
+			if (FireSecondaries[i]) {
 				Ships[obj->instance].weapons.current_secondary_bank = i;
 
 				ship_fire_secondary(obj);
 			}
 		}
+
+		ship_process_post(obj, frametime);
+		ai_process_subobjects(CurrentObject); // So that animations get reset
+
+		if (!getLabManager()->FireTurrets.empty()) {
+			for (auto& [subsys, mode, fire] : getLabManager()->FireTurrets) {
+				if (!fire || subsys == nullptr)
+					continue;
+
+				vec3d new_pos, new_vec;
+				ship_get_global_turret_info(&Objects[subsys->parent_objnum], subsys->system_info, &new_pos, &new_vec);
+
+				bool multipart = false;
+				// Turret is multipart
+				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
+					multipart = true;
+				}
+
+				switch (mode) {
+					case LabTurretAimType::UVEC: {
+						subsys->last_aim_enemy_pos = new_pos + new_vec * 500.0f;
+						break;
+					}
+					case LabTurretAimType::INITIAL: {
+						subsys->last_aim_enemy_pos = vmd_zero_vector;
+						break;
+					}
+					case LabTurretAimType::RANDOM: {
+						bool gen_new_vec = !multipart || subsys->points_to_target <= 0.010f;
+						if (gen_new_vec && timestamp_elapsed(subsys->turret_next_fire_stamp)) {
+							vec3d rand_vec;
+							const int MAX_ATTEMPTS = 100;
+							bool valid_vec_found = false;
+
+							// You get 100 tries to find a set of random coords to fire at
+							for (int attempt = 0; attempt < MAX_ATTEMPTS; ++attempt) {
+								float full_fov_degrees = 2.0f * acosf(subsys->system_info->turret_fov) * (180.0f / PI);
+								vm_vec_random_cone(&rand_vec, &new_vec, full_fov_degrees);
+
+								vec3d target_point;
+								vm_vec_scale_add(&target_point, &new_pos, &rand_vec, 1000.0f);
+
+								//  Create a vector from the turret to the random point.
+								vec3d turret_to_target;
+								vm_vec_sub(&turret_to_target, &target_point, &new_pos);
+								vm_vec_normalize(&turret_to_target);
+
+								// Test if the generated vector is within the FOV
+								if (turret_fov_test(subsys, &new_vec, &turret_to_target, 0.0f)) {
+									valid_vec_found = true;
+									rand_vec = target_point;
+									break;
+								}
+							}
+
+							if (valid_vec_found) {
+								subsys->last_aim_enemy_pos = rand_vec;
+							} else {
+								subsys->last_aim_enemy_pos = new_pos + new_vec * 500.0f;
+							}
+						}
+						break;
+					}
+					default:
+						Assertion(false, "Invalid Lab Turret Aim Type!");
+						break;
+				}
+
+				ai_turret_execute_behavior(&Ships[obj->instance], subsys);
+			}
+		}
+
+		// Check if we have finished an undock test. If so, delete the docker ship
+		if (DockerObject >= 0) {
+			object* docker_objp = &Objects[DockerObject];
+			ship* shipp = &Ships[docker_objp->instance];
+			ai_info* aip = &Ai_info[shipp->ai_index];
+
+			bool hasDockGoal = false;
+			for (const auto& goal : aip->goals) {
+				if (goal.ai_mode == AI_GOAL_DOCK || goal.ai_mode == AI_GOAL_UNDOCK) {
+					hasDockGoal = true;
+					break;
+				}
+			}
+
+			if (!hasDockGoal && !object_is_docked(docker_objp)) {
+				deleteDockerObject();
+			}
+		}
+
+		// Check if we have finished a bay test. If so, delete the bay ship
+		if (BayObject >= 0) {
+			object* bay_objp = &Objects[BayObject];
+			ship* shipp = &Ships[bay_objp->instance];
+			ai_info* aip = &Ai_info[shipp->ai_index];
+			bool hasBayGoal = aip->mode == AIM_BAY_EMERGE || aip->mode == AIM_BAY_DEPART;
+			if (!hasBayGoal) {
+				deleteBayObject();
+			}
+		}
+
 	}
 
 	// get correct revolution rate
@@ -281,29 +396,412 @@ void LabManager::onFrame(float frametime) {
 	gr_flip();
 }
 
-void LabManager::changeDisplayedObject(LabMode mode, int info_index) {
-	if (mode == CurrentMode && info_index == CurrentClass)
+//Cleans the scene and resets object actions. Stops any firing weapons.
+void LabManager::cleanup() {
+	if (CurrentObject != -1) {
+
+		// Stop any firing weapons
+		FireTurrets.clear();
+		FirePrimaries.fill(false);
+		FireSecondaries.fill(false);
+
+		// Remove all beams
+		beam_delete_all();
+
+		// Properly clean up the test objects
+		deleteTestObjects();
+
+		// Remove all objects
+		obj_delete_all();
+
+		// Clean up the particles
+		particle::kill_all();
+
+		// Clean up our path mess
+		reset_ai_path_points();
+
+		// Reset lab variables
+		CurrentMode = LabMode::None;
+		CurrentObject = -1;
+		CurrentSubtype = -1;
+		CurrentClass = -1;
+		DockerDockPoint.clear();
+		DockeeDockPoint.clear();
+		BayPathMask = 0;
+		CurrentPosition = vmd_zero_vector;
+		CurrentOrientation = vmd_identity_matrix;
+		ModelFilename = "";
+		Player_ship = nullptr;
+
+		Lab_object_detail_level = -1;
+	}
+}
+
+void LabManager::deleteTestObjects() {
+	deleteDockerObject();
+	deleteBayObject();
+}
+
+void LabManager::deleteDockerObject() {
+	if (DockerObject >= 0) {
+		object* obj = &Objects[CurrentObject];
+
+		while (object_is_docked(obj)) {
+			object_jettison_cargo(obj, dock_get_first_docked_object(obj), 50, true);
+		}
+
+		obj_delete(DockerObject);
+		DockerObject = -1;
+		reset_ai_path_points();
+	}
+}
+
+void LabManager::deleteBayObject()
+{
+	if (BayObject >= 0) {
+		object* bay_objp = &Objects[BayObject];
+		ai_info* aip = &Ai_info[Ships[bay_objp->instance].ai_index];
+
+		// This is kind of a hack but it gets the job done
+		// Since we're deleting the bay object we can flag bay doors to close
+		Ships[Objects[CurrentObject].instance].bay_doors_wanting_open = 0;
+		extern void ai_manage_bay_doors(object * pl_objp, ai_info * aip, bool done);
+		ai_manage_bay_doors(bay_objp, aip, true);
+
+		obj_delete(BayObject);
+		BayObject = -1;
+		reset_ai_path_points();
+	}
+}
+
+void LabManager::spawnDockerObject() {
+
+	deleteTestObjects();
+
+	if (DockerDockPoint.empty() || DockeeDockPoint.empty()) {
 		return;
+	}
+
+	// Check ship class index
+	if (DockerClass < 0 || DockerClass >= static_cast<int>(Ship_info.size())) {
+		mprintf(("Invalid ship class index %d\n", DockerClass));
+		return;
+	}
+
+	object* obj = &Objects[CurrentObject];
+
+	// Spawn near the target
+	vec3d spawn_pos = obj->pos;
+	vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
+	vec3d final_pos;
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+
+	matrix spawn_orient = vmd_identity_matrix;
+
+	DockerObject = ship_create(&spawn_orient, &final_pos, DockerClass, nullptr, true);
+
+	if (DockerObject < 0) {
+		mprintf(("Failed to create docker object with ship class index %d!\n", DockerClass));
+		return;
+	}
+
+	object* new_objp = &Objects[DockerObject];
+
+	// Set a more reasonable starting position
+	float offset_radius = obj->radius + new_objp->radius;
+	offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+	new_objp->pos = final_pos;
+}
+
+void LabManager::spawnBayObject()
+{
+
+	deleteTestObjects();
+
+	// Technically this would work but that's not the intention of the test
+	// and suggests something went wrong
+	if (BayPathMask == 0) {
+		return;
+	}
+
+	// Check ship class index
+	if (!SCP_vector_inbounds(Ship_info, BayClass)) {
+		mprintf(("Invalid ship class index %d\n", BayClass));
+		return;
+	}
+
+	object* obj = &Objects[CurrentObject];
+
+	// Spawn near the target
+	vec3d spawn_pos = obj->pos;
+	vec3d offset = {{{0.0f, -50000.0f, -50000.0f}}}; // Spawn it far away then we can move it based on its radius
+	vec3d final_pos;
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+
+	matrix spawn_orient = vmd_identity_matrix;
+
+	BayObject = ship_create(&spawn_orient, &final_pos, BayClass, nullptr, true);
+
+	if (BayObject < 0) {
+		mprintf(("Failed to create bay test object with ship class index %d!\n", BayClass));
+		return;
+	}
+
+	object* new_objp = &Objects[BayObject];
+
+	// Set a more reasonable starting position
+	float offset_radius = obj->radius + new_objp->radius;
+	offset = {{{0.0f, obj->pos.xyz.y + offset_radius, obj->pos.xyz.z - offset_radius}}}; // Make this selectable or random?
+	vm_vec_add(&final_pos, &spawn_pos, &offset);
+	new_objp->pos = final_pos;
+}
+
+void LabManager::beginDockingTest() {
+	// Spawn a docker object
+	spawnDockerObject();
+
+	if (DockerObject >= 0) {
+		object* new_objp = &Objects[DockerObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+		// TODO: Get the pos of the first dock path point and set the ship's position to that
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		// Create the dock order
+		ai_goal_type type = ai_goal_type::EVENT_SHIP;
+		ai_goal* aigp = &aip->goals[0];
+
+		ai_goal_reset(aigp, true);
+		aigp->type = type;
+
+		aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
+		aigp->docker.name = ai_add_dock_name(DockerDockPoint.c_str());
+		aigp->dockee.name = ai_add_dock_name(DockeeDockPoint.c_str());
+		aigp->priority = 200;
+
+		aigp->ai_mode = AI_GOAL_DOCK;
+		aigp->ai_submode = AIS_DOCK_0;
+
+		aigp->flags.set(AI::Goal_Flags::Afterburn_hard);
+	}
+}
+
+void LabManager::beginUndockingTest() {
+	// Spawn a docker object if necessary
+	if (DockerObject < 0 || !object_is_docked(&Objects[DockerObject])) {
+		spawnDockerObject();
+
+		// Once spawned we need to instantly set it to docked
+		if (DockerObject >= 0) {
+			object* dockee_objp = &Objects[CurrentObject];
+			object* docker_objp = &Objects[DockerObject];
+
+			int docker_point_index = model_find_dock_name_index(Ship_info[Ships[docker_objp->instance].ship_info_index].model_num, DockerDockPoint.c_str());
+			int dockee_point_index = model_find_dock_name_index(Ship_info[Ships[dockee_objp->instance].ship_info_index].model_num, DockeeDockPoint.c_str());
+
+			// set model animations correctly
+			// (fortunately, this function is called AFTER model_anim_set_initial_states in the sea of ship creation
+			// functions, which is necessary for model animations to start from t=0 at the correct positions)
+			ship *shipp = &Ships[docker_objp->instance];
+			ship *goal_shipp = &Ships[dockee_objp->instance];
+
+			ship_info* sip = &Ship_info[shipp->ship_info_index];
+			ship_info* goal_sip = &Ship_info[goal_shipp->ship_info_index];
+
+			polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
+			polymodel_instance* goal_shipp_pmi = model_get_instance(goal_shipp->model_instance_num);
+
+			(sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, docker_point_index)
+				+ sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::Docked, docker_point_index)).start(animation::ModelAnimationDirection::FWD, true, true);
+			(goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage1, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage2, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docking_Stage3, dockee_point_index)
+				+ goal_sip->animations.getAll(goal_shipp_pmi, animation::ModelAnimationTriggerType::Docked, dockee_point_index)).start(animation::ModelAnimationDirection::FWD, true, true);
+
+			// Set docker as instantly docked
+			dock_orient_and_approach(docker_objp, docker_point_index, dockee_objp, dockee_point_index, DOA_DOCK_STAY);
+			ai_do_objects_docked_stuff(docker_objp, docker_point_index, dockee_objp, dockee_point_index, true);
+		}
+	}
+
+	if (DockerObject >= 0) {
+		ai_info* aip = &Ai_info[Ships[Objects[DockerObject].instance].ai_index];
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		// Create the undock order
+		int gindex = 0;
+		ai_goal_type type = ai_goal_type::EVENT_SHIP;
+		ai_goal* aigp = &aip->goals[gindex];
+
+		ai_goal_reset(aigp, true);
+		aigp->type = type;
+
+		aigp->target_name = ai_get_goal_target_name(Ships[Objects[CurrentObject].instance].ship_name, &aigp->target_name_index);
+		aigp->priority = 200;
+
+		aigp->ai_mode = AI_GOAL_UNDOCK;
+		aigp->ai_submode = AIS_UNDOCK_0;
+	}
+}
+
+void LabManager::beginBayTest()
+{
+	// Spawn a bay object
+	spawnBayObject();
+
+	if (BayObject < 0)
+		return;
+
+	// Reset the bay status of the current ship
+	ship* shipp = &Ships[Objects[CurrentObject].instance];
+	shipp->bay_doors_wanting_open = 0;
+	shipp->bay_doors_status = MA_POS_NOT_SET;
+
+	if (BayTestMode == BayMode::Arrival) {
+		object* new_objp = &Objects[BayObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+
+		if (ai_acquire_emerge_path(new_objp, CurrentObject, BayPathMask) == -1) {
+			mprintf(("Unable to acquire arrival path on anchor ship %s\n", Ships[Objects[CurrentObject].instance].ship_name)); // Warning instead of print?
+			deleteBayObject();
+			return;
+		}
+	}
+
+	if (BayTestMode == BayMode::Departure) {
+		object* new_objp = &Objects[BayObject];
+		ship* new_shipp = &Ships[new_objp->instance];
+		ai_info* aip = &Ai_info[new_shipp->ai_index];
+		// Ensure AI is ready
+		ai_clear_ship_goals(aip);
+		if (ai_acquire_depart_path(new_objp, CurrentObject, BayPathMask) == -1) {
+			mprintf(("Unable to acquire departure path on anchor ship %s\n", Ships[Objects[CurrentObject].instance].ship_name)); // Warning instead of print?
+			deleteBayObject();
+			return;
+		}
+
+		// Set the object's position to the start of the path
+		new_objp->pos = Path_points[aip->path_start].pos;
+	}
+}
+
+void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype) {
+	// Removing this allows reseting by clicking on the object again,
+	// making it easier to respawn destroyed objects
+	// If this is re-enabled then it will need to be modified so that
+	// ShowingTechModel bool toggles are also accounted for
+	//if (mode == CurrentMode && info_index == CurrentClass)
+		//return;
+
+	// Toggle the show thrusters default when we change modes
+	if (mode != CurrentMode) {
+		if (mode == LabMode::Ship) {
+			labUi.show_thrusters = false;
+		}
+		if (mode == LabMode::Weapon) {
+			labUi.show_thrusters = true;
+		}
+
+		// Set the render flag now
+		Renderer->setRenderFlag(LabRenderFlag::ShowThrusters, labUi.show_thrusters);
+	}
+
+	cleanup();
 
 	CurrentMode = mode;
 	CurrentClass = info_index;
 
-	if (CurrentObject != -1) {
-		obj_delete_all();
-		CurrentObject = -1;
-	}
+	if (CurrentMode == LabMode::Asteroid)
+		CurrentSubtype = subtype;
+
+	ai_paused = 1;
+	Player_ship = nullptr;
+
+	DockeeDockPoint.clear();
+	DockerDockPoint.clear();
+
+	BayPathMask = 0;
 
 	switch (CurrentMode) {
 	case LabMode::Ship:
 		CurrentObject = ship_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
 		changeShipInternal();
-		break;
-	case LabMode::Weapon:
-		CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
-		if (Weapon_info[CurrentClass].model_num != -1) {
-			ModelFilename = model_get(Weapon_info[CurrentClass].model_num)->filename;
+		if (isSafeForShips()) {
+			Player_ship = &Ships[Objects[CurrentObject].instance];
+			ai_paused = 0;
+
+			// Set the ship to play dead so it doesn't move. For the lab there are two special carveouts:
+			// 1: Allow subsystem rotations/translations
+			// 2: Allow subystems to be processed
+			ai_add_ship_goal_scripting(AI_GOAL_PLAY_DEAD_PERSISTENT, -1, 100, nullptr, &Ai_info[Player_ship->ai_index], 0, 0);
 		}
 		break;
+	case LabMode::Weapon:
+		if (ShowingTechModel && VALID_FNAME(Weapon_info[CurrentClass].tech_model)) {
+			ModelFilename = Weapon_info[CurrentClass].tech_model;
+			CurrentObject = obj_raw_pof_create(ModelFilename.c_str(), &CurrentOrientation, &CurrentPosition);
+		}else if (Weapon_info[CurrentClass].wi_flags[Weapon::Info_Flags::Beam]) {
+			beam_fire_info fire_info;
+			memset(&fire_info, 0, sizeof(beam_fire_info));
+			fire_info.accuracy = 0.000001f; // this will guarantee a hit
+			fire_info.bfi_flags |= BFIF_FLOATING_BEAM;
+			fire_info.turret = nullptr; // A free-floating beam isn't fired from a subsystem.
+			fire_info.burst_index = 0;
+			fire_info.beam_info_index = CurrentClass;
+			fire_info.shooter = nullptr;
+			fire_info.team = 0;
+			fire_info.starting_pos = CurrentPosition;
+			fire_info.target = nullptr;
+			fire_info.target_subsys = nullptr;
+			fire_info.bfi_flags |= BFIF_TARGETING_COORDS;
+			fire_info.fire_method = BFM_SEXP_FLOATING_FIRED;
+
+			// Fire beam straight ahead from spawn origin
+			vec3d origin = CurrentPosition;
+			vec3d endpoint;
+			vm_vec_scale_add(&endpoint, &origin, &vmd_z_vector, 1500.0f); // Fire forward along +Z
+
+			fire_info.target_pos1 = endpoint;
+			fire_info.target_pos2 = endpoint;
+
+			CurrentObject = beam_fire(&fire_info);
+		} else {
+			CurrentObject = weapon_create(&CurrentPosition, &CurrentOrientation, CurrentClass, -1);
+			if (Weapon_info[CurrentClass].model_num != -1) {
+				ModelFilename = model_get(Weapon_info[CurrentClass].model_num)->filename;
+			}
+		}
+		break;
+	case LabMode::Asteroid: {
+		// Ensure model is loaded before creating asteroid
+		asteroid_load(CurrentClass, CurrentSubtype);
+		object* objp = asteroid_create(&Asteroid_field, CurrentClass, CurrentSubtype, false);
+		if (objp != nullptr) {
+			CurrentObject = OBJ_INDEX(objp);
+
+			// Zero out asteroid velocity
+			vm_vec_zero(&objp->phys_info.rotvel);
+			vm_vec_zero(&objp->phys_info.desired_rotvel);
+			objp->flags.remove(Object::Object_Flags::Physics);
+		} else {
+			CurrentObject = -1;
+			mprintf(("LabManager: Failed to create asteroid for index %d, subtype %d\n", CurrentClass, CurrentSubtype));
+		}
+
+		break;
+	}
 	default:
 		UNREACHABLE("Unhandled lab mode %d", (int)mode);
 		ModelFilename = "";

@@ -49,6 +49,7 @@
 #include "ship/ship.h"
 #include "starfield/supernova.h"
 #include "ui/ui.h"
+#include "utils/string_utils.h"
 #include "weapon/weapon.h"
 
 // campaign wasn't ended
@@ -99,13 +100,29 @@ campaign Campaign;
  * In the type field, we return if the campaign is a single player or multiplayer campaign.  
  * The type field will only be valid if the name returned is non-NULL
  */
-int mission_campaign_get_info(const char *filename, char *name, int *type, int *max_players, char **desc, char **first_mission)
+bool mission_campaign_get_info(const char *filename, SCP_string &name, int *type, int *max_players, char **desc, char **first_mission)
 {
-	int i, success = 0;
-	char campaign_type[NAME_LENGTH], fname[MAX_FILENAME_LEN];
+	int i, success = false;
+	SCP_string campaign_type;
+	char fname[MAX_FILENAME_LEN];
 
-	Assert( name != NULL );
 	Assert( type != NULL );
+
+	// make sure outputs always have sane values
+	name.clear();
+	*type = -1;
+
+	if (max_players) {
+		*max_players = 0;
+	}
+
+	if (desc) {
+		*desc = nullptr;
+	}
+
+	if (first_mission) {
+		*first_mission = nullptr;
+	}
 
 	strncpy(fname, filename, MAX_FILENAME_LEN - 1);
 	auto fname_len = strlen(fname);
@@ -115,7 +132,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 	}
 	Assert(fname_len < MAX_FILENAME_LEN);
 
-	*type = -1;
 	do {
 		try
 		{
@@ -123,23 +139,23 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 			reset_parse();
 
 			required_string("$Name:");
-			stuff_string(name, F_NAME, NAME_LENGTH);
-			if (name == NULL) {
+			stuff_string(name, F_NAME);
+			if (name.empty()) {
 				nprintf(("Warning", "No name found for campaign file %s\n", filename));
 				break;
 			}
 
 			required_string("$Type:");
-			stuff_string(campaign_type, F_NAME, NAME_LENGTH);
+			stuff_string(campaign_type, F_NAME);
 
 			for (i = 0; i < MAX_CAMPAIGN_TYPES; i++) {
-				if (!stricmp(campaign_type, campaign_types[i])) {
+				if (!stricmp(campaign_type.c_str(), campaign_types[i])) {
 					*type = i;
 				}
 			}
 
-			if (name == NULL) {
-				Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type);
+			if (*type < 0) {
+				Warning(LOCATION, "Invalid campaign type \"%s\"\n", campaign_type.c_str());
 				break;
 			}
 
@@ -165,7 +181,7 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 
 			// if we found a valid campaign type
 			if ((*type) >= 0) {
-				success = 1;
+				success = true;
 			}
 		}
 		catch (const parse::ParseException& e)
@@ -175,7 +191,6 @@ int mission_campaign_get_info(const char *filename, char *name, int *type, int *
 		}
 	} while (0);
 
-	Assert(success);
 	return success;
 }
 
@@ -249,7 +264,7 @@ void mission_campaign_free_list()
 
 int mission_campaign_maybe_add(const char *filename)
 {
-	char name[NAME_LENGTH];
+	SCP_string name;
 	char *desc = NULL;
 	int type, max_players;
 
@@ -260,7 +275,7 @@ int mission_campaign_maybe_add(const char *filename)
 
 	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
 		if ( !MC_multiplayer && (type == CAMPAIGN_TYPE_SINGLE) ) {
-			Campaign_names[Num_campaigns] = vm_strdup(name);
+			Campaign_names[Num_campaigns] = vm_strdup(name.c_str());
 
 			if (MC_desc)
 				Campaign_descs[Num_campaigns] = desc;
@@ -422,7 +437,7 @@ void mission_campaign_get_sw_info()
  * this file.  If you change the format of the campaign file, you should be sure these related
  * functions work properly and update them if it breaks them.
  */
-int mission_campaign_load(const char* filename, const char* full_path, player* pl, int load_savefile, bool reset_stats)
+int mission_campaign_load(const char* filename, const char* full_path, player* pl, int load_savefile)
 {
 	int i;
 	char name[NAME_LENGTH], type[NAME_LENGTH], temp[NAME_LENGTH];
@@ -503,6 +518,10 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			stuff_int( &(Campaign.flags) );
 		}
 
+		if (optional_string("$begin_custom_data_map")) {
+			parse_string_map(Campaign.custom_data, "$end_custom_data_map", "+Val:");
+		}
+
 		// parse the optional ship/weapon information
 		mission_campaign_get_sw_info();
 
@@ -539,15 +558,21 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			}
 
 			// Goober5000 - substitute main hall (like substitute music)
+			cm->substitute_main_hall = "";
 			if (optional_string("+Substitute Main Hall:")) {
 				stuff_string(temp, F_RAW, 32);
+				cm->substitute_main_hall = temp;
 
-				// see if this main hall exists
-				main_hall_defines *mhd = main_hall_get_pointer(temp);
-				if (mhd != NULL) {
-					cm->main_hall = temp;
-				} else {
-					mprintf(("Substitute main hall '%s' not found\n", temp));
+				// if we're running FRED, keep the halls separate (so we can save the campaign file),
+				// but if we're running FS, replace the main hall with the substitute right now
+				if (!Fred_running) {
+					// see if this main hall exists
+					main_hall_defines* mhd = main_hall_get_pointer(temp);
+					if (mhd != nullptr) {
+						cm->main_hall = temp;
+					} else {
+						mprintf(("Substitute main hall '%s' not found\n", temp));
+					}
 				}
 			}
 
@@ -674,13 +699,11 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 				Campaign.num_missions = 0;
 				Campaign_load_failure = CAMPAIGN_ERROR_SAVEFILE;
 				return CAMPAIGN_ERROR_SAVEFILE;
-			} else {
-				// make sure we initialize red alert data for the new CSG
-				red_alert_clear();
-				// and reset stats when requested
-				if (reset_stats) {
-					pl->stats.init();
-				}
+			}
+			// start with fresh new campaign data
+			else {
+				Pilot.clear_savefile(false);	// don't reset ships and weapons because they are currently the campaign's starting ones
+				Campaign.next_mission = 0;
 				Pilot.save_savefile();
 			}
 		}
@@ -742,13 +765,15 @@ void mission_campaign_init()
  */
 void mission_campaign_savefile_delete(const char* cfilename)
 {
-	char filename[_MAX_FNAME], base[_MAX_FNAME];
-
-	_splitpath( cfilename, NULL, NULL, base, NULL );
+	char filename[_MAX_FNAME];
 
 	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
 		return;	// no such thing as a multiplayer campaign savefile
 	}
+
+	auto base = util::get_file_part(cfilename);
+	// do a sanity check, but don't arbitrarily drop any extension in case the filename contains a period
+	Assertion(!stristr(base, FS_CAMPAIGN_FILE_EXT), "The campaign should not have an extension at this point!");
 
 	// only support the new filename here - taylor
 	sprintf_safe( filename, NOX("%s.%s.csg"), Player->callsign, base );
@@ -1153,7 +1178,9 @@ void mission_campaign_mission_over(bool do_next_mission)
 		}
 
 		// runs the new scripting conditional hook, "On Campaign Mission Accept" --wookieejedi
-		scripting::hooks::OnCampaignMissionAccept->run();
+		scripting::hooks::OnCampaignMissionAccept->run(
+			scripting::hook_param_list(scripting::hook_param("Mission", 's', mission_obj->name)
+		));
 		
 	} else {
 		// free up the goals and events which were just malloced.  It's kind of like erasing any fact
@@ -1227,6 +1254,7 @@ void mission_campaign_clear()
 		Campaign.missions[i].pos = 0;
 		Campaign.missions[i].flags = 0;
 		Campaign.missions[i].main_hall = "";
+		Campaign.missions[i].substitute_main_hall = "";
 		Campaign.missions[i].debrief_persona_index = 0;
 
 		Campaign.missions[i].stats.init();
@@ -1235,6 +1263,7 @@ void mission_campaign_clear()
 	memset(Campaign.name, 0, NAME_LENGTH);
 	memset(Campaign.filename, 0, MAX_FILENAME_LEN);
 	Campaign.type = 0;
+	Campaign.custom_data.clear();
 	Campaign.flags = CF_DEFAULT_VALUE;
 	Campaign.num_missions = 0;
 	Campaign.num_missions_completed = 0;
@@ -1470,7 +1499,6 @@ void mission_campaign_maybe_play_movie(int type)
 		return;
 
 	movie::play(filename);	//Play the movie!
-	cutscene_mark_viewable( filename );
 }
 
 /**
@@ -1557,13 +1585,46 @@ int mission_load_up_campaign(bool fall_back_from_current)
 	auto pl = Player;
 
 	// find best campaign to use:
-	//   1) last used
-	//   2) builtin
-	//   3) anything else
+	//   1) cmdline
+	//   2) last used
+	//   3) builtin
+	//   4) anything else
 	// Note that in each step we only fall back when the error is benign, e.g. ignored or missing;
 	// if there's some other real error with the campaign file, we report it.
 	// Also note that if we *have* a current campaign, we shouldn't fall back *at all*, lest we repeatedly
 	// reset what the current campaign is, *unless* we are starting a brand new session or loading a new pilot.
+
+	// cmdline...
+	if ( Cmdline_campaign != nullptr && strlen(Cmdline_campaign) ) {
+		char* campaign = Cmdline_campaign;
+
+		// Clear cmdline value
+		// * Only set campaign once from cmdline.
+		// * Prevent subsequent load failures.
+		// * On success, campaign becomes "last used".
+		Cmdline_campaign = nullptr;
+
+		bool has_last_used_campaign = strlen(pl->current_campaign) > 0;
+		bool campaign_already_set = has_last_used_campaign
+			&& (stricmp(campaign, pl->current_campaign) == 0);
+
+		if (has_last_used_campaign) {
+			mprintf(("Current campaign is '%s'\n", pl->current_campaign));
+		}
+
+		if (!campaign_already_set) {
+			rc = mission_campaign_load(campaign, nullptr, pl);
+
+			if (rc == 0) {
+				// update pilot with the new current campaign (becomes "last used")
+				strcpy_s(pl->current_campaign, Campaign.filename);
+				mprintf(("Set current campaign to '%s'\n", campaign));
+				return rc;
+			} else {
+				mprintf(("Failed to set current campaign to '%s'\n", campaign));
+			}
+		}
+	}
 
 	// last used...
 	if ( strlen(pl->current_campaign) ) {
@@ -1672,6 +1733,18 @@ void mission_campaign_skip_to_next()
 	// now set the next mission
 	mission_campaign_eval_next_mission();
 
+	// because all goals/events are marked true, it's possible for the campaign condition to unexpectedly *not* evaluate to the next mission
+	// (e.g. if is-previous-goal-false or is-previous-event-false is used without the optional argument), so this is a failsafe
+	if (Campaign.next_mission == Campaign.current_mission) {
+		Campaign.next_mission++;
+		if (Campaign.next_mission < Campaign.num_missions) {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!  Choosing the next-in-sequence mission as a failsafe...");
+		} else {
+			Warning(LOCATION, "mission_campaign_skip_to_next() could not determine the next mission!");
+			Campaign.next_mission = -1;
+		}
+	}
+
 	// clear out relevant player vars
 	Player->failures_this_session = 0;
 	Player->show_skip_popup = 1;
@@ -1721,24 +1794,25 @@ void mission_campaign_exit_loop()
  * all previous missions marked skipped
  * this relies on correct mission ordering in the campaign file
  */
-void mission_campaign_jump_to_mission(const char* name, bool no_skip)
+bool mission_campaign_jump_to_mission(const char* filename, bool no_skip)
 {
 	int i = 0, mission_num = -1;
-	char dest_name[64], *p;
+	constexpr size_t dest_filename_size = 64;
+	char dest_filename[dest_filename_size], *p;
 
 	// load in the campaign junk
 	mission_load_up_campaign();
 
-	// tack the .fs2 onto the input name
-	strcpy_s(dest_name, name);
-	p = strchr(dest_name, '.');
-	if (p != NULL)
-		*p = '\0';
-	strcat_s(dest_name, ".fs2");
+	// tack the .fs2 onto the input name if necessary
+	strcpy_s(dest_filename, filename);
+	drop_white_space(dest_filename);
+	p = strchr(dest_filename, '.');
+	if ((p == nullptr || stricmp(p, ".fs2") != 0) && strlen(dest_filename) <= dest_filename_size - 4 - 1)
+		strcat_s(dest_filename, ".fs2");
 
 	// search for our mission
 	for (i = 0; i < Campaign.num_missions; i++) {
-		if ((Campaign.missions[i].name != NULL) && !stricmp(Campaign.missions[i].name, dest_name)) {
+		if ((Campaign.missions[i].name != nullptr) && !stricmp(Campaign.missions[i].name, dest_filename)) {
 			mission_num = i;
 			break;
 		} else if (!no_skip) {
@@ -1750,9 +1824,8 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 
 	if (mission_num < 0) {
 		// if we got here, no match was found
-		// restart the campaign
-		mission_campaign_savefile_delete(Campaign.filename);
-		mission_campaign_load(Campaign.filename);
+		// based on player feedback, let's NOT restart the campaign but rather fail gracefully
+		return false;
 	} else {
 		for (SCP_vector<ship_info>::iterator it = Ship_info.begin(); it != Ship_info.end(); it++) {
 			i = static_cast<int>(std::distance(Ship_info.begin(), it));
@@ -1768,6 +1841,7 @@ void mission_campaign_jump_to_mission(const char* name, bool no_skip)
 		Game_mode |= GM_CAMPAIGN_MODE;
 
 		gameseq_post_event(GS_EVENT_START_GAME);
+		return true;
 	}
 }
 

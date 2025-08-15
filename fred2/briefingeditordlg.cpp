@@ -17,6 +17,7 @@
 #include "mission/missionparse.h"
 #include "FredRender.h"
 #include "Management.h"
+#include "globalincs/alphacolors.h"
 #include "globalincs/linklist.h"
 #include "MainFrm.h"
 #include "bmpman/bmpman.h"
@@ -100,12 +101,15 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_HILIGHT, m_hilight);
 	DDX_CBIndex(pDX, IDC_ICON_IMAGE, m_icon_image);
 	DDX_Text(pDX, IDC_ICON_LABEL, m_icon_label);
+	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
 	DDX_Text(pDX, IDC_ICON_CLOSEUP_LABEL, m_icon_closeup_label);
+	DDV_MaxChars(pDX, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 	DDX_Text(pDX, IDC_ICON_SCALE, m_icon_scale);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_TIME, m_time);
 	DDX_Text(pDX, IDC_VOICE, m_voice);
+	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 	DDX_CBIndex(pDX, IDC_TEAM, m_icon_team);
 	DDX_CBIndex(pDX, IDC_SHIP_TYPE, m_ship_type);
 	DDX_Check(pDX, IDC_LOCAL, m_change_local);
@@ -119,10 +123,6 @@ void briefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Check(pDX, IDC_USE_WING_ICON, m_use_wing);
 	DDX_Check(pDX, IDC_USE_CARGO_ICON, m_use_cargo);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
-	DDV_MaxChars(pDX, m_icon_label, MAX_LABEL_LEN - 1);
-	DDV_MaxChars(pDX, m_icon_closeup_label, MAX_LABEL_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(briefing_editor_dlg, CDialog)
@@ -935,6 +935,7 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 		Briefing->stages[to].camera_time = 500;
 		Briefing->stages[to].num_icons = 0;
 		Briefing->stages[to].formula = Locked_sexp_true;
+		Briefing->stages[to].grid_color = Color_briefing_grid;
 		return;
 	}
 
@@ -948,6 +949,8 @@ void briefing_editor_dlg::copy_stage(int from, int to)
 	Briefing->stages[to].num_icons = Briefing->stages[from].num_icons;
 	Briefing->stages[to].num_lines = Briefing->stages[from].num_lines;
 	Briefing->stages[to].formula = Briefing->stages[from].formula;
+	// For now let's just always set this back to default. Eventually when we have a UI color picker in qtFRED, we can copy from stage to stage
+	Briefing->stages[to].grid_color = Color_briefing_grid;
 
 	memmove( Briefing->stages[to].icons, Briefing->stages[from].icons, sizeof(brief_icon)*MAX_STAGE_ICONS );
 	memmove( Briefing->stages[to].lines, Briefing->stages[from].lines, sizeof(brief_line)*MAX_BRIEF_STAGE_LINES );

@@ -22,6 +22,7 @@
 #include <windows.h>
 #include <winbase.h>		/* needed for memory mapping of file functions */
 #include <shlwapi.h>
+#include <sys/stat.h>
 #endif
 
 #ifdef SCP_UNIX
@@ -595,7 +596,7 @@ static void cf_add_mod_roots(const char* rootDirectory, uint32_t basic_location)
 
 			cf_root* root = cf_create_root();
 
-			root->path = rootPath;
+			root->path = std::move(rootPath);
 			if (primary) {
 				root->location_flags = basic_location | CF_LOCATION_TYPE_PRIMARY_MOD;
 			} else {
@@ -826,7 +827,8 @@ static void check_file_shadows(const int root_index __UNUSED, const int pathtype
 		}
 
 		// this log message occurs in the middle of an existing line, hence the extra new lines
-		mprintf(("\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
+		// critical files and files in same root are always logged, files in different root are behind a filter
+		nprintf(((critical || !root->path.compare(r->path)) ? "General" : "CFileSystem", "\nWARNING! A %sfile being indexed may be shadowed by an existing file!\n New:\n  %s\n Existing:\n  %s\n",
 				critical ? "critical " : "",
 				newfile.c_str(), curfile.c_str()));
 
@@ -1236,6 +1238,22 @@ static bool sub_path_match(const SCP_string &search, const SCP_string &index)
 	return !stricmp(search.c_str(), index.c_str());
 }
 
+static time_t get_mtime(int fd)
+{
+#ifdef _WIN32
+	struct _stat buf;
+	#define fstat _fstat
+#else
+	struct stat buf;
+#endif
+
+	if (fstat(fd, &buf) != 0) {
+		return 0;
+	}
+
+	return buf.st_mtime;
+}
+
 /**
  * Searches for a file.
  *
@@ -1270,6 +1288,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 		if (fp)	{
 			CFileLocation res(true);
 			res.size = static_cast<size_t>(filelength(fileno(fp)));
+			res.m_time = get_mtime(fileno(fp));
 
 			fclose(fp);
 
@@ -1332,6 +1351,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 			if (fp) {
 				CFileLocation res(true);
 				res.size = static_cast<size_t>(filelength( fileno(fp) ));
+				res.m_time = get_mtime(fileno(fp));
 
 				fclose(fp);
 
@@ -1388,6 +1408,7 @@ CFileLocation cf_find_file_location(const char* filespec, int pathtype, uint32_t
 			res.offset = (size_t)f->pack_offset;
 			res.data_ptr = f->data;
 			res.name_ext = f->name_ext;
+			res.m_time = f->write_time;
 
 			if (f->data != nullptr) {
 				// This is an in-memory file so we just copy the pathtype name + file name
@@ -1523,6 +1544,7 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 				CFileLocationExt res(cur_ext);
 				res.found = true;
 				res.size = static_cast<size_t>(filelength( fileno(fp) ));
+				res.m_time = get_mtime(fileno(fp));
 
 				fclose(fp);
 
@@ -1611,6 +1633,7 @@ CFileLocationExt cf_find_file_location_ext(const char *filename, const int ext_n
 				res.offset = (size_t)f->pack_offset;
 				res.data_ptr = f->data;
 				res.name_ext = f->name_ext;
+				res.m_time = f->write_time;
 
 				if (f->data != nullptr) {
 					// This is an in-memory file so we just copy the pathtype name + file name

@@ -6,7 +6,7 @@ INCLUDE(voice_rec.cmake)
 
 ADD_LIBRARY(code STATIC ${source_files} ${VOICE_REC_FILES})
 
-target_compile_features(code PUBLIC cxx_std_11)
+target_compile_features(code PUBLIC cxx_std_17)
 
 if (MSVC)
 	target_compile_definitions(code PUBLIC "PDB_DEBUGGING=1")
@@ -25,7 +25,11 @@ if (FSO_BUILD_WITH_OPENGL)
 	endif()
 endif()
 
-if(FSO_BUILD_WITH_OPENXR_DEBUG)
+if(FSO_BUILD_WITH_OPENXR)
+	add_definitions(-DFS_OPENXR)
+endif()
+
+if(FSO_BUILD_WITH_OPENXR_DEBUG AND FSO_BUILD_WITH_OPENXR)
 	add_definitions(-DFS_OPENXR_DEBUG)
 endif()
 
@@ -48,7 +52,10 @@ TARGET_LINK_LIBRARIES(code PUBLIC compiler)
 
 target_link_libraries(code PUBLIC md5)
 
-target_link_libraries(code PUBLIC discord-rpc)
+if (FSO_BUILD_WITH_DISCORD)
+	target_link_libraries(code PUBLIC discord-rpc)
+	add_definitions(-DWITH_DISCORD)
+endif()
 
 target_link_libraries(code PUBLIC libRocket)
 
@@ -67,19 +74,13 @@ ENDIF(FSO_USE_SPEECH)
 
 TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
-target_link_libraries(code PUBLIC variant)
-
-target_link_libraries(code PUBLIC any)
-
-target_link_libraries(code PUBLIC optional)
-
 target_link_libraries(code PUBLIC anl)
 
 target_link_libraries(code PUBLIC hidapi::hidapi)
 
 target_link_libraries(code PUBLIC imgui)
 
-IF(NOT APPLE)
+IF(FSO_BUILD_WITH_OPENXR)
 	target_link_libraries(code PUBLIC OpenXR::openxr_loader)
 	target_include_directories(code PUBLIC OpenXR::Headers)
 ENDIF()

@@ -65,7 +65,7 @@ namespace Ship {
 		Arriving_stage_1_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
 		Arriving_stage_2,			// ship is arriving. In other words, doing warp in effect, stage 2             
 		Arriving_stage_2_dock_follower,		// "Arriving but Not the Dock Leader"; these guys need some warp stuff done but not all
-		Engines_on,					// engines sound should play if set
+		Engine_sound_on,                // engines sound should play if set
 		Dock_leader,				// Goober5000 - this guy is in charge of everybody he's docked to
 		Cargo_revealed,				// ship's cargo is revealed to all friendly ships
 		From_player_wing,			// set for ships that are members of any player starting wing
@@ -108,7 +108,8 @@ namespace Ship {
 		No_thrusters,				// The E - Thrusters on this ship are not rendered.
 		Ship_locked,				// Karajorma - Prevents the player from changing the ship class on loadout screen
 		Weapons_locked,				// Karajorma - Prevents the player from changing the weapons on the ship on the loadout screen
-		Scramble_messages,			// Goober5000 - all messages sent from this ship appear scrambled
+		Scramble_messages,			// Goober5000 - all messages sent from or received by this ship appear scrambled
+		EMP_doesnt_scramble_messages,	// Goober5000 - when EMP is active, messages will not have the scramble effect
         No_secondary_lockon,        // zookeeper - secondary lock-on disabled
         No_disabled_self_destruct,  // Goober5000 - ship will not self-destruct after 90 seconds if engines or weapons destroyed (c.f. ai_maybe_self_destruct)
 		Subsystem_movement_locked,	// The_E -- Rotating subsystems are locked in place.
@@ -139,6 +140,8 @@ namespace Ship {
 		No_targeting_limits,				//MjnMixael -- Ship is always targetable regardless of AWACS or targeting range limits
 		Maneuver_despite_engines,	// Goober5000 - ship can move even when engines are disabled or disrupted
 		Force_primary_unlinking,	// plieblang - turned on when the ship is under good-primary-time
+		No_scanned_cargo,                 //MjnMixael -- The cargo will never be revealed, instead always returning "Scanned" or "Not Scanned"
+		No_insignias,				// Cyborg -- do not render insignias, even when one is defined for them.
 
 		NUM_VALUES
 
@@ -219,16 +222,6 @@ namespace Ship {
 		NUM_VALUES
 	};
 
-	FLAG_LIST(Aiming_Flags) {
-		Autoaim = 0,			// has autoaim
-		Auto_convergence,		// has automatic convergence
-		Std_convergence,		// has standard - ie. non-automatic - convergence
-		Autoaim_convergence,	// has autoaim with convergence
-		Convergence_offset,		// marks that convergence has offset value
-
-		NUM_VALUES
-	};
-
     FLAG_LIST(Type_Info_Flags) {
         Counts_for_alone,
         Praise_destruction,
@@ -296,6 +289,7 @@ namespace Ship {
 		Same_arrival_warp_when_docked,		// Goober5000
 		Same_departure_warp_when_docked,	// Goober5000
 		No_first_wave_message,		// don't play arrival message for the first wave
+		Waypoints_no_formation, // wing will not try to form up when running a waypoint together
 
 		NUM_VALUES
 	};

@@ -92,12 +92,12 @@ ubyte g3_transfer_vertex(vertex *dest, const vec3d *src)
 }
 
 static void g3_compensate_asymmetric_fov(float& x, float& y, float z) {
-	if (mpark::holds_alternative<asymmetric_fov>(Proj_fov)) {
-		const auto& afov = mpark::get<asymmetric_fov>(Proj_fov);
-		float angle = atan2_safe(z, x) + (afov.left + afov.right);
+	if (std::holds_alternative<asymmetric_fov>(Proj_fov)) {
+		const auto& afov = std::get<asymmetric_fov>(Proj_fov);
+		float angle = atan2(z, x) + (afov.left + afov.right);
 		x = angle == PI_2 ? 0.0f : z / tanf(angle);
 
-		angle = atan2_safe(z, y) + (afov.up + afov.down);
+		angle = atan2(z, y) + (afov.up + afov.down);
 		y = angle == PI_2 ? 0.0f : z / tanf(angle);
 	}
 }

@@ -51,15 +51,37 @@ extern int ENVMAP;
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> TextureFilteringValues = {{0, {"Bilinear", 1677}},
 																		                { 1, {"Trilinear", 1678}}};
 
+static void parse_texture_filtering_func()
+{
+	SCP_string mode;
+	stuff_string(mode, F_NAME);
+
+	// Convert to lowercase once
+	SCP_tolower(mode);
+
+	// Use a map to associate strings with their respective actions
+	static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+		{"bilinear", []() { GL_mipmap_filter = 0; }},
+		{"trilinear", []() { GL_mipmap_filter = 1; }}};
+
+	auto it = effectActions.find(mode);
+	if (it != effectActions.end()) {
+		it->second(); // Execute the corresponding action
+	} else {
+		error_display(0, "%s is not a valid texturing filtering setting", mode.c_str());
+	}
+}
+
 static auto TextureFilteringOption __UNUSED = options::OptionBuilder<int>("Graphics.TextureFilter",
                      std::pair<const char*, int>{"Texture Filtering", 1763},
                      std::pair<const char*, int>{"Texture filtering option", 1764})
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(TextureFilteringValues)
-                     .default_val(0)
+                     .default_func([]() {return GL_mipmap_filter;})
                      .bind_to_once(&GL_mipmap_filter)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
+                     .parser(parse_texture_filtering_func)
                      .finish();
 
 static SCP_vector<float> anisotropic_value_enumerator()
@@ -651,8 +673,10 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 		auto mipmap_w = tex_w;
 		auto mipmap_h = tex_h;
 
-		// should never have mipmap levels if we also have to manually resize
-		if ((mipmap_levels > 1) && resize) {
+		// if we are doing mipmap resizing we need to account for adjusted tex size
+		// (we can end up with only one mipmap level if base_level is high enough so don't check it)
+		if (base_level > 0) {
+			Assertion(resize == false, "Cannot use manual and mipmap resizing at the same time!");
 			Assert(texmem == nullptr);
 
 			// If we have mipmaps then tex_w/h are already adjusted for the base level but that will cause problems with
@@ -1225,7 +1249,7 @@ int opengl_compress_image( ubyte **compressed_data, ubyte *in_data, int width, i
 {
 	Assert( in_data != NULL );
 
-	if ( !Texture_compression_available ) {
+	if ( !GLAD_GL_EXT_texture_compression_s3tc ) {
 		return 0;
 	}
 

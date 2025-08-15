@@ -19,7 +19,8 @@
 #define POPUP_YES						XSTR("&Yes", 505)
 #define POPUP_NO						XSTR("&No", 506)
 
-#define POPUP_DEFAULT_VALID_CHARS "_.-"	// Default string of valid non-alphanumeric characters that popup_input may accept
+#define POPUP_DEFAULT_VALID_CHARS "_.-"		// Default string of valid non-alphanumeric characters that popup_input may accept
+#define POPUP_DEFAULT_PLUS_SPACE  "_.- "	// The above, plus a space
 
 ///////////////////////////////////////////////////
 // flags
@@ -48,7 +49,7 @@
 // misc
 #define PF_RUN_STATE					(1<<22)	// call the do frame of the current state underneath the popup
 #define PF_IGNORE_ESC				(1<<23)	// ignore the escape character
-#define PF_ALLOW_DEAD_KEYS			(1<<24)	// Allow player to use keyset that exists when player dies
+#define PF_UNUSED_0					(1<<24)	// Previously PF_ALLOW_DEAD_KEYS, but this was unused even in retail
 #define PF_NO_NETWORKING			(1<<25)	// don't do any networking
 
 // no special buttons

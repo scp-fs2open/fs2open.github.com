@@ -57,6 +57,8 @@ public:
 	
 	float subsys_damage_scale[NUM_SKILL_LEVELS];			// damage applied to a player subsystem
 	float beam_friendly_damage_cap[NUM_SKILL_LEVELS];		// damage cap values for friendly beam fire
+	float weapon_friendly_damage_cap[NUM_SKILL_LEVELS];
+	float weapon_self_damage_cap[NUM_SKILL_LEVELS];
 	float turn_time_scale[NUM_SKILL_LEVELS];				// speed at which enemy ships turn
 	float glide_attack_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "glide attack" move
 	float circle_strafe_percent[NUM_SKILL_LEVELS];			// SUSHI: The likelihood (0.0-1.0) of the AI to use the "circle strafe" move
@@ -97,7 +99,10 @@ public:
 	// Player-specific autoaim FOV override
 	float player_autoaim_fov[NUM_SKILL_LEVELS];
 
-	float detail_distance_mult[MAX_DETAIL_LEVEL + 1];	//MAX_DETAIL_LEVEL really needs to be 4
+	float detail_distance_mult[MAX_DETAIL_VALUE + 1];	//MAX_DETAIL_VALUE really needs to be 4
+
+	// minimum radius for the line-of-sight (los) detection --wookieejedi
+	float los_min_detection_radius;
 
 	int ai_path_mode;
 
@@ -117,6 +122,27 @@ public:
 
 	// how often turrets shoulds check for new targets, milliseconds
 	float turret_target_recheck_time;
+
+	// Multiplier value so the player can also experience rotational effects from collisions --wookieejedi
+	float rot_fac_multiplier_ply_collisions; 
+
+	// Collision avoidance options  --developed by asteroth, exposed by wookieejedi
+	//   Velocity / turn rate gives us a vector which represents the minimum 'bug out' distance.
+	//   However this will be a significant underestimate, it doesn't take into account acceleration
+	//   with regards to its turn speed, nor already existing rotvel, nor the angular distance
+	//   to the particular avoidance vector it comes up with.
+	//   These would significantly complicate the calculation, so for now, it is all bundled into these magic numbers.
+	float better_collision_avoid_aggression_combat;
+	float better_collision_avoid_aggression_guard;
+
+	// AI strafing options  --wookieejedi
+	float standard_strafe_when_below_speed; // Speed at which standard strafing large ships is possibly triggered
+	float strafe_retreat_box_dist;          // Distance beyond the bounding box to retreat to strafing point 
+	float strafe_max_unhit_time;            // Maximum amount of time to stay in strafe mode if not hit
+
+	// AI guard options  --wookieejedi
+	float guard_big_orbit_above_target_radius; // Radius of guardee that triggers ai_big_guard() 
+	float guard_big_orbit_max_speed_percent;   // Max percent of forward speed that is used in ai_big_guard() 
 
     void reset();
 };

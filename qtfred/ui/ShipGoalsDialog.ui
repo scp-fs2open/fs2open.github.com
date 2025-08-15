@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>597</width>
-    <height>344</height>
+    <height>374</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -322,28 +322,12 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
-  <connections>
+ <connections>
   <connection>
    <sender>okButton</sender>
    <signal>clicked()</signal>
    <receiver>fso::fred::dialogs::ShipGoalsDialog</receiver>
    <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>628</x>
-     <y>19</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>357</x>
-     <y>297</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipGoalsDialog</receiver>
-   <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>628</x>

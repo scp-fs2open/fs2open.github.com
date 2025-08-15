@@ -1,8 +1,7 @@
 
 #include "ai/ailua.h"
-
+#include "mission/missionmessage.h"
 #include "parse/sexp/sexp_lookup.h"
-
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "parse/sexp/LuaSEXP.h"
@@ -55,7 +54,7 @@ void parse_sexp_table(const char* filename) {
 
 
 				dynamic_sexp_enum_list thisList;
-				thisList.name = name;
+				thisList.name = std::move(name);
 
 				while (optional_string("+Enum:")) {
 					SCP_string item;
@@ -93,7 +92,7 @@ void parse_sexp_table(const char* filename) {
 				}
 
 				if (thisList.list.size() > 0) {
-					Dynamic_enums.push_back(thisList);
+					Dynamic_enums.push_back(std::move(thisList));
 					increment_enum_list_id();
 				} else {
 					error_display(0, "Parsed empty enum list '%s'. Ignoring!\n", thisList.name.c_str());
@@ -239,16 +238,16 @@ int add_dynamic_sexp(std::unique_ptr<DynamicSEXP>&& sexp, sexp_oper_type type)
 	new_op.type = type;
 
 	sexp_help_struct new_help;
-	new_help.id = new_op.value;
+	new_help.id = free_op_index;
 	new_help.help = sexp->getHelpText();
 
-	global.operator_const_mapping.insert(std::make_pair(new_op.value, std::move(sexp)));
+	global.operator_const_mapping.insert(std::make_pair(free_op_index, std::move(sexp)));
 
 	// Now actually add the operator to the SEXP containers
-	Operators.push_back(new_op);
-	Sexp_help.push_back(new_help);
+	Operators.push_back(std::move(new_op));
+	Sexp_help.push_back(std::move(new_help));
 
-	return new_op.value;
+	return free_op_index;
 }
 DynamicSEXP* get_dynamic_sexp(int operator_const)
 {
@@ -314,6 +313,7 @@ void dynamic_sexp_init()
 	}
 	global.pending_sexps.clear();
 
+	message_types_init();
 	parse_modular_table("*-sexp.tbm", parse_sexp_table, CF_TYPE_TABLES);
 
 	Script_system.OnStateDestroy.add(free_lua_sexps);

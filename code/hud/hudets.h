@@ -42,6 +42,8 @@ enum SYSTEM_TYPE {WEAPONS, SHIELDS, ENGINES};
 
 void update_ets(object* obj, float fl_frametime);
 void ets_init_ship(object* obj);
+int ets_properties(object* objp);
+float ets_power_factor(object* objp, bool include_power_output = true);
 void ai_manage_ets(object* obj);
 
 void increase_recharge_rate(object* obj, SYSTEM_TYPE enum_value);
@@ -79,8 +81,8 @@ public:
 	void initLetter(char _letter);	// obligatory PC Load Letter joke. (Swifty)
 	void initBarHeight(int _ets_bar_h);
 	void initBitmaps(char *fname);
-	void blitGauge(int index);
-	void render(float frametime) override;
+	void blitGauge(int index, int ix, int iy, float scale, bool config);
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
@@ -88,21 +90,21 @@ class HudGaugeEtsWeapons: public HudGaugeEts
 {
 public:
 	HudGaugeEtsWeapons();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsShields: public HudGaugeEts
 {
 public:
 	HudGaugeEtsShields();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsEngines: public HudGaugeEts
 {
 public:
 	HudGaugeEtsEngines();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeEtsRetail: public HudGaugeEts
@@ -112,7 +114,7 @@ protected:
 	int Gauge_positions[num_retail_ets_gauges];
 public:
 	HudGaugeEtsRetail();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initLetters(char *_letters);
 	void initGaugePositions(int *_gauge_positions);
 };

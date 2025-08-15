@@ -1,6 +1,7 @@
 #include "network/multi_interpolate.h"
-#include "globalincs/pstypes.h"
 #include "freespace.h"
+
+SCP_unordered_map<int, interpolation_manager> Interp_info;
 
 extern void multi_ship_record_signal_update(int objnum, TIMESTAMP lower_time_limit, TIMESTAMP upper_time_limit, int prev_packet_index, int current_packet_index);
 ///////////////////////////////////////////
@@ -38,6 +39,11 @@ void interpolation_manager::reassess_packet_index(vec3d* pos, matrix* ori, physi
 	_simulation_mode = true;
 }
 
+void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship)
+{
+	Interp_info[objnum].interpolate_main(pos, ori, pip, last_pos, last_orient, gravity, player_ship);
+}
+
 // the meat and potatoes.  Basically, this figures out if we should interpolate, and then interpolates or sims
 void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d * gravity, bool player_ship)
 {
@@ -70,12 +76,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 		// we need to push this ship up to the limit of where we were on the remote instance, if we haven't already.
 		// then we need to adjust our timing since some of the sim time is used up getting to that last packet.
 		if (!_packets_expended && !_packets.empty()) {
-			*pos = _packets.front().position;
-			*ori = _packets.front().orientation;
-			pip->vel = _packets.front().velocity;
-			pip->desired_vel = _packets.front().desired_velocity;
-			pip->rotvel = _packets.front().rotational_velocity;
-			pip->desired_rotvel = _packets.front().desired_rotational_velocity;
+			physics_apply_snapshot_manual(*pos, *ori, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel, _packets.front().snapshot);
 
 			sim_time -= (static_cast<float>(_packets.front().remote_missiontime) - static_cast<float>(Multi_Timing_Info.get_last_time())) / TIMESTAMP_FREQUENCY;
 			_packets_expended = true;
@@ -107,7 +108,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 		pip->speed = vm_vec_mag(&pip->vel);
 		pip->fspeed = vm_vec_dot(&ori->vec.fvec, &pip->vel);
 
-		return; // we should not try interpolating and siming, so return.
+		return; // we should not try interpolating and siming on the same call, so return.
 	}
 
 	// calc what the current timing should be.
@@ -123,41 +124,22 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 	CLAMP(scale, 0.001f, 0.999f);
 
 	// one by one interpolate the vectors to get the desired results.
-	vec3d temp_vector;
+	physics_snapshot temp_state;
 
-	// set new position.
-	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].position, &_packets[_prev_packet_index].position);
-	vm_vec_scale_add(pos, &_packets[_prev_packet_index].position, &temp_vector, scale);
-
-	// set new velocity
-	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].velocity, &_packets[_prev_packet_index].velocity);
-	vm_vec_scale_add(&pip->vel, &_packets[_prev_packet_index].velocity, &temp_vector, scale);
+	// Interpolation in just two lines!  Who'da thunk?
+	physics_interpolate_snapshots(temp_state, _packets[_prev_packet_index].snapshot, _packets[_upcoming_packet_index].snapshot, scale);
+	physics_apply_snapshot_manual(*pos, *ori, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel, temp_state);
 
 	// we can't trust what the last position was on the local instance, so figure out what it should have been
 	// use flFrametime here because we need to know what the last position would have been if it was accurate in the last frame.
 	vm_vec_scale_add(last_pos, pos, &pip->vel, -flFrametime);
 
-	// set new desired velocity
-	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].desired_velocity, &_packets[_prev_packet_index].desired_velocity);
-	vm_vec_scale_add(&pip->desired_vel, &_packets[_prev_packet_index].desired_velocity, &temp_vector, scale);
-
-	// set new rotational velocity
-	vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].rotational_velocity, &_packets[_prev_packet_index].rotational_velocity);
-	vm_vec_scale_add(&pip->rotvel, &_packets[_prev_packet_index].rotational_velocity, &temp_vector, scale);
-
-	// we only do desired rotational velocity if this is a player ship.
-	if (player_ship) {
-		vm_vec_sub(&temp_vector, &_packets[_upcoming_packet_index].desired_rotational_velocity, &_packets[_prev_packet_index].desired_rotational_velocity);
-		vm_vec_scale_add(&pip->desired_rotvel, &_packets[_prev_packet_index].desired_rotational_velocity, &temp_vector, scale);
-	} // So if AI, just set them to the same value.
-	else {
+	// AI ships do not really use desired velocity, so undo that calc for AI ships.
+	if (!player_ship) {
 		pip->desired_rotvel = pip->rotvel;
 	}
 
-	// calculate the new orientation.
-	vm_interpolate_matrices(ori, &_packets[_prev_packet_index].orientation, &_packets[_upcoming_packet_index].orientation, scale);
-
-	// a quick calculation for the last orientation, courtesy Asteroth
+	// finally, a quick calculation for the last orientation, courtesy Asteroth
 	if (!IS_VEC_NULL(&pip->rotvel)) {
 
 		vec3d normalized_rotvel;
@@ -177,7 +159,7 @@ void interpolation_manager::interpolate_main(vec3d* pos, matrix* ori, physics_in
 }
 
 // correct the ship record for player ships when an up to date packet comes in.
-void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d* position, matrix* orientation, vec3d* velocity, vec3d* rotational_velocity)
+void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_packet_index, int next_packet_index,  vec3d& position, matrix& orientation, vec3d& velocity, vec3d& rotational_velocity)
 {
 	// calc what the timing was previously.
 	float numerator = static_cast<float>(_packets[next_packet_index].remote_missiontime) - static_cast<float>(stamp.value());
@@ -190,19 +172,10 @@ void interpolation_manager::reinterpolate_previous(TIMESTAMP stamp, int prev_pac
 	// protect against bad floating point arithmetic making orientation or position look off
 	CLAMP(scale, 0.001f, 0.999f);
 
-	// calc the corrected physics data
-	vec3d temp_vector;
+	physics_snapshot temp_snapshot;
 
-	vm_vec_sub(&temp_vector, &_packets[next_packet_index].position, &_packets[prev_packet_index].position);
-	vm_vec_scale_add(position, &_packets[prev_packet_index].position, &temp_vector, scale);
-
-	vm_vec_sub(&temp_vector, &_packets[next_packet_index].velocity, &_packets[prev_packet_index].velocity);
-	vm_vec_scale_add(velocity, &_packets[prev_packet_index].velocity, &temp_vector, scale);
-
-	vm_vec_sub(&temp_vector, &_packets[next_packet_index].rotational_velocity, &_packets[prev_packet_index].rotational_velocity);
-	vm_vec_scale_add(rotational_velocity, &_packets[prev_packet_index].rotational_velocity, &temp_vector, scale);
-
-	vm_interpolate_matrices(orientation, &_packets[prev_packet_index].orientation, &_packets[next_packet_index].orientation, scale);
+	physics_interpolate_snapshots(temp_snapshot, _packets[_prev_packet_index].snapshot, _packets[_upcoming_packet_index].snapshot, scale);
+	physics_apply_snapshot_manual(position, orientation, velocity, rotational_velocity, temp_snapshot);
 }
 
 // add a packet to the vector, remove the last one if necessary.
@@ -273,10 +246,18 @@ void interpolation_manager::replace_packet(int index, vec3d* pos, matrix* orient
 	_packets[index].frame = _packets[index - 1].frame - 1;
 
 	_packets[index].remote_missiontime = Multi_Timing_Info.get_last_time();
-	_packets[index].position = *pos;
-	_packets[index].velocity = pip->vel;
-	_packets[index].desired_velocity = pip->desired_vel;
-	_packets[index].rotational_velocity = pip->rotvel;
-	_packets[index].desired_rotational_velocity = pip->desired_rotvel; 
-	_packets[index].orientation = *orient;
+
+	physics_populate_snapshot_manual(_packets[index].snapshot, *pos, *orient, pip->vel, pip->desired_vel, pip->rotvel, pip->desired_rotvel);
+}
+
+// the contained vectors have been cleared during object shut down.
+void multi_interpolate_clear_all()
+{
+	// clear the main container.
+	Interp_info.clear();
+}
+
+// helper functiont that helps avoid include issues.
+void multi_interpolate_clear_helper(int objnum) {
+	Interp_info[objnum].clean_up();
 }

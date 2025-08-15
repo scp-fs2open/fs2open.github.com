@@ -30,7 +30,7 @@ class object;
 #define TBOX_FLASH_SUBSYS			4
 
 extern sound_handle Target_static_looping;
-extern int Target_display_cargo;
+extern bool Target_display_cargo;
 extern char Cargo_string[256];
 
 extern int Target_window_coords[GR_NUM_RESOLUTIONS][4];
@@ -122,21 +122,21 @@ public:
 
 	void initialize() override;
 	void pageIn() override;
-	void render(float frametime) override;
-	void renderTargetShip(object *target_objp);
+	void render(float frametime, bool config = false) override;
+	void renderTargetShip(object* target_objp, bool config = false);
 	void renderTargetWeapon(object *target_objp);
 	void renderTargetDebris(object *target_objp);
 	void renderTargetAsteroid(object *target_objp);
 	void renderTargetJumpNode(object *target_objp);
 	void renderTargetSetup(vec3d *camera_eye, matrix *camera_orient, fov_t zoom);
 	void renderTargetClose();
-	void renderTargetForeground();
-	void renderTargetIntegrity(int disabled, int force_obj_num = -1);
+	void renderTargetForeground(bool config = false);
+	void renderTargetIntegrity(int disabled, int force_obj_num = -1, bool config = false);
 	int maybeFlashElement(int index, int flash_fast=0);
-	void renderTargetShipInfo(object *target_objp);
+	void renderTargetShipInfo(object* target_objp, bool config = false);
 	void maybeRenderCargoScan(ship_info *target_sip, ship_subsys *target_subsys);
 	void initFlashTimer(int index);
-	void showTargetData(float frametime);
+	void showTargetData(float frametime, bool config);
 };
 
 class HudGaugeExtraTargetData: public HudGauge // HUD_TARGET_MONITOR_EXTRA_DATA
@@ -161,7 +161,7 @@ public:
 	void initTimeOffsets(int x, int y);
 	void initOrderOffsets(int x, int y);
 	void initOrderMaxWidth(int width);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initialize() override;
 	void initDockFlashTimer();
 	void startFlashDock(int duration=TBOX_FLASH_DURATION);

@@ -7,6 +7,8 @@
 #include "vecmath.h"
 #include "weaponclass.h"
 #include "wing.h"
+#include "team_colors.h"
+#include "globalincs/alphacolors.h" //Needed for team colors
 
 #include "mission/missionparse.h"
 
@@ -96,6 +98,18 @@ ADE_FUNC(isValid, l_ParseObject, nullptr, "Detect whether the parsed ship handle
 		return ADE_RETURN_FALSE;
 
 	return ade_set_args(L, "b", poh->isValid());
+}
+
+ADE_FUNC(getBreedName, l_ParseObject, nullptr, "Gets the FreeSpace type name", "string", "'Parse Object', or empty string if handle is invalid")
+{
+	parse_object_h* poh = nullptr;
+	if (!ade_get_args(L, "o", l_ParseObject.GetPtr(&poh)))
+		return ade_set_error(L, "s", "");
+
+	if (!poh->isValid())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", "Parse Object");
 }
 
 ADE_FUNC(isPlayer, l_ParseObject, nullptr, "Checks whether the parsed ship is a player ship", "boolean", "Whether the parsed ship is a player ship")
@@ -320,6 +334,37 @@ ADE_VIRTVAR(Team, l_ParseObject, "team", "The team of the parsed ship.", "team",
 	return ade_set_args(L, "o", l_Team.Set(poh->getObject()->team));
 }
 
+ADE_VIRTVAR(TeamColor, l_ParseObject, "teamcolor", "The team color. Setting the team color here will not be reflected in the mission if the ship is already created. You must do that on the Ship object instead.", "teamcolor", "The team color handle or nil if not set or invalid.")
+{
+	parse_object_h* poh = nullptr;
+	int idx = -1;
+	if (!ade_get_args(L, "o|o", l_ParseObject.GetPtr(&poh), l_TeamColor.Get(&idx)))
+		return ADE_RETURN_NIL;
+
+	if (!poh->isValid())
+		return ADE_RETURN_NIL;
+
+	// Set team color
+	if (ADE_SETTING_VAR && SCP_vector_inbounds(Team_Names, idx)) {
+		// Verify
+		const auto& it = Team_Colors.find(Team_Names[idx]);
+		if (it == Team_Colors.end()) {
+			mprintf(("Invalid team color specified in mission file for ship %s. Not setting!\n", poh->getObject()->name));
+		} else {
+			poh->getObject()->team_color_setting = Team_Names[idx];
+		}
+	}
+
+	// look up by name
+	for (int i = 0; i < static_cast<int>(Team_Names.size()); ++i) {
+		if (lcase_equal(Team_Names[i], poh->getObject()->team_color_setting)) {
+			return ade_set_args(L, "o", l_TeamColor.Set(i));
+		}
+	}
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_VIRTVAR(InitialHull, l_ParseObject, "number", "The initial hull percentage of this parsed ship.", "number",
             "The initial hull")
 {
@@ -422,7 +467,8 @@ ADE_VIRTVAR(Subsystems, l_ParseObject, nullptr, "Get the list of subsystems of t
 	return ade_set_args(L, "t", tbl);
 }
 
-static int parse_object_getset_location_helper(lua_State* L, int p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
+template <typename LOC>
+static int parse_object_getset_location_helper(lua_State* L, LOC p_object::* field, const char* location_type, const char** location_names, size_t location_names_size)
 {
 	parse_object_h* poh;
 	const char* s = nullptr;
@@ -440,10 +486,10 @@ static int parse_object_getset_location_helper(lua_State* L, int p_object::* fie
 			Warning(LOCATION, "%s location '%s' not found.", location_type, s);
 			return ADE_RETURN_NIL;
 		}
-		poh->getObject()->*field = location;
+		poh->getObject()->*field = static_cast<LOC>(location);
 	}
 
-	return ade_set_args(L, "s", location_names[poh->getObject()->*field]);
+	return ade_set_args(L, "s", location_names[static_cast<int>(poh->getObject()->*field)]);
 }
 
 ADE_VIRTVAR(ArrivalLocation, l_ParseObject, "string", "The ship's arrival location", "string", "Arrival location, or nil if handle is invalid")

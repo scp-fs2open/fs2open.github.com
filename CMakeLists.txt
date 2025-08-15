@@ -1,5 +1,5 @@
 
-CMAKE_MINIMUM_REQUIRED(VERSION 3.4)
+CMAKE_MINIMUM_REQUIRED(VERSION 3.21)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Make sure the source and binary directory are not the sample
@@ -8,12 +8,12 @@ if ("${CMAKE_CURRENT_SOURCE_DIR}" STREQUAL "${CMAKE_CURRENT_BINARY_DIR}")
 endif()
 
 include(cmake/util.cmake)
-include(cmake/embed_file.cmake)
 
 # Set a few policies
 set_policy(CMP0051 NEW)
 set_policy(CMP0053 NEW)
 set_policy(CMP0054 NEW)
+set_policy(CMP0091 NEW) # Enable use of CMAKE_MSVC_RUNTIME_LIBRARY
 
 SET(FSO_PROJECT_DESCRIPTION "Open source project based on the original FreeSpace 2 source code.")
 
@@ -47,11 +47,6 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
-IF(CMAKE_CROSSCOMPILING)
-	SET(IMPORT_EXE_DIR "IMPORT_EXE_DIR-NOTFOUND" CACHE FILEPATH "Required for a cross compiling build, point to binary directory of a cmake build for the real OS")
-	INCLUDE(${IMPORT_EXE_DIR}/ImportExecutables.cmake)
-ENDIF(CMAKE_CROSSCOMPILING)
-
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
@@ -61,6 +56,10 @@ LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/finder")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules")
 LIST(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/cotire")
+
+INCLUDE(globals)
+INCLUDE(toolchain)
+include(embed_file)
 
 IF(RESET_INSTALL_PREFIX)
 	IF(NOT $ENV{FS2PATH} STREQUAL "")
@@ -122,12 +121,27 @@ option(FSO_RELEASE_LOGGING "Enable logging output for release builds" OFF)
 
 OPTION(FSO_BUILD_WITH_FFMPEG "Enable the usage of FFmpeg for sound and custscenes" ON)
 
+OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
+
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
 
+IF(NOT APPLE)
+	SET(OPENXR_BUILD_DEFAULT ON)
+ELSE()
+	SET(OPENXR_BUILD_DEFAULT OFF)
+ENDIF()
+OPTION(FSO_BUILD_WITH_OPENXR "Build with OpenXR support" ${OPENXR_BUILD_DEFAULT})
+IF(FSO_BUILD_WITH_OPENXR AND APPLE)
+	MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. Not supported on macOS - setting to OFF.")
+	SET(FSO_BUILD_WITH_OPENXR OFF CACHE BOOL "" FORCE)
+ENDIF()
+
 OPTION(FSO_BUILD_WITH_OPENXR_DEBUG "Enables debug option for OpenXR" OFF)
+
+OPTION(FSO_USE_LTO "Build using LTO (only for release builds)" ON)
 
 MARK_AS_ADVANCED(FORCE FSO_CMAKE_DEBUG)
 MARK_AS_ADVANCED(FORCE FSO_BUILD_INCLUDED_LIBS)
@@ -139,16 +153,13 @@ mark_as_advanced(FORCE FSO_INSTALL_DEBUG_FILES)
 mark_as_advanced(FORCE ENABLE_COTIRE)
 mark_as_advanced(FORCE FSO_RELEASE_LOGGING)
 mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_DISCORD)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
 
-# Include cotire file from https://github.com/sakra/cotire/
-include(cotire)
-
-INCLUDE(globals)
-INCLUDE(toolchain)
 INCLUDE(platforms)
 include(version)
 
@@ -163,6 +174,14 @@ if(FSO_BUILD_APPIMAGE)
 endif()
 
 include(clang-tidy)
+
+include(CheckIPOSupported)
+check_ipo_supported(RESULT LTO_AVAILABLE)
+if (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
+	set(CMAKE_POLICY_DEFAULT_CMP0069 NEW)
+	message("Enabled LTO")
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif (CMAKE_BUILD_TYPE STREQUAL "Release" AND FSO_USE_LTO AND LTO_AVAILABLE)
 
 # This includes source code for some tools, either used in the build or also for something else
 ADD_SUBDIRECTORY(tools)
@@ -221,5 +240,7 @@ message(STATUS "Building qtFRED: ${FSO_BUILD_QTFRED}")
 message(STATUS "Fatal warnings: ${FSO_FATAL_WARNINGS}")
 message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
+message(STATUS "With Discord: ${FSO_BUILD_WITH_DISCORD}")
 message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
 message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
+message(STATUS "With OpenXR: ${FSO_BUILD_WITH_OPENXR}")

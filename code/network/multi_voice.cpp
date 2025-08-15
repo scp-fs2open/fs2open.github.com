@@ -742,12 +742,12 @@ int multi_voice_keydown()
 
 	// if we're pre-game, we should just be checking the keyboard bitflags
 	if(!(Game_mode & GM_IN_MISSION)){	
-		return (keyd_pressed[MULTI_VOICE_KEY] && !(keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT])) ? 1 : 0;
+		return (key_is_pressed(MULTI_VOICE_KEY) && !(key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT))) ? 1 : 0;
 	} 
 
 	// in-mission, paused - treat just like any other "chattable" screen.
 	if(gameseq_get_state() == GS_STATE_MULTI_PAUSED){
-		return (keyd_pressed[MULTI_VOICE_KEY] && !(keyd_pressed[KEY_LSHIFT] || keyd_pressed[KEY_RSHIFT])) ? 1 : 0;
+		return (key_is_pressed(MULTI_VOICE_KEY) && !(key_is_pressed(KEY_LSHIFT) || key_is_pressed(KEY_RSHIFT))) ? 1 : 0;
 	}
 
 	// ingame, unpaused, rely on the multi-messaging system (ingame)

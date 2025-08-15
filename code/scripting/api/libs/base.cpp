@@ -86,7 +86,7 @@ ADE_FUNC(error, l_Base, "string Message", "Displays a FreeSpace error message wi
 	if (Cmdline_lua_devmode) {
 		nprintf(("scripting", "ERROR: %s\n", str.c_str()));
 	} else {
-		Error(LOCATION, "%s", lua_tostring(L, -1));
+		Error(LOCATION, "%s", lua_tostring_nullsafe(L, -1));
 	}
 
 	return ADE_RETURN_NIL;
@@ -207,11 +207,26 @@ ADE_FUNC(createVector, l_Base, "[number x, number y, number z]", "Creates a vect
 	return ade_set_args(L, "o", l_Vector.Set(v3));
 }
 
-ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a fairly random normalized vector object.", "vector", "Vector object")
+ADE_FUNC(createRandomVector, l_Base, nullptr, "Creates a random normalized vector object.", "vector", "Vector object")
 {
 	vec3d v3;
-	vm_vec_rand_vec(&v3);
+	vm_vec_random_in_sphere(&v3, &vmd_zero_vector, 1.0f, true);
 	return ade_set_args(L, "o", l_Vector.Set(v3));
+}
+
+ADE_FUNC(createRandomOrientation, l_Base, nullptr, "Creates a random orientation object.", "orientation", "Orientation object")
+{
+	vec3d fvec, uvec;
+	matrix fvec_orient, final_orient;
+
+	vm_vec_random_in_sphere(&fvec, &vmd_zero_vector, 1.0f, true);
+	vm_vector_2_matrix_norm(&fvec_orient, &fvec, nullptr, nullptr);
+
+	vm_vec_random_in_circle(&uvec, &vmd_zero_vector, &fvec_orient, 1.0f, true);
+
+	vm_vector_2_matrix_norm(&final_orient, &fvec, &uvec);
+
+	return ade_set_args(L, "o", l_Matrix.Set(matrix_h(&final_orient)));
 }
 
 ADE_FUNC(createSurfaceNormal,
@@ -283,9 +298,14 @@ ADE_FUNC(findPointOnLineNearestSkewLine,
 	return ade_set_args(L, "o", l_Vector.Set(dest));
 }
 
-ADE_FUNC(getFrametimeOverall, l_Base, NULL, "The overall frame time in seconds since the engine has started", "number", "Overall time (seconds)")
+ADE_FUNC(getFrametimeOverall, l_Base, nullptr, "The overall frame time in fix units (seconds * 65536) since the engine has started", "number", "Overall time (fix units)")
 {
 	return ade_set_args(L, "x", game_get_overall_frametime());
+}
+
+ADE_FUNC(getSecondsOverall, l_Base, nullptr, "The overall time in seconds since the engine has started", "number", "Overall time (seconds)")
+{
+	return ade_set_args(L, "f", f2fl(game_get_overall_frametime()));
 }
 
 ADE_FUNC(getMissionFrametime, l_Base, nullptr, "Gets how long this frame is calculated to take. Use it to for animations, physics, etc to make incremental changes. Increased or decreased based on current time compression", "number", "Frame time (seconds)")
@@ -647,9 +667,14 @@ ADE_FUNC(getVersionString, l_Base, nullptr,
 }
 
 ADE_FUNC(getModRootName, l_Base, nullptr,
-	"Returns the name of the current mod's root folder.", "string", "The mod root")
+	"Returns the name of the current mod's root folder.", "string", "The mod root or empty string if the mod runs without a -mod line")
 {
-	SCP_string str = Cmdline_mod;
+	const char* mod = Cmdline_mod;
+	if (mod == nullptr) {
+		mod = "";
+	}
+	
+	SCP_string str = mod;
 
 	// Trim any trailing folders so we get just the name of the root mod folder
 	str = str.substr(0, str.find_first_of(DIR_SEPARATOR_CHAR));

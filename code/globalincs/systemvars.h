@@ -141,42 +141,73 @@ extern bool Trail_render_override;
 // or bad things will happen, I promise.
 //====================================================================================
 
-#define MAX_DETAIL_LEVEL 4			// The highest valid value for the "analog" detail level settings
+// This refers to the total number of default levels as defined in Detail_defaults[]. Should only be 4.
+enum class DefaultDetailPreset {
+	Custom = -1, // Special level used only in certain cases
+	Low,
+	Medium,
+	High,
+	VeryHigh,
+
+	Num_detail_presets
+};
+
+#define MAX_DETAIL_VALUE 4			// The highest valid value for the "analog" detail level settings. Lowest is 0.
 
 // If you change this, update player file in ManagePilot.cpp
 typedef struct detail_levels {
 
-	int		setting;						// Which default setting this was created from.   0=lowest... NUM_DEFAULT_DETAIL_LEVELS-1, -1=Custom
+	DefaultDetailPreset		setting;						// Which default setting this was created from.   0=lowest... DefaultDetailPreset::Num_detail_presets-1, -1=Custom
 
 	// "Analogs"
-	int		nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-	int		detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest
-	int		hardware_textures;		// 0=max culling, MAX_DETAIL_LEVEL=no culling
-	int		num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-	int		num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-	int		num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-	int		shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-	int		lighting;					// 0=min, MAX_DETAIL_LEVEL=max
+	int		nebula_detail;				// 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+	int		detail_distance;			// 0=lowest MAX_DETAIL_VALUE=highest
+	int		hardware_textures;		// 0=max culling, MAX_DETAIL_VALUE=no culling
+	int		num_small_debris;			// 0=min number, MAX_DETAIL_VALUE=max number
+	int		num_particles;				// 0=min number, MAX_DETAIL_VALUE=max number
+	int		num_stars;					// 0=min number, MAX_DETAIL_VALUE=max number
+	int		shield_effects;			// 0=min, MAX_DETAIL_VALUE=max
+	int		lighting;					// 0=min, MAX_DETAIL_VALUE=max
 
 	// Booleans
-	int		targetview_model;			// 0=off, 1=on
-	int		planets_suns;				// 0=off, 1=on
-	int		weapon_extras;				// extra weapon details. trails, glows
+	bool		targetview_model;			// 0=off, 1=on
+	bool		planets_suns;				// 0=off, 1=on
+	bool		weapon_extras;				// extra weapon details. trails, glows
 } detail_levels;
+
+// Used for the newer options system to set the above values in more readable and safe way.
+// This enum class should always match the above struct
+enum class DetailSetting {
+	NebulaDetail,
+	DetailDistance,
+	HardwareTextures,
+	NumSmallDebris,
+	NumParticles,
+	NumStars,
+	ShieldEffects,
+	Lighting,
+	TargetViewModel,
+	PlanetsSuns,
+	WeaponExtras,
+
+	Num_detail_settings
+};
 
 // Global values used to access detail levels in game and libs
 extern detail_levels Detail;
 
-#define NUM_DEFAULT_DETAIL_LEVELS	4	// How many "predefined" detail levels there are
-
 // Call this with:
 // 0 - lowest
-// NUM_DEFAULT_DETAIL_LEVELS - highest
+// Num_detail_presets - highest
 // To set the parameters in Detail to some set of defaults
-void detail_level_set(int level);
+void detail_level_set(DefaultDetailPreset preset);
 
-// Returns the current detail level or -1 if custom.
-int current_detail_level();
+// level is 0 - lowest, Num_detail_presets - hights
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, int value);
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, bool value);
+
+// Returns the current detail preset or -1 if custom.
+DefaultDetailPreset current_detail_preset();
 
 #define safe_kill(a) if(a)vm_free(a)
 

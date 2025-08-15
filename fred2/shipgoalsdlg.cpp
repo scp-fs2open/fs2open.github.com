@@ -25,6 +25,7 @@
 #define TYPE_WING			0x4000
 #define TYPE_WAYPOINT		0x5000
 #define TYPE_SHIP_CLASS		0x6000
+#define TYPE_SHIP_TYPE		0x7000
 #define TYPE_MASK			0xf000
 #define DATA_MASK			0x0fff
 
@@ -295,16 +296,14 @@ BOOL ShipGoalsDlg::OnInitDialog()
 		}
 	}
 
-	// initialize the behavior boxes (they remain constant) and initialize each goal's data
+	// initialize the data for the behavior boxes (they remain constant while the dialog is open)
+	init_combo_data(valid);
+
+	// initialize the behavior boxes themselves
 	for (i=0; i<ED_MAX_GOALS; i++) {
 		m_behavior_box[i] -> ResetContent();
-		z = m_behavior_box[i] -> AddString("None");
-		m_behavior_box[i] -> SetItemData(z, (DWORD) AI_GOAL_NONE);
-		for (j=0; j<Ai_goal_list_size; j++){
-			if (valid[j]) {
-				z = m_behavior_box[i] -> AddString(Ai_goal_list[j].name);
-				m_behavior_box[i] -> SetItemData(z, (DWORD) Ai_goal_list[j].def);
-			}
+		for (const auto &entry: m_ai_goal_combo_data) {
+			m_behavior_box[i]->AddString(entry.first);
 		}
 	}
 
@@ -335,6 +334,60 @@ BOOL ShipGoalsDlg::OnInitDialog()
 	((CSpinButtonCtrl *) GetDlgItem(IDC_SPIN10)) -> SetRange(0, MAX_EDITOR_GOAL_PRIORITY);
 
 	return TRUE;
+}
+
+void ShipGoalsDlg::init_combo_data(int valid[])
+{
+	// don't add more than one of the same string (case-insensitive)
+	SCP_unordered_map<SCP_string, size_t, SCP_string_lcase_hash, SCP_string_lcase_equal_to> strings_to_indexes;
+
+	// start by adding "None"
+	auto none_str = "None";
+	strings_to_indexes.emplace(none_str, 0);
+	SCP_set<ai_goal_mode> none_set{ AI_GOAL_NONE };
+	m_ai_goal_combo_data.clear();
+	m_ai_goal_combo_data.emplace_back(none_str, std::move(none_set));
+
+	// initialize the data used in the combo boxes in the Initial Orders dialog
+	for (int i = 0; i < Ai_goal_list_size; ++i)
+	{
+		if (!valid[i])
+			continue;
+		auto &entry = Ai_goal_list[i];
+
+		// see if we already added the string
+		auto ii = strings_to_indexes.find(entry.name);
+		if (ii != strings_to_indexes.end())
+		{
+			// skip adding the string, but add the entry's goal definition to the combo box data at the existing index
+			m_ai_goal_combo_data[ii->second].second.insert(entry.def);
+		}
+		else
+		{
+			// this string will correspond to the index that is about to be created
+			strings_to_indexes[entry.name] = m_ai_goal_combo_data.size();
+
+			// add the entry's goal definition as the first (maybe only) member of the set
+			SCP_set<ai_goal_mode> new_set{ entry.def };
+			m_ai_goal_combo_data.emplace_back(entry.name, std::move(new_set));
+		}
+	}
+}
+
+ai_goal_mode ShipGoalsDlg::get_first_mode_from_combo_box(int which_item)
+{
+	// which_item indicates initial goal 1 through MAX_AI_GOALS, so find that behavior...
+	int behavior_index = m_behavior[which_item];
+
+	// if we have a superposition of behaviors, bail here
+	if (behavior_index < 0)
+		return ai_goal_mode::AI_GOAL_SCHROEDINGER;
+
+	// the behavior is the index into the combo box that contains a subset of goals from Ai_goal_list
+	const auto &set = m_ai_goal_combo_data[behavior_index].second;
+
+	// just get the first mode in the set, since chase/chase-wing and guard/guard-wing are handled respectively together
+	return *(set.begin());
 }
 
 void ShipGoalsDlg::initialize_multi()
@@ -403,7 +456,8 @@ void ShipGoalsDlg::initialize_multi()
 // perform one-time initialization of data from the goals struct.
 void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 {
-	int i, item, num, inst, flag, mode;
+	int i, item, num, inst, flag;
+	ai_goal_mode mode;
 	object *ptr;
 
 	// note that the flag variable is a bitfield:
@@ -431,9 +485,10 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 
 		m_behavior[item] = 0;
 		if (mode != AI_GOAL_NONE) {
-			i = m_behavior_box[item] -> GetCount();
+			i = static_cast<int>(m_ai_goal_combo_data.size());
 			while (i-- > 0){
-				if (mode & (m_behavior_box[item]->GetItemData(i))) {
+				const auto &set = m_ai_goal_combo_data[i].second;
+				if (set.find(mode) != set.end()) {
 					m_behavior[item] = i;
 					break;
 				}
@@ -452,6 +507,10 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 
 			case AI_GOAL_CHASE_SHIP_CLASS:
 				flag = 16;	// target is a ship class
+				break;
+
+			case AI_GOAL_CHASE_SHIP_TYPE:
+				flag = 32;
 				break;
 
 			case AI_GOAL_STAY_STILL:
@@ -564,6 +623,15 @@ void ShipGoalsDlg::initialize(ai_goal *goals, int ship)
 			}
 		}
 
+		if (flag & 0x20) { // data is a ship type
+			for (i = 0; i <static_cast<int>(Ship_types.size()); i++) {
+				if (!stricmp(goalp[item].target_name, Ship_types[i].name)) {
+					m_data[item] = i | TYPE_SHIP_TYPE;
+					break;
+				}
+			}
+		}
+
 		switch (mode) {
 			case AI_GOAL_DOCK:
 				m_dock2[item] = -1;
@@ -611,7 +679,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 		return;
 	}
 
-	auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
+	auto mode = get_first_mode_from_combo_box(item);
 	m_priority_box[item] -> EnableWindow(TRUE);
 	if ((mode == AI_GOAL_CHASE_ANY) || (mode == AI_GOAL_UNDOCK) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) || (mode == AI_GOAL_PLAY_DEAD) || (mode == AI_GOAL_PLAY_DEAD_PERSISTENT) || (mode == AI_GOAL_WARP) ) {
 		m_object_box[item] -> EnableWindow(FALSE);
@@ -652,7 +720,7 @@ void ShipGoalsDlg::set_item(int item, int init)
 			break;
 	}
 
-	// for goals that deal with ship classes
+	// for goals that deal with ship classes and types
 	switch (mode) {
 		case AI_GOAL_CHASE_SHIP_CLASS:
 			for (i = 0; i < ship_info_size(); i++) {
@@ -662,14 +730,25 @@ void ShipGoalsDlg::set_item(int item, int init)
 					m_object[item] = z;
 			}
 			break;
+
+		case AI_GOAL_CHASE_SHIP_TYPE:
+			for (i = 0; i < static_cast<int>(Ship_types.size()); i++) {
+				z = m_object_box[item] -> AddString(Ship_types[i].name);
+				m_object_box[item] -> SetItemData(z, i | TYPE_SHIP_TYPE);
+				if (init && (m_data[item] == (i | TYPE_SHIP_TYPE)))
+					m_object[item] = z;
+			}
+			break;
 	}
 
 	// for goals that deal with individual ships
 	switch (mode) {
 		case AI_GOAL_DESTROY_SUBSYSTEM:
-		case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
+		case AI_GOAL_CHASE:
+		case AI_GOAL_CHASE_WING:
 		case AI_GOAL_DOCK:
-		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+		case AI_GOAL_GUARD:
+		case AI_GOAL_GUARD_WING:
 		case AI_GOAL_DISABLE_SHIP:
 		case AI_GOAL_DISABLE_SHIP_TACTICAL:
 		case AI_GOAL_DISARM_SHIP:
@@ -715,8 +794,10 @@ void ShipGoalsDlg::set_item(int item, int init)
 
 	// for goals that deal with wings
 	switch (mode) {
-		case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
-		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+		case AI_GOAL_CHASE:
+		case AI_GOAL_CHASE_WING:
+		case AI_GOAL_GUARD:
+		case AI_GOAL_GUARD_WING:
 			for (i=0; i<MAX_WINGS; i++) {
 				if (Wings[i].wave_count && i != self_wing) {
 					z = m_object_box[item] -> AddString(Wings[i].name);
@@ -911,7 +992,7 @@ int ShipGoalsDlg::verify_orders(int ship)
 void ShipGoalsDlg::update_item(int item, int multi)
 {
 	char *docker, *dockee, *subsys;
-	int mode;
+	ai_goal_mode mode;
 	char buf[512], save[80];
 	waypoint_list *wp_list;
 
@@ -928,7 +1009,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			m_behavior[item] = 0;
 	}
 
-	mode = (int)m_behavior_box[item] -> GetItemData(m_behavior[item]);
+	mode = get_first_mode_from_combo_box(item);
 	switch (mode) {
 		case AI_GOAL_NONE:
 		case AI_GOAL_CHASE_ANY:
@@ -940,6 +1021,10 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			// these goals do not have a target in the dialog box, so let's set the goal and return immediately
 			// so that we don't run afoul of the "doesn't have a valid target" code at the bottom of the function
 			MODIFY(goalp[item].ai_mode, mode);
+			return;
+
+		case AI_GOAL_SCHROEDINGER:
+			// return, but don't set the goal
 			return;
 
 		case AI_GOAL_WAYPOINTS:
@@ -954,6 +1039,7 @@ void ShipGoalsDlg::update_item(int item, int multi)
 		case AI_GOAL_STAY_NEAR_SHIP:
 		case AI_GOAL_STAY_STILL:
 		case AI_GOAL_CHASE_SHIP_CLASS:
+		case AI_GOAL_CHASE_SHIP_TYPE:
 			break;
 
 		case AI_GOAL_DESTROY_SUBSYSTEM:
@@ -977,7 +1063,8 @@ void ShipGoalsDlg::update_item(int item, int multi)
 
 			break;
 
-		case AI_GOAL_CHASE | AI_GOAL_CHASE_WING:
+		case AI_GOAL_CHASE:
+		case AI_GOAL_CHASE_WING:
 			switch (m_data[item] & TYPE_MASK) {
 				case TYPE_SHIP:
 				case TYPE_PLAYER:
@@ -1028,7 +1115,8 @@ void ShipGoalsDlg::update_item(int item, int multi)
 
 			break;
 
-		case AI_GOAL_GUARD | AI_GOAL_GUARD_WING:
+		case AI_GOAL_GUARD:
+		case AI_GOAL_GUARD_WING:
 			switch (m_data[item] & TYPE_MASK) {
 				case TYPE_SHIP:
 				case TYPE_PLAYER:
@@ -1080,6 +1168,10 @@ void ShipGoalsDlg::update_item(int item, int multi)
 			goalp[item].target_name = ai_get_goal_target_name(Ship_info[m_data[item] & DATA_MASK].name, &not_used);
 			break;
 
+		case TYPE_SHIP_TYPE:
+			goalp[item].target_name = ai_get_goal_target_name(Ship_types[m_data[item] & DATA_MASK].name, &not_used);
+			break;
+
 		case 0:
 		case -1:
 		case (-1 & TYPE_MASK):
@@ -1106,8 +1198,8 @@ void ShipGoalsDlg::OnOK()
 	UpdateData(TRUE);
 
 	for (i=0; i<ED_MAX_GOALS; i++) {
-		auto mode = m_behavior_box[i] -> GetItemData(m_behavior[i]);
-		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
+		auto mode = get_first_mode_from_combo_box(i);
+		if ((mode != AI_GOAL_NONE) && (mode != AI_GOAL_SCHROEDINGER) && (mode != AI_GOAL_CHASE_ANY) && (mode != AI_GOAL_UNDOCK) && (mode != AI_GOAL_KEEP_SAFE_DISTANCE) && (mode != AI_GOAL_PLAY_DEAD) && (mode != AI_GOAL_PLAY_DEAD_PERSISTENT) && (mode != AI_GOAL_WARP) ) {
 			if (!m_object_box[i] -> GetCount())  // no valid objects?
 				m_behavior[i] = 0;
 			else
@@ -1205,7 +1297,8 @@ void ShipGoalsDlg::set_object(int item)
 	ship_subsys *subsys;
 
 	if (m_behavior[item] > 0) {
-		auto mode = m_behavior_box[item] -> GetItemData(m_behavior[item]);
+		auto mode = get_first_mode_from_combo_box(item);
+
 		if (!m_object_box[item] -> GetCount())
 			m_behavior[item] = m_data[item] = 0;
 		else

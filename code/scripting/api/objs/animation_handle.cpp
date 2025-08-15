@@ -43,6 +43,25 @@ ADE_FUNC(getTime, l_AnimationHandle, nullptr,
 	return ade_set_args(L, "f", ((float)anim_set->getTime()) * 0.001f);
 }
 
+ADE_FUNC(setSpeed, l_AnimationHandle, "[number speedMultiplier = 1.0]",
+	"Sets the speed multiplier at which an animation runs. Anything other than 1 will not work in multiplayer.",
+	nullptr,
+	nullptr)
+{
+	animation_handle_h* anim_set;
+	float speed = 1.0f;
+
+	if (!ade_get_args(L, "o|f", l_AnimationHandle.GetPtr(&anim_set), &speed))
+		return ADE_RETURN_NIL;
+
+	if (anim_set == nullptr)
+		return ADE_RETURN_NIL;
+
+	anim_set->setSpeed(speed);
+
+	return ADE_RETURN_NIL;
+}
+
 ADE_FUNC(stopNextLoop, l_AnimationHandle, nullptr,
 	"Will stop this looping animation on its next repeat.",
 	nullptr, nullptr)

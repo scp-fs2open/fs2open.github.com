@@ -20,12 +20,10 @@
 #include <io.h>
 #include <direct.h>
 #include <windows.h>
-#include <winbase.h>		/* needed for memory mapping of file functions */
 #endif
 
 #ifdef SCP_UNIX
 #include <glob.h>
-#include <sys/mman.h>
 #endif
 
 #include "cfile/cfile.h"
@@ -107,12 +105,6 @@ static int cfget_cfile_block();
 static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* original_filename, FILE * fp, int type);
 static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type, size_t offset, size_t size);
 static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type);
-
-#if defined _WIN32
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, HANDLE hFile, int type);
-#elif defined SCP_UNIX
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type);
-#endif
 
 static void cf_chksum_long_init();
 
@@ -632,18 +624,13 @@ void cf_create_directory(int dir_type, uint32_t location_flags)
 // parameters:  *filepath ==> name of file to open (may be path+name)
 //              *mode     ==> specifies how file should be opened (eg "rb" for read binary)
 //                            passing NULL to mode triggers an assert and returns NULL
-//               type     ==> one of:    CFILE_NORMAL
-//                                       CFILE_MEMORY_MAPPED
 //					  dir_type	=>	override extension check, value is one of CF_TYPE* #defines
-//
-//               NOTE: type parameter is an optional parameter.  The default value is CFILE_NORMAL
-//
 //
 // returns:		success ==> address of CFILE structure
 //					error   ==> NULL
 //
 
-CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int type, int dir_type,
+CFILE* _cfopen(const char* source, int line, const char* file_path, const char* mode, int dir_type,
                bool /* localize */, uint32_t location_flags)
 {
 	/* Bobboau, what is this doing here? 31 is way too short... - Goober5000
@@ -659,12 +646,6 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	// Check that all the parameters make sense
 	Assert(file_path && strlen(file_path));
 	Assert( mode != NULL );
-	
-	// Can only open read-only binary files in memory mapped mode.
-	if ( (type & CFILE_MEMORY_MAPPED) && strcmp(mode,"rb") != 0 ) {
-		Int3();				
-		return NULL;
-	}
 
 	//===========================================================
 	// If in write mode, just try to open the file straight off
@@ -689,7 +670,6 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 
 			cf_create_default_path_string(longname, dir_type, file_path, location_flags);
 		}
-		Assert( !(type & CFILE_MEMORY_MAPPED) );
 
 		// JOHN: TODO, you should create the path if it doesn't exist.
 		
@@ -740,35 +720,11 @@ CFILE* _cfopen(const char* source, int line, const char* file_path, const char* 
 	auto find_res = cf_find_file_location(file_path, dir_type, location_flags);
 
 	if ( find_res.found ) {
-
 		// Fount it, now create a cfile out of it
 		nprintf(("CFileDebug", "Requested file %s found at: %s\n", file_path, find_res.full_name.c_str()));
 
-		if ( type & CFILE_MEMORY_MAPPED ) {
-		
-			// Can't open memory mapped files out of pack or memory files
-			if ( find_res.offset == 0 && find_res.data_ptr != nullptr )	{
-#if defined _WIN32
-				HANDLE hFile;
-
-				hFile = CreateFile(find_res.full_name.c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
-
-				if (hFile != INVALID_HANDLE_VALUE)	{
-					return cf_open_mapped_fill_cfblock(source, line, file_path, hFile, dir_type);
-				}
-#elif defined SCP_UNIX
-				FILE* fp = fopen(find_res.full_name.c_str(), "rb");
-				if (fp) {
-					return cf_open_mapped_fill_cfblock(source, line, file_path, fp, dir_type);
-				}
-#endif
-			} 
-
-		} else {
-			// since cfopen_special already has all the code to handle the opening we can just use that here
-			return _cfopen_special(source, line, find_res, mode, dir_type);
-		}
-
+		// since cfopen_special already has all the code to handle the opening we can just use that here
+		return _cfopen_special(source, line, find_res, mode, dir_type);
 	}
 
 	return NULL;
@@ -893,27 +849,7 @@ int cfclose( CFILE * cfile )
 	Assert(cfile != NULL);
 
 	result = 0;
-	if ( cfile->data && cfile->mem_mapped ) {
-		// close memory mapped file
-#if defined _WIN32
-		result = UnmapViewOfFile((void*)cfile->data);
-		Assert(result);
-		result = CloseHandle(cfile->hInFile);
-		Assert(result);	// Ensure file handle is closed properly
-		result = CloseHandle(cfile->hMapFile);
-		Assert(result);	// Ensure file handle is closed properly
-		result = 0;
-#elif defined SCP_UNIX
-		// FIXME: result is wrong after munmap() but it is successful
-		//result = munmap(cfile->data, cfile->data_length);
-		//Assert(result);
-		// This const_cast is safe since the pointer returned by mmap was also non-const
-		munmap(const_cast<void*>(cfile->data), cfile->data_length);
-		if ( cfile->fp != nullptr)
-			result = fclose(cfile->fp);
-#endif
-
-	} else if ( cfile->fp != nullptr )	{
+	if ( cfile->fp != nullptr )	{
 		Assert(cfile->fp != nullptr);
 		result = fclose(cfile->fp);
 	} else {
@@ -958,7 +894,6 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 	} else {
 		CFILE *cfp = &Cfile_block_list[cfile_block_index];
 		cfp->data = nullptr;
-		cfp->mem_mapped = false;
 		cfp->fp = fp;
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
@@ -997,7 +932,6 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 
 		cfp->data = nullptr;
 		cfp->fp = fp;
-		cfp->mem_mapped = false;
 		cfp->dir_type = type;
 		cfp->max_read_len = 0;
 
@@ -1010,70 +944,6 @@ static CFILE *cf_open_packed_cfblock(const char* source, int line, const char* o
 		return cfp;
 	}
 
-}
-
-
-
-// cf_open_mapped_fill_cfblock() will fill up a Cfile_block element in the Cfile_block_list[] array
-// for the case of a file being opened by cf_open_mapped();
-//
-// returns:   ptr CFILE structure.  
-//
-#if defined _WIN32
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, HANDLE hFile, int type)
-#elif defined SCP_UNIX
-static CFILE *cf_open_mapped_fill_cfblock(const char* source, int line, const char* original_filename, FILE *fp, int type)
-#endif
-{
-	int cfile_block_index;
-
-	cfile_block_index = cfget_cfile_block();
-	if ( cfile_block_index == -1 ) {
-#ifdef SCP_UNIX
-		fclose(fp);
-#endif
-		return NULL;
-	}
-	else {
-		CFILE *cfp = &Cfile_block_list[cfile_block_index];
-
-		cfp->max_read_len = 0;
-		cfp->fp = nullptr;
-		cfp->mem_mapped = true;
-#if defined _WIN32
-		cfp->hInFile = hFile;
-#endif
-		cfp->dir_type = type;
-
-		cfp->original_filename = original_filename;
-		cfp->source_file = source;
-		cfp->line_num = line;
-
-		cf_init_lowlevel_read_code(cfp, 0, 0, 0 );
-		
-#if defined _WIN32
-		cfp->hMapFile = CreateFileMapping(cfp->hInFile, NULL, PAGE_READONLY, 0, 0, NULL);
-		if (cfp->hMapFile == NULL) {
-			nprintf(("Error", "Could not create file-mapping object.\n")); 
-			return NULL;
-		} 
-	
-		cfp->data = (ubyte*)MapViewOfFile(cfp->hMapFile, FILE_MAP_READ, 0, 0, 0);
-		Assert( cfp->data != NULL );
-#elif defined SCP_UNIX
-		cfp->fp = fp;
-		cfp->data_length = filelength(fileno(fp));
-		cfp->data = mmap(nullptr,                        // start
-		                 cfp->data_length,    // length
-		                 PROT_READ,                // prot
-		                 MAP_SHARED,                // flags
-		                 fileno(fp),                // fd
-		                 0);                        // offset
-		Assert(cfp->data != nullptr);
-#endif
-
-		return cfp;
-	}
 }
 
 static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const char* original_filename, const void* data, size_t size, int dir_type)
@@ -1089,7 +959,6 @@ static CFILE *cf_open_memory_fill_cfblock(const char* source, int line, const ch
 
 		cfp->max_read_len = 0;
 		cfp->fp = nullptr;
-		cfp->mem_mapped = false;
 		cfp->dir_type = dir_type;
 
 		cfp->original_filename = original_filename;
@@ -1332,9 +1201,6 @@ int cfwrite_string_len(const char *buf, CFILE *file)
 // Get the filelength
 int cfilelength(CFILE* cfile) {
 	Assert(cfile != NULL);
-
-	// TODO: return length of memory mapped file
-	Assert(!cfile->mem_mapped);
 
 	// cfile->size gets set at cfopen
 
@@ -1728,7 +1594,7 @@ int cf_chksum_short(const char *filename, ushort *chksum, int max_size, int cf_t
 	*chksum = 0;
 
 	// attempt to open the file
-	cfile = cfopen(filename,"rt",CFILE_NORMAL,cf_type);
+	cfile = cfopen(filename,"rt",cf_type);
 	if(cfile == NULL){		
 		return 0;
 	}
@@ -1778,7 +1644,7 @@ int cf_chksum_long(const char *filename, uint *chksum, int max_size, int cf_type
 	*chksum = 0;
 
 	// attempt to open the file
-	cfile = cfopen(filename,"rt",CFILE_NORMAL,cf_type);
+	cfile = cfopen(filename,"rt",cf_type);
 	if(cfile == NULL){		
 		return 0;
 	}

@@ -4,6 +4,7 @@
 #include <algorithm>
 
 #include "ui_AsteroidEditorDialog.h"
+#include <mission/util.h>
 
 namespace fso {
 namespace fred {
@@ -22,6 +23,8 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 	ui(new Ui::AsteroidEditorDialog()),
 	_model(new AsteroidEditorDialogModel(this, viewport))
 {
+	connect(this, &QDialog::accepted, _model.get(), &AsteroidEditorDialogModel::apply);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &AsteroidEditorDialog::rejectHandler);
 	ui->setupUi(this);
 	_model->update_init();
 
@@ -50,8 +53,6 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 
 	// setup values in ship debris combo boxes
 	// MFC let you set comboxbox item indexes, Qt doesn't so we'll need a lookup
-	static_assert(MAX_ACTIVE_DEBRIS_TYPES == 3,
-			"qtFRED only provides three combo boxes for debris type input");
 	debrisComboBoxes = ui->fieldProperties->findChildren<QComboBox *>(QString(), Qt::FindDirectChildrenOnly);
 	std::sort(debrisComboBoxes.begin(), debrisComboBoxes.end(), sort_qcombobox_by_name);
 
@@ -65,7 +66,8 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 		}
 	}
 
-	for (auto i = 0; i < MAX_ACTIVE_DEBRIS_TYPES; ++i) {
+	// There are only 3 combo boxes.. FOR NOW
+	for (auto i = 0; i < 3; ++i) {
 		debrisComboBoxes.at(i)->addItems(debris_names);
 		// update debris combobox data on index changes
 		connect(debrisComboBoxes.at(i), QOverload<int>::of(&QComboBox::currentIndexChanged), this, \
@@ -127,6 +129,18 @@ AsteroidEditorDialog::AsteroidEditorDialog(FredView *parent, EditorViewport* vie
 }
 
 AsteroidEditorDialog::~AsteroidEditorDialog() = default;
+
+void AsteroidEditorDialog::closeEvent(QCloseEvent* e)
+{
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
+}
+
+void AsteroidEditorDialog::rejectHandler()
+{
+	this->close();
+}
 
 QString & AsteroidEditorDialog::getBoxText(AsteroidEditorDialogModel::_box_line_edits type)
 {
@@ -330,46 +344,6 @@ void AsteroidEditorDialog::updateUI()
 	ui->lineEdit_ibox_maxX->setText(_model->AsteroidEditorDialogModel::getBoxText(AsteroidEditorDialogModel::_I_MAX_X));
 	ui->lineEdit_ibox_maxY->setText(_model->AsteroidEditorDialogModel::getBoxText(AsteroidEditorDialogModel::_I_MAX_Y));
 	ui->lineEdit_ibox_maxZ->setText(_model->AsteroidEditorDialogModel::getBoxText(AsteroidEditorDialogModel::_I_MAX_Z));
-}
-
-void AsteroidEditorDialog::done(int r)
-{
-	if(QDialog::Accepted == r)  // ok was pressed
-	{
-		// TODO consider moving the validation to when values are entered
-		// but just visually indicate that there's a problem at that time
-		// hard fail (by checking status boolean?) here instead
-		// i.e. let FREDers have temp bad values when they're changing stuff
-		// if they know what they're doing
-		if (_model->apply()) {
-			// all ok
-			QDialog::done(r);
-			_model->unset_modified();
-			return;
-		}
-		else {
-			// leave dialog open
-			return;
-		}
-	}
-	else    // cancel, close or exc was pressed
-	{
-		if (_model->get_modified()) {
-			// give FREDer a chance in case they cancelled by mistake
-			// although I wonder if we're better off with always saving & don't prompt
-			// ~philisophical~
-			auto z = _viewport->dialogProvider->showButtonDialog(DialogType::Question,
-				"Question",
-				"You have unsaved changes, do you wish to discard them?",
-				{ DialogButton::Ok, DialogButton::Cancel });
-			if (z == DialogButton::Cancel) {
-				return;
-			}
-		}
-		QDialog::done(r);
-		_model->unset_modified();
-		return;
-	}
 }
 
 } // namespace dialogs

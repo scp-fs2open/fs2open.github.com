@@ -7,11 +7,17 @@ namespace hooks {
 
 extern const std::shared_ptr<Hook<>>									OnGameInit;
 extern const std::shared_ptr<Hook<>>									OnSplashEnd;
-extern const std::shared_ptr<Hook<>>									OnIntroAboutToPlay;
+extern const std::shared_ptr<OverridableHook<>>							OnIntroAboutToPlay;
+extern const std::shared_ptr<OverridableHook<>>							OnMovieAboutToPlay;
+extern const std::shared_ptr<Hook<>>									OnOptionsTabChanged;
+extern const std::shared_ptr<Hook<>>									OnOptionsMenuClosed;
+extern const std::shared_ptr<Hook<>>									OnHUDConfigMenuClosed;
+extern const std::shared_ptr<Hook<>>									OnControlConfigMenuClosed;
 //The On State Start hook previously used to pass OldState to the conditions, but no semantically sensible condition read the value, so we pretend it has no local condition
 extern const std::shared_ptr<OverridableHook<>>							OnStateStart;
 
 extern const std::shared_ptr<Hook<>>									OnLoadScreen;
+extern const std::shared_ptr<Hook<>>									OnLoadComplete;
 extern const std::shared_ptr<Hook<>>									OnCampaignMissionAccept;
 extern const std::shared_ptr<Hook<>>									OnBriefStage;
 extern const std::shared_ptr<Hook<>>									OnMissionStart; 
@@ -19,8 +25,8 @@ extern const std::shared_ptr<Hook<>>									OnGameplayStart;
 
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnAction;
 extern const std::shared_ptr<Hook<ControlActionConditions>>				OnActionStopped;
-extern const std::shared_ptr<Hook<>>									OnKeyPressed;
-extern const std::shared_ptr<Hook<>>									OnKeyReleased;
+extern const std::shared_ptr<OverridableHook<KeyPressConditions>>		OnKeyPressed;
+extern const std::shared_ptr<Hook<KeyPressConditions>>					OnKeyReleased;
 extern const std::shared_ptr<Hook<>>									OnMouseMoved;
 extern const std::shared_ptr<Hook<>>									OnMousePressed;
 extern const std::shared_ptr<Hook<>>									OnMouseReleased;
@@ -67,6 +73,7 @@ extern const std::shared_ptr<Hook<WeaponUsedConditions>>				OnBeamWarmdown;
 
 extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuOpened;
 extern const std::shared_ptr<OverridableHook<>>							OnHudCommMenuClosed;
+extern const std::shared_ptr<OverridableHook<CommOrderConditions>> OnHudCommOrderIssued;
 
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnHudDraw;
 extern const std::shared_ptr<OverridableHook<ObjectDrawConditions>>		OnObjectRender;
@@ -78,6 +85,8 @@ extern const std::shared_ptr<OverridableHook<>>							OnDialogFrame;
 extern const std::shared_ptr<Hook<>>									OnDialogClose;
 
 extern const std::shared_ptr<Hook<>>									OnCheat;
+
+extern const std::shared_ptr<OverridableHook<>>                         OnMissionGoalStatusChanged;
 
 extern const std::shared_ptr<Hook<>>									OnMissionAboutToEndHook;
 extern const std::shared_ptr<OverridableHook<>>							OnMissionEndHook;

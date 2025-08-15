@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
 
-	QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
+	//QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
 #ifndef NDEBUG
 	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
 	qGuiApp->processEvents();
 	std::unique_ptr<Editor> fred(new Editor());
 
-	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath());
+	auto baseDir = QDir::toNativeSeparators(QDir::current().absolutePath()).toStdString();
 
 	typedef std::unordered_map<SubSystem, QString> SubsystemMap;
 
@@ -174,7 +174,7 @@ int main(int argc, char* argv[]) {
 								 { SubSystem::ScriptingInitHook, app.tr("Running game init scripting hook") },
 	};
 
-	auto initSuccess = fso::fred::initialize(baseDir.toStdString(), argc, argv, fred.get(), [&](const SubSystem& which) {
+	auto initSuccess = fso::fred::initialize(baseDir, argc, argv, fred.get(), [&](const SubSystem& which) {
 		if (initializers.count(which)) {
 			splash.showMessage(initializers.at(which), Qt::AlignHCenter | Qt::AlignBottom, Qt::white);
 		}

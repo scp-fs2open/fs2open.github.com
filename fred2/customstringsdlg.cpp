@@ -139,7 +139,7 @@ void CustomStringsDlg::OnListerSelectionChange()
 	Assertion(index >= 0 && index < static_cast<int>(m_custom_strings.size()), "Selected an invalid custom string! Please report.");
 
 	const SCP_string& key = m_lister_keys[index];
-	const mission_custom_string *cs = nullptr;
+	const custom_string *cs = nullptr;
 
 	for (size_t i = 0; i <= m_custom_strings.size(); i++) {
 		if (m_custom_strings[i].name == key) {
@@ -165,7 +165,7 @@ void CustomStringsDlg::add_pair_entry()
 		return;
 	}
 
-	mission_custom_string cs;
+	custom_string cs;
 
 	CEdit* key_edit = (CEdit*)GetDlgItem(IDC_CUSTOM_KEY);
 	CString key_str;

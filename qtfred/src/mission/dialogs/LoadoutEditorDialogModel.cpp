@@ -233,6 +233,7 @@ void LoadoutDialogModel::setPlayerEntryDelay(float delay)
 {
 	_playerEntryDelay = delay;
 	modelChanged();
+	set_modified();
 
 }
 
@@ -721,7 +722,7 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -754,7 +755,7 @@ void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& li
 				item);
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -780,7 +781,7 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -813,7 +814,7 @@ void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& 
 				item);
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -828,7 +829,7 @@ void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -842,7 +843,7 @@ void LoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -856,7 +857,7 @@ void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_strin
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -870,7 +871,7 @@ void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vect
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -916,7 +917,7 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
 }
 
@@ -930,8 +931,9 @@ void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, c
 			}
 		}
 	}
-
+	set_modified();
 	buildCurrentLists();
+	modelChanged();
 }
 
 bool LoadoutDialogModel::getSkipValidation() {
@@ -942,6 +944,7 @@ void LoadoutDialogModel::setSkipValidation(const bool skipIt) {
 	// this is designed to be a global control, so turn this off in TvT, until we hear from someone otherwise.
 	for (auto& team : _teams) {
 		team.skipValidation = skipIt;
+		set_modified();
 	}
 }
 

@@ -32,7 +32,8 @@ enum class Light_Type : int {
 	Directional = 0,// A light like a sun
 	Point = 1,		// A point light, like an explosion
 	Tube = 2,		// A tube light, like a fluorescent light
-	Cone = 3		// A cone light, like a flood light
+	Cone = 3,		// A cone light, like a flood light
+	Ambient = 4		// A directionless and positionless ambient light
 };
 
 typedef struct light {
@@ -126,4 +127,6 @@ extern int light_find_for_sun(int sun_index);
 bool light_compare_by_type(const light &a, const light &b);
 
 bool light_deferred_enabled();
+
+bool light_deferredcockpit_enabled();
 #endif

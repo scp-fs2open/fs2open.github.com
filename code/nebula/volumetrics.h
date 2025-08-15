@@ -4,7 +4,7 @@
 #include "math/vecmat.h"
 
 #include <memory>
-#include <tl/optional.hpp>
+#include <optional>
 
 namespace fso {
 	namespace fred {
@@ -34,6 +34,8 @@ class volumetric_nebula {
 	int resolution = 6;
 	//Oversampling of 3D-Texture. Will quadruple loading computation time for each increment, but improves banding especially at lower resolutions. 1 - 3. Mostly Loading time cost.
 	int oversampling = 2;
+	//How much the edge of the POF should be smoothed to be less hard
+	float smoothing = 0.f;
 	//Resolution of Noise 3D-Texture as 2^n. 5 - 8 recommended. Mostly VRAM cost
 	int noiseResolution = 5;
 
@@ -63,7 +65,7 @@ class volumetric_nebula {
 	//The size of the noise's two levels, in meters. The fraction of the two levels should have a large denominator to avoid visible harmonics
 	std::tuple<float, float> noiseScale = std::make_tuple(1.0f, 1.0f);
 	//Noise functions. ANL's DSL for noise. Leave empty to use default noise. Default is representable by: translate(bias(scale(valueBasis(3,0),3),scale(valueBasis(3,1),8)),scale(simplexBasis(2),4)*0.6)
-	tl::optional<SCP_string> noiseColorFunc1 = tl::nullopt, noiseColorFunc2 = tl::nullopt;
+	std::optional<SCP_string> noiseColorFunc1 = std::nullopt, noiseColorFunc2 = std::nullopt;
 	//Noise color
 	std::tuple<float, float, float> noiseColor = std::make_tuple(0.0f, 0.0f, 0.0f);
 	//Noise Intensity
@@ -75,6 +77,10 @@ class volumetric_nebula {
 
 	int noiseVolumeBitmapHandle = -1;
 	std::unique_ptr<ubyte[]> noiseVolumeBitmapData = nullptr;
+
+	float udfScale = 1.0f;
+
+	bool enabled = true;
 
 	//Friend things that are allowed to directly manipulate "current" volumetrics. Only FRED and the Lab. In all other cases, "sensibly constant" values behave properly RAII and stay constant afterwards.
 	friend class LabUi; //Lab
@@ -89,6 +95,9 @@ public:
 
 	const vec3d& getPos() const;
 	const vec3d& getSize() const;
+	const std::tuple<float, float, float>& getNebulaColor() const;
+
+	int getVolumeBitmapSmoothingSteps() const;
 
 	bool getEdgeSmoothing() const;
 	int getSteps() const;
@@ -96,7 +105,6 @@ public:
 
 	float getOpacityDistance() const;
 	float getStepsize() const;
-	float getStepalpha() const;
 	float getAlphaLim() const;
 
 	float getEmissiveSpread() const;
@@ -116,8 +124,12 @@ public:
 	void renderVolumeBitmap();
 	int getVolumeBitmapHandle() const;
 	int getNoiseVolumeBitmapHandle() const;
+	float getUDFScale() const;
 
 	float getAlphaToPos(const vec3d& pnt, float distance_mult) const;
+
+	void set_enabled(bool set_enabled);
+	bool get_enabled() const;
 };
 
 void volumetrics_level_close();

@@ -24,8 +24,6 @@
 
 struct sexp_container;
 
-#define BACKUP_DEPTH	9
-
 /**
  * @class CFred_mission_save
  *
@@ -507,10 +505,15 @@ private:
 	 */
 	int save_wings();
 
-	char *raw_ptr;
+	/**
+	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while handling newlines properly
+	 */
+	void fout_raw_comment(const char *comment_start);
+
+	char *raw_ptr = nullptr;
 	SCP_vector<SCP_string> fso_ver_comment;
-	int err;
-	CFILE *fp;
+	int err = 0;
+	CFILE *fp = nullptr;
 };
 
 #endif	// _MISSION_SAVE_H

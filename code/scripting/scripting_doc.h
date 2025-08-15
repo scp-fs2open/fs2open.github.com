@@ -71,12 +71,18 @@ struct DocumentationEnum {
 	int value;
 };
 
+struct DocumentationOption {
+	SCP_string title;
+	SCP_string description;
+	SCP_string key;
+};
+
 struct DocumentationAction {
 	SCP_string name;
 	SCP_string description;
 	SCP_vector<HookVariableDocumentation> parameters;
 	const SCP_unordered_map<SCP_string, const std::unique_ptr<const ParseableCondition>>& conditions;
-	const tl::optional<HookDeprecationOptions>& deprecation;
+	const std::optional<HookDeprecationOptions>& deprecation;
 	bool overridable;
 };
 
@@ -90,6 +96,8 @@ struct ScriptingDocumentation {
 	SCP_vector<std::unique_ptr<DocumentationElement>> elements;
 
 	SCP_vector<DocumentationEnum> enumerations;
+	
+	SCP_vector<DocumentationOption> options;
 };
 
 }

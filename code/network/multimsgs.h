@@ -30,6 +30,7 @@ class ship_subsys;
 struct log_entry;
 struct beam_fire_info;
 namespace animation { enum class ModelAnimationDirection; }
+struct tracking_info;
 
 // macros for building up packets -- to save on time and typing.  Important to note that local variables
 // must be named correctly
@@ -76,13 +77,13 @@ namespace animation { enum class ModelAnimationDirection; }
 // data sending wrappers
 
 // send the specified data packet to all players
-void multi_io_send(net_player *pl, ubyte *data, int length);
-void multi_io_send_to_all(ubyte *data, int length, net_player *ignore = NULL);
+void multi_io_send(net_player *pl, const ubyte *data, int length);
+void multi_io_send_to_all(const ubyte *data, int length, const net_player *ignore = nullptr);
 void multi_io_send_force(net_player *pl);
 
 // send the data packet to all players via their reliable sockets
-void multi_io_send_reliable(net_player *pl, ubyte *data, int length);
-void multi_io_send_to_all_reliable(ubyte* data, int length, net_player *ignore = NULL);
+void multi_io_send_reliable(net_player *pl, const ubyte *data, int length);
+void multi_io_send_to_all_reliable(const ubyte* data, int length, const net_player *ignore = nullptr);
 void multi_io_send_reliable_force(net_player *pl);
 
 // send all buffered packets
@@ -270,7 +271,7 @@ void send_game_info_packet( void );
 void send_leave_game_packet(short player_id = -1,int kicked_reason = -1,net_player *target = NULL);
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int starting_count, int num_fired, int allow_swarm );
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, tracking_info &tinfo, int num_fired, int allow_swarm );
 
 // send a packet indicating a countermeasure was fired
 void send_countermeasure_fired_packet( object *objp, int cmeasure_count, int rand_val );
@@ -296,7 +297,7 @@ void send_netgame_descript_packet(net_addr *addr, int code);
 void send_object_update_packet(int force_all = 0);
 
 // send a packet indicating a ship has been killed
-void send_ship_kill_packet( object *ship_obj, object *other_objp, float percent_killed, int self_destruct );
+void send_ship_kill_packet( const object *ship_obj, const object *other_objp, float percent_killed, int self_destruct );
 
 // send a packet indicating that a missile died.
 void send_missile_kill_packet(object* objp);
@@ -530,16 +531,16 @@ void send_weapon_detonate_packet(object *objp);
 void process_weapon_detonate_packet(ubyte *data, header *hinfo);
 
 // turret fired packet
-void send_turret_fired_packet( int objnum, int subsys_index, int weapon_objnum );
+void send_turret_fired_packet( int objnum, int subsys_index, int weapon_objnum, float dist_to_target, float target_radius );
 void process_turret_fired_packet( ubyte *data, header *hinfo );
 
 // flak fired packet
-void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range);
+void send_flak_fired_packet(int ship_objnum, int subsys_index, int weapon_objnum, float flak_range, float dist_to_target, float target_radius );
 void process_flak_fired_packet(ubyte *data, header *hinfo);
 
 // player pain packet
-void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, vec3d *force, vec3d *hitpos, int quadrant_num);
-void process_player_pain_packet(ubyte *data, header *hinfo);
+void send_player_pain_packet(net_player *pl, int weapon_info_index, float damage, const vec3d *force, const vec3d *hitpos, int quadrant_num);
+void process_player_pain_packet(const ubyte *data, header *hinfo);
 
 // lightning packet
 void send_lightning_packet(int bolt_type_internal, vec3d *start, vec3d *strike);

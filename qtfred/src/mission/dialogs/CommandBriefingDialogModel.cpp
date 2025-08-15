@@ -144,7 +144,7 @@ void CommandBriefingDialogModel::addStage()
 
 	_wipCommandBrief.num_stages++;
 	_currentStage = _wipCommandBrief.num_stages - 1;
-	
+	set_modified();
 	modelChanged();
 }
 
@@ -155,6 +155,7 @@ void CommandBriefingDialogModel::insertStage()
 
 	if (_wipCommandBrief.num_stages >= CMD_BRIEF_STAGES_MAX) {
 		_wipCommandBrief.num_stages = CMD_BRIEF_STAGES_MAX;
+		set_modified();
 		modelChanged(); // signal that the model has changed, in case of inexplicable invalid index.
 		return;
 	}
@@ -164,6 +165,7 @@ void CommandBriefingDialogModel::insertStage()
 	for (int i = _wipCommandBrief.num_stages - 1; i > _currentStage; i--) {
 		_wipCommandBrief.stage[i] = _wipCommandBrief.stage[i - 1];
 	}
+	set_modified();
 	modelChanged();
 }
 
@@ -181,6 +183,7 @@ void CommandBriefingDialogModel::deleteStage()
 		_wipCommandBrief.stage[0].wave = -1;
 		memset(_wipCommandBrief.stage[0].wave_filename, 0, CF_MAX_FILENAME_LENGTH);
 		memset(_wipCommandBrief.stage[0].ani_filename, 0, CF_MAX_FILENAME_LENGTH);
+		set_modified();
 		modelChanged();
 		return;
 	}
@@ -293,13 +296,15 @@ int CommandBriefingDialogModel::getSpeechInstanceNumber()
 
 void CommandBriefingDialogModel::setBriefingText(const SCP_string& briefingText) 
 { 
-	_wipCommandBrief.stage[_currentStage].text = briefingText; 
+	_wipCommandBrief.stage[_currentStage].text = briefingText;
+	set_modified();
 	modelChanged(); 
 }
 
 void CommandBriefingDialogModel::setAnimationFilename(const SCP_string& animationFilename) 
 { 
-	strcpy_s(_wipCommandBrief.stage[_currentStage].ani_filename, animationFilename.c_str()); 
+	strcpy_s(_wipCommandBrief.stage[_currentStage].ani_filename, animationFilename.c_str());
+	set_modified();
 	modelChanged(); 
 }
 
@@ -307,24 +312,28 @@ void CommandBriefingDialogModel::setSpeechFilename(const SCP_string& speechFilen
 { 
 	_soundTestUpdateRequired = true; 
 	strcpy_s(_wipCommandBrief.stage[_currentStage].wave_filename, speechFilename.c_str());
-	setWaveID(); 
+	setWaveID();
+	set_modified();
 	modelChanged(); 
 }
 
 void CommandBriefingDialogModel::setCurrentTeam(const ubyte& teamIn) 
 { 
 	_currentTeam = teamIn;
+	set_modified();
 }; // not yet fully supported
 
 void CommandBriefingDialogModel::setLowResolutionFilename(const SCP_string& lowResolutionFilename) 
 { 
 	strcpy_s(_wipCommandBrief.background[0], lowResolutionFilename.c_str()); 
+	set_modified();
 	modelChanged();  
 }
 
 void CommandBriefingDialogModel::setHighResolutionFilename(const SCP_string& highResolutionFilename) 
 { 
 	strcpy_s(_wipCommandBrief.background[1], highResolutionFilename.c_str()); 
+	set_modified();
 	modelChanged(); 
 }
 

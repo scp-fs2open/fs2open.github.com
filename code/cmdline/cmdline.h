@@ -12,7 +12,7 @@
 #ifndef FS_CMDLINE_HEADER_FILE
 #define FS_CMDLINE_HEADER_FILE
 
-#include <tl/optional.hpp>
+#include <optional>
 
 int parse_cmdline(int argc, char *argv[]);
 
@@ -34,7 +34,6 @@ extern int Cmdline_cd_check;
 extern int Cmdline_closed_game;
 extern int Cmdline_freespace_no_music;
 extern int Cmdline_freespace_no_sound;
-extern int Cmdline_gimme_all_medals;
 extern int Cmdline_mouse_coords;
 extern int Cmdline_multi_log;
 extern int Cmdline_multi_stream_chat_to_file;
@@ -44,10 +43,10 @@ extern int Cmdline_spew_pof_info;
 extern int Cmdline_start_netgame;
 extern int Cmdline_timeout;
 extern int Cmdline_use_last_pilot;
-extern int Cmdline_window;
-extern int Cmdline_fullscreen_window;
+extern bool Cmdline_window;
+extern bool Cmdline_fullscreen_window;
 extern char *Cmdline_res;
-extern tl::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res;
+extern std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res;
 extern char *Cmdline_center_res;
 
 
@@ -63,10 +62,7 @@ extern int Cmdline_noscalevid;	// disables fit-to-window for movies - taylor
 extern int Cmdline_spec;
 extern int Cmdline_normal;
 extern int Cmdline_height;
-extern int Cmdline_enable_3d_shockwave;
 extern int Cmdline_softparticles;
-extern int Cmdline_bloom_intensity;
-extern bool Cmdline_force_lightshaft_off;
 extern int Cmdline_no_deferred_lighting;
 extern bool Cmdline_deferred_lighting_cockpit;
 extern int Cmdline_emissive;
@@ -75,7 +71,7 @@ extern int Cmdline_msaa_enabled;
 
 // Game Speed related
 extern int Cmdline_NoFPSCap;
-extern int Cmdline_no_vsync;
+extern bool Cmdline_no_vsync;
 
 // HUD related
 extern int Cmdline_ballistic_gauge;
@@ -84,12 +80,9 @@ extern int Cmdline_orb_radar;
 extern int Cmdline_rearm_timer;
 
 // Gameplay related
-extern int Cmdline_ship_choice_3d;
-extern int Cmdline_weapon_choice_3d;
 extern int Cmdline_autopilot_interruptable;
-extern int Cmdline_stretch_menu;
+extern bool Cmdline_stretch_menu;
 extern bool Cmdline_capture_mouse;
-extern int Cmdline_no_screenshake;
 extern int Cmdline_deadzone;
 extern bool Cmdline_enable_vr;
 
@@ -99,6 +92,7 @@ extern int Cmdline_no_enhanced_sound;
 
 // MOD related
 extern char *Cmdline_mod;	 // DTP for mod support
+extern char *Cmdline_campaign;	 // for campaign support
 // Multiplayer/Network related
 extern char *Cmdline_almission;	// DTP for autoload mission (for multi only)
 extern int Cmdline_ingamejoin;
@@ -150,6 +144,7 @@ extern int Cmdline_verify_vps;
 extern int Cmdline_reparse_mainhall;
 extern bool Cmdline_profile_write_file;
 extern bool Cmdline_no_unfocus_pause;
+extern bool Cmdline_retail_time_compression_range;
 extern bool Cmdline_benchmark_mode;
 extern const char *Cmdline_pilot;
 extern bool Cmdline_noninteractive;
@@ -164,9 +159,14 @@ extern bool Cmdline_lua_devmode;
 extern bool Cmdline_override_data;
 extern bool Cmdline_show_imgui_debug;
 extern bool Cmdline_vulkan;
+extern int Cmdline_multithreading;
 
 enum class WeaponSpewType { NONE = 0, STANDARD, ALL };
 extern WeaponSpewType Cmdline_spew_weapon_stats;
 
+extern void removeVSyncOption();
+extern void removeWindowModeOption();
+extern void removeResolutionOption();
+extern void removeResolutionVROption();
 
 #endif

@@ -56,6 +56,15 @@ namespace font
 		float getTextHeight() const override;
 
 		/**
+		 * @brief	Gets the family name of this font
+		 *
+		 * @see FSFont::getFamilyName()
+		 *
+		 * @return	The family name.
+		 */
+		const SCP_string& getFamilyName() const override;
+
+		/**
 		* @brief	Gets the size of the specified string in pixels.
 		*
 		* @param [in]	text  	the text which should be checked.
@@ -63,8 +72,9 @@ namespace font
 		* @param	resize_mode		The used resize mode
 		* @param [out]	width 	If non-null, the width.
 		* @param [out]	height	If non-null, the height.
+		* @param scaleMultiplier The scale to use to apply scaling in addition to user settings
 		*/
 		void
-		getStringSize(const char* text, size_t textLen, int resize_mode, float* width, float* height) const override;
+		getStringSize(const char* text, size_t textLen, int resize_mode, float* width, float* height, float scaleMultiplier = 1.0f) const override;
 	};
 }

@@ -189,7 +189,7 @@ ADE_VIRTVAR(AttachedObject, l_Particle, "object", "The object this particle is a
 	if (ADE_SETTING_VAR)
 	{
 		if (newObj != nullptr && newObj->isValid())
-			ph->Get().lock()->attached_objnum = newObj->objp->signature;
+			ph->Get().lock()->attached_objnum = newObj->sig;
 	}
 
 	return ade_set_object_with_breed(L, ph->Get().lock()->attached_objnum);
@@ -207,27 +207,9 @@ ADE_FUNC(isValid, l_Particle, NULL, "Detects whether this handle is valid", "boo
 	return ade_set_args(L, "b", ph->isValid());
 }
 
-ADE_FUNC(setColor, l_Particle, "number r, number g, number b", "Sets the color for a particle.  If the particle does not support color, the function does nothing.  (Currently only debug particles support color.)", nullptr, nullptr)
+ADE_FUNC_DEPRECATED(setColor, l_Particle, "number r, number g, number b", "Sets the color for a particle.  If the particle does not support color, the function does nothing.  (Currently only debug particles support color.)", nullptr, nullptr, gameversion::version(25,0,0), "Debug particles are deprecated as of FSO 25.0.0! Use particles with a solid-color bitmap instead!")
 {
-	particle_h *ph = nullptr;
-	int r, g, b;
-	if (!ade_get_args(L, "o|iii", l_Particle.GetPtr(&ph), &r, &g, &b))
-		return ADE_RETURN_NIL;
-
-	if (ph == NULL)
-		return ADE_RETURN_NIL;
-
-	if (!ph->isValid())
-		return ADE_RETURN_NIL;
-
-	if (ph->Get().lock()->type != particle::PARTICLE_DEBUG)
-		return ADE_RETURN_NIL;
-
-	CLAMP(r, 0, 255);
-	CLAMP(g, 0, 255);
-	CLAMP(b, 0, 255);
-	ph->Get().lock()->optional_data = r << 16 | g << 8 | b;
-
+	LuaError(L, "Debug particles are deprecated as of FSO 25.0.0!");
 	return ADE_RETURN_NIL;
 }
 

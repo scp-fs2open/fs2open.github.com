@@ -32,8 +32,26 @@ void encrypt(char *text, int text_len, char *scrambled_text, int *scrambled_len,
 void unencrypt(char *scrambled_text, int scrambled_len, char *text, int *text_len);
 
 //A fast platform/std-implementation stable hashing algorithm. Implements the FNV-1a hash algorithm
+constexpr uint32_t hash_fnv1a(const uint8_t* bytes, size_t length) {
+	const uint32_t fnv1a_magic_prime = 16777619;
+	uint32_t hash = 2166136261;
+
+	for (size_t cnt = 0; cnt < length; cnt++) {
+		hash = (hash ^ bytes[cnt]) * fnv1a_magic_prime;
+	}
+
+	return hash;
+}
+
 uint32_t hash_fnv1a(const SCP_string& string);
 uint32_t hash_fnv1a(const void* data, size_t length);
+constexpr uint32_t hash_fnv1a(uint32_t value) {
+	uint8_t bytes[4] = {static_cast<uint8_t>((value) & 0xff),
+						static_cast<uint8_t>((value >> 8) & 0xff),
+						static_cast<uint8_t>((value >> 16) & 0xff),
+						static_cast<uint8_t>((value >> 24) & 0xff)};
+	return hash_fnv1a(bytes, sizeof(uint32_t));
+}
 
 #endif
 

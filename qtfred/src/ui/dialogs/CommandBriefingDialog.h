@@ -29,6 +29,8 @@ public:
 protected:
 	void closeEvent(QCloseEvent*) override;
 
+	void rejectHandler();
+
 private slots: // where the buttons go
 	void on_actionPrevStage_clicked();
 	void on_actionNextStage_clicked();

@@ -239,6 +239,8 @@ enum shader_type {
 
 #define SDR_FLAG_TONEMAPPING_LINEAR_OUT (1 << 0)
 
+#define SDR_FLAG_ENV_MAP (1 << 0)
+
 
 enum class uniform_block_type {
 	Lights = 0,
@@ -271,14 +273,17 @@ struct vertex_format_data
 		MODEL_ID,
 		RADIUS,
 		UVEC,
+		MATRIX4,
 	};
 
 	vertex_format format_type;
 	size_t stride;
 	size_t offset;
+	size_t divisor;
+	size_t buffer_number;
 
-	vertex_format_data(vertex_format i_format_type, size_t i_stride, size_t i_offset) :
-	format_type(i_format_type), stride(i_stride), offset(i_offset) {}
+	vertex_format_data(vertex_format i_format_type, size_t i_stride, size_t i_offset, size_t i_divisor, size_t i_buffer_number) :
+	format_type(i_format_type), stride(i_stride), offset(i_offset), divisor(i_divisor), buffer_number(i_buffer_number) {}
 
 	static inline uint mask(vertex_format v_format) { return 1 << v_format; }
 
@@ -291,7 +296,7 @@ class vertex_layout
 	SCP_vector<vertex_format_data> Vertex_components;
 
 	uint Vertex_mask = 0;
-	size_t Vertex_stride = 0;
+	SCP_unordered_map<size_t, size_t> Vertex_stride;
 public:
 	vertex_layout() {}
 
@@ -301,9 +306,9 @@ public:
 	
 	bool resident_vertex_format(vertex_format_data::vertex_format format_type) const;
 
-	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset);
+	void add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset, size_t divisor = 0, size_t buffer_number = 0);
 
-	size_t get_vertex_stride() const { return Vertex_stride; }
+	size_t get_vertex_stride(size_t buffer_number = 0) const { return Vertex_stride.at(buffer_number); }
 
 	bool operator==(const vertex_layout& other) const;
 
@@ -333,7 +338,8 @@ enum class gr_capability {
 	CAPABILITY_SEPARATE_BLEND_FUNCTIONS,
 	CAPABILITY_PERSISTENT_BUFFER_MAPPING,
 	CAPABILITY_BPTC,
-	CAPABILITY_LARGE_SHADER
+	CAPABILITY_LARGE_SHADER,
+	CAPABILITY_INSTANCED_RENDERING
 };
 
 struct gr_capability_def {
@@ -891,7 +897,9 @@ typedef struct screen {
 		primitive_type prim_type,
 		vertex_layout* layout,
 		int num_elements,
-		const indexed_vertex_source& buffers)>
+		const indexed_vertex_source& buffers,
+		const gr_buffer_handle& instance_buffer,
+		int num_instances)>
 		gf_render_decals;
 	void (*gf_render_rocket_primitives)(interface_material* material_info,
 		primitive_type prim_type,
@@ -934,6 +942,42 @@ typedef struct screen {
 	std::function<bool()> gf_openxr_acquire_swapchain_buffers;
 	std::function<bool()> gf_openxr_flip;
 } screen;
+
+/**
+ * @brief Scripting context render values
+ */
+typedef struct lua_screen {
+	bool active = false;
+	bool force_fso_context = false;
+	color current_color = {
+		0,   // is_alphacolor
+		0,   // alphacolor
+		0,   // magic
+		255, // red
+		255, // green
+		255, // blue
+		255, // alpha
+		0,   // ac_type
+		0    // raw8
+	};
+	float line_width = 1.0f;
+	int current_font_index = 0;
+} lua_screen;
+
+extern lua_screen gr_lua_screen;
+
+bool gr_lua_context_active();
+
+// Macros to easily choose been which context to use for color and line width
+// Note that font is handled slightly differently for the normal game context by using it's own global in the FontManager namespace
+// So FontManager::getCurrentFontIndex() is effectively its own macro
+
+// Gets the current color between the game context and the lua context if active
+#define GR_CURRENT_COLOR (gr_lua_context_active() ? gr_lua_screen.current_color : gr_screen.current_color)
+
+// Gets the current line width between the game context and the lua contet if active
+#define GR_CURRENT_LINE_WIDTH (gr_lua_context_active() ? gr_lua_screen.line_width : gr_screen.line_width)
+
 
 // handy macro
 #define GR_MAYBE_CLEAR_RES(bmap)		do  { int bmw = -1; int bmh = -1; if(bmap != -1){ bm_get_info( bmap, &bmw, &bmh, NULL, NULL, NULL); if((bmw != gr_screen.max_w) || (bmh != gr_screen.max_h)){gr_clear();} } else {gr_clear();} } while(false);
@@ -1008,7 +1052,7 @@ extern void gr_printf_menu_zoomed( int x, int y, const char * format, SCP_FORMAT
 extern void gr_printf_no_resize( int x, int y, const char * format, SCP_FORMAT_STRING ... )  SCP_FORMAT_STRING_ARGS(3, 4);
 
 // Returns the size of the string in pixels in w and h
-extern void gr_get_string_size( int *w, int *h, const char * text, size_t len = std::string::npos );
+extern void gr_get_string_size( int *w, int *h, const char * text, float scaleMultiplier = 1.0f, size_t len = std::string::npos);
 
 // Returns the height of the current font
 extern int gr_get_font_height();
@@ -1311,13 +1355,14 @@ void gr_init_color(color *c, int r, int g, int b);
 void gr_init_alphacolor( color *clr, int r, int g, int b, int alpha, int type = AC_TYPE_HUD );
 void gr_set_color( int r, int g, int b );
 void gr_set_color_fast(const color *dst);
+bool gr_compare_color_values(const color& clr1, const color& clr2);
 
 // shader functions
 void gr_create_shader(shader *shade, ubyte r, ubyte g, ubyte b, ubyte c);
 void gr_set_shader(shader *shade);
 
 // new bitmap functions
-void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL);
+void gr_bitmap(int x, int y, int resize_mode = GR_RESIZE_FULL, bool mirror = false, float scale_factor = 1.0f);
 void gr_bitmap_uv(int _x, int _y, int _w, int _h, float _u0, float _v0, float _u1, float _v1, int resize_mode = GR_RESIZE_FULL);
 
 // special function for drawing polylines. this function is specifically intended for

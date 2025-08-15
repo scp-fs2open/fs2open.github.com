@@ -3,7 +3,7 @@
 #include "ui_MissionSpecDialog.h"
 
 #include <ui/util/SignalBlockers.h>
-
+#include "mission/util.h"
 #include <QCloseEvent>
 #include <QFileDialog>
 
@@ -17,7 +17,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
     ui->setupUi(this);
 
 	connect(this, &QDialog::accepted, _model.get(), &MissionSpecDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &MissionSpecDialogModel::reject);
+	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, _model.get(), &MissionSpecDialogModel::reject);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &MissionSpecDialog::updateUI);
 
@@ -82,6 +82,7 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->toggle2DMission, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Mission_2d); });
 	connect(ui->toggleGoalsInBriefing, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Toggle_showing_goals); });
 	connect(ui->toggleMissionEndToMainhall, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::End_to_mainhall); });
+	connect(ui->toggleOverrideHashCommand, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Override_hashcommand); });
 	connect(ui->togglePreloadSubspace, &QCheckBox::toggled, this, [this](bool param) {flagToggled(param, Mission::Mission_Flags::Preload_subspace); });
 
 	// AI Profiles
@@ -102,23 +103,14 @@ MissionSpecDialog::MissionSpecDialog(FredView* parent, EditorViewport* viewport)
 MissionSpecDialog::~MissionSpecDialog() {
 }
 
-void MissionSpecDialog::closeEvent(QCloseEvent* event) {
-	if (_model->query_modified()) {
-		auto button = _viewport->dialogProvider->showButtonDialog(DialogType::Question, "Changes detected", "Do you want to keep your changes?",
-		{ DialogButton::Yes, DialogButton::No, DialogButton::Cancel });
-
-		if (button == DialogButton::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (button == DialogButton::Yes) {
-			accept();
-			return;
-		}
-	}
-
-	QDialog::closeEvent(event);
+void MissionSpecDialog::closeEvent(QCloseEvent* e) {
+	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		e->ignore();
+	};
+}
+void MissionSpecDialog::rejectHandler()
+{
+	this->close();
 }
 
 void MissionSpecDialog::updateUI() {
@@ -247,6 +239,7 @@ void MissionSpecDialog::updateFlags() {
 	ui->toggleGoalsInBriefing->setChecked(flags[Mission::Mission_Flags::Toggle_showing_goals]);
 	ui->toggleHardcodedAutopilot->setChecked(flags[Mission::Mission_Flags::Deactivate_ap]);
 	ui->toggleMissionEndToMainhall->setChecked(flags[Mission::Mission_Flags::End_to_mainhall]);
+	ui->toggleOverrideHashCommand->setChecked(flags[Mission::Mission_Flags::Override_hashcommand]);
 	ui->toggleNoBriefing->setChecked(flags[Mission::Mission_Flags::No_briefing]);
 	ui->toggleNoTraitor->setChecked(flags[Mission::Mission_Flags::No_traitor]);
 	ui->togglePromotion->setChecked(flags[Mission::Mission_Flags::No_promotion]);
@@ -306,6 +299,7 @@ void MissionSpecDialog::squadronNameChanged(const QString & string) {
 
 void MissionSpecDialog::on_customWingNameButton_clicked() {
 	CustomWingNamesDialog* dialog = new CustomWingNamesDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->exec();
 }
 

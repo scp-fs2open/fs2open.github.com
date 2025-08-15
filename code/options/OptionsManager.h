@@ -3,6 +3,7 @@
 #include "globalincs/pstypes.h"
 #include "libs/jansson.h"
 #include <memory>
+#include <optional>
 
 namespace options {
 
@@ -18,7 +19,10 @@ class OptionsManager {
 
 	SCP_unordered_map<SCP_string, const OptionBase*> _optionsMapping;
 
-	SCP_vector<std::unique_ptr<const OptionBase>> _options;
+	// Enforced options are hidden from the player and do not load values from user settings
+	SCP_unordered_set<SCP_string> _enforcedOptions;
+
+	SCP_vector<std::shared_ptr<const OptionBase>> _options;
 	bool _optionsSorted = false;
 
   public:
@@ -26,19 +30,25 @@ class OptionsManager {
 
 	~OptionsManager();
 
-	std::unique_ptr<json_t> getValueFromConfig(const SCP_string& key) const;
+	std::optional<std::unique_ptr<json_t>> getValueFromConfig(const SCP_string& key) const;
 
 	void setConfigValue(const SCP_string& key, std::unique_ptr<json_t>&& value);
 
 	void setOverride(const SCP_string& key, const SCP_string& json);
 
-	const OptionBase* addOption(std::unique_ptr<const OptionBase>&& option);
+	const OptionBase* addOption(std::shared_ptr<const OptionBase>&& option);
 
-	void removeOption(const OptionBase* option);
+	void removeOption(const std::shared_ptr<const OptionBase>& option);
 
 	const OptionBase* getOptionByKey(SCP_string name);
 
-	const SCP_vector<std::unique_ptr<const options::OptionBase>>& getOptions();
+	void enforceOption(const SCP_string& key);
+
+	void unenforceOption(const SCP_string& key);
+
+	bool isOptionEnforced(const SCP_string& key) const;
+
+	const SCP_vector<std::shared_ptr<const options::OptionBase>>& getOptions();
 
 	bool persistOptionChanges(const options::OptionBase* option);
 
@@ -58,6 +68,11 @@ class OptionsManager {
 	void loadInitialValues();
 
 	void printValues();
+
+	void set_ingame_binary_option(SCP_string key, bool value);
+	void set_ingame_multi_option(SCP_string key, int value);
+	void set_ingame_range_option(SCP_string key, int value);
+	void set_ingame_range_option(SCP_string key, float value);
 };
 
 }

@@ -60,14 +60,13 @@ void debriefing_editor_dlg::DoDataExchange(CDataExchange* pDX)
 	DDX_Control(pDX, IDC_TREE, m_tree);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_VOICE, m_voice);
+	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_REC_TEXT, m_rec_text);
 	DDX_CBIndex(pDX, IDC_SUCCESSFUL_MISSION_TRACK, m_debriefPass_music);
 	DDX_CBIndex(pDX, IDC_DEBRIEFING_TRACK, m_debriefAvg_music);
 	DDX_CBIndex(pDX, IDC_FAILED_MISSION_TRACK, m_debriefFail_music);
 	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_voice, MAX_FILENAME_LEN - 1);
 }
 
 BEGIN_MESSAGE_MAP(debriefing_editor_dlg, CDialog)

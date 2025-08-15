@@ -8,13 +8,13 @@
 #include "network/multi.h"
 #include "network/multimsgs.h"
 
-void vec3d::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& value, ubyte* data, int& packet_size) {
+void scripting::internal::ade_serializable_external<vec3d>::serialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, const luacpp::LuaValue& luaValue, ubyte* data, int& packet_size) {
 	vec3d vec;
-	value.getValue(scripting::api::l_Vector.Get(&vec));
+	luaValue.getValue(scripting::api::l_Vector.Get(&vec));
 	ADD_VECTOR(vec);
 }
 
-void vec3d::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) {
+void scripting::internal::ade_serializable_external<vec3d>::deserialize(lua_State* /*L*/, const scripting::ade_table_entry& /*tableEntry*/, char* data_ptr, ubyte* data, int& offset) { // NOLINT
 	vec3d vec;
 	GET_VECTOR(vec);
 	new(data_ptr) vec3d(std::move(vec));
@@ -579,8 +579,8 @@ ADE_FUNC(getOrientation,
 
 ADE_FUNC(getMagnitude,
 		 l_Vector,
-		 NULL,
-		 "Returns the magnitude of a vector (Total regardless of direction)",
+		 nullptr,
+		 "Returns the magnitude of a vector (Length regardless of direction)",
 		 "number",
 		 "Magnitude of vector, or 0 if handle is invalid") {
 	vec3d* v3;
@@ -589,6 +589,20 @@ ADE_FUNC(getMagnitude,
 	}
 
 	return ade_set_args(L, "f", vm_vec_mag(v3));
+}
+
+ADE_FUNC(getMagnitudeSquared,
+		 l_Vector,
+		 nullptr,
+		 "Returns the magnitude squared of a vector",
+		 "number",
+		 "Magnitude squared of vector, or 0 if handle is invalid") {
+	vec3d* v3;
+	if (!ade_get_args(L, "o", l_Vector.GetPtr(&v3))) {
+		return ade_set_error(L, "f", 0.0f);
+	}
+
+	return ade_set_args(L, "f", vm_vec_mag_squared(v3));
 }
 
 ADE_FUNC(getDistance, l_Vector, "vector otherPos", "Distance", "number", "Returns distance from another vector") {

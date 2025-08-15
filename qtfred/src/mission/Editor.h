@@ -15,6 +15,9 @@
 #include <memory>
 #include <stdexcept>
 
+#define MISSION_BACKUP_NAME     "Backup"
+#define MISSION_BACKUP_DEPTH    9
+
 namespace fso {
 namespace fred {
 
@@ -35,6 +38,8 @@ class Editor : public QObject {
 	void unmark_all();
 
 	void createNewMission();
+
+	void maybeUseAutosave(std::string& filepath);
 
 	/*! Load a mission. */
 	bool loadMission(const std::string& filepath, int flags = 0);
@@ -63,6 +68,9 @@ class Editor : public QObject {
 
 	void hideMarkedObjects();
 	void showHiddenObjects();
+
+	void lockMarkedObjects();
+	void unlockAllObjects();
 
 	int dup_object(object* objp);
 
@@ -180,6 +188,7 @@ class Editor : public QObject {
 	static void strip_quotation_marks(SCP_string& str);
 	static void pad_with_newline(SCP_string& str, size_t max_size);
 	static void lcl_fred_replace_stuff(QString& text);
+	static SCP_string get_display_name_for_text_box(const SCP_string &orig_name);
 
 	SCP_vector<int> getStartingWingLoadoutUseCounts();
 
@@ -228,7 +237,7 @@ class Editor : public QObject {
 	int invalidate_references(const char* name, sexp_ref_type type);
 
 	// DA 1/7/99 These ship names are not variables
-	int rename_ship(int ship, char* name);
+	int rename_ship(int ship, const char* name);
 
 	void delete_reinforcement(int num);
 
@@ -280,14 +289,14 @@ class Editor : public QObject {
 	int error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 	int internal_error(SCP_FORMAT_STRING const char* msg, ...) SCP_FORMAT_STRING_ARGS(2, 3);
 
-	int fred_check_sexp(int sexp, int type, const char* msg, ...);
+	int fred_check_sexp(int sexp, int type, const char* location, ...);
 
 
 	int global_error_check_mixed_player_wing(int w);
 
 	int global_error_check_player_wings(int multi);
 
-	const char* get_order_name(int order);
+	static const char* get_order_name(ai_goal_mode order);
 
 	void updateStartingWingLoadoutUseCounts();
 };

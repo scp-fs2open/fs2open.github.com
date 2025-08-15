@@ -5,6 +5,7 @@
 #include "object/object.h"
 #include "object/waypoint.h"
 #include "network/multiutil.h"
+#include <limits.h>
 
 //********************GLOBALS********************
 SCP_vector<waypoint_list> Waypoint_lists;
@@ -152,13 +153,17 @@ void calc_waypoint_indexes(int waypoint_instance, int &waypoint_list_index, int 
 
 int calc_waypoint_list_index(int waypoint_instance)
 {
-	Assert(waypoint_instance >= 0);
+	if (waypoint_instance < 0)
+		return -1;
+
 	return waypoint_instance / 0x10000;
 }
 
 int calc_waypoint_index(int waypoint_instance)
 {
-	Assert(waypoint_instance >= 0);
+	if (waypoint_instance < 0)
+		return -1;
+
 	return waypoint_instance & 0xffff;
 }
 
@@ -197,7 +202,7 @@ void waypoint_create_game_objects()
 
 waypoint_list *find_matching_waypoint_list(const char *name)
 {
-	Assert(name != NULL);
+	Assert(name != nullptr);
 
 	for (auto &ii: Waypoint_lists)
 	{
@@ -205,7 +210,22 @@ waypoint_list *find_matching_waypoint_list(const char *name)
 			return &ii;
 	}
 
-	return NULL;
+	return nullptr;
+}
+
+int find_matching_waypoint_list_index(const char *name)
+{
+	Assert(name != nullptr);
+
+	int i = 0;
+	for (auto &ii: Waypoint_lists)
+	{
+		if (!stricmp(ii.get_name(), name))
+			return i;
+		i++;
+	}
+
+	return -1;
 }
 
 // NOTE: waypoint names are always in the format Name:index
@@ -265,19 +285,10 @@ waypoint *find_matching_waypoint(const char *name)
 
 waypoint *find_waypoint_with_objnum(int objnum)
 {
-	if (objnum < 0 || Objects[objnum].type != OBJ_WAYPOINT)
-		return NULL;
+	if (objnum < 0 || objnum >= MAX_OBJECTS || Objects[objnum].type != OBJ_WAYPOINT)
+		return nullptr;
 
-	for (auto &ii: Waypoint_lists)
-	{
-		for (auto &jj: ii.get_waypoints())
-		{
-			if (jj.get_objnum() == objnum)
-				return &jj;
-		}
-	}
-
-	return NULL;
+	return find_waypoint_with_instance(Objects[objnum].instance);
 }
 
 waypoint_list *find_waypoint_list_with_instance(int waypoint_instance, int *waypoint_index)
@@ -308,34 +319,30 @@ waypoint_list *find_waypoint_list_with_instance(int waypoint_instance, int *wayp
 waypoint *find_waypoint_with_instance(int waypoint_instance)
 {
 	if (waypoint_instance < 0)
-		return NULL;
+		return nullptr;
 
-	waypoint_list *wp_list = find_waypoint_list_at_index(calc_waypoint_list_index(waypoint_instance));
-	if (wp_list == NULL)
-		return NULL;
-
-	return find_waypoint_at_index(wp_list, calc_waypoint_index(waypoint_instance));
+	return find_waypoint_at_indexes(calc_waypoint_list_index(waypoint_instance), calc_waypoint_index(waypoint_instance));
 }
 
 waypoint_list *find_waypoint_list_at_index(int index)
 {
-	Assert(index >= 0);
-
-	if (index >= 0 && index < (int)Waypoint_lists.size())
+	if (SCP_vector_inbounds(Waypoint_lists, index))
 		return &Waypoint_lists[index];
 
-	return NULL;
+	return nullptr;
 }
 
 waypoint *find_waypoint_at_index(waypoint_list *list, int index)
 {
-	Assert(list != NULL);
-	Assert(index >= 0);
-
-	if (index >= 0 && index < (int)list->get_waypoints().size())
+	if (list && SCP_vector_inbounds(list->get_waypoints(), index))
 		return &list->get_waypoints()[index];
 
-	return NULL;
+	return nullptr;
+}
+
+waypoint *find_waypoint_at_indexes(int list_index, int index)
+{
+	return find_waypoint_at_index(find_waypoint_list_at_index(list_index), index);
 }
 
 int find_index_of_waypoint_list(const waypoint_list *wp_list)
@@ -404,7 +411,7 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list)
 	Assert(wp_list.get_waypoints().size() <= 0xffff);
 }
 
-int waypoint_add(const vec3d *pos, int waypoint_instance)
+int waypoint_add(const vec3d *pos, int waypoint_instance, bool first_waypoint_in_list)
 {
 	Assert(pos != NULL);
 	waypoint_list *wp_list;
@@ -416,29 +423,35 @@ int waypoint_add(const vec3d *pos, int waypoint_instance)
 	{
 		// get a name for it
 		char buf[NAME_LENGTH];
-		waypoint_find_unique_name(buf, (int)(Waypoint_lists.size() + 1));
+		waypoint_find_unique_name(buf, static_cast<int>(Waypoint_lists.size()) + 1);
 
 		// add new list with that name
-		waypoint_list new_list(buf);
-		Waypoint_lists.push_back(new_list);
+		Waypoint_lists.emplace_back(buf);
 		wp_list = &Waypoint_lists.back();
 
 		// set up references
-		wp_list_index = (int)(Waypoint_lists.size() - 1);
-		wp_index = (int) wp_list->get_waypoints().size();
+		wp_list_index = static_cast<int>(Waypoint_lists.size()) - 1;
+		wp_index = static_cast<int>(wp_list->get_waypoints().size());
 	}
-	// create the waypoint on the same list as, and immediately after, waypoint_instance
+	// create the waypoint on the same list as, and immediately after, waypoint_instance (unless it's the first waypoint)
 	else
 	{
 		calc_waypoint_indexes(waypoint_instance, wp_list_index, wp_index);
 		wp_list = find_waypoint_list_at_index(wp_list_index);
 
-		// theoretically waypoint_instance points to a current waypoint, so advance past it
-		wp_index++;
+		if (first_waypoint_in_list)
+		{
+			wp_index = 0;
+		}
+		else
+		{
+			// theoretically waypoint_instance points to a current waypoint, so advance past it
+			wp_index++;
+		}
 
 		// it has to be on, or at the end of, an existing list
 		Assert(wp_list != NULL);
-		Assert((uint) wp_index <= wp_list->get_waypoints().size());
+		Assert(wp_index <= static_cast<int>(wp_list->get_waypoints().size()));
 
 		// iterate through all waypoints that are at this index or later,
 		// and edit their instances so that they point to a waypoint one place higher

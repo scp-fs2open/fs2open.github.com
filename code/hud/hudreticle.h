@@ -44,14 +44,16 @@ protected:
 	int firepoint_scale_y;
 	int autoaim_frame_offset;
 	bool has_autoaim_lock;
+	int flight_cursor_frame_offset;
 public:
 	HudGaugeReticle();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initBitmaps(char *fname);
 	void pageIn() override;
 	void initFirepointDisplay(bool firepoint, int scaleX, int scaleY, int size);
 	void getFirepointStatus();
 	void setAutoaimFrame(int framenum);
+	void setFlightCursorFrame(int framenum);
 };
 
 class HudGaugeThrottle: public HudGauge
@@ -104,12 +106,12 @@ public:
 	void showBackground(bool show);
 	void initBitmaps(char *fname);
 
-	void render(float frametime) override;
-	void renderThrottleSpeed(float current_speed, int y_end);
-	void renderThrottleLine(int y);
-	void renderThrottleForeground(int y_end);
-	void renderThrottleBackground(int y_end);
-	void renderMatchSpeedIcon(int x, int y);
+	void render(float frametime, bool config = false) override;
+	void renderThrottleSpeed(float current_speed, int y_scaled, bool config);
+	void renderThrottleLine(int y_unscaled, int y_scaled, bool config);
+	void renderThrottleForeground(int y_unscaled, int y_scaled, bool config);
+	void renderThrottleBackground(int y_unscaled, bool config);
+	void renderMatchSpeedIcon(int x, int y, float scale, bool config);
 
 	void pageIn() override;
 };
@@ -135,11 +137,11 @@ public:
 	void initBitmaps(char *fname_arc, char *fname_laser, char *fname_lock);
 	void initLaserWarnOffsets(int x, int y);
 	void initLockWarnOffsets(int x, int y);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void initialize() override;
 	void pageIn() override;
-	void renderLaserThreat();
-	void renderLockThreat();
+	void renderLaserThreat(bool config);
+	void renderLockThreat(bool config);
 };
 
 class HudGaugeWeaponLinking: public HudGauge
@@ -162,11 +164,12 @@ public:
 		char *fname_secondary_link_1, 
 		char *fname_secondary_link_2, 
 		char *fname_secondary_link_3);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 
 void hud_init_reticle();
 void hud_update_reticle( player *pp );
+void hud_reticle_set_flight_cursor_offset();
 
 #endif

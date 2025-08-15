@@ -45,7 +45,7 @@ extern int find_player(net_addr* addr);
 extern int find_player_no_port(net_addr *addr);
 extern int find_player_index(short player_id);
 extern int find_player_socket(PSNET_SOCKET_RELIABLE sock);	// note this is only valid to do on a server!
-extern int multi_find_player_by_object( object *obj );
+extern int multi_find_player_by_object( const object *obj );
 extern int multi_find_player_by_signature( int signature );
 extern int multi_find_player_by_callsign(const char *callsign);
 extern int multi_find_player_by_net_signature(ushort net_signature);

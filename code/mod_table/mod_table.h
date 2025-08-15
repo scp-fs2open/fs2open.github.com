@@ -20,6 +20,12 @@ typedef enum {
 	OH_ROTATING
 } overhead_style;
 
+// Typedef for Escape key behavior --wookieejedi
+typedef enum {
+	DEFAULT,
+	SAVE
+} EscapeKeyBehaviorInOptions;
+
 // And one for splash screens
 struct splash_screen {
 	SCP_string filename;
@@ -35,6 +41,7 @@ struct splash_screen {
 
 extern int Directive_wait_time;
 extern bool True_loop_argument_sexps;
+extern bool Skybox_internal_depth_consistency;
 extern bool Fixed_turret_collisions;
 extern bool Fixed_missile_detonation;
 extern bool Damage_impacted_subsystem_first;
@@ -42,6 +49,9 @@ extern bool Cutscene_camera_displays_hud;
 extern bool Alternate_chaining_behavior;
 extern bool Fixed_chaining_to_repeat;
 extern bool Use_host_orientation_for_set_camera_facing;
+extern bool Use_model_eyepoint_for_set_camera_host;
+extern bool Use_model_eyepoint_normals;
+extern bool Always_show_directive_value_count;
 extern bool Use_3d_ship_select;
 extern int Default_ship_select_effect;
 extern bool Use_3d_ship_icons;
@@ -49,11 +59,15 @@ extern bool Use_3d_weapon_select;
 extern int Default_weapon_select_effect;
 extern bool Use_3d_weapon_icons;
 extern bool Use_3d_overhead_ship;
+extern color Default_fs2_effect_grid_color;
+extern color Default_fs2_effect_scanline_color;
+extern color Default_fs2_effect_wireframe_color;
+extern int Default_fs2_effect_grid_density;
 extern overhead_style Default_overhead_ship_style;
 extern int Default_fiction_viewer_ui;
 extern bool Enable_external_shaders;
 extern bool Enable_external_default_scripts;
-extern int Default_detail_level;
+extern DefaultDetailPreset Default_detail_preset;
 extern bool Full_color_head_anis;
 extern bool Dont_automatically_select_turret_when_targeting_ship;
 extern bool Automatically_select_subsystem_under_reticle_when_targeting_same_ship;
@@ -85,6 +99,7 @@ extern bool Use_tabled_strings_for_default_language;
 extern bool No_built_in_languages;
 extern bool Dont_preempt_training_voice;
 extern SCP_string Movie_subtitle_font;
+extern std::array<int, 4> Movie_subtitle_rgba;
 extern bool Enable_scripts_in_fred;
 extern SCP_string Window_icon_path;
 extern bool Disable_built_in_translations;
@@ -129,12 +144,15 @@ extern std::tuple<float, float, float, float> Shadow_distances;
 extern std::tuple<float, float, float, float> Shadow_distances_cockpit;
 extern bool Show_ship_casts_shadow;
 extern bool Cockpit_shares_coordinate_space;
+extern bool Show_ship_only_if_cockpits_enabled;
 extern bool Custom_briefing_icons_always_override_standard_icons;
 extern float Min_pixel_size_thruster;
 extern float Min_pixel_size_beam;
 extern float Min_pizel_size_muzzleflash;
 extern float Min_pixel_size_trail;
 extern float Min_pixel_size_laser;
+extern float Do_not_render_lasers_below_length;
+extern float Do_not_render_lasers_below_radius;
 extern bool Supernova_hits_at_zero;
 extern bool Show_subtitle_uses_pixels;
 extern int Show_subtitle_screen_base_res[];
@@ -154,12 +172,28 @@ extern bool SCPUI_loads_hi_res_animations;
 extern bool Auto_assign_personas;
 extern bool Countermeasures_use_capacity;
 extern bool Play_thruster_sounds_for_player;
+extern bool Unify_minimum_engine_sound;
+extern bool Disabled_or_disrupted_engines_silent;
 extern std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 extern bool Randomize_particle_rotation;
+extern bool Disable_shield_effects;
 extern bool Calculate_subsystem_hitpoints_after_parsing;
 extern bool Disable_internal_loadout_restoration_system;
 extern bool Contrails_use_absolute_speed;
+extern bool Use_new_scanning_behavior;
 extern bool Lua_API_returns_nil_instead_of_invalid_object;
+extern bool Dont_show_callsigns_in_escort_list;
+extern bool Hide_main_rearm_items_in_comms_gauge;
+extern bool Fix_scripted_velocity;
+extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
+extern bool Preload_briefing_icon_models;
+extern EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
+extern bool Fix_asteroid_bounding_box_check;
+extern bool Disable_intro_movie;
+extern bool Show_locked_status_scramble_missions;
+extern bool Disable_expensive_turret_target_check;
+extern float Shield_percent_skips_damage;
+extern float Min_radius_for_persistent_debris;
 
 void mod_table_init();
 void mod_table_post_process();

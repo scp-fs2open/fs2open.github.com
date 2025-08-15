@@ -75,7 +75,7 @@ HudGauge(HUD_OBJECT_ESCORT, HUD_ESCORT_VIEW, false, false, (VM_EXTERNAL | VM_DEA
 {
 }
 
-void HudGaugeEscort::initHeaderText(char *text)
+void HudGaugeEscort::initHeaderText(const char *text)
 {
 	strcpy_s(header_text, text);
 }
@@ -135,7 +135,7 @@ void HudGaugeEscort::initRightAlignNames(bool align)
 	right_align_names = align;
 }
 
-void HudGaugeEscort::initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom)
+void HudGaugeEscort::initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom)
 {
 	Escort_gauges[0].first_frame = bm_load_animation(fname_top, &Escort_gauges[0].num_frames);
 	if (Escort_gauges[0].first_frame == -1) {
@@ -234,171 +234,240 @@ int HudGaugeEscort::setGaugeColorEscort(int index, int team)
 	return is_flashing;
 }
 
-void HudGaugeEscort::render(float  /*frametime*/)
+void HudGaugeEscort::render(float  /*frametime*/, bool config)
 {
-	int	i = 0;
-
 	if (Escort_gauges[0].first_frame < 0)
 		return;
 
-	if ( !Show_escort_view ) {
+	if (!config && !Show_escort_view ) {
 		return;
 	}
 
-	if ( Escort_ships.empty() ) {
+	if (!config && Escort_ships.empty() ) {
 		return;
+	}
+
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
 	}
 
 	// hud_set_default_color();
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 
 	// draw the top of the escort view
-	renderBitmap(Escort_gauges[0].first_frame, position[0], position[1]);	
-	renderString(position[0] + header_text_offsets[0], position[1] + header_text_offsets[1], header_text);
+	renderBitmap(Escort_gauges[0].first_frame, x, y, scale, config);	
+	renderString(x + fl2i(header_text_offsets[0] * scale), y + fl2i(header_text_offsets[1] * scale), header_text, scale, config);
 
-	int x = position[0] + list_start_offsets[0];
-	int y = position[1] + list_start_offsets[1];
+	int lx = x + fl2i(list_start_offsets[0] * scale);
+	int ly = y + fl2i(list_start_offsets[1] * scale);
 
-	//This is temporary
-	int num_escort_ships = std::min(hud_escort_num_ships_on_list(), Max_escort_ships) - 1;
-	i=0;
+	//This is temporary. Oh really?
+	int num_escort_ships = config ? 2 : std::min(hud_escort_num_ships_on_list(), Max_escort_ships) - 1;
+	if (num_escort_ships > 0) {
+		for (int i = 0; i < num_escort_ships; i++) {
+			renderBitmap(Escort_gauges[1].first_frame, lx, ly, scale, config);
+			renderIcon(lx, ly, i, scale, config);
 
-	if(num_escort_ships > 0)
-	{
-		for(; i < num_escort_ships; i++)
-		{
-			if(i != 0)
-			{
-				x += entry_stagger_w;
-				y += entry_h;
-			}
-			renderBitmap(Escort_gauges[1].first_frame, x, y);
-			
-			//Now we just show the ships info
-			renderIcon(x, y, i);
+			// Apply offset for next entry
+			lx += fl2i(entry_stagger_w * scale);
+			ly += fl2i(entry_h * scale);
 		}
-
-		//Increment for last entry
-		x += entry_stagger_w;
-		y += entry_h;
 	}
 
-	//Show the last escort entry
-	renderBitmap(Escort_gauges[2].first_frame, x, y + bottom_bg_offset);
-	renderIcon(x, y, i);
+	// Show the last escort entry (already positioned correctly)
+	renderBitmap(Escort_gauges[2].first_frame, lx, ly + fl2i(bottom_bg_offset * scale), scale, config);
+	renderIcon(lx, ly, num_escort_ships, scale, config);
+
+	// Now that we know the height of the list, we can send the coords to hud config
+	if (config) {
+		int bmw, bmh;
+		bm_get_info(Escort_gauges[2].first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, lx + fl2i(bmw * scale), y, ly + fl2i(bmh * scale));
+	}
 }
 
 // draw the shield icon and integrity for the escort ship
-void HudGaugeEscort::renderIcon(int x, int y, int index)
+void HudGaugeEscort::renderIcon(int x, int y, int index, float scale, bool config)
 {
-	if(MULTI_DOGFIGHT && index <= 2)
+	if(!config && MULTI_DOGFIGHT && index <= 2)
 	{
 		renderIconDogfight(x, y, index);
 		return;
 	}
 
-	float	shields, integrity;
-	int		screen_integrity, offset, objnum = -1;
-	char	buf[255];
-
 	auto eship = get_escort_entry_from_index(index);
 
-	if (eship == Escort_ships.end()) {
+	if (!config && eship == Escort_ships.end()) {
 		return;
 	}
 
-	if ( (Game_mode & GM_MULTIPLAYER) && (eship->np_id >= 0) ) {
-		int np_index = find_player_index(eship->np_id);
+	int objnum = -1;
+	if (!config) {
+		if ((Game_mode & GM_MULTIPLAYER) && (eship->np_id >= 0)) {
+			int np_index = find_player_index(eship->np_id);
 
-		if (np_index >= 0) {
-			objnum = Net_players[np_index].m_player->objnum;
+			if (np_index >= 0) {
+				objnum = Net_players[np_index].m_player->objnum;
 
-			// this can occassionally happen in multi when a player still needs to respawn.
-			if (objnum < 0 || Objects[objnum].type != OBJ_SHIP){
-				return;
+				// this can occassionally happen in multi when a player still needs to respawn.
+				if (objnum < 0 || Objects[objnum].type != OBJ_SHIP) {
+					return;
+				}
 			}
-			
+
+		} else {
+			objnum = eship->objnum;
 		}
 
+		if (objnum < 0) {
+			return;
+		}
+	}
+
+	object* objp = nullptr;
+	ship* sp = nullptr;
+
+	if (!config) {
+		objp = &Objects[objnum];
+		sp = &Ships[objp->instance];
+
+		// determine if its "friendly" or not
+		// Goober5000 - changed in favor of just passing the team
+		setGaugeColorEscort(index, sp->team);
 	} else {
-		objnum = eship->objnum;
+		// For config we do friendly, friendly disable, and hostile in that order
+		// But try to find defined IFFs that match, else just use red and green
+		bool found;
+		switch (index) {
+		case 2:
+			// Try to find hostile
+			found = false;
+			for (iff_info& iff : Iff_info) {
+				if (!stricmp(iff.iff_name, "hostile")) {
+					gr_set_color_fast(iff_get_color(iff.color_index, false));
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				gr_set_color_fast(&Color_bright_red);
+			}
+			break;
+		default:
+			// Try to find friendly
+			found = false;
+			for (iff_info& iff : Iff_info) {
+				if (!stricmp(iff.iff_name, "friendly")) {
+					gr_set_color_fast(iff_get_color(iff.color_index, false));
+					found = true;
+					break;
+				}
+			}
+			if (!found) {
+				gr_set_color_fast(&Color_bright_green);
+			}
+			break;
+		}
 	}
-
-	if (objnum < 0) {
-		return;
-	}
-
-	object	*objp	= &Objects[objnum];
-	ship	*sp		= &Ships[objp->instance];
-
-	// determine if its "friendly" or not	
-	// Goober5000 - changed in favor of just passing the team
-	setGaugeColorEscort(index, sp->team);
-	/*
-	if(Player_ship != NULL){
-		hud_escort_set_gauge_color(index, (sp->team == Player_ship->team) ? 1 : 0);
-	} else {
-		hud_escort_set_gauge_color(index, 1);
-	}
-	*/
 
 	// draw a 'D' if a ship is disabled
-	if ( (sp->flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) ) {		
-		renderString( x + ship_status_offsets[0], y + ship_status_offsets[1], EG_NULL, XSTR( "D", 284));				
+	if ((config && index == 1) || (!config && (( (sp->flags[Ship::Ship_Flags::Disabled]) || (ship_subsys_disrupted(sp, SUBSYSTEM_ENGINE)) )))) {		
+		renderString( x + fl2i(ship_status_offsets[0] * scale), y + fl2i(ship_status_offsets[1] * scale), EG_NULL, XSTR( "D", 284), scale, config);				
 	}
 
 	// print out ship name
 	// original behavior replaced with similar logic to hudtargetbox.cpp, except
 	// if the name is hidden, it's replaced with the class name.
-	if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) || (sp->flags[Ship::Ship_Flags::Hide_ship_name]))
-	{
-		// If we're hiding the ship name, we probably shouldn't append the callsign either
-		hud_stuff_ship_class(buf, sp);
-	}
-	else
-	{
-		hud_stuff_ship_name(buf, sp);
+	char buf[255];
+	if (!config) {
+		if (((Iff_info[sp->team].flags & IFFF_WING_NAME_HIDDEN) && (sp->wingnum != -1)) ||
+			(sp->flags[Ship::Ship_Flags::Hide_ship_name])) {
+			// If we're hiding the ship name, we probably shouldn't append the callsign either
+			hud_stuff_ship_class(buf, sp);
+		} else {
+			hud_stuff_ship_name(buf, sp);
 
-		// maybe concatenate the callsign
-		if (*buf)
-		{
-			char callsign[NAME_LENGTH];
+			if (!Dont_show_callsigns_in_escort_list) {
+				// maybe concatenate the callsign
+				if (*buf) {
+					char callsign[NAME_LENGTH];
 
-			hud_stuff_ship_callsign(callsign, sp);
-			if (*callsign)
-				sprintf(&buf[strlen(buf)], " (%s)", callsign);
+					hud_stuff_ship_callsign(callsign, sp);
+					if (*callsign)
+						sprintf(&buf[strlen(buf)], " (%s)", callsign);
+				}
+				// maybe substitute the callsign
+				else {
+					hud_stuff_ship_callsign(buf, sp);
+				}
+			}
 		}
-		// maybe substitute the callsign
-		else
-		{
-			hud_stuff_ship_callsign(buf, sp);
+	} else {
+		switch (index) {
+		case 0:
+			strcpy(buf, "Friendly Ship");
+			break;
+		case 1:
+			strcpy(buf, "Friendly Disabled Ship");
+			break;
+		case 2:
+			strcpy(buf, "Hostile Ship");
+			break;
+		default:
+			strcpy(buf, "Escort Ship");
+			break;
 		}
 	}
 
-	const int w = font::force_fit_string(buf, 255, ship_name_max_width);
+	const int w = font::force_fit_string(buf, 255, fl2i(ship_name_max_width * scale), scale);
 	
 	if (right_align_names) {
-		renderString( x + ship_name_offsets[0] + ship_name_max_width - w, y + ship_name_offsets[1], EG_ESCORT1 + index, buf);
+		renderString( x + fl2i(ship_name_offsets[0] * scale) + fl2i(ship_name_max_width * scale) - w, y + fl2i(ship_name_offsets[1] * scale), EG_ESCORT1 + index, buf, scale, config);
 	} else {
-		renderString( x + ship_name_offsets[0], y + ship_name_offsets[1], EG_ESCORT1 + index, buf);
+		renderString( x + fl2i(ship_name_offsets[0] * scale), y + fl2i(ship_name_offsets[1] * scale), EG_ESCORT1 + index, buf, scale, config);
 	}
 
+	int screen_integrity;
+
 	// show ship integrity
-	hud_get_target_strength(objp, &shields, &integrity);
-	screen_integrity = (int)std::lround(integrity * 100);
-	offset = 0;
-	if ( screen_integrity < 100 ) {
+	float integrity = 0.0f;
+	if (!config) {
+		float shields;
+		hud_get_target_strength(objp, &shields, &integrity);
+		screen_integrity = fl2i(std::lround(integrity * 100));
+	} else {
+		switch (index) {
+		case 1:
+			screen_integrity = 25;
+			break;
+		case 2:
+			screen_integrity = 50;
+			break;
+		default:
+			screen_integrity = 100;
+			break;
+		}
+	}
+
+	// set offsets based on integrity
+	int offset = 0;
+	if (screen_integrity < 100) {
 		offset = 2;
-		if ( screen_integrity == 0 ) {
-			if ( integrity > 0 ) {
+		if (screen_integrity == 0) {
+			if (integrity > 0) {
 				screen_integrity = 1;
 			}
 		}
 	}
-	renderPrintf( x+ship_integrity_offsets[0] + offset, y+ship_integrity_offsets[1], EG_NULL, "%d", screen_integrity);
+
+	renderPrintfWithGauge( x+fl2i(ship_integrity_offsets[0] * scale) + offset, y+fl2i(ship_integrity_offsets[1] * scale), EG_NULL, scale, config, "%d", screen_integrity);
 
 	//Let's be nice.
-	setGaugeColor();
+	setGaugeColor(HUD_C_NONE, config);
 }
 
 // multiplayer dogfight
@@ -450,9 +519,9 @@ void HudGaugeEscort::renderIconDogfight(int x, int y, int index)
 
 	// show ship integrity
 	if(objp == NULL){	
-		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
+		renderPrintfWithGauge( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, 1.0f, false, "%d", Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	} else {
-		renderPrintf( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
+		renderPrintfWithGauge( x+ship_integrity_offsets[0] - stat_shift, y+ship_integrity_offsets[1], EG_NULL, 1.0f, false, "(%d%%) %d", hull_integrity, Net_players[np_index].m_player->stats.m_kill_count_ok);	
 	}
 }
 
@@ -882,7 +951,7 @@ void hud_remove_ship_from_escort(int objnum)
  * @param objp      The object hit
  * @param quadrant  Shield quadrant on the object that was hit, alternatively -1 if no shield
  */
-void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
+void hud_escort_ship_hit(const object *objp, int  /*quadrant*/)
 {
 	// no ships on the escort list in multiplayer dogfight
 	if(MULTI_DOGFIGHT){
@@ -894,7 +963,7 @@ void hud_escort_ship_hit(object *objp, int  /*quadrant*/)
 	for (auto &es : Escort_ships) {
 		if (es.objnum == objnum) {
 			hud_gauge_popup_start(HUD_ESCORT_VIEW);
-			es.escort_hit_timer = timestamp(SHIELD_HIT_DURATION);
+			es.escort_hit_timer = timestamp(SHIELD_HIT_FLASH_DURATION);
 			es.escort_hit_next_flash = timestamp(SHIELD_FLASH_INTERVAL);
 			break;
 		}

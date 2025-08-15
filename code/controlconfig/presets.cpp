@@ -1,7 +1,9 @@
 #include "controlconfig/controlsconfig.h"
 #include "controlconfig/presets.h"
+#include "gamesequence/gamesequence.h"
 #include "libs/jansson.h"
 #include "parse/parselo.h"
+#include "popup/popup.h"
 
 #include <jansson.h>
 
@@ -43,7 +45,7 @@ void load_preset_files(SCP_string clone) {
 	std::unique_ptr<PresetFileHandler> handler = nullptr;
 
 	for (const auto &file : filelist) {
-		CFILE* fp = cfopen((file + ".json").c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+		CFILE* fp = cfopen((file + ".json").c_str(), "r", CF_TYPE_PLAYER_BINDS, false,
 						   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 		if (!fp) {
@@ -133,8 +135,12 @@ void load_preset_files(SCP_string clone) {
 			Control_config_presets.push_back(preset);
 
 		} else if ((it->name != preset.name) || (it->type != Preset_t::pst)) {
-			// Complain and ignore if the preset names or the type differs
-			Warning(LOCATION, "PST => Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			if (gameseq_get_state() == GS_STATE_CONTROL_CONFIG) {
+				popup(PF_TITLE_WHITE | PF_USE_AFFIRMATIVE_ICON, 1, POPUP_OK, "Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			} else {
+				// Complain and ignore if the preset names or the type differs
+				Warning(LOCATION, "PST => Preset '%s' is a duplicate of an existing preset, ignoring", preset.name.c_str());
+			}
 		
 		} // else, silent ignore
 	}
@@ -184,7 +190,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	std::unique_ptr<PresetFileHandler> handler = nullptr;
 
 	// Check if there's a file already
-	CFILE* fp = cfopen(filename.c_str(), "r", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+	CFILE* fp = cfopen(filename.c_str(), "r", CF_TYPE_PLAYER_BINDS, false,
 	                  CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	
 	if ((fp != nullptr) && !overwrite) {
@@ -193,7 +199,7 @@ bool save_preset_file(CC_preset preset, bool overwrite) {
 	}
 
 	// Try opening file for write
-	fp = cfopen(filename.c_str(), "w", CFILE_NORMAL, CF_TYPE_PLAYER_BINDS, false,
+	fp = cfopen(filename.c_str(), "w", CF_TYPE_PLAYER_BINDS, false,
 					   CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 
 	if (!fp) {

@@ -43,6 +43,7 @@
 #include "scripting/scripting.h"
 #include "tracing/tracing.h"
 #include "utils/boost/hash_combine.h"
+#include "utils/string_utils.h"
 #include "gamesequence/gamesequence.h"
 
 #ifdef WITH_OPENGL
@@ -78,7 +79,8 @@ gr_capability_def gr_capabilities[] = {
 	GR_CAPABILITY_ENTRY(SEPARATE_BLEND_FUNCTIONS),
 	GR_CAPABILITY_ENTRY(PERSISTENT_BUFFER_MAPPING),
 	gr_capability_def {gr_capability::CAPABILITY_BPTC, "BPTC Texture Compression"}, //This one had a different parse string already!
-	GR_CAPABILITY_ENTRY(LARGE_SHADER)
+	GR_CAPABILITY_ENTRY(LARGE_SHADER),
+	GR_CAPABILITY_ENTRY(INSTANCED_RENDERING),
 };
 
 const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilities[0]);
@@ -88,6 +90,8 @@ const size_t gr_capabilities_num = sizeof(gr_capabilities) / sizeof(gr_capabilit
 const char* Resolution_prefixes[GR_NUM_RESOLUTIONS] = {"", "2_"};
 
 screen gr_screen;
+
+lua_screen gr_lua_screen;
 
 color_gun Gr_red, Gr_green, Gr_blue, Gr_alpha;
 color_gun Gr_t_red, Gr_t_green, Gr_t_blue, Gr_t_alpha;
@@ -137,22 +141,60 @@ static bool gamma_change_listener(float new_val, bool initial)
 	return true;
 }
 
+static void parse_gamma_func()
+{
+	float value;
+	stuff_float(&value);
+
+	constexpr float EPSILON = 0.0001f;
+
+	if (value < 0.1f - EPSILON || value > 5.0f + EPSILON) {
+		error_display(0, "%f is not a valid gamma value! (Out of range)", value);
+		return;
+	}
+
+	float expected_i = value / 0.05f;
+	int i = fl2i(std::round(expected_i));
+
+	if (std::abs(value - (0.05f * i)) < EPSILON && i >= 2 && i <= 100) {
+		Gr_gamma = value;
+		return;
+	}
+
+	error_display(0, "%f is not a valid gamma value! (Invalid increment)", value);
+}
+
 static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma",
                      std::pair<const char*, int>{"Brightness", 1375},
                      std::pair<const char*, int>{"The brightness value used for the game window", 1738})
                      .category(std::make_pair("Graphics", 1825))
-                     .default_val(1.0f)
+                     .default_func([]() { return Gr_gamma; })
                      .enumerator(gamma_value_enumerator)
                      .display(gamma_display)
                      .change_listener(gamma_change_listener)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_gamma_func)
                      .finish();
 
+static void parse_lighting_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::Lighting, value[i]);
+		}
+	}
+}
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
-                                                                                   { 1, {"Low", 1161}},
-                                                                                   { 2, {"Medium", 1162}},
-                                                                                   { 3, {"High", 1163}},
+                                                                                   { 1, {"Low", 1160}},
+                                                                                   { 2, {"Medium", 1161}},
+                                                                                   { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
 
 const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Lighting",
@@ -161,7 +203,7 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                      .importance(1)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([]() { return Detail.lighting; })
                      .change_listener([](int val, bool initial) {
                           Detail.lighting = val;
                           if (!initial) {
@@ -170,9 +212,10 @@ const auto LightingOption __UNUSED = options::OptionBuilder<int>("Graphics.Light
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_lighting_func)
                      .finish();
 
-os::ViewportState Gr_configured_window_state = os::ViewportState::Windowed;
+os::ViewportState Gr_configured_window_state = os::ViewportState::Fullscreen;
 
 static bool mode_change_func(os::ViewportState state, bool initial)
 {
@@ -192,6 +235,21 @@ static bool mode_change_func(os::ViewportState state, bool initial)
 	return true;
 }
 
+static void parse_window_mode_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+	if (lcase_equal(value, "windowed")) {
+		Gr_configured_window_state = os::ViewportState::Windowed;
+	} else if (lcase_equal(value, "borderless")) {
+		Gr_configured_window_state = os::ViewportState::Borderless;
+	} else if (lcase_equal(value, "fullscreen")) {
+		Gr_configured_window_state = os::ViewportState::Fullscreen;
+	} else {
+		error_display(0, "%s is an invalide window mode", value.c_str());
+	}
+}
+
 static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState>("Graphics.WindowMode",
                      std::pair<const char*, int>{"Window Mode", 1772},
                      std::pair<const char*, int>{"Controls how the game window is created", 1773})
@@ -201,12 +259,18 @@ static auto WindowModeOption __UNUSED = options::OptionBuilder<os::ViewportState
                               {os::ViewportState::Borderless, {"Borderless", 1675}},
                               {os::ViewportState::Windowed, {"Windowed", 1676}}})
                      .importance(98)
-                     .default_val(os::ViewportState::Fullscreen)
+                     .default_func([]() { return Gr_configured_window_state; })
                      .change_listener(mode_change_func)
+                     .parser(parse_window_mode_func)
                      .finish();
 
+void removeWindowModeOption()
+{
+	options::OptionsManager::instance()->removeOption(WindowModeOption);
+}
+
 const std::shared_ptr<scripting::OverridableHook<>> OnFrameHook = scripting::OverridableHook<>::Factory(
-	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, tl::nullopt, CHA_ONFRAME);
+	"On Frame", "Called every frame as the last action before showing the frame result to the user.", {}, std::nullopt, CHA_ONFRAME);
 
 // z-buffer stuff
 int gr_zbuffering        = 0;
@@ -283,6 +347,10 @@ static bool videodisplay_change(int display, bool initial)
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
+
+// Video display cannot support default settings because graphics have not been
+// initialized so we can't validate the setting. But also, this should probably
+// only ever be a user setting
 static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
                      std::pair<const char*, int>{"The display used for rendering", 1742})
@@ -338,8 +406,18 @@ static SCP_vector<ResolutionInfo> resolution_enumerator()
 
 		auto res = ResolutionInfo(mode.w, mode.h);
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
-			out.push_back(res);
+			out.emplace_back(res);
 		}
+	}
+
+	return out;
+}
+static SCP_vector<ResolutionInfo> resolution_vr_enumerator()
+{
+	SCP_vector<ResolutionInfo> out;
+
+	for (int i = 1000; i <= 6000; i += 500) {
+		out.emplace_back(ResolutionInfo(i, i));
 	}
 
 	return out;
@@ -357,6 +435,10 @@ static ResolutionInfo resolution_default()
 		return {};
 	}
 	return {(uint32_t)mode.w, (uint32_t)mode.h};
+}
+static ResolutionInfo resolution_vr_default()
+{
+	return {(uint32_t)2500, (uint32_t)2500};
 }
 static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 {
@@ -393,6 +475,18 @@ static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
 	}
 	 */
 }
+
+static bool resolution_vr_change(const ResolutionInfo& /*info*/, bool initial)
+{
+	if (initial) {
+		return false;
+	}
+	return false;
+}
+
+// Resolution cannot support default settings because graphics have not been
+// initialized so we can't validate the setting. But also, this should probably
+// only ever be a user setting
 static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.Resolution",
                      std::pair<const char*, int>{"Resolution", 1748},
                      std::pair<const char*, int>{"The rendering resolution", 1749})
@@ -407,19 +501,78 @@ static auto ResolutionOption = options::OptionBuilder<ResolutionInfo>("Graphics.
                      .importance(100)
                      .finish();
 
-bool Gr_enable_soft_particles = false;
+void removeResolutionOption()
+{
+	options::OptionsManager::instance()->removeOption(ResolutionOption);
+}
+
+static auto ResolutionVROption = options::OptionBuilder<ResolutionInfo>("Graphics.ResolutionVR",
+	std::pair<const char*, int>{"VR Resolution", 1878},
+	std::pair<const char*, int>{"The rendering resolution when in VR mode", 1879})
+								   .category(std::make_pair("Graphics", 1825))
+								   .level(options::ExpertLevel::Beginner)
+								   .deserializer(resolution_deserializer)
+								   .serializer(resolution_serializer)
+								   .enumerator(resolution_vr_enumerator)
+								   .display(resolution_display)
+								   .default_func(resolution_vr_default)
+								   .change_listener(resolution_vr_change)
+								   .importance(101)
+								   .finish();
+
+void removeResolutionVROption()
+{
+	options::OptionsManager::instance()->removeOption(ResolutionVROption);
+}
+
+bool Gr_enable_soft_particles = true;
+
+static void parse_soft_particle_func() {
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_soft_particles = value;
+}
 
 static auto SoftParticlesOption __UNUSED = options::OptionBuilder<bool>("Graphics.SoftParticles",
                      std::pair<const char*, int>{"Soft Particles", 1761},
                      std::pair<const char*, int>{"Enable or disable soft particle rendering", 1762})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_enable_soft_particles; })
                      .bind_to_once(&Gr_enable_soft_particles)
                      .importance(68)
+                     .parser(parse_soft_particle_func)
                      .finish();
 
-flagset<FramebufferEffects> Gr_framebuffer_effects;
+flagset<FramebufferEffects> Gr_framebuffer_effects{};
+
+static void parse_framebuffer_func() {
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	// Convert to lowercase once
+    SCP_tolower(value);
+
+    // Use a map to associate strings with their respective actions
+    static const std::unordered_map<std::string, std::function<void()>> effectActions = {
+        {"shockwaves", []() { Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves); }},
+        {"thrusters",  []() { Gr_framebuffer_effects.set(FramebufferEffects::Thrusters); }},
+        {"all",        []() { 
+                              Gr_framebuffer_effects.set(FramebufferEffects::Shockwaves);
+                              Gr_framebuffer_effects.set(FramebufferEffects::Thrusters);
+        }},
+        {"none",       []() { /* No-op */ }}
+    };
+
+    auto it = effectActions.find(value);
+    if (it != effectActions.end()) {
+        Gr_framebuffer_effects = flagset<FramebufferEffects>(); // Clear only if valid
+        it->second(); // Execute the corresponding action
+    } else {
+        error_display(0, "%s is not a valid framebuffer effect setting", value.c_str());
+    }
+}
 
 static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<FramebufferEffects>>("Graphics.FramebufferEffects",
                      std::pair<const char*, int>{"Framebuffer effects", 1732},
@@ -430,13 +583,41 @@ static auto FramebufferEffectsOption __UNUSED = options::OptionBuilder<flagset<F
                               {{FramebufferEffects::Shockwaves}, {"Shockwaves", 1688}},
                               {{FramebufferEffects::Thrusters}, {"Thrusters", 1689}},
                               {{FramebufferEffects::Shockwaves, FramebufferEffects::Thrusters}, {"All", 1690}}})
-                     .default_val({})
+                     .default_func([]() { return Gr_framebuffer_effects; } )
                      .bind_to_once(&Gr_framebuffer_effects)
                      .importance(77)
+                     .parser(parse_framebuffer_func)
                      .finish();
 
 AntiAliasMode Gr_aa_mode = AntiAliasMode::None;
 AntiAliasMode Gr_aa_mode_last_frame = AntiAliasMode::None;
+
+static void parse_anti_aliasing_func() {
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	SCP_tolower(value);
+
+	// Map of valid values to AntiAliasMode
+	static const std::unordered_map<std::string, AntiAliasMode> aaModeMap = {
+		{"none", AntiAliasMode::None},
+		{"fxaa low", AntiAliasMode::FXAA_Low},
+		{"fxaa medium", AntiAliasMode::FXAA_Medium},
+		{"fxaa high", AntiAliasMode::FXAA_High},
+		{"smaa low", AntiAliasMode::SMAA_Low},
+		{"smaa medium", AntiAliasMode::SMAA_Medium},
+		{"smaa high", AntiAliasMode::SMAA_High},
+		{"smaa ultra", AntiAliasMode::SMAA_Ultra},
+	};
+
+	// Look up the value in the map
+	auto it = aaModeMap.find(value);
+	if (it != aaModeMap.end()) {
+		Gr_aa_mode = it->second; // Set the mode
+	} else {
+		error_display(0, "%s is not a valid anti aliasing setting", value.c_str());
+	}
+}
 
 static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.AAMode",
                      std::pair<const char*, int>{"Anti Aliasing", 1752},
@@ -451,12 +632,40 @@ static auto AAOption __UNUSED = options::OptionBuilder<AntiAliasMode>("Graphics.
                               {AntiAliasMode::SMAA_Medium, {"SMAA Medium", 1685}},
                               {AntiAliasMode::SMAA_High, {"SMAA High", 1686}},
                               {AntiAliasMode::SMAA_Ultra, {"SMAA Ultra", 1687}}})
-                     .default_val(AntiAliasMode::None)
+                     .default_func([]() { return Gr_aa_mode; } )
                      .bind_to(&Gr_aa_mode)
                      .importance(79)
+                     .parser(parse_anti_aliasing_func)
                      .finish();
 
 extern int Cmdline_msaa_enabled;
+
+static void parse_msaa_func()
+{
+	SCP_string value;
+	stuff_string(value, F_NAME);
+
+	// Convert to lowercase
+	SCP_string lowercase_value = value;
+	SCP_tolower(lowercase_value);
+
+	// Map valid values to MSAA settings
+	static const std::unordered_map<std::string, int> msaaMap = {
+		{"off", 0},
+		{"4 samples", 4},
+		{"8 samples", 8},
+		//{"16 samples", 16},
+	};
+
+	// Look up the value in the map
+	auto it = msaaMap.find(lowercase_value);
+	if (it != msaaMap.end()) {
+		Cmdline_msaa_enabled = it->second; // Set the MSAA level
+	} else {
+		error_display(0, "%s is not a valid MSAA setting", value.c_str());
+	}
+}
+
 static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamples",
                      std::pair<const char*, int>{"Multisample Anti Aliasing", 1758},
                      std::pair<const char*, int>{"Controls whether multisample anti asliasing is enabled, and with how many samples", 1759})
@@ -464,11 +673,11 @@ static auto MSAAOption __UNUSED = options::OptionBuilder<int>("Graphics.MSAASamp
                      .level(options::ExpertLevel::Advanced)
                      .values({{0, {"Off", 1693}},
                               {4, {"4 Samples", 1694}},
-                              {8, {"8 Samples", 1695}},
-                              {16, {"16 Samples", 1696}}})
-                     .default_val(0)
+                              {8, {"8 Samples", 1695}}})
+                     .default_func([]() { return Cmdline_msaa_enabled; } )
                      .bind_to_once(&Cmdline_msaa_enabled)
                      .importance(78)
+                     .parser(parse_msaa_func)
                      .finish();
 
 bool gr_is_fxaa_mode(AntiAliasMode mode)
@@ -479,6 +688,14 @@ bool gr_is_smaa_mode(AntiAliasMode mode) {
 	return mode == AntiAliasMode::SMAA_Low || mode == AntiAliasMode::SMAA_Medium || mode == AntiAliasMode::SMAA_High || mode == AntiAliasMode::SMAA_Ultra;
 }
 
+static void parse_post_processing_func()
+{
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_post_processing_enabled = value;
+}
+
 bool Gr_post_processing_enabled = true;
 
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
@@ -486,22 +703,37 @@ static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.
                      std::pair<const char*, int>{"Controls whether post processing is enabled in the engine.", 1727})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_post_processing_enabled; })
                      .bind_to_once(&Gr_post_processing_enabled)
                      .importance(69)
+                     .parser(parse_post_processing_func)        
                      .finish();
 
 bool Gr_enable_vsync = true;
+
+static void parse_vsync_func()
+{
+	bool value;
+	stuff_boolean(&value);
+
+	Gr_enable_vsync = value;
+}
 
 static auto VSyncOption __UNUSED = options::OptionBuilder<bool>("Graphics.VSync",
                      std::pair<const char*, int>{"Vertical Sync", 1766},
                      std::pair<const char*, int>{"Controls how the engine does vertical synchronization", 1767})
                      .category(std::make_pair("Graphics", 1825))
                      .level(options::ExpertLevel::Advanced)
-                     .default_val(true)
+                     .default_func([]() { return Gr_enable_vsync; })
                      .bind_to_once(&Gr_enable_vsync)
                      .importance(70)
+                     .parser(parse_vsync_func)  
                      .finish();
+
+void removeVSyncOption()
+{
+	options::OptionsManager::instance()->removeOption(VSyncOption);
+}
 
 static std::unique_ptr<graphics::util::UniformBufferManager> UniformBufferManager;
 
@@ -1510,9 +1742,21 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	}
 
 	if (Using_in_game_options) {
-		auto res = ResolutionOption->getValue();
-		width = res.width;
-		height = res.height;
+		if (Cmdline_enable_vr) {
+			// in VR mode, so set resolution using VR values 
+			// and hide/disable the default resolution option
+			auto res = ResolutionVROption->getValue();
+			width = res.width;
+			height = res.height;
+			removeResolutionOption();
+		} else {
+			// in non-VR mode, so set resolution using default values
+			// and hide/disable the VR resolution option
+			auto res = ResolutionOption->getValue();
+			width = res.width;
+			height = res.height;
+			removeResolutionVROption();
+		}
 	} else if ( !Is_standalone ) {
 		// We cannot continue without this, quit, but try to help the user out first
 		ptr = os_config_read_string(nullptr, NOX("VideocardFs2open"), nullptr);
@@ -1601,6 +1845,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		}
 	}
 
+	if (!Fred_running && !Cmdline_window_res.has_value()) {
+		// For whatever reason, it seems that a combination of Win 11 and presumably NVidia GPU's causes weird artifacts.
+		// These artifacts do not appear in windowed mode, or with an attached renderdoc / nvidia nsight.
+		// Similarly using the -window_res command line parameter prevents this.
+		// To the best of our knowledge, this is because all of the aforementioned methods route the rendering through another buffer
+		// (be that a window, a render overlay from nsight, or an FSO-internal buffer) instead of directly rendering to the OS-provided direct screen backbuffer.
+		// As the cost of -window_res is one single blit of a fullscreen buffer, it's probably an acceptable compromise to get rid of render artifacts.
+		// As such, forcibly enable -window_res at the screen resolution here, if we're in fullscreen.
+
+		// Additionally, SDL3+ doesn't work when reading from the GL_FRONT buffers, so we need our own intermediate buffers.
+		Cmdline_window_res.emplace(static_cast<uint16_t>(width), static_cast<uint16_t>(height));
+	}
+
 	if (d_mode == GR_DEFAULT) {
 		// OpenGL should be default
 		mode = GR_OPENGL;
@@ -1667,19 +1924,19 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 	height = 800;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #elif defined(_FORCE_DEBUG_1024)
 	width = 1024;
 	height = 768;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #elif defined(_FORCE_DEBUG_640)
 	width = 640;
 	height = 480;
 	depth = 32;
 	center_aspect_ratio = -1.0f;
-	Cmdline_window = 1;
+	Cmdline_window = true;
 #endif
 #endif
 
@@ -1863,7 +2120,29 @@ void gr_set_color( int r, int g, int b )
 
 void gr_set_color_fast(const color *dst)
 {
-	gr_screen.current_color = *dst;
+	if (gr_lua_context_active()) {
+		gr_lua_screen.current_color = *dst;
+	} else {
+		gr_screen.current_color = *dst;
+	}
+}
+
+//Compares the RGBA values of two colors. Returns true if the colors are identical
+bool gr_compare_color_values(const color& clr1, const color& clr2)
+{
+	if (clr1.red != clr2.red) {
+		return false;
+	}
+	if (clr1.green != clr2.green) {
+		return false;
+	}
+	if (clr1.blue != clr2.blue) {
+		return false;
+	}
+	if (clr1.alpha != clr2.alpha) {
+		return false;
+	}
+	return true;
 }
 
 // shader functions
@@ -1885,7 +2164,7 @@ void gr_set_shader(shader *shade)
 }
 
 // new bitmap functions
-void gr_bitmap(int _x, int _y, int resize_mode)
+void gr_bitmap(int _x, int _y, int resize_mode, bool mirror, float scale_factor)
 {
 	GR_DEBUG_SCOPE("2D Bitmap");
 
@@ -1898,6 +2177,11 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 	}
 
 	bm_get_info(gr_screen.current_bitmap, &_w, &_h, NULL, NULL, NULL);
+
+	if (scale_factor != 1.0f) {
+		_w = static_cast<int>(_w * scale_factor);
+		_h = static_cast<int>(_h * scale_factor);
+	}
 
 	x = i2fl(_x);
 	y = i2fl(_y);
@@ -1913,22 +2197,22 @@ void gr_bitmap(int _x, int _y, int resize_mode)
 
 	verts[0].screen.xyw.x = x;
 	verts[0].screen.xyw.y = y;
-	verts[0].texture_position.u = 0.0f;
+	verts[0].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[0].texture_position.v = 0.0f;
 
 	verts[1].screen.xyw.x = x + w;
 	verts[1].screen.xyw.y = y;
-	verts[1].texture_position.u = 1.0f;
+	verts[1].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[1].texture_position.v = 0.0f;
 
 	verts[2].screen.xyw.x = x + w;
 	verts[2].screen.xyw.y = y + h;
-	verts[2].texture_position.u = 1.0f;
+	verts[2].texture_position.u = mirror ? 0.0f : 1.0f;
 	verts[2].texture_position.v = 1.0f;
 
 	verts[3].screen.xyw.x = x;
 	verts[3].screen.xyw.y = y + h;
-	verts[3].texture_position.u = 0.0f;
+	verts[3].texture_position.u = mirror ? 1.0f : 0.0f;
 	verts[3].texture_position.v = 1.0f;
 
 	// turn off zbuffering
@@ -2789,7 +3073,7 @@ size_t hash<vertex_layout>::operator()(const vertex_layout& data) const {
 bool vertex_layout::resident_vertex_format(vertex_format_data::vertex_format format_type) const {
 	return ( Vertex_mask & vertex_format_data::mask(format_type) ) ? true : false;
 }
-void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset) {
+void vertex_layout::add_vertex_component(vertex_format_data::vertex_format format_type, size_t stride, size_t offset, size_t divisor, size_t buffer_number ) {
 	// A stride value of 0 is not handled consistently by the graphics API so we must enforce that that does not happen
 	Assertion(stride != 0, "The stride of a vertex component may not be zero!");
 
@@ -2798,15 +3082,16 @@ void vertex_layout::add_vertex_component(vertex_format_data::vertex_format forma
 		return;
 	}
 
-	if (Vertex_mask == 0) {
+	auto stride_it = Vertex_stride.find(buffer_number);
+	if (stride_it == Vertex_stride.end()) {
 		// This is the first element so we need to initialize the global stride here
-		Vertex_stride = stride;
+		stride_it = Vertex_stride.emplace(buffer_number, stride).first;
 	}
 
-	Assertion(Vertex_stride == stride, "The strides of all elements must be the same in a vertex layout!");
+	Assertion(stride_it->second == stride, "The strides of all elements must be the same in a vertex layout!");
 
 	Vertex_mask |= (1 << format_type);
-	Vertex_components.push_back(vertex_format_data(format_type, stride, offset));
+	Vertex_components.emplace_back(format_type, stride, offset, divisor, buffer_number);
 }
 bool vertex_layout::operator==(const vertex_layout& other) const {
 	if (Vertex_mask != other.Vertex_mask) {
@@ -2916,7 +3201,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 
 		for (x = 0; x < 256; x++) {
 			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0, 65535);
+			CLAMP(val, 0., 65535.);
 
 			base_ramp[x] = (ushort)val;
 		}
@@ -2924,7 +3209,7 @@ static void make_gamma_ramp(float gamma, ushort* ramp)
 		for (y = 0; y < 3; y++) {
 			for (x = 0; x < 256; x++) {
 				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0, 65535);
+				CLAMP(val, 0., 65535.);
 
 				ramp[x + y * 256] = (ushort)val;
 			}
@@ -2992,7 +3277,9 @@ bool gr_is_viewport_window()
 		return true;
 	}
 	
-	if (Using_in_game_options) {
+	if (Cmdline_enable_vr) {
+		return true;
+	} else if (Using_in_game_options) {
 		switch (Gr_configured_window_state)
 		{
 		case os::ViewportState::Windowed:
@@ -3009,4 +3296,12 @@ bool gr_is_viewport_window()
 	}
 
 	return false;
+}
+
+bool gr_lua_context_active() {
+	if (gr_lua_screen.force_fso_context) {
+		return false;
+	}
+
+	return gr_lua_screen.active;
 }

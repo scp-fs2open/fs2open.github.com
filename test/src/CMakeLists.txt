@@ -2,6 +2,9 @@
 include(source_groups.cmake)
 
 add_executable(unittests ${source_files})
+
+target_compile_features(unittests PUBLIC cxx_std_17)
+
 target_link_libraries(unittests PRIVATE gtest)
 target_link_libraries(unittests PRIVATE code)
 

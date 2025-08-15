@@ -51,8 +51,8 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 			operatorText = context->MINUS()->getText();
 		}
 
-		const auto leftExpr = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
-		const auto rightExpr = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto leftExpr = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(0)));
+		const auto rightExpr = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(1)));
 
 		auto operatorExpression = std::make_shared<nodes::FunctionCallExpression>(operatorTok,
 			true,
@@ -88,8 +88,8 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 	antlrcpp::Any visitRandom_range_expression(ActionExpressionParser::Random_range_expressionContext* context) override
 	{
 		auto expression = std::make_shared<nodes::RandomRangeExpression>(context->RAND_L_PAREN()->getSymbol(),
-			visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>(),
-			visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>());
+			std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(0))),
+			std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(1))));
 		return std::static_pointer_cast<nodes::AbstractExpression>(expression);
 	}
 	antlrcpp::Any visitLiteral_expression(ActionExpressionParser::Literal_expressionContext* context) override
@@ -122,9 +122,9 @@ class ExpressionBuilderVisitor : public ActionExpressionVisitor {
 	}
 	antlrcpp::Any visitVec3d_constructor(ActionExpressionParser::Vec3d_constructorContext* context) override
 	{
-		auto xExpression = visit(context->expression(0)).as<std::shared_ptr<nodes::AbstractExpression>>();
-		auto yExpression = visit(context->expression(1)).as<std::shared_ptr<nodes::AbstractExpression>>();
-		auto zExpression = visit(context->expression(2)).as<std::shared_ptr<nodes::AbstractExpression>>();
+		const auto xExpression = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(0)));
+		const auto yExpression = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(1)));
+		const auto zExpression = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(visit(context->expression(2)));
 
 		auto expression = std::make_shared<nodes::VectorConstructorExpression>(context->L_PAREN()->getSymbol(),
 			xExpression,
@@ -157,7 +157,7 @@ std::shared_ptr<nodes::AbstractExpression> ExpressionParser::parse(const ParseCo
 	if (errListener.diagnostics.empty()) {
 		// Only do semantic checking if syntax is valid
 		ExpressionBuilderVisitor builder;
-		exprReturn = tree->accept(&builder).as<std::shared_ptr<nodes::AbstractExpression>>();
+		exprReturn = std::any_cast<std::shared_ptr<nodes::AbstractExpression>>(tree->accept(&builder));
 
 		if (!exprReturn->validate(&parser, context)) {
 			exprReturn = nullptr;

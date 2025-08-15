@@ -209,10 +209,13 @@ int Game_shudder_total;
 float Game_shudder_intensity;
 void game_shudder_apply(int, float, bool, bool){}
 
+class object;
+class ship;
+
 int game_hacked_data(){return 0;}
 int game_single_step;
 int last_single_step;
-void game_tst_mark(class object *, class ship *){}
+void game_tst_mark(const object*, const ship*){}
 int tst;
 //int Player_multi_died_check;
 int Show_framerate = 0;
@@ -223,6 +226,9 @@ void game_feature_disabled_popup() {}
 
 void game_pause() {}
 void game_unpause() {}
+
+bool Pre_player_entry = false;
+bool game_actually_playing() { return false; }
 
 //Time stuff
 bool Time_compression_locked;

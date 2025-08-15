@@ -1,12 +1,6 @@
-Any.h: Change std::is_nothrow_copy_constructible to std::is_copy_constructible
-CMakeLists.txt:
- - Slight changes to avoid conflicts with Antlr license file
- - Removed searching for libuuid since it is not needed
-runtime/CMakeLists.txt:
- - Removed special output directory setting
- - Removed linking against libuuid
- - added target_compile_definitions to communicate interface definitions
- - added EXCLUDE_FROM_ALL to targets
- - Added "compiler platform" links to antlr targets
- - Disable installation rules
- - Removed _shared target since it it causing issues
+Stripped the CMake Files to no longer concern themselves with tests or demos.
+Force C++17.
+Disable shared target
+Commented out antlr4/runtime/Cpp/runtime/src/RuleContext.h Line 135 as per https://github.com/antlr/antlr4/issues/4608
+Remove variable shadowing in each constructor
+Renamed Utf8.h due to conflicts in dependent projects

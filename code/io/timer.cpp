@@ -180,16 +180,22 @@ UI_TIMESTAMP ui_timestamp() {
 
 TIMESTAMP timestamp_delta(TIMESTAMP stamp, int delta_ms)
 {
-	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+	if (!stamp.isFinite())
 		return stamp;
+
+	if (stamp.isImmediate())
+		return TIMESTAMP(timestamp_ms() + delta_ms);
 
 	return TIMESTAMP(stamp.value() + delta_ms);
 }
 
 UI_TIMESTAMP ui_timestamp_delta(UI_TIMESTAMP stamp, int delta_ms)
 {
-	if (!stamp.isValid() || stamp.isImmediate() || stamp.isNever())
+	if (!stamp.isFinite())
 		return stamp;
+
+	if (stamp.isImmediate())
+		return UI_TIMESTAMP(timer_get_milliseconds() + delta_ms);
 
 	return UI_TIMESTAMP(stamp.value() + delta_ms);
 }
@@ -299,6 +305,12 @@ UI_TIMESTAMP ui_timestamp(int delta_ms) {
 //	Negative value gives milliseconds ago that timestamp elapsed.
 int timestamp_until(int stamp)
 {
+	// handle special values
+	if (stamp <= 0)
+		return INT_MAX;
+	if (stamp == 1)
+		return 0;
+
 	// JAS: FIX
 	// HACK!! This doesn't handle rollover!
 	// (Will it ever happen?)
@@ -322,8 +334,8 @@ int timestamp_until(int stamp)
 
 int timestamp_until(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	if (!stamp.isValid() || stamp.isNever())
+	Assertion(stamp.isFinite(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	if (!stamp.isFinite())
 		return INT_MAX;
 
 	if (stamp.isImmediate())
@@ -334,8 +346,8 @@ int timestamp_until(TIMESTAMP stamp)
 
 int ui_timestamp_until(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	if (!stamp.isValid() || stamp.isNever())
+	Assertion(stamp.isFinite(), "timestamp_until was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	if (!stamp.isFinite())
 		return INT_MAX;
 
 	if (stamp.isImmediate())
@@ -346,13 +358,19 @@ int ui_timestamp_until(UI_TIMESTAMP stamp)
 
 int timestamp_since(int stamp)
 {
+	// handle special values
+	if (stamp <= 0)
+		return INT_MIN;
+	if (stamp == 1)
+		return 0;
+
 	return timestamp_ms() - stamp;
 }
 
 int timestamp_since(TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	if (!stamp.isValid() || stamp.isNever())
+	Assertion(stamp.isFinite(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	if (!stamp.isFinite())
 		return INT_MIN;
 
 	if (stamp.isImmediate())
@@ -363,8 +381,8 @@ int timestamp_since(TIMESTAMP stamp)
 
 int ui_timestamp_since(UI_TIMESTAMP stamp)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	if (!stamp.isValid() || stamp.isNever())
+	Assertion(stamp.isFinite(), "timestamp_since was called with a%s timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	if (!stamp.isFinite())
 		return INT_MIN;
 
 	if (stamp.isImmediate())
@@ -445,9 +463,9 @@ int ui_timestamp_compare(UI_TIMESTAMP t1, UI_TIMESTAMP t2)
 
 bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	Assertion(before.isValid() && !before.isNever(), "timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
-	Assertion(after.isValid() && !after.isNever(), "timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
+	Assertion(stamp.isFinite(), "timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isFinite(), "timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isFinite(), "timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
 
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
@@ -457,9 +475,9 @@ bool timestamp_in_between(TIMESTAMP stamp, TIMESTAMP before, TIMESTAMP after)
 
 bool ui_timestamp_in_between(UI_TIMESTAMP stamp, UI_TIMESTAMP before, UI_TIMESTAMP after)
 {
-	Assertion(stamp.isValid() && !stamp.isNever(), "ui_timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
-	Assertion(before.isValid() && !before.isNever(), "ui_timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
-	Assertion(after.isValid() && !after.isNever(), "ui_timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
+	Assertion(stamp.isFinite(), "ui_timestamp_in_between was called with a%s 'stamp' timestamp!", !stamp.isValid() ? "n invalid" : " Never");
+	Assertion(before.isFinite(), "ui_timestamp_in_between was called with a%s 'before' timestamp!", !before.isValid() ? "n invalid" : " Never");
+	Assertion(after.isFinite(), "ui_timestamp_in_between was called with a%s 'after' timestamp!", !after.isValid() ? "n invalid" : " Never");
 
 	if (!stamp.isValid() || !before.isValid() || !after.isValid())
 		return false;
@@ -476,7 +494,7 @@ bool timestamp_elapsed(int stamp) {
 }
 
 bool timestamp_elapsed(TIMESTAMP stamp) {
-	if (!stamp.isValid() || stamp.isNever()) {
+	if (!stamp.isFinite()) {
 		return false;
 	}
 	if (stamp.isImmediate()) {
@@ -487,7 +505,7 @@ bool timestamp_elapsed(TIMESTAMP stamp) {
 }
 
 bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
-	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
+	if (!ui_stamp.isFinite()) {
 		return false;
 	}
 	if (ui_stamp.isImmediate()) {
@@ -498,7 +516,7 @@ bool ui_timestamp_elapsed(UI_TIMESTAMP ui_stamp) {
 }
 
 bool timestamp_elapsed_last_frame(TIMESTAMP stamp) {
-	if (!stamp.isValid() || stamp.isNever()) {
+	if (!stamp.isFinite()) {
 		return false;
 	}
 	if (stamp.isImmediate()) {
@@ -509,7 +527,7 @@ bool timestamp_elapsed_last_frame(TIMESTAMP stamp) {
 }
 
 bool ui_timestamp_elapsed_last_frame(UI_TIMESTAMP ui_stamp) {
-	if (!ui_stamp.isValid() || ui_stamp.isNever()) {
+	if (!ui_stamp.isFinite()) {
 		return false;
 	}
 	if (ui_stamp.isImmediate()) {
@@ -528,7 +546,7 @@ bool timestamp_elapsed_safe(int a, int b) {
 }
 
 bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
-	if (!a.isValid() || a.isNever()) {
+	if (!a.isFinite()) {
 		return false;
 	}
 	if (a.isImmediate()) {
@@ -539,7 +557,7 @@ bool timestamp_elapsed_safe(TIMESTAMP a, int b) {
 }
 
 bool ui_timestamp_elapsed_safe(UI_TIMESTAMP a, int b) {
-	if (!a.isValid() || a.isNever()) {
+	if (!a.isFinite()) {
 		return false;
 	}
 	if (a.isImmediate()) {

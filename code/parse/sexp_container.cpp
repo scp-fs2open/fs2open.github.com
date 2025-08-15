@@ -10,7 +10,6 @@
 
 #include "gamesequence/gamesequence.h"
 #include "globalincs/pstypes.h"
-#include "globalincs/toolchain.h"
 #include "mission/missiongoals.h"
 #include "parse/generic_log.h"
 #include "parse/parselo.h"
@@ -90,7 +89,7 @@ namespace {
 			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		}
 #endif
-		map_data.emplace(key, data);
+		map_data[key] = data;
 	}
 
 	// Containers should not be modified if the game is simply checking the syntax. 
@@ -1274,12 +1273,9 @@ void sexp_add_to_map(int node)
 		const SCP_string key = CTEXT(node);
 
 		if (container.is_being_used_in_special_arg()) {
-			// modifying existing keys' data is ok, but adding new keys is not
-			if (container.map_data.find(key) == container.map_data.end()) {
-				report_container_used_in_special_arg("Add-to-map", container_name);
-				node = CDDR(node); // skip to next key-data pair
-				continue;
-			}
+			report_container_used_in_special_arg("Add-to-map", container_name);
+			node = CDDR(node); // skip to next key-data pair
+			continue;
 		}
 
 		const SCP_string data = CTEXT(CDR(node));
@@ -1321,7 +1317,7 @@ void sexp_remove_from_map(int node)
 		if (container.map_data.erase(key_to_remove) == 0) {
 			const SCP_string msg =
 				"Remove-from-map couldn't find key " + key_to_remove + " inside map container " + container_name;
-			Warning(LOCATION, "%s", msg.c_str());
+			mprintf(("%s\n", msg.c_str()));
 			log_printf(LOGFILE_EVENT_LOG, "%s", msg.c_str());
 		}
 

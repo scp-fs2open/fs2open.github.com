@@ -17,6 +17,10 @@ enum class PostEffectUniformType {
 	Cutoff,
 	Tint,
 	Dither,
+	CustomEffectVEC3A,
+	CustomEffectFloatA,
+	CustomEffectVEC3B,
+	CustomEffectFloatB,
 };
 
 struct post_effect_t {
@@ -69,6 +73,7 @@ class PostProcessingManager {
 } // namespace graphics
 
 bool gr_lightshafts_enabled();
+bool gr_sunglare_enabled();
 int gr_bloom_intensity();
 // used by lab
 void gr_set_bloom_intensity(int intensity);

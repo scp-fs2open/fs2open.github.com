@@ -27,13 +27,13 @@ void	hud_setup_escort_list(int level = 1);
 void	hud_resort_escort_list();
 void	hud_add_remove_ship_escort(int objnum, int supress_feedback = 0);
 void	hud_escort_clear_all(bool clear_flags = false);
-void	hud_escort_ship_hit(object *objp, int quadrant);
+void	hud_escort_ship_hit(const object *objp, int quadrant);
 void	hud_escort_target_next();
 void	hud_escort_cull_list();
 void	hud_add_ship_to_escort(int objnum, int supress_feedback);
-void  hud_remove_ship_from_escort(int objnum);
-int	hud_escort_num_ships_on_list();
-int	hud_escort_return_objnum(int index);
+void    hud_remove_ship_from_escort(int objnum);
+int     hud_escort_num_ships_on_list();
+int     hud_escort_return_objnum(int index);
 void	hud_escort_add_player(short id);
 void	hud_escort_remove_player(short id);
 
@@ -55,8 +55,8 @@ protected:
 	bool right_align_names;				// whether or not to right-align ship names
 public:
 	HudGaugeEscort();
-	void initBitmaps(char *fname_top, char *fname_middle, char *fname_bottom);
-	void initHeaderText(char *text);
+	void initBitmaps(const char *fname_top, const char *fname_middle, const char *fname_bottom);
+	void initHeaderText(const char *text);
 	void initHeaderTextOffsets(int x, int y);
 	void initListStartOffsets(int x, int y);
 	void initEntryHeight(int h);
@@ -68,9 +68,9 @@ public:
 	void initShipNameMaxWidth(int w);
 	void initRightAlignNames(bool align);
 	int setGaugeColorEscort(int index, int team);
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
-	void renderIcon(int x, int y, int index);
+	void renderIcon(int x, int y, int index, float scale, bool config);
 	void renderIconDogfight(int x, int y, int index);
 };
 

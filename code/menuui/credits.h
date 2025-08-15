@@ -12,7 +12,8 @@
 #ifndef __CREDITS_H__
 #define __CREDITS_H__
 
-extern char Credits_music_name[NAME_LENGTH];
+extern char Credits_music_name[];
+extern char Credits_substitute_music_name[];
 extern int Credits_num_images;
 extern int Credits_artwork_index;
 extern float Credits_scroll_rate;

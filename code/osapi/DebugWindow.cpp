@@ -145,7 +145,7 @@ float DebugWindow::print_line(float bottom_y, const LineInfo& line) {
 	gr_set_color_fast(&Color_white);
 
 	for (size_t i = 0; i < split_lines.size(); ++i) {
-		gr_string(max_category_width + 18.f, y_pos, split_lines[i], GR_RESIZE_NONE, static_cast<size_t>(line_lengths[i]));
+		gr_string(max_category_width + 18.f, y_pos, split_lines[i], GR_RESIZE_NONE, 1.0f, static_cast<size_t>(line_lengths[i]));
 
 		y_pos += font::get_current_font()->getHeight();
 	}

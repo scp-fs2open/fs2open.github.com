@@ -95,6 +95,16 @@ namespace
 			}
 		}
 
+		// This must happen before the font is loaded to set the size
+		bool autoSize = false;
+		if (optional_string("+Auto Size:")) {
+			stuff_boolean(&autoSize);
+
+			if (autoSize && !Fred_running) {
+				size = calculate_auto_font_size(size);
+			}
+		}
+
 		// Build name from existing values if no name is specified
 		if (!hasName)
 		{
@@ -121,12 +131,24 @@ namespace
 			}
 		}
 
-		NVGFont *nvgFont = FontManager::loadNVGFont(fontFilename, size);
+		auto nvgPair = FontManager::loadNVGFont(fontFilename, size);
+		auto nvgFont = nvgPair.first;
+
+		// Now we can set the auto size behavior which is used for special character rendering
+		nvgFont->setAutoScaleBehavior(autoSize);
 
 		if (nvgFont == NULL)
 		{
 			error_display(0, "Couldn't load font \"%s\".", fontFilename.c_str());
 			return;
+		}
+
+		if (optional_string("+Can Scale:")) {
+			bool temp;
+			
+			stuff_boolean(&temp);
+
+			nvgFont->setScaleBehavior(temp);
 		}
 
 		if (optional_string("+Top offset:"))
@@ -205,10 +227,9 @@ namespace
 					}
 				}
 				else {
-					auto old_entry = FontManager::getFontByFilename(fontName);
+					int old_index = FontManager::getFontIndexByFilename(fontName);
 					
-					if (old_entry != nullptr) {
-						int old_index = FontManager::getFontIndex(old_entry);
+					if (old_index >= 0) {
 						special_char_index = Lcl_languages[0].special_char_indexes[old_index];
 					} else {
 
@@ -235,7 +256,7 @@ namespace
 				}
 			}
 
-			auto font_id = FontManager::getFontIndex(nvgFont);
+			int font_id = nvgPair.second;
 
 			// add the index specified to all languages
 			for (auto & Lcl_language : Lcl_languages) {
@@ -272,7 +293,8 @@ namespace
 
 	void parse_vfnt_font(const SCP_string& fontFilename)
 	{
-		VFNTFont *font = FontManager::loadVFNTFont(fontFilename);
+		auto vfntPair = FontManager::loadVFNTFont(fontFilename);
+		auto font = vfntPair.first;
 
 		if (font == NULL)
 		{
@@ -293,8 +315,9 @@ namespace
 
 		font->setName(fontName);
 		font->setFilename(fontFilename);
+		font->setFamilyName("Volition Font");
 
-		auto font_id = FontManager::getFontIndex(font);
+		int font_id = vfntPair.second;
 
 		int user_defined_default_special_char_index = (int)DEFAULT_SPECIAL_CHAR_INDEX;
 		// 'default' special char index for all languages using this font
@@ -365,6 +388,22 @@ namespace
 			}
 		}
 
+		if (optional_string("+Auto Size")) {
+			bool temp;
+
+			stuff_boolean(&temp);
+
+			font->setAutoScaleBehavior(temp);
+		}
+
+		if (optional_string("+Can Scale:")) {
+			bool temp;
+
+			stuff_boolean(&temp);
+
+			font->setScaleBehavior(temp);
+		}
+
 		if (optional_string("+Top offset:"))
 		{
 			float temp;
@@ -421,13 +460,15 @@ namespace
 			FontType type;
 			SCP_string fontName;
 
+			SCP_vector<SCP_string> skipped_font_names;
+
 			while (parse_type(type, fontName))
 			{
 				switch (type)
 				{
 				case VFNT_FONT:
 					if (Unicode_text_mode) {
-						WarningEx(LOCATION, "Bitmap fonts are not supported in Unicode text mode! Font %s will be ignored.", fontName.c_str());
+						skipped_font_names.push_back(fontName);
 						skip_to_start_of_string_one_of({"$TrueType:", "$Font:", "#End"});
 					} else {
 						parse_vfnt_font(fontName);
@@ -439,6 +480,14 @@ namespace
 				default:
 					error_display(0, "Unknown font type %d! Get a coder!", (int)type);
 					break;
+				}
+			}
+
+			// check if we skipped any fonts
+			if (!skipped_font_names.empty()) {
+				Warning(LOCATION, "One or more bitmap fonts were skipped because they are not supported in Unicode text mode. The list of fonts is in the debug log.");
+				for (const auto& skippedFont : skipped_font_names) {
+					mprintf(("Warning: Skipped bitmap font: %s\n", skippedFont.c_str()));
 				}
 			}
 
@@ -484,6 +533,12 @@ namespace font
 		font_initialized = true;
 	}
 
+	void checkFontOptions() {
+		if (!FontManager::hasScalingFonts()) {
+			removeFontMultiplierOption();
+		}
+	}
+
 	void close()
 	{
 		if (!font_initialized) {
@@ -495,11 +550,11 @@ namespace font
 		font_initialized = false;
 	}
 
-	int force_fit_string(char *str, int max_str, int max_width)
+	int force_fit_string(char *str, int max_str, int max_width, float scale)
 	{
 		int w;
 
-		gr_get_string_size(&w, NULL, str);
+		gr_get_string_size(&w, nullptr, str, scale);
 		if (w > max_width) {
 			if ((int)strlen(str) > max_str - 3) {
 				Assert(max_str >= 3);
@@ -507,11 +562,11 @@ namespace font
 			}
 
 			strcpy(str + strlen(str) - 1, "...");
-			gr_get_string_size(&w, NULL, str);
+			gr_get_string_size(&w, nullptr, str, scale);
 			while (w > max_width) {
 				Assert(strlen(str) >= 4);  // if this is hit, a bad max_width was passed in and the calling function needs fixing.
 				strcpy(str + strlen(str) - 4, "...");
-				gr_get_string_size(&w, NULL, str);
+				gr_get_string_size(&w, nullptr, str, scale);
 			}
 		}
 
@@ -585,9 +640,9 @@ namespace font
 		return FontManager::getFont(name);
 	}
 
-	FSFont *get_font_by_filename(const SCP_string& name)
+	FSFont *get_font_by_filename(const SCP_string& filename)
 	{
-		return FontManager::getFontByFilename(name);
+		return FontManager::getFontByFilename(filename);
 	}
 
 	
@@ -669,7 +724,7 @@ int gr_get_dynamic_font_lines(int number_default_lines) {
 	return fl2i((number_default_lines * 10) / (gr_get_font_height() + 1));
 }
 
-void gr_get_string_size(int *w1, int *h1, const char *text, size_t len)
+void gr_get_string_size(int* w1, int* h1, const char* text, float scaleMultiplier, size_t len)
 {
 	if (!FontManager::isReady())
 	{
@@ -685,7 +740,7 @@ void gr_get_string_size(int *w1, int *h1, const char *text, size_t len)
 	float w = 0.0f;
 	float h = 0.0f;
 
-	FontManager::getCurrentFont()->getStringSize(text, len, -1, &w, &h);
+	FontManager::getCurrentFont()->getStringSize(text, len, -1, &w, &h, scaleMultiplier);
 
 	if (w1)
 	{

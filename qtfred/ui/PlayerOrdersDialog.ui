@@ -54,13 +54,6 @@
    </item>
   </layout>
  </widget>
-  <customwidgets>
-  <customwidget>
-   <class>fso::fred::ShipFlagCheckbox</class>
-   <extends>QCheckBox</extends>
-   <header>ui/widgets/ShipFlagCheckbox.h</header>
-  </customwidget>
- </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
@@ -74,22 +67,6 @@
     <hint type="sourcelabel">
      <x>147</x>
      <y>76</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>97</x>
-     <y>118</y>
-    </hint>
-   </hints>
-  </connection>
-  <connection>
-   <sender>cancelButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::PlayerOrdersDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>147</x>
-     <y>159</y>
     </hint>
     <hint type="destinationlabel">
      <x>97</x>

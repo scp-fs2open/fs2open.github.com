@@ -20,9 +20,15 @@ jobs:
           - configuration: Release
             compiler: gcc-13
             cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=OFF
+          - configuration: Debug
+            compiler: gcc-13
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=ON
+          - configuration: Release
+            compiler: gcc-13
+            cmake_options: -DFSO_BUILD_WITH_OPENGL=OFF -DFSO_BUILD_WITH_VULKAN=ON
     name: Linux
     runs-on: ubuntu-latest
-    container: ghcr.io/scp-fs2open/linux_build:sha-1ff82e8
+    container: ghcr.io/scp-fs2open/linux_build:sha-71099c9
     steps:
       - uses: actions/checkout@v1
         name: Checkout
@@ -70,11 +76,11 @@ jobs:
   build_windows:
     strategy:
       matrix:
-        configuration: [Debug, Release]
+        configuration: [Debug, FastDebug, Release]
         compiler: [MSVC]
         arch: [Win32, x64]
     name: Windows
-    runs-on: windows-2019
+    runs-on: windows-2022
     steps:
       - name: Prepare Environment
         run: choco install ninja
@@ -107,9 +113,9 @@ jobs:
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake
@@ -133,12 +139,12 @@ jobs:
           else
               if [ "$ARCHITECTURE" = "Win32" ]; then
                   cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
-                      -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -G "Visual Studio 16 2019" \
-                      -DFSO_BUILD_QTFRED=OFF -T "v142" -A "$ARCHITECTURE" ..
+                      -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -DFSO_BUILD_WITH_VULKAN="OFF" -G "Visual Studio 17 2022" \
+                      -DFSO_BUILD_QTFRED=OFF -T "v143" -A "$ARCHITECTURE" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
               else
                   cmake -DFSO_USE_SPEECH="ON" -DFSO_FATAL_WARNINGS="ON" -DFSO_USE_VOICEREC="OFF" -DFSO_BUILD_TESTS="ON" \
-                      -DMSVC_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 16 2019" \
-                      -DFSO_BUILD_QTFRED=OFF -T "v142" -A "$ARCHITECTURE" ..
+                      -DFORCED_SIMD_INSTRUCTIONS=SSE2 -DFSO_BUILD_FRED2="ON" -G "Visual Studio 17 2022" \
+                      -DFSO_BUILD_QTFRED=OFF -T "v143" -A "$ARCHITECTURE" -DCMAKE_BUILD_TYPE=$CONFIGURATION ..
               fi
           fi
       - name: Compile
@@ -202,9 +208,9 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.configuration }}-${{ matrix.compiler }}-${{ matrix.arch }}
           save: false # Caches are created by a separate job and only restored for PRs
       - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
-          vulkan-query-version: 1.3.204.0
+          vulkan-query-version: 1.4.304.1
           vulkan-components: Vulkan-Headers, Vulkan-Loader
           vulkan-use-cache: true
       - name: Configure CMake

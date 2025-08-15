@@ -8,6 +8,7 @@
 
 #include "scripting/ade.h"
 #include "scripting/ade_args.h"
+#include "scripting/ade_external_serializer.h"
 #include "scripting/ade_doc.h"
 
 class lua_net_exception : public std::runtime_error {
@@ -47,7 +48,7 @@ namespace internal {
 		throw lua_net_exception("Cannot deserialize data of received userdata type from network");
 	}
 
-	enum class ade_multi_serialize_mode : size_t { NATIVE, FUNDAMENTAL, UNSUPPORTED };
+	enum class ade_multi_serialize_mode : size_t { NATIVE, EXTERNAL, FUNDAMENTAL, UNSUPPORTED };
 
 	template <typename T, typename = int>
 	struct ade_serializable : std::false_type { };
@@ -62,6 +63,12 @@ namespace internal {
 	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::NATIVE> {
 		static constexpr ade_serialize_func serialize = &T::serialize;
 		static constexpr ade_deserialize_func deserialize = &T::deserialize;
+	};
+
+	template<typename T>
+	struct ade_multi_serialize_dispatcher<T, ade_multi_serialize_mode::EXTERNAL> {
+		static constexpr ade_serialize_func serialize = &ade_serializable_external<T>::serialize;
+		static constexpr ade_deserialize_func deserialize = &ade_serializable_external<T>::deserialize;
 	};
 
 	template<typename T>
@@ -80,7 +87,8 @@ namespace internal {
 template<typename T>
 struct ade_multi_serializer : public internal::ade_multi_serialize_dispatcher<T,
 	internal::ade_serializable<T>::value ? internal::ade_multi_serialize_mode::NATIVE :
-	(std::is_fundamental<T>::value ? internal::ade_multi_serialize_mode::FUNDAMENTAL : internal::ade_multi_serialize_mode::UNSUPPORTED)> {};
+	(internal::ade_serializable_external<T>::value ? internal::ade_multi_serialize_mode::EXTERNAL : (
+	std::is_fundamental<T>::value ? internal::ade_multi_serialize_mode::FUNDAMENTAL : internal::ade_multi_serialize_mode::UNSUPPORTED))> {};
 
 /**
  * @ingroup ade_api

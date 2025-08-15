@@ -28,6 +28,9 @@ void	hud_set_wingman_status_none( int wing_index, int wing_pos);
 void	hud_wingman_status_start_flash(int wing_index, int wing_pos);
 void	hud_wingman_status_set_index(wing *wingp, ship *shipp, p_object *pobjp);
 
+// for resetting the gauge via sexp
+void	hud_set_new_squadron_wings(const std::array<int, MAX_SQUADRON_WINGS> &new_squad_wingnums);
+
 class HudGaugeWingmanStatus: public HudGauge
 {
 protected:
@@ -48,7 +51,9 @@ protected:
 	int wing_name_offsets[2];
 
 	enum {GROW_LEFT, GROW_RIGHT, GROW_DOWN};
+	enum {ALIGN_CENTER, ALIGN_LEFT, ALIGN_RIGHT};
 	int grow_mode;
+	int wingname_align_mode;
 	bool use_full_wingnames;
 	bool use_expanded_colors;
 
@@ -74,13 +79,14 @@ public:
 	void initWingmate5Offsets(int x, int y);
 	void initWingmate6Offsets(int x, int y);
 	void initGrowMode(int mode);
+	void initWingnameAlignMode(int mode);
 	void initUseFullWingnames(bool usefullname);
 	void initUseExpandedColors(bool useexpandedcolors);
 	void pageIn() override;
 	void initialize() override;
-	void render(float frametime) override;
-	void renderBackground(int num_wings_to_draw);
-	void renderDots(int wing_index, int screen_index, int num_wings_to_draw);
+	void render(float frametime, bool config = false) override;
+	void renderBackground(int num_wings_to_draw, bool config);
+	void renderDots(int wing_index, int screen_index, int num_wings_to_draw, bool config);
 	void initFlash();
 	bool maybeFlashStatus(int wing_index, int wing_pos);
 };

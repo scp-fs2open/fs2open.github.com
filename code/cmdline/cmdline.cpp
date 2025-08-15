@@ -165,11 +165,9 @@ Flag exe_params[] =
 	{ "-nonormal",			"Disable normal maps",						true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON  | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nonormal" },
 	{ "-emissive_light",	"Enable emissive light from ships",			true,	0,									EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-emissive_light" },
 	{ "-noheight",			"Disable height/parallax maps",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON  | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noheight" },
-	{ "-3dshockwave",		"Enable 3D shockwaves",						true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dshockwave" },
 	{ "-no_post_process",	"Disable post-processing",					true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_post_process" },
 	{ "-soft_particles",	"Enable soft particles",					true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-soft_particles" },
 	{ "-aa",				"Enable Post-process anti-aliasing",		true,	EASY_ALL_ON  | EASY_HI_MEM_ON,		EASY_DEFAULT | EASY_HI_MEM_OFF,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-aa" },
-	{ "-nolightshafts",		"Disable lightshafts",						true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nolightshafts"},
 	{ "-fb_explosions",		"Enable Framebuffer Shockwaves",			true,	EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_explosions", },
     { "-fb_thrusters",      "Enable Framebuffer Thrusters",             true,   EASY_ALL_ON,						EASY_DEFAULT,					"Graphics",     "http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-fb_thrusters", },
 	{ "-no_deferred",		"Disable Deferred Lighting",				true,	EASY_DEFAULT | EASY_HI_MEM_OFF,		EASY_ALL_ON | EASY_HI_MEM_ON,	"Graphics",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_deferred"},
@@ -193,13 +191,10 @@ Flag exe_params[] =
 	{ "-capture_mouse",		"Capture the mouse within the window",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-capture_mouse", },
 	{ "-stretch_menu",		"Stretch interface to fill screen",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-stretch_menu", },
 	{ "-noscalevid",		"Disable scale-to-window for movies",		true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-noscalevid", },
-	{ "-nomotiondebris",	"Disable motion debris",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nomotiondebris",},
-	{ "-3dwarp",			"Enable 3D warp",							true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-3dwarp", },
-	{ "-warp_flash",		"Enable flash upon warp",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-warp_flash", },
 	{ "-no_ap_interrupt",	"Disable interrupting autopilot",			true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_ap_interrupt", },
-	{ "-no_screenshake",	"Disable screen shaking",					true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_screenshake", },
 	{ "-vr",				"Enable Virtual Reality Mode",				true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-vr", },
 	{ "-no_unfocused_pause","Don't pause if the window isn't focused",	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-no_unfocused_pause", },
+	{ "-orig_speedx_range", "Restrict speedup/slowdown (1x to 4x)", 	true,	0,									EASY_DEFAULT,					"Gameplay",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-orig_speedx_range", },
 
 	//flag					launcher text								FSO		on_flags							off_flags						category		reference URL
 	{ "-nosound",			"Disable all sound",						false,	0,									EASY_DEFAULT,					"Audio",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-nosound", },
@@ -266,6 +261,7 @@ Flag exe_params[] =
 	{ "-output_sexps",		"Output SEXPs to sexps.html",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_sexps", },
 	{ "-output_scripting",	"Output scripting to scripting.html",		true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_scripting", },
 	{ "-output_script_json",	"Output scripting doc to scripting.json",	true,	0,								EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_script_json", },
+	{ "-output_script_lua",	"Output scripting doc to scripting.lua",	true,	0,								EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-output_script_luastub", },
 	{ "-controlconfig_tbl",	"Save control presets to table",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-controlconfig_tbl", },
 	{ "-save_render_target",	"Save render targets to file",			true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-save_render_target", },
 	{ "-verify_vps",		"Spew VP CRCs to vp_crcs.txt",				true,	0,									EASY_DEFAULT,					"Dev Tool",		"http://www.hard-light.net/wiki/index.php/Command-Line_Reference#-verify_vps", },
@@ -320,7 +316,6 @@ int Cmdline_cd_check = 1;
 int Cmdline_closed_game = 0;
 int Cmdline_freespace_no_music = 0;
 int Cmdline_freespace_no_sound = 0;
-int Cmdline_gimme_all_medals = 0;
 int Cmdline_mouse_coords = 0;
 int Cmdline_multi_log = 0;
 int Cmdline_multi_stream_chat_to_file = 0;
@@ -344,15 +339,12 @@ cmdline_parm emissive_power_arg("-emissive", "Multiplies the brightness of all a
 cmdline_parm emissive_arg("-emissive_light", "Enable emissive light from ships", AT_NONE);		// semi-deprecated but still functional
 cmdline_parm env("-noenv", NULL, AT_NONE);								// Cmdline_env
 cmdline_parm glow_arg("-noglow", NULL, AT_NONE); 						// Cmdline_glow  -- use Bobs glow code
-cmdline_parm nomotiondebris_arg("-nomotiondebris", NULL, AT_NONE);		// Cmdline_nomotiondebris  -- Removes those ugly floating rocks -C
 cmdline_parm noscalevid_arg("-noscalevid", NULL, AT_NONE);				// Cmdline_noscalevid  -- disable video scaling that fits to window
 cmdline_parm spec_arg("-nospec", NULL, AT_NONE);			// Cmdline_spec  --
 cmdline_parm normal_arg("-nonormal", NULL, AT_NONE);						// Cmdline_normal  -- disable normal mapping
 cmdline_parm height_arg("-noheight", NULL, AT_NONE);						// Cmdline_height  -- enable support for parallax mapping
-cmdline_parm enable_3d_shockwave_arg("-3dshockwave", NULL, AT_NONE);
 cmdline_parm softparticles_arg("-soft_particles", NULL, AT_NONE);
 cmdline_parm no_postprocess_arg("-no_post_process", "Disables post-processing", AT_NONE);
-cmdline_parm bloom_intensity_arg("-bloom_intensity", "Set bloom intensity, requires post-processing", AT_INT);
 cmdline_parm post_process_aa_arg("-aa", "Enables post-process antialiasing", AT_NONE);
 cmdline_parm post_process_aa_preset_arg("-aa_preset", "Sets the AA effect to use. See the wiki for details", AT_INT);
 cmdline_parm deprecated_fxaa_arg("-fxaa", nullptr, AT_NONE);
@@ -362,7 +354,6 @@ cmdline_parm deprecated_smaa_preset_arg("-smaa_preset", "SMAA quality (0-3), req
 cmdline_parm msaa_enabled_arg("-msaa", nullptr, AT_INT);
 cmdline_parm fb_explosions_arg("-fb_explosions", NULL, AT_NONE);
 cmdline_parm fb_thrusters_arg("-fb_thrusters", NULL, AT_NONE);
-cmdline_parm flightshaftsoff_arg("-nolightshafts", NULL, AT_NONE);
 cmdline_parm shadow_quality_arg("-shadow_quality", NULL, AT_INT);
 cmdline_parm enable_shadows_arg("-enable_shadows", NULL, AT_NONE);
 cmdline_parm no_deferred_lighting_arg("-no_deferred", NULL, AT_NONE);	// Cmdline_no_deferred
@@ -380,10 +371,7 @@ int Cmdline_spec = 1;
 int Cmdline_emissive = 0;
 int Cmdline_normal = 1;
 int Cmdline_height = 1;
-int Cmdline_enable_3d_shockwave = 0;
 int Cmdline_softparticles = 0;
-int Cmdline_bloom_intensity = 25;
-bool Cmdline_force_lightshaft_off = false;
 int Cmdline_no_deferred_lighting = 0;
 bool Cmdline_deferred_lighting_cockpit = false;
 int Cmdline_aniso_level = 0;
@@ -394,7 +382,7 @@ cmdline_parm no_fpscap("-no_fps_capping", "Don't limit frames-per-second", AT_NO
 cmdline_parm no_vsync_arg("-no_vsync", NULL, AT_NONE);		// Cmdline_no_vsync
 
 int Cmdline_NoFPSCap = 0; // Disable FPS capping - kazan
-int Cmdline_no_vsync = 0;
+bool Cmdline_no_vsync = false;
 
 // HUD related
 cmdline_parm ballistic_gauge("-ballistic_gauge", NULL, AT_NONE);	// Cmdline_ballistic_gauge
@@ -409,22 +397,16 @@ int Cmdline_orb_radar = 0;
 int Cmdline_rearm_timer = 0;
 
 // Gameplay related
-cmdline_parm use_3dwarp("-3dwarp", nullptr, AT_NONE);			// Is now Fireball_use_3d_warp
-cmdline_parm use_warp_flash("-warp_flash", nullptr, AT_NONE);	// Cmdline_warp_flash
 cmdline_parm allow_autpilot_interrupt("-no_ap_interrupt", nullptr, AT_NONE);
 cmdline_parm stretch_menu("-stretch_menu", nullptr, AT_NONE);	// Cmdline_stretch_menu
 cmdline_parm capture_mouse("-capture_mouse", nullptr, AT_NONE);	// Cmdline_capture_mouse
-cmdline_parm no_screenshake("-no_screenshake", nullptr, AT_NONE); // Cmdline_no_screenshake
 cmdline_parm vr("-vr", nullptr, AT_NONE);
 cmdline_parm deadzone("-deadzone", 
 "Sets the joystick deadzone. Integer value from 0 to 100 as a percentage of the joystick's range (100% would make the stick do nothing). Disables deadzone slider in the in-game Options menu.", AT_INT); //Cmdline_deadzone
 
-int Cmdline_ship_choice_3d = 0;
-int Cmdline_weapon_choice_3d = 0;
 int Cmdline_autopilot_interruptable = 1;
-int Cmdline_stretch_menu = 0;
+bool Cmdline_stretch_menu = false;
 bool Cmdline_capture_mouse = false;
-int Cmdline_no_screenshake = 0;
 int Cmdline_deadzone = -1;
 bool Cmdline_enable_vr = false;
 
@@ -436,8 +418,10 @@ int Cmdline_no_enhanced_sound = 0;
 
 // MOD related
 cmdline_parm mod_arg("-mod", "List of folders to overwrite/add-to the default data", AT_STRING, true);	// Cmdline_mod  -- DTP modsupport
+cmdline_parm campaign_arg("-campaign", "Set current campaign", AT_STRING);	// Cmdline_campaign
 
 char *Cmdline_mod = NULL; //DTP for mod argument
+char *Cmdline_campaign = nullptr; // for campaign argument
 
 // Multiplayer/Network related
 cmdline_parm almission_arg("-almission", "Autoload multiplayer mission", AT_STRING);		// Cmdline_almission  -- DTP for autoload Multi mission
@@ -534,6 +518,7 @@ cmdline_parm parse_cmdline_only(PARSE_COMMAND_LINE_STRING, "Ignore any cmdline_f
 cmdline_parm reparse_mainhall_arg("-reparse_mainhall", NULL, AT_NONE); //Cmdline_reparse_mainhall
 cmdline_parm frame_profile_write_file("-profile_write_file", NULL, AT_NONE); // Cmdline_profile_write_file
 cmdline_parm no_unfocused_pause_arg("-no_unfocused_pause", NULL, AT_NONE); //Cmdline_no_unfocus_pause
+cmdline_parm retail_time_compression_range_arg("-orig_speedx_range", NULL, AT_NONE); //Cmdline_retail_time_compression_range
 cmdline_parm benchmark_mode_arg("-benchmark_mode", NULL, AT_NONE); //Cmdline_benchmark_mode
 cmdline_parm pilot_arg("-pilot", nullptr, AT_STRING); //Cmdline_pilot
 cmdline_parm noninteractive_arg("-noninteractive", NULL, AT_NONE); //Cmdline_noninteractive
@@ -549,6 +534,7 @@ cmdline_parm luadev_arg("-luadev", "Make lua errors non-fatal", AT_NONE);	// Cmd
 cmdline_parm override_arg("-override_data", "Enable override directory", AT_NONE);	// Cmdline_override_data
 cmdline_parm imgui_debug_arg("-imgui_debug", nullptr, AT_NONE);
 cmdline_parm vulkan("-vulkan", nullptr, AT_NONE);
+cmdline_parm multithreading("-threads", nullptr, AT_INT);
 
 char *Cmdline_start_mission = NULL;
 int Cmdline_dis_collisions = 0;
@@ -563,15 +549,16 @@ int Cmdline_bmpman_usage = 0;
 int Cmdline_show_pos = 0;
 int Cmdline_show_stats = 0;
 int Cmdline_save_render_targets = 0;
-int Cmdline_window = 0;
-int Cmdline_fullscreen_window = 0;
-tl::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = tl::nullopt;
+bool Cmdline_window = false;
+bool Cmdline_fullscreen_window = false;
+std::optional<std::pair<uint16_t, uint16_t>>Cmdline_window_res = std::nullopt;
 char *Cmdline_res = 0;
 char *Cmdline_center_res = 0;
 int Cmdline_verify_vps = 0;
 int Cmdline_reparse_mainhall = 0;
 bool Cmdline_profile_write_file = false;
 bool Cmdline_no_unfocus_pause = false;
+bool Cmdline_retail_time_compression_range = false;
 bool Cmdline_benchmark_mode = false;
 const char *Cmdline_pilot = nullptr;
 bool Cmdline_noninteractive = false;
@@ -586,12 +573,14 @@ bool Cmdline_lua_devmode = false;
 bool Cmdline_override_data = false;
 bool Cmdline_show_imgui_debug = false;
 bool Cmdline_vulkan = false;
+int Cmdline_multithreading = 1;
 
 // Other
 cmdline_parm get_flags_arg(GET_FLAGS_STRING, "Output the launcher flags file", AT_STRING);
 cmdline_parm output_sexp_arg("-output_sexps", NULL, AT_NONE); //WMC - outputs all SEXPs to sexps.html
 cmdline_parm output_scripting_arg("-output_scripting", NULL, AT_NONE);	//WMC
 cmdline_parm output_script_json_arg("-output_script_json", nullptr, AT_NONE);	// m!m
+cmdline_parm output_script_luastub_arg("-output_script_lua", nullptr, AT_NONE); // mjnmixael
 cmdline_parm generate_controlconfig_arg("-controlconfig_tbl", nullptr, AT_NONE);	
 
 // Deprecated flags - CommanderDJ
@@ -614,6 +603,13 @@ cmdline_parm deprecated_spec_tube_arg("-spec_tube", "Deprecated", AT_NONE);
 cmdline_parm deprecated_ambient_factor_arg("-ambient_factor", "Deprecated", AT_NONE);	//
 cmdline_parm deprecated_ship_choice_3d_arg("-ship_choice_3d", "Deprecated", AT_NONE);
 cmdline_parm deprecated_weapon_choice_3d_arg("-weapon_choice_3d", "Deprecated", AT_NONE);
+cmdline_parm deprecated_no_screenshake("-no_screenshake", "Deprecated", AT_NONE);
+cmdline_parm deprecated_bloom_intensity_arg("-bloom_intensity", "Deprecated", AT_INT);
+cmdline_parm deprecated_nomotiondebris_arg("-nomotiondebris", "Deprecated", AT_NONE);
+cmdline_parm deprecated_flightshaftsoff_arg("-nolightshafts", "Deprecated", AT_NONE);
+cmdline_parm deprecated_use_warp_flash("-warp_flash", "Deprecated", AT_NONE);
+cmdline_parm deprecated_use_3dwarp("-3dwarp", "Deprecated", AT_NONE);
+cmdline_parm deprecated_enable_3d_shockwave_arg("-3dshockwave", "Deprecated", AT_NONE);
 
 #ifndef NDEBUG
 // NOTE: this assumes that os_init() has already been called but isn't a fatal error if it hasn't
@@ -649,8 +645,8 @@ void cmdline_debug_print_cmdline()
 }
 #endif
 
-// prints simple cmdline to multi.log
-void cmdline_print_cmdline_multi()
+// builds simple cmdline
+SCP_string cmdline_build_string()
 {
 	cmdline_parm *parmp;
 	int found = 0;
@@ -669,10 +665,18 @@ void cmdline_print_cmdline_multi()
 	}
 
 	if ( !found ) {
-		cmdline << " <none>";
+		return "";
 	}
 
-	ml_printf("Command line:%s", cmdline.str().c_str());
+	return cmdline.str();
+}
+
+// prints simple cmdline to multi.log
+void cmdline_print_cmdline_multi()
+{
+	auto str = cmdline_build_string();
+
+	ml_printf("Command line:%s", str.empty() ? " <none>" : str.c_str());
 }
 
 //	Return true if this character is an extra char (white space and quotes)
@@ -680,7 +684,6 @@ int is_extra_space(char ch)
 {
 	return ((ch == ' ') || (ch == '\t') || (ch == 0x0a) || (ch == '\'') || (ch == '\"'));
 }
-
 
 // eliminates all leading and trailing extra chars from a string.  Returns pointer passed in.
 char *drop_extra_chars(char *str)
@@ -1589,6 +1592,12 @@ bool SetCmdlineParams()
 {
 	//getcwd(FreeSpace_Directory, 256); // set the directory to our fs2 root
 
+	// DO THIS BEFORE get_flags, as portable_mode can change the value of pref_path printed in the json
+	if (portable_mode.found())
+	{
+		Cmdline_portable_mode = true;
+	}
+
 	// DO THIS FIRST to avoid unrecognized flag warnings when just getting flag file
 	if ( get_flags_arg.found() ) {
 		write_flags();
@@ -1769,14 +1778,14 @@ bool SetCmdlineParams()
 	if(window_arg.found()) {
 		// We need to set both values since we don't know if we are going to use the new config system
 		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "0");
-		Cmdline_window = 1;
+		Cmdline_window = true;
 	}
 
 	if ( fullscreen_window_arg.found( ) )
 	{
 		//options::OptionsManager::instance()->setOverride("Graphics.WindowMode", "1");
-		Cmdline_fullscreen_window = 1;
-		Cmdline_window = 0; /* Make sure no-one sets both */
+		Cmdline_fullscreen_window = true;
+		Cmdline_window = false; /* Make sure no-one sets both */
 	}
 
 	if(render_res_arg.found() || deprecated_res_arg.found()){
@@ -1871,6 +1880,14 @@ bool SetCmdlineParams()
 		Cmdline_mod = modlist;
 	}
 
+	if(campaign_arg.found()) {
+		Cmdline_campaign = campaign_arg.str();
+
+		// strip off blank space if it's there
+		if ( Cmdline_campaign[strlen(Cmdline_campaign)-1] == ' ' ) {
+			Cmdline_campaign[strlen(Cmdline_campaign)-1] = '\0';
+		}
+	}
 
 	if (fps_arg.found())
 	{
@@ -1885,10 +1902,6 @@ bool SetCmdlineParams()
 	if(pos_arg.found())
 	{
 		Cmdline_show_pos = 1;
-	}
-
-	if ( nomotiondebris_arg.found() ) {
-		Motion_debris_enabled = false;
 	}
 
 	if( mipmap_arg.found() ) {
@@ -1923,6 +1936,25 @@ bool SetCmdlineParams()
 		if (fov_arg.found() || fov_cockpit_arg.found()) {
 			Warning(LOCATION, "FoV Command line settings found. VR-Mode will override these with the HMD's native FoV...");
 		}
+
+		// enable other settings to allow VR to work more seamlessly  
+		mprintf(("VR-Mode enabled, so forcing on the following settings: capture_mouse, window_res 1000x1000, window, no_vsync \n"));
+
+		// ensure ingame resolution is set to sensible values in VR mode, 
+		// which will exceed the resolution otherwise shown and is not dependent on the monitor resolution
+		Cmdline_capture_mouse = true;
+		Cmdline_window_res.emplace(static_cast<uint16_t>(1000), static_cast<uint16_t>(1000));
+
+		Cmdline_fullscreen_window = false;
+		Cmdline_window = true; /* Make sure no-one sets both */
+		removeWindowModeOption();
+
+		// Turn off VSync, since we definitely don't want to be capped by the main monitor
+		// the OpenXR runtime should have a buffered wait which will behave, effectively,
+		// as a VSync to VR goggle driver
+		Gr_enable_vsync = false;
+		removeVSyncOption();
+
 		openxr_prepare();
 	}
 
@@ -1931,20 +1963,8 @@ bool SetCmdlineParams()
 		Cmdline_orb_radar = 1;
 	}
 
-	if ( use_3dwarp.found() ) {
-		Fireball_use_3d_warp = true;
-	}
-
-	if ( use_warp_flash.found() ) {
-		Fireball_warp_flash = true;
-	}
-
 	if ( allow_autpilot_interrupt.found() )	{
 		Cmdline_autopilot_interruptable = 0;
-	}
-
-	if ( no_screenshake.found() ) {
-		Cmdline_no_screenshake = 1;
 	}
 	
 	if ( deadzone.found() ) {
@@ -1952,7 +1972,7 @@ bool SetCmdlineParams()
 	}
 
 	if ( stretch_menu.found() )	{
-		Cmdline_stretch_menu = 1;
+		Cmdline_stretch_menu = true;
 	}
 
 	if ( capture_mouse.found() ) {
@@ -2059,6 +2079,9 @@ bool SetCmdlineParams()
 	if (output_script_json_arg.found() )
 		Output_scripting_json = true;
 
+	if (output_script_luastub_arg.found())
+		Output_scripting_luastub = true;
+
 	if (output_sexp_arg.found() ) {
 		Cmdline_output_sexp_info = true;
 	}
@@ -2104,11 +2127,6 @@ bool SetCmdlineParams()
 	if (noshadercache_arg.found())
 	{
 		Cmdline_noshadercache = true;
-	}
-
-	if (portable_mode.found())
-	{
-		Cmdline_portable_mode = true;
 	}
 
 	if (lang_arg.found()) 
@@ -2165,11 +2183,6 @@ bool SetCmdlineParams()
         Cmdline_ati_color_swap = 1;
     }
 
-	if ( enable_3d_shockwave_arg.found() )
-	{
-		Cmdline_enable_3d_shockwave = 1;
-	}
-
 	if ( softparticles_arg.found() )
 	{
 		Cmdline_softparticles = 1;
@@ -2188,16 +2201,6 @@ bool SetCmdlineParams()
 	if ( no_postprocess_arg.found() )
 	{
 		Gr_post_processing_enabled = false;
-	}
-
-	if ( bloom_intensity_arg.found() )
-	{
-		Cmdline_bloom_intensity = bloom_intensity_arg.get_int();
-	}
-
-	if ( flightshaftsoff_arg.found() )
-	{
-		Cmdline_force_lightshaft_off = true;
 	}
 
 	if( reparse_mainhall_arg.found() )
@@ -2264,6 +2267,11 @@ bool SetCmdlineParams()
 	if (no_unfocused_pause_arg.found())
 	{
 		Cmdline_no_unfocus_pause = true;
+	}
+
+	if (retail_time_compression_range_arg.found())
+	{
+		Cmdline_retail_time_compression_range = true;
 	}
 	
 	if (benchmark_mode_arg.found())
@@ -2399,6 +2407,10 @@ bool SetCmdlineParams()
 		else {
 			Warning(LOCATION,"-seed must be an integer greater than 0. Invalid input seed will be disregarded.");
 		}
+	}
+
+	if (multithreading.found()) {
+		Cmdline_multithreading = abs(multithreading.get_int());
 	}
 
 	return true; 

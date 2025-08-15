@@ -13,6 +13,8 @@
 #define _COLLIDESTUFF_H
 
 #include "globalincs/pstypes.h"
+#include <optional>
+#include <any>
 
 class object;
 struct CFILE;
@@ -36,6 +38,7 @@ struct collision_info_struct {
 	bool	edge_hit;				// if edge is hit, need to change collision normal
 	bool	submodel_move_hit;		// if collision is against a moving submodel
 	bool	is_landing;			//SUSHI: Maybe treat current collision as a landing
+	bool 	player_involved;
 };
 
 //Collision physics constants
@@ -57,8 +60,10 @@ struct obj_pair	{
 	object *a;
 	object *b;
 	int	next_check_time;	// a timestamp that when elapsed means to check for a collision
-	struct obj_pair *next;
 };
+
+//Never check again | data for collision post-processing | collision post-proc function
+using collision_result = std::tuple<bool, std::any, void (*)(obj_pair *, const std::any& collision_data)>;
 
 extern SCP_vector<int> Collision_sort_list;
 
@@ -86,6 +91,7 @@ int weapon_will_never_hit( object *weapon, object *other, obj_pair * current_pai
 // CODE is locatated in CollideGeneral.cpp
 int collide_subdivide(vec3d *p0, vec3d *p1, float prad, vec3d *q0, vec3d *q1, float qrad);
 
+void collide_init();
 
 //===============================================================================
 // SPECIFIC COLLISION DETECTION FUNCTIONS 
@@ -100,6 +106,9 @@ int collide_weapon_weapon( obj_pair * pair );
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideShipWeapon.cpp
 int collide_ship_weapon( obj_pair * pair );
+
+//Same as above, but for deferred collision processing / usage in multithreading
+collision_result collide_ship_weapon_check( obj_pair * pair );
 
 // Checks debris-weapon collisions.  pair->a is debris and pair->b is weapon.
 // Returns 1 if all future collisions between these can be ignored
@@ -118,6 +127,10 @@ int collide_asteroid_weapon(obj_pair *pair);
 // Returns 1 if all future collisions between these can be ignored
 // CODE is locatated in CollideShipShip.cpp
 int collide_ship_ship( obj_pair * pair );
+//Same as above, but for deferred collision processing / usage in multithreading
+collision_result collide_ship_ship_check( obj_pair * pair );
+
+void collide_mp_worker_thread(size_t threadIdx);
 
 //	Predictive functions.
 //	Returns true if vector from curpos to goalpos with radius radius will collide with object goalobjp

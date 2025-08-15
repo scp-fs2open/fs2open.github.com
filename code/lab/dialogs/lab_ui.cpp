@@ -3,6 +3,7 @@
 
 #include "lab_ui_helpers.h"
 
+#include "asteroid/asteroid.h"
 #include "graphics/debug_sphere.h"
 #include "graphics/matrix.h"
 #include "lab/labv2_internal.h"
@@ -31,7 +32,7 @@ void LabUi::object_changed()
 		trigger = false;
 }
 
-void LabUi::build_species_entry(species_info species_def, int species_idx) const
+void LabUi::build_species_entry(const species_info &species_def, int species_idx) const
 {
 	with_TreeNode(species_def.species_name)
 	{
@@ -91,14 +92,83 @@ void LabUi::build_weapon_subtype_list() const
 	}
 }
 
+void LabUi::build_asteroid_list()
+{
+	with_TreeNode("Asteroids")
+	{
+		int asteroid_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type == ASTEROID_TYPE_DEBRIS) {
+				asteroid_idx++;
+				continue;
+			}
+
+			int subtype_idx = 0;
+			for (const auto& subtype : info.subtypes) {
+				SCP_string node_label;
+				sprintf(node_label, "##AsteroidClassIndex%i_%i", asteroid_idx, subtype_idx);
+				TreeNodeEx(node_label.c_str(),
+					ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+					"%s (%s)",
+					info.name,
+					subtype.type_name.c_str());
+
+				if (IsItemClicked() && !IsItemToggledOpen()) {
+					getLabManager()->changeDisplayedObject(LabMode::Asteroid, asteroid_idx, subtype_idx);
+				}
+
+				subtype_idx++;
+			}
+
+			asteroid_idx++;
+		}
+	}
+}
+
+void LabUi::build_debris_list()
+{
+	with_TreeNode("Debris")
+	{
+		int debris_idx = 0;
+
+		for (const auto& info : Asteroid_info) {
+			if (info.type != ASTEROID_TYPE_DEBRIS) {
+				debris_idx++;
+				continue;
+			}
+
+			SCP_string node_label;
+			sprintf(node_label, "##DebrisClassIndex%i", debris_idx);
+			TreeNodeEx(node_label.c_str(),
+				ImGuiTreeNodeFlags_Leaf | ImGuiTreeNodeFlags_NoTreePushOnOpen,
+				"%s",
+				info.name);
+
+			if (IsItemClicked() && !IsItemToggledOpen()) {
+				getLabManager()->changeDisplayedObject(LabMode::Asteroid, debris_idx, 0); // Debris subtype is always 0
+			}
+
+			debris_idx++;
+		}
+	}
+}
+
 void LabUi::build_weapon_list() const
 {
-	//weapon display needs to be rethought
+	with_TreeNode("Weapon Classes")
+	{
+		build_weapon_subtype_list();
+	}
+}
 
-	//with_TreeNode("Weapon Classes")
-	//{
-	//	build_weapon_subtype_list();
-	//}
+void LabUi::build_object_list()
+{
+	with_TreeNode("Asteroid/Debris Types")
+	{
+		build_asteroid_list();
+		build_debris_list();
+	}
 }
 
 void LabUi::build_background_list() const
@@ -201,6 +271,8 @@ void LabUi::show_object_selector() const
 			build_ship_list();
 
 			build_weapon_list();
+
+			build_object_list();
 		}
 	}
 }
@@ -342,13 +414,19 @@ void LabUi::show_render_options()
 
 		with_CollapsingHeader("Model features")
 		{
-			Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			if (getLabManager()->CurrentMode == LabMode::Ship) {
+				Checkbox("Rotate/Translate Subsystems", &animate_subsystems);
+			}
 			Checkbox("Show full detail", &show_full_detail);
-			Checkbox("Show thrusters", &show_thrusters);
-			Checkbox("Show afterburners", &show_afterburners);
-			Checkbox("Show weapons", &show_weapons);
-			Checkbox("Show Insignia", &show_insignia);
-			Checkbox("Show damage lightning", &show_damage_lightning);
+			if (getLabManager()->CurrentMode != LabMode::Asteroid) {
+				Checkbox("Show thrusters", &show_thrusters);
+				if (getLabManager()->CurrentMode == LabMode::Ship) {
+					Checkbox("Show afterburners", &show_afterburners);
+					Checkbox("Show weapons", &show_weapons);
+					Checkbox("Show Insignia", &show_insignia);
+					Checkbox("Show damage lightning", &show_damage_lightning);
+				}
+			}
 			Checkbox("No glowpoints", &no_glowpoints);
 		}
 
@@ -372,6 +450,7 @@ void LabUi::show_render_options()
 		with_CollapsingHeader("Scene rendering options")
 		{
 			Checkbox("Hide Post Processing", &hide_post_processing);
+			Checkbox("Hide particles", &no_particles);
 			Checkbox("Render as wireframe", &use_wireframe_rendering);
 			Checkbox("Render without light", &no_lighting);
 			Checkbox("Render with emissive lighting", &show_emissive_lighting);
@@ -487,6 +566,7 @@ void LabUi::show_render_options()
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowWeapons, show_weapons);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::ShowEmissiveLighting, show_emissive_lighting);
 		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::MoveSubsystems, animate_subsystems);
+		getLabManager()->Renderer->setRenderFlag(LabRenderFlag::NoParticles, no_particles);
 		getLabManager()->Renderer->setEmissiveFactor(emissive_factor);
 		getLabManager()->Renderer->setAmbientFactor(ambient_factor);
 		getLabManager()->Renderer->setLightFactor(light_factor);
@@ -523,7 +603,7 @@ void LabUi::do_triggered_anim(animation::ModelAnimationTriggerType type,
 	TextUnformatted(colB);         \
 
 
-void LabUi::build_table_info_txtbox(ship_info* sip) const
+static void build_ship_table_info_txtbox(ship_info* sip)
 {
 	with_TreeNode("Table information")
 	{
@@ -536,6 +616,26 @@ void LabUi::build_table_info_txtbox(ship_info* sip) const
 			table_text = get_ship_table_text(sip);
 
 		InputTextMultiline("##table_text",
+			const_cast<char*>(table_text.c_str()),
+			table_text.length(),
+			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+			ImGuiInputTextFlags_ReadOnly);
+	}
+}
+
+static void build_weapon_table_info_txtbox(weapon_info* wip)
+{
+	with_TreeNode("Table information")
+	{
+		// Cache result across frames for performance
+		static SCP_string table_text;
+		static int old_class = getLabManager()->CurrentClass;
+
+		if (table_text.length() == 0 || old_class != getLabManager()->CurrentClass) {
+			table_text = get_weapon_table_text(wip);
+		}
+
+		InputTextMultiline("##weapon_table_text",
 			const_cast<char*>(table_text.c_str()),
 			table_text.length(),
 			ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
@@ -751,15 +851,9 @@ void LabUi::build_weapon_options(ship* shipp) const {
 
 				build_primary_weapon_combobox(text, wip, primary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_PRIMARY_BANKS] = {false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FirePrimaries |= 1 << bank;
-				} else {
-					getLabManager()->FirePrimaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FirePrimaries[bank]);
 
 				bank++;
 			}
@@ -777,18 +871,126 @@ void LabUi::build_weapon_options(ship* shipp) const {
 				sprintf(text, "##Secondary bank %i", bank);
 				build_secondary_weapon_combobox(text, wip, secondary_slot);
 				SameLine();
-				static bool should_fire[MAX_SHIP_SECONDARY_BANKS] = {false, false, false, false};
 				SCP_string cb_text;
 				sprintf(cb_text, "Fire bank %i##secondary", bank);
-				Checkbox(cb_text.c_str(), &should_fire[bank]);
-				if (should_fire[bank]) {
-					getLabManager()->FireSecondaries |= 1 << bank;
-				} else {
-					getLabManager()->FireSecondaries &= ~(1 << bank);
-				}
+				Checkbox(cb_text.c_str(), &getLabManager()->FireSecondaries[bank]);
 
 				bank++;
 			}
+		}
+	}
+
+	with_TreeNode("Turrets")
+	{
+		auto subsys_idx = 0; // unique IDs
+
+		for (auto* subsys = GET_FIRST(&shipp->subsys_list); subsys != END_OF_LIST(&shipp->subsys_list);
+			 subsys = GET_NEXT(subsys)) {
+			if (subsys->system_info->type != SUBSYSTEM_TURRET)
+				continue;
+
+			SCP_string label;
+			sprintf(label, "Turret %i - %s", subsys_idx, subsys->system_info->subobj_name);
+
+			if (TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_DefaultOpen)) {
+
+				Spacing();
+
+				// Find the turret in FireTurrets
+				auto it = std::find_if(getLabManager()->FireTurrets.begin(),
+					getLabManager()->FireTurrets.end(),
+					[subsys](const auto& tuple) { return std::get<0>(tuple) == subsys; });
+
+				int mode = 0; // Default to UVEC aligned
+				bool fire_now = false;
+
+				bool multipart = false;
+				if (subsys->system_info->turret_gun_sobj >= 0 && subsys->system_info->subobj_num != subsys->system_info->turret_gun_sobj) {
+					multipart = true;
+				}
+
+				const char* aiming_options[] = {"Random", "UVEC Aligned", "Initial"};
+
+				// In the lab we need to force fire on target because we're faking having an actual target
+				subsys->system_info->flags.set(Model::Subsystem_Flags::Fire_on_target);
+
+				// If already added, load current mode + fire state
+				if (it != getLabManager()->FireTurrets.end()) {
+					mode = static_cast<int>(std::get<1>(*it));
+					fire_now = std::get<2>(*it);
+				}
+
+				// Fire checkbox
+				SCP_string cb_label;
+				sprintf(cb_label, "Fire Turret##turret%i", subsys_idx);
+				Checkbox(cb_label.c_str(), &fire_now);
+
+				// Mode dropdown
+				ImGui::TextUnformatted("Turret Aiming:");
+				ImGui::SameLine(150.0f); // Start combo box at 150px
+				ImGui::SetNextItemWidth(200.0f);
+				ImGui::Combo("##AimingMode", &mode, aiming_options, multipart ? 3 : 2);
+
+				auto modeToAimType = [multipart](int this_mode) -> LabTurretAimType {
+					switch (this_mode) {
+					case 0:
+						return LabTurretAimType::RANDOM;
+					case 1:
+						return LabTurretAimType::UVEC;
+					case 2:
+						if (multipart) {
+							return LabTurretAimType::INITIAL;
+						} else {
+							return LabTurretAimType::UVEC;
+						}
+					default:
+						return LabTurretAimType::RANDOM; // fallback
+					}
+				};
+
+				// Update or add to FireTurrets
+				if (it == getLabManager()->FireTurrets.end()) {
+					getLabManager()->FireTurrets.emplace_back(subsys, modeToAimType(mode), fire_now);
+
+					// Set timestamps to allow turret to fire immediately
+					subsys->turret_next_fire_stamp = timestamp(0);
+					auto& weps = subsys->weapons;
+					for (auto& stamp : weps.next_primary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+
+					for (auto& stamp : weps.next_secondary_fire_stamp) {
+						stamp = timestamp(0);
+					}
+				} else {
+					std::get<1>(*it) = modeToAimType(mode);
+					std::get<2>(*it) = fire_now;
+				}
+
+				auto& weps = subsys->weapons;
+
+				// PRIMARY BANKS
+				for (int bank = 0; bank < weps.num_primary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretPrimaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.primary_bank_weapons[bank]];
+					build_primary_weapon_combobox(text, wip, weps.primary_bank_weapons[bank]);
+				}
+
+				// SECONDARY BANKS
+				for (int bank = 0; bank < weps.num_secondary_banks; ++bank) {
+					SCP_string text;
+					sprintf(text, "##TurretSecondaryBank%i_%i", subsys_idx, bank);
+
+					auto* wip = &Weapon_info[weps.secondary_bank_weapons[bank]];
+					build_secondary_weapon_combobox(text, wip, weps.secondary_bank_weapons[bank]);
+				}
+
+				TreePop(); // Close this turret node
+			}
+
+			subsys_idx++;
 		}
 	}
 }
@@ -827,37 +1029,10 @@ void LabUi::build_secondary_weapon_combobox(SCP_string& text, weapon_info* wip, 
 	}
 }
 
-void LabUi::reset_animations(ship* shipp, ship_info* sip) const
+void LabUi::reset_animations()
 {
-	polymodel_instance* shipp_pmi = model_get_instance(shipp->model_instance_num);
-
-	for (auto i = 0; i < MAX_SHIP_PRIMARY_BANKS; ++i) {
-		if (triggered_primary_banks[i]) {
-			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::PrimaryBank, i)
-				.start(animation::ModelAnimationDirection::RWD);
-			triggered_primary_banks[i] = false;
-		}
-	}
-
-	for (auto i = 0; i < MAX_SHIP_SECONDARY_BANKS; ++i) {
-		if (triggered_secondary_banks[i]) {
-			sip->animations.getAll(shipp_pmi, animation::ModelAnimationTriggerType::SecondaryBank, i)
-				.start(animation::ModelAnimationDirection::RWD);
-			triggered_secondary_banks[i] = false;
-		}
-	}
-
-	for (auto& entry : manual_animations) {
-		if (entry.second) {
-			sip->animations.getAll(shipp_pmi, entry.first).start(animation::ModelAnimationDirection::RWD);
-			entry.second = false;
-		}
-	}
-
-	for (const auto& entry : manual_animation_triggers) {
-		auto animation_type = entry.first;
-		sip->animations.getAll(shipp_pmi, animation_type).start(animation::ModelAnimationDirection::RWD);
-	}
+	// With full animation support for docking stages and fighter bays it's honestly just easier to reload the current object
+	getLabManager()->changeDisplayedObject(getLabManager()->CurrentMode, getLabManager()->CurrentClass, getLabManager()->CurrentSubtype);
 }
 
 void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnimationSet::RegisteredTrigger>& anim_triggers,
@@ -868,10 +1043,35 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 		})) {
 		with_TreeNode(label.c_str())
 		{
+			int count = 1;
 			for (const auto& anim_trigger : anim_triggers) {
 				if (anim_trigger.type == trigger_type) {
 
-					if (Button(anim_trigger.name.c_str())) {
+					SCP_string button_label = anim_trigger.name;
+					switch (trigger_type) {
+					case animation::ModelAnimationTriggerType::DockBayDoor:
+						button_label += "Trigger Bay Door Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage1:
+						button_label += "Trigger Docking Stage 1 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage2:
+						button_label += "Trigger Docking Stage 2 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docking_Stage3:
+						button_label += "Trigger Docking Stage 3 Animation " + std::to_string(count++);
+						break;
+					case animation::ModelAnimationTriggerType::Docked:
+						button_label += "Trigger Docked Animation " + std::to_string(count++);
+						break;
+					default:
+						// We really shouldn't be here, but just in case
+						Assertion(false, "Unexpected animation trigger type %d", static_cast<int>(trigger_type));
+						button_label += "Trigger Animation " + std::to_string(count++);
+						break;
+					}
+
+					if (Button(button_label.c_str())) {
 						auto& scripted_triggers = manual_animation_triggers[trigger_type];
 						auto direction = scripted_triggers[anim_trigger.name];
 						do_triggered_anim(trigger_type,
@@ -886,6 +1086,182 @@ void LabUi::maybe_show_animation_category(const SCP_vector<animation::ModelAnima
 	}
 }
 
+void LabUi::build_dock_test_options(ship* shipp)
+{
+	with_TreeNode("Docking Tests")
+	{
+		auto dockee_dock_map = get_docking_point_map(Ship_info[shipp->ship_info_index].model_num);
+
+		if (!dockee_dock_map.empty()) {
+
+			if (ImGui::BeginCombo("Docker Ship Class", Ship_info[getLabManager()->DockerClass].name)) {
+				for (size_t i = 0; i < Ship_info.size(); ++i) {
+					bool is_selected = (static_cast<int>(i) == getLabManager()->DockerClass);
+					if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
+						getLabManager()->DockerClass = static_cast<int>(i);
+						// Load model if needed
+						auto& dsip = Ship_info[getLabManager()->DockerClass];
+						if (dsip.model_num < 0) {
+							dsip.model_num = model_load(dsip.pof_file, &dsip);
+						}
+						auto new_dock_map = get_docking_point_map(dsip.model_num);
+
+						// Auto-select first available dockpoint (or clear if none)
+						if (!new_dock_map.empty()) {
+							getLabManager()->DockerDockPoint = new_dock_map.begin()->second;
+						} else {
+							getLabManager()->DockerDockPoint.clear();
+						}
+					}
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			auto& dsip = Ship_info[getLabManager()->DockerClass];
+			if (dsip.model_num < 0) {
+				dsip.model_num = model_load(dsip.pof_file, &dsip);
+			}
+			auto dock_map = get_docking_point_map(dsip.model_num);
+
+			// Ensure DockerDockPoint is initialized once based on the current DockerClass
+			if (getLabManager()->DockerDockPoint.empty()) {
+				if (!dock_map.empty()) {
+					getLabManager()->DockerDockPoint = dock_map.begin()->second;
+				}
+			}
+
+			const char* docker_label = getLabManager()->DockerDockPoint.c_str();
+
+			if (ImGui::BeginCombo("Docker Dockpoint", docker_label)) {
+				if (!dock_map.empty()) {
+					for (const auto& [index, name] : dock_map) {
+						bool is_selected = (name == getLabManager()->DockerDockPoint);
+						if (ImGui::Selectable(name.c_str(), is_selected)) {
+							getLabManager()->DockerDockPoint = name;
+						}
+						if (is_selected) {
+							ImGui::SetItemDefaultFocus();
+						}
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			// Auto-select first dockpoint if none currently selected
+			if (getLabManager()->DockeeDockPoint.empty()) {
+				getLabManager()->DockeeDockPoint = dockee_dock_map.begin()->second;
+			}
+
+			const char* dockee_label = getLabManager()->DockeeDockPoint.c_str();
+
+			if (ImGui::BeginCombo("Dockee Dockpoint", dockee_label)) {
+				for (const auto& [index, name] : dockee_dock_map) {
+					bool is_selected = (name == getLabManager()->DockeeDockPoint);
+					if (ImGui::Selectable(name.c_str(), is_selected)) {
+						getLabManager()->DockeeDockPoint = name;
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			if (Button("Begin Docking Test")) {
+				getLabManager()->beginDockingTest();
+			}
+
+			if (Button("Begin Undocking Test")) {
+				getLabManager()->beginUndockingTest();
+			}
+		}
+	}
+}
+
+void LabUi::build_bay_test_options(ship_info* sip)
+{
+	with_TreeNode("Fighterbay Tests")
+	{
+		auto bay_paths_map = get_bay_paths_map(sip->model_num);
+
+		if (!bay_paths_map.empty()) {
+
+			if (ImGui::BeginCombo("Bay Arrival/Departure Ship Class", Ship_info[getLabManager()->BayClass].name)) {
+				for (size_t i = 0; i < Ship_info.size(); ++i) {
+					bool is_selected = (static_cast<int>(i) == getLabManager()->BayClass);
+					if (ImGui::Selectable(Ship_info[i].name, is_selected)) {
+						getLabManager()->BayClass = static_cast<int>(i);
+					}
+					if (is_selected)
+						ImGui::SetItemDefaultFocus();
+				}
+				ImGui::EndCombo();
+			}
+
+			auto& bsip = Ship_info[getLabManager()->BayClass];
+
+			// Load the model
+			if (bsip.model_num < 0) {
+				bsip.model_num = model_load(bsip.pof_file, &bsip);
+			}
+
+			// Pick the first entry in bay_paths_map if it's set to 0
+			if (getLabManager()->BayPathMask == 0) {
+				int first_idx = bay_paths_map.begin()->first;
+				getLabManager()->BayPathMask = (1u << first_idx);
+			}
+
+			// Get the preview label by finding the one bit that's set
+			const char* path_label = "??";
+			for (const auto& [idx, name] : bay_paths_map) {
+				if (getLabManager()->BayPathMask & (1u << idx)) {
+					path_label = name.c_str();
+					break;
+				}
+			}
+
+			if (ImGui::BeginCombo("Bay Path", path_label)) {
+				for (const auto& [idx, name] : bay_paths_map) {
+					bool is_selected = (getLabManager()->BayPathMask & (1u << idx)) != 0;
+					if (ImGui::Selectable(name.c_str(), is_selected)) {
+						getLabManager()->BayPathMask = (1u << idx);
+					}
+					if (is_selected) {
+						ImGui::SetItemDefaultFocus();
+					}
+				}
+				ImGui::EndCombo();
+			}
+
+			static const char* mode_names[] = {"Arrival", "Departure"};
+			int mode_idx = static_cast<int>(getLabManager()->BayTestMode);
+
+			Assertion(mode_idx == 0 || mode_idx == 1, "Bay test mode is not valid!"); // only two valid modes
+
+			if (ImGui::BeginCombo("Bay Test Mode", mode_names[mode_idx])) {
+				// Arrival
+				if (ImGui::Selectable("Arrival", getLabManager()->BayTestMode == BayMode::Arrival)) {
+					getLabManager()->BayTestMode = BayMode::Arrival;
+				}
+
+				// Departure
+				if (ImGui::Selectable("Departure", getLabManager()->BayTestMode == BayMode::Departure)) {
+					getLabManager()->BayTestMode = BayMode::Departure;
+				}
+
+				ImGui::SetItemDefaultFocus();
+				ImGui::EndCombo();
+			}
+
+			if (Button("Begin Bay Path Test")) {
+				getLabManager()->beginBayTest();
+			}
+		}
+	}
+}
+
 void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 {
 	with_TreeNode("Animations")
@@ -893,7 +1269,7 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 		const auto& anim_triggers = sip->animations.getRegisteredTriggers();
 
 		if (Button("Reset animations")) {
-			reset_animations(shipp, sip);
+			reset_animations();
 		}
 
 		if (shipp->weapons.num_primary_banks > 0) {
@@ -933,6 +1309,9 @@ void LabUi::build_animation_options(ship* shipp, ship_info* sip) const
 		maybe_show_animation_category(anim_triggers,
 			animation::ModelAnimationTriggerType::Docking_Stage3,
 			"Docking stage 3##anims");
+		maybe_show_animation_category(anim_triggers,
+			animation::ModelAnimationTriggerType::Docked,
+			"Docked animations##anims");
 	}
 }
 
@@ -1013,7 +1392,7 @@ void LabUi::show_object_options() const
 
 			with_CollapsingHeader(sip->name)
 			{
-				build_table_info_txtbox(sip);
+				build_ship_table_info_txtbox(sip);
 
 				build_model_info_box(sip, pm);
 
@@ -1025,12 +1404,19 @@ void LabUi::show_object_options() const
 				if (getLabManager()->isSafeForShips()) {
 					if (Button("Destroy ship")) {
 						if (Objects[getLabManager()->CurrentObject].type == OBJ_SHIP) {
+							// If we have testing objects, delete them
+							getLabManager()->deleteTestObjects();
+
 							auto obj = &Objects[getLabManager()->CurrentObject];
 
 							obj->flags.remove(Object::Object_Flags::Player_ship);
 							ship_self_destruct(obj);
 						}
 					}
+
+					build_dock_test_options(shipp);
+
+					build_bay_test_options(sip);
 
 					build_animation_options(shipp, sip);
 				}
@@ -1039,6 +1425,62 @@ void LabUi::show_object_options() const
 			with_CollapsingHeader("Weapons")
 			{
 				build_weapon_options(shipp);
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Weapon && getLabManager()->isSafeForWeapons()) {
+			auto wip = &Weapon_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Weapon Info")
+			{
+				build_weapon_table_info_txtbox(wip);
+			}
+			
+			with_CollapsingHeader("Object Actions")
+			{
+				Checkbox("Progress weapon lifetime", &getLabManager()->AllowWeaponDestruction);
+
+				if (VALID_FNAME(wip->tech_model)) {
+					if (Checkbox("Show Tech Model", &getLabManager()->ShowingTechModel)) {
+						getLabManager()->changeDisplayedObject(LabMode::Weapon, getLabManager()->CurrentClass);
+					}
+				}
+			}
+		} else if (getLabManager()->CurrentMode == LabMode::Asteroid && getLabManager()->CurrentClass >= 0) {
+			const auto& info = Asteroid_info[getLabManager()->CurrentClass];
+
+			with_CollapsingHeader("Object Info")
+			{
+				static SCP_string table_text;
+				static int old_class = -1;
+
+				if (table_text.empty() || old_class != getLabManager()->CurrentClass) {
+					table_text = get_asteroid_table_text(&info);
+					old_class = getLabManager()->CurrentClass;
+				}
+
+				InputTextMultiline("##asteroid_table_text",
+					const_cast<char*>(table_text.c_str()),
+					table_text.length(),
+					ImVec2(-FLT_MIN, GetTextLineHeight() * 16),
+					ImGuiInputTextFlags_ReadOnly);
+			}
+
+			with_CollapsingHeader("Object actions")
+			{
+				if (getLabManager()->isSafeForAsteroids()) {
+					if (Button("Destroy object")) {
+						if (Objects[getLabManager()->CurrentObject].type == OBJ_ASTEROID) {
+							auto obj = &Objects[getLabManager()->CurrentObject];
+
+							if (obj->type == OBJ_ASTEROID) {
+								vec3d dummy_pos = obj->pos;
+								vec3d dummy_force = ZERO_VECTOR;
+
+								// Apply full asteroid health to guarantee destruction
+								asteroid_hit(obj, nullptr, &dummy_pos, obj->hull_strength + 1.0f, &dummy_force);
+							}
+						}
+					}
+				}
 			}
 		}
 	}

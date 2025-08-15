@@ -33,6 +33,7 @@
 #include "parse/parselo.h"
 #include "parse/sexp.h"
 #include "playerman/player.h"
+#include "scripting/global_hooks.h"
 #include "tracing/tracing.h"
 #include "ui/ui.h"
 
@@ -739,27 +740,46 @@ void mission_goal_status_change( int goal_num, int new_status)
 	}
 
 	type = Mission_goals[goal_num].type & GOAL_TYPE_MASK;
+
+	bool isOverride = false;
+
+	if (scripting::hooks::OnMissionGoalStatusChanged->isActive()) {
+		auto paramList = scripting::hook_param_list(scripting::hook_param("Name", 's', Mission_goals[goal_num].name),
+			scripting::hook_param("Description", 's', Mission_goals[goal_num].message),
+			scripting::hook_param("Type", 'i', type + 1),
+			scripting::hook_param("State", 'b', new_status == GOAL_COMPLETE));
+		if (scripting::hooks::OnMissionGoalStatusChanged->isOverride(paramList)) {
+			isOverride = true; // Override here only prevents displaying the goals and playing the music. Everything
+							   // else still runs.
+		}
+		scripting::hooks::OnMissionGoalStatusChanged->run(paramList);
+	}
+
 	Mission_goals[goal_num].satisfied = new_status;
 	if ( new_status == GOAL_FAILED ) {
 		// don't display bonus goal failure
-		if ( type != BONUS_GOAL ) {
+		if (type != BONUS_GOAL ) {
 
-			// only do HUD and music is goals are my teams goals.
+			// only do HUD and music if goals are my teams goals.
 			if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team)) ) {
-				hud_add_objective_messsage(type, new_status);
-				if ( !( Mission_goals[goal_num].flags & MGF_NO_MUSIC ) ) {	// maybe play event music
-					event_music_primary_goal_failed();
+				if (!isOverride) {
+					hud_add_objective_messsage(type, new_status);
+					if (!(Mission_goals[goal_num].flags & MGF_NO_MUSIC)) { // maybe play event music
+						event_music_primary_goal_failed();
+					}
 				}
 			}
 		}
 		mission_log_add_entry( LOG_GOAL_FAILED, Mission_goals[goal_num].name.c_str(), nullptr, goal_num );
 	} else if ( new_status == GOAL_COMPLETE ) {
 		if ( (Game_mode & GM_NORMAL) || ((Net_player != NULL) && (Net_player->p_info.team == Mission_goals[goal_num].team))) {
-			hud_add_objective_messsage(type, new_status);
-			// cue for Event Music
-			if ( !(Mission_goals[goal_num].flags & MGF_NO_MUSIC) ) {
-				event_music_primary_goals_met();
-			}			
+			if (!isOverride) {
+				hud_add_objective_messsage(type, new_status);
+				// cue for Event Music
+				if (!(Mission_goals[goal_num].flags & MGF_NO_MUSIC)) {
+					event_music_primary_goals_met();
+				}
+			}
 			mission_log_add_entry( LOG_GOAL_SATISFIED, Mission_goals[goal_num].name.c_str(), nullptr, goal_num );
 		}	
 		
@@ -970,7 +990,7 @@ void mission_process_event( int event )
 			mission_event_unset_directive_special(event);
 		}
 
-		if (Mission_events[event].count || (Directive_count > 1)){
+		if (Mission_events[event].count || (Directive_count > 1) || (Always_show_directive_value_count && Directive_count != DIRECTIVE_WING_ZERO)) {
 			Mission_events[event].count = Directive_count;
 		}
 
@@ -1406,8 +1426,10 @@ void mission_goal_mark_all_true(int type)
 	int i;
 
 	for (i = 0; i < (int)Mission_goals.size(); i++ ) {
-		if ( (Mission_goals[i].type & GOAL_TYPE_MASK) == type )
+		if ( (Mission_goals[i].type & GOAL_TYPE_MASK) == type ) {
 			Mission_goals[i].satisfied = GOAL_COMPLETE;
+			mission_log_add_entry(LOG_GOAL_SATISFIED, Mission_goals[i].name.c_str(), nullptr, i);
+		}
 	}
 
 	HUD_sourced_printf(HUD_SOURCE_HIDDEN, NOX("All %s goals marked true"), Goal_type_text(type) );

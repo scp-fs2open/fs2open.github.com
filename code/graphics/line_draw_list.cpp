@@ -11,13 +11,13 @@ namespace graphics {
 line_draw_list::line_draw_list() {
 }
 void line_draw_list::add_line(int x1, int y1, int x2, int y2, int resize_mode) {
-	add_vertex(x1, y1, resize_mode, &gr_screen.current_color);
-	add_vertex(x2, y2, resize_mode, &gr_screen.current_color);
+	add_vertex(x1, y1, resize_mode, &GR_CURRENT_COLOR);
+	add_vertex(x2, y2, resize_mode, &GR_CURRENT_COLOR);
 }
 void line_draw_list::add_gradient(int x1, int y1, int x2, int y2, int resize_mode) {
-	add_vertex(x1, y1, resize_mode, &gr_screen.current_color);
+	add_vertex(x1, y1, resize_mode, &GR_CURRENT_COLOR);
 
-	color endColor = gr_screen.current_color;
+	color endColor = GR_CURRENT_COLOR;
 	endColor.alpha = 0;
 	add_vertex(x2, y2, resize_mode, &endColor);
 }

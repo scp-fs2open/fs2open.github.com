@@ -15,8 +15,15 @@
 #include "globalincs/pstypes.h"
 #include "hud/hud.h"
 
-#define SHIELD_HIT_DURATION	1400	// time a shield quadrant flashes after being hit
+#define SHIELD_HIT_FLASH_DURATION	1400	// time a shield quadrant flashes after being hit
 #define SHIELD_FLASH_INTERVAL	200	// time between shield quadrant flashes
+
+enum ShieldGaugeType {
+	SHIELD_GAUGE_PLAYER,
+	SHIELD_GAUGE_TARGET,
+
+	num_shield_gauge_types
+};
 
 typedef struct shield_hit_info
 {
@@ -39,17 +46,17 @@ class ship_info;
 void hud_shield_level_init();
 void hud_shield_equalize(object *objp, player *pl);
 void hud_augment_shield_quadrant(object *objp, int direction);
-void hud_shield_assign_info(ship_info *sip, char *filename);
-void hud_show_mini_ship_integrity(object *objp, int force_x = -1, int force_y = -1);
-void hud_shield_show_mini(object *objp, int x_force = -1, int y_force = -1, int x_hull_offset = 0, int y_hull_offset = 0);
+void hud_shield_assign_info(ship_info *sip, const char *filename);
+void hud_show_mini_ship_integrity(const object *objp, int force_x = -1, int force_y = -1);
+void hud_shield_show_mini(const object *objp, int x_force = -1, int y_force = -1, int x_hull_offset = 0, int y_hull_offset = 0);
 void hud_shield_hit_update();
-void hud_shield_quadrant_hit(object *objp, int quadrant);
-void hud_shield_hit_reset(object *objp, int player=0);
+void hud_shield_quadrant_hit(const object *objp, int quadrant);
+void hud_shield_hit_reset(const object *objp, int player=0);
 
-void shield_info_reset(object *objp, shield_hit_info *shi);
+void shield_info_reset(const object *objp, const shield_hit_info *shi);
 
 // random page in stuff - moved here by Goober5000
-extern void hud_ship_icon_page_in(ship_info *sip);
+extern void hud_ship_icon_page_in(const ship_info *sip);
 
 class HudGaugeShield: public HudGauge
 {
@@ -57,9 +64,9 @@ protected:
 public:
 	HudGaugeShield();
 	HudGaugeShield(int _gauge_object, int _gauge_config);
-	void render(float frametime) override;
-	void showShields(object *objp, int mode);
-	int maybeFlashShield(int target_index, int shield_offset);
+	void showShields(const object* objp, ShieldGaugeType mode, bool config);
+	void render(float frametime, bool config = false) override;
+	int maybeFlashShield(ShieldGaugeType target_index, int shield_offset);
 	void renderShieldIcon(coord2d coords[6]);
 };
 
@@ -68,7 +75,7 @@ class HudGaugeShieldPlayer: public HudGaugeShield
 protected:
 public:
 	HudGaugeShieldPlayer();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeShieldTarget: public HudGaugeShield
@@ -76,7 +83,7 @@ class HudGaugeShieldTarget: public HudGaugeShield
 protected:
 public:
 	HudGaugeShieldTarget();
-	void render(float frametime) override;
+	void render(float frametime, bool config = false) override;
 };
 
 class HudGaugeShieldMini: public HudGauge
@@ -89,14 +96,14 @@ protected:
 	int Mini_2digit_offsets[2];
 public:
 	HudGaugeShieldMini();
-	void initBitmaps(char *fname);
+	void initBitmaps(const char *fname);
 	void init3DigitOffsets(int x, int y);
 	void init1DigitOffsets(int x, int y);
 	void init2DigitOffsets(int x, int y);
 	int maybeFlashShield(int target_index, int shield_offset);
-	void showMiniShields(object *objp);
-	void showIntegrity(float p_target_integrity);
-	void render(float frametime) override;
+	void showMiniShields(const object* objp, bool config);
+	void showIntegrity(float p_target_integrity, bool config);
+	void render(float frametime, bool config = false) override;
 	void pageIn() override;
 };
 #endif /* __FREESPACE_HUDSHIELDBOX_H__ */

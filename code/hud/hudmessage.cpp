@@ -305,7 +305,7 @@ void HudGaugeMessages::processMessageBuffer()
 		ptr = strstr(msg, NOX(": "));
 		if ( ptr ) {
 			int sw;
-			gr_get_string_size(&sw, nullptr, msg, (ptr + 2 - msg));
+			gr_get_string_size(&sw, nullptr, msg, 1.0f, (ptr + 2 - msg));
 			offset = sw;
 		}
 
@@ -437,29 +437,45 @@ void HudGaugeMessages::preprocess()
  * HudGaugeMessages::render() will display the active HUD messages on the HUD.  It will scroll
  * the messages up when a new message arrives.
  */
-void HudGaugeMessages::render(float  /*frametime*/)
+void HudGaugeMessages::render(float  /*frametime*/, bool config)
 {
 	hud_set_default_color();
 
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	if (config) {
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+        int bmw, bmh;
+		SCP_string msg = XSTR("Terran Fighter: HUD Message Display", 1874);
+		gr_get_string_size(&bmw, &bmh, msg.c_str(), scale);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + bmw, y, y + bmh);
+		setGaugeColor(HUD_C_NONE, config);
+		renderPrintf(x, y, scale, config, "%s", msg.c_str());
+
+		// Config version doesn't need to do anything else
+		return;
+	}
+
 	// dependant on max_width, max_lines, and line_height
-	setClip(position[0], position[1], Window_width, Window_height+2);
+	setClip(x, y, fl2i(Window_width * scale), fl2i(Window_height * scale) + 2);
 
 	//Since setClip already sets makes drawing local, further renderings mustn't additionally slew
 	bool doSlew = reticle_follow;
 	reticle_follow = false;
 
-	for ( SCP_vector<Hud_display_info>::iterator m = active_messages.begin(); m != active_messages.end(); ++m) {
-		if ( !timestamp_elapsed(m->total_life) ) {
-			if ( !(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
-				// set the appropriate color					
-				if ( m->msg.source ) {
+	for (auto& active_message : active_messages) {
+		if (!timestamp_elapsed(active_message.total_life)) {
+			if (!(Player->flags & PLAYER_FLAGS_MSG_MODE) || !Hidden_by_comms_menu) {
+				// set the appropriate color
+				if (active_message.msg.source) {
 					setGaugeColor(HUD_C_BRIGHT);
 				} else {
 					setGaugeColor();
 				}
-
 				// print the message out
-				renderPrintf(m->msg.x, m->y, "%s", m->msg.text.c_str());
+				renderString(x + active_message.msg.x, y + active_message.y, active_message.msg.text.c_str(), scale);
 			}
 		}
 	}
@@ -600,7 +616,7 @@ int hud_query_scrollback_size()
 	int count = 0, y_add = 0;
 	int font_height = gr_get_font_height();
 
-	if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited)
+	if (Msg_scrollback_lines.empty() || !HUD_msg_inited)
 		return 0;
 
 	for (int i = 0; i < (int)Msg_scrollback_lines.size(); i++) {
@@ -641,7 +657,7 @@ void hud_add_msg_to_scrollback(const char *text, int source, int t)
 
 	// determine the length of the sender's name for underlining
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, (ptr - buf));
+		gr_get_string_size(&w, nullptr, buf, 1.0f, (ptr - buf));
 	}
 
 	// create the new node for the vector
@@ -661,7 +677,7 @@ int hud_get_scroll_max_pos()
 		// number of pixels in excess of what can be displayed
 		int excess = Scroll_max - Hud_mission_log_list_coords[gr_screen.res][3];
 
-		if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited) {
+		if (Msg_scrollback_lines.empty() || !HUD_msg_inited) {
 			max = 0;
 		} else {
 
@@ -730,7 +746,7 @@ void hud_goto_pos(int delta)
 	if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
 		int count = 0, y = 0;
 
-		if (Msg_scrollback_lines.size() <= 1 || !HUD_msg_inited)
+		if (Msg_scrollback_lines.empty() || !HUD_msg_inited)
 			return;
 
 		for (int i = 0; i < (int)Msg_scrollback_lines.size(); i++) {
@@ -812,7 +828,7 @@ void hud_scrollback_button_pressed(int n)
 
 		case SHOW_EVENTS_BUTTON:
 			Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-			Scroll_max = Num_log_lines * gr_get_font_height();
+			Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 			hud_scroll_reset();
 			break;
 
@@ -843,7 +859,7 @@ void hud_initialize_scrollback_lines()
 
 			int width = 0;
 			int height = 0;
-			gr_get_string_size(&width, &height, node_msg.text.c_str(), node_msg.text.length());
+			gr_get_string_size(&width, &height, node_msg.text.c_str(), 1.0f, node_msg.text.length());
 
 			int max_width = Hud_mission_log_list2_coords[gr_screen.res][2];
 			if (width > max_width) {
@@ -913,9 +929,9 @@ void hud_scrollback_init()
 	Background_bitmap = bm_load(Hud_mission_log_fname[gr_screen.res]);
 	// Status_bitmap = bm_load(Hud_mission_log_status_fname[gr_screen.res]);
 
-	message_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
+	mission_log_init_scrollback(Hud_mission_log_list_coords[gr_screen.res][2]);
 	if (Scrollback_mode == SCROLLBACK_MODE_EVENT_LOG)
-		Scroll_max = Num_log_lines * gr_get_font_height();
+		Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 	else if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES)
 		Scroll_max = Num_obj_lines * gr_get_font_height();
 	else
@@ -928,7 +944,7 @@ void hud_scrollback_init()
 void hud_scrollback_close()
 {
 	ML_objectives_close();
-	message_log_shutdown_scrollback();
+	mission_log_shutdown_scrollback();
 	if (Background_bitmap >= 0)
 		bm_release(Background_bitmap);
 	//if (Status_bitmap >= 0)
@@ -960,7 +976,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else {
@@ -975,7 +991,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		case KEY_SHIFTED | KEY_TAB:
 			if (Scrollback_mode == SCROLLBACK_MODE_OBJECTIVES) {
 				Scrollback_mode = SCROLLBACK_MODE_EVENT_LOG;
-				Scroll_max = Num_log_lines * gr_get_font_height();
+				Scroll_max = mission_log_scrollback_num_lines() * gr_get_font_height();
 				hud_scroll_reset();
 
 			} else if (Scrollback_mode == SCROLLBACK_MODE_MSGS_LOG) {
@@ -1052,7 +1068,7 @@ void hud_scrollback_do_frame(float  /*frametime*/)
 		Buttons[gr_screen.res][SHOW_MSGS_BUTTON].button.draw_forced(2);
 
 		int y = 0;
-		if (!(Msg_scrollback_lines.size() <= 1) && HUD_msg_inited) {
+		if (!Msg_scrollback_lines.empty() && HUD_msg_inited) {
 			int i = 0;
 			for (int j = 0; j < (int)Msg_scrollback_lines.size(); j++) {
 				line_node node_msg = Msg_scrollback_lines[j];
@@ -1140,7 +1156,7 @@ HudGauge(HUD_OBJECT_TALKING_HEAD, HUD_TALKING_HEAD, false, true, (VM_DEAD_VIEW |
 
 void HudGaugeTalkingHead::initialize()
 {
-	head_anim = NULL;
+	head_anim = nullptr;
 	msg_id = -1;
 
 	HudGauge::initialize();
@@ -1176,14 +1192,65 @@ void HudGaugeTalkingHead::initBitmaps(const char *fname)
  * Renders everything for a head animation
  * Also checks for when new head ani's need to start playing
  */
-void HudGaugeTalkingHead::render(float frametime)
+void HudGaugeTalkingHead::render(float frametime, bool config)
 {
 	if ( Head_frame.first_frame == -1 ){
 		return;
 	}
 
-	if(msg_id != -1 && head_anim != NULL) {
-		if(!head_anim->done_playing) {
+	if (config) {
+		int x = position[0];
+		int y = position[1];
+		float scale = 1.0;
+
+		std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		int bmw, bmh;
+		bm_get_info(Head_frame.first_frame, &bmw, &bmh);
+		hud_config_set_mouse_coords(gauge_config_id, x, x + fl2i(bmw * scale), y, y + fl2i(bmh * scale));
+
+		// Talking head is complex enough that we can do all the config rendering right here and exit early
+		setGaugeColor(HUD_C_NONE, config);
+		renderBitmap(Head_frame.first_frame, x, y, scale, config); // head ani border
+		renderString(x + fl2i(Header_offsets[0] * scale), y + fl2i(Header_offsets[1] * scale), XSTR("message", 217), scale, config); // title
+		// Ideally this would be defined somewhere, maybe in hud_gauges.tbl?
+		SCP_string head_fname = HC_head_anim_filename.empty() ? "head-cm4b.ani" : HC_head_anim_filename;
+		HC_talking_head_frame = bm_load_animation(head_fname.c_str());
+		bm_page_in_aabitmap(HC_talking_head_frame);
+		if (HC_talking_head_frame != -1) {
+			// This isn't *exactly* how heads are drawn on the HUD, but it's close enough for the Config UI
+			renderBitmap(HC_talking_head_frame,
+				x + fl2i(Anim_offsets[0] * scale),
+				y + fl2i(Anim_offsets[1] * scale),
+				scale,
+				config);
+		}
+		return;
+	}
+
+	if(msg_id != -1) {
+
+		// Get our message data. Current max is 2 so this shouldn't be much of a performance hit
+		pmessage* cur_message = nullptr;
+		for (int j = 0; j < Num_messages_playing; ++j) {
+			if (Playing_messages[j].id == msg_id) {
+				cur_message = &Playing_messages[j];
+				break; // only one head ani plays at a time
+			}
+		}
+
+		// Should we play a frame or not?
+		bool play_frame = false;
+		if (head_anim != nullptr) {
+			// New method loops until the message audio is done
+			if (Always_loop_head_anis && cur_message != nullptr && (cur_message->builtin_type != MESSAGE_WINGMAN_SCREAM)) {
+				play_frame = cur_message->play_anim;
+				// Old method only plays once
+			} else if (head_anim != nullptr) {
+				play_frame = !head_anim->done_playing;
+			}
+		}
+
+		if (play_frame) {
 			// draw frame
 			// hud_set_default_color();
 			setGaugeColor();
@@ -1235,24 +1302,34 @@ void HudGaugeTalkingHead::render(float frametime)
 			// draw title
 			renderString(position[0] + Header_offsets[0], position[1] + Header_offsets[1], XSTR("message", 217));
 		} else {
-			for (int j = 0; j < Num_messages_playing; ++j) {
-				if (Playing_messages[j].id == msg_id) {
-					Playing_messages[j].play_anim = false;
-					break;  // only one head ani plays at a time
+			if (cur_message == nullptr) {
+				for (int j = 0; j < Num_messages_playing; ++j) {
+					if (Playing_messages[j].id == msg_id) {
+						Playing_messages[j].play_anim = false;
+						break; // only one head ani plays at a time
+					}
 				}
+			} else {
+				cur_message->play_anim = false;
 			}
 			msg_id = -1;    // allow repeated messages to display a new head ani
-			head_anim = NULL; // Nothing to see here anymore, move along
+			head_anim = nullptr; // Nothing to see here anymore, move along
 		}
 	}
 	// check playing messages to see if we have any messages with talking animations that need to be created.
 	for (int i = 0; i < Num_messages_playing; i++ ) {
 		if(Playing_messages[i].play_anim && Playing_messages[i].id != msg_id ) {
 			msg_id = Playing_messages[i].id;
-			if (Playing_messages[i].anim_data)
-				head_anim = Playing_messages[i].anim_data;	
-			else
-				head_anim = NULL;
+			if (Playing_messages[i].anim_data) {
+				head_anim = Playing_messages[i].anim_data;
+				// If we're using the newer setup then choose a random starting frame
+				if (Use_newer_head_ani_suffix && (Playing_messages[i].builtin_type != MESSAGE_WINGMAN_SCREAM) && head_anim->num_frames > 0) {
+					int random_frame = util::Random::next(head_anim->num_frames); // Generate random frame to start with
+					head_anim->anim_time = (float)random_frame * head_anim->total_time / head_anim->num_frames;
+				}
+			} else {
+				head_anim = nullptr;
+			}
 
 			return;
 		}
@@ -1304,22 +1381,37 @@ void HudGaugeFixedMessages::initCenterText(bool center) {
 	center_text = center;
 }
 
-void HudGaugeFixedMessages::render(float  /*frametime*/) {
+void HudGaugeFixedMessages::render(float  /*frametime*/, bool config) {
 	HUD_ft	*hp;
 
 	hp = &HUD_fixed_text[0];
+	const char* message = config ? XSTR("This is a fixed message", 1875) : hp->text;
 
-	if (!timestamp_elapsed(hp->end_time)) {
-		gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
-		
-		if (center_text) {
-			int w = 0;
-			gr_get_string_size(&w, nullptr, hp->text);
-			renderString(position[0] - (w / 2), position[1], hp->text);
+	int x = position[0];
+	int y = position[1];
+	float scale = 1.0;
+
+	int w, h;
+	gr_get_string_size(&w, &h, message, scale);
+
+	// This gauge uses the same settings as the message output gauge right now.
+	// That may change in the future, in which case the code below can be restored.
+	if (config) {
+		/*std::tie(x, y, scale) = hud_config_convert_coord_sys(position[0], position[1], base_w, base_h);
+		hud_config_set_mouse_coords(gauge_config_id, x - fl2i(w * scale), x + fl2i(w * scale), y, y + fl2i(h * scale));*/
+		return;
+	}
+
+	if (config || !timestamp_elapsed(hp->end_time)) {
+		if (!config) {
+			gr_set_color((hp->color >> 16) & 0xff, (hp->color >> 8) & 0xff, hp->color & 0xff);
 		} else {
-			renderString(position[0], position[1], hp->text);
+			setGaugeColor(HUD_C_NONE, config);
 		}
-		//renderString(0x8000, MSG_WINDOW_Y_START + MSG_WINDOW_HEIGHT + 8, hp->text);
+
+		int render_x = center_text ? x - (w / 2) : x;
+		
+		renderString(render_x, y, message, scale, config);
 	}
 }
 

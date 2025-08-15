@@ -7,30 +7,32 @@
 
 namespace antlrcpp {
 
-void replaceAll(std::string& str, std::string const& from, std::string const& to)
-{
-  if (from.empty())
-    return;
-
-  size_t start_pos = 0;
-  while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
-    str.replace(start_pos, from.length(), to);
-    start_pos += to.length(); // In case 'to' contains 'from', like replacing 'x' with 'yx'.
+  std::string escapeWhitespace(std::string_view in) {
+    std::string out;
+    escapeWhitespace(out, in);
+    out.shrink_to_fit();
+    return out;
   }
-}
 
-std::string ws2s(std::wstring const& wstr) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-  std::string narrow = converter.to_bytes(wstr);
-
-  return narrow;
-}
-
-std::wstring s2ws(const std::string &str) {
-  std::wstring_convert<std::codecvt_utf8_utf16<wchar_t>> converter;
-  std::wstring wide = converter.from_bytes(str);
-  
-  return wide;
-}
+  std::string& escapeWhitespace(std::string& out, std::string_view in) {
+    out.reserve(in.size());  // Best case, no escaping.
+    for (const auto &c : in) {
+      switch (c) {
+        case '\t':
+          out.append("\\t");
+          break;
+        case '\r':
+          out.append("\\r");
+          break;
+        case '\n':
+          out.append("\\n");
+          break;
+        default:
+          out.push_back(c);
+          break;
+      }
+    }
+    return out;
+  }
 
 } // namespace antrlcpp

@@ -13,6 +13,7 @@
 #include "globalincs/pstypes.h"
 #include "parse/parselo.h"
 #include "graphics/openxr.h"
+#include "io/joy_ff.h"
 
 #include <fcntl.h>
 #include <utf8.h>
@@ -32,7 +33,7 @@ namespace
 	const char* ORGANIZATION_NAME = "HardLightProductions";
 	const char* APPLICATION_NAME = "FreeSpaceOpen";
 
-	char* preferencesPath = nullptr;
+	SCP_string preferencesPath;
 
 	bool checkedLegacyMode = false;
 	bool legacyMode = false;
@@ -41,31 +42,50 @@ namespace
 	os::Viewport* mainViewPort = nullptr;
 	SDL_Window* mainSDLWindow = nullptr;
 
-	const char* getPreferencesPath()
+	SCP_string getPreferencesPath()
 	{
 		// Lazily initialize the preferences path
-		if (!preferencesPath) {
-		    preferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
-			
-			// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
-			// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
-		    if (preferencesPath == nullptr) {
-				static bool sdl_is_borked_warning = false;
-				if (!sdl_is_borked_warning) {
-					ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
-						"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
-						"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
-						"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
-					sdl_is_borked_warning = true;
+		if (preferencesPath.empty()) {
+			//Check for a custom path set by env variable
+			auto envPreferencesPath = getenv("FSO_PREFERENCES_PATH");
+			if (envPreferencesPath != nullptr && strlen(envPreferencesPath) > 0) {
+				preferencesPath = SCP_string(envPreferencesPath);
+			}
+			else {
+				char* sdlPreferencesPath = SDL_GetPrefPath(ORGANIZATION_NAME, APPLICATION_NAME);
+				if (sdlPreferencesPath != nullptr) {
+					preferencesPath = SCP_string(sdlPreferencesPath);
+					SDL_free(sdlPreferencesPath);
+					sdlPreferencesPath = nullptr;
 				}
-				// No preferences path, try current directory.
+				else {
+					// this section will at least tell the user if something is seriously wrong instead of just crashing without a message or debug log.
+					// It may crash later, especially when trying to load sound. But let's let it *try* to run in the current directory at least.
+					static bool sdl_is_borked_warning = false;
+					if (!sdl_is_borked_warning) {
+						ReleaseWarning(LOCATION, "%s\n\nSDL and Windows are unable to get the preferred path for the reason above. "
+							"Installing FSO, its executables and DLLs in another non-protected folder may fix the issue.\n\n"
+							"You may experience issues if you continue playing, and FSO may crash. Please report this error if it persists.\n\n"
+							"Report at www.hard-light.net or the hard-light discord.", SDL_GetError());
+						sdl_is_borked_warning = true;
+					}
+				}
+			}
+
+			// No preferences path, try current directory.
+			if (preferencesPath.empty()) {
 				Cmdline_portable_mode = true;
 				return "." DIR_SEPARATOR_STR;
 		    }
+
+			// Ensure path ends with a path separator (slash)
+			if (!preferencesPath.empty() && (preferencesPath.back() != DIR_SEPARATOR_CHAR)) {
+				preferencesPath += DIR_SEPARATOR_CHAR;
+			}
 #ifdef WIN32
 		    try {
-			    auto current           = preferencesPath;
-			    const auto prefPathEnd = preferencesPath + strlen(preferencesPath);
+			    auto current           = preferencesPath.begin();
+			    const auto prefPathEnd = preferencesPath.end();
 			    while (current != prefPathEnd) {
 				    const auto cp = utf8::next(current, prefPathEnd);
 				    if (cp > 127) {
@@ -74,12 +94,12 @@ namespace
 					    const auto invalid_end = current;
 						static bool force_portable_warning = false;
 						if (!force_portable_warning) {
-							utf8::prior(current, preferencesPath);
+							utf8::prior(current, preferencesPath.begin());
 							ReleaseWarning(LOCATION,
 								"Determined the preferences path as \"%s\". That path is not supported since it "
 								"contains a Unicode character (%s). Using portable mode. Set -portable_mode in "
 								"the commandline to avoid this message in the future.",
-								preferencesPath, std::string(current, invalid_end).c_str());
+								preferencesPath.c_str(), std::string(current, invalid_end).c_str());
 							force_portable_warning = true;
 						}
 						Cmdline_portable_mode = true;
@@ -87,13 +107,13 @@ namespace
 				    }
 			    }
 		    } catch (const std::exception& e) {
-			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath,
+			    Error(LOCATION, "UTF-8 error while checking the preferences path \"%s\": %s", preferencesPath.c_str(),
 			          e.what());
 		    }
 #endif
 	    }
 
-	    if (preferencesPath) {
+	    if (!preferencesPath.empty()) {
 			return preferencesPath;
 		}
 		else {
@@ -114,6 +134,7 @@ namespace
 			{
 				if (fAppActive) {
 					game_pause();
+					joy_unacquire_ff();
 
 					fAppActive = false;
 				}
@@ -124,6 +145,7 @@ namespace
 			case SDL_WINDOWEVENT_FOCUS_GAINED:
 			{
 				if (!fAppActive) {
+					joy_reacquire_ff();
 					game_unpause();
 
 					fAppActive = true;
@@ -429,16 +451,7 @@ bool os_foreground()
 // Sleeps for n milliseconds or until app becomes active.
 void os_sleep(uint ms)
 {
-#ifdef __APPLE__
-	// ewwww, I hate this!!  SDL_Delay() is causing issues for us though and this
-	// basically matches Apple examples of the same thing.  Same as SDL_Delay() but
-	// we aren't hitting up the system for anything during the process
-	uint then = SDL_GetTicks() + ms;
-
-	while (then > SDL_GetTicks());
-#else
 	SDL_Delay(ms);
-#endif
 }
 
 static bool file_exists(const SCP_string& path) {
@@ -512,14 +525,20 @@ bool os_is_legacy_mode()
 					<< "cmdline_fso.cfg";
 		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
 #else
-		// At this point we can't determine if the old config exists so just assume that it does
-		auto old_config_exists = true;
-		time_t old_config_time = os_registry_get_last_modification_time();
+		std::optional<time_t> optional_old_config_time = os_registry_get_last_modification_time();
+		time_t old_config_time = 0;
 
-		// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
-		path_stream.str("");
-		path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
-		old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		//Check if the registry key exists
+		auto old_config_exists = optional_old_config_time.has_value();
+
+		if (old_config_exists) {
+			old_config_time = optional_old_config_time.value();
+			// On Windows the cmdline_fso file was stored in the game root directory which should be in the current directory
+			// Only get this if the old config exists
+			path_stream.str("");
+			path_stream << "." << DIR_SEPARATOR_CHAR << "data" << DIR_SEPARATOR_CHAR << "cmdline_fso.cfg";
+			old_config_time = std::max(old_config_time, get_file_modification_time(path_stream.str()));
+		}
 #endif
 
 		if (new_config_exists && old_config_exists) {
@@ -554,7 +573,7 @@ bool os_is_legacy_mode()
 	if (legacyMode) {
 		// Print a message for the people running it from the terminal
 		fprintf(stdout, "FSO is running in legacy config mode. Please either update your launcher or"
-			" copy the configuration and pilot files to '%s' for better future compatibility.\n", getPreferencesPath());
+			" copy the configuration and pilot files to '%s' for better future compatibility.\n", getPreferencesPath().c_str());
 	}
 
 	checkedLegacyMode = true;
@@ -570,11 +589,6 @@ void os_deinit()
 {
 	// Free the view ports 
 	os::closeAllViewports();
-
-	if (preferencesPath) {
-		SDL_free(preferencesPath);
-		preferencesPath = nullptr;
-	}
 
 	SDL_Quit();
 }
@@ -728,9 +742,16 @@ static void handle_sdl_event(const SDL_Event& event) {
 
 	bool imgui_processed_this = false;
 	if ((gameseq_get_state() == GS_STATE_LAB) || (gameseq_get_state() == GS_STATE_INGAME_OPTIONS)) {
-		if (ImGui::GetIO().WantCaptureKeyboard || ImGui::GetIO().WantCaptureMouse) {
-					imgui_processed_this = ImGui_ImplSDL2_ProcessEvent(&event);
-		}
+		//In these states, we always need to forward inputs to ImGUI, and depending on the ImGUI state and the input type, we must consume it here instead of passing it to FSO.
+		ImGui_ImplSDL2_ProcessEvent(&event);
+
+		imgui_processed_this = (ImGui::GetIO().WantCaptureKeyboard &&
+									(event.type == SDL_EventType::SDL_KEYUP ||
+									 event.type == SDL_EventType::SDL_KEYDOWN)) ||
+							   (ImGui::GetIO().WantCaptureMouse &&
+									(event.type == SDL_EventType::SDL_MOUSEBUTTONUP ||
+				 					 event.type == SDL_EventType::SDL_MOUSEBUTTONDOWN||
+									 event.type == SDL_EventType::SDL_MOUSEMOTION));
 	}
 
 	if (!imgui_processed_this) {

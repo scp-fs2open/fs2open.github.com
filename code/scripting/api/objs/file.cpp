@@ -108,7 +108,7 @@ ADE_FUNC(read,
 	"<li>\"*a\" - Reads the rest of the file and returns it as a string.</li>"
 	"<li>\"*l\" - Reads a line. Skips the end of line markers.</li>"
 	"<li>(number) - Reads given number of characters, then returns them as a string.</li></ul>",
-	"number|string...",
+	"string",
 	"Requested data, or nil if the function fails")
 {
 	cfile_h* cfp = nullptr;
@@ -132,7 +132,7 @@ ADE_FUNC(read,
 		//int num = 0;
 		if (type == LUA_TSTRING)
 		{
-			fmt = lua_tostring(L, i);
+			fmt = lua_tostring_nullsafe(L, i);
 			if (!stricmp(fmt, "*n"))
 			{
 				double d = 0.0f;
@@ -280,7 +280,7 @@ ADE_FUNC(write, l_File, "string|number, any...",
 	{
 		if (type == LUA_TSTRING)
 		{
-			auto s = lua_tostring(L, l_pos);
+			auto s = lua_tostring_nullsafe(L, l_pos);
 			if (cfwrite(s, (int)sizeof(char), (int)strlen(s), cfp->get()))
 				num_successful++;
 		}

@@ -599,7 +599,7 @@ void EventEditorDialog::applyChanges()
 			SCP_string buf = "<" + event.name + ">";
 
 			// force it to not be too long
-			if (SCP_truncate(buf, NAME_LENGTH))
+			if (SCP_truncate(buf, NAME_LENGTH - 1))
 				buf.back() = '>';
 
 			names.emplace_back(event.name, buf);
@@ -674,7 +674,7 @@ bool EventEditorDialog::query_modified() {
 		return true;
 	}
 
-	for (auto i = 0; i < (int)m_events.size(); i++) {
+	for (size_t i = 0; i < m_events.size(); ++i) {
 		if (!lcase_equal(m_events[i].name, Mission_events[i].name)) {
 			return true;
 		}
@@ -699,23 +699,29 @@ bool EventEditorDialog::query_modified() {
 		if (!lcase_equal(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
 			return true;
 		}
+		if (m_events[i].flags != Mission_events[i].flags) {
+			return true;
+		}
 		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags) {
 			return true;
 		}
 	}
 
-	if ((int)m_messages.size() != Num_messages - Num_builtin_messages) {
+	if (static_cast<int>(m_messages.size()) != Num_messages - Num_builtin_messages) {
 		return true;
 	}
 
-	for (auto i = 0; i < (int)m_messages.size(); ++i) {
+	for (size_t i = 0; i < m_messages.size(); ++i) {
 		auto& local = m_messages[i];
-		auto& ref = Messages[i];
+		auto& ref = Messages[Num_builtin_messages + i];
 
 		if (stricmp(local.name, ref.name) != 0) {
 			return true;
 		}
 		if (stricmp(local.message, ref.message) != 0) {
+			return true;
+		}
+		if (!lcase_equal(local.note, ref.note)) {
 			return true;
 		}
 		if (local.persona_index != ref.persona_index) {
@@ -724,10 +730,10 @@ bool EventEditorDialog::query_modified() {
 		if (local.multi_team != ref.multi_team) {
 			return true;
 		}
-		if (safe_stricmp(local.avi_info.name, ref.avi_info.name)) {
+		if (safe_stricmp(local.avi_info.name, ref.avi_info.name) != 0) {
 			return true;
 		}
-		if (safe_stricmp(local.wave_info.name, ref.avi_info.name)) {
+		if (safe_stricmp(local.wave_info.name, ref.avi_info.name) != 0) {
 			return true;
 		}
 	}

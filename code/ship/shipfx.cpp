@@ -32,7 +32,6 @@
 #include "object/objectdock.h"
 #include "object/objectsnd.h"
 #include "parse/parselo.h"
-#include "particle/particle.h"
 #include "playerman/player.h"
 #include "render/3d.h" // needed for View_position, which is used when playing a 3D sound
 #include "render/batching.h"
@@ -73,25 +72,25 @@ static void shipfx_remove_submodel_ship_sparks(ship* shipp, int submodel_num)
 	Assert(submodel_num != -1);
 
 	// maybe no active sparks on submodel
-	if (shipp->num_hits == 0) {
+	if (shipp->num_sparks == 0) {
 		return;
 	}
 
-	for (int spark_num = 0; spark_num < shipp->num_hits; spark_num++) {
+	for (int spark_num = 0; spark_num < shipp->num_sparks; spark_num++) {
 		if (shipp->sparks[spark_num].submodel_num == submodel_num) {
 			shipp->sparks[spark_num].end_time = timestamp(1);
 		}
 	}
 }
 
-void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, matrix *objorient);
+void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, const polymodel *pm, const polymodel_instance *pmi, int submodel_num, const matrix *objorient);
 
 /**
  * Check if subsystem has live debris and create
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -270,7 +269,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	}
 }
 
-void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *subsys, vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion)
 {
 	vec3d subobj_pos;
 
@@ -298,7 +297,7 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, ship_subsys *sub
 	}
 }
 
-static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *pmi, vec3d *exp_center)
+static void shipfx_blow_up_hull(object *obj, const polymodel *pm, const polymodel_instance *pmi, const vec3d *exp_center)
 {
 	int i;
 	ushort sig_save;
@@ -344,7 +343,7 @@ static void shipfx_blow_up_hull(object *obj, polymodel *pm, polymodel_instance *
 /**
  * Creates "ndebris" pieces of debris on random verts of the the "submodel" in the ship's model.
  */
-void shipfx_blow_up_model(object *obj, int submodel, int ndebris, vec3d *exp_center)
+void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center)
 {
 	int i;
 
@@ -480,10 +479,11 @@ void shipfx_actually_warpin(ship *shipp, object *objp)
 
 	// dock leader needs to handle dockees
 	if (object_is_docked(objp)) {
-		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should only be the dock leader at this point!\n", shipp->ship_name);
+		Assertion(shipp->flags[Ship::Ship_Flags::Dock_leader], "The docked ship warping in (%s) should be the dock leader at this point!\n", shipp->ship_name);
 		dock_function_info dfi;
 		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage1_ndl_flag_helper);
 		dock_evaluate_all_docked_objects(objp, &dfi, object_remove_arriving_stage2_ndl_flag_helper);
+		shipp->flags.remove(Ship::Ship_Flags::Dock_leader);	// the dock leader flag is only used for arrival and could interfere with future scripted warpIn() calls
 	}
 
 	// let physics in on it too.
@@ -527,7 +527,6 @@ void shipfx_warpin_start( object *objp )
 	if (shipp->is_arriving())
 	{
 		mprintf(( "Ship '%s' is already arriving!\n", shipp->ship_name ));
-		Int3();
 		return;
 	}
 
@@ -597,7 +596,7 @@ static void shipfx_actually_warpout(ship *shipp, object *objp)
 		auto params = scripting::hook_param_list(scripting::hook_param("Self", 'o', objp));
 		auto conditions = scripting::hooks::ShipSourceConditions{ shipp };
 		if (OnWarpOutCompleteHook->isOverride(conditions, params)) {
-			OnWarpOutCompleteHook->run(conditions, params);
+			OnWarpOutCompleteHook->run(conditions, std::move(params));
 			return;
 		}
 	}
@@ -863,7 +862,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*2.0f );
 				vec3d pos,eye_posi;
 				matrix eye_ori;
-				ship_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
+				object_get_eye(&eye_posi, &eye_ori, Viewer_obj, false);
 				vm_vec_unrotate(&pos, &sip->cockpit_offset, &eye_ori);
 				vm_vec_add2(&pos, &eye_posi);
 
@@ -912,7 +911,8 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
 				}
 			}
 
-			if ( sip->flags[Ship::Info_Flags::Show_ship_model] ) {
+			if ( sip->flags[Ship::Info_Flags::Show_ship_model] 
+				&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active) ) {
 				vm_vec_scale_add( &rp1, &rp0, &light_dir, Viewer_obj->radius*10.0f );
 
 				mc.model_instance_num = -1;
@@ -979,7 +979,7 @@ bool shipfx_eye_in_shadow( vec3d *eye_pos, object * src_obj, int light_n )
         vm_vec_scale_add( &rp1, &rp0, &light_dir, objp->radius*10.0f );
 
 		mc.model_instance_num = -1;
-		mc.model_num = Asteroid_info[ast->asteroid_type].model_num[ast->asteroid_subtype];	// Fill in the model to check
+		mc.model_num = Asteroid_info[ast->asteroid_type].subtypes[ast->asteroid_subtype].model_number;	// Fill in the model to check
 		mc.submodel_num = -1;
 		mc.orient = &objp->orient;					// The object's orient
 		mc.pos = &objp->pos;							// The object's position
@@ -1035,7 +1035,7 @@ void shipfx_flash_init()
 /**
  * Given that a ship fired a weapon, light up the model accordingly.
  */
-void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index)
+void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun_dir, int is_primary, int weapon_info_index, int weapon_objnum)
 {
 	int i;
 	int objnum = OBJ_INDEX(objp);
@@ -1051,12 +1051,39 @@ void shipfx_flash_create(object *objp, int model_num, vec3d *gun_pos, vec3d *gun
 	// HACK - let the flak guns do this on their own since they fire so quickly
 	// Also don't create if its the player in the cockpit unless he's also got show_ship_model, provided render_player_mflash isnt on
 	bool in_cockpit_view = (Viewer_mode & (VM_EXTERNAL | VM_CHASE | VM_OTHER_SHIP | VM_WARP_CHASE)) == 0;
-	bool player_show_ship_model = objp == Player_obj && Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model];
-	if ((Weapon_info[weapon_info_index].muzzle_flash >= 0) && !(Weapon_info[weapon_info_index].wi_flags[Weapon::Info_Flags::Flak]) &&
+	bool player_show_ship_model = (
+		objp == Player_obj 
+		&& Ship_info[Ships[objp->instance].ship_info_index].flags[Ship::Info_Flags::Show_ship_model]
+		&& (!Show_ship_only_if_cockpits_enabled || Cockpit_active));
+
+	auto* wip = &Weapon_info[weapon_info_index];
+	
+	if (!(wip->wi_flags[Weapon::Info_Flags::Flak]) &&
 		(objp != Player_obj || Render_player_mflash || (!in_cockpit_view || player_show_ship_model))) {
-		vec3d real_dir;
-		vm_vec_rotate(&real_dir, gun_dir,&objp->orient);	
-		mflash_create(gun_pos, &real_dir, &objp->phys_info, Weapon_info[weapon_info_index].muzzle_flash, objp);		
+			// if there's a muzzle effect entry, we use that
+			if (Weapon_info[weapon_info_index].muzzle_effect.isValid()) {
+				matrix gunOrient;
+				vm_vector_2_matrix_norm(&gunOrient, gun_dir);
+
+				// spawn particle effect
+				auto particleSource = particle::ParticleManager::get()->createSource(Weapon_info[weapon_info_index].muzzle_effect);
+				//This should probably end up attached to the subobject, not the object, but it's not that much of a problem since primaries / secondaries rarely move.
+				particleSource->setHost(make_unique<EffectHostObject>(objp, *gun_pos, gunOrient, true));
+
+				auto *weapon_objp = &Objects[weapon_objnum];
+				auto *wp = &Weapons[weapon_objp->instance];
+
+				float radius_mult = 1.f;
+
+				if (wip->render_type == WRT_LASER) {
+					radius_mult = wip->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LASER_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+				}
+
+				particleSource->setTriggerRadius(weapon_objp->radius * radius_mult);
+				particleSource->setTriggerVelocity(vm_vec_mag_quick(&weapon_objp->phys_info.vel));
+
+				particleSource->finishCreation();
+			}
 	}
 
 	if ( pm->num_lights < 1 ) return;
@@ -1147,61 +1174,6 @@ void shipfx_flash_do_frame(float frametime)
 
 }
 
-float Particle_width = 1.2f;
-DCF(particle_width, "Sets multiplier for angular width of the particle spew ( 0 - 5)")
-{
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_width : %f\n", Particle_width);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_width = value;
-
-	dc_printf("Particle_width set to %f\n", Particle_width);
-}
-
-float Particle_number = 1.2f;
-DCF(particle_num, "Sets multiplier for the number of particles created")
-{
-	
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_number : %f\n", Particle_number);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_number = value;
-
-	dc_printf("Particle_number set to %f\n", Particle_number);
-}
-
-float Particle_life = 1.2f;
-DCF(particle_life, "Multiplier for the lifetime of particles created")
-{
-	float value;
-
-	if (dc_optional_string_either("status", "--status") || dc_optional_string_either("?", "--?")) {
-		dc_printf("Particle_life : %f\n", Particle_life);
-		return;
-	}
-
-	dc_stuff_float(&value);
-
-	CLAMP(value, 0.0, 5.0);
-	Particle_life = value;
-
-	dc_printf("Particle_life set to %f\n", Particle_life);
-}
-
 // Make sparks fly off of ship n.
 // sn = spark number to spark, corrosponding to element in
 //      ship->hitpos array.  If this isn't -1, it is a just
@@ -1212,33 +1184,16 @@ void shipfx_emit_spark( int n, int sn )
 	object * obj;
 	vec3d outpnt;
 	ship *shipp = &Ships[n];
-	float ship_radius, spark_scale_factor;
 
 	ship_info *sip = &Ship_info[shipp->ship_info_index];
-	if(sn > -1 && sip->impact_spew.n_high <= 0)
+	if(sn > -1 && !sip->impact_spew.isValid())
 		return;
 
-	if(sn < 0 && sip->damage_spew.n_high <= 0)
+	if(sn < 0 && !sip->damage_spew.isValid())
 		return;
 	
-	if ( shipp->num_hits <= 0 )
+	if ( shipp->num_sparks <= 0 )
 		return;
-
-	// get radius of ship
-	ship_radius = model_get_radius(sip->model_num);
-
-	// get spark_scale_factor -- how much to increase ship sparks, based on radius
-	if (ship_radius > 40) {
-		spark_scale_factor = 1.0f;
-	} else if (ship_radius > 20) {
-		spark_scale_factor = (ship_radius - 20.0f) / 20.0f;
-	} else {
-		spark_scale_factor = 0.0f;
-	}
-
-	float spark_time_scale  = 1.0f + spark_scale_factor * (Particle_life   - 1.0f);
-	float spark_width_scale = 1.0f + spark_scale_factor * (Particle_width  - 1.0f);
-	float spark_num_scale   = 1.0f + spark_scale_factor * (Particle_number - 1.0f);
 
 	obj = &Objects[shipp->objnum];
 
@@ -1253,7 +1208,7 @@ void shipfx_emit_spark( int n, int sn )
 
 	int spark_num;
 	if ( sn == -1 ) {
-		spark_num = Random::next(shipp->num_hits);
+		spark_num = Random::next(shipp->num_sparks);
 	} else {
 		spark_num = sn;
 	}
@@ -1263,10 +1218,11 @@ void shipfx_emit_spark( int n, int sn )
 		return;
 	}
 
+	auto pmi = model_get_instance(shipp->model_instance_num);
+	auto pm = model_get(pmi->model_num);
+
 	// get spark position
 	if (shipp->sparks[spark_num].submodel_num != -1) {
-		auto pmi = model_get_instance(shipp->model_instance_num);
-		auto pm = model_get(pmi->model_num);
 		model_instance_local_to_global_point(&outpnt, &shipp->sparks[spark_num].pos, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient, &obj->pos);
 	} else {
 		// rotate sparks correctly with current ship orient
@@ -1286,22 +1242,6 @@ void shipfx_emit_spark( int n, int sn )
 		return;
 
 	if ( create_spark )	{
-
-		particle::particle_emitter pe;
-		particle_effect		pef;
-
-		pe.pos = outpnt;				// Where the particles emit from
-
-        if (shipp->is_arriving() || shipp->flags[Ship::Ship_Flags::Depart_warp]) {
-			// No velocity if going through warp.
-			pe.vel = vmd_zero_vector;
-		} else {
-			// Initial velocity of all the particles.
-			// 0.0f = 0% of parent's.
-			// 1.0f = 100% of parent's.
-			vm_vec_copy_scale( &pe.vel, &obj->phys_info.vel, 0.7f );
-		}
-
 		// TODO: add velocity from rotation if submodel is rotating
 		// v_rot = w x r
 
@@ -1319,18 +1259,20 @@ void shipfx_emit_spark( int n, int sn )
 			vm_vec_scale_add2(&tmp_norm,&tmp_vel, -2.0f);
 			vm_vec_normalize_safe(&tmp_norm);
 		}
-				
-		pe.normal = tmp_norm;			// What normal the particle emit around
 
-		if (sn > -1)
-			pef = sip->impact_spew;
-		else
-			pef = sip->damage_spew;
+		vec3d local_norm;
+		model_instance_global_to_local_dir(&local_norm, &tmp_norm, pm, pmi, shipp->sparks[spark_num].submodel_num, &obj->orient);
 
-		pe.min_rad = pef.min_rad;
-		pe.max_rad = pef.max_rad;
-		pe.min_vel = pef.min_vel;				// How fast the slowest particle can move
-		pe.max_vel = pef.max_vel;				// How fast the fastest particle can move
+		matrix orient;
+		vm_vector_2_matrix_norm(&orient, &local_norm);
+
+		std::unique_ptr<EffectHost> particleHost;
+		if (shipp->sparks[spark_num].submodel_num != -1) {
+			particleHost = std::make_unique<EffectHostSubmodel>(obj, shipp->sparks[spark_num].submodel_num, shipp->sparks[spark_num].pos, orient);
+		}
+		else {
+			particleHost = std::make_unique<EffectHostObject>(obj, shipp->sparks[spark_num].pos, orient);
+		}
 
 		// first time through - set up end time and make heavier initially
 		if ( sn > -1 )	{
@@ -1345,37 +1287,14 @@ void shipfx_emit_spark( int n, int sn )
 					shipp->sparks[spark_num].end_time = timestamp( 100000000 );
 				}
 			}
-			pe.num_low = pef.n_low;				// Lowest number of particles to create (hardware)
-			pe.num_high = pef.n_high;
-			pe.normal_variance = pef.variance;	//	How close they stick to that normal 0=good, 1=360 degree
-			pe.min_life = pef.min_life;				// How long the particles live
-			pe.max_life = pef.max_life;				// How long the particles live
 
-			particle::emit( &pe, particle::PARTICLE_FIRE, 0 );
+			auto source = particle::ParticleManager::get()->createSource(sip->impact_spew);
+			source->setHost(std::move(particleHost));
+			source->finishCreation();
 		} else {
-			if (pef.n_high > 1) {
-				pe.num_low = pef.n_low;
-				pe.num_high = pef.n_high;
-			} else {
-				pe.num_low  = (int) (20.0f * spark_num_scale);
-				pe.num_high = (int) (50.0f * spark_num_scale);
-			}
-			
-			if (pef.variance > 0.0f) {
-				pe.normal_variance = pef.variance;
-			} else {
-				pe.normal_variance = 0.2f * spark_width_scale;
-			}
-
-			if (pef.max_life > 0.0f) {
-				pe.min_life = pef.min_life;
-				pe.max_life = pef.max_life;
-			} else {
-				pe.min_life = 0.7f * spark_time_scale;
-				pe.max_life = 1.5f * spark_time_scale;
-			}
-			
-			particle::emit( &pe, particle::PARTICLE_SMOKE, 0 );
+			auto source = particle::ParticleManager::get()->createSource(sip->damage_spew);
+			source->setHost(std::move(particleHost));
+			source->finishCreation();
 		}
 	}
 
@@ -1606,7 +1525,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 	vm_vec_add2(&debris_clip_plane_pt, &half_ship->local_pivot);
 
 	// set up render flags
-	uint render_flags = MR_NORMAL;
+	uint64_t render_flags = MR_NORMAL;
 
 	if ( Rendering_to_shadow_map ) {
 		render_flags |= MR_NO_TEXTURING | MR_NO_LIGHTING;
@@ -1646,7 +1565,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 				model_render_params render_info;
 
 				render_info.set_clip_plane(debris_clip_plane_pt, clip_plane_norm);
-				render_info.set_replacement_textures(shipp->ship_replacement_textures);
+				render_info.set_replacement_textures(pmi->texture_replace);
 				render_info.set_flags(render_flags);
 
 				submodel_render_queue(&render_info, scene, pm, pmi, pm->debris_objects[i], &half_ship->orient, &tmp);
@@ -1690,7 +1609,7 @@ void shipfx_queue_render_ship_halves_and_debris(model_draw_list *scene, clip_shi
 
 	render_info.set_flags(render_flags);
 	render_info.set_clip_plane(model_clip_plane_pt, clip_plane_norm);
-	render_info.set_replacement_textures(shipp->ship_replacement_textures);
+	render_info.set_replacement_textures(pmi->texture_replace);
 	render_info.set_object_number(shipp->objnum);
 
 	if (Ship_info[shipp->ship_info_index].uses_team_colors && !shipp->flags[Ship::Ship_Flags::Render_without_miscmap]) {
@@ -1728,7 +1647,7 @@ void shipfx_large_blowup_init(ship *shipp)
 	split_ship_init(shipp, &Split_ships[i] );
 }
 
-void shipfx_debris_limit_speed(debris *db, ship *shipp)
+void shipfx_debris_limit_speed(const debris *db, const ship *shipp)
 {
 	if(db == NULL || shipp == NULL)
 		return;
@@ -1925,7 +1844,13 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 	if ( timestamp_elapsed(half_ship->next_fireball) ) {
 		if ( half_ship->length_left > 0.2f*fl_abs(half_ship->explosion_vel) )	{
 			ship_info *sip = &Ship_info[Ships[half_ship->parent_obj->instance].ship_info_index];
-			
+
+			if ( !sip->split_particles.isValid() ) {
+				// time out forever
+				half_ship->next_fireball = timestamp(-1);
+				return;
+			}
+
 			polymodel* pm = model_get(sip->model_num);
 
 			vec3d model_clip_plane_pt, orig_ship_world_center, temp;
@@ -1972,46 +1897,20 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			do_sub_expl_sound(half_ship->parent_obj->radius, &model_clip_plane_pt, handle_array);
 
 			// do particles
-			particle::particle_emitter	pe;
-			particle_effect		pef = sip->split_particles;
 
-			pe.num_low = pef.n_low;					// Lowest number of particles to create
-			pe.num_high = pef.n_high;				// Highest number of particles to create
-			pe.pos = model_clip_plane_pt;	// Where the particles emit from
-			pe.vel = half_ship->phys_info.vel;		// Initial velocity of all the particles
+			//This does not seem right, but is current particle behaviour
+			vec3d normal = vmd_x_vector;
 
-			float range = 1.0f + 0.002f*half_ship->parent_obj->radius;
+			auto source = particle::ParticleManager::get()->createSource(sip->split_particles);
 
-			if (pef.max_life > 0.0f) {
-				pe.min_life = pef.min_life;
-				pe.max_life = pef.max_life;
-			} else {
-				pe.min_life = 0.5f*range;				// How long the particles live
-				pe.max_life = 6.0f*range;				// How long the particles live
-			}
+			matrix orient;
+			vm_vector_2_matrix_norm(&orient, &normal);
 
-			pe.normal = vmd_x_vector;		// What normal the particle emit around
-			pe.normal_variance = pef.variance;		//	How close they stick to that normal 0=on normal, 1=180, 2=360 degree
-
-			if (pef.max_vel > 0.0f) {
-				pe.min_vel = pef.min_vel;
-				pe.max_vel = pef.max_vel;
-			} else {
-				pe.min_vel = 0.0f;									// How fast the slowest particle can move
-				pe.max_vel = half_ship->explosion_vel;				// How fast the fastest particle can move
-			}
-			float scale = half_ship->parent_obj->radius * 0.01f;
-			if (pef.max_rad > 0.0f) {
-				pe.min_rad = pef.min_rad;
-				pe.max_rad = pef.max_rad;
-			} else {
-				pe.min_rad = 0.5f*scale;				// Min radius
-				pe.max_rad = 1.5f*scale;				// Max radius
-			}
-
-			if (pe.num_high > 0) {
-				particle::emit( &pe, particle::PARTICLE_SMOKE2, 0, range );
-			}
+			auto host = std::make_unique<EffectHostVector>(model_clip_plane_pt, orient, half_ship->phys_info.vel, vmd_identity_matrix, true);
+			host->setRadius(half_ship->parent_obj->radius);
+			source->setHost(std::move(host));
+			source->setTriggerVelocity(half_ship->explosion_vel);
+			source->finishCreation();
 
 			if (sip->generic_debris_model_num >= 0) {
 				// spawn a bunch of debris pieces, first determine the cross sectional average position to be the force explosion center
@@ -2152,48 +2051,50 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			if (skip) continue;
 
 			if (submodel_1 >= 0 && submodel_2 >= 0) {
-				// spawn the arc in the first unused slot
-				for (int j = 0; j < MAX_ARC_EFFECTS; j++) {
-					if (!shipp->arc_timestamp[j].isValid()) {
-						shipp->arc_timestamp[j] = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
+				// spawn the arc in the first unused slot, or in a new slot if there are no unused ones
+				auto arc = ship_find_or_create_electrical_arc_slot(shipp, shipp->electrical_arcs.size() >= MAX_ARC_EFFECTS);
+				if (arc) {
+					arc->timestamp = _timestamp(fl2i(arc_info->duration * MILLISECONDS_PER_SECOND));
 
-						vec3d v1, v2, offset;
-						// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
-						model_find_submodel_offset(&offset, pm, submodel_1);
-						v1 = arc_info->pos.first - offset;
-						model_find_submodel_offset(&offset, pm, submodel_2);
-						v2 = arc_info->pos.second - offset;
+					vec3d v1, v2, offset;
+					// subtract away the submodel's offset, since these positions were in frame of ref of the whole ship
+					model_find_submodel_offset(&offset, pm, submodel_1);
+					v1 = arc_info->pos.first - offset;
+					model_find_submodel_offset(&offset, pm, submodel_2);
+					v2 = arc_info->pos.second - offset;
 
-						model_instance_local_to_global_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
-						shipp->arc_pts[j][0] = v1;
-						model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
-						shipp->arc_pts[j][1] = v2;
+					model_instance_local_to_global_point(&v1, &v1, shipp->model_instance_num, submodel_1, &vmd_identity_matrix, &vmd_zero_vector);
+					arc->endpoint_1 = v1;
+					model_instance_local_to_global_point(&v2, &v2, shipp->model_instance_num, submodel_2, &vmd_identity_matrix, &vmd_zero_vector);
+					arc->endpoint_2 = v2;
 
-						//Set the arc colors
-						shipp->arc_primary_color_1[j] = arc_info->primary_color_1;
-						shipp->arc_primary_color_2[j] = arc_info->primary_color_2;
-						shipp->arc_secondary_color[j] = arc_info->secondary_color;
+					//Set the arc colors
+					arc->primary_color_1 = arc_info->primary_color_1;
+					arc->primary_color_2 = arc_info->primary_color_2;
+					arc->secondary_color = arc_info->secondary_color;
 
-						shipp->arc_type[j] = MARC_TYPE_SHIP;
+					arc->type = MARC_TYPE_SHIP;
 
-						if (arc_info->width > 0.0f) {
-							shipp->arc_width[j] = arc_info->width;
-						} else {
-							// same width as other arc types in model_render_add_lightning
-							// try and scale the size a bit so that it looks equally well on smaller vessels
-							shipp->arc_width[j] = Arc_width_default_damage;
-							if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
-								shipp->arc_width[j] *= (pm->rad * Arc_width_radius_multiplier_damage);
+					if (arc_info->width > 0.0f) {
+						arc->width = arc_info->width;
+					} else {
+						// same width as other arc types in model_render_add_lightning
+						// try and scale the size a bit so that it looks equally well on smaller vessels
+						arc->width = Arc_width_default_damage;
+						if (pm->rad < Arc_width_no_multiply_over_radius_damage) {
+							arc->width *= (pm->rad * Arc_width_radius_multiplier_damage);
 
-								if (shipp->arc_width[j] < Arc_width_minimum_damage) {
-									shipp->arc_width[j] = Arc_width_minimum_damage;
-								}
+							if (arc->width < Arc_width_minimum_damage) {
+								arc->width = Arc_width_minimum_damage;
 							}
 						}
-
-						shipp->passive_arc_next_times[passive_arc_info_idx] = timestamp((int)(arc_info->frequency * 1000));
-						break;
 					}
+
+					arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+					arc->persistent_arc_points.reset();	// by default, no persistent points
+
+					shipp->passive_arc_next_times[passive_arc_info_idx] = _timestamp(fl2i(arc_info->frequency * MILLISECONDS_PER_SECOND));
 				}
 			}
 		}
@@ -2233,9 +2134,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 	}
 
 	// Kill off old sparks
-	for (auto &arc_stamp : shipp->arc_timestamp) {
-		if (arc_stamp.isValid() && timestamp_elapsed(arc_stamp)) {
-			arc_stamp = TIMESTAMP::invalid();
+	for (auto &arc: shipp->electrical_arcs) {
+		if (arc.timestamp.isValid() && timestamp_elapsed(arc.timestamp)) {
+			arc.timestamp = TIMESTAMP::invalid();
 		}
 	}
 
@@ -2244,7 +2145,7 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		return;
 	}
 
-	if (!timestamp_valid(shipp->arc_next_time))	{
+	if (!shipp->arc_next_time.isValid()) {
 		// start the next fireball up in the next 10 seconds or so... 
 		int freq;
 		
@@ -2258,14 +2159,14 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 		}
 
 		// set the next arc time
-		shipp->arc_next_time = timestamp_rand(freq*2,freq*4);
+		shipp->arc_next_time = _timestamp_rand(freq*2,freq*4);
 	}
 
 	if ( timestamp_elapsed(shipp->arc_next_time) )	{
 
-		shipp->arc_next_time = timestamp(-1);		// invalid, so it gets restarted next frame
+		shipp->arc_next_time = TIMESTAMP::invalid();		// invalid, so it gets restarted next frame
 
-		int n, n_arcs = Random::next(1, 3);
+		int n_arcs = Random::next(1, 3);
 
 		vec3d v1 = submodel_get_random_point(model_num, -1);
 		vec3d v2 = submodel_get_random_point(model_num, -1);
@@ -2303,84 +2204,83 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 			
 		}
 		
-		n = 0;
-
 		float factor = 1.0f + 0.0025f*obj->radius;
 		int a = (int) (factor*100.0f);
 		int b = (int) (factor*1000.0f);
 		int lifetime = Random::next(a, b);
 
 		// Create the arc effects
-		int num_damage_arcs = 0;
-		for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
-			if ( !shipp->arc_timestamp[i].isValid() )	{
-				shipp->arc_timestamp[i] = _timestamp(lifetime);	// live up to a second
+		auto num_damage_arcs = std::count_if(shipp->electrical_arcs.begin(), shipp->electrical_arcs.end(), [](const ship_electrical_arc &arc) {
+			return arc.timestamp.isValid() && (arc.type == MARC_TYPE_DAMAGED || arc.type == MARC_TYPE_EMP);
+		});
+		for (int n = 0; n < n_arcs && num_damage_arcs < MAX_SHIP_DAMAGE_ARCS; n++) {
+			auto arc = ship_find_or_create_electrical_arc_slot(shipp, false);
+			if (arc) {
+				arc->timestamp = _timestamp(lifetime);	// live up to a second
 
 				switch( n )	{
 				case 0:
-					shipp->arc_pts[i][0] = v1;
-					shipp->arc_pts[i][1] = v2;
+					arc->endpoint_1 = v1;
+					arc->endpoint_2 = v2;
 					break;
 				case 1:
-					shipp->arc_pts[i][0] = v2;
-					shipp->arc_pts[i][1] = v3;
+					arc->endpoint_1 = v2;
+					arc->endpoint_2 = v3;
 					break;
-
 				case 2:
-					shipp->arc_pts[i][0] = v2;
-					shipp->arc_pts[i][1] = v4;
+					arc->endpoint_1 = v2;
+					arc->endpoint_2 = v4;
 					break;
 
 				default:
-					Int3();
+					UNREACHABLE("Unhandled case %d for electrical arc creation in shipfx_do_lightning_arcs_frame()!", n);
 				}
 
 				// determine what kind of arc to create
 				if((shipp->emp_intensity > 0.0f) || (disrupted_arc)){
-					shipp->arc_type[i] = MARC_TYPE_EMP;
+					arc->type = MARC_TYPE_EMP;
 				} else {
-					shipp->arc_type[i] = MARC_TYPE_DAMAGED;
+					arc->type = MARC_TYPE_DAMAGED;
 				}
-					
-				n++;
-				num_damage_arcs++;
-				if ( n == n_arcs || num_damage_arcs >= MAX_SHIP_DAMAGE_ARCS)
-					break;	// Don't need to create anymore
-			} else if (shipp->arc_type[i] == MARC_TYPE_DAMAGED || shipp->arc_type[i] == MARC_TYPE_EMP) {
-				num_damage_arcs ++;
-			}
-	
-			// rotate v2 out of local coordinates into world.
-			// Use v2 since it is used in every bolt.  See above switch().
-			vec3d snd_pos;
-			vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
-			vm_vec_add2(&snd_pos, &obj->pos );
 
-			//Play a sound effect
-			if ( lifetime > 750 )	{
-				// 1.00 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  500 )	{
-				// 0.75 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  250 )	{
-				// 0.50 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
-			} else if ( lifetime >  100 )	{
-				// 0.25 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
-			} else {
-				// 0.10 second effect
-				snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
+				arc->segment_depth = 4;	// previously hard-coded in interp_generate_arc_segment()
+
+				arc->persistent_arc_points.reset();	// by default, no persistent points
+
+				num_damage_arcs++;
 			}
+		}
+
+		// rotate v2 out of local coordinates into world.
+		// Use v2 since it is used in every bolt.  See above switch().
+		vec3d snd_pos;
+		vm_vec_unrotate(&snd_pos, &v2, &obj->orient);
+		vm_vec_add2(&snd_pos, &obj->pos );
+
+		//Play a sound effect
+		if ( lifetime > 750 )	{
+			// 1.00 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_05), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  500 )	{
+			// 0.75 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_04), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  250 )	{
+			// 0.50 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_03), &snd_pos, &View_position, obj->radius );
+		} else if ( lifetime >  100 )	{
+			// 0.25 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_02), &snd_pos, &View_position, obj->radius );
+		} else {
+			// 0.10 second effect
+			snd_play_3d( gamesnd_get_game_sound(GameSounds::DEBRIS_ARC_01), &snd_pos, &View_position, obj->radius );
 		}
 	}
 
 	// maybe move arc points around
-	for (int i=0; i<MAX_ARC_EFFECTS; i++ )	{
+	for (auto &arc: shipp->electrical_arcs)	{
 		//Only move arc points around for Damaged or EMP type arcs
-		if (((shipp->arc_type[i] == MARC_TYPE_DAMAGED) || (shipp->arc_type[i] == MARC_TYPE_EMP)) && shipp->arc_timestamp[i].isValid()) {
-			if ( !timestamp_elapsed( shipp->arc_timestamp[i] ) )	{							
+		if (((arc.type == MARC_TYPE_DAMAGED) || (arc.type == MARC_TYPE_EMP)) && arc.timestamp.isValid()) {
+			if (!timestamp_elapsed(arc.timestamp)) {
 				// Maybe move a vertex....  20% of the time maybe?
 				int mr = Random::next();
 				if ( mr < Random::MAX_VALUE/5 )	{
@@ -2389,9 +2289,9 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 					vec3d static_one;
 
 					if ( mr % 2 )	{
-						static_one = shipp->arc_pts[i][0];
+						static_one = arc.endpoint_1;
 					} else {
-						static_one = shipp->arc_pts[i][1];
+						static_one = arc.endpoint_2;
 					}
 
 					// For large ships, cap the length to be 25% of max radius
@@ -2409,7 +2309,10 @@ void shipfx_do_lightning_arcs_frame( ship *shipp )
 						}
 					}
 
-					shipp->arc_pts[i][mr % 2] = v1;
+					if (mr % 2 == 0)
+						arc.endpoint_1 = v1;
+					else
+						arc.endpoint_2 = v1;
 				}
 			}
 		}
@@ -2671,7 +2574,7 @@ void engine_wash_ship_process(ship *shipp)
 
 	// is it time to check for engine wash 
 	int time_to_next_hit = timestamp_until(shipp->wash_timestamp);
-	if (time_to_next_hit < 0) {
+	if (time_to_next_hit <= 0) {
 		if (time_to_next_hit < -ENGINE_WASH_CHECK_INTERVAL) {
 			time_to_next_hit = 0;
 		}
@@ -3739,11 +3642,11 @@ int WE_Default::getWarpOrientation(matrix* output) const
 	auto objp = &Objects[m_objnum];
 
 	if (this->m_direction == WarpDirection::WARP_IN)
-		vm_vector_2_matrix(output, &objp->orient.vec.fvec, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, nullptr, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, nullptr, nullptr);
 	}
     return 1;
 }
@@ -4127,7 +4030,7 @@ int WE_BSG::getWarpOrientation(matrix* output) const
 
 	auto objp = &Objects[m_objnum];
 
-	vm_vector_2_matrix(output, &objp->orient.vec.fvec, NULL, NULL);
+	vm_vector_2_matrix_norm(output, &objp->orient.vec.fvec, nullptr, nullptr);
 	return 1;
 }
 
@@ -4416,7 +4319,7 @@ int WE_Homeworld::getWarpOrientation(matrix* output) const
 	else {
 		vec3d backwards = objp->orient.vec.fvec;
 		vm_vec_negate(&backwards);
-		vm_vector_2_matrix(output, &backwards, &objp->orient.vec.uvec, nullptr);
+		vm_vector_2_matrix_norm(output, &backwards, &objp->orient.vec.uvec, nullptr);
 	}
 
 	return 1;

@@ -10,24 +10,28 @@ namespace api {
 class modelinstance_h
 {
  protected:
-	polymodel_instance *_pmi;
+	int _pmi_id;
 
  public:
 	explicit modelinstance_h(int pmi_id);
 	explicit modelinstance_h(polymodel_instance *pmi);
 	modelinstance_h();
 
-	polymodel_instance *Get();
+	polymodel_instance *Get() const;
+	int GetID() const;
+
+	polymodel *GetModel() const;
+	int GetModelID() const;
 
 	bool isValid() const;
 };
+DECLARE_ADE_OBJ(l_ModelInstanceTextures, modelinstance_h);
 DECLARE_ADE_OBJ(l_ModelInstance, modelinstance_h);
 
 class submodelinstance_h
 {
 protected:
-	polymodel_instance *_pmi;
-	polymodel *_pm;
+	int _pmi_id;
 	int _submodel_num;
 
 public:
@@ -35,12 +39,15 @@ public:
 	explicit submodelinstance_h(polymodel_instance *pmi, int submodel_num);
 	submodelinstance_h();
 
-	polymodel_instance *GetModelInstance();
-	submodel_instance *Get();
+	polymodel_instance *GetModelInstance() const;
+	int GetModelInstanceID() const;
 
-	polymodel *GetModel();
-	bsp_info *GetSubmodel();
-	int GetSubmodelIndex();
+	polymodel *GetModel() const;
+	int GetModelID() const;
+
+	submodel_instance *Get() const;
+	bsp_info *GetSubmodel() const;
+	int GetSubmodelIndex() const;
 
 	bool isValid() const;
 };

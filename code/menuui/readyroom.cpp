@@ -67,8 +67,7 @@ int Campaign_list_coords[GR_NUM_RESOLUTIONS][4] = {
 #define MODE_CAMPAIGNS	0
 #define MODE_MISSIONS	1
 
-#define MAX_LINES					200
-#define MAX_DESC_LINES			200
+#define MAX_LINES					200		// NOLINT(modernize-macro-to-enum)
 #define NUM_BUTTONS				11
 #define LIST_BUTTONS_MAX		42
 
@@ -1380,7 +1379,7 @@ void sim_room_do_frame(float  /*frametime*/)
 	}
 
 	line = Scroll_offset;
-	while (sim_room_line_query_visible(line)) {
+	while (sim_room_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		y = list_y + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;
 
 		if (sim_room_lines[line].type != READYROOM_LINE_CAMPAIGN) {
@@ -1507,14 +1506,6 @@ UI_XSTR Cr_text[GR_NUM_RESOLUTIONS][CR_NUM_TEXT] = {
 	}
 };
 
-/*
-static struct {
-	char *text;
-	int len;
-} campaign_desc_lines[MAX_DESC_LINES];
-*/
-
-static int Num_desc_lines;
 static int Desc_scroll_offset;
 static int Selected_campaign_index;
 static int Active_campaign_index;
@@ -1584,11 +1575,10 @@ void campaign_room_scroll_info_down()
 
 void campaign_reset(const SCP_string& campaign_file)
 {
-	auto filename = campaign_file + FS_CAMPAIGN_FILE_EXT;
+	// note: we do not toss all-time stats from player's performance in campaign up till now
+	mission_campaign_savefile_delete(campaign_file.c_str());
 
-	mission_campaign_savefile_delete(filename.c_str());
-
-	const int load_status = mission_campaign_load(filename.c_str(), nullptr, nullptr, 1 , false);	// retail doesn't reset stats when resetting the campaign
+	const int load_status = mission_campaign_load(campaign_file.c_str(), nullptr, nullptr, 1);
 
 	// see if we successfully loaded this campaign
 	if (load_status == 0) {
@@ -1785,7 +1775,6 @@ void campaign_room_init()
 	Campaign_room_overlay_id = help_overlay_get_index(CAMPAIGN_ROOM_OVERLAY);
 	help_overlay_set_state(Campaign_room_overlay_id,gr_screen.res,0);
 
-	Num_desc_lines = 0;
 	Desc_scroll_offset = Scroll_offset = 0;
 
 	// this stuff needs to happen before the mission_campaign_build_list() call
@@ -1938,7 +1927,7 @@ void campaign_room_do_frame(float  /*frametime*/)
 	font::set_font(font::FONT1);
 	int font_height = gr_get_font_height();
 	line = Scroll_offset;
-	while (sim_room_line_query_visible(line)) {
+	while (sim_room_line_query_visible(line) && (line - Scroll_offset < LIST_BUTTONS_MAX)) {
 		y = Cr_list_coords[gr_screen.res][1] + sim_room_lines[line].y - sim_room_lines[Scroll_offset].y;
 
 		List_buttons[line - Scroll_offset].update_dimensions(Cr_list_coords[gr_screen.res][0], y, Cr_list_coords[gr_screen.res][2], font_height);

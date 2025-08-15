@@ -487,7 +487,7 @@ int emp_should_blit_gauge()
 }
 
 // emp hud string
-void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode)
+void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode, float scale)
 {
 	char tmp[256] = "";
 
@@ -507,7 +507,7 @@ void emp_hud_string(int x, int y, int gauge_id, const char *str, int resize_mode
 	}
 
 	// print the string out
-	gr_string(x, y, tmp, resize_mode);
+	gr_string(x, y, tmp, resize_mode, scale);
 }
 
 // maybe reformat a string 

@@ -46,7 +46,7 @@ ADE_FUNC(__newindex, l_RPC, "function(any arg) => void rpc_body", "Sets the func
 	if (rpc == nullptr)
 		return ade_set_error(L, "b", false);
 
-	rpc->func = func;
+	rpc->func = std::move(func);
 
 	return ade_set_args(L, "u", rpc->func);
 }

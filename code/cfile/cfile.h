@@ -85,10 +85,6 @@ typedef struct {
 // TRUE if type is specified and valid
 #define CF_TYPE_SPECIFIED(path_type) (((path_type)>CF_TYPE_INVALID) && ((path_type)<CF_MAX_PATH_TYPES))
 
-// #define's for the type parameter in cfopen.  
-#define CFILE_NORMAL				0			// open file normally
-#define CFILE_MEMORY_MAPPED	(1<<0)	//	open file as a memory-mapped file
-
 #define CF_SORT_NONE	0
 #define CF_SORT_NAME 1
 #define CF_SORT_TIME 2
@@ -181,7 +177,7 @@ int cf_get_dir_type(const CFILE *cfile);
 
 // Opens the file.  If no path is given, use the extension to look into the
 // default path.  If mode is NULL, delete the file.
-CFILE* _cfopen(const char* source_file, int line, const char* filename, const char* mode, int type = CFILE_NORMAL,
+CFILE* _cfopen(const char* source_file, int line, const char* filename, const char* mode,
                int dir_type = CF_TYPE_ANY, bool localize = false, uint32_t location_flags = CF_LOCATION_ALL);
 #define cfopen(...) _cfopen(LOCATION, __VA_ARGS__) // Pass source location to the function
 
@@ -377,6 +373,7 @@ struct CFileLocation {
 	SCP_string full_name;
 	size_t size          = 0;
 	size_t offset        = 0;
+	time_t m_time        = 0;
 	const void* data_ptr = nullptr;
 
 	explicit CFileLocation(bool found_in = false) : found(found_in) {}

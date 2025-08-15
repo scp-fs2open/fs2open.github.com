@@ -6,6 +6,7 @@
 
 #include "globalincs/pstypes.h"
 #include "globalincs/version.h"
+#include "globalincs/utility.h"
 
 #include "object/object.h"
 #include "scripting/ade_doc.h"
@@ -25,6 +26,8 @@ extern "C" {
  * These functions enable the code to communicate with external scripts and expose an API for them to use
  */
 
+// lua_tostring will return NULL if and only if it cannot convert to a string; nil values are converted to "nil"
+#define lua_tostring_nullsafe(L,i)	coalesce(lua_tostring(L,i), "<UNABLE TO CONVERT TO STRING>")
 
 namespace scripting {
 

@@ -53,6 +53,7 @@
 #include "tracing/Monitor.h"
 #include "graphics/light.h"
 #include "graphics/color.h"
+#include "math/curve.h"
 
 extern void ship_reset_disabled_physics(object *objp, int ship_class);
 
@@ -69,6 +70,7 @@ object *Viewer_obj = NULL;
 
 //Data for objects
 object Objects[MAX_OBJECTS];
+SCP_map<int, raw_pof_obj> Pof_objects;
 
 #ifdef OBJECT_CHECK 
 checkobject CheckObjects[MAX_OBJECTS];
@@ -81,6 +83,44 @@ int Object_next_signature = 1;	//0 is bogus, start at 1
 int Object_inited = 0;
 int Show_waypoints = 0;
 
+object_h::object_h(int in_objnum)
+	: objnum(in_objnum)
+{
+	if (objnum >= 0 && objnum < MAX_OBJECTS)
+		sig = Objects[objnum].signature;
+	else
+		objnum = -1;
+}
+
+object_h::object_h(const object* in_objp)
+{
+	if (in_objp)
+	{
+		objnum = OBJ_INDEX(in_objp);
+		sig = in_objp->signature;
+	}
+}
+
+object_h::object_h()
+{}
+
+bool object_h::isValid() const
+{
+	// a signature of 0 is invalid, per obj_init()
+	if (objnum < 0 || sig <= 0 || objnum >= MAX_OBJECTS)
+		return false;
+	return Objects[objnum].signature == sig;
+}
+
+object* object_h::objp() const
+{
+	return &Objects[objnum];
+}
+
+object* object_h::objp_or_null() const
+{
+	return isValid() ? &Objects[objnum] : nullptr;
+}
 
 //WMC - Made these prettier
 const char *Object_type_names[MAX_OBJECT_TYPES] = {
@@ -101,6 +141,7 @@ const char *Object_type_names[MAX_OBJECT_TYPES] = {
 	"Asteroid",
 	"Jump Node",
 	"Beam",
+	"Raw Pof"
 //XSTR:ON
 };
 
@@ -114,22 +155,26 @@ obj_flag_name Object_flag_names[] = {
 	{ Object::Object_Flags::Laser_protected,		"laser-protect-ship",				},
 	{ Object::Object_Flags::Missile_protected,		"missile-protect-ship",				},
 	{ Object::Object_Flags::Immobile,				"immobile",							},
+	{ Object::Object_Flags::Dont_change_position,	"don't-change-position",			},
+	{ Object::Object_Flags::Dont_change_orientation,	"don't-change-orientation",		},
 	{ Object::Object_Flags::Collides,				"collides",							},
 	{ Object::Object_Flags::Attackable_if_no_collide, "ai-attackable-if-no-collide",	},
 };
 
 obj_flag_description Object_flag_descriptions[] = {
-    { Object::Object_Flags::Invulnerable,				"Stops ship from taking any damage."},
-	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack ship."},
-	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::No_shields,					"Ship will have no shields (ETS will be rebalanced if shields were off and are enabled)."},
-	{ Object::Object_Flags::Targetable_as_bomb,			"Allows ship to be targeted with the bomb targeting key."},
-	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack ship."},
-	{ Object::Object_Flags::Immobile,					"Will not let a ship move or rotate in any fashion. Upon destruction the ship will still do the death roll and explosion."},
-	{ Object::Object_Flags::Collides,					"Causes a ship to vanish (no deathroll, no debris, no explosion) when destroyed."},
-	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set."},
+    { Object::Object_Flags::Invulnerable,				"Stops this object from taking any damage."},
+	{ Object::Object_Flags::Protected,					"Ship and Turret AI will ignore and not attack this object."},
+	{ Object::Object_Flags::Beam_protected,				"Turrets with beam weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::No_shields,					"This object will have no shields.  (If this object can otherwise have shields, its shield energy will be fully reallocated to other ETS systems.)"},
+	{ Object::Object_Flags::Targetable_as_bomb,			"Allows this object to be targeted with the bomb targeting key."},
+	{ Object::Object_Flags::Flak_protected,				"Turrets with flak weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Laser_protected,			"Turrets with laser weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Missile_protected,			"Turrets with missile weapons will ignore and not attack this object."},
+	{ Object::Object_Flags::Immobile,					"Will not let an object change position or orientation.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_position,		"Will not let an object change position.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Dont_change_orientation,	"Will not let an object change orientation.  Upon destruction it will still do the death roll and explosion."},
+	{ Object::Object_Flags::Collides,					"This object will collide with other objects."},
+	{ Object::Object_Flags::Attackable_if_no_collide,	"Allows the AI to attack this object, even if no-collide is set.  (Normally an object that does not collide is also not attacked.)"},
 };
 
 extern const int Num_object_flag_names = sizeof(Object_flag_names) / sizeof(obj_flag_name);
@@ -144,16 +189,15 @@ checkobject::checkobject()
 
 // all we need to set are the pointers, but type, parent, and instance are useful to set as well
 object::object()
-	: next(NULL), prev(NULL), type(OBJ_NONE), parent(-1), instance(-1), n_quadrants(0), hull_strength(0.0),
-	  sim_hull_strength(0.0), net_signature(0), num_pairs(0), dock_list(NULL), dead_dock_list(NULL), collision_group_id(0)
+	: next(nullptr), prev(nullptr), signature(0), type(OBJ_NONE), parent(-1), parent_sig(0), instance(-1), pos(vmd_zero_vector), orient(vmd_identity_matrix),
+	radius(0.0f), last_pos(vmd_zero_vector), last_orient(vmd_identity_matrix), hull_strength(0.0f), sim_hull_strength(0.0f), net_signature(0), num_pairs(0),
+	dock_list(nullptr), dead_dock_list(nullptr), collision_group_id(0)
 {
 	memset(&(this->phys_info), 0, sizeof(physics_info));
 }
 
 object::~object()
 {
-	objsnd_num.clear();
-
 	dock_free_dock_list(this);
 	dock_free_dead_dock_list(this);
 }
@@ -234,6 +278,7 @@ int free_object_slots(int target_num_used)
 				case OBJ_ASTEROID:
 				case OBJ_JUMP_NODE:				
 				case OBJ_BEAM:
+				case OBJ_RAW_POF:
 					break;
 				default:
 					Int3();	//	Hey, what kind of object is this?  Unknown!
@@ -295,57 +340,81 @@ int free_object_slots(int target_num_used)
 }
 
 // Goober5000
-float get_hull_pct(object *objp)
+// This helper function does not check the object type and is not intended as a public API.
+float get_hull_or_sim_hull_pct_helper(const object *objp, const float object::*strength_field, const ship *shipp, bool allow_negative)
 {
-	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
+	Assert(objp && shipp);
+	if (!objp || !shipp)
+		return 0.0f;
 
-	float total_strength = Ships[objp->instance].ship_max_hull_strength;
-
+	float total_strength = shipp->ship_max_hull_strength;
 	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
-
 	if (total_strength == 0.0f)
 		return 0.0f;
 
-	if (objp->hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+	if (!allow_negative && objp->*strength_field < 0.0f)	// this sometimes happens when a ship is being destroyed
 		return 0.0f;
 
-	return objp->hull_strength / total_strength;
+	return objp->*strength_field / total_strength;
 }
 
-float get_sim_hull_pct(object *objp)
+float get_hull_pct(const object *objp, bool allow_negative)
 {
-	Assert(objp);
-	Assert(objp->type == OBJ_SHIP);
-
-	float total_strength = Ships[objp->instance].ship_max_hull_strength;
-
-	Assert(total_strength > 0.0f);	// unlike shield, no ship can have 0 hull
-
-	if (total_strength == 0.0f)
+	Assert(objp && objp->type == OBJ_SHIP);
+	if (!objp || objp->type != OBJ_SHIP)
 		return 0.0f;
+	return get_hull_or_sim_hull_pct_helper(objp, &object::hull_strength, &Ships[objp->instance], allow_negative);
+}
 
-	if (objp->sim_hull_strength < 0.0f)	// this sometimes happens when a ship is being destroyed
+float get_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative)
+{
+	return get_hull_or_sim_hull_pct_helper(ship_entry->objp(), &object::hull_strength, ship_entry->shipp(), allow_negative);
+}
+
+float get_sim_hull_pct(const object *objp, bool allow_negative)
+{
+	Assert(objp && objp->type == OBJ_SHIP);
+	if (!objp || objp->type != OBJ_SHIP)
 		return 0.0f;
+	return get_hull_or_sim_hull_pct_helper(objp, &object::sim_hull_strength, &Ships[objp->instance], allow_negative);
+}
 
-	return objp->sim_hull_strength / total_strength;
+float get_sim_hull_pct(const ship_registry_entry *ship_entry, bool allow_negative)
+{
+	return get_hull_or_sim_hull_pct_helper(ship_entry->objp(), &object::sim_hull_strength, ship_entry->shipp(), allow_negative);
 }
 
 // Goober5000
-float get_shield_pct(object *objp)
+// This helper function does not check the object type and is not intended as a public API.
+float get_shield_pct_helper(const object *objp, const ship *shipp)
+{
+	Assert(objp && shipp);
+	if (!objp || !shipp)
+		return 0.0f;
+
+	float total_strength = shield_get_max_strength(shipp);
+	if (total_strength == 0.0f)
+		return 0.0f;
+
+	return shield_get_strength(objp) / total_strength;
+}
+
+float get_shield_pct(const object *objp)
 {
 	Assert(objp);
+	if (!objp)
+		return 0.0f;
 
 	// bah - we might have asteroids
 	if (objp->type != OBJ_SHIP)
 		return 0.0f;
 
-	float total_strength = shield_get_max_strength(objp);
+	return get_shield_pct_helper(objp, &Ships[objp->instance]);
+}
 
-	if (total_strength == 0.0f)
-		return 0.0f;
-
-	return shield_get_strength(objp) / total_strength;
+float get_shield_pct(const ship_registry_entry *ship_entry)
+{
+	return get_shield_pct_helper(ship_entry->objp(), ship_entry->shipp());
 }
 
 static void on_script_state_destroy(lua_State*) {
@@ -499,6 +568,44 @@ void obj_free(int objnum)
 }
 
 /**
+ * Create a raw pof item
+ * @return the objnum of this raw POF
+ */
+int obj_raw_pof_create(const char* pof_filename, const matrix* orient, const vec3d* pos)
+{
+	static int next_raw_pof_id = 0;
+
+	// Unlikely this would ever be hit.. but just in case
+	if (next_raw_pof_id >= INT_MAX || next_raw_pof_id < 0) {
+		Error(LOCATION, "Too many RAW_POF objects created!");
+		return -1;
+	}
+
+	if (!VALID_FNAME(pof_filename)) {
+		Warning(LOCATION, "Invalid tech model POF: %s", pof_filename);
+		return -1;
+	}
+
+	int model_num = model_load(pof_filename);
+	if (model_num < 0) {
+		Warning(LOCATION, "Failed to load tech model: %s", pof_filename);
+		return -1;
+	}
+
+	int id = next_raw_pof_id++;
+	Pof_objects[id] = {model_num, -1, {}};
+
+	flagset<Object::Object_Flags> flags;
+	flags.set(Object::Object_Flags::Renders);
+
+	int objnum = obj_create(OBJ_RAW_POF, -1, id, orient, pos, model_get_radius(model_num), flags);
+
+	Pof_objects[id].model_instance = model_create_instance(objnum, model_num);
+
+	return objnum;
+}
+
+/**
  * Initialize a new object. Adds to the list for the given segment.
  *
  * The object will be a non-rendering, non-physics object.   Pass -1 if no parent.
@@ -547,8 +654,7 @@ int obj_create(ubyte type, int parent_obj, int instance, const matrix *orient,
 	}
 	obj->radius 				= radius;
 
-	obj->n_quadrants = DEFAULT_SHIELD_SECTIONS; // Might be changed by the ship creation code
-	obj->shield_quadrant.resize(obj->n_quadrants);
+	obj->shield_quadrant.resize(DEFAULT_SHIELD_SECTIONS);	// Might be changed by the ship creation code
 
 	return objnum;
 }
@@ -650,6 +756,10 @@ void obj_delete(int objnum)
 		break;	
 	case OBJ_BEAM:
 		break;
+	case OBJ_RAW_POF:
+		model_delete_instance(Pof_objects[objp->instance].model_instance);
+		Pof_objects.erase(objp->instance);
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -657,8 +767,11 @@ void obj_delete(int objnum)
 		Error( LOCATION, "Unhandled object type %d in obj_delete_all_that_should_be_dead", objp->type );
 	}
 
+	// this avoids include issues from physics state, multi interpolate and object code
+	extern void multi_interpolate_clear_helper(int objnum);
+
 	// clean up interpolation info
-	objp->interp_info.clean_up();
+	multi_interpolate_clear_helper(objnum);
 
 	// delete any dock information we still have
 	dock_free_dock_list(objp);
@@ -883,47 +996,6 @@ void obj_move_call_physics(object *objp, float frametime)
 			// recover if we *are* maneuvering but the flag was added
 			else if ((objp->phys_info.flags & PF_DEAD_DAMP) && !shipp->flags[Ship::Ship_Flags::Dying]) {
 				ship_reset_disabled_physics(objp, shipp->ship_info_index);
-			}
-
-			if (shipp->weapons.num_secondary_banks > 0) {
-				polymodel *pm = model_get(Ship_info[shipp->ship_info_index].model_num);
-				Assertion( pm != NULL, "No polymodel found for ship %s", Ship_info[shipp->ship_info_index].name );
-				Assertion( pm->missile_banks != NULL, "Ship %s has %d secondary banks, but no missile banks could be found.\n", Ship_info[shipp->ship_info_index].name, shipp->weapons.num_secondary_banks );
-
-				for (int i = 0; i < shipp->weapons.num_secondary_banks; i++) {
-					//if there are no missles left don't bother
-					if (!ship_secondary_has_ammo(&shipp->weapons, i))
-						continue;
-
-					int points = pm->missile_banks[i].num_slots;
-					int missles_left = shipp->weapons.secondary_bank_ammo[i];
-					int next_point = shipp->weapons.secondary_next_slot[i];
-					float fire_wait = Weapon_info[shipp->weapons.secondary_bank_weapons[i]].fire_wait;
-					float reload_time = (fire_wait == 0.0f) ? 1.0f : 1.0f / fire_wait;
-
-					//ok so...we want to move up missles but only if there is a missle there to be moved up
-					//there is a missle behind next_point, and how ever many missles there are left after that
-
-					if (points > missles_left) {
-						//there are more slots than missles left, so not all of the slots will have missles drawn on them
-						for (int k = next_point; k < next_point+missles_left; k ++) {
-							float &s_pct = shipp->secondary_point_reload_pct.get(i, k % points);
-							if (s_pct < 1.0)
-								s_pct += reload_time * frametime;
-							if (s_pct > 1.0)
-								s_pct = 1.0f;
-						}
-					} else {
-						//we don't have to worry about such things
-						for (int k = 0; k < points; k++) {
-							float &s_pct = shipp->secondary_point_reload_pct.get(i, k);
-							if (s_pct < 1.0)
-								s_pct += reload_time * frametime;
-							if (s_pct > 1.0)
-								s_pct = 1.0f;
-						}
-					}
-				}
 			}
 		}
 
@@ -1195,6 +1267,8 @@ void obj_move_all_pre(object *objp, float frametime)
 		break;	
 	case OBJ_BEAM:		
 		break;
+	case OBJ_RAW_POF:
+		break;
 	case OBJ_NONE:
 		Int3();
 		break;
@@ -1248,35 +1322,48 @@ void obj_move_all_post(object *objp, float frametime)
 					}
 				}
 				if (cast_light) {
-					weapon_info* wi = &Weapon_info[Weapons[objp->instance].weapon_info_index];
+					weapon* wp = &Weapons[objp->instance];
+					weapon_info* wi = &Weapon_info[wp->weapon_info_index];
 					auto lp = lighting_profiles::current();
 					hdr_color light_color;
+
+					float intensity_mult = wi->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LIGHT_INTENSITY_MULT, *wp, &wp->modular_curves_instance);
+					float radius_mult = wi->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LIGHT_RADIUS_MULT, *wp, &wp->modular_curves_instance);
+					float r_mult = wi->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LIGHT_R_MULT, *wp, &wp->modular_curves_instance);
+					float g_mult = wi->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LIGHT_G_MULT, *wp, &wp->modular_curves_instance);
+					float b_mult = wi->weapon_curves.get_output(weapon_info::WeaponCurveOutputs::LIGHT_B_MULT, *wp, &wp->modular_curves_instance);
+
+					float source_radius = objp->radius;
+					float light_radius;
+					float light_brightness;
+
+					// Handle differing adjustments depending on weapon type.
+					if (wi->render_type == WRT_LASER) {
+						light_radius = lp->laser_light_radius.handle(wi->light_radius) * radius_mult;
+						// intensity is stored in the light color even if no user setting is done.
+						light_brightness = lp->laser_light_brightness.handle(wi->light_color.i());
+					} else {
+						// Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
+						source_radius *= 0.05f;
+						light_radius = lp->missile_light_radius.handle(wi->light_radius) * radius_mult;
+						light_brightness = lp->missile_light_brightness.handle(wi->light_color.i());
+					}
+
 					// If there is no specific color set in the table, laser render weapons have a dynamic color.
 					if (!wi->light_color_set && wi->render_type == WRT_LASER) {
-						// intensity is stored in the light color even if no user setting is done.
-						light_color = hdr_color(&wi->light_color);
 						// Classic dynamic laser color is handled with an old color object
 						color c;
 						weapon_get_laser_color(&c, objp);
-						light_color.set_rgb(&c);
+						light_color.set_rgbai((c.red/255.f), (c.green/255.f), (c.blue/255.f), 1.f, light_brightness);
 					} else {
 						// If not a laser then all default information needed is stored in the weapon light color
-						light_color = hdr_color(&wi->light_color);
+						light_color.set_rgbai(wi->light_color.r(), wi->light_color.g(), wi->light_color.b(), 1.f, light_brightness);
 					}
-					//handles both defaults and adjustments.
-					float r = wi->light_radius;
-					float source_radius = objp->radius;
-					if (wi->render_type == WRT_LASER) {
-						r = lp->laser_light_radius.handle(r);
-						light_color.i(lp->laser_light_brightness.handle(light_color.i()));
-					} else {
-						//Missiles should typically not be treated as lights for their whole radius. TODO: make configurable.
-						source_radius *= 0.05f;
-						r = lp->missile_light_radius.handle(r);
-						light_color.i(lp->missile_light_brightness.handle(light_color.i()));
-					}
-					if(r > 0.0f && light_color.i() > 0.0f)
-						light_add_point(&objp->pos, r, r, &light_color,source_radius);
+
+					light_color.multiply_rgbai(r_mult, g_mult, b_mult, 1.f, intensity_mult);
+
+					if(light_radius > 0.0f && intensity_mult > 0.0f && light_color.i() > 0.0f)
+						light_add_point(&objp->pos, light_radius, light_radius, &light_color, source_radius);
 				}
 			}
 
@@ -1294,18 +1381,16 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on ships cast light
 			if (Arc_light)	{
 				if ( (Detail.lighting > 3) && (objp != Viewer_obj) ) {
-					int i;
-					ship		*shipp;
-					shipp = &Ships[objp->instance];
+					auto shipp = &Ships[objp->instance];
 
-					for (i=0; i<MAX_ARC_EFFECTS; i++ )	{
-						if ( shipp->arc_timestamp[i].isValid() )	{
+					for (auto &arc: shipp->electrical_arcs) {
+						if ( arc.timestamp.isValid() )	{
 							// Move arc endpoints into world coordinates	
 							vec3d tmp1, tmp2;
-							vm_vec_unrotate(&tmp1,&shipp->arc_pts[i][0],&objp->orient);
+							vm_vec_unrotate(&tmp1,&arc.endpoint_1,&objp->orient);
 							vm_vec_add2(&tmp1,&objp->pos);
 
-							vm_vec_unrotate(&tmp2,&shipp->arc_pts[i][1],&objp->orient);
+							vm_vec_unrotate(&tmp2,&arc.endpoint_2,&objp->orient);
 							vm_vec_add2(&tmp2,&objp->pos);
 
 							light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f);
@@ -1391,19 +1476,17 @@ void obj_move_all_post(object *objp, float frametime)
 			// Make any electrical arcs on debris cast light
 			if (Arc_light)	{
 				if ( Detail.lighting > 3 ) {
-					int i;
-					debris		*db;
-					db = &Debris[objp->instance];
+					auto db = &Debris[objp->instance];
 
 					if (db->arc_frequency > 0) {
-						for (i=0; i<MAX_DEBRIS_ARCS; i++ )	{
-							if ( db->arc_timestamp[i].isValid() )	{
+						for (auto &arc: db->electrical_arcs) {
+							if ( arc.timestamp.isValid() )	{
 								// Move arc endpoints into world coordinates	
 								vec3d tmp1, tmp2;
-								vm_vec_unrotate(&tmp1,&db->arc_pts[i][0],&objp->orient);
+								vm_vec_unrotate(&tmp1,&arc.endpoint_1,&objp->orient);
 								vm_vec_add2(&tmp1,&objp->pos);
 
-								vm_vec_unrotate(&tmp2,&db->arc_pts[i][1],&objp->orient);
+								vm_vec_unrotate(&tmp2,&arc.endpoint_2,&objp->orient);
 								vm_vec_add2(&tmp2,&objp->pos);
 
 								light_add_point( &tmp1, 10.0f, 20.0f, frand(), 1.0f, 1.0f, 1.0f );
@@ -1443,6 +1526,9 @@ void obj_move_all_post(object *objp, float frametime)
 			break;	
 
 		case OBJ_BEAM:		
+			break;
+
+		case OBJ_RAW_POF:
 			break;
 
 		case OBJ_NONE:
@@ -1541,32 +1627,50 @@ void obj_move_all(float frametime)
 			objp->last_orient = objp->orient;
 		}
 
-		// Goober5000 - skip objects which don't move, but only until they're destroyed
-		if (!(objp->flags[Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f)) {
+		// Goober5000 - accommodate objects that aren't supposed to move in some way (at least until they're destroyed)
+		bool dont_change_position = objp->flags[Object::Object_Flags::Dont_change_position, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+		bool dont_change_orientation = objp->flags[Object::Object_Flags::Dont_change_orientation, Object::Object_Flags::Immobile] && objp->hull_strength > 0.0f;
+
+		// skip the physics if we're totally immobile
+		if (!dont_change_position || !dont_change_orientation) {
 			// if this is an object which should be interpolated in multiplayer, do so
 			if (interpolation_object) {
-				objp->interp_info.interpolate_main(&objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
+				extern void interpolate_main_helper(int objnum, vec3d* pos, matrix* ori, physics_info* pip, vec3d* last_pos, matrix* last_orient, vec3d* gravity, bool player_ship);
+
+				interpolate_main_helper(OBJ_INDEX(objp), &objp->pos, &objp->orient, &objp->phys_info, &objp->last_pos, &objp->last_orient, &The_mission.gravity, objp->flags[Object::Object_Flags::Player_ship]);
 			} else {
 				// physics
 				obj_move_call_physics(objp, frametime);
 			}
-		} else {
-			// make sure velocity is always 0 for immobile things!
+		}
+
+		// If the object isn't supposed to move, roll back any movement that occurred.  Most of the movement should already have been skipped, but this ensures complete immobility.
+		if (dont_change_position) {
+			objp->pos = objp->last_pos;
+
+			// make sure velocity is always 0
 			vm_vec_zero(&objp->phys_info.vel);
 			vm_vec_zero(&objp->phys_info.desired_vel);
+			objp->phys_info.speed = 0.0f;
+			objp->phys_info.fspeed = 0.0f;
+		}
+		if (dont_change_orientation) {
+			objp->orient = objp->last_orient;
+
+			// make sure velocity is always 0
 			vm_vec_zero(&objp->phys_info.rotvel);
 			vm_vec_zero(&objp->phys_info.desired_rotvel);
 		}
 
-		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile" flag.
+		// Submodel movement now happens here, right after physics movement.  It's not excluded by the "immobile", "don't-change-position", or "don't-change-orientation" flags.
 		
 		// this flag only affects ship subsystems, not any other type of submodel movement
 		if (objp->type == OBJ_SHIP && !Ships[objp->instance].flags[Ship::Ship_Flags::Subsystem_movement_locked])
 			ship_move_subsystems(objp);
 
 		// do animation on this object
-		int model_instance_num = object_get_model_instance(objp);
-		if (model_instance_num > -1) {
+		int model_instance_num = object_get_model_instance_num(objp);
+		if (model_instance_num >= 0) {
 			polymodel_instance* pmi = model_get_instance(model_instance_num);
 			animation::ModelAnimation::stepAnimations(frametime, pmi);
 		}
@@ -1715,6 +1819,63 @@ void obj_render(object *obj)
 	gr_reset_lighting();
 }
 
+void raw_pof_render(object* obj, model_draw_list* scene) {
+	model_render_params render_info;
+
+	auto pof_obj = Pof_objects[obj->instance];
+
+	uint64_t render_flags = MR_NORMAL | MR_IS_MISSILE | MR_NO_BATCH;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_light])
+		render_flags |= MR_NO_LIGHTING;
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Glowmaps_disabled]) {
+		render_flags |= MR_NO_GLOWMAPS;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Draw_as_wireframe]) {
+		render_flags |= MR_SHOW_OUTLINE_HTL | MR_NO_POLYS | MR_NO_TEXTURING;
+		render_info.set_color(Wireframe_color);
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_full_detail]) {
+		render_flags |= MR_FULL_DETAIL;
+	}
+
+	uint debug_flags = render_info.get_debug_flags();
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_diffuse]) {
+		debug_flags |= MR_DEBUG_NO_DIFFUSE;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_glowmap]) {
+		debug_flags |= MR_DEBUG_NO_GLOW;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_normalmap]) {
+		debug_flags |= MR_DEBUG_NO_NORMAL;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_ambientmap]) {
+		debug_flags |= MR_DEBUG_NO_AMBIENT;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_specmap]) {
+		debug_flags |= MR_DEBUG_NO_SPEC;
+	}
+
+	if (pof_obj.flags[Object::Raw_Pof_Flags::Render_without_reflectmap]) {
+		debug_flags |= MR_DEBUG_NO_REFLECT;
+	}
+
+	render_info.set_object_number(OBJ_INDEX(obj));
+
+	render_info.set_flags(render_flags);
+	render_info.set_debug_flags(debug_flags);
+
+	model_render_queue(&render_info, scene, Pof_objects[obj->instance].model_num, &obj->orient, &obj->pos);
+}
+
 void obj_queue_render(object* obj, model_draw_list* scene)
 {
 	TRACE_SCOPE(tracing::QueueRender);
@@ -1783,6 +1944,9 @@ void obj_queue_render(object* obj, model_draw_list* scene)
 	case OBJ_GHOST:
 		break;
 	case OBJ_BEAM:
+		break;
+	case OBJ_RAW_POF:
+		raw_pof_render(obj, scene);
 		break;
 	default:
 		Error( LOCATION, "Unhandled obj type %d in obj_render", obj->type );
@@ -1889,6 +2053,7 @@ int obj_team(object *objp)
 		case OBJ_GHOST:
 		case OBJ_SHOCKWAVE:		
 		case OBJ_BEAM:
+		case OBJ_RAW_POF:
 			team = -1;
 			break;
 
@@ -2010,16 +2175,16 @@ int obj_get_by_signature(int sig)
 }
 
 /**
- * Gets object model
+ * Gets the model number for this object, or -1 if none
  */
-int object_get_model(const object *objp)
+int object_get_model_num(const object *objp)
 {
 	switch(objp->type)
 	{
 		case OBJ_ASTEROID:
 		{
 			asteroid *asp = &Asteroids[objp->instance];
-			return Asteroid_info[asp->asteroid_type].model_num[asp->asteroid_subtype];
+			return Asteroid_info[asp->asteroid_type].subtypes[asp->asteroid_subtype].model_number;
 		}
 		case OBJ_DEBRIS:
 		{
@@ -2036,6 +2201,8 @@ int object_get_model(const object *objp)
 			weapon *wp = &Weapons[objp->instance];
 			return Weapon_info[wp->weapon_info_index].model_num;
 		}
+		case OBJ_RAW_POF:
+			return Pof_objects[objp->instance].model_num;
 		default:
 			break;
 	}
@@ -2043,7 +2210,19 @@ int object_get_model(const object *objp)
 	return -1;
 }
 
-int object_get_model_instance(const object *objp)
+/**
+ * Gets the model for this object, or nullptr if none
+ */
+polymodel *object_get_model(const object *objp)
+{
+	int model_num = object_get_model_num(objp);
+	return model_num >= 0 ? model_get(model_num) : nullptr;
+}
+
+/**
+ * Gets the model instance number for this object, or -1 if none
+ */
+int object_get_model_instance_num(const object *objp)
 {
 	if (objp == nullptr)
 		return -1;
@@ -2076,11 +2255,22 @@ int object_get_model_instance(const object *objp)
 			Assertion(jnp != nullptr, "Could not find jump node!");
 			return jnp->GetPolymodelInstanceNum();
 		}
+		case OBJ_RAW_POF:
+			return Pof_objects[objp->instance].model_instance;
 		default:
 			break;
 	}
 
 	return -1;
+}
+
+/**
+ * Gets the model instance for this object, or nullptr if none
+ */
+polymodel_instance *object_get_model_instance(const object *objp)
+{
+	int model_instance_num = object_get_model_instance_num(objp);
+	return model_instance_num >= 0 ? model_get_instance(model_instance_num) : nullptr;
 }
 
 bool obj_compare(object* left, object* right) {
@@ -2095,3 +2285,28 @@ bool obj_compare(object* left, object* right) {
 
 	return OBJ_INDEX(left) == OBJ_INDEX(right);
 }
+
+void physics_populate_snapshot(physics_snapshot& snapshot, const object* objp)
+{
+    Assertion(objp != nullptr, "Bad object (nullptr) passed to physics_overwrite_snapshot, please report to the SCP!");
+
+    snapshot.position = objp->pos;
+    snapshot.orientation = objp->orient;
+    snapshot.velocity = objp->phys_info.vel;
+    snapshot.desired_velocity = objp->phys_info.desired_vel;
+    snapshot.rotational_velocity = objp->phys_info.rotvel;
+    snapshot.desired_rotational_velocity = objp->phys_info.desired_rotvel;
+}
+
+void physics_apply_pstate_to_object(object* objp, const physics_snapshot& source)
+{
+    Assertion(objp != nullptr, "Bad object passed to phsyics snapshot application code.  This is a coder mistake, please report!");
+
+    objp->pos = source.position;
+    objp->orient = source.orientation;
+    objp->phys_info.vel = source.velocity;
+    objp->phys_info.desired_vel = source.desired_velocity;
+    objp->phys_info.rotvel = source.rotational_velocity;
+    objp->phys_info.desired_rotvel = source.desired_rotational_velocity;
+}
+

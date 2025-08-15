@@ -512,7 +512,7 @@ bool cockpit_displays_h::isValid() const {
 		return false;
 	}
 
-	if ( Player_cockpit_textures == NULL ) {
+	if ( Player_cockpit_textures == nullptr ) {
 		return false;
 	}
 

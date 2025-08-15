@@ -10,14 +10,13 @@
 #ifndef _OBJECTSHIELD_H
 #define _OBJECTSHIELD_H
 
-#include "globalincs/globals.h"
-#include "globalincs/pstypes.h"
-#include "object/object.h"
-
 #define	FRONT_QUAD	1
 #define	REAR_QUAD	2
 #define	LEFT_QUAD	3
 #define	RIGHT_QUAD	0
+
+class object;
+class ship;
 
 /**
  * @brief Balances/Equalizes the shield
@@ -52,7 +51,7 @@ void shield_transfer(object *objp, int quadrant, float rate);
 /**
  * @brief Gets the shield strength (in HP) of the given object
  */
-float shield_get_strength(object *objp);
+float shield_get_strength(const object *objp);
 
 /**
  * @brief Sets the shield strength (in HP) of the given object.
@@ -74,7 +73,16 @@ void shield_add_strength(object *objp, float delta);
  *
  * @author Goober5000
  */
-float shield_get_quad(object *objp, int quadrant_num);
+float shield_get_quad(const object *objp, int quadrant_num);
+
+/**
+ * Return the shield strength of the specified quadrant on hit_objp
+ *
+ * @param objp object pointer to ship object
+ * @param quadrant_num shield quadrant to check
+ * @return strength of shields in the checked quadrant as a percentage, between 0 and 1.0
+ */
+float shield_get_quad_percent(const object* objp, int quadrant_num);
 
 /**
  * @brief Sets the strength (in HP) of a shield quadrant/sector
@@ -103,7 +111,16 @@ void shield_add_quad(object *objp, int quadrant_num, float strength);
  *
  * @author Goober5000
  */
-float shield_get_max_strength(object *objp, bool no_msr = false);
+float shield_get_max_strength(const object *objp, bool no_msr = false);
+
+/**
+ * @brief Gets the max shield HP of the given ship
+ *
+ * @note $Max Shield Recharge is not intended to affect max strength of individual shield segments
+ *
+ * @author Goober5000
+ */
+float shield_get_max_strength(const ship *shipp, bool no_msr = false);
 
 /**
  * @brief Sets the max shield HP of the given object. Use this to init or override a ship's default shield HP
@@ -115,7 +132,7 @@ void shield_set_max_strength(object *objp, float newmax);
  *
  * @author Goober5000
  */
-float shield_get_max_quad(object *objp);
+float shield_get_max_quad(const object *objp);
 
 /**
  * @brief Strengthens the weakest quadrant first, then spreads it out

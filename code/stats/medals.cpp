@@ -18,6 +18,7 @@
 #include "localization/localize.h"
 #include "menuui/snazzyui.h"
 #include "parse/parselo.h"
+#include "pilotfile/pilotfile.h"
 #include "playerman/player.h"
 #include "popup/popup.h"
 #include "stats/medals.h"
@@ -144,10 +145,9 @@ static char Medals_background_filename[NAME_LENGTH];
 static const char* Default_medals_mask_filename = "Medals-M";
 static char Medals_mask_filename[NAME_LENGTH];
 
-scoring_struct *Player_score=NULL;
-
-int Medals_mode;
-player *Medals_player;
+static int Medals_mode;
+static player *Medals_player;
+static scoring_struct Medals_stats;
 
 void init_medal_bitmaps();
 void init_snazzy_regions();
@@ -199,9 +199,9 @@ const char* medal_stuff::get_display_name() const {
 
 static medal_stuff* get_medal_pointer(const char* medal_name)
 {
-	for (int i = 0; i < (int)Medals.size(); i++) {
-		if (!stricmp(medal_name, Medals[i].name)) {
-			return &Medals[i];
+	for (auto &medal: Medals) {
+		if (!stricmp(medal_name, medal.name)) {
+			return &medal;
 		}
 	}
 
@@ -211,7 +211,7 @@ static medal_stuff* get_medal_pointer(const char* medal_name)
 
 static int get_medal_position(const char* medal_name)
 {
-	for (int i = 0; i < (int)Medals.size(); i++) {
+	for (int i = 0; i < static_cast<int>(Medals.size()); i++) {
 		if (!stricmp(medal_name, Medals[i].name)) {
 			return i;
 		}
@@ -499,7 +499,8 @@ DCF(medals, "Grant or revoke medals")
 	{
 		dc_printf ("Usage: medals all | clear | promote | demote | [index]\n");
 		dc_printf ("       [index] --  index of medal to grant\n");
-		dc_printf ("       with no parameters, displays the available medals\n");
+		dc_printf ("       with no parameters, displays the available medals.\n");
+		dc_printf ("       Note: Modifying only works on the medals screen and is not permanent.\n");
 		return;
 	}
 
@@ -507,62 +508,65 @@ DCF(medals, "Grant or revoke medals")
 	{
 		dc_printf("You have the following medals:\n");
 
-		for (i = 0; i < (int)Medals.size(); i++)
+		for (i = 0; i < static_cast<int>(Medals.size()); i++)
 		{
-			if (Player->stats.medal_counts[i] > 0)
-				dc_printf("%d %s\n", Player->stats.medal_counts[i], Medals[i].name);
+			if (Medals_stats.medal_counts[i] > 0)
+				dc_printf("%d %s\n", Medals_stats.medal_counts[i], Medals[i].name);
 		}
-		dc_printf("%s\n", Ranks[verify_rank(Player->stats.rank)].name);
+		dc_printf("%s\n", Ranks[verify_rank(Medals_stats.rank)].name);
 		return;
 	}
 
 	if (dc_optional_string("all")) {
-		for (i = 0; i < (int)Medals.size(); i++) {
-			Player->stats.medal_counts[i]++;
+		for (i = 0; i < static_cast<int>(Medals.size()); i++) {
+			Medals_stats.medal_counts[i]++;
 		}
+		init_medal_bitmaps();
 		dc_printf("Granted all medals\n");
 		return;
 
 	} else if (dc_optional_string("clear")) {
-		for (i = 0; i < (int)Medals.size(); i++) {
-			Player->stats.medal_counts[i] = 0;
+		for (i = 0; i < static_cast<int>(Medals.size()); i++) {
+			Medals_stats.medal_counts[i] = 0;
 		}
+		init_medal_bitmaps();
 		dc_printf("Cleared all medals\n");
 		return;
 
 	} else if (dc_optional_string("promote")) {
-		if (Player->stats.rank < ((int)Ranks.size() - 1)) {
-			Player->stats.rank++;
+		if (Medals_stats.rank < ((int)Ranks.size() - 1)) {
+			Medals_stats.rank++;
 		}
-		dc_printf("Promoted to %s\n", Ranks[verify_rank(Player->stats.rank)].name);
+		init_medal_bitmaps();
+		dc_printf("Promoted to %s\n", Ranks[verify_rank(Medals_stats.rank)].name);
 		return;
 
 	} else if (dc_optional_string("demote")) {
-		if (Player->stats.rank > 0) {
-			Player->stats.rank--;
+		if (Medals_stats.rank > 0) {
+			Medals_stats.rank--;
 		}
-		dc_printf("Demoted to %s\n", Ranks[verify_rank(Player->stats.rank)].name);
+		init_medal_bitmaps();
+		dc_printf("Demoted to %s\n", Ranks[verify_rank(Medals_stats.rank)].name);
 		return;
 	}
 
 	if (dc_maybe_stuff_int(&idx)) {
-		if (idx < 0 || idx >= (int)Medals.size())
+		if (idx < 0 || idx >= static_cast<int>(Medals.size()))
 		{
 			dc_printf("Medal index %d is out of range\n", idx);
 			return;
 		}
-
+		Medals_stats.medal_counts[idx]++;
+		init_medal_bitmaps();
 		dc_printf("Granted %s\n", Medals[idx].name);
-		Player->stats.medal_counts[idx]++;
 		return;
 	}
 
 	dc_printf("The following medals are available:\n");
-	for (i = 0; i < (int)Medals.size(); i++) {
+	for (i = 0; i < static_cast<int>(Medals.size()); i++) {
 		dc_printf("%d: %s\n", i, Medals[i].name);
 	}
 }
-
 
 void medal_main_init(player *pl, int mode)
 {
@@ -571,19 +575,17 @@ void medal_main_init(player *pl, int mode)
 
 	Assert(pl != NULL);
 	Medals_player = pl;
-	Player_score = &Medals_player->stats;
 
-#ifndef NDEBUG
-	if (Cmdline_gimme_all_medals){
-		for (idx = 0; idx < (int)Medals.size(); idx++) {
-			Medals_player->stats.medal_counts[idx] = 1;
-		}
-	}
-#endif
+	// all-time campaign stats use Medals_player->stats;
+	// all-time ever stats use pilot file export
+	scoring_struct pstats;
+	Pilot.export_stats(&pstats);
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	Medals_stats.assign(pstats);	// or *Medals_player->stats for the campaign all-time stats
+
+	for (idx = 0; idx < static_cast<int>(Medals.size()); idx++) {
 		if ((Medals[idx].available_from_start) && (Medals_player->stats.medal_counts[idx] < 1)) {
-			Medals_player->stats.medal_counts[idx] = 1;
+			Medals_stats.medal_counts[idx] = 1;
 		}
 	}
 
@@ -775,11 +777,11 @@ int medal_main_do()
 	region = snazzy_menu_do((ubyte*)Medals_mask->data,
 		Medals_mask_w,
 		Medals_mask_h,
-		(int)Medals.size(),
+		static_cast<int>(Medals.size()),
 		Medal_regions,
 		&selected);
 
-	for (int i = 0; i < (int)Medals.size(); i++) {
+	for (int i = 0; i < static_cast<int>(Medals.size()); i++) {
 		if (region == Medals[i].mask_index) {
 			medal_index = i;
 		}
@@ -787,7 +789,7 @@ int medal_main_do()
 
 	if (medal_index == Rank_medal_index)
 	{
-		blit_label(get_rank_display_name(&Ranks[verify_rank(Player_score->rank)]).c_str(), 1);
+		blit_label(get_rank_display_name(&Ranks[verify_rank(Medals_stats.rank)]).c_str(), 1);
 	}
 	else switch (region)
 	{
@@ -804,8 +806,8 @@ int medal_main_do()
 			break;
 
 		default:
-			if (Player_score->medal_counts[medal_index] > 0) {
-				blit_label(Medals[medal_index].get_display_name(), Player_score->medal_counts[medal_index]);
+			if (Medals_stats.medal_counts[medal_index] > 0) {
+				blit_label(Medals[medal_index].get_display_name(), Medals_stats.medal_counts[medal_index]);
 			}
 			break;
 	} // end switch
@@ -836,8 +838,6 @@ void medal_main_close()
 	delete[] Medal_regions;
 	Medal_regions = NULL;
 
-	Player_score = NULL;
-
 	Medals_window.destroy();
 
 	if (Init_flags & MASK_BITMAP_INIT) {
@@ -853,12 +853,11 @@ void medal_main_close()
 void init_medal_bitmaps()
 {
 	int idx;
-	Assert(Player_score);
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	for (idx = 0; idx < static_cast<int>(Medals.size()); idx++) {
 		Medal_display_info[idx].bitmap = -1;
 
-		if (Player_score->medal_counts[idx] > 0) {
+		if (Medals_stats.medal_counts[idx] > 0) {
 			int num_medals;
 			char filename[MAX_FILENAME_LEN], base[MAX_FILENAME_LEN];
 
@@ -869,7 +868,7 @@ void init_medal_bitmaps()
 
 			_splitpath( filename, NULL, NULL, base, NULL );
 
-			num_medals = Player_score->medal_counts[idx];
+			num_medals = Medals_stats.medal_counts[idx];
 
 			// can't display more than the maximum number of version for this medal
 			if ( num_medals > Medals[idx].num_versions )
@@ -899,13 +898,13 @@ void init_medal_bitmaps()
 	// load up rank insignia
 	if (gr_screen.res == GR_1024) {
 		char filename[NAME_LENGTH];
-		if (snprintf(filename, NAME_LENGTH, "2_%s", Ranks[verify_rank(Player_score->rank)].bitmap) >= NAME_LENGTH) {
+		if (snprintf(filename, NAME_LENGTH, "2_%s", Ranks[verify_rank(Medals_stats.rank)].bitmap) >= NAME_LENGTH) {
 			// Make sure the string is null terminated
 			filename[NAME_LENGTH - 1] = '\0';
 		}
 		Rank_bm = bm_load(filename);
 	} else {
-		Rank_bm = bm_load(Ranks[verify_rank((int)Player_score->rank)].bitmap);
+		Rank_bm = bm_load(Ranks[verify_rank(Medals_stats.rank)].bitmap);
 	}
 }
 
@@ -915,10 +914,10 @@ void init_snazzy_regions()
 
 	// well, we need regions in an array (versus a vector), so...
 	Assert(Medal_regions == NULL);
-	Medal_regions = new MENU_REGION[(int)Medals.size()];
+	Medal_regions = new MENU_REGION[static_cast<int>(Medals.size())];
 
 	// snazzy regions for the medals/ranks, etc.
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
+	for (idx = 0; idx < static_cast<int>(Medals.size()); idx++) {
 		snazzy_menu_add_region(&Medal_regions[idx], "", idx, 0);
 	}
 }
@@ -928,8 +927,8 @@ void blit_medals()
 {
 	int idx;
 
-	for (idx = 0; idx < (int)Medals.size(); idx++) {
-		if (idx != Rank_medal_index && Player_score->medal_counts[idx] > 0) {
+	for (idx = 0; idx < static_cast<int>(Medals.size()); idx++) {
+		if (idx != Rank_medal_index && Medals_stats.medal_counts[idx] > 0) {
 #ifndef NDEBUG
 			// this can happen if gimmemedals was used on the medal screen
 			if (Medal_display_info[idx].bitmap < 0) {
@@ -952,7 +951,7 @@ int medals_info_lookup(const char *name)
 		return -1;
 	}
 
-	for (int i = 0; i < (int)Medals.size(); i++) {
+	for (int i = 0; i < static_cast<int>(Medals.size()); i++) {
 		if ( !stricmp(name, Medals[i].name) ) {
 			return i;
 		}

@@ -12,6 +12,61 @@ from subprocess import check_output
 MAX_PAGES = 100  # maximum number of PR pages to go through
 warnings = 0
 
+label_scores = {
+"fred" : 6,
+"qtfred" : 6,
+"vr" : 6,
+"multi" : 6,
+"Lab" : 6,
+"pilot file" : 6,
+"scripting" : 6,
+"sexps" : 6,
+"ai" : 6,
+"controls" : 6,
+"HUD" : 6,
+"models" : 6,
+"sound" : 6,
+"graphics" : 6,
+"physics" : 6,
+"ui" : 6,
+"localization / translation" : 6,
+"optimization" : 6,
+"gameplay" : 5,
+"general modding" : 4,
+"fix" : 3,
+"enhancement" : 2,
+"backport" : 1,
+"cleanup" : 0
+}
+
+label_to_category = {
+"fred" : "FRED",
+"qtfred" : "QtFRED",
+"vr" : "VR",
+"multi" : "Multiplayer",
+"Lab" : "Lab",
+"pilot file" : "Pilot File",
+"scripting" : "Scripting",
+"sexps" : "SEXPs",
+"ai" : "AI",
+"controls" : "Controls",
+"HUD" : "HUD",
+"models" : "Models",
+"sound" : "Sound",
+"graphics" : "Graphics",
+"physics" : "Physics",
+"ui" : "UI",
+"localization / translation" : "Localization",
+"optimization" : "Optimization",
+"gameplay" : "Gameplay",
+"general modding" : "General Modding",
+"fix" : "Fix",
+"enhancement" : "Enhancement",
+"backport" : "Backport",
+"cleanup" : "Cleanup",
+"misc" : "Misc."
+}
+
 def get_last_page(response: requests.Response) -> int:
     """
     @brief Extract the last page number from the response header
@@ -40,7 +95,33 @@ def get_last_page(response: requests.Response) -> int:
             return MAX_PAGES
         else:
             return last_page
+
+def label_score(label):
+    try:
+        return label_scores[label['name']]
+    except KeyError:
+        return -1
+
+def get_label(labels) -> str:
+    """
+    @brief Get the primary label from a list of labels
+
+    @param[in] labels The list of labels from a pull request
+
+    @returns The primary label to be used for sorting in the changelog
+    """
+    if len(labels) < 1:
+        return "misc"
+
+    # Sort the labels based on their score and grab the highest valued label
+    name = sorted(labels, key=label_score, reverse=True)[0]['name']
     
+    # If a label couldn't be found, toss it into a miscellaneous bin
+    if name not in label_scores:
+        name = "misc"
+    
+    return name
+
 
 def main():
     parser = argparse.ArgumentParser(description="Retrieves a log of commit messages and attempts to pretty them into a human-readable format")
@@ -138,11 +219,16 @@ def main():
                 print("Found old pull #{} ({}), stopping loop...".format(pull['number'], pull['updated_at']))
                 page = last_page + 1
                 break
+            
+            # If a label isn't in the changelog, create a bin for it
+            label = get_label(pull['labels'])
+            if label not in changelog:
+                changelog[label] = {}
 
             # Add the pull to the changelog, indexed by its pull.number
-            if pull['number'] not in changelog:
+            if pull['number'] not in changelog[label]:
                 # only add if the key isn't there already
-                changelog[pull['number']] = {
+                changelog[label][pull['number']] = {
                     "date":     merge_date,
                     "title":    pull['title'],
                     "labels":   pull['labels'],
@@ -158,9 +244,13 @@ def main():
     # 2021-09-28 | (#3661) Fix homing child weapons in niche circumstances 
     print("Writing to change.log...")
     str = ''
-    for key, value in changelog.items():
-        str += "{} | (#{}) {} \n".format(value['date'].strftime("%Y-%m-%d"), key, value['title'])
-    
+    for label, pulls in dict(sorted(changelog.items())).items():
+        str += "[size=18pt]{}[/size]\n".format(label_to_category[label])
+        str += "[list]\n"
+        for key, value in pulls.items():
+            str += "[li](#{}) {} [/li]\n".format(key, value['title'])
+        str += "[/list]\n\n"
+
     with open("change.log", "w") as file:
         file.write(str)
 

@@ -28,7 +28,7 @@ ADE_VIRTVAR(Name, l_Team, "string", "Team name", "string", "Team name, or empty 
 	if(!ade_get_args(L, "o|s", l_Team.Get(&tdx), &s))
 		return ade_set_error(L, "s", "");
 
-	if(tdx < 0 || tdx >= (int)Iff_info.size())
+	if(!SCP_vector_inbounds(Iff_info, tdx))
 		return ade_set_error(L, "s", "");
 
 	if(ADE_SETTING_VAR && s != nullptr) {
@@ -52,7 +52,7 @@ ADE_FUNC(getColor,
 	if(!ade_get_args(L, "o|b", l_Team.Get(&idx), &rc))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= (int)Iff_info.size())
+	if(!SCP_vector_inbounds(Iff_info, idx))
 		return ADE_RETURN_NIL;
 
 	color* cur = iff_get_color_by_team(idx, 0, 0);
@@ -70,10 +70,22 @@ ADE_FUNC(isValid, l_Team, NULL, "Detects whether handle is valid", "boolean", "t
 	if(!ade_get_args(L, "o", l_Team.Get(&idx)))
 		return ADE_RETURN_NIL;
 
-	if(idx < 0 || idx >= (int)Iff_info.size())
+	if(!SCP_vector_inbounds(Iff_info, idx))
 		return ADE_RETURN_FALSE;
 
 	return ADE_RETURN_TRUE;
+}
+
+ADE_FUNC(getBreedName, l_Team, nullptr, "Gets the FreeSpace type name", "string", "'Team', or empty string if handle is invalid")
+{
+	int idx;
+	if (!ade_get_args(L, "o", l_Team.Get(&idx)))
+		return ade_set_error(L, "s", "");
+
+	if (!SCP_vector_inbounds(Iff_info, idx))
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", "Team");
 }
 
 ADE_FUNC(attacks, l_Team, "team", "Checks the IFF status of another team", "boolean", "True if this team attacks the specified team")

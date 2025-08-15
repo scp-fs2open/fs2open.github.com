@@ -46,8 +46,6 @@ class ShaderProgram {
 
 	SCP_vector<GLuint> _compiled_shaders;
 
-	SCP_unordered_map<opengl_vert_attrib::attrib_id, GLint> _attribute_locations;
-
 	void freeCompiledShaders();
  public:
 	explicit ShaderProgram(const SCP_string& program_name);
@@ -58,8 +56,8 @@ class ShaderProgram {
 	ShaderProgram(const ShaderProgram&) = delete;
 	ShaderProgram& operator=(const ShaderProgram&) = delete;
 
-	ShaderProgram(ShaderProgram&& other) noexcept;
-	ShaderProgram& operator=(ShaderProgram&& other) noexcept;
+	ShaderProgram(ShaderProgram&& other) noexcept = default;
+	ShaderProgram& operator=(ShaderProgram&& other) noexcept = default;
 
 	void use();
 
@@ -67,9 +65,7 @@ class ShaderProgram {
 
 	void linkProgram();
 
-	void initAttribute(const SCP_string& name, opengl_vert_attrib::attrib_id attr_id, const vec4& default_value);
-
-	GLint getAttributeLocation(opengl_vert_attrib::attrib_id attribute);
+	void initAttribute(const SCP_string& name, const vec4& default_value);
 
 	GLuint getShaderHandle();
 };

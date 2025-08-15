@@ -68,7 +68,7 @@ const float UPKEEP_DIST_MULT = 1.2f;
 const float PROBABLY_TOO_MANY_POOFS = 100000.0f;
 
 // bit array of neb2 poofs
-std::unique_ptr<ubyte> Neb2_poof_flags;
+std::unique_ptr<ubyte[]> Neb2_poof_flags;
 
 // array of neb2 bitmaps
 SCP_vector<SCP_string> Neb2_bitmap_filenames;
@@ -130,23 +130,39 @@ SCP_vector<poof> Neb2_poofs;
 int Neb2_background_color[3] = {0, 0, 255};			// rgb background color (used for lame rendering)
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
-                                                                                   { 1, {"Low", 1161}},
-                                                                                   { 2, {"Medium", 1162}},
-                                                                                   { 3, {"High", 1163}},
+                                                                                   { 1, {"Low", 1160}},
+                                                                                   { 2, {"Medium", 1161}},
+                                                                                   { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
+
+static void parse_nebula_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NebulaDetail, value[i]);
+		}
+	}
+}
 
 const auto NebulaDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.NebulaDetail",
                      std::pair<const char*, int>{"Nebula Detail", 1361},
                      std::pair<const char*, int>{"Detail level of nebulas", 1697})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([]() { return Detail.nebula_detail; })
                      .importance(7)
                      .change_listener([](int val, bool) {
                           Detail.nebula_detail = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_nebula_detail_func)
                      .finish();
 
 // --------------------------------------------------------------------------------------------------------
@@ -188,8 +204,13 @@ void parse_nebula_table(const char* filename)
 		read_file_text(filename, CF_TYPE_TABLES);
 		reset_parse();
 
+		// allow modular tables to not define bitmaps
+		bool skip_background_bitmaps = false;
+		if (Parsing_modular_table && (check_for_string("+Poof:") || check_for_string("$Name:")))
+			skip_background_bitmaps = true;
+
 		// background bitmaps
-		while (!optional_string("#end")) {
+		while (!skip_background_bitmaps && !optional_string("#end")) {
 			// nebula
 			optional_string("+Nebula:");
 			stuff_string(name, F_NAME, MAX_FILENAME_LEN);
@@ -206,7 +227,7 @@ void parse_nebula_table(const char* filename)
 		if (Parsing_modular_table && check_for_eof())
 			return;
 
-		// poofs
+		// poofs (see also check_for_string above)
 		while (required_string_one_of(3, "#end", "+Poof:", "$Name:")) {
 			bool create_if_not_found = true;
 			poof_info pooft;
@@ -277,7 +298,7 @@ void parse_nebula_table(const char* filename)
 					error_display(0, "Bitmap defined for nebula poof %s was not found!", poofp->name);
 
 				if (optional_string("$Scale:"))
-					poofp->scale = ::util::parseUniformRange<float>(0.01f, 100000.0f);
+					poofp->scale = ::util::ParsedRandomFloatRange::parseRandomRange(0.01f, 100000.0f);
 
 				if (optional_string("$Density:")) {
 					stuff_float(&poofp->density);
@@ -288,8 +309,18 @@ void parse_nebula_table(const char* filename)
 					poofp->density = 1 / (poofp->density * poofp->density * poofp->density);
 				}
 
+				if (optional_string("$Alignment:")) {
+					SCP_string type;
+					stuff_string(type, F_NAME);
+
+					if (!stricmp(type.c_str(), "VERTICAL"))
+						poofp->alignment = vmd_y_vector;
+					else
+						Warning(LOCATION, "Unrecognized alignment type '%s' for nebula poof %s", type.c_str(), poofp->name);
+				}
+
 				if (optional_string("$Rotation:"))
-					poofp->rotation = ::util::parseUniformRange<float>(-1000.0f, 1000.0f);
+					poofp->rotation = util::ParsedRandomFloatRange::parseRandomRange(-1000.0f, 1000.0f);
 
 				if (optional_string("$View Distance:")) {
 					stuff_float(&poofp->view_dist);
@@ -308,7 +339,7 @@ void parse_nebula_table(const char* filename)
 				}
 
 				if (optional_string("$Alpha:")) {
-					poofp->alpha = ::util::parseUniformRange<float>(0.0f, 1.0f);
+					poofp->alpha = util::ParsedRandomFloatRange::parseRandomRange(0.0f, 1.0f);
 				}
 			}
 		}
@@ -333,7 +364,7 @@ void neb2_init()
 	Poof_accum.resize(Poof_info.size());
 
 	// set up bit string
-	Neb2_poof_flags.reset(new ubyte[calculate_num_bytes(Poof_info.size())]);
+	Neb2_poof_flags = std::make_unique<ubyte[]>(calculate_num_bytes(Poof_info.size()));
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 }
 
@@ -402,7 +433,7 @@ void neb2_poof_setup() {
 		}
 	}
 	Poof_density_multiplier = Poof_density_sum_square / (Poof_density_sum * Poof_density_sum);
-	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_LEVEL + 0.5f); // scale the poofs down based on detail level
+	Poof_density_multiplier *= (Detail.nebula_detail + 0.5f) / (MAX_DETAIL_VALUE + 0.5f); // scale the poofs down based on detail level
 }
 
 void neb2_generate_fog_color(const char *fog_color_palette, ubyte fog_color[])
@@ -645,7 +676,8 @@ int neb2_skip_render(object *objp, float z_depth)
 			}
 			break;
 
-		// any ship less than 3% visible at their closest point
+		// any ship or raw pof less than 3% visible at their closest point
+		case OBJ_RAW_POF:
 		case OBJ_SHIP:
 			if (fog < 0.03f)
 				return 1;
@@ -833,7 +865,10 @@ void new_poof(size_t poof_info_idx, vec3d* pos) {
 	new_poof.rot_speed = fl_radians(pinfo->rotation.next());
 	new_poof.alpha = pinfo->alpha.next();
 	new_poof.anim_time = frand_range(0.0f, pinfo->bitmap.total_time);
-	vm_vec_rand_vec(&new_poof.up_vec);
+	if (pinfo->alignment == vmd_zero_vector)
+		vm_vec_rand_vec(&new_poof.up_vec);
+	else
+		new_poof.up_vec = pinfo->alignment;
 
 	Neb2_poofs.push_back(new_poof);
 }
@@ -974,13 +1009,19 @@ void neb2_render_poofs()
 		vec3d view_pos;
 		{
 			float scalar = -1 / powf((vm_vec_dist(&eye_pos, &pf.pt) / (10 * pf.radius)), 3.f);
+			if (pinfo->alignment != vmd_zero_vector)
+				scalar = 0.0f;
 
 			vm_vec_scale_add(&view_pos, &eye_pos, &eye_orient.vec.fvec, scalar);
 
 			view_pos -= pf.pt;
+
+			if (pinfo->alignment != vmd_zero_vector)
+				vm_project_point_onto_plane(&view_pos, &view_pos, &pinfo->alignment, &vmd_zero_vector);
+
 			vm_vec_normalize(&view_pos);
 
-			vm_vector_2_matrix(&orient, &view_pos, &pf.up_vec, nullptr);
+			vm_vector_2_matrix_norm(&orient, &view_pos, &pf.up_vec, nullptr);
 		}
 
 		// update the poof's up vector to be perpindicular to the camera and also rotated by however much its rotating

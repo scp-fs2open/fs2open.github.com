@@ -26,28 +26,6 @@ DecalDefinition::~DecalDefinition() {
 	}
 }
 
-DecalDefinition::DecalDefinition(DecalDefinition&& other) noexcept {
-	*this = std::move(other); // Use operator implementation
-}
-
-DecalDefinition& DecalDefinition::operator=(DecalDefinition&& other) noexcept {
-	std::swap(_name, other._name);
-
-	std::swap(_diffuseFilename, other._diffuseFilename);
-	std::swap(_glowFilename, other._glowFilename);
-	std::swap(_normalMapFilename, other._normalMapFilename);
-
-	std::swap(_diffuseBitmap, other._diffuseBitmap);
-	std::swap(_glowBitmap, other._glowBitmap);
-	std::swap(_normalBitmap, other._normalBitmap);
-
-	std::swap(_loopDiffuse, other._loopDiffuse);
-	std::swap(_loopGlow, other._loopGlow);
-	std::swap(_loopNormal, other._loopNormal);
-
-	return *this;
-}
-
 void DecalDefinition::parse() {
 	if (optional_string("+Diffuse:")) {
 		stuff_string(_diffuseFilename, F_FILESPEC);
@@ -174,7 +152,7 @@ void parse_decals_table(const char* filename) {
 			SCP_string name;
 			stuff_string(name, F_NAME);
 
-			DecalDefinition def(name);
+			DecalDefinition def(std::move(name));
 			def.parse();
 
 			DecalDefinitions.push_back(std::move(def));
@@ -203,66 +181,52 @@ void parse_decals_table(const char* filename) {
 	}
 }
 
-struct Decal {
-	int definition_handle = -1;
-	object_h object;
-	int orig_obj_type = OBJ_NONE;
-	int submodel = -1;
+Decal::Decal() {
+	vm_vec_make(&scale, 1.f, 1.f, 1.f);
+}
 
-	float creation_time = -1.0f; //!< The mission time at which this decal was created
-	float lifetime = -1.0f; //!< The time this decal is active. When negative it never expires
-
-	vec3d position = vmd_zero_vector;
-	vec3d scale;
-	matrix orientation = vmd_identity_matrix;
-
-	Decal() {
-		vm_vec_make(&scale, 1.f, 1.f, 1.f);
+bool Decal::isValid() const  {
+	if (!object.isValid()) {
+		return false;
+	}
+	if (object.objp()->flags[Object::Object_Flags::Should_be_dead]) {
+		return false;
 	}
 
-	bool isValid() const {
-		if (!object.isValid()) {
-			return false;
-		}
-		if (object.objp->flags[Object::Object_Flags::Should_be_dead]) {
-			return false;
-		}
-
-		if (orig_obj_type != object.objp->type) {
-			mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
-			         OBJ_INDEX(object.objp), Object_type_names[orig_obj_type], Object_type_names[object.objp->type]));
-			return false;
-		}
-
-		if (lifetime > 0.0f) {
-			if (f2fl(Missiontime) >= creation_time + lifetime) {
-				// Decal has expired
-				return false;
-			}
-		}
-
-		auto objp = object.objp;
-		if (objp->type == OBJ_SHIP) {
-			auto shipp = &Ships[objp->instance];
-			auto model_instance = model_get_instance(shipp->model_instance_num);
-
-			Assertion(submodel >= 0 && submodel < model_get(object_get_model(objp))->n_models,
-					  "Invalid submodel number detected!");
-			auto smi = &model_instance->submodel[submodel];
-
-			if (smi->blown_off) {
-				return false;
-			}
-		} else {
-			Assertion(false, "Only ships are currently supported for decals!");
-			return false;
-		}
-
-		return true;
+	if (orig_obj_type != object.objp()->type) {
+		mprintf(("Decal object type for object %d has changed from %s to %s. Please let m!m know about this\n",
+				object.objnum, Object_type_names[orig_obj_type], Object_type_names[object.objp()->type]));
+		return false;
 	}
-};
 
-SCP_vector<Decal> active_decals;
+	if (lifetime > 0.0f) {
+		if (f2fl(Missiontime) >= creation_time + lifetime) {
+			// Decal has expired
+			return false;
+		}
+	}
+
+	auto objp = object.objp();
+	if (objp->type == OBJ_SHIP) {
+		auto shipp = &Ships[objp->instance];
+		auto model_instance = model_get_instance(shipp->model_instance_num);
+
+		Assertion(submodel >= 0 && submodel < object_get_model(objp)->n_models,
+				  "Invalid submodel number detected!");
+		auto smi = &model_instance->submodel[submodel];
+
+		if (smi->blown_off) {
+			return false;
+		}
+	} else {
+		Assertion(false, "Only ships are currently supported for decals!");
+		return false;
+	}
+
+	return true;
+}
+
+SCP_vector<Decal> active_decals, active_single_frame_decals;
 
 bool required_string_if_new(const char* token, bool new_entry) {
 	if (!new_entry) {
@@ -339,7 +303,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 	}
 
 	if (required_string_if_new("+Radius:", is_new_entry)) {
-		dest_info.radius = util::parseUniformRange(0.0001f);
+		dest_info.radius = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 	}
 
 	if (required_string_if_new("+Lifetime:", is_new_entry)) {
@@ -347,7 +311,7 @@ void parseDecalReference(creation_info& dest_info, bool is_new_entry) {
 			dest_info.lifetime = util::UniformFloatRange(-1.0f);
 		} else {
 			// Require at least a small lifetime so that the calculations don't have to deal with div-by-zero
-			dest_info.lifetime = util::parseUniformRange(0.0001f);
+			dest_info.lifetime = util::ParsedRandomFloatRange::parseRandomRange(0.0001f);
 		}
 	}
 
@@ -392,10 +356,14 @@ void initializeMission() {
 	active_decals.clear();
 }
 
-matrix4 getDecalTransform(Decal& decal) {
-	Assertion(decal.object.objp->type == OBJ_SHIP, "Only ships are currently supported for decals!");
+// Discard any fragments where the angle to the direction to greater than 45°
+const float DECAL_ANGLE_CUTOFF = fl_radians(45.f);
+const float DECAL_ANGLE_FADE_START = fl_radians(30.f);
 
-	auto objp = decal.object.objp;
+static matrix4 getDecalTransform(const Decal& decal, float alpha) {
+	Assertion(decal.object.objp()->type == OBJ_SHIP, "Only ships are currently supported for decals!");
+
+	auto objp = decal.object.objp();
 	auto ship = &Ships[objp->instance];
 	auto pmi = model_get_instance(ship->model_instance_num);
 	auto pm = model_get(pmi->model_num);
@@ -427,11 +395,62 @@ matrix4 getDecalTransform(Decal& decal) {
 	matrix4 mat4;
 	vm_matrix4_set_transform(&mat4, &worldOrient, &worldPos);
 
+	// This is currently a constant but in the future this may be configurable by the decals table
+	mat4.a2d[0][3] = DECAL_ANGLE_CUTOFF;
+	mat4.a2d[1][3] = DECAL_ANGLE_FADE_START;
+
+	mat4.a2d[2][3] = alpha;
+
 	return mat4;
 }
 
+inline static void renderDecal(graphics::decal_draw_list& draw_list, const Decal& decal) {
+	auto mission_time = f2fl(Missiontime);
+
+	int diffuse_bm = -1;
+	int glow_bm = -1;
+	int normal_bm = -1;
+
+	auto decal_time = mission_time - decal.creation_time;
+	auto progress = decal_time / decal.lifetime;
+
+	float alpha = 1.0f;
+	if (progress > 0.8) {
+		// Fade the decal out for the last 20% of its lifetime
+		alpha = 1.0f - smoothstep(0.8f, 1.0f, progress);
+	}
+
+	if (std::holds_alternative<int>(decal.definition_handle)) {
+		int definition_handle = std::get<int>(decal.definition_handle);
+		Assertion(definition_handle >= 0 && definition_handle < (int) DecalDefinitions.size(),
+				  "Invalid decal handle detected!");
+		auto &decalDef = DecalDefinitions[definition_handle];
+
+		if (decalDef.getDiffuseBitmap() >= 0) {
+			diffuse_bm = decalDef.getDiffuseBitmap()
+						 +
+						 bm_get_anim_frame(decalDef.getDiffuseBitmap(), decal_time, 0.0f, decalDef.isDiffuseLooping());
+		}
+
+		if (decalDef.getGlowBitmap() >= 0) {
+			glow_bm = decalDef.getGlowBitmap()
+					  + bm_get_anim_frame(decalDef.getGlowBitmap(), decal_time, 0.0f, decalDef.isGlowLooping());
+		}
+
+		if (decalDef.getNormalBitmap() >= 0) {
+			normal_bm = decalDef.getNormalBitmap()
+						+ bm_get_anim_frame(decalDef.getNormalBitmap(), decal_time, 0.0f, decalDef.isNormalLooping());
+		}
+	}
+	else {
+		std::tie(diffuse_bm, glow_bm, normal_bm) = std::get<std::tuple<int, int, int>>(decal.definition_handle);
+	}
+
+	draw_list.add_decal(diffuse_bm, glow_bm, normal_bm, decal_time, getDecalTransform(decal, alpha));
+}
+
 void renderAll() {
-	if (!Decal_system_active || !Decal_option_active) {
+	if (!Decal_system_active || !Decal_option_active || !gr_is_capable(gr_capability::CAPABILITY_INSTANCED_RENDERING)) {
 		return;
 	}
 
@@ -454,54 +473,24 @@ void renderAll() {
 		++iter;
 	}
 
-	if (active_decals.empty()) {
+	if (active_decals.empty() && active_single_frame_decals.empty()) {
 		return;
 	}
 
-	auto mission_time = f2fl(Missiontime);
 
-	graphics::decal_draw_list draw_list(active_decals.size());
-	for (auto& decal : active_decals) {
 
-		Assertion(decal.definition_handle >= 0 && decal.definition_handle < (int)DecalDefinitions.size(),
-			"Invalid decal handle detected!");
-		auto& decalDef = DecalDefinitions[decal.definition_handle];
-
-		int diffuse_bm = -1;
-		int glow_bm = -1;
-		int normal_bm = -1;
-
-		auto decal_time = mission_time - decal.creation_time;
-		auto progress = decal_time / decal.lifetime;
-
-		float alpha = 1.0f;
-		if (progress > 0.8) {
-			// Fade the decal out for the last 20% of its lifetime
-			alpha = 1.0f - smoothstep(0.8f, 1.0f, progress);
-		}
-
-		if (decalDef.getDiffuseBitmap() >= 0) {
-			diffuse_bm = decalDef.getDiffuseBitmap()
-				+ bm_get_anim_frame(decalDef.getDiffuseBitmap(), decal_time, 0.0f, decalDef.isDiffuseLooping());
-		}
-
-		if (decalDef.getGlowBitmap() >= 0) {
-			glow_bm = decalDef.getGlowBitmap()
-				+ bm_get_anim_frame(decalDef.getGlowBitmap(), decal_time, 0.0f, decalDef.isGlowLooping());
-		}
-
-		if (decalDef.getNormalBitmap() >= 0) {
-			normal_bm = decalDef.getNormalBitmap()
-				+ bm_get_anim_frame(decalDef.getNormalBitmap(), decal_time, 0.0f, decalDef.isNormalLooping());
-		}
-
-		draw_list.add_decal(diffuse_bm, glow_bm, normal_bm, decal_time, getDecalTransform(decal), alpha);
-	}
+	graphics::decal_draw_list draw_list;
+	for (auto& decal : active_decals)
+		renderDecal(draw_list, decal);
+	for (auto& decal : active_single_frame_decals)
+		renderDecal(draw_list, decal);
 
 	draw_list.render();
+
+	active_single_frame_decals.clear();
 }
 
-void addDecal(creation_info& info, object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
+void addDecal(creation_info& info, const object* host, int submodel, const vec3d& local_pos, const matrix& local_orient) {
 	if (!Decal_system_active || !Decal_option_active) {
 		return;
 	}
@@ -541,6 +530,10 @@ void addDecal(creation_info& info, object* host, int submodel, const vec3d& loca
 	}
 
 	active_decals.push_back(newDecal);
+}
+
+void addSingleFrameDecal(Decal&& info) {
+	active_single_frame_decals.push_back(info);
 }
 
 }

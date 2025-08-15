@@ -85,14 +85,10 @@ namespace font {
 		*
 		* Returns the font pointer which is located as the specified index or @c NULL when the specified index is invald
 		*
-		* @param index The index that should be returns
+		* @param index The index that should be returned
 		* @return Font pointer
 		*/
-		inline static FSFont *getFont(int index) {
-			Assertion(index >= 0 && index < (int) fonts.size(), "Invalid font index %d given!", index);
-
-			return fonts[index].get();
-		}
+		static FSFont *getFont(int index);
 
 		/**
 		* @brief Returns the index of the currently used font
@@ -112,7 +108,6 @@ namespace font {
 		*/
 		static FSFont *getCurrentFont();
 
-
 		/**
 		* @brief Returns the index of the font with the specified @c name.
 		*
@@ -122,15 +117,17 @@ namespace font {
 		static int getFontIndex(const SCP_string &name);
 
 		/**
-		* @brief Returns the index of the specified font pointer
+		* @brief Returns the index of the font with the specified @c filename.
 		*
-		* Searches through the internal font vector and returns the index for which @verbatim (*fontIterator) == font @endverbatim
-		* is true.
-		*
-		* @param font The font which should be searched
-		* @return The index of the font or -1 when font could not be found
+		* @param filename The filename which should be searched
+		* @return The index or -1 when font could not be found
 		*/
-		static int getFontIndex(FSFont *font);
+		static int getFontIndexByFilename(const SCP_string &filename);
+
+		/**
+		 * @brief Checks if we have any Scaling TTF fonts loaded. If not it disables the font scaling option
+		 */
+		static bool hasScalingFonts();
 
 		/**
 		* @brief Returns the number of fonts currently saved in the manager
@@ -151,12 +148,10 @@ namespace font {
 		static bool isFontNumberValid(int fontNumber);
 
 		/**
-		* @brief Sets the currently active font
-		* @param font The font which should be used, may not be @c NULL
-		*
-		* @warning The integrity of the specified pointer is not checked
+		* @brief Sets the currently active font index
+		* @param index The font index which should be used; must be in range
 		*/
-		static void setCurrentFont(FSFont *font);
+		static void setCurrentFontIndex(int index);
 
 		/**
 		* @brief Loads a TrueType font
@@ -166,10 +161,9 @@ namespace font {
 		*
 		* @param fileName The name of the font file which should be loaded
 		* @param fontSize The initial size of the font
-		* @param type The type of the font
-		* @return A FTGLFont pointer or @c NULL when font could not be loaded
+		* @return A FTGLFont pointer or @c NULL when font could not be loaded, paired with the font's index
 		*/
-		static NVGFont *loadNVGFont(const SCP_string &fileName, float fontSize = 12.0f);
+		static std::pair<NVGFont*, int> loadNVGFont(const SCP_string& fileName, float fontSize = 12.0f);
 
 		/**
 		* @brief Loads an old VFNT font
@@ -177,9 +171,9 @@ namespace font {
 		* Loads the VFNT font with the specified @c fileName and returns it in form of a VFNTFont pointer
 		*
 		* @param fileName The name of the font file
-		* @return The font pointer or @c null on error
+		* @return The font pointer or @c null on error, paired with the font's index
 		*/
-		static VFNTFont *loadVFNTFont(const SCP_string &fileName);
+		static std::pair<VFNTFont*, int> loadVFNTFont(const SCP_string& fileName);
 
 		/**
 		* @brief Loads old volition font data
@@ -210,6 +204,6 @@ namespace font {
 		static SCP_map<SCP_string, std::unique_ptr<font>> vfntFontData;
 		static SCP_vector<std::unique_ptr<FSFont>> fonts;
 
-		static FSFont *currentFont;
+		static int currentFontIndex;
 	};
 }

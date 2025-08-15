@@ -51,7 +51,9 @@ namespace Mission {
 		OF_Protected,
 		OF_Player_start,
 		SF_No_departure_warp,
-		SF_Locked,
+		SF_Locked,	// encompasses both ship-locked and weapons-locked
+		SF_Ship_locked,
+		SF_Weapons_locked,
 		OF_Invulnerable,
 		SF_Hidden_from_sensors,
 		SF_Scannable,	// ship is a "scannable" ship
@@ -90,11 +92,11 @@ namespace Mission {
 		SF_Lock_all_turrets_initially,		
 		SF_Afterburner_locked,	
 		OF_Force_shields_on,
-		OF_Immobile,
+		OF_Immobile,	// encompasses both don't-change-position and don't-change-orientation (legacy flag, but not deprecated due to the difficulty of mapping one flag to two for compatibility)
+		OF_Dont_change_position,
+		OF_Dont_change_orientation,
 		SF_No_ets,
 		SF_Cloaked,
-		SF_Ship_locked,
-		SF_Weapons_locked,
 		SF_Scramble_messages,
 		Red_alert_deleted,	// Goober5000 - used analogously to SEF_PLAYER_DELETED
 		Already_handled,	// Goober5000 - used for docking currently, but could be used generically

@@ -11,9 +11,8 @@
 #include <type_traits>
 #include <memory>
 #include <map>
-
-#include <tl/optional.hpp>
-#include <linb/any.hpp>
+#include <optional>
+#include <any>
 
 class ship;
 class ship_info;
@@ -77,7 +76,7 @@ namespace animation {
 	struct ModelAnimationData {
 	private:
 		template<typename T>
-		using maybe_optional = typename std::conditional<is_optional, tl::optional<T>, T>::type;
+		using maybe_optional = typename std::conditional<is_optional, std::optional<T>, T>::type;
 
 	public:
 		ModelAnimationData() = default;
@@ -85,7 +84,7 @@ namespace animation {
 		ModelAnimationData(const vec3d& copy_position, const matrix& copy_orientation) :
 			position(copy_position),
 			orientation(copy_orientation) {};
-		ModelAnimationData(const tl::optional<vec3d>& copy_position, const tl::optional<matrix>& copy_orientation) :
+		ModelAnimationData(const std::optional<vec3d>& copy_position, const std::optional<matrix>& copy_orientation) :
 			position(*copy_position),
 			orientation(*copy_orientation) {};
 		ModelAnimationData(const ModelAnimationData<!is_optional>& other) : ModelAnimationData(other.position, other.orientation) {};
@@ -128,7 +127,7 @@ namespace animation {
 	class ModelAnimationSubmodel {
 	protected:
 		SCP_string m_name;
-		tl::optional<int> m_submodel;
+		std::optional<int> m_submodel;
 		bool is_turret = false;
 
 	private:
@@ -203,6 +202,8 @@ namespace animation {
 		virtual void executeAnimation(const ModelAnimationSubmodelBuffer& state, float timeboundLower, float timeboundUpper, ModelAnimationDirection direction, int pmi_id) = 0;
 		//This function must exchange all held submodel pointers of itself and children with ones acquired from replaceWith.
 		virtual void exchangeSubmodelPointers(ModelAnimationSet& replaceWith) = 0;
+		//This function must tidy up animation side-effects when the animation is stopped immediately, such as by ship death or departure
+		virtual void forceStopAnimation(int /*pmi_id*/) { }
 	};
 
 	class ModelAnimation : public std::enable_shared_from_this <ModelAnimation> {
@@ -261,7 +262,7 @@ namespace animation {
 		//Start playing the animation. Will stop other animations that have components running on the same submodels. instant always requires force
 		void start(polymodel_instance* pmi, ModelAnimationDirection direction, bool force = false, bool instant = false, bool pause = false, const float* multiOverrideTime = nullptr);
 		//Stops the animation. If cleanup is set, it will remove the animation from the list of running animations. Don't call without cleanup unless you know what you are doing
-		void stop(polymodel_instance* pmi, bool cleanup = true);
+		void stop(polymodel_instance* pmi, bool cleanup = true, bool forceStop = false);
 
 		float getTime(int pmi_id) const;
 		
@@ -282,7 +283,7 @@ namespace animation {
 	public:
 		virtual ~ModelAnimationMoveable() = default;
 
-		virtual void update(polymodel_instance* pmi, const SCP_vector<linb::any>& args) = 0;
+		virtual void update(polymodel_instance* pmi, const SCP_vector<std::any>& args) = 0;
 		virtual void initialize(ModelAnimationSet* parentSet, polymodel_instance* pmi) = 0;
 	};
 
@@ -322,6 +323,7 @@ namespace animation {
 	public:
 		ModelAnimationSet(SCP_string SIPname = "");
 		ModelAnimationSet(const ModelAnimationSet& other);
+		ModelAnimationSet(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(ModelAnimationSet&& other) noexcept;
 		ModelAnimationSet& operator=(const ModelAnimationSet& other);
 
@@ -364,9 +366,9 @@ namespace animation {
 		SCP_vector<RegisteredTrigger> getRegisteredTriggers() const;
 		SCP_set<SCP_string> getRegisteredAnimNames() const;
 
-		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const std::vector<linb::any>& args) const;
+		bool updateMoveable(polymodel_instance* pmi, const SCP_string& name, const SCP_vector<std::any>& args) const;
 		void initializeMoveables(polymodel_instance* pmi);
-		std::vector<SCP_string> getRegisteredMoveables() const;
+		SCP_vector<SCP_string> getRegisteredMoveables() const;
 
 		bool isEmpty() const;
 

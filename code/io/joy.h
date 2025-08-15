@@ -17,7 +17,7 @@
 #include "SDL_joystick.h"
 
 // z64: Moved up here for compatibility. Bye bye, organization!
-const int JOY_NUM_BUTTONS = 32;
+const int JOY_NUM_BUTTONS = 128;	// Max number of buttons FSO can handle.  OS max may differ.
 const int JOY_NUM_HAT_POS = 4;
 const int JOY_TOTAL_BUTTONS = (JOY_NUM_BUTTONS + JOY_NUM_HAT_POS);
 
@@ -92,6 +92,20 @@ namespace io
 			 * @return @c true if the joystick is attached, @c false otherwise
 			 */
 			bool isAttached() const;
+
+			/**
+			 * @brief Determines if this joystick is considered a gamepad
+			 *
+			 * @return @c true if the joystick is a gamepad, @c false otherwise
+			 */
+			bool isGamepad() const;
+
+			/**
+			 * @brief Determines if this joystick has haptic features
+			 *
+			 * @return @c true if the joystick has hapic features, @c false otherwise
+			 */
+			bool isHaptic() const;
 
 			/**
 			 * @brief Gets the value of the specified axis
@@ -262,6 +276,7 @@ namespace io
 			SCP_string _name;       //!< The joystick name
 			SDL_JoystickID _id;     //!< The instance ID
 			bool _isHaptic = false; //!< If this joystick supports haptic feedback
+			bool _isGamepad = false; //!< If this joystick is considered a gamepad
 
 			SCP_vector<Sint16> _axisValues; //!< The current axes values
 			SCP_vector<coord2d> _ballValues; //!< The ball values
@@ -346,6 +361,12 @@ namespace io
 		void printJoyJSON();
 	}
 }
+
+// integer Aliases for hat positions (because z64 is lazy)
+const int iHAT_UP = io::joystick::HAT_UP + JOY_NUM_BUTTONS;
+const int iHAT_RIGHT = io::joystick::HAT_RIGHT + JOY_NUM_BUTTONS;
+const int iHAT_DOWN = io::joystick::HAT_DOWN + JOY_NUM_BUTTONS;
+const int iHAT_LEFT = io::joystick::HAT_LEFT + JOY_NUM_BUTTONS;
 
 const int JOY_AXIS_MIN = 0;
 const int JOY_AXIS_CENTER = 32768;	//  = JOY_AXIS_MIN + ((JOY_AXIS_MAX - JOY_AXIS_MIN) / 2)

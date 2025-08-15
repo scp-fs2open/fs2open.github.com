@@ -72,6 +72,7 @@ void waypoint_create_game_objects();
 
 // Find a waypoint list with the specified name
 waypoint_list *find_matching_waypoint_list(const char *name);
+int find_matching_waypoint_list_index(const char *name);
 
 // Find a waypoint with the specified name (e.g. Path:1)
 waypoint *find_matching_waypoint(const char *name);
@@ -84,6 +85,7 @@ waypoint *find_waypoint_with_instance(int waypoint_instance);
 // Find something at the specified index
 waypoint_list *find_waypoint_list_at_index(int index);
 waypoint *find_waypoint_at_index(waypoint_list *list, int index);
+waypoint *find_waypoint_at_indexes(int list_index, int index);
 int find_index_of_waypoint_list(const waypoint_list *wp_list);
 int find_index_of_waypoint(const waypoint_list *wp_list, const waypoint *wpt);
 
@@ -95,7 +97,7 @@ void waypoint_add_list(const char *name, const SCP_vector<vec3d> &vec_list);
 
 // Attempts to create a waypoint with the specified instance (used to calculate list and index).
 // Returns the object number, or -1 on failure.  Used by scripting and FRED.
-int waypoint_add(const vec3d *pos, int waypoint_instance);
+int waypoint_add(const vec3d *pos, int waypoint_instance, bool first_waypoint_in_list = false);
 
 // Removes a waypoint, including its entire list if it's the last waypoint remaining.
 void waypoint_remove(const waypoint *wpt);

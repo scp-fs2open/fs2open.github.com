@@ -43,13 +43,12 @@ void cmd_brief_dlg::DoDataExchange(CDataExchange* pDX)
 	CDialog::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(cmd_brief_dlg)
 	DDX_Text(pDX, IDC_ANI_FILENAME, m_ani_filename);
+	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
 	DDX_Text(pDX, IDC_TEXT, m_text);
 	DDX_Text(pDX, IDC_STAGE_TITLE, m_stage_title);
 	DDX_Text(pDX, IDC_WAVE_FILENAME, m_wave_filename);
-	//}}AFX_DATA_MAP
-
-	DDV_MaxChars(pDX, m_ani_filename, MAX_FILENAME_LEN - 1);
 	DDV_MaxChars(pDX, m_wave_filename, MAX_FILENAME_LEN - 1);
+	//}}AFX_DATA_MAP
 }
 
 BEGIN_MESSAGE_MAP(cmd_brief_dlg, CDialog)
@@ -93,11 +92,15 @@ void cmd_brief_dlg::update_data(int update)
 	if (last_cmd_brief && m_last_stage >= 0 && m_last_stage < last_cmd_brief->num_stages) {
 		cmd_brief_stage *last_stage = &last_cmd_brief->stage[m_last_stage];
 
-		deconvert_multiline_string(last_stage->text, m_text);
-		lcl_fred_replace_stuff(last_stage->text);
+		SCP_string text;
+		deconvert_multiline_string(text, m_text);
+		lcl_fred_replace_stuff(text);
+		if (last_stage->text != text)
+			set_modified();
+		last_stage->text = std::move(text);
 
-		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1);
-		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1);
+		string_copy(last_stage->ani_filename, m_ani_filename, MAX_FILENAME_LEN - 1, true);
+		string_copy(last_stage->wave_filename, m_wave_filename, MAX_FILENAME_LEN - 1, true);
 	}
 
 	// load data of new stage into dialog

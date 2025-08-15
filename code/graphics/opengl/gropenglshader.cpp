@@ -57,7 +57,7 @@ SCP_vector<opengl_vert_attrib> GL_vertex_attrib_info =
 		{ opengl_vert_attrib::MODEL_ID,		"vertModelID",		{{{ 0.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::RADIUS,		"vertRadius",		{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 		{ opengl_vert_attrib::UVEC,			"vertUvec",			{{{ 0.0f, 1.0f, 0.0f, 0.0f }}} },
-		{ opengl_vert_attrib::WORLD_MATRIX,	"vertWorldMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
+		{ opengl_vert_attrib::MODEL_MATRIX,	"vertModelMatrix",	{{{ 1.0f, 0.0f, 0.0f, 0.0f }}} },
 	};
 
 struct opengl_uniform_block_binding {
@@ -141,7 +141,7 @@ static opengl_shader_type_t GL_shader_types[] = {
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "NanoVG shader", false },
 
 	{ SDR_TYPE_DECAL, "decal-v.sdr", "decal-f.sdr", nullptr,
-		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::WORLD_MATRIX }, "Decal rendering", false },
+		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::MODEL_MATRIX }, "Decal rendering", false },
 
 	{ SDR_TYPE_SCENE_FOG, "post-v.sdr", "fog-f.sdr", nullptr,
 		{ opengl_vert_attrib::POSITION, opengl_vert_attrib::TEXCOORD }, "Scene fogging", false },
@@ -190,6 +190,8 @@ static opengl_shader_variant_t GL_shader_variants[] = {
 
 	{SDR_TYPE_EFFECT_PARTICLE, true, SDR_FLAG_PARTICLE_POINT_GEN, "FLAG_EFFECT_GEOMETRY", {opengl_vert_attrib::UVEC}, "Geometry shader point-based particles"},
 
+	{SDR_TYPE_DEFERRED_LIGHTING, false, SDR_FLAG_ENV_MAP, "ENV_MAP", {}, "Render ambient light with env and irrmaps"},
+
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_HORIZONTAL, "PASS_0", {}, "Horizontal blur pass"},
 
 	{SDR_TYPE_POST_PROCESS_BLUR, false, SDR_FLAG_BLUR_VERTICAL, "PASS_1", {}, "Vertical blur pass"},
@@ -218,22 +220,7 @@ static const int GL_num_shader_variants = sizeof(GL_shader_variants) / sizeof(op
 opengl_shader_t *Current_shader = NULL;
 
 opengl_shader_t::opengl_shader_t() : shader(SDR_TYPE_NONE), flags(0), flags2(0)
-{
-}
-opengl_shader_t::opengl_shader_t(opengl_shader_t&& other) noexcept {
-	*this = std::move(other);
-}
-// NOLINTNEXTLINE(misc-unconventional-assign-operator)
-opengl_shader_t& opengl_shader_t::operator=(opengl_shader_t&& other) noexcept {
-	// VS2013 doesn't support implicit move constructors so we need to explicitly declare it
-	shader = other.shader;
-	flags = other.flags;
-	flags2 = other.flags2;
-
-	program = std::move(other.program);
-
-	return *this;
-}
+{}
 
 /**
  * Set the currently active shader
@@ -360,7 +347,7 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 static SCP_string opengl_load_shader(const char* filename) {
 	SCP_string content;
 	if (Enable_external_shaders) {
-		CFILE* cf_shader = cfopen(filename, "rt", CFILE_NORMAL, CF_TYPE_EFFECTS);
+		CFILE* cf_shader = cfopen(filename, "rt", CF_TYPE_EFFECTS);
 
 		if (cf_shader != NULL) {
 			int len = cfilelength(cf_shader);
@@ -661,7 +648,7 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 	auto metadata = base_filename + ".json";
 	auto binary = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto metadata_fp = cfopen(metadata.c_str(), "rb", CF_TYPE_CACHE, false,
 	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		nprintf(("ShaderCache", "Metadata file does not exist.\n"));
@@ -703,7 +690,7 @@ static bool load_cached_shader_binary(opengl::ShaderProgram* program, const SCP_
 		return false;
 	}
 
-	auto binary_fp = cfopen(binary.c_str(), "rb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto binary_fp = cfopen(binary.c_str(), "rb", CF_TYPE_CACHE, false,
 	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		nprintf(("ShaderCache", "Binary file does not exist.\n"));
@@ -767,7 +754,7 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	auto metadata_name = base_filename + ".json";
 	auto binary_name = base_filename + ".bin";
 
-	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto metadata_fp = cfopen(metadata_name.c_str(), "wb", CF_TYPE_CACHE, false,
 	                          CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!metadata_fp) {
 		mprintf(("Could not open shader cache metadata file!\n"));
@@ -783,7 +770,7 @@ static void cache_program_binary(GLuint program, const SCP_string& hash) {
 	cfclose(metadata_fp);
 	json_decref(metadata);
 
-	auto binary_fp = cfopen(binary_name.c_str(), "wb", CFILE_NORMAL, CF_TYPE_CACHE, false,
+	auto binary_fp = cfopen(binary_name.c_str(), "wb", CF_TYPE_CACHE, false,
 	                        CF_LOCATION_ROOT_USER | CF_LOCATION_ROOT_GAME | CF_LOCATION_TYPE_ROOT);
 	if (!binary_fp) {
 		mprintf(("Could not open shader cache binary file!\n"));
@@ -899,7 +886,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 
 	// initialize the attributes
 	for (auto& attr : sdr_info->attributes) {
-		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].attribute_id, GL_vertex_attrib_info[attr].default_value);
+		new_shader.program->initAttribute(GL_vertex_attrib_info[attr].name, GL_vertex_attrib_info[attr].default_value);
 	}
 
 	for (auto& uniform_block : GL_uniform_blocks) {
@@ -919,7 +906,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		if (sdr_info->type_id == variant.type_id && variant.flag & flags) {
 			for (auto& attr : variant.attributes) {
 				auto& attr_info = GL_vertex_attrib_info[attr];
-				new_shader.program->initAttribute(attr_info.name, attr_info.attribute_id, attr_info.default_value);
+				new_shader.program->initAttribute(attr_info.name, attr_info.default_value);
 			}
 
 			nprintf(("shaders","	%s\n", variant.description));
@@ -1089,19 +1076,6 @@ void opengl_shader_init()
 	gr_opengl_maybe_create_shader(SDR_TYPE_PASSTHROUGH_RENDER, 0);
 
 	nprintf(("shaders","\n"));
-}
-
-/**
- * Get the internal OpenGL location for a given attribute. Requires that the Current_shader global variable is valid
- *
- * @param attribute_text	Name of the attribute
- * @return					Internal OpenGL location for the attribute
- */
-GLint opengl_shader_get_attribute(opengl_vert_attrib::attrib_id attribute)
-{
-	Assertion(Current_shader != nullptr, "Current shader may not be null!");
-
-	return Current_shader->program->getAttributeLocation(attribute);
 }
 
 void opengl_shader_set_passthrough(bool textured, bool hdr)

@@ -18,8 +18,13 @@ HudGaugeScripting::HudGaugeScripting() :
 	         255) {
 }
 
-void HudGaugeScripting::render(float /*frametime*/) {
+void HudGaugeScripting::render(float /*frametime*/, bool config) {
 	using namespace scripting::api;
+
+	// Not yet supported in config
+	if (config) {
+		return;
+	}
 
 	if (!_renderFunction.isValid()) {
 		return;

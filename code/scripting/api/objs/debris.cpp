@@ -25,7 +25,7 @@ ADE_VIRTVAR(IsHull, l_Debris, "boolean", "Whether or not debris is a piece of hu
 	if(!oh->isValid())
 		return ade_set_error(L, "b", false);
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR) {
 		db->is_hull = b;
@@ -45,7 +45,7 @@ ADE_VIRTVAR(OriginClass, l_Debris, "shipclass", "The shipclass of the ship this 
 	if(!oh->isValid())
 		return ade_set_error(L, "o", l_Shipclass.Set(-1));
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	if(ADE_SETTING_VAR) {
 		if (shipIdx >= 0 && shipIdx < ship_info_size())
@@ -66,7 +66,7 @@ ADE_VIRTVAR(DoNotExpire, l_Debris, "boolean", "Whether the debris should expire.
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	debris *db = &Debris[objh->objp->instance];
+	debris *db = &Debris[objh->objp()->instance];
 
 	if (ADE_SETTING_VAR)
 	{
@@ -100,7 +100,7 @@ ADE_VIRTVAR(LifeLeft, l_Debris, "number", "The time this debris piece will last.
 	if (!objh->isValid())
 		return ADE_RETURN_NIL;
 
-	debris *db = &Debris[objh->objp->instance];
+	debris *db = &Debris[objh->objp()->instance];
 
 	if (ADE_SETTING_VAR)
 		db->lifeleft = lifeleft;
@@ -117,7 +117,7 @@ ADE_FUNC(getDebrisRadius, l_Debris, NULL, "The radius of this debris piece", "nu
 	if(!oh->isValid())
 		return ade_set_error(L, "f", -1.0f);
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	polymodel *pm = model_get(db->model_num);
 
@@ -148,7 +148,7 @@ ADE_FUNC(isGeneric, l_Debris, nullptr, "Return if this debris is the generic deb
 	if (!oh->isValid())
 		return ADE_RETURN_FALSE;
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	return ade_set_args(L, "b", debris_is_generic(db));
 }
@@ -162,7 +162,7 @@ ADE_FUNC(isVaporized, l_Debris, nullptr, "Return if this debris is the vaporized
 	if (!oh->isValid())
 		return ADE_RETURN_FALSE;
 
-	debris *db = &Debris[oh->objp->instance];
+	debris *db = &Debris[oh->objp()->instance];
 
 	return ade_set_args(L, "b", debris_is_vaporized(db));
 }
@@ -178,7 +178,7 @@ ADE_FUNC(vanish, l_Debris, nullptr, "Vanishes this piece of debris from the miss
 		return ade_set_error(L, "b", false);
 
 	//This skips all the fancy deathroll stuff, and just cleans it from the mission
-	oh->objp->flags.set(Object::Object_Flags::Should_be_dead);
+	oh->objp()->flags.set(Object::Object_Flags::Should_be_dead);
 
 	return ade_set_args(L, "b", true);
 }

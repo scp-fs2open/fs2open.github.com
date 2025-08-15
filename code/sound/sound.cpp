@@ -62,15 +62,24 @@ static bool effects_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_effect_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_sound_volume = volume;
+}
+
 static auto EffectVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Effects",
                      std::pair<const char*, int>{"Effects", 1370},
                      std::pair<const char*, int>{"Volume used for playing in-game effects", 1734})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_sound_volume)
+                     .default_func([](){ return Default_sound_volume; })
                      .range(0.0f, 1.0f)
                      .change_listener(effects_volume_change_listener)
                      .importance(2)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_effect_volume_func)
                      .finish();
 
 float Default_voice_volume = 0.7f; // range is 0 -> 1, used for all voice playback
@@ -85,41 +94,51 @@ static bool voice_volume_change_listener(float new_val, bool /*initial*/)
 	return true;
 }
 
+static void parse_voice_volume_func()
+{
+	float volume;
+	stuff_float(&volume);
+	CLAMP(volume, 0.0f, 1.0f);
+	Default_voice_volume = volume;
+}
+
 static auto VoiceVolumeOption __UNUSED = options::OptionBuilder<float>("Audio.Voice",
                      std::pair<const char*, int>{"Voice", 1372},
                      std::pair<const char*, int>{"Volume used for playing voice audio", 1735})
                      .category(std::make_pair("Audio", 1826))
-                     .default_val(Default_voice_volume)
+                     .default_func([]() { return Default_voice_volume; })
                      .range(0.0f, 1.0f)
                      .change_listener(voice_volume_change_listener)
                      .importance(0)
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_voice_volume_func)
                      .finish();
 
 unsigned int SND_ENV_DEFAULT = 0;
 
-struct LoopingSoundInfo {
-	sound_handle m_dsHandle;
+struct LoopingSoundInfo
+{
 	float m_defaultVolume;	//!< The default volume of this sound (from game_snd)
 	float m_dynamicVolume;	//!< The dynamic volume before scripted volume adjustment is applied (is updated via snd_set_volume)
 
-	LoopingSoundInfo(sound_handle dsHandle, float defaultVolume, float dynamicVolume)
-	    : m_dsHandle(dsHandle), m_defaultVolume(defaultVolume), m_dynamicVolume(dynamicVolume)
-	{
-	}
+	LoopingSoundInfo(float defaultVolume, float dynamicVolume)
+	    : m_defaultVolume(defaultVolume), m_dynamicVolume(dynamicVolume)
+	{}
     
-    LoopingSoundInfo() : m_dsHandle(-1), m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
-    {
-    }
+    LoopingSoundInfo() : m_defaultVolume(0.0f), m_dynamicVolume(0.0f)
+    {}
 };
 
-SCP_list<LoopingSoundInfo> currentlyLoopingSoundInfos;
-SCP_list<LoopingSoundInfo> currentlyLooping3dSoundInfos;
+SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> currentlyLoopingSoundInfos;
+SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> currentlyLooping3dSoundInfos;
 
 //For the adjust-audio-volume sexp
-float aav_voice_volume = 1.0f;
 float aav_music_volume = 1.0f;
+float aav_voice_volume = 1.0f;
 float aav_effect_volume = 1.0f;
+
+// these must correspond to the order of the AAV_ #defines
+static float* aav_volume[] = { &aav_music_volume, &aav_voice_volume, &aav_effect_volume };
 
 struct aav {
 	float start_volume;
@@ -131,7 +150,7 @@ struct aav {
 aav aav_data[3];
 
 // min volume to play a sound after all volume processing (range is 0.0 -> 1.0)
-#define	MIN_SOUND_VOLUME				0.05f
+#define	MIN_SOUND_VOLUME				0.005f
 
 static int snd_next_sig	= 1;
 
@@ -322,11 +341,14 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 	if (!ds_initialized)
 		return sound_load_id::invalid();
 
-	if (!VALID_FNAME(entry->filename))
-		return sound_load_id::invalid();
-
 	if (flags && *flags & GAME_SND_NOT_VALID)
 		return sound_load_id::invalid();
+
+	if (!VALID_FNAME(entry->filename)) {
+		if (flags)
+			*flags |= GAME_SND_NOT_VALID;
+		return sound_load_id::invalid();
+	}
 
 	for (n = 0; n < Sounds.size(); n++) {
 		if ( !(Sounds[n].flags & SND_F_USED) ) {
@@ -338,6 +360,12 @@ sound_load_id snd_load(game_snd_entry* entry, int *flags, int /*allow_hardware_l
 			//       but will not load a duplicate 2D entry to get stereo if 3D
 			//       version already loaded
 			if ( (Sounds[n].info.n_channels == 1) || !(flags && *flags & GAME_SND_USE_DS3D) ) {
+				// Check we need to populate the signature here, as modders may desire to use 
+				// a sound file more than once in their tables.
+				if (entry->id_sig == -1) {
+					entry->id_sig = Sounds[n].sig;
+				}
+
 				return sound_load_id(static_cast<int>(n));
 			}
 		}
@@ -764,7 +792,7 @@ sound_handle snd_play_3d(game_snd* gs, const vec3d* source_pos, const vec3d* lis
 
 	if (handle.isValid()) {
 		if (looping) {
-			currentlyLooping3dSoundInfos.emplace_back(handle, default_volume, vol_scale);
+			currentlyLooping3dSoundInfos[handle] = { default_volume, vol_scale };
 		}
 
 		snd_set_pitch(handle, gs->pitch_range.next());
@@ -930,7 +958,7 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 
 		if (handle.isValid()) {
 			if (scriptingUpdateVolume) {
-				currentlyLoopingSoundInfos.emplace_back(handle, default_volume, vol_scale);
+				currentlyLoopingSoundInfos[handle] = { default_volume, vol_scale };
 			}
 
 			snd_set_pitch(handle, gs->pitch_range.next());
@@ -938,14 +966,6 @@ sound_handle snd_play_looping(game_snd* gs, float pan, int /*start_loop*/, int /
 	}
 
 	return handle;
-}
-
-void remove_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
-{
-	// the cast to void avoids warnings about unused return value
-	(void)std::remove_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
-		return ls_info.m_dsHandle == sig;
-	});
 }
 
 /**
@@ -965,8 +985,8 @@ void snd_stop(sound_handle sig)
 	if ( channel == -1 )
 		return;
 	
-	remove_looping_sound(currentlyLoopingSoundInfos, sig);
-	remove_looping_sound(currentlyLooping3dSoundInfos, sig);
+	currentlyLoopingSoundInfos.erase(sig);
+	currentlyLooping3dSoundInfos.erase(sig);
 
 	ds_stop_channel(channel);
 }
@@ -1025,13 +1045,6 @@ void snd_stop_all()
 	ds_stop_channel_all();
 }
 
-SCP_list<LoopingSoundInfo>::iterator find_looping_sound(SCP_list<LoopingSoundInfo> &looping_sounds, sound_handle sig)
-{
-	return std::find_if(looping_sounds.begin(), looping_sounds.end(), [sig](const LoopingSoundInfo &ls_info) -> bool {
-		return ls_info.m_dsHandle == sig;
-	});
-}
-
 /**
  * Set the volume of a currently playing sound
  *
@@ -1055,30 +1068,22 @@ void snd_set_volume(sound_handle sig, float volume, bool is_voice)
 		return;
 	}
 
-	bool isLoopingSound = false;
-
-
-	auto iter = find_looping_sound(currentlyLoopingSoundInfos, sig);
+	auto iter = currentlyLoopingSoundInfos.find(sig);
 	if (iter != currentlyLoopingSoundInfos.end()) {
-		iter->m_dynamicVolume = volume;
-		isLoopingSound = true;
+		iter->second.m_dynamicVolume = volume;
 	} else {
-		iter = find_looping_sound(currentlyLooping3dSoundInfos, sig);
+		iter = currentlyLooping3dSoundInfos.find(sig);
 		if (iter != currentlyLooping3dSoundInfos.end()) {
-			iter->m_dynamicVolume = volume;
-			isLoopingSound = true;
+			iter->second.m_dynamicVolume = volume;
 		}
 	}
 
-	//looping sound volumes are updated in snd_do_frame
-	if(!isLoopingSound) {
-		if (is_voice) {
-			new_volume = volume * (Master_voice_volume * aav_effect_volume);
-		} else {
-			new_volume = volume * (Master_sound_volume * aav_effect_volume);
-		}
-		ds_set_volume( channel, new_volume );
+	if (is_voice) {
+		new_volume = volume * (Master_voice_volume * aav_voice_volume);
+	} else {
+		new_volume = volume * (Master_sound_volume * aav_effect_volume);
 	}
+	ds_set_volume( channel, new_volume );
 }
 
 // ---------------------------------------------------------------------------------------
@@ -1282,8 +1287,7 @@ void snd_rewind(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
-
-	snd = &Sounds[ds_get_sound_id(channel)].info;
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
 	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
@@ -1311,10 +1315,9 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 		return;
 
 	auto channel = ds_get_channel(snd_handle);
+	snd = &Sounds[snd_get_sound_id(snd_handle).value()].info;
 
-	snd = &Sounds[ds_get_sound_id(channel)].info;
-
-	current_offset = ds_get_play_position(ds_get_channel(snd_handle));	// current offset into the sound
+	current_offset = ds_get_play_position(channel);	// current offset into the sound
 	bps = (float)snd->sample_rate * (float)snd->bits;							// data rate
 	current_time = (float)current_offset/bps;										// how many seconds we're into the sound
 
@@ -1325,35 +1328,32 @@ void snd_ffwd(sound_handle snd_handle, float seconds)
 	desired_time = current_time + seconds;											// where we want to be
 	desired_offset = (uint32_t)(desired_time * bps);								// the target
 			
-	ds_set_position(ds_get_channel(snd_handle),desired_offset);
+	ds_set_position(channel,desired_offset);
 }
 
 // this could probably be optimized a bit
 void snd_set_pos(sound_handle snd_handle, float val, int as_pct)
 {
-	sound_info *snd;
-
 	if(!snd_is_playing(snd_handle))
 		return;
 
-	auto channel = ds_get_channel(snd_handle);
+	auto id_handle = snd_get_sound_id(snd_handle);
 
-	int idx = ds_get_sound_index(channel);
-	Assertion(SCP_vector_inbounds(Sounds, idx), "Attempt to get a sound that is not loaded, please report!");
+	Assertion(SCP_vector_inbounds(Sounds, id_handle.value()), "Attempt to get a sound %i that is not loaded, please report!", id_handle.value());
 
-	snd = &Sounds[idx].info;
+	const auto& snd = Sounds[id_handle.value()].info;
 
 	// set position as an absolute from 0 to 1
 	if(as_pct){
 		Assert((val >= 0.0) && (val <= 1.0));
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)((float)snd->size * val));
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>((static_cast<float>(snd.size) * val)));
 	} 
 	// set the position as an absolute # of seconds from the beginning of the sound
 	else {
 		float bps;
-		Assert(val <= (float)snd->duration/1000.0f);
-		bps = (float)snd->sample_rate * (float)snd->bits;							// data rate			
-		ds_set_position(ds_get_channel(snd_handle),(uint32_t)(bps * val));
+		Assert(val <= static_cast<float>(snd.duration) / 1000.0f);
+		bps = static_cast<float>(snd.sample_rate) * static_cast<float>(snd.bits);							// data rate			
+		ds_set_position(ds_get_channel(snd_handle), static_cast<uint32_t>(bps * val));
 	}
 }
 
@@ -1544,66 +1544,50 @@ int sound_env_supported()
 	return ds_eax_is_inited();
 }
 
+void adjust_volume_on_frame(float* volume_now, aav* data);
+
 // Called once per game frame
 //
-
-void adjust_volume_on_frame(float* volume_now, aav* data);
-void update_looping_sound_volumes(SCP_list<LoopingSoundInfo>& looping_sounds);
 void snd_do_frame()
 {
 	adjust_volume_on_frame(&aav_music_volume, &aav_data[AAV_MUSIC]);
 	adjust_volume_on_frame(&aav_voice_volume, &aav_data[AAV_VOICE]);
 	adjust_volume_on_frame(&aav_effect_volume, &aav_data[AAV_EFFECTS]);
 
-	update_looping_sound_volumes(currentlyLoopingSoundInfos);
-	update_looping_sound_volumes(currentlyLooping3dSoundInfos);
-
 	ds_do_frame();
 }
 
-void update_looping_sound_volumes(SCP_list<LoopingSoundInfo> &looping_sounds)
+void update_looping_sound_volumes(SCP_unordered_map<sound_handle, LoopingSoundInfo, util::ID_Hash> &looping_sounds)
 {
-	for (auto &looping_sound : looping_sounds) {
+	for (const auto &looping_sound_pair : looping_sounds) {
+		const auto& dsHandle = looping_sound_pair.first;
+		const auto& looping_sound = looping_sound_pair.second;
+
 		const float new_volume =
 			looping_sound.m_defaultVolume * looping_sound.m_dynamicVolume * (Master_sound_volume * aav_effect_volume);
-		ds_set_volume(ds_get_channel(looping_sound.m_dsHandle), new_volume);
+		ds_set_volume(ds_get_channel(dsHandle), new_volume);
 	}
 }
 
-void snd_adjust_audio_volume(int type, float percent, int time)
+void snd_adjust_audio_volume(int aav_type, float percent, int delta_time)
 {
-	Assert( type >= 0 && type < 3 );
-	
-	if ( type >= 0 && type < 3 ) {
-		switch (type) {
-		case AAV_MUSIC:
-			aav_data[type].start_volume = aav_music_volume;
-			if (percent < aav_music_volume)
-				aav_data[type].delta = (aav_music_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_music_volume;
-			break;
-		case AAV_VOICE:
-			aav_data[type].start_volume = aav_voice_volume;
-			if (percent < aav_voice_volume)
-				aav_data[type].delta = (aav_voice_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_voice_volume;
-			break;
-		case AAV_EFFECTS:
-			aav_data[type].start_volume = aav_effect_volume;
-			if (percent < aav_effect_volume)
-				aav_data[type].delta = (aav_effect_volume - percent) * -1.0f;
-			else
-				aav_data[type].delta = percent - aav_effect_volume;
-			break;
-		default:
-			Int3();
-		}
+	Assertion(aav_type >= 0 && aav_type <= 2, "aav_type is out of range!");
+	if (aav_type < 0 || aav_type > 2)
+		return;
 
-		aav_data[type].delta_time = time;
-		aav_data[type].start_time = (f2fl(Missiontime) * 1000);	
-	}
+	aav_data[aav_type].start_volume = *aav_volume[aav_type];
+	if (percent < *aav_volume[aav_type])
+		aav_data[aav_type].delta = (*aav_volume[aav_type] - percent) * -1.0f;
+	else
+		aav_data[aav_type].delta = percent - *aav_volume[aav_type];
+
+	aav_data[aav_type].delta_time = delta_time;
+	aav_data[aav_type].start_time = f2fl(Missiontime) * MILLISECONDS_PER_SECOND;
+
+
+	// if the delta_time is 0 [immediate], make the relevant updates without waiting for the next frame's snd_do_frame()
+	if (delta_time <= 0)
+		adjust_volume_on_frame(aav_volume[aav_type], &aav_data[aav_type]);
 }
 
 void adjust_volume_on_frame(float* volume_now, aav* data)
@@ -1615,28 +1599,30 @@ void adjust_volume_on_frame(float* volume_now, aav* data)
 	if (*volume_now == (data->start_volume + data->delta))
 		return;
 	
-	float msMissiontime = (f2fl(Missiontime) * 1000);
+	float msMissiontime = f2fl(Missiontime) * MILLISECONDS_PER_SECOND;
 	
-	if ( msMissiontime > ( data->start_time + data->delta_time) ) {
-		*volume_now = data->start_volume + data->delta;
-		return;
-	}
-	
-	float done = 0.0f;
 	//How much change do we need?
-	if (data->delta_time == 0)
-		done = 1.0f;
+	//if immediate, or if the time has elapsed, use the target volume
+	if (data->delta_time <= 0 || msMissiontime >= (data->start_time + data->delta_time))
+		*volume_now = data->start_volume + data->delta;
 	else
-		done =(float) (msMissiontime - data->start_time)/data->delta_time;
+	{
+		float done = (msMissiontime - data->start_time) / data->delta_time;
 
-	//apply change
-	*volume_now = data->start_volume + (data->delta * done);
-	CLAMP(*volume_now, 0.0f, 1.0f);
+		//apply change
+		*volume_now = data->start_volume + (data->delta * done);
+		CLAMP(*volume_now, 0.0f, 1.0f);
+	}
 
 	// if setting music volume, trigger volume change in playing tracks
 	// done here in order to avoid setting music volume in every frame regardless if it changed or not
 	if (&aav_music_volume == volume_now) {
 		audiostream_set_volume_all(Master_event_music_volume * aav_music_volume, ASF_EVENTMUSIC);
+	}
+	// for similar reasons, if setting effects volume, trigger volume change here
+	else if (&aav_effect_volume == volume_now) {
+		update_looping_sound_volumes(currentlyLoopingSoundInfos);
+		update_looping_sound_volumes(currentlyLooping3dSoundInfos);
 	}
 }
 

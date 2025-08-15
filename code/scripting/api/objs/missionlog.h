@@ -11,7 +11,7 @@ struct log_entry_h {
 	int section;
 	log_entry_h();
 	explicit log_entry_h(int l_section);
-	log_line_complete* getSection() const;
+	const log_line_complete* getSection() const;
 	bool isValid() const;
 };
 
@@ -19,7 +19,7 @@ struct message_entry_h {
 	int section;
 	message_entry_h();
 	explicit message_entry_h(int l_section);
-	line_node* getSection() const;
+	const line_node* getSection() const;
 	bool isValid() const;
 };
 

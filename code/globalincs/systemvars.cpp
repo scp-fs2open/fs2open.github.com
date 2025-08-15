@@ -155,94 +155,105 @@ void game_busy(const char *filename)
 	}
 }
 
-#if MAX_DETAIL_LEVEL != 4
-#error MAX_DETAIL_LEVEL is assumed to be 4 in SystemVars.cpp
-#endif
+static_assert(MAX_DETAIL_VALUE == 4, "MAX_DETAIL_VALUE is assumed to be 4 in SystemVars.cpp");
 
-#if NUM_DEFAULT_DETAIL_LEVELS != 4
-#error NUM_DEFAULT_DETAIL_LEVELS is assumed to be 4 in SystemVars.cpp
-#endif
+static_assert(static_cast<int>(DefaultDetailPreset::Num_detail_presets) == 4, "Code in ManagePilot assumes Num_detail_presets = 4");
 
-// Detail level stuff
-detail_levels Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS] = {
-	{				// Low
-		0,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		0,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		0,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		0,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		0,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		0,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		2,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+// Detail preset stuff
+detail_levels Detail_defaults[static_cast<int>(DefaultDetailPreset::Num_detail_presets)] = {
+	{
+		DefaultDetailPreset::Low,              // setting
+                    // ================== Analogs ==================
+		0,          // nebula_detail;          // 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		0,          // detail_distance;        // 0=lowest MAX_DETAIL_VALUE=highest			
+		0,          // hardware_textures;      // 0=max culling, MAX_DETAIL_VALUE=no culling
+		0,          // num_small_debris;       // 0=min number, MAX_DETAIL_VALUE=max number
+		0,          // num_particles;          // 0=min number, MAX_DETAIL_VALUE=max number
+		0,          // num_stars;              // 0=min number, MAX_DETAIL_VALUE=max number
+		0,          // shield_effects;         // 0=min, MAX_DETAIL_VALUE=max
+		2,          // lighting;               // 0=min, MAX_DETAIL_VALUE=max		
 
-					// ====  Booleans ====
-		0,			//	targetview_model;			// 0=off, 1=on		
-		0,			//	planets_suns;				// 0=off, 1=on		
-		0,			// weapon_extras
+                    // ================== Booleans ==================
+		false,       // targetview_model;       // false=off, true=on		
+		false,       // planets_suns;           // false=off, true=on		
+		false,       // weapon_extras           // false=off, true=on
 	},
-	{				// Medium
-		1,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		2,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		2,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		2,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		3,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+	{
+		DefaultDetailPreset::Medium,           // setting
+                    // ================== Analogs ==================
+		2,          // nebula_detail;          // 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		2,          // detail_distance;        // 0=lowest MAX_DETAIL_VALUE=highest				
+		2,          // hardware_textures;      // 0=max culling, MAX_DETAIL_VALUE=no culling
+		2,          // num_small_debris;       // 0=min number, MAX_DETAIL_VALUE=max number
+		2,          // num_particles;          // 0=min number, MAX_DETAIL_VALUE=max number
+		2,          // num_stars;              // 0=min number, MAX_DETAIL_VALUE=max number
+		2,          // shield_effects;         // 0=min, MAX_DETAIL_VALUE=max
+		3,          // lighting;               // 0=min, MAX_DETAIL_VALUE=max		
 
-		// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon extras				
+                    // ================== Booleans ==================
+		true,       // targetview_model;       // false=off, true=on		
+		true,       // planets_suns;           // false=off, true=on
+		true,       // weapon_extras           // false=off, true=on		
 	},
-	{				// High level
-		2,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		2,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		2,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		3,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		3,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		3,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		3,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		4,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+	{
+		DefaultDetailPreset::High,             // setting
+                    // ================== Analogs ==================
+		2,          // nebula_detail;          // 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		2,          // detail_distance;        // 0=lowest MAX_DETAIL_VALUE=highest			
+		3,          // hardware_textures;      // 0=max culling, MAX_DETAIL_VALUE=no culling
+		3,          // num_small_debris;       // 0=min number, MAX_DETAIL_VALUE=max number
+		3,          // num_particles;          // 0=min number, MAX_DETAIL_VALUE=max number
+		4,          // num_stars;              // 0=min number, MAX_DETAIL_VALUE=max number
+		3,          // shield_effects;         // 0=min, MAX_DETAIL_VALUE=max
+		4,          // lighting;               // 0=min, MAX_DETAIL_VALUE=max		
 
-										// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon_extras
+                    // ================== Booleans ==================
+		true,       // targetview_model;       // false=off, true=on	
+		true,       // planets_suns;           // false=off, true=on
+		true,       // weapon_extras           // false=off, true=on
 	},
-	{				// Highest level
-		3,			// setting
-					// ===== Analogs (0-MAX_DETAIL_LEVEL) ====
-		4,			// nebula_detail;				// 0=lowest detail, MAX_DETAIL_LEVEL=highest detail
-		4,			// detail_distance;			// 0=lowest MAX_DETAIL_LEVEL=highest		
-		4,			//	hardware_textures;			// 0=max culling, MAX_DETAIL_LEVEL=no culling
-		4,			//	num_small_debris;			// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_particles;				// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	num_stars;					// 0=min number, MAX_DETAIL_LEVEL=max number
-		4,			//	shield_effects;			// 0=min, MAX_DETAIL_LEVEL=max
-		4,			// lighting;					// 0=min, MAX_DETAIL_LEVEL=max		
+	{
+		DefaultDetailPreset::VeryHigh,         // setting
+                    // ================== Analogs ==================
+		4,          // nebula_detail;          // 0=lowest detail, MAX_DETAIL_VALUE=highest detail
+		4,          // detail_distance;        // 0=lowest MAX_DETAIL_VALUE=highest		
+		4,          // hardware_textures;      // 0=max culling, MAX_DETAIL_VALUE=no culling
+		4,          // num_small_debris;       // 0=min number, MAX_DETAIL_VALUE=max number
+		4,          // num_particles;          // 0=min number, MAX_DETAIL_VALUE=max number
+		4,          // num_stars;              // 0=min number, MAX_DETAIL_VALUE=max number
+		4,          // shield_effects;         // 0=min, MAX_DETAIL_VALUE=max
+		4,          // lighting;               // 0=min, MAX_DETAIL_VALUE=max		
 
-										// ====  Booleans ====
-		1,			//	targetview_model;			// 0=off, 1=on		
-		1,			//	planets_suns;				// 0=off, 1=on
-		1,			// weapon_extras
+                    // ================== Booleans ==================
+		true,       // targetview_model;       // false=off, true=on		
+		true,       // planets_suns;           // false=off, true=on
+		true,       // weapon_extras           // false=off, true=on
 	},
 };
 
-// Global used to access detail levels in game and libs
-detail_levels Detail = Detail_defaults[NUM_DEFAULT_DETAIL_LEVELS - 1];
+// Global used to access detail presets in game and libs
+detail_levels Detail = Detail_defaults[static_cast<int>(DefaultDetailPreset::Num_detail_presets) - 1];
 
 const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues = {{ 0, {"Minimum", 1680}},
-                                                                                   { 1, {"Low", 1161}},
-                                                                                   { 2, {"Medium", 1162}},
-                                                                                   { 3, {"High", 1163}},
+                                                                                   { 1, {"Low", 1160}},
+                                                                                   { 2, {"Medium", 1161}},
+                                                                                   { 3, {"High", 1162}},
                                                                                    { 4, {"Ultra", 1721}}};
+
+static void parse_model_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::DetailDistance, value[i]);
+		}
+	}
+}
 
 const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.Detail",
                      std::pair<const char*, int>{"Model Detail", 1739},
@@ -250,13 +261,29 @@ const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.De
                      .importance(8)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.detail_distance;})
                      .change_listener([](int val, bool) {
                           Detail.detail_distance = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_model_detail_func)
                      .finish();
+
+static void parse_texture_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::HardwareTextures, value[i]);
+		}
+	}
+}
 
 const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Texture",
                      std::pair<const char*, int>{"3D Hardware Textures", 1362},
@@ -264,13 +291,29 @@ const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Textu
                      .importance(6)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.hardware_textures;})
                      .change_listener([](int val, bool) {
                           Detail.hardware_textures = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_texture_detail_func)
                      .finish();
+
+static void parse_particles_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumParticles, value[i]);
+		}
+	}
+}
 
 const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Particles",
                      std::pair<const char*, int>{"Particles", 1363},
@@ -278,27 +321,59 @@ const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Part
                      .importance(5)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.num_particles;})
                      .change_listener([](int val, bool) {
                           Detail.num_particles = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_particles_detail_func)
                      .finish();
+
+static void parse_debris_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumSmallDebris, value[i]);
+		}
+	}
+}
 
 const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.SmallDebris", 
                      std::pair<const char*, int>{"Impact Effects", 1364}, 
                      std::pair<const char*, int>{"Level of detail of impact effects", 1743})
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.num_small_debris;})
                      .importance(4)
                      .change_listener([](int val,bool) {
                           Detail.num_small_debris = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_debris_detail_func)
                      .finish();
+
+static void parse_shield_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::ShieldEffects, value[i]);
+		}
+	}
+}
 
 const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.ShieldEffects",
                      std::pair<const char*, int>{"Shield Hit Effects", 1718},
@@ -306,13 +381,29 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
                      .importance(3)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.shield_effects;})
                      .change_listener([](int val, bool) {
                           Detail.shield_effects = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_shield_detail_func)
                      .finish();
+
+static void parse_stars_detail_func()
+{
+	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
+	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+
+	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+
+		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
+			error_display(0, "%i is an invalid detail level value!", value[i]);
+		} else {
+			change_default_detail_level(static_cast<DefaultDetailPreset>(i), DetailSetting::NumStars, value[i]);
+		}
+	}
+}
 
 const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars", 
                      std::pair<const char*, int>{"Stars", 1366}, 
@@ -320,42 +411,96 @@ const auto StarsOption __UNUSED = options::OptionBuilder<int>("Graphics.Stars",
                      .importance(2)
                      .category(std::make_pair("Graphics", 1825))
                      .values(DetailLevelValues)
-                     .default_val(MAX_DETAIL_LEVEL)
+                     .default_func([](){return Detail.num_stars;})
                      .change_listener([](int val, bool) {
                           Detail.num_stars = val;
                           return true;
                      })
                      .flags({options::OptionFlags::RetailBuiltinOption})
+                     .parser(parse_stars_detail_func)
                      .finish();
 
 // Call this with:
 // 0 - lowest
-// NUM_DETAIL_LEVELS - highest
+// Num_detail_presets - highest
 // To set the parameters in Detail to some set of defaults
-void detail_level_set(int level)
+void detail_level_set(DefaultDetailPreset preset)
 {
-	if ( level < 0 )	{
-		Detail.setting = -1;
+	if (preset == DefaultDetailPreset::Custom) {
+		Detail.setting = DefaultDetailPreset::Custom;
 		return;
 	}
-	Assert( level >= 0 );
-	Assert( level < NUM_DEFAULT_DETAIL_LEVELS );
 
-	Detail = Detail_defaults[level];
+	Detail = Detail_defaults[static_cast<int>(preset)];
 }
 
-// Returns the current detail level or -1 if custom.
-int current_detail_level()
+// Change detail values 0 - MAX_DETAIL_VALUE
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, int value)
+{
+
+	// Use a switch statement for more readable access to the struct members
+	switch (selection) {
+	case DetailSetting::NebulaDetail:
+		Detail_defaults[static_cast<int>(preset)].nebula_detail = value;
+		break;
+	case DetailSetting::DetailDistance:
+		Detail_defaults[static_cast<int>(preset)].detail_distance = value;
+		break;
+	case DetailSetting::HardwareTextures:
+		Detail_defaults[static_cast<int>(preset)].hardware_textures = value;
+		break;
+	case DetailSetting::NumSmallDebris:
+		Detail_defaults[static_cast<int>(preset)].num_small_debris = value;
+		break;
+	case DetailSetting::NumParticles:
+		Detail_defaults[static_cast<int>(preset)].num_particles = value;
+		break;
+	case DetailSetting::NumStars:
+		Detail_defaults[static_cast<int>(preset)].num_stars = value;
+		break;
+	case DetailSetting::ShieldEffects:
+		Detail_defaults[static_cast<int>(preset)].shield_effects = value;
+		break;
+	case DetailSetting::Lighting:
+		Detail_defaults[static_cast<int>(preset)].lighting = value;
+		break;
+	default:
+		Assertion(false, "Invalid detail selection. Get a coder!");
+	}
+}
+
+// Change detail values bool overload
+void change_default_detail_level(DefaultDetailPreset preset, DetailSetting selection, bool value)
+{
+
+	// Use a switch statement for more readable access to the struct members
+	switch (selection) {
+	case DetailSetting::TargetViewModel:
+		Detail_defaults[static_cast<int>(preset)].targetview_model = value;
+		break;
+	case DetailSetting::PlanetsSuns:
+		Detail_defaults[static_cast<int>(preset)].planets_suns = value;
+		break;
+	case DetailSetting::WeaponExtras:
+		Detail_defaults[static_cast<int>(preset)].weapon_extras = value;
+		break;
+	default:
+		Assertion(false, "Invalid detail selection. Get a coder!");
+	}
+}
+
+// Returns the current detail preset or -1 if custom.
+DefaultDetailPreset current_detail_preset()
 {
 //	return Detail.setting;
 	int i;
 
-	for (i=0; i<NUM_DEFAULT_DETAIL_LEVELS; i++ )	{
+	for (i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
 		if ( memcmp( &Detail, &Detail_defaults[i], sizeof(detail_levels) )==0 )	{
-			return i;
+			return static_cast<DefaultDetailPreset>(i);
 		}
 	}
-	return -1;
+	return DefaultDetailPreset::Custom;
 }
 
 #ifndef NDEBUG
@@ -440,87 +585,3 @@ DCF(detail, "Turns on/off parts of the game for speed testing" )
 	}
 }
 #endif
-
-// Stuff that can't be included in vmallocator.h
-
-std::locale SCP_default_locale("");
-
-void SCP_tolower(char *str)
-{
-	for (; *str != '\0'; ++str)
-		*str = SCP_tolower(*str);
-}
-
-void SCP_toupper(char *str)
-{
-	for (; *str != '\0'; ++str)
-		*str = SCP_toupper(*str);
-}
-
-// this is a bit naive but it is good enough for the time being
-void SCP_totitle(char *str)
-{
-	bool prev_alpha = false;
-
-	for (; *str != '\0'; ++str)
-	{
-		bool this_alpha = (*str >= 'a' && *str <= 'z') || (*str >= 'A' && *str <= 'Z');
-
-		if (this_alpha)
-		{
-			if (prev_alpha)
-				*str = SCP_tolower(*str);
-			else
-				*str = SCP_toupper(*str);
-		}
-
-		prev_alpha = this_alpha;
-	}
-}
-
-bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right)
-{
-	if (_Left.size() != _Right.size())
-		return false;
-
-	auto l_it = _Left.cbegin();
-	auto r_it = _Right.cbegin();
-
-	while (l_it != _Left.cend())
-	{
-		if (SCP_tolower(*l_it) != SCP_tolower(*r_it))
-			return false;
-
-		++l_it;
-		++r_it;
-	}
-
-	return true;
-}
-
-bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right)
-{
-	auto l_it = _Left.cbegin();
-	auto r_it = _Right.cbegin();
-
-	while (true)
-	{
-		if (l_it == _Left.cend())
-			return (r_it != _Right.cend());
-		else if (r_it == _Right.cend())
-			return false;
-
-		auto lch = SCP_tolower(*l_it);
-		auto rch = SCP_tolower(*r_it);
-
-		if (lch < rch)
-			return true;
-		else if (lch > rch)
-			return false;
-
-		++l_it;
-		++r_it;
-	}
-
-	return true;
-}

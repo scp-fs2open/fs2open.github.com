@@ -84,26 +84,22 @@ bool delete_pilot_file(const char *pilot_name)
 // this works on barracks and player_select interface screens
 void init_new_pilot(player *p, int reset)
 {
-	int cur_speed;
-
 	if (reset) {
-		hud_set_default_hud_config(p);		// use a default hud config
+		hud_set_default_hud_config(p, HC_default_preset_file); // use a default hud config
 
 		control_config_use_preset(Control_config_presets[0]);		// get a default keyboard config
 		player_set_pilot_defaults(p);			// set up any player struct defaults
 
-		// set the default detail level based on tabling rather than the above method
-		cur_speed = Default_detail_level;
+		// set the default detail preset based on tabling rather than the above method
+		DefaultDetailPreset cur_speed = Default_detail_preset;
 
-#if NUM_DEFAULT_DETAIL_LEVELS != 4
-#error Code in ManagePilot assumes NUM_DEFAULT_DETAIL_LEVELS = 4
-#endif
+		static_assert(static_cast<int>(DefaultDetailPreset::Num_detail_presets) == 4, "Code in ManagePilot assumes Num_detail_presets = 4");
 
 		detail_level_set(cur_speed);
 
 		Game_skill_level = game_get_default_skill_level();
 
-		mprintf(( "Setting detail level to %d because of new pilot\n", cur_speed ));
+		mprintf(( "Setting detail level to %d because of new pilot\n", static_cast<int>(cur_speed) ));
 		Use_mouse_to_fly = true;
 		Mouse_sensitivity = 4;
 		if (!Using_in_game_options) {
@@ -174,26 +170,17 @@ int local_num_campaigns = 0;
 
 int campaign_file_list_filter(const char *filename)
 {
-	char name[NAME_LENGTH];
-	char *desc = NULL;
+	SCP_string name;
 	int type, max_players;
 
-	if ( mission_campaign_get_info( filename, name, &type, &max_players, &desc) ) {
+	if ( mission_campaign_get_info( filename, name, &type, &max_players) ) {
 		if ( type == CAMPAIGN_TYPE_SINGLE) {
-			Campaign_names[local_num_campaigns] = vm_strdup(name);
+			Campaign_names[local_num_campaigns] = vm_strdup(name.c_str());
 			local_num_campaigns++;
-
-			// here we *do* free the campaign description because we are not saving the pointer.
-			if (desc != NULL)
-				vm_free(desc);
-
 			return 1;
 		}
 	}
 
-	if (desc != NULL)
-		vm_free(desc);
- 
 	return 0;
 }
 

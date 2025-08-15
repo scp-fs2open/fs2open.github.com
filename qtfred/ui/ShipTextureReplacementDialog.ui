@@ -253,21 +253,5 @@
     </hint>
    </hints>
   </connection>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::ShipTextureReplacementDialog</receiver>
-   <slot>reject()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>296</x>
-     <y>179</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>200</x>
-     <y>100</y>
-    </hint>
-   </hints>
-  </connection>
  </connections>
 </ui>

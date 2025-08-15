@@ -17,6 +17,7 @@
 //
 #include "globalincs/globals.h"
 #include "model/model.h"
+#include "utils/modular_curves.h"
 
 // prototypes
 class object;
@@ -208,7 +209,6 @@ typedef struct beam {
 	beam_info binfo;
 	int bank;
 
-	int Beam_muzzle_stamp;
 	int firingpoint;
 	float		beam_collide_width;
 	float		beam_light_width;
@@ -218,7 +218,9 @@ typedef struct beam {
 	bool rotates;					// type 5s only, determines whether it rotates
 	float type5_rot_speed;          // how fast it rotates if it does
 
-	WeaponState weapon_state;  
+	WeaponState weapon_state;
+
+	modular_curves_entry_instance modular_curves_instance;
 } beam;
 
 extern std::array<beam, MAX_BEAMS> Beams;				// all beams
@@ -244,10 +246,10 @@ int beam_fire(beam_fire_info *fire_info);
 int beam_fire_targeting(fighter_beam_fire_info *fire_info);
 
 // return an object index of the guy who's firing this beam
-int beam_get_parent(object *bm);
+int beam_get_parent(const object *bm);
 
 // return weapon_info_index of beam
-int beam_get_weapon_info_index(object *bm);
+int beam_get_weapon_info_index(const object *bm);
 
 // given a beam object, get the # of collisions which happened during the last collision check (typically, last frame)
 int beam_get_num_collisions(int objnum);
@@ -285,6 +287,9 @@ void beam_move_all_post();
 
 // render all beam weapons
 void beam_render_all();
+
+// delete all active beams
+void beam_delete_all();
 
 // early-out function for when adding object collision pairs, return 1 if the pair should be ignored
 int beam_collide_early_out(object *a, object *b);

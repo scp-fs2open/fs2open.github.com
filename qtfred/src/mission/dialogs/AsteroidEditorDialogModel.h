@@ -61,13 +61,7 @@ public:
 	void update_init();
 	bool validate_data();
 
-	void set_modified();
-	void unset_modified();
-	bool get_modified();
-
 private:
-	template<typename T>
-	void modify(T &a, const T &b);
 
 	void showErrorDialogNoCancel(const SCP_string& message);
 	void initializeData();
@@ -91,13 +85,13 @@ private:
 	QString _inner_max_y;
 	QString _inner_max_z;
 
-	int            _field_debris_type[MAX_ACTIVE_DEBRIS_TYPES];  // species and size of ship debris
+	SCP_vector<int>            _field_debris_type;  // debris
+	SCP_vector<SCP_string>     _field_asteroid_type; // asteroid types
 	field_type_t   _field_type;                                  // active or passive
 	debris_genre_t _debris_genre;                                // ship or asteroid
 	asteroid_field _a_field;      // :v: had unfinished plans for multiple fields?
 
 	bool _bypass_errors;
-	bool _modified;
 	int  _cur_field;
 	int  _last_field;
 
@@ -108,15 +102,6 @@ private:
 	// and the inverse as a map + roids - populate in ctor
 	std::unordered_map<int, int> debris_inverse_idx_lookup;
 };
-
-template<typename T>
-inline void AsteroidEditorDialogModel::modify(T &a, const T &b) {
-	if (a != b) {
-		a = b;
-		set_modified();
-		modelChanged();
-	}
-}
 
 } // namespace dialogs
 } // namespace fred
