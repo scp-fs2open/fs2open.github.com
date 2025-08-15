@@ -47,6 +47,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 
 	void newMission();
 
+	// this can be triggered by the loadout dialog and so needs to be public
+	void on_actionVariables_triggered(bool);
+
  private slots:
 	 void on_actionSave_As_triggered(bool);
 	 void on_actionSave_triggered(bool);
