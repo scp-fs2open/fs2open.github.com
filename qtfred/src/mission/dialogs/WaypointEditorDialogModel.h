@@ -1,61 +1,45 @@
 #pragma once
-
 #include "mission/dialogs/AbstractDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 class WaypointEditorDialogModel: public AbstractDialogModel {
  Q_OBJECT
 
  public:
-	struct PointListElement {
-		SCP_string name;
-		int id = -1;
-
-		PointListElement(const SCP_string& name, int id);
-	};
-
 	WaypointEditorDialogModel(QObject* parent, EditorViewport* viewport);
 
 	bool apply() override;
-
 	void reject() override;
 
-	static const int ID_JUMP_NODE_MENU = 8000;
-	static const int ID_WAYPOINT_MENU = 9000;
-
 	const SCP_string& getCurrentName() const;
-	int getCurrentElementId() const;
+	void setCurrentName(const SCP_string& name);
+	int getCurrentlySelectedPath() const;
+	void setCurrentlySelectedPath(int elementId);
+	
 	bool isEnabled() const;
-	const SCP_vector<WaypointEditorDialogModel::PointListElement>& getElements() const;
+	const SCP_vector<std::pair<SCP_string, int>>& getWaypointPathList() const;
 
-	void idSelected(int elementId);
-	void setNameEditText(const SCP_string& name);
+signals:
+	void waypointPathMarkingChanged();
+	
 
-	inline bool query_modified() const { return modified; }	// TODO: needs handling in the waypoint dialog
-
- private:
-	bool showErrorDialog(const SCP_string& message, const SCP_string& title);
-
+private slots:
 	void onSelectedObjectChanged(int);
 	void onSelectedObjectMarkingChanged(int, bool);
-	void missionChanged();
+	void onMissionChanged();
 
-	void updateElementList();
-
+ private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeData();
+    void updateWaypointPathList();
+	bool validateData();
+	void showErrorDialogNoCancel(const SCP_string& message);
 
 	SCP_string _currentName;
-	int _currentElementId = -1;
+	int _currentWaypointPathSelected = -1;
 	bool _enabled = false;
-	SCP_vector<PointListElement> _elements;
-
-	bool bypass_errors = false;
-	bool modified = false;
+	SCP_vector<std::pair<SCP_string, int>> _waypointPathList;
+	bool _bypass_errors = false;
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
