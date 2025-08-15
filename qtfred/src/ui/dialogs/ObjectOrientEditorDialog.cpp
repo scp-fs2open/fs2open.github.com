@@ -9,169 +9,248 @@
 #include "mission/util.h"
 #include <QCloseEvent>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 ObjectOrientEditorDialog::ObjectOrientEditorDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent), ui(new Ui::ObjectOrientEditorDialog()), _model(new ObjectOrientEditorDialogModel(this, viewport)),
 	_viewport(viewport) {
+	this->setFocus();
 	ui->setupUi(this);
 
-	connect(this, &QDialog::accepted, _model.get(), &ObjectOrientEditorDialogModel::apply);
-	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ObjectOrientEditorDialog::rejectHandler);
-
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ObjectOrientEditorDialog::updateUI);
-
-	connect(ui->objectComboBox,
-			static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-			this,
-			&ObjectOrientEditorDialog::objectSelectionChanged);
-
-	connect(ui->objectRadio, &QRadioButton::toggled, this, &ObjectOrientEditorDialog::objectRadioToggled);
-	connect(ui->locationRadio, &QRadioButton::toggled, this, &ObjectOrientEditorDialog::locationRadioToggled);
-
-	connect(ui->pointToCheck, &QCheckBox::toggled, this, &ObjectOrientEditorDialog::pointToChecked);
-
-	connect(ui->position_x,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::positionValueChangedX);
-	connect(ui->position_y,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::positionValueChangedY);
-	connect(ui->position_z,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::positionValueChangedZ);
-
-	connect(ui->location_x,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::locationValueChangedX);
-	connect(ui->location_y,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::locationValueChangedY);
-	connect(ui->location_z,
-			static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-			this,
-			&ObjectOrientEditorDialog::locationValueChangedZ);
-
-	updateUI();
+	// set our internal values, update the UI
+	initializeUi();
+	updateUi();
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
-ObjectOrientEditorDialog::~ObjectOrientEditorDialog() {
-}
+ObjectOrientEditorDialog::~ObjectOrientEditorDialog() = default;
 
-void ObjectOrientEditorDialog::closeEvent(QCloseEvent* e) {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
-}
-
-void ObjectOrientEditorDialog::rejectHandler()
+void ObjectOrientEditorDialog::accept()
 {
-	this->close();
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
 }
 
-void ObjectOrientEditorDialog::updateUI() {
-	util::SignalBlockers blockers(this);
+void ObjectOrientEditorDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
 
-	ui->position_x->setValue(_model->getPosition().xyz.x);
-	ui->position_y->setValue(_model->getPosition().xyz.y);
-	ui->position_z->setValue(_model->getPosition().xyz.z);
+void ObjectOrientEditorDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
 
-	ui->location_x->setValue(_model->getLocation().xyz.x);
-	ui->location_y->setValue(_model->getLocation().xyz.y);
-	ui->location_z->setValue(_model->getLocation().xyz.z);
-
-	ui->pointToCheck->setChecked(_model->isPointTo());
-
-	ui->objectRadio->setChecked(_model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Object);
-	ui->locationRadio->setChecked(_model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Location);
-
+void ObjectOrientEditorDialog::initializeUi()
+{
 	updateComboBox();
 
-	ui->position_x->setEnabled(_model->isEnabled());
-	ui->position_y->setEnabled(_model->isEnabled());
-	ui->position_z->setEnabled(_model->isEnabled());
-
-	ui->location_x->setEnabled(_model->isEnabled());
-	ui->location_y->setEnabled(_model->isEnabled());
-	ui->location_z->setEnabled(_model->isEnabled());
-
-	ui->pointToCheck->setEnabled(_model->isEnabled());
-
-	ui->objectRadio->setEnabled(_model->isEnabled());
-
-	ui->objectComboBox->setEnabled(_model->isEnabled());
-
-	ui->locationRadio->setEnabled(_model->isEnabled());
-	ui->location_x->setEnabled(_model->isEnabled());
-	ui->location_y->setEnabled(_model->isEnabled());
-	ui->location_z->setEnabled(_model->isEnabled());
-}
-void ObjectOrientEditorDialog::updateComboBox() {
-	ui->objectComboBox->clear();
-
-	for (auto& entry : _model->getEntries()) {
-		ui->objectComboBox->addItem(QString::fromStdString(entry.name), QVariant(entry.objIndex));
-	}
-	ui->objectComboBox->setCurrentIndex(ui->objectComboBox->findData(_model->getObjectIndex()));
-}
-void ObjectOrientEditorDialog::objectSelectionChanged(int index) {
-	auto objNum = ui->objectComboBox->itemData(index).value<int>();
-	_model->setSelectedObjectNum(objNum);
-}
-void ObjectOrientEditorDialog::objectRadioToggled(bool enabled) {
-	if (enabled) {
-		_model->setPointMode(ObjectOrientEditorDialogModel::PointToMode::Object);
-	}
-}
-void ObjectOrientEditorDialog::locationRadioToggled(bool enabled) {
-	if (enabled) {
+	if (_model->getPointToObjectList().empty()) {
 		_model->setPointMode(ObjectOrientEditorDialogModel::PointToMode::Location);
 	}
 }
-void ObjectOrientEditorDialog::pointToChecked(bool checked) {
+
+void ObjectOrientEditorDialog::updateUi()
+{
+	util::SignalBlockers blockers(this);
+
+	updatePosition();
+	updateOrientation();
+	updatePointTo();
+	updateLocation();
+
+	enableOrDisableControls();
+}
+
+void ObjectOrientEditorDialog::enableOrDisableControls()
+{
+	ui->orientationGroupBox->setEnabled(!_model->getPointTo() && _model->isOrientationEnabledForType());
+	ui->pointToGroupBox->setEnabled(_model->getPointTo() && _model->isOrientationEnabledForType());
+	ui->transformSettingsGroupBox->setEnabled(_model->getNumObjectsMarked() > 1 && _model->isOrientationEnabledForType());
+
+	bool enableLocation = _model->getPointTo() && _model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Location;
+	bool noEntries = _model->getPointToObjectList().empty();
+	bool enableObject = _model->getPointTo() && !noEntries && _model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Object;
+
+	ui->objectRadioButton->setEnabled(!noEntries);
+	ui->objectComboBox->setEnabled(enableObject);
+	ui->locationXSpinBox->setEnabled(enableLocation);
+	ui->locationYSpinBox->setEnabled(enableLocation);
+	ui->locationZSpinBox->setEnabled(enableLocation);
+}
+
+void ObjectOrientEditorDialog::updatePosition()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->positionXSpinBox->setValue(_model->getPosition().x);
+	ui->positionYSpinBox->setValue(_model->getPosition().y);
+	ui->positionZSpinBox->setValue(_model->getPosition().z);
+}
+
+void ObjectOrientEditorDialog::updateOrientation()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->orientationPSpinBox->setValue(_model->getOrientation().p);
+	ui->orientationBSpinBox->setValue(_model->getOrientation().b);
+	ui->orientationHSpinBox->setValue(_model->getOrientation().h);
+}
+
+void ObjectOrientEditorDialog::updatePointTo()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->pointToCheckBox->setChecked(_model->getPointTo());
+	ui->objectRadioButton->setChecked(_model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Object);
+	ui->locationRadioButton->setChecked(_model->getPointMode() == ObjectOrientEditorDialogModel::PointToMode::Location);
+}
+
+void ObjectOrientEditorDialog::updateComboBox()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->objectComboBox->clear();
+
+	for (auto& entry : _model->getPointToObjectList()) {
+		ui->objectComboBox->addItem(QString::fromStdString(entry.name), QVariant(entry.objIndex));
+	}
+	ui->objectComboBox->setCurrentIndex(ui->objectComboBox->findData(_model->getPointToObjectIndex()));
+}
+
+void ObjectOrientEditorDialog::updateLocation()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->locationXSpinBox->setValue(_model->getLocation().x);
+	ui->locationYSpinBox->setValue(_model->getLocation().y);
+	ui->locationZSpinBox->setValue(_model->getLocation().z);
+}
+
+void ObjectOrientEditorDialog::on_okAndCancelButtons_accepted()
+{
+	accept();
+}
+
+void ObjectOrientEditorDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
+}
+
+void ObjectOrientEditorDialog::on_positionXSpinBox_valueChanged(double value)
+{
+	_model->setPositionX(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_positionYSpinBox_valueChanged(double value)
+{
+	_model->setPositionY(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_positionZSpinBox_valueChanged(double value)
+{
+	_model->setPositionZ(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_orientationPSpinBox_valueChanged(double value)
+{
+	_model->setOrientationP(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_orientationBSpinBox_valueChanged(double value)
+{
+	_model->setOrientationB(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_orientationHSpinBox_valueChanged(double value)
+{
+	_model->setOrientationH(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_setAbsoluteRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setSetMode(ObjectOrientEditorDialogModel::SetMode::Absolute);
+		updateUi();
+	}
+}
+
+void ObjectOrientEditorDialog::on_setRelativeRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setSetMode(ObjectOrientEditorDialogModel::SetMode::Relative);
+		updateUi();
+	}
+}
+
+void ObjectOrientEditorDialog::on_transformIndependentlyRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setTransformMode(ObjectOrientEditorDialogModel::TransformMode::Independent);
+		updateUi();
+	}
+}
+
+void ObjectOrientEditorDialog::on_transformRelativelyRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setTransformMode(ObjectOrientEditorDialogModel::TransformMode::Relative);
+		updateUi();
+	}
+}
+
+void ObjectOrientEditorDialog::on_pointToCheckBox_toggled(bool checked)
+{
 	_model->setPointTo(checked);
-}
-void ObjectOrientEditorDialog::positionValueChangedX(double value) {
-	auto oldVal = _model->getPosition();
-	oldVal.xyz.x = (float) value;
-	_model->setPosition(oldVal);
-}
-void ObjectOrientEditorDialog::positionValueChangedY(double value) {
-	auto oldVal = _model->getPosition();
-	oldVal.xyz.y = (float) value;
-	_model->setPosition(oldVal);
-}
-void ObjectOrientEditorDialog::positionValueChangedZ(double value) {
-	auto oldVal = _model->getPosition();
-	oldVal.xyz.z = (float) value;
-	_model->setPosition(oldVal);
+	updateUi();
 }
 
-void ObjectOrientEditorDialog::locationValueChangedX(double value) {
-	auto oldVal = _model->getLocation();
-	oldVal.xyz.x = (float) value;
-	_model->setLocation(oldVal);
-}
-void ObjectOrientEditorDialog::locationValueChangedY(double value) {
-	auto oldVal = _model->getLocation();
-	oldVal.xyz.y = (float) value;
-	_model->setLocation(oldVal);
-}
-void ObjectOrientEditorDialog::locationValueChangedZ(double value) {
-	auto oldVal = _model->getLocation();
-	oldVal.xyz.z = (float) value;
-	_model->setLocation(oldVal);
+void ObjectOrientEditorDialog::on_objectRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setPointMode(ObjectOrientEditorDialogModel::PointToMode::Object);
+		updateUi();
+	}
 }
 
+void ObjectOrientEditorDialog::on_objectComboBox_currentIndexChanged(int index)
+{
+	auto objNum = ui->objectComboBox->itemData(index).value<int>();
+	_model->setPointToObjectIndex(objNum);
 }
+
+void ObjectOrientEditorDialog::on_locationRadioButton_toggled(bool checked)
+{
+	if (checked) {
+		_model->setPointMode(ObjectOrientEditorDialogModel::PointToMode::Location);
+		updateUi();
+	}
 }
+
+void ObjectOrientEditorDialog::on_locationXSpinBox_valueChanged(double value)
+{
+	_model->setLocationX(static_cast<float>(value));
 }
+
+void ObjectOrientEditorDialog::on_locationYSpinBox_valueChanged(double value)
+{
+	_model->setLocationY(static_cast<float>(value));
+}
+
+void ObjectOrientEditorDialog::on_locationZSpinBox_valueChanged(double value)
+{
+	_model->setLocationZ(static_cast<float>(value));
+}
+
+} // namespace fso::fred::dialogs
