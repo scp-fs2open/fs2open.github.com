@@ -193,10 +193,6 @@ add_file_folder("Source/UI/General"
 	src/ui/dialogs/General/ImagePickerDialog.cpp
 	src/ui/dialogs/General/ImagePickerDialog.h
 )
-add_file_folder("Source/UI/General"
-	src/ui/dialogs/General/CheckBoxListDialog.cpp
-	src/ui/dialogs/General/CheckBoxListDialog.h
-)
 
 add_file_folder("Source/UI/Util"
 	src/ui/util/ImageRenderer.cpp
