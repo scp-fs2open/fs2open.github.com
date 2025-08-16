@@ -844,7 +844,8 @@ namespace joystick
 		if (_isGamepad) {
 			// gamepads may not support all buttons, but they don't necessarily match
 			// the number or index of what's reported by the joystick api either
-			_button.resize(static_cast<size_t>(SDL_GAMEPAD_BUTTON_COUNT));
+			// NOTE: +2 added so we can map left & right triggers to a button
+			_button.resize(static_cast<size_t>(SDL_GAMEPAD_BUTTON_COUNT + 2));
 			for (size_t i = 0; i < _button.size(); ++i) {
 				if (SDL_GetGamepadButton(_gamepad, static_cast<SDL_GamepadButton>(i))) {
 					_button[i].DownTimestamp = ui_timestamp();
@@ -977,14 +978,29 @@ namespace joystick
 
 		Assertion(axis < numAxes(), "SDL event contained invalid axis index!");
 
-		// Triggers range from 0..32767 so we need to scale the value for FSO
-		// since it expects a full -32768..32767 range. Note that precision is
-		// lost in the scaling so only scale if it's not a min/max trigger value
 		if ((axis == SDL_GAMEPAD_AXIS_LEFT_TRIGGER) || (axis == SDL_GAMEPAD_AXIS_RIGHT_TRIGGER)) {
+			// Triggers range from 0..32767 so we need to scale the value for FSO
+			// since it expects a full -32768..32767 range. Note that precision is
+			// lost in the scaling so only scale if it's not a min/max trigger value
 			if (value == 0) {
 				value = -32768;
 			} else if (value < 32767) {
 				value = static_cast<decltype(value)>((value * 2) - 32768);
+			}
+
+			// We can also take this opportunity to map triggers to a button
+			int button = SDL_GAMEPAD_BUTTON_COUNT + (axis - SDL_GAMEPAD_AXIS_LEFT_TRIGGER);
+			bool down = (value >= 0);
+
+			Assertion(button < numButtons(), "Gamepad trigger button is out of bounds!");
+
+			// We also need to avoid bumping DownCount for every tiny axis movement.
+			if ( !down || (_button[button].DownCount == 0) ) {
+				_button[button].DownTimestamp = down ? ui_timestamp() : UI_TIMESTAMP::invalid();
+
+				if (down) {
+					++_button[button].DownCount;
+				}
 			}
 		}
 
@@ -1433,4 +1449,27 @@ bool joy_present(short cid) {
 	}
 
 	return pJoystick[cid] != nullptr;
+}
+
+// Check for special trigger buttons and return axis for button
+// This is primarily for easier UI/UX in controlconfig (like conflict detection)
+// returns axis or -1 if not an axis button
+short joy_get_button_axis(short cid, short btn)
+{
+	auto current = io::joystick::getPlayerJoystick(cid);
+
+	// gamepads only (for now?)
+	if ( !current || !current->isGamepad() ) {
+		return -1;
+	}
+
+	// the special trigger buttons are extended on normal buttons so we need to
+	// remove those and sort out whether this is the left (0) or right (1) trigger
+	auto axis_button = btn - SDL_GAMEPAD_BUTTON_COUNT;
+
+	if (axis_button < 0 || axis_button > 1) {
+		return -1;
+	}
+
+	return static_cast<short>(SDL_GAMEPAD_AXIS_LEFT_TRIGGER + axis_button);
 }
