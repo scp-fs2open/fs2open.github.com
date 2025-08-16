@@ -3080,6 +3080,11 @@ void ship_apply_global_damage(object *ship_objp, object *other_obj, const vec3d 
 		// shield_quad = quadrant facing the force_center
 		shield_quad = get_quadrant(&local_hitpos, ship_objp);
 
+		// world_hitpos use force_center for shockwave
+		// Goober5000 check for NULL
+		if (other_obj && (other_obj->type == OBJ_SHOCKWAVE) && (Ship_info[Ships[ship_objp->instance].ship_info_index].is_huge_ship()))
+			world_hitpos = *force_center;
+
 		int wip_index = -1;
 		if(other_obj != nullptr && other_obj->type == OBJ_SHOCKWAVE)
 			wip_index = shockwave_get_weapon_index(other_obj->instance);
