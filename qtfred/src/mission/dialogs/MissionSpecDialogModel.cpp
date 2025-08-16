@@ -13,12 +13,11 @@
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
+#include "mission/mission_flags.h"
 
 #include <QtWidgets>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
@@ -26,6 +25,8 @@ MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* 
 }
 
 void MissionSpecDialogModel::initializeData() {
+	prepareSquadLogoList();
+
 	_m_mission_title = The_mission.name;
 	_m_designer_name = The_mission.author;
 	_m_created = The_mission.created;
@@ -69,6 +70,15 @@ void MissionSpecDialogModel::initializeData() {
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
 
 	modelChanged();
+}
+
+void MissionSpecDialogModel::prepareSquadLogoList()
+{
+	pilot_load_squad_pic_list();
+
+	for (int i = 0; i < Num_pilot_squad_images; i++) {
+		_m_squadLogoList.emplace_back(Pilot_squad_image_names[i]);
+	}
 }
 
 bool MissionSpecDialogModel::apply() {
@@ -322,7 +332,23 @@ SCP_string MissionSpecDialogModel::getSubEventMusic() {
 	return _m_substitute_event_music;
 }
 
-void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
+void MissionSpecDialogModel::setMissionFlag(const SCP_string& flag_name, bool enabled)
+{
+	// Find the matching flagDef by name
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		if (!stricmp(flag_name.c_str(), Parse_mission_flags[i].name)) {
+			if (enabled)
+				_m_flags.set(Parse_mission_flags[i].def);
+			else
+				_m_flags.remove(Parse_mission_flags[i].def);
+			break;
+		}
+	}
+
+	set_modified();
+}
+
+void MissionSpecDialogModel::setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled) {
 	if (_m_flags[flag] != enabled) {
 		_m_flags.set(flag, enabled);
 		set_modified();
@@ -330,8 +356,25 @@ void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool en
 	}
 }
 
-const flagset<Mission::Mission_Flags>& MissionSpecDialogModel::getMissionFlags() const {
-	return _m_flags;
+bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {
+	return _m_flags[flag];
+}
+
+const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissionFlagsList() {
+	if (_m_flag_data.empty()) {
+		for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+			auto flagDef = Parse_mission_flags[i];
+
+			// Skip flags that have checkboxes elsewhere than the flag list or are inactive
+			if (flagDef.is_special || !flagDef.in_use) {
+				continue;
+			}
+
+			bool checked = _m_flags[flagDef.def];
+			_m_flag_data.emplace_back(flagDef.name, checked);
+		}
+	}
+	return _m_flag_data;
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
@@ -367,6 +410,4 @@ SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
 }
 
-}
-}
-}
+} // namespace fso::fred::dialogs

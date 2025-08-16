@@ -6,15 +6,15 @@
 #include "gamesnd/eventmusic.h"
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
+#include "playerman/managepilot.h" // for squad logos
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 
 class MissionSpecDialogModel : public AbstractDialogModel {
 private:
 	void initializeData();
+	void prepareSquadLogoList();
 
 
 	SCP_string _m_created;
@@ -42,6 +42,8 @@ private:
 	int			_m_contrail_threshold;
 
 	flagset<Mission::Mission_Flags> _m_flags;
+	SCP_vector<std::pair<SCP_string, bool>> _m_flag_data;
+	SCP_vector<SCP_string> _m_squadLogoList;
 
 	int _m_type;
 
@@ -74,6 +76,7 @@ public:
 	SCP_string getSquadronName();
 	void setSquadronLogo(const SCP_string&);
 	SCP_string getSquadronLogo();
+	std::vector<std::string> getSquadLogoList() const { return _m_squadLogoList; };
 
 	void setLowResLoadingScreen(const SCP_string&);
 	SCP_string getLowResLoadingScren();
@@ -102,8 +105,10 @@ public:
 	void setSubEventMusic(const SCP_string&);
 	SCP_string getSubEventMusic();
 
-	void setMissionFlag(Mission::Mission_Flags flag, bool enabled);
-	const flagset<Mission::Mission_Flags>& getMissionFlags() const;
+	void setMissionFlag(const SCP_string& flag_name, bool enabled);
+	void setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled);
+	bool getMissionFlag(Mission::Mission_Flags flag) const;
+	const SCP_vector<std::pair<SCP_string, bool>>& getMissionFlagsList();
 
 	void setMissionFullWar(bool enabled);
 
@@ -118,6 +123,4 @@ public:
 
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
