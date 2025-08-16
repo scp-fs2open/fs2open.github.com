@@ -2589,25 +2589,51 @@ void CC_bind::invert_toggle() {
 	flags ^= CCF_INVERTED;
 }
 
+
+static bool compare_btn(short cid, const CC_bind& A, char& A_flags, const CC_bind& B, char& B_flags)
+{
+	auto A_btn = A.get_btn();
+	auto B_btn = B.get_btn();
+
+	auto current = io::joystick::getPlayerJoystick(cid);
+
+	if (current && current->isGamepad()) {
+		if (A_btn >= SDL_GAMEPAD_BUTTON_COUNT) {
+			A_btn = (A_btn - SDL_GAMEPAD_BUTTON_COUNT) + SDL_GAMEPAD_AXIS_LEFT_TRIGGER;
+			A_flags |= CCF_AXIS_BTN;
+		}
+
+		if (B_btn >= SDL_GAMEPAD_BUTTON_COUNT) {
+			B_btn = (B_btn - SDL_GAMEPAD_BUTTON_COUNT) + SDL_GAMEPAD_AXIS_LEFT_TRIGGER;
+			B_flags |= CCF_AXIS_BTN;
+		}
+	}
+
+	return (A_btn == B_btn);
+}
+
 bool CC_bind::conflicts_with(const CC_bind& B) const {
+	char A_flags = flags;
+	char B_flags = B.flags;
+
 	// Bail early if CID or btn are not the same
-	if ((cid != B.cid) || (btn != B.btn)) {
+	if ((cid != B.cid) || !compare_btn(cid, *this, A_flags, B, B_flags)) {
 		return false;
 	}
 
 	// Check if A is an Axis or Axis Button, and if B is an Axis or Axis Button
 	char mask = (CCF_AXIS_BTN | CCF_AXIS);
-	if ((flags & mask) && (B.flags & mask)) {
+	if ((A_flags & mask) && (B_flags & mask)) {
 		return true;
 	}
 
 	// Check if Hat
-	if (flags & B.flags & CCF_HAT) {
+	if (A_flags & B_flags & CCF_HAT) {
 		return true;
 	}
 
 	// Check if Ball
-	if (flags & B.flags & CCF_BALL) {
+	if (A_flags & B_flags & CCF_BALL) {
 		return true;
 	}
 
@@ -2619,7 +2645,7 @@ bool CC_bind::conflicts_with(const CC_bind& B) const {
 	// First off, check if A or B is NOT a button, as according to the mask.  Buttons do not have a flag, so we check
 	// if they are any of the other input types
 	// Next, we return the inverse of the result. Negative of a Negative = Positive. Not Not a button = Is a button
-	return !((flags | B.flags) & mask);
+	return !((A_flags | B_flags) & mask);
 }
 
 bool CC_bind::is_inverted() const {
@@ -2710,10 +2736,19 @@ SCP_string CC_bind::textify() const {
 		case CID_JOY0:
 		case CID_JOY1:
 		case CID_JOY2:
-		case CID_JOY3:
-			Assert((btn >= 0) && (btn < JOY_TOTAL_BUTTONS));
-			retval = SCP_string(textify_button(btn));
+		case CID_JOY3: {
+			auto axis = joy_get_button_axis(cid, btn);
+
+			if (axis < 0) {
+				Assert((btn >= 0) && (btn < JOY_TOTAL_BUTTONS));
+				retval = SCP_string(textify_button(btn));
+			} else {
+				Assert((axis >= 0) && (axis < NUM_AXIS_TEXT));
+				retval = SCP_string(Axis_text[axis]);
+			}
+
 			break;
+		}
 
 		case CID_NONE:
 		default:
