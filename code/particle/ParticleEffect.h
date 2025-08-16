@@ -234,6 +234,10 @@ public:
 		std::pair {"Particle Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
+			ModularCurvesMathOperators::division>{}},
+		std::pair {"Nebula Usage Score", modular_curves_math_input<
+		    modular_curves_global_submember_input<get_particle_count>,
+			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
 			ModularCurvesMathOperators::division>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
