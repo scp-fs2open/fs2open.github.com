@@ -360,9 +360,6 @@ void send_new_player_packet(int new_player_num,net_player *target);
 // send a packet telling players to end the mission
 void send_endgame_packet(net_player *pl = NULL);
 
-// send a skip to debrief item packet
-void send_force_end_mission_packet();
-
 // send a position/orientation update for myself (if I'm an observer)
 void send_observer_update_packet();
 
