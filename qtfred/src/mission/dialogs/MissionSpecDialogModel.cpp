@@ -100,6 +100,15 @@ void MissionSpecDialogModel::prepareSquadLogoList()
 	}
 }
 
+void MissionSpecDialogModel::prepareSquadLogoList()
+{
+	pilot_load_squad_pic_list();
+
+	for (int i = 0; i < Num_pilot_squad_images; i++) {
+		_m_squadLogoList.emplace_back(Pilot_squad_image_names[i]);
+	}
+}
+
 bool MissionSpecDialogModel::apply() {
 	int new_m_type;
 
