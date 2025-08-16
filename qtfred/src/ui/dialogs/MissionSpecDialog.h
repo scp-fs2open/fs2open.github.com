@@ -74,7 +74,7 @@ private slots:
 	void on_designerNoteEditor_textChanged();
 
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::MissionSpecDialog> ui;
 	std::unique_ptr<MissionSpecDialogModel> _model;
 	EditorViewport* _viewport;
