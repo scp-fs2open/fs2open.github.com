@@ -55,7 +55,7 @@ class FlagListWidget final : public QWidget {
 	void onSelectAll();
 	void onClearAll();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	enum Roles : int {
 		KeyRole = Qt::UserRole + 1
 	};
