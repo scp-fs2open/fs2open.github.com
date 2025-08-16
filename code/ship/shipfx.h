@@ -32,7 +32,7 @@ struct matrix;
 void shipfx_emit_spark( int n, int sn );
 
 // Does the special effects to blow a subsystem off a ship
-extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion = false);
+extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion = false, bool no_fireballs = false);
 
 // Creates "ndebris" pieces of debris on random verts of the "submodel" in the 
 // ship's model.

@@ -90,7 +90,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag, bool no_fireballs = false)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -146,8 +146,11 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const s
 		if(fireball_type < 0) {
 			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 		}
-		// create fireball here.
-		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
+
+		if (!no_fireballs) {
+			// create fireball here.
+			fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
+		}
 
 		// create debris
 		live_debris_obj = debris_create(ship_objp, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag, subsys);
@@ -269,7 +272,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	}
 }
 
-void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion, bool no_fireballs)
 {
 	vec3d subobj_pos;
 
@@ -286,14 +289,16 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsy
 
 		// create live debris objects, if any
 		// TODO:  some MULTIPLAYER implcations here!!
-		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f);
+		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f, no_fireballs);
 		
-		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
-		if(fireball_type < 0) {
-			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		if (!no_fireballs) {
+			int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
+			if(fireball_type < 0) {
+				fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+			}
+			// create first fireball
+			fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), psub->radius );
 		}
-		// create first fireball
-		fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), psub->radius );
 	}
 }
 
