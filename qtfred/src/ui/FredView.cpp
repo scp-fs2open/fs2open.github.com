@@ -1721,7 +1721,8 @@ void FredView::showContextMenu(const QPoint& globalPos) {
 	auto localPos = ui->centralWidget->mapFromGlobal(globalPos);
 	_lastContextMenuLocalPos = localPos;
 
-	auto obj = _viewport->select_object(localPos.x(), localPos.y());
+	auto obj =
+		_viewport->select_object(localPos.x() * this->devicePixelRatio(), localPos.y() * this->devicePixelRatio());
 	if (obj >= 0) {
 		fred->selectObject(obj);
 		const auto objType = Objects[obj].type;
