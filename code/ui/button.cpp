@@ -445,8 +445,8 @@ void UI_BUTTON::maybe_show_custom_cursor()
 
 void UI_BUTTON::restore_previous_cursor()
 {
-	if (previous_cursor != NULL) {
+	if (previous_cursor != nullptr && !is_mouse_on()) {
 		io::mouse::CursorManager::get()->setCurrentCursor(previous_cursor);
-		previous_cursor = NULL;
+		previous_cursor = nullptr;
 	}
 }

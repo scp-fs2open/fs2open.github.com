@@ -1,11 +1,14 @@
 #ifndef TRACKIRPUBLIC_H_INCLUDED_
 #define TRACKIRPUBLIC_H_INCLUDED_
 
+#ifdef _WIN32
+
 #include "external_dll/externalcode.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
 
-#include <SDL_syswm.h>
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 #ifdef _WIN64
 #define TRACKIRBRIDGEDLLNAME "scptrackir64.dll"
@@ -81,5 +84,7 @@ private:
 
 	bool m_enabled;
 };
+
+#endif	// _WIN32
 
 #endif /* TRACKIRPUBLIC_H_INCLUDED_ */

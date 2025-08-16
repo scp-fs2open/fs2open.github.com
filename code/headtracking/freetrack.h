@@ -2,6 +2,8 @@
 #ifndef HEADTRACKING_FREETRACK_H
 #define HEADTRACKING_FREETRACK_H
 
+#ifdef _WIN32
+
 #include "headtracking/headtracking.h"
 #include "headtracking/headtracking_internal.h"
 
@@ -91,5 +93,7 @@ namespace headtracking
 		};
 	}
 }
+
+#endif	// _WIN32
 
 #endif // HEADTRACKING_FREETRACK_H

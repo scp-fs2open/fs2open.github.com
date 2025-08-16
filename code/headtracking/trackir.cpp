@@ -1,11 +1,12 @@
 
+#ifdef _WIN32
+
 #include "headtracking/trackir.h"
 
 #include "headtracking/trackirpublic.h"
 
 #include "osapi/osapi.h"
 
-#include <SDL_syswm.h>
 
 namespace headtracking
 {
@@ -53,3 +54,5 @@ namespace headtracking
 		}
 	}
 }
+
+#endif	// _WIN32
