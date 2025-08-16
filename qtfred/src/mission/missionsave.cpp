@@ -5364,39 +5364,48 @@ int CFred_mission_save::save_wings()
 			fout("\n+Flags: (");
 		}
 
+		auto get_flag_name = [](Ship::Wing_Flags flag) -> const char* {
+			for (size_t k = 0; k < Num_parse_wing_flags; ++k) {
+				if (Parse_wing_flags[k].def == flag) {
+					return Parse_wing_flags[k].name;
+				}
+			}
+			return nullptr;
+		};
+
 		if (Wings[i].flags[Ship::Wing_Flags::Ignore_count]) {
-			fout(" \"ignore-count\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Ignore_count));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::Reinforcement]) {
-			fout(" \"reinforcement\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Reinforcement));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_music]) {
-			fout(" \"no-arrival-music\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_music));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_message]) {
-			fout(" \"no-arrival-message\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_message));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_first_wave_message]) {
-			fout(" \"no-first-wave-message\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_first_wave_message));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_arrival_warp]) {
-			fout(" \"no-arrival-warp\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_warp));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_departure_warp]) {
-			fout(" \"no-departure-warp\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_departure_warp));
 		}
 		if (Wings[i].flags[Ship::Wing_Flags::No_dynamic]) {
-			fout(" \"no-dynamic\"");
+			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_dynamic));
 		}
 		if (save_format != MissionFormat::RETAIL) {
 			if (Wings[i].flags[Ship::Wing_Flags::Nav_carry]) {
-				fout(" \"nav-carry-status\"");
+				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Nav_carry));
 			}
 			if (Wings[i].flags[Ship::Wing_Flags::Same_arrival_warp_when_docked]) {
-				fout(" \"same-arrival-warp-when-docked\"");
+				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Same_arrival_warp_when_docked));
 			}
 			if (Wings[i].flags[Ship::Wing_Flags::Same_departure_warp_when_docked]) {
-				fout(" \"same-departure-warp-when-docked\"");
+				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Same_departure_warp_when_docked));
 			}
 		}
 

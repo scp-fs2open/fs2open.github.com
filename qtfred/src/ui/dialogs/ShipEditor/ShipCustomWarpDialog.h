@@ -20,6 +20,8 @@ class ShipCustomWarpDialog : public QDialog {
 	 * @param [in] departure Whether the dialog is changeing warp-in or warp-out.
 	 */
 	explicit ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, const bool departure = false);
+	// Constructor for wing mode
+	ShipCustomWarpDialog(QDialog* parent, EditorViewport* viewport, bool departure, int wingIndex, bool wingMode);
 	~ShipCustomWarpDialog() override;
 
   protected:
@@ -55,5 +57,7 @@ class ShipCustomWarpDialog : public QDialog {
 	 * @brief Update model with the contents of the anim text box
 	 */
 	void animChanged();
+
+	void setupConnections();
 };
 } // namespace fso::fred::dialogs

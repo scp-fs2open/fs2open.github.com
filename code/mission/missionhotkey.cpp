@@ -26,7 +26,6 @@
 #include "mod_table/mod_table.h"
 #include "object/object.h"
 #include "parse/parselo.h"
-#include "playerman/player.h"
 #include "ship/ship.h"
 #include "sound/audiostr.h"
 #include "ui/ui.h"
@@ -34,7 +33,7 @@
 #include "weapon/weapon.h"
 
 
-static int Key_sets[MAX_KEYED_TARGETS] = {
+int Key_sets[MAX_KEYED_TARGETS] = {
 	KEY_F5,
 	KEY_F6,
 	KEY_F7,

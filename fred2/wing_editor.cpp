@@ -821,12 +821,12 @@ void wing_editor::update_data_safe()
 
 		// when arriving near or in front of a ship, be sure that we are far enough away from it!!!
 		if (((m_arrival_location != static_cast<int>(ArrivalLocation::AT_LOCATION)) && (m_arrival_location != static_cast<int>(ArrivalLocation::FROM_DOCK_BAY))) && (i >= 0) && !(i & SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
-			d = int(std::min(500.0f, 2.0f * Objects[Ships[i].objnum].radius));
+			d = int(std::min(MIN_TARGET_ARRIVAL_DISTANCE, MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius));
 			if ((Wings[cur_wing].arrival_distance < d) && (Wings[cur_wing].arrival_distance > -d)) {
 				if (!bypass_errors) {
 					sprintf(buf, "Ship must arrive at least %d meters away from target.\n"
 						"Value has been reset to this.  Use with caution!\r\n"
-						"Recommended distance is %d meters.\r\n", d, (int)(2.0f * Objects[Ships[i].objnum].radius) );
+						"Recommended distance is %d meters.\r\n", d, (int)(MIN_TARGET_ARRIVAL_MULTIPLIER * Objects[Ships[i].objnum].radius) );
 
 					MessageBox(buf);
 				}
