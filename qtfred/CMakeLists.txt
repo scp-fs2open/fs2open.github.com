@@ -20,6 +20,7 @@ qt_add_executable(qtfred
     ${QTFRED_UI_GENERATED}
 )
 set_target_properties(qtfred PROPERTIES
+        AUTORCC TRUE
         AUTOUIC FALSE)
 set_target_properties(qtfred PROPERTIES OUTPUT_NAME "qtfred_${FSO_BINARY_SUFFIX}")
 
