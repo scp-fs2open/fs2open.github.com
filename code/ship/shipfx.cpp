@@ -1865,8 +1865,9 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			vm_vec_scale(&temp, 0.1f*frand());
 			vm_vec_add2(&model_clip_plane_pt, &temp);
 
-			float rad = get_model_cross_section_at_z(half_ship->cur_clip_plane_pt, pm);
-			if (rad < 1) {
+			float cross_section_rad = get_model_cross_section_at_z(half_ship->cur_clip_plane_pt, pm);
+			float rad = cross_section_rad;
+			if (cross_section_rad < 1) {
 				// changed from 0.4 & 0.6 to 0.6 & 0.9 as later 1.5 multiplier was removed
 				rad = half_ship->parent_obj->radius * frand_range(0.6f, 0.9f);
 			} else {
@@ -1874,18 +1875,28 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 				// changed from 1.4 & 1.6 to 2.1 & 2.4 as later 1.5 multiplier was removed
 				rad *= frand_range(2.1f, 2.4f);
 			}
-
+			
 			rad = MIN(rad, half_ship->parent_obj->radius);
+			
+			if (sip->propagating_exp_particles.isValid()) {
+				auto source = particle::ParticleManager::get()->createSource(sip->propagating_exp_particles);
+				auto host = std::make_unique<EffectHostVector>(model_clip_plane_pt, half_ship->orient, half_ship->phys_info.vel);
+				// for particle effects, we'll ignore all the special logic applied to rad and just use the raw radius; the modder can handle it using curves
+				host->setRadius(cross_section_rad);
+				source->setHost(std::move(host));
+				source->setNormal(half_ship->orient.vec.uvec);
+				source->finishCreation();
+			} else {
+				//defaults to 1.0 now that multiplier was applied to the static values above
+				rad *= sip->prop_exp_rad_mult;
 
-			//defaults to 1.0 now that multiplier was applied to the static values above
-			rad *= sip->prop_exp_rad_mult;
-
-			int fireball_type = fireball_ship_explosion_type(sip);
-			if(fireball_type < 0) {
-				fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+				}
+				int low_res_fireballs = Bs_exp_fire_low;
+				fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 			}
-			int low_res_fireballs = Bs_exp_fire_low;
-			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
 			int time_low, time_high;
