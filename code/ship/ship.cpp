@@ -9424,17 +9424,16 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				// Get a random point on the surface of a submodel
 				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
+				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
 				if (sip->death_roll_exp_particles.isValid()) {
-					vec3d center_to_point = objp->pos - pnt1;
+					vec3d center_to_point = outpnt - objp->pos;
 					vm_vec_normalize(&center_to_point);
 					auto source = particle::ParticleManager::get()->createSource(sip->death_roll_exp_particles);
 					source->setHost(std::make_unique<EffectHostObject>(objp, pnt1));
 					source->setNormal(center_to_point);
 					source->finishCreation();
 				} else {
-					model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
-
 					float rad = objp->radius*0.1f;
 				
 					if (sip->death_roll_r_mult != 1.0f)
@@ -9543,17 +9542,16 @@ static void ship_dying_frame(object *objp, int ship_num)
 				vec3d pnt2 = submodel_get_random_point(pm->id, pm->detail[0]);
 
 				vm_vec_avg( &avgpnt, &pnt1, &pnt2 );
+				model_instance_local_to_global_point(&outpnt, &avgpnt, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
 
 				if (sip->pre_death_exp_particles.isValid()) {
-					vec3d center_to_point = objp->pos - avgpnt;
+					vec3d center_to_point = outpnt - objp->pos;
 					vm_vec_normalize(&center_to_point);
 					auto source = particle::ParticleManager::get()->createSource(sip->pre_death_exp_particles);
 					source->setHost(std::make_unique<EffectHostObject>(objp, avgpnt));
 					source->setNormal(center_to_point);
 					source->finishCreation();
 				} else {
-					model_instance_local_to_global_point(&outpnt, &avgpnt, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
-
 					float rad = objp->radius*0.40f;
 
 					rad *= sip->death_fx_r_mult;
