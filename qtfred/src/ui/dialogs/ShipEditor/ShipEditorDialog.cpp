@@ -13,6 +13,7 @@
 
 #include <QCloseEvent>
 #include <ui/dialogs/General/CheckBoxListDialog.h>
+#include <QVariant>
 
 namespace fso::fred::dialogs {
 
