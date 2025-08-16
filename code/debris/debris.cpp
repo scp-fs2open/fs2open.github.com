@@ -71,15 +71,27 @@ static void debris_start_death_roll(object *debris_obj, debris *debris_p, vec3d 
 		if( MULTIPLAYER_MASTER )
 			send_debris_update_packet(debris_obj,DEBRIS_UPDATE_NUKE);
 
-		int fireball_type = fireball_ship_explosion_type(&Ship_info[debris_p->ship_info_index]);
-		if(fireball_type < 0) {
-			fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+		auto sip = &Ship_info[debris_p->ship_info_index];
+		if (sip->debris_end_particles.isValid()) {
+			auto source = particle::ParticleManager::get()->createSource(sip->debris_end_particles);
+
+			// Use the position since the object is going to be invalid soon
+			auto host = std::make_unique<EffectHostVector>(debris_obj->pos, debris_obj->orient, debris_obj->phys_info.vel);
+			host->setRadius(debris_obj->radius);
+			source->setHost(std::move(host));
+			source->setNormal(debris_obj->orient.vec.uvec);
+			source->finishCreation();
+		} else {
+			int fireball_type = fireball_ship_explosion_type(sip);
+			if(fireball_type < 0) {
+				fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+			}
+			fireball_create( &debris_obj->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
 		}
-		fireball_create( &debris_obj->pos, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(debris_obj), debris_obj->radius*1.75f);
 
 		// only play debris destroy sound if hull piece and it has been around for at least 2 seconds
 		if ( Missiontime > debris_p->time_started + 2*F1_0 ) {
-			auto snd_id = Ship_info[debris_p->ship_info_index].debris_explosion_sound;
+			auto snd_id = sip->debris_explosion_sound;
 			if (snd_id.isValid()) {
 				snd_play_3d( gamesnd_get_game_sound(snd_id), &debris_obj->pos, &View_position, debris_obj->radius );
 			}
@@ -427,8 +439,18 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, const
 		debris_create_set_velocity(&Debris[obj->instance], shipp, exp_center, exp_force, source_subsys);
 		debris_create_fire_hook(obj, source_obj);
 		const auto& sip = Ship_info[Ships[source_obj->instance].ship_info_index];
-		if (sip.debris_flame_particles.isValid()) {
-			auto source = particle::ParticleManager::get()->createSource(sip.debris_flame_particles);
+		particle::ParticleEffectHandle flame_effect;
+		if (source_subsys != nullptr) {
+			if (source_subsys->system_info->debris_flame_particles.isValid()) {
+				flame_effect = source_subsys->system_info->debris_flame_particles;
+			} else {
+				flame_effect = sip.default_subsys_debris_flame_particles;
+			}
+		} else {
+			flame_effect = sip.debris_flame_particles;
+		}
+		if (flame_effect.isValid()) {
+			auto source = particle::ParticleManager::get()->createSource(flame_effect);
 			source->setHost(std::make_unique<EffectHostObject>(obj, vmd_zero_vector));
 			source->setTriggerRadius(source_obj->radius);
 			source->setTriggerVelocity(vm_vec_mag_quick(&source_obj->phys_info.vel));
