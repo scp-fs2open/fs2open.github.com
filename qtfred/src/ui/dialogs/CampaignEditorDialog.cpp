@@ -332,8 +332,8 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 
 	QMenu menu{ ui->lstMissions };
 
-	QAction *to = menu.addAction(tr("Add branch to ") + mnName);
-	QAction *from = menu.addAction(tr("Add branch from ") + mnName);
+	QAction *to = menu.addAction(tr("Add branch to ") + *mnName);
+	QAction *from = menu.addAction(tr("Add branch from ") + *mnName);
 	QAction *end = menu.addAction(tr("Add campaign end"));
 	bool mnSel{ model->isCurMnSelected() };
 	to->setEnabled(mnSel);

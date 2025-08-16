@@ -10,6 +10,7 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <QVariant>
 
 namespace fso::fred::dialogs {
 

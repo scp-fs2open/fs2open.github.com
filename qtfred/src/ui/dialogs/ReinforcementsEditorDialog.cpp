@@ -27,7 +27,7 @@ void ReinforcementsDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, donï¿½t close
 }
 
 void ReinforcementsDialog::reject()
