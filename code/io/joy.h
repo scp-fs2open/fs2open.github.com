@@ -383,6 +383,8 @@ int joy_down_count(const CC_bind &bind, int reset_count);
 
 int joy_down(const CC_bind &bind);
 
+short joy_get_button_axis(const short cid, short btn);
+
 /**
  * Checks if the given joystick is present or not
  */
