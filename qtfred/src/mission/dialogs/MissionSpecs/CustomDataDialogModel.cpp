@@ -111,10 +111,9 @@ bool CustomDataDialogModel::removeAt(size_t index)
 
 bool CustomDataDialogModel::hasKey(const SCP_string& key) const
 {
-	if (std::any_of(_items.begin(), _items.end(), [&key](const auto& kv) { return stricmp(kv.first.c_str(), key.c_str()) == 0; })) {
-		return true;
-	}
-	return false;
+	return std::any_of(_items.begin(), _items.end(), [&key](const auto& kv) {
+		return stricmp(kv.first.c_str(), key.c_str()) == 0;
+	});
 }
 
 std::optional<size_t> CustomDataDialogModel::indexOfKey(const SCP_string& key) const
