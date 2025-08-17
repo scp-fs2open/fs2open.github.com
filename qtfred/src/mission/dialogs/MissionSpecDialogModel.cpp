@@ -198,7 +198,7 @@ bool MissionSpecDialogModel::apply() {
 		strcpy_s(TVT_wing_names[i], _m_custom_tvt_wings[i].c_str());
 	}
 
-	_editor->update_custom_wing_indexes();
+	Editor::update_custom_wing_indexes();
 
 	return true;
 }

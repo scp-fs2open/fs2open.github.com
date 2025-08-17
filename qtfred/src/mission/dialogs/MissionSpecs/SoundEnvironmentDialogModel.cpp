@@ -30,7 +30,7 @@ sound_env SoundEnvironmentDialogModel::params() const
 	return _working;
 }
 
-bool SoundEnvironmentDialogModel::validateVolume(float vol, SCP_string* errorOut) const
+bool SoundEnvironmentDialogModel::validateVolume(float vol, SCP_string* errorOut)
 {
 	if (vol < 0.0f || vol > 1.0f) {
 		if (errorOut)
@@ -40,7 +40,7 @@ bool SoundEnvironmentDialogModel::validateVolume(float vol, SCP_string* errorOut
 	return true;
 }
 
-bool SoundEnvironmentDialogModel::validateDamping(float d, SCP_string* errorOut) const
+bool SoundEnvironmentDialogModel::validateDamping(float d, SCP_string* errorOut)
 {
 	if (d < 0.0f || d > 1.0f) {
 		if (errorOut)
@@ -50,7 +50,7 @@ bool SoundEnvironmentDialogModel::validateDamping(float d, SCP_string* errorOut)
 	return true;
 }
 
-bool SoundEnvironmentDialogModel::validateDecay(float decay, SCP_string* errorOut) const
+bool SoundEnvironmentDialogModel::validateDecay(float decay, SCP_string* errorOut)
 {
 	if (decay <= 0.0f) {
 		if (errorOut)

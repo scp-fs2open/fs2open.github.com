@@ -43,12 +43,12 @@ class SoundEnvironmentDialog final : public QDialog {
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void enableOrDisableFields();
 	void populatePresets();
 	void applyPresetFields();
 	void closeWave();
-	void disableEnvPreview();
+	static void disableEnvPreview();
 
 	std::unique_ptr<Ui::SoundEnvironmentDialog> ui;
 	std::unique_ptr<SoundEnvironmentDialogModel> _model;

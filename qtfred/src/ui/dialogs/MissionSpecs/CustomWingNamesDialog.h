@@ -47,7 +47,7 @@ private slots:
 	void on_dogfightWing_1_textChanged(const QString& text);
 	void on_dogfightWing_2_textChanged(const QString& text);
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::CustomWingNamesDialog> ui;
 	std::unique_ptr<CustomWingNamesDialogModel> _model;
 	EditorViewport* _viewport;

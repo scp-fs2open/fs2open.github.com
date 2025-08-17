@@ -92,8 +92,8 @@ void SoundEnvironmentDialog::populatePresets()
 
 	ui->environmentComboBox->clear();
 	ui->environmentComboBox->addItem(QString("<none>")); // index 0 = none
-	for (size_t i = 0; i < EFX_presets.size(); ++i) {
-		ui->environmentComboBox->addItem(QString::fromStdString(EFX_presets[i].name));
+	for (auto& preset : EFX_presets) {
+		ui->environmentComboBox->addItem(QString::fromStdString(preset.name));
 	}
 }
 
@@ -213,7 +213,7 @@ void SoundEnvironmentDialog::on_okAndCancelButtons_rejected()
 void SoundEnvironmentDialog::closeWave()
 {
 	if (_waveId >= 0) {
-		audiostream_close_file(_waveId, 0);
+		audiostream_close_file(_waveId, false);
 		ui->fileSelectionLabel->setText(QString("<No File Selected>")); // clear label
 		_waveId = -1;
 	}

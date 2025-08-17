@@ -40,7 +40,7 @@ class CustomStringsDialog final : public QDialog {
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void buildView();
 	void refreshTable();
 	void selectRow(int row);

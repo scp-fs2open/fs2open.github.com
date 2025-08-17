@@ -26,9 +26,9 @@ class SoundEnvironmentDialogModel final : public AbstractDialogModel {
   private:
 	sound_env _working = {};
 
-	bool validateVolume(float vol, SCP_string* errorOut) const;
-	bool validateDamping(float d, SCP_string* errorOut) const;
-	bool validateDecay(float decay, SCP_string* errorOut) const;
+	static bool validateVolume(float vol, SCP_string* errorOut);
+	static bool validateDamping(float d, SCP_string* errorOut);
+	static bool validateDecay(float decay, SCP_string* errorOut);
 };
 
 } // namespace fso::fred::dialogs
