@@ -2351,15 +2351,17 @@ static void asteroid_parse_section()
 		asteroid_p->damage_type_idx_sav = damage_type_add(buf);
 		asteroid_p->damage_type_idx = asteroid_p->damage_type_idx_sav;
 	}
-	
-	if(optional_string("$Explosion Animations:")){
-		stuff_fireball_index_list(asteroid_p->explosion_bitmap_anims, asteroid_p->name);
 
-		if (optional_string("$Explosion Radius Mult:")) {
-			stuff_float(&asteroid_p->fireball_radius_multiplier);
-		}
-	} else if (optional_string("$Explosion Effect:")) {
+	if (optional_string("$Explosion Effect:")) {
 		asteroid_p->end_particles = particle::util::parseEffect(asteroid_p->name);
+	} else {
+		if(optional_string("$Explosion Animations:")){
+			stuff_fireball_index_list(asteroid_p->explosion_bitmap_anims, asteroid_p->name);
+		}
+		
+		if (optional_string("$Explosion Radius Mult:")) {
+				stuff_float(&asteroid_p->fireball_radius_multiplier);
+		}
 	}
 
 	if (optional_string("$Breakup Delay:")) {
