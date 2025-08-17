@@ -167,7 +167,7 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/WingEditorDialog.cpp
 	src/ui/dialogs/WingEditorDialog.h
 )
-add_file_folder("Source/UI/MissionSpecs"
+add_file_folder("Source/UI/Dialogs/MissionSpecs"
 	src/ui/dialogs/MissionSpecs/CustomDataDialog.cpp
 	src/ui/dialogs/MissionSpecs/CustomDataDialog.h
 	src/ui/dialogs/MissionSpecs/CustomStringsDialog.cpp

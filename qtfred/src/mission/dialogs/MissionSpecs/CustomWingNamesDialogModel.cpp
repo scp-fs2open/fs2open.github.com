@@ -2,27 +2,22 @@
 
 #include "ship/ship.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 CustomWingNamesDialogModel::CustomWingNamesDialogModel(QObject * parent, EditorViewport * viewport) :
 	AbstractDialogModel(parent, viewport) {
-	initializeData();
 }
 
 bool CustomWingNamesDialogModel::apply() {
-	int i;
-
-	for (auto wing : _m_starting) {
+	for (auto& wing : _m_starting) {
 		Editor::strip_quotation_marks(wing);
 	}
 
-	for (auto wing : _m_squadron) {
+	for (auto& wing : _m_squadron) {
 		Editor::strip_quotation_marks(wing);
 	}
 
-	for (auto wing : _m_tvt) {
+	for (auto& wing : _m_tvt) {
 		Editor::strip_quotation_marks(wing);
 	}
 	
@@ -67,78 +62,71 @@ bool CustomWingNamesDialogModel::apply() {
 	}
 
 
-	// copy starting wings
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		strcpy_s(Starting_wing_names[i], _m_starting[i].c_str());
-	}
-
-	// copy squadron wings
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		strcpy_s(Squadron_wing_names[i], _m_squadron[i].c_str());
-	}
-
-	// copy tvt wings
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		strcpy_s(TVT_wing_names[i], _m_tvt[i].c_str());
-	}
-
-	_viewport->editor->update_custom_wing_indexes();
-
+	// No direct application; this model is used to collect custom strings
+	// and the actual application is handled by the MissionSpecDialogModel.
 	return true;
 }
 
 void CustomWingNamesDialogModel::reject() {
+	// No direct rejection; this model is used to collect custom strings
+	// and the actual rejection is handled by the MissionSpecDialogModel.
 }
 
-void CustomWingNamesDialogModel::initializeData() {
-	int i;
-
-	// init starting wings
-	for (i = 0; i < MAX_STARTING_WINGS; i++) {
-		_m_starting[i] = Starting_wing_names[i];
-	}
-
-	// init squadron wings
-	for (i = 0; i < MAX_SQUADRON_WINGS; i++) {
-		_m_squadron[i] = Squadron_wing_names[i];
-	}
-
-	// init tvt wings
-	for (i = 0; i < MAX_TVT_WINGS; i++) {
-		_m_tvt[i] = TVT_wing_names[i];
-	}
+void CustomWingNamesDialogModel::setInitialStartingWings(const std::array<SCP_string, MAX_STARTING_WINGS>& startingWings)
+{
+	_m_starting = startingWings;
 }
 
-void CustomWingNamesDialogModel::setStartingWing(SCP_string str, int index) {
+void CustomWingNamesDialogModel::setInitialSquadronWings(const std::array<SCP_string, MAX_SQUADRON_WINGS>& squadronWings)
+{
+	_m_squadron = squadronWings;
+}
+
+void CustomWingNamesDialogModel::setInitialTvTWings(const std::array<SCP_string, MAX_TVT_WINGS>& tvtWings)
+{
+	_m_tvt = tvtWings;
+}
+
+const std::array<SCP_string, MAX_STARTING_WINGS>& CustomWingNamesDialogModel::getStartingWings() const {
+	return _m_starting;
+}
+
+const std::array<SCP_string, MAX_SQUADRON_WINGS>& CustomWingNamesDialogModel::getSquadronWings() const {
+	return _m_squadron;
+}
+
+const std::array<SCP_string, MAX_TVT_WINGS>& CustomWingNamesDialogModel::getTvTWings() const {
+	return _m_tvt;
+}
+
+void CustomWingNamesDialogModel::setStartingWing(const SCP_string& str, int index)
+{
 	modify(_m_starting[index], str);
 }
 
-void CustomWingNamesDialogModel::setSquadronWing(SCP_string str, int index) {
+void CustomWingNamesDialogModel::setSquadronWing(const SCP_string& str, int index)
+{
 	modify(_m_squadron[index], str);
 }
 
-void CustomWingNamesDialogModel::setTvTWing(SCP_string str, int index) {
+void CustomWingNamesDialogModel::setTvTWing(const SCP_string& str, int index)
+{
 	modify(_m_tvt[index], str);
 }
 
-SCP_string CustomWingNamesDialogModel::getStartingWing(int index) {
+const SCP_string& CustomWingNamesDialogModel::getStartingWing(int index)
+{
 	return _m_starting[index];
 }
 
-SCP_string CustomWingNamesDialogModel::getSquadronWing(int index) {
+const SCP_string& CustomWingNamesDialogModel::getSquadronWing(int index)
+{
 	return _m_squadron[index];
 }
 
-SCP_string CustomWingNamesDialogModel::getTvTWing(int index) {
+const SCP_string& CustomWingNamesDialogModel::getTvTWing(int index)
+{
 	return _m_tvt[index];
 }
 
-bool CustomWingNamesDialogModel::query_modified() {
-	return Starting_wing_names[0] != _m_starting[0] || Starting_wing_names[1] != _m_starting[1] || Starting_wing_names[2] != _m_starting[2]
-		|| Squadron_wing_names[0] != _m_squadron[0] || Squadron_wing_names[1] != _m_squadron[1] || Squadron_wing_names[2] != _m_squadron[2] || Squadron_wing_names[3] != _m_squadron[3] || Squadron_wing_names[4] != _m_squadron[4]
-		|| TVT_wing_names[0] != _m_tvt[0] || TVT_wing_names[1] != _m_tvt[1];
-}
-
-}
-}
-}
+} // namespace fso::fred::dialogs

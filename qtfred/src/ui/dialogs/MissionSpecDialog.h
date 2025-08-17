@@ -4,7 +4,6 @@
 #include <ui/FredView.h>
 
 #include <mission/dialogs/MissionSpecDialogModel.h>
-#include "CustomWingNamesDialog.h"
 
 namespace fso::fred::dialogs {
 

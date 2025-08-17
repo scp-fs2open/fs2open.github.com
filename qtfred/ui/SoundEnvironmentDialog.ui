@@ -2,12 +2,15 @@
 <ui version="4.0">
  <class>fso::fred::dialogs::SoundEnvironmentDialog</class>
  <widget class="QDialog" name="fso::fred::dialogs::SoundEnvironmentDialog">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>376</width>
-    <height>199</height>
+    <height>200</height>
    </rect>
   </property>
   <property name="windowTitle">

@@ -45,6 +45,10 @@ private:
 	SCP_vector<custom_string> _m_custom_strings;
 	sound_env	_m_sound_env;
 
+	std::array<SCP_string, MAX_STARTING_WINGS> _m_custom_starting_wings;
+	std::array<SCP_string, MAX_SQUADRON_WINGS> _m_custom_squadron_wings;
+	std::array<SCP_string, MAX_TVT_WINGS> _m_custom_tvt_wings;
+
 	flagset<Mission::Mission_Flags> _m_flags;
 	SCP_vector<std::pair<SCP_string, bool>> _m_flag_data;
 	SCP_vector<SCP_string> _m_squadLogoList;
@@ -133,6 +137,15 @@ public:
 
 	void setSoundEnvironmentParams(const sound_env& env);
 	sound_env getSoundEnvironmentParams() const;
+
+	void setCustomStartingWings(const std::array<SCP_string, MAX_STARTING_WINGS>& starting_wings);
+	std::array<SCP_string, MAX_STARTING_WINGS> getCustomStartingWings() const;
+
+	void setCustomSquadronWings(const std::array<SCP_string, MAX_SQUADRON_WINGS>& squadron_wings);
+	std::array<SCP_string, MAX_SQUADRON_WINGS> getCustomSquadronWings() const;
+
+	void setCustomTvTWings(const std::array<SCP_string, MAX_TVT_WINGS>& tvt_wings);
+	std::array<SCP_string, MAX_TVT_WINGS> getCustomTvTWings() const;
 
 };
 

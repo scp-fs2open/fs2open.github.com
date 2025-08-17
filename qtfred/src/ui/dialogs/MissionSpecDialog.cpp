@@ -5,6 +5,7 @@
 #include <ui/dialogs/General/ImagePickerDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
+#include <ui/dialogs/MissionSpecs/CustomWingNamesDialog.h>
 #include <ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
@@ -296,9 +297,16 @@ void MissionSpecDialog::on_squadronName_textChanged(const QString & string) {
 
 void MissionSpecDialog::on_customWingNameButton_clicked()
 {
-	CustomWingNamesDialog* dialog = new CustomWingNamesDialog(this, _viewport);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->exec();
+	CustomWingNamesDialog dialog(this, _viewport);
+	dialog.setInitialStartingWings(_model->getCustomStartingWings());
+	dialog.setInitialSquadronWings(_model->getCustomSquadronWings());
+	dialog.setInitialTvTWings(_model->getCustomTvTWings());
+
+	if (dialog.exec() == QDialog::Accepted) {
+		_model->setCustomStartingWings(dialog.getStartingWings());
+		_model->setCustomSquadronWings(dialog.getSquadronWings());
+		_model->setCustomTvTWings(dialog.getTvTWings());
+	}
 }
 
 void MissionSpecDialog::on_squadronLogoButton_clicked() {

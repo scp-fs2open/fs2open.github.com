@@ -1,10 +1,8 @@
 #pragma once
 
-#include "AbstractDialogModel.h"
+#include "../AbstractDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 class CustomWingNamesDialogModel : public AbstractDialogModel {
 public:
@@ -13,23 +11,25 @@ public:
 	bool apply() override;
 	void reject() override;
 
-	void setStartingWing(SCP_string, int);
-	void setSquadronWing(SCP_string, int);
-	void setTvTWing(SCP_string, int);
-	SCP_string getStartingWing(int);
-	SCP_string getSquadronWing(int);
-	SCP_string getTvTWing(int);
+	void setInitialStartingWings(const std::array<SCP_string, MAX_STARTING_WINGS>& startingWings);
+	void setInitialSquadronWings(const std::array<SCP_string, MAX_SQUADRON_WINGS>& squadronWings);
+	void setInitialTvTWings(const std::array<SCP_string, MAX_TVT_WINGS>& tvtWings);
 
-	bool query_modified();
+	const std::array<SCP_string, MAX_STARTING_WINGS>& getStartingWings() const;
+	const std::array<SCP_string, MAX_SQUADRON_WINGS>& getSquadronWings() const;
+	const std::array<SCP_string, MAX_TVT_WINGS>& getTvTWings() const;
+
+	void setStartingWing(const SCP_string&, int);
+	void setSquadronWing(const SCP_string&, int);
+	void setTvTWing(const SCP_string&, int);
+	const SCP_string& getStartingWing(int);
+	const SCP_string& getSquadronWing(int);
+	const SCP_string& getTvTWing(int);
 private:
-	void initializeData();
 
-
-	SCP_string _m_starting[3];
-	SCP_string _m_squadron[5];
-	SCP_string _m_tvt[2];
+	std::array<SCP_string, MAX_STARTING_WINGS> _m_starting;
+	std::array<SCP_string, MAX_SQUADRON_WINGS> _m_squadron;
+	std::array<SCP_string, MAX_TVT_WINGS> _m_tvt;
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
