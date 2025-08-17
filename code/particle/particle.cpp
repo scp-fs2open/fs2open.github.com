@@ -428,10 +428,11 @@ namespace particle
 		}
 
 		if (part->length != 0.0f) {
-			vec3d p0 = part->pos;
+			vec3d p0 = p_pos;
 
 			vec3d p1;
 			vm_vec_copy_normalize_safe(&p1, &part->velocity);
+			vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
 			p1 *= part->length;
 			p1 += part->pos;
 
