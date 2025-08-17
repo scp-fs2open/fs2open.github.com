@@ -374,7 +374,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *e
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
 		model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
 
-		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, 0, 1.0f, subsys );
+		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, false, 1.0f, subsys );
 	}
 }
 
