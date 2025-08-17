@@ -9,6 +9,7 @@
 #include "utils/RandomRange.h"
 #include "utils/id.h"
 #include "utils/modular_curves.h"
+#include "graphics/2d.h"
 
 #include <optional>
 
@@ -244,7 +245,10 @@ public:
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
 		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},
-		std::pair {"Apparent Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectApparentSize>{}}
+		std::pair {"Apparent Size At Emitter", modular_curves_math_input<
+			modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>,
+			modular_curves_global_submember_input<gr_screen, &screen::max_w>,
+			ModularCurvesMathOperators::division>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
