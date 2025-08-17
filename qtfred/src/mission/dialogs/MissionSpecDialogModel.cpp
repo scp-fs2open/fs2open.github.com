@@ -69,6 +69,7 @@ void MissionSpecDialogModel::initializeData() {
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
 
+	_m_custom_data = The_mission.custom_data;
 	_m_custom_strings = The_mission.custom_strings;
 
 	modelChanged();
@@ -161,6 +162,7 @@ bool MissionSpecDialogModel::apply() {
 		Num_teams = 2;
 	}
 
+	The_mission.custom_data = _m_custom_data;
 	The_mission.custom_strings = _m_custom_strings;
 
 	return true;
@@ -412,6 +414,17 @@ void MissionSpecDialogModel::setDesignerNoteText(const SCP_string& m_mission_not
 
 SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
+}
+
+void MissionSpecDialogModel::setCustomData(const SCP_map<SCP_string, SCP_string>& custom_data)
+{
+	modify(_m_custom_data, custom_data);
+	set_modified();
+}
+
+SCP_map<SCP_string, SCP_string> MissionSpecDialogModel::getCustomData() const
+{
+	return _m_custom_data;
 }
 
 void MissionSpecDialogModel::setCustomStrings(const SCP_vector<custom_string>& custom_strings)

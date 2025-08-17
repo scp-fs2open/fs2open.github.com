@@ -1,7 +1,5 @@
 #include "CustomStringsDialogModel.h"
 
-#include <algorithm>
-
 namespace fso::fred::dialogs {
 
 CustomStringsDialogModel::CustomStringsDialogModel(QObject* parent, EditorViewport* viewport)

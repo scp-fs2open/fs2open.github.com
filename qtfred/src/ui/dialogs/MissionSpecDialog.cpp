@@ -3,6 +3,7 @@
 #include "ui_MissionSpecDialog.h"
 
 #include <ui/dialogs/General/ImagePickerDialog.h>
+#include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
@@ -396,6 +397,16 @@ void MissionSpecDialog::on_aiProfileCombo_currentIndexChanged(int index)
 {
 	auto aipIndex = ui->aiProfileCombo->itemData(index).value<int>();
 	_model->setAIProfileIndex(aipIndex);
+}
+
+void MissionSpecDialog::on_customDataButton_clicked()
+{
+	CustomDataDialog dlg(this, _viewport);
+	dlg.setInitial(_model->getCustomData());
+
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setCustomData(dlg.items());
+	}
 }
 
 void MissionSpecDialog::on_customStringsButton_clicked()
