@@ -201,7 +201,7 @@ public:
 
 	bool isOnetime() const { return m_duration == Duration::ONETIME; }
 
-	float getApproximateVisualSize(const vec3d& pos) const;
+	float getApproximatePixelSize(const vec3d& pos) const;
 
 	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
 		std::array {
@@ -243,7 +243,8 @@ public:
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
-		std::pair {"Apparent Visual Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectVisualSize>{}}
+		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},
+		std::pair {"Apparent Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectApparentSize>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
