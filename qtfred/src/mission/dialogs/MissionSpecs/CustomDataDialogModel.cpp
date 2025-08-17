@@ -54,17 +54,6 @@ advance_to_index(SCP_map<SCP_string, SCP_string>& m, size_t index, SCP_map<SCP_s
 	return true;
 }
 
-static inline bool advance_to_index_const(const SCP_map<SCP_string, SCP_string>& m,
-	size_t index,
-	SCP_map<SCP_string, SCP_string>::const_iterator& out)
-{
-	if (index >= m.size())
-		return false;
-	out = m.begin();
-	std::advance(out, static_cast<long>(index));
-	return true;
-}
-
 bool CustomDataDialogModel::updateAt(size_t index, const std::pair<SCP_string, SCP_string>& e, SCP_string* errorOut)
 {
 	// Bounds check
