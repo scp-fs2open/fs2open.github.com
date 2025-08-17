@@ -295,6 +295,7 @@ public:
 	float density;
 
 	particle::ParticleEffectHandle debris_flame_particles;
+	particle::ParticleEffectHandle shrapnel_flame_particles;
 
     void reset();
 

@@ -1229,8 +1229,11 @@ public:
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
 	particle::ParticleEffectHandle 		debris_flame_particles;
+	particle::ParticleEffectHandle 		shrapnel_flame_particles;
 	particle::ParticleEffectHandle 		debris_end_particles;
+	particle::ParticleEffectHandle 		shrapnel_end_particles;
 	particle::ParticleEffectHandle 		default_subsys_debris_flame_particles;
+	particle::ParticleEffectHandle 		default_subsys_shrapnel_flame_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;

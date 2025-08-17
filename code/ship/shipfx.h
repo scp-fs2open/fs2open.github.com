@@ -36,7 +36,7 @@ extern void shipfx_blow_off_subsystem(object *ship_obj, ship *ship_p, const ship
 
 // Creates "ndebris" pieces of debris on random verts of the "submodel" in the 
 // ship's model.
-extern void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center);
+extern void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center, const ship_subsys *subsys = nullptr);
 
 
 // =================================================
