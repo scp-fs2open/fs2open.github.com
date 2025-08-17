@@ -30,7 +30,7 @@ class CustomDataDialog final : public QDialog {
 	}
 
   protected:
-	void closeEvent(QCloseEvent*) override;
+	void closeEvent(QCloseEvent* e) override;
 
   private slots:
 	// Top-row buttons

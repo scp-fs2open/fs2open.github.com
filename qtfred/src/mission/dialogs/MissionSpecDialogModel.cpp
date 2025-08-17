@@ -71,6 +71,7 @@ void MissionSpecDialogModel::initializeData() {
 
 	_m_custom_data = The_mission.custom_data;
 	_m_custom_strings = The_mission.custom_strings;
+	_m_sound_env = The_mission.sound_environment;
 
 	modelChanged();
 }
@@ -164,6 +165,8 @@ bool MissionSpecDialogModel::apply() {
 
 	The_mission.custom_data = _m_custom_data;
 	The_mission.custom_strings = _m_custom_strings;
+
+	The_mission.sound_environment = _m_sound_env;
 
 	return true;
 }
@@ -435,6 +438,16 @@ void MissionSpecDialogModel::setCustomStrings(const SCP_vector<custom_string>& c
 SCP_vector<custom_string> MissionSpecDialogModel::getCustomStrings() const
 {
 	return _m_custom_strings;
+}
+
+void MissionSpecDialogModel::setSoundEnvironmentParams(const sound_env& snd_env)
+{
+	modify(_m_sound_env, snd_env);
+}
+
+sound_env MissionSpecDialogModel::getSoundEnvironmentParams() const
+{
+	return _m_sound_env;
 }
 
 } // namespace fso::fred::dialogs

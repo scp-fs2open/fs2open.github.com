@@ -7,6 +7,7 @@
 #include "mission/missionparse.h"
 #include "mission/missionmessage.h"
 #include "playerman/managepilot.h" // for squad logos
+#include "sound/sound.h"
 
 namespace fso::fred::dialogs {
 
@@ -42,6 +43,7 @@ private:
 	int			_m_contrail_threshold;
 	SCP_map<SCP_string, SCP_string> _m_custom_data;
 	SCP_vector<custom_string> _m_custom_strings;
+	sound_env	_m_sound_env;
 
 	flagset<Mission::Mission_Flags> _m_flags;
 	SCP_vector<std::pair<SCP_string, bool>> _m_flag_data;
@@ -128,6 +130,9 @@ public:
 
 	void setCustomStrings(const SCP_vector<custom_string>& custom_strings);
 	SCP_vector<custom_string> getCustomStrings() const;
+
+	void setSoundEnvironmentParams(const sound_env& env);
+	sound_env getSoundEnvironmentParams() const;
 
 };
 

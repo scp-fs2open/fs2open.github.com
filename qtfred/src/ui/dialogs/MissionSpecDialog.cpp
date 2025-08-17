@@ -5,6 +5,7 @@
 #include <ui/dialogs/General/ImagePickerDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
 #include <ui/dialogs/MissionSpecs/CustomStringsDialog.h>
+#include <ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h>
 #include <ui/util/SignalBlockers.h>
 #include "mission/util.h"
 #include <QCloseEvent>
@@ -397,6 +398,16 @@ void MissionSpecDialog::on_aiProfileCombo_currentIndexChanged(int index)
 {
 	auto aipIndex = ui->aiProfileCombo->itemData(index).value<int>();
 	_model->setAIProfileIndex(aipIndex);
+}
+
+void MissionSpecDialog::on_soundEnvButton_clicked()
+{
+	SoundEnvironmentDialog dlg(this, _viewport);
+	dlg.setInitial(_model->getSoundEnvironmentParams());
+
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setSoundEnvironmentParams(dlg.items());
+	}
 }
 
 void MissionSpecDialog::on_customDataButton_clicked()

@@ -67,7 +67,7 @@ private slots:
 	void on_aiProfileCombo_currentIndexChanged(int index);
 
 	// General
-	//void on_sndEnvButton_clicked();
+	void on_soundEnvButton_clicked();
 	void on_customDataButton_clicked();
 	void on_customStringsButton_clicked();
 	void on_missionDescEditor_textChanged();
