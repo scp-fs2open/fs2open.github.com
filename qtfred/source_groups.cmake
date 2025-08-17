@@ -46,8 +46,6 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/CampaignEditorDialogModel.h
 	src/mission/dialogs/CommandBriefingDialogModel.cpp
 	src/mission/dialogs/CommandBriefingDialogModel.h
-	src/mission/dialogs/CustomWingNamesDialogModel.cpp
-	src/mission/dialogs/CustomWingNamesDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
     src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
@@ -82,6 +80,8 @@ add_file_folder("Source/Mission/Dialogs/MissionSpecs"
 	src/mission/dialogs/MissionSpecs/CustomDataDialogModel.h
 	src/mission/dialogs/MissionSpecs/CustomStringsDialogModel.cpp
 	src/mission/dialogs/MissionSpecs/CustomStringsDialogModel.h
+	src/mission/dialogs/MissionSpecs/CustomWingNamesDialogModel.cpp
+	src/mission/dialogs/MissionSpecs/CustomWingNamesDialogModel.h
 	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.cpp
 	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.h
 )
@@ -134,8 +134,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
-	src/ui/dialogs/CustomWingNamesDialog.cpp
-	src/ui/dialogs/CustomWingNamesDialog.h
     src/ui/dialogs/EventEditorDialog.cpp
     src/ui/dialogs/EventEditorDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
@@ -174,6 +172,8 @@ add_file_folder("Source/UI/MissionSpecs"
 	src/ui/dialogs/MissionSpecs/CustomDataDialog.h
 	src/ui/dialogs/MissionSpecs/CustomStringsDialog.cpp
 	src/ui/dialogs/MissionSpecs/CustomStringsDialog.h
+	src/ui/dialogs/MissionSpecs/CustomWingNamesDialog.cpp
+	src/ui/dialogs/MissionSpecs/CustomWingNamesDialog.h
 	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.cpp
 	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h
 )
