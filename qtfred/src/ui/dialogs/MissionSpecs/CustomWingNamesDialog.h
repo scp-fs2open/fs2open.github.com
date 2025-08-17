@@ -1,6 +1,3 @@
-#ifndef CUSTOMWINGNAMESDIALOG_H
-#define CUSTOMWINGNAMESDIALOG_H
-
 #include <QDialog>
 #include <QCloseEvent>
 
