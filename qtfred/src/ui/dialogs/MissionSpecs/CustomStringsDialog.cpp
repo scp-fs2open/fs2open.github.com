@@ -47,13 +47,24 @@ void CustomStringsDialog::accept()
 
 void CustomStringsDialog::reject()
 {
-	// Asks the user if they want to save changes, if any
-	// If they do, it runs _model->apply() and returns the success value
-	// If they don't, it runs _model->reject() and returns true
-	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		QDialog::reject(); // actually close
+	// Custom reject or close logic because we need to handle talkback to Mission Specs
+	if (_model->query_modified()) {
+		auto button = _viewport->dialogProvider->showButtonDialog(fso::fred::DialogType::Question,
+			"Changes detected",
+			"Do you want to keep your changes?",
+			{fso::fred::DialogButton::Yes, fso::fred::DialogButton::No, fso::fred::DialogButton::Cancel});
+
+		if (button == fso::fred::DialogButton::Yes) {
+			accept();
+		}
+		if (button == fso::fred::DialogButton::No) {
+			_model->reject();
+			QDialog::reject(); // actually close
+		}
+	} else {
+		_model->reject();
+		QDialog::reject();
 	}
-	// else: do nothing, don't close
 }
 
 void CustomStringsDialog::closeEvent(QCloseEvent* e)
@@ -87,6 +98,15 @@ void CustomStringsDialog::buildView()
 	ui->stringsTableView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 	ui->stringsTableView->verticalHeader()->setVisible(false);
 	ui->stringsTableView->horizontalHeader()->setStretchLastSection(true);
+	ui->stringsTableView->setSortingEnabled(false);
+
+	// Make sure headers are not interactive
+	auto* hdr = ui->stringsTableView->horizontalHeader();
+	hdr->setSectionsClickable(false);        // no click/press behavior
+	hdr->setSortIndicatorShown(false);       // hide sort arrow
+	hdr->setHighlightSections(false);        // don’t change look when selected
+	hdr->setSectionsMovable(false);          // no drag-to-reorder columns
+	hdr->setFocusPolicy(Qt::NoFocus);   
 
 	// When a selection is made then load the editors
 	connect(ui->stringsTableView->selectionModel(),
