@@ -15,7 +15,7 @@ CustomWingNamesDialog::CustomWingNamesDialog(QWidget* parent, EditorViewport* vi
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &CustomWingNamesDialog::updateUi);
 
 	updateUi();
-
+	
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
@@ -42,11 +42,11 @@ void CustomWingNamesDialog::reject()
 
 		if (button == fso::fred::DialogButton::Yes) {
 			accept();
-		}
+}
 		if (button == fso::fred::DialogButton::No) {
 			_model->reject();
 			QDialog::reject(); // actually close
-		}
+}
 	} else {
 		_model->reject();
 		QDialog::reject();
