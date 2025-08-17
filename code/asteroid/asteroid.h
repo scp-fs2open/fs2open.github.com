@@ -16,6 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "object/object_flags.h"
 #include "io/timer.h"
+#include "particle/ParticleEffect.h"
 
 class object;
 class polymodel;
@@ -79,7 +80,9 @@ public:
 	float		initial_asteroid_strength;						// starting strength of asteroid
 	SCP_vector< asteroid_split_info > split_info;
 	SCP_vector<int> explosion_bitmap_anims;
-	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
+	float fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
+	particle::ParticleEffectHandle end_particles;
+	std::optional<float> breakup_delay;
 	SCP_string	display_name;									// only used for hud targeting display and for debris
 	float		spawn_weight;									// debris only, relative proportion to spawn compared to other types in its asteroid field
 	float		gravity_const;									// multiplier for mission gravity
@@ -90,7 +93,7 @@ public:
 		  rotational_vel_multiplier(1), damage_type_idx(0),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
-		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )
+		  fireball_radius_multiplier( -1 ), end_particles( particle::ParticleEffectHandle::invalid() ), breakup_delay( std::nullopt ), spawn_weight( 1 ), gravity_const( 0 )
 	{
 		name[ 0 ] = 0;
 		display_name = "";
