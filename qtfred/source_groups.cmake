@@ -77,6 +77,14 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/WingEditorDialogModel.cpp
 	src/mission/dialogs/WingEditorDialogModel.h
 )
+add_file_folder("Source/Mission/Dialogs/MissionSpecs"
+	src/mission/dialogs/MissionSpecs/CustomDataDialogModel.cpp
+	src/mission/dialogs/MissionSpecs/CustomDataDialogModel.h
+	src/mission/dialogs/MissionSpecs/CustomStringsDialogModel.cpp
+	src/mission/dialogs/MissionSpecs/CustomStringsDialogModel.h
+	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.cpp
+	src/mission/dialogs/MissionSpecs/SoundEnvironmentDialogModel.h
+)
 add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipEditorDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipEditorDialogModel.cpp
@@ -166,8 +174,8 @@ add_file_folder("Source/UI/MissionSpecs"
 	src/ui/dialogs/MissionSpecs/CustomDataDialog.h
 	src/ui/dialogs/MissionSpecs/CustomStringsDialog.cpp
 	src/ui/dialogs/MissionSpecs/CustomStringsDialog.h
-	src/ui/dialogs/MissionSpecs/SoundEnvironment.cpp
-	src/ui/dialogs/MissionSpecs/SoundEnvironment.h
+	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.cpp
+	src/ui/dialogs/MissionSpecs/SoundEnvironmentDialog.h
 )
 add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipEditorDialog.h

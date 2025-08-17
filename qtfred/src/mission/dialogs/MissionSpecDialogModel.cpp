@@ -69,6 +69,8 @@ void MissionSpecDialogModel::initializeData() {
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
 
+	_m_custom_strings = The_mission.custom_strings;
+
 	modelChanged();
 }
 
@@ -158,6 +160,8 @@ bool MissionSpecDialogModel::apply() {
 	if ((The_mission.game_type & MISSION_TYPE_MULTI) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)) {
 		Num_teams = 2;
 	}
+
+	The_mission.custom_strings = _m_custom_strings;
 
 	return true;
 }
@@ -408,6 +412,16 @@ void MissionSpecDialogModel::setDesignerNoteText(const SCP_string& m_mission_not
 
 SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
+}
+
+void MissionSpecDialogModel::setCustomStrings(const SCP_vector<custom_string>& custom_strings)
+{
+	modify(_m_custom_strings, custom_strings);
+}
+
+SCP_vector<custom_string> MissionSpecDialogModel::getCustomStrings() const
+{
+	return _m_custom_strings;
 }
 
 } // namespace fso::fred::dialogs

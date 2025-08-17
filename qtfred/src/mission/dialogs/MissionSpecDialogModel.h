@@ -40,6 +40,7 @@ private:
 	float		_m_max_subsys_repair_val;
 	bool		_m_contrail_threshold_flag;
 	int			_m_contrail_threshold;
+	SCP_vector<custom_string> _m_custom_strings;
 
 	flagset<Mission::Mission_Flags> _m_flags;
 	SCP_vector<std::pair<SCP_string, bool>> _m_flag_data;
@@ -120,6 +121,9 @@ public:
 
 	void setDesignerNoteText(const SCP_string&);
 	SCP_string getDesignerNoteText();
+
+	void setCustomStrings(const SCP_vector<custom_string>& custom_strings);
+	SCP_vector<custom_string> getCustomStrings() const;
 
 };
 

@@ -156,6 +156,16 @@ typedef struct custom_string {
 	SCP_string text;
 } custom_string;
 
+inline bool operator==(const custom_string& a, const custom_string& b)
+{
+	return a.name == b.name && a.value == b.value && a.text == b.text;
+}
+
+inline bool operator!=(const custom_string& a, const custom_string& b)
+{
+	return !(a == b);
+}
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
