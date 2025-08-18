@@ -21,9 +21,6 @@ class RenderWidget;
 
 namespace dialogs {
 class ShipEditorDialog;
-}
-
-namespace dialogs {
 class WingEditorDialog;
 }
 
