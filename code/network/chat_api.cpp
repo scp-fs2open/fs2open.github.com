@@ -473,7 +473,7 @@ char *ChatGetString(void)
 	struct timeval timeout; 
 	char ch[2];
 	char *p;
-	int bytesread;
+	long bytesread;
 	static char return_string[MAXCHATBUFFER];
 	
 	timeout.tv_sec=0;            

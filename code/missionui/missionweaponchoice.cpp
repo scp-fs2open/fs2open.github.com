@@ -941,7 +941,7 @@ void draw_3d_overhead_view(int model_num,
 					gr_curve(lineendx, lineendy, 5, curve, resize_mode);
 
 					if (curve == 0 || curve == 1) {
-						lineendy = bank_coords[x][1] + lround(bank_y_offset * 1.5);
+						lineendy = bank_coords[x][1] + static_cast<int>(lround(bank_y_offset * 1.5));
 					} else {
 						lineendy = bank_coords[x][1] + (bank_y_offset / 2);
 					}
@@ -1015,7 +1015,7 @@ void draw_3d_overhead_view(int model_num,
 					if (curve == 1 || curve == 2) {
 						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + (bank_y_offset / 2);
 					} else {
-						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + lround(bank_y_offset * 1.5);
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + static_cast<int>(lround(bank_y_offset * 1.5));
 					}
 
 					gr_line(xc, lineendy, xc, yc, resize_mode);
