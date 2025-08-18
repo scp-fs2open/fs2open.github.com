@@ -118,6 +118,22 @@ enum : int {
 	Num_movie_types
 };
 
+struct cutscene_type_data {
+	int value;         // enum
+	SCP_string label; // shown in combo boxes
+	SCP_string desc;   // short explanation for the description box
+};
+
+static const cutscene_type_data CutsceneMenuData[] = {
+	{MOVIE_PRE_FICTION, "Fiction Viewer", "Plays just before the fiction viewer game state"},
+	{MOVIE_PRE_CMD_BRIEF, "Command Briefing", "Plays just before the command briefing game state"},
+	{MOVIE_PRE_BRIEF, "Briefing", "Plays just before the briefing game state"},
+	{MOVIE_PRE_GAME, "Pre-game", "Plays just before the mission starts after Accept has been pressed"},
+	{MOVIE_PRE_DEBRIEF, "Debriefing", "Plays just before the debriefing game state"},
+	{MOVIE_POST_DEBRIEF, "Post-debriefing", "Plays when the debriefing has been accepted but before exiting the mission"},
+	{MOVIE_END_CAMPAIGN, "End Campaign", "Plays when the campaign has been completed"}
+};
+
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 

@@ -21,6 +21,7 @@
 #include <ui/dialogs/MissionGoalsDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
+#include <ui/dialogs/MissionCutscenesDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
@@ -709,6 +710,12 @@ void FredView::on_actionMission_Events_triggered(bool) {
 	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
+}
+void FredView::on_actionMission_Cutscenes_triggered(bool)
+{
+	auto cutsceneEditor = new dialogs::MissionCutscenesDialog(this, _viewport);
+	cutsceneEditor->setAttribute(Qt::WA_DeleteOnClose);
+	cutsceneEditor->show();
 }
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
 	_viewport->Selection_lock = enabled;
