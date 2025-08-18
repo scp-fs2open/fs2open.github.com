@@ -243,7 +243,7 @@ class NoteBadgeDelegate final : public QStyledItemDelegate {
 		const QStyle* s = w ? w->style() : QApplication::style();
 		s->drawControl(QStyle::CE_ItemViewItem, &opt, p, w);
 
-		// if there’s a note, paint the badge directly after the text
+		// if thereï¿½s a note, paint the badge directly after the text
 		const QString note = index.data(sexp_tree::NoteRole).toString();
 		if (!note.isEmpty()) {
 			// where Qt drew the text
@@ -2882,14 +2882,14 @@ void sexp_tree::mouseMoveEvent(QMouseEvent* e)
 		return;
 	}
 
-	// “Dragging” – we just highlight potential drop target (a root under the cursor)
+	// ï¿½Draggingï¿½ ï¿½ we just highlight potential drop target (a root under the cursor)
 	s_dragging = true;
 	if (auto* over = itemAt(e->pos())) {
 		if (isRoot(over))
-			setCurrentItem(over); // simple visual cue like OG’s SelectDropTarget
+			setCurrentItem(over); // simple visual cue like OGï¿½s SelectDropTarget
 	}
 
-	// No QDrag payload; we’ll do the move on mouse release to keep logic simple.
+	// No QDrag payload; weï¿½ll do the move on mouse release to keep logic simple.
 	QTreeWidget::mouseMoveEvent(e);
 }
 
@@ -2899,7 +2899,7 @@ void sexp_tree::mouseReleaseEvent(QMouseEvent* e)
 		auto* dropTarget = itemAt(e->pos());
 		if (dropTarget && isRoot(dropTarget) && dropTarget != s_dragSourceRoot) {
 			// OG rule: if moving up, insert_before=true; if moving down, insert_after
-			// (so we “end up where we dropped”). :contentReference[oaicite:1]{index=1}
+			// (so we ï¿½end up where we droppedï¿½). :contentReference[oaicite:1]{index=1}
 			const int srcIdx = indexOfTopLevelItem(s_dragSourceRoot);
 			const int dstIdx = indexOfTopLevelItem(dropTarget);
 			const bool insert_before = (srcIdx > dstIdx);
@@ -6040,7 +6040,7 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	std::unique_ptr<QMenu> popup_menu(new QMenu(tr("Edit SEXP tree")));
 
 	auto delete_act =
-		popup_menu->addAction(tr("&Delete Item"), this, [this]() { deleteActionHandler(); }, QKeySequence::Delete);
+		popup_menu->addAction(tr("&Delete Item"), QKeySequence::Delete, this, [this]() { deleteActionHandler(); });
 	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, [this]() { editDataActionHandler(); });
 	popup_menu->addAction(tr("Expand All"), this, [this]() { expand_branch(currentItem()); });
 
@@ -6051,10 +6051,10 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	edit_color_act->setEnabled(_interface->getFlags()[TreeFlags::AnnotationsAllowed]);
 
 	popup_menu->addSection(tr("Copy operations"));
-	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
+	auto cut_act = popup_menu->addAction(tr("Cut"), QKeySequence::Cut, this, [this]() { cutActionHandler(); });
 	cut_act->setEnabled(false);
-	auto copy_act = popup_menu->addAction(tr("Copy"), this, [this]() { copyActionHandler(); }, QKeySequence::Copy);
-	auto paste_act = popup_menu->addAction(tr("Paste"), this, [this]() { pasteActionHandler(); }, QKeySequence::Paste); //TODO match paste/add paste
+	auto copy_act = popup_menu->addAction(tr("Copy"), QKeySequence::Copy, this, [this]() { copyActionHandler(); });
+	auto paste_act = popup_menu->addAction(tr("Paste"), QKeySequence::Paste, this, [this]() { pasteActionHandler(); });
 	paste_act->setEnabled(false);
 
 	popup_menu->addSection(tr("Add"));
@@ -7323,7 +7323,7 @@ void sexp_tree::startOperatorQuickSearch(QTreeWidgetItem* item, const QString& s
 		return;
 
 	// Only allow on editable positions (operator or data) that live beneath a parent
-	// (We’ll compute OPF from parent or root as necessary)
+	// (Weï¿½ll compute OPF from parent or root as necessary)
 	_opAll = validOperatorsForNode(nodeIdx);
 	if (_opAll.isEmpty())
 		return;

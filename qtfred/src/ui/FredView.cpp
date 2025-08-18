@@ -918,8 +918,9 @@ void FredView::handleObjectEditor(int objNum) {
 	}
 }
 void FredView::mouseDoubleClickEvent(QMouseEvent* event) {
-	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPos());
-	auto obj = _viewport->select_object(viewLocal.x(), viewLocal.y());
+	auto viewLocal = ui->centralWidget->mapFromGlobal(event->globalPosition()); 
+	auto obj =
+		_viewport->select_object(viewLocal.x() * this->devicePixelRatio(), viewLocal.y() * this->devicePixelRatio());
 
 	if (obj >= 0) {
 		handleObjectEditor(obj);

@@ -12,7 +12,7 @@ void bankTree::dragEnterEvent(QDragEnterEvent* event)
 }
 void bankTree::dropEvent(QDropEvent* event)
 {
-	auto item = indexAt(event->pos());
+	auto item = indexAt(event->position().toPoint());
 	if (!item.isValid()) {
 		return;
 	}
