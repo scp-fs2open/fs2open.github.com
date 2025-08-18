@@ -219,9 +219,9 @@ void MissionGoalsDialog::on_newObjectiveBtn_clicked()
 void MissionGoalsDialog::on_goalEventTree_selectedRootChanged(int formula)
 {
 	auto& goals = _model->getGoals();
-	for (auto i = 0; i < (int)goals.size(); ++i) {
+	for (size_t i = 0; i < goals.size(); ++i) {
 		if (goals[i].formula == formula) {
-			_model->setCurrentGoal(i);
+			_model->setCurrentGoal(static_cast<int>(i));
 			break;
 		}
 	}

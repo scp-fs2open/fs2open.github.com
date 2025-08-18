@@ -9,7 +9,6 @@ MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::Edi
 bool MissionGoalsDialogModel::apply()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
-	int i;
 
 	auto changes_detected = query_modified();
 
@@ -19,7 +18,7 @@ bool MissionGoalsDialogModel::apply()
 	}
 
 	// rename all sexp references to old goals
-	for (i=0; i<(int)m_goals.size(); i++) {
+	for (size_t i=0; i<m_goals.size(); i++) {
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
@@ -65,17 +64,17 @@ void MissionGoalsDialogModel::reject() {
 	// Nothing to do here
 }
 mission_goal& MissionGoalsDialogModel::getCurrentGoal() {
-	Assertion(cur_goal >= 0 && cur_goal < (int)m_goals.size(), "Current goal index is not valid!");
+	Assertion(SCP_vector_inbounds(m_goals, cur_goal), "Current goal index is not valid!");
 
 	return m_goals[cur_goal];
 }
 bool MissionGoalsDialogModel::isCurrentGoalValid() const {
-	return cur_goal >= 0 && cur_goal < (int)m_goals.size();
+	return SCP_vector_inbounds(m_goals, cur_goal);
 }
 void MissionGoalsDialogModel::initializeData() {
 	m_goals.clear();
 	m_sig.clear();
-	for (int i=0; i<(int)Mission_goals.size(); i++) {
+	for (size_t i=0; i<Mission_goals.size(); i++) {
 		m_goals.push_back(Mission_goals[i]);
 		m_sig.push_back(i);
 
@@ -100,16 +99,15 @@ bool MissionGoalsDialogModel::isGoalVisible(const mission_goal& goal) const {
 void MissionGoalsDialogModel::setGoalDisplayType(int type) {
 	modify(m_display_goal_types, type);
 }
-bool MissionGoalsDialogModel::query_modified() {
-	int i;
-
+bool MissionGoalsDialogModel::query_modified()
+{
 	if (modified)
 		return true;
 
 	if (Mission_goals.size() != m_goals.size())
 		return true;
 
-	for (i=0; i<(int)Mission_goals.size(); i++) {
+	for (size_t i=0; i<Mission_goals.size(); i++) {
 		if (!lcase_equal(Mission_goals[i].name, m_goals[i].name))
 			return true;
 		if (!lcase_equal(Mission_goals[i].message, m_goals[i].message))
@@ -128,12 +126,12 @@ void MissionGoalsDialogModel::setTreeControl(sexp_tree* tree) {
 	_sexp_tree = tree;
 }
 void MissionGoalsDialogModel::deleteGoal(int node) {
-	int i;
-	for (i=0; i<(int)m_goals.size(); i++)
+	size_t i;
+	for (i=0; i<m_goals.size(); i++)
 	if (m_goals[i].formula == node)
 		break;
 
-	Assert(i < (int)m_goals.size());
+	Assert(i < m_goals.size());
 	m_goals.erase(m_goals.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
 
@@ -141,15 +139,15 @@ void MissionGoalsDialogModel::deleteGoal(int node) {
 	modelChanged();
 }
 void MissionGoalsDialogModel::changeFormula(int old_form, int new_form) {
-	int i;
+	size_t i;
 
-	for (i=0; i<(int)m_goals.size(); i++){
+	for (i=0; i<m_goals.size(); i++){
 		if (m_goals[i].formula == old_form){
 			break;
 		}
 	}
 
-	Assert(i < (int)m_goals.size());
+	Assert(i < m_goals.size());
 	m_goals[i].formula = new_form;
 
 	set_modified();
