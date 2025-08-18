@@ -234,15 +234,16 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 		waypoint_instance = Objects[fred->cur_waypoint->get_objnum()].instance;
 	}
 
-	_markingBox.x1 = event->x() * _window->devicePixelRatio();
-	_markingBox.y1 = event->y() * _window->devicePixelRatio();
+	_markingBox.x1 = event->position().x() * _window->devicePixelRatio();
+	_markingBox.y1 = event->position().y() * _window->devicePixelRatio();
 	_viewport->Dup_drag = 0;
 
-	_viewport->on_object =
-		_viewport->select_object(event->x() * _window->devicePixelRatio(), event->y() * _window->devicePixelRatio());
+	_viewport->on_object = _viewport->select_object(event->position().x() * _window->devicePixelRatio(),
+		event->position().y() * _window->devicePixelRatio());
 	_viewport->button_down = 1;
 
 	if (event->modifiers().testFlag(Qt::ControlModifier)) {  // add a new object
+				_viewport->on_object =
 		if (_viewport->on_object == -1) {
 			_viewport->Selection_lock = false;  // force off selection lock
 			const bool shift = event->modifiers().testFlag(Qt::ShiftModifier);
@@ -253,7 +254,7 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 			} else if (shift && !alt) {
 				kind = CreateKind::Prop;
 			}
-			_viewport->on_object = _viewport->create_object_on_grid(event->x() * _window->devicePixelRatio(), event->y() * _window->devicePixelRatio(), waypoint_instance, kind);
+			_viewport->on_object = _viewport->create_object_on_grid(event->position().x() * _window->devicePixelRatio(), event->position().y() * _window->devicePixelRatio(), waypoint_instance, kind);
 
 		} else {
 			// Ctrl+drag: duplicate marked objects (waypoints start a new path).
@@ -291,7 +292,8 @@ void RenderWidget::mousePressEvent(QMouseEvent* event) {
 	_viewport->moved = 0;
 	if (_viewport->Selection_lock) {
 		if (_viewport->Editing_mode == CursorMode::Moving) {
-			_viewport->drag_objects(event->x() * _window->devicePixelRatio(), event->y() * _window->devicePixelRatio());
+			_viewport->drag_objects(event->position().x() * _window->devicePixelRatio(),
+				event->position().y() * _window->devicePixelRatio());
 		} else if (_viewport->Editing_mode == CursorMode::Rotating) {
 			_viewport->drag_rotate_objects(0, 0);
 		}
@@ -358,13 +360,13 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 	}
 
 // Update marking box
-	_markingBox.x2 = event->x() * _window->devicePixelRatio();
-	_markingBox.y2 = event->y() * _window->devicePixelRatio();
+	_markingBox.x2 = event->position().x() * _window->devicePixelRatio();
+	_markingBox.y2 = event->position().y() * _window->devicePixelRatio();
 
 	// RT point
 
-	_viewport->Cursor_over =
-		_viewport->select_object(event->x() * _window->devicePixelRatio(), event->y() * _window->devicePixelRatio());
+	_viewport->Cursor_over = _viewport->select_object(event->position().x() * _window->devicePixelRatio(),
+		event->position().y() * _window->devicePixelRatio());
 	updateCursor();
 
 	if (!event->buttons().testFlag(Qt::LeftButton)) {
@@ -379,8 +381,8 @@ void RenderWidget::mouseMoveEvent(QMouseEvent* event) {
 		if (_viewport->moved) {
 			if (_viewport->on_object != -1 || _viewport->Selection_lock) {
 				if (_viewport->Editing_mode == CursorMode::Moving) {
-					_viewport->drag_objects(event->x() * _window->devicePixelRatio(),
-						event->y() * _window->devicePixelRatio());
+					_viewport->drag_objects(event->position().x() * _window->devicePixelRatio(),
+						event->position().y() * _window->devicePixelRatio());
 				} else if (_viewport->Editing_mode == CursorMode::Rotating) {
 					_viewport->drag_rotate_objects(mouseDX.x(), mouseDX.y());
 				}
@@ -420,8 +422,8 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 		return QWidget::mouseReleaseEvent(event);
 	}
 
-	_markingBox.x2 = event->x() * _window->devicePixelRatio();
-	_markingBox.y2 = event->y() * _window->devicePixelRatio();
+	_markingBox.x2 = event->position().x() * _window->devicePixelRatio();
+	_markingBox.y2 = event->position().y() * _window->devicePixelRatio();
 
 	if (_viewport->button_down) {
 		if (abs(_markingBox.x1 - _markingBox.x2) > 1 || abs(_markingBox.y1 - _markingBox.y2) > 1) {
@@ -431,8 +433,8 @@ void RenderWidget::mouseReleaseEvent(QMouseEvent* event) {
 		if (_viewport->moved) {
 			if ((_viewport->on_object != -1) || _viewport->Selection_lock) {
 				if (_viewport->Editing_mode == CursorMode::Moving) {
-					_viewport->drag_objects(event->x() * _window->devicePixelRatio(),
-						event->y() * _window->devicePixelRatio());
+					_viewport->drag_objects(event->position().x() * _window->devicePixelRatio(),
+						event->position().y() * _window->devicePixelRatio());
 				} else if (_viewport->Editing_mode == CursorMode::Rotating) {
 					_viewport->drag_rotate_objects(0, 0);
 				}
