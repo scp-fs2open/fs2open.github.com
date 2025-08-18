@@ -108,7 +108,11 @@
               </widget>
              </item>
              <item row="3" column="1">
-              <widget class="QSpinBox" name="goalScore"/>
+              <widget class="QSpinBox" name="goalScore">
+               <property name="maximum">
+                <number>16777215</number>
+               </property>
+              </widget>
              </item>
              <item row="4" column="1">
               <widget class="QComboBox" name="goalTeamCombo">
@@ -187,7 +191,7 @@
            </widget>
           </item>
           <item row="2" column="1">
-           <widget class="QDialogButtonBox" name="buttonBox">
+           <widget class="QDialogButtonBox" name="okAndCancelButtons">
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>
@@ -254,22 +258,5 @@
   </customwidget>
  </customwidgets>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::MissionGoalsDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>506</x>
-     <y>113</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
