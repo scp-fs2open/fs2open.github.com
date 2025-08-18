@@ -452,10 +452,18 @@ object *debris_create(object *source_obj, int model_num, int submodel_num, const
 		const auto& sip = Ship_info[Ships[source_obj->instance].ship_info_index];
 		particle::ParticleEffectHandle flame_effect;
 		if (source_subsys != nullptr) {
-			if (hull_flag ? source_subsys->system_info->debris_flame_particles.isValid() : source_subsys->system_info->shrapnel_flame_particles.isValid()) {
-				flame_effect = hull_flag ? source_subsys->system_info->debris_flame_particles : source_subsys->system_info->shrapnel_flame_particles;
+			if (hull_flag) {
+				if (source_subsys->system_info->debris_flame_particles.isValid()) {
+					flame_effect = source_subsys->system_info->debris_flame_particles;
+				} else {
+					flame_effect = sip.default_subsys_debris_flame_particles;
+				}
 			} else {
-				flame_effect = hull_flag ? sip.default_subsys_debris_flame_particles : sip.default_subsys_shrapnel_flame_particles;
+				if (source_subsys->system_info->shrapnel_flame_particles.isValid()) {
+					flame_effect = source_subsys->system_info->shrapnel_flame_particles;
+				} else {
+					flame_effect = sip.default_subsys_shrapnel_flame_particles;
+				}
 			}
 		} else {
 			flame_effect = hull_flag ? sip.debris_flame_particles : sip.shrapnel_flame_particles;
