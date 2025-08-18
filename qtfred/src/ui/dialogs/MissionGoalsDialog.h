@@ -46,7 +46,7 @@ private slots:
 	void on_goalEventTree_rootNodeFormulaChanged(int old, int node);
 	void on_goalEventTree_helpChanged(const QString& help);
 
- private:
+ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void createNewObjective();
 	void changeGoalCategory(int type);
