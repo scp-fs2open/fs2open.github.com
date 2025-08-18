@@ -40,7 +40,7 @@ private slots:
 	void on_cutsceneEventTree_rootNodeFormulaChanged(int old, int node);
 	void on_cutsceneEventTree_helpChanged(const QString& help);
 
- private:
+ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void createNewCutscene();
 	void changeCutsceneCategory(int type);

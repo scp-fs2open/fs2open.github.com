@@ -135,10 +135,9 @@ void MissionCutscenesDialog::populateCutsceneCombos()
 	ui->displayTypeCombo->clear();
 	ui->cutsceneTypeCombo->clear();
 
-	for (int i = 0; i < Num_movie_types; ++i) {
-		const auto& t = CutsceneMenuData[i];
-		ui->displayTypeCombo->addItem(QString::fromStdString(t.label), t.value);
-		ui->cutsceneTypeCombo->addItem(QString::fromStdString(t.label), t.value);
+	for (auto& item : CutsceneMenuData) {
+		ui->displayTypeCombo->addItem(QString::fromStdString(item.label), item.value);
+		ui->cutsceneTypeCombo->addItem(QString::fromStdString(item.label), item.value);
 	}
 
 	ui->displayTypeCombo->setCurrentIndex(_model->m_display_cutscene_types);
@@ -200,9 +199,9 @@ void MissionCutscenesDialog::on_newCutsceneBtn_clicked()
 void MissionCutscenesDialog::on_cutsceneEventTree_selectedRootChanged(int formula)
 {
 	auto& cutscenes = _model->getCutscenes();
-	for (auto i = 0; i < (int)cutscenes.size(); ++i) {
+	for (size_t i = 0; i < cutscenes.size(); ++i) {
 		if (cutscenes[i].formula == formula) {
-			_model->setCurrentCutscene(i);
+			_model->setCurrentCutscene(static_cast<int>(i));
 			break;
 		}
 	}

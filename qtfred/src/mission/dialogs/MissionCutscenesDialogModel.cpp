@@ -36,12 +36,12 @@ void MissionCutscenesDialogModel::reject()
 }
 mission_cutscene& MissionCutscenesDialogModel::getCurrentCutscene()
 {
-	Assertion(cur_cutscene >= 0 && cur_cutscene < (int)m_cutscenes.size(), "Current cutscene index is not valid!");
+	Assertion(SCP_vector_inbounds(m_cutscenes, cur_cutscene), "Current cutscene index is not valid!");
 	return m_cutscenes[cur_cutscene];
 }
 bool MissionCutscenesDialogModel::isCurrentCutsceneValid() const
 {
-	return cur_cutscene >= 0 && cur_cutscene < (int)m_cutscenes.size();
+	return SCP_vector_inbounds(m_cutscenes, cur_cutscene);
 }
 void MissionCutscenesDialogModel::initializeData()
 {
@@ -82,15 +82,13 @@ int MissionCutscenesDialogModel::getCutsceneType() const
 }
 bool MissionCutscenesDialogModel::query_modified()
 {
-	int i;
-
 	if (modified)
 		return true;
 
 	if (The_mission.cutscenes.size() != m_cutscenes.size())
 		return true;
 
-	for (i = 0; i < (int)The_mission.cutscenes.size(); i++) {
+	for (size_t i = 0; i < The_mission.cutscenes.size(); i++) {
 		if (!lcase_equal(The_mission.cutscenes[i].filename, m_cutscenes[i].filename))
 			return true;
 		if (The_mission.cutscenes[i].type != m_cutscenes[i].type)
@@ -105,22 +103,21 @@ void MissionCutscenesDialogModel::setTreeControl(sexp_tree* tree)
 }
 void MissionCutscenesDialogModel::deleteCutscene(int node)
 {
-	int i;
-	for (i=0; i<(int)m_cutscenes.size(); i++)
-	if (m_cutscenes[i].formula == node)
-		break;
+	size_t i;
+	for (i = 0; i < m_cutscenes.size(); i++)
+		if (m_cutscenes[i].formula == node)
+			break;
 
-	Assert(i < (int)m_cutscenes.size());
-	m_cutscenes.erase(m_cutscenes.begin() + i);
-	m_sig.erase(m_sig.begin() + i);
+		Assert(i < m_cutscenes.size());
+		m_cutscenes.erase(m_cutscenes.begin() + i);
+		m_sig.erase(m_sig.begin() + i);
 
 	set_modified();
 	modelChanged();
 }
 void MissionCutscenesDialogModel::changeFormula(int old_form, int new_form)
 {
-	int i;
-
+	size_t i;
 	for (i=0; i<(int)m_cutscenes.size(); i++){
 		if (m_cutscenes[i].formula == old_form){
 			break;

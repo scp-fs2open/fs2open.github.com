@@ -45,7 +45,7 @@ class MissionCutscenesDialogModel: public AbstractDialogModel {
 	// TODO HACK: This does not belong here since it is a UI specific control. Once the model based SEXP tree is implemented
 	// this should be replaced
 	void setTreeControl(sexp_tree* tree);
- public:
+ private:
 	int cur_cutscene = -1;
 	SCP_vector<int> m_sig;
 	SCP_vector<mission_cutscene> m_cutscenes;
