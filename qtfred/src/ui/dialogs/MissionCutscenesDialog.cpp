@@ -140,7 +140,7 @@ void MissionCutscenesDialog::populateCutsceneCombos()
 		ui->cutsceneTypeCombo->addItem(QString::fromStdString(item.label), item.value);
 	}
 
-	ui->displayTypeCombo->setCurrentIndex(_model->m_display_cutscene_types);
+	ui->displayTypeCombo->setCurrentIndex(_model->getSelectedCutsceneType());
 	setCutsceneTypeDescription();
 }
 

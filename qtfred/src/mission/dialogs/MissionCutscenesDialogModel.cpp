@@ -68,6 +68,12 @@ void MissionCutscenesDialogModel::setCurrentCutscene(int index)
 
 	modelChanged();
 }
+
+int MissionCutscenesDialogModel::getSelectedCutsceneType() const
+{
+	return m_display_cutscene_types;
+}
+
 bool MissionCutscenesDialogModel::isCutsceneVisible(const mission_cutscene& cutscene) const
 {
 	return (cutscene.type == m_display_cutscene_types);

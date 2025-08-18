@@ -20,6 +20,7 @@ class MissionCutscenesDialogModel: public AbstractDialogModel {
 	bool isCurrentCutsceneValid() const;
 
 	void setCurrentCutscene(int index);
+	int getSelectedCutsceneType() const;
 
 	void initializeData();
 
