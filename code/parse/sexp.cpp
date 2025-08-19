@@ -27634,8 +27634,7 @@ void maybe_write_to_event_log(int result)
 	char buffer [256]; 
 
 	int mask = generate_event_log_flags_mask(result);
-	int secs = f2i(Missiontime);
-	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name.c_str(), secs, secs * MILLISECONDS_PER_SECOND);
+	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name.c_str(), f2i(Missiontime), static_cast<int>(f2fl(Missiontime) * MILLISECONDS_PER_SECOND));
 	Current_event_log_buffer->push_back(buffer);
 		
 	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
