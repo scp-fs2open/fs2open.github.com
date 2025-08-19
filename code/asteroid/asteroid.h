@@ -16,7 +16,7 @@
 #include "globalincs/pstypes.h"
 #include "object/object_flags.h"
 #include "io/timer.h"
-#include "particle/ParticleEffect.h"
+#include "particle/ParticleSource.h"
 
 class object;
 class polymodel;
