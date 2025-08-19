@@ -110,13 +110,15 @@ void MissionCutscenesDialogModel::setTreeControl(sexp_tree* tree)
 void MissionCutscenesDialogModel::deleteCutscene(int node)
 {
 	size_t i;
-	for (i = 0; i < m_cutscenes.size(); i++)
-		if (m_cutscenes[i].formula == node)
+	for (i = 0; i < m_cutscenes.size(); i++) {
+		if (m_cutscenes[i].formula == node) {
 			break;
+		}
+	}
 
-		Assert(i < m_cutscenes.size());
-		m_cutscenes.erase(m_cutscenes.begin() + i);
-		m_sig.erase(m_sig.begin() + i);
+	Assertion(i < m_cutscenes.size(), "Invalid cutscene index!");
+	m_cutscenes.erase(m_cutscenes.begin() + i);
+	m_sig.erase(m_sig.begin() + i);
 
 	set_modified();
 	modelChanged();
@@ -130,7 +132,7 @@ void MissionCutscenesDialogModel::changeFormula(int old_form, int new_form)
 		}
 	}
 
-	Assert(i < m_cutscenes.size());
+	Assertion(i < m_cutscenes.size(), "Invalid cutscene index!");
 	m_cutscenes[i].formula = new_form;
 
 	set_modified();
