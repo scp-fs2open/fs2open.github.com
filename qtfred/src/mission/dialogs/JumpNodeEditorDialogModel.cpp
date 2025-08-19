@@ -128,16 +128,10 @@ void JumpNodeEditorDialogModel::buildNodeList()
 bool JumpNodeEditorDialogModel::validateData()
 {
 	_bypass_errors = false;
-	
-	auto trim = [](const SCP_string& s) -> SCP_string {
-		auto start = s.find_first_not_of(" \t\r\n");
-		auto end = s.find_last_not_of(" \t\r\n");
-		if (start == SCP_string::npos)
-			return {};
-		return s.substr(start, end - start + 1);
-	};
 
-	const SCP_string name = trim(_name);
+	SCP_trim(_name);
+
+	const SCP_string name = _name;
 	if (name.empty()) {
 		showErrorDialogNoCancel("A jump node name cannot be empty.");
 		return false;
@@ -275,6 +269,8 @@ bool JumpNodeEditorDialogModel::hasValidSelection() const
 
 void JumpNodeEditorDialogModel::setName(const SCP_string& v)
 {
+	SCP_trim(_name);
+	
 	SCP_string current = _name;
 
 	_name = v;
