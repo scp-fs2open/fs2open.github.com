@@ -17,13 +17,13 @@ namespace fred {
 namespace dialogs {
 
 namespace Ui {
-class EventEditorDialog;
+class MissionEventsDialog;
 }
 
 const int MAX_SEARCH_MESSAGE_DEPTH = 5;		// maximum search number of event nodes with message text
 
-class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
-	std::unique_ptr<Ui::EventEditorDialog> ui;
+class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
+	std::unique_ptr<Ui::MissionEventsDialog> ui;
 
 	Editor* _editor = nullptr;
 
@@ -93,8 +93,8 @@ class EventEditorDialog: public QDialog, public SexpTreeEditorInterface {
  protected:
 	void closeEvent(QCloseEvent* event) override;
  public:
-	EventEditorDialog(QWidget* parent, EditorViewport* viewport);
-	~EventEditorDialog() override;
+	MissionEventsDialog(QWidget* parent, EditorViewport* viewport);
+	~MissionEventsDialog() override;
 
 	void rootNodeDeleted(int node);
 	void rootNodeRenamed(int node);

@@ -1,8 +1,5 @@
-//
-//
-
-#include "EventEditorDialog.h"
-#include "ui_EventEditorDialog.h"
+#include "MissionEventsDialog.h"
+#include "ui_MissionEventsDialog.h"
 #include "ui/util/SignalBlockers.h"
 
 #include <sound/audiostr.h>
@@ -43,23 +40,23 @@ int safe_stricmp(const char* one, const char* two) {
 
 }
 
-EventEditorDialog::EventEditorDialog(QWidget* parent, EditorViewport* viewport) :
+MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable }),
-	ui(new Ui::EventEditorDialog()),
+	  ui(new Ui::MissionEventsDialog()),
 	_editor(viewport->editor) {
 	ui->setupUi(this);
 
 	ui->eventTree->initializeEditor(viewport->editor, this);
 
-	connect(this, &QDialog::accepted, this, &EventEditorDialog::applyChanges);
-	connect(this, &QDialog::rejected, this, &EventEditorDialog::rejectChanges);
+	connect(this, &QDialog::accepted, this, &MissionEventsDialog::applyChanges);
+	connect(this, &QDialog::rejected, this, &MissionEventsDialog::rejectChanges);
 
 	initMessageWidgets();
 
 	initEventWidgets();
 }
-void EventEditorDialog::initEventWidgets() {
+void MissionEventsDialog::initEventWidgets() {
 	initEventTree();
 
 	ui->miniHelpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
@@ -68,9 +65,9 @@ void EventEditorDialog::initEventWidgets() {
 	ui->repeatCountBox->setMinimum(-1);
 
 	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { modified = true; });
-	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &EventEditorDialog::rootNodeDeleted);
-	connect(ui->eventTree, &sexp_tree::rootNodeRenamed, this, &EventEditorDialog::rootNodeRenamed);
-	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &EventEditorDialog::rootNodeFormulaChanged);
+	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
+	connect(ui->eventTree, &sexp_tree::rootNodeRenamed, this, &MissionEventsDialog::rootNodeRenamed);
+	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
 	connect(ui->eventTree,
 			&sexp_tree::miniHelpChanged,
 			this,
@@ -148,13 +145,13 @@ void EventEditorDialog::initEventWidgets() {
 	connectLogState(ui->checkLogLastTrigger, MLF_LAST_TRIGGER_ONLY);
 	connectLogState(ui->checkLogPrevious, MLF_STATE_CHANGE);
 
-	connect(ui->btnNewEvent, &QPushButton::clicked, this, &EventEditorDialog::newEventHandler);
-	connect(ui->btnInsertEvent, &QPushButton::clicked, this, &EventEditorDialog::insertEventHandler);
-	connect(ui->btnDeleteEvent, &QPushButton::clicked, this, &EventEditorDialog::deleteEventHandler);
+	connect(ui->btnNewEvent, &QPushButton::clicked, this, &MissionEventsDialog::newEventHandler);
+	connect(ui->btnInsertEvent, &QPushButton::clicked, this, &MissionEventsDialog::insertEventHandler);
+	connect(ui->btnDeleteEvent, &QPushButton::clicked, this, &MissionEventsDialog::deleteEventHandler);
 
 	set_current_event(-1);
 }
-void EventEditorDialog::initMessageWidgets() {
+void MissionEventsDialog::initMessageWidgets() {
 	initMessageList();
 
 	initHeadCombo();
@@ -267,7 +264,7 @@ void EventEditorDialog::initMessageWidgets() {
 	});
 
 	connect(ui->messageList, &QListWidget::currentRowChanged, this, [this](int row) { set_current_message(row); });
-	connect(ui->messageList, &QListWidget::itemDoubleClicked, this, &EventEditorDialog::messageDoubleClicked);
+	connect(ui->messageList, &QListWidget::itemDoubleClicked, this, &MissionEventsDialog::messageDoubleClicked);
 
 	connect(ui->btnNewMsg, &QPushButton::clicked, this, [this](bool) { createNewMessage(); });
 	connect(ui->btnDeleteMsg, &QPushButton::clicked, this, [this](bool) { deleteMessage(); });
@@ -279,14 +276,14 @@ void EventEditorDialog::initMessageWidgets() {
 
 	connect(ui->btnUpdateStuff, &QPushButton::clicked, this, [this](bool) { updateStuff(); });
 }
-EventEditorDialog::~EventEditorDialog() = default;
-void EventEditorDialog::initEventTree() {
+MissionEventsDialog::~MissionEventsDialog() = default;
+void MissionEventsDialog::initEventTree() {
 	load_tree();
 
 	create_tree();
 
 }
-void EventEditorDialog::load_tree() {
+void MissionEventsDialog::load_tree() {
 	ui->eventTree->clear_tree();
 	m_events.clear();
 	m_sig.clear();
@@ -310,7 +307,7 @@ void EventEditorDialog::load_tree() {
 	ui->eventTree->post_load();
 	cur_event = -1;
 }
-void EventEditorDialog::create_tree() {
+void MissionEventsDialog::create_tree() {
 	ui->eventTree->clear();
 	for (auto i = 0; i < (int)m_events.size(); i++) {
 		// set the proper bitmap
@@ -334,7 +331,7 @@ void EventEditorDialog::create_tree() {
 
 	cur_event = -1;
 }
-void EventEditorDialog::rootNodeDeleted(int node) {
+void MissionEventsDialog::rootNodeDeleted(int node) {
 	int i;
 	for (i = 0; i < (int)m_events.size(); i++) {
 		if (m_events[i].formula == node) {
@@ -351,9 +348,9 @@ void EventEditorDialog::rootNodeDeleted(int node) {
 
 	set_current_event(i);
 }
-void EventEditorDialog::rootNodeRenamed(int /*node*/) {
+void MissionEventsDialog::rootNodeRenamed(int /*node*/) {
 }
-void EventEditorDialog::rootNodeFormulaChanged(int old, int node) {
+void MissionEventsDialog::rootNodeFormulaChanged(int old, int node) {
 	int i;
 
 	for (i = 0; i < (int)m_events.size(); i++) {
@@ -365,7 +362,7 @@ void EventEditorDialog::rootNodeFormulaChanged(int old, int node) {
 	Assert(i < (int)m_events.size());
 	m_events[i].formula = node;
 }
-void EventEditorDialog::initMessageList() {
+void MissionEventsDialog::initMessageList() {
 	int num_messages = Num_messages - Num_builtin_messages;
 	m_messages.clear();
 	m_messages.reserve(num_messages);
@@ -388,7 +385,7 @@ void EventEditorDialog::initMessageList() {
 		set_current_message(-1);
 	}
 }
-void EventEditorDialog::rebuildMessageList() {
+void MissionEventsDialog::rebuildMessageList() {
 	// Block signals so that the current item index isn't overwritten by this
 	QSignalBlocker blocker(ui->messageList);
 
@@ -398,7 +395,7 @@ void EventEditorDialog::rebuildMessageList() {
 		ui->messageList->addItem(item);
 	}
 }
-void EventEditorDialog::set_current_event(int evt) {
+void MissionEventsDialog::set_current_event(int evt) {
 	util::SignalBlockers blockers(this);
 
 	cur_event = evt;
@@ -475,7 +472,7 @@ void EventEditorDialog::set_current_event(int evt) {
 	ui->checkLogLastTrigger->setChecked((m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) != 0);
 	ui->checkLogPrevious->setChecked((m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) != 0);
 }
-void EventEditorDialog::initHeadCombo() {
+void MissionEventsDialog::initHeadCombo() {
 	auto box = ui->aniCombo;
 	box->clear();
 	box->addItem("<None>");
@@ -502,7 +499,7 @@ void EventEditorDialog::initHeadCombo() {
 		maybe_add_head(box, "Head-BSH");
 	}
 }
-void EventEditorDialog::initWaveFilenames() {
+void MissionEventsDialog::initWaveFilenames() {
 	auto box = ui->waveCombo;
 	box->clear();
 	box->addItem("<None>");
@@ -515,7 +512,7 @@ void EventEditorDialog::initWaveFilenames() {
 		}
 	}
 }
-void EventEditorDialog::initPersonas() {
+void MissionEventsDialog::initPersonas() {
 	// add the persona names into the combo box
 	auto box = ui->personaCombo;
 	box->clear();
@@ -524,7 +521,7 @@ void EventEditorDialog::initPersonas() {
 		box->addItem(persona.name);
 	}
 }
-void EventEditorDialog::set_current_message(int msg) {
+void MissionEventsDialog::set_current_message(int msg) {
 	ui->messageList->setCurrentItem(ui->messageList->item(msg));
 	m_cur_msg = msg;
 
@@ -571,7 +568,7 @@ void EventEditorDialog::set_current_message(int msg) {
 	ui->personaCombo->setEnabled(enable);
 	ui->teamCombo->setEnabled(enable);
 }
-void EventEditorDialog::applyChanges()
+void MissionEventsDialog::applyChanges()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 
@@ -636,7 +633,7 @@ void EventEditorDialog::applyChanges()
 		_editor->missionChanged();
 	}
 }
-void EventEditorDialog::closeEvent(QCloseEvent* event) {
+void MissionEventsDialog::closeEvent(QCloseEvent* event) {
 	audiostream_close_file(m_wave_id, false);
 	m_wave_id = -1;
 
@@ -659,13 +656,13 @@ void EventEditorDialog::closeEvent(QCloseEvent* event) {
 		}
 	}
 }
-void EventEditorDialog::rejectChanges() {
+void MissionEventsDialog::rejectChanges() {
 	audiostream_close_file(m_wave_id, false);
 	m_wave_id = -1;
 
 	// Nothing else to do here
 }
-bool EventEditorDialog::query_modified() {
+bool MissionEventsDialog::query_modified() {
 	if (modified) {
 		return true;
 	}
@@ -740,10 +737,10 @@ bool EventEditorDialog::query_modified() {
 
 	return false;
 }
-bool EventEditorDialog::hasDefaultMessageParamter() {
+bool MissionEventsDialog::hasDefaultMessageParamter() {
 	return !m_messages.empty();
 }
-SCP_vector<SCP_string> EventEditorDialog::getMessages() {
+SCP_vector<SCP_string> MissionEventsDialog::getMessages() {
 	SCP_vector<SCP_string> messages;
 	messages.reserve(m_messages.size());
 
@@ -753,10 +750,10 @@ SCP_vector<SCP_string> EventEditorDialog::getMessages() {
 
 	return messages;
 }
-int EventEditorDialog::getRootReturnType() const {
+int MissionEventsDialog::getRootReturnType() const {
 	return OPR_NULL;
 }
-void EventEditorDialog::messageDoubleClicked(QListWidgetItem* item) {
+void MissionEventsDialog::messageDoubleClicked(QListWidgetItem* item) {
 	auto message_name = item->text();
 
 	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
@@ -802,7 +799,7 @@ void EventEditorDialog::messageDoubleClicked(QListWidgetItem* item) {
 		ui->eventTree->hilite_item(m_last_message_node);
 	}
 }
-void EventEditorDialog::createNewMessage() {
+void MissionEventsDialog::createNewMessage() {
 	MMessage msg;
 
 	strcpy_s(msg.name, "<new message>");
@@ -820,7 +817,7 @@ void EventEditorDialog::createNewMessage() {
 	ui->messageList->addItem(QString::fromUtf8(msg.name));
 	set_current_message(id);
 }
-void EventEditorDialog::deleteMessage() {
+void MissionEventsDialog::deleteMessage() {
 	// handle this case somewhat gracefully
 	Assertion((m_cur_msg >= -1) && (m_cur_msg < (int)m_messages.size()),
 			  "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n",
@@ -859,7 +856,7 @@ void EventEditorDialog::deleteMessage() {
 	// The list loses focus when the current image is removed so we fix that here
 	ui->messageList->setFocus();
 }
-void EventEditorDialog::browseAni() {
+void MissionEventsDialog::browseAni() {
 	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
@@ -892,7 +889,7 @@ void EventEditorDialog::browseAni() {
 
 	modified = true;
 }
-void EventEditorDialog::browseWave() {
+void MissionEventsDialog::browseWave() {
 	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
@@ -932,7 +929,7 @@ void EventEditorDialog::browseWave() {
 
 	modified = true;
 }
-void EventEditorDialog::updatePersona() {
+void MissionEventsDialog::updatePersona() {
 	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
@@ -982,7 +979,7 @@ void EventEditorDialog::updatePersona() {
 
 	modified = true;
 }
-void EventEditorDialog::playWave() {
+void MissionEventsDialog::playWave() {
 	if (m_wave_id >= 0) {
 		audiostream_close_file(m_wave_id, false);
 		m_wave_id = -1;
@@ -996,11 +993,11 @@ void EventEditorDialog::playWave() {
 		audiostream_play(m_wave_id, 1.0f, 0);
 	}
 }
-void EventEditorDialog::updateStuff() {
+void MissionEventsDialog::updateStuff() {
 	updatePersona();
 	set_current_message(m_cur_msg);
 }
-void EventEditorDialog::updateEventBitmap() {
+void MissionEventsDialog::updateEventBitmap() {
 	auto chained = m_events[cur_event].chain_delay != -1;
 	auto hasObjectiveText = !m_events[cur_event].objective_text.empty();
 
@@ -1027,7 +1024,7 @@ void EventEditorDialog::updateEventBitmap() {
 		}
 	}
 }
-void EventEditorDialog::connectLogState(QCheckBox* box, uint32_t flag) {
+void MissionEventsDialog::connectLogState(QCheckBox* box, uint32_t flag) {
 	connect(box, &QCheckBox::stateChanged, this, [this, flag](int state) {
 		if (cur_event < 0) {
 			return;
@@ -1041,12 +1038,12 @@ void EventEditorDialog::connectLogState(QCheckBox* box, uint32_t flag) {
 		}
 	});
 }
-void EventEditorDialog::newEventHandler() {
+void MissionEventsDialog::newEventHandler() {
 	m_events.emplace_back();
 	m_sig.push_back(-1);
 	reset_event((int)m_events.size() - 1, nullptr);
 }
-void EventEditorDialog::insertEventHandler() {
+void MissionEventsDialog::insertEventHandler() {
 	if (cur_event < 0 || m_events.empty()) {
 		//There are no events yet, so just create one
 		newEventHandler();
@@ -1067,7 +1064,7 @@ void EventEditorDialog::insertEventHandler() {
 		}
 	}
 }
-void EventEditorDialog::deleteEventHandler() {
+void MissionEventsDialog::deleteEventHandler() {
 	if (cur_event < 0) {
 		return;
 	}
@@ -1082,7 +1079,7 @@ void EventEditorDialog::deleteEventHandler() {
 	ui->eventTree->deleteCurrentItem();
 }
 
-QTreeWidgetItem* EventEditorDialog::get_event_handle(int num)
+QTreeWidgetItem* MissionEventsDialog::get_event_handle(int num)
 {
 	for (auto i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto item = ui->eventTree->topLevelItem(i);
@@ -1093,7 +1090,7 @@ QTreeWidgetItem* EventEditorDialog::get_event_handle(int num)
 	}
 	return nullptr;
 }
-void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
+void MissionEventsDialog::reset_event(int num, QTreeWidgetItem* after) {
 	// this is always called for a freshly constructed event, so all we have to do is set the name
 	m_events[num].name = "Event name";
 	auto h = ui->eventTree->insert(m_events[num].name.c_str(), NodeImage::ROOT, nullptr, after);
@@ -1110,7 +1107,7 @@ void EventEditorDialog::reset_event(int num, QTreeWidgetItem* after) {
 	// This will automatically call set_cur_event
 	h->setSelected(true);
 }
-void EventEditorDialog::keyPressEvent(QKeyEvent* event) {
+void MissionEventsDialog::keyPressEvent(QKeyEvent* event) {
 	if (event->key() == Qt::Key_Escape) {
 		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
 		// user to save unsaved changes
