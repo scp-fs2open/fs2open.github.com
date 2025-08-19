@@ -1727,7 +1727,7 @@ void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, f
 		if ( !asp->final_death_time.isValid() ) {
 			int play_loud_collision = 0;
 			
-			float explosion_life;
+			float explosion_life = 1.f;
 			int breakup_timestamp;
 			
 			Assertion(!asip->end_particles.isValid() || asip->breakup_delay.has_value(), "Asteroid %s has end particles but no breakup delay. Parsing should not have allowed this!", asip->name);
