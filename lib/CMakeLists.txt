@@ -39,7 +39,7 @@ endif()
 
 include(libRocket.cmake)
 
-add_subdirectory(libpcp)
+add_subdirectory(libpcpnatpmp)
 
 include(antlr4.cmake)
 

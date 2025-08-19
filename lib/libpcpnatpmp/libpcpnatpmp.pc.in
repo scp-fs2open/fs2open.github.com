@@ -1,0 +1,16 @@
+#libpcpnatpmp pkg-config source file
+
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: libpcpnatpmp
+Description: library implementing a Port Control Protocol (PCP) and NAT-PMP client
+Version: @VERSION@
+Requires:
+Conflicts:
+Libs: -L${libdir} -lpcpnatpmp
+Libs.private: @LIBS@
+Cflags: -I${includedir}
+

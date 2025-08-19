@@ -15,7 +15,7 @@
 #include <netdb.h>
 #endif
 
-#include "pcp.h"
+#include "pcpnatpmp.h"
 
 #include "cmdline/cmdline.h"
 #include "io/timer.h"

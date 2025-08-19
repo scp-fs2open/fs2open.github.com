@@ -59,7 +59,7 @@ endif()
 
 target_link_libraries(code PUBLIC libRocket)
 
-target_link_libraries(code PUBLIC pcp)
+target_link_libraries(code PUBLIC pcpnatpmp)
 
 target_link_libraries(code PUBLIC parsers)
 
