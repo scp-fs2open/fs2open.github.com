@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>fso::fred::dialogs::EventEditorDialog</class>
- <widget class="QDialog" name="fso::fred::dialogs::EventEditorDialog">
+ <class>fso::fred::dialogs::MissionEventsDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::MissionEventsDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -520,7 +520,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>rejected()</signal>
-   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <receiver>fso::fred::dialogs::MissionEventsDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -536,7 +536,7 @@
   <connection>
    <sender>buttonBox</sender>
    <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::EventEditorDialog</receiver>
+   <receiver>fso::fred::dialogs::MissionEventsDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">

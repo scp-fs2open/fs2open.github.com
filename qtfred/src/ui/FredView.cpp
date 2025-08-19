@@ -14,6 +14,7 @@
 #include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
 #include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
+#include <ui/dialogs/MissionEventsDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
@@ -711,7 +712,7 @@ void FredView::keyReleaseEvent(QKeyEvent* event) {
 	_inKeyReleaseHandler = false;
 }
 void FredView::on_actionMission_Events_triggered(bool) {
-	auto eventEditor = new dialogs::EventEditorDialog(this, _viewport);
+	auto eventEditor = new dialogs::MissionEventsDialog(this, _viewport);
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }

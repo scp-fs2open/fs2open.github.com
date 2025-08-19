@@ -58,6 +58,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/LoadoutEditorDialogModel.h
 	src/mission/dialogs/MissionCutscenesDialogModel.cpp
 	src/mission/dialogs/MissionCutscenesDialogModel.h
+	src/mission/dialogs/MissionEventsDialogModel.cpp
+	src/mission/dialogs/MissionEventsDialogModel.h
 	src/mission/dialogs/MissionGoalsDialogModel.cpp
 	src/mission/dialogs/MissionGoalsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
@@ -142,8 +144,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
-    src/ui/dialogs/EventEditorDialog.cpp
-    src/ui/dialogs/EventEditorDialog.h
+	src/ui/dialogs/CustomWingNamesDialog.cpp
+	src/ui/dialogs/CustomWingNamesDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
@@ -156,6 +158,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/LoadoutDialog.h
 	src/ui/dialogs/MissionCutscenesDialog.cpp
 	src/ui/dialogs/MissionCutscenesDialog.h
+	src/ui/dialogs/MissionEventsDialog.cpp
+    src/ui/dialogs/MissionEventsDialog.h
 	src/ui/dialogs/MissionGoalsDialog.cpp
 	src/ui/dialogs/MissionGoalsDialog.h
 	src/ui/dialogs/MissionSpecDialog.cpp
@@ -267,7 +271,6 @@ add_file_folder("UI"
 	ui/CustomDataDialog.ui
 	ui/CustomStringsDialog.ui
 	ui/CustomWingNamesDialog.ui
-    ui/EventEditorDialog.ui
 	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui
@@ -275,6 +278,7 @@ add_file_folder("UI"
 	ui/JumpNodeEditorDialog.ui
 	ui/LoadoutDialog.ui
 	ui/MissionCutscenesDialog.ui
+	ui/MissionEventsDialog.ui
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/MusicPlayerDialog.ui
