@@ -2,389 +2,214 @@
 #include "ui_MissionEventsDialog.h"
 #include "ui/util/SignalBlockers.h"
 
+#include "mission/util.h"
+
 #include <sound/audiostr.h>
 #include <localization/localize.h>
 
+#include <QInputDialog>
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QDebug>
 #include <QKeyEvent>
 #include <mission/missionmessage.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
-
-namespace {
-void maybe_add_head(QComboBox* box, const char* name) {
-	auto id = box->findText(QString::fromUtf8(name));
-	if (id < 0) {
-		box->addItem(name);
-	}
-}
-int safe_stricmp(const char* one, const char* two) {
-	if (!one && !two) {
-		return 0;
-	}
-
-	if (!one) {
-		return -1;
-	}
-
-	if (!two) {
-		return 1;
-	}
-
-	return stricmp(one, two);
-}
-
-}
+namespace fso::fred::dialogs {
 
 MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable }),
-	  ui(new Ui::MissionEventsDialog()),
-	_editor(viewport->editor) {
+	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
+{
 	ui->setupUi(this);
+
+	// Build the Qt adapter now that eventTree exists
+	struct QtTreeOps final : IEventTreeOps {
+		explicit QtTreeOps(sexp_tree& t) : tree(t) {}
+		sexp_tree& tree;
+
+		int load_sub_tree(int formula, bool allow_empty = false, const char* default_body = "do-nothing") override
+		{
+			return tree.load_sub_tree(formula, allow_empty, default_body);
+		}
+
+		void post_load() override
+		{
+			tree.post_load();
+		}
+
+		void add_sub_tree(const SCP_string& name, NodeImage image, int formula) override
+		{
+			auto h = tree.insert(name.c_str(), image);
+			h->setData(0, sexp_tree::FormulaDataRole, formula);
+			tree.add_sub_tree(formula, h);
+		}
+
+		QTreeWidgetItem* findRootByFormula(int formula)
+		{
+			const int n = tree.topLevelItemCount();
+			for (int i = 0; i < n; ++i) {
+				auto* it = tree.topLevelItem(i);
+				if (it && it->data(0, sexp_tree::FormulaDataRole).toInt() == formula)
+					return it;
+			}
+			return nullptr;
+		}
+
+		int build_default_root(const SCP_string& name, int after_root) override
+		{
+			QTreeWidgetItem* afterItem = (after_root >= 0) ? findRootByFormula(after_root) : nullptr;
+
+			auto* root = tree.insert(name.c_str(), NodeImage::ROOT, /*parent*/ nullptr, afterItem);
+
+			// Build default body: when -> true -> do-nothing
+			tree.setCurrentItemIndex(-1);
+			int whenIdx = tree.add_operator("when", root);
+			root->setData(0, sexp_tree::FormulaDataRole, whenIdx);
+			tree.add_operator("true");
+			tree.setCurrentItemIndex(whenIdx);
+			tree.add_operator("do-nothing");
+
+			tree.clearSelection();
+			root->setSelected(true);
+
+			return root->data(0, sexp_tree::FormulaDataRole).toInt();
+		}
+
+		int save_tree(int root_formula) override
+		{
+			return tree.save_tree(root_formula);
+		}
+
+		void ensure_top_level_index(int root_formula, int desired_index) override
+		{
+			if (auto* item = findRootByFormula(root_formula)) {
+				int cur = tree.indexOfTopLevelItem(item);
+				if (cur != desired_index) {
+					tree.takeTopLevelItem(cur);
+					tree.insertTopLevelItem(desired_index, item);
+				}
+			}
+		}
+
+		void select_root(int root_formula) override
+		{
+			if (auto* item = findRootByFormula(root_formula))
+				tree.setCurrentItem(item);
+		}
+
+		void clear() override
+		{
+			tree.clear();
+		}
+
+		void delete_event() override
+		{
+			// This is such an ugly hack but I don't want to rewrite sexp_tree just for this..
+			auto item = tree.currentItem();
+			while (item->parent() != nullptr) {
+				item = item->parent();
+			}
+			tree.setCurrentItem(item);
+
+			tree.deleteCurrentItem();
+		}
+	};
+
+	_treeOps = std::make_unique<QtTreeOps>(QtTreeOps{*ui->eventTree});
 
 	ui->eventTree->initializeEditor(viewport->editor, this);
 
-	connect(this, &QDialog::accepted, this, &MissionEventsDialog::applyChanges);
-	connect(this, &QDialog::rejected, this, &MissionEventsDialog::rejectChanges);
+	// Now construct the model with reference to tree ops
+	_model = std::make_unique<MissionEventsDialogModel>(this, _viewport, *_treeOps);
 
 	initMessageWidgets();
 
 	initEventWidgets();
 }
+
+MissionEventsDialog::~MissionEventsDialog() = default;
+
 void MissionEventsDialog::initEventWidgets() {
-	initEventTree();
+	initEventTeams();
 
 	ui->miniHelpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
 	ui->helpBox->setFont(QFontDatabase::systemFont(QFontDatabase::FixedFont));
-	ui->triggerCountBox->setMinimum(-1);
-	ui->repeatCountBox->setMinimum(-1);
 
-	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { modified = true; });
+	// connect the sexp tree stuff
+	connect(ui->eventTree, &sexp_tree::modified, this, [this]() { _model->setModified(); });
 	connect(ui->eventTree, &sexp_tree::rootNodeDeleted, this, &MissionEventsDialog::rootNodeDeleted);
 	connect(ui->eventTree, &sexp_tree::rootNodeRenamed, this, &MissionEventsDialog::rootNodeRenamed);
 	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
-	connect(ui->eventTree,
-			&sexp_tree::miniHelpChanged,
-			this,
-			[this](const QString& help) { ui->miniHelpBox->setText(help); });
-	connect(ui->eventTree,
-			&sexp_tree::helpChanged,
-			this,
-			[this](const QString& help) { ui->helpBox->setPlainText(help); });
-	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) {
-		for (auto i = 0; i < (int)m_events.size(); i++) {
-			if (m_events[i].formula == formula) {
-				set_current_event(i);
-				return;
-			}
-		}
-		set_current_event(-1);
-	});
-	connect(ui->repeatCountBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].repeat_count = value;
-	});
-	connect(ui->triggerCountBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].trigger_count = value;
-	});
-	connect(ui->intervalTimeBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].interval = value;
-	});
-	connect(ui->scoreBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].score = value;
-	});
-	connect(ui->chainedCheckBox, &QCheckBox::stateChanged, this, [this](int value) {
-		if (cur_event < 0) {
-			return;
-		}
+	connect(ui->eventTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) { ui->miniHelpBox->setText(help); });
+	connect(ui->eventTree, &sexp_tree::helpChanged, this, [this](const QString& help) { ui->helpBox->setPlainText(help); });
+	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) {_model->setCurrentlySelectedEventByFormula(formula);});
 
-		if (value != Qt::Checked) {
-			m_events[cur_event].chain_delay = -1;
-		} else {
-			m_events[cur_event].chain_delay = ui->chainDelayBox->value();
-		}
+	_model->setCurrentlySelectedEvent(-1);
 
-		updateEventBitmap();
-	});
-	connect(ui->editDirectiveText, &QLineEdit::textChanged, this, [this](const QString& value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].objective_text = value.toUtf8().constData();
-		lcl_fred_replace_stuff(m_events[cur_event].objective_text);
-
-		updateEventBitmap();
-	});
-	connect(ui->editDirectiveKeypressText, &QLineEdit::textChanged, this, [this](const QString& value) {
-		if (cur_event < 0) {
-			return;
-		}
-		m_events[cur_event].objective_key_text = value.toUtf8().constData();
-		lcl_fred_replace_stuff(m_events[cur_event].objective_key_text);
-	});
-	connectLogState(ui->checkLogTrue, MLF_SEXP_TRUE);
-	connectLogState(ui->checkLogFalse, MLF_SEXP_FALSE);
-	connectLogState(ui->checkLogAlwaysFalse, MLF_SEXP_KNOWN_FALSE);
-	connectLogState(ui->checkLogFirstRepeat, MLF_FIRST_REPEAT_ONLY);
-	connectLogState(ui->checkLogLastRepeat, MLF_LAST_REPEAT_ONLY);
-	connectLogState(ui->checkLogFirstTrigger, MLF_FIRST_TRIGGER_ONLY);
-	connectLogState(ui->checkLogLastTrigger, MLF_LAST_TRIGGER_ONLY);
-	connectLogState(ui->checkLogPrevious, MLF_STATE_CHANGE);
-
-	connect(ui->btnNewEvent, &QPushButton::clicked, this, &MissionEventsDialog::newEventHandler);
-	connect(ui->btnInsertEvent, &QPushButton::clicked, this, &MissionEventsDialog::insertEventHandler);
-	connect(ui->btnDeleteEvent, &QPushButton::clicked, this, &MissionEventsDialog::deleteEventHandler);
-
-	set_current_event(-1);
+	updateEventUi();
 }
+
+void MissionEventsDialog::accept()
+{
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
+}
+
+void MissionEventsDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
+void MissionEventsDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+
 void MissionEventsDialog::initMessageWidgets() {
-	initMessageList();
-
 	initHeadCombo();
-
 	initWaveFilenames();
-
 	initPersonas();
+	initMessageTeams();
+
+	initMessageList();
 
 	ui->messageName->setMaxLength(NAME_LENGTH - 1);
 
-	connect(ui->aniCombo,
-			QOverload<const QString&>::of(&QComboBox::currentTextChanged),
-			this,
-			[this](const QString& text) {
-				if (m_cur_msg < 0) {
-					return;
-				}
-
-				if (m_messages[m_cur_msg].avi_info.name) {
-					free(m_messages[m_cur_msg].avi_info.name);
-					m_messages[m_cur_msg].avi_info.name = nullptr;
-				}
-
-				auto ptr = text.toUtf8();
-				if (ptr.isEmpty() || !VALID_FNAME(ptr)) {
-					m_messages[m_cur_msg].avi_info.name = NULL;
-				} else {
-					m_messages[m_cur_msg].avi_info.name = strdup(ptr);
-				}
-			});
-	connect(ui->waveCombo,
-			QOverload<const QString&>::of(&QComboBox::currentTextChanged),
-			this,
-			[this](const QString& text) {
-				if (m_cur_msg < 0) {
-					return;
-				}
-
-				if (m_messages[m_cur_msg].wave_info.name) {
-					free(m_messages[m_cur_msg].wave_info.name);
-					m_messages[m_cur_msg].wave_info.name = nullptr;
-				}
-
-				auto ptr = text.toUtf8();
-				if (ptr.isEmpty() || !VALID_FNAME(ptr)) {
-					m_messages[m_cur_msg].wave_info.name = NULL;
-				} else {
-					m_messages[m_cur_msg].wave_info.name = strdup(ptr);
-				}
-				updatePersona();
-				set_current_message(m_cur_msg);
-			});
-	connect(ui->messageName, QOverload<const QString&>::of(&QLineEdit::textChanged), this, [this](const QString& text) {
-		if (m_cur_msg < 0) {
-			return;
-		}
-
-		auto conflict = false;
-		auto ptr = text.toUtf8();
-		for (auto i = 0; i < Num_builtin_messages; i++) {
-			if (!stricmp(ptr, Messages[i].name)) {
-				conflict = true;
-				break;
-			}
-		}
-
-		for (auto i = 0; i < (int)m_messages.size(); i++) {
-			if ((i != m_cur_msg) && (!stricmp(ptr, m_messages[i].name))) {
-				conflict = true;
-				break;
-			}
-		}
-
-		if (!conflict) {  // update name if no conflicts, otherwise keep old name
-			strncpy(m_messages[m_cur_msg].name, text.toUtf8().constData(), NAME_LENGTH - 1);
-
-			auto item = ui->messageList->item(m_cur_msg);
-			item->setText(text);
-		}
-	});
-	connect(ui->messageContent, &QPlainTextEdit::textChanged, this, [this]() {
-		if (m_cur_msg < 0) {
-			return;
-		}
-
-		auto msg = ui->messageContent->toPlainText();
-
-		strncpy(m_messages[m_cur_msg].message, msg.toUtf8().constData(), MESSAGE_LENGTH - 1);
-		lcl_fred_replace_stuff(m_messages[m_cur_msg].message, MESSAGE_LENGTH - 1);
-	});
-	connect(ui->messageTeamCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int id) {
-		if (m_cur_msg < 0) {
-			return;
-		}
-
-		if (id >= MAX_TVT_TEAMS) {
-			m_messages[m_cur_msg].multi_team = -1;
-		} else {
-			m_messages[m_cur_msg].multi_team = id;
-		}
-	});
-	connect(ui->personaCombo, QOverload<int>::of(&QComboBox::activated), this, [this](int id) {
-		if (m_cur_msg < 0) {
-			return;
-		}
-
-		// update the persona to the message.  We subtract 1 for the "None" at the beginning of the combo
-		// box list.
-		m_messages[m_cur_msg].persona_index = id - 1;
-	});
-
-	connect(ui->messageList, &QListWidget::currentRowChanged, this, [this](int row) { set_current_message(row); });
+	connect(ui->messageList, &QListWidget::currentRowChanged, this, [this](int row) { _model->setCurrentlySelectedMessage(row); });
 	connect(ui->messageList, &QListWidget::itemDoubleClicked, this, &MissionEventsDialog::messageDoubleClicked);
 
-	connect(ui->btnNewMsg, &QPushButton::clicked, this, [this](bool) { createNewMessage(); });
-	connect(ui->btnDeleteMsg, &QPushButton::clicked, this, [this](bool) { deleteMessage(); });
-
-	connect(ui->btnAniBrowse, &QPushButton::clicked, this, [this](bool) { browseAni(); });
-	connect(ui->btnBrowseWave, &QPushButton::clicked, this, [this](bool) { browseWave(); });
-
-	connect(ui->btnWavePlay, &QPushButton::clicked, this, [this](bool){ playWave(); });
-
-	connect(ui->btnUpdateStuff, &QPushButton::clicked, this, [this](bool) { updateStuff(); });
+	updateMessageUi();
 }
-MissionEventsDialog::~MissionEventsDialog() = default;
-void MissionEventsDialog::initEventTree() {
-	load_tree();
 
-	create_tree();
-
-}
-void MissionEventsDialog::load_tree() {
-	ui->eventTree->clear_tree();
-	m_events.clear();
-	m_sig.clear();
-	for (auto i = 0; i < (int)Mission_events.size(); i++) {
-		m_events.push_back(Mission_events[i]);
-		m_sig.push_back(i);
-
-		if (m_events[i].name.empty()) {
-			m_events[i].name = "<Unnamed>";
-		}
-
-		m_events[i].formula = ui->eventTree->load_sub_tree(Mission_events[i].formula, false, "do-nothing");
-
-		// we must check for the case of the repeat count being 0.  This would happen if the repeat
-		// count is not specified in a mission
-		if (m_events[i].repeat_count <= 0) {
-			m_events[i].repeat_count = 1;
-		}
-	}
-
-	ui->eventTree->post_load();
-	cur_event = -1;
-}
-void MissionEventsDialog::create_tree() {
-	ui->eventTree->clear();
-	for (auto i = 0; i < (int)m_events.size(); i++) {
-		// set the proper bitmap
-		NodeImage image;
-		if (m_events[i].chain_delay >= 0) {
-			image = NodeImage::CHAIN;
-			if (!m_events[i].objective_text.empty()) {
-				image = NodeImage::CHAIN_DIRECTIVE;
-			}
-		} else {
-			image = NodeImage::ROOT;
-			if (!m_events[i].objective_text.empty()) {
-				image = NodeImage::ROOT_DIRECTIVE;
-			}
-		}
-
-		auto h = ui->eventTree->insert(m_events[i].name.c_str(), image);
-		h->setData(0, sexp_tree::FormulaDataRole, m_events[i].formula);
-		ui->eventTree->add_sub_tree(m_events[i].formula, h);
-	}
-
-	cur_event = -1;
-}
 void MissionEventsDialog::rootNodeDeleted(int node) {
-	int i;
-	for (i = 0; i < (int)m_events.size(); i++) {
-		if (m_events[i].formula == node) {
-			break;
-		}
-	}
-
-	Assert(i < (int)m_events.size());
-	m_events.erase(m_events.begin() + i);
-	m_sig.erase(m_sig.begin() + i);
-
-	if (i >= (int)m_events.size())	// if we have deleted the last event,
-		i--;						// i will be set to -1 which is what we want
-
-	set_current_event(i);
+	_model->deleteRootNode(node);
 }
-void MissionEventsDialog::rootNodeRenamed(int /*node*/) {
+
+void MissionEventsDialog::rootNodeRenamed(int node) {
+	_model->renameRootNode(node);
 }
+
 void MissionEventsDialog::rootNodeFormulaChanged(int old, int node) {
-	int i;
-
-	for (i = 0; i < (int)m_events.size(); i++) {
-		if (m_events[i].formula == old) {
-			break;
-		}
-	}
-
-	Assert(i < (int)m_events.size());
-	m_events[i].formula = node;
+	_model->changeRootNodeFormula(old, node);
 }
 void MissionEventsDialog::initMessageList() {
-	int num_messages = Num_messages - Num_builtin_messages;
-	m_messages.clear();
-	m_messages.reserve(num_messages);
-	for (auto i = 0; i < num_messages; i++) {
-		auto msg = Messages[i + Num_builtin_messages];
-		m_messages.push_back(msg);
-		if (m_messages[i].avi_info.name) {
-			m_messages[i].avi_info.name = strdup(m_messages[i].avi_info.name);
-		}
-		if (m_messages[i].wave_info.name) {
-			m_messages[i].wave_info.name = strdup(m_messages[i].wave_info.name);
-		}
-	}
-
 	rebuildMessageList();
 
-	if (Num_messages > Num_builtin_messages) {
-		set_current_message(0);
+	if (_model->getMessageList().size() > 0) {
+		_model->setCurrentlySelectedMessage(0);
 	} else {
-		set_current_message(-1);
+		_model->setCurrentlySelectedMessage(-1);
 	}
 }
 void MissionEventsDialog::rebuildMessageList() {
@@ -392,22 +217,21 @@ void MissionEventsDialog::rebuildMessageList() {
 	QSignalBlocker blocker(ui->messageList);
 
 	ui->messageList->clear();
-	for (auto& msg : m_messages) {
+	for (auto& msg : _model->getMessageList()) {
 		auto item = new QListWidgetItem(msg.name, ui->messageList);
 		ui->messageList->addItem(item);
 	}
 }
-void MissionEventsDialog::set_current_event(int evt) {
+
+void MissionEventsDialog::updateEventUi() {
 	util::SignalBlockers blockers(this);
 
-	cur_event = evt;
-
-	if (cur_event < 0) {
+	if (!_model->eventIsValid()) {
 		ui->repeatCountBox->setValue(1);
 		ui->triggerCountBox->setValue(1);
 		ui->intervalTimeBox->setValue(1);
 		ui->chainDelayBox->setValue(0);
-		ui->teamCombo->setCurrentIndex(MAX_TVT_TEAMS);
+		ui->teamCombo->setCurrentIndex(0); // was MAX_TVT_TEAMS for none?
 		ui->editDirectiveText->setText("");
 		ui->editDirectiveKeypressText->setText("");
 
@@ -421,19 +245,15 @@ void MissionEventsDialog::set_current_event(int evt) {
 		return;
 	}
 
-	if (m_events[cur_event].team < 0) {
-		ui->teamCombo->setCurrentIndex(MAX_TVT_TEAMS);
-	} else {
-		ui->teamCombo->setCurrentIndex(m_events[cur_event].team);
-	}
+	ui->teamCombo->setCurrentIndex(_model->getEventTeam());
 
-	ui->repeatCountBox->setValue(m_events[cur_event].repeat_count);
-	ui->triggerCountBox->setValue(m_events[cur_event].trigger_count);
-	ui->intervalTimeBox->setValue(m_events[cur_event].interval);
-	ui->scoreBox->setValue(m_events[cur_event].score);
-	if (m_events[cur_event].chain_delay >= 0) {
+	ui->repeatCountBox->setValue(_model->getRepeatCount());
+	ui->triggerCountBox->setValue(_model->getTriggerCount());
+	ui->intervalTimeBox->setValue(_model->getIntervalTime());
+	ui->scoreBox->setValue(_model->getEventScore());
+	if (_model->getChained()) {
 		ui->chainedCheckBox->setChecked(true);
-		ui->chainDelayBox->setValue(m_events[cur_event].chain_delay);
+		ui->chainDelayBox->setValue(_model->getChainDelay());
 		ui->chainDelayBox->setEnabled(true);
 	} else {
 		ui->chainedCheckBox->setChecked(false);
@@ -441,17 +261,17 @@ void MissionEventsDialog::set_current_event(int evt) {
 		ui->chainDelayBox->setEnabled(false);
 	}
 
-	ui->editDirectiveText->setText(QString::fromUtf8(m_events[cur_event].objective_text.c_str()));
-	ui->editDirectiveKeypressText->setText(QString::fromUtf8(m_events[cur_event].objective_key_text.c_str()));
+	ui->editDirectiveText->setText(QString::fromStdString(_model->getEventDirectiveText()));
+	ui->editDirectiveKeypressText->setText(QString::fromStdString(_model->getEventDirectiveKeyText()));
 
 	ui->repeatCountBox->setEnabled(true);
 	ui->triggerCountBox->setEnabled(true);
 
-	if ((m_events[cur_event].repeat_count > 1) || (m_events[cur_event].repeat_count < 0) ||
-		(m_events[cur_event].trigger_count > 1) || (m_events[cur_event].trigger_count < 0)) {
+	if ((_model->getRepeatCount() > 1) || (_model->getRepeatCount() < 0) ||
+		(_model->getTriggerCount() > 1) || (_model->getTriggerCount() < 0)) {
 		ui->intervalTimeBox->setEnabled(true);
 	} else {
-		ui->intervalTimeBox->setValue(1);
+		ui->intervalTimeBox->setValue(_model->getIntervalTime());
 		ui->intervalTimeBox->setEnabled(false);
 	}
 
@@ -465,74 +285,70 @@ void MissionEventsDialog::set_current_event(int evt) {
 	}
 
 	// handle event log flags
-	ui->checkLogTrue->setChecked((m_events[cur_event].mission_log_flags & MLF_SEXP_TRUE) != 0);
-	ui->checkLogFalse->setChecked((m_events[cur_event].mission_log_flags & MLF_SEXP_FALSE) != 0);
-	ui->checkLogAlwaysFalse->setChecked((m_events[cur_event].mission_log_flags & MLF_SEXP_KNOWN_FALSE) != 0);
-	ui->checkLogFirstRepeat->setChecked((m_events[cur_event].mission_log_flags & MLF_FIRST_REPEAT_ONLY) != 0);
-	ui->checkLogLastRepeat->setChecked((m_events[cur_event].mission_log_flags & MLF_LAST_REPEAT_ONLY) != 0);
-	ui->checkLogFirstTrigger->setChecked((m_events[cur_event].mission_log_flags & MLF_FIRST_TRIGGER_ONLY) != 0);
-	ui->checkLogLastTrigger->setChecked((m_events[cur_event].mission_log_flags & MLF_LAST_TRIGGER_ONLY) != 0);
-	ui->checkLogPrevious->setChecked((m_events[cur_event].mission_log_flags & MLF_STATE_CHANGE) != 0);
+	ui->checkLogTrue->setChecked(_model->getLogTrue());
+	ui->checkLogFalse->setChecked(_model->getLogFalse());
+	ui->checkLogPrevious->setChecked(_model->getLogLogPrevious());
+	ui->checkLogAlwaysFalse->setChecked(_model->getLogAlwaysFalse());
+	ui->checkLogFirstRepeat->setChecked(_model->getLogFirstRepeat());
+	ui->checkLogLastRepeat->setChecked(_model->getLogLastRepeat());
+	ui->checkLogFirstTrigger->setChecked(_model->getLogFirstTrigger());
+	ui->checkLogLastTrigger->setChecked(_model->getLogLastTrigger());
 }
 void MissionEventsDialog::initHeadCombo() {
-	auto box = ui->aniCombo;
-	box->clear();
-	box->addItem("<None>");
-	for (auto i = 0; i < Num_messages; i++) {
-		if (Messages[i].avi_info.name) {
-			maybe_add_head(box, Messages[i].avi_info.name);
-		}
-	}
+	auto list = _model->getHeadAniList();
 
-	if (!Disable_hc_message_ani) {
-		maybe_add_head(box, "Head-TP2");
-		maybe_add_head(box, "Head-VC2");
-		maybe_add_head(box, "Head-TP4");
-		maybe_add_head(box, "Head-TP5");
-		maybe_add_head(box, "Head-TP6");
-		maybe_add_head(box, "Head-TP7");
-		maybe_add_head(box, "Head-TP8");
-		maybe_add_head(box, "Head-VP2");
-		maybe_add_head(box, "Head-VP2");
-		maybe_add_head(box, "Head-CM2");
-		maybe_add_head(box, "Head-CM3");
-		maybe_add_head(box, "Head-CM4");
-		maybe_add_head(box, "Head-CM5");
-		maybe_add_head(box, "Head-BSH");
+	ui->aniCombo->clear();
+
+	for (auto& head : list) {
+		ui->aniCombo->addItem(QString().fromStdString(head));
 	}
 }
 void MissionEventsDialog::initWaveFilenames() {
-	auto box = ui->waveCombo;
-	box->clear();
-	box->addItem("<None>");
-	for (auto i = 0; i < Num_messages; i++) {
-		if (Messages[i].wave_info.name) {
-			auto id = box->findText(Messages[i].wave_info.name);
-			if (id < 0) {
-				box->addItem(Messages[i].wave_info.name);
-			}
-		}
+	auto list = _model->getWaveList();
+
+	ui->waveCombo->clear();
+
+	for (auto& wave : list) {
+		ui->waveCombo->addItem(QString().fromStdString(wave));
 	}
 }
 void MissionEventsDialog::initPersonas() {
-	// add the persona names into the combo box
-	auto box = ui->personaCombo;
-	box->clear();
-	box->addItem("<None>");
-	for (const auto &persona: Personas) {
-		box->addItem(persona.name);
+	auto list = _model->getPersonaList();
+
+	ui->personaCombo->clear();
+
+	for (const auto& persona : list) {
+		ui->personaCombo->addItem(QString::fromStdString(persona.first), persona.second);
 	}
 }
-void MissionEventsDialog::set_current_message(int msg) {
-	ui->messageList->setCurrentItem(ui->messageList->item(msg));
-	m_cur_msg = msg;
 
-	auto enable = true;
+void MissionEventsDialog::initMessageTeams() {
+	auto list = _model->getTeamList();
 
-	audiostream_close_file(m_wave_id, false);
-	m_wave_id = -1;
+	ui->messageTeamCombo->clear();
 
-	if (m_cur_msg < 0) {
+	for (const auto& team : list) {
+		ui->messageTeamCombo->addItem(QString::fromStdString(team.first), team.second);
+	}
+
+}
+
+void MissionEventsDialog::initEventTeams()
+{
+	auto list = _model->getTeamList();
+
+	ui->teamCombo->clear();
+
+	for (const auto& team : list) {
+		ui->teamCombo->addItem(QString::fromStdString(team.first), team.second);
+	}
+}
+
+void MissionEventsDialog::updateMessageUi()
+{
+	bool enable = true;
+
+	if (!_model->messageIsValid()) {
 		enable = false;
 
 		ui->messageName->setText("");
@@ -543,21 +359,13 @@ void MissionEventsDialog::set_current_message(int msg) {
 		ui->teamCombo->setCurrentIndex(-1);
 		ui->messageTeamCombo->setCurrentIndex(-1);
 	} else {
-		auto& message = m_messages[m_cur_msg];
+		ui->messageName->setText(QString().fromStdString(_model->getMessageName()));
+		ui->messageContent->setPlainText(QString().fromStdString(_model->getMessageText()));
+		ui->aniCombo->setEditText(QString().fromStdString(_model->getMessageAni()));
+		ui->personaCombo->setCurrentIndex(_model->getMessagePersona());
+		ui->waveCombo->setEditText(QString().fromStdString(_model->getMessageWave()));
 
-		ui->messageName->setText(message.name);
-		ui->messageContent->setPlainText(message.message);
-		ui->aniCombo->setEditText(message.avi_info.name);
-		ui->personaCombo->setCurrentIndex(
-			message.persona_index + 1); // add one for the "none" at the beginning of the list
-		ui->waveCombo->setEditText(message.wave_info.name);
-
-		// m_message_team == -1 maps to 2
-		if (m_messages[m_cur_msg].multi_team == -1) {
-			ui->messageTeamCombo->setCurrentIndex(MAX_TVT_TEAMS);
-		} else {
-			ui->messageTeamCombo->setCurrentIndex(m_messages[m_cur_msg].multi_team);
-		}
+		ui->messageTeamCombo->setCurrentIndex(_model->getMessageTeam());
 	}
 
 	ui->messageName->setEnabled(enable);
@@ -570,193 +378,16 @@ void MissionEventsDialog::set_current_message(int msg) {
 	ui->personaCombo->setEnabled(enable);
 	ui->teamCombo->setEnabled(enable);
 }
-void MissionEventsDialog::applyChanges()
-{
-	SCP_vector<std::pair<SCP_string, SCP_string>> names;
-
-	audiostream_close_file(m_wave_id, 0);
-	m_wave_id = -1;
-
-	auto changes_detected = query_modified();
-
-	for (auto &event: Mission_events) {
-		free_sexp2(event.formula);
-		event.result = 0;  // use this as a processed flag
-	}
-
-	// rename all sexp references to old events
-	for (int i = 0; i < (int)m_events.size(); i++) {
-		if (m_sig[i] >= 0) {
-			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
-			Mission_events[m_sig[i]].result = 1;
-		}
-	}
-
-	// invalidate all sexp references to deleted events.
-	for (const auto &event: Mission_events) {
-		if (!event.result) {
-			SCP_string buf = "<" + event.name + ">";
-
-			// force it to not be too long
-			if (SCP_truncate(buf, NAME_LENGTH - 1))
-				buf.back() = '>';
-
-			names.emplace_back(event.name, buf);
-		}
-	}
-
-	// copy all dialog events to the mission
-	Mission_events.clear();
-	for (const auto &dialog_event: m_events) {
-		Mission_events.push_back(dialog_event);
-		Mission_events.back().formula = ui->eventTree->save_tree(dialog_event.formula);
-	}
-
-	// now update all sexp references
-	for (const auto &name_pair: names)
-		update_sexp_references(name_pair.first.c_str(), name_pair.second.c_str(), OPF_EVENT_NAME);
-
-	for (int i = Num_builtin_messages; i < Num_messages; i++) {
-		if (Messages[i].avi_info.name)
-			free(Messages[i].avi_info.name);
-
-		if (Messages[i].wave_info.name)
-			free(Messages[i].wave_info.name);
-	}
-
-	Num_messages = (int)m_messages.size() + Num_builtin_messages;
-	Messages.resize(Num_messages);
-	for (int i = 0; i < (int)m_messages.size(); i++)
-		Messages[i + Num_builtin_messages] = m_messages[i];
-
-	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
-	// state
-	if (changes_detected) {
-		_editor->missionChanged();
-	}
-}
-void MissionEventsDialog::closeEvent(QCloseEvent* event) {
-	audiostream_close_file(m_wave_id, false);
-	m_wave_id = -1;
-
-	if (query_modified()) {
-		auto result = QMessageBox::question(this,
-											"Close",
-											"Do you want to keep your changes?",
-											QMessageBox::Yes | QMessageBox::No | QMessageBox::Cancel,
-											QMessageBox::Cancel);
-
-		if (result == QMessageBox::Cancel) {
-			event->ignore();
-			return;
-		}
-
-		if (result == QMessageBox::Yes) {
-			applyChanges();
-			event->accept();
-			return;
-		}
-	}
-}
-void MissionEventsDialog::rejectChanges() {
-	audiostream_close_file(m_wave_id, false);
-	m_wave_id = -1;
-
-	// Nothing else to do here
-}
-bool MissionEventsDialog::query_modified() {
-	if (modified) {
-		return true;
-	}
-
-	if (Mission_events.size() != m_events.size()) {
-		return true;
-	}
-
-	for (size_t i = 0; i < m_events.size(); ++i) {
-		if (!lcase_equal(m_events[i].name, Mission_events[i].name)) {
-			return true;
-		}
-		if (m_events[i].repeat_count != Mission_events[i].repeat_count) {
-			return true;
-		}
-		if (m_events[i].trigger_count != Mission_events[i].trigger_count) {
-			return true;
-		}
-		if (m_events[i].interval != Mission_events[i].interval) {
-			return true;
-		}
-		if (m_events[i].score != Mission_events[i].score) {
-			return true;
-		}
-		if (m_events[i].chain_delay != Mission_events[i].chain_delay) {
-			return true;
-		}
-		if (!lcase_equal(m_events[i].objective_text, Mission_events[i].objective_text)) {
-			return true;
-		}
-		if (!lcase_equal(m_events[i].objective_key_text, Mission_events[i].objective_key_text)) {
-			return true;
-		}
-		if (m_events[i].flags != Mission_events[i].flags) {
-			return true;
-		}
-		if (m_events[i].mission_log_flags != Mission_events[i].mission_log_flags) {
-			return true;
-		}
-	}
-
-	if (static_cast<int>(m_messages.size()) != Num_messages - Num_builtin_messages) {
-		return true;
-	}
-
-	for (size_t i = 0; i < m_messages.size(); ++i) {
-		auto& local = m_messages[i];
-		auto& ref = Messages[Num_builtin_messages + i];
-
-		if (stricmp(local.name, ref.name) != 0) {
-			return true;
-		}
-		if (stricmp(local.message, ref.message) != 0) {
-			return true;
-		}
-		if (!lcase_equal(local.note, ref.note)) {
-			return true;
-		}
-		if (local.persona_index != ref.persona_index) {
-			return true;
-		}
-		if (local.multi_team != ref.multi_team) {
-			return true;
-		}
-		if (safe_stricmp(local.avi_info.name, ref.avi_info.name) != 0) {
-			return true;
-		}
-		if (safe_stricmp(local.wave_info.name, ref.avi_info.name) != 0) {
-			return true;
-		}
-	}
-
-	return false;
-}
 bool MissionEventsDialog::hasDefaultMessageParamter() {
-	return !m_messages.empty();
-}
-SCP_vector<SCP_string> MissionEventsDialog::getMessages() {
-	SCP_vector<SCP_string> messages;
-	messages.reserve(m_messages.size());
-
-	for (const auto &msg: m_messages) {
-		messages.push_back(msg.name);
-	}
-
-	return messages;
+	//return !m_messages.empty();
+	return false;
 }
 int MissionEventsDialog::getRootReturnType() const {
 	return OPR_NULL;
 }
 void MissionEventsDialog::messageDoubleClicked(QListWidgetItem* item) {
-	auto message_name = item->text();
+	//TODO
+	/*auto message_name = item->text();
 
 	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
 	auto num_messages =
@@ -799,67 +430,12 @@ void MissionEventsDialog::messageDoubleClicked(QListWidgetItem* item) {
 
 		// highlight next
 		ui->eventTree->hilite_item(m_last_message_node);
-	}
+	}*/
 }
-void MissionEventsDialog::createNewMessage() {
-	MMessage msg;
 
-	strcpy_s(msg.name, "<new message>");
-
-	strcpy_s(msg.message, "<put description here>");
-	msg.avi_info.name = NULL;
-	msg.wave_info.name = NULL;
-	msg.persona_index = -1;
-	msg.multi_team = -1;
-	m_messages.push_back(msg);
-	auto id = (int)m_messages.size() - 1;
-
-	modified = true;
-
-	ui->messageList->addItem(QString::fromUtf8(msg.name));
-	set_current_message(id);
-}
-void MissionEventsDialog::deleteMessage() {
-	// handle this case somewhat gracefully
-	Assertion((m_cur_msg >= -1) && (m_cur_msg < (int)m_messages.size()),
-			  "Unexpected m_cur_msg value (%d); expected either -1, or between 0-%d. Get a coder!\n",
-			  m_cur_msg,
-			  (int)m_messages.size() - 1);
-	if ((m_cur_msg < 0) || (m_cur_msg >= (int)m_messages.size())) {
-		return;
-	}
-
-	if (m_messages[m_cur_msg].avi_info.name) {
-		free(m_messages[m_cur_msg].avi_info.name);
-		m_messages[m_cur_msg].avi_info.name = nullptr;
-	}
-	if (m_messages[m_cur_msg].wave_info.name) {
-		free(m_messages[m_cur_msg].wave_info.name);
-		m_messages[m_cur_msg].wave_info.name = nullptr;
-	}
-
-	SCP_string buf;
-	sprintf(buf, "<%s>", m_messages[m_cur_msg].name);
-	update_sexp_references(m_messages[m_cur_msg].name, buf.c_str(), OPF_MESSAGE);
-	update_sexp_references(m_messages[m_cur_msg].name, buf.c_str(), OPF_MESSAGE_OR_STRING);
-
-	m_messages.erase(m_messages.begin() + m_cur_msg);
-
-	if (m_cur_msg >= (int)m_messages.size()) {
-		m_cur_msg = (int)m_messages.size() - 1;
-	}
-
-	rebuildMessageList();
-	set_current_message(m_cur_msg);
-
-	ui->btnNewMsg->setEnabled(true);
-	modified = true;
-
-	// The list loses focus when the current image is removed so we fix that here
-	ui->messageList->setFocus();
-}
 void MissionEventsDialog::browseAni() {
-	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
+	//TODO
+	/*if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
 		return;
 	}
 
@@ -889,118 +465,12 @@ void MissionEventsDialog::browseAni() {
 	m_messages[m_cur_msg].avi_info.name = strdup(info.fileName().toUtf8().constData());
 	set_current_message(m_cur_msg);
 
-	modified = true;
+	modified = true;*/
 }
-void MissionEventsDialog::browseWave() {
-	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
-		return;
-	}
 
-	int z;
-	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
-		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
-	} else {
-		z = cfile_push_chdir(CF_TYPE_VOICE_SPECIAL);
-	}
-	auto interface_path = QDir::currentPath();
-	if (!z) {
-		cfile_pop_dir();
-	}
-
-	auto name = QFileDialog::getOpenFileName(this,
-											 tr("Select message animation"),
-											 interface_path,
-											 "Voice Files (*.ogg, *.wav);;Ogg Vorbis Files (*.ogg);;"
-											 "Wave Files (*.wav)");
-
-	if (name.isEmpty()) {
-		// Nothing was selected
-		return;
-	}
-
-	QFileInfo info(name);
-
-	if (m_messages[m_cur_msg].wave_info.name) {
-		free(m_messages[m_cur_msg].wave_info.name);
-		m_messages[m_cur_msg].wave_info.name = nullptr;
-	}
-	m_messages[m_cur_msg].wave_info.name = strdup(info.fileName().toUtf8().constData());
-	updatePersona();
-
-	set_current_message(m_cur_msg);
-
-	modified = true;
-}
-void MissionEventsDialog::updatePersona() {
-	if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
-		return;
-	}
-
-	SCP_string wave_name = m_messages[m_cur_msg].wave_info.name;
-	SCP_string avi_name = m_messages[m_cur_msg].avi_info.name;
-
-	if ((wave_name[0] >= '1') && (wave_name[0] <= '9') && (wave_name[1] == '_')) {
-		auto i = wave_name[0] - '1';
-		if ((i < (int)Personas.size()) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
-			m_messages[m_cur_msg].persona_index = i;
-			if (i == 0 || i == 1) {
-				avi_name = "HEAD-TP1";
-			} else if (i == 2 || i == 3) {
-				avi_name = "HEAD-TP2";
-			} else if (i == 4) {
-				avi_name = "HEAD-TP3";
-			} else if (i == 5) {
-				avi_name = "HEAD-VP1";
-			}
-		}
-	} else {
-		auto mask = 0;
-		if (!strnicmp(wave_name.c_str(), "S_", 2)) {
-			mask = PERSONA_FLAG_SUPPORT;
-			avi_name = "HEAD-CM1";
-		} else if (!strnicmp(wave_name.c_str(), "L_", 2)) {
-			mask = PERSONA_FLAG_LARGE;
-			avi_name = "HEAD-CM1";
-		} else if (!strnicmp(wave_name.c_str(), "TC_", 3)) {
-			mask = PERSONA_FLAG_COMMAND;
-			avi_name = "HEAD-CM1";
-		}
-
-		for (auto i = 0; i < (int)Personas.size(); i++) {
-			if (Personas[i].flags & mask) {
-				m_messages[m_cur_msg].persona_index = i;
-			}
-		}
-	}
-
-	if (m_messages[m_cur_msg].avi_info.name) {
-		free(m_messages[m_cur_msg].avi_info.name);
-		m_messages[m_cur_msg].avi_info.name = nullptr;
-	}
-	m_messages[m_cur_msg].avi_info.name = strdup(avi_name.c_str());
-
-	modified = true;
-}
-void MissionEventsDialog::playWave() {
-	if (m_wave_id >= 0) {
-		audiostream_close_file(m_wave_id, false);
-		m_wave_id = -1;
-		return;
-	}
-
-	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
-	m_wave_id = audiostream_open(m_messages[m_cur_msg].wave_info.name, ASF_EVENTMUSIC);
-
-	if (m_wave_id >= 0) {
-		audiostream_play(m_wave_id, 1.0f, 0);
-	}
-}
-void MissionEventsDialog::updateStuff() {
-	updatePersona();
-	set_current_message(m_cur_msg);
-}
+// TODO??
 void MissionEventsDialog::updateEventBitmap() {
-	auto chained = m_events[cur_event].chain_delay != -1;
+	/*auto chained = m_events[cur_event].chain_delay != -1;
 	auto hasObjectiveText = !m_events[cur_event].objective_text.empty();
 
 	NodeImage bitmap;
@@ -1024,91 +494,23 @@ void MissionEventsDialog::updateEventBitmap() {
 			item->setIcon(0, sexp_tree::convertNodeImageToIcon(bitmap));
 			return;
 		}
-	}
-}
-void MissionEventsDialog::connectLogState(QCheckBox* box, uint32_t flag) {
-	connect(box, &QCheckBox::stateChanged, this, [this, flag](int state) {
-		if (cur_event < 0) {
-			return;
-		}
-
-		bool enable = state == Qt::Checked;
-		if (enable) {
-			m_events[cur_event].mission_log_flags |= flag;
-		} else {
-			m_events[cur_event].mission_log_flags &= ~flag;
-		}
-	});
-}
-void MissionEventsDialog::newEventHandler() {
-	m_events.emplace_back();
-	m_sig.push_back(-1);
-	reset_event((int)m_events.size() - 1, nullptr);
-}
-void MissionEventsDialog::insertEventHandler() {
-	if (cur_event < 0 || m_events.empty()) {
-		//There are no events yet, so just create one
-		newEventHandler();
-	} else {
-		m_events.insert(m_events.begin() + cur_event, mission_event());
-		m_sig.insert(m_sig.begin() + cur_event, -1);
-
-		if (cur_event != 0) {
-			reset_event(cur_event, get_event_handle(cur_event - 1));
-		} else {
-			reset_event(cur_event, nullptr);
-
-			// Since there is no TVI_FIRST in Qt we need to do some additional work to get this to work right
-			auto new_item = get_event_handle(cur_event);
-			auto index = ui->eventTree->indexOfTopLevelItem(new_item);
-			ui->eventTree->takeTopLevelItem(index);
-			ui->eventTree->insertTopLevelItem(0, new_item);
-		}
-	}
-}
-void MissionEventsDialog::deleteEventHandler() {
-	if (cur_event < 0) {
-		return;
-	}
-
-	// This is such an ugly hack but I don't want to rewrite sexp_tree just for this..
-	auto item = ui->eventTree->currentItem();
-	while (item->parent() != nullptr) {
-		item = item->parent();
-	}
-	ui->eventTree->setCurrentItem(item);
-
-	ui->eventTree->deleteCurrentItem();
+	}*/
 }
 
+// TODO??
 QTreeWidgetItem* MissionEventsDialog::get_event_handle(int num)
 {
-	for (auto i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
+	/*for (auto i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto item = ui->eventTree->topLevelItem(i);
 
 		if (item->data(0, sexp_tree::FormulaDataRole).toInt() == m_events[num].formula) {
 			return item;
 		}
 	}
-	return nullptr;
+	return nullptr;*/
 }
-void MissionEventsDialog::reset_event(int num, QTreeWidgetItem* after) {
-	// this is always called for a freshly constructed event, so all we have to do is set the name
-	m_events[num].name = "Event name";
-	auto h = ui->eventTree->insert(m_events[num].name.c_str(), NodeImage::ROOT, nullptr, after);
 
-	ui->eventTree->setCurrentItemIndex(-1);
-	auto index = m_events[num].formula = ui->eventTree->add_operator("when", h);
-	h->setData(0, sexp_tree::FormulaDataRole, index);
-	ui->eventTree->add_operator("true");
-	ui->eventTree->setCurrentItemIndex(index);
-	ui->eventTree->add_operator("do-nothing");
-
-	// First clear the current selection since the add_operator calls added new items and select them by default
-	ui->eventTree->clearSelection();
-	// This will automatically call set_cur_event
-	h->setSelected(true);
-}
+// TODO??
 void MissionEventsDialog::keyPressEvent(QKeyEvent* event) {
 	if (event->key() == Qt::Key_Escape) {
 		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
@@ -1120,7 +522,262 @@ void MissionEventsDialog::keyPressEvent(QKeyEvent* event) {
 	QDialog::keyPressEvent(event);
 }
 
+void MissionEventsDialog::on_okAndCancelButtons_accepted()
+{
+	accept();
 }
+
+void MissionEventsDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
 }
+
+void MissionEventsDialog::on_btnNewEvent_clicked()
+{
+	_model->createEvent();
+
+	updateEventUi();
 }
+
+void MissionEventsDialog::on_btnInsertEvent_clicked()
+{
+	_model->insertEvent();
+
+	updateEventUi();
+}
+
+void MissionEventsDialog::on_btnDeleteEvent_clicked()
+{
+	_model->deleteEvent();
+
+	updateEventUi();
+}
+
+void MissionEventsDialog::on_repeatCountBox_valueChanged(int value)
+{
+	_model->setRepeatCount(value);
+}
+
+void MissionEventsDialog::on_triggerCountBox_valueChanged(int value)
+{
+	_model->setTriggerCount(value);
+}
+
+void MissionEventsDialog::on_intervalTimeBox_valueChanged(int value)
+{
+	_model->setIntervalTime(value);
+}
+
+void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
+{
+	_model->setChained(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
+{
+	_model->setChainDelay(value);
+}
+
+void MissionEventsDialog::on_scoreBox_valueChanged(int value)
+{
+	_model->setEventScore(value);
+}
+
+void MissionEventsDialog::on_teamCombo_currentIndexChanged(int index)
+{
+	_model->setEventTeam(ui->teamCombo->itemData(index).toInt());
+}
+
+void MissionEventsDialog::on_editDirectiveText_textChanged(const QString& text)
+{
+	SCP_string dir = text.toUtf8().constData();
+	_model->setEventDirectiveText(dir);
+}
+
+void MissionEventsDialog::on_editDirectiveKeypressText_textChanged(const QString& text)
+{
+	SCP_string dir = text.toUtf8().constData();
+	_model->setEventDirectiveKeyText(dir);
+}
+
+void MissionEventsDialog::on_checkLogTrue_stateChanged(int state)
+{
+	_model->setLogTrue(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogFalse_stateChanged(int state)
+{
+	_model->setLogFalse(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogPrevious_stateChanged(int state)
+{
+	_model->setLogLogPrevious(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogAlwaysFalse_stateChanged(int state)
+{
+	_model->setLogAlwaysFalse(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogFirstRepeat_stateChanged(int state)
+{
+	_model->setLogFirstRepeat(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogLastRepeat_stateChanged(int state)
+{
+	_model->setLogLastRepeat(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogFirstTrigger_stateChanged(int state)
+{
+	_model->setLogFirstTrigger(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_checkLogLastTrigger_stateChanged(int state)
+{
+	_model->setLogLastTrigger(state == Qt::Checked);
+}
+
+void MissionEventsDialog::on_btnNewMsg_clicked()
+{
+	_model->createMessage();
+
+	rebuildMessageList();
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_btnDeleteMsg_clicked()
+{
+	_model->deleteMessage();
+
+	rebuildMessageList();
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_messageName_textChanged(const QString& text)
+{
+	SCP_string name = text.toUtf8().constData();
+	_model->setMessageName(name);
+
+	rebuildMessageList();
+}
+
+void MissionEventsDialog::on_messageContent_textChanged()
+{
+	SCP_string content = ui->messageContent->toPlainText().toUtf8().constData();
+	_model->setMessageText(content);
+}
+
+void MissionEventsDialog::on_btnMsgNote_clicked()
+{
+	if (!_model->messageIsValid()) {
+		return;
+	}
+	auto note = _model->getMessageNote();
+	auto text = QInputDialog::getText(this,
+		"Message Note",
+		"Enter a note for this message:",
+		QLineEdit::Normal,
+		QString::fromUtf8(note.c_str()));
+	
+	SCP_string newNote = text.toUtf8().constData();
+	_model->setMessageNote(newNote);
+}
+
+void MissionEventsDialog::on_aniCombo_currentTextChanged(const QString& text)
+{
+	SCP_string name = text.toUtf8().constData();
+	_model->setMessageAni(name);
+
+	//TODO Update the combo box
+}
+
+void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
+{
+	SCP_string name = ui->aniCombo->itemText(index).toUtf8().constData();
+	_model->setMessageAni(name);
+}
+
+void MissionEventsDialog::on_btnAniBrowse_clicked()
+{
+	// TODO make ANI browser with previews and file input
+}
+
+void MissionEventsDialog::on_waveCombo_currentTextChanged(const QString& text)
+{
+	SCP_string name = text.toUtf8().constData();
+	_model->setMessageWave(name);
+
+	// TODO Update the combo box
+}
+
+void MissionEventsDialog::on_waveCombo_selectedIndexChanged(int index)
+{
+	SCP_string name = ui->waveCombo->itemText(index).toUtf8().constData();
+	_model->setMessageWave(name);
+}
+
+void MissionEventsDialog::on_btnBrowseWave_clicked()
+{
+	if (!_model->messageIsValid()) {
+		return;
+	}
+
+	int z;
+	if (The_mission.game_type & MISSION_TYPE_TRAINING) {
+		z = cfile_push_chdir(CF_TYPE_VOICE_TRAINING);
+	} else {
+		z = cfile_push_chdir(CF_TYPE_VOICE_SPECIAL);
+	}
+	auto interface_path = QDir::currentPath();
+	if (!z) {
+		cfile_pop_dir();
+	}
+
+	auto name = QFileDialog::getOpenFileName(this,
+		tr("Select message animation"),
+		interface_path,
+		"Voice Files (*.ogg, *.wav);;Ogg Vorbis Files (*.ogg);;"
+		"Wave Files (*.wav)");
+
+	if (name.isEmpty()) {
+		// Nothing was selected
+		return;
+	}
+
+	QFileInfo info(name);
+
+	SCP_string file_name = info.fileName().toUtf8().constData();
+
+	_model->setMessageWave(file_name);
+
+	//TODO Update the combo box
+}
+
+void MissionEventsDialog::on_btnPlayWave_clicked()
+{
+	_model->playMessageWave();
+}
+
+void MissionEventsDialog::on_personaCombo_currentIndexChanged(int index)
+{
+	_model->setMessagePersona(ui->personaCombo->itemData(index).toInt());
+}
+
+void MissionEventsDialog::on_btnUpdateStuff_clicked()
+{
+	//TODO ask user for verification first
+	_model->autoSelectPersona();
+
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_messageTeamCombo_currentIndexChanged(int index)
+{
+	_model->setMessageTeam(ui->messageTeamCombo->itemData(index).toInt());
+}
+
+} // namespace fso::fred::dialogs
 
