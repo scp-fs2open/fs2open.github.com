@@ -1,11 +1,8 @@
 #pragma once
 
-#include "globalincs/vmallocator.h"
+#include "globalincs/pstypes.h"
 #include "math/vecmat.h"
 #include "io/timer.h"
-
-struct hid_device_;
-typedef hid_device_ hid_device;
 
 namespace io
 {
@@ -27,14 +24,14 @@ namespace io
 			const SpaceMouseDefinition& m_definition;
 			const int m_pollingFrequency;
 
-			hid_device* m_deviceHandle;
+			SDL_hid_device* m_deviceHandle;
 			SpaceMouseMovement m_current;
 			SCP_vector<bool> m_keypresses;
 			UI_TIMESTAMP m_lastPolled;
 			
 			void poll();
 			void pollMaybe();
-			SpaceMouse(const SpaceMouseDefinition& definition, hid_device* deviceHandle, int pollingFrequency = 10);
+			SpaceMouse(const SpaceMouseDefinition& definition, SDL_hid_device* deviceHandle, int pollingFrequency = 10);
 		public:
 			~SpaceMouse();
 
