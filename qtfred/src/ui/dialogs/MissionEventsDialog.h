@@ -1,5 +1,7 @@
 #pragma once
 
+#include "mission/dialogs/MissionEventsDialogModel.h"
+
 #include <QDialog>
 #include <QListWidget>
 
@@ -12,9 +14,7 @@
 
 class QCheckBox;
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class MissionEventsDialog;
@@ -23,52 +23,90 @@ class MissionEventsDialog;
 const int MAX_SEARCH_MESSAGE_DEPTH = 5;		// maximum search number of event nodes with message text
 
 class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
+	Q_OBJECT
+
+  public:
+	explicit MissionEventsDialog(QWidget* parent, EditorViewport* viewport);
+	~MissionEventsDialog() override;
+
+	void accept() override;
+	void reject() override;
+
+  protected:
+	void closeEvent(QCloseEvent* event) override;
+	void keyPressEvent(QKeyEvent* event) override;
+
+	// TODO handle these
+	QTreeWidgetItem* get_event_handle(int num);
+	bool hasDefaultMessageParamter() override;
+	int getRootReturnType() const override;
+
+private slots:
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
+
+	void on_btnNewEvent_clicked();
+    void on_btnInsertEvent_clicked();
+	void on_btnDeleteEvent_clicked();
+
+	void on_repeatCountBox_valueChanged(int value);
+	void on_triggerCountBox_valueChanged(int value);
+	void on_intervalTimeBox_valueChanged(int value);
+	void on_chainedCheckBox_stateChanged(int state);
+	void on_chainedDelayBox_valueChanged(int value);
+	void on_scoreBox_valueChanged(int value);
+	void on_teamCombo_currentIndexChanged(int index);
+	
+	void on_editDirectiveText_textChanged(const QString& text);
+	void on_editDirectiveKeypressText_textChanged(const QString& text);
+
+	void on_checkLogTrue_stateChanged(int state);
+	void on_checkLogFalse_stateChanged(int state);
+	void on_checkLogPrevious_stateChanged(int state);
+	void on_checkLogAlwaysFalse_stateChanged(int state);
+	void on_checkLogFirstRepeat_stateChanged(int state);
+	void on_checkLogLastRepeat_stateChanged(int state);
+	void on_checkLogFirstTrigger_stateChanged(int state);
+	void on_checkLogLastTrigger_stateChanged(int state);
+
+	void on_btnNewMsg_clicked();
+	void on_btnDeleteMsg_clicked();
+
+	void on_messageName_textChanged(const QString& text);
+	void on_messageContent_textChanged();
+	void on_btnMsgNote_clicked();
+	void on_aniCombo_currentTextChanged(const QString& text);
+	void on_aniCombo_selectedIndexChanged(int index);
+	void on_btnAniBrowse_clicked();
+	void on_waveCombo_currentTextChanged(const QString& text);
+	void on_waveCombo_selectedIndexChanged(int index);
+	void on_btnBrowseWave_clicked();
+	void on_btnPlayWave_clicked();
+	void on_personaCombo_currentIndexChanged(int index);
+	void on_btnUpdateStuff_clicked();
+	void on_messageTeamCombo_currentIndexChanged(int index);
+
+
+private:
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
+	EditorViewport* _viewport;
+	std::unique_ptr<IEventTreeOps> _treeOps;
+	std::unique_ptr<MissionEventsDialogModel> _model;
 
-	Editor* _editor = nullptr;
-
-	SCP_vector<int> m_sig;
-	SCP_vector<mission_event> m_events;
-	int cur_event = -1;
-	void set_current_event(int evt);
-
-	SCP_vector<MMessage> m_messages;
-	int m_cur_msg = -1;
-	void set_current_message(int msg);
-
-	int m_wave_id = -1;
-
-	// Message data
-	int m_last_message_node = -1;
-
-	void connectCheckBox(QCheckBox* box, bool* var);
-
-	bool modified = false;
-
-	void initEventTree();
-	void load_tree();
-	void create_tree();
+	void updateEventUi();
+	void updateMessageUi();
 
 	void initMessageList();
 	void initHeadCombo();
 	void initWaveFilenames();
 	void initPersonas();
 
-	void applyChanges();
-	void rejectChanges();
+	void initMessageTeams();
+	void initEventTeams();
 
-	void messageDoubleClicked(QListWidgetItem* item);
-
-	void createNewMessage();
-	void deleteMessage();
-
-	void browseAni();
-	void browseWave();
-
-	void playWave();
-	void updateStuff();
-
-	void updatePersona();
+	void rootNodeDeleted(int node);
+	void rootNodeRenamed(int node);
+	void rootNodeFormulaChanged(int old, int node);
 
 	void rebuildMessageList();
 
@@ -78,34 +116,10 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 
 	void updateEventBitmap();
 
-	void connectLogState(QCheckBox* box, uint32_t flag);
+	void messageDoubleClicked(QListWidgetItem* item);
 
-	void newEventHandler();
-	void insertEventHandler();
-	void deleteEventHandler();
-	QTreeWidgetItem* get_event_handle(int num);
-	void reset_event(int num, QTreeWidgetItem* after);
-
-	bool query_modified();
- protected:
-	void keyPressEvent(QKeyEvent* event) override;
- Q_OBJECT
- protected:
-	void closeEvent(QCloseEvent* event) override;
- public:
-	MissionEventsDialog(QWidget* parent, EditorViewport* viewport);
-	~MissionEventsDialog() override;
-
-	void rootNodeDeleted(int node);
-	void rootNodeRenamed(int node);
-	void rootNodeFormulaChanged(int old, int node);
-
-	bool hasDefaultMessageParamter() override;
-	SCP_vector<SCP_string> getMessages() override;
-	int getRootReturnType() const override;
+	void browseAni();
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
 
