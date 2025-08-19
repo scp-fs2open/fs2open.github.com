@@ -124,13 +124,13 @@ void MissionCutscenesDialogModel::deleteCutscene(int node)
 void MissionCutscenesDialogModel::changeFormula(int old_form, int new_form)
 {
 	size_t i;
-	for (i=0; i<(int)m_cutscenes.size(); i++){
+	for (i=0; i<m_cutscenes.size(); i++){
 		if (m_cutscenes[i].formula == old_form){
 			break;
 		}
 	}
 
-	Assert(i < (int)m_cutscenes.size());
+	Assert(i < m_cutscenes.size());
 	m_cutscenes[i].formula = new_form;
 
 	set_modified();
