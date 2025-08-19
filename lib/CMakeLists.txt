@@ -51,10 +51,6 @@ add_subdirectory(accidental-noise)
 
 ADD_SUBDIRECTORY(lz4)
 
-set(HIDAPI_WITH_LIBUSB OFF)
-set(HIDAPI_WITH_HIDRAW ON)
-add_subdirectory(hidapi)
-
 ADD_SUBDIRECTORY(imgui)
 
 if(FSO_BUILD_WITH_OPENXR)

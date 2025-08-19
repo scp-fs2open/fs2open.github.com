@@ -76,8 +76,6 @@ TARGET_LINK_LIBRARIES(code PUBLIC jansson)
 
 target_link_libraries(code PUBLIC anl)
 
-target_link_libraries(code PUBLIC hidapi::hidapi)
-
 target_link_libraries(code PUBLIC imgui)
 
 IF(FSO_BUILD_WITH_OPENXR)
