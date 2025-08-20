@@ -71,7 +71,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	bool eventIsValid() const;
 	bool messageIsValid() const;
 
-	void setCurrentlySelectedEvent(int event); // TODO make a signal for this?
+	void setCurrentlySelectedEvent(int event);
 	void setCurrentlySelectedEventByFormula(int formula);
 	SCP_vector<mission_event>& getEventList();
 	void deleteRootNode(int node);
@@ -79,16 +79,16 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void changeRootNodeFormula(int old, int node);
 	void reorderByRootFormulaOrder(const SCP_vector<int>& newOrderedFormulas);
 
-	void setCurrentlySelectedMessage(int msg); // TODO make a signal for this?
+	void setCurrentlySelectedMessage(int msg);
 	const SCP_vector<SCP_string>& getHeadAniList();
 	const SCP_vector<SCP_string>& getWaveList();
 	const SCP_vector<std::pair<SCP_string, int>>& getPersonaList();
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 
 	// Event Management
-	void createEvent(); // TODO make a signal for this?
-	void insertEvent(); // TODO make a signal for this?
-	void deleteEvent(); // TODO make a signal for this?
+	void createEvent();
+	void insertEvent();
+	void deleteEvent();
 	void renameEvent(int id, const SCP_string& name);
 	int getFormula() const;
 	void setFormula(int node);
@@ -134,8 +134,8 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void setNodeBgColor(IEventTreeOps::Handle h, int r, int g, int b, bool has_color);
 
 	// Message Management
-	void createMessage(); // TODO make a signal for this?
-	void deleteMessage(); // TODO make a signal for this?
+	void createMessage();
+	void deleteMessage();
 	SCP_string getMessageName() const;
 	void setMessageName(const SCP_string& name);
 	SCP_string getMessageText() const;

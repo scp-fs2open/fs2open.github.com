@@ -34,12 +34,6 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 
   protected:
 	void closeEvent(QCloseEvent* event) override;
-	void keyPressEvent(QKeyEvent* event) override;
-
-	// TODO handle these
-	QTreeWidgetItem* get_event_handle(int num);
-	bool hasDefaultMessageParamter() override;
-	int getRootReturnType() const override;
 
 private slots:
 	void on_okAndCancelButtons_accepted();
