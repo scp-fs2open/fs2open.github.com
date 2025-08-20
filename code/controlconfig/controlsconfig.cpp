@@ -2086,7 +2086,6 @@ int control_config_bind_key_on_frame(int ctrl, selItem item, bool API_Access)
 		if (!done && bind) {
 			if (!Axis_override.empty()) {
 				control_config_bind(ctrl, Axis_override, item, API_Access);
-				control_config_bind(ctrl, Axis_override, item, API_Access);
 				done = true;
 				strcpy_s(bound_string, Axis_override.textify().c_str());
 

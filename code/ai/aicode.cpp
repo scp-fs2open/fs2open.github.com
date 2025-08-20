@@ -14048,20 +14048,28 @@ void ai_bay_depart()
 		return;
 	}
 
+	ship* shipp;
+
 	// check if parent ship valid; if not, abort depart
-	auto anchor_ship_entry = ship_registry_get(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
-	if (!anchor_ship_entry || !ship_useful_for_departure(anchor_ship_entry->shipnum, Ships[Pl_objp->instance].departure_path_mask))
-	{
-		mprintf(("Aborting bay departure!\n"));
-		aip->mode = AIM_NONE;
-		
-        Ships[Pl_objp->instance].flags.remove(Ship::Ship_Flags::Depart_dockbay);
-		return;
+	if (gameseq_get_state() != GS_STATE_LAB) {
+		auto anchor_ship_entry = ship_registry_get(Parse_names[Ships[Pl_objp->instance].departure_anchor]);
+		if (!anchor_ship_entry ||
+			!ship_useful_for_departure(anchor_ship_entry->shipnum, Ships[Pl_objp->instance].departure_path_mask)) {
+			mprintf(("Aborting bay departure!\n"));
+			aip->mode = AIM_NONE;
+
+			Ships[Pl_objp->instance].flags.remove(Ship::Ship_Flags::Depart_dockbay);
+			return;
+		}
+
+		shipp = anchor_ship_entry->shipp();
+	} else {
+		shipp = &Ships[Objects[aip->goal_objnum].instance];
 	}
 
 	ai_manage_bay_doors(Pl_objp, aip, false);
 
-	if ( anchor_ship_entry->shipp()->bay_doors_status != MA_POS_READY )
+	if ( shipp->bay_doors_status != MA_POS_READY )
 		return;
 
 	// follow the path to the final point

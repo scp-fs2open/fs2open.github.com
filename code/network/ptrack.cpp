@@ -623,7 +623,7 @@ void PollPTrackNet()
 	timeout.tv_usec=0;
 	
 	FD_ZERO(&read_fds);	// NOLINT
-	FD_SET_SAFE(Psnet_socket, &read_fds);
+	FD_SET(Psnet_socket, &read_fds);
 
 	if(SELECT(static_cast<int>(Psnet_socket+1), &read_fds,nullptr,nullptr,&timeout, PSNET_TYPE_USER_TRACKER)){
 		int bytesin;

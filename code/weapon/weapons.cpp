@@ -618,6 +618,11 @@ void parse_shockwave_info(shockwave_create_info *sci, const char *pre_char)
 		sci->rot_defined = true;
 	}
 
+	sprintf(buf, "%sShockwave Rotation Is Relative To Parent:", pre_char);
+	if(optional_string(buf.c_str())) {
+		stuff_boolean(&sci->rot_parent_relative);
+	}
+
 	sprintf(buf, "%sShockwave Model:", pre_char);
 	if(optional_string(buf.c_str())) {
 		stuff_string(sci->pof_name, F_NAME, MAX_FILENAME_LEN);
@@ -991,6 +996,10 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 	// Weapon fadein effect, used when no ani is specified or weapon_select_3d is active
 	if (first_time) {
 		wip->selection_effect = Default_weapon_select_effect; // By default, use the FS2 effect
+		wip->fs2_effect_grid_color = Default_fs2_effect_grid_color;
+		wip->fs2_effect_scanline_color = Default_fs2_effect_scanline_color;
+		wip->fs2_effect_grid_density = Default_fs2_effect_grid_density;
+		wip->fs2_effect_wireframe_color = Default_fs2_effect_wireframe_color;
 	}
 	if(optional_string("$Selection Effect:")) {
 		char effect[NAME_LENGTH];
@@ -1002,6 +1011,44 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		else if (!stricmp(effect, "off"))
 			wip->selection_effect = 0;
 	}	
+
+	if (optional_string("$FS2 effect grid color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&wip->fs2_effect_grid_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect scanline color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&wip->fs2_effect_scanline_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect grid density:")) {
+		int tmp;
+		stuff_int(&tmp);
+		// only set value if it is above 0
+		if (tmp > 0) {
+			wip->fs2_effect_grid_density = tmp;
+		} else {
+			Warning(LOCATION, "The $FS2 effect grid density must be above 0.\n");
+		}
+	}
+
+	if (optional_string("$FS2 effect wireframe color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&wip->fs2_effect_wireframe_color, rgb[0], rgb[1], rgb[2]);
+	}
 
 	//Check for the HUD image string
 	if(optional_string("$HUD Image:")) {
@@ -7265,7 +7312,7 @@ void spawn_child_weapons(object *objp, int spawn_index_override)
 				// fire the beam
 				beam_fire(&fire_info);
 			} else {
-				vm_vector_2_matrix_norm(&orient, &tvec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&orient, &tvec, &objp->orient.vec.uvec, &objp->orient.vec.rvec);
 				weapon_objnum = weapon_create(&pos, &orient, child_id, parent_num, -1, wp->weapon_flags[Weapon::Weapon_Flags::Locked_when_fired], true);
 
 				//if the child inherits parent target, do it only if the parent weapon was locked to begin with
@@ -9503,6 +9550,10 @@ void weapon_info::reset()
 	memset(this->icon_filename, 0, sizeof(this->icon_filename));
 	memset(this->anim_filename, 0, sizeof(this->anim_filename));
 	this->selection_effect = Default_weapon_select_effect;
+	this->fs2_effect_grid_color = Default_fs2_effect_grid_color;
+	this->fs2_effect_scanline_color = Default_fs2_effect_scanline_color;
+	this->fs2_effect_grid_density = Default_fs2_effect_grid_density;
+	this->fs2_effect_wireframe_color = Default_fs2_effect_wireframe_color;
 
 	this->shield_impact_effect_radius = -1.0f;
 	this->shield_impact_explosion_radius = 1.0f;

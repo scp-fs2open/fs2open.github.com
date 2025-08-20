@@ -1209,6 +1209,10 @@ void ship_info::clone(const ship_info& other)
 	strcpy_s(anim_filename, other.anim_filename);
 	strcpy_s(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+	fs2_effect_grid_color = other.fs2_effect_grid_color;
+	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
+	fs2_effect_grid_density = other.fs2_effect_grid_density;
+	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
@@ -1549,6 +1553,10 @@ void ship_info::move(ship_info&& other)
 	std::swap(anim_filename, other.anim_filename);
 	std::swap(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+	fs2_effect_grid_color = other.fs2_effect_grid_color;
+	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
+	fs2_effect_grid_density = other.fs2_effect_grid_density;
+	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
@@ -1926,6 +1934,10 @@ ship_info::ship_info()
 	overhead_filename[0] = '\0';
 
 	selection_effect = Default_ship_select_effect;
+	fs2_effect_grid_color = Default_fs2_effect_grid_color;
+	fs2_effect_scanline_color = Default_fs2_effect_scanline_color;
+	fs2_effect_grid_density = Default_fs2_effect_grid_density;
+	fs2_effect_wireframe_color = Default_fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = -1;
 
@@ -3034,6 +3046,44 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->selection_effect = 1;
 		else if (!stricmp(effect, "off"))
 			sip->selection_effect = 0;
+	}
+
+	if (optional_string("$FS2 effect grid color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_grid_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect scanline color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_scanline_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect grid density:")) {
+		int tmp;
+		stuff_int(&tmp);
+		// only set value if it is above 0
+		if (tmp > 0) {
+			sip->fs2_effect_grid_density = tmp;
+		} else {
+			Warning(LOCATION, "The $FS2 effect grid density must be above 0.\n");
+		}
+	}
+
+	if (optional_string("$FS2 effect wireframe color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_wireframe_color, rgb[0], rgb[1], rgb[2]);
 	}
 
 	// This only works if the hud gauge defined uses $name assignment
@@ -13408,7 +13458,7 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 									vm_vec_normalized_dir(&firing_vec, &predicted_target_pos, &obj->pos);
 								}
 
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (std_convergence_flagged || (auto_convergence_flagged && (aip->target_objnum != -1))) {
 								// std & auto convergence
 								vec3d target_vec, firing_vec, convergence_offset;
@@ -13435,12 +13485,12 @@ int ship_fire_primary(object * obj, int force, bool rollback_shot)
 								vm_vec_normalized_dir(&firing_vec, &target_vec, &firing_pos);
 
 								// set orientation
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							} else if (sip->flags[Ship::Info_Flags::Gun_convergence]) {
 								// model file defined convergence
 								vec3d firing_vec;
 								vm_vec_unrotate(&firing_vec, &pm->gun_banks[bank_to_fire].norm[pt], &obj->orient);
-								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+								vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 							}
 
 							if (winfo_p->wi_flags[Weapon::Info_Flags::Apply_Recoil]){	// Function to add recoil functionality - DahBlount
@@ -13836,7 +13886,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 {
-	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
+	int			n, weapon_idx, j, bank, bank_adjusted, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -13846,6 +13896,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	polymodel	*pm;
 	vec3d		missile_point, pnt, firing_pos;
 	bool has_fired = false;		// Used to determine whether to fire the scripting hook
+	tracking_info tinfo;
 
 	Assert( obj != NULL );
 
@@ -13932,14 +13983,13 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
-		starting_bank_count = swp->secondary_bank_ammo[bank];
 	}
 
 	if (ship_fire_secondary_detonate(obj, swp)) {
 		// in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
 		// to client code to set the detonate timer to 0.
 		if ( MULTIPLAYER_MASTER ) {
-			send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
+			send_secondary_fired_packet( shipp, 0, tinfo, 1, allow_swarm );
 		}
 	
 		//	For all banks, if ok to fire a weapon, make it wait a bit.
@@ -14112,10 +14162,6 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			return 0;		// we can make a quick out here!!!
 		}
 
-		int target_objnum;
-		ship_subsys *target_subsys;
-		int locked;
-
 		if ( obj == Player_obj || ( MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
@@ -14132,39 +14178,35 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				}
 
 				if (lock_data.obj != nullptr) {
-					target_objnum = OBJ_INDEX(lock_data.obj);
-					target_subsys = lock_data.subsys;
-					locked = 1;
+					tinfo.objnum = OBJ_INDEX(lock_data.obj);
+					tinfo.subsys = lock_data.subsys;
+					tinfo.locked = true;
 				} else {
-					target_objnum = -1;
-					target_subsys = nullptr;
-					locked = 0;
+					tinfo.objnum = -1;
+					tinfo.subsys = nullptr;
+					tinfo.locked = false;
 				}
-			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
-				target_objnum = aip->target_objnum;
-				target_subsys = aip->targeted_subsys;
-				locked = aip->current_target_is_locked;
 			} else {
-				target_objnum = -1;
-				target_subsys = nullptr;
-				locked = 0;
+				tinfo.objnum = aip->target_objnum;
+				tinfo.subsys = aip->targeted_subsys;
+				tinfo.locked = aip->current_target_is_locked == 1;
 			}
 		} else if (wip->multi_lock && !aip->ai_missile_locks_firing.empty()) {
-			target_objnum = aip->ai_missile_locks_firing.back().first;
-			target_subsys = aip->ai_missile_locks_firing.back().second;
-			locked = 1;
+			tinfo.objnum = aip->ai_missile_locks_firing.back().first;
+			tinfo.subsys = aip->ai_missile_locks_firing.back().second;
+			tinfo.locked = true;
 			aip->ai_missile_locks_firing.pop_back();
 		} else {
-			target_objnum = aip->target_objnum;
-			target_subsys = aip->targeted_subsys;
-			locked = aip->current_target_is_locked;
+			tinfo.objnum = aip->target_objnum;
+			tinfo.subsys = aip->targeted_subsys;
+			tinfo.locked = aip->current_target_is_locked == 1;
 		}
 
 		num_slots = pm->missile_banks[bank].num_slots;
 		float target_radius = 0.f;
 
-		if (target_objnum >= 0) {
-			target_radius = Objects[target_objnum].radius;
+		if (tinfo.objnum >= 0) {
+			target_radius = Objects[tinfo.objnum].radius;
 		}
 
 		auto launch_curve_data = WeaponLaunchCurveData {
@@ -14281,12 +14323,12 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			{
 				vec3d firing_vec;
 				vm_vec_unrotate(&firing_vec, &pm->missile_banks[bank].norm[pnt_index-1], &obj->orient);
-				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, nullptr, nullptr);
+				vm_vector_2_matrix_norm(&firing_orient, &firing_vec, &obj->orient.vec.uvec, &obj->orient.vec.rvec);
 			}
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked, false, 0.f, nullptr, launch_curve_data);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, 0.f, nullptr, launch_curve_data);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
@@ -14298,7 +14340,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
-				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), target_objnum, locked, target_subsys);
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
 				has_fired = true;
 
 				// create the muzzle flash effect
@@ -14362,7 +14404,7 @@ done_secondary:
 		// Cyborg17 - If this is a rollback shot, the server will let the player know within the packet.
 		if ( MULTIPLAYER_MASTER ) {			
 			Assert(starting_sig != 0);
-			send_secondary_fired_packet( shipp, starting_sig, starting_bank_count, num_fired, allow_swarm );			
+			send_secondary_fired_packet( shipp, starting_sig, tinfo, num_fired, allow_swarm );
 		}
 
 		// Handle Player only stuff, including stats and client secondary packets
@@ -15530,6 +15572,9 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 {
 	Assertion(subsys != nullptr, "ship_get_subsys_index was called with a null ship_subsys parameter!");
 	if (subsys == nullptr)
+		return -1;
+
+	if (subsys->parent_objnum < 0)
 		return -1;
 
 	// might need to refresh the cache
@@ -18606,6 +18651,31 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 	float size = (float)Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
 	return (int)std::lround(capacity / size);
+}
+
+/**
+ * The same as above, but for a specific turret's bank.
+ */
+int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int ammo_type)
+{
+	float capacity, size;
+
+	Assertion(bank < MAX_SHIP_PRIMARY_BANKS,
+		"Invalid primary bank of %d (max is %d); get a coder!\n",
+		bank,
+		MAX_SHIP_PRIMARY_BANKS - 1);
+	Assertion(ammo_type < weapon_info_size(),
+		"Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n",
+		ammo_type,
+		weapon_info_size());
+
+	if (!swp || bank < 0 || ammo_type < 0 || !(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic])) {
+		return 0;
+	} else {
+		capacity = (float)swp->primary_bank_capacity[bank];
+		size = (float)Weapon_info[ammo_type].cargo_size;
+		return (int)(capacity / size);
+	}
 }
 
 /**

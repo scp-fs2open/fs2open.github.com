@@ -204,7 +204,7 @@ bool ik_constraint_window::constrain(matrix& localRot, bool /*backwardsPass*/) c
 	
 	//Clamp absolute value of individual angles to window
 	for (float angles::* i : pbh) {
-		const float absAngle = abs(currentAngles.*i);
+		const float absAngle = std::abs(currentAngles.*i);
 		if(absAngle > absLimit.*i){
 			needsClamp = true;
 			currentAngles.*i = copysignf(std::min(absAngle, absLimit.*i), currentAngles.*i);

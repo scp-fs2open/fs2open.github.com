@@ -535,6 +535,10 @@ struct weapon_info
 	char	icon_filename[MAX_FILENAME_LEN];	// filename for icon that is displayed in weapon selection
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in weapon selection
 	int 	selection_effect;
+	color  fs2_effect_grid_color;               // color of the grid effect in the weapon selection screen
+	color  fs2_effect_scanline_color;           // color of the scanline effect in the weapon selection screen
+	int    fs2_effect_grid_density;             // density of the grid effect in the weapon selection screen
+	color  fs2_effect_wireframe_color;          // color of the wireframe effect in the weapon selection screen
 
 	float shield_impact_effect_radius;    // shield surface effect radius
 	float shield_impact_explosion_radius; // shield-specific particle effect radius
@@ -938,6 +942,13 @@ extern SCP_vector<int> Player_weapon_precedence;	// Vector of weapon types, prec
 
 #define WEAPON_INDEX(wp)			(int)(wp-Weapons)
 
+typedef struct tracking_info {
+	ship_subsys *subsys;
+	int objnum;
+	bool locked;
+
+	tracking_info() : subsys(nullptr), objnum(-1), locked(false) {}
+} tracking_info;
 
 int weapon_info_lookup(const char *name);
 int weapon_info_get_index(const weapon_info *wip);
@@ -989,6 +1000,11 @@ int weapon_create( const vec3d *pos,
 		0.f
 	});
 void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, int target_objnum, int target_is_locked = 0, ship_subsys *target_subsys = NULL);
+
+inline void weapon_set_tracking_info(int weapon_objnum, int parent_objnum, tracking_info &tinfo)
+{
+	weapon_set_tracking_info(weapon_objnum, parent_objnum, tinfo.objnum, tinfo.locked, tinfo.subsys);
+}
 
 // gets the substitution pattern pointer for a given weapon
 // src_turret may be null

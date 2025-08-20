@@ -1,6 +1,8 @@
 #ifndef TRACKIRPUBLIC_H_INCLUDED_
 #define TRACKIRPUBLIC_H_INCLUDED_
 
+#ifdef _WIN32
+
 #include "external_dll/externalcode.h"
 #include "globalincs/pstypes.h"
 #include "osapi/osapi.h"
@@ -81,5 +83,7 @@ private:
 
 	bool m_enabled;
 };
+
+#endif	// _WIN32
 
 #endif /* TRACKIRPUBLIC_H_INCLUDED_ */

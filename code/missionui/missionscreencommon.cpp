@@ -1663,7 +1663,7 @@ void draw_model_icon(int model_id, uint64_t flags, float closeup_zoom, int x, in
 	gr_reset_clip();
 }
 
-void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, int effect)
+void draw_model_rotating(model_render_params *render_info, int model_id, int x1, int y1, int x2, int y2, float *rotation_buffer, const vec3d *closeup_pos, float closeup_zoom, float rev_rate, uint64_t flags, int resize_mode, select_effect_params effect_params)
 {
 	//WMC - Can't draw a non-model
 	if (model_id < 0)
@@ -1680,7 +1680,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 	const bool& shadow_disable_override = flags & MR_IS_MISSILE ? Shadow_disable_overrides.disable_mission_select_weapons : Shadow_disable_overrides.disable_mission_select_ships;
 
-	if (effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
+	if (effect_params.effect == 2) {  // FS2 Effect; Phase 0 Expand scanline, Phase 1 scan the grid and wireframe, Phase 2 scan up and reveal the ship, Phase 3 tilt the camera, Phase 4 start rotating the ship
 		// rotate the ship as much as required for this frame
 		if (time >= 3.6f) // Phase 4
 			*rotation_buffer += PI2 * flFrametime / rev_rate;
@@ -1743,7 +1743,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		g3_start_instance_angles(&vmd_zero_vector,&view_angles);
 
 		if (time < 0.5f) { // Do the expanding scanline in phase 0
-			gr_set_color(0,255,0);
+			gr_set_color(effect_params.fs2_scanline_color.red, effect_params.fs2_scanline_color.green, effect_params.fs2_scanline_color.blue);
 			start.xyz.x = size*start_scale;
 			start.xyz.y = 0.0f;
 			start.xyz.z = -clip;
@@ -1758,32 +1758,38 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 		gr_zbuffer_set(GR_ZBUFF_NONE); // Turn off Depthbuffer so we don't get gridlines over the ship or a disappearing scanline 
 		Glowpoint_use_depth_buffer = false; // Since we don't have one
 		if (time >= 0.5f) { // Phase 1 onward draw the grid
-			int i;
 			start.xyz.y = -offset;
 			start.xyz.z = size+offset*0.5f;
 			stop.xyz.y = -offset;
 			stop.xyz.z = -size+offset*0.5f;
-			gr_set_color(0,200,0);
+			gr_set_color(effect_params.fs2_grid_color.red, effect_params.fs2_grid_color.green, effect_params.fs2_grid_color.blue);
 			g3_start_instance_angles(&vmd_zero_vector,&view_angles);
 
 			if (time < 1.5f) {
 				stop.xyz.z = -clip;
 			}
 
-			for (i = -3; i < 4; i++) {
-				start.xyz.x = stop.xyz.x = size*0.333f*i;
-				//g3_draw_htl_line(&start,&stop);
+			int num_lines = std::max(3, effect_params.fs2_grid_density);
+			float x_step = (size * 2.0f) / (num_lines - 1);
+			float x_start = -size;
+
+			for (int i = 0; i < num_lines; ++i) {
+				start.xyz.x = stop.xyz.x = x_start + i * x_step;
 				g3_render_line_3d(false, &start, &stop);
 			}
 
 			start.xyz.x = size;
 			stop.xyz.x = -size;
 
-			for (i = 3; i > -4; i--) {
-				start.xyz.z = stop.xyz.z = size*0.333f*i+offset*0.5f;
-				if ((time < 1.5f) && (start.xyz.z <= -clip))
+			float z_step = (size * 2.0f) / (num_lines - 1);
+			float z_start = size + offset * 0.5f;
+
+			for (int i = 0; i < num_lines; ++i) {
+				float z = z_start - i * z_step;
+				if ((time < 1.5f) && (z <= -clip))
 					break;
-				//g3_draw_htl_line(&start,&stop);
+
+				start.xyz.z = stop.xyz.z = z;
 				g3_render_line_3d(false, &start, &stop);
 			}
 
@@ -1825,8 +1831,8 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 				gr_set_view_matrix(&Eye_position, &Eye_matrix);
             }
 			gr_zbuffer_set(false);
-			gr_set_color(80,49,160);
-			render_info->set_color(80, 49, 160);
+			gr_set_color(effect_params.fs2_wireframe_color.red, effect_params.fs2_wireframe_color.green, effect_params.fs2_wireframe_color.blue);
+			render_info->set_color(effect_params.fs2_wireframe_color.red, effect_params.fs2_wireframe_color.green, effect_params.fs2_wireframe_color.blue);
 
 			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS2, -clip);
 
@@ -1847,7 +1853,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 			}
 
 			if (time < 2.5f) { // Render the scanline in Phase 1 and 2
-				gr_set_color(0,255,0);
+				gr_set_color(effect_params.fs2_scanline_color.red, effect_params.fs2_scanline_color.green, effect_params.fs2_scanline_color.blue);
 				start.xyz.x = size*1.25f;
 				start.xyz.y = 0.0f;
 				start.xyz.z = -clip;
@@ -1924,7 +1930,7 @@ void draw_model_rotating(model_render_params *render_info, int model_id, int x1,
 
 		gr_set_color(0,128,0);
 
-		if (effect == 1) { // FS1 effect
+		if (effect_params.effect == 1) { // FS1 effect
 			render_info->set_animated_effect(ANIMATED_SHADER_LOADOUTSELECT_FS1, MIN(time*0.5f,2.0f));
 			render_info->set_flags(flags);
 		} else {

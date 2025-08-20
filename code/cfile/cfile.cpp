@@ -902,7 +902,7 @@ static CFILE *cf_open_fill_cfblock(const char* source, int line, const char* ori
 		cfp->source_file = source;
 		cfp->line_num = line;
 		
-		int pos = ftell(fp);
+		auto pos = ftell(fp);
 		if(pos == -1L)
 			pos = 0;
 		cf_init_lowlevel_read_code(cfp,0,filelength(fileno(fp)), 0 );

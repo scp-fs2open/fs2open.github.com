@@ -107,9 +107,6 @@ extern unsigned int Serverconn;
 #define PSNET_IP_MODE_V6		(1<<1)
 #define PSNET_IP_MODE_DUAL		(PSNET_IP_MODE_V4|PSNET_IP_MODE_V6)
 
-#define FD_SET_SAFE(bit, set) FD_SET((bit < 0 || bit >= FD_SETSIZE ? 0 : bit), set)
-#define FD_ISSET_SAFE(bit, set) FD_ISSET((bit < 0 || bit >= FD_SETSIZE ? 0 : bit), set)
-
 // -------------------------------------------------------------------------------------------------------
 // PSNET 2 TOP LAYER FUNCTIONS - these functions simply buffer and store packets based upon type (see PSNET_TYPE_* defines)
 //
