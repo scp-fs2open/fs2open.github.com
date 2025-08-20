@@ -173,6 +173,7 @@
     <addaction name="actionMission_Specs"/>
     <addaction name="actionMission_Goals"/>
     <addaction name="actionMission_Events"/>
+    <addaction name="actionMission_Cutscenes"/>
     <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionFiction_Viewer"/>
@@ -1517,6 +1518,14 @@
    </property>
    <property name="shortcut">
     <string>Shift+J</string>
+   </property>
+  </action>
+  <action name="actionMission_Cutscenes">
+   <property name="text">
+    <string>Mission Cutscenes</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+X</string>
    </property>
   </action>
  </widget>
