@@ -335,15 +335,23 @@ void MissionEventsDialog::rebuildMessageList() {
 	// Block signals so that the current item index isn't overwritten by this
 	QSignalBlocker blocker(ui->messageList);
 
+	const int curRow = _model->getCurrentlySelectedMessage();
+
 	ui->messageList->clear();
 	for (auto& msg : _model->getMessageList()) {
 		auto item = new QListWidgetItem(msg.name, ui->messageList);
 		ui->messageList->addItem(item);
 	}
+
+	if (curRow >= 0 && curRow < ui->messageList->count()) {
+		ui->messageList->setCurrentRow(curRow);
+	}
 }
 
 void MissionEventsDialog::updateEventUi() {
 	util::SignalBlockers blockers(this);
+
+	updateEventMoveButtons();
 
 	if (!_model->eventIsValid()) {
 		ui->repeatCountBox->setValue(1);
@@ -410,6 +418,26 @@ void MissionEventsDialog::updateEventUi() {
 	ui->checkLogFirstTrigger->setChecked(_model->getLogFirstTrigger());
 	ui->checkLogLastTrigger->setChecked(_model->getLogLastTrigger());
 }
+
+void MissionEventsDialog::updateEventMoveButtons()
+{
+	auto* cur = ui->eventTree->currentItem();
+
+	const bool isRoot = (cur && !cur->parent());
+	const int count = ui->eventTree->topLevelItemCount();
+
+	bool canUp = false, canDown = false;
+
+	if (isRoot && count > 1) {
+		const int idx = ui->eventTree->indexOfTopLevelItem(cur);
+		canUp = (idx > 0);
+		canDown = (idx >= 0 && idx < count - 1);
+	}
+
+	ui->eventUpBtn->setEnabled(canUp);
+	ui->eventDownBtn->setEnabled(canDown);
+}
+
 void MissionEventsDialog::initHeadCombo() {
 	auto list = _model->getHeadAniList();
 
@@ -419,6 +447,7 @@ void MissionEventsDialog::initHeadCombo() {
 		ui->aniCombo->addItem(QString().fromStdString(head));
 	}
 }
+
 void MissionEventsDialog::initWaveFilenames() {
 	auto list = _model->getWaveList();
 
@@ -428,6 +457,7 @@ void MissionEventsDialog::initWaveFilenames() {
 		ui->waveCombo->addItem(QString().fromStdString(wave));
 	}
 }
+
 void MissionEventsDialog::initPersonas() {
 	auto list = _model->getPersonaList();
 
@@ -499,6 +529,21 @@ void MissionEventsDialog::updateMessageUi()
 	ui->personaCombo->setEnabled(enable);
 	ui->messageTeamCombo->setEnabled(enable && _model->getMissionIsMultiTeam());
 	ui->btnMsgNote->setEnabled(enable);
+
+	updateMessageMoveButtons();
+}
+
+void MissionEventsDialog::updateMessageMoveButtons()
+{
+	const int count = ui->messageList->count();
+	const int row = ui->messageList->currentItem() ? ui->messageList->row(ui->messageList->currentItem()) : -1;
+
+	const bool hasSel = (row >= 0);
+	const bool canUp = hasSel && row > 0;
+	const bool canDown = hasSel && row < count - 1;
+
+	ui->msgUpBtn->setEnabled(canUp);
+	ui->msgDownBtn->setEnabled(canDown);
 }
 
 void MissionEventsDialog::browseAni() {
@@ -534,6 +579,17 @@ void MissionEventsDialog::browseAni() {
 	set_current_message(m_cur_msg);
 
 	modified = true;*/
+}
+
+SCP_vector<int> MissionEventsDialog::read_root_formula_order(sexp_tree* tree)
+{
+	SCP_vector<int> order;
+	order.reserve(tree->topLevelItemCount());
+	for (int i = 0; i < tree->topLevelItemCount(); ++i) {
+		auto* it = tree->topLevelItem(i);
+		order.push_back(it->data(0, sexp_tree::FormulaDataRole).toInt());
+	}
+	return order;
 }
 
 void MissionEventsDialog::updateEventBitmap() {
@@ -593,6 +649,47 @@ void MissionEventsDialog::on_btnDeleteEvent_clicked()
 	_model->deleteEvent();
 
 	updateEventUi();
+}
+
+void MissionEventsDialog::on_eventUpBtn_clicked()
+{
+	auto* cur = ui->eventTree->currentItem();
+	if (!cur || cur->parent())
+		return; // roots only
+	const int idx = ui->eventTree->indexOfTopLevelItem(cur);
+	if (idx <= 0)
+		return; // already at top
+
+	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx - 1);
+	ui->eventTree->move_root(cur, dest, /*insert_before=*/true); // visual move + modified()
+
+	// Keep model in sync with the new root order
+	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
+
+	// Ensure it stays selected and visible
+	ui->eventTree->setCurrentItem(cur);
+	ui->eventTree->scrollToItem(cur);
+	updateEventMoveButtons();
+}
+
+void MissionEventsDialog::on_eventDownBtn_clicked()
+{
+	auto* cur = ui->eventTree->currentItem();
+	if (!cur || cur->parent())
+		return; // roots only
+	const int idx = ui->eventTree->indexOfTopLevelItem(cur);
+	const int last = ui->eventTree->topLevelItemCount() - 1;
+	if (idx < 0 || idx >= last)
+		return; // already at bottom
+
+	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx + 1);
+	ui->eventTree->move_root(cur, dest, /*insert_before=*/false); // visual move + modified()
+
+	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
+
+	ui->eventTree->setCurrentItem(cur);
+	ui->eventTree->scrollToItem(cur);
+	updateEventMoveButtons();
 }
 
 void MissionEventsDialog::on_repeatCountBox_valueChanged(int value)
@@ -749,11 +846,54 @@ void MissionEventsDialog::on_btnNewMsg_clicked()
 	updateMessageUi();
 }
 
+void MissionEventsDialog::on_btnInsertMsg_clicked()
+{
+	_model->insertMessage();
+
+	// Refresh list UI (replace with your actual refresh)
+	rebuildMessageList();
+
+	// Keep selection/visibility in sync
+	const int sel = _model->getCurrentlySelectedMessage(); // or expose accessor
+	if (auto* w = ui->messageList) {                            // your list widget id
+		w->setCurrentRow(sel);
+		if (auto* it = w->item(sel))
+			w->scrollToItem(it);
+	}
+	updateMessageUi();
+}
+
 void MissionEventsDialog::on_btnDeleteMsg_clicked()
 {
 	_model->deleteMessage();
 
 	rebuildMessageList();
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_msgUpBtn_clicked()
+{
+	_model->moveMessageUp();
+	rebuildMessageList();
+	const int sel = _model->getCurrentlySelectedMessage();
+	if (auto* w = ui->messageList) {
+		w->setCurrentRow(sel);
+		if (auto* it = w->item(sel))
+			w->scrollToItem(it);
+	}
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_msgDownBtn_clicked()
+{
+	_model->moveMessageDown();
+	rebuildMessageList();
+	const int sel = _model->getCurrentlySelectedMessage();
+	if (auto* w = ui->messageList) {
+		w->setCurrentRow(sel);
+		if (auto* it = w->item(sel))
+			w->scrollToItem(it);
+	}
 	updateMessageUi();
 }
 

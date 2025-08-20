@@ -487,6 +487,11 @@ void MissionEventsDialogModel::setCurrentlySelectedEventByFormula(int formula)
 	}
 }
 
+int MissionEventsDialogModel::getCurrentlySelectedEvent() const
+{
+	return m_cur_event;
+}
+
 SCP_vector<mission_event>& MissionEventsDialogModel::getEventList()
 {
 	return m_events;
@@ -588,6 +593,11 @@ void MissionEventsDialogModel::setCurrentlySelectedMessage(int msg)
 
 	audiostream_close_file(m_wave_id, false);
 	m_wave_id = -1;
+}
+
+int MissionEventsDialogModel::getCurrentlySelectedMessage() const
+{
+	return m_cur_msg;
 }
 
 const SCP_vector<SCP_string>& MissionEventsDialogModel::getHeadAniList()
@@ -1097,6 +1107,33 @@ void MissionEventsDialogModel::createMessage()
 	set_modified();
 }
 
+void MissionEventsDialogModel::insertMessage()
+{
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg)) {
+		createMessage();
+		return;
+	}
+
+	MMessage msg;
+	const SCP_string base = "<new message>";
+	const SCP_string unique = makeUniqueMessageName(base);
+
+	strcpy_s(msg.name, unique.c_str());
+	strcpy_s(msg.message, "<put description here>");
+	msg.avi_info.name = nullptr;
+	msg.wave_info.name = nullptr;
+	msg.persona_index = -1;
+	msg.multi_team = -1;
+
+	// Insert at requested position
+	m_messages.insert(m_messages.begin() + m_cur_msg, msg);
+
+	// Select the new message
+	setCurrentlySelectedMessage(m_cur_msg);
+
+	set_modified();
+}
+
 void MissionEventsDialogModel::deleteMessage()
 {
 	// handle this case somewhat gracefully
@@ -1134,6 +1171,27 @@ void MissionEventsDialogModel::deleteMessage()
 
 	set_modified();
 }
+
+void MissionEventsDialogModel::moveMessageUp()
+{
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg == 0)
+		return;
+
+	std::swap(m_messages[m_cur_msg - 1], m_messages[m_cur_msg]);
+	setCurrentlySelectedMessage(m_cur_msg - 1);
+	set_modified();
+}
+
+void MissionEventsDialogModel::moveMessageDown()
+{
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg >= (int)m_messages.size() - 1)
+		return;
+
+	std::swap(m_messages[m_cur_msg + 1], m_messages[m_cur_msg]);
+	setCurrentlySelectedMessage(m_cur_msg + 1);
+	set_modified();
+}
+
 
 SCP_string MissionEventsDialogModel::getMessageName() const
 {

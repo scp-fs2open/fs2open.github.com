@@ -73,6 +73,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 
 	void setCurrentlySelectedEvent(int event);
 	void setCurrentlySelectedEventByFormula(int formula);
+	int getCurrentlySelectedEvent() const;
 	SCP_vector<mission_event>& getEventList();
 	void deleteRootNode(int node);
 	void renameRootNode(int node, const SCP_string& name);
@@ -80,6 +81,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void reorderByRootFormulaOrder(const SCP_vector<int>& newOrderedFormulas);
 
 	void setCurrentlySelectedMessage(int msg);
+	int getCurrentlySelectedMessage() const;
 	const SCP_vector<SCP_string>& getHeadAniList();
 	const SCP_vector<SCP_string>& getWaveList();
 	const SCP_vector<std::pair<SCP_string, int>>& getPersonaList();
@@ -135,7 +137,10 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 
 	// Message Management
 	void createMessage();
+	void insertMessage();
 	void deleteMessage();
+	void moveMessageUp();
+	void moveMessageDown();
 	SCP_string getMessageName() const;
 	void setMessageName(const SCP_string& name);
 	SCP_string getMessageText() const;
