@@ -91,6 +91,7 @@ extern void SCP_toupper(SCP_string &str);
 extern void SCP_totitle(SCP_string &str);
 
 extern bool SCP_truncate(SCP_string &str, size_t len);
+extern bool SCP_trim(SCP_string& str);
 
 extern bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right);
 extern bool lcase_lessthan(const SCP_string& _Left, const SCP_string& _Right);
