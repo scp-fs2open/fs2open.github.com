@@ -23,7 +23,11 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 {
 	ui->setupUi(this);
 
-	// Build the Qt adapter now that eventTree exists
+	// Build the Qt adapter for our data model
+	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree
+	// Simultaneously our tree model needs to be able to tell the tree when things change and also
+	// be able to read data from the tree as needed. So we pass in this small adapter object with
+	// the relevant tree operations allowing the model to do all the cross talk it needs
 	struct QtTreeOps final : IEventTreeOps {
 		explicit QtTreeOps(sexp_tree& t) : tree(t) {}
 		sexp_tree& tree;
@@ -114,6 +118,75 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 
 			tree.deleteCurrentItem();
 		}
+
+		Handle parent_of(Handle node) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(node);
+			return static_cast<Handle>(it ? it->parent() : nullptr);
+		}
+
+		int index_in_parent(Handle node) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(node);
+			if (!it)
+				return -1;
+			auto* p = it->parent();
+			return p ? p->indexOfChild(it) : -1;
+		}
+
+		int root_formula_of(Handle node) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(node);
+			if (!it)
+				return -1;
+			while (it->parent())
+				it = it->parent();
+			return it->data(0, sexp_tree::FormulaDataRole).toInt();
+		}
+
+		bool is_handle_valid(Handle h) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(h);
+			return it && it->treeWidget() == &tree;
+		}
+
+		Handle get_root_by_formula(int formula) override
+		{
+			return static_cast<Handle>(findRootByFormula(formula));
+		}
+
+		int child_count(Handle node) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(node);
+			return it ? it->childCount() : 0;
+		}
+
+		Handle child_at(Handle node, int idx) override
+		{
+			auto* it = static_cast<QTreeWidgetItem*>(node);
+			if (!it || idx < 0 || idx >= it->childCount())
+				return nullptr;
+			return static_cast<Handle>(it->child(idx));
+		}
+
+		void set_node_note(Handle node, const SCP_string& note) override
+		{
+			if (auto* it = static_cast<QTreeWidgetItem*>(node)) {
+				const QString q = QString::fromStdString(note);
+				it->setData(0, sexp_tree::NoteRole, q);
+				it->setToolTip(0, q);
+				tree.applyVisuals(it);
+			}
+		}
+
+		void set_node_bg_color(Handle node, int r, int g, int b, bool has_color) override
+		{
+			if (auto* it = static_cast<QTreeWidgetItem*>(node)) {
+				it->setData(0, sexp_tree::BgColorRole, QColor(r, g, b));
+				it->setBackground(0, has_color ? QBrush(QColor(r, g, b)) : QBrush());
+				tree.applyVisuals(it);
+			}
+		}
 	};
 
 	_treeOps = std::make_unique<QtTreeOps>(QtTreeOps{*ui->eventTree});
@@ -146,6 +219,15 @@ void MissionEventsDialog::initEventWidgets() {
 	connect(ui->eventTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) { ui->miniHelpBox->setText(help); });
 	connect(ui->eventTree, &sexp_tree::helpChanged, this, [this](const QString& help) { ui->helpBox->setPlainText(help); });
 	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) { MissionEventsDialog::rootNodeSelectedByFormula(formula); });
+
+	connect(ui->eventTree, &sexp_tree::nodeAnnotationChanged, this, [this](void* h, const QString& note) {
+		SCP_string text = note.toUtf8().constData();
+		_model->setNodeAnnotation(h, text);
+	});
+
+	connect(ui->eventTree, &sexp_tree::nodeBgColorChanged, this, [this](void* h, const QColor& c) {
+		_model->setNodeBgColor(h, c.red(), c.green(), c.blue(), c.isValid());
+	});
 
 	_model->setCurrentlySelectedEvent(-1);
 
@@ -640,8 +722,7 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 	/*auto message_name = item->text();
 
 	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
-	auto num_messages =
-		ui->eventTree->find_text(message_name.toUtf8().constData(), message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
+	auto num_messages = ui->eventTree->find_text(message_name.toUtf8().constData(), message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
 
 	if (num_messages == 0) {
 		QString message = tr("No events using message '%1'").arg(message_name);

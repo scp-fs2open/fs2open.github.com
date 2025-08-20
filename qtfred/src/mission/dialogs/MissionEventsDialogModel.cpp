@@ -68,6 +68,8 @@ bool MissionEventsDialogModel::apply()
 	for (int i = 0; i < (int)m_messages.size(); i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
+	applyAnnotations();
+
 	// Only fire the signal after the changes have been applied to make sure the other parts of the code see the updated
 	// state
 	if (query_modified()) {
@@ -134,6 +136,136 @@ void MissionEventsDialogModel::initializeEvents()
 
 		m_event_tree_ops.add_sub_tree(event.name, image, event.formula);
 	}
+
+	initializeEventAnnotations();
+}
+
+int MissionEventsDialogModel::findFormulaByOriginalEventIndex(int orig) const
+{
+	for (int cur = 0; cur < (int)m_sig.size(); ++cur)
+		if (m_sig[cur] == orig)
+			return m_events[cur].formula;
+	return -1;
+}
+
+void MissionEventsDialogModel::initializeEventAnnotations()
+{
+	m_event_annotations = Event_annotations; // copy
+
+	for (auto& ea : m_event_annotations) {
+		ea.handle = nullptr;
+		if (ea.path.empty())
+			continue;
+
+		const int origIdx = ea.path.front();
+		const int formula = findFormulaByOriginalEventIndex(origIdx);
+		if (formula < 0)
+			continue;
+
+		IEventTreeOps::Handle h = m_event_tree_ops.get_root_by_formula(formula);
+		if (!h)
+			continue;
+
+		// walk children
+		auto it = ea.path.begin();
+		++it; // skip event index
+		for (; it != ea.path.end() && h; ++it) {
+			const int child = *it;
+			if (child < 0 || child >= m_event_tree_ops.child_count(h)) {
+				h = nullptr;
+				break;
+			}
+			h = m_event_tree_ops.child_at(h, child);
+		}
+
+		ea.handle = h;
+		if (h) {
+			const bool hasColor = !(ea.r == 255 && ea.g == 255 && ea.b == 255);
+			m_event_tree_ops.set_node_note(h, ea.comment);
+			m_event_tree_ops.set_node_bg_color(h, ea.r, ea.g, ea.b, hasColor);
+		}
+	}
+}
+
+// Build the path for a handle (root formula -> orig index; then child indices)
+SCP_list<int> MissionEventsDialogModel::buildPathForHandle(IEventTreeOps::Handle h) const
+{
+	SCP_list<int> path;
+	if (!h)
+		return path;
+
+	const int rootFormula = m_event_tree_ops.root_formula_of(h);
+	if (rootFormula < 0)
+		return path;
+
+	// current idx -> original idx
+	int curIdx = -1;
+	for (int i = 0; i < (int)m_events.size(); ++i)
+		if (m_events[i].formula == rootFormula) {
+			curIdx = i;
+			break;
+		}
+	if (curIdx < 0)
+		return path;
+
+	int origIdx = (curIdx < (int)m_sig.size()) ? m_sig[curIdx] : -1;
+	if (origIdx < 0) {
+		origIdx = curIdx; // fallback to current index if we can't find the original because it's probably a new event
+	}
+	path.push_back(origIdx);
+
+	// climb to root, collecting indices, then reverse
+	std::vector<int> rev;
+	IEventTreeOps::Handle cur = h;
+	for (;;) {
+		IEventTreeOps::Handle parent = m_event_tree_ops.parent_of(cur);
+		if (!parent)
+			break;
+		rev.push_back(m_event_tree_ops.index_in_parent(cur));
+		cur = parent;
+	}
+	for (auto it = rev.rbegin(); it != rev.rend(); ++it)
+		path.push_back(*it);
+	return path;
+}
+
+bool MissionEventsDialogModel::isDefaultAnnotation(const event_annotation& ea)
+{
+	const bool noNote = ea.comment.empty();
+	const bool noColor = (ea.r == 255 && ea.g == 255 && ea.b == 255);
+	return noNote && noColor;
+}
+
+IEventTreeOps::Handle MissionEventsDialogModel::resolveHandleFromPath(const SCP_list<int>& path) const
+{
+	if (path.empty())
+		return nullptr;
+	const int origEvt = path.front();
+	const int formula = findFormulaByOriginalEventIndex(origEvt);
+	if (formula < 0)
+		return nullptr;
+
+	auto h = m_event_tree_ops.get_root_by_formula(formula);
+	auto it = path.begin();
+	++it; // skip event index
+	for (; it != path.end() && h; ++it) {
+		const int childIdx = *it;
+		if (childIdx < 0 || childIdx >= m_event_tree_ops.child_count(h))
+			return nullptr;
+		h = m_event_tree_ops.child_at(h, childIdx);
+	}
+	return h;
+}
+
+event_annotation& MissionEventsDialogModel::ensureAnnotationByPath(const SCP_list<int>& path)
+{
+	for (auto& ea : m_event_annotations)
+		if (ea.path == path)
+			return ea;
+	event_annotation ea{};
+	ea.path = path;
+	m_event_annotations.push_back(ea);
+	return m_event_annotations.back();
 }
 
 void MissionEventsDialogModel::initializeTeamList()
@@ -154,6 +286,39 @@ mission_event MissionEventsDialogModel::makeDefaultEvent()
 
 	return e;
 }
+
+void MissionEventsDialogModel::applyAnnotations()
+{
+	// Recompute paths from whatever we currently have
+	for (auto& ea : m_event_annotations) {
+		// Prefer live handle if still valid
+		if (ea.handle && m_event_tree_ops.is_handle_valid(ea.handle)) {
+			ea.path = buildPathForHandle(ea.handle);
+		} else {
+			// If we lost the handle, try to resolve from the old path
+			auto h = resolveHandleFromPath(ea.path);
+			if (h) {
+				ea.handle = h;                   // refresh cache for the rest of the session
+				ea.path = buildPathForHandle(h); // normalize
+			} else {
+				// Node is gone; mark default so we prune
+				ea.comment.clear();
+				ea.r = ea.g = ea.b = 255;
+				ea.handle = nullptr;
+				ea.path.clear();
+			}
+		}
+		// Drop the handle
+		ea.handle = nullptr;
+	}
+
+	// Prune defaults
+	m_event_annotations.erase(std::remove_if(m_event_annotations.begin(), m_event_annotations.end(), [](const event_annotation& ea) { return isDefaultAnnotation(ea); }), m_event_annotations.end());
+
+	// Apply
+	Event_annotations = m_event_annotations;
+}
+
 
 void MissionEventsDialogModel::initializeMessages()
 {
@@ -297,7 +462,6 @@ SCP_string MissionEventsDialogModel::makeUniqueMessageName(const SCP_string& bas
 			return cand;
 	}
 }
-
 
 bool MissionEventsDialogModel::eventIsValid() const
 {
@@ -841,6 +1005,32 @@ void MissionEventsDialogModel::setLogLastTrigger(bool log)
 	} else {
 		event.mission_log_flags &= ~MLF_LAST_TRIGGER_ONLY;
 	}
+	set_modified();
+}
+
+void MissionEventsDialogModel::setNodeAnnotation(IEventTreeOps::Handle h, const SCP_string& note)
+{
+	auto path = buildPathForHandle(h);
+	auto& ea = ensureAnnotationByPath(path);
+	ea.handle = h;
+	ea.comment = note;
+	m_event_tree_ops.set_node_note(h, note);
+	set_modified();
+}
+
+void MissionEventsDialogModel::setNodeBgColor(IEventTreeOps::Handle h, int r, int g, int b, bool has_color)
+{
+	auto path = buildPathForHandle(h);
+	auto& ea = ensureAnnotationByPath(path);
+	ea.handle = h;
+	if (has_color) {
+		ea.r = (ubyte)r;
+		ea.g = (ubyte)g;
+		ea.b = (ubyte)b;
+	} else {
+		ea.r = ea.g = ea.b = 255;
+	}
+	m_event_tree_ops.set_node_bg_color(h, r, g, b, has_color);
 	set_modified();
 }
 
