@@ -64,12 +64,12 @@ public:
 	int setVariableOnMissionCloseOrCompleteFlag(int index, int flags);
 	bool setVariableEternalFlag(int index, bool eternal);
 
-	SCP_string setVariableStringValue(int index, SCP_string value);
+	SCP_string setVariableStringValue(int index, const SCP_string& value);
 	int setVariableNumberValue(int index, int value);
 
 	SCP_string addNewVariable();
 	SCP_string addNewVariable(SCP_string nameIn);
-	SCP_string changeVariableName(int index, SCP_string newName);
+	SCP_string changeVariableName(int index, const SCP_string& newName);
 	SCP_string copyVariable(int index);
 	// returns whether it succeeded
 	bool removeVariable(int index, bool toDelete);
@@ -99,25 +99,25 @@ public:
 	SCP_string addContainer();
 	SCP_string addContainer(SCP_string nameIn);
 	SCP_string copyContainer(int index);
-	SCP_string changeContainerName(int index, SCP_string newName);
+	SCP_string changeContainerName(int index, const SCP_string& newName);
 	bool removeContainer(int index, bool toDelete);
 
 	SCP_string addListItem(int index);
-	SCP_string addListItem(int index, SCP_string item);
+	SCP_string addListItem(int index, const SCP_string& item);
 	SCP_string copyListItem(int containerIndex, int index);
 	bool removeListItem(int containerindex, int index);
 
 	std::pair<SCP_string, SCP_string> addMapItem(int index);
-	std::pair<SCP_string, SCP_string> addMapItem(int index, SCP_string key, SCP_string value);
+	std::pair<SCP_string, SCP_string> addMapItem(int index, const SCP_string& key, const SCP_string& value);
 	std::pair<SCP_string, SCP_string> copyMapItem(int index, int itemIndex);
-	SCP_string changeListItem(int containerIndex, int index, SCP_string newString);
+	SCP_string changeListItem(int containerIndex, int index, const SCP_string& newString);
 	bool removeMapItem(int index, int rowIndex);
 
 	void shiftListItemUp(int containerIndex, int itemIndex);
 	void shiftListItemDown(int containerIndex, int itemIndex);
 	
-	SCP_string changeMapItemKey(int index, int keyIndex, SCP_string newKey);
-	SCP_string changeMapItemStringValue(int index, int itemIndex, SCP_string newValue);
+	SCP_string changeMapItemKey(int index, int keyIndex, const SCP_string& newKey);
+	SCP_string changeMapItemStringValue(int index, int itemIndex, const SCP_string& newValue);
 	SCP_string changeMapItemNumberValue(int index, int itemIndex, int newValue);
 	
 	const SCP_vector<SCP_string>& getMapKeys(int index);
@@ -199,7 +199,7 @@ private:
 		return nullptr;
 	}
 
-	SCP_string* lookupContainerKeyByName(int containerIndex, SCP_string keyIn){
+	SCP_string* lookupContainerKeyByName(int containerIndex, const SCP_string& keyIn){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
 			for (auto key = _containerItems[containerIndex].keys.begin(); key != _containerItems[containerIndex].keys.end(); ++key) {
 				if (*key == keyIn){

@@ -592,7 +592,7 @@ bool VariableDialogModel::setVariableEternalFlag(int index, bool eternal)
     return eternal;
 }
 
-SCP_string VariableDialogModel::setVariableStringValue(int index, SCP_string value)
+SCP_string VariableDialogModel::setVariableStringValue(int index, const SCP_string& value)
 {
     auto variable = lookupVariable(index);
 
@@ -664,7 +664,7 @@ SCP_string VariableDialogModel::addNewVariable(SCP_string nameIn)
     return _variableItems.back().name;
 }
 
-SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName)
+SCP_string VariableDialogModel::changeVariableName(int index, const SCP_string& newName)
 { 
     auto variable = lookupVariable(index);
 
@@ -1303,7 +1303,7 @@ SCP_string VariableDialogModel::copyContainer(int index)
     return _containerItems.back().name;
 }
 
-SCP_string VariableDialogModel::changeContainerName(int index, SCP_string newName)
+SCP_string VariableDialogModel::changeContainerName(int index, const SCP_string& newName)
 {
     auto container = lookupContainer(index);
 
@@ -1370,7 +1370,7 @@ SCP_string VariableDialogModel::addListItem(int index)
     }
 }
 
-SCP_string VariableDialogModel::addListItem(int index, SCP_string item)
+SCP_string VariableDialogModel::addListItem(int index, const SCP_string& item)
 {
 	auto container = lookupContainer(index);
 
@@ -1454,7 +1454,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
 }
 
 // Overload for specified key and/or Value
-std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, SCP_string key, SCP_string value)
+std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, const SCP_string& key, const SCP_string& value)
 {
 	auto container = lookupContainer(index);
 
@@ -1543,7 +1543,7 @@ SCP_string VariableDialogModel::copyListItem(int containerIndex, int index)
 
 }
 
-SCP_string VariableDialogModel::changeListItem(int containerIndex, int index, SCP_string newString)
+SCP_string VariableDialogModel::changeListItem(int containerIndex, int index, const SCP_string& newString)
 {
 	auto container = lookupContainer(containerIndex);
 
@@ -1821,7 +1821,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     return true;
 }
 
-SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, SCP_string newKey)
+SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, const SCP_string& newKey)
 {
     auto container = lookupContainer(index);
 
@@ -1839,7 +1839,7 @@ SCP_string VariableDialogModel::changeMapItemKey(int index, int keyRow, SCP_stri
 	return container->keys[keyRow];
 }
 
-SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemIndex, SCP_string newValue)
+SCP_string VariableDialogModel::changeMapItemStringValue(int index, int itemIndex, const SCP_string& newValue)
 {
 	auto item = lookupContainerStringItem(index, itemIndex);
     
