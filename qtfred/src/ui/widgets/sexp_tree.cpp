@@ -53,6 +53,12 @@
 #include <QtWidgets/QColorDialog>
 #include <QtWidgets/QStyledItemDelegate>
 #include <QtWidgets/QStyleOptionViewItem>
+#include <QKeyEvent>
+#include <QVBoxLayout>
+#include <QAbstractItemView>
+#include <QScrollBar>
+#include <QFontMetrics>
+#include <QRegularExpression>
 #include <QApplication>
 #include <QPainter>
 #include <QDebug>
@@ -284,14 +290,7 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree::handleNewItemSelected);
-	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {
-		if (!_interface || !_interface->getFlags()[TreeFlags::RootEditable]) {
-			return; // respect flags
-		}
-		if (item && !item->parent()) { // root only
-			beginItemEdit(item);       // sets _currently_editing + calls editItem
-		}
-	});
+	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {openNodeEditor(item);});
 
 	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
 }
@@ -2746,6 +2745,66 @@ void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool i
 QTreeWidgetItem*
 sexp_tree::insert(const QString& lpszItem, NodeImage image, QTreeWidgetItem* hParent, QTreeWidgetItem* hInsertAfter) {
 	return insertWithIcon(lpszItem, convertNodeImageToIcon(image), hParent, hInsertAfter);
+}
+
+void sexp_tree::keyPressEvent(QKeyEvent* e)
+{
+	// Clear stale state if popup was closed externally
+	if (_opPopup && _opPopupActive && !_opPopup->isVisible()) {
+		_opPopupActive = false;
+		_opNodeIndex = -1;
+	}
+
+	// Route keys while popup is active
+	if (_opPopupActive && _opPopup) {
+		switch (e->key()) {
+		case Qt::Key_Escape:
+			endOperatorQuickSearch(false);
+			return;
+		case Qt::Key_Return:
+		case Qt::Key_Enter:
+			endOperatorQuickSearch(true);
+			return;
+		case Qt::Key_Up:
+		case Qt::Key_Down:
+		case Qt::Key_PageUp:
+		case Qt::Key_PageDown:
+		case Qt::Key_Home:
+		case Qt::Key_End:
+			QCoreApplication::sendEvent(_opList, e);
+			return;
+		default:
+			QCoreApplication::sendEvent(_opEdit, e);
+			return;
+		}
+	}
+
+	// Space opens the editor for the selected node
+	if (e->key() == Qt::Key_Space && currentItem()) {
+		openNodeEditor(currentItem());
+		return;
+	}
+
+	QTreeWidget::keyPressEvent(e);
+}
+
+bool sexp_tree::eventFilter(QObject* obj, QEvent* ev)
+{
+	if (obj == _opPopup) {
+		switch (ev->type()) {
+		case QEvent::Hide:
+		case QEvent::Close:
+		case QEvent::WindowDeactivate:
+			// Treat any external close as cancel; just clear state.
+			_opPopupActive = false;
+			_opNodeIndex = -1;
+			setFocus(Qt::OtherFocusReason);
+			break;
+		default:
+			break;
+		}
+	}
+	return QTreeWidget::eventFilter(obj, ev);
 }
 
 QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
@@ -7034,6 +7093,254 @@ void sexp_tree::deleteActionHandler() {
 void sexp_tree::editDataActionHandler() {
 	beginItemEdit(currentItem());
 }
+
+// Compute the valid operators for replacing/adding at the given node, based on parent arg type.
+// This mirrors the original menu enable/disable logic. See original for how "type" is computed.
+QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
+{
+	QStringList out;
+	if (nodeIndex < 0 || nodeIndex >= (int)tree_nodes.size())
+		return out;
+
+	const int parent = tree_nodes[nodeIndex].parent;
+	const int argIndex = (parent >= 0) ? find_argument_number(parent, nodeIndex) : 0;
+
+	// Original behavior: compute the OPF type expected at this node
+	const int opf = query_node_argument_type(nodeIndex); // handles top-level = OPF_NULL, etc.
+	if (opf < 0)
+		return out;
+
+	// Build the canonical list for this OPF (this mirrors classic FRED)
+	sexp_list_item* list = get_listing_opf(opf, parent, argIndex); // may be nullptr
+	for (auto* p = list; p; p = p->next) {
+		if (p->op >= 0) {
+			const int opIndex = p->op;
+
+			// Optional: keep parity with the menu, which disables ops lacking default args
+			if (!query_default_argument_available(opIndex))
+				continue;
+
+			out.push_back(QString::fromStdString(Operators[opIndex].text));
+		}
+		// (items with p->op < 0 are data items like strings/ships/etc.; we ignore for operator search)
+	}
+
+	if (list)
+		list->destroy();
+
+	out.removeDuplicates();
+	std::sort(out.begin(), out.end(), [](const QString& a, const QString& b) {
+		return a.compare(b, Qt::CaseInsensitive) < 0;
+	});
+	return out;
+}
+
+void sexp_tree::openNodeEditor(QTreeWidgetItem* item)
+{
+	if (!item || !_interface)
+		return;
+
+	// if this is the root and it's not editable, bail.
+	if (!_interface->getFlags()[TreeFlags::RootEditable] && !item->parent())
+		return;
+
+	if (item && !item->parent()) { // root only
+		beginItemEdit(item);       // sets _currently_editing + calls editItem
+		return;
+	}
+
+	// If an operator popup is already up, ignore
+	if (_opPopupActive && _opPopup && _opPopup->isVisible())
+		return;
+
+	// Map item -> internal node index
+	int nodeIdx = -1;
+	for (uint i = 0; i < tree_nodes.size(); ++i) {
+		if (tree_nodes[i].handle == item) {
+			nodeIdx = static_cast<int>(i);
+			break;
+		}
+	}
+	if (nodeIdx < 0)
+		return;
+
+	// operator chooser vs inline data edit
+	const QStringList ops = validOperatorsForNode(nodeIdx); // uses get_listing_opf(...)
+	if (!ops.isEmpty()) {
+		startOperatorQuickSearch(item, QString());
+		return;
+	}
+
+	// Fallback to inline edit
+	beginItemEdit(item);
+}
+
+void sexp_tree::startOperatorQuickSearch(QTreeWidgetItem* item, const QString& seed)
+{
+	if (!item)
+		return;
+
+	// Map item -> node index
+	int nodeIdx = -1;
+	for (uint i = 0; i < tree_nodes.size(); ++i) {
+		if (tree_nodes[i].handle == item) {
+			nodeIdx = (int)i;
+			break;
+		}
+	}
+	if (nodeIdx < 0)
+		return;
+
+	// Only allow on editable positions (operator or data) that live beneath a parent
+	// (We’ll compute OPF from parent or root as necessary)
+	_opAll = validOperatorsForNode(nodeIdx);
+	if (_opAll.isEmpty())
+		return;
+
+	_opNodeIndex = nodeIdx;
+
+	if (!_opPopup) {
+		_opPopup = new QFrame(viewport(), Qt::Popup);
+		_opPopup->setFrameShape(QFrame::Box);
+		_opPopup->setFrameShadow(QFrame::Plain);
+		_opPopup->installEventFilter(this); // <-- important
+		auto* layout = new QVBoxLayout(_opPopup);
+		layout->setContentsMargins(4, 4, 4, 4);
+		_opEdit = new QLineEdit(_opPopup);
+		_opList = new QListWidget(_opPopup);
+		_opList->setSelectionMode(QAbstractItemView::SingleSelection);
+		_opList->setUniformItemSizes(true);
+		layout->addWidget(_opEdit);
+		layout->addWidget(_opList);
+		connect(_opEdit, &QLineEdit::textChanged, this, &sexp_tree::filterOperatorPopup);
+		connect(_opEdit, &QLineEdit::returnPressed, [this]() { endOperatorQuickSearch(true); });
+		connect(_opList, &QListWidget::itemActivated, [this](QListWidgetItem*) { endOperatorQuickSearch(true); });
+		connect(_opList, &QListWidget::itemClicked, [this](QListWidgetItem*) { endOperatorQuickSearch(true); });
+	}
+
+	_opList->clear();
+	_opList->addItems(_opAll);
+	if (!seed.isEmpty()) {
+		_opEdit->setText(seed);
+		_opEdit->selectAll();
+		filterOperatorPopup(seed);
+	} else {
+		_opEdit->clear();
+		if (_opList->count() > 0)
+			_opList->setCurrentRow(0);
+	}
+
+	// Size the popup: width = widest operator text + scrollbar + padding; height ~10 rows
+	QFontMetrics fm(_opList->font());
+	int w = 0;
+	for (const auto& s : _opAll)
+		w = std::max(w, fm.horizontalAdvance(s));
+	w += _opList->verticalScrollBar()->sizeHint().width() + 24; // padding
+	int rowH = fm.height() + 6;
+	int h = (std::min(10, std::max(4, _opList->count())) * rowH) + _opEdit->sizeHint().height() + 12;
+
+	// Place below the item
+	QRect itemRect = visualItemRect(item);
+	QPoint topLeft = viewport()->mapToGlobal(itemRect.topLeft());
+	_opPopup->setGeometry(QRect(topLeft.x(), topLeft.y(), std::max(w, 260), h));
+	_opPopup->show();
+	_opEdit->setFocus();
+	_opPopupActive = true;
+}
+
+void sexp_tree::filterOperatorPopup(const QString& text)
+{
+	_opList->clear();
+	if (text.isEmpty()) {
+		_opList->addItems(_opAll);
+	} else {
+		for (const auto& s : _opAll) {
+			if (s.contains(text, Qt::CaseInsensitive))
+				_opList->addItem(s);
+		}
+	}
+	if (_opList->count() > 0)
+		_opList->setCurrentRow(0);
+}
+
+void sexp_tree::endOperatorQuickSearch(bool confirm)
+{
+	if (!_opPopupActive)
+		return;
+
+	// Cache before hiding since hide triggers eventFilter which clears state
+	const int node = _opNodeIndex;
+
+	QString chosenOp;
+	QString typed = (_opEdit ? _opEdit->text().trimmed() : QString());
+
+	if (confirm) {
+		// If user selected an operator in the list, prefer that
+		if (_opList && _opList->currentItem())
+			chosenOp = _opList->currentItem()->text();
+
+		// If nothing selected, see if typed text is a valid *number* for this slot
+		if (chosenOp.isEmpty() && !typed.isEmpty()) {
+			const int expected = query_node_argument_type(node); // OPF_*
+			const bool expectsNumber = (expected == OPF_NUMBER) || (expected == OPF_POSITIVE) ||
+									   (expected == OPF_AMBIGUOUS); // allow numerics here too???
+
+			// Accept +/- integers
+			static const QRegularExpression kIntRx(QStringLiteral(R"(^[+-]?\d+$)"));
+			const bool isInt = kIntRx.match(typed).hasMatch();
+
+			// Enforce positivity if required
+			bool okForPositive = true;
+			if (expected == OPF_POSITIVE && isInt) {
+				okForPositive = typed.toLongLong() > 0;
+			}
+
+			if (expectsNumber && isInt && okForPositive) {
+				// Commit as NUMBER data
+				if (_opPopup)
+					_opPopup->hide();
+				_opPopupActive = false;
+				_opNodeIndex = -1;
+
+				setCurrentItemIndex(node); // sets item_index for replace_data()
+				int type = SEXPT_NUMBER | SEXPT_VALID;
+				if (tree_nodes[item_index].type & SEXPT_MODIFIER)
+					type |= SEXPT_MODIFIER;
+
+				replace_data(typed.toUtf8().constData(), type);
+				setFocus(Qt::OtherFocusReason);
+				return; // done
+			}
+		}
+
+		// fall back to closest operator match from typed text
+		if (chosenOp.isEmpty() && !typed.isEmpty()) {
+			auto best = match_closest_operator(typed.toStdString(), node);
+			if (!best.empty())
+				chosenOp = QString::fromStdString(best);
+		}
+	}
+
+	// Close popup and reset state
+	if (_opPopup)
+		_opPopup->hide();
+	_opPopupActive = false;
+	_opNodeIndex = -1;
+
+	// Commit operator if we resolved one
+	if (confirm && !chosenOp.isEmpty() && node >= 0 && node < (int)tree_nodes.size()) {
+		setCurrentItemIndex(node);
+		const int op_num = get_operator_index(chosenOp.toUtf8().constData());
+		if (op_num >= 0) {
+			add_or_replace_operator(op_num, /*replace_flag*/ 1);
+			if (tree_nodes[node].handle)
+				tree_nodes[node].handle->setExpanded(true);
+		}
+	}
+
+	setFocus(Qt::OtherFocusReason);
+}
+
 void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 	if (!_currently_editing) {
 		return;
@@ -7064,7 +7371,8 @@ void sexp_tree::handleItemChange(QTreeWidgetItem* item, int  /*column*/) {
 
 	Assert(node < tree_nodes.size());
 	if (tree_nodes[node].type & SEXPT_OPERATOR) {
-		auto op = match_closest_operator(str.toStdString(), node);
+		SCP_string text = str.toUtf8().constData();
+		auto op = match_closest_operator(text, node);
 		if (op.empty()) {
 			return;
 		}    // Goober5000 - avoids crashing
