@@ -171,7 +171,12 @@ class sexp_tree: public QTreeWidget {
 
  Q_OBJECT
  public:
-	static const int FormulaDataRole = Qt::UserRole;
+	 enum {
+		 FormulaDataRole = Qt::UserRole + 1,
+		 SexpNodeIdRole = Qt::UserRole + 2,
+		 NoteRole = Qt::UserRole + 100,
+		 BgColorRole = Qt::UserRole + 101
+	 };
 
  	static QIcon convertNodeImageToIcon(NodeImage image);
 
@@ -217,6 +222,8 @@ class sexp_tree: public QTreeWidget {
 	void ensure_visible(int node);
 	int node_error(int node, const char* msg, int* bypass);
 	void expand_branch(QTreeWidgetItem* h);
+	void editNoteForItem(QTreeWidgetItem* h);
+	void editBgColorForItem(QTreeWidgetItem* h);
 	void expand_operator(int node);
 	void merge_operator(int node);
 	int identify_arg_type(int node);
@@ -380,6 +387,8 @@ class sexp_tree: public QTreeWidget {
 	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
 
 	void deleteCurrentItem();
+
+	void applyVisuals(QTreeWidgetItem* it);
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
@@ -391,6 +400,9 @@ class sexp_tree: public QTreeWidget {
 	void nodeChanged(int node);
 
 	void selectedRootChanged(int formula);
+
+	void nodeAnnotationChanged(void* handle, const QString& note);
+	void nodeBgColorChanged(void* handle, const QColor& color);
 
 	// Generated message map functions
  protected:

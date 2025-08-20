@@ -49,6 +49,12 @@
 
 #include <QtWidgets/QMessageBox>
 #include <QtWidgets/QMenu>
+#include <QtWidgets/QInputDialog>
+#include <QtWidgets/QColorDialog>
+#include <QtWidgets/QStyledItemDelegate>
+#include <QtWidgets/QStyleOptionViewItem>
+#include <QApplication>
+#include <QPainter>
 #include <QDebug>
 
 #define TREE_NODE_INCREMENT    100
@@ -208,6 +214,60 @@ QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
 	return QIcon(node_image_to_resource_name(image));
 }
 
+class NoteBadgeDelegate final : public QStyledItemDelegate {
+  public:
+	explicit NoteBadgeDelegate(sexp_tree* tree) : QStyledItemDelegate(tree), _tree(tree) {}
+
+	void paint(QPainter* p, const QStyleOptionViewItem& option, const QModelIndex& index) const override
+	{
+		QStyleOptionViewItem opt(option);
+		initStyleOption(&opt, index);
+
+		// draw the standard icon + text first
+		const QWidget* w = opt.widget;
+		const QStyle* s = w ? w->style() : QApplication::style();
+		s->drawControl(QStyle::CE_ItemViewItem, &opt, p, w);
+
+		// if there’s a note, paint the badge directly after the text
+		const QString note = index.data(sexp_tree::NoteRole).toString();
+		if (!note.isEmpty()) {
+			// where Qt drew the text
+			QRect textRect = s->subElementRect(QStyle::SE_ItemViewItemText, &opt, w);
+
+			// compute how much text actually fit (respect eliding)
+			QFontMetrics fm(opt.font);
+			const QString shown = fm.elidedText(opt.text, opt.textElideMode, textRect.width());
+			const int textWidth = fm.horizontalAdvance(shown);
+
+			// pick an icon; use your existing mapping
+			const QIcon icon = sexp_tree::convertNodeImageToIcon(NodeImage::COMMENT);
+			const int dpi = p->device() ? p->device()->logicalDpiX() : 96;
+			const int sz = opt.decorationSize.isValid() ? opt.decorationSize.height() : int(16 * dpi / 96);
+			const QPixmap pm = icon.pixmap(sz, sz);
+
+			// place badge just after the text, with a small pad
+			const int pad = 10;
+			int x = textRect.left() + textWidth + pad;
+			int y = textRect.center().y() - pm.height() / 2;
+
+			// keep inside cell if the row is very tight
+			const int rightBound = option.rect.right() - 2;
+			if (x + pm.width() > rightBound)
+				x = rightBound - pm.width();
+
+			p->save();
+			// ensure good contrast on selected rows
+			if (opt.state & QStyle::State_Selected)
+				p->setCompositionMode(QPainter::CompositionMode_SourceOver);
+			p->drawPixmap(x, y, pm);
+			p->restore();
+		}
+	}
+
+  private:
+	sexp_tree* _tree;
+};
+
 // constructor
 sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	setSelectionMode(QTreeWidget::SingleSelection);
@@ -232,6 +292,8 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 			beginItemEdit(item);       // sets _currently_editing + calls editItem
 		}
 	});
+
+	setItemDelegateForColumn(0, new NoteBadgeDelegate(this));
 }
 
 sexp_tree::~sexp_tree() = default;
@@ -1746,6 +1808,32 @@ void sexp_tree::expand_branch(QTreeWidgetItem* h) {
 	for (auto i = 0; i < h->childCount(); ++i) {
 		expand_branch(h->child(i));
 	}
+}
+
+// edit the comment for the operator pointed to by item_index
+void sexp_tree::editNoteForItem(QTreeWidgetItem* it)
+{
+	const QString old = it->data(0, NoteRole).toString();
+	bool ok = false;
+	const QString text = QInputDialog::getMultiLineText(this, tr("Edit Note"), tr("Node note:"), old, &ok);
+	if (!ok)
+		return;
+	it->setData(0, NoteRole, text);
+	applyVisuals(it);
+
+	Q_EMIT nodeAnnotationChanged(static_cast<void*>(it), text);
+}
+
+void sexp_tree::editBgColorForItem(QTreeWidgetItem* it)
+{
+	const QColor start = it->data(0, BgColorRole).value<QColor>();
+	const QColor c = QColorDialog::getColor(start.isValid() ? start : Qt::yellow, this, tr("Choose Background Color"));
+	if (!c.isValid())
+		return;
+	it->setData(0, BgColorRole, c);
+	applyVisuals(it);
+
+	Q_EMIT nodeBgColorChanged(static_cast<void*>(it), c);
 }
 
 void sexp_tree::merge_operator(int  /*node*/) {
@@ -5791,11 +5879,17 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	auto edit_data_act = popup_menu->addAction(tr("&Edit Data"), this, [this]() { editDataActionHandler(); });
 	popup_menu->addAction(tr("Expand All"), this, [this]() { expand_branch(currentItem()); });
 
+	popup_menu->addSection(tr("Annotations"));
+	auto edit_comment_act = popup_menu->addAction(tr("Edit Comment"), this, [this, h]() { editNoteForItem(h); });
+	auto edit_color_act = popup_menu->addAction(tr("Edit Color"), this, [this, h]() { editBgColorForItem(h); });
+	edit_comment_act->setEnabled(true); // TODO disable for non event editor windows
+	edit_color_act->setEnabled(true); // TODO disable for non event editor windows
+
 	popup_menu->addSection(tr("Copy operations"));
 	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
 	cut_act->setEnabled(false);
 	auto copy_act = popup_menu->addAction(tr("Copy"), this, [this]() { copyActionHandler(); }, QKeySequence::Copy);
-	auto paste_act = popup_menu->addAction(tr("Paste"), this, [this]() { pasteActionHandler(); }, QKeySequence::Paste);
+	auto paste_act = popup_menu->addAction(tr("Paste"), this, [this]() { pasteActionHandler(); }, QKeySequence::Paste); //TODO match paste/add paste
 	paste_act->setEnabled(false);
 
 	popup_menu->addSection(tr("Add"));
@@ -7367,6 +7461,17 @@ void sexp_tree::handleNewItemSelected() {
 }
 void sexp_tree::deleteCurrentItem() {
 	deleteActionHandler();
+}
+void sexp_tree::applyVisuals(QTreeWidgetItem* it)
+{
+	const auto note = it->data(0, NoteRole).toString();
+	const auto color = it->data(0, BgColorRole).value<QColor>();
+	it->setToolTip(0, note);
+
+	// Background color for the entire row
+	if (color.isValid()) {
+		it->setBackground(0, QBrush(color));
+	}
 }
 int sexp_tree::getCurrentItemIndex() const {
 	return item_index;
