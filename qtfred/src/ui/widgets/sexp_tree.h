@@ -59,6 +59,7 @@ FLAG_LIST(TreeFlags) {
 	LabeledRoot = 0,
 	RootDeletable,
 	RootEditable,
+	AnnotationsAllowed,
 
 	NUM_VALUES
 };

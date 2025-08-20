@@ -5941,8 +5941,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 	popup_menu->addSection(tr("Annotations"));
 	auto edit_comment_act = popup_menu->addAction(tr("Edit Comment"), this, [this, h]() { editNoteForItem(h); });
 	auto edit_color_act = popup_menu->addAction(tr("Edit Color"), this, [this, h]() { editBgColorForItem(h); });
-	edit_comment_act->setEnabled(true); // TODO disable for non event editor windows
-	edit_color_act->setEnabled(true); // TODO disable for non event editor windows
+	edit_comment_act->setEnabled(_interface->getFlags()[TreeFlags::AnnotationsAllowed]);
+	edit_color_act->setEnabled(_interface->getFlags()[TreeFlags::AnnotationsAllowed]);
 
 	popup_menu->addSection(tr("Copy operations"));
 	auto cut_act = popup_menu->addAction(tr("Cut"), this, [this]() { cutActionHandler(); }, QKeySequence::Cut);
