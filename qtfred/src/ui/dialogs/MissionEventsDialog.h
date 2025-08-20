@@ -20,8 +20,6 @@ namespace Ui {
 class MissionEventsDialog;
 }
 
-const int MAX_SEARCH_MESSAGE_DEPTH = 5;		// maximum search number of event nodes with message text
-
 class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 	Q_OBJECT
 
@@ -123,7 +121,6 @@ private:
 	void initMessageWidgets();
 	void initEventWidgets();
 	void updateEventBitmap();
-	void messageDoubleClicked(QListWidgetItem* item);
 	void browseAni();
 
 	static SCP_vector<int> read_root_formula_order(sexp_tree* tree);
