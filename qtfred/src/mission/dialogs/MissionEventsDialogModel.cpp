@@ -198,23 +198,21 @@ SCP_list<int> MissionEventsDialogModel::buildPathForHandle(IEventTreeOps::Handle
 	if (rootFormula < 0)
 		return path;
 
-	// current idx -> original idx
+	// Find the *current* index of this root in m_events
 	int curIdx = -1;
-	for (int i = 0; i < (int)m_events.size(); ++i)
+	for (int i = 0; i < static_cast<int>(m_events.size()); ++i) {
 		if (m_events[i].formula == rootFormula) {
 			curIdx = i;
 			break;
 		}
+	}
 	if (curIdx < 0)
 		return path;
 
-	int origIdx = (curIdx < (int)m_sig.size()) ? m_sig[curIdx] : -1;
-	if (origIdx < 0) {
-		origIdx = curIdx; // fallback to current index if we can't find the original because it's probably a new event
-	}
-	path.push_back(origIdx);
+	// persist the current index
+	path.push_back(curIdx);
 
-	// climb to root, collecting indices, then reverse
+	// Collect child indices from node up to root, then reverse
 	std::vector<int> rev;
 	IEventTreeOps::Handle cur = h;
 	for (;;) {
@@ -226,6 +224,7 @@ SCP_list<int> MissionEventsDialogModel::buildPathForHandle(IEventTreeOps::Handle
 	}
 	for (auto it = rev.rbegin(); it != rev.rend(); ++it)
 		path.push_back(*it);
+
 	return path;
 }
 
@@ -537,6 +536,49 @@ void MissionEventsDialogModel::changeRootNodeFormula(int old, int node)
 
 	Assertion(i < static_cast<int>(m_events.size()), "Attempt to modify invalid event!");
 	m_events[i].formula = node;
+	set_modified();
+}
+
+void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& newOrderedFormulas)
+{
+	// Basic sanity: must be a 1:1 permutation of current roots
+	if ((int)newOrderedFormulas.size() != (int)m_events.size())
+		return;
+
+	// Build the permuted arrays (O(n^2) is fine for event counts)
+	SCP_vector<mission_event> newEvents;
+	SCP_vector<int> newSig;
+	newEvents.reserve(m_events.size());
+	newSig.reserve(m_sig.size());
+
+	for (int formula : newOrderedFormulas) {
+		int oldIdx = -1;
+		for (int i = 0; i < (int)m_events.size(); ++i) {
+			if (m_events[i].formula == formula) {
+				oldIdx = i;
+				break;
+			}
+		}
+		if (oldIdx < 0) {
+			// Unknown formula; bail without mutating state
+			return;
+		}
+		newEvents.push_back(m_events[oldIdx]);
+		if (SCP_vector_inbounds(m_sig, oldIdx)) {
+			newSig.push_back(m_sig[oldIdx]);
+		}
+	}
+
+	// Swap in the new order
+	m_events.swap(newEvents);
+	m_sig.swap(newSig);
+
+	// Keep selection reasonable (select the first event after reorder)
+	setCurrentlySelectedEvent(m_events.empty() ? -1 : 0);
+
+	// Rebuild applied annotations against new handles/order if needed
+	initializeEventAnnotations();
+
 	set_modified();
 }
 

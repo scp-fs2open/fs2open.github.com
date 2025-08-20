@@ -145,6 +145,15 @@ QString node_image_to_resource_name(NodeImage image) {
 	}
 	return ":/images/bitmap1.png";
 }
+
+static QPoint s_dragStartPos;
+static QTreeWidgetItem* s_dragSourceRoot = nullptr;
+static bool s_dragging = false;
+
+static bool isRoot(QTreeWidgetItem* it)
+{
+	return it && !it->parent();
+}
 }
 
 SexpTreeEditorInterface::SexpTreeEditorInterface() :
@@ -2664,73 +2673,77 @@ void sexp_tree::move_branch(int source, int parent) {
 	}
 }
 
-QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after) {
-	QTreeWidgetItem* h = nullptr;
-	if (source) {
-		uint i;
+QTreeWidgetItem* sexp_tree::move_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after)
+{
+	if (!source)
+		return nullptr;
 
-		for (i = 0; i < tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == source) {
-				break;
-			}
-		}
+	// Find matching tree_nodes slot, if any, to update its handle
+	uint idx = 0;
+	while (idx < tree_nodes.size() && tree_nodes[idx].handle != source) {
+		++idx;
+	}
 
-		if (i < tree_nodes.size()) {
-			auto icon = source->icon(0);
-			h = insertWithIcon(source->text(0), icon, parent, after);
-			tree_nodes[i].handle = h;
-		} else {
-			auto icon = source->icon(0);
-			h = insertWithIcon(source->text(0), icon, parent, after);
-		}
+	// Create the destination item
+	const auto icon = source->icon(0);
+	QTreeWidgetItem* h = insertWithIcon(source->text(0), icon, parent, after);
+	if (idx < tree_nodes.size()) {
+		tree_nodes[idx].handle = h;
+	}
 
-		h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
-		for (auto childIdx = 0; childIdx < source->childCount(); ++i) {
-			auto child = source->child(childIdx);
+	// Copy all per-item data we rely on for annotations/visuals
+	h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
+	h->setData(0, NoteRole, source->data(0, NoteRole));
+	h->setData(0, BgColorRole, source->data(0, BgColorRole));
+	applyVisuals(h);
 
-			move_branch(child, h);
-		}
+	// Move children safely
+	while (source->childCount() > 0) {
+		auto* child = source->child(0);
+		move_branch(child, h);
+	}
 
-		h->setExpanded(source->isExpanded());
+	h->setExpanded(source->isExpanded());
 
-		source->parent()->removeChild(source);
+	// Remove the old item from the tree
+	if (auto* p = source->parent()) {
+		p->removeChild(source);
+		delete source;
+	} else if (auto* tw = source->treeWidget()) {
+		const int topIdx = tw->indexOfTopLevelItem(source);
+		if (topIdx >= 0)
+			tw->takeTopLevelItem(topIdx);
+		delete source;
 	}
 
 	return h;
 }
 
-void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after) {
-	QTreeWidgetItem* h = nullptr;
-	if (source) {
-		uint i;
+void sexp_tree::copy_branch(QTreeWidgetItem* source, QTreeWidgetItem* parent, QTreeWidgetItem* after)
+{
+	if (!source)
+		return;
 
-		for (i = 0; i < tree_nodes.size(); i++) {
-			if (tree_nodes[i].handle == source) {
-				break;
-			}
-		}
+	const auto icon = source->icon(0);
+	QTreeWidgetItem* h = insertWithIcon(source->text(0), icon, parent, after);
 
-		if (i < tree_nodes.size()) {
-			auto icon = source->icon(0);
-			h = insertWithIcon(source->text(0), icon, parent, after);
-			tree_nodes[i].handle = h;
-		} else {
-			auto icon = source->icon(0);
-			h = insertWithIcon(source->text(0), icon, parent, after);
-		}
+	// Copy per-item data/annotations
+	h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
+	h->setData(0, NoteRole, source->data(0, NoteRole));
+	h->setData(0, BgColorRole, source->data(0, BgColorRole));
+	applyVisuals(h);
 
-		h->setData(0, FormulaDataRole, source->data(0, FormulaDataRole));
-		for (auto childIdx = 0; childIdx < source->childCount(); ++i) {
-			auto child = source->child(childIdx);
-
-			move_branch(child, h);
-		}
-
-		h->setExpanded(source->isExpanded());
+	// Copy children (recursively COPY, not move)
+	for (int i = 0; i < source->childCount(); ++i) {
+		copy_branch(source->child(i), h);
 	}
+
+	h->setExpanded(source->isExpanded());
 }
 
-void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before) {
+// Old version of move_root
+/*void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before)
+{
 	auto after = dest;
 
 	if (insert_before) {
@@ -2740,6 +2753,45 @@ void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool i
 	auto h = move_branch(source, itemFromIndex(rootIndex()), after);
 	setCurrentItem(h);
 	modified();
+}*/
+
+void sexp_tree::move_root(QTreeWidgetItem* source, QTreeWidgetItem* dest, bool insert_before)
+{
+	if (!source || !dest)
+		return;
+	if (source->parent() || dest->parent())
+		return; // roots only
+
+	// Take the source out of the top-level list
+	const int srcIdx = indexOfTopLevelItem(source);
+	if (srcIdx < 0)
+		return;
+
+	// Remove first so the destination index we compute is correct after removal
+	QTreeWidgetItem* moved = takeTopLevelItem(srcIdx);
+
+	// Recompute the current index of dest after the removal
+	int dstIdx = indexOfTopLevelItem(dest);
+	if (dstIdx < 0) {
+		// put it back where it was
+		insertTopLevelItem(srcIdx, moved);
+		return;
+	}
+
+	if (!insert_before) {
+		// inserting after the drop target
+		++dstIdx;
+	}
+
+	// Clamp and insert
+	dstIdx = std::max(0, std::min(dstIdx, topLevelItemCount()));
+	insertTopLevelItem(dstIdx, moved);
+	setCurrentItem(moved);
+
+	// Mark the tree modified
+	modified();
+
+	Q_EMIT rootOrderChanged();
 }
 
 QTreeWidgetItem*
@@ -2805,6 +2857,63 @@ bool sexp_tree::eventFilter(QObject* obj, QEvent* ev)
 		}
 	}
 	return QTreeWidget::eventFilter(obj, ev);
+}
+
+void sexp_tree::mousePressEvent(QMouseEvent* e)
+{
+	s_dragStartPos = e->pos();
+	s_dragSourceRoot = itemAt(e->pos());
+	if (!isRoot(s_dragSourceRoot))
+		s_dragSourceRoot = nullptr; // roots only
+	s_dragging = false;
+	QTreeWidget::mousePressEvent(e);
+}
+
+void sexp_tree::mouseMoveEvent(QMouseEvent* e)
+{
+	if (!s_dragSourceRoot) {
+		QTreeWidget::mouseMoveEvent(e);
+		return;
+	}
+	if (!(e->buttons() & Qt::LeftButton)) {
+		QTreeWidget::mouseMoveEvent(e);
+		return;
+	}
+	const int dist = (e->pos() - s_dragStartPos).manhattanLength();
+	if (!s_dragging && dist < QApplication::startDragDistance()) {
+		QTreeWidget::mouseMoveEvent(e);
+		return;
+	}
+
+	// “Dragging” – we just highlight potential drop target (a root under the cursor)
+	s_dragging = true;
+	if (auto* over = itemAt(e->pos())) {
+		if (isRoot(over))
+			setCurrentItem(over); // simple visual cue like OG’s SelectDropTarget
+	}
+
+	// No QDrag payload; we’ll do the move on mouse release to keep logic simple.
+	QTreeWidget::mouseMoveEvent(e);
+}
+
+void sexp_tree::mouseReleaseEvent(QMouseEvent* e)
+{
+	if (s_dragging && s_dragSourceRoot) {
+		auto* dropTarget = itemAt(e->pos());
+		if (dropTarget && isRoot(dropTarget) && dropTarget != s_dragSourceRoot) {
+			// OG rule: if moving up, insert_before=true; if moving down, insert_after
+			// (so we “end up where we dropped”). :contentReference[oaicite:1]{index=1}
+			const int srcIdx = indexOfTopLevelItem(s_dragSourceRoot);
+			const int dstIdx = indexOfTopLevelItem(dropTarget);
+			const bool insert_before = (srcIdx > dstIdx);
+
+			// Perform the visual move
+			move_root(s_dragSourceRoot, dropTarget, insert_before);
+		}
+	}
+	s_dragSourceRoot = nullptr;
+	s_dragging = false;
+	QTreeWidget::mouseReleaseEvent(e);
 }
 
 QTreeWidgetItem* sexp_tree::insertWithIcon(const QString& lpszItem,
@@ -7063,30 +7172,55 @@ void sexp_tree::cutActionHandler() {
 	// fall through to ID_DELETE case.
 	deleteActionHandler();
 }
-void sexp_tree::deleteActionHandler() {
-	if (currentItem() == nullptr) {
+void sexp_tree::deleteActionHandler()
+{
+	if (currentItem() == nullptr || !_interface) {
 		return;
 	}
 
-	if (_interface->getFlags()[TreeFlags::RootDeletable] && (item_index == -1)) {
-		auto item = currentItem();
-		item_index = item->data(0, FormulaDataRole).toInt();
+	auto* item = currentItem();
+	const bool isRootItem = (item->parent() == nullptr);
 
-		rootNodeDeleted(item_index);
+	// Root delete: allowed if flag is set and the selected item is a top-level row
+	if (_interface->getFlags()[TreeFlags::RootDeletable] && isRootItem) {
+		const int formulaNode = item->data(0, FormulaDataRole).toInt();
 
-		free_node2(item_index);
+		// Tell the dialog/model first so it can drop the event row
+		rootNodeDeleted(formulaNode);
+
+		// Free the underlying SEXP subtree safely
+		if (formulaNode >= 0) {
+			free_node2(formulaNode);
+		}
+
+		// Remove the UI item and reset selection/index
 		delete item;
+		setCurrentItemIndex(-1);
 		modified();
 		return;
 	}
 
-	Assert(item_index >= 0);
-	auto h_parent = currentItem()->parent();
-	auto parent = tree_nodes[item_index].parent;
+	// Non-root delete
+	Assertion(item_index >= 0, "Attempt to delete node at invalid index!");
+	auto* h_parent = item->parent();
+	const int parent = tree_nodes[item_index].parent;
 
-	Assert(parent != -1 && tree_nodes[parent].handle == h_parent);
+	// If we somehow reached here on a root, bail safely
+	if (parent == -1) {
+		// Treat it as a root delete fallback
+		const int formulaNode = item->data(0, FormulaDataRole).toInt();
+		rootNodeDeleted(formulaNode);
+		if (formulaNode >= 0)
+			free_node2(formulaNode);
+		delete item;
+		setCurrentItemIndex(-1);
+		modified();
+		return;
+	}
+
+	Assertion(tree_nodes[parent].handle == h_parent, "Tree node handle mismatch!");
 	free_node(item_index);
-	delete currentItem();
+	delete item;
 
 	modified();
 }

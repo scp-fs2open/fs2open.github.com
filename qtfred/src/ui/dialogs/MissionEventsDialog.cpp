@@ -229,6 +229,16 @@ void MissionEventsDialog::initEventWidgets() {
 		_model->setNodeBgColor(h, c.red(), c.green(), c.blue(), c.isValid());
 	});
 
+	connect(ui->eventTree, &sexp_tree::rootOrderChanged, this, [this] {
+		SCP_vector<int> order;
+		order.reserve(ui->eventTree->topLevelItemCount());
+		for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
+			auto* it = ui->eventTree->topLevelItem(i);
+			order.push_back(it->data(0, sexp_tree::FormulaDataRole).toInt());
+		}
+		_model->reorderByRootFormulaOrder(order);
+	});
+
 	_model->setCurrentlySelectedEvent(-1);
 
 	updateEventUi();
