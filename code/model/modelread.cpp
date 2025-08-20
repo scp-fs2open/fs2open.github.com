@@ -490,7 +490,7 @@ void get_user_prop_value(char *buf, char *value)
 	char *p, *p1, c;
 
 	p = buf;
-	while ( isspace(*p) || (*p == '=') )		// skip white space and equal sign
+	while ( isspace(*p) || (*p == '=') || (*p == ':') )		// skip white space, equal sign, and colon
 		p++;
 	p1 = p;
 	while ( !iscntrl(*p1) )						// copy until we get to a control character
