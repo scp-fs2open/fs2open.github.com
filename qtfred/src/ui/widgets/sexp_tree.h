@@ -400,6 +400,7 @@ class sexp_tree: public QTreeWidget {
 	void rootNodeRenamed(int node);
 	void rootNodeFormulaChanged(int old, int node);
 	void nodeChanged(int node);
+	void rootOrderChanged();
 
 	void selectedRootChanged(int formula);
 
@@ -410,6 +411,9 @@ class sexp_tree: public QTreeWidget {
  protected:
 	void keyPressEvent(QKeyEvent* e) override;
 	bool eventFilter(QObject* obj, QEvent* ev) override;
+	void mousePressEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* e) override;
+	void mouseReleaseEvent(QMouseEvent* e) override;
 
 	QTreeWidgetItem* insertWithIcon(const QString& lpszItem,
 									const QIcon& image,

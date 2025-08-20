@@ -77,6 +77,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void deleteRootNode(int node);
 	void renameRootNode(int node, const SCP_string& name);
 	void changeRootNodeFormula(int old, int node);
+	void reorderByRootFormulaOrder(const SCP_vector<int>& newOrderedFormulas);
 
 	void setCurrentlySelectedMessage(int msg); // TODO make a signal for this?
 	const SCP_vector<SCP_string>& getHeadAniList();
