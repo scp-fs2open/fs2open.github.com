@@ -32,6 +32,9 @@ class MissionEventsDialog: public QDialog, public SexpTreeEditorInterface {
 	void accept() override;
 	void reject() override;
 
+	SCP_vector<SCP_string> getMessages() override;
+	bool hasDefaultMessageParamter() override;
+
   protected:
 	void closeEvent(QCloseEvent* event) override;
 
@@ -94,6 +97,9 @@ private:
 	EditorViewport* _viewport;
 	std::unique_ptr<IEventTreeOps> _treeOps;
 	std::unique_ptr<MissionEventsDialogModel> _model;
+
+	int m_last_message_node = -1;
+	QString m_last_message_name;
 
 	void updateEventUi();
 	void updateEventMoveButtons();
