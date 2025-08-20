@@ -18,7 +18,7 @@ namespace fso::fred::dialogs {
 
 MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewport) :
 	QDialog(parent),
-	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable }),
+	SexpTreeEditorInterface({ TreeFlags::LabeledRoot, TreeFlags::RootDeletable, TreeFlags::RootEditable, TreeFlags::AnnotationsAllowed }),
 	  ui(new Ui::MissionEventsDialog()), _viewport(viewport)
 {
 	ui->setupUi(this);
