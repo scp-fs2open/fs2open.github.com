@@ -17,6 +17,7 @@
 
 #include <QTreeView>
 #include <QTreeWidgetItem>
+#include <QListWidget>
 
 namespace fso {
 namespace fred {
@@ -406,6 +407,9 @@ class sexp_tree: public QTreeWidget {
 
 	// Generated message map functions
  protected:
+	void keyPressEvent(QKeyEvent* e) override;
+	bool eventFilter(QObject* obj, QEvent* ev) override;
+
 	QTreeWidgetItem* insertWithIcon(const QString& lpszItem,
 									const QIcon& image,
 									QTreeWidgetItem* hParent = nullptr,
@@ -454,6 +458,20 @@ class sexp_tree: public QTreeWidget {
 
 	int Add_count, Replace_count;
 	int Modify_variable;
+
+	//  Operator quick search popup
+	QFrame* _opPopup = nullptr;
+	QLineEdit* _opEdit = nullptr;
+	QListWidget* _opList = nullptr;
+	QStringList _opAll;    // all valid operators for current context
+	int _opNodeIndex = -1; // tree_nodes[] index of the node being edited
+	bool _opPopupActive = false;
+
+	void openNodeEditor(QTreeWidgetItem* item);
+	void startOperatorQuickSearch(QTreeWidgetItem* item, const QString& seed = QString());
+	void endOperatorQuickSearch(bool confirm);
+	void filterOperatorPopup(const QString& text);
+	QStringList validOperatorsForNode(int nodeIndex);
 
 	void handleItemChange(QTreeWidgetItem* item, int column);
 
