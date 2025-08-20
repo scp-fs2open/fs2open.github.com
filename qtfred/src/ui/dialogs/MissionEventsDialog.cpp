@@ -237,6 +237,7 @@ void MissionEventsDialog::initEventWidgets() {
 			order.push_back(it->data(0, sexp_tree::FormulaDataRole).toInt());
 		}
 		_model->reorderByRootFormulaOrder(order);
+		m_last_message_node = -1;
 	});
 
 	_model->setCurrentlySelectedEvent(-1);
@@ -262,6 +263,22 @@ void MissionEventsDialog::reject()
 		QDialog::reject(); // actually close
 	}
 	// else: do nothing, don't close
+}
+
+SCP_vector<SCP_string> MissionEventsDialog::getMessages()
+{
+	SCP_vector<SCP_string> out;
+	const auto& msgs = _model->getMessageList();
+	out.reserve(msgs.size());
+	for (const auto& m : msgs) {
+		out.emplace_back(m.name);
+	}
+	return out;
+}
+
+bool MissionEventsDialog::hasDefaultMessageParamter()
+{
+	return !_model->getMessageList().empty();
 }
 
 void MissionEventsDialog::closeEvent(QCloseEvent* e)
@@ -792,50 +809,37 @@ void MissionEventsDialog::on_messageList_currentRowChanged(int row)
 
 void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item)
 {
-	// TODO
-	/*auto message_name = item->text();
+	if (!item || !ui->eventTree)
+		return;
 
-	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
-	auto num_messages = ui->eventTree->find_text(message_name.toUtf8().constData(), message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
+	const QString name = item->text();
+	if (name != m_last_message_name) {
+		m_last_message_name = name;
+		m_last_message_node = -1; // reset cycle when switching message
+	}
 
-	if (num_messages == 0) {
-		QString message = tr("No events using message '%1'").arg(message_name);
-		QMessageBox::information(this, "Error", message);
-	} else {
-		// find last message_node
-		if (m_last_message_node == -1) {
-			m_last_message_node = message_nodes[0];
-		} else {
+	constexpr int kMax = 5; // We need some kind of limit. Original limited to 5.
+	int nodes[kMax];
+	const int num = ui->eventTree->find_text(name.toUtf8().constData(), nodes, kMax);
+	if (num <= 0) {
+		QMessageBox::information(this, tr("Error"), tr("No events using message '%1'").arg(name));
+		return;
+	}
 
-			if (num_messages == 1) {
-				// only 1 message
-				m_last_message_node = message_nodes[0];
-			} else {
-				// find which message and go to next message
-				int found_pos = -1;
-				for (int i = 0; i < num_messages; i++) {
-					if (message_nodes[i] == m_last_message_node) {
-						found_pos = i;
-						break;
-					}
-				}
-
-				if (found_pos == -1) {
-					// no previous message
-					m_last_message_node = message_nodes[0];
-				} else if (found_pos == num_messages - 1) {
-					// cycle back to start
-					m_last_message_node = message_nodes[0];
-				} else {
-					// go to next
-					m_last_message_node = message_nodes[found_pos + 1];
-				}
+	// cycle to next
+	int next = nodes[0];
+	if (m_last_message_node != -1) {
+		int pos = -1;
+		for (int i = 0; i < num; ++i)
+			if (nodes[i] == m_last_message_node) {
+				pos = i;
+				break;
 			}
-		}
+		next = (pos == -1 || pos == num - 1) ? nodes[0] : nodes[pos + 1];
+	}
 
-		// highlight next
-		ui->eventTree->hilite_item(m_last_message_node);
-	}*/
+	m_last_message_node = next;
+	ui->eventTree->hilite_item(next);
 }
 
 void MissionEventsDialog::on_btnNewMsg_clicked()
