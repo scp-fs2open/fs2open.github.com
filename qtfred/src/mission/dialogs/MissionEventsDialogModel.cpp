@@ -272,6 +272,33 @@ bool MissionEventsDialogModel::checkMessageNameConflict(const SCP_string& name)
 	return false;
 }
 
+SCP_string MissionEventsDialogModel::makeUniqueMessageName(const SCP_string& base) const
+{
+	const int maxLen = NAME_LENGTH - 1;
+
+	auto exists = [&](const SCP_string& cand) -> bool {
+		for (const auto& m : m_messages) {
+			if (m.name[0] != '\0' && stricmp(m.name, cand.c_str()) == 0) {
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Try base, then base + " 1", base + " 2", ...
+	for (int n = 0;; ++n) {
+		SCP_string suffix = (n == 0) ? "" : (" " + std::to_string(n));
+		const size_t avail = (maxLen > static_cast<int>(suffix.size()))
+								 ? static_cast<size_t>(maxLen - static_cast<int>(suffix.size()))
+								 : 0u;
+		SCP_string head = base.substr(0, avail);
+		SCP_string cand = head + suffix;
+		if (!exists(cand))
+			return cand;
+	}
+}
+
+
 bool MissionEventsDialogModel::eventIsValid() const
 {
 	return SCP_vector_inbounds(m_events, m_cur_event);
@@ -818,11 +845,13 @@ void MissionEventsDialogModel::createMessage()
 {
 	MMessage msg;
 
-	strcpy_s(msg.name, "<new message>");
+	const SCP_string base = "<new message>";
+	const SCP_string unique = makeUniqueMessageName(base);
 
+	strcpy_s(msg.name, unique.c_str());
 	strcpy_s(msg.message, "<put description here>");
-	msg.avi_info.name = NULL;
-	msg.wave_info.name = NULL;
+	msg.avi_info.name = nullptr;
+	msg.wave_info.name = nullptr;
 	msg.persona_index = -1;
 	msg.multi_team = -1;
 	m_messages.push_back(msg);
@@ -940,10 +969,7 @@ SCP_string MissionEventsDialogModel::getMessageAni() const
 		return "";
 	}
 	auto& msg = m_messages[m_cur_msg];
-	if (msg.avi_info.name) {
-		return msg.avi_info.name;
-	}
-	return "";
+	return msg.avi_info.name ? SCP_string(msg.avi_info.name) : SCP_string("<None>");
 }
 
 void MissionEventsDialogModel::setMessageAni(const SCP_string& ani)
@@ -953,15 +979,35 @@ void MissionEventsDialogModel::setMessageAni(const SCP_string& ani)
 	}
 
 	auto& msg = m_messages[m_cur_msg];
+	const char* cur = msg.avi_info.name;
+	const SCP_string curStr = cur ? cur : "";
 
-	if (msg.avi_info.name) {
-		free(msg.avi_info.name);
-		msg.avi_info.name = nullptr;
+	// Treat empty, "none", "<none>" as no avi and store nullptr
+	const bool isNone = ani.empty() || lcase_equal(ani, "<none>") || lcase_equal(ani, "none");
+	if (isNone) {
+		if (cur != nullptr) { // only do work if changing something
+			free(msg.avi_info.name);
+			msg.avi_info.name = nullptr;
+			set_modified();
+		}
+		return;
 	}
+
+	// No change? bail
+	if (cur && curStr == ani) {
+		return;
+	}
+
+	// Replace value
+	if (cur)
+		free(msg.avi_info.name);
 	msg.avi_info.name = strdup(ani.c_str());
 	set_modified();
 
-	auto it = std::find(m_head_ani_list.begin(), m_head_ani_list.end(), ani);
+	// Possibly add to list of known anis
+	auto it = std::find_if(m_head_ani_list.begin(), m_head_ani_list.end(), [&](const SCP_string& s) {
+		return lcase_equal(s, ani);
+	});
 	if (it == m_head_ani_list.end()) {
 		m_head_ani_list.emplace_back(ani);
 	}
@@ -973,10 +1019,7 @@ SCP_string MissionEventsDialogModel::getMessageWave() const
 		return "";
 	}
 	auto& msg = m_messages[m_cur_msg];
-	if (msg.wave_info.name) {
-		return msg.wave_info.name;
-	}
-	return "";
+	return msg.wave_info.name ? SCP_string(msg.wave_info.name) : SCP_string("<None>");
 }
 
 void MissionEventsDialogModel::setMessageWave(const SCP_string& wave)
@@ -989,16 +1032,32 @@ void MissionEventsDialogModel::setMessageWave(const SCP_string& wave)
 	m_wave_id = -1;
 
 	auto& msg = m_messages[m_cur_msg];
+	const char* cur = msg.wave_info.name;
+	const SCP_string curStr = cur ? cur : "";
 
-	if (msg.wave_info.name) {
-		free(msg.wave_info.name);
-		msg.wave_info.name = nullptr;
+	// Treat empty, "none", "<none>" as no avi and store nullptr
+	const bool isNone = wave.empty() || lcase_equal(wave, "<none>") || lcase_equal(wave, "none");
+	if (isNone) {
+		if (cur != nullptr) { // only do work if changing something
+			free(msg.wave_info.name);
+			msg.wave_info.name = nullptr;
+			set_modified();
+		}
+		return;
 	}
+
+	// No change? bail
+	if (cur && curStr == wave) {
+		return;
+	}
+
+	// Replace value
+	if (cur)
+		free(msg.wave_info.name);
 	msg.wave_info.name = strdup(wave.c_str());
+	set_modified();
 
 	autoSelectPersona();
-
-	set_modified();
 }
 
 int MissionEventsDialogModel::getMessagePersona() const
@@ -1062,8 +1121,8 @@ void MissionEventsDialogModel::autoSelectPersona()
 		return;
 	}
 
-	SCP_string wave_name = m_messages[m_cur_msg].wave_info.name;
-	SCP_string avi_name = m_messages[m_cur_msg].avi_info.name;
+	SCP_string wave_name = m_messages[m_cur_msg].wave_info.name ? m_messages[m_cur_msg].wave_info.name : "";
+	SCP_string avi_name = m_messages[m_cur_msg].avi_info.name ? m_messages[m_cur_msg].avi_info.name : "";
 
 	if ((wave_name[0] >= '1') && (wave_name[0] <= '9') && (wave_name[1] == '_')) {
 		auto i = wave_name[0] - '1';
@@ -1122,7 +1181,7 @@ void MissionEventsDialogModel::playMessageWave()
 	auto& msg = m_messages[m_cur_msg];
 
 	if (msg.wave_info.name) {
-		m_wave_id = audiostream_open(msg.wave_info.name, ASF_EVENTMUSIC);
+		m_wave_id = audiostream_open(msg.wave_info.name, ASF_VOICE);
 		if (m_wave_id >= 0) {
 			audiostream_play(m_wave_id, 1.0f, 0);
 		}
@@ -1132,6 +1191,11 @@ void MissionEventsDialogModel::playMessageWave()
 const SCP_vector<MMessage>& MissionEventsDialogModel::getMessageList() const
 {
 	return m_messages;
+}
+
+bool MissionEventsDialogModel::getMissionIsMultiTeam() const
+{
+	return The_mission.game_type & MISSION_TYPE_MULTI_TEAMS;
 }
 
 void MissionEventsDialogModel::setModified() {
