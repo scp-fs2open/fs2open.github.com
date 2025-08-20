@@ -500,13 +500,6 @@ void MissionEventsDialog::updateMessageUi()
 	ui->messageTeamCombo->setEnabled(enable && _model->getMissionIsMultiTeam());
 	ui->btnMsgNote->setEnabled(enable);
 }
-bool MissionEventsDialog::hasDefaultMessageParamter() {
-	//return !m_messages.empty();
-	return false;
-}
-int MissionEventsDialog::getRootReturnType() const {
-	return OPR_NULL;
-}
 
 void MissionEventsDialog::browseAni() {
 	//TODO
@@ -543,7 +536,6 @@ void MissionEventsDialog::browseAni() {
 	modified = true;*/
 }
 
-// TODO??
 void MissionEventsDialog::updateEventBitmap() {
 	auto chained = _model->getChained();
 	auto hasObjectiveText = !_model->getEventDirectiveText().empty();
@@ -570,31 +562,6 @@ void MissionEventsDialog::updateEventBitmap() {
 			return;
 		}
 	}
-}
-
-// TODO??
-QTreeWidgetItem* MissionEventsDialog::get_event_handle(int num)
-{
-	/*for (auto i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
-		auto item = ui->eventTree->topLevelItem(i);
-
-		if (item->data(0, sexp_tree::FormulaDataRole).toInt() == m_events[num].formula) {
-			return item;
-		}
-	}
-	return nullptr;*/
-}
-
-// TODO??
-void MissionEventsDialog::keyPressEvent(QKeyEvent* event) {
-	if (event->key() == Qt::Key_Escape) {
-		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
-		// user to save unsaved changes
-		event->ignore();
-		this->close();
-		return;
-	}
-	QDialog::keyPressEvent(event);
 }
 
 void MissionEventsDialog::on_okAndCancelButtons_accepted()
