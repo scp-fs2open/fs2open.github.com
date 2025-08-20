@@ -186,8 +186,13 @@ void MissionEventsDialog::initMessageWidgets() {
 
 	ui->messageName->setMaxLength(NAME_LENGTH - 1);
 
-	connect(ui->messageList, &QListWidget::currentRowChanged, this, [this](int row) { _model->setCurrentlySelectedMessage(row); });
-	connect(ui->messageList, &QListWidget::itemDoubleClicked, this, &MissionEventsDialog::messageDoubleClicked);
+	if (auto* le = ui->aniCombo->lineEdit()) {
+		connect(le, &QLineEdit::editingFinished, this, &MissionEventsDialog::on_aniCombo_editingFinished);
+	}
+
+	if (auto* le = ui->waveCombo->lineEdit()) {
+		connect(le, &QLineEdit::editingFinished, this, &MissionEventsDialog::on_waveCombo_editingFinished);
+	}
 
 	updateMessageUi();
 }
@@ -245,7 +250,7 @@ void MissionEventsDialog::updateEventUi() {
 		return;
 	}
 
-	ui->teamCombo->setCurrentIndex(_model->getEventTeam());
+	ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(_model->getEventTeam()));
 
 	ui->repeatCountBox->setValue(_model->getRepeatCount());
 	ui->triggerCountBox->setValue(_model->getTriggerCount());
@@ -279,10 +284,7 @@ void MissionEventsDialog::updateEventUi() {
 	ui->chainedCheckBox->setEnabled(true);
 	ui->editDirectiveText->setEnabled(true);
 	ui->editDirectiveKeypressText->setEnabled(true);
-	ui->teamCombo->setEnabled(false);
-	if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ){
-		ui->teamCombo->setEnabled(true);
-	}
+	ui->teamCombo->setEnabled(_model->getMissionIsMultiTeam());
 
 	// handle event log flags
 	ui->checkLogTrue->setChecked(_model->getLogTrue());
@@ -317,8 +319,8 @@ void MissionEventsDialog::initPersonas() {
 
 	ui->personaCombo->clear();
 
-	for (const auto& persona : list) {
-		ui->personaCombo->addItem(QString::fromStdString(persona.first), persona.second);
+	for (auto&& [name, id] : _model->getPersonaList()) {
+		ui->personaCombo->addItem(QString::fromStdString(name), id);
 	}
 }
 
@@ -354,18 +356,22 @@ void MissionEventsDialog::updateMessageUi()
 		ui->messageName->setText("");
 		ui->messageContent->setPlainText("");
 		ui->aniCombo->setEditText("");
-		ui->personaCombo->setCurrentIndex(0);
+		ui->personaCombo->setCurrentIndex(-1);
 		ui->waveCombo->setEditText("");
-		ui->teamCombo->setCurrentIndex(-1);
 		ui->messageTeamCombo->setCurrentIndex(-1);
+		ui->btnMsgNote->setText("Add Node");
 	} else {
 		ui->messageName->setText(QString().fromStdString(_model->getMessageName()));
 		ui->messageContent->setPlainText(QString().fromStdString(_model->getMessageText()));
 		ui->aniCombo->setEditText(QString().fromStdString(_model->getMessageAni()));
-		ui->personaCombo->setCurrentIndex(_model->getMessagePersona());
+		ui->personaCombo->setCurrentIndex(ui->personaCombo->findData(_model->getMessagePersona()));
 		ui->waveCombo->setEditText(QString().fromStdString(_model->getMessageWave()));
-
-		ui->messageTeamCombo->setCurrentIndex(_model->getMessageTeam());
+		ui->messageTeamCombo->setCurrentIndex(ui->messageTeamCombo->findData(_model->getMessageTeam()));
+		if (_model->getMessageNote().empty()) {
+			ui->btnMsgNote->setText("Add Note");
+		} else {
+			ui->btnMsgNote->setText("Edit Note");
+		}
 	}
 
 	ui->messageName->setEnabled(enable);
@@ -373,10 +379,12 @@ void MissionEventsDialog::updateMessageUi()
 	ui->aniCombo->setEnabled(enable);
 	ui->btnAniBrowse->setEnabled(enable);
 	ui->btnBrowseWave->setEnabled(enable);
+	ui->btnWavePlay->setEnabled(enable);
 	ui->waveCombo->setEnabled(enable);
 	ui->btnDeleteMsg->setEnabled(enable);
 	ui->personaCombo->setEnabled(enable);
-	ui->teamCombo->setEnabled(enable);
+	ui->messageTeamCombo->setEnabled(enable && _model->getMissionIsMultiTeam());
+	ui->btnMsgNote->setEnabled(enable);
 }
 bool MissionEventsDialog::hasDefaultMessageParamter() {
 	//return !m_messages.empty();
@@ -384,53 +392,6 @@ bool MissionEventsDialog::hasDefaultMessageParamter() {
 }
 int MissionEventsDialog::getRootReturnType() const {
 	return OPR_NULL;
-}
-void MissionEventsDialog::messageDoubleClicked(QListWidgetItem* item) {
-	//TODO
-	/*auto message_name = item->text();
-
-	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
-	auto num_messages =
-		ui->eventTree->find_text(message_name.toUtf8().constData(), message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
-
-	if (num_messages == 0) {
-		QString message = tr("No events using message '%1'").arg(message_name);
-		QMessageBox::information(this, "Error", message);
-	} else {
-		// find last message_node
-		if (m_last_message_node == -1) {
-			m_last_message_node = message_nodes[0];
-		} else {
-
-			if (num_messages == 1) {
-				// only 1 message
-				m_last_message_node = message_nodes[0];
-			} else {
-				// find which message and go to next message
-				int found_pos = -1;
-				for (int i = 0; i < num_messages; i++) {
-					if (message_nodes[i] == m_last_message_node) {
-						found_pos = i;
-						break;
-					}
-				}
-
-				if (found_pos == -1) {
-					// no previous message
-					m_last_message_node = message_nodes[0];
-				} else if (found_pos == num_messages - 1) {
-					// cycle back to start
-					m_last_message_node = message_nodes[0];
-				} else {
-					// go to next
-					m_last_message_node = message_nodes[found_pos + 1];
-				}
-			}
-		}
-
-		// highlight next
-		ui->eventTree->hilite_item(m_last_message_node);
-	}*/
 }
 
 void MissionEventsDialog::browseAni() {
@@ -640,6 +601,61 @@ void MissionEventsDialog::on_checkLogLastTrigger_stateChanged(int state)
 	_model->setLogLastTrigger(state == Qt::Checked);
 }
 
+void MissionEventsDialog::on_messageList_currentRowChanged(int row)
+{
+	_model->setCurrentlySelectedMessage(row);
+	updateMessageUi();
+}
+
+void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item)
+{
+	// TODO
+	/*auto message_name = item->text();
+
+	int message_nodes[MAX_SEARCH_MESSAGE_DEPTH];
+	auto num_messages =
+		ui->eventTree->find_text(message_name.toUtf8().constData(), message_nodes, MAX_SEARCH_MESSAGE_DEPTH);
+
+	if (num_messages == 0) {
+		QString message = tr("No events using message '%1'").arg(message_name);
+		QMessageBox::information(this, "Error", message);
+	} else {
+		// find last message_node
+		if (m_last_message_node == -1) {
+			m_last_message_node = message_nodes[0];
+		} else {
+
+			if (num_messages == 1) {
+				// only 1 message
+				m_last_message_node = message_nodes[0];
+			} else {
+				// find which message and go to next message
+				int found_pos = -1;
+				for (int i = 0; i < num_messages; i++) {
+					if (message_nodes[i] == m_last_message_node) {
+						found_pos = i;
+						break;
+					}
+				}
+
+				if (found_pos == -1) {
+					// no previous message
+					m_last_message_node = message_nodes[0];
+				} else if (found_pos == num_messages - 1) {
+					// cycle back to start
+					m_last_message_node = message_nodes[0];
+				} else {
+					// go to next
+					m_last_message_node = message_nodes[found_pos + 1];
+				}
+			}
+		}
+
+		// highlight next
+		ui->eventTree->hilite_item(m_last_message_node);
+	}*/
+}
+
 void MissionEventsDialog::on_btnNewMsg_clicked()
 {
 	_model->createMessage();
@@ -672,26 +688,46 @@ void MissionEventsDialog::on_messageContent_textChanged()
 
 void MissionEventsDialog::on_btnMsgNote_clicked()
 {
-	if (!_model->messageIsValid()) {
+	if (!_model->messageIsValid())
 		return;
+
+	QDialog dlg(this);
+	dlg.setWindowTitle(tr("Message Note"));
+	auto* layout = new QVBoxLayout(&dlg);
+	auto* label = new QLabel(tr("Enter a note for this message:"), &dlg);
+	auto* edit = new QTextEdit(&dlg);
+	edit->setPlainText(QString::fromUtf8(_model->getMessageNote().c_str()));
+	edit->setMinimumSize(700, 500); // big!
+	auto* buttons = new QDialogButtonBox(QDialogButtonBox::Ok | QDialogButtonBox::Cancel, &dlg);
+
+	layout->addWidget(label);
+	layout->addWidget(edit, 1);
+	layout->addWidget(buttons);
+
+	QObject::connect(buttons, &QDialogButtonBox::accepted, &dlg, &QDialog::accept);
+	QObject::connect(buttons, &QDialogButtonBox::rejected, &dlg, &QDialog::reject);
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	SCP_string note = edit->toPlainText().toUtf8().constData();
+	_model->setMessageNote(note);
+
+	// Update the button text
+	if (note.empty()) {
+		ui->btnMsgNote->setText("Add Note");
+	} else {
+		ui->btnMsgNote->setText("Edit Note");
 	}
-	auto note = _model->getMessageNote();
-	auto text = QInputDialog::getText(this,
-		"Message Note",
-		"Enter a note for this message:",
-		QLineEdit::Normal,
-		QString::fromUtf8(note.c_str()));
-	
-	SCP_string newNote = text.toUtf8().constData();
-	_model->setMessageNote(newNote);
 }
 
-void MissionEventsDialog::on_aniCombo_currentTextChanged(const QString& text)
+void MissionEventsDialog::on_aniCombo_editingFinished()
 {
-	SCP_string name = text.toUtf8().constData();
+	SCP_string name = ui->aniCombo->currentText().toUtf8().constData();
 	_model->setMessageAni(name);
 
-	//TODO Update the combo box
+	initHeadCombo();
+	ui->aniCombo->setCurrentText(QString::fromStdString(name));
 }
 
 void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
@@ -705,12 +741,13 @@ void MissionEventsDialog::on_btnAniBrowse_clicked()
 	// TODO make ANI browser with previews and file input
 }
 
-void MissionEventsDialog::on_waveCombo_currentTextChanged(const QString& text)
+void MissionEventsDialog::on_waveCombo_editingFinished()
 {
-	SCP_string name = text.toUtf8().constData();
+	SCP_string name = ui->waveCombo->currentText().toUtf8().constData();
 	_model->setMessageWave(name);
 
-	// TODO Update the combo box
+	initWaveFilenames();
+	ui->waveCombo->setCurrentText(QString::fromStdString(name));
 }
 
 void MissionEventsDialog::on_waveCombo_selectedIndexChanged(int index)
@@ -739,8 +776,7 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 	auto name = QFileDialog::getOpenFileName(this,
 		tr("Select message animation"),
 		interface_path,
-		"Voice Files (*.ogg, *.wav);;Ogg Vorbis Files (*.ogg);;"
-		"Wave Files (*.wav)");
+		"Voice Files (*.ogg *.wav);;Ogg Vorbis Files (*.ogg);;Wave Files (*.wav);;All Files (*)");
 
 	if (name.isEmpty()) {
 		// Nothing was selected
@@ -753,10 +789,11 @@ void MissionEventsDialog::on_btnBrowseWave_clicked()
 
 	_model->setMessageWave(file_name);
 
-	//TODO Update the combo box
+	initWaveFilenames();
+	ui->waveCombo->setCurrentText(QString::fromStdString(file_name));
 }
 
-void MissionEventsDialog::on_btnPlayWave_clicked()
+void MissionEventsDialog::on_btnWavePlay_clicked()
 {
 	_model->playMessageWave();
 }
@@ -768,10 +805,17 @@ void MissionEventsDialog::on_personaCombo_currentIndexChanged(int index)
 
 void MissionEventsDialog::on_btnUpdateStuff_clicked()
 {
-	//TODO ask user for verification first
-	_model->autoSelectPersona();
+	auto result = _viewport->dialogProvider->showButtonDialog(
+		DialogType::Question,
+		"Update Message Stuff",
+		"This will update the message animation and persona to match the current mission settings. "
+		   "Are you sure you want to do this?",
+		{DialogButton::Yes, DialogButton::No});
 
-	updateMessageUi();
+	if (result != DialogButton::Yes) {
+		_model->autoSelectPersona();
+		updateMessageUi();
+	}
 }
 
 void MissionEventsDialog::on_messageTeamCombo_currentIndexChanged(int index)

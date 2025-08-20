@@ -69,19 +69,22 @@ private slots:
 	void on_checkLogFirstTrigger_stateChanged(int state);
 	void on_checkLogLastTrigger_stateChanged(int state);
 
+	void on_messageList_currentRowChanged(int row);
+	void on_messageList_itemDoubleClicked(QListWidgetItem* item);
+
 	void on_btnNewMsg_clicked();
 	void on_btnDeleteMsg_clicked();
 
 	void on_messageName_textChanged(const QString& text);
 	void on_messageContent_textChanged();
 	void on_btnMsgNote_clicked();
-	void on_aniCombo_currentTextChanged(const QString& text);
+	void on_aniCombo_editingFinished();
 	void on_aniCombo_selectedIndexChanged(int index);
 	void on_btnAniBrowse_clicked();
-	void on_waveCombo_currentTextChanged(const QString& text);
+	void on_waveCombo_editingFinished();
 	void on_waveCombo_selectedIndexChanged(int index);
 	void on_btnBrowseWave_clicked();
-	void on_btnPlayWave_clicked();
+	void on_btnWavePlay_clicked();
 	void on_personaCombo_currentIndexChanged(int index);
 	void on_btnUpdateStuff_clicked();
 	void on_messageTeamCombo_currentIndexChanged(int index);

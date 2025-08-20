@@ -132,6 +132,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void autoSelectPersona();
 	void playMessageWave();
 	const SCP_vector<MMessage>& getMessageList() const;
+	bool getMissionIsMultiTeam() const;
 
 	void setModified();
 
@@ -148,6 +149,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void initializePersonaList();
 
 	bool checkMessageNameConflict(const SCP_string& name);
+	SCP_string makeUniqueMessageName(const SCP_string& name) const;
 
 	IEventTreeOps& m_event_tree_ops;
 
