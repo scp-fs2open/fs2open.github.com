@@ -110,6 +110,7 @@ private:
 	void rootNodeDeleted(int node);
 	void rootNodeRenamed(int node);
 	void rootNodeFormulaChanged(int old, int node);
+	void rootNodeSelectedByFormula(int formula);
 
 	void rebuildMessageList();
 

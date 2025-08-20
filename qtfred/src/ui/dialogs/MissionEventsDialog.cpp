@@ -143,7 +143,7 @@ void MissionEventsDialog::initEventWidgets() {
 	connect(ui->eventTree, &sexp_tree::rootNodeFormulaChanged, this, &MissionEventsDialog::rootNodeFormulaChanged);
 	connect(ui->eventTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) { ui->miniHelpBox->setText(help); });
 	connect(ui->eventTree, &sexp_tree::helpChanged, this, [this](const QString& help) { ui->helpBox->setPlainText(help); });
-	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) {_model->setCurrentlySelectedEventByFormula(formula);});
+	connect(ui->eventTree, &sexp_tree::selectedRootChanged, this, [this](int formula) { MissionEventsDialog::rootNodeSelectedByFormula(formula); });
 
 	_model->setCurrentlySelectedEvent(-1);
 
@@ -208,6 +208,12 @@ void MissionEventsDialog::rootNodeRenamed(int node) {
 void MissionEventsDialog::rootNodeFormulaChanged(int old, int node) {
 	_model->changeRootNodeFormula(old, node);
 }
+
+void MissionEventsDialog::rootNodeSelectedByFormula(int formula) {
+	_model->setCurrentlySelectedEventByFormula(formula);
+	updateEventUi();
+}
+
 void MissionEventsDialog::initMessageList() {
 	rebuildMessageList();
 
@@ -217,6 +223,7 @@ void MissionEventsDialog::initMessageList() {
 		_model->setCurrentlySelectedMessage(-1);
 	}
 }
+
 void MissionEventsDialog::rebuildMessageList() {
 	// Block signals so that the current item index isn't overwritten by this
 	QSignalBlocker blocker(ui->messageList);
