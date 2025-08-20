@@ -349,7 +349,7 @@ void MissionEventsDialogModel::deleteRootNode(int node)
 	set_modified();
 }
 
-void MissionEventsDialogModel::renameRootNode(int node)
+void MissionEventsDialogModel::renameRootNode(int node, const SCP_string& name)
 {
 	int i;
 	for (i = 0; i < static_cast<int>(m_events.size()); i++) {
@@ -358,7 +358,7 @@ void MissionEventsDialogModel::renameRootNode(int node)
 		}
 	}
 	Assertion(i < static_cast<int>(m_events.size()), "Attempt to rename an invalid event!");
-	m_events[i].name = "<Unnamed>";
+	m_events[i].name = name;
 	set_modified();
 }
 
@@ -409,13 +409,13 @@ void MissionEventsDialogModel::createEvent()
 	m_events.emplace_back(makeDefaultEvent());
 	m_sig.push_back(-1);
 
-	m_cur_event = static_cast<int>(m_events.size()) - 1;
-	setCurrentlySelectedEvent(m_cur_event);
+	auto& event = m_events.back();
 
-	const int after = (m_cur_event > 0) ? m_events[m_cur_event - 1].formula : -1;
-	m_events[m_cur_event].formula = m_event_tree_ops.build_default_root(m_events[m_cur_event].name, after);
-	m_event_tree_ops.select_root(m_events[m_cur_event].formula);
+	const int after = event.formula;
+	event.formula = m_event_tree_ops.build_default_root(event.name, after);
+	m_event_tree_ops.select_root(event.formula);
 
+	setCurrentlySelectedEventByFormula(event.formula);
 	set_modified();
 }
 
@@ -426,19 +426,22 @@ void MissionEventsDialogModel::insertEvent()
 		return;
 	}
 
-	m_events.insert(m_events.begin() + m_cur_event, makeDefaultEvent());
-	m_sig.insert(m_sig.begin() + m_cur_event, -1);
+	const int pos = m_cur_event; // Can shift during tree ops so save our position now
+	auto it = m_events.insert(m_events.begin() + pos, makeDefaultEvent());
+	m_sig.insert(m_sig.begin() + pos, -1);
+	auto& event = m_events[pos];
 
-	setCurrentlySelectedEvent(m_cur_event);
+	// Place after the previous root if it exists and is valid; otherwise we’ll fix index explicitly
+	int after = (pos > 0 && m_events[pos - 1].formula >= 0) ? m_events[pos - 1].formula : -1;
 
-	const int after = (m_cur_event > 0) ? m_events[m_cur_event - 1].formula : -1;
-	m_events[m_cur_event].formula = m_event_tree_ops.build_default_root(m_events[m_cur_event].name, after);
+	event.formula = m_event_tree_ops.build_default_root(event.name, after);
 
-	if (m_cur_event == 0) {
-		m_event_tree_ops.ensure_top_level_index(m_events[m_cur_event].formula, 0);
+	if (pos == 0) {
+		m_event_tree_ops.ensure_top_level_index(event.formula, 0);
 	}
-	m_event_tree_ops.select_root(m_events[m_cur_event].formula);
+	m_event_tree_ops.select_root(event.formula);
 
+	setCurrentlySelectedEventByFormula(event.formula);
 	set_modified();
 }
 

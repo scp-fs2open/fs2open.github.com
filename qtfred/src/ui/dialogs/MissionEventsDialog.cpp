@@ -119,6 +119,8 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 	_treeOps = std::make_unique<QtTreeOps>(QtTreeOps{*ui->eventTree});
 
 	ui->eventTree->initializeEditor(viewport->editor, this);
+	ui->eventTree->clear_tree();
+	ui->eventTree->post_load();
 
 	// Now construct the model with reference to tree ops
 	_model = std::make_unique<MissionEventsDialogModel>(this, _viewport, *_treeOps);
@@ -202,7 +204,20 @@ void MissionEventsDialog::rootNodeDeleted(int node) {
 }
 
 void MissionEventsDialog::rootNodeRenamed(int node) {
-	_model->renameRootNode(node);
+	QTreeWidgetItem* item = nullptr;
+	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
+		auto* it = ui->eventTree->topLevelItem(i);
+		if (it && it->data(0, sexp_tree::FormulaDataRole).toInt() == node) {
+			item = it;
+			break;
+		}
+	}
+	if (!item)
+		return;
+
+	SCP_string newText = item->text(0).toUtf8().constData();
+
+	_model->renameRootNode(node, newText);
 }
 
 void MissionEventsDialog::rootNodeFormulaChanged(int old, int node) {
@@ -438,8 +453,8 @@ void MissionEventsDialog::browseAni() {
 
 // TODO??
 void MissionEventsDialog::updateEventBitmap() {
-	/*auto chained = m_events[cur_event].chain_delay != -1;
-	auto hasObjectiveText = !m_events[cur_event].objective_text.empty();
+	auto chained = _model->getChained();
+	auto hasObjectiveText = !_model->getEventDirectiveText().empty();
 
 	NodeImage bitmap;
 	if (chained) {
@@ -458,11 +473,11 @@ void MissionEventsDialog::updateEventBitmap() {
 	for (int i = 0; i < ui->eventTree->topLevelItemCount(); ++i) {
 		auto item = ui->eventTree->topLevelItem(i);
 
-		if (item->data(0, sexp_tree::FormulaDataRole).toInt() == m_events[cur_event].formula) {
+		if (item->data(0, sexp_tree::FormulaDataRole).toInt() == _model->getFormula()) {
 			item->setIcon(0, sexp_tree::convertNodeImageToIcon(bitmap));
 			return;
 		}
-	}*/
+	}
 }
 
 // TODO??
@@ -524,11 +539,13 @@ void MissionEventsDialog::on_btnDeleteEvent_clicked()
 void MissionEventsDialog::on_repeatCountBox_valueChanged(int value)
 {
 	_model->setRepeatCount(value);
+	updateEventUi();
 }
 
 void MissionEventsDialog::on_triggerCountBox_valueChanged(int value)
 {
 	_model->setTriggerCount(value);
+	updateEventUi();
 }
 
 void MissionEventsDialog::on_intervalTimeBox_valueChanged(int value)
@@ -539,6 +556,8 @@ void MissionEventsDialog::on_intervalTimeBox_valueChanged(int value)
 void MissionEventsDialog::on_chainedCheckBox_stateChanged(int state)
 {
 	_model->setChained(state == Qt::Checked);
+	updateEventBitmap();
+	updateEventUi();
 }
 
 void MissionEventsDialog::on_chainedDelayBox_valueChanged(int value)
@@ -560,6 +579,7 @@ void MissionEventsDialog::on_editDirectiveText_textChanged(const QString& text)
 {
 	SCP_string dir = text.toUtf8().constData();
 	_model->setEventDirectiveText(dir);
+	updateEventBitmap();
 }
 
 void MissionEventsDialog::on_editDirectiveKeypressText_textChanged(const QString& text)

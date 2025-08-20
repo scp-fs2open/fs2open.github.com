@@ -224,6 +224,14 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 	connect(this, &QWidget::customContextMenuRequested, this, &sexp_tree::customMenuHandler);
 	connect(this, &QTreeWidget::itemChanged, this, &sexp_tree::handleItemChange);
 	connect(this, &QTreeWidget::itemSelectionChanged, this, &sexp_tree::handleNewItemSelected);
+	connect(this, &QTreeWidget::itemDoubleClicked, this, [this](QTreeWidgetItem* item, int /*column*/) {
+		if (!_interface || !_interface->getFlags()[TreeFlags::RootEditable]) {
+			return; // respect flags
+		}
+		if (item && !item->parent()) { // root only
+			beginItemEdit(item);       // sets _currently_editing + calls editItem
+		}
+	});
 }
 
 sexp_tree::~sexp_tree() = default;

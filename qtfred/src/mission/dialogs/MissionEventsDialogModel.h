@@ -58,7 +58,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void setCurrentlySelectedEventByFormula(int formula);
 	SCP_vector<mission_event>& getEventList();
 	void deleteRootNode(int node);
-	void renameRootNode(int node);
+	void renameRootNode(int node, const SCP_string& name);
 	void changeRootNodeFormula(int old, int node);
 
 	void setCurrentlySelectedMessage(int msg); // TODO make a signal for this?

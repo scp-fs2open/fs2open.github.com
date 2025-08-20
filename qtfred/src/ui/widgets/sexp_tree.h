@@ -399,6 +399,12 @@ class sexp_tree: public QTreeWidget {
 									QTreeWidgetItem* hParent = nullptr,
 									QTreeWidgetItem* hInsertAfter = nullptr);
 
+	//bool edit(const QModelIndex& index, QAbstractItemView::EditTrigger trigger, QEvent* event) override
+	//{
+		//_currently_editing = true; // mark explicit edit
+		//return QTreeWidget::edit(index, trigger, event);
+	//}
+
 	void customMenuHandler(const QPoint& pos);
 
 	void handleNewItemSelected();
