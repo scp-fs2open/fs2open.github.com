@@ -3,9 +3,7 @@
 #include <unordered_set>
 #include <climits>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 	static int _textMode = 0;
 
 VariableDialogModel::VariableDialogModel(QObject* parent, EditorViewport* viewport) 
@@ -311,7 +309,7 @@ bool VariableDialogModel::apply()
     for (const auto& container : _containerItems){
         newContainers.push_back(createContainer(container));
 
-        if (container.originalName != "" && container.name != container.originalName){
+        if (!container.originalName.empty() && container.name != container.originalName){
             renamedContainers[container.originalName] = container.name;
         }
     }
@@ -783,7 +781,7 @@ bool VariableDialogModel::safeToAlterVariable(int index)
     }
 
     // FIXME! until we can actually count references (via a SEXP backend), this is the best way to go.
-    if (variable->originalName != ""){
+    if (!variable->originalName.empty()){
         return true;
     }
 
@@ -1963,7 +1961,7 @@ bool VariableDialogModel::safeToAlterContainer(int index)
     }
 
     // FIXME! Until there's a sexp backend, we can only check if we just created the container.
-    if (container->originalName != ""){
+    if (!container->originalName.empty()){
         return true;
     }
 
@@ -1972,8 +1970,8 @@ bool VariableDialogModel::safeToAlterContainer(int index)
 
 bool VariableDialogModel::safeToAlterContainer(const containerInfo& containerItem)
 {
-    // again, FIXME!  Needs actally reference count.
-    return containerItem.originalName == "";
+    // again, FIXME!  Needs actual reference count.
+    return containerItem.originalName.empty();
 }
 
 SCP_string VariableDialogModel::changeMapItemNumberValue(int index, int itemIndex, int newValue)
@@ -2402,6 +2400,4 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 }
 
 
-} // dialogs
-} // fred
-} // fso
+}

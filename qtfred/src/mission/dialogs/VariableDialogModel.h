@@ -6,18 +6,16 @@
 #include "parse/sexp_container.h"
 #include <QMessageBox>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 struct variableInfo {
 	SCP_string name = "<unnamed>";
-	SCP_string originalName = "";
+	SCP_string originalName;
 	bool deleted = false;
 	bool string = true;
 	int flags = 0;
 	int numberValue = 0;
-	SCP_string stringValue = "";
+	SCP_string stringValue;
 };
 
 
@@ -163,10 +161,10 @@ private:
 		return nullptr;
 	}
 
-	variableInfo* lookupVariableByName(SCP_string name){
-		for (int x = 0; x < static_cast<int>(_variableItems.size()); ++x) {
-			if (_variableItems[x].name == name) {
-				return &_variableItems[x];
+	variableInfo* lookupVariableByName(const SCP_string& name){
+		for (auto& variableItem : _variableItems) {
+			if (variableItem.name == name) {
+				return variableItem;
 			}
 		}
 
@@ -181,7 +179,7 @@ private:
 		return nullptr;
 	}
 
-	containerInfo* lookupContainerByName(SCP_string name){
+	containerInfo* lookupContainerByName(const SCP_string& name){
 		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x) {
 			if (_containerItems[x].name == name) {
 				return &_containerItems[x];
@@ -235,7 +233,7 @@ private:
 
 
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
-	bool confirmAction(SCP_string question, SCP_string informativeText)
+	bool confirmAction(const SCP_string& question, const SCP_string& informativeText)
 	{
 	QMessageBox msgBox;
 	msgBox.setText(question.c_str());
@@ -261,6 +259,3 @@ private:
 };
 
 } // namespace dialogs
-} // namespace fred
-} // namespace fso
-
