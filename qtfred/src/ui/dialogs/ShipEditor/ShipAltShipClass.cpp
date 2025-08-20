@@ -214,11 +214,11 @@ void ShipAltShipClass::updateUI()
 	auto current = ui->classList->currentIndex();
 	auto ship_class = -1;
 	auto variable = -1;
-	auto default = false;
+	auto default_ship = false;
 	if (current.isValid()) {
 		ship_class = current.data(Qt::UserRole + 1).toInt();
 		variable = current.data(Qt::UserRole + 2).toInt();
-		default = current.data(Qt::UserRole).toBool();
+		default_ship = current.data(Qt::UserRole).toBool();
 	}
 	if (ui->variableCombo->model()->rowCount() <= 1) {
 		dynamic_cast<InverseSortFilterProxyModel*>(ui->shipCombo->model())->setFilterFixedString("Set From Variable");
@@ -254,18 +254,18 @@ void ShipAltShipClass::updateUI()
 	if (ui->variableCombo->model()->rowCount() <= 1) {
 		ui->variableCombo->setEnabled(false);
 	}
-	ui->defaultCheckbox->setChecked(default);
+	ui->defaultCheckbox->setChecked(default_ship);
 }
 void ShipAltShipClass::classListChanged(const QModelIndex& current)
 {
 	updateUI();
 }
-QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default) const
+QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default_ship) const
 {
 	QString classname = generate_name(classid, variable);
 	if (!classname.isEmpty()) {
 		QStandardItem* item = new QStandardItem(classname);
-		item->setData(default, Qt::UserRole);
+		item->setData(default_ship, Qt::UserRole);
 		item->setData(classid, Qt::UserRole + 1);
 		item->setData(variable, Qt::UserRole + 2);
 		return item;

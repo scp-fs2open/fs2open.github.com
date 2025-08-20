@@ -57,7 +57,7 @@ class ShipAltShipClass : public QDialog {
 	QStandardItemModel* alt_pool;
 
 	void classListChanged(const QModelIndex& current);
-	QStandardItem* generate_item(const int classid, const int variable, const bool default) const;
+	QStandardItem* generate_item(const int classid, const int variable, const bool default_ship) const;
 	QString generate_name(const int classid, const int variable) const;
 
 	void sync_data();
