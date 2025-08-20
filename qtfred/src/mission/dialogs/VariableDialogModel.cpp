@@ -664,7 +664,7 @@ SCP_string VariableDialogModel::addNewVariable(SCP_string nameIn)
     return _variableItems.back().name;
 }
 
-SCP_string VariableDialogModel::changeVariableName(int index, const SCP_string& newName)
+SCP_string VariableDialogModel::changeVariableName(int index, SCP_string newName)
 { 
     auto variable = lookupVariable(index);
 
