@@ -25,12 +25,6 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 
 	SCP_vector<int> _m_alt_class_list;
 
-	SCP_vector<SCP_string> _m_set_from_variables;
-
-	SCP_vector<std::reference_wrapper<sexp_variable>> _string_variables;
-
-	SCP_vector<SCP_string> _m_set_from_ship_class;
-	SCP_vector<int> _ship_class_indices;
   public:
 	/**
 	 * @brief Constructor
@@ -40,5 +34,11 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 	ShipAltShipClassModel(QObject* parent, EditorViewport* viewport, bool is_several_ships);
 	bool apply() override;
 	void reject() override;
+
+	SCP_vector<alt_class> get_pool() const;
+
+	SCP_vector<std::pair<SCP_string, int>> get_classes() const;
+	SCP_vector<std::pair<SCP_string, int>> get_variables() const;
+	void sync_data(const SCP_vector<alt_class>);
 };
 } // namespace fso::fred::dialogs

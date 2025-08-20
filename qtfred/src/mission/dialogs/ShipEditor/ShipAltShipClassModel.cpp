@@ -11,6 +11,15 @@ ShipAltShipClassModel::ShipAltShipClassModel(QObject* parent, EditorViewport* vi
 bool ShipAltShipClassModel::apply()
 {
 	// TODO: Add extra validation here
+	for (auto& pool_class : alt_class_pool) {
+		if (pool_class.ship_class == -1 && pool_class.variable_index == -1) {
+			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
+				"Warning",
+				"Class Can\'t be set by both ship class and by variable simultaneously.",
+				{DialogButton::Ok});
+			return false;
+		}
+	}
 	for (int i = 0; i < _num_selected_ships; i++) {
 		Ships[_m_selected_ships[i]].s_alt_classes = alt_class_pool;
 	}
@@ -19,6 +28,61 @@ bool ShipAltShipClassModel::apply()
 
 void ShipAltShipClassModel::reject() {}
 
+SCP_vector<alt_class> ShipAltShipClassModel::get_pool() const
+{
+	return alt_class_pool;
+}
+
+SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes() const
+{
+	// Fill the ship classes combo box
+	SCP_vector<std::pair<SCP_string, int>> _m_set_from_ship_class;
+	std::pair<SCP_string, int> classData;
+	// Add the default entry if we need one followed by all the ship classes
+		classData.first = "Set From Variable";
+		classData.second = -1;
+		_m_set_from_ship_class.push_back(classData);
+	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
+		if (_player_flyable_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
+			continue;
+		}
+		classData.first = it->name;
+		classData.second = std::distance(Ship_info.cbegin(), it);
+		_m_set_from_ship_class.push_back(classData);
+	}
+
+	return _m_set_from_ship_class;
+}
+
+SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_variables() const
+{
+	// Fill the variable combo box
+	SCP_vector<std::pair<SCP_string, int>> _m_set_from_variables;
+	std::pair<SCP_string, int> variableData;
+	variableData.first = "Set From Ship Class";
+	variableData.second = -1;
+	_m_set_from_variables.push_back(variableData);
+	for (int i = 0; i < MAX_SEXP_VARIABLES; i++) {
+		if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) {
+			SCP_string buff = Sexp_variables[i].variable_name;
+			buff = buff + "[" + Sexp_variables[i].text + "]";
+			variableData.first = buff;
+			variableData.second = i;
+			_m_set_from_variables.push_back(variableData);
+			//_string_variables.push_back(variable);
+			//			_string_variables[0].get().type = 1234;
+		}
+	}
+	return _m_set_from_variables;
+}
+void ShipAltShipClassModel::sync_data(const SCP_vector<alt_class> new_pool) {
+	if (new_pool == alt_class_pool) {
+		return;
+	} else {
+		alt_class_pool = new_pool;
+		set_modified();
+	}
+}
 void ShipAltShipClassModel::initializeData()
 {
 	_num_selected_ships = 0;
@@ -38,40 +102,6 @@ void ShipAltShipClassModel::initializeData()
 	Assert(_num_selected_ships > 0);
 	// Assert(Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 
-	// Fill the variable combo box
-	_m_set_from_variables.clear();
-	_string_variables.clear();
-	_m_set_from_variables.push_back("Set From Ship Class");
-	for (auto& variable : Sexp_variables) {
-		if (variable.type & SEXP_VARIABLE_STRING) {
-			SCP_string buff = variable.variable_name;
-			buff = buff + "[" + variable.text + "]";
-			_m_set_from_variables.push_back(buff);
-			_string_variables.push_back(variable);
-			//			_string_variables[0].get().type = 1234;
-		}
-	}
-
-	/* int index = std::distance(std::begin(Sexp_variables),
-		std::find_if(std::begin(Sexp_variables), std::end(Sexp_variables), [this](sexp_variable value) {
-			return value.variable_name == _string_variables[0].get().variable_name;
-		}));*/
-
-	// Fill the ship classes combo box
-	_m_set_from_ship_class.clear();
-	// Add the default entry if we need one followed by all the ship classes
-	if (_m_set_from_variables.size() > 0) {
-		_m_set_from_ship_class.push_back("Set From Variable");
-	}
-
-	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		if (_player_flyable_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
-			continue;
-		}
-
-		_ship_class_indices.push_back(std::distance(Ship_info.cbegin(), it));
-		_m_set_from_ship_class.push_back(it->name);
-	}
 	alt_class_pool.clear();
 	objp = GET_FIRST(&obj_used_list);
 	while (objp != END_OF_LIST(&obj_used_list)) {
@@ -84,4 +114,5 @@ void ShipAltShipClassModel::initializeData()
 		objp = GET_NEXT(objp);
 	}
 }
+
 } // namespace fso::fred::dialogs

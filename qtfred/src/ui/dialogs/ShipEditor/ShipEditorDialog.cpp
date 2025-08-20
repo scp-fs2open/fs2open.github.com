@@ -827,6 +827,9 @@ void ShipEditorDialog::on_playerShipButton_clicked()
 void ShipEditorDialog::on_altShipClassButton_clicked()
 {
 	// TODO: altshipclassui
+	auto dialog = new dialogs::ShipAltShipClass(this, _viewport, getIfMultipleShips());
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
 }
 void ShipEditorDialog::on_prevButton_clicked()
 {

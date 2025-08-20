@@ -22,7 +22,14 @@
      <item>
       <layout class="QHBoxLayout" name="topLeftLayout">
        <item>
-        <widget class="QListView" name="classList"/>
+        <widget class="QListView" name="classList">
+         <property name="editTriggers">
+          <set>QAbstractItemView::NoEditTriggers</set>
+         </property>
+         <property name="defaultDropAction">
+          <enum>Qt::IgnoreAction</enum>
+         </property>
+        </widget>
        </item>
        <item>
         <layout class="QVBoxLayout" name="moveButtons">
@@ -99,7 +106,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboBox"/>
+      <widget class="QComboBox" name="shipCombo"/>
      </item>
      <item>
       <widget class="QLabel" name="variableLabel">
@@ -115,7 +122,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QComboBox" name="comboBox_2"/>
+      <widget class="QComboBox" name="variableCombo"/>
      </item>
      <item>
       <widget class="QCheckBox" name="defaultCheckbox">

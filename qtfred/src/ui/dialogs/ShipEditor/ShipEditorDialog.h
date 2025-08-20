@@ -13,6 +13,7 @@
 #include "ShipTBLViewer.h"
 #include "ShipPathsDialog.h"
 #include "ShipCustomWarpDialog.h"
+#include "ShipAltShipClass.h"
 
 #include <QAbstractButton>
 
