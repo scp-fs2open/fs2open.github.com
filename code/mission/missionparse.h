@@ -340,6 +340,17 @@ struct alt_class {
 	int ship_class;				
 	int variable_index;			// if set allows the class to be set by a variable
 	bool default_to_this_class;
+	alt_class()
+	{
+		ship_class = -1;
+		variable_index = -1;
+		default_to_this_class = false;
+	}
+	alt_class(const alt_class& a) {
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+	}
 	bool operator==(const alt_class& a) const
 	{
 		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
