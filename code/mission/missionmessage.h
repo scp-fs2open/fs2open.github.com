@@ -56,6 +56,8 @@ extern SCP_vector<message_extra> Message_waves;
 #define DEFAULT_COMMAND			"Command"
 #define DEFAULT_HASHCOMMAND		"#" DEFAULT_COMMAND
 
+#define MAX_SEARCH_MESSAGE_DEPTH 5 // maximum search number of event nodes with message text
+
 extern SCP_vector<SCP_string> Builtin_moods;
 extern int Current_mission_mood;
 extern float Command_announces_enemy_arrival_chance;

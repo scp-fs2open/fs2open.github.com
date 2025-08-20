@@ -16,8 +16,6 @@
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 
-#define MAX_SEARCH_MESSAGE_DEPTH		5		// maximum search number of event nodes with message text
-
 
 class event_sexp_tree : public sexp_tree
 {

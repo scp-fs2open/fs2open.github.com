@@ -818,9 +818,8 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 		m_last_message_node = -1; // reset cycle when switching message
 	}
 
-	constexpr int kMax = 5; // We need some kind of limit. Original limited to 5.
-	int nodes[kMax];
-	const int num = ui->eventTree->find_text(name.toUtf8().constData(), nodes, kMax);
+	int nodes[MAX_SEARCH_MESSAGE_DEPTH];
+	const int num = ui->eventTree->find_text(name.toUtf8().constData(), nodes, MAX_SEARCH_MESSAGE_DEPTH);
 	if (num <= 0) {
 		QMessageBox::information(this, tr("Error"), tr("No events using message '%1'").arg(name));
 		return;
