@@ -258,6 +258,7 @@ void ShipAltShipClass::updateUI()
 }
 void ShipAltShipClass::classListChanged(const QModelIndex& current)
 {
+	SCP_UNUSED(current);
 	updateUI();
 }
 QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default_ship) const
