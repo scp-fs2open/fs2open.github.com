@@ -12,9 +12,10 @@ DecoderStatus::~DecoderStatus() {
 	videoCodec = nullptr;
 
 	if (videoCodecCtx != nullptr) {
-		avcodec_close(videoCodecCtx);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		avcodec_free_context(&videoCodecCtx);
+#else
+		avcodec_close(videoCodecCtx);
 #endif
 		videoCodecCtx = nullptr;
 	}
@@ -24,9 +25,10 @@ DecoderStatus::~DecoderStatus() {
 	audioCodec = nullptr;
 
 	if (audioCodecCtx != nullptr) {
-		avcodec_close(audioCodecCtx);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		avcodec_free_context(&audioCodecCtx);
+#else
+		avcodec_close(audioCodecCtx);
 #endif
 		audioCodecCtx = nullptr;
 	}
@@ -36,9 +38,10 @@ DecoderStatus::~DecoderStatus() {
 	subtitleCodec = nullptr;
 
 	if (subtitleCodecCtx != nullptr) {
-		avcodec_close(subtitleCodecCtx);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		avcodec_free_context(&subtitleCodecCtx);
+#else
+		avcodec_close(subtitleCodecCtx);
 #endif
 		subtitleCodecCtx = nullptr;
 	}

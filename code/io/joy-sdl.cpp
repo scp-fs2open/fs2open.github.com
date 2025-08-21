@@ -286,7 +286,7 @@ auto JoystickOption = options::OptionBuilder<Joystick*>("Input.Joystick",
                      .level(options::ExpertLevel::Beginner)
                      .default_val(nullptr)                 // initial/default value for this option
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .importance(3)
+                     .importance(100)
                      .change_listener([](Joystick* joy, bool) {
                          setPlayerJoystick(joy, CID_JOY0);
                          return true;
@@ -304,7 +304,7 @@ auto JoystickOption1 = options::OptionBuilder<Joystick*>("Input.Joystick1",
                      .level(options::ExpertLevel::Beginner)
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
-                     .importance(3)
+                     .importance(90)
                      .change_listener([](Joystick* joy, bool) {
                          setPlayerJoystick(joy, CID_JOY1);
                          return true;
@@ -322,7 +322,7 @@ auto JoystickOption2 = options::OptionBuilder<Joystick*>("Input.Joystick2",
                      .level(options::ExpertLevel::Beginner)
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
-                     .importance(3)
+                     .importance(80)
                      .change_listener([](Joystick* joy, bool) {
                          setPlayerJoystick(joy, CID_JOY2);
                          return true;
@@ -340,7 +340,7 @@ auto JoystickOption3 = options::OptionBuilder<Joystick*>("Input.Joystick3",
                      .level(options::ExpertLevel::Beginner)
                      .default_val(nullptr)
                      .flags({ options::OptionFlags::ForceMultiValueSelection })
-                     .importance(3)
+                     .importance(70)
                      .change_listener([](Joystick* joy, bool) {
                          setPlayerJoystick(joy, CID_JOY3);
                          return true;

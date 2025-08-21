@@ -1,4 +1,6 @@
 
+#ifdef _WIN32
+
 #include "headtracking/freetrack.h"
 
 #define WIN32_LEAN_AND_MEAN
@@ -183,3 +185,5 @@ namespace headtracking
 		}
 	}
 }
+
+#endif	// _WIN32

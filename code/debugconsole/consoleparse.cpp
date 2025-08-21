@@ -1083,7 +1083,7 @@ void dc_stuff_int(int *i)
 	value_l = dc_parse_long(token.c_str(), DCT_INT);
 
 	if ((value_l < INT_MAX) && (value_l > INT_MIN)) {
-		*i = value_l;
+		*i = static_cast<int>(value_l);
 
 	} else {
 		throw errParse(token.c_str(), DCT_INT);
@@ -1101,7 +1101,7 @@ void dc_stuff_uint(uint *i)
 	value_l = dc_parse_long(Cp, DCT_INT);
 
 	if (value_l < UINT_MAX) {
-		*i = value_l;
+		*i = static_cast<uint>(value_l);
 
 	} else {
 		throw errParse(token.c_str(), DCT_INT);

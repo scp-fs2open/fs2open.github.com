@@ -1077,6 +1077,11 @@ void ship_info::clone(const ship_info& other)
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
 	debris_flame_particles = other.debris_flame_particles;
+	shrapnel_flame_particles = other.shrapnel_flame_particles;
+	debris_end_particles = other.debris_end_particles;
+	shrapnel_end_particles = other.shrapnel_end_particles;
+	default_subsys_debris_flame_particles = other.default_subsys_debris_flame_particles;
+	default_subsys_shrapnel_flame_particles = other.default_subsys_shrapnel_flame_particles;
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1440,6 +1445,11 @@ void ship_info::move(ship_info&& other)
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
 	std::swap(debris_flame_particles, other.debris_flame_particles);
+	std::swap(shrapnel_flame_particles, other.shrapnel_flame_particles);
+	std::swap(debris_end_particles, other.debris_end_particles);
+	std::swap(shrapnel_end_particles, other.shrapnel_end_particles);
+	std::swap(default_subsys_debris_flame_particles, other.default_subsys_debris_flame_particles);
+	std::swap(default_subsys_shrapnel_flame_particles, other.default_subsys_shrapnel_flame_particles);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1812,6 +1822,11 @@ ship_info::ship_info()
 	regular_end_particles = default_regular_end_particles;
 
 	debris_flame_particles = particle::ParticleEffectHandle::invalid();
+	shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
+	debris_end_particles = particle::ParticleEffectHandle::invalid();
+	shrapnel_end_particles = particle::ParticleEffectHandle::invalid();
+	default_subsys_debris_flame_particles = particle::ParticleEffectHandle::invalid();
+	default_subsys_shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -3923,6 +3938,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
 	}
 
+	if(optional_string("$Shrapnel Flame Effect:"))
+	{
+		sip->shrapnel_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Debris Death Effect:"))
+	{
+		sip->debris_end_particles = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Shrapnel Death Effect:"))
+	{
+		sip->shrapnel_end_particles = particle::util::parseEffect(sip->name);
+	}
+
 	auto skip_str = "$Skip Death Roll Percent Chance:";
 	auto vaporize_str = "$Vaporize Percent Chance:";
 	int which;
@@ -5466,6 +5496,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Default Subsystem Death Effect:")) {
 		sip->default_subsys_death_effect = particle::util::parseEffect(sip->name);
+
+	if(optional_string("$Default Subsystem Debris Flame Effect:"))
+	{
+		sip->default_subsys_debris_flame_particles = particle::util::parseEffect(sip->name);
+	}
+	
+	if(optional_string("$Default Subsystem Shrapnel Flame Effect:"))
+	{
+		sip->default_subsys_shrapnel_flame_particles = particle::util::parseEffect(sip->name);
 	}
 
 	int n_subsystems = 0;
@@ -5565,7 +5604,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				sp->turret_max_bomb_ownage = -1;
 				sp->turret_max_target_ownage = -1;
 				sp->density = 1.0f;
+        
 				sp->death_effect = particle::ParticleEffectHandle::invalid();
+				sp->debris_flame_particles = particle::ParticleEffectHandle::invalid();
+				sp->shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
+
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -5758,6 +5801,15 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 			if (optional_string("$Debris Density:")) {
 				stuff_float(&sp->density);
+			}
+
+			if(optional_string("$Debris Flame Effect:"))
+			{
+				sp->debris_flame_particles = particle::util::parseEffect(sip->name);
+			}
+			if(optional_string("$Shrapnel Debris Flame Effect:"))
+			{
+				sp->shrapnel_flame_particles = particle::util::parseEffect(sip->name);
 			}
 
 			if (optional_string("$Flags:")) {
@@ -15589,6 +15641,9 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 	if (subsys == nullptr)
 		return -1;
 
+	if (subsys->parent_objnum < 0)
+		return -1;
+
 	// might need to refresh the cache
 	auto sp = &Ships[Objects[subsys->parent_objnum].instance];
 	if (!sp->flags[Ship::Ship_Flags::Subsystem_cache_valid])
@@ -18663,6 +18718,31 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 	float size = (float)Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
 	return (int)std::lround(capacity / size);
+}
+
+/**
+ * The same as above, but for a specific turret's bank.
+ */
+int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int ammo_type)
+{
+	float capacity, size;
+
+	Assertion(bank < MAX_SHIP_PRIMARY_BANKS,
+		"Invalid primary bank of %d (max is %d); get a coder!\n",
+		bank,
+		MAX_SHIP_PRIMARY_BANKS - 1);
+	Assertion(ammo_type < weapon_info_size(),
+		"Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n",
+		ammo_type,
+		weapon_info_size());
+
+	if (!swp || bank < 0 || ammo_type < 0 || !(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic])) {
+		return 0;
+	} else {
+		capacity = (float)swp->primary_bank_capacity[bank];
+		size = (float)Weapon_info[ammo_type].cargo_size;
+		return (int)(capacity / size);
+	}
 }
 
 /**

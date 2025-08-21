@@ -88,10 +88,12 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCurrent_Ship_triggered(bool enabled);
 
 	void on_actionMission_Events_triggered(bool);
+	void on_actionMission_Cutscenes_triggered(bool);
 	void on_actionAsteroid_Field_triggered(bool);
 	void on_actionBriefing_triggered(bool);
 	void on_actionMission_Specs_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
+	void on_actionJump_Nodes_triggered(bool);
 	void on_actionObjects_triggered(bool);
 	void on_actionShips_triggered(bool);
 	void on_actionCampaign_triggered(bool);

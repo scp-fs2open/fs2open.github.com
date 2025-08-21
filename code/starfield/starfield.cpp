@@ -2305,6 +2305,10 @@ void stars_draw_background()
 		return;
 	}
 
+	// detail settings
+	if (!Detail.planets_suns)
+		return;
+
 	if (Nmodel_num < 0)
 		return;
 
