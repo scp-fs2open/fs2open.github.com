@@ -54,7 +54,7 @@ SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes()
 	return _m_set_from_ship_class;
 }
 
-SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_variables() const
+SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_variables()
 {
 	// Fill the variable combo box
 	SCP_vector<std::pair<SCP_string, int>> _m_set_from_variables;

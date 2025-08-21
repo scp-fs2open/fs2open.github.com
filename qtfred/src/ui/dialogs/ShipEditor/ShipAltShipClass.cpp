@@ -193,7 +193,7 @@ void ShipAltShipClass::initUI()
 		item->setData(ship.second, Qt::UserRole);
 		ship_pool->appendRow(item);
 	}
-	InverseSortFilterProxyModel* shipproxyModel = new InverseSortFilterProxyModel(this);
+	auto shipproxyModel = new InverseSortFilterProxyModel(this);
 	shipproxyModel->setSourceModel(ship_pool);
 	ui->shipCombo->setModel(shipproxyModel);
 	auto variable_pool = new QStandardItemModel();
@@ -261,7 +261,7 @@ void ShipAltShipClass::classListChanged(const QModelIndex& current)
 	SCP_UNUSED(current);
 	updateUI();
 }
-QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default_ship) const
+QStandardItem* ShipAltShipClass::generate_item(const int classid, const int variable, const bool default_ship)
 {
 	QString classname = generate_name(classid, variable);
 	if (!classname.isEmpty()) {
@@ -282,7 +282,7 @@ QString ShipAltShipClass::generate_name(const int classid, const int variable)
 {
 	QString classname;
 	if (variable != -1) {
-		Assert(variable > -1 && variable < MAX_SEXP_VARIABLES);
+		Assert(variable <= -1 || variable >= MAX_SEXP_VARIABLES);
 		Assert(Sexp_variables[variable].type & SEXP_VARIABLE_STRING);
 
 		classname = Sexp_variables[variable].variable_name;
