@@ -13,9 +13,6 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 
 	SCP_vector<alt_class> alt_class_pool;
 
-	//Does this really need to be a var?
-	bool _player_flyable_ships_only = true;
-
 	int _num_selected_ships = 0;
 
 	SCP_vector<int> _m_selected_ships;

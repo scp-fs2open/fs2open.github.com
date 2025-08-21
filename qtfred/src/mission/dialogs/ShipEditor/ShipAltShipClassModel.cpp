@@ -43,7 +43,7 @@ SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes()
 		classData.second = -1;
 		_m_set_from_ship_class.push_back(classData);
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-			if (&ShipAltShipClassModel::_player_flyable_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
+			if (!(it->flags[Ship::Info_Flags::Player_ship])) {
 			continue;
 		}
 		classData.first = it->name;
