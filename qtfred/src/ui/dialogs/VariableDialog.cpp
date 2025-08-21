@@ -1632,7 +1632,7 @@ void VariableDialog::updateContainerDataOptions(bool list, bool safeToAlter)
 						ui->shiftItemUpButton->setEnabled(false);
 					}
 					
-					if (x <= -1 || x >= static_cast<int>(strings.size()) - 1)){
+					if (x <= -1 || x >= static_cast<int>(strings.size()) - 1){
 						ui->shiftItemDownButton->setEnabled(false);
 					}
 				}
