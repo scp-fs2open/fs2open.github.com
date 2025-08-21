@@ -329,7 +329,7 @@ void VariableDialog::onVariablesTableUpdated()
 		auto ret = _model->changeVariableName(item->row(), itemText);
 
 		// we put something in the cell, but the model couldn't process it.
-		if (strlen(item->text().toStdString().c_str()) && ret == ""){
+		if (strlen(item->text().toStdString().c_str()) && ret.empty()){
 			// update of variable name failed, resync UI
 			apply = true;
 
@@ -353,7 +353,7 @@ void VariableDialog::onVariablesTableUpdated()
 			temp = temp.substr(0, NAME_LENGTH - 1);
 
 			SCP_string ret = _model->setVariableStringValue(item->row(), temp);
-			if (ret == ""){
+			if (ret.empty()){
 				apply = true;
 			} else {
 				item->setText(ret.c_str());

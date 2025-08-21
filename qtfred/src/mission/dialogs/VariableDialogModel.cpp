@@ -500,7 +500,7 @@ bool VariableDialogModel::setVariableType(int index, bool string)
     // this variable is currently a string
     if (variable->string) {
         // no risk change, because no string was specified.
-        if (variable->stringValue == "") {
+        if (variable->stringValue.empty()) {
             variable->string = string;
             return variable->string;
         } else {
@@ -526,7 +526,7 @@ bool VariableDialogModel::setVariableType(int index, bool string)
             return variable->string;
         } else {
             // if there was no previous string value 
-            if (variable->stringValue == ""){
+            if (variable->stringValue.empty()){
                 sprintf(variable->stringValue, "%i", variable->numberValue);
             }
 
@@ -791,7 +791,7 @@ bool VariableDialogModel::safeToAlterVariable(int index)
 bool VariableDialogModel::safeToAlterVariable(const variableInfo& variableItem)
 {
     // again, FIXME!  Needs actally reference count.
-    return variableItem.originalName == "";
+    return variableItem.originalName.empty();
 }
 
 
@@ -1183,7 +1183,6 @@ bool VariableDialogModel::setContainerListOrMap(int index, bool list)
 		return container->list;
 	}
 
-	return !list;
 }
 
 bool VariableDialogModel::setContainerNetworkStatus(int index, bool network)
@@ -1719,7 +1718,6 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
         return std::make_pair(newKey, temp);
     }
 
-    return std::make_pair("", "");
 }
 
 // requires a model reload anyway, so no return value.
@@ -1887,7 +1885,7 @@ void VariableDialogModel::swapKeyAndValues(int index)
 
             // not as easy part 2
 			for (int x = 0; x < static_cast<int>(keysCopy.size()); ++x) {
-                if (keysCopy[x] == ""){
+                if (keysCopy[x].empty()){
                     container->numberValues[x] = 0;
                 } else {
                     try {
@@ -2061,9 +2059,9 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
             notes = "Referenced";            
         } else if (item.deleted){
             notes = "To Be Deleted";
-        } else if (item.originalName == ""){
+        } else if (item.originalName.empty()){
             notes = "New";
-        } else if ((item.string && item.stringValue == "") || (!item.string && item.numberValue == 0)){
+        } else if ((item.string && item.stringValue.empty()) || (!item.string && item.numberValue == 0)){
             notes = "Default Value";
         } else if (item.name != item.originalName){
             notes = "Renamed";
@@ -2218,7 +2216,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
             notes = "Referenced";
         } else if (item.deleted) {
             notes = "To Be Deleted";
-        } else if (item.originalName == "") {
+        } else if (item.originalName.empty()) {
             notes = "New";
         } else if (item.name != item.originalName){
             notes = "Renamed";
