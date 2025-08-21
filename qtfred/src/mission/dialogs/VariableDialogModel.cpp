@@ -1474,8 +1474,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, con
 				sprintf(newKey, "%i", count);
 			}
 
-            for (const auto& key : container->keys) {
-                if (key == newKey){
+            for (const auto& current_key : container->keys) {
+                if (current_key == newKey){
 					conflict = true;
 					break;
 				}
@@ -1640,8 +1640,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         do {
             found = false;
-            for (const auto& key : container->keys){
-                if (key == newKey) {
+            for (const auto& current_key : container->keys){
+                if (current_key == newKey) {
                     found = true;
                     break;
                 }
@@ -1683,8 +1683,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         do {
             found = false;
-            for (const auto& key : container->keys){
-                if (key == newKey) {
+            for (const auto& current_key : container->keys){
+                if (current_key == newKey) {
                     found = true;
                     break;
                 }
@@ -2230,7 +2230,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     return outStrings;   
 }
 
-static void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
+void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
 
 void VariableDialogModel::sortMap(int index)
 {
