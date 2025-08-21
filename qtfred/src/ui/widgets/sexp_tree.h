@@ -390,7 +390,7 @@ class sexp_tree: public QTreeWidget {
 
 	void deleteCurrentItem();
 
-	void applyVisuals(QTreeWidgetItem* it);
+	static void applyVisuals(QTreeWidgetItem* it);
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);

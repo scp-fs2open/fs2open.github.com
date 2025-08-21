@@ -90,7 +90,7 @@ private slots:
 	void on_messageTeamCombo_currentIndexChanged(int index);
 
 
-private:
+private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::MissionEventsDialog> ui;
 	EditorViewport* _viewport;
 	std::unique_ptr<IEventTreeOps> _treeOps;
