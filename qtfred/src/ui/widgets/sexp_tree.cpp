@@ -146,11 +146,11 @@ QString node_image_to_resource_name(NodeImage image) {
 	return ":/images/bitmap1.png";
 }
 
-static QPoint s_dragStartPos;
-static QTreeWidgetItem* s_dragSourceRoot = nullptr;
-static bool s_dragging = false;
+QPoint s_dragStartPos;
+QTreeWidgetItem* s_dragSourceRoot = nullptr;
+bool s_dragging = false;
 
-static bool isRoot(QTreeWidgetItem* it)
+bool isRoot(QTreeWidgetItem* it)
 {
 	return it && !it->parent();
 }
@@ -1831,7 +1831,7 @@ void sexp_tree::editNoteForItem(QTreeWidgetItem* it)
 
 void sexp_tree::editBgColorForItem(QTreeWidgetItem* it)
 {
-	const QColor start = it->data(0, BgColorRole).value<QColor>();
+	const auto start = it->data(0, BgColorRole).value<QColor>();
 	const QColor c = QColorDialog::getColor(start.isValid() ? start : Qt::yellow, this, tr("Choose Background Color"));
 	if (!c.isValid())
 		return;

@@ -15,7 +15,7 @@ bool MissionEventsDialogModel::apply()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
 
-	audiostream_close_file(m_wave_id, 0);
+	audiostream_close_file(m_wave_id, false);
 	m_wave_id = -1;
 
 	for (auto& event : Mission_events) {
@@ -180,7 +180,7 @@ void MissionEventsDialogModel::initializeEventAnnotations()
 
 		ea.handle = h;
 		if (h) {
-			const bool hasColor = !(ea.r == 255 && ea.g == 255 && ea.b == 255);
+			const bool hasColor = (ea.r != 255) || (ea.g != 255) || (ea.b != 255);
 			m_event_tree_ops.set_node_note(h, ea.comment);
 			m_event_tree_ops.set_node_bg_color(h, ea.r, ea.g, ea.b, hasColor);
 		}
@@ -1486,7 +1486,7 @@ const SCP_vector<MMessage>& MissionEventsDialogModel::getMessageList() const
 	return m_messages;
 }
 
-bool MissionEventsDialogModel::getMissionIsMultiTeam() const
+bool MissionEventsDialogModel::getMissionIsMultiTeam()
 {
 	return The_mission.game_type & MISSION_TYPE_MULTI_TEAMS;
 }

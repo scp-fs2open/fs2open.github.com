@@ -159,7 +159,7 @@ class MissionEventsDialogModel : public AbstractDialogModel {
 	void autoSelectPersona();
 	void playMessageWave();
 	const SCP_vector<MMessage>& getMessageList() const;
-	bool getMissionIsMultiTeam() const;
+	static bool getMissionIsMultiTeam();
 
 	void setModified();
 

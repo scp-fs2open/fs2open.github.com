@@ -342,11 +342,7 @@ void MissionEventsDialog::rootNodeSelectedByFormula(int formula) {
 void MissionEventsDialog::initMessageList() {
 	rebuildMessageList();
 
-	if (_model->getMessageList().size() > 0) {
-		_model->setCurrentlySelectedMessage(0);
-	} else {
-		_model->setCurrentlySelectedMessage(-1);
-	}
+	_model->setCurrentlySelectedMessage(_model->getMessageList().empty() ? -1 : 0);
 }
 
 void MissionEventsDialog::rebuildMessageList() {
@@ -795,11 +791,12 @@ void MissionEventsDialog::on_messageList_itemDoubleClicked(QListWidgetItem* item
 	int next = nodes[0];
 	if (m_last_message_node != -1) {
 		int pos = -1;
-		for (int i = 0; i < num; ++i)
+		for (int i = 0; i < num; ++i) {
 			if (nodes[i] == m_last_message_node) {
 				pos = i;
 				break;
 			}
+		}
 		next = (pos == -1 || pos == num - 1) ? nodes[0] : nodes[pos + 1];
 	}
 
