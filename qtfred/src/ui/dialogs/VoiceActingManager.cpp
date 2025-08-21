@@ -132,7 +132,7 @@ void VoiceActingManager::syncGroupMessagesEnabled()
 	ui->groupMessagesCheckBox->setEnabled(enable);
 }
 
-int VoiceActingManager::exportSelectionToIndex(ExportSelection sel) const
+int VoiceActingManager::exportSelectionToIndex(ExportSelection sel)
 {
 	switch (sel) {
 	case ExportSelection::Everything:
@@ -151,26 +151,7 @@ int VoiceActingManager::exportSelectionToIndex(ExportSelection sel) const
 	}
 }
 
-ExportSelection VoiceActingManager::indexToExportSelection(int idx) const
-{
-	switch (idx) {
-		case 0:
-			return ExportSelection::Everything;
-		case 1:
-			return ExportSelection::CommandBriefings;
-		case 2:
-			return ExportSelection::Briefings;
-		case 3:
-			return ExportSelection::Debriefings;
-		case 4:
-			return ExportSelection::Messages;
-		default:
-			Assertion(false, "Invalid export selection index!");
-			return ExportSelection::Everything;
-	}
-}
-
-int VoiceActingManager::suffixToIndex(Suffix s) const
+int VoiceActingManager::suffixToIndex(Suffix s)
 {
 	switch (s) {
 		case Suffix::WAV:
@@ -183,7 +164,7 @@ int VoiceActingManager::suffixToIndex(Suffix s) const
 	}
 }
 
-Suffix VoiceActingManager::indexToSuffix(int idx) const
+Suffix VoiceActingManager::indexToSuffix(int idx)
 {
 	switch (idx) {
 		case 0:

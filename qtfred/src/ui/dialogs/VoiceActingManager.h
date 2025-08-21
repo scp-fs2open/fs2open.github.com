@@ -70,11 +70,10 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void syncGroupMessagesEnabled();
 
 	// enum mappers
-	int exportSelectionToIndex(ExportSelection sel) const;
-	ExportSelection indexToExportSelection(int idx) const;
+	static int exportSelectionToIndex(ExportSelection sel);
 
-	int suffixToIndex(Suffix s) const;
-	Suffix indexToSuffix(int idx) const;
+	static int suffixToIndex(Suffix s);
+	static Suffix indexToSuffix(int idx);
 };
 
 } // namespace fso::fred::dialogs

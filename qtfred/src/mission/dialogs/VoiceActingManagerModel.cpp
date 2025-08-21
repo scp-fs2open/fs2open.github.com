@@ -102,7 +102,7 @@ void VoiceActingManagerModel::initializeData()
 	_whichPersonaToSync = 0;
 }
 
-SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices() const
+SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices()
 {
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<Wingman Personas>");
@@ -113,7 +113,7 @@ SCP_vector<SCP_string> VoiceActingManagerModel::personaChoices() const
 	return out;
 }
 
-SCP_vector<SCP_string> VoiceActingManagerModel::fileChoices() const
+SCP_vector<SCP_string> VoiceActingManagerModel::fileChoices()
 {
 	SCP_vector<SCP_string> out;
 
@@ -322,7 +322,7 @@ int VoiceActingManagerModel::generateFilenames()
 	return num_modified;
 }
 
-int VoiceActingManagerModel::fout(void* fp, const char* format, ...) const
+bool VoiceActingManagerModel::fout(void* fp, const char* format, ...)
 {
 	SCP_string str;
 	va_list args;
@@ -330,7 +330,7 @@ int VoiceActingManagerModel::fout(void* fp, const char* format, ...) const
 	vsprintf(str, format, args);
 	va_end(args);
 	cfputs(str.c_str(), static_cast<CFILE*>(fp));
-	return 0;
+	return true;
 }
 
 static inline void replace_all(std::string& s, const std::string& from, const std::string& to)
@@ -612,7 +612,7 @@ int VoiceActingManagerModel::setHeadAnisUsingMessagesTbl()
 	return modified;
 }
 
-AnyWingmanCheckResult VoiceActingManagerModel::checkAnyWingmanPersonas() const
+AnyWingmanCheckResult VoiceActingManagerModel::checkAnyWingmanPersonas()
 {
 	AnyWingmanCheckResult result;
 	char senderBuf[NAME_LENGTH]{};
@@ -814,12 +814,12 @@ void VoiceActingManagerModel::groupMessageIndexesInTree(int node, SCP_vector<int
 bool VoiceActingManagerModel::checkPersonaFilter(int persona) const
 {
 	Assertion(SCP_vector_inbounds(Personas, persona), "Persona index out of range in checkPersonaFilter()");
-	if (_whichPersonaToSync == 0) {
+	if (_whichPersonaToSync == static_cast<int>(PersonaSyncIndex::Wingman)) {
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) != 0;
-	} else if (_whichPersonaToSync == 1) {
+	} else if (_whichPersonaToSync == static_cast<int>(PersonaSyncIndex::NonWingman)) {
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) == 0;
 	} else {
-		const int specific = _whichPersonaToSync - 2;
+		const int specific = _whichPersonaToSync - static_cast<int>(PersonaSyncIndex::PersonasStart);
 		Assertion(SCP_vector_inbounds(Personas, specific), "Dropdown persona index out of range");
 		return specific == persona;
 	}

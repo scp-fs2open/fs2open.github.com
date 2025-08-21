@@ -968,17 +968,17 @@ bool VoiceActingManager::check_persona(int persona)
 {
 	Assertion(SCP_vector_inbounds(Personas, persona), "The persona index provided to check_persona() is not in range!");
 
-	if (m_which_persona_to_sync == WINGMAN_PERSONAS)
+	if (m_which_persona_to_sync == static_cast<int>(PersonaSyncIndex::Wingman))
 	{
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) != 0;
 	}
-	else if (m_which_persona_to_sync == NON_WINGMAN_PERSONAS)
+	else if (m_which_persona_to_sync == static_cast<int>(PersonaSyncIndex::NonWingman))
 	{
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) == 0;
 	}
 	else
 	{
-		int real_persona_to_sync = m_which_persona_to_sync - SPECIFIC_PERSONAS_START_AT;
+		int real_persona_to_sync = m_which_persona_to_sync - static_cast<int>(PersonaSyncIndex::PersonasStart);
 		Assertion(SCP_vector_inbounds(Personas, real_persona_to_sync), "The m_which_persona_to_sync dropdown index is not in range!");
 		return real_persona_to_sync == persona;
 	}

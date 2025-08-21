@@ -5,9 +5,11 @@
 // Voice acting manager
 #define INVALID_MESSAGE ((MMessage*)SIZE_MAX) // was originally SIZE_T_MAX but that wasn't available outside fred. May need more research.
 
-#define WINGMAN_PERSONAS 0
-#define NON_WINGMAN_PERSONAS 1
-#define SPECIFIC_PERSONAS_START_AT 2
+enum class PersonaSyncIndex : int {
+	Wingman = 0,      // <Wingman Personas>
+	NonWingman = 1,   // <Non-Wingman Personas>
+	PersonasStart = 2 // indices >= 2 map to specific persona
+};
 
 extern char Voice_abbrev_briefing[NAME_LENGTH];
 extern char Voice_abbrev_campaign[NAME_LENGTH];

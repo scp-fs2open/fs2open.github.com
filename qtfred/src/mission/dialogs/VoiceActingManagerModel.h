@@ -77,8 +77,8 @@ class VoiceActingManagerModel : public AbstractDialogModel {
 	void setWhichPersonaToSync(int idx);
 
 	// Populates "<Wingman>", "<Non-Wingman>", then all persona names
-	SCP_vector<SCP_string> personaChoices() const;
-	SCP_vector<SCP_string> fileChoices() const;
+	static SCP_vector<SCP_string> personaChoices();
+	static SCP_vector<SCP_string> fileChoices();
 
 	// Builds example filename using current settings
 	// prefers command->brief->debrief->message ordering
@@ -102,7 +102,7 @@ class VoiceActingManagerModel : public AbstractDialogModel {
 	int setHeadAnisUsingMessagesTbl();
 
 	// Validate <any wingman> messages
-	AnyWingmanCheckResult checkAnyWingmanPersonas() const;
+	static AnyWingmanCheckResult checkAnyWingmanPersonas();
 
   signals:
 	
@@ -143,7 +143,7 @@ class VoiceActingManagerModel : public AbstractDialogModel {
 	static void groupMessageIndexesInTree(int node, SCP_vector<int>& sourceList, SCP_vector<int>& destList);
 	bool checkPersonaFilter(int persona) const;
 
-	int fout(void* cfilePtr, const char* fmt, ...) const; // cfilePtr is CFILE*
+	static bool fout(void* cfilePtr, const char* fmt, ...); // cfilePtr is CFILE*
 	
 };
 
