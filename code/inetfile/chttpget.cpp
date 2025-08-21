@@ -392,7 +392,7 @@ int ChttpGet::ConnectSocket()
 
 char *ChttpGet::GetHTTPLine()
 {
-	int iBytesRead;
+	long iBytesRead;
 	char chunk[2];
 	uint igotcrlf = 0;
 	memset(recv_buffer,0,1000);
@@ -463,7 +463,7 @@ char *ChttpGet::GetHTTPLine()
 uint ChttpGet::ReadDataChannel()
 {
 	char sDataBuffer[4096];		// Data-storage buffer for the data channel
-	int nBytesRecv = 0;						// Bytes received from the data channel
+	long nBytesRecv = 0;						// Bytes received from the data channel
 
 	fd_set	wfds;
 

@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -168,11 +168,13 @@
     <addaction name="actionWings"/>
     <addaction name="actionObjects"/>
     <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionJump_Nodes"/>
     <addaction name="separator"/>
     <addaction name="actionMission_Specs"/>
     <addaction name="actionMission_Goals"/>
     <addaction name="actionMission_Events"/>
     <addaction name="actionVariables"/>
+    <addaction name="actionMission_Cutscenes"/>
     <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionFiction_Viewer"/>
@@ -1520,6 +1522,20 @@
    </property>
    <property name="shortcut">
     <string>Shift+V</string>
+  <action name="actionJump_Nodes">
+   <property name="text">
+    <string>Jump &amp;Nodes</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+J</string>
+   </property>
+  </action>
+  <action name="actionMission_Cutscenes">
+   <property name="text">
+    <string>Mission Cutscenes</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+X</string>
    </property>
   </action>
  </widget>

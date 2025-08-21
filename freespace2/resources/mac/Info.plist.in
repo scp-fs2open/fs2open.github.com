@@ -17,7 +17,7 @@
 	<key>CFBundleName</key>
 	<string>FreeSpace Open</string>
 	<key>CFBundleIdentifier</key>
-	<string>us.indiegames.scp.FreeSpaceOpen</string>
+	<string>${MACOSX_BUNDLE_GUI_IDENTIFIER}</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleSignature</key>

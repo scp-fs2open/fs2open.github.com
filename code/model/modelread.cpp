@@ -490,7 +490,7 @@ void get_user_prop_value(char *buf, char *value)
 	char *p, *p1, c;
 
 	p = buf;
-	while ( isspace(*p) || (*p == '=') )		// skip white space and equal sign
+	while ( isspace(*p) || (*p == '=') || (*p == ':') )		// skip white space, equal sign, and colon
 		p++;
 	p1 = p;
 	while ( !iscntrl(*p1) )						// copy until we get to a control character
@@ -1065,7 +1065,7 @@ float get_submodel_delta_angle(const submodel_instance *smi)
 float get_submodel_delta_shift(const submodel_instance *smi)
 {
 	// this is a bit simpler
-	return abs(smi->cur_offset - smi->prev_offset);
+	return std::abs(smi->cur_offset - smi->prev_offset);
 }
 
 void do_new_subsystem( int n_subsystems, model_subsystem *slist, int subobj_num, float rad, const vec3d *pnt, char *props, const char *subobj_name, int model_num )
@@ -4388,7 +4388,7 @@ void submodel_look_at(polymodel *pm, polymodel_instance *pmi, int submodel_num)
 
 	// calculate turn rate
 	// (try to avoid a one-frame dramatic spike in the turn rate if the angle passes 0.0 or PI2)
-	if (abs(smi->cur_angle - smi->prev_angle) < PI)
+	if (std::abs(smi->cur_angle - smi->prev_angle) < PI)
 		smi->current_turn_rate = smi->desired_turn_rate = (smi->cur_angle - smi->prev_angle) / flFrametime;
 
 	// and now set the other submodel fields

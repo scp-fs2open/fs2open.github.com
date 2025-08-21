@@ -52,8 +52,12 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
 	src/mission/dialogs/FormWingDialogModel.h
+	src/mission/dialogs/JumpNodeEditorDialogModel.cpp
+	src/mission/dialogs/JumpNodeEditorDialogModel.h
 	src/mission/dialogs/LoadoutEditorDialogModel.cpp
 	src/mission/dialogs/LoadoutEditorDialogModel.h
+	src/mission/dialogs/MissionCutscenesDialogModel.cpp
+	src/mission/dialogs/MissionCutscenesDialogModel.h
 	src/mission/dialogs/MissionGoalsDialogModel.cpp
 	src/mission/dialogs/MissionGoalsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
@@ -126,8 +130,12 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
 	src/ui/dialogs/FormWingDialog.h
+	src/ui/dialogs/JumpNodeEditorDialog.cpp
+	src/ui/dialogs/JumpNodeEditorDialog.h
 	src/ui/dialogs/LoadoutDialog.cpp	
 	src/ui/dialogs/LoadoutDialog.h
+	src/ui/dialogs/MissionCutscenesDialog.cpp
+	src/ui/dialogs/MissionCutscenesDialog.h
 	src/ui/dialogs/MissionGoalsDialog.cpp
 	src/ui/dialogs/MissionGoalsDialog.h
 	src/ui/dialogs/MissionSpecDialog.cpp
@@ -194,6 +202,8 @@ add_file_folder("Source/UI/Util"
 add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h
+	src/ui/widgets/FlagList.cpp
+	src/ui/widgets/FlagList.h
     src/ui/widgets/renderwidget.cpp
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
@@ -219,7 +229,9 @@ add_file_folder("UI"
 	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui
+	ui/JumpNodeEditorDialog.ui
 	ui/LoadoutDialog.ui
+	ui/MissionCutscenesDialog.ui
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
 	ui/ObjectOrientationDialog.ui

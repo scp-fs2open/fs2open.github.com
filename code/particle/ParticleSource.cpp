@@ -110,7 +110,11 @@ float ParticleSource::getEffectRunningTime(const std::tuple<const ParticleSource
 	return i2fl(timestamp_get_delta(timing.m_startTimestamp, timing.m_nextCreation)) / i2fl(MILLISECONDS_PER_SECOND);
 }
 
-float ParticleSource::getEffectVisualSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
-	return std::get<0>(source).getEffect()[std::get<1>(source)].getApproximateVisualSize(std::get<2>(source));
+float ParticleSource::getEffectPixelSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
+	return std::get<0>(source).getEffect()[std::get<1>(source)].getApproximatePixelSize(std::get<2>(source));
+}
+
+float ParticleSource::getEffectApparentSize(const std::tuple<const ParticleSource&, const size_t&, const vec3d&>& source) {
+	return i2fl(std::get<0>(source).getEffect()[std::get<1>(source)].getApproximatePixelSize(std::get<2>(source))) / i2fl(gr_screen.max_w);
 }
 }

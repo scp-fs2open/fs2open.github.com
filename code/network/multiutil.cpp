@@ -3310,7 +3310,7 @@ void bitbuffer_put( bitbuffer *bitbuf, uint data, int bit_count )
 {
 	uint mask;
 
-	mask = 1L << ( bit_count - 1 );
+	mask = 1U << ( bit_count - 1 );
 	while ( mask != 0) {
 		if ( mask & data )	{
 			bitbuf->rack |= bitbuf->mask;
@@ -3330,7 +3330,7 @@ uint bitbuffer_get_unsigned( bitbuffer *bitbuf, int bit_count )
 	uint local_mask;
 	uint return_value;
 
-	local_mask = 1L << ( bit_count - 1 );
+	local_mask = 1U << ( bit_count - 1 );
 	return_value = 0;
 
 	while ( local_mask != 0)	{
@@ -3355,7 +3355,7 @@ int bitbuffer_get_signed( bitbuffer *bitbuf, int bit_count )
 	uint local_mask;
 	uint return_value;
 
-	local_mask = 1L << ( bit_count - 1 );
+	local_mask = 1U << ( bit_count - 1 );
 	return_value = 0;
 	while ( local_mask != 0)	{
 		if ( bitbuf->mask == 0x80 ) {

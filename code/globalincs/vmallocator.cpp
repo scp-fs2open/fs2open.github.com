@@ -80,6 +80,21 @@ bool SCP_truncate(SCP_string &str, size_t len)
 		return false;
 }
 
+bool SCP_trim(SCP_string& str)
+{
+	auto start = str.find_first_not_of(" \t\r\n");
+	auto end = str.find_last_not_of(" \t\r\n");
+	if (start == SCP_string::npos) {
+		str.clear();
+		return true;
+	}
+	if (start > 0 || end < str.length() - 1) {
+		str = str.substr(start, end - start + 1);
+		return true;
+	}
+	return false;
+}
+
 bool lcase_equal(const SCP_string& _Left, const SCP_string& _Right)
 {
 	if (_Left.size() != _Right.size())

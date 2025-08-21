@@ -143,7 +143,7 @@ void lz41_load_offsets(CFILE* cf)
 	int* offsets_ptr = cf->compression_info.offsets;
 
 	/* Seek to the first offset position, remember to consider the trailing ints */
-	fso_fseek(cf, ( ( sizeof(int) * cf->compression_info.num_offsets ) * -1 ) - (sizeof(int)*3 ), SEEK_END);
+	fso_fseek(cf, static_cast<int>( ( sizeof(int) * cf->compression_info.num_offsets ) * -1 ) - (sizeof(int)*3 ), SEEK_END);
 	for (block = 0; block < cf->compression_info.num_offsets; ++block)
 	{
 		auto bytes_read = fread(offsets_ptr++, sizeof(int), 1, cf->fp);

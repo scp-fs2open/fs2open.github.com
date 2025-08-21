@@ -186,7 +186,6 @@ void Editor::maybeUseAutosave(std::string& filepath)
 bool Editor::loadMission(const std::string& mission_name, int flags) {
 	char name[512], * old_name;
 	int i, j, k, ob;
-	int used_pool[MAX_WEAPON_TYPES];
 	object* objp;
 
 	// activate the localizer hash table
@@ -334,6 +333,10 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			}
 		}
 	}
+
+	int used_pool[MAX_WEAPON_TYPES] = {};
+	for (auto& pool : used_pool)
+		pool = 0; 
 
 	for (i = 0; i < Num_teams; i++) {
 		generate_team_weaponry_usage_list(i, _weapon_usage[i]);

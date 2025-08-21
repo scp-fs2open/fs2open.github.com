@@ -124,7 +124,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}
 
-float ParticleEffect::getApproximateVisualSize(const vec3d& pos) const {
+float ParticleEffect::getApproximatePixelSize(const vec3d& pos) const {
 	float distance_to_eye = vm_vec_dist(&Eye_position, &pos);
 
 	return convert_distance_and_diameter_to_pixel_size(

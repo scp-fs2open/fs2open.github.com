@@ -23,6 +23,7 @@
 #include "model/model_flags.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
+#include "particle/ParticleEffect.h"
 
 class object;
 class ship_info;
@@ -292,6 +293,9 @@ public:
 	actions::ProgramSet beam_warmdown_program;
 
 	float density;
+
+	particle::ParticleEffectHandle debris_flame_particles;
+	particle::ParticleEffectHandle shrapnel_flame_particles;
 
     void reset();
 

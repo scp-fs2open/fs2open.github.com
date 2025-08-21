@@ -3952,22 +3952,6 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	}	
 }
 
-// If the end_mission SEXP has been used tell clients to skip straight to the debrief screen
-void send_force_end_mission_packet()
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size;
-	
-	packet_size = 0;
-	BUILD_HEADER(FORCE_MISSION_END);	
-
-	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
-	{	
-		// tell everyone to leave the game		
-		multi_io_send_to_all_reliable(data, packet_size);
-	}
-}
-
 // process a packet indicating that we should jump straight to the debrief screen
 void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
 {
@@ -3977,13 +3961,13 @@ void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
  	
 	PACKET_SET_SIZE();
 
-	ml_string("Receiving force end mission packet");
-
-	// Since only the server sends out these packets it should never receive one
-	Assert (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)); 
-	
-	multi_handle_sudden_mission_end();
-	send_debrief_event();
+	// TODO: Obsolete packet - Remove on next multi bump
+	//
+	// This method of ending a mission was horribly broken and skipped over a
+	// lot of necessary state changes resulting in broken standalone net traffic
+	//
+	// We need to support receiving this packet for compatibility sake, but it
+	// should be removed on the next multi bump (as noted in #6927)
 }
 
 // send a packet telling players to end the mission
