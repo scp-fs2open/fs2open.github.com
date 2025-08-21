@@ -643,7 +643,7 @@ void MissionEventsDialogModel::insertEvent()
 	}
 
 	const int pos = m_cur_event; // Can shift during tree ops so save our position now
-	auto it = m_events.insert(m_events.begin() + pos, makeDefaultEvent());
+	m_events.insert(m_events.begin() + pos, makeDefaultEvent());
 	m_sig.insert(m_sig.begin() + pos, -1);
 	auto& event = m_events[pos];
 
