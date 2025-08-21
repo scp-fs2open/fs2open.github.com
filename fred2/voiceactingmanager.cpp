@@ -7,6 +7,7 @@
 #include "freddoc.h"
 #include "VoiceActingManager.h"
 #include "globalincs/vmallocator.h"
+#include "missioneditor/common.h"
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
@@ -21,24 +22,6 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
-#define INVALID_MESSAGE ((MMessage*)SIZE_T_MAX)
-
-// to keep track of data
-char Voice_abbrev_briefing[NAME_LENGTH];
-char Voice_abbrev_campaign[NAME_LENGTH];
-char Voice_abbrev_command_briefing[NAME_LENGTH];
-char Voice_abbrev_debriefing[NAME_LENGTH];
-char Voice_abbrev_message[NAME_LENGTH];
-char Voice_abbrev_mission[NAME_LENGTH];
-bool Voice_no_replace_filenames;
-char Voice_script_entry_format[NOTES_LENGTH];
-int Voice_export_selection;
-bool Voice_group_messages;
-
-constexpr int WINGMAN_PERSONAS = 0;
-constexpr int NON_WINGMAN_PERSONAS = 1;
-constexpr int SPECIFIC_PERSONAS_START_AT = 2;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -141,15 +124,7 @@ BOOL VoiceActingManager::OnInitDialog()
 	box->SetCurSel(0);
 
 	// this text is too long for the .rc file, so set it here
-	GetDlgItem(IDC_ENTRY_FORMAT_DESC)->SetWindowText(
-		"$name - name of the message\r\n"
-		"$filename - name of the message file\r\n"
-		"$message - text of the message\r\n"
-		"$persona - persona of the sender\r\n"
-		"$sender - name of the sender\r\n"
-		"$note - message notes\r\n\r\n"
-		"Note that $persona and $sender will only appear for the Message section."
-	);
+	GetDlgItem(IDC_ENTRY_FORMAT_DESC)->SetWindowText(Voice_script_instructions_string.c_str());
 
 	// load saved data for file names
 	m_abbrev_briefing = _T(Voice_abbrev_briefing);

@@ -72,6 +72,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/ShieldSystemDialogModel.h
 	src/mission/dialogs/VariableDialogModel.cpp
 	src/mission/dialogs/VariableDialogModel.h
+	src/mission/dialogs/VoiceActingManagerModel.h
+	src/mission/dialogs/VoiceActingManagerModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 	src/mission/dialogs/WingEditorDialogModel.cpp

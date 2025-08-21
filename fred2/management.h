@@ -14,6 +14,7 @@
 #include "globalincs/pstypes.h"
 #include "jumpnode/jumpnode.h"
 #include "ship/ship.h"
+#include "missioneditor/common.h"
 #include <afxmt.h>
 
 #define SHIP_FILTER_PLAYERS (1 << 0) // set: add players to list as well
@@ -42,17 +43,6 @@ extern char* Docking_bay_list[];
 
 extern char Fred_exe_dir[512];
 extern char Fred_base_dir[512];
-
-// Goober5000 - for voice acting manager
-extern char Voice_abbrev_briefing[NAME_LENGTH];
-extern char Voice_abbrev_campaign[NAME_LENGTH];
-extern char Voice_abbrev_command_briefing[NAME_LENGTH];
-extern char Voice_abbrev_debriefing[NAME_LENGTH];
-extern char Voice_abbrev_message[NAME_LENGTH];
-extern char Voice_abbrev_mission[NAME_LENGTH];
-extern bool Voice_no_replace_filenames;
-extern char Voice_script_entry_format[NOTES_LENGTH];
-extern int Voice_export_selection;
 
 // Goober5000
 extern SCP_vector<bool> Show_iff;
