@@ -282,9 +282,11 @@ QString ShipAltShipClass::generate_name(const int classid, const int variable)
 {
 	QString classname;
 	if (variable != -1) {
-		Assert(variable > 0 && variable <= MAX_SEXP_VARIABLES);
-		Assert(Sexp_variables[variable].type & SEXP_VARIABLE_STRING);
-
+		// NOLINTBEGIN(readability-simplify-boolean-expr)
+		Assertion(variable > -1 && variable < MAX_SEXP_VARIABLES,
+			"Variable index out of bounds!");
+		Assertion(Sexp_variables[variable].type & SEXP_VARIABLE_STRING, "Variable type is not a string.");
+		// NOLINTEND(readability-simplify-boolean-expr)
 		classname = Sexp_variables[variable].variable_name;
 		classname = classname + '[' + Sexp_variables[variable].text + ']';
 	} else {

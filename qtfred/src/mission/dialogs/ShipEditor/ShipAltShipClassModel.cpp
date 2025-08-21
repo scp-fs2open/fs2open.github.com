@@ -101,7 +101,7 @@ void ShipAltShipClassModel::initializeData()
 		objp = GET_NEXT(objp);
 	}
 
-	Assert(_num_selected_ships > 0);
+	Assertion(_num_selected_ships > 0, "No Ships Selected");
 	// Assert(Objects[cur_object_index].flags[Object::Object_Flags::Marked]);
 
 	alt_class_pool.clear();
