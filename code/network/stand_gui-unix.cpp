@@ -131,17 +131,13 @@ public:
     }
 
 	void execute() override {
-        size_t foundPlayerIndex = MAX_PLAYERS;
-        for (size_t idx = 0; idx < MAX_PLAYERS; idx++) {
+        for (int idx = 0; idx < MAX_PLAYERS; idx++) {
             if (MULTI_CONNECTED(Net_players[idx])) {
                 if (Net_players[idx].player_id == mPlayerId) {
-                    foundPlayerIndex = idx;
+					multi_kick_player(idx, 0);
+					break;
                 }
             }
-        }
-        
-        if (foundPlayerIndex < MAX_PLAYERS) {
-            multi_kick_player(foundPlayerIndex, 0);
         }
     }
 private:
@@ -622,7 +618,7 @@ static bool webserverApiRequest(mg_connection *conn, const mg_request_info *ri) 
 
                 std::string basicAuthValue = "Basic ";
 
-                basicAuthValue += base64_encode(reinterpret_cast<const unsigned char*>(userNameAndPassword.c_str()), userNameAndPassword.length());
+                basicAuthValue += base64_encode(reinterpret_cast<const unsigned char*>(userNameAndPassword.c_str()), static_cast<uint>(userNameAndPassword.length()));
 
                 const char* authValue = mg_get_header(conn, "Authorization");
                 if (authValue == NULL || strcmp(authValue, basicAuthValue.c_str()) != 0) {
