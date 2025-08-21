@@ -231,7 +231,7 @@ QIcon sexp_tree::convertNodeImageToIcon(NodeImage image) {
 
 class NoteBadgeDelegate final : public QStyledItemDelegate {
   public:
-	explicit NoteBadgeDelegate(sexp_tree* tree) : QStyledItemDelegate(tree), _tree(tree) {}
+	explicit NoteBadgeDelegate(sexp_tree* tree) : QStyledItemDelegate(tree) {}
 
 	void paint(QPainter* p, const QStyleOptionViewItem& option, const QModelIndex& index) const override
 	{
@@ -278,9 +278,6 @@ class NoteBadgeDelegate final : public QStyledItemDelegate {
 			p->restore();
 		}
 	}
-
-  private:
-	sexp_tree* _tree;
 };
 
 // constructor
