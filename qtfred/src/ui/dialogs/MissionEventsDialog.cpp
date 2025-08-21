@@ -176,7 +176,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 				const QString q = QString::fromStdString(note);
 				it->setData(0, sexp_tree::NoteRole, q);
 				it->setToolTip(0, q);
-				tree.applyVisuals(it);
+				sexp_tree::applyVisuals(it);
 			}
 		}
 
@@ -185,7 +185,7 @@ MissionEventsDialog::MissionEventsDialog(QWidget* parent, EditorViewport* viewpo
 			if (auto* it = static_cast<QTreeWidgetItem*>(node)) {
 				it->setData(0, sexp_tree::BgColorRole, QColor(r, g, b));
 				it->setBackground(0, has_color ? QBrush(QColor(r, g, b)) : QBrush());
-				tree.applyVisuals(it);
+				sexp_tree::applyVisuals(it);
 			}
 		}
 	};
