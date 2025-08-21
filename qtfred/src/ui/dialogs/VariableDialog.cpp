@@ -9,9 +9,7 @@
 #include <QMessageBox>
 //#include <QtWidgets/QMenuBar>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::VariableEditorDialog()), _model(new VariableDialogModel(this, viewport)), _viewport(viewport)
@@ -334,7 +332,7 @@ void VariableDialog::onVariablesTableUpdated()
 			apply = true;
 
 		// we had a successful rename.  So update the variable we reference.
-		} else if (ret != "") {
+		} else if (!ret.empty()) {
 			item->setText(ret.c_str());
 			_currentVariable = ret;
 		}
@@ -1869,5 +1867,4 @@ void VariableDialog::checkValidModel()
 }
 
 } // namespace dialogs
-} // namespace fred
-} // namespace fso
+

@@ -399,11 +399,7 @@ void VariableDialogModel::initializeData()
 				}
 			}
 		} else {
-			if (any(container.type & ContainerType::STRING_KEYS)){
-				newContainer.stringKeys = true;					
-			} else {
-				newContainer.stringKeys = false;								
-			}
+			newContainer.stringKeys = any(container.type & ContainerType::STRING_KEYS);
 
 			for (const auto& item : container.map_data){
 				newContainer.keys.push_back(item.first);
@@ -412,7 +408,7 @@ void VariableDialogModel::initializeData()
 					newContainer.stringValues.push_back(item.second);
 					newContainer.numberValues.push_back(0);				
 				} else {
-					newContainer.stringValues.push_back("");
+					newContainer.stringValues.emplace_back();
 					
 					try{
 						newContainer.numberValues.push_back(std::stoi(item.second));				
@@ -753,7 +749,7 @@ bool VariableDialogModel::removeVariable(int index, bool toDelete)
         if (_deleteWarningCount < 2){
 
             SCP_string question = "Are you sure you want to delete this variable? Any references to it will have to be changed.";
-            SCP_string info = "";
+            SCP_string info;
 
             if (!confirmAction(question, info)){
                 --_deleteWarningCount;
@@ -1264,7 +1260,7 @@ SCP_string VariableDialogModel::addContainer()
     return _containerItems.back().name;
 }
 
-SCP_string VariableDialogModel::addContainer(SCP_string nameIn)
+SCP_string VariableDialogModel::addContainer(const SCP_string& nameIn)
 {
     _containerItems.emplace_back();
     _containerItems.back().name = nameIn.substr(0, TOKEN_LENGTH - 1);
@@ -1333,7 +1329,7 @@ bool VariableDialogModel::removeContainer(int index, bool toDelete)
         
         if (_deleteWarningCount < 3){
             SCP_string question = "Are you sure you want to delete this container? Any references to it will have to be changed.";
-            SCP_string info = "";
+            SCP_string info;
 
             if (!confirmAction(question, info)){
                 return container->deleted;
@@ -1589,7 +1585,7 @@ bool VariableDialogModel::removeListItem(int containerIndex, int index)
 
     if (_deleteWarningCount < 3){
         SCP_string question = "Are you sure you want to delete this list item? This can't be undone.";
-        SCP_string info = "";
+        SCP_string info;
 
         if (!confirmAction(question, info)){
             --_deleteWarningCount;
@@ -1792,7 +1788,7 @@ bool VariableDialogModel::removeMapItem(int index, int itemIndex)
     // double check that we want to delete
     if (_deleteWarningCount < 3){
         SCP_string question = "Are you sure you want to delete this map item?  This can't be undone.";
-        SCP_string info = "";
+        SCP_string info;
 
         if (!confirmAction(question, info)){
             --_deleteWarningCount;
@@ -2234,7 +2230,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     return outStrings;   
 }
 
-void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
+static void VariableDialogModel::setTextMode(int modeIn) { _textMode = modeIn;}
 
 void VariableDialogModel::sortMap(int index)
 {

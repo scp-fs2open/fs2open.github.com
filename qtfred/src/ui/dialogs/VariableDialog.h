@@ -78,11 +78,11 @@ class VariableDialog : public QDialog {
 	int getCurrentContainerItemRow();
 
 	bool _applyingModel = false;
-	SCP_string _currentVariable = "";
-	SCP_string _currentVariableData = "";
-	SCP_string _currentContainer = "";
-	SCP_string _currentContainerItemCol1 = "";
-	SCP_string _currentContainerItemCol2 = "";
+	SCP_string _currentVariable;
+	SCP_string _currentVariableData;
+	SCP_string _currentContainer;
+	SCP_string _currentContainerItemCol1;
+	SCP_string _currentContainerItemCol2;
 	
 	void reject() override 
 	{

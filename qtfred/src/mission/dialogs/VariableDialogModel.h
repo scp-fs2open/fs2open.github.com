@@ -28,7 +28,7 @@ struct containerInfo {
 	int flags = 0;
 
 	// this will allow us to look up the original values used in the mission previously.
-	SCP_string originalName = "";
+	SCP_string originalName;
 
 	// I found out that keys could be strictly typed as numbers *after* finishing the majority of the model....
 	// So I am just going to store numerical keys as strings and use a bool to differentiate.
@@ -97,7 +97,7 @@ public:
 	bool setContainerEternalFlag(int index, bool eternal);
 
 	SCP_string addContainer();
-	SCP_string addContainer(SCP_string nameIn);
+	SCP_string addContainer(const SCP_string& nameIn);
 	SCP_string copyContainer(int index);
 	SCP_string changeContainerName(int index, const SCP_string& newName);
 	bool removeContainer(int index, bool toDelete);
@@ -131,7 +131,7 @@ public:
 
 	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
 	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
-	void setTextMode(int modeIn);
+	static void setTextMode(int modeIn);
 
 	bool checkValidModel();
 
@@ -233,7 +233,7 @@ private:
 
 
 	// many of the controls in this editor can lead to drastic actions, so this will be very useful.
-	bool confirmAction(const SCP_string& question, const SCP_string& informativeText)
+	static bool confirmAction(const SCP_string& question, const SCP_string& informativeText)
 	{
 	QMessageBox msgBox;
 	msgBox.setText(question.c_str());
