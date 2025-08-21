@@ -38,6 +38,7 @@ VoiceActingManager::~VoiceActingManager() = default;
 void VoiceActingManager::closeEvent(QCloseEvent* e)
 {
 	_model->apply();
+	e->accept(); //close
 }
 
 bool VoiceActingManager::eventFilter(QObject* obj, QEvent* ev)

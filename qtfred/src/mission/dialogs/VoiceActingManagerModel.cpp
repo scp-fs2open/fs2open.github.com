@@ -198,7 +198,7 @@ SCP_string VoiceActingManagerModel::generateFilename(ExportSelection sel, int nu
 	}
 
 	SCP_string num = std::to_string(number);
-	while (num.size() < digits)
+	while (static_cast<int>(num.size()) < digits)
 		num.insert(0, "0");
 
 	SCP_string out = prefix + num;
@@ -508,7 +508,7 @@ int VoiceActingManagerModel::copyMessagePersonasToShips()
 
 	if (modified > 0)
 		set_modified();
-	// (Dialog can present a warning based on inconsistencies if desired.)
+
 	return modified;
 }
 
@@ -629,12 +629,12 @@ AnyWingmanCheckResult VoiceActingManagerModel::checkAnyWingmanPersonas() const
 		// message must have a wingman persona and at least one ship with that persona
 		if (msg->persona_index < 0) {
 			++result.issueCount;
-			result.report += SCP_string("\n\"") + (msg->name ? msg->name : "<unnamed>") + "\" - does not have a persona";
+			result.report += SCP_string("\n\"") + msg->name + "\" - does not have a persona";
 			continue;
 		}
 		if ((Personas[msg->persona_index].flags & PERSONA_FLAG_WINGMAN) == 0) {
 			++result.issueCount;
-			result.report += SCP_string("\n\"") + (msg->name ? msg->name : "<unnamed>") + "\" - does not have a wingman persona";
+			result.report += SCP_string("\n\"") + msg->name + "\" - does not have a wingman persona";
 			continue;
 		}
 
@@ -650,8 +650,8 @@ AnyWingmanCheckResult VoiceActingManagerModel::checkAnyWingmanPersonas() const
 		if (!foundPotentialSender) {
 			++result.issueCount;
 
-			const char* msg_name = msg->name ? msg->name : "<unnamed>";
-			const char* persona_name = Personas[msg->persona_index].name ? Personas[msg->persona_index].name : "<none>";
+			const char* msg_name = msg->name;
+			const char* persona_name = Personas[msg->persona_index].name;
 
 			result.report += std::string("\n\"") + msg_name + "\" - no ship with persona \"" + persona_name + "\" was found";
 		}
@@ -763,7 +763,7 @@ void VoiceActingManagerModel::groupMessageIndexes(SCP_vector<int>& messageIndexe
 #ifndef NDEBUG
 	if (initialSize != messageIndexes.size()) {
 		// parity check
-		Warning(LOCATION, "groupMessageIndexes changed list size (%d -> %d)", initialSize, messageIndexes.size());
+		Warning(LOCATION, "groupMessageIndexes changed list size (%d -> %d)", static_cast<int>(initialSize), static_cast<int>(messageIndexes.size()));
 	}
 #endif
 }
@@ -783,7 +783,7 @@ void VoiceActingManagerModel::groupMessageIndexesInTree(int node, SCP_vector<int
 			n = CDR(n);
 		while (n != -1) {
 			char* message_name = Sexp_nodes[CDDR(n)].text;
-			for (int i = 0; i < source.size(); ++i) {
+			for (int i = 0; i < static_cast<int>(source.size()); ++i) {
 				if (!strcmp(message_name, Messages[source[i]].name)) {
 					dest.push_back(source[i]);
 					source.erase(source.begin() + i);
@@ -796,7 +796,7 @@ void VoiceActingManagerModel::groupMessageIndexesInTree(int node, SCP_vector<int
 		n = CDDR(n);
 		while (n != -1) {
 			char* message_name = Sexp_nodes[n].text;
-			for (int i = 0; i < source.size(); ++i) {
+			for (int i = 0; i < static_cast<int>(source.size()); ++i) {
 				if (!strcmp(message_name, Messages[source[i]].name)) {
 					dest.push_back(source[i]);
 					source.erase(source.begin() + i);
