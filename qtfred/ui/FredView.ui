@@ -1522,6 +1522,7 @@
    </property>
    <property name="shortcut">
     <string>Shift+V</string>
+  </action>
   <action name="actionJump_Nodes">
    <property name="text">
     <string>Jump &amp;Nodes</string>
