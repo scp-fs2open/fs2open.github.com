@@ -1628,11 +1628,11 @@ void VariableDialog::updateContainerDataOptions(bool list, bool safeToAlter)
 					ui->containerContentsTable->item(x,0)->setSelected(true);
 
 					// more than one item and not already at the top of the list.
-					if (!(x > 0 && x < static_cast<int>(strings.size()))){
+					if (x <= 0 || x >= static_cast<int>(strings.size())){
 						ui->shiftItemUpButton->setEnabled(false);
 					}
 					
-					if (!(x > -1 && x < static_cast<int>(strings.size()) - 1)){
+					if (x <= -1 || x >= static_cast<int>(strings.size()) - 1)){
 						ui->shiftItemDownButton->setEnabled(false);
 					}
 				}
@@ -1678,11 +1678,11 @@ void VariableDialog::updateContainerDataOptions(bool list, bool safeToAlter)
 						ui->containerContentsTable->item(x,0)->setSelected(true);
 
 						// more than one item and not already at the top of the list.
-						if (!(x > 0 && x < static_cast<int>(numbers.size()))){
+						if (x <= 0 || x >= static_cast<int>(numbers.size())){
 							ui->shiftItemUpButton->setEnabled(false);
 						}
 					
-						if (!(x > -1 && x < static_cast<int>(numbers.size()) - 1)){
+						if (x <= -1 || x >= static_cast<int>(numbers.size()) - 1){
 							ui->shiftItemDownButton->setEnabled(false);
 						}
 					}
