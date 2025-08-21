@@ -2053,7 +2053,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _variableItems){
-        SCP_string notes = "";
+        SCP_string notes;
 
         if (!safeToAlterVariable(item)){
             notes = "Referenced";            
@@ -2178,8 +2178,8 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
     for (const auto& item : _containerItems) {
-        SCP_string type = "";
-        SCP_string notes = "";
+        SCP_string type;
+        SCP_string notes;
 
         if (item.string) {
             type = "String";
@@ -2309,11 +2309,7 @@ bool VariableDialogModel::atMaxVariables()
 		}
 	}
 
-	if (count < MAX_SEXP_VARIABLES){
-		return false;
-	} else {
-		return true;
-	}
+	return count < MAX_SEXP_VARIABLES;
 }
 
 // This function is for cleaning up input strings that should be numbers.  We could use std::stoi,
@@ -2351,11 +2347,7 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 					break;
                 // only copy the '-' char if it is the first thing to be copied.
                 case '-':
-                    if (ret.empty()){
-                        return true;
-                    } else {
-                        return false;
-                    }
+                    return ret.empty();
 				default:
                     return false;
 					break;
