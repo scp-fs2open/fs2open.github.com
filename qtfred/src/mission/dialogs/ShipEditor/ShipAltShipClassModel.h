@@ -13,11 +13,8 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 
 	SCP_vector<alt_class> alt_class_pool;
 
-	bool _multi_edit = false;
-
+	//Does this really need to be a var?
 	bool _player_flyable_ships_only = true;
-
-	int _num_string_variables = 0;
 
 	int _num_selected_ships = 0;
 
@@ -31,7 +28,7 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 	 * @param [in] parent The parent dialog.
 	 * @param [in] viewport The viewport this dialog is attacted to.
 	 */
-	ShipAltShipClassModel(QObject* parent, EditorViewport* viewport, bool is_several_ships);
+	ShipAltShipClassModel(QObject* parent, EditorViewport* viewport);
 	bool apply() override;
 	void reject() override;
 

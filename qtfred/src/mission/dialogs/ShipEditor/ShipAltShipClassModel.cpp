@@ -2,8 +2,8 @@
 
 #include "ship/ship.h"
 namespace fso::fred::dialogs {
-ShipAltShipClassModel::ShipAltShipClassModel(QObject* parent, EditorViewport* viewport, bool is_several_ships)
-	: AbstractDialogModel(parent, viewport), _multi_edit(is_several_ships)
+ShipAltShipClassModel::ShipAltShipClassModel(QObject* parent, EditorViewport* viewport)
+	: AbstractDialogModel(parent, viewport)
 {
 	initializeData();
 }

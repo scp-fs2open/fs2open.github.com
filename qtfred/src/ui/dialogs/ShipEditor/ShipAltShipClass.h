@@ -29,7 +29,7 @@ class ShipAltShipClass : public QDialog {
 	 * @param [in] parent The parent dialog.
 	 * @param [in] viewport The viewport this dialog is attacted to.
 	 */
-	explicit ShipAltShipClass(QDialog* parent, EditorViewport* viewport, bool is_several_ships);
+	explicit ShipAltShipClass(QDialog* parent, EditorViewport* viewport);
 	~ShipAltShipClass() override;
 
 	void accept() override;

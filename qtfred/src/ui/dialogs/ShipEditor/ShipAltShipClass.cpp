@@ -8,9 +8,9 @@
 #include <QCloseEvent>
 
 namespace fso::fred::dialogs {
-ShipAltShipClass::ShipAltShipClass(QDialog* parent, EditorViewport* viewport, bool is_several_ships)
+ShipAltShipClass::ShipAltShipClass(QDialog* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::ShipAltShipClass()),
-	  _model(new ShipAltShipClassModel(this, viewport, is_several_ships)), _viewport(viewport)
+	  _model(new ShipAltShipClassModel(this, viewport)), _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
