@@ -1417,8 +1417,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
             sprintf(newKey, "%i", count);
         }
 
-        for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
-            if (container->keys[x] == newKey){
+        for (const auto& key : container->keys) {
+            if (key == newKey){
                 conflict = true;
                 break;
             }
@@ -1474,8 +1474,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index, con
 				sprintf(newKey, "%i", count);
 			}
 
-			for (int x = 0; x < static_cast<int>(container->keys.size()); ++x) {
-				if (container->keys[x] == newKey){
+            for (const auto& key : container->keys) {
+                if (key == newKey){
 					conflict = true;
 					break;
 				}
@@ -1640,8 +1640,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         do {
             found = false;
-            for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
-                if (container->keys[y] == newKey) {
+            for (const auto& key : container->keys){
+                if (key == newKey) {
                     found = true;
                     break;
                 }
@@ -1683,8 +1683,8 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         do {
             found = false;
-            for (int y = 0; y < static_cast<int>(container->keys.size()); ++y){
-                if (container->keys[y] == newKey) {
+            for (const auto& key : container->keys){
+                if (key == newKey) {
                     found = true;
                     break;
                 }
@@ -2184,7 +2184,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNam
         }
 
         if (item.list){
-            type = listPrefix + type + listPostscript;
+            type += listPrefix + type + listPostscript;
             
         } else {
 
