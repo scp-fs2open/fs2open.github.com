@@ -932,30 +932,7 @@ void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
 
 void MissionEventsDialog::on_btnAniBrowse_clicked()
 {
-	// Build gallery from the model's known head ANIs
-	/*const SCP_vector<SCP_string> heads = _model->getHeadAniList();
-	QStringList gallery;
-	gallery.reserve((int)heads.size());
-	for (const auto& s : heads)
-		gallery << QString::fromUtf8(s.c_str());
-
-	ImagePickerDialog dlg(this);
-	dlg.setWindowTitle(tr("Choose Head"));
-	dlg.setPreviewEnabled(true);
-	dlg.setBrowseDialog(tr("Add Head"), QStringLiteral("FSO Images (*.ani *.eff *.png *.jpg *.jpeg *.dds *.pcx *.tga);;All files (*.*)"));
-	dlg.setMessageHeadAniMode(true);
-	dlg.allowUnset(true);
-	dlg.setImageFilenames(gallery);
-
-	// preselect current head
-	dlg.setInitialSelection(QString::fromStdString(_model->getMessageAni()));
-
-	if (dlg.exec() != QDialog::Accepted)
-		return;
-
-	const SCP_string picked = dlg.selectedFile().toUtf8().constData(); // empty if "<None>"
-	_model->setMessageAni(picked);*/
-
+	// TODO Build gallery from the model's known head ANIs
 	const QString filters =
 		"FSO Images (*.ani *.eff *.png);;All files (*.*)";
 	const QString file = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), QString(), filters);
