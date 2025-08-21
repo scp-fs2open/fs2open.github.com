@@ -282,7 +282,7 @@ QString ShipAltShipClass::generate_name(const int classid, const int variable)
 {
 	QString classname;
 	if (variable != -1) {
-		Assert(variable <= -1 || variable >= MAX_SEXP_VARIABLES);
+		Assert(variable > 0 && variable <= MAX_SEXP_VARIABLES);
 		Assert(Sexp_variables[variable].type & SEXP_VARIABLE_STRING);
 
 		classname = Sexp_variables[variable].variable_name;
