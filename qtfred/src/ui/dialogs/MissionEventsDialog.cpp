@@ -1,6 +1,7 @@
 #include "MissionEventsDialog.h"
 #include "ui_MissionEventsDialog.h"
 #include "ui/util/SignalBlockers.h"
+#include "ui/dialogs/General/ImagePickerDialog.h"
 
 #include "mission/util.h"
 
@@ -563,41 +564,6 @@ void MissionEventsDialog::updateMessageMoveButtons()
 	ui->msgDownBtn->setEnabled(canDown);
 }
 
-void MissionEventsDialog::browseAni() {
-	//TODO
-	/*if (m_cur_msg < 0 || m_cur_msg >= (int)m_messages.size()) {
-		return;
-	}
-
-	auto z = cfile_push_chdir(CF_TYPE_INTERFACE);
-	auto interface_path = QDir::currentPath();
-	if (!z) {
-		cfile_pop_dir();
-	}
-
-	auto name = QFileDialog::getOpenFileName(this,
-											 tr("Select message animation"),
-											 interface_path,
-											 "APNG Files (*.png);;Ani Files (*.ani);;Eff Files (*.eff);;"
-											 "All Anims (*.ani, *.eff, *.png)");
-
-	if (name.isEmpty()) {
-		// Nothing was selected
-		return;
-	}
-
-	QFileInfo info(name);
-
-	if (m_messages[m_cur_msg].avi_info.name) {
-		free(m_messages[m_cur_msg].avi_info.name);
-		m_messages[m_cur_msg].avi_info.name = nullptr;
-	}
-	m_messages[m_cur_msg].avi_info.name = strdup(info.fileName().toUtf8().constData());
-	set_current_message(m_cur_msg);
-
-	modified = true;*/
-}
-
 SCP_vector<int> MissionEventsDialog::read_root_formula_order(sexp_tree* tree)
 {
 	SCP_vector<int> order;
@@ -966,7 +932,29 @@ void MissionEventsDialog::on_aniCombo_selectedIndexChanged(int index)
 
 void MissionEventsDialog::on_btnAniBrowse_clicked()
 {
-	// TODO make ANI browser with previews and file input
+	// Build gallery from the model's known head ANIs
+	/*const SCP_vector<SCP_string> heads = _model->getHeadAniList();
+	QStringList gallery;
+	gallery.reserve((int)heads.size());
+	for (const auto& s : heads)
+		gallery << QString::fromUtf8(s.c_str());
+
+	ImagePickerDialog dlg(this);
+	dlg.setWindowTitle(tr("Choose Head"));
+	dlg.setPreviewEnabled(true);
+	dlg.setBrowseDialog(tr("Add Head"), QStringLiteral("FSO Images (*.ani *.eff *.png *.jpg *.jpeg *.dds *.pcx *.tga);;All files (*.*)"));
+	dlg.setMessageHeadAniMode(true);
+	dlg.allowUnset(true);
+	dlg.setImageFilenames(gallery);
+
+	// preselect current head
+	dlg.setInitialSelection(QString::fromStdString(_model->getMessageAni()));
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	const SCP_string picked = dlg.selectedFile().toUtf8().constData(); // empty if "<None>"
+	_model->setMessageAni(picked);*/
 }
 
 void MissionEventsDialog::on_waveCombo_editingFinished()

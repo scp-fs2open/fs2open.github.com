@@ -121,7 +121,6 @@ private:
 	void initMessageWidgets();
 	void initEventWidgets();
 	void updateEventBitmap();
-	void browseAni();
 
 	static SCP_vector<int> read_root_formula_order(sexp_tree* tree);
 };
