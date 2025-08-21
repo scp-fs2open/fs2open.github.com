@@ -955,6 +955,13 @@ void MissionEventsDialog::on_btnAniBrowse_clicked()
 
 	const SCP_string picked = dlg.selectedFile().toUtf8().constData(); // empty if "<None>"
 	_model->setMessageAni(picked);*/
+
+	const QString filters =
+		"FSO Images (*.ani *.eff *.png);;All files (*.*)";
+	const QString file = QFileDialog::getOpenFileName(this, tr("Select Head Animation"), QString(), filters);
+	if (file.isEmpty())
+		return;
+	_model->setMessageAni(file.toUtf8().constData());
 }
 
 void MissionEventsDialog::on_waveCombo_editingFinished()
