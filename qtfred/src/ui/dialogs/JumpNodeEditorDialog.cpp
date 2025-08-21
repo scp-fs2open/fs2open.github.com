@@ -126,6 +126,4 @@ void JumpNodeEditorDialog::on_hiddenByDefaultCheckBox_toggled(bool checked)
 	_model->setHidden(checked);
 }
 
-void temp() {};
-
 } // namespace fso::fred::dialogs

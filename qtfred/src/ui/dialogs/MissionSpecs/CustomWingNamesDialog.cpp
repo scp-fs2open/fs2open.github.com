@@ -177,9 +177,4 @@ void CustomWingNamesDialog::on_dogfightWing_2_textChanged(const QString & text)
 	dogfightWingChanged(text, 1);
 }
 
-void temp()
-{
-
-}
-
 } // namespace fso::fred::dialogs
