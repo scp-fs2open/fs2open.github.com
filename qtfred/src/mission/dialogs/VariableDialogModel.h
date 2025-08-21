@@ -162,9 +162,9 @@ private:
 	}
 
 	variableInfo* lookupVariableByName(const SCP_string& name){
-		for (auto* variableItem : _variableItems) {
+		for (auto& variableItem : _variableItems) {
 			if (variableItem.name == name) {
-				return variableItem;
+				return &variableItem;
 			}
 		}
 
