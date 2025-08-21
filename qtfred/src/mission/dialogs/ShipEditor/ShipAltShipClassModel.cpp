@@ -33,7 +33,7 @@ SCP_vector<alt_class> ShipAltShipClassModel::get_pool() const
 	return alt_class_pool;
 }
 
-SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes() const
+SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes()
 {
 	// Fill the ship classes combo box
 	SCP_vector<std::pair<SCP_string, int>> _m_set_from_ship_class;
@@ -43,7 +43,7 @@ SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_classes() cons
 		classData.second = -1;
 		_m_set_from_ship_class.push_back(classData);
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it) {
-		if (_player_flyable_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
+			if (&ShipAltShipClassModel::_player_flyable_ships_only && !(it->flags[Ship::Info_Flags::Player_ship])) {
 			continue;
 		}
 		classData.first = it->name;
@@ -64,8 +64,10 @@ SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_variables() co
 	_m_set_from_variables.push_back(variableData);
 	for (int i = 0; i < MAX_SEXP_VARIABLES; i++) {
 		if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) {
+			std::ostringstream oss;
 			SCP_string buff = Sexp_variables[i].variable_name;
-			buff = buff + "[" + Sexp_variables[i].text + "]";
+			oss << buff << "[" << Sexp_variables[i].text << "]";
+			buff = oss.str();
 			variableData.first = buff;
 			variableData.second = i;
 			_m_set_from_variables.push_back(variableData);
@@ -75,7 +77,7 @@ SCP_vector<std::pair<SCP_string, int>> ShipAltShipClassModel::get_variables() co
 	}
 	return _m_set_from_variables;
 }
-void ShipAltShipClassModel::sync_data(const SCP_vector<alt_class> new_pool) {
+void ShipAltShipClassModel::sync_data(const SCP_vector<alt_class>& new_pool) {
 	if (new_pool == alt_class_pool) {
 		return;
 	} else {

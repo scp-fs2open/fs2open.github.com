@@ -189,7 +189,7 @@ void ShipAltShipClass::initUI()
 	auto ship_pool = new QStandardItemModel();
 	for (auto& ship : _model->get_classes()) {
 		QString classname = ship.first.c_str();
-		QStandardItem* item = new QStandardItem(classname);
+		auto item = new QStandardItem(classname);
 		item->setData(ship.second, Qt::UserRole);
 		ship_pool->appendRow(item);
 	}
@@ -199,7 +199,7 @@ void ShipAltShipClass::initUI()
 	auto variable_pool = new QStandardItemModel();
 	for (auto& variable : _model->get_variables()) {
 		QString classname = variable.first.c_str();
-		QStandardItem* item = new QStandardItem(classname);
+		auto item = new QStandardItem(classname);
 		item->setData(variable.second, Qt::UserRole);
 		variable_pool->appendRow(item);
 	}
@@ -265,7 +265,7 @@ QStandardItem* ShipAltShipClass::generate_item(const int classid, const int vari
 {
 	QString classname = generate_name(classid, variable);
 	if (!classname.isEmpty()) {
-		QStandardItem* item = new QStandardItem(classname);
+		auto item = new QStandardItem(classname);
 		item->setData(default_ship, Qt::UserRole);
 		item->setData(classid, Qt::UserRole + 1);
 		item->setData(variable, Qt::UserRole + 2);
@@ -278,11 +278,11 @@ QStandardItem* ShipAltShipClass::generate_item(const int classid, const int vari
 		return nullptr;
 	}
 }
-QString ShipAltShipClass::generate_name(const int classid, const int variable) const
+QString ShipAltShipClass::generate_name(const int classid, const int variable)
 {
 	QString classname;
 	if (variable != -1) {
-		Assert(variable < -1 && variable < MAX_SEXP_VARIABLES);
+		Assert(variable > -1 && variable < MAX_SEXP_VARIABLES);
 		Assert(Sexp_variables[variable].type & SEXP_VARIABLE_STRING);
 
 		classname = Sexp_variables[variable].variable_name;

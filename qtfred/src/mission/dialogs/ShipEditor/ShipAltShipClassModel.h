@@ -34,8 +34,8 @@ class ShipAltShipClassModel : public AbstractDialogModel {
 
 	SCP_vector<alt_class> get_pool() const;
 
-	SCP_vector<std::pair<SCP_string, int>> get_classes() const;
+	static SCP_vector<std::pair<SCP_string, int>> get_classes();
 	SCP_vector<std::pair<SCP_string, int>> get_variables() const;
-	void sync_data(const SCP_vector<alt_class>);
+	void sync_data(const SCP_vector<alt_class>&);
 };
 } // namespace fso::fred::dialogs
