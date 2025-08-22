@@ -5496,6 +5496,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Default Subsystem Death Effect:")) {
 		sip->default_subsys_death_effect = particle::util::parseEffect(sip->name);
+	}
 
 	if(optional_string("$Default Subsystem Debris Flame Effect:"))
 	{
