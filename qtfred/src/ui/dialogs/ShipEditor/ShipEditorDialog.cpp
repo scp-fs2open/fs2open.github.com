@@ -11,9 +11,7 @@
 
 #include <QCloseEvent>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	: QDialog(parent), ui(new Ui::ShipEditorDialog()), _model(new ShipEditorDialogModel(this, viewport)),
@@ -28,111 +26,12 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
 
 	// Column One
-	connect(ui->shipNameEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::shipNameChanged);
-	connect(ui->shipDisplayNameEdit, (&QLineEdit::editingFinished), this, &ShipEditorDialog::shipDisplayNameChanged);
-
-	connect(ui->shipClassCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::shipClassChanged);
-	connect(ui->AIClassCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::aiClassChanged);
-	connect(ui->teamCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::teamChanged);
 
 	connect(ui->cargoCombo->lineEdit(), (&QLineEdit::editingFinished), this, &ShipEditorDialog::cargoChanged);
 	connect(ui->altNameCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::altNameChanged);
 	connect(ui->callsignCombo->lineEdit(), (&QLineEdit::textEdited), this, &ShipEditorDialog::callsignChanged);
 
 	// ui->cargoCombo->installEventFilter(this);
-
-	// Column Two
-	connect(ui->hotkeyCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::hotkeyChanged);
-
-	connect(ui->personaCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::personaChanged);
-
-	connect(ui->killScoreEdit,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&ShipEditorDialog::scoreChanged);
-
-	connect(ui->assistEdit,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&ShipEditorDialog::assistChanged);
-	connect(ui->playerShipCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::playerChanged);
-
-	// Arival Box
-	connect(ui->arrivalLocationCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::arrivalLocationChanged);
-	connect(ui->arrivalTargetCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::arrivalTargetChanged);
-	connect(ui->arrivalDistanceEdit,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&ShipEditorDialog::arrivalDistanceChanged);
-	connect(ui->arrivalDelaySpinBox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&ShipEditorDialog::arrivalDelayChanged);
-
-	connect(ui->updateArrivalCueCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::ArrivalCueChanged);
-
-	connect(ui->arrivalTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
-		// use this otherwise linux complains
-
-		_model->setArrivalFormula(old, node);
-	});
-	connect(ui->arrivalTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
-		ui->helpText->setPlainText(help);
-	});
-	connect(ui->arrivalTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) {
-		ui->HelpTitle->setText(help);
-	});
-
-	connect(ui->noArrivalWarpCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::arrivalWarpChanged);
-
-	// Departure Box
-	connect(ui->departureLocationCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::departureLocationChanged);
-	connect(ui->departureTargetCombo,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		this,
-		&ShipEditorDialog::departureTargetChanged);
-	connect(ui->departureDelaySpinBox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&ShipEditorDialog::departureDelayChanged);
-
-	connect(ui->updateDepartureCueCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::DepartureCueChanged);
-
-	connect(ui->departureTree, &sexp_tree::rootNodeFormulaChanged, this, [this](int old, int node) {
-		// use this otherwise linux complains
-		_model->setDepartureFormula(old, node);
-	});
-	connect(ui->departureTree, &sexp_tree::helpChanged, this, [this](const QString& help) {
-		ui->helpText->setPlainText(help);
-	});
-	connect(ui->departureTree, &sexp_tree::miniHelpChanged, this, [this](const QString& help) {
-		ui->HelpTitle->setText(help);
-	});
-	connect(ui->noDepartureWarpCheckBox, &QCheckBox::toggled, this, &ShipEditorDialog::departureWarpChanged);
 
 	updateUI();
 
@@ -168,7 +67,8 @@ void ShipEditorDialog::hideEvent(QHideEvent* e)
 {
 	QDialog::hideEvent(e);
 }
-void ShipEditorDialog::showEvent(QShowEvent* e) {
+void ShipEditorDialog::showEvent(QShowEvent* e)
+{
 	_model->initializeData();
 	QDialog::showEvent(e);
 }
@@ -189,7 +89,8 @@ void ShipEditorDialog::on_initialStatusButton_clicked()
 
 void ShipEditorDialog::on_initialOrdersButton_clicked()
 {
-	auto dialog = new dialogs::ShipGoalsDialog(this, _viewport, getIfMultipleShips(), Ships[getSingleShip()].objnum, -1);
+	auto dialog =
+		new dialogs::ShipGoalsDialog(this, _viewport, getIfMultipleShips(), Ships[getSingleShip()].objnum, -1);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
@@ -236,7 +137,7 @@ void ShipEditorDialog::updateColumnOne()
 	auto ai = _model->getAIClass();
 	ui->AIClassCombo->clear();
 	for (int j = 0; j < Num_ai_classes; j++) {
-		ui->AIClassCombo->addItem(Ai_class_names[j], QVariant(j));  
+		ui->AIClassCombo->addItem(Ai_class_names[j], QVariant(j));
 	}
 	ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
 
@@ -660,50 +561,6 @@ void ShipEditorDialog::enableDisable()
 		this->setWindowTitle("Edit Ship");
 	}
 }
-
-/*---------------------------------------------------------
-					WARNING
-Do not try to optimise string entries; this convoluted method is necessary to avoid fatal errors caused by QT
------------------------------------------------------------*/
-void ShipEditorDialog::shipNameChanged()
-{
-	const QString entry = ui->shipNameEdit->text();
-	if (!entry.isEmpty() && entry != _model->getShipName().c_str()) {
-		const auto textBytes = entry.toUtf8();
-		const std::string NewShipName = textBytes.toStdString();
-		_model->setShipName(NewShipName);
-	}
-
-	// automatically determine or reset the display name
-	_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
-
-	// sync the variable to the edit box
-	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
-}
-void ShipEditorDialog::shipDisplayNameChanged()
-{
-	const QString entry = ui->shipDisplayNameEdit->text();
-	if (entry != _model->getShipDisplayName().c_str()) {
-		const auto textBytes = entry.toUtf8();
-		const std::string NewShipDisplayName = textBytes.toStdString();
-		_model->setShipDisplayName(NewShipDisplayName);
-	}
-}
-void ShipEditorDialog::shipClassChanged(const int index)
-{
-	auto shipClassIdx = ui->shipClassCombo->itemData(index).value<int>();
-	_model->setShipClass(shipClassIdx);
-}
-void ShipEditorDialog::aiClassChanged(const int index)
-{
-	auto aiClassIdx = ui->AIClassCombo->itemData(index).value<int>();
-	_model->setAIClass(aiClassIdx);
-}
-void ShipEditorDialog::teamChanged(const int index)
-{
-	auto teamIdx = ui->teamCombo->itemData(index).value<int>();
-	_model->setTeam(teamIdx);
-}
 void ShipEditorDialog::cargoChanged()
 {
 	const QString entry = ui->cargoCombo->lineEdit()->text();
@@ -730,87 +587,6 @@ void ShipEditorDialog::callsignChanged()
 		const SCP_string newCallsign = textBytes.toStdString();
 		_model->setCallsign(newCallsign);
 	}
-}
-void ShipEditorDialog::hotkeyChanged(const int index)
-{
-	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).value<int>();
-	_model->setHotkey(hotkeyIdx);
-}
-void ShipEditorDialog::personaChanged(const int index)
-{
-	auto personaIdx = ui->personaCombo->itemData(index).value<int>();
-	_model->setPersona(personaIdx);
-}
-void ShipEditorDialog::scoreChanged(const int value)
-{
-	_model->setScore(value);
-}
-void ShipEditorDialog::assistChanged(const int value)
-{
-	_model->setAssist(value);
-}
-void ShipEditorDialog::playerChanged(const bool enabled)
-{
-	_model->setPlayer(enabled);
-}
-
-void ShipEditorDialog::arrivalLocationChanged(const int index)
-{
-	auto arrivalLocationIdx = ui->arrivalLocationCombo->itemData(index).value<int>();
-	_model->setArrivalLocationIndex(arrivalLocationIdx);
-}
-
-void ShipEditorDialog::arrivalTargetChanged(const int index)
-{
-	auto arrivalLocationIdx = ui->arrivalTargetCombo->itemData(index).value<int>();
-	_model->setArrivalTarget(arrivalLocationIdx);
-}
-
-void ShipEditorDialog::arrivalDistanceChanged(const int value)
-{
-	_model->setArrivalDistance(value);
-}
-
-void ShipEditorDialog::arrivalDelayChanged(const int value)
-{
-	_model->setArrivalDelay(value);
-}
-
-void ShipEditorDialog::arrivalWarpChanged(const bool enable)
-{
-	_model->setNoArrivalWarp(enable);
-}
-
-void ShipEditorDialog::ArrivalCueChanged(const bool value)
-{
-	_model->setArrivalCue(value);
-}
-
-void ShipEditorDialog::departureLocationChanged(const int index)
-{
-	auto depLocationIdx = ui->departureLocationCombo->itemData(index).value<int>();
-	_model->setDepartureLocationIndex(depLocationIdx);
-}
-
-void ShipEditorDialog::departureTargetChanged(const int index)
-{
-	auto depLocationIdx = ui->departureTargetCombo->itemData(index).value<int>();
-	_model->setDepartureTarget(depLocationIdx);
-}
-
-void ShipEditorDialog::departureDelayChanged(const int value)
-{
-	_model->setDepartureDelay(value);
-}
-
-void ShipEditorDialog::departureWarpChanged(const bool value)
-{
-	_model->setNoDepartureWarp(value);
-}
-
-void ShipEditorDialog::DepartureCueChanged(const bool value)
-{
-	_model->setDepartureCue(value);
 }
 
 void ShipEditorDialog::on_textureReplacementButton_clicked()
@@ -851,7 +627,7 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 	dialog->show();
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
-	{
+{
 	auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
@@ -886,8 +662,6 @@ void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, false);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
-
-
 }
 void ShipEditorDialog::on_customWarpinButton_clicked()
 {
@@ -908,6 +682,135 @@ void ShipEditorDialog::on_customWarpoutButton_clicked()
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+
+/*---------------------------------------------------------
+					WARNING
+Do not try to optimise string entries; this convoluted method is necessary to avoid fatal errors caused by QT
+-----------------------------------------------------------*/
+void ShipEditorDialog::on_shipNameEdit_editingFinished()
+{
+	const QString entry = ui->shipNameEdit->text();
+	if (!entry.isEmpty() && entry != _model->getShipName().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const std::string NewShipName = textBytes.toStdString();
+		_model->setShipName(NewShipName);
+	}
+
+	// automatically determine or reset the display name
+	_model->setShipDisplayName(Editor::get_display_name_for_text_box(_model->getShipName()));
+
+	// sync the variable to the edit box
+	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
+}
+void ShipEditorDialog::on_shipDisplayNameEdit_editingFinished()
+{
+	const QString entry = ui->shipDisplayNameEdit->text();
+	if (entry != _model->getShipDisplayName().c_str()) {
+		const auto textBytes = entry.toUtf8();
+		const std::string NewShipDisplayName = textBytes.toStdString();
+		_model->setShipDisplayName(NewShipDisplayName);
+	}
+}
+void ShipEditorDialog::on_shipClassCombo_currentIndexChanged(int index)
+{
+	auto shipClassIdx = ui->shipClassCombo->itemData(index).toInt();
+	_model->setShipClass(shipClassIdx);
+}
+void ShipEditorDialog::on_AIClassCombo_currentIndexChanged(int index)
+{
+	auto aiClassIdx = ui->AIClassCombo->itemData(index).toInt();
+	_model->setAIClass(aiClassIdx);
+}
+void ShipEditorDialog::on_teamCombo_currentIndexChanged(int index)
+{
+	auto teamIdx = ui->teamCombo->itemData(index).toInt();
+	_model->setTeam(teamIdx);
+}
+void ShipEditorDialog::on_hotkeyCombo_currentIndexChanged(int index)
+{
+	auto hotkeyIdx = ui->hotkeyCombo->itemData(index).toInt();
+	_model->setHotkey(hotkeyIdx);
+}
+void ShipEditorDialog::on_personaCombo_currentIndexChanged(int index)
+{
+	auto personaIdx = ui->personaCombo->itemData(index).toInt();
+	_model->setPersona(personaIdx);
+}
+void ShipEditorDialog::on_killScoreEdit_valueChanged(int value)
+{
+	_model->setScore(value);
+}
+void ShipEditorDialog::on_assistEdit_valueChanged(int value)
+{
+	_model->setAssist(value);
+}
+void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
+{
+	_model->setPlayer(value);
+}
+void ShipEditorDialog::on_arrivalLocationCombo_currentIndexChanged(int index)
+{
+	auto arrivalLocationIdx = ui->arrivalLocationCombo->itemData(index).toInt();
+	_model->setArrivalLocationIndex(arrivalLocationIdx);
+}
+void ShipEditorDialog::on_arrivalTargetCombo_currentIndexChanged(int index)
+{
+	auto arrivalLocationIdx = ui->arrivalTargetCombo->itemData(index).toInt();
+	_model->setArrivalTarget(arrivalLocationIdx);
+}
+void ShipEditorDialog::on_arrivalDistanceEdit_valueChanged(int value)
+{
+	_model->setArrivalDistance(value);
+}
+void ShipEditorDialog::on_arrivalDelaySpinBox_valueChanged(int value)
+{
+	_model->setArrivalDelay(value);
+}
+void ShipEditorDialog::on_updateArrivalCueCheckBox_toggled(bool value)
+{
+	_model->setArrivalCue(value);
+}
+void ShipEditorDialog::on_noArrivalWarpCheckBox_toggled(bool value)
+{
+	_model->setNoArrivalWarp(value);
+}
+void ShipEditorDialog::on_arrivalTree_rootNodeFormulaChanged(int old, int node)
+{
+	_model->setArrivalFormula(old, node);
+}
+void ShipEditorDialog::on_arrivalTree_helpChanged(const QString& help)
+{
+	ui->helpText->setPlainText(help);
+}
+void ShipEditorDialog::on_arrivalTree_miniHelpChanged(const QString& help)
+{
+	ui->HelpTitle->setText(help);
+}
+void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index) {
+	auto depLocationIdx = ui->departureLocationCombo->itemData(index).toInt();
+	_model->setDepartureLocationIndex(depLocationIdx);
+}
+void fred::dialogs::ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index) {
+	auto depLocationIdx = ui->departureTargetCombo->itemData(index).toInt();
+	_model->setDepartureTarget(depLocationIdx);
+}
+void fred::dialogs::ShipEditorDialog::on_departureDelaySpinBox_valueChanged(int value) {
+	_model->setDepartureDelay(value);
+}
+void fred::dialogs::ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value) {
+	_model->setDepartureCue(value);
+}
+void fred::dialogs::ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node) {
+	_model->setDepartureFormula(old, node);
+}
+void fred::dialogs::ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
+{
+	ui->helpText->setPlainText(help);
+}
+void fred::dialogs::ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help) {
+	ui->HelpTitle->setText(help);
+}
+void fred::dialogs::ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value) {
+	_model->setNoDepartureWarp(value);
+}
+} // namespace fso::fred::dialogs
