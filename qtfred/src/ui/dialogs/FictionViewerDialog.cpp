@@ -108,17 +108,17 @@ void FictionViewerDialog::on_okAndCancelButtons_rejected()
 
 void FictionViewerDialog::on_storyFileEdit_textChanged(const QString& text)
 {
-	_model->setStoryFile(ui->storyFileEdit->text().toUtf8().constData());
+	_model->setStoryFile(text.toUtf8().constData());
 }
 
 void FictionViewerDialog::on_fontFileEdit_textChanged(const QString& text)
 {
-	_model->setFontFile(ui->fontFileEdit->text().toUtf8().constData());
+	_model->setFontFile(text.toUtf8().constData());
 }
 
 void FictionViewerDialog::on_voiceFileEdit_textChanged(const QString& text)
 {
-	_model->setVoiceFile(ui->voiceFileEdit->text().toUtf8().constData());
+	_model->setVoiceFile(text.toUtf8().constData());
 }
 
 void FictionViewerDialog::on_musicComboBox_currentIndexChanged(int index)
