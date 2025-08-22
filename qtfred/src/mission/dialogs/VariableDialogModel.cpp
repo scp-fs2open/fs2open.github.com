@@ -2044,7 +2044,7 @@ const SCP_vector<int>& VariableDialogModel::getNumberValues(int index)
     return container->numberValues;
 }
 
-const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValues()
+SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValues()
 {
     SCP_vector<std::array<SCP_string, 3>> outStrings;
 
@@ -2073,7 +2073,7 @@ const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getVariableValu
     return outStrings;
 }
 
-const SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
+SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
 {
     // This logic makes the string which we use to display the type of the container, based on the specific mode we're using. 
     SCP_string listPrefix;
