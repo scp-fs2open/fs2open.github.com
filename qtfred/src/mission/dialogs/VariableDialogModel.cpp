@@ -2184,7 +2184,7 @@ SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
         }
 
         if (item.list){
-            type.append(listPrefix + type + listPostscript);
+            type.append(listPrefix.append(type.append(listPostscript)));
             
         } else {
 
