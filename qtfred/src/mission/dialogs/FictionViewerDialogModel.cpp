@@ -1,10 +1,7 @@
-#include <missionui/fictionviewer.h>
 #include <gamesnd/eventmusic.h>
 #include "mission/dialogs/FictionViewerDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 FictionViewerDialogModel::FictionViewerDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
@@ -13,78 +10,136 @@ FictionViewerDialogModel::FictionViewerDialogModel(QObject* parent, EditorViewpo
 }
 
 bool FictionViewerDialogModel::apply() {
-	// store the fields in the data structure
-	fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
-	if (_storyFile.empty()) {
-		Fiction_viewer_stages.erase(Fiction_viewer_stages.begin());
-		stagep = nullptr;
+	// if the story file for the current stage is empty, treat as no fiction viewer stage
+	// currently we only support one stage, so just check the first one
+	const auto& stage = _fictionViewerStages.at(0);
+	const bool empty = stage.story_filename[0] == '\0';
+
+	if (empty) {
+		_fictionViewerStages.clear();
 		Mission_music[SCORE_FICTION_VIEWER] = -1;
 	} else {
-		strcpy_s(stagep->story_filename, _storyFile.c_str());
-		strcpy_s(stagep->font_filename, _fontFile.c_str());
-		strcpy_s(stagep->voice_filename, _voiceFile.c_str());
-		Mission_music[SCORE_FICTION_VIEWER] = _fictionMusic - 1;
+		// Keep whatever you’ve edited in _fictionViewerStages
+		Mission_music[SCORE_FICTION_VIEWER] = _fictionMusic; // -1 for none is valid
 	}
+
+	// Commit working copy to mission
+	Fiction_viewer_stages = _fictionViewerStages;
 	return true;
 }
 
 void FictionViewerDialogModel::reject() {
-	// nothing to do if the dialog is created each time it's opened
+	// nothing to do
 }
 
 void FictionViewerDialogModel::initializeData() {
+
+	_fictionViewerStages = Fiction_viewer_stages;
+
 	// make sure we have at least one stage
-	if (Fiction_viewer_stages.empty()) {
+	if (_fictionViewerStages.empty()) {
 		fiction_viewer_stage stage;
 		memset(&stage, 0, sizeof(fiction_viewer_stage));
 		stage.formula = Locked_sexp_true;
 
-		Fiction_viewer_stages.push_back(stage);
+		_fictionViewerStages.push_back(stage);
 	}
 	
-	_musicOptions.emplace_back("None", 0);
-	for (int i = 0; i < (int)Spooled_music.size(); ++i) {
-		_musicOptions.emplace_back(Spooled_music[i].name, i + 1); // + 1 because option 0 is None
+	_musicOptions.emplace_back("None", -1);
+	for (int i = 0; i < static_cast<int>(Spooled_music.size()); ++i) {
+		_musicOptions.emplace_back(Spooled_music[i].name, i);
 	}
-	
-	// init fields based on first fiction viewer stage
-	const fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
-	_storyFile = stagep->story_filename;
-	_fontFile = stagep->font_filename;
-	_voiceFile = stagep->voice_filename;
-
-	// initialize file name length limits
-	_maxStoryFileLength = sizeof(stagep->story_filename) - 1;
-	_maxFontFileLength = sizeof(stagep->font_filename) - 1;
-	_maxVoiceFileLength = sizeof(stagep->voice_filename) - 1;
 
 	// music is managed through the mission
-	_fictionMusic = Mission_music[SCORE_FICTION_VIEWER] + 1;
+	_fictionMusic = Mission_music[SCORE_FICTION_VIEWER];
+}
 
-	modelChanged();
+const SCP_vector<std::pair<SCP_string, int>>& FictionViewerDialogModel::getMusicOptions()
+{
+	return _musicOptions;
+}
+
+SCP_string FictionViewerDialogModel::getStoryFile() const
+{
+	return _fictionViewerStages[_fictionViewerStageIndex].story_filename;
+}
+
+void FictionViewerDialogModel::setStoryFile(const SCP_string& storyFile)
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
+
+	if (strcmp(stage.story_filename, storyFile.c_str()) != 0) {
+		strcpy_s(stage.story_filename, storyFile.c_str());
+		set_modified();
+	}
+}
+
+SCP_string FictionViewerDialogModel::getFontFile() const
+{
+	return _fictionViewerStages[_fictionViewerStageIndex].font_filename;
+}
+
+void FictionViewerDialogModel::setFontFile(const SCP_string& fontFile)
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
+
+	if (stricmp(stage.font_filename, fontFile.c_str()) != 0) {
+		strcpy_s(stage.font_filename, fontFile.c_str());
+		set_modified();
+	}
+}
+
+SCP_string FictionViewerDialogModel::getVoiceFile() const
+{
+	return _fictionViewerStages[_fictionViewerStageIndex].voice_filename;
+}
+
+void FictionViewerDialogModel::setVoiceFile(const SCP_string& voiceFile)
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
+
+	if (stricmp(stage.voice_filename, voiceFile.c_str()) != 0) {
+		strcpy_s(stage.voice_filename, voiceFile.c_str());
+		set_modified();
+	}
+}
+
+int FictionViewerDialogModel::getFictionMusic() const
+{
+	// TODO research how music is set for multiple fiction viewer stages so we
+	// can return the correct index when multiple stages is fully supported
+	return _fictionMusic;
 }
 
 void FictionViewerDialogModel::setFictionMusic(int fictionMusic) {
-	Assert(fictionMusic >= 0);
-	Assert(fictionMusic <= (int)Spooled_music.size());
-	modify<int>(_fictionMusic, fictionMusic);
+	bool valid = fictionMusic == -1 || SCP_vector_inbounds(Spooled_music, fictionMusic);
+	Assertion(valid,
+		"Fiction music index out of bounds: %d (max %d)",
+		fictionMusic,
+		static_cast<int>(Spooled_music.size()));
+
+	modify(_fictionMusic, fictionMusic);
 }
 
-bool FictionViewerDialogModel::query_modified() const {
-	Assert(!Fiction_viewer_stages.empty());
+int FictionViewerDialogModel::getMaxStoryFileLength() const
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
 
-	const fiction_viewer_stage *stagep = &Fiction_viewer_stages.at(0);
-	
-	return strcmp(_storyFile.c_str(), stagep->story_filename) != 0
-	    || strcmp(_fontFile.c_str(), stagep->font_filename) != 0
-		|| strcmp(_voiceFile.c_str(), stagep->voice_filename) != 0
-		|| _fictionMusic != (Mission_music[SCORE_FICTION_VIEWER] + 1);
+	return sizeof(stage.story_filename) - 1;
 }
 
-bool FictionViewerDialogModel::hasMultipleStages() const {
-	return Fiction_viewer_stages.size() > 1;
+int FictionViewerDialogModel::getMaxFontFileLength() const
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
+
+	return sizeof(stage.font_filename) - 1;
 }
 
+int FictionViewerDialogModel::getMaxVoiceFileLength() const
+{
+	auto& stage = _fictionViewerStages[_fictionViewerStageIndex];
+
+	return sizeof(stage.voice_filename) - 1;
 }
-}
-}
+
+} // namespace fso::fred::dialogs

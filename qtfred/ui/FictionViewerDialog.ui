@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>229</width>
-    <height>157</height>
+    <width>277</width>
+    <height>172</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -74,7 +74,7 @@
     <widget class="QComboBox" name="musicComboBox"/>
    </item>
    <item row="4" column="1">
-    <widget class="QDialogButtonBox" name="dialogButtonBox">
+    <widget class="QDialogButtonBox" name="okAndCancelButtons">
      <property name="standardButtons">
       <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
      </property>
@@ -85,7 +85,7 @@
  <resources/>
  <connections>
   <connection>
-   <sender>dialogButtonBox</sender>
+   <sender>okAndCancelButtons</sender>
    <signal>accepted()</signal>
    <receiver>fso::fred::dialogs::FictionViewerDialog</receiver>
    <slot>accept()</slot>
