@@ -16,9 +16,9 @@ class CommandBriefingDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	int getCurrentTeam();
+	int getCurrentTeam() const;
 	void setCurrentTeam(int teamIn);
-	int getCurrentStage();
+	int getCurrentStage() const;
 	int getTotalStages();
 
 	SCP_string getBriefingText();
@@ -40,7 +40,7 @@ class CommandBriefingDialogModel: public AbstractDialogModel {
 	void testSpeech();
 	void copyToOtherTeams();
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
-	bool getMissionIsMultiTeam();
+	static bool getMissionIsMultiTeam();
 
  private:
 	void initializeData();

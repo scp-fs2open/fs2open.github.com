@@ -193,7 +193,7 @@ void CommandBriefingDialogModel::initializeTeamList()
 	}
 }
 
-int CommandBriefingDialogModel::getCurrentTeam()
+int CommandBriefingDialogModel::getCurrentTeam() const
 {
 	return _currentTeam;
 }
@@ -203,7 +203,7 @@ void CommandBriefingDialogModel::setCurrentTeam(int teamIn)
 	modify(_currentTeam, teamIn);
 };
 
-int CommandBriefingDialogModel::getCurrentStage()
+int CommandBriefingDialogModel::getCurrentStage() const
 {
 	return _currentStage;
 }
