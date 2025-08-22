@@ -70,6 +70,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
 	src/mission/dialogs/ShieldSystemDialogModel.h
+	src/mission/dialogs/VariableDialogModel.cpp
+	src/mission/dialogs/VariableDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 )
@@ -148,6 +150,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
 	src/ui/dialogs/ShieldSystemDialog.cpp
+	src/ui/dialogs/VariableDialog.cpp
+	src/ui/dialogs/VariableDialog.h
 	src/ui/dialogs/VoiceActingManager.h
 	src/ui/dialogs/VoiceActingManager.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
@@ -252,6 +256,7 @@ add_file_folder("UI"
 	ui/ShipCustomWarpDialog.ui
 	ui/ShipAltShipClass.ui
 	ui/ShipWeaponsDialog.ui
+	ui/VariableDialog.ui
 )
 
 add_file_folder("Resources"

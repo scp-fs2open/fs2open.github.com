@@ -531,9 +531,9 @@ void LoadoutDialog::onClearAllUsedWeaponsPressed()
 	_lastSelectionChanged = USED_WEAPONS;
 }
 
-// TODO!  Finish writing a trigger to open that dialog, once the variable editor is created
 void LoadoutDialog::openEditVariablePressed() 
 {
+	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
 }
 
 void LoadoutDialog::onSelectionRequiredPressed() 
