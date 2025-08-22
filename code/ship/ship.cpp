@@ -1352,6 +1352,8 @@ void ship_info::clone(const ship_info& other)
 	ship_passive_arcs = other.ship_passive_arcs;
 
 	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
+
+	default_subsys_death_effect = other.default_subsys_death_effect; 
 }
 
 void ship_info::move(ship_info&& other)
@@ -1698,6 +1700,8 @@ void ship_info::move(ship_info&& other)
 
 	animations = std::move(other.animations);
 	cockpit_animations = std::move(other.cockpit_animations);
+
+	default_subsys_death_effect = other.default_subsys_death_effect;
 }
 
 ship_info &ship_info::operator= (ship_info&& other) noexcept
@@ -2091,6 +2095,8 @@ ship_info::ship_info()
 	glowpoint_bank_override_map.clear();
 
 	ship_passive_arcs.clear();
+
+	default_subsys_death_effect = particle::ParticleEffectHandle::invalid();
 }
 
 ship_info::~ship_info()
@@ -5488,6 +5494,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		required_string("$end_custom_strings");
 	}
 
+	if (optional_string("$Default Subsystem Death Effect:")) {
+		sip->default_subsys_death_effect = particle::util::parseEffect(sip->name);
+	}
+
 	if(optional_string("$Default Subsystem Debris Flame Effect:"))
 	{
 		sip->default_subsys_debris_flame_particles = particle::util::parseEffect(sip->name);
@@ -5595,8 +5605,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				sp->turret_max_bomb_ownage = -1;
 				sp->turret_max_target_ownage = -1;
 				sp->density = 1.0f;
+        
+				sp->death_effect = particle::ParticleEffectHandle::invalid();
 				sp->debris_flame_particles = particle::ParticleEffectHandle::invalid();
 				sp->shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
+
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -5781,6 +5794,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 						Warning(LOCATION, "RoF multiplier not set for subsystem\n'%s' in %s '%s'.", sp->subobj_name, info_type_name, sip->name);
 					}
 				}
+			}
+
+			if (optional_string("$Subsystem Death Effect:")) {
+				sp->death_effect = particle::util::parseEffect(sip->name);
 			}
 
 			if (optional_string("$Debris Density:")) {
