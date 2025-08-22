@@ -127,10 +127,10 @@ public:
 	void swapKeyAndValues(int index);
 	
 	bool safeToAlterContainer(int index);
-	bool safeToAlterContainer(const containerInfo& containerItem);
+	static bool safeToAlterContainer(const containerInfo& containerItem);
 
-	const SCP_vector<std::array<SCP_string, 3>> getVariableValues();
-	const SCP_vector<std::array<SCP_string, 3>> getContainerNames();
+	SCP_vector<std::array<SCP_string, 3>> getVariableValues();
+	SCP_vector<std::array<SCP_string, 3>> getContainerNames();
 	static void setTextMode(int modeIn);
 
 	bool checkValidModel();

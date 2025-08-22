@@ -2325,10 +2325,7 @@ SCP_string VariableDialogModel::trimIntegerString(SCP_string source)
 			switch (c) {
                 // ignore leading zeros.  If all digits are zero, this will be handled elsewhere
 				case '0':
-                    if (foundNonZero)
-                        return true;
-                    else
-                        return false;
+                    return foundNonZero;
 				case '1':
 				case '2':
 				case '3':
