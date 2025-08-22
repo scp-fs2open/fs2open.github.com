@@ -280,7 +280,7 @@ void VariableDialog::onVariablesTableUpdated()
 	}	
 	
 	auto item = ui->variablesTable->item(currentRow, 0);
-	SCP_string itemText = item->text().toStdString();
+	SCP_string itemText = item->text().toUtf8().constData();
 	bool apply = false;
 
 	// This will only be true if the user is trying to add a new variable.
@@ -327,7 +327,7 @@ void VariableDialog::onVariablesTableUpdated()
 		auto ret = _model->changeVariableName(item->row(), itemText);
 
 		// we put something in the cell, but the model couldn't process it.
-		if (strlen(item->text().toStdString().c_str()) && ret.empty()){
+		if (strlen(item->text().toUtf8().constData()) && ret.empty()) {
 			// update of variable name failed, resync UI
 			apply = true;
 
@@ -341,7 +341,7 @@ void VariableDialog::onVariablesTableUpdated()
 
 	// now work on the variable data cell
 	item = ui->variablesTable->item(currentRow, 1);
-	itemText = item->text().toStdString();
+	itemText = item->text().toUtf8().constData();
 
 	// check if data column was altered
 	if (itemText != _currentVariableData) {
@@ -360,7 +360,7 @@ void VariableDialog::onVariablesTableUpdated()
 		
 		// Variable is a number
 		} else {
-			SCP_string source = item->text().toStdString();
+			SCP_string source = item->text().toUtf8().constData();
 			SCP_string temp = _model->trimIntegerString(source);
 
 			try {
@@ -404,13 +404,13 @@ void VariableDialog::onVariablesSelectionChanged()
 	auto item = ui->variablesTable->item(row, 0); 
 
 	if (item){
-		newVariableName = item->text().toStdString();
+		newVariableName = item->text().toUtf8().constData();
 	}
 
 	item = ui->variablesTable->item(row, 1);
 
 	if (item){
-		_currentVariableData = item->text().toStdString();
+		_currentVariableData = item->text().toUtf8().constData();
 	}
 
 	if (newVariableName != _currentVariable){
@@ -439,7 +439,7 @@ void VariableDialog::onContainersTableUpdated()
 	// Are they adding a new container?
 	if (row == ui->containersTable->rowCount() - 1){
 		if (ui->containersTable->item(row, 0)) {
-			SCP_string newString = ui->containersTable->item(row, 0)->text().toStdString();
+			SCP_string newString = ui->containersTable->item(row, 0)->text().toUtf8().constData();
 			if (!newString.empty() && newString != "Add Container ..."){
 				_model->addContainer(newString);
 				_currentContainer = newString;
@@ -454,7 +454,7 @@ void VariableDialog::onContainersTableUpdated()
 
 	// are they editing an existing container name?
 	} else if (ui->containersTable->item(row, 0)){
-		SCP_string newName = ui->containersTable->item(row,0)->text().toStdString();
+		SCP_string newName = ui->containersTable->item(row,0)->text().toUtf8().constData();
 
 		// Restoring a deleted container?
 		if (_currentContainer.empty()){
@@ -484,7 +484,7 @@ void VariableDialog::onContainersSelectionChanged()
 	}
 
 	// guaranteed not to be null, since getCurrentContainerRow already checked.
-	_currentContainer = ui->containersTable->item(row, 0)->text().toStdString();
+	_currentContainer = ui->containersTable->item(row, 0)->text().toUtf8().constData();
 	applyModel();
 }
 
@@ -512,7 +512,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 		SCP_string newString;
 
 		if (ui->containerContentsTable->item(row, 0)) {
-			newString = ui->containerContentsTable->item(row, 0)->text().toStdString();
+			newString = ui->containerContentsTable->item(row, 0)->text().toUtf8().constData();
 			
 			if (!newString.empty() && newString != "Add item ..."){
 				
@@ -532,7 +532,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 		} 
 		
 		if (ui->containerContentsTable->item(row, 1)) {
-			newString = ui->containerContentsTable->item(row, 1)->text().toStdString();
+			newString = ui->containerContentsTable->item(row, 1)->text().toUtf8().constData();
 			
 			if (!newString.empty() && newString != "Add item ..."){
 				
@@ -554,7 +554,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 
 	// are they editing an existing container item column 1?
 	} else if (ui->containerContentsTable->item(row, 0)){
-		SCP_string newText = ui->containerContentsTable->item(row, 0)->text().toStdString();
+		SCP_string newText = ui->containerContentsTable->item(row, 0)->text().toUtf8().constData();
 			
 		if (_model->getContainerListOrMap(containerRow)){
 
@@ -581,7 +581,7 @@ void VariableDialog::onContainerContentsTableUpdated()
 	// if we're here, nothing has changed so far.  So let's attempt column 2
 	if (ui->containerContentsTable->item(row, 1) && !_model->getContainerListOrMap(containerRow)){
 		
-		SCP_string newText = ui->containerContentsTable->item(row, 1)->text().toStdString();
+		SCP_string newText = ui->containerContentsTable->item(row, 1)->text().toUtf8().constData();
 		
 		if(newText != _currentContainerItemCol2){
 			
@@ -624,9 +624,9 @@ void VariableDialog::onContainerContentsSelectionChanged()
 		return;
 	}
 
-	newContainerItemName = item->text().toStdString();
+	newContainerItemName = item->text().toUtf8().constData();
 	item = ui->containerContentsTable->item(row, 1);	
-	SCP_string newContainerDataText = (item) ? item->text().toStdString() : "";
+	SCP_string newContainerDataText = (item) ? item->text().toUtf8().constData() : "";
 
 	if (newContainerItemName != _currentContainerItemCol1 || _currentContainerItemCol2 != newContainerDataText){
 		_currentContainerItemCol1 = newContainerItemName;
@@ -676,7 +676,7 @@ void VariableDialog::onDeleteVariableButtonPressed()
 	}	
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->deleteVariableButton->text().toStdString() == "Restore") {
+	if (ui->deleteVariableButton->text().toUtf8().constData() == "Restore") {
 		_model->removeVariable(currentRow, false);
 		applyModel();
 	} else {
@@ -853,7 +853,7 @@ void VariableDialog::onDeleteContainerButtonPressed()
 	}
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->deleteContainerButton->text().toStdString() == "Restore"){
+	if (ui->deleteContainerButton->text().toUtf8().constData() == "Restore"){
 		_model->removeContainer(row, false);
 	} else {
 		_model->removeContainer(row, true);
@@ -1248,12 +1248,13 @@ void VariableDialog::applyModel()
 	}
 
 	if (_currentVariable.empty() || selectedRow < 0){
-		if (ui->variablesTable->item(0, 0) && !ui->variablesTable->item(0, 0)->text().toStdString().empty()){
-			_currentVariable = ui->variablesTable->item(0, 0)->text().toStdString();	
+		SCP_string text = ui->variablesTable->item(0, 0)->text().toUtf8().constData();
+		if (ui->variablesTable->item(0, 0) && !text.empty()) {
+			_currentVariable = text;	
 		}
 
 		if (ui->variablesTable->item(0, 1)) {
-			_currentVariableData = ui->variablesTable->item(0, 1)->text().toStdString();
+			_currentVariableData = ui->variablesTable->item(0, 1)->text().toUtf8().constData();
 		}
 	}
 
@@ -1294,11 +1295,13 @@ void VariableDialog::applyModel()
 	}
 
 	// do we need to switch the delete button to a restore button?
-	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && ui->containersTable->item(selectedRow, 2)->text().toStdString() == "To Be Deleted") {
+	SCP_string var = selectedRow > -1 ? ui->containersTable->item(selectedRow, 2)->text().toUtf8().constData() : "";
+	if (selectedRow > -1 && ui->containersTable->item(selectedRow, 2) && var == "To Be Deleted") {
 		ui->deleteContainerButton->setText("Restore");
 		
 		// We can't restore empty container names.
-		if (ui->containersTable->item(selectedRow, 0) && ui->containersTable->item(selectedRow, 0)->text().toStdString().empty()){
+		SCP_string text = ui->containersTable->item(selectedRow, 0)->text().toUtf8().constData();
+		if (ui->containersTable->item(selectedRow, 0) && text.empty()){
 			ui->deleteContainerButton->setEnabled(false);
 		} else {
 			ui->deleteContainerButton->setEnabled(true);		
@@ -1338,7 +1341,7 @@ void VariableDialog::applyModel()
 
 	if (selectedRow < 0 && ui->containersTable->rowCount() > 1) {
 		if (ui->containersTable->item(0, 0)){
-			_currentContainer = ui->containersTable->item(0, 0)->text().toStdString();
+			_currentContainer = ui->containersTable->item(0, 0)->text().toUtf8().constData();
 			ui->containersTable->clearSelection();
 			ui->containersTable->item(0, 0)->setSelected(true);
 		}
@@ -1396,11 +1399,13 @@ void VariableDialog::updateVariableOptions(bool safeToAlter)
 	ui->setVariableAsNumberRadio->setChecked(!string);
 
 	// do we need to switch the delete button to a restore button?
-	if (ui->variablesTable->item(row, 2) && ui->variablesTable->item(row, 2)->text().toStdString() == "To Be Deleted"){
+	SCP_string var = ui->variablesTable->item(row, 2) ? ui->variablesTable->item(row, 2)->text().toUtf8().constData() : "";
+	if (ui->variablesTable->item(row, 2) && var == "To Be Deleted"){
 		ui->deleteVariableButton->setText("Restore");		
 
 		// We can't restore empty variable names.
-		if (ui->variablesTable->item(row, 0) && ui->variablesTable->item(row, 0)->text().toStdString().empty()){
+		SCP_string text = ui->variablesTable->item(row, 0)->text().toUtf8().constData();
+		if (ui->variablesTable->item(row, 0) && text.empty()){
 			ui->deleteVariableButton->setEnabled(false);
 		} else {
 			ui->deleteVariableButton->setEnabled(true);		
@@ -1823,7 +1828,8 @@ int VariableDialog::getCurrentVariableRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item && item->column() == 0 && item->text().toStdString() != "Add Variable ...") {
+		SCP_string var = item->text().toUtf8().constData();
+		if (item && item->column() == 0 && var != "Add Variable ...") {
 			return item->row();
 		}
 	}
@@ -1837,7 +1843,8 @@ int VariableDialog::getCurrentContainerRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item && item->column() == 0 && item->text().toStdString() != "Add Container ...") {
+		SCP_string var = item->text().toUtf8().constData();
+		if (item && item->column() == 0 && var != "Add Container ...") {
 			return item->row();
 		}
 	}
@@ -1851,7 +1858,8 @@ int VariableDialog::getCurrentContainerItemRow()
 
 	// yes, selected items returns a list, but we really should only have one item because multiselect will be off.
 	for (const auto& item : items) {
-		if (item && ((item->column() == 0 && item->text().toStdString() != "Add item ...") || (item->column() == 1 && item->text().toStdString() != "Add item ..."))) {
+		SCP_string var = item->text().toUtf8().constData();
+		if (item && ((item->column() == 0 && var != "Add item ...") || (item->column() == 1 && var != "Add item ..."))) {
 			return item->row();
 		}
 	}
