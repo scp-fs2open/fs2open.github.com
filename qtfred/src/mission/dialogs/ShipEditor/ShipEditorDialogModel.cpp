@@ -336,7 +336,6 @@ namespace fso {
 
 					_m_player_ship = pship;
 
-					_m_persona++;
 					if (_m_persona > 0) {
 						int persona_index = 0;
 						for (int i = 0; i < _m_persona; i++) {

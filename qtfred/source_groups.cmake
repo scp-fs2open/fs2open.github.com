@@ -202,6 +202,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/weaponList.h
 	src/ui/widgets/bankTree.cpp
 	src/ui/widgets/bankTree.h
+	src/ui/widgets/PersonaColorComboBox.cpp
+	src/ui/widgets/PersonaColorComboBox.h
 )
 
 add_file_folder("UI"

@@ -20,7 +20,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 	this->setFocus();
 	ui->setupUi(this);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipEditorDialog::updateUI);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this] { updateUI(false); });
 	connect(this, &QDialog::accepted, _model.get(), &ShipEditorDialogModel::apply);
 	connect(viewport->editor, &Editor::currentObjectChanged, this, &ShipEditorDialog::update);
 	connect(viewport->editor, &Editor::objectMarkingChanged, this, &ShipEditorDialog::update);
@@ -33,7 +33,7 @@ ShipEditorDialog::ShipEditorDialog(FredView* parent, EditorViewport* viewport)
 
 	// ui->cargoCombo->installEventFilter(this);
 
-	updateUI();
+	updateUI(true);
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
@@ -109,162 +109,148 @@ void ShipEditorDialog::update()
 			_model->apply();
 		}
 		_model->initializeData();
+		updateUI(true);
 	}
 }
 
-void ShipEditorDialog::updateUI()
+void ShipEditorDialog::updateUI(bool overwrite)
 {
 	util::SignalBlockers blockers(this);
 	enableDisable();
-	updateColumnOne();
-	updateColumnTwo();
-	updateArrival();
-	updateDeparture();
+	updateColumnOne(overwrite);
+	updateColumnTwo(overwrite);
+	updateArrival(overwrite);
+	updateDeparture(overwrite);
 }
-void ShipEditorDialog::updateColumnOne()
+void ShipEditorDialog::updateColumnOne(bool overwrite)
 {
 	util::SignalBlockers blockers(this);
-	ui->shipNameEdit->setText(_model->getShipName().c_str());
-	ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
-	size_t i;
-	auto idx = _model->getShipClass();
-	ui->shipClassCombo->clear();
-	for (i = 0; i < Ship_info.size(); i++) {
-		ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(static_cast<int>(i)));
-	}
-	ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
+	int idx;
+	if (overwrite) {
+		ui->shipNameEdit->setText(_model->getShipName().c_str());
+		ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
+		idx = _model->getShipClass();
+		ui->shipClassCombo->clear();
+		for (auto i = 0; i < Ship_info.size(); i++) {
+			ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(static_cast<int>(i)));
+		}
+		ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
 
-	auto ai = _model->getAIClass();
-	ui->AIClassCombo->clear();
-	for (int j = 0; j < Num_ai_classes; j++) {
-		ui->AIClassCombo->addItem(Ai_class_names[j], QVariant(j));
+		auto ai = _model->getAIClass();
+		ui->AIClassCombo->clear();
+		for (auto j = 0; j < Num_ai_classes; j++) {
+			ui->AIClassCombo->addItem(Ai_class_names[j], QVariant(j));
+		}
+		ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
 	}
-	ui->AIClassCombo->setCurrentIndex(ui->AIClassCombo->findData(ai));
-
 	if (_model->getNumSelectedPlayers()) {
 		if (_model->getTeam() != -1) {
 			ui->teamCombo->setEnabled(true);
 		} else {
 			ui->teamCombo->setEnabled(false);
 		}
-
-		ui->teamCombo->clear();
-		for (i = 0; i < MAX_TVT_TEAMS; i++) {
-			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
+		if (overwrite) {
+			ui->teamCombo->clear();
+			for (auto i = 0; i < MAX_TVT_TEAMS; i++) {
+				ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
+			}
 		}
 	} else {
-		idx = _model->getTeam();
 		ui->teamCombo->setEnabled(_model->getUIEnable());
-		ui->teamCombo->clear();
-		for (i = 0; i < Iff_info.size(); i++) {
-			ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
+		if (overwrite) {
+			idx = _model->getTeam();
+			ui->teamCombo->clear();
+			for (auto i = 0; i < Iff_info.size(); i++) {
+				ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
+			}
+			ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
 		}
-		ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
 	}
-	auto cargo = _model->getCargo();
-	ui->cargoCombo->clear();
-	int j;
-	for (j = 0; j < Num_cargo; j++) {
-		ui->cargoCombo->addItem(Cargo_names[j]);
-	}
-	if (ui->cargoCombo->findText(QString(cargo.c_str()))) {
-		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
-	} else {
-		ui->cargoCombo->addItem(cargo.c_str());
+	if (overwrite) {
+		auto cargo = _model->getCargo();
+		ui->cargoCombo->clear();
+		int j;
+		for (j = 0; j < Num_cargo; j++) {
+			ui->cargoCombo->addItem(Cargo_names[j]);
+		}
+		if (ui->cargoCombo->findText(QString(cargo.c_str()))) {
+			ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
+		} else {
+			ui->cargoCombo->addItem(cargo.c_str());
 
-		ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
+			ui->cargoCombo->setCurrentIndex(ui->cargoCombo->findText(QString(cargo.c_str())));
+		}
 	}
-	ui->altNameCombo->clear();
 	if (_model->getNumSelectedObjects()) {
 		if (_model->getIfMultipleShips()) {
 			ui->altNameCombo->setEnabled(false);
 		} else {
 			auto altname = _model->getAltName();
 			ui->altNameCombo->setEnabled(true);
-			ui->altNameCombo->addItem("<none>");
-			for (j = 0; j < Mission_alt_type_count; j++) {
-				ui->altNameCombo->addItem(Mission_alt_types[j]);
-			}
-			if (ui->altNameCombo->findText(QString(altname.c_str()))) {
-				ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
-			} else {
-				ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText("<none>"));
+			if (overwrite) {
+				ui->altNameCombo->clear();
+				ui->altNameCombo->addItem("<none>");
+				for (auto j = 0; j < Mission_alt_type_count; j++) {
+					ui->altNameCombo->addItem(Mission_alt_types[j]);
+				}
+				if (ui->altNameCombo->findText(QString(altname.c_str()))) {
+					ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText(QString(altname.c_str())));
+				} else {
+					ui->altNameCombo->setCurrentIndex(ui->altNameCombo->findText("<none>"));
+				}
 			}
 		}
 	}
-	ui->callsignCombo->clear();
 	if (_model->getNumSelectedObjects()) {
 		if (_model->getIfMultipleShips()) {
 			ui->callsignCombo->setEnabled(false);
 		} else {
+			ui->callsignCombo->clear();
 			auto callsign = _model->getCallsign();
-			ui->callsignCombo->addItem("<none>");
 			ui->callsignCombo->setEnabled(true);
-			for (j = 0; j < Mission_callsign_count; j++) {
-				ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
-			}
+			if (overwrite) {
+				ui->callsignCombo->addItem("<none>");
+				for (auto j = 0; j < Mission_callsign_count; j++) {
+					ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
+				}
 
-			if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
-				ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
-			} else {
-				ui->altNameCombo->setCurrentIndex(ui->callsignCombo->findText("<none>"));
-			}
-		}
-	}
-}
-void ShipEditorDialog::updateColumnTwo()
-{
-	util::SignalBlockers blockers(this);
-	ui->wing->setText(_model->getWing().c_str());
-
-	ui->personaCombo->clear();
-	ui->personaCombo->addItem("<none>", QVariant(-1));
-	for (size_t i = 0; i < Personas.size(); i++) {
-		if (Personas[i].flags & PERSONA_FLAG_WINGMAN) {
-			SCP_string persona_name = Personas[i].name;
-
-			// see if the bitfield matches one and only one species
-			int species = -1;
-			for (size_t j = 0; j < 32 && j < Species_info.size(); j++) {
-				if (Personas[i].species_bitfield == (1 << j)) {
-					species = static_cast<int>(j);
-					break;
+				if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
+					ui->callsignCombo->setCurrentIndex(ui->callsignCombo->findText(QString(callsign.c_str())));
+				} else {
+					ui->altNameCombo->setCurrentIndex(ui->callsignCombo->findText("<none>"));
 				}
 			}
-
-			// if it is an exact species that isn't the first
-			if (species > 0) {
-				persona_name += "-";
-
-				auto species_name = Species_info[species].species_name;
-				size_t len = strlen(species_name);
-				for (size_t j = 0; j < 3 && j < len; j++)
-					persona_name += species_name[j];
-			}
-
-			ui->personaCombo->addItem(persona_name.c_str(), QVariant(static_cast<int>(i)));
 		}
 	}
-	auto idx = _model->getPersona();
-	ui->personaCombo->setCurrentIndex(ui->personaCombo->findData(idx));
-
-	ui->killScoreEdit->setValue(_model->getScore());
-
-	ui->assistEdit->setValue(_model->getAssist());
-
-	ui->playerShipCheckBox->setChecked(_model->getPlayer());
 }
-void ShipEditorDialog::updateArrival()
+void ShipEditorDialog::updateColumnTwo(bool overwrite)
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getArrivalLocationIndex();
-	int i;
-	ui->arrivalLocationCombo->clear();
-	for (i = 0; i < MAX_ARRIVAL_NAMES; i++) {
-		ui->arrivalLocationCombo->addItem(Arrival_location_names[i], QVariant(i));
-	}
-	ui->arrivalLocationCombo->setCurrentIndex(ui->arrivalLocationCombo->findData(idx));
+	if (overwrite) {
+		ui->wing->setText(_model->getWing().c_str());
 
+		auto idx = _model->getPersona();
+		ui->personaCombo->setCurrentIndex(ui->personaCombo->findData(idx));
+
+		ui->killScoreEdit->setValue(_model->getScore());
+
+		ui->assistEdit->setValue(_model->getAssist());
+
+		ui->playerShipCheckBox->setChecked(_model->getPlayer());
+	}
+}
+void ShipEditorDialog::updateArrival(bool overwrite)
+{
+	util::SignalBlockers blockers(this);
+	if (overwrite) {
+		auto idx = _model->getArrivalLocationIndex();
+		int i;
+		ui->arrivalLocationCombo->clear();
+		for (i = 0; i < MAX_ARRIVAL_NAMES; i++) {
+			ui->arrivalLocationCombo->addItem(Arrival_location_names[i], QVariant(i));
+		}
+		ui->arrivalLocationCombo->setCurrentIndex(ui->arrivalLocationCombo->findData(idx));
+	}
 	object* objp;
 	int restrict_to_players;
 	ui->arrivalTargetCombo->clear();
@@ -303,46 +289,49 @@ void ShipEditorDialog::updateArrival()
 		}
 	}
 	ui->arrivalTargetCombo->setCurrentIndex(ui->arrivalTargetCombo->findData(_model->getArrivalTarget()));
+	if (overwrite) {
+		ui->arrivalDistanceEdit->clear();
+		ui->arrivalDistanceEdit->setValue(_model->getArrivalDistance());
+		ui->arrivalDelaySpinBox->setValue(_model->getArrivalDelay());
 
-	ui->arrivalDistanceEdit->clear();
-	ui->arrivalDistanceEdit->setValue(_model->getArrivalDistance());
-	ui->arrivalDelaySpinBox->setValue(_model->getArrivalDelay());
+		ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
 
-	ui->updateArrivalCueCheckBox->setChecked(_model->getArrivalCue());
+		ui->arrivalTree->initializeEditor(_viewport->editor, this);
+		if (_model->getNumSelectedShips()) {
 
-	ui->arrivalTree->initializeEditor(_viewport->editor, this);
-	if (_model->getNumSelectedShips()) {
-
-		if (_model->getIfMultipleShips()) {
-			ui->arrivalTree->clear_tree("");
-		}
-		if (_model->getUseCue()) {
-			ui->arrivalTree->load_tree(_model->getArrivalFormula());
+			if (_model->getIfMultipleShips()) {
+				ui->arrivalTree->clear_tree("");
+			}
+			if (_model->getUseCue()) {
+				ui->arrivalTree->load_tree(_model->getArrivalFormula());
+			} else {
+				ui->arrivalTree->clear_tree("");
+			}
+			if (!_model->getIfMultipleShips()) {
+				int j = ui->arrivalTree->select_sexp_node;
+				if (j != -1) {
+					ui->arrivalTree->hilite_item(j);
+				}
+			}
 		} else {
 			ui->arrivalTree->clear_tree("");
 		}
-		if (!_model->getIfMultipleShips()) {
-			int j = ui->arrivalTree->select_sexp_node;
-			if (j != -1) {
-				ui->arrivalTree->hilite_item(j);
-			}
-		}
-	} else {
-		ui->arrivalTree->clear_tree("");
-	}
 
-	ui->noArrivalWarpCheckBox->setChecked(_model->getNoArrivalWarp());
+		ui->noArrivalWarpCheckBox->setChecked(_model->getNoArrivalWarp());
+	}
 }
-void ShipEditorDialog::updateDeparture()
+void ShipEditorDialog::updateDeparture(bool overwrite)
 {
 	util::SignalBlockers blockers(this);
-	auto idx = _model->getDepartureLocationIndex();
-	int i;
-	ui->departureLocationCombo->clear();
-	for (i = 0; i < MAX_DEPARTURE_NAMES; i++) {
-		ui->departureLocationCombo->addItem(Departure_location_names[i], QVariant(i));
+	if (overwrite) {
+		auto idx = _model->getDepartureLocationIndex();
+		int i;
+		ui->departureLocationCombo->clear();
+		for (i = 0; i < MAX_DEPARTURE_NAMES; i++) {
+			ui->departureLocationCombo->addItem(Departure_location_names[i], QVariant(i));
+		}
+		ui->departureLocationCombo->setCurrentIndex(ui->departureLocationCombo->findData(idx));
 	}
-	ui->departureLocationCombo->setCurrentIndex(ui->departureLocationCombo->findData(idx));
 	object* objp;
 
 	ui->departureTargetCombo->clear();
@@ -360,34 +349,35 @@ void ShipEditorDialog::updateDeparture()
 		}
 	}
 	ui->departureTargetCombo->setCurrentIndex(ui->departureTargetCombo->findData(_model->getDepartureTarget()));
+	if (overwrite) {
+		ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
 
-	ui->departureDelaySpinBox->setValue(_model->getDepartureDelay());
+		ui->departureTree->initializeEditor(_viewport->editor, this);
+		if (_model->getNumSelectedShips()) {
 
-	ui->departureTree->initializeEditor(_viewport->editor, this);
-	if (_model->getNumSelectedShips()) {
-
-		if (_model->getIfMultipleShips()) {
-			ui->departureTree->clear_tree("");
-		}
-		if (_model->getUseCue()) {
-			ui->departureTree->load_tree(_model->getDepartureFormula(), "false");
+			if (_model->getIfMultipleShips()) {
+				ui->departureTree->clear_tree("");
+			}
+			if (_model->getUseCue()) {
+				ui->departureTree->load_tree(_model->getDepartureFormula(), "false");
+			} else {
+				ui->departureTree->clear_tree("");
+			}
+			if (!_model->getIfMultipleShips()) {
+				auto i = ui->arrivalTree->select_sexp_node;
+				if (i != -1) {
+					i = ui->departureTree->select_sexp_node;
+					ui->departureTree->hilite_item(i);
+				}
+			}
 		} else {
 			ui->departureTree->clear_tree("");
 		}
-		if (!_model->getIfMultipleShips()) {
-			i = ui->arrivalTree->select_sexp_node;
-			if (i != -1) {
-				i = ui->departureTree->select_sexp_node;
-				ui->departureTree->hilite_item(i);
-			}
-		}
-	} else {
-		ui->departureTree->clear_tree("");
+
+		ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarp());
+
+		ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 	}
-
-	ui->noDepartureWarpCheckBox->setChecked(_model->getNoDepartureWarp());
-
-	ui->updateDepartureCueCheckBox->setChecked(_model->getDepartureCue());
 }
 // Enables disbales controls based on what is selected
 void ShipEditorDialog::enableDisable()
@@ -786,31 +776,38 @@ void ShipEditorDialog::on_arrivalTree_miniHelpChanged(const QString& help)
 {
 	ui->HelpTitle->setText(help);
 }
-void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index) {
+void ShipEditorDialog::on_departureLocationCombo_currentIndexChanged(int index)
+{
 	auto depLocationIdx = ui->departureLocationCombo->itemData(index).toInt();
 	_model->setDepartureLocationIndex(depLocationIdx);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index) {
+void fred::dialogs::ShipEditorDialog::on_departureTargetCombo_currentIndexChanged(int index)
+{
 	auto depLocationIdx = ui->departureTargetCombo->itemData(index).toInt();
 	_model->setDepartureTarget(depLocationIdx);
 }
-void fred::dialogs::ShipEditorDialog::on_departureDelaySpinBox_valueChanged(int value) {
+void fred::dialogs::ShipEditorDialog::on_departureDelaySpinBox_valueChanged(int value)
+{
 	_model->setDepartureDelay(value);
 }
-void fred::dialogs::ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value) {
+void fred::dialogs::ShipEditorDialog::on_updateDepartureCueCheckBox_toggled(bool value)
+{
 	_model->setDepartureCue(value);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node) {
+void fred::dialogs::ShipEditorDialog::on_departureTree_rootNodeFormulaChanged(int old, int node)
+{
 	_model->setDepartureFormula(old, node);
 }
 void fred::dialogs::ShipEditorDialog::on_departureTree_helpChanged(const QString& help)
 {
 	ui->helpText->setPlainText(help);
 }
-void fred::dialogs::ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help) {
+void fred::dialogs::ShipEditorDialog::on_departureTree_miniHelpChanged(const QString& help)
+{
 	ui->HelpTitle->setText(help);
 }
-void fred::dialogs::ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value) {
+void fred::dialogs::ShipEditorDialog::on_noDepartureWarpCheckBox_toggled(bool value)
+{
 	_model->setNoDepartureWarp(value);
 }
 } // namespace fso::fred::dialogs

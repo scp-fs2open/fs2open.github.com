@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>468</width>
-    <height>688</height>
+    <height>754</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -241,7 +241,7 @@
             </widget>
            </item>
            <item row="3" column="1">
-            <widget class="QComboBox" name="personaCombo">
+            <widget class="fso::fred::PersonaColorComboBox" name="personaCombo">
              <property name="toolTip">
               <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Sets the head ani &amp;amp; voice for automated messages&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
              </property>
@@ -887,6 +887,11 @@
    <class>fso::fred::ShipFlagCheckbox</class>
    <extends>QCheckBox</extends>
    <header>ui/widgets/ShipFlagCheckbox.h</header>
+  </customwidget>
+  <customwidget>
+   <class>fso::fred::PersonaColorComboBox</class>
+   <extends>QComboBox</extends>
+   <header>ui/widgets/PersonaColorComboBox.h</header>
   </customwidget>
  </customwidgets>
  <resources>

@@ -125,11 +125,11 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void update();
 
-	void updateUI();
-	void updateColumnOne();
-	void updateColumnTwo();
-	void updateArrival();
-	void updateDeparture();
+	void updateUI(bool overwrite = false);
+	void updateColumnOne(bool overwrite = false);
+	void updateColumnTwo(bool ovewrite = false);
+	void updateArrival(bool overwrite = false);
+	void updateDeparture(bool overwrite = false);
 	void enableDisable();
 
 	// column one
