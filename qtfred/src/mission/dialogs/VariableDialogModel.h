@@ -74,7 +74,7 @@ public:
 	// returns whether it succeeded
 	bool removeVariable(int index, bool toDelete);
 	bool safeToAlterVariable(int index);
-	bool safeToAlterVariable(const variableInfo& variableItem);
+	static bool safeToAlterVariable(const variableInfo& variableItem);
 
 	// Container Section
 
@@ -148,7 +148,7 @@ private:
 
 	int _deleteWarningCount;
 
-	sexp_container createContainer(const containerInfo& infoIn);
+	static sexp_container createContainer(const containerInfo& infoIn);
 
 	void sortMap(int index);
 	bool atMaxVariables();

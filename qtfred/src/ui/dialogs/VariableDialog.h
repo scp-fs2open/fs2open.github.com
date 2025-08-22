@@ -5,9 +5,7 @@
 #include <QtWidgets/QDialog>
 #include <ui/FredView.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class VariableEditorDialog;
@@ -101,6 +99,4 @@ class VariableDialog : public QDialog {
 
 
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace 

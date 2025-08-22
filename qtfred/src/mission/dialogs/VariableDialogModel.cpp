@@ -325,7 +325,7 @@ void VariableDialogModel::initializeData()
     _containerItems.clear();
 
     for (int i = 0; i < MAX_SEXP_VARIABLES; ++i){ 
-        if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) {
+        if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) { // NOLINT(modernize-loop-convert)
             _variableItems.emplace_back();
             auto& item = _variableItems.back();
             item.name = Sexp_variables[i].variable_name;
@@ -2184,7 +2184,7 @@ SCP_vector<std::array<SCP_string, 3>> VariableDialogModel::getContainerNames()
         }
 
         if (item.list){
-            type += listPrefix + type + listPostscript;
+            type.append(listPrefix + type + listPostscript);
             
         } else {
 
