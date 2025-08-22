@@ -324,8 +324,8 @@ void VariableDialogModel::initializeData()
     _variableItems.clear();
     _containerItems.clear();
 
-    for (int i = 0; i < MAX_SEXP_VARIABLES; ++i){ 
-        if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) { // NOLINT(modernize-loop-convert)
+    for (int i = 0; i < MAX_SEXP_VARIABLES; ++i){ // NOLINT(modernize-loop-convert)
+        if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) { 
             _variableItems.emplace_back();
             auto& item = _variableItems.back();
             item.name = Sexp_variables[i].variable_name;
