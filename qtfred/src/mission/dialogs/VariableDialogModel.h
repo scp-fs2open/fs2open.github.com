@@ -180,9 +180,9 @@ private:
 	}
 
 	containerInfo* lookupContainerByName(const SCP_string& name){
-		for (int x = 0; x < static_cast<int>(_containerItems.size()); ++x) {
-			if (_containerItems[x].name == name) {
-				return &_containerItems[x];
+		for (auto& container : _containerItems) {
+			if (container.name == name) {
+				return &container;
 			}
 		}
 
@@ -201,9 +201,9 @@ private:
 
 	SCP_string* lookupContainerKeyByName(int containerIndex, const SCP_string& keyIn){
 		if(containerIndex > -1 &&  containerIndex < static_cast<int>(_containerItems.size()) ){
-			for (auto key = _containerItems[containerIndex].keys.begin(); key != _containerItems[containerIndex].keys.end(); ++key) {
-				if (*key == keyIn){
-					return &(*key);
+			for (auto& key : _containerItems[containerIndex].keys) {
+				if (key == keyIn){
+					return &key;
 				}
 			}
 		}

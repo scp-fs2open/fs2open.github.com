@@ -254,7 +254,7 @@ bool VariableDialogModel::apply()
 
         // set of instructions for updating variables
         if (!variable.originalName.empty()) {
-            for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
+            for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) { // NOLINT(modernize-loop-convert)
                 if (!stricmp(Sexp_variables[i].variable_name, variable.originalName.c_str())){
                     if (variable.deleted) {
                         sexp_variable_delete(i);
@@ -656,7 +656,7 @@ SCP_string VariableDialogModel::addNewVariable(SCP_string nameIn)
     }
     
     _variableItems.emplace_back();
-    _variableItems.back().name.substr(0, TOKEN_LENGTH - 1) = nameIn;
+    _variableItems.back().name.substr(0, TOKEN_LENGTH - 1) = std::move(nameIn);
     return _variableItems.back().name;
 }
 
@@ -1440,7 +1440,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::addMapItem(int index)
         ret.second = "0";
 	}
 
-	container->stringValues.push_back("");
+	container->stringValues.emplace_back();
 	container->numberValues.push_back(0);
 
     sortMap(index);
@@ -1705,7 +1705,7 @@ std::pair<SCP_string, SCP_string> VariableDialogModel::copyMapItem(int index, in
 
         container->keys.push_back(newKey);
         container->numberValues.push_back(copyValue);
-        container->stringValues.push_back("");
+        container->stringValues.emplace_back();
 
         SCP_string temp;
         sprintf(temp, "%i", copyValue);
