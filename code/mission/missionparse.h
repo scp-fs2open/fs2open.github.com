@@ -352,11 +352,33 @@ extern SCP_vector<texture_replace> Fred_texture_replacements;
 // which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
 extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
 
-typedef struct alt_class {
+struct alt_class {
 	int ship_class;				
 	int variable_index;			// if set allows the class to be set by a variable
 	bool default_to_this_class;
-}alt_class;
+	alt_class()
+	{
+		ship_class = -1;
+		variable_index = -1;
+		default_to_this_class = false;
+	}
+	alt_class(const alt_class& a) {
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+	}
+	bool operator==(const alt_class& a) const
+	{
+		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
+	}
+	alt_class& operator=(const alt_class& a)
+	{
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+		return *this;
+	}
+};
 
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
