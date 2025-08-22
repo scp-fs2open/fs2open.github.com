@@ -676,7 +676,8 @@ void VariableDialog::onDeleteVariableButtonPressed()
 	}	
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->deleteVariableButton->text().toUtf8().constData() == "Restore") {
+	SCP_string btn_text = ui->deleteVariableButton->text().toUtf8().constData();
+	if (btn_text == "Restore") {
 		_model->removeVariable(currentRow, false);
 		applyModel();
 	} else {
@@ -853,7 +854,8 @@ void VariableDialog::onDeleteContainerButtonPressed()
 	}
 
 	// Because of the text update we'll need, this needs an applyModel, whether it fails or not.
-	if (ui->deleteContainerButton->text().toUtf8().constData() == "Restore"){
+	SCP_string btn_text = ui->deleteContainerButton->text().toUtf8().constData();
+	if (btn_text == "Restore"){
 		_model->removeContainer(row, false);
 	} else {
 		_model->removeContainer(row, true);
