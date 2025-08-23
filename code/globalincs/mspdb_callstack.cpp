@@ -105,7 +105,7 @@ BOOL SCP_mspdbcs_ResolveSymbol( HANDLE hProcess, UINT_PTR dwAddress, SCP_mspdbcs
 
 			if ( siSymbol.dwOffset != 0 )
 			{
-				sprintf_s( szWithOffset, SCP_MSPDBCS_MAX_SYMBOL_LENGTH, "%s + %lld bytes", pszSymbol, siSymbol.dwOffset );
+				snprintf( szWithOffset, SCP_MSPDBCS_MAX_SYMBOL_LENGTH, "%s + %lld bytes", pszSymbol, siSymbol.dwOffset );
 				szWithOffset[ SCP_MSPDBCS_MAX_SYMBOL_LENGTH - 1 ] = '\0'; /* Because sprintf doesn't guarantee NULL terminating */
 				pszSymbol = szWithOffset;
 			}
