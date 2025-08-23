@@ -37,7 +37,7 @@ private slots:
 	void on_teamHasShieldRadio_toggled(bool checked);
 	void on_teamNoShieldRadio_toggled(bool checked);
 
-private:
+private:  // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 
