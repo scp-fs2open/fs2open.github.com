@@ -226,7 +226,7 @@ void ReinforcementsDialog::on_delaySpinBox_valueChanged(int val)
 	}
 }
 
-void ReinforcementsDialog::on_chosenShipsList_itemClicked(QListWidgetItem* item)
+void ReinforcementsDialog::on_chosenShipsList_itemClicked(QListWidgetItem* /*item*/)
 {
 	SCP_vector<SCP_string> listOut;
 	for (auto& currentItem : ui->chosenShipsList->selectedItems()) {

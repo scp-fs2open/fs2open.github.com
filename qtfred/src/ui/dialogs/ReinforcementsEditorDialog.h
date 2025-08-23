@@ -38,7 +38,7 @@ private slots:
 	void on_moveSelectionDown_clicked();
 	void on_useSpinBox_valueChanged(int val);
 	void on_delaySpinBox_valueChanged(int val);
-	void on_chosenShipsList_itemClicked(QListWidgetItem* item);
+	void on_chosenShipsList_itemClicked(QListWidgetItem* /*item*/);
 
 	void on_chosenMultiselectCheckbox_toggled(bool checked);
 	void on_poolMultiselectCheckbox_toggled(bool checked);
