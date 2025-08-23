@@ -40,7 +40,7 @@ QSurfaceFormat getSurfaceFormat(const os::ViewPortProperties& viewProps, const o
 		format.setProfile(QSurfaceFormat::CompatibilityProfile);
 		break;
 	case os::OpenGLProfile::ES:
-		format.setProfile(QSurfaceFormat::OpenGLES);
+		format.setProfile(QSurfaceFormat::NoProfile);
 		break;
 	}
 
