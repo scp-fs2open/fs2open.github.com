@@ -303,9 +303,16 @@ void opengl_shader_shutdown()
 
 static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool has_geo_shader) {
 	SCP_stringstream sflags;
-
+	#ifndef __ANDROID__
 	sflags << "#version " << GLSL_version << " core\n";
-
+	#else
+	sflags << "#version " << GLSL_version << " es\n";
+	sflags << "precision highp float;" << "\n";
+	sflags << "precision highp int;" << "\n";
+	sflags << "precision highp sampler2DArray;" << "\n";
+	sflags << "precision highp sampler2D;" << "\n";
+	sflags << "precision highp samplerCube;" << "\n";
+	#endif
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}

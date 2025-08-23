@@ -42,6 +42,9 @@ void setOGLProperties(const os::ViewPortProperties& props)
 		case os::OpenGLProfile::Compatibility:
 			profile = SDL_GL_CONTEXT_PROFILE_COMPATIBILITY;
 			break;
+		case os::OpenGLProfile::ES:
+			profile = SDL_GL_CONTEXT_PROFILE_ES;
+			break;
 		default:
 			UNREACHABLE("Unhandled profile value!");
 			return;
