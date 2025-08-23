@@ -136,6 +136,7 @@ void AsteroidEditorDialogModel::update_internal_field()
 		_a_field.inner_min_bound.xyz.z = _inner_min_z.toFloat();
 		_a_field.inner_max_bound.xyz.x = _inner_max_x.toFloat();
 		_a_field.inner_max_bound.xyz.y = _inner_max_y.toFloat();
+		_a_field.inner_max_bound.xyz.z = _inner_max_z.toFloat();
 	}
 
 	// clear the lists
