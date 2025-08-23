@@ -14,13 +14,13 @@ class GlobalShipFlagsDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	void setNoShieldsAll();
+	static void setNoShieldsAll();
 
-	void setNoSubspaceDriveOnFightersBombers();
+	static void setNoSubspaceDriveOnFightersBombers();
 
-	void setPrimitiveSensorsOnFightersBombers();
+	static void setPrimitiveSensorsOnFightersBombers();
 
-	void setAffectedByGravityOnFightersBombers();
+	static void setAffectedByGravityOnFightersBombers();
 };
 
 } // namespace fso::fred::dialogs
