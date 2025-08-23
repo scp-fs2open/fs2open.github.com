@@ -1,15 +1,9 @@
 #pragma once
-
 #include <QDialog>
-
 #include <mission/dialogs/WaypointEditorDialogModel.h>
 #include <ui/FredView.h>
 
-#include <memory>
-
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class WaypointEditorDialog;
@@ -21,30 +15,19 @@ public:
 	WaypointEditorDialog(FredView* parent, EditorViewport* viewport);
 	~WaypointEditorDialog() override;
 
-	void reject() override;
+private slots:
+	void on_pathSelection_currentIndexChanged(int index);
+	void on_nameEdit_editingFinished();
 
- protected:
-	bool event(QEvent* event) override;
-
- private:
-
-	void pathSelectionChanged(int index);
-
-	void updateComboBox();
-
-	void updateUI();
-
-	void nameTextChanged(const QString& newText);
-
-	EditorViewport* _viewport = nullptr;
-	Editor* _editor = nullptr;
-	
+ private: // NOLINT(readability-redundant-access-specifiers)
+	EditorViewport* _viewport;
 	std::unique_ptr<Ui::WaypointEditorDialog> ui;
-
 	std::unique_ptr<WaypointEditorDialogModel> _model;
+
+	void initializeUi();
+	void updateWaypointListComboBox();
+    void updateUi();
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
 

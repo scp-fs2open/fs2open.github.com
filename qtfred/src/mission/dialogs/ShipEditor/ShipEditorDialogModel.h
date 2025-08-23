@@ -186,7 +186,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 * @brief Returns true if the wing is a player wing
 	 * @param wing Takes an integer id of the wing
 	 */
-	static bool wing_is_player_wing(const int);
+	bool wing_is_player_wing(const int) const;
 	const std::set<size_t> &getShipOrders() const;
 
 	bool getTexEditEnable() const;

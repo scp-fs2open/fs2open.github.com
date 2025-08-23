@@ -11,6 +11,9 @@
 #include "ShipTBLViewer.h"
 #include "ShipTextureReplacementDialog.h"
 #include "ShipWeaponsDialog.h"
+#include "ShipPathsDialog.h"
+#include "ShipCustomWarpDialog.h"
+#include "ShipAltShipClass.h"
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
 #include <ui/FredView.h>

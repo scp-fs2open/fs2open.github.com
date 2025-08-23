@@ -16,6 +16,8 @@
 #include "globalincs/pstypes.h"
 #include "object/object_flags.h"
 #include "io/timer.h"
+#include "particle/ParticleSource.h"
+#include "math/vecmat.h"
 
 class object;
 class polymodel;
@@ -79,7 +81,9 @@ public:
 	float		initial_asteroid_strength;						// starting strength of asteroid
 	SCP_vector< asteroid_split_info > split_info;
 	SCP_vector<int> explosion_bitmap_anims;
-	float		fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
+	float fireball_radius_multiplier;						// the model radius is multiplied by this to determine the fireball size
+	particle::ParticleEffectHandle end_particles;
+	std::optional<float> breakup_delay;
 	SCP_string	display_name;									// only used for hud targeting display and for debris
 	float		spawn_weight;									// debris only, relative proportion to spawn compared to other types in its asteroid field
 	float		gravity_const;									// multiplier for mission gravity
@@ -90,7 +94,7 @@ public:
 		  rotational_vel_multiplier(1), damage_type_idx(0),
 		  damage_type_idx_sav( -1 ), inner_rad( 0 ), outer_rad( 0 ),
 		  damage( 0 ), blast( 0 ), initial_asteroid_strength( 0 ),
-		  fireball_radius_multiplier( -1 ), spawn_weight( 1 ), gravity_const( 0 )
+		  fireball_radius_multiplier( -1 ), end_particles( particle::ParticleEffectHandle::invalid() ), breakup_delay( std::nullopt ), spawn_weight( 1 ), gravity_const( 0 )
 	{
 		name[ 0 ] = 0;
 		display_name = "";
@@ -130,7 +134,7 @@ typedef enum {
 	FT_PASSIVE
 } field_type_t;
 
-typedef	struct asteroid_field {
+struct asteroid_field {
 	vec3d	min_bound;					// Minimum range of field.
 	vec3d	max_bound;					// Maximum range of field.
 	float	bound_rad;
@@ -147,7 +151,24 @@ typedef	struct asteroid_field {
 	bool            enhanced_visibility_checks;     // if true then range checks are overridden for spawning and wrapping asteroids in the field
 
 	SCP_vector<SCP_string> target_names;	// default retail behavior is to just throw at the first big ship in the field
-} asteroid_field;
+
+	asteroid_field()
+	{
+		num_initial_asteroids = 0; // disable the field by default
+		speed = 0.0f;
+		vm_vec_make(&min_bound, -1000.0f, -1000.0f, -1000.0f);
+		vm_vec_make(&max_bound, 1000.0f, 1000.0f, 1000.0f);
+		vm_vec_make(&inner_min_bound, -500.0f, -500.0f, -500.0f);
+		vm_vec_make(&inner_max_bound, 500.0f, 500.0f, 500.0f);
+		has_inner_bound = false;
+		field_type = FT_ACTIVE;
+		debris_genre = DG_ASTEROID;
+		enhanced_visibility_checks = false;
+		bound_rad = 0.0f;
+		vel = ZERO_VECTOR;
+		// the vectors default-construct to empty
+	}
+};
 
 extern SCP_vector< asteroid_info > Asteroid_info;
 extern asteroid Asteroids[MAX_ASTEROIDS];

@@ -12,14 +12,17 @@
 #include <qevent.h>
 #include <FredApplication.h>
 #include <ui/dialogs/ShipEditor/ShipEditorDialog.h>
+#include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
+#include <ui/dialogs/JumpNodeEditorDialog.h>
 #include <ui/dialogs/CampaignEditorDialog.h>
 #include <ui/dialogs/MissionGoalsDialog.h>
 #include <ui/dialogs/ObjectOrientEditorDialog.h>
 #include <ui/dialogs/MissionSpecDialog.h>
+#include <ui/dialogs/MissionCutscenesDialog.h>
 #include <ui/dialogs/FormWingDialog.h>
 #include <ui/dialogs/AboutDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
@@ -31,6 +34,7 @@
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
 #include <ui/dialogs/LoadoutDialog.h>
+#include <ui/dialogs/VariableDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -709,6 +713,12 @@ void FredView::on_actionMission_Events_triggered(bool) {
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
+void FredView::on_actionMission_Cutscenes_triggered(bool)
+{
+	auto cutsceneEditor = new dialogs::MissionCutscenesDialog(this, _viewport);
+	cutsceneEditor->setAttribute(Qt::WA_DeleteOnClose);
+	cutsceneEditor->show();
+}
 void FredView::on_actionSelectionLock_triggered(bool enabled) {
 	_viewport->Selection_lock = enabled;
 }
@@ -741,6 +751,12 @@ void FredView::on_actionWaypoint_Paths_triggered(bool) {
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
+void FredView::on_actionJump_Nodes_triggered(bool)
+{
+	auto editorDialog = new dialogs::JumpNodeEditorDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
 void FredView::on_actionShips_triggered(bool)
 {
 	if (!_shipEditorDialog) {
@@ -756,6 +772,19 @@ void FredView::on_actionShips_triggered(bool)
 		_shipEditorDialog->activateWindow();
 	}
 
+}
+void FredView::on_actionWings_triggered(bool)
+{
+	if (!_wingEditorDialog) {
+		_wingEditorDialog = new dialogs::WingEditorDialog(this, _viewport);
+		_wingEditorDialog->setAttribute(Qt::WA_DeleteOnClose);
+		// When the user closes it, reset our pointer so we can open a new one later
+		connect(_wingEditorDialog, &QObject::destroyed, this, [this]() { _wingEditorDialog = nullptr; });
+		_wingEditorDialog->show();
+	} else {
+		_wingEditorDialog->raise();
+		_wingEditorDialog->activateWindow();
+	}
 }
 void FredView::on_actionCampaign_triggered(bool) {
 	//TODO: Save if Changes
@@ -781,6 +810,11 @@ void FredView::on_actionLoadout_triggered(bool) {
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
+void FredView::on_actionVariables_triggered(bool) {
+	auto editorDialog = new dialogs::VariableDialog(this, _viewport);
+	editorDialog->show();
+}
+
 DialogButton FredView::showButtonDialog(DialogType type,
 										const SCP_string& title,
 										const SCP_string& message,
@@ -860,7 +894,12 @@ void FredView::handleObjectEditor(int objNum) {
 			fred->selectObject(objNum);
 
 			// Use the existing slot for this to avoid duplicating code
-			on_actionWaypoint_Paths_triggered(false);
+			if (Objects[objNum].type == OBJ_JUMP_NODE) {
+				on_actionJump_Nodes_triggered(false);
+			} else if (Objects[objNum].type == OBJ_WAYPOINT) {
+				// If this is a waypoint, we need to show the waypoint editor
+				on_actionWaypoint_Paths_triggered(false);
+			}
 		} else if (Objects[objNum].type == OBJ_POINT) {
 			return;
 		} else {

@@ -1225,10 +1225,18 @@ public:
 
 	particle::ParticleEffectHandle		impact_spew;
 	particle::ParticleEffectHandle		damage_spew;
+	particle::ParticleEffectHandle		death_roll_exp_particles;
+	particle::ParticleEffectHandle		pre_death_exp_particles;
+	particle::ParticleEffectHandle		propagating_exp_particles;
 	particle::ParticleEffectHandle		split_particles;
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
 	particle::ParticleEffectHandle 		debris_flame_particles;
+	particle::ParticleEffectHandle 		shrapnel_flame_particles;
+	particle::ParticleEffectHandle 		debris_end_particles;
+	particle::ParticleEffectHandle 		shrapnel_end_particles;
+	particle::ParticleEffectHandle 		default_subsys_debris_flame_particles;
+	particle::ParticleEffectHandle 		default_subsys_shrapnel_flame_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1257,6 +1265,7 @@ public:
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
     model_subsystem *subsystems;				// see model.h for structure definition
+	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
 	float		power_output;					// power output of ships reactor (EU/s)

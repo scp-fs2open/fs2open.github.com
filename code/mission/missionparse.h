@@ -45,6 +45,9 @@ enum class DepartureLocation;
 #define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
 #define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
 
+#define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
+#define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
+
 int get_special_anchor(const char *name);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
@@ -116,6 +119,22 @@ enum : int {
 
 	// Must always be at the end of the list
 	Num_movie_types
+};
+
+struct cutscene_type_data {
+	int value;         // enum
+	SCP_string label; // shown in combo boxes
+	SCP_string desc;   // short explanation for the description box
+};
+
+static const cutscene_type_data CutsceneMenuData[] = {
+	{MOVIE_PRE_FICTION,   "Fiction Viewer",   "Plays just before the fiction viewer game state"},
+	{MOVIE_PRE_CMD_BRIEF, "Command Briefing", "Plays just before the command briefing game state"},
+	{MOVIE_PRE_BRIEF,     "Briefing",         "Plays just before the briefing game state"},
+	{MOVIE_PRE_GAME,      "Pre-game",         "Plays just before the mission starts after Accept has been pressed"},
+	{MOVIE_PRE_DEBRIEF,   "Debriefing",       "Plays just before the debriefing game state"},
+	{MOVIE_POST_DEBRIEF,  "Post-debriefing",  "Plays when the debriefing has been accepted but before exiting the mission"},
+	{MOVIE_END_CAMPAIGN,  "End Campaign",     "Plays when the campaign has been completed"}
 };
 
 // defines a mission cutscene.
@@ -281,6 +300,9 @@ extern const size_t Num_Parse_ship_object_flags;
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
+extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
+extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
+extern const size_t Num_parse_wing_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
@@ -342,11 +364,33 @@ extern SCP_vector<texture_replace> Fred_texture_replacements;
 // which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
 extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
 
-typedef struct alt_class {
+struct alt_class {
 	int ship_class;				
 	int variable_index;			// if set allows the class to be set by a variable
 	bool default_to_this_class;
-}alt_class;
+	alt_class()
+	{
+		ship_class = -1;
+		variable_index = -1;
+		default_to_this_class = false;
+	}
+	alt_class(const alt_class& a) {
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+	}
+	bool operator==(const alt_class& a) const
+	{
+		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
+	}
+	alt_class& operator=(const alt_class& a)
+	{
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+		return *this;
+	}
+};
 
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to

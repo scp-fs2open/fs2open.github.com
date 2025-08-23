@@ -90,7 +90,7 @@ void model_get_rotating_submodel_axis(vec3d *model_axis, vec3d *world_axis, cons
  *
  * DKA: 5/26/99 make velocity of debris scale according to size of debris subobject (at least for large subobjects)
  */
-static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag)
+static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, float exp_mag, bool no_fireballs = false)
 {
 	// initializations
 	ship *shipp = &Ships[ship_objp->instance];
@@ -146,8 +146,11 @@ static void shipfx_subsystem_maybe_create_live_debris(object *ship_objp, const s
 		if(fireball_type < 0) {
 			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
 		}
-		// create fireball here.
-		fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
+
+		if (!no_fireballs) {
+			// create fireball here.
+			fireball_create(&end_world_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), pm->submodel[live_debris_submodel].rad);
+		}
 
 		// create debris
 		live_debris_obj = debris_create(ship_objp, pm->id, live_debris_submodel, &end_world_pos, exp_center, 1, exp_mag, subsys);
@@ -269,7 +272,7 @@ static void shipfx_maybe_create_live_debris_at_ship_death( object *ship_objp )
 	}
 }
 
-void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion)
+void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsys *subsys, const vec3d *exp_center, bool no_explosion, bool no_fireballs)
 {
 	vec3d subobj_pos;
 
@@ -282,18 +285,20 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsy
 
 	// create debris shards
     if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
-		shipfx_blow_up_model(ship_objp, psub->subobj_num, 50, &subobj_pos );
+		shipfx_blow_up_model(ship_objp, psub->subobj_num, 50, &subobj_pos, subsys );
 
 		// create live debris objects, if any
 		// TODO:  some MULTIPLAYER implcations here!!
-		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f);
+		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f, no_fireballs);
 		
-		int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
-		if(fireball_type < 0) {
-			fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+		if (!no_fireballs) {
+			int fireball_type = fireball_ship_explosion_type(&Ship_info[ship_p->ship_info_index]);
+			if(fireball_type < 0) {
+				fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+			}
+			// create first fireball
+			fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), psub->radius );
 		}
-		// create first fireball
-		fireball_create( &subobj_pos, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(ship_objp), psub->radius );
 	}
 }
 
@@ -343,7 +348,7 @@ static void shipfx_blow_up_hull(object *obj, const polymodel *pm, const polymode
 /**
  * Creates "ndebris" pieces of debris on random verts of the the "submodel" in the ship's model.
  */
-void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center)
+void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *exp_center, const ship_subsys *subsys)
 {
 	int i;
 
@@ -374,7 +379,7 @@ void shipfx_blow_up_model(object *obj, int submodel, int ndebris, const vec3d *e
 		vm_vec_avg( &tmp, &pnt1, &pnt2 );
 		model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, submodel, &obj->orient, &obj->pos );
 
-		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, 0, 1.0f );
+		debris_create( obj, use_ship_debris ? Ship_info[Ships[obj->instance].ship_info_index].generic_debris_model_num : -1, -1, &outpnt, exp_center, false, 1.0f, subsys );
 	}
 }
 
@@ -1865,8 +1870,9 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 			vm_vec_scale(&temp, 0.1f*frand());
 			vm_vec_add2(&model_clip_plane_pt, &temp);
 
-			float rad = get_model_cross_section_at_z(half_ship->cur_clip_plane_pt, pm);
-			if (rad < 1) {
+			float cross_section_rad = get_model_cross_section_at_z(half_ship->cur_clip_plane_pt, pm);
+			float rad = cross_section_rad;
+			if (cross_section_rad < 1) {
 				// changed from 0.4 & 0.6 to 0.6 & 0.9 as later 1.5 multiplier was removed
 				rad = half_ship->parent_obj->radius * frand_range(0.6f, 0.9f);
 			} else {
@@ -1874,18 +1880,28 @@ static void maybe_fireball_wipe(clip_ship* half_ship, sound_handle* handle_array
 				// changed from 1.4 & 1.6 to 2.1 & 2.4 as later 1.5 multiplier was removed
 				rad *= frand_range(2.1f, 2.4f);
 			}
-
+			
 			rad = MIN(rad, half_ship->parent_obj->radius);
+			
+			if (sip->propagating_exp_particles.isValid()) {
+				auto source = particle::ParticleManager::get()->createSource(sip->propagating_exp_particles);
+				auto host = std::make_unique<EffectHostVector>(model_clip_plane_pt, half_ship->orient, half_ship->phys_info.vel);
+				// for particle effects, we'll ignore all the special logic applied to rad and just use the raw radius; the modder can handle it using curves
+				host->setRadius(cross_section_rad);
+				source->setHost(std::move(host));
+				source->setNormal(half_ship->orient.vec.uvec);
+				source->finishCreation();
+			} else {
+				//defaults to 1.0 now that multiplier was applied to the static values above
+				rad *= sip->prop_exp_rad_mult;
 
-			//defaults to 1.0 now that multiplier was applied to the static values above
-			rad *= sip->prop_exp_rad_mult;
-
-			int fireball_type = fireball_ship_explosion_type(sip);
-			if(fireball_type < 0) {
-				fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+				int fireball_type = fireball_ship_explosion_type(sip);
+				if(fireball_type < 0) {
+					fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+				}
+				int low_res_fireballs = Bs_exp_fire_low;
+				fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 			}
-			int low_res_fireballs = Bs_exp_fire_low;
-			fireball_create(&model_clip_plane_pt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(half_ship->parent_obj), rad, false, &half_ship->parent_obj->phys_info.vel, 0.0f, -1, nullptr, low_res_fireballs);
 
 			// start the next fireball up (3-4 per frame) + 30%
 			int time_low, time_high;

@@ -1,88 +1,89 @@
-#include <object/waypoint.h>
-#include <jumpnode/jumpnode.h>
 #include <QtWidgets/QTextEdit>
 #include "ui/dialogs/WaypointEditorDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "ui_WaypointEditorDialog.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+#include <mission/util.h>
+
+namespace fso::fred::dialogs {
 
 
 WaypointEditorDialog::WaypointEditorDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
 	_viewport(viewport),
-	_editor(viewport->editor),
 	ui(new Ui::WaypointEditorDialog()),
-	_model(new WaypointEditorDialogModel(this, viewport)) {
+	_model(new WaypointEditorDialogModel(this, viewport))
+{
+	this->setFocus();
 	ui->setupUi(this);
 
-	connect(this, &QDialog::accepted, _model.get(), &WaypointEditorDialogModel::apply);
-	connect(this, &QDialog::rejected, _model.get(), &WaypointEditorDialogModel::reject);
+	initializeUi();
+	updateUi();
 
-	connect(parent, &FredView::viewWindowActivated, _model.get(), &WaypointEditorDialogModel::apply);
-
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &WaypointEditorDialog::updateUI);
-
-	connect(ui->pathSelection,
-			static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-			this,
-			&WaypointEditorDialog::pathSelectionChanged);
-
-	connect(ui->nameEdit, &QLineEdit::textChanged, this, &WaypointEditorDialog::nameTextChanged);
-
-	// Initial set up of the UI
-	updateUI();
+	connect(_model.get(), &WaypointEditorDialogModel::waypointPathMarkingChanged, this, [this] {
+		initializeUi();
+		updateUi();
+	});
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
-WaypointEditorDialog::~WaypointEditorDialog() {
-}
-void WaypointEditorDialog::pathSelectionChanged(int index) {
-	auto itemId = ui->pathSelection->itemData(index).value<int>();
-	_model->idSelected(itemId);
-}
-void WaypointEditorDialog::reject() {
-	// This dialog never rejects
-	accept();
-}
-void WaypointEditorDialog::updateComboBox() {
-	// Remove all previous entries
-	ui->pathSelection->clear();
 
-	for (auto& el : _model->getElements()) {
-		ui->pathSelection->addItem(QString::fromStdString(el.name), QVariant(el.id));
-	}
+WaypointEditorDialog::~WaypointEditorDialog() = default;
 
-	auto itemIndex = ui->pathSelection->findData(QVariant(_model->getCurrentElementId()));
-	ui->pathSelection->setCurrentIndex(itemIndex); // This also works if the index is -1
-
-	ui->pathSelection->setEnabled(ui->pathSelection->count() > 0);
-}
-void WaypointEditorDialog::updateUI() {
+void WaypointEditorDialog::initializeUi()
+{
 	util::SignalBlockers blockers(this);
 
-	updateComboBox();
-
-	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
+	updateWaypointListComboBox();
 	ui->nameEdit->setEnabled(_model->isEnabled());
 }
-void WaypointEditorDialog::nameTextChanged(const QString& newText) {
-	_model->setNameEditText(newText.toStdString());
+
+void WaypointEditorDialog::updateWaypointListComboBox()
+{
+	ui->pathSelection->clear();
+
+	for (auto& wp : _model->getWaypointPathList()) {
+		ui->pathSelection->addItem(QString::fromStdString(wp.first), wp.second);
+	}
+
+	ui->pathSelection->setEnabled(!_model->getWaypointPathList().empty());
 }
-bool WaypointEditorDialog::event(QEvent* event) {
-	switch(event->type()) {
-	case QEvent::WindowDeactivate:
-		_model->apply();
-		event->accept();
-		return true;
-	default:
-		return QDialog::event(event);
+
+void WaypointEditorDialog::updateUi()
+{
+	util::SignalBlockers blockers(this);
+	ui->nameEdit->setText(QString::fromStdString(_model->getCurrentName()));
+	ui->pathSelection->setCurrentIndex(ui->pathSelection->findData(_model->getCurrentlySelectedPath()));
+}
+
+void WaypointEditorDialog::on_pathSelection_currentIndexChanged(int index)
+{
+	auto itemId = ui->pathSelection->itemData(index).value<int>();
+	_model->setCurrentlySelectedPath(itemId);
+}
+
+// This will run any time an edit is finished which includes the entire window closing, losing focus,
+// the user clicking elsewhere in the dialog, or pressing Enter in the edit box.
+// This is ok here because this is literally the only field that can be edited but if this dialog
+// ever expands then it would be wise to change the whole thing to an ok/cancel type dialog.
+void WaypointEditorDialog::on_nameEdit_editingFinished()
+{
+	// Waypoint editor applies immediately when the name is changed
+	// so save the current, try to apply, if fails, restore the current
+	// and update the text in the edit box
+
+	SCP_string current = _model->getCurrentName();
+
+	SCP_string newText = ui->nameEdit->text().toUtf8().constData();
+	_model->setCurrentName(newText);
+
+	if (!_model->apply()) {
+		util::SignalBlockers blockers(this);
+		// If apply failed, restore the old name
+		ui->nameEdit->setText(QString::fromStdString(current));
+		_model->setCurrentName(current); // Restore the model's current name
 	}
 }
 
-}
-}
-}
+} // namespace fso::fred::dialogs
