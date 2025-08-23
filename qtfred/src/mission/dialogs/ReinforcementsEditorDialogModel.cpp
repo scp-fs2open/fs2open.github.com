@@ -2,9 +2,7 @@
 #include "ship/ship.h"
 #include <algorithm>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 ReinforcementsDialogModel::ReinforcementsDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
@@ -38,6 +36,9 @@ void ReinforcementsDialogModel::initializeData()
 			continue;
 		}
 
+		// wings can have a use count.
+		_useCountEnabled.emplace_back(currentWing.name);
+
 		bool found = false;
 
 		for (auto& reinforcement : _reinforcementList) {
@@ -48,7 +49,7 @@ void ReinforcementsDialogModel::initializeData()
 		}
 
 		if (!found) {
-			_shipWingPool.push_back(currentWing.name);
+			_shipWingPool.emplace_back(currentWing.name);
 		}
 	}
 
@@ -75,9 +76,6 @@ void ReinforcementsDialogModel::initializeData()
 
 	_selectedReinforcements.clear();
 	_selectedReinforcementIndices.clear();
-	_numberLineEditUpdateRequired = true;
-	_listUpdateRequired = true;
-	modelChanged();
 }
 
 bool ReinforcementsDialogModel::apply() 
@@ -99,8 +97,6 @@ bool ReinforcementsDialogModel::apply()
 	}
 
 	_shipWingPool.clear();
-	_numberLineEditUpdateRequired = false;
-	_listUpdateRequired = false;
 	_selectedReinforcementIndices.clear();
 
 	return true;
@@ -111,18 +107,6 @@ void ReinforcementsDialogModel::reject()
 	_shipWingPool.clear();
 	_reinforcementList.clear();
 	_selectedReinforcementIndices.clear();
-	_numberLineEditUpdateRequired = false;
-	_listUpdateRequired = false;
-}
-
-bool ReinforcementsDialogModel::numberLineEditUpdateRequired()
-{
-	return _numberLineEditUpdateRequired;
-}
-
-bool ReinforcementsDialogModel::listUpdateRequired()
-{
-	return _listUpdateRequired;
 }
 
 void ReinforcementsDialogModel::addToReinforcements(const SCP_vector<SCP_string>& namesIn)
@@ -144,9 +128,6 @@ void ReinforcementsDialogModel::addToReinforcements(const SCP_vector<SCP_string>
 		_reinforcementList.pop_back();
 	}
 
-	_listUpdateRequired = true;
-	_numberLineEditUpdateRequired = true;
-	modelChanged();
 	set_modified();
 }
 
@@ -167,10 +148,6 @@ void ReinforcementsDialogModel::removeFromReinforcements(const SCP_vector<SCP_st
 
 	_selectedReinforcements.clear();
 	updateSelectedIndices();
-
-	_listUpdateRequired = true;
-	_numberLineEditUpdateRequired = true;
-	modelChanged();
 	set_modified();
 }
 
@@ -183,8 +160,6 @@ SCP_vector<SCP_string> ReinforcementsDialogModel::getShipPoolList()
 // remember to call this and getShipPoolList together
 SCP_vector<SCP_string> ReinforcementsDialogModel::getReinforcementList()
 {
-	_listUpdateRequired = false;
-
 	SCP_vector<SCP_string> list;
 
 	for (auto& currentReinforcement : _reinforcementList)
@@ -215,6 +190,11 @@ int ReinforcementsDialogModel::getUseCount()
 	}
 
 	return current;
+}
+
+bool ReinforcementsDialogModel::getUseCountEnabled(const SCP_string& name) 
+{
+	return std::find(_useCountEnabled.begin(), _useCountEnabled.end(), name) != _useCountEnabled.end();
 }
 
 int ReinforcementsDialogModel::getBeforeArrivalDelay()
@@ -250,17 +230,27 @@ void ReinforcementsDialogModel::selectReinforcement(const SCP_vector<SCP_string>
 
 	Assertion(namesIn.size() == _selectedReinforcementIndices.size(), "%d vs %d", static_cast<int>(namesIn.size()), static_cast<int>(_selectedReinforcementIndices.size()));
 
-	_numberLineEditUpdateRequired = true;
-	modelChanged();
 	set_modified();
 }
 
 void ReinforcementsDialogModel::setUseCount(int count) 
 {
-	for (auto& reinforcement : _selectedReinforcementIndices) {
-		std::get<1>(_reinforcementList[reinforcement]) = count;
+	if (_selectedReinforcementIndices.empty())
+		return;
+
+	for (int idx : _selectedReinforcementIndices) {
+		if (idx < 0 || idx >= static_cast<int>(_reinforcementList.size()))
+			continue;
+
+		auto& tup = _reinforcementList[idx];
+		const SCP_string& name = std::get<0>(tup);
+
+		if (!getUseCountEnabled(name))
+			continue;
+
+		std::get<1>(tup) = count;
 	}
-	modelChanged();
+
 	set_modified();
 }
 
@@ -269,7 +259,6 @@ void ReinforcementsDialogModel::setBeforeArrivalDelay(int delay)
 	for (auto& reinforcement : _selectedReinforcementIndices) {
 		std::get<2>(_reinforcementList[reinforcement]) = delay;
 	}
-	modelChanged();
 	set_modified();
 }
 
@@ -289,8 +278,6 @@ void ReinforcementsDialogModel::moveReinforcementsUp()
 
 	if (updatedRequired) {
 		updateSelectedIndices();
-		_listUpdateRequired = true;
-		modelChanged();
 		set_modified();
 	}
 }
@@ -309,8 +296,6 @@ void ReinforcementsDialogModel::moveReinforcementsDown()
 
 	if (updatedRequired) {
 		updateSelectedIndices();
-		_listUpdateRequired = true;
-		modelChanged();
 		set_modified();
 	}
 }
@@ -334,6 +319,4 @@ void ReinforcementsDialogModel::updateSelectedIndices()
 	std::sort(_selectedReinforcementIndices.begin(), _selectedReinforcementIndices.end());
 }
 
-}
-}
-}
+} // namespace fso::fred::dialogs
