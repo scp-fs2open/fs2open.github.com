@@ -2309,7 +2309,6 @@ static int spawnParticles(lua_State *L, bool persistent) {
 	std::unique_ptr<EffectHost> host;
 	if (objh != nullptr && objh->isValid()) {
 		host = std::make_unique<EffectHostObject>(objh->objp(), pos);
-		vel += objh->objp()->phys_info.vel;
 	}
 	else {
 		host = std::make_unique<EffectHostVector>(pos, vmd_identity_matrix, vmd_zero_vector);
