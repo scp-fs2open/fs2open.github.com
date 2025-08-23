@@ -34,18 +34,25 @@ void ObjectOrientEditorDialogModel::initializeData()
 	ptr = GET_FIRST(&obj_used_list);
 	while (ptr != END_OF_LIST(&obj_used_list)) {
 		if (_editor->getNumMarked() != 1 || OBJ_INDEX(ptr) != _editor->currentObject) {
-			if ((ptr->type == OBJ_START) || (ptr->type == OBJ_SHIP)) {
-				_pointToObjectList.emplace_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
-			} else if (ptr->type == OBJ_WAYPOINT) {
-				int waypoint_num;
-				waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-				Assertion(wp_list != nullptr, "Waypoint list was nullptr!");
-				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			switch (ptr->type) {
+				case OBJ_START:
+				case OBJ_SHIP:
+					_pointToObjectList.emplace_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
+					break;
+				case OBJ_WAYPOINT: {
+					int waypoint_num;
+					waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
+					Assertion(wp_list != nullptr, "Waypoint list was nullptr!");
+					sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
 
-				_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
-			} else if ((ptr->type == OBJ_POINT) || (ptr->type == OBJ_JUMP_NODE)) {
-			} else {
-				Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
+					_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
+					break;
+				}
+				case OBJ_POINT:
+				case OBJ_JUMP_NODE:
+					break;
+				default:
+					Assertion(false, "Unknown object type in Object Orient Dialog!"); // unknown object type
 			}
 		}
 
