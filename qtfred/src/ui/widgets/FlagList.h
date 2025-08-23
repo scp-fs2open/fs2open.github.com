@@ -25,13 +25,13 @@ class FlagListWidget final : public QWidget {
 	explicit FlagListWidget(QWidget* parent = nullptr);
 	~FlagListWidget() override;
 
-	void setFlags(const QVector<std::pair<QString, bool>>& flags);
+	void setFlags(const QVector<std::pair<QString, int>>& flags);
 
 	// Optionally set descriptions
 	void setFlagDescriptions(const QVector<std::pair<QString, QString>>& descriptions);
 
 	// Read back the entire list and their checked states
-	QVector<std::pair<QString, bool>> getFlags() const;
+	QVector<std::pair<QString, int>> getFlags() const;
 
 	// Optional UI controls
 	void setFilterVisible(bool visible);
@@ -45,9 +45,9 @@ class FlagListWidget final : public QWidget {
 
   signals:
 	// Emitted whenever a checkbox is toggled
-	void flagToggled(const QString& name, bool checked);
+	void flagToggled(const QString& name, int checked);
 	// Emitted after any change that alters the entire set
-	void flagsChanged(const QVector<std::pair<QString, bool>>& flags);
+	void flagsChanged(const QVector<std::pair<QString, int>>& flags);
 
   private slots:
 	void onItemChanged(QStandardItem* item);
@@ -62,9 +62,9 @@ class FlagListWidget final : public QWidget {
 
 	void buildUi();
 	void connectSignals();
-	void rebuildModel(const QVector<std::pair<QString, bool>>& flags);
+	void rebuildModel(const QVector<std::pair<QString, int>>& flags);
 	void applyTooltipsToItems();
-	QVector<std::pair<QString, bool>> snapshot() const;
+	QVector<std::pair<QString, int>> snapshot() const;
 
 	QLineEdit* _filter = nullptr;
 	QToolButton* _btnAll = nullptr;

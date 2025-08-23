@@ -97,6 +97,7 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_killScoreEdit_valueChanged(int);
 	void on_assistEdit_valueChanged(int);
 	void on_playerShipCheckBox_toggled(bool);
+	void on_respawnSpinBox_valueChanged(int);
 
 	//arrival
 	void on_arrivalLocationCombo_currentIndexChanged(int);

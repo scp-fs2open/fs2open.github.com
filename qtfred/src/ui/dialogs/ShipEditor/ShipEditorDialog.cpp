@@ -237,6 +237,7 @@ void ShipEditorDialog::updateColumnTwo(bool overwrite)
 		ui->assistEdit->setValue(_model->getAssist());
 
 		ui->playerShipCheckBox->setChecked(_model->getPlayer());
+		ui->respawnSpinBox->setValue(_model->getRespawn());
 	}
 }
 void ShipEditorDialog::updateArrival(bool overwrite)
@@ -492,6 +493,11 @@ void ShipEditorDialog::enableDisable()
 		ui->playerShipCheckBox->setEnabled(false);
 	else
 		ui->playerShipCheckBox->setEnabled(true);
+	if (The_mission.game_type & MISSION_TYPE_MULTI) {
+		ui->respawnSpinBox->setEnabled(_model->getUIEnable());
+	} else {
+		ui->respawnSpinBox->setEnabled(false);
+	}
 
 	// show the "set player" button only if single player
 	if (!(The_mission.game_type & MISSION_TYPE_MULTI))
@@ -737,6 +743,9 @@ void ShipEditorDialog::on_assistEdit_valueChanged(int value)
 void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
 {
 	_model->setPlayer(value);
+}
+void ShipEditorDialog::on_respawnSpinBox_valueChanged(int value) {
+	_model->setRespawn(value);
 }
 void ShipEditorDialog::on_arrivalLocationCombo_currentIndexChanged(int index)
 {

@@ -272,6 +272,12 @@ extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
 extern const char *Reinforcement_type_names[];
 extern char *Object_flags[];
+extern flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[];
+extern const size_t Num_Parse_ship_flags;
+extern flag_def_list_new<AI::AI_Flags> Parse_ship_ai_flags[];
+extern const size_t Num_Parse_ship_ai_flags;
+extern flag_def_list_new<Object::Object_Flags> Parse_ship_object_flags[];
+extern const size_t Num_Parse_ship_object_flags;
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
@@ -389,6 +395,7 @@ public:
 
 	flagset<Mission::Parse_Object_Flags>	flags;								// mission savable flags
 	int	escort_priority = 0;					// priority in escort list
+	int ship_guardian_threshold;
 	int	ai_class = -1;
 	int	hotkey = -1;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score = 0;

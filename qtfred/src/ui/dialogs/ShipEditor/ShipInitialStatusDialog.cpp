@@ -91,6 +91,10 @@ namespace fso {
 			{
 				this->close();
 			}
+			void ShipInitialStatusDialog::on_guardianSpinBox_valueChanged(int value)
+			{
+				_model->setGuardian(value);
+			}
 			void ShipInitialStatusDialog::updateUI()
 			{
 				util::SignalBlockers blockers(this);
@@ -123,6 +127,7 @@ namespace fso {
 				else {
 					ui->shieldHullSpinBox->setSpecialValueText("-");
 				}
+				ui->guardianSpinBox->setValue(_model->getGuardian());
 				updateFlags();
 				updateDocks();
 				updateDockee();
