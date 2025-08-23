@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::GlobalShipFlagsDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::GlobalShipFlagsDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>321</width>
+    <height>128</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Global Ship Flags</string>
+  </property>
+  <layout class="QVBoxLayout" name="verticalLayout">
+   <item>
+    <widget class="QPushButton" name="noShieldsButton">
+     <property name="text">
+      <string>Global No-Shields</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="noSubspaceDriveButton">
+     <property name="text">
+      <string>Global No-Subspace-Drive</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="primitiveSensorsButton">
+     <property name="text">
+      <string>Global Primitive-Sensors</string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QPushButton" name="affectedByGravityButton">
+     <property name="text">
+      <string>Global Affected-By-Gravity</string>
+     </property>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
