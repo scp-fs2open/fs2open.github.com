@@ -333,7 +333,6 @@ void opengl_state::SetPolygonOffset(GLfloat factor, GLfloat units)
 
 		polygon_offset_Factor = factor;
 		polygon_offset_Unit = units;
-		
 	}
 }
 
