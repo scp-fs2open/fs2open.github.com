@@ -1704,37 +1704,57 @@ static void asteroid_do_area_effect(object *asteroid_objp)
  */
 void asteroid_hit( object * pasteroid_obj, object * other_obj, vec3d * hitpos, float damage, vec3d* force )
 {
-	float		explosion_life;
-	asteroid	*asp;
-
-	asp = &Asteroids[pasteroid_obj->instance];
-
+	asteroid	*asp = &Asteroids[pasteroid_obj->instance];
+	asteroid_info *asip = &Asteroid_info[Asteroids[pasteroid_obj->instance].asteroid_type];
+	
 	if (pasteroid_obj->flags[Object::Object_Flags::Should_be_dead]){
 		return;
 	}
-
+	
 	if ( MULTIPLAYER_MASTER ){
 		send_asteroid_hit( pasteroid_obj, other_obj, hitpos, damage, force );
 	}
-
+	
 	if (hitpos && force && The_mission.ai_profile->flags[AI::Profile_Flags::Whackable_asteroids]) {
 		vec3d rel_hit_pos = *hitpos - pasteroid_obj->pos;
 		physics_calculate_and_apply_whack(force, &rel_hit_pos, &pasteroid_obj->phys_info, &pasteroid_obj->orient, &pasteroid_obj->phys_info.I_body_inv);
 		pasteroid_obj->phys_info.desired_vel = pasteroid_obj->phys_info.vel;
 	}
-
+	
 	pasteroid_obj->hull_strength -= damage;
-
+	
 	if (pasteroid_obj->hull_strength < 0.0f) {
 		if ( !asp->final_death_time.isValid() ) {
 			int play_loud_collision = 0;
+			
+			float explosion_life = 1.f;
+			int breakup_timestamp;
+			
+			Assertion(!asip->end_particles.isValid() || asip->breakup_delay.has_value(), "Asteroid %s has end particles but no breakup delay. Parsing should not have allowed this!", asip->name);
 
-			explosion_life = asteroid_create_explosion(pasteroid_obj);
+			if (asip->end_particles.isValid()) {
+				auto source = particle::ParticleManager::get()->createSource(asip->end_particles);
+
+				// Use the position since the asteroid is going to be invalid soon
+				auto host = std::make_unique<EffectHostVector>(pasteroid_obj->pos, pasteroid_obj->orient, pasteroid_obj->phys_info.vel);
+				host->setRadius(pasteroid_obj->radius);
+				source->setHost(std::move(host));
+				source->setNormal(pasteroid_obj->orient.vec.uvec);
+				source->finishCreation();
+			} else {
+				explosion_life = asteroid_create_explosion(pasteroid_obj);
+			}
+
+			if (asip->breakup_delay.has_value()) {
+				breakup_timestamp = fl2i(*asip->breakup_delay * MILLISECONDS_PER_SECOND);
+			} else {
+				breakup_timestamp = fl2i((explosion_life * MILLISECONDS_PER_SECOND) / 5.f);
+			}
 
 			asteroid_explode_sound(pasteroid_obj, asp->asteroid_type, play_loud_collision);
 			asteroid_do_area_effect(pasteroid_obj);
 
-			asp->final_death_time = _timestamp( fl2i(explosion_life*MILLISECONDS_PER_SECOND)/5 );	// Wait till 30% of vclip time before breaking the asteroid up.
+			asp->final_death_time = _timestamp( breakup_timestamp );	// Wait till 20% of vclip time before breaking the asteroid up, or use the specified delay
 			if ( hitpos ) {
 				asp->death_hit_pos = *hitpos;
 			} else {
@@ -2331,13 +2351,25 @@ static void asteroid_parse_section()
 		asteroid_p->damage_type_idx_sav = damage_type_add(buf);
 		asteroid_p->damage_type_idx = asteroid_p->damage_type_idx_sav;
 	}
-	
-	if(optional_string("$Explosion Animations:")){
-		stuff_fireball_index_list(asteroid_p->explosion_bitmap_anims, asteroid_p->name);
+
+	if (optional_string("$Explosion Effect:")) {
+		asteroid_p->end_particles = particle::util::parseEffect(asteroid_p->name);
+	} else {
+		if(optional_string("$Explosion Animations:")){
+			stuff_fireball_index_list(asteroid_p->explosion_bitmap_anims, asteroid_p->name);
+		}
+		
+		if (optional_string("$Explosion Radius Mult:")) {
+				stuff_float(&asteroid_p->fireball_radius_multiplier);
+		}
 	}
 
-	if (optional_string("$Explosion Radius Mult:")) {
-		stuff_float(&asteroid_p->fireball_radius_multiplier);
+	if (optional_string("$Breakup Delay:")) {
+		stuff_float(&asteroid_p->breakup_delay.emplace());
+	}
+
+	if (asteroid_p->end_particles.isValid() && !asteroid_p->breakup_delay.has_value()) {
+		error_display(0, "Asteroid %s has an explosion effect but no breakup delay!", asteroid_p->name);
 	}
 
 	if (optional_string("$Expl inner rad:")){
