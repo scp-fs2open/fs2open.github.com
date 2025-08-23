@@ -21,6 +21,7 @@ class RenderWidget;
 
 namespace dialogs {
 class ShipEditorDialog;
+class WingEditorDialog;
 }
 
 namespace Ui {
@@ -99,6 +100,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionJump_Nodes_triggered(bool);
 	void on_actionObjects_triggered(bool);
 	void on_actionShips_triggered(bool);
+	void on_actionWings_triggered(bool);
 	void on_actionCampaign_triggered(bool);
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionReinforcements_triggered(bool);
@@ -216,6 +218,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	EditorViewport* _viewport = nullptr;
 
 	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
+	fso::fred::dialogs::WingEditorDialog* _wingEditorDialog = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;

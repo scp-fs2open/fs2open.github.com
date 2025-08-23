@@ -45,6 +45,9 @@ enum class DepartureLocation;
 #define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
 #define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
 
+#define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
+#define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
+
 int get_special_anchor(const char *name);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
@@ -291,6 +294,9 @@ extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
+extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
+extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
+extern const size_t Num_parse_wing_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 

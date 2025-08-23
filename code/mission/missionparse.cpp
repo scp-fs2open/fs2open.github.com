@@ -401,6 +401,35 @@ parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_des
 
 const size_t Num_parse_object_flags = sizeof(Parse_object_flags) / sizeof(flag_def_list_new<Mission::Parse_Object_Flags>);
 
+flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[] = {
+	{"ignore-count", Ship::Wing_Flags::Ignore_count, true, false},
+	{"reinforcement", Ship::Wing_Flags::Reinforcement, true, false},
+	{"no-arrival-music", Ship::Wing_Flags::No_arrival_music, true, false},
+	{"no-arrival-message", Ship::Wing_Flags::No_arrival_message, true, false},
+	{"no-first-wave-message", Ship::Wing_Flags::No_first_wave_message, true, false},
+	{"no-arrival-warp", Ship::Wing_Flags::No_arrival_warp, true, false},
+	{"no-departure-warp", Ship::Wing_Flags::No_departure_warp, true, false},
+	{"no-dynamic", Ship::Wing_Flags::No_dynamic, true, false},
+	{"nav-carry-status", Ship::Wing_Flags::Nav_carry, true, false},
+	{"same-arrival-warp-when-docked", Ship::Wing_Flags::Same_arrival_warp_when_docked, true, false},
+	{"same-departure-warp-when-docked", Ship::Wing_Flags::Same_departure_warp_when_docked, true, false}
+};
+
+parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[] = {
+	{ Ship::Wing_Flags::Ignore_count,                    "Ignore this wing when counting ship types for goals." },
+	{ Ship::Wing_Flags::Reinforcement,                   "This wing is a reinforcement wing." },
+	{ Ship::Wing_Flags::No_arrival_music,                "Don't play arrival music when wing arrives." },
+	{ Ship::Wing_Flags::No_arrival_message,              "Don't play arrival message when wing arrives." },
+	{ Ship::Wing_Flags::No_first_wave_message,           "Don't play the 'first wave' message when this is the first wing to arrive." },
+	{ Ship::Wing_Flags::No_arrival_warp,                 "No arrival warp-in effect." },
+	{ Ship::Wing_Flags::No_departure_warp,               "No departure warp-in effect." },
+	{ Ship::Wing_Flags::No_dynamic,                      "Will stop allowing the AI to pursue dynamic goals (eg: chasing ships it was not ordered to)." },
+	{ Ship::Wing_Flags::Nav_carry,                       "Ships in this wing autopilot with the player." },
+	{ Ship::Wing_Flags::Same_arrival_warp_when_docked,   "Docked ships use the same warp effect size upon arrival as if they were not docked instead of the enlarged aggregate size." },
+	{ Ship::Wing_Flags::Same_departure_warp_when_docked, "Docked ship use the same warp effect size upon departure as if they were not docked instead of the enlarged aggregate size." }};
+
+const size_t Num_parse_wing_flags = sizeof(Parse_wing_flags) / sizeof(flag_def_list_new<Ship::Wing_Flags>);
+
 // These are only the flags that are saved to the mission file.  See the MEF_ #defines.
 flag_def_list Mission_event_flags[] = {
 	{ "interval & delay use msecs", MEF_USE_MSECS, 0 },
@@ -4580,7 +4609,7 @@ void parse_wing(mission *pm)
 {
 	int wingnum, i, wing_goals;
 	char name[NAME_LENGTH], ship_names[MAX_SHIPS_PER_WING][NAME_LENGTH];
-    char wing_flag_strings[PARSEABLE_WING_FLAGS][NAME_LENGTH];
+	char wing_flag_strings[Num_parse_wing_flags][NAME_LENGTH];
 	wing *wingp;
 
 	Assert(pm != NULL);
@@ -4761,33 +4790,22 @@ void parse_wing(mission *pm)
 	}
 
 	if (optional_string("+Flags:")) {
-		auto count = (int) stuff_string_list(wing_flag_strings, PARSEABLE_WING_FLAGS);
+		auto count = stuff_string_list(wing_flag_strings, Num_parse_wing_flags);
 
-		for (i = 0; i < count; i++) {
-			if (!stricmp(wing_flag_strings[i], NOX("ignore-count")))
-				wingp->flags.set(Ship::Wing_Flags::Ignore_count);
-			else if (!stricmp(wing_flag_strings[i], NOX("reinforcement")))
-				wingp->flags.set(Ship::Wing_Flags::Reinforcement);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-music")))
-				wingp->flags.set(Ship::Wing_Flags::No_arrival_music);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-message")))
-				wingp->flags.set(Ship::Wing_Flags::No_arrival_message);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-first-wave-message")))
-				wingp->flags.set(Ship::Wing_Flags::No_first_wave_message);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-arrival-warp")))
-				wingp->flags.set(Ship::Wing_Flags::No_arrival_warp);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-departure-warp")))
-				wingp->flags.set(Ship::Wing_Flags::No_departure_warp);
-			else if (!stricmp(wing_flag_strings[i], NOX("no-dynamic")))
-				wingp->flags.set(Ship::Wing_Flags::No_dynamic);
-			else if (!stricmp(wing_flag_strings[i], NOX("nav-carry-status")))
-				wingp->flags.set(Ship::Wing_Flags::Nav_carry);
-			else if (!stricmp(wing_flag_strings[i], NOX("same-arrival-warp-when-docked")))
-				wingp->flags.set(Ship::Wing_Flags::Same_arrival_warp_when_docked);
-			else if (!stricmp(wing_flag_strings[i], NOX("same-departure-warp-when-docked")))
-				wingp->flags.set(Ship::Wing_Flags::Same_departure_warp_when_docked);
-			else
-				Warning(LOCATION, "unknown wing flag\n%s\n\nSkipping.", wing_flag_strings[i]);
+		for (size_t j = 0; j < count; j++) {
+			auto tok = wing_flag_strings[j];
+			bool matched = false;
+			for (auto& Parse_wing_flag : Parse_wing_flags) {
+				if (!stricmp(tok, Parse_wing_flag.name)) {
+					wingp->flags.set(Parse_wing_flag.def);
+					matched = true;
+					break;
+				}
+			}
+
+			if (!matched) {
+				Warning(LOCATION, "Unknown wing flag '%s', skipping!", tok);
+			}
 		}
 	}
 
