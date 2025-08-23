@@ -32,7 +32,7 @@
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
 #include "cfilesystem.h"
-
+#include <SDL_system.h>
 
 #include <limits>
 
@@ -184,8 +184,18 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	}
 
 	char buf[CFILE_ROOT_DIRECTORY_LEN];
-
-	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	
+	#ifndef __ANDROID__
+		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	#else
+		(void)exe_dir;
+		const char* android_path = SDL_AndroidGetExternalStoragePath();
+		if(android_path == nullptr){
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Freespace Open needs permission to access the external storage.");
+			return 1;
+		}		
+		strncpy(buf, android_path, CFILE_ROOT_DIRECTORY_LEN - 1);
+	#endif
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 
 	// are we in a root directory?		

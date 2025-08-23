@@ -6,7 +6,7 @@
 #include <direct.h>
 #endif
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 #include<glad/glad_glx.h>
 //Required because X defines none and always, which is used later
 #undef None
@@ -48,8 +48,13 @@
 // minimum GL version we can reliably support is 3.2
 static const int MIN_REQUIRED_GL_VERSION = 32;
 
+#ifndef __ANDROID__
 // minimum GLSL version we can reliably support is 110
 static const int MIN_REQUIRED_GLSL_VERSION = 150;
+#else
+// minimum GLSL ES version
+static const int MIN_REQUIRED_GLSL_VERSION = 320;
+#endif
 
 int GL_version = 0;
 int GLSL_version = 0;
@@ -875,8 +880,11 @@ std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProper
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
-	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
-
+	#ifndef __ANDROID__
+		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#else
+		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+	#endif
 	return graphic_operations->createViewport(attrs);
 }
 
@@ -900,7 +908,11 @@ int opengl_init_display_device()
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
-	attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#ifndef __ANDROID__
+		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
+	#else
+		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
+	#endif
 
 	attrs.display = os_config_read_uint("Video", "Display", 0);
 	attrs.width = (uint32_t) gr_screen.max_w;
@@ -941,7 +953,7 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32 };
+	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32, 31, 30 };
 
 	// find the latest and greatest OpenGL context
 	for (auto ver : gl_versions)
@@ -1249,8 +1261,12 @@ static void init_extensions() {
 
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
-
-	sscanf(glsl_ver, "%d.%d", &major, &minor);
+	
+	#ifndef __ANDROID__
+		sscanf(glsl_ver, "%d.%d", &major, &minor);
+	#else
+		sscanf(glsl_ver, "OpenGL ES GLSL ES %d.%d", &major, &minor);
+	#endif
 	ver = (major * 100) + minor;
 
 	GLSL_version = ver;
@@ -1306,7 +1322,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 		Error(LOCATION, "Failed to load OpenGL!");
 	}
 
-#if !defined __APPLE_CC__ && defined SCP_UNIX
+#if !defined __APPLE_CC__ && !defined __ANDROID__ && defined SCP_UNIX
 	if (!gladLoadGLXLoader(GL_context->getLoaderFunction(), nullptr, 0)) {
 		Error(LOCATION, "Failed to load GLX!");
 	}

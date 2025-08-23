@@ -48,7 +48,7 @@ IF(PLATFORM_WINDOWS)
     target_link_libraries(ffmpeg INTERFACE swscale)
     target_link_libraries(ffmpeg INTERFACE swresample)
 ELSE(WIN32)
-    if (PLATFORM_MAC)
+    if (PLATFORM_MAC OR ANDROID)
         option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." ON)
     else()
         option(FFMPEG_USE_PRECOMPILED "Use precompiled version of FFmpeg. If disabled the system libraries will be used." OFF)
@@ -94,18 +94,28 @@ ELSE(WIN32)
 
             ADD_IMPORTED_LIB("${name}" "${${name}_INCLUDE_DIRS}" "${${name}_LIB}" SHARED)
         else()
-            # Use our libraries
-            find_library(${name}_LOCATION ${name}
-                PATHS "${FFMPEG_PATH}/lib"
-                NO_DEFAULT_PATH)
-
-            file(GLOB ${name}_LIBS "${FFMPEG_PATH}/lib/lib${name}*")
-
-            get_filename_component(FULL_LIB_PATH "${${name}_LOCATION}" REALPATH)
-
-            ADD_IMPORTED_LIB("${name}" "${FFMPEG_PATH}/include" "${FULL_LIB_PATH}")
-
-            add_target_copy_files("${${name}_LIBS}")
+        	if(NOT ANDROID)
+            	# Use our libraries
+            	find_library(${name}_LOCATION ${name}
+                	PATHS "${FFMPEG_PATH}/lib"
+                	NO_DEFAULT_PATH)
+            	file(GLOB ${name}_LIBS "${FFMPEG_PATH}/lib/lib${name}*")
+	
+            	get_filename_component(FULL_LIB_PATH "${${name}_LOCATION}" REALPATH)
+            
+            	ADD_IMPORTED_LIB("${name}" "${FFMPEG_PATH}/include" "${FULL_LIB_PATH}")
+	
+            	add_target_copy_files("${${name}_LIBS}")
+            else()
+            	# Ugly workaround because the ffmpeg libs compiled for android were not detected by the code abode
+				file(GLOB ${name}_LIBS "${FFMPEG_PATH}/lib/lib${name}*")
+				
+				if(${name}_LIBS)
+    				get_filename_component(FULL_LIB_PATH "${${name}_LIBS}" REALPATH)
+    				ADD_IMPORTED_LIB("${name}" "${FFMPEG_PATH}/include" "${FULL_LIB_PATH}")
+    				add_target_copy_files("${${name}_LIBS}")
+				endif()
+            endif()
         endif()
     endmacro(add_av_lib)
 

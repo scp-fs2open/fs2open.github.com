@@ -316,10 +316,13 @@ GLboolean opengl_state::CullFace(GLint state)
 void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
 {
 	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
-		glPolygonMode(face, mode);
-
+		#ifndef __ANDROID__
+			glPolygonMode(face, mode);
+			polygon_mode_Mode = mode;
+		#else
+			polygon_mode_Mode = GL_FILL;
+		#endif
 		polygon_mode_Face = face;
-		polygon_mode_Mode = mode;
 	}
 }
 
@@ -330,6 +333,7 @@ void opengl_state::SetPolygonOffset(GLfloat factor, GLfloat units)
 
 		polygon_offset_Factor = factor;
 		polygon_offset_Unit = units;
+		
 	}
 }
 
