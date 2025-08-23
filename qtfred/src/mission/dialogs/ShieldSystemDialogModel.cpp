@@ -57,7 +57,7 @@ void ShieldSystemDialogModel::setCurrentTeam(int team)
 }
 void ShieldSystemDialogModel::setCurrentShipType(int type)
 {
-	Assertion(type >= 0 && type < MAX_SHIP_CLASSES, "Ship class index %d is invalid!", type); // NOLINTEND(readability-simplify-boolean-expr)
+	Assertion(type >= 0 && type < MAX_SHIP_CLASSES, "Ship class index %d is invalid!", type); // NOLINT(readability-simplify-boolean-expr)
 	modify(_currType, type);
 }
 
