@@ -22,275 +22,364 @@
   <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QGridLayout" name="gridLayout">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="sizeConstraint">
     <enum>QLayout::SetFixedSize</enum>
    </property>
-   <item row="0" column="0">
-    <layout class="QVBoxLayout" name="verticalLayout_2">
+   <item>
+    <layout class="QHBoxLayout" name="mainDialogLayout">
      <item>
-      <widget class="QGroupBox" name="groupBox">
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-       <property name="title">
-        <string>Position</string>
-       </property>
-       <layout class="QGridLayout" name="gridLayout_2">
-        <item row="1" column="1">
-         <widget class="QDoubleSpinBox" name="position_y">
-          <property name="minimum">
-           <double>-9999.000000000000000</double>
-          </property>
-          <property name="maximum">
-           <double>9999.000000000000000</double>
-          </property>
-          <property name="value">
-           <double>0.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="1">
-         <widget class="QDoubleSpinBox" name="position_x">
-          <property name="minimum">
-           <double>-9999.000000000000000</double>
-          </property>
-          <property name="maximum">
-           <double>9999.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-        <item row="1" column="0">
-         <widget class="QLabel" name="label_2">
-          <property name="text">
-           <string>&amp;Y:</string>
-          </property>
-          <property name="buddy">
-           <cstring>position_y</cstring>
-          </property>
-         </widget>
-        </item>
-        <item row="0" column="0">
-         <widget class="QLabel" name="label">
-          <property name="text">
-           <string>&amp;X:</string>
-          </property>
-          <property name="buddy">
-           <cstring>position_x</cstring>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="0">
-         <widget class="QLabel" name="label_3">
-          <property name="text">
-           <string>&amp;Z:</string>
-          </property>
-          <property name="buddy">
-           <cstring>position_z</cstring>
-          </property>
-         </widget>
-        </item>
-        <item row="2" column="1">
-         <widget class="QDoubleSpinBox" name="position_z">
-          <property name="minimum">
-           <double>-9999.000000000000000</double>
-          </property>
-          <property name="maximum">
-           <double>9999.000000000000000</double>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </widget>
+      <layout class="QVBoxLayout" name="leftSideLayout">
+       <item>
+        <layout class="QHBoxLayout" name="positionOrientationLayout">
+         <item>
+          <widget class="QGroupBox" name="positionGroupBox">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Position</string>
+           </property>
+           <layout class="QFormLayout" name="formLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelPositionX">
+              <property name="text">
+               <string>&amp;X:</string>
+              </property>
+              <property name="buddy">
+               <cstring>positionXSpinBox</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="positionXSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelPositionY">
+              <property name="text">
+               <string>&amp;Y:</string>
+              </property>
+              <property name="buddy">
+               <cstring>positionYSpinBox</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="positionYSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="value">
+               <double>0.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="labelPositionZ">
+              <property name="text">
+               <string>&amp;Z:</string>
+              </property>
+              <property name="buddy">
+               <cstring>positionZSpinBox</cstring>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="positionZSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-9999.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>9999.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="orientationGroupBox">
+           <property name="title">
+            <string>Orientation</string>
+           </property>
+           <layout class="QFormLayout" name="formLayout_2">
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelOrientationP">
+              <property name="text">
+               <string>P:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelOrientationB">
+              <property name="text">
+               <string>B:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="orientationPSpinBox">
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="orientationBSpinBox">
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="labelOrientationH">
+              <property name="text">
+               <string>H:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="orientationHSpinBox">
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="radioButtonsLayout">
+         <item>
+          <widget class="QGroupBox" name="setSettingGroupBox">
+           <layout class="QVBoxLayout" name="setVerticalLayout">
+            <item>
+             <widget class="QRadioButton" name="setAbsoluteRadioButton">
+              <property name="text">
+               <string>Set Absolute</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="setRelativeRadioButton">
+              <property name="text">
+               <string>Set Relative</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="setVerticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="transformSettingsGroupBox">
+           <layout class="QVBoxLayout" name="transformVerticalLayout">
+            <item>
+             <widget class="QRadioButton" name="transformIndependantlyRadioButton">
+              <property name="text">
+               <string>Transform Objects Independently</string>
+              </property>
+              <property name="checked">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QRadioButton" name="transformRelativelyRadioButton">
+              <property name="text">
+               <string>Transform Objects Relative to Origin Object</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="transformVerticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
      </item>
      <item>
-      <widget class="QDialogButtonBox" name="buttonBox">
-       <property name="orientation">
-        <enum>Qt::Vertical</enum>
-       </property>
-       <property name="standardButtons">
-        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-       </property>
-       <property name="centerButtons">
-        <bool>false</bool>
-       </property>
-      </widget>
+      <layout class="QVBoxLayout" name="rightSideLayout">
+       <item>
+        <widget class="QCheckBox" name="pointToCheckBox">
+         <property name="text">
+          <string>Point to:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="pointToGroupBox">
+         <layout class="QVBoxLayout" name="pointToSelectionLayout">
+          <property name="leftMargin">
+           <number>10</number>
+          </property>
+          <item>
+           <widget class="QRadioButton" name="objectRadioButton">
+            <property name="text">
+             <string>Object:</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="objectComboBox"/>
+          </item>
+          <item>
+           <widget class="QRadioButton" name="locationRadioButton">
+            <property name="text">
+             <string>Location:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="locationFormLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="labelLocationX">
+              <property name="text">
+               <string>X:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QDoubleSpinBox" name="locationXSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="labelLocationY">
+              <property name="text">
+               <string>Y:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QDoubleSpinBox" name="locationYSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="labelLocationZ">
+              <property name="text">
+               <string>Z:</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="locationZSpinBox">
+              <property name="decimals">
+               <number>2</number>
+              </property>
+              <property name="minimum">
+               <double>-16777215.000000000000000</double>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
      </item>
     </layout>
    </item>
-   <item row="0" column="1">
-    <layout class="QGridLayout" name="gridLayout_3" columnstretch="0,0,0">
-     <item row="1" column="0">
-      <spacer name="horizontalSpacer">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="2" column="1">
-      <spacer name="horizontalSpacer_2">
-       <property name="orientation">
-        <enum>Qt::Horizontal</enum>
-       </property>
-       <property name="sizeType">
-        <enum>QSizePolicy::Fixed</enum>
-       </property>
-       <property name="sizeHint" stdset="0">
-        <size>
-         <width>40</width>
-         <height>20</height>
-        </size>
-       </property>
-      </spacer>
-     </item>
-     <item row="5" column="2">
-      <widget class="QDoubleSpinBox" name="location_x">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimum">
-        <double>-9999.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>9999.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="2">
-      <widget class="QDoubleSpinBox" name="location_y">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimum">
-        <double>-9999.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>9999.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="2">
-      <widget class="QDoubleSpinBox" name="location_z">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimum">
-        <double>-9999.000000000000000</double>
-       </property>
-       <property name="maximum">
-        <double>9999.000000000000000</double>
-       </property>
-      </widget>
-     </item>
-     <item row="2" column="2">
-      <widget class="QComboBox" name="objectComboBox">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
-       <property name="minimumSize">
-        <size>
-         <width>0</width>
-         <height>0</height>
-        </size>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1" colspan="2">
-      <widget class="QRadioButton" name="locationRadio">
-       <property name="text">
-        <string>Loca&amp;tion</string>
-       </property>
-      </widget>
-     </item>
-     <item row="1" column="1" colspan="2">
-      <widget class="QRadioButton" name="objectRadio">
-       <property name="text">
-        <string>Ob&amp;ject:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="0" column="0" colspan="3">
-      <widget class="QCheckBox" name="pointToCheck">
-       <property name="text">
-        <string>Point to:</string>
-       </property>
-      </widget>
-     </item>
-     <item row="5" column="0" colspan="2" alignment="Qt::AlignRight">
-      <widget class="QLabel" name="label_4">
-       <property name="text">
-        <string>X:</string>
-       </property>
-       <property name="buddy">
-        <cstring>location_x</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="0" colspan="2" alignment="Qt::AlignRight">
-      <widget class="QLabel" name="label_5">
-       <property name="text">
-        <string>Y:</string>
-       </property>
-       <property name="buddy">
-        <cstring>location_y</cstring>
-       </property>
-      </widget>
-     </item>
-     <item row="7" column="0" colspan="2" alignment="Qt::AlignRight">
-      <widget class="QLabel" name="label_6">
-       <property name="text">
-        <string>Z:</string>
-       </property>
-       <property name="buddy">
-        <cstring>location_z</cstring>
-       </property>
-      </widget>
-     </item>
-    </layout>
+   <item>
+    <widget class="QDialogButtonBox" name="okAndCancelButtons">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+     <property name="standardButtons">
+      <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+     </property>
+     <property name="centerButtons">
+      <bool>false</bool>
+     </property>
+    </widget>
    </item>
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::ObjectOrientEditorDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
