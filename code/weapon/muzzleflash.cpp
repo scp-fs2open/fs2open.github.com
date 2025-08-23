@@ -194,7 +194,7 @@ static void convert_mflash_to_particle() {
 				bm_load_animation(blob.name));
 
 			if (Min_pizel_size_muzzleflash > 0) {
-				subparticles.back().m_modular_curves.add_curve("Apparent Visual Size At Emitter", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, scaling_curve);
+				subparticles.back().m_modular_curves.add_curve("Pixel Size At Emitter", particle::ParticleEffect::ParticleCurvesOutput::RADIUS_MULT, scaling_curve);
 			}
 		}
 
