@@ -16,6 +16,7 @@
 #include "CampaignEditorDlg.h"
 #include "CampaignTreeWnd.h"
 #include "mission/missionparse.h"
+#include "utils/string_utils.h"
 
 #ifdef _DEBUG
 #undef THIS_FILE
@@ -305,16 +306,16 @@ void campaign_tree_view::construct_tree()
 		// do special mission path
 		if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_LOOP ) {
 			stuff_link_with_formula(&link_idx, Campaign.missions[i].mission_loop_formula, i);
-			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
-			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
-			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links[link_idx-1].mission_branch_txt = util::unique_copy(Campaign.missions[i].mission_branch_desc.get(), true);
+			Links[link_idx-1].mission_branch_brief_anim = util::unique_copy(Campaign.missions[i].mission_branch_brief_anim.get(), true);
+			Links[link_idx-1].mission_branch_brief_sound = util::unique_copy(Campaign.missions[i].mission_branch_brief_sound.get(), true);
 			Links[link_idx-1].is_mission_loop = true;
 		}
 		else if ( Campaign.missions[i].flags & CMISSION_FLAG_HAS_FORK ) {
 			Campaign.missions[i].mission_loop_formula = -1;
-			Links[link_idx-1].mission_branch_txt = Campaign.missions[i].mission_branch_desc;
-			Links[link_idx-1].mission_branch_brief_anim = Campaign.missions[i].mission_branch_brief_anim;
-			Links[link_idx-1].mission_branch_brief_sound = Campaign.missions[i].mission_branch_brief_sound;
+			Links[link_idx-1].mission_branch_txt = util::unique_copy(Campaign.missions[i].mission_branch_desc.get(), true);
+			Links[link_idx-1].mission_branch_brief_anim = util::unique_copy(Campaign.missions[i].mission_branch_brief_anim.get(), true);
+			Links[link_idx-1].mission_branch_brief_sound = util::unique_copy(Campaign.missions[i].mission_branch_brief_sound.get(), true);
 			Links[link_idx-1].is_mission_fork = true;
 		}
 	}
@@ -522,43 +523,22 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 		if ( (Cur_campaign_link >= 0) && (Links[Cur_campaign_link].is_mission_loop || Links[Cur_campaign_link].is_mission_fork)) {
 			// HACK!!  UPDATE mission loop/fork desc before changing selections
 			// save mission loop/fork desc
-			char buffer[MISSION_DESC_LENGTH];
+			CString buffer;
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_MISSION_LOOP_DESC);
-			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
-			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_branch_txt) {
-					free(Links[Cur_campaign_link].mission_branch_txt);
-				}
-				Links[Cur_campaign_link].mission_branch_txt = strdup(buffer);
-			} else {
-				Links[Cur_campaign_link].mission_branch_txt = NULL;
-			}
+			box->GetWindowText(buffer);
+			Links[Cur_campaign_link].mission_branch_txt = util::unique_copy((LPCTSTR)buffer, true);
 
 			// HACK!!  UPDATE mission loop/fork desc before changing selections
 			// save mission loop/fork desc			
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_LOOP_BRIEF_ANIM);
-			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
-			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_branch_brief_anim) {
-					free(Links[Cur_campaign_link].mission_branch_brief_anim);
-				}
-				Links[Cur_campaign_link].mission_branch_brief_anim = strdup(buffer);
-			} else {
-				Links[Cur_campaign_link].mission_branch_brief_anim = NULL;
-			}
+			box->GetWindowText(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_anim = util::unique_copy((LPCTSTR)buffer, true);
 
 			// HACK!!  UPDATE mission loop/fork desc before changing selections
 			// save mission loop/fork desc			
 			box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_LOOP_BRIEF_SOUND);
-			box->GetWindowText(buffer, MISSION_DESC_LENGTH);
-			if (strlen(buffer)) {
-				if (Links[Cur_campaign_link].mission_branch_brief_sound) {
-					free(Links[Cur_campaign_link].mission_branch_brief_sound);
-				}
-				Links[Cur_campaign_link].mission_branch_brief_sound = strdup(buffer);
-			} else {
-				Links[Cur_campaign_link].mission_branch_brief_sound = NULL;
-			}
+			box->GetWindowText(buffer);
+			Links[Cur_campaign_link].mission_branch_brief_sound = util::unique_copy((LPCTSTR)buffer, true);
 		}
 		Mission_dragging = Cur_campaign_mission = Cur_campaign_link = -1;
 		for (i=0; i<Campaign.num_missions; i++)
@@ -576,7 +556,7 @@ void campaign_tree_view::OnLButtonDown(UINT nFlags, CPoint point)
 				}
 
 				if (Campaign.missions[Cur_campaign_mission].notes) {
-					convert_multiline_string(str, Campaign.missions[Cur_campaign_mission].notes);
+					convert_multiline_string(str, Campaign.missions[Cur_campaign_mission].notes.get());
 					box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);
 					if (box)
 						box->SetWindowText(str);
@@ -969,8 +949,8 @@ BOOL campaign_tree_view::OnDrop(COleDataObject* pDataObject, DROPEFFECT dropEffe
 	cm->name = strdup(pData);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-	cm->notes = NULL;
-	cm->briefing_cutscene[0] = 0;
+	cm->notes.reset();
+	cm->briefing_cutscene.reset();
 	for (i=0; i<Campaign.num_missions - 1; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
@@ -1067,8 +1047,8 @@ void campaign_tree_view::drop_mission(int m, CPoint point)
 	cm->name = strdup(name);
 	cm->formula = Locked_sexp_true;
 	cm->flags |= CMISSION_FLAG_FRED_LOAD_PENDING;
-	cm->notes = NULL;
-	cm->briefing_cutscene[0] = 0;
+	cm->notes.reset();
+	cm->briefing_cutscene.reset();
 	for (i=0; i<Campaign.num_missions - 1; i++)
 		if ((Campaign.missions[i].level == level) && (Campaign.missions[i].pos + 1 == pos)) {
 			pos = query_alternate_pos(point);
@@ -1188,7 +1168,7 @@ void campaign_tree_view::delete_link(int num)
 	sexp_unmark_persistent(Links[num].sexp);
 	free_sexp2(Links[num].sexp);
 	while (num < Total_links - 1) {
-		Links[num] = Links[num + 1];
+		Links[num] = std::move(Links[num + 1]);
 		num++;
 	}
 
@@ -1278,7 +1258,7 @@ void campaign_tree_view::remove_mission(int m)
 	}
 
 	Elements[m] = Elements[z];
-	Campaign.missions[m] = Campaign.missions[z];
+	Campaign.missions[m] = std::move(Campaign.missions[z]);
 	if (m == Cur_campaign_mission) {
 		Cur_campaign_mission = -1;
 		box = (CEdit *) Campaign_tree_formp->GetDlgItem(IDC_HELP_BOX);

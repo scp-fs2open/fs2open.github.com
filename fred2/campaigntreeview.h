@@ -30,9 +30,9 @@ typedef struct campaign_tree_link {
 	int to_pos;	// to link drawing offset
 	bool is_mission_loop;	// whether link leads to mission loop
 	bool is_mission_fork;	// whether link leads to mission fork
-	char *mission_branch_txt;	// text describing mission loop
-	char *mission_branch_brief_anim;	// filename of anim to play in the brief
-	char *mission_branch_brief_sound;	// filename of anim to play in the brief
+	std::unique_ptr<char[]> mission_branch_txt;	// text describing mission loop
+	std::unique_ptr<char[]> mission_branch_brief_anim;	// filename of anim to play in the brief
+	std::unique_ptr<char[]> mission_branch_brief_sound;	// filename of anim to play in the brief
 	CPoint p1;	// coordinates of line last draw for link, from p1 to p2
 	CPoint p2;
 } campaign_tree_link;

@@ -502,7 +502,7 @@ int build_standalone_mission_list_do_frame(bool API_Access)
 					sim_mission api_mission;
 					api_mission.name = The_mission.name;
 					api_mission.filename = filename;
-					api_mission.mission_desc = The_mission.mission_desc;
+					api_mission.mission_desc = coalesce(The_mission.mission_desc.get(), "");
 					api_mission.author = The_mission.author;
 					api_mission.visible = 1;
 
@@ -574,7 +574,7 @@ int build_campaign_mission_list_do_frame(bool API_Access)
 				sim_mission api_mission;
 				api_mission.name = The_mission.name;
 				api_mission.filename = filename;
-				api_mission.mission_desc = The_mission.mission_desc;
+				api_mission.mission_desc = coalesce(The_mission.mission_desc.get(), "");
 				api_mission.author = The_mission.author;
 				api_mission.visible = Campaign.missions[Num_campaign_missions_with_info].completed;
 

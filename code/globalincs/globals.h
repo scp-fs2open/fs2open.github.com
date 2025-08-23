@@ -16,15 +16,11 @@
 #define	DATE_LENGTH				32
 #define	TIME_LENGTH				16
 #define	DATE_TIME_LENGTH		48
-#define	NOTES_LENGTH			1024
 #define	MULTITEXT_LENGTH		4096
 #define	FILESPEC_LENGTH			64
 #define	MESSAGE_LENGTH			512
 #define TRAINING_MESSAGE_LENGTH	512
 #define CONDITION_LENGTH		64
-
-// from missionparse.h
-#define MISSION_DESC_LENGTH		512
 
 // from player.h
 #define CALLSIGN_LEN					(MAX_FILENAME_LEN - 4 - 1)		//	shortened from 32 to allow .json to be attached without exceeding MAX_FILENAME_LEN
