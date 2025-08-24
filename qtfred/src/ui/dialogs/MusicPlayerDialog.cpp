@@ -38,7 +38,7 @@ void MusicPlayerDialog::reject()
 	QDialog::reject();
 }
 
-void MusicPlayerDialog::closeEvent(QCloseEvent* e)
+void MusicPlayerDialog::closeEvent(QCloseEvent* /*e*/)
 {
 	reject();
 }
@@ -74,7 +74,7 @@ void MusicPlayerDialog::syncButtonsEnabled()
 	const bool hasSel = _model->currentRow() >= 0;
 	ui->playButton->setEnabled(hasSel);
 	ui->stopButton->setEnabled(_model->isPlaying());
-	ui->nextButton->setEnabled(_model->currentRow() >= 0 && _model->currentRow() < _model->tracks().size() - 1);
+	ui->nextButton->setEnabled(_model->currentRow() >= 0 && _model->currentRow() < static_cast<int>(_model->tracks().size()) - 1);
 	ui->prevButton->setEnabled(_model->currentRow() > 0);
 }
 

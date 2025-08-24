@@ -22,7 +22,7 @@ class MusicPlayerDialog final : public QDialog {
 	void reject() override; // ensure we stop playback on close
 
   protected:
-	void closeEvent(QCloseEvent* e) override;
+	void closeEvent(QCloseEvent* /*e*/) override;
 
   private slots:
 	void on_musicList_itemSelectionChanged();
