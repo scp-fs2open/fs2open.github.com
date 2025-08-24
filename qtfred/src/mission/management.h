@@ -7,6 +7,12 @@
 namespace fso {
 namespace fred {
 
+enum CheckState {
+	Unchecked = Qt::Unchecked,
+	PartiallyChecked = Qt::PartiallyChecked,
+	Checked = Qt::Checked
+};
+
 enum class SubSystem {
 	OS,
 	CommandLine,

@@ -86,7 +86,7 @@ void FlagListWidget::connectSignals()
 	connect(_btnNone, &QToolButton::clicked, this, &FlagListWidget::onClearAll);
 }
 
-void FlagListWidget::setFlags(const QVector<std::pair<QString, bool>>& flags)
+void FlagListWidget::setFlags(const QVector<std::pair<QString, int>>& flags)
 {
 	rebuildModel(flags);
 }
@@ -101,7 +101,7 @@ void FlagListWidget::setFlagDescriptions(const QVector<std::pair<QString, QStrin
 	applyTooltipsToItems(); // apply immediately if items already exist
 }
 
-void FlagListWidget::rebuildModel(const QVector<std::pair<QString, bool>>& flags)
+void FlagListWidget::rebuildModel(const QVector<std::pair<QString, int>>& flags)
 {
 	_updating = true;
 
@@ -113,11 +113,11 @@ void FlagListWidget::rebuildModel(const QVector<std::pair<QString, bool>>& flags
 	_model->insertRows(0, flags.size());
 	for (int i = 0; i < flags.size(); ++i) {
 		const auto& name = flags[i].first;
-		const bool checked = flags[i].second;
+		const auto checked = flags[i].second;
 
 		auto* item = new QStandardItem(name);
 		item->setCheckable(true);
-		item->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+		item->setCheckState(Qt::CheckState(checked));
 		item->setData(name, KeyRole);
 
 		// If we have a description for this flag, set it as tooltip
@@ -148,7 +148,7 @@ void FlagListWidget::applyTooltipsToItems()
 	}
 }
 
-QVector<std::pair<QString, bool>> FlagListWidget::getFlags() const
+QVector<std::pair<QString, int>> FlagListWidget::getFlags() const
 {
 	return snapshot();
 }
@@ -193,7 +193,7 @@ void FlagListWidget::onItemChanged(QStandardItem* item)
 		return;
 
 	const auto name = item->data(KeyRole).toString();
-	const bool checked = (item->checkState() == Qt::Checked);
+	const auto checked = item->checkState();
 
 	Q_EMIT flagToggled(name, checked);
 	Q_EMIT flagsChanged(snapshot());
@@ -232,14 +232,14 @@ void FlagListWidget::onClearAll()
 	Q_EMIT flagsChanged(snapshot());
 }
 
-QVector<std::pair<QString, bool>> FlagListWidget::snapshot() const
+QVector<std::pair<QString, int>> FlagListWidget::snapshot() const
 {
-	QVector<std::pair<QString, bool>> out;
+	QVector<std::pair<QString, int>> out;
 	out.reserve(_model->rowCount());
 	for (int r = 0; r < _model->rowCount(); ++r) {
 		if (auto* it = _model->item(r, 0)) {
 			const auto key = it->data(KeyRole).toString();
-			const bool checked = (it->checkState() == Qt::Checked);
+			const Qt::CheckState checked = it->checkState();
 			out.append({key, checked});
 		}
 	}

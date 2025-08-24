@@ -3959,7 +3959,18 @@ int CFred_mission_save::save_objects()
 
 			fout(" %d", shipp->escort_priority);
 		}
+		// Custom Guardian Thrshold
+		if (save_format != MissionFormat::RETAIL) {
+			if (shipp->ship_guardian_threshold != 0) {
+				if (optional_string_fred("+Guardian Threshold:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n+Guardian Threshold:");
+				}
 
+				fout(" %d", shipp->ship_guardian_threshold);
+			}
+		}
 		// special explosions
 		if (save_format != MissionFormat::RETAIL) {
 			if (shipp->use_special_explosion) {

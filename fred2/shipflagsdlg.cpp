@@ -296,7 +296,7 @@ BOOL ship_flags_dlg::OnInitDialog()
 					m_escort_value.init(shipp->escort_priority);
 
 					if(The_mission.game_type & MISSION_TYPE_MULTI) {
-						m_respawn_priority.init(shipp->escort_priority);
+						m_respawn_priority.init(shipp->respawn_priority);
 					}
 
 					for (j=0; j<Num_reinforcements; j++) {
