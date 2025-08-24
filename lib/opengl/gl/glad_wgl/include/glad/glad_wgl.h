@@ -34,7 +34,11 @@
 #include <windows.h>
 #endif
 
+#ifndef USE_OPENGL_ES
 #include <glad/glad.h>
+#else
+#include "../../glad/include/glad/glad.h"
+#endif
 
 #ifndef __glad_wglext_h_
 
