@@ -188,7 +188,7 @@ void CustomDataDialog::on_addButton_clicked()
 	}
 
 	refreshTable();
-	// selectRow(_tableModel->rowCount() - 1);
+	selectRow(_tableModel->rowCount() - 1);
 	clearEditors();
 }
 
