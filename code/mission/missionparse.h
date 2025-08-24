@@ -89,6 +89,15 @@ extern bool check_for_24_3_data();
 #define IS_MISSION_MULTI_TEAMS		(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 #define IS_MISSION_MULTI_DOGFIGHT	(The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)
 
+// Used in the mission editor
+inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [] {
+	std::vector<std::pair<SCP_string, int>> arr;
+	arr.reserve(MAX_TVT_TEAMS);
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i) {
+		arr.emplace_back("Team " + std::to_string(i + 1), i);
+	}
+	return arr;
+}();
 
 // Goober5000
 typedef struct support_ship_info {

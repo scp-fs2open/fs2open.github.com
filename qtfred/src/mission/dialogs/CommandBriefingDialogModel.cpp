@@ -3,9 +3,7 @@
 #include "sound/audiostr.h"
 #include <QMessageBox>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 CommandBriefingDialogModel::CommandBriefingDialogModel(QObject* parent, EditorViewport* viewport) 
 	: AbstractDialogModel(parent, viewport)
@@ -13,63 +11,12 @@ CommandBriefingDialogModel::CommandBriefingDialogModel(QObject* parent, EditorVi
 		initializeData();
 }
 
-void CommandBriefingDialogModel::initializeData() 
-{
-	Cur_cmd_brief = Cmd_briefs;  // default to first cmd briefing
-	_wipCommandBrief.num_stages = Cur_cmd_brief->num_stages;
-	strcpy_s(_wipCommandBrief.background[0],Cur_cmd_brief->background[0]);
-	strcpy_s(_wipCommandBrief.background[1],Cur_cmd_brief->background[1]);
-	
-	if (!strlen(_wipCommandBrief.background[0])) {
-		strcpy_s(_wipCommandBrief.background[0], "<default>");
-	}
-
-	if (!strlen(_wipCommandBrief.background[1])) {
-		strcpy_s(_wipCommandBrief.background[1], "<default>");
-	}
-
-	_currentStage = 0;
-
-	int i;
-
-	for (i = 0; i < _wipCommandBrief.num_stages; i++) {
-		_wipCommandBrief.stage[i] = Cur_cmd_brief->stage[i];
-		strcpy_s(_wipCommandBrief.stage[i].ani_filename, Cur_cmd_brief->stage[i].ani_filename);
-		_wipCommandBrief.stage[i].text = Cur_cmd_brief->stage[i].text;
-		_wipCommandBrief.stage[i].wave = Cur_cmd_brief->stage[i].wave;
-		strcpy_s(_wipCommandBrief.stage[i].wave_filename, Cur_cmd_brief->stage[i].wave_filename);
-	}
-
-	for (i = _wipCommandBrief.num_stages; i < CMD_BRIEF_STAGES_MAX; i++) {
-		strcpy_s(_wipCommandBrief.stage[i].ani_filename, "<default>");
-		_wipCommandBrief.stage[i].text = "<Text here>";
-		_wipCommandBrief.stage[i].wave = -1;
-		strcpy_s(_wipCommandBrief.stage[i].wave_filename, "none");
-	}
-
-	_briefingTextUpdateRequired = true;
-	_stageNumberUpdateRequired = true; // always need to start off setting the correct stage.
-	_soundTestUpdateRequired = true;
-	_currentlyPlayingSound = -1;
-
-	_currentTeam = 0; // this is forced to zero and kept there until multiple teams command briefing is supported.
-	modelChanged();
-}
-
 bool CommandBriefingDialogModel::apply()
 {
 	stopSpeech();
 
-	// Copy the bits that are global to the Command Briefing
-	Cur_cmd_brief->num_stages = _wipCommandBrief.num_stages;
-	strcpy_s(Cur_cmd_brief->background[0], _wipCommandBrief.background[0]);
-	strcpy_s(Cur_cmd_brief->background[1], _wipCommandBrief.background[1]);
-
-	int i = 0;
-
-	for (i = 0; i < CMD_BRIEF_STAGES_MAX; i++) {
-		Cur_cmd_brief->stage[i] =_wipCommandBrief.stage[i];
-		audiostream_close_file(_wipCommandBrief.stage[i].wave, false);
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		Cmd_briefs[i] = _wipCommandBrief[i];
 	}
 
 	return true;
@@ -77,273 +24,248 @@ bool CommandBriefingDialogModel::apply()
 
 void CommandBriefingDialogModel::reject() 
 {
-
 	stopSpeech();
-
-	for (int i = _wipCommandBrief.num_stages; i < CMD_BRIEF_STAGES_MAX; i++) {
-		memset(&_wipCommandBrief.stage[i].ani_filename, 0, CF_MAX_FILENAME_LENGTH);
-		_wipCommandBrief.stage[i].text.clear();
-		audiostream_close_file(_wipCommandBrief.stage[i].wave, false);
-		_wipCommandBrief.stage[i].wave = -1;
-		memset(&_wipCommandBrief.stage[i].wave_filename, 0, CF_MAX_FILENAME_LENGTH);	
-	}
-
-	_wipCommandBrief.num_stages = 0;
-	memset(&_wipCommandBrief.background[0], 0, CF_MAX_FILENAME_LENGTH);
-	memset(&_wipCommandBrief.background[1], 0, CF_MAX_FILENAME_LENGTH);
 
 }
 
-void CommandBriefingDialogModel::update_init() {}
+void CommandBriefingDialogModel::initializeData()
+{
+	initializeTeamList();
+	
+	// Make a working copy
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		_wipCommandBrief[i] = Cmd_briefs[i];
+	}
+
+	_currentTeam = 0;  // default to the first team
+	_currentStage = 0; // default to the first stage
+}
 
 void CommandBriefingDialogModel::gotoPreviousStage()
 {
-	// make sure 
 	if (_currentStage <= 0) {
 		_currentStage = 0;
 		return;
 	}
 
-	_briefingTextUpdateRequired = true;
-	_stageNumberUpdateRequired = true;
 	stopSpeech();
 	_currentStage--;
-	modelChanged();
 }
 
 void CommandBriefingDialogModel::gotoNextStage()
 {
+	if (_currentStage >= CMD_BRIEF_STAGES_MAX - 1) {
+		_currentStage = CMD_BRIEF_STAGES_MAX - 1;
+		return;
+	}
+
+	if (_currentStage >= _wipCommandBrief[_currentTeam].num_stages - 1) {
+		_currentStage = _wipCommandBrief[_currentTeam].num_stages - 1;
+		return;
+	}
+	
 	_currentStage++;
-
-	if (_currentStage >= _wipCommandBrief.num_stages) {
-		_currentStage = _wipCommandBrief.num_stages - 1;
-	}
-	else {
-		stopSpeech();
-		_briefingTextUpdateRequired = true;
-		_stageNumberUpdateRequired = true;
-	}
-
-	// should update regardless, who knows, maybe there was an inexplicable invalid index before.
-	modelChanged();
+	stopSpeech();
 }
 
 void CommandBriefingDialogModel::addStage()
 {
-	_stageNumberUpdateRequired = true;
-	_briefingTextUpdateRequired = true;
-
 	stopSpeech();
 
-	if (_wipCommandBrief.num_stages >= CMD_BRIEF_STAGES_MAX) {
-		_wipCommandBrief.num_stages = CMD_BRIEF_STAGES_MAX;
-		_currentStage = _wipCommandBrief.num_stages - 1;
-		modelChanged(); // signal that the model has changed, in case of inexplicable invalid index.
+	if (_wipCommandBrief[_currentTeam].num_stages >= CMD_BRIEF_STAGES_MAX) {
+		_wipCommandBrief[_currentTeam].num_stages = CMD_BRIEF_STAGES_MAX;
+		_currentStage = _wipCommandBrief[_currentTeam].num_stages - 1;
 		return;
 	}
 
-	_wipCommandBrief.num_stages++;
-	_currentStage = _wipCommandBrief.num_stages - 1;
+	_wipCommandBrief[_currentTeam].num_stages++;
+	_currentStage = _wipCommandBrief[_currentTeam].num_stages - 1;
+	_wipCommandBrief[_currentTeam].stage[_currentStage].text = "<Text here>";
 	set_modified();
-	modelChanged();
 }
 
 // copies the current stage as the next stage and then moves the rest of the stages over.
 void CommandBriefingDialogModel::insertStage()
 {
-	_stageNumberUpdateRequired = true;
+	stopSpeech();
 
-	if (_wipCommandBrief.num_stages >= CMD_BRIEF_STAGES_MAX) {
-		_wipCommandBrief.num_stages = CMD_BRIEF_STAGES_MAX;
+	if (_wipCommandBrief[_currentTeam].num_stages >= CMD_BRIEF_STAGES_MAX) {
+		_wipCommandBrief[_currentTeam].num_stages = CMD_BRIEF_STAGES_MAX;
 		set_modified();
-		modelChanged(); // signal that the model has changed, in case of inexplicable invalid index.
 		return;
 	}
 
-	_wipCommandBrief.num_stages++;
+	_wipCommandBrief[_currentTeam].num_stages++;
 
-	for (int i = _wipCommandBrief.num_stages - 1; i > _currentStage; i--) {
-		_wipCommandBrief.stage[i] = _wipCommandBrief.stage[i - 1];
+	for (int i = _wipCommandBrief[_currentTeam].num_stages - 1; i > _currentStage; i--) {
+		_wipCommandBrief[_currentTeam].stage[i] = _wipCommandBrief[_currentTeam].stage[i - 1];
 	}
+
+	// Future TODO: Add a QtFRED Option to clear the inserted stage instead of copying the current one.
+
 	set_modified();
-	modelChanged();
 }
 
 void CommandBriefingDialogModel::deleteStage()
 {
-	_briefingTextUpdateRequired = true;
-	_stageNumberUpdateRequired = true;
-
 	stopSpeech();
 
 	// Clear everything if we were on the last stage.
-	if (_wipCommandBrief.num_stages <= 1) {
-		_wipCommandBrief.num_stages = 0;
-		_wipCommandBrief.stage[0].text.clear();
-		_wipCommandBrief.stage[0].wave = -1;
-		memset(_wipCommandBrief.stage[0].wave_filename, 0, CF_MAX_FILENAME_LENGTH);
-		memset(_wipCommandBrief.stage[0].ani_filename, 0, CF_MAX_FILENAME_LENGTH);
+	if (_wipCommandBrief[_currentTeam].num_stages <= 1) {
+		_wipCommandBrief[_currentTeam].num_stages = 0;
+		_wipCommandBrief[_currentTeam].stage[0].text.clear();
+		_wipCommandBrief[_currentTeam].stage[0].wave = -1;
+		memset(_wipCommandBrief[_currentTeam].stage[0].wave_filename, 0, CF_MAX_FILENAME_LENGTH);
+		memset(_wipCommandBrief[_currentTeam].stage[0].ani_filename, 0, CF_MAX_FILENAME_LENGTH);
 		set_modified();
-		modelChanged();
 		return;
 	}
 	
 	// copy the stages backwards until we get to the stage we're on
-	for (int i = _currentStage; i + 1 < _wipCommandBrief.num_stages; i++){
-		_wipCommandBrief.stage[i] = _wipCommandBrief.stage[i + 1];
+	for (int i = _currentStage; i + 1 < _wipCommandBrief[_currentTeam].num_stages; i++) {
+		_wipCommandBrief[_currentTeam].stage[i] = _wipCommandBrief[_currentTeam].stage[i + 1];
 	}
 
-	_wipCommandBrief.num_stages--;
+	_wipCommandBrief[_currentTeam].num_stages--;
+
+	// Clear the tail
+	const int tail = _wipCommandBrief[_currentTeam].num_stages; // index of the old last element
+	_wipCommandBrief[_currentTeam].stage[tail].text.clear();
+	_wipCommandBrief[_currentTeam].stage[tail].wave = -1;
+	std::memset(_wipCommandBrief[_currentTeam].stage[tail].wave_filename, 0, CF_MAX_FILENAME_LENGTH);
+	std::memset(_wipCommandBrief[_currentTeam].stage[tail].ani_filename, 0, CF_MAX_FILENAME_LENGTH);
 
 	// make sure that the current stage is valid.
-	if (_wipCommandBrief.num_stages <= _currentStage) {
-		_currentStage = _wipCommandBrief.num_stages - 1;
+	if (_wipCommandBrief[_currentTeam].num_stages <= _currentStage) {
+		_currentStage = _wipCommandBrief[_currentTeam].num_stages - 1;
 	}
 
-	modelChanged();
-}
-
-void CommandBriefingDialogModel::setWaveID()
-{
-	// close the old one
-	if (_wipCommandBrief.stage[_currentStage].wave >= 0) {
-		audiostream_close_file(_wipCommandBrief.stage[_currentStage].wave, false);
-	}
-
-	// we use ASF_EVENTMUSIC here so that it will keep the extension in place
-	_wipCommandBrief.stage[_currentStage].wave = audiostream_open(_wipCommandBrief.stage[_currentStage].wave_filename, ASF_EVENTMUSIC);
-	_soundTestUpdateRequired = true;
+	set_modified();
 }
 
 void CommandBriefingDialogModel::testSpeech() 
 {
-	if (_wipCommandBrief.stage[_currentStage].wave >= 0 && !audiostream_is_playing(_wipCommandBrief.stage[_currentStage].wave)) {
-		stopSpeech();
-		audiostream_play(_wipCommandBrief.stage[_currentStage].wave, 1.0f, 0);
-		_currentlyPlayingSound = _wipCommandBrief.stage[_currentStage].wave;
+	// May cause unloading/reloading but it's just the mission editor
+	// we don't need to keep all the waves loaded only to have to unload them
+	// later anyway. This ensures we have one wave loaded and stopSpeech always unloads it
+	
+	stopSpeech();
+
+	_waveId = audiostream_open(_wipCommandBrief[_currentTeam].stage[_currentStage].wave_filename, ASF_EVENTMUSIC);
+	audiostream_play(_waveId, 1.0f, 0);
+}
+
+void CommandBriefingDialogModel::copyToOtherTeams()
+{
+	stopSpeech();
+
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		if (i != _currentTeam) {
+			_wipCommandBrief[i] = _wipCommandBrief[_currentTeam];
+		}
 	}
+	set_modified();
+}
+
+const SCP_vector<std::pair<SCP_string, int>>& CommandBriefingDialogModel::getTeamList()
+{
+	return _teamList;
+}
+
+bool CommandBriefingDialogModel::getMissionIsMultiTeam()
+{
+	return The_mission.game_type & MISSION_TYPE_MULTI_TEAMS;
 }
 
 void CommandBriefingDialogModel::stopSpeech()
 {
-	if (_currentlyPlayingSound >= -1) {
-		audiostream_stop(_currentlyPlayingSound,1,0);
-		_currentlyPlayingSound = -1;
+	if (_waveId >= -1) {
+		audiostream_close_file(_waveId, false);
+		_waveId = -1;
 	}
 }
 
-bool CommandBriefingDialogModel::briefingUpdateRequired() 
+void CommandBriefingDialogModel::initializeTeamList()
 {
-	return _briefingTextUpdateRequired; 
+	_teamList.clear();
+	for (auto& team : Mission_event_teams_tvt) {
+		_teamList.emplace_back(team.first, team.second);
+	}
 }
 
-bool CommandBriefingDialogModel::stageNumberUpdateRequired() 
-{ 
-	return _stageNumberUpdateRequired; 
+int CommandBriefingDialogModel::getCurrentTeam() const
+{
+	return _currentTeam;
 }
 
-bool CommandBriefingDialogModel::soundTestUpdateRequired() 
-{ 
-	return _soundTestUpdateRequired; 
+void CommandBriefingDialogModel::setCurrentTeam(int teamIn)
+{
+	modify(_currentTeam, teamIn);
+};
+
+int CommandBriefingDialogModel::getCurrentStage() const
+{
+	return _currentStage;
+}
+
+int CommandBriefingDialogModel::getTotalStages()
+{
+	return _wipCommandBrief[_currentTeam].num_stages;
 }
 
 SCP_string CommandBriefingDialogModel::getBriefingText() 
 { 
-	_briefingTextUpdateRequired = false; 
-	return _wipCommandBrief.stage[_currentStage].text; 
+	return _wipCommandBrief[_currentTeam].stage[_currentStage].text;
+}
+
+void CommandBriefingDialogModel::setBriefingText(const SCP_string& briefingText)
+{
+	modify(_wipCommandBrief[_currentTeam].stage[_currentStage].text, briefingText);
 }
 
 SCP_string CommandBriefingDialogModel::getAnimationFilename() 
 { 
-	return _wipCommandBrief.stage[_currentStage].ani_filename; 
+	return _wipCommandBrief[_currentTeam].stage[_currentStage].ani_filename;
+}
+
+void CommandBriefingDialogModel::setAnimationFilename(const SCP_string& animationFilename)
+{
+	strcpy_s(_wipCommandBrief[_currentTeam].stage[_currentStage].ani_filename, animationFilename.c_str());
+	set_modified();
 }
 
 SCP_string CommandBriefingDialogModel::getSpeechFilename() 
 { 
-	return _wipCommandBrief.stage[_currentStage].wave_filename; 
+	return _wipCommandBrief[_currentTeam].stage[_currentStage].wave_filename;
 }
 
-ubyte CommandBriefingDialogModel::getCurrentTeam() 
-{ 
-	return _currentTeam; 
+void CommandBriefingDialogModel::setSpeechFilename(const SCP_string& speechFilename)
+{
+	strcpy_s(_wipCommandBrief[_currentTeam].stage[_currentStage].wave_filename, speechFilename.c_str());
+	set_modified();
 }
 
 SCP_string CommandBriefingDialogModel::getLowResolutionFilename() 
 { 
-	return _wipCommandBrief.background[0]; 
+	return _wipCommandBrief[_currentTeam].background[0];
+}
+
+void CommandBriefingDialogModel::setLowResolutionFilename(const SCP_string& lowResolutionFilename)
+{
+	strcpy_s(_wipCommandBrief[_currentTeam].background[0], lowResolutionFilename.c_str());
+	set_modified();
 }
 
 SCP_string CommandBriefingDialogModel::getHighResolutionFilename() 
 { 
-	return _wipCommandBrief.background[1]; 
-}
-
-int CommandBriefingDialogModel::getTotalStages() 
-{ 
-	_stageNumberUpdateRequired = false; 
-	return _wipCommandBrief.num_stages; 
-}
-
-int CommandBriefingDialogModel::getCurrentStage() 
-{ 
-	return _currentStage; 
-}
-
-int CommandBriefingDialogModel::getSpeechInstanceNumber() 
-{ 
-	return _wipCommandBrief.stage[_currentStage].wave; 
-}
-
-void CommandBriefingDialogModel::setBriefingText(const SCP_string& briefingText) 
-{ 
-	_wipCommandBrief.stage[_currentStage].text = briefingText;
-	set_modified();
-	modelChanged(); 
-}
-
-void CommandBriefingDialogModel::setAnimationFilename(const SCP_string& animationFilename) 
-{ 
-	strcpy_s(_wipCommandBrief.stage[_currentStage].ani_filename, animationFilename.c_str());
-	set_modified();
-	modelChanged(); 
-}
-
-void CommandBriefingDialogModel::setSpeechFilename(const SCP_string& speechFilename) 
-{ 
-	_soundTestUpdateRequired = true; 
-	strcpy_s(_wipCommandBrief.stage[_currentStage].wave_filename, speechFilename.c_str());
-	setWaveID();
-	set_modified();
-	modelChanged(); 
-}
-
-void CommandBriefingDialogModel::setCurrentTeam(const ubyte& teamIn) 
-{ 
-	_currentTeam = teamIn;
-	set_modified();
-}; // not yet fully supported
-
-void CommandBriefingDialogModel::setLowResolutionFilename(const SCP_string& lowResolutionFilename) 
-{ 
-	strcpy_s(_wipCommandBrief.background[0], lowResolutionFilename.c_str()); 
-	set_modified();
-	modelChanged();  
+	return _wipCommandBrief[_currentTeam].background[1];
 }
 
 void CommandBriefingDialogModel::setHighResolutionFilename(const SCP_string& highResolutionFilename) 
 { 
-	strcpy_s(_wipCommandBrief.background[1], highResolutionFilename.c_str()); 
+	strcpy_s(_wipCommandBrief[_currentTeam].background[1], highResolutionFilename.c_str()); 
 	set_modified();
-	modelChanged(); 
-}
-
-void CommandBriefingDialogModel::requestInitialUpdate() 
-{ 
-	initializeData();
-	modelChanged();
 }
 
 
-}
-}
-}
+} // namespace fso::fred::dialogs
