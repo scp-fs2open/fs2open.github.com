@@ -49,9 +49,8 @@ class MusicPlayerDialogModel final : public AbstractDialogModel {
 
   private:
 	SCP_string currentItemName() const;             // without extension
-	int tryOpenStream(const SCP_string& baseNoExt); // .wav first, then .ogg
+	static int tryOpenStream(const SCP_string& baseNoExt); // .wav first, then .ogg
 
-  private:
 	SCP_vector<SCP_string> _tracks;
 	int _currentRow = -1;
 	int _musicId = -1; // audiostream id or -1 when none

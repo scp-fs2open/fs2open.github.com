@@ -36,7 +36,7 @@ void MusicTBLViewerModel::initializeData()
 		tbl_file_names[n] += ".tbm";
 
 		text += "--  ";
-		text += tbl_file_names[n].c_str();
+		text += tbl_file_names[n];
 		text += "  -------------------------------\r\n";
 
 		fp = cfopen(tbl_file_names[n].c_str(), "r");

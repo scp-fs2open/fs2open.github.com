@@ -93,7 +93,7 @@ void MusicPlayerDialogModel::play()
 void MusicPlayerDialogModel::stop()
 {
 	if (_musicId >= 0) {
-		audiostream_close_file(_musicId, 0);
+		audiostream_close_file(_musicId, false);
 		_musicId = -1;
 	}
 }

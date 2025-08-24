@@ -41,7 +41,6 @@ class MusicPlayerDialog final : public QDialog {
 	void syncSelectionToModel();
 	void syncButtonsEnabled();
 
-  private:
 	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::MusicPlayerDialog> ui;
 	std::unique_ptr<MusicPlayerDialogModel> _model;
