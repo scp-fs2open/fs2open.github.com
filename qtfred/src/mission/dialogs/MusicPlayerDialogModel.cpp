@@ -48,14 +48,14 @@ void MusicPlayerDialogModel::loadTracks()
 
 void MusicPlayerDialogModel::setCurrentRow(int row)
 {
-	if (row < -1 || row >= _tracks.size())
+	if (row < -1 || row >= static_cast<int>(_tracks.size()))
 		return;
 	modify(_currentRow, row);
 }
 
 SCP_string MusicPlayerDialogModel::currentItemName() const
 {
-	if (_currentRow < 0 || _currentRow >= _tracks.size())
+	if (!SCP_vector_inbounds(_tracks, _currentRow))
 		return "";
 	return _tracks.at(_currentRow);
 }
@@ -100,7 +100,7 @@ void MusicPlayerDialogModel::stop()
 
 bool MusicPlayerDialogModel::selectNext()
 {
-	if (_currentRow >= 0 && _currentRow < _tracks.size() - 1) {
+	if (_currentRow >= 0 && _currentRow < static_cast<int>(_tracks.size()) - 1) {
 		modify(_currentRow, _currentRow + 1);
 		return true;
 	}
@@ -109,7 +109,7 @@ bool MusicPlayerDialogModel::selectNext()
 
 bool MusicPlayerDialogModel::selectPrev()
 {
-	if (_currentRow > 0 && _currentRow < _tracks.size()) {
+	if (_currentRow > 0 && _currentRow < static_cast<int>(_tracks.size())) {
 		modify(_currentRow, _currentRow - 1);
 		return true;
 	}
