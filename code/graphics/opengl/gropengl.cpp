@@ -48,7 +48,7 @@
 // minimum GL version we can reliably support is 3.2
 static const int MIN_REQUIRED_GL_VERSION = 32;
 
-#ifndef __ANDROID__
+#ifndef USE_OPENGL_ES
 // minimum GLSL version we can reliably support is 110
 static const int MIN_REQUIRED_GLSL_VERSION = 150;
 #else
@@ -880,7 +880,7 @@ std::unique_ptr<os::Viewport> gr_opengl_create_viewport(const os::ViewPortProper
 	attrs.pixel_format.multi_samples = os_config_read_uint(NULL, "OGL_AntiAliasSamples", 0);
 
 	attrs.enable_opengl = true;
-	#ifndef __ANDROID__
+	#ifndef USE_OPENGL_ES
 		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
 	#else
 		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
@@ -908,7 +908,7 @@ int opengl_init_display_device()
 	attrs.gl_attributes.flags.set(os::OpenGLContextFlags::Debug);
 #endif
 
-	#ifndef __ANDROID__
+	#ifndef USE_OPENGL_ES
 		attrs.gl_attributes.profile = os::OpenGLProfile::Core;
 	#else
 		attrs.gl_attributes.profile = os::OpenGLProfile::ES;
@@ -953,7 +953,7 @@ int opengl_init_display_device()
 		return 1;
 	}
 
-	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32, 31, 30 };
+	const int gl_versions[] = { 45, 44, 43, 42, 41, 40, 33, 32 };
 
 	// find the latest and greatest OpenGL context
 	for (auto ver : gl_versions)
@@ -1262,7 +1262,7 @@ static void init_extensions() {
 	int ver = 0, major = 0, minor = 0;
 	const char *glsl_ver = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
 	
-	#ifndef __ANDROID__
+	#ifndef USE_OPENGL_ES
 		sscanf(glsl_ver, "%d.%d", &major, &minor);
 	#else
 		sscanf(glsl_ver, "OpenGL ES GLSL ES %d.%d", &major, &minor);

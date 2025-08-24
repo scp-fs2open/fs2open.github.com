@@ -33,6 +33,9 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_ACCELERATED_VISUAL, 1);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, props.gl_attributes.major_version);
 	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, props.gl_attributes.minor_version);
+	#ifdef USE_OPENGL_ES 
+	SDL_SetHint(SDL_HINT_OPENGL_ES_DRIVER, "1");
+	#endif
 
 	int profile;
 	switch (props.gl_attributes.profile) {
