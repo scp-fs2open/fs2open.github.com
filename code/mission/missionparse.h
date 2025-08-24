@@ -156,6 +156,16 @@ typedef struct custom_string {
 	SCP_string text;
 } custom_string;
 
+inline bool operator==(const custom_string& a, const custom_string& b)
+{
+	return a.name == b.name && a.value == b.value && a.text == b.text;
+}
+
+inline bool operator!=(const custom_string& a, const custom_string& b)
+{
+	return !(a == b);
+}
+
 // descriptions of flags for FRED
 template <class T>
 struct parse_object_flag_description {
@@ -290,6 +300,9 @@ extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
 extern const char *Reinforcement_type_names[];
+extern flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[];
+extern parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[];
+extern const size_t Num_parse_mission_flags;
 extern char *Object_flags[];
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
