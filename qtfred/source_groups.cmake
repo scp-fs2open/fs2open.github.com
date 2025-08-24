@@ -62,6 +62,10 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/MissionGoalsDialogModel.h
 	src/mission/dialogs/MissionSpecDialogModel.cpp
 	src/mission/dialogs/MissionSpecDialogModel.h
+	src/mission/dialogs/MusicPlayerDialogModel.cpp
+	src/mission/dialogs/MusicPlayerDialogModel.h
+	src/mission/dialogs/MusicTBLViewerModel.cpp
+	src/mission/dialogs/MusicTBLViewerModel.h
 	src/mission/dialogs/ObjectOrientEditorDialogModel.cpp
 	src/mission/dialogs/ObjectOrientEditorDialogModel.h
 	src/mission/dialogs/ReinforcementsEditorDialogModel.cpp	
@@ -156,6 +160,10 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/MissionGoalsDialog.h
 	src/ui/dialogs/MissionSpecDialog.cpp
 	src/ui/dialogs/MissionSpecDialog.h
+	src/ui/dialogs/MusicPlayerDialog.cpp
+	src/ui/dialogs/MusicPlayerDialog.h
+	src/ui/dialogs/MusicTBLViewer.cpp
+	src/ui/dialogs/MusicTBLViewer.h
 	src/ui/dialogs/ObjectOrientEditorDialog.cpp
 	src/ui/dialogs/ObjectOrientEditorDialog.h
 	src/ui/dialogs/ReinforcementsEditorDialog.cpp
@@ -267,6 +275,7 @@ add_file_folder("UI"
 	ui/MissionCutscenesDialog.ui
 	ui/MissionGoalsDialog.ui
 	ui/MissionSpecDialog.ui
+	ui/MusicPlayerDialog.ui
 	ui/ObjectOrientationDialog.ui
 	ui/ReinforcementsDialog.ui
 	ui/SelectionDialog.ui
@@ -342,8 +351,10 @@ add_file_folder("Resources/Images"
     resources/images/fredknows.png
     resources/images/fred_splash.png
     resources/images/green_do.png
+	resources/images/next.png
     resources/images/orbitsel.png
     resources/images/play.png
+	resources/images/prev.png
     resources/images/root_directive.png
     resources/images/root.png
     resources/images/rotlocal.png
@@ -354,6 +365,7 @@ add_file_folder("Resources/Images"
     resources/images/selectrot.png
     resources/images/showdist.png
     resources/images/splash.png
+	resources/images/stop.png
     resources/images/toolbar1.png
     resources/images/toolbar.png
     resources/images/V_fred.ico
