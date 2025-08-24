@@ -4,120 +4,126 @@
 #include "ui/util/SignalBlockers.h"
 #include "ui_FictionViewerDialog.h"
 #include "mission/util.h"
-namespace fso {
-namespace fred {
-namespace dialogs {
 
+namespace fso::fred::dialogs {
 
 FictionViewerDialog::FictionViewerDialog(FredView* parent, EditorViewport* viewport) :
-	QDialog(parent),
-	_viewport(viewport),
-	_editor(viewport->editor),
-	ui(new Ui::FictionViewerDialog()),
-	_model(new FictionViewerDialogModel(this, viewport)) {
+	QDialog(parent), _viewport(viewport), ui(new Ui::FictionViewerDialog()), _model(new FictionViewerDialogModel(this, viewport))
+{
 
 	ui->setupUi(this);
 
-	ui->storyFileEdit->setMaxLength(_model->getMaxStoryFileLength());
-	ui->fontFileEdit->setMaxLength(_model->getMaxFontFileLength());
-	ui->voiceFileEdit->setMaxLength(_model->getMaxVoiceFileLength());
-
-	connect(this, &QDialog::accepted, _model.get(), &FictionViewerDialogModel::apply);
-	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &FictionViewerDialog::rejectHandler);
-
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &FictionViewerDialog::updateUI);
-
-	connect(ui->storyFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::storyFileTextChanged);
-	connect(ui->fontFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::fontFileTextChanged);
-	connect(ui->voiceFileEdit, &QLineEdit::textChanged, this, &FictionViewerDialog::voiceFileTextChanged);
-	connect(ui->musicComboBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &FictionViewerDialog::musicSelectionChanged);
-
 	// Initial set up of the UI
-	updateUI();
+	initializeUi();
+	updateUi();
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 
-	if (_model->hasMultipleStages()) {
+	// Fiction viewer can have multiple *conditional* stages but only ever displays one during a mission.
+	// So in order to properly handle multiple stages in the editor we will need to add a formula editor
+	// to the dialog like goals or cutscenes. It looks like formulas already saved/parsed in the mission file
+	// so this is just an editor UI limitation maybe? This should be handled in the next pass at the FV dialog
+	// because the model doesn't yet support reading/writing the formula
+	/*if (_model->hasMultipleStages()) {
 		viewport->dialogProvider->showButtonDialog(DialogType::Information, "Multiple stages detected",
 			"This mission has multiple fiction viewer stages defined.  Currently, qtFRED will only allow you to edit the first stage.",
 			{ DialogButton::Ok});
-	}
+	}*/
 }
-FictionViewerDialog::~FictionViewerDialog() {
+FictionViewerDialog::~FictionViewerDialog() = default;
+
+void FictionViewerDialog::accept()
+{
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
 }
 
-void FictionViewerDialog::updateMusicComboBox() {
-	ui->musicComboBox->clear();
-
-	for (const auto& el : _model->getMusicOptions()) {
-		ui->musicComboBox->addItem(QString::fromStdString(el.name), QVariant(el.id));
+void FictionViewerDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
 	}
-
-	if (ui->musicComboBox->count() > 0) {
-		ui->musicComboBox->setEnabled(true);
-		int selectedIndex = -1;
-		for (int i = 0; i < ui->musicComboBox->count(); ++i) {
-			const int itemId = ui->musicComboBox->itemData(i).value<int>();
-			if (itemId == _model->getFictionMusic()) {
-				selectedIndex = i;
-				break;
-			}
-		}
-		ui->musicComboBox->setCurrentIndex(selectedIndex);
-	} else {
-		ui->musicComboBox->setEnabled(false);
-	}
+	// else: do nothing, don't close
 }
-void FictionViewerDialog::updateUI() {
-	util::SignalBlockers blockers(this);
+
+void FictionViewerDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+
+void FictionViewerDialog::initializeUi()
+{
+	ui->storyFileEdit->setMaxLength(_model->getMaxStoryFileLength());
+	ui->fontFileEdit->setMaxLength(_model->getMaxFontFileLength());
+	ui->voiceFileEdit->setMaxLength(_model->getMaxVoiceFileLength());
 
 	updateMusicComboBox();
+}
+
+void FictionViewerDialog::updateUi() {
+	util::SignalBlockers blockers(this);
 
 	ui->storyFileEdit->setText(QString::fromStdString(_model->getStoryFile()));
 	ui->fontFileEdit->setText(QString::fromStdString(_model->getFontFile()));
 	ui->voiceFileEdit->setText(QString::fromStdString(_model->getVoiceFile()));
+	ui->musicComboBox->setCurrentIndex(ui->musicComboBox->findData(_model->getFictionMusic()));
 }
 
-void FictionViewerDialog::musicSelectionChanged(int index) {
-	if (index >= 0) {
-		int itemId = ui->musicComboBox->itemData(index).value<int>();
-		_model->setFictionMusic(itemId);
-	}
-}
+void FictionViewerDialog::updateMusicComboBox()
+{
+	util::SignalBlockers blockers(this);
+	
+	ui->musicComboBox->clear();
 
-void FictionViewerDialog::storyFileTextChanged() {
-	_model->setStoryFile(ui->storyFileEdit->text().toStdString());
-}
+	const auto& musicOptions = _model->getMusicOptions();
 
-void FictionViewerDialog::fontFileTextChanged() {
-	_model->setFontFile(ui->fontFileEdit->text().toStdString());
-}
-
-void FictionViewerDialog::voiceFileTextChanged() {
-	_model->setVoiceFile(ui->voiceFileEdit->text().toStdString());
-}
-
-void FictionViewerDialog::keyPressEvent(QKeyEvent* event) {
-	if (event->key() == Qt::Key_Escape) {
-		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
-		// user to save unsaved changes
-		event->ignore();
-		this->close();
+	if (musicOptions.empty()) {
+		ui->musicComboBox->setEnabled(false);
 		return;
 	}
-	QDialog::keyPressEvent(event);
+
+	ui->musicComboBox->setEnabled(true);
+	for (const auto& option : musicOptions) {
+		ui->musicComboBox->addItem(QString::fromStdString(option.first), option.second);
+	}
 }
 
-void FictionViewerDialog::closeEvent(QCloseEvent* e) {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
-}
-void FictionViewerDialog::rejectHandler()
+void FictionViewerDialog::on_okAndCancelButtons_accepted()
 {
-	this->close();
+	accept();
 }
+
+void FictionViewerDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
 }
+
+void FictionViewerDialog::on_storyFileEdit_textChanged(const QString& text)
+{
+	_model->setStoryFile(text.toUtf8().constData());
 }
+
+void FictionViewerDialog::on_fontFileEdit_textChanged(const QString& text)
+{
+	_model->setFontFile(text.toUtf8().constData());
 }
+
+void FictionViewerDialog::on_voiceFileEdit_textChanged(const QString& text)
+{
+	_model->setVoiceFile(text.toUtf8().constData());
+}
+
+void FictionViewerDialog::on_musicComboBox_currentIndexChanged(int index)
+{
+	_model->setFictionMusic(ui->musicComboBox->itemData(index).value<int>());
+}
+
+} // namespace fso::fred::dialogs
