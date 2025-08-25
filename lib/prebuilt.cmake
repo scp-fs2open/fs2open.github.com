@@ -6,12 +6,13 @@ set(PREBUILT_LIB_DIR "${CMAKE_CURRENT_BINARY_DIR}/prebuilt")
 set(CURRENT_ROOT "${CMAKE_CURRENT_BINARY_DIR}")
 
 function(get_prebuilt_path OUT_VAR)
+	# Moved this block from inside the IF IS_DIRECTORY below, it was not working, the file were getting downloaded anyway
+    if (NOT "${FSO_PREBUILT_OVERRIDE}" STREQUAL "")
+        set(${OUT_VAR} "${FSO_PREBUILT_OVERRIDE}" PARENT_SCOPE)
+        set(PREBUILT_PATH ${FSO_PREBUILT_OVERRIDE}) #added
+        return()
+    endif()
     if (IS_DIRECTORY "${PREBUILT_LIB_DIR}")
-        if (NOT "${FSO_PREBUILT_OVERRIDE}" STREQUAL "")
-            set(${OUT_VAR} "${FSO_PREBUILT_OVERRIDE}" PARENT_SCOPE)
-            return()
-        endif()
-
         if ("${DOWNLOADED_PREBUILT_VERSION}" STREQUAL "${PREBUILT_VERSION_NAME}")
             # Libraries already downloaded and up-to-date
             set(${OUT_VAR} "${PREBUILT_LIB_DIR}" PARENT_SCOPE)

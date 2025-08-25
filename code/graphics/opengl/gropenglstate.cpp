@@ -316,10 +316,14 @@ GLboolean opengl_state::CullFace(GLint state)
 void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
 {
 	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
-		glPolygonMode(face, mode);
-
+		#ifndef USE_OPENGL_ES
+			glPolygonMode(face, mode);
+			polygon_mode_Mode = mode;
+		#else
+			// glPolygonMode() is not supported on ES, wireframe mode needs an alternative path
+			polygon_mode_Mode = GL_FILL;
+		#endif
 		polygon_mode_Face = face;
-		polygon_mode_Mode = mode;
 	}
 }
 
