@@ -36,6 +36,7 @@
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
 #include <ui/dialogs/LoadoutDialog.h>
 #include <ui/dialogs/VariableDialog.h>
+#include <ui/dialogs/MusicPlayerDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -1216,6 +1217,13 @@ void FredView::on_actionVoice_Acting_Manager_triggered(bool) {
 }
 void FredView::on_actionMission_Goals_triggered(bool) {
 	auto dialog = new dialogs::MissionGoalsDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionMusic_Player_triggered(bool)
+{
+	auto dialog = new dialogs::MusicPlayerDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
