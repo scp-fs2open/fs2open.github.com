@@ -144,8 +144,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
-	src/ui/dialogs/CustomWingNamesDialog.cpp
-	src/ui/dialogs/CustomWingNamesDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
