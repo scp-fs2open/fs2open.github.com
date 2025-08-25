@@ -71,6 +71,8 @@ void BackgroundEditorDialog::initializeUi()
 		ui->poofsListWidget->addItem(QString::fromStdString(s));
 	}
 
+	ui->fogSwatch->setFrameShape(QFrame::Box);
+
 	updateNebulaControls();
 
 	// Old nebula
@@ -85,6 +87,12 @@ void BackgroundEditorDialog::initializeUi()
 	}
 
 	updateOldNebulaControls();
+
+	// Ambient light
+	ui->ambientSwatch->setMinimumSize(28, 28);
+	ui->ambientSwatch->setFrameShape(QFrame::Box);
+
+	updateAmbientLightControls();
 
 }
 
@@ -240,7 +248,21 @@ void BackgroundEditorDialog::updateNebulaControls()
 	ui->fogOverrideGreenSpinBox->setValue(_model->getFogG());
 	ui->fogOverrideBlueSpinBox->setValue(_model->getFogB());
 
+	updateFogSwatch();
+
 	updateOldNebulaControls();
+}
+
+void BackgroundEditorDialog::updateFogSwatch()
+{
+	const int r = _model->getFogR();
+	const int g = _model->getFogG();
+	const int b = _model->getFogB();
+	ui->fogSwatch->setStyleSheet(QString("background: rgb(%1,%2,%3);"
+											 "border: 1px solid #444; border-radius: 3px;")
+			.arg(r)
+			.arg(g)
+			.arg(b));
 }
 
 void BackgroundEditorDialog::updateOldNebulaControls()
@@ -261,6 +283,29 @@ void BackgroundEditorDialog::updateOldNebulaControls()
 	ui->oldNebulaPitchSpinBox->setValue(_model->getOldNebulaPitch());
 	ui->oldNebulaBankSpinBox->setValue(_model->getOldNebulaBank());
 	ui->oldNebulaHeadingSpinBox->setValue(_model->getOldNebulaHeading());
+}
+
+void BackgroundEditorDialog::updateAmbientLightControls()
+{
+	util::SignalBlockers blockers(this);
+	
+	const int r = _model->getAmbientR();
+	const int g = _model->getAmbientG();
+	const int b = _model->getAmbientB();
+
+	ui->ambientLightRedSlider->setValue(r);
+	ui->ambientLightGreenSlider->setValue(g);
+	ui->ambientLightBlueSlider->setValue(b);
+
+	QString redText = "R: " + QString::number(r);
+	QString greenText = "G: " + QString::number(g);
+	QString blueText = "B: " + QString::number(b);
+
+	ui->ambientLightRedLabel->setText(redText);
+	ui->ambientLightGreenLabel->setText(greenText);
+	ui->ambientLightBlueLabel->setText(blueText);
+
+	updateAmbientSwatch();
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
@@ -539,16 +584,19 @@ void BackgroundEditorDialog::on_overrideFogPaletteCheckBox_toggled(bool checked)
 void BackgroundEditorDialog::on_fogOverrideRedSpinBox_valueChanged(int arg1)
 {
 	_model->setFogR(arg1);
+	updateFogSwatch();
 }
 
 void BackgroundEditorDialog::on_fogOverrideGreenSpinBox_valueChanged(int arg1)
 {
 	_model->setFogG(arg1);
+	updateFogSwatch();
 }
 
 void BackgroundEditorDialog::on_fogOverrideBlueSpinBox_valueChanged(int arg1)
 {
 	_model->setFogB(arg1);
+	updateFogSwatch();
 }
 
 void BackgroundEditorDialog::on_oldNebulaPatternCombo_currentIndexChanged(int index)
@@ -581,6 +629,45 @@ void BackgroundEditorDialog::on_oldNebulaBankSpinBox_valueChanged(int arg1)
 void BackgroundEditorDialog::on_oldNebulaHeadingSpinBox_valueChanged(int arg1)
 {
 	_model->setOldNebulaHeading(arg1);
+}
+
+void BackgroundEditorDialog::on_ambientLightRedSlider_valueChanged(int value)
+{
+	_model->setAmbientR(value);
+	
+	QString text = "R: " + QString::number(value);
+	ui->ambientLightRedLabel->setText(text);
+	updateAmbientSwatch();
+}
+
+void BackgroundEditorDialog::on_ambientLightGreenSlider_valueChanged(int value)
+{
+	_model->setAmbientG(value);
+	
+	QString text = "G: " + QString::number(value);
+	ui->ambientLightGreenLabel->setText(text);
+	updateAmbientSwatch();
+}
+
+void BackgroundEditorDialog::on_ambientLightBlueSlider_valueChanged(int value)
+{
+	_model->setAmbientB(value);
+
+	QString text = "B: " + QString::number(value);
+	ui->ambientLightBlueLabel->setText(text);
+	updateAmbientSwatch();
+}
+
+void BackgroundEditorDialog::updateAmbientSwatch()
+{
+	const int r = _model->getAmbientR();
+	const int g = _model->getAmbientG();
+	const int b = _model->getAmbientB();
+	ui->ambientSwatch->setStyleSheet(QString("background: rgb(%1,%2,%3);"
+											 "border: 1px solid #444; border-radius: 3px;")
+			.arg(r)
+			.arg(g)
+			.arg(b));
 }
 
 } // namespace fso::fred::dialogs

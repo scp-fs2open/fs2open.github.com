@@ -540,6 +540,13 @@
              </widget>
             </item>
             <item>
+             <widget class="QLabel" name="fogSwatch">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
              <layout class="QHBoxLayout" name="fogPaletteOverrideLayout" stretch="0,1,0,1,0,1">
               <item>
                <widget class="QLabel" name="fogOverrideRLabel">
@@ -745,13 +752,6 @@
          <layout class="QHBoxLayout" name="horizontalLayout_17">
           <item>
            <layout class="QGridLayout" name="ambientSlidersGrid">
-            <item row="2" column="2">
-             <widget class="QLabel" name="ambientLightBlueLabel">
-              <property name="text">
-               <string>B: 0</string>
-              </property>
-             </widget>
-            </item>
             <item row="1" column="2">
              <widget class="QLabel" name="ambientLightGreenLabel">
               <property name="text">
@@ -772,16 +772,17 @@
               </property>
              </widget>
             </item>
-            <item row="2" column="0" colspan="2">
-             <widget class="QSlider" name="ambientLightBlueSlider">
-              <property name="minimum">
-               <number>1</number>
+            <item row="2" column="2">
+             <widget class="QLabel" name="ambientLightBlueLabel">
+              <property name="text">
+               <string>B: 0</string>
               </property>
-              <property name="maximum">
-               <number>255</number>
-              </property>
-              <property name="orientation">
-               <enum>Qt::Horizontal</enum>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <widget class="QLabel" name="ambientLightRedLabel">
+              <property name="text">
+               <string>R: 0</string>
               </property>
              </widget>
             </item>
@@ -798,10 +799,23 @@
               </property>
              </widget>
             </item>
-            <item row="0" column="2">
-             <widget class="QLabel" name="ambientLightRedLabel">
+            <item row="0" column="3" rowspan="3">
+             <widget class="QLabel" name="ambientSwatch">
               <property name="text">
-               <string>R: 0</string>
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0" colspan="2">
+             <widget class="QSlider" name="ambientLightBlueSlider">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>255</number>
+              </property>
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
               </property>
              </widget>
             </item>

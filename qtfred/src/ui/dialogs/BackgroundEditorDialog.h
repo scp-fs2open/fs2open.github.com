@@ -66,6 +66,11 @@ private slots:
 	void on_oldNebulaBankSpinBox_valueChanged(int arg1);
 	void on_oldNebulaHeadingSpinBox_valueChanged(int arg1);
 
+	// Ambient Light
+	void on_ambientLightRedSlider_valueChanged(int value);
+	void on_ambientLightGreenSlider_valueChanged(int value);
+	void on_ambientLightBlueSlider_valueChanged(int value);
+
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
@@ -78,7 +83,10 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void refreshSunList();
 	void updateSunControls();
 	void updateNebulaControls();
+	void updateFogSwatch();
 	void updateOldNebulaControls();
+	void updateAmbientLightControls();
+	void updateAmbientSwatch();
 };
 
 } // namespace fso::fred::dialogs

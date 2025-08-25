@@ -1,6 +1,7 @@
 #include "FredApplication.h"
 #include "BackgroundEditorDialogModel.h"
 
+#include "graphics/light.h"
 #include "math/bitarray.h"
 #include "mission/missionparse.h"
 #include "nebula/neb.h"
@@ -748,7 +749,7 @@ void BackgroundEditorDialogModel::setFogB(int b)
 {
 	CLAMP(b, 0, 255)
 	const ubyte v = static_cast<ubyte>(b);
-	modify(Neb2_fog_color[0], v);
+	modify(Neb2_fog_color[2], v);
 }
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions() const
@@ -859,6 +860,60 @@ void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
 		Nebula_heading = deg;
 		modify(Nebula_heading, deg);
 	}
+}
+
+int BackgroundEditorDialogModel::getAmbientR() const
+{
+	return The_mission.ambient_light_level & 0xff;
+}
+
+void BackgroundEditorDialogModel::setAmbientR(int r)
+{
+	CLAMP(r, 1, 255);
+	
+	const int g = getAmbientG(), b = getAmbientB();
+	const int newCol = (r) | (g << 8) | (b << 16);
+	
+	modify(The_mission.ambient_light_level, newCol);
+
+	gr_set_ambient_light(r, g, b);
+	refreshBackgroundPreview();
+}
+
+int BackgroundEditorDialogModel::getAmbientG() const
+{
+	return (The_mission.ambient_light_level >> 8) & 0xff;
+}
+
+void BackgroundEditorDialogModel::setAmbientG(int g)
+{
+	CLAMP(g, 1, 255);
+
+	const int r = getAmbientR(), b = getAmbientB();
+	const int newCol = (r) | (g << 8) | (b << 16);
+
+	modify(The_mission.ambient_light_level, newCol);
+
+	gr_set_ambient_light(r, g, b);
+	refreshBackgroundPreview();
+}
+
+int BackgroundEditorDialogModel::getAmbientB() const
+{
+	return (The_mission.ambient_light_level >> 16) & 0xff;
+}
+
+void BackgroundEditorDialogModel::setAmbientB(int b)
+{
+	CLAMP(b, 1, 255);
+
+	const int r = getAmbientR(), g = getAmbientG();
+	const int newCol = (r) | (g << 8) | (b << 16);
+
+	modify(The_mission.ambient_light_level, newCol);
+
+	gr_set_ambient_light(r, g, b);
+	refreshBackgroundPreview();
 }
 
 } // namespace fso::fred::dialogs

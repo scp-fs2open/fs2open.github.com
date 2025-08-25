@@ -114,6 +114,14 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	int getOldNebulaHeading() const;
 	void setOldNebulaHeading(int deg);
 
+	// ambient light group
+	int getAmbientR() const;
+	void setAmbientR(int r);
+	int getAmbientG() const;
+	void setAmbientG(int g);
+	int getAmbientB() const;
+	void setAmbientB(int b);
+
   private:
 	void refreshBackgroundPreview();
 	background_t& getActiveBackground() const;
