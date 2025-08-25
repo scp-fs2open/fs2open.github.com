@@ -12,6 +12,9 @@
 #include "graphics/material.h"
 #include "gropenglstate.h"
 #include "math/vecmat.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern GLfloat GL_max_anisotropy;
 
@@ -317,7 +320,7 @@ void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
 {
 	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
 		glPolygonMode(face, mode);
-
+		
 		polygon_mode_Face = face;
 		polygon_mode_Mode = mode;
 	}
