@@ -150,6 +150,9 @@
               </item>
               <item row="0" column="1">
                <widget class="QSpinBox" name="bitmapPitchSpin">
+                <property name="wrapping">
+                 <bool>true</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
@@ -164,6 +167,9 @@
               </item>
               <item row="1" column="1">
                <widget class="QSpinBox" name="bitmapBankSpin">
+                <property name="wrapping">
+                 <bool>true</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
@@ -178,6 +184,9 @@
               </item>
               <item row="2" column="1">
                <widget class="QSpinBox" name="bitmapHeadingSpin">
+                <property name="wrapping">
+                 <bool>true</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
@@ -202,12 +211,18 @@
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
                 </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
+                </property>
                </widget>
               </item>
               <item>
                <widget class="QDoubleSpinBox" name="bitmapScaleYDoubleSpinBox">
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
                 </property>
                </widget>
               </item>
@@ -327,12 +342,18 @@
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
                 </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
+                </property>
                </widget>
               </item>
               <item row="1" column="1">
                <widget class="QDoubleSpinBox" name="fogFarDoubleSpinBox">
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
                 </property>
                </widget>
               </item>
@@ -484,6 +505,9 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
               <property name="maximum">
                <number>16777215</number>
               </property>
@@ -497,6 +521,9 @@
                 <height>0</height>
                </size>
               </property>
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
               <property name="maximum">
                <number>16777215</number>
               </property>
@@ -509,6 +536,9 @@
                 <width>100</width>
                 <height>0</height>
                </size>
+              </property>
+              <property name="wrapping">
+               <bool>true</bool>
               </property>
               <property name="maximum">
                <number>16777215</number>
@@ -558,17 +588,11 @@
                </widget>
               </item>
               <item>
-               <spacer name="sunsButtonsSpacer">
-                <property name="orientation">
-                 <enum>Qt::Horizontal</enum>
+               <widget class="QPushButton" name="changeSunButton">
+                <property name="text">
+                 <string>Change</string>
                 </property>
-                <property name="sizeHint" stdset="0">
-                 <size>
-                  <width>40</width>
-                  <height>20</height>
-                 </size>
-                </property>
-               </spacer>
+               </widget>
               </item>
               <item>
                <widget class="QPushButton" name="deleteSunButton">
@@ -597,47 +621,39 @@
               </item>
               <item row="0" column="1">
                <widget class="QSpinBox" name="sunPitchSpin">
+                <property name="wrapping">
+                 <bool>true</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
                </widget>
               </item>
               <item row="1" column="0">
-               <widget class="QLabel" name="sunsBankLabel">
-                <property name="text">
-                 <string>Bank</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QSpinBox" name="sunBankSpin">
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
                <widget class="QLabel" name="sunsHeadingLabel">
                 <property name="text">
                  <string>Heading</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="1">
+              <item row="1" column="1">
                <widget class="QSpinBox" name="sunHeadingSpin">
+                <property name="wrapping">
+                 <bool>true</bool>
+                </property>
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
                </widget>
               </item>
-              <item row="3" column="0">
+              <item row="2" column="0">
                <widget class="QLabel" name="sunScaleLabel">
                 <property name="text">
                  <string>Scale</string>
                 </property>
                </widget>
               </item>
-              <item row="3" column="1">
+              <item row="2" column="1">
                <widget class="QDoubleSpinBox" name="sunScaleDoubleSpinBox">
                 <property name="minimumSize">
                  <size>
@@ -647,6 +663,9 @@
                 </property>
                 <property name="maximum">
                  <double>16777215.000000000000000</double>
+                </property>
+                <property name="singleStep">
+                 <double>0.100000000000000</double>
                 </property>
                </widget>
               </item>
@@ -681,6 +700,12 @@
             </item>
             <item row="0" column="0" colspan="2">
              <widget class="QSlider" name="ambientLightRedSlider">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>255</number>
+              </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -688,6 +713,12 @@
             </item>
             <item row="2" column="0" colspan="2">
              <widget class="QSlider" name="ambientLightBlueSlider">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>255</number>
+              </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -695,6 +726,12 @@
             </item>
             <item row="1" column="0" colspan="2">
              <widget class="QSlider" name="ambientLightGreenSlider">
+              <property name="minimum">
+               <number>1</number>
+              </property>
+              <property name="maximum">
+               <number>255</number>
+              </property>
               <property name="orientation">
                <enum>Qt::Horizontal</enum>
               </property>
@@ -743,6 +780,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="skyboxPitchSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
               <property name="maximum">
                <number>16777215</number>
               </property>
@@ -757,6 +797,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="skyboxBankSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
               <property name="maximum">
                <number>16777215</number>
               </property>
@@ -771,6 +814,9 @@
             </item>
             <item>
              <widget class="QSpinBox" name="skyboxHeadingSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
               <property name="maximum">
                <number>16777215</number>
               </property>
@@ -842,6 +888,9 @@
           </item>
           <item>
            <widget class="QSlider" name="numStarsSlider">
+            <property name="maximum">
+             <number>2000</number>
+            </property>
             <property name="orientation">
              <enum>Qt::Horizontal</enum>
             </property>

@@ -31,26 +31,38 @@ void BackgroundEditorDialog::initializeUi()
 	ui->bitmapPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
 	ui->bitmapBankSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
 	ui->bitmapHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
-	ui->bitmapScaleXDoubleSpinBox->setRange(_model->getScaleLimit().first, _model->getScaleLimit().second);
-	ui->bitmapScaleYDoubleSpinBox->setRange(_model->getScaleLimit().first, _model->getScaleLimit().second);
+	ui->bitmapScaleXDoubleSpinBox->setRange(_model->getBitmapScaleLimit().first, _model->getBitmapScaleLimit().second);
+	ui->bitmapScaleYDoubleSpinBox->setRange(_model->getBitmapScaleLimit().first, _model->getBitmapScaleLimit().second);
 	ui->bitmapDivXSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
 	ui->bitmapDivYSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
-	refreshBitmapList();
 
 	const auto& names = _model->getAvailableBitmapNames();
 	for (const auto& s : names){
 		ui->bitmapTypeCombo->addItem(QString::fromStdString(s));
 	}
 
+	refreshBitmapList();
+
+	// Suns
+	ui->sunPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->sunHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->sunScaleDoubleSpinBox->setRange(_model->getSunScaleLimit().first, _model->getSunScaleLimit().second);
+
+	const auto& sun_names = _model->getAvailableSunNames();
+	for (const auto& s : sun_names) {
+		ui->sunSelectionCombo->addItem(QString::fromStdString(s));
+	}
+
+	refreshSunList();
+
 }
 
 void BackgroundEditorDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
-	// Backgrounds
-	// TODO
-	// Bitmaps
+
 	refreshBitmapList();
+	refreshSunList();
 }
 
 void BackgroundEditorDialog::refreshBitmapList()
@@ -106,6 +118,53 @@ void BackgroundEditorDialog::updateBitmapControls()
 	ui->bitmapScaleYDoubleSpinBox->setValue(_model->getBitmapScaleY());
 	ui->bitmapDivXSpinBox->setValue(_model->getBitmapDivX());
 	ui->bitmapDivYSpinBox->setValue(_model->getBitmapDivY());
+}
+
+void BackgroundEditorDialog::refreshSunList()
+{
+	util::SignalBlockers blockers(this);
+
+	const auto names = _model->getMissionSunNames();
+
+	const int oldRow = ui->sunsListWidget->currentRow();
+	ui->sunsListWidget->setUpdatesEnabled(false);
+	ui->sunsListWidget->clear();
+
+	QStringList items;
+	items.reserve(static_cast<int>(names.size()));
+	for (const auto& s : names)
+		items << QString::fromStdString(s);
+	ui->sunsListWidget->addItems(items);
+
+	if (!items.isEmpty()) {
+		const int clamped = qBound(0, oldRow, ui->sunsListWidget->count() - 1);
+		ui->sunsListWidget->setCurrentRow(clamped);
+	}
+
+	ui->sunsListWidget->setUpdatesEnabled(true);
+
+	updateSunControls();
+}
+
+void BackgroundEditorDialog::updateSunControls()
+{
+	util::SignalBlockers blockers(this);
+
+	bool enabled = (_model->getSelectedSunIndex() >= 0);
+
+	ui->changeSunButton->setEnabled(enabled);
+	ui->deleteSunButton->setEnabled(enabled);
+	ui->sunSelectionCombo->setEnabled(enabled);
+	ui->sunPitchSpin->setEnabled(enabled);
+	ui->sunHeadingSpin->setEnabled(enabled);
+	ui->sunScaleDoubleSpinBox->setEnabled(enabled);
+
+	const int index = ui->sunSelectionCombo->findText(QString::fromStdString(_model->getSunName()));
+	ui->sunSelectionCombo->setCurrentIndex(index);
+
+	ui->sunPitchSpin->setValue(_model->getSunPitch());
+	ui->sunHeadingSpin->setValue(_model->getSunHeading());
+	ui->sunScaleDoubleSpinBox->setValue(_model->getSunScale());
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
@@ -176,9 +235,6 @@ void BackgroundEditorDialog::on_addBitmapButton_clicked()
 	dlg.setWindowTitle("Select Background Bitmap");
 	dlg.setImageFilenames(qnames);
 
-	// Optional: preselect current
-	//dlg.setInitialSelection(QString::fromStdString(_model->getSquadLogo()));
-
 	if (dlg.exec() != QDialog::Accepted)
 		return;
 
@@ -221,6 +277,98 @@ void BackgroundEditorDialog::on_deleteBitmapButton_clicked()
 {
 	_model->removeMissionBitmap();
 	refreshBitmapList();
+}
+
+void BackgroundEditorDialog::on_sunListWidget_currentRowChanged(int row)
+{
+	_model->setSelectedSunIndex(row);
+	updateSunControls();
+}
+
+void BackgroundEditorDialog::on_sunSelectionCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->sunSelectionCombo->itemText(index);
+	_model->setSunName(text.toUtf8().constData());
+	refreshSunList();
+}
+
+void BackgroundEditorDialog::on_sunPitchSpin_valueChanged(int arg1)
+{
+	_model->setSunPitch(arg1);
+}
+
+void BackgroundEditorDialog::on_sunHeadingSpin_valueChanged(int arg1)
+{
+	_model->setSunHeading(arg1);
+}
+
+void BackgroundEditorDialog::on_sunScaleDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setSunScale(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_addSunButton_clicked()
+{
+	const auto files = _model->getAvailableSunNames();
+	if (files.empty()) {
+		QMessageBox::information(this, "Select Background Sun", "No suns found.");
+		return;
+	}
+
+	QStringList qnames;
+	qnames.reserve(static_cast<int>(files.size()));
+	for (const auto& s : files)
+		qnames << QString::fromStdString(s);
+
+	ImagePickerDialog dlg(this);
+	dlg.setWindowTitle("Select Background Sun");
+	dlg.setImageFilenames(qnames);
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
+	_model->addMissionSunByName(chosen);
+
+	refreshSunList();
+}
+
+void BackgroundEditorDialog::on_changeSunButton_clicked()
+{
+	const auto files = _model->getAvailableSunNames();
+	if (files.empty()) {
+		QMessageBox::information(this, "Select Background Sun", "No suns found.");
+		return;
+	}
+
+	QStringList qnames;
+	qnames.reserve(static_cast<int>(files.size()));
+	for (const auto& s : files)
+		qnames << QString::fromStdString(s);
+
+	ImagePickerDialog dlg(this);
+	dlg.setWindowTitle("Select Background Sun");
+	dlg.setImageFilenames(qnames);
+
+	// preselect current
+	dlg.setInitialSelection(QString::fromStdString(_model->getSunName()));
+
+	if (dlg.exec() != QDialog::Accepted)
+		return;
+
+	const SCP_string chosen = dlg.selectedFile().toUtf8().constData();
+	_model->setSunName(chosen);
+
+	refreshSunList();
+}
+
+void BackgroundEditorDialog::on_deleteSunButton_clicked()
+{
+	_model->removeMissionSun();
+	refreshSunList();
 }
 
 } // namespace fso::fred::dialogs

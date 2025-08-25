@@ -34,6 +34,16 @@ private slots:
 	void on_changeBitmapButton_clicked();
 	void on_deleteBitmapButton_clicked();
 
+	// Suns
+	void on_sunListWidget_currentRowChanged(int row);
+	void on_sunSelectionCombo_currentIndexChanged(int index);
+	void on_sunPitchSpin_valueChanged(int arg1);
+	void on_sunHeadingSpin_valueChanged(int arg1);
+	void on_sunScaleDoubleSpinBox_valueChanged(double arg1);
+	void on_addSunButton_clicked();
+	void on_changeSunButton_clicked();
+	void on_deleteSunButton_clicked();
+
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
@@ -43,6 +53,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateUi();
 	void refreshBitmapList();
 	void updateBitmapControls();
+	void refreshSunList();
+	void updateSunControls();
 };
 
 } // namespace fso::fred::dialogs
