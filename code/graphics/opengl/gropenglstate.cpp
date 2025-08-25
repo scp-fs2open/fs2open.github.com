@@ -12,6 +12,9 @@
 #include "graphics/material.h"
 #include "gropenglstate.h"
 #include "math/vecmat.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 extern GLfloat GL_max_anisotropy;
 
@@ -316,13 +319,9 @@ GLboolean opengl_state::CullFace(GLint state)
 void opengl_state::SetPolygonMode(GLenum face, GLenum mode)
 {
 	if ( polygon_mode_Face != face || polygon_mode_Mode != mode ) {
-		#ifndef USE_OPENGL_ES
-			glPolygonMode(face, mode);
-			polygon_mode_Mode = mode;
-		#else
-			// glPolygonMode() is not supported on ES, wireframe mode needs an alternative path
-			polygon_mode_Mode = GL_FILL;
-		#endif
+		glPolygonMode(face, mode);
+
+		polygon_mode_Mode = mode;
 		polygon_mode_Face = face;
 	}
 }

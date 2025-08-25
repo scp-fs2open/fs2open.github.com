@@ -28,6 +28,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_framebuffer_ms;
