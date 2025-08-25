@@ -27,6 +27,7 @@
 #include <ui/dialogs/AboutDialog.h>
 #include <ui/dialogs/BackgroundEditorDialog.h>
 #include <ui/dialogs/ShieldSystemDialog.h>
+#include <ui/dialogs/GlobalShipFlagsDialog.h>
 #include <ui/dialogs/VoiceActingManager.h>
 #include <globalincs/linklist.h>
 #include <ui/dialogs/SelectionDialog.h>
@@ -1198,6 +1199,12 @@ void FredView::on_actionBackground_triggered(bool) {
 
 void FredView::on_actionShield_System_triggered(bool) {
 	auto dialog = new dialogs::ShieldSystemDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionSet_Global_Ship_Flags_triggered(bool) {
+	auto dialog = new dialogs::GlobalShipFlagsDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
