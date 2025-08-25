@@ -50,6 +50,7 @@ void gr_opengl_query_value(int obj, QueryType type) {
 		case QueryType::Timestamp:
 			Assertion(GLAD_GL_ARB_timer_query, "Timestamp queries are not available! Availability must be checked before calling this function!");
 			glQueryCounter(slot.name, GL_TIMESTAMP);
+			break;
 		default:
 			UNREACHABLE("Unhandled enum value!");
 			break;
