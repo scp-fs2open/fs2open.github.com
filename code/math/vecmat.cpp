@@ -2988,7 +2988,7 @@ void vm_interpolate_matrices(matrix* out_orient, const matrix* curr_orient, cons
 	matrix rot_matrix;
 
 	vm_quaternion_rotate(&rot_matrix, t * theta, &rot_axis); // get the matrix that rotates current to our interpolated matrix
-	vm_matrix_x_matrix(out_orient, &rot_matrix, curr_orient); // do the final rotation
+	vm_matrix_x_matrix(out_orient, curr_orient, &rot_matrix); // do the final rotation
 	
 }
 
