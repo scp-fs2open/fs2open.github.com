@@ -11,6 +11,7 @@
 #include "asteroid/asteroid.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "prop/prop.h"
 
 
 enum class LabRotationMode { Both, Yaw, Pitch, Roll };
@@ -72,6 +73,9 @@ public:
 		// Unload any asteroids that were loaded
 		asteroid_level_close();
 
+		// Unload any props that were loaded
+		props_level_close();
+
 		// Lab can only be entered from the Mainhall so this should be safe
 		model_free_all();
 
@@ -103,11 +107,15 @@ public:
 
 	int Saved_cmdline_collisions_value;
 
-	bool isSafeForShips() {
+	bool isSafeForShips() const {
 		return CurrentMode == LabMode::Ship && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_SHIP;
 	}
 
-	bool isSafeForWeapons() {
+	bool isSafeForProps() const {
+		return CurrentMode == LabMode::Prop && CurrentObject != -1 && Objects[CurrentObject].type == OBJ_PROP;
+	}
+
+	bool isSafeForWeapons() const {
 		bool valid = CurrentObject != -1 && (Objects[CurrentObject].type == OBJ_WEAPON || Objects[CurrentObject].type == OBJ_BEAM);
 		return CurrentMode == LabMode::Weapon && valid;
 	}
