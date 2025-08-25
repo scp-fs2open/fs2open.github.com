@@ -5,9 +5,7 @@
 #include "ui_ShieldSystemDialog.h"
 #include "mission/util.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewport) :
 	QDialog(parent),
@@ -15,40 +13,45 @@ ShieldSystemDialog::ShieldSystemDialog(FredView* parent, EditorViewport* viewpor
 	ui(new Ui::ShieldSystemDialog()),
 	_model(new ShieldSystemDialogModel(this, viewport)) {
     ui->setupUi(this);
-	
-	connect(this, &QDialog::accepted, _model.get(), &ShieldSystemDialogModel::apply);
-	connect(ui->dialogButtonBox, &QDialogButtonBox::rejected, this, &ShieldSystemDialog::rejectHandler);
 
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShieldSystemDialog::updateUI);
-
-	connect(ui->shipTeamCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &ShieldSystemDialog::teamSelectionChanged);
-	connect(ui->shipTypeCombo, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, &ShieldSystemDialog::typeSelectionChanged);
-
-	connect(ui->teamHasShieldRadio, &QRadioButton::toggled, this,
-		[this](bool) { _model->setCurrentTeamShieldSys(ui->teamHasShieldRadio->isChecked() ? 0 : 1); });
-	connect(ui->teamNoShieldRadio, &QRadioButton::toggled, this,
-		[this](bool) { _model->setCurrentTeamShieldSys(ui->teamNoShieldRadio->isChecked() ? 1 : 0); });
-	connect(ui->typeHasShieldRadio, &QRadioButton::toggled, this,
-		[this](bool) { _model->setCurrentTypeShieldSys(ui->typeHasShieldRadio->isChecked() ? 0 : 1); });
-	connect(ui->typeNoShieldRadio, &QRadioButton::toggled, this,
-		[this](bool) { _model->setCurrentTypeShieldSys(ui->typeNoShieldRadio->isChecked() ? 1 : 0); });
-
-	updateUI();
+	initializeUi();
+	updateUi();
 
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
-ShieldSystemDialog::~ShieldSystemDialog() {
+
+ShieldSystemDialog::~ShieldSystemDialog() = default;
+
+void ShieldSystemDialog::accept()
+{
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
 }
 
-void ShieldSystemDialog::updateUI() {
+void ShieldSystemDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
+void ShieldSystemDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+
+void ShieldSystemDialog::initializeUi() {
 	util::SignalBlockers blockers(this);
 
-	updateTeam();
-	updateType();
-}
-
-void ShieldSystemDialog::updateTeam() {
 	if (ui->shipTeamCombo->count() == 0) {
 		for (const auto& teamName : _model->getTeamOptions()) {
 			ui->shipTeamCombo->addItem(QString::fromStdString(teamName));
@@ -57,19 +60,6 @@ void ShieldSystemDialog::updateTeam() {
 
 	ui->shipTeamCombo->setCurrentIndex(_model->getCurrentTeam());
 
-	const int status = _model->getCurrentTeamShieldSys();
-
-	ui->teamHasShieldRadio->setChecked(false);
-	ui->teamNoShieldRadio->setChecked(false);
-
-	if (status == 0) {
-		ui->teamHasShieldRadio->setChecked(true);
-	} else if (status == 1) {
-		ui->teamNoShieldRadio->setChecked(true);
-	}
-}
-
-void ShieldSystemDialog::updateType() {
 	if (ui->shipTypeCombo->count() == 0) {
 		for (const auto& typeName : _model->getShipTypeOptions()) {
 			ui->shipTypeCombo->addItem(QString::fromStdString(typeName));
@@ -77,51 +67,64 @@ void ShieldSystemDialog::updateType() {
 	}
 
 	ui->shipTypeCombo->setCurrentIndex(_model->getCurrentShipType());
-
-	const int status = _model->getCurrentTypeShieldSys();
-
-	ui->typeHasShieldRadio->setChecked(false);
-	ui->typeNoShieldRadio->setChecked(false);
-
-	if (status == 0) {
-		ui->typeHasShieldRadio->setChecked(true);
-	} else if (status == 1) {
-		ui->typeNoShieldRadio->setChecked(true);
-	}
 }
 
-void ShieldSystemDialog::teamSelectionChanged(int index) {
+void ShieldSystemDialog::updateUi() {
+	util::SignalBlockers blockers(this);
+
+	auto typeShieldSys = _model->getCurrentTypeShieldSys();
+	ui->typeHasShieldRadio->setChecked(typeShieldSys == GlobalShieldStatus::HasShields);
+	ui->typeNoShieldRadio->setChecked(typeShieldSys == GlobalShieldStatus::NoShields);
+
+	auto teamShieldSys = _model->getCurrentTeamShieldSys();
+	ui->teamHasShieldRadio->setChecked(teamShieldSys == GlobalShieldStatus::HasShields);
+	ui->teamNoShieldRadio->setChecked(teamShieldSys == GlobalShieldStatus::NoShields);
+}
+
+void ShieldSystemDialog::on_okAndCancelButtons_accepted() {
+	accept();
+}
+
+void ShieldSystemDialog::on_okAndCancelButtons_rejected() {
+	reject();
+}
+
+void ShieldSystemDialog::on_shipTypeCombo_currentIndexChanged(int index) {
 	if (index >= 0) {
 		_model->setCurrentTeam(index);
 	}
+	updateUi();
 }
 
-void ShieldSystemDialog::typeSelectionChanged(int index) {
+void ShieldSystemDialog::on_shipTeamCombo_currentIndexChanged(int index) {
 	if (index >= 0) {
 		_model->setCurrentShipType(index);
 	}
+	updateUi();
 }
 
-void ShieldSystemDialog::keyPressEvent(QKeyEvent* event) {
-	if (event->key() == Qt::Key_Escape) {
-		// Instead of calling reject when we close a dialog it should try to close the window which will will allow the
-		// user to save unsaved changes
-		event->ignore();
-		this->close();
-		return;
+void ShieldSystemDialog::on_typeHasShieldRadio_toggled(bool checked) {
+	if (checked) {
+		_model->setCurrentTypeShieldSys(checked);
 	}
-	QDialog::keyPressEvent(event);
 }
 
-void ShieldSystemDialog::closeEvent(QCloseEvent* e) {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
+void ShieldSystemDialog::on_typeNoShieldRadio_toggled(bool checked) {
+	if (checked) {
+		_model->setCurrentTypeShieldSys(!checked);
+	}
 }
-void ShieldSystemDialog::rejectHandler()
-{
-	this->close();
+
+void ShieldSystemDialog::on_teamHasShieldRadio_toggled(bool checked) {
+	if (checked) {
+		_model->setCurrentTeamShieldSys(checked);
+	}
 }
+
+void ShieldSystemDialog::on_teamNoShieldRadio_toggled(bool checked) {
+	if (checked) {
+		_model->setCurrentTeamShieldSys(!checked);
+	}
 }
-}
-}
+
+} // namespace fso::fred::dialogs

@@ -5,9 +5,7 @@
 #include <mission/dialogs/ShieldSystemDialogModel.h>
 #include <ui/FredView.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class ShieldSystemDialog;
@@ -21,25 +19,31 @@ public:
     explicit ShieldSystemDialog(FredView* parent, EditorViewport* viewport);
 	~ShieldSystemDialog() override;
 
+	void accept() override;
+	void reject() override;
+
 protected:
-	void keyPressEvent(QKeyEvent* event) override;
-	void closeEvent(QCloseEvent*) override;
+	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
 
-	void rejectHandler();
+private slots:
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
 
-  private:
-	void updateUI();
-	void updateTeam();
-	void updateType();
+	void on_shipTypeCombo_currentIndexChanged(int index);
+	void on_shipTeamCombo_currentIndexChanged(int index);
 
-	void teamSelectionChanged(int index);
-	void typeSelectionChanged(int index);
+	void on_typeHasShieldRadio_toggled(bool checked);
+	void on_typeNoShieldRadio_toggled(bool checked);
+	void on_teamHasShieldRadio_toggled(bool checked);
+	void on_teamNoShieldRadio_toggled(bool checked);
+
+private:  // NOLINT(readability-redundant-access-specifiers)
+	void initializeUi();
+	void updateUi();
 
 	EditorViewport * _viewport = nullptr;
     std::unique_ptr<Ui::ShieldSystemDialog> ui;
 	std::unique_ptr<ShieldSystemDialogModel> _model;
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
