@@ -55,6 +55,37 @@ void BackgroundEditorDialog::initializeUi()
 
 	refreshSunList();
 
+	// Nebula
+	const auto& nebula_names = _model->getNebulaPatternNames();
+	for (const auto& s : nebula_names) {
+		ui->nebulaPatternCombo->addItem(QString::fromStdString(s));
+	}
+
+	const auto& lightning_names = _model->getLightningNames();
+	for (const auto& s : lightning_names) {
+		ui->nebulaLightningCombo->addItem(QString::fromStdString(s));
+	}
+
+	const auto& poof_names = _model->getPoofNames();
+	for (const auto& s : poof_names) {
+		ui->poofsListWidget->addItem(QString::fromStdString(s));
+	}
+
+	updateNebulaControls();
+
+	// Old nebula
+	const auto& old_nebula_names = _model->getOldNebulaPatternOptions();
+	for (const auto& s : old_nebula_names) {
+		ui->oldNebulaPatternCombo->addItem(QString::fromStdString(s));
+	}
+
+	const auto& old_nebula_colors = _model->getOldNebulaColorOptions();
+	for (const auto& s : old_nebula_colors) {
+		ui->oldNebulaColorCombo->addItem(QString::fromStdString(s));
+	}
+
+	updateOldNebulaControls();
+
 }
 
 void BackgroundEditorDialog::updateUi()
@@ -165,6 +196,71 @@ void BackgroundEditorDialog::updateSunControls()
 	ui->sunPitchSpin->setValue(_model->getSunPitch());
 	ui->sunHeadingSpin->setValue(_model->getSunHeading());
 	ui->sunScaleDoubleSpinBox->setValue(_model->getSunScale());
+}
+
+void BackgroundEditorDialog::updateNebulaControls()
+{
+	util::SignalBlockers blockers(this);
+	
+	bool enabled = _model->getFullNebulaEnabled();
+	ui->rangeSpinBox->setEnabled(enabled);
+	ui->nebulaPatternCombo->setEnabled(enabled);
+	ui->nebulaLightningCombo->setEnabled(enabled);
+	ui->poofsListWidget->setEnabled(enabled);
+	ui->shipTrailsCheckBox->setEnabled(enabled);
+	ui->fogNearDoubleSpinBox->setEnabled(enabled);
+	ui->fogFarDoubleSpinBox->setEnabled(enabled);
+	ui->displayBgsInNebulaCheckbox->setEnabled(enabled);
+	ui->overrideFogPaletteCheckBox->setEnabled(enabled);
+
+	bool override = _model->getFogPaletteOverride();
+	ui->fogOverrideRedSpinBox->setEnabled(enabled && override);
+	ui->fogOverrideGreenSpinBox->setEnabled(enabled && override);
+	ui->fogOverrideBlueSpinBox->setEnabled(enabled && override);
+
+	ui->fullNebulaCheckBox->setChecked(enabled);
+	ui->rangeSpinBox->setValue(_model->getFullNebulaRange());
+	ui->nebulaPatternCombo->setCurrentIndex(ui->nebulaPatternCombo->findText(QString::fromStdString(_model->getNebulaFullPattern())));
+	ui->nebulaLightningCombo->setCurrentIndex(ui->nebulaLightningCombo->findText(QString::fromStdString(_model->getLightning())));
+
+	const auto& selected_poofs = _model->getSelectedPoofs();
+	for (auto& poof : selected_poofs) {
+		auto items = ui->poofsListWidget->findItems(QString::fromStdString(poof), Qt::MatchExactly);
+		for (auto* item : items) {
+			item->setSelected(true);
+		}
+	}
+
+	ui->shipTrailsCheckBox->setChecked(_model->getShipTrailsToggled());
+	ui->fogNearDoubleSpinBox->setValue(static_cast<double>(_model->getFogNearMultiplier()));
+	ui->fogFarDoubleSpinBox->setValue(static_cast<double>(_model->getFogFarMultiplier()));
+	ui->displayBgsInNebulaCheckbox->setChecked(_model->getDisplayBackgroundBitmaps());
+	ui->overrideFogPaletteCheckBox->setChecked(override);
+	ui->fogOverrideRedSpinBox->setValue(_model->getFogR());
+	ui->fogOverrideGreenSpinBox->setValue(_model->getFogG());
+	ui->fogOverrideBlueSpinBox->setValue(_model->getFogB());
+
+	updateOldNebulaControls();
+}
+
+void BackgroundEditorDialog::updateOldNebulaControls()
+{
+	util::SignalBlockers blockers(this);
+	
+	const bool enabled = !_model->getFullNebulaEnabled();
+	const bool old_enabled = _model->getOldNebulaPattern() != "<None>";
+
+	ui->oldNebulaPatternCombo->setEnabled(enabled);
+	ui->oldNebulaColorCombo->setEnabled(enabled && old_enabled);
+	ui->oldNebulaPitchSpinBox->setEnabled(enabled && old_enabled);
+	ui->oldNebulaBankSpinBox->setEnabled(enabled && old_enabled);
+	ui->oldNebulaHeadingSpinBox->setEnabled(enabled && old_enabled);
+
+	ui->oldNebulaPatternCombo->setCurrentIndex(ui->oldNebulaPatternCombo->findText(QString::fromStdString(_model->getOldNebulaPattern())));
+	ui->oldNebulaColorCombo->setCurrentIndex(ui->oldNebulaColorCombo->findText(QString::fromStdString(_model->getOldNebulaColorName())));
+	ui->oldNebulaPitchSpinBox->setValue(_model->getOldNebulaPitch());
+	ui->oldNebulaBankSpinBox->setValue(_model->getOldNebulaBank());
+	ui->oldNebulaHeadingSpinBox->setValue(_model->getOldNebulaHeading());
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
@@ -369,6 +465,122 @@ void BackgroundEditorDialog::on_deleteSunButton_clicked()
 {
 	_model->removeMissionSun();
 	refreshSunList();
+}
+
+void BackgroundEditorDialog::on_fullNebulaCheckBox_toggled(bool checked)
+{
+	_model->setFullNebulaEnabled(checked);
+	updateNebulaControls();
+}
+
+void BackgroundEditorDialog::on_rangeSpinBox_valueChanged(int arg1)
+{
+	_model->setFullNebulaRange(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_nebulaPatternCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->nebulaPatternCombo->itemText(index);
+	_model->setNebulaFullPattern(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_nebulaLightningCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->nebulaLightningCombo->itemText(index);
+	_model->setLightning(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_poofsListWidget_itemSelectionChanged()
+{
+	QStringList selected;
+	for (auto* item : ui->poofsListWidget->selectedItems()) {
+		selected << item->text();
+	}
+	SCP_vector<SCP_string> selected_std;
+	selected_std.reserve(static_cast<size_t>(selected.size()));
+	for (const auto& s : selected) {
+		selected_std.emplace_back(s.toUtf8().constData());
+	}
+	_model->setSelectedPoofs(selected_std);
+}
+
+void BackgroundEditorDialog::on_shipTrailsCheckBox_toggled(bool checked)
+{
+	_model->setShipTrailsToggled(checked);
+}
+
+void BackgroundEditorDialog::on_fogNearDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogNearMultiplier(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_fogFarDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setFogFarMultiplier(static_cast<float>(arg1));
+}
+
+void BackgroundEditorDialog::on_displayBgsInNebulaCheckbox_toggled(bool checked)
+{
+	_model->setDisplayBackgroundBitmaps(checked);
+}
+
+void BackgroundEditorDialog::on_overrideFogPaletteCheckBox_toggled(bool checked)
+{
+	_model->setFogPaletteOverride(checked);
+	updateNebulaControls();
+}
+
+void BackgroundEditorDialog::on_fogOverrideRedSpinBox_valueChanged(int arg1)
+{
+	_model->setFogR(arg1);
+}
+
+void BackgroundEditorDialog::on_fogOverrideGreenSpinBox_valueChanged(int arg1)
+{
+	_model->setFogG(arg1);
+}
+
+void BackgroundEditorDialog::on_fogOverrideBlueSpinBox_valueChanged(int arg1)
+{
+	_model->setFogB(arg1);
+}
+
+void BackgroundEditorDialog::on_oldNebulaPatternCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	const QString text = ui->oldNebulaPatternCombo->itemText(index);
+	_model->setOldNebulaPattern(text.toUtf8().constData());
+	updateOldNebulaControls();
+}
+
+void BackgroundEditorDialog::on_oldNebulaColorCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+	const QString text = ui->oldNebulaColorCombo->itemText(index);
+	_model->setOldNebulaColorName(text.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_oldNebulaPitchSpinBox_valueChanged(int arg1)
+{
+	_model->setOldNebulaPitch(arg1);
+}
+
+void BackgroundEditorDialog::on_oldNebulaBankSpinBox_valueChanged(int arg1)
+{
+	_model->setOldNebulaBank(arg1);
+}
+
+void BackgroundEditorDialog::on_oldNebulaHeadingSpinBox_valueChanged(int arg1)
+{
+	_model->setOldNebulaHeading(arg1);
 }
 
 } // namespace fso::fred::dialogs

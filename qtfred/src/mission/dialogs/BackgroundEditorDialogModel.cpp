@@ -1,10 +1,15 @@
 #include "FredApplication.h"
 #include "BackgroundEditorDialogModel.h"
 
-//#include "mission/missionparse.h"
+#include "math/bitarray.h"
+#include "mission/missionparse.h"
+#include "nebula/neb.h"
+#include "nebula/neblightning.h"
+#include "starfield/nebula.h"
 
 // TODO move this to common for both FREDs. Do not pass review if this is not done
 const static float delta = .00001f;
+const static float default_nebula_range = 3000.0f;
 
 namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
@@ -24,13 +29,19 @@ BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, Editor
 
 bool BackgroundEditorDialogModel::apply()
 {
-	// do the OnClose stuff here
+	// override dumb values with reasonable ones
+	// this is what original FRED does but it was a text edit field using atoi
+	// ours is a limited spinbox so this probably isn't necessary anymore??
+	// Does this mean range can never be 0?????????
+	if (Neb2_awacs <= 0.00000001f) {
+		Neb2_awacs = 3000.0f;
+	}
 	return true;
 }
 
 void BackgroundEditorDialogModel::reject()
 {
-	// do nothing?
+	// do nothing
 }
 
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
@@ -516,6 +527,338 @@ void BackgroundEditorDialogModel::setSunScale(float v)
 	CLAMP(v, getSunScaleLimit().first, getSunScaleLimit().second);
 	modify(s->scale_x, v);
 	refreshBackgroundPreview();
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames() const
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back("<None>"); // legacy default
+	for (const auto& st : Storm_types) {
+		out.emplace_back(st.name);
+	}
+	return out;
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames() const
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back("<None>"); // matches legacy combo where index 0 = none
+	for (const auto& neb : Neb2_bitmap_filenames) {
+		out.emplace_back(neb);
+	}
+	return out;
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getPoofNames() const
+{
+	SCP_vector<SCP_string> out;
+	out.reserve(Poof_info.size());
+	for (const auto& p : Poof_info) {
+		out.emplace_back(p.name);
+	}
+	return out;
+}
+
+bool BackgroundEditorDialogModel::getFullNebulaEnabled() const
+{
+	return The_mission.flags[Mission::Mission_Flags::Fullneb];
+}
+
+void BackgroundEditorDialogModel::setFullNebulaEnabled(bool enabled)
+{
+	const bool currentlyEnabled = getFullNebulaEnabled();
+	if (enabled == currentlyEnabled) {
+		return;
+	}
+
+	if (enabled) {
+		The_mission.flags.set(Mission::Mission_Flags::Fullneb);
+
+		// Set defaults if needed
+		if (Neb2_awacs <= 0.0f) {
+			modify(Neb2_awacs, default_nebula_range);
+		}
+	} else {
+		// Disable full nebula
+		The_mission.flags.remove(Mission::Mission_Flags::Fullneb);
+		modify(Neb2_awacs, -1.0f);
+	}
+
+	set_modified();
+}
+
+float BackgroundEditorDialogModel::getFullNebulaRange() const
+{
+	// May be -1 if full nebula is disabled
+	return Neb2_awacs;
+}
+
+void BackgroundEditorDialogModel::setFullNebulaRange(float range)
+{
+	modify(Neb2_awacs, range);
+}
+
+SCP_string BackgroundEditorDialogModel::getNebulaFullPattern() const
+{
+	return (Neb2_texture_name[0] != '\0') ? SCP_string(Neb2_texture_name) : SCP_string("<None>");
+}
+
+void BackgroundEditorDialogModel::setNebulaFullPattern(const SCP_string& name)
+{
+	if (lcase_equal(name, "<None>")) {
+		strcpy_s(Neb2_texture_name, "");
+	} else {
+		strcpy_s(Neb2_texture_name, name.c_str());
+	}
+
+	set_modified();
+}
+
+SCP_string BackgroundEditorDialogModel::getLightning() const
+{
+	// Return "<none>" when engine stores "none" or empty
+	if (Mission_parse_storm_name[0] == '\0')
+		return "<None>";
+	SCP_string s = Mission_parse_storm_name;
+	if (lcase_equal(s, "none"))
+		return "<None>";
+	return s;
+}
+
+void BackgroundEditorDialogModel::setLightning(const SCP_string& name)
+{
+	// Engine convention is the literal "none" for no storm
+	if (lcase_equal(name, "<None>")) {
+		strcpy_s(Mission_parse_storm_name, "none");
+	} else {
+		strcpy_s(Mission_parse_storm_name, name.c_str());
+	}
+	set_modified();
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getSelectedPoofs() const
+{
+	SCP_vector<SCP_string> out;
+	for (size_t i = 0; i < Poof_info.size(); ++i) {
+		if (get_bit(Neb2_poof_flags.get(), i))
+			out.emplace_back(Poof_info[i].name);
+	}
+	return out;
+}
+
+void BackgroundEditorDialogModel::setSelectedPoofs(const SCP_vector<SCP_string>& names)
+{
+	// Clear all, then set matching names
+	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
+	for (const auto& want : names) {
+		for (size_t i = 0; i < Poof_info.size(); ++i) {
+			if (!_stricmp(Poof_info[i].name, want.c_str())) {
+				set_bit(Neb2_poof_flags.get(), i);
+				break;
+			}
+		}
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getShipTrailsToggled() const
+{
+	return The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails];
+}
+
+void BackgroundEditorDialogModel::setShipTrailsToggled(bool on)
+{
+	The_mission.flags.set(Mission::Mission_Flags::Toggle_ship_trails, on);
+	set_modified();
+}
+
+float BackgroundEditorDialogModel::getFogNearMultiplier() const
+{
+	return Neb2_fog_near_mult;
+}
+
+void BackgroundEditorDialogModel::setFogNearMultiplier(float v)
+{
+	modify(Neb2_fog_near_mult, v);
+}
+
+float BackgroundEditorDialogModel::getFogFarMultiplier() const
+{
+	return Neb2_fog_far_mult;
+}
+
+void BackgroundEditorDialogModel::setFogFarMultiplier(float v)
+{
+	modify(Neb2_fog_far_mult, v);
+}
+
+bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps() const
+{
+	return The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps];
+}
+
+void BackgroundEditorDialogModel::setDisplayBackgroundBitmaps(bool on)
+{
+	The_mission.flags.set(Mission::Mission_Flags::Fullneb_background_bitmaps, on);
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getFogPaletteOverride() const
+{
+	return The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override];
+}
+
+void BackgroundEditorDialogModel::setFogPaletteOverride(bool on)
+{
+	The_mission.flags.set(Mission::Mission_Flags::Neb2_fog_color_override, on);
+	set_modified();
+}
+
+int BackgroundEditorDialogModel::getFogR() const
+{
+	return Neb2_fog_color[0];
+}
+
+void BackgroundEditorDialogModel::setFogR(int r)
+{
+	CLAMP(r, 0, 255)
+	const ubyte v = static_cast<ubyte>(r);
+	modify(Neb2_fog_color[0], v);
+}
+
+int BackgroundEditorDialogModel::getFogG() const
+{
+	return Neb2_fog_color[1];
+}
+
+void BackgroundEditorDialogModel::setFogG(int g)
+{
+	CLAMP(g, 0, 255)
+	const ubyte v = static_cast<ubyte>(g);
+	modify(Neb2_fog_color[1], v);
+}
+
+int BackgroundEditorDialogModel::getFogB() const
+{
+	return Neb2_fog_color[2];
+}
+
+void BackgroundEditorDialogModel::setFogB(int b)
+{
+	CLAMP(b, 0, 255)
+	const ubyte v = static_cast<ubyte>(b);
+	modify(Neb2_fog_color[0], v);
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions() const
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back("<None>");
+	for (auto& neb : Nebula_filenames) {
+		out.emplace_back(neb);
+	}
+	return out;
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaColorOptions() const
+{
+	SCP_vector<SCP_string> out;
+	out.reserve(NUM_NEBULA_COLORS);
+	for (auto& color : Nebula_colors) {
+		out.emplace_back(color);
+	}
+	return out;
+}
+
+SCP_string BackgroundEditorDialogModel::getOldNebulaPattern() const
+{
+	if (Nebula_index < 0)
+		return "<None>";
+
+	if (Nebula_index >= 0 && Nebula_index < NUM_NEBULAS) {
+		return Nebula_filenames[Nebula_index];
+	}
+
+	return SCP_string{};
+}
+
+void BackgroundEditorDialogModel::setOldNebulaPattern(const SCP_string& name)
+{
+	int newIndex = -1;
+	if (!name.empty() && stricmp(name.c_str(), "<None>") != 0) {
+		for (int i = 0; i < NUM_NEBULAS; ++i) {
+			if (!stricmp(Nebula_filenames[i], name.c_str())) {
+				newIndex = i;
+				break;
+			}
+		}
+	}
+
+	modify(Nebula_index, newIndex);
+}
+
+SCP_string BackgroundEditorDialogModel::getOldNebulaColorName() const
+{
+	if (Mission_palette >= 0 && Mission_palette < NUM_NEBULA_COLORS) {
+		return Nebula_colors[Mission_palette];
+	}
+	return SCP_string{};
+}
+
+void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
+{
+	if (name.empty())
+		return;
+	for (int i = 0; i < NUM_NEBULA_COLORS; ++i) {
+		if (!stricmp(Nebula_colors[i], name.c_str())) {
+			modify(Mission_palette, i);
+			return;
+		}
+	}
+	// name not found: ignore
+}
+
+int BackgroundEditorDialogModel::getOldNebulaPitch() const
+{
+	return Nebula_pitch;
+}
+
+void BackgroundEditorDialogModel::setOldNebulaPitch(int deg)
+{
+	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	if (Nebula_pitch != deg) {
+		Nebula_pitch = deg;
+		modify(Nebula_pitch, deg);
+	}
+}
+
+int BackgroundEditorDialogModel::getOldNebulaBank() const
+{
+	return Nebula_bank;
+}
+
+void BackgroundEditorDialogModel::setOldNebulaBank(int deg)
+{
+	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	if (Nebula_bank != deg) {
+		Nebula_bank = deg;
+		modify(Nebula_bank, deg);
+	}
+}
+
+int BackgroundEditorDialogModel::getOldNebulaHeading() const
+{
+	return Nebula_heading;
+}
+
+void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
+{
+	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
+	if (Nebula_heading != deg) {
+		Nebula_heading = deg;
+		modify(Nebula_heading, deg);
+	}
 }
 
 } // namespace fso::fred::dialogs

@@ -69,7 +69,52 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	float getSunScale() const; // uses scale_x for both x and y
 	void setSunScale(float v);
 
-  private: // NOLINT(readability-redundant-access-specifiers)
+	// nebula group
+	SCP_vector<SCP_string> getLightningNames() const;
+	SCP_vector<SCP_string> getNebulaPatternNames() const;
+	SCP_vector<SCP_string> getPoofNames() const;
+	bool getFullNebulaEnabled() const;
+	void setFullNebulaEnabled(bool enabled);
+	float getFullNebulaRange() const;
+	void setFullNebulaRange(float range);
+	SCP_string getNebulaFullPattern() const;
+	void setNebulaFullPattern(const SCP_string& name);
+	SCP_string getLightning() const;
+	void setLightning(const SCP_string& name);
+	SCP_vector<SCP_string> getSelectedPoofs() const;
+	void setSelectedPoofs(const SCP_vector<SCP_string>& names);
+	bool getShipTrailsToggled() const;
+	void setShipTrailsToggled(bool on);
+	float getFogNearMultiplier() const;
+	void setFogNearMultiplier(float v);
+	float getFogFarMultiplier() const;
+	void setFogFarMultiplier(float v);
+	bool getDisplayBackgroundBitmaps() const;
+	void setDisplayBackgroundBitmaps(bool on);
+	bool getFogPaletteOverride() const;
+	void setFogPaletteOverride(bool on);
+	int getFogR() const;
+	void setFogR(int r);
+	int getFogG() const;
+	void setFogG(int g);
+	int getFogB() const;
+	void setFogB(int b);
+
+	// old nebula group
+	SCP_vector<SCP_string> getOldNebulaPatternOptions() const;
+	SCP_vector<SCP_string> getOldNebulaColorOptions() const;
+	SCP_string getOldNebulaColorName() const;
+	void setOldNebulaColorName(const SCP_string& name);
+	SCP_string getOldNebulaPattern() const;
+	void setOldNebulaPattern(const SCP_string& name);
+	int getOldNebulaPitch() const;
+	void setOldNebulaPitch(int deg);
+	int getOldNebulaBank() const;
+	void setOldNebulaBank(int deg);
+	int getOldNebulaHeading() const;
+	void setOldNebulaHeading(int deg);
+
+  private:
 	void refreshBackgroundPreview();
 	background_t& getActiveBackground() const;
 	starfield_list_entry* getActiveBitmap() const;

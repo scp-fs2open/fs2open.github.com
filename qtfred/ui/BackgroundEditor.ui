@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>981</width>
-    <height>814</height>
+    <width>1041</width>
+    <height>862</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -93,174 +93,331 @@
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="mainHorizontalLayout">
+    <layout class="QHBoxLayout" name="backgroundHorizontalLayout">
      <item>
-      <layout class="QVBoxLayout" name="leftLayout">
-       <item>
-        <widget class="QGroupBox" name="bitmapsGroupBox">
-         <property name="title">
-          <string>Bitmaps</string>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="5,3">
+      <widget class="QGroupBox" name="bitmapsGroupBox">
+       <property name="title">
+        <string>Bitmaps</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_12" stretch="5,3">
+        <item>
+         <layout class="QVBoxLayout" name="bitmapLeftLayout">
           <item>
-           <layout class="QVBoxLayout" name="bitmapLeftLayout">
-            <item>
-             <widget class="QListWidget" name="bitmapListWidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="bitmapButtonsLayout">
-              <item>
-               <widget class="QPushButton" name="addBitmapButton">
-                <property name="text">
-                 <string>Add</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="changeBitmapButton">
-                <property name="text">
-                 <string>Change</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="deleteBitmapButton">
-                <property name="text">
-                 <string>Delete</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
+           <widget class="QListWidget" name="bitmapListWidget"/>
           </item>
           <item>
-           <layout class="QVBoxLayout" name="bitmapRightLayout">
+           <layout class="QHBoxLayout" name="bitmapButtonsLayout">
             <item>
-             <widget class="QComboBox" name="bitmapTypeCombo"/>
-            </item>
-            <item>
-             <layout class="QFormLayout" name="bitmapOrientForm">
-              <item row="0" column="0">
-               <widget class="QLabel" name="bitmapPitchLabel">
-                <property name="text">
-                 <string>Pitch</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QSpinBox" name="bitmapPitchSpin">
-                <property name="wrapping">
-                 <bool>true</bool>
-                </property>
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="bitmapBankLabel">
-                <property name="text">
-                 <string>Bank</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QSpinBox" name="bitmapBankSpin">
-                <property name="wrapping">
-                 <bool>true</bool>
-                </property>
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="bitmapHeadingLabel">
-                <property name="text">
-                 <string>Heading</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QSpinBox" name="bitmapHeadingSpin">
-                <property name="wrapping">
-                 <bool>true</bool>
-                </property>
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QLabel" name="bitmapScaleLabel">
+             <widget class="QPushButton" name="addBitmapButton">
               <property name="text">
-               <string>Scale (x/y)</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>Add</string>
               </property>
              </widget>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="bitmapScaleLayout">
-              <item>
-               <widget class="QDoubleSpinBox" name="bitmapScaleXDoubleSpinBox">
-                <property name="maximum">
-                 <double>16777215.000000000000000</double>
-                </property>
-                <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QDoubleSpinBox" name="bitmapScaleYDoubleSpinBox">
-                <property name="maximum">
-                 <double>16777215.000000000000000</double>
-                </property>
-                <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-            <item>
-             <widget class="QLabel" name="bitmapDivisionLabel">
+             <widget class="QPushButton" name="changeBitmapButton">
               <property name="text">
-               <string># divisions (x/y)</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <string>Change</string>
               </property>
              </widget>
             </item>
             <item>
-             <layout class="QHBoxLayout" name="bitmapDivisionLayout">
-              <item>
-               <widget class="QSpinBox" name="bitmapDivXSpinBox">
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QSpinBox" name="bitmapDivYSpinBox">
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-             </layout>
+             <widget class="QPushButton" name="deleteBitmapButton">
+              <property name="text">
+               <string>Delete</string>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
          </layout>
-        </widget>
-       </item>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="bitmapRightLayout">
+          <item>
+           <widget class="QComboBox" name="bitmapTypeCombo"/>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="bitmapOrientForm">
+            <item row="0" column="0">
+             <widget class="QLabel" name="bitmapPitchLabel">
+              <property name="text">
+               <string>Pitch</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="bitmapPitchSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="bitmapBankLabel">
+              <property name="text">
+               <string>Bank</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="bitmapBankSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="bitmapHeadingLabel">
+              <property name="text">
+               <string>Heading</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QSpinBox" name="bitmapHeadingSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="bitmapScaleLabel">
+            <property name="text">
+             <string>Scale (x/y)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="bitmapScaleLayout">
+            <item>
+             <widget class="QDoubleSpinBox" name="bitmapScaleXDoubleSpinBox">
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QDoubleSpinBox" name="bitmapScaleYDoubleSpinBox">
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <widget class="QLabel" name="bitmapDivisionLabel">
+            <property name="text">
+             <string># divisions (x/y)</string>
+            </property>
+            <property name="alignment">
+             <set>Qt::AlignCenter</set>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="bitmapDivisionLayout">
+            <item>
+             <widget class="QSpinBox" name="bitmapDivXSpinBox">
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QSpinBox" name="bitmapDivYSpinBox">
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="sunsGroupBox">
+       <property name="title">
+        <string>Suns</string>
+       </property>
+       <layout class="QHBoxLayout" name="horizontalLayout_16">
+        <item>
+         <layout class="QVBoxLayout" name="sunLeftLayout">
+          <item>
+           <widget class="QListWidget" name="sunsListWidget"/>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="sunsButtonsLayout">
+            <item>
+             <widget class="QPushButton" name="addSunButton">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="changeSunButton">
+              <property name="text">
+               <string>Change</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="deleteSunButton">
+              <property name="text">
+               <string>Delete</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <layout class="QVBoxLayout" name="sunRightLayout">
+          <item>
+           <widget class="QComboBox" name="sunSelectionCombo"/>
+          </item>
+          <item>
+           <layout class="QFormLayout" name="sunsFormLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="sunsPitchLabel">
+              <property name="text">
+               <string>Pitch</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QSpinBox" name="sunPitchSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="sunsHeadingLabel">
+              <property name="text">
+               <string>Heading</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QSpinBox" name="sunHeadingSpin">
+              <property name="wrapping">
+               <bool>true</bool>
+              </property>
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="sunScaleLabel">
+              <property name="text">
+               <string>Scale</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QDoubleSpinBox" name="sunScaleDoubleSpinBox">
+              <property name="minimumSize">
+               <size>
+                <width>75</width>
+                <height>0</height>
+               </size>
+              </property>
+              <property name="maximum">
+               <double>16777215.000000000000000</double>
+              </property>
+              <property name="singleStep">
+               <double>0.100000000000000</double>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="backgroundFooterLayout">
+     <item>
+      <spacer name="checkboxCenteringLeft">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+     <item>
+      <widget class="QCheckBox" name="useCorrectAngleFormatCheckBox">
+       <property name="text">
+        <string>Save sun/bitmap angles to mission in correct format</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <spacer name="checkboxCenteringRight">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>40</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <widget class="Line" name="line">
+     <property name="orientation">
+      <enum>Qt::Horizontal</enum>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="mainHorizontalLayout">
+     <item>
+      <layout class="QVBoxLayout" name="leftLayout">
        <item>
         <widget class="QGroupBox" name="nebulaGroupBox">
          <property name="title">
@@ -310,6 +467,9 @@
                 <property name="maximum">
                  <number>16777215</number>
                 </property>
+                <property name="value">
+                 <number>3000</number>
+                </property>
                </widget>
               </item>
              </layout>
@@ -345,6 +505,9 @@
                 <property name="singleStep">
                  <double>0.100000000000000</double>
                 </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
+                </property>
                </widget>
               </item>
               <item row="1" column="1">
@@ -354,6 +517,9 @@
                 </property>
                 <property name="singleStep">
                  <double>0.100000000000000</double>
+                </property>
+                <property name="value">
+                 <double>1.000000000000000</double>
                 </property>
                </widget>
               </item>
@@ -437,7 +603,11 @@
              </widget>
             </item>
             <item>
-             <widget class="QListWidget" name="poofsListWidget"/>
+             <widget class="QListWidget" name="poofsListWidget">
+              <property name="selectionMode">
+               <enum>QAbstractItemView::MultiSelection</enum>
+              </property>
+             </widget>
             </item>
            </layout>
           </item>
@@ -567,115 +737,6 @@
      </item>
      <item>
       <layout class="QVBoxLayout" name="rightLayout">
-       <item>
-        <widget class="QGroupBox" name="sunsGroupBox">
-         <property name="title">
-          <string>suns</string>
-         </property>
-         <layout class="QHBoxLayout" name="horizontalLayout_16">
-          <item>
-           <layout class="QVBoxLayout" name="sunLeftLayout">
-            <item>
-             <widget class="QListWidget" name="sunsListWidget"/>
-            </item>
-            <item>
-             <layout class="QHBoxLayout" name="sunsButtonsLayout">
-              <item>
-               <widget class="QPushButton" name="addSunButton">
-                <property name="text">
-                 <string>Add</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="changeSunButton">
-                <property name="text">
-                 <string>Change</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="deleteSunButton">
-                <property name="text">
-                 <string>Delete</string>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QVBoxLayout" name="sunRightLayout">
-            <item>
-             <widget class="QComboBox" name="sunSelectionCombo"/>
-            </item>
-            <item>
-             <layout class="QFormLayout" name="sunsFormLayout">
-              <item row="0" column="0">
-               <widget class="QLabel" name="sunsPitchLabel">
-                <property name="text">
-                 <string>Pitch</string>
-                </property>
-               </widget>
-              </item>
-              <item row="0" column="1">
-               <widget class="QSpinBox" name="sunPitchSpin">
-                <property name="wrapping">
-                 <bool>true</bool>
-                </property>
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="sunsHeadingLabel">
-                <property name="text">
-                 <string>Heading</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QSpinBox" name="sunHeadingSpin">
-                <property name="wrapping">
-                 <bool>true</bool>
-                </property>
-                <property name="maximum">
-                 <number>16777215</number>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="sunScaleLabel">
-                <property name="text">
-                 <string>Scale</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QDoubleSpinBox" name="sunScaleDoubleSpinBox">
-                <property name="minimumSize">
-                 <size>
-                  <width>75</width>
-                  <height>0</height>
-                 </size>
-                </property>
-                <property name="maximum">
-                 <double>16777215.000000000000000</double>
-                </property>
-                <property name="singleStep">
-                 <double>0.100000000000000</double>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </widget>
-       </item>
        <item>
         <widget class="QGroupBox" name="ambientLightGroupBox">
          <property name="title">

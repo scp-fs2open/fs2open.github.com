@@ -44,6 +44,28 @@ private slots:
 	void on_changeSunButton_clicked();
 	void on_deleteSunButton_clicked();
 
+	// Nebula
+	void on_fullNebulaCheckBox_toggled(bool checked);
+	void on_rangeSpinBox_valueChanged(int arg1);
+	void on_nebulaPatternCombo_currentIndexChanged(int index);
+	void on_nebulaLightningCombo_currentIndexChanged(int index);
+	void on_poofsListWidget_itemSelectionChanged();
+	void on_shipTrailsCheckBox_toggled(bool checked);
+	void on_fogNearDoubleSpinBox_valueChanged(double arg1);
+	void on_fogFarDoubleSpinBox_valueChanged(double arg1);
+	void on_displayBgsInNebulaCheckbox_toggled(bool checked);
+	void on_overrideFogPaletteCheckBox_toggled(bool checked);
+	void on_fogOverrideRedSpinBox_valueChanged(int arg1);
+	void on_fogOverrideGreenSpinBox_valueChanged(int arg1);
+	void on_fogOverrideBlueSpinBox_valueChanged(int arg1);
+
+	// Old Nebula
+	void on_oldNebulaPatternCombo_currentIndexChanged(int index);
+	void on_oldNebulaColorCombo_currentIndexChanged(int index);
+	void on_oldNebulaPitchSpinBox_valueChanged(int arg1);
+	void on_oldNebulaBankSpinBox_valueChanged(int arg1);
+	void on_oldNebulaHeadingSpinBox_valueChanged(int arg1);
+
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
@@ -55,6 +77,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateBitmapControls();
 	void refreshSunList();
 	void updateSunControls();
+	void updateNebulaControls();
+	void updateOldNebulaControls();
 };
 
 } // namespace fso::fred::dialogs
