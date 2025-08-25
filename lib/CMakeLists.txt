@@ -15,7 +15,7 @@ if (FSO_BUILD_WITH_OPENGL)
 	add_subdirectory(opengl)
 endif()
 
-include(SDL2.cmake)
+include(SDL3.cmake)
 
 ADD_SUBDIRECTORY(jansson)
 # These are only required for the web-ui which is non-Windows
@@ -50,10 +50,6 @@ add_subdirectory(mdns)
 add_subdirectory(accidental-noise)
 
 ADD_SUBDIRECTORY(lz4)
-
-set(HIDAPI_WITH_LIBUSB OFF)
-set(HIDAPI_WITH_HIDRAW ON)
-add_subdirectory(hidapi)
 
 ADD_SUBDIRECTORY(imgui)
 
