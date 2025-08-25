@@ -1,4 +1,6 @@
-
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 #include "graphics/opengl/gropenglquery.h"
 #include "graphics/opengl/gropengl.h"
 
@@ -48,7 +50,6 @@ void gr_opengl_query_value(int obj, QueryType type) {
 		case QueryType::Timestamp:
 			Assertion(GLAD_GL_ARB_timer_query, "Timestamp queries are not available! Availability must be checked before calling this function!");
 			glQueryCounter(slot.name, GL_TIMESTAMP);
-			break;
 		default:
 			UNREACHABLE("Unhandled enum value!");
 			break;
@@ -68,7 +69,14 @@ std::uint64_t gr_opengl_get_query_value(int obj) {
 	auto& slot = get_query_slot(obj);
 
 	GLuint64 available;
+	#ifndef USE_OPENGL_ES
 	glGetQueryObjectui64v(slot.name, GL_QUERY_RESULT, &available);
+	#else
+	//No 64 bit version on ES, ill call the 32bit version
+	GLuint available32 = 0;
+	glGetQueryObjectuiv(slot.name, GL_QUERY_RESULT, &available32);
+	available = static_cast<std::uint64_t>(available32);
+	#endif
 
 	return available;
 }
