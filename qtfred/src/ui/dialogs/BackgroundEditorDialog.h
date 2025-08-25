@@ -1,32 +1,48 @@
 #pragma once
 
+#include "mission/dialogs/BackgroundEditorDialogModel.h"
 #include <QtWidgets/QDialog>
 
 #include <ui/FredView.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class BackgroundEditor;
 }
 
-class BackgroundEditorDialog : public QDialog
-{
+class BackgroundEditorDialog : public QDialog {
     Q_OBJECT
 
 public:
     explicit BackgroundEditorDialog(FredView* parent, EditorViewport* viewport);
-	// TODO shouldn't all QDialog subclasses have a virtual destructor?
 	~BackgroundEditorDialog() override;
 
-private:
+private slots:
+
+	// Bitmaps
+	void on_bitmapListWidget_currentRowChanged(int row);
+	void on_bitmapTypeCombo_currentIndexChanged(int index);
+	void on_bitmapPitchSpin_valueChanged(int arg1);
+	void on_bitmapBankSpin_valueChanged(int arg1);
+	void on_bitmapHeadingSpin_valueChanged(int arg1);
+	void on_bitmapScaleXDoubleSpinBox_valueChanged(double arg1);
+	void on_bitmapScaleYDoubleSpinBox_valueChanged(double arg1);
+	void on_bitmapDivXSpinBox_valueChanged(int arg1);
+	void on_bitmapDivYSpinBox_valueChanged(int arg1);
+	void on_addBitmapButton_clicked();
+	void on_changeBitmapButton_clicked();
+	void on_deleteBitmapButton_clicked();
+
+private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
-	//std::unique_ptr<BackgroundEditorDialogModel> _model;
-	EditorViewport* _viewport;	
+	std::unique_ptr<BackgroundEditorDialogModel> _model;
+	EditorViewport* _viewport;
+
+	void initializeUi();
+	void updateUi();
+	void refreshBitmapList();
+	void updateBitmapControls();
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs
