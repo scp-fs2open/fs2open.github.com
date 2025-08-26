@@ -75,7 +75,7 @@ void VolumetricNebulaDialogModel::showErrorDialogNoCancel(const SCP_string& mess
 												{ DialogButton::Ok });
 }
 
-void VolumetricNebulaDialogModel::makeVolumetricsCopy(volumetric_nebula& dest, const volumetric_nebula& src) const
+void VolumetricNebulaDialogModel::makeVolumetricsCopy(volumetric_nebula& dest, const volumetric_nebula& src)
 {
 	// Instance / placement / look
 	dest.hullPof = src.hullPof;
