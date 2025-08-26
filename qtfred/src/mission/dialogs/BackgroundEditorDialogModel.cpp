@@ -7,6 +7,7 @@
 #include "nebula/neb.h"
 #include "nebula/neblightning.h"
 #include "starfield/nebula.h"
+#include "lighting/lighting_profiles.h" 
 
 // TODO move this to common for both FREDs. Do not pass review if this is not done
 const static float delta = .00001f;
@@ -918,11 +919,11 @@ void BackgroundEditorDialogModel::setAmbientB(int b)
 	refreshBackgroundPreview();
 }
 
-std::string BackgroundEditorDialogModel::getSkyboxModelName() const
+SCP_string BackgroundEditorDialogModel::getSkyboxModelName() const
 {
 	return The_mission.skybox_model;
 }
-void BackgroundEditorDialogModel::setSkyboxModelName(const std::string& name)
+void BackgroundEditorDialogModel::setSkyboxModelName(const SCP_string& name)
 {
 	// empty string = no skybox
 	if (std::strncmp(The_mission.skybox_model, name.c_str(), NAME_LENGTH) != 0) {
@@ -1106,6 +1107,69 @@ void BackgroundEditorDialogModel::setSkyboxHeading(int deg)
 		set_modified();
 		refreshBackgroundPreview();
 	}
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightingProfileOptions() const
+{
+	SCP_vector<SCP_string> out;
+	auto profiles = lighting_profiles::list_profiles(); // returns a vector of names
+	out.reserve(profiles.size());
+	for (const auto& p : profiles)
+		out.emplace_back(p.c_str());
+	return out;
+}
+
+int BackgroundEditorDialogModel::getNumStars() const
+{
+	return Num_stars;
+}
+
+void BackgroundEditorDialogModel::setNumStars(int n)
+{
+	CLAMP(n, getStarsLimit().first, getStarsLimit().second);
+	modify(Num_stars, n);
+	refreshBackgroundPreview(); // TODO make this actually show the stars in the background
+}
+
+bool BackgroundEditorDialogModel::getTakesPlaceInSubspace() const
+{
+	return The_mission.flags[Mission::Mission_Flags::Subspace];
+}
+
+void BackgroundEditorDialogModel::setTakesPlaceInSubspace(bool on)
+{
+	auto before = The_mission.flags[Mission::Mission_Flags::Subspace];
+	if (before == on)
+		return;
+
+	The_mission.flags.set(Mission::Mission_Flags::Subspace, on);
+
+	set_modified();
+}
+
+SCP_string BackgroundEditorDialogModel::getEnvironmentMapName() const
+{
+	return SCP_string(The_mission.envmap_name);
+}
+
+void BackgroundEditorDialogModel::setEnvironmentMapName(const SCP_string& name)
+{
+	if (name == The_mission.envmap_name)
+		return;
+
+	strcpy_s(The_mission.envmap_name, name.c_str());
+
+	set_modified();
+}
+
+SCP_string BackgroundEditorDialogModel::getLightingProfileName() const
+{
+	return The_mission.lighting_profile_name;
+}
+
+void BackgroundEditorDialogModel::setLightingProfileName(const SCP_string& name)
+{
+	modify(The_mission.lighting_profile_name, name);
 }
 
 } // namespace fso::fred::dialogs

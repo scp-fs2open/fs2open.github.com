@@ -85,6 +85,13 @@ private slots:
 	void on_noCullCheckBox_toggled(bool checked);
 	void on_noGlowmapsCheckBox_toggled(bool checked);
 
+	// Misc
+	void on_numStarsSlider_valueChanged(int value);
+	void on_subspaceCheckBox_toggled(bool checked);
+	void on_envMapButton_clicked();
+	void on_envMapEdit_textChanged(const QString& arg1);
+	void on_lightingProfileCombo_currentIndexChanged(int index);
+
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
@@ -102,6 +109,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateAmbientLightControls();
 	void updateAmbientSwatch();
 	void updateSkyboxControls();
+	void updateMiscControls();
 };
 
 } // namespace fso::fred::dialogs

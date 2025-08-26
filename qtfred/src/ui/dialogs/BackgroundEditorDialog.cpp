@@ -98,8 +98,17 @@ void BackgroundEditorDialog::initializeUi()
 	updateAmbientLightControls();
 
 	// Skybox
-
 	updateSkyboxControls();
+
+	// Misc
+	ui->numStarsSlider->setRange(_model->getStarsLimit().first, _model->getStarsLimit().second);
+	const auto& profiles = _model->getLightingProfileOptions();
+
+	for (const auto& s : profiles) {
+		ui->lightingProfileCombo->addItem(QString::fromStdString(s));
+	}
+
+	updateMiscControls();
 
 }
 
@@ -341,6 +350,19 @@ void BackgroundEditorDialog::updateSkyboxControls()
 	ui->noZBufferCheckBox->setChecked(_model->getSkyboxNoZbuffer());
 	ui->noCullCheckBox->setChecked(_model->getSkyboxNoCull());
 	ui->noGlowMapsCheckBox->setChecked(_model->getSkyboxNoGlowmaps());
+}
+
+void BackgroundEditorDialog::updateMiscControls()
+{
+	util::SignalBlockers blockers(this);
+	
+	QString text = "Number of stars: " + QString::number(_model->getNumStars());
+	ui->numStarsLabel->setText(text);
+	ui->numStarsSlider->setValue(_model->getNumStars());
+	ui->subspaceCheckBox->setChecked(_model->getTakesPlaceInSubspace());
+	ui->envMapEdit->setText(QString::fromStdString(_model->getEnvironmentMapName()));
+	ui->lightingProfileCombo->setCurrentIndex(ui->lightingProfileCombo->findText(QString::fromStdString(_model->getLightingProfileName())));
+
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
@@ -719,7 +741,7 @@ void BackgroundEditorDialog::on_skyboxButton_clicked()
 	settings.setValue("skybox/lastDir", fi.absolutePath());
 
 	const QString baseName = fi.completeBaseName();
-	_model->setSkyboxModelName(baseName.toStdString());
+	_model->setSkyboxModelName(baseName.toUtf8().constData());
 
 	updateSkyboxControls();
 }
@@ -777,6 +799,50 @@ void BackgroundEditorDialog::on_noCullCheckBox_toggled(bool checked)
 void BackgroundEditorDialog::on_noGlowmapsCheckBox_toggled(bool checked)
 {
 	_model->setSkyboxNoGlowmaps(checked);
+}
+
+void BackgroundEditorDialog::on_numStarsSlider_valueChanged(int value)
+{
+	_model->setNumStars(value);
+
+	QString text = "Number of stars: " + QString::number(value);
+	ui->numStarsLabel->setText(text);
+}
+
+void BackgroundEditorDialog::on_subspaceCheckBox_toggled(bool checked)
+{
+	_model->setTakesPlaceInSubspace(checked);
+}
+
+void BackgroundEditorDialog::on_envMapButton_clicked()
+{
+	QSettings settings("QtFRED", "BackgroundEditor");
+	const QString lastDir = settings.value("envmap/lastDir", QDir::homePath()).toString();
+	const QString path = QFileDialog::getOpenFileName(this,
+		tr("Select Environment Map"),
+		lastDir,
+		tr("Environment Maps (*.dds);;All Files (*)"));
+	if (path.isEmpty())
+		return;
+	const QFileInfo fi(path);
+	settings.setValue("envmap/lastDir", fi.absolutePath());
+	const QString baseName = fi.completeBaseName();
+	_model->setEnvironmentMapName(baseName.toUtf8().constData());
+	updateMiscControls();
+}
+
+void BackgroundEditorDialog::on_envMapEdit_textChanged(const QString& arg1)
+{
+	_model->setEnvironmentMapName(arg1.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_lightingProfileCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	const QString text = ui->lightingProfileCombo->itemText(index);
+	_model->setLightingProfileName(text.toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs

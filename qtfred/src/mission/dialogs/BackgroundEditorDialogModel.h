@@ -26,6 +26,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	std::pair<float,float> getBitmapScaleLimit() const   { return {0.001f, 18.0f}; }
 	std::pair<float,float> getSunScaleLimit() const{ return {0.1f,   50.0f}; }
 	std::pair<int, int> getDivisionLimit() const { return {1, 5}; }
+	std::pair<int, int> getStarsLimit() const { return {0, MAX_STARS}; }
 
 	// bitmap group
 	SCP_vector<SCP_string> getAvailableBitmapNames() const;
@@ -123,8 +124,8 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setAmbientB(int b);
 
 	// skybox group
-	std::string getSkyboxModelName() const;
-	void setSkyboxModelName(const std::string& name);
+	SCP_string getSkyboxModelName() const;
+	void setSkyboxModelName(const SCP_string& name);
 	bool getSkyboxNoLighting() const;
 	void setSkyboxNoLighting(bool on);
 	bool getSkyboxAllTransparent() const;
@@ -143,6 +144,17 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSkyboxBank(int deg);
 	int getSkyboxHeading() const;
 	void setSkyboxHeading(int deg);
+
+	// misc group
+	SCP_vector<SCP_string> getLightingProfileOptions() const;
+	int getNumStars() const;
+	void setNumStars(int n);
+	bool getTakesPlaceInSubspace() const;
+	void setTakesPlaceInSubspace(bool on);
+	SCP_string getEnvironmentMapName() const;
+	void setEnvironmentMapName(const SCP_string& name);
+	SCP_string getLightingProfileName() const;
+	void setLightingProfileName(const SCP_string& name);
 
   private:
 	void refreshBackgroundPreview();
