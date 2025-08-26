@@ -15,6 +15,7 @@
 #include <ui/dialogs/WingEditorDialog.h>
 #include <ui/dialogs/EventEditorDialog.h>
 #include <ui/dialogs/AsteroidEditorDialog.h>
+#include <ui/dialogs/VolumetricNebulaDialog.h>
 #include <ui/dialogs/BriefingEditorDialog.h>
 #include <ui/dialogs/WaypointEditorDialog.h>
 #include <ui/dialogs/JumpNodeEditorDialog.h>
@@ -737,6 +738,12 @@ void FredView::on_actionAsteroid_Field_triggered(bool) {
 	auto asteroidFieldEditor = new dialogs::AsteroidEditorDialog(this, _viewport);
 	asteroidFieldEditor->setAttribute(Qt::WA_DeleteOnClose);
 	asteroidFieldEditor->show();
+}
+void FredView::on_actionVolumetric_Nebula_triggered(bool)
+{
+	auto volumetricNebulaEditor = new dialogs::VolumetricNebulaDialog(this, _viewport);
+	volumetricNebulaEditor->setAttribute(Qt::WA_DeleteOnClose);
+	volumetricNebulaEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
 	auto eventEditor = new dialogs::BriefingEditorDialog(this);
