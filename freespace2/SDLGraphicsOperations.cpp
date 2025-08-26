@@ -21,7 +21,11 @@ void setOGLProperties(const os::ViewPortProperties& props)
 	SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, props.pixel_format.blue_size);
 	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, props.pixel_format.depth_size);
 	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, props.pixel_format.stencil_size);
+	#ifndef USE_OPENGL_ES
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	#else
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 0);
+	#endif
 	// disabled due to issues with implementation; may be re-enabled in future
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLEBUFFERS, 0);
 	SDL_GL_SetAttribute(SDL_GL_MULTISAMPLESAMPLES, 0);
