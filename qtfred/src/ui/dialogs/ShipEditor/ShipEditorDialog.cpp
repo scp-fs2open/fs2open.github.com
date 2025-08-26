@@ -131,7 +131,7 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 		ui->shipDisplayNameEdit->setText(_model->getShipDisplayName().c_str());
 		idx = _model->getShipClass();
 		ui->shipClassCombo->clear();
-		for (auto i = 0; i < Ship_info.size(); i++) {
+		for (size_t i = 0; i < Ship_info.size(); i++) {
 			ui->shipClassCombo->addItem(Ship_info[i].name, QVariant(static_cast<int>(i)));
 		}
 		ui->shipClassCombo->setCurrentIndex(ui->shipClassCombo->findData(idx));
@@ -160,7 +160,7 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 		if (overwrite) {
 			idx = _model->getTeam();
 			ui->teamCombo->clear();
-			for (auto i = 0; i < Iff_info.size(); i++) {
+			for (size_t i = 0; i < Iff_info.size(); i++) {
 				ui->teamCombo->addItem(Iff_info[i].iff_name, QVariant(static_cast<int>(i)));
 			}
 			ui->teamCombo->setCurrentIndex(ui->teamCombo->findData(idx));
