@@ -9,7 +9,7 @@
 #include "starfield/nebula.h"
 #include "lighting/lighting_profiles.h" 
 
-// TODO move this to common for both FREDs. Do not pass review if this is not done
+// TODO move this to common for both FREDs.
 const static float delta = .00001f;
 const static float default_nebula_range = 3000.0f;
 
@@ -56,7 +56,7 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 	_editor->missionChanged();
 }
 
-background_t& BackgroundEditorDialogModel::getActiveBackground() const
+background_t& BackgroundEditorDialogModel::getActiveBackground()
 {
 	if (!SCP_vector_inbounds(Backgrounds, Cur_background)) {
 		// Fall back to first background if Cur_background isn’t set
@@ -85,8 +85,15 @@ starfield_list_entry* BackgroundEditorDialogModel::getActiveSun() const
 	return &list[_selectedSunIndex];
 }
 
+int BackgroundEditorDialogModel::getNumBackgrounds() const
+{
+	return static_cast<int>(Backgrounds.size());
+}
+
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getBackgroundNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	out.reserve(Backgrounds.size());
 	for (size_t i = 0; i < Backgrounds.size(); ++i)
@@ -110,6 +117,8 @@ void BackgroundEditorDialogModel::setActiveBackgroundIndex(int idx)
 
 int BackgroundEditorDialogModel::getActiveBackgroundIndex() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	return Cur_background < 0 ? 0 : Cur_background;
 }
 
@@ -147,6 +156,8 @@ void BackgroundEditorDialogModel::removeActiveBackground()
 
 int BackgroundEditorDialogModel::getImportableBackgroundCount(const SCP_string& fs2Path) const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	// Normalize the filepath to use the current platform's directory separator
 	SCP_string path = fs2Path;
 	std::replace(path.begin(), path.end(), '/', DIR_SEPARATOR_CHAR);
@@ -248,7 +259,6 @@ void BackgroundEditorDialogModel::swapBackgrounds()
 	set_modified();
 
 	refreshBackgroundPreview();
-	return;
 }
 
 int BackgroundEditorDialogModel::getSwapWithIndex() const
@@ -288,6 +298,8 @@ void BackgroundEditorDialogModel::setSaveAnglesCorrectFlag(bool on)
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	const int count = stars_get_num_entries(/*is_a_sun=*/false, /*bitmap_count=*/true);
 	out.reserve(count);
@@ -301,6 +313,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames() co
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionBitmapNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	const auto& vec = getActiveBackground().bitmaps;
 	out.reserve(vec.size());
@@ -552,6 +566,8 @@ void BackgroundEditorDialogModel::setBitmapDivY(int v)
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableSunNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	const int count = stars_get_num_entries(/*is_a_sun=*/true, /*bitmap_count=*/true);
 	out.reserve(count);
@@ -565,6 +581,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableSunNames() const
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionSunNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	const auto& vec = getActiveBackground().suns;
 	out.reserve(vec.size());
@@ -716,6 +734,8 @@ void BackgroundEditorDialogModel::setSunScale(float v)
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>"); // legacy default
 	for (const auto& st : Storm_types) {
@@ -726,6 +746,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames() const
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>"); // matches legacy combo where index 0 = none
 	for (const auto& neb : Neb2_bitmap_filenames) {
@@ -736,6 +758,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames() cons
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getPoofNames() const
 {
+	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
+	
 	SCP_vector<SCP_string> out;
 	out.reserve(Poof_info.size());
 	for (const auto& p : Poof_info) {
@@ -744,7 +768,7 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getPoofNames() const
 	return out;
 }
 
-bool BackgroundEditorDialogModel::getFullNebulaEnabled() const
+bool BackgroundEditorDialogModel::getFullNebulaEnabled()
 {
 	return The_mission.flags[Mission::Mission_Flags::Fullneb];
 }
@@ -772,7 +796,7 @@ void BackgroundEditorDialogModel::setFullNebulaEnabled(bool enabled)
 	set_modified();
 }
 
-float BackgroundEditorDialogModel::getFullNebulaRange() const
+float BackgroundEditorDialogModel::getFullNebulaRange()
 {
 	// May be -1 if full nebula is disabled
 	return Neb2_awacs;
@@ -783,7 +807,7 @@ void BackgroundEditorDialogModel::setFullNebulaRange(float range)
 	modify(Neb2_awacs, range);
 }
 
-SCP_string BackgroundEditorDialogModel::getNebulaFullPattern() const
+SCP_string BackgroundEditorDialogModel::getNebulaFullPattern()
 {
 	return (Neb2_texture_name[0] != '\0') ? SCP_string(Neb2_texture_name) : SCP_string("<None>");
 }
@@ -799,7 +823,7 @@ void BackgroundEditorDialogModel::setNebulaFullPattern(const SCP_string& name)
 	set_modified();
 }
 
-SCP_string BackgroundEditorDialogModel::getLightning() const
+SCP_string BackgroundEditorDialogModel::getLightning()
 {
 	// Return "<none>" when engine stores "none" or empty
 	if (Mission_parse_storm_name[0] == '\0')
@@ -821,7 +845,7 @@ void BackgroundEditorDialogModel::setLightning(const SCP_string& name)
 	set_modified();
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getSelectedPoofs() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getSelectedPoofs()
 {
 	SCP_vector<SCP_string> out;
 	for (size_t i = 0; i < Poof_info.size(); ++i) {
@@ -847,7 +871,7 @@ void BackgroundEditorDialogModel::setSelectedPoofs(const SCP_vector<SCP_string>&
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getShipTrailsToggled() const
+bool BackgroundEditorDialogModel::getShipTrailsToggled()
 {
 	return The_mission.flags[Mission::Mission_Flags::Toggle_ship_trails];
 }
@@ -858,7 +882,7 @@ void BackgroundEditorDialogModel::setShipTrailsToggled(bool on)
 	set_modified();
 }
 
-float BackgroundEditorDialogModel::getFogNearMultiplier() const
+float BackgroundEditorDialogModel::getFogNearMultiplier()
 {
 	return Neb2_fog_near_mult;
 }
@@ -868,7 +892,7 @@ void BackgroundEditorDialogModel::setFogNearMultiplier(float v)
 	modify(Neb2_fog_near_mult, v);
 }
 
-float BackgroundEditorDialogModel::getFogFarMultiplier() const
+float BackgroundEditorDialogModel::getFogFarMultiplier()
 {
 	return Neb2_fog_far_mult;
 }
@@ -878,7 +902,7 @@ void BackgroundEditorDialogModel::setFogFarMultiplier(float v)
 	modify(Neb2_fog_far_mult, v);
 }
 
-bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps() const
+bool BackgroundEditorDialogModel::getDisplayBackgroundBitmaps()
 {
 	return The_mission.flags[Mission::Mission_Flags::Fullneb_background_bitmaps];
 }
@@ -889,7 +913,7 @@ void BackgroundEditorDialogModel::setDisplayBackgroundBitmaps(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getFogPaletteOverride() const
+bool BackgroundEditorDialogModel::getFogPaletteOverride()
 {
 	return The_mission.flags[Mission::Mission_Flags::Neb2_fog_color_override];
 }
@@ -900,7 +924,7 @@ void BackgroundEditorDialogModel::setFogPaletteOverride(bool on)
 	set_modified();
 }
 
-int BackgroundEditorDialogModel::getFogR() const
+int BackgroundEditorDialogModel::getFogR()
 {
 	return Neb2_fog_color[0];
 }
@@ -908,11 +932,11 @@ int BackgroundEditorDialogModel::getFogR() const
 void BackgroundEditorDialogModel::setFogR(int r)
 {
 	CLAMP(r, 0, 255)
-	const ubyte v = static_cast<ubyte>(r);
+	const auto v = static_cast<ubyte>(r);
 	modify(Neb2_fog_color[0], v);
 }
 
-int BackgroundEditorDialogModel::getFogG() const
+int BackgroundEditorDialogModel::getFogG()
 {
 	return Neb2_fog_color[1];
 }
@@ -920,11 +944,11 @@ int BackgroundEditorDialogModel::getFogG() const
 void BackgroundEditorDialogModel::setFogG(int g)
 {
 	CLAMP(g, 0, 255)
-	const ubyte v = static_cast<ubyte>(g);
+	const auto v = static_cast<ubyte>(g);
 	modify(Neb2_fog_color[1], v);
 }
 
-int BackgroundEditorDialogModel::getFogB() const
+int BackgroundEditorDialogModel::getFogB()
 {
 	return Neb2_fog_color[2];
 }
@@ -932,11 +956,11 @@ int BackgroundEditorDialogModel::getFogB() const
 void BackgroundEditorDialogModel::setFogB(int b)
 {
 	CLAMP(b, 0, 255)
-	const ubyte v = static_cast<ubyte>(b);
+	const auto v = static_cast<ubyte>(b);
 	modify(Neb2_fog_color[2], v);
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions()
 {
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>");
@@ -946,7 +970,7 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaPatternOptions()
 	return out;
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaColorOptions() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaColorOptions()
 {
 	SCP_vector<SCP_string> out;
 	out.reserve(NUM_NEBULA_COLORS);
@@ -956,7 +980,7 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getOldNebulaColorOptions() c
 	return out;
 }
 
-SCP_string BackgroundEditorDialogModel::getOldNebulaPattern() const
+SCP_string BackgroundEditorDialogModel::getOldNebulaPattern()
 {
 	if (Nebula_index < 0)
 		return "<None>";
@@ -983,7 +1007,7 @@ void BackgroundEditorDialogModel::setOldNebulaPattern(const SCP_string& name)
 	modify(Nebula_index, newIndex);
 }
 
-SCP_string BackgroundEditorDialogModel::getOldNebulaColorName() const
+SCP_string BackgroundEditorDialogModel::getOldNebulaColorName()
 {
 	if (Mission_palette >= 0 && Mission_palette < NUM_NEBULA_COLORS) {
 		return Nebula_colors[Mission_palette];
@@ -1004,7 +1028,7 @@ void BackgroundEditorDialogModel::setOldNebulaColorName(const SCP_string& name)
 	// name not found: ignore
 }
 
-int BackgroundEditorDialogModel::getOldNebulaPitch() const
+int BackgroundEditorDialogModel::getOldNebulaPitch()
 {
 	return Nebula_pitch;
 }
@@ -1018,7 +1042,7 @@ void BackgroundEditorDialogModel::setOldNebulaPitch(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getOldNebulaBank() const
+int BackgroundEditorDialogModel::getOldNebulaBank()
 {
 	return Nebula_bank;
 }
@@ -1032,7 +1056,7 @@ void BackgroundEditorDialogModel::setOldNebulaBank(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getOldNebulaHeading() const
+int BackgroundEditorDialogModel::getOldNebulaHeading()
 {
 	return Nebula_heading;
 }
@@ -1046,7 +1070,7 @@ void BackgroundEditorDialogModel::setOldNebulaHeading(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getAmbientR() const
+int BackgroundEditorDialogModel::getAmbientR()
 {
 	return The_mission.ambient_light_level & 0xff;
 }
@@ -1064,7 +1088,7 @@ void BackgroundEditorDialogModel::setAmbientR(int r)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getAmbientG() const
+int BackgroundEditorDialogModel::getAmbientG()
 {
 	return (The_mission.ambient_light_level >> 8) & 0xff;
 }
@@ -1082,7 +1106,7 @@ void BackgroundEditorDialogModel::setAmbientG(int g)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getAmbientB() const
+int BackgroundEditorDialogModel::getAmbientB()
 {
 	return (The_mission.ambient_light_level >> 16) & 0xff;
 }
@@ -1100,7 +1124,7 @@ void BackgroundEditorDialogModel::setAmbientB(int b)
 	refreshBackgroundPreview();
 }
 
-SCP_string BackgroundEditorDialogModel::getSkyboxModelName() const
+SCP_string BackgroundEditorDialogModel::getSkyboxModelName()
 {
 	return The_mission.skybox_model;
 }
@@ -1116,7 +1140,7 @@ void BackgroundEditorDialogModel::setSkyboxModelName(const SCP_string& name)
 	refreshBackgroundPreview();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxNoLighting() const
+bool BackgroundEditorDialogModel::getSkyboxNoLighting()
 {
 	return (The_mission.skybox_flags & MR_NO_LIGHTING) != 0;
 }
@@ -1132,7 +1156,7 @@ void BackgroundEditorDialogModel::setSkyboxNoLighting(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxAllTransparent() const
+bool BackgroundEditorDialogModel::getSkyboxAllTransparent()
 {
 	return (The_mission.skybox_flags & MR_ALL_XPARENT) != 0;
 }
@@ -1148,7 +1172,7 @@ void BackgroundEditorDialogModel::setSkyboxAllTransparent(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxNoZbuffer() const
+bool BackgroundEditorDialogModel::getSkyboxNoZbuffer()
 {
 	return (The_mission.skybox_flags & MR_NO_ZBUFFER) != 0;
 }
@@ -1164,7 +1188,7 @@ void BackgroundEditorDialogModel::setSkyboxNoZbuffer(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxNoCull() const
+bool BackgroundEditorDialogModel::getSkyboxNoCull()
 {
 	return (The_mission.skybox_flags & MR_NO_CULL) != 0;
 }
@@ -1180,7 +1204,7 @@ void BackgroundEditorDialogModel::setSkyboxNoCull(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxNoGlowmaps() const
+bool BackgroundEditorDialogModel::getSkyboxNoGlowmaps()
 {
 	return (The_mission.skybox_flags & MR_NO_GLOWMAPS) != 0;
 }
@@ -1196,7 +1220,7 @@ void BackgroundEditorDialogModel::setSkyboxNoGlowmaps(bool on)
 	set_modified();
 }
 
-bool BackgroundEditorDialogModel::getSkyboxForceClamp() const
+bool BackgroundEditorDialogModel::getSkyboxForceClamp()
 {
 	return (The_mission.skybox_flags & MR_FORCE_CLAMP) != 0;
 }
@@ -1212,7 +1236,7 @@ void BackgroundEditorDialogModel::setSkyboxForceClamp(bool on)
 	set_modified();
 }
 
-int BackgroundEditorDialogModel::getSkyboxPitch() const
+int BackgroundEditorDialogModel::getSkyboxPitch()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
@@ -1238,7 +1262,7 @@ void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxBank() const
+int BackgroundEditorDialogModel::getSkyboxBank()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
@@ -1264,7 +1288,7 @@ void BackgroundEditorDialogModel::setSkyboxBank(int deg)
 	}
 }
 
-int BackgroundEditorDialogModel::getSkyboxHeading() const
+int BackgroundEditorDialogModel::getSkyboxHeading()
 {
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
@@ -1290,7 +1314,7 @@ void BackgroundEditorDialogModel::setSkyboxHeading(int deg)
 	}
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightingProfileOptions() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightingProfileOptions()
 {
 	SCP_vector<SCP_string> out;
 	auto profiles = lighting_profiles::list_profiles(); // returns a vector of names
@@ -1300,7 +1324,7 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightingProfileOptions() 
 	return out;
 }
 
-int BackgroundEditorDialogModel::getNumStars() const
+int BackgroundEditorDialogModel::getNumStars()
 {
 	return Num_stars;
 }
@@ -1312,7 +1336,7 @@ void BackgroundEditorDialogModel::setNumStars(int n)
 	refreshBackgroundPreview(); // TODO make this actually show the stars in the background
 }
 
-bool BackgroundEditorDialogModel::getTakesPlaceInSubspace() const
+bool BackgroundEditorDialogModel::getTakesPlaceInSubspace()
 {
 	return The_mission.flags[Mission::Mission_Flags::Subspace];
 }
@@ -1328,7 +1352,7 @@ void BackgroundEditorDialogModel::setTakesPlaceInSubspace(bool on)
 	set_modified();
 }
 
-SCP_string BackgroundEditorDialogModel::getEnvironmentMapName() const
+SCP_string BackgroundEditorDialogModel::getEnvironmentMapName()
 {
 	return SCP_string(The_mission.envmap_name);
 }
@@ -1343,7 +1367,7 @@ void BackgroundEditorDialogModel::setEnvironmentMapName(const SCP_string& name)
 	set_modified();
 }
 
-SCP_string BackgroundEditorDialogModel::getLightingProfileName() const
+SCP_string BackgroundEditorDialogModel::getLightingProfileName()
 {
 	return The_mission.lighting_profile_name;
 }

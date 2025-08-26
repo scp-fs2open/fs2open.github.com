@@ -22,11 +22,11 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void reject() override;
 
 	// limits
-	std::pair<int, int> getOrientLimit() const { return {0, 359}; }
-	std::pair<float,float> getBitmapScaleLimit() const   { return {0.001f, 18.0f}; }
-	std::pair<float,float> getSunScaleLimit() const{ return {0.1f,   50.0f}; }
-	std::pair<int, int> getDivisionLimit() const { return {1, 5}; }
-	std::pair<int, int> getStarsLimit() const { return {0, MAX_STARS}; }
+	static std::pair<int, int> getOrientLimit() { return {0, 359}; }
+	static std::pair<float,float> getBitmapScaleLimit() { return {0.001f, 18.0f}; }
+	static std::pair<float,float> getSunScaleLimit() { return {0.1f,   50.0f}; }
+	static std::pair<int, int> getDivisionLimit() { return {1, 5}; }
+	static std::pair<int, int> getStarsLimit() { return {0, MAX_STARS}; }
 
 	// backgrounds group
 	SCP_vector<SCP_string> getBackgroundNames() const;
@@ -86,97 +86,98 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	SCP_vector<SCP_string> getLightningNames() const;
 	SCP_vector<SCP_string> getNebulaPatternNames() const;
 	SCP_vector<SCP_string> getPoofNames() const;
-	bool getFullNebulaEnabled() const;
+	static bool getFullNebulaEnabled();
 	void setFullNebulaEnabled(bool enabled);
-	float getFullNebulaRange() const;
+	static float getFullNebulaRange();
 	void setFullNebulaRange(float range);
-	SCP_string getNebulaFullPattern() const;
+	static SCP_string getNebulaFullPattern();
 	void setNebulaFullPattern(const SCP_string& name);
-	SCP_string getLightning() const;
+	static SCP_string getLightning();
 	void setLightning(const SCP_string& name);
-	SCP_vector<SCP_string> getSelectedPoofs() const;
+	static SCP_vector<SCP_string> getSelectedPoofs();
 	void setSelectedPoofs(const SCP_vector<SCP_string>& names);
-	bool getShipTrailsToggled() const;
+	static bool getShipTrailsToggled();
 	void setShipTrailsToggled(bool on);
-	float getFogNearMultiplier() const;
+	static float getFogNearMultiplier();
 	void setFogNearMultiplier(float v);
-	float getFogFarMultiplier() const;
+	static float getFogFarMultiplier();
 	void setFogFarMultiplier(float v);
-	bool getDisplayBackgroundBitmaps() const;
+	static bool getDisplayBackgroundBitmaps();
 	void setDisplayBackgroundBitmaps(bool on);
-	bool getFogPaletteOverride() const;
+	static bool getFogPaletteOverride();
 	void setFogPaletteOverride(bool on);
-	int getFogR() const;
+	static int getFogR();
 	void setFogR(int r);
-	int getFogG() const;
+	static int getFogG();
 	void setFogG(int g);
-	int getFogB() const;
+	static int getFogB();
 	void setFogB(int b);
 
 	// old nebula group
-	SCP_vector<SCP_string> getOldNebulaPatternOptions() const;
-	SCP_vector<SCP_string> getOldNebulaColorOptions() const;
-	SCP_string getOldNebulaColorName() const;
+	static SCP_vector<SCP_string> getOldNebulaPatternOptions();
+	static SCP_vector<SCP_string> getOldNebulaColorOptions();
+	static SCP_string getOldNebulaColorName();
 	void setOldNebulaColorName(const SCP_string& name);
-	SCP_string getOldNebulaPattern() const;
+	static SCP_string getOldNebulaPattern();
 	void setOldNebulaPattern(const SCP_string& name);
-	int getOldNebulaPitch() const;
+	static int getOldNebulaPitch();
 	void setOldNebulaPitch(int deg);
-	int getOldNebulaBank() const;
+	static int getOldNebulaBank();
 	void setOldNebulaBank(int deg);
-	int getOldNebulaHeading() const;
+	static int getOldNebulaHeading();
 	void setOldNebulaHeading(int deg);
 
 	// ambient light group
-	int getAmbientR() const;
+	static int getAmbientR();
 	void setAmbientR(int r);
-	int getAmbientG() const;
+	static int getAmbientG();
 	void setAmbientG(int g);
-	int getAmbientB() const;
+	static int getAmbientB();
 	void setAmbientB(int b);
 
 	// skybox group
-	SCP_string getSkyboxModelName() const;
+	static SCP_string getSkyboxModelName();
 	void setSkyboxModelName(const SCP_string& name);
-	bool getSkyboxNoLighting() const;
+	static bool getSkyboxNoLighting();
 	void setSkyboxNoLighting(bool on);
-	bool getSkyboxAllTransparent() const;
+	static bool getSkyboxAllTransparent();
 	void setSkyboxAllTransparent(bool on);
-	bool getSkyboxNoZbuffer() const;
+	static bool getSkyboxNoZbuffer();
 	void setSkyboxNoZbuffer(bool on);
-	bool getSkyboxNoCull() const;
+	static bool getSkyboxNoCull();
 	void setSkyboxNoCull(bool on);
-	bool getSkyboxNoGlowmaps() const;
+	static bool getSkyboxNoGlowmaps();
 	void setSkyboxNoGlowmaps(bool on);
-	bool getSkyboxForceClamp() const;
+	static bool getSkyboxForceClamp();
 	void setSkyboxForceClamp(bool on);
-	int getSkyboxPitch() const;
+	static int getSkyboxPitch();
 	void setSkyboxPitch(int deg);
-	int getSkyboxBank() const;
+	static int getSkyboxBank();
 	void setSkyboxBank(int deg);
-	int getSkyboxHeading() const;
+	static int getSkyboxHeading();
 	void setSkyboxHeading(int deg);
 
 	// misc group
-	SCP_vector<SCP_string> getLightingProfileOptions() const;
-	int getNumStars() const;
+	static SCP_vector<SCP_string> getLightingProfileOptions();
+	static int getNumStars();
 	void setNumStars(int n);
-	bool getTakesPlaceInSubspace() const;
+	static bool getTakesPlaceInSubspace();
 	void setTakesPlaceInSubspace(bool on);
-	SCP_string getEnvironmentMapName() const;
+	static SCP_string getEnvironmentMapName();
 	void setEnvironmentMapName(const SCP_string& name);
-	SCP_string getLightingProfileName() const;
+	static SCP_string getLightingProfileName();
 	void setLightingProfileName(const SCP_string& name);
 
   private:
 	void refreshBackgroundPreview();
-	background_t& getActiveBackground() const;
+	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;
 	starfield_list_entry* getActiveSun() const;
+	int getNumBackgrounds() const;
 
 	int _selectedBitmapIndex = -1; // index into Backgrounds[Cur_background].bitmaps
 	int _selectedSunIndex = -1;    // index into Backgrounds[Cur_background].suns
-	int _swapIndex = 0;           // index of background to swap with
+	int _swapIndex = 0;            // index of background to swap with
 
 };
 } // namespace fso::fred::dialogs

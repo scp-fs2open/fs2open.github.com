@@ -121,7 +121,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateSkyboxControls();
 	void updateMiscControls();
 
-	int pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex = 0);
+	static int pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex = 0);
 };
 
 } // namespace fso::fred::dialogs
