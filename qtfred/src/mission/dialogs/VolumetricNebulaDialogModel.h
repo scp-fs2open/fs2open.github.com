@@ -128,7 +128,7 @@ private:
 	bool validate_data();
 	void showErrorDialogNoCancel(const SCP_string& message);
 
-	void makeVolumetricsCopy(volumetric_nebula& dest, const volumetric_nebula& src) const;
+	static void makeVolumetricsCopy(volumetric_nebula& dest, const volumetric_nebula& src);
 
 	// boilerplate
 	bool _bypass_errors;
