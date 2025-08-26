@@ -1,4 +1,4 @@
-/*
+﻿/*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
  * All source code herein is the property of Volition, Inc. You may not sell
@@ -340,6 +340,10 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	return sflags.str();
 }
 
+#ifdef USE_OPENGL_ES
+SCP_string glsl_es_expand_includes(const SCP_string&);
+#endif
+
 /**
  * Load a shader file from disc or from the builtin defaults in def_files.cpp if none can be found.
  * This function will also create a list of preprocessor defines for the GLSL compiler based on the shader flags
@@ -370,9 +374,40 @@ static SCP_string opengl_load_shader(const char* filename) {
 	nprintf(("shaders","   Loading built-in default shader for: %s\n", filename));
 	auto def_shader = defaults_get_file(filename);
 	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
+	#ifdef USE_OPENGL_ES
+	content = glsl_es_expand_includes(content);
+	#endif
 
 	return content;
 }
+
+#ifdef USE_OPENGL_ES
+/*
+*	This function will expand any includes a shader may have with GLSL ES
+*	Since shaders #includes are not supported.
+*/
+SCP_string glsl_es_expand_includes(const SCP_string& src)
+{
+	SCP_stringstream input(src);
+	SCP_stringstream output;
+	SCP_string line;
+
+	while (std::getline(input, line)) {
+		if (line.find("#include") != std::string::npos) {
+			auto start = line.find('"');
+			auto end = line.find('"', start + 1);
+			if (start != std::string::npos && end != std::string::npos) {
+				std::string filename = line.substr(start + 1, end - start - 1);
+				SCP_string included = opengl_load_shader(filename.c_str());
+				output << included << "\n";
+				continue;
+			}
+		}
+		output << line << "\n";
+	}
+	return output.str();
+}
+#endif
 
 static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 								 SCP_stringstream& output,
@@ -863,13 +898,11 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 			}
 
 			// bind fragment data locations before we link the shader
-			#ifndef USE_OPENGL_ES
 			glBindFragDataLocation(program->getShaderHandle(), 0, "fragOut0");
 			glBindFragDataLocation(program->getShaderHandle(), 1, "fragOut1");
 			glBindFragDataLocation(program->getShaderHandle(), 2, "fragOut2");
 			glBindFragDataLocation(program->getShaderHandle(), 3, "fragOut3");
 			glBindFragDataLocation(program->getShaderHandle(), 4, "fragOut4");
-			#endif
 
 			if (do_shader_caching()) {
 				// Enable shader caching
@@ -880,7 +913,7 @@ void opengl_compile_shader_actual(shader_type sdr, const uint &flags, opengl_sha
 		}
 		catch (const std::exception&) {
 			// Since all shaders are required a compilation failure is a fatal error
-			Error(LOCATION, "A shader failed to compile! Check the debug log for more information.");
+			Error(LOCATION, "A shader failed to compile! %s. Check the debug log for more information.", sdr_info->description );
 		}
 
 		cache_program_binary(program->getShaderHandle(), shader_hash);

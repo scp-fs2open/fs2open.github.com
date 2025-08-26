@@ -24,10 +24,11 @@
 #define GL_BGRA									GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
 #define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV			GL_UNSIGNED_SHORT_5_5_5_1 // Not great changes alpha bit position, may need to convert it
-#define GL_RGB5									GL_RGB5_A1 // not going to work
+#define GL_RGB5									GL_RGB5_A1 // has extra alpha bit, not sure if it going to work
 #define GL_BGR									GL_BGRA_EXT // only if BGRA8 and depends on GL_EXT_texture_format_BGRA8888
 #define GLAD_GL_ARB_texture_storage				1 // Part of 3.2
 #define GLAD_GL_ARB_texture_compression_bptc    GL_EXT_texture_compression_bptc
+#define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5
 #define GLAD_GL_ARB_gpu_shader5				    GL_EXT_gpu_shader5
 #define GLAD_GL_ARB_get_program_binary		    GL_OES_get_program_binary
 #define GL_MULTISAMPLE						    GL_TRUE // Always enabled on ES
@@ -48,6 +49,9 @@ inline void glDrawBuffer(GLenum data)
 	const GLenum buffer[] = { data };
 	glDrawBuffers(1, buffer);
 }
+
+// does not exist on ES, ES uses layout(location=) directly on shader
+#define glBindFragDataLocation(program, colorNumber, name) ((void)0)
 
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
 #define glPolygonMode(face, mode) ((void)0)
