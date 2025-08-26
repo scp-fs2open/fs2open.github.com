@@ -138,6 +138,11 @@ void BackgroundEditorDialogModel::removeActiveBackground()
 	set_modified();
 
 	setActiveBackgroundIndex(newIdx);
+
+	// Ensure the swap index is still valid
+	if (!SCP_vector_inbounds(Backgrounds, _swapIndex)) {
+		_swapIndex = 0;
+	}
 }
 
 int BackgroundEditorDialogModel::getImportableBackgroundCount(const SCP_string& fs2Path) const
