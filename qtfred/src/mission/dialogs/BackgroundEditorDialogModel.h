@@ -29,21 +29,21 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static std::pair<int, int> getStarsLimit() { return {0, MAX_STARS}; }
 
 	// backgrounds group
-	SCP_vector<SCP_string> getBackgroundNames() const;
+	static SCP_vector<SCP_string> getBackgroundNames();
 	void setActiveBackgroundIndex(int idx); 
-	int getActiveBackgroundIndex() const;
+	static int getActiveBackgroundIndex();
 	void addBackground();
 	void removeActiveBackground();
-	int getImportableBackgroundCount(const SCP_string& fs2Path) const;
+	static int getImportableBackgroundCount(const SCP_string& fs2Path);
 	bool importBackgroundFromMission(const SCP_string& fs2Path, int whichIndex);
 	void swapBackgrounds();
 	void setSwapWithIndex(int idx);
 	int getSwapWithIndex() const;
 	void setSaveAnglesCorrectFlag(bool on);
-	bool getSaveAnglesCorrectFlag() const;
+	static bool getSaveAnglesCorrectFlag();
 
 	// bitmap group
-	SCP_vector<SCP_string> getAvailableBitmapNames() const;
+	static SCP_vector<SCP_string> getAvailableBitmapNames();
 	SCP_vector<SCP_string> getMissionBitmapNames() const;
 	void setSelectedBitmapIndex(int index);
 	int getSelectedBitmapIndex() const;
@@ -67,8 +67,8 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setBitmapDivY(int v);
 
 	// sun group
-	SCP_vector<SCP_string> getAvailableSunNames() const;
-	SCP_vector<SCP_string> getMissionSunNames() const;
+	static SCP_vector<SCP_string> getAvailableSunNames();
+	static SCP_vector<SCP_string> getMissionSunNames();
 	void setSelectedSunIndex(int index);
 	int getSelectedSunIndex() const;
 	void addMissionSunByName(const SCP_string& name);
@@ -83,9 +83,9 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSunScale(float v);
 
 	// nebula group
-	SCP_vector<SCP_string> getLightningNames() const;
-	SCP_vector<SCP_string> getNebulaPatternNames() const;
-	SCP_vector<SCP_string> getPoofNames() const;
+	static SCP_vector<SCP_string> getLightningNames();
+	static SCP_vector<SCP_string> getNebulaPatternNames();
+	static SCP_vector<SCP_string> getPoofNames();
 	static bool getFullNebulaEnabled();
 	void setFullNebulaEnabled(bool enabled);
 	static float getFullNebulaRange();
@@ -173,7 +173,6 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	static background_t& getActiveBackground();
 	starfield_list_entry* getActiveBitmap() const;
 	starfield_list_entry* getActiveSun() const;
-	int getNumBackgrounds() const;
 
 	int _selectedBitmapIndex = -1; // index into Backgrounds[Cur_background].bitmaps
 	int _selectedSunIndex = -1;    // index into Backgrounds[Cur_background].suns

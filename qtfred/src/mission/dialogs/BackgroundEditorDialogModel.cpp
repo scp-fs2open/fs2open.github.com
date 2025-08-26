@@ -53,6 +53,7 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
 	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
 	stars_set_background_orientation(&The_mission.skybox_orientation);
+	// TODO make this actually show the stars in the background
 	_editor->missionChanged();
 }
 
@@ -85,14 +86,8 @@ starfield_list_entry* BackgroundEditorDialogModel::getActiveSun() const
 	return &list[_selectedSunIndex];
 }
 
-int BackgroundEditorDialogModel::getNumBackgrounds() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getBackgroundNames()
 {
-	return static_cast<int>(Backgrounds.size());
-}
-
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getBackgroundNames() const
-{
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
 	
 	SCP_vector<SCP_string> out;
 	out.reserve(Backgrounds.size());
@@ -115,10 +110,8 @@ void BackgroundEditorDialogModel::setActiveBackgroundIndex(int idx)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getActiveBackgroundIndex() const
+int BackgroundEditorDialogModel::getActiveBackgroundIndex()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	return Cur_background < 0 ? 0 : Cur_background;
 }
 
@@ -154,10 +147,8 @@ void BackgroundEditorDialogModel::removeActiveBackground()
 	}
 }
 
-int BackgroundEditorDialogModel::getImportableBackgroundCount(const SCP_string& fs2Path) const
+int BackgroundEditorDialogModel::getImportableBackgroundCount(const SCP_string& fs2Path)
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	// Normalize the filepath to use the current platform's directory separator
 	SCP_string path = fs2Path;
 	std::replace(path.begin(), path.end(), '/', DIR_SEPARATOR_CHAR);
@@ -275,7 +266,7 @@ void BackgroundEditorDialogModel::setSwapWithIndex(int idx)
 	_swapIndex = idx;
 }
 
-bool BackgroundEditorDialogModel::getSaveAnglesCorrectFlag() const
+bool BackgroundEditorDialogModel::getSaveAnglesCorrectFlag()
 {
 	const auto& bg = getActiveBackground();
 	return bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file];
@@ -296,10 +287,8 @@ void BackgroundEditorDialogModel::setSaveAnglesCorrectFlag(bool on)
 	set_modified();
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	const int count = stars_get_num_entries(/*is_a_sun=*/false, /*bitmap_count=*/true);
 	out.reserve(count);
@@ -313,8 +302,6 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames() co
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionBitmapNames() const
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	const auto& vec = getActiveBackground().bitmaps;
 	out.reserve(vec.size());
@@ -564,10 +551,8 @@ void BackgroundEditorDialogModel::setBitmapDivY(int v)
 	refreshBackgroundPreview();
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableSunNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableSunNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	const int count = stars_get_num_entries(/*is_a_sun=*/true, /*bitmap_count=*/true);
 	out.reserve(count);
@@ -579,10 +564,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableSunNames() const
 	return out;
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionSunNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionSunNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	const auto& vec = getActiveBackground().suns;
 	out.reserve(vec.size());
@@ -732,10 +715,8 @@ void BackgroundEditorDialogModel::setSunScale(float v)
 	refreshBackgroundPreview();
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>"); // legacy default
 	for (const auto& st : Storm_types) {
@@ -744,10 +725,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getLightningNames() const
 	return out;
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	out.emplace_back("<None>"); // matches legacy combo where index 0 = none
 	for (const auto& neb : Neb2_bitmap_filenames) {
@@ -756,10 +735,8 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getNebulaPatternNames() cons
 	return out;
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getPoofNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getPoofNames()
 {
-	Assertion(getNumBackgrounds() > 0, "There should always be at least one background");
-	
 	SCP_vector<SCP_string> out;
 	out.reserve(Poof_info.size());
 	for (const auto& p : Poof_info) {
@@ -1333,7 +1310,7 @@ void BackgroundEditorDialogModel::setNumStars(int n)
 {
 	CLAMP(n, getStarsLimit().first, getStarsLimit().second);
 	modify(Num_stars, n);
-	refreshBackgroundPreview(); // TODO make this actually show the stars in the background
+	refreshBackgroundPreview();
 }
 
 bool BackgroundEditorDialogModel::getTakesPlaceInSubspace()
@@ -1354,7 +1331,7 @@ void BackgroundEditorDialogModel::setTakesPlaceInSubspace(bool on)
 
 SCP_string BackgroundEditorDialogModel::getEnvironmentMapName()
 {
-	return SCP_string(The_mission.envmap_name);
+	return {The_mission.envmap_name};
 }
 
 void BackgroundEditorDialogModel::setEnvironmentMapName(const SCP_string& name)
