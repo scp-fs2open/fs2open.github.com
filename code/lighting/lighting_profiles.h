@@ -72,6 +72,7 @@ class profile {
 	// Strictly speaking this should be handled by postproc but we need something for the non-postproc people.
 	adjustment overall_brightness;
 	adjustment cockpit_light_radius_modifier;
+	adjustment cockpit_light_intensity_modifier;
 
 	void reset();
 	profile& operator=(const profile& rhs);

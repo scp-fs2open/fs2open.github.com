@@ -384,6 +384,10 @@ void gr_opengl_deferred_lighting_finish()
 							? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb))
 							: MAX(l.rada, l.radb);
 			light_data->lightRadius = rad;
+			float intensity = (Lighting_mode == lighting_mode::COCKPIT)
+							? lp->cockpit_light_intensity_modifier.handle(intensity)
+							: intensity;
+			light_data->lightIntensity = intensity;
 			// A small padding factor is added to guard against potentially clipping the edges of the light with facets
 			// of the volume mesh.
 			light_data->scale.xyz.x = rad * 1.05f;
@@ -396,6 +400,11 @@ void gr_opengl_deferred_lighting_finish()
 				(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
 
 			light_data->lightRadius = rad;
+			float intensity =
+				(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_intensity_modifier.handle(l.intensity) : l.intensity;
+
+			light_data->lightIntensity = intensity;
+
 			light_data->lightType = LT_TUBE;
 
 			vec3d a;
