@@ -23,7 +23,6 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	  int guardian_threshold;
 	int m_ship;
 	int cur_subsys = -1;
-	 int m_g_threshold;
 	int m_damage;
 	int m_shields;
 	int m_force_shields;
