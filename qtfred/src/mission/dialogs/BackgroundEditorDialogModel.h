@@ -28,6 +28,20 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	std::pair<int, int> getDivisionLimit() const { return {1, 5}; }
 	std::pair<int, int> getStarsLimit() const { return {0, MAX_STARS}; }
 
+	// backgrounds group
+	SCP_vector<SCP_string> getBackgroundNames() const;
+	void setActiveBackgroundIndex(int idx); 
+	int getActiveBackgroundIndex() const;
+	void addBackground();
+	void removeActiveBackground();
+	int getImportableBackgroundCount(const SCP_string& fs2Path) const;
+	bool importBackgroundFromMission(const SCP_string& fs2Path, int whichIndex);
+	void swapBackgrounds();
+	void setSwapWithIndex(int idx);
+	int getSwapWithIndex() const;
+	void setSaveAnglesCorrectFlag(bool on);
+	bool getSaveAnglesCorrectFlag() const;
+
 	// bitmap group
 	SCP_vector<SCP_string> getAvailableBitmapNames() const;
 	SCP_vector<SCP_string> getMissionBitmapNames() const;
@@ -164,6 +178,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 
 	int _selectedBitmapIndex = -1; // index into Backgrounds[Cur_background].bitmaps
 	int _selectedSunIndex = -1;    // index into Backgrounds[Cur_background].suns
+	int _swapIndex = 0;           // index of background to swap with
 
 };
 } // namespace fso::fred::dialogs

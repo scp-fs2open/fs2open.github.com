@@ -20,6 +20,15 @@ public:
 
 private slots:
 
+	// Backgrounds
+	void on_backgroundSelectionCombo_currentIndexChanged(int index);
+	void on_addButton_clicked();
+	void on_removeButton_clicked();
+	void on_importButton_clicked();
+	void on_swapWithButton_clicked();
+	void on_swapWithCombo_currentIndexChanged(int index);
+	void on_useCorrectAngleFormatCheckBox_toggled(bool checked);
+
 	// Bitmaps
 	void on_bitmapListWidget_currentRowChanged(int row);
 	void on_bitmapTypeCombo_currentIndexChanged(int index);
@@ -99,6 +108,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 
 	void initializeUi();
 	void updateUi();
+	void updateBackgroundControls();
 	void refreshBitmapList();
 	void updateBitmapControls();
 	void refreshSunList();
@@ -110,6 +120,8 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateAmbientSwatch();
 	void updateSkyboxControls();
 	void updateMiscControls();
+
+	int pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex = 0);
 };
 
 } // namespace fso::fred::dialogs

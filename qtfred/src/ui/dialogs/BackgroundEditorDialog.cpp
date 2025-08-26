@@ -7,6 +7,8 @@
 #include <QSettings>
 #include <QFileDialog>
 #include <QFileInfo>
+#include <QInputDialog>
+#include <QStringList>
 
 namespace fso::fred::dialogs {
 
@@ -28,7 +30,7 @@ void BackgroundEditorDialog::initializeUi()
 	util::SignalBlockers blockers(this);
 
 	// Backgrounds
-	// TODO
+	updateBackgroundControls();
 
 	// Bitmaps
 	ui->bitmapPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
@@ -40,6 +42,7 @@ void BackgroundEditorDialog::initializeUi()
 	ui->bitmapDivYSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
 
 	const auto& names = _model->getAvailableBitmapNames();
+
 	for (const auto& s : names){
 		ui->bitmapTypeCombo->addItem(QString::fromStdString(s));
 	}
@@ -116,8 +119,31 @@ void BackgroundEditorDialog::updateUi()
 {
 	util::SignalBlockers blockers(this);
 
+	updateBackgroundControls();
 	refreshBitmapList();
 	refreshSunList();
+	updateNebulaControls();
+	updateOldNebulaControls();
+	updateAmbientLightControls();
+	updateSkyboxControls();
+	updateMiscControls();
+}
+
+void BackgroundEditorDialog::updateBackgroundControls()
+{
+	util::SignalBlockers blockers(this);
+
+	ui->backgroundSelectionCombo->clear();
+	const auto names = _model->getBackgroundNames();
+	for (const auto& s : names){
+		ui->backgroundSelectionCombo->addItem(QString::fromStdString(s));
+		ui->swapWithCombo->addItem(QString::fromStdString(s));
+	}
+
+	ui->removeButton->setEnabled(_model->getBackgroundNames().size() > 1);
+	ui->backgroundSelectionCombo->setCurrentIndex(_model->getActiveBackgroundIndex());
+	ui->swapWithCombo->setCurrentIndex(_model->getSwapWithIndex());
+	ui->useCorrectAngleFormatCheckBox->setChecked(_model->getSaveAnglesCorrectFlag());
 }
 
 void BackgroundEditorDialog::refreshBitmapList()
@@ -362,7 +388,90 @@ void BackgroundEditorDialog::updateMiscControls()
 	ui->subspaceCheckBox->setChecked(_model->getTakesPlaceInSubspace());
 	ui->envMapEdit->setText(QString::fromStdString(_model->getEnvironmentMapName()));
 	ui->lightingProfileCombo->setCurrentIndex(ui->lightingProfileCombo->findText(QString::fromStdString(_model->getLightingProfileName())));
+}
 
+int BackgroundEditorDialog::pickBackgroundIndexDialog(QWidget* parent, int count, int defaultIndex)
+{
+	if (count <= 0)
+		return -1;
+
+	QStringList items;
+	items.reserve(count);
+	for (int i = 0; i < count; ++i)
+		items << QObject::tr("Background %1").arg(i + 1);
+
+	bool ok = false;
+	const int start = std::clamp(defaultIndex, 0, count - 1);
+	const QString sel = QInputDialog::getItem(parent,
+		QObject::tr("Choose Background to Import"),
+		QObject::tr("Import which background?"),
+		items,
+		start,
+		false,
+		&ok);
+	if (!ok)
+		return -1;
+	return items.indexOf(sel);
+}
+
+void BackgroundEditorDialog::on_backgroundSelectionCombo_currentIndexChanged(int index)
+{
+	if (index < 0)
+		return;
+
+	_model->setActiveBackgroundIndex(index);
+	updateUi();
+}
+
+void BackgroundEditorDialog::on_addButton_clicked()
+{
+	_model->addBackground();
+	updateUi();
+}
+
+void BackgroundEditorDialog::on_removeButton_clicked()
+{
+	_model->removeActiveBackground();
+	updateUi();
+}
+
+void BackgroundEditorDialog::on_importButton_clicked()
+{
+	const QString file = QFileDialog::getOpenFileName(this, "Import Backgrounds from File", QString(), "Freespace 2 Mission Files (*.fs2);;All Files (*)");
+	if (file.isEmpty())
+		return;
+	int count = _model->getImportableBackgroundCount(file.toUtf8().constData());
+
+	if (count <= 0) {
+		QMessageBox::information(this, "Import Background", "No backgrounds found in the specified file.");
+		return;
+	}
+
+	int which = pickBackgroundIndexDialog(this, count);
+
+	if (which < 0)
+		return;
+
+	_model->importBackgroundFromMission(file.toUtf8().constData(), which);
+
+	updateUi();
+}
+
+void BackgroundEditorDialog::on_swapWithButton_clicked()
+{
+	_model->swapBackgrounds();
+
+	updateUi();
+}
+
+void BackgroundEditorDialog::on_swapWithCombo_currentIndexChanged(int index)
+{
+	_model->setSwapWithIndex(index);
+}
+
+void BackgroundEditorDialog::on_useCorrectAngleFormatCheckBox_toggled(bool checked)
+{
+	_model->setSaveAnglesCorrectFlag(checked);
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)

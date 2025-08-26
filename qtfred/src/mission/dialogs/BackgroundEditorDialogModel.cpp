@@ -13,6 +13,8 @@
 const static float delta = .00001f;
 const static float default_nebula_range = 3000.0f;
 
+extern void parse_one_background(background_t* background);
+
 namespace fso::fred::dialogs {
 BackgroundEditorDialogModel::BackgroundEditorDialogModel(QObject* parent, EditorViewport* viewport)
 	: AbstractDialogModel(parent, viewport)
@@ -81,6 +83,202 @@ starfield_list_entry* BackgroundEditorDialogModel::getActiveSun() const
 		return nullptr;
 	}
 	return &list[_selectedSunIndex];
+}
+
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getBackgroundNames() const
+{
+	SCP_vector<SCP_string> out;
+	out.reserve(Backgrounds.size());
+	for (size_t i = 0; i < Backgrounds.size(); ++i)
+		out.emplace_back("Background " + std::to_string(i + 1));
+	return out;
+}
+
+void BackgroundEditorDialogModel::setActiveBackgroundIndex(int idx)
+{
+	if (!SCP_vector_inbounds(Backgrounds, idx))
+		return;
+
+	Cur_background = idx;
+
+	// Reseed selections for the new background
+	_selectedBitmapIndex = Backgrounds[idx].bitmaps.empty() ? -1 : 0;
+	_selectedSunIndex = Backgrounds[idx].suns.empty() ? -1 : 0;
+
+	refreshBackgroundPreview();
+}
+
+int BackgroundEditorDialogModel::getActiveBackgroundIndex() const
+{
+	return Cur_background < 0 ? 0 : Cur_background;
+}
+
+
+void BackgroundEditorDialogModel::addBackground()
+{
+	const int newIndex = static_cast<int>(Backgrounds.size());
+	stars_add_blank_background(/*creating_in_fred=*/true);
+	set_modified();
+
+	// select it
+	setActiveBackgroundIndex(newIndex);
+}
+
+void BackgroundEditorDialogModel::removeActiveBackground()
+{
+	if (Backgrounds.size() <= 1 || Cur_background < 0) {
+		return; // keep at least one background
+	}
+
+	const int oldIdx = Cur_background;
+	Backgrounds.erase(Backgrounds.begin() + oldIdx);
+
+	// clamp selection to the new valid range
+	const int newIdx = std::min(oldIdx, static_cast<int>(Backgrounds.size()) - 1);
+	set_modified();
+
+	setActiveBackgroundIndex(newIdx);
+}
+
+int BackgroundEditorDialogModel::getImportableBackgroundCount(const SCP_string& fs2Path) const
+{
+	// Normalize the filepath to use the current platform's directory separator
+	SCP_string path = fs2Path;
+	std::replace(path.begin(), path.end(), '/', DIR_SEPARATOR_CHAR);
+	
+	try {
+		read_file_text(path.c_str());
+		reset_parse();
+
+		if (!skip_to_start_of_string("#Background bitmaps")) {
+			return 0; // no background section
+		}
+
+		// Enter the section and skip the header fields
+		required_string("#Background bitmaps");
+		required_string("$Num stars:");
+		int tmp;
+		stuff_int(&tmp);
+		required_string("$Ambient light level:");
+		stuff_int(&tmp);
+
+		// Count how many explicit "$Bitmap List:" blocks this file has
+		char* saved = Mp;
+		int count = 0;
+		while (skip_to_string("$Bitmap List:")) {
+			++count;
+		}
+		Mp = saved;
+
+		// Retail-style missions may have 0 "$Bitmap List:" entries but still one background.
+		return (count > 0) ? count : 1;
+	} catch (...) {
+		return 0; // parse error
+	}
+}
+
+bool BackgroundEditorDialogModel::importBackgroundFromMission(const SCP_string& fs2Path, int whichIndex)
+{
+	// Replace the CURRENT background with one parsed from another mission file.
+	if (Cur_background < 0)
+		return false;
+
+	// Normalize the filepath to use the current platform's directory separator
+	SCP_string path = fs2Path;
+	std::replace(path.begin(), path.end(), '/', DIR_SEPARATOR_CHAR);
+
+	try {
+		read_file_text(path.c_str());
+		reset_parse();
+
+		if (!skip_to_start_of_string("#Background bitmaps")) {
+			return false; // file has no background section
+		}
+
+		required_string("#Background bitmaps");
+		required_string("$Num stars:");
+		int tmp;
+		stuff_int(&tmp);
+		required_string("$Ambient light level:");
+		stuff_int(&tmp);
+
+		// Count "$Bitmap List:" occurrences
+		char* saved = Mp;
+		int count = 0;
+		while (skip_to_string("$Bitmap List:")) {
+			++count;
+		}
+		Mp = saved;
+
+		// If multiple lists exist, skip to the requested one.
+		// If zero lists exist (retail), parse_one_background will handle the single background.
+		if (count > 0) {
+			const int target = std::max(0, std::min(whichIndex, count - 1));
+			for (int i = 0; i < target + 1; ++i) {
+				skip_to_string("$Bitmap List:");
+			}
+		}
+
+		// Parse into the current slot
+		parse_one_background(&Backgrounds[Cur_background]);
+	} catch (...) {
+		return false;
+	}
+
+	set_modified();
+	// Rebuild instances & repaint so the import is visible immediately
+	stars_load_background(Cur_background);
+	if (_viewport)
+		_viewport->needsUpdate();
+	return true;
+}
+
+void BackgroundEditorDialogModel::swapBackgrounds()
+{
+	if (Cur_background < 0 || _swapIndex < 0 || _swapIndex >= static_cast<int>(Backgrounds.size()) || _swapIndex == Cur_background) {
+		return;
+	}
+
+	stars_swap_backgrounds(Cur_background, _swapIndex);
+	set_modified();
+
+	refreshBackgroundPreview();
+	return;
+}
+
+int BackgroundEditorDialogModel::getSwapWithIndex() const
+{
+	return _swapIndex;
+}
+
+void BackgroundEditorDialogModel::setSwapWithIndex(int idx)
+{
+	if (!SCP_vector_inbounds(Backgrounds, idx)) {
+		return;
+	}
+	
+	_swapIndex = idx;
+}
+
+bool BackgroundEditorDialogModel::getSaveAnglesCorrectFlag() const
+{
+	const auto& bg = getActiveBackground();
+	return bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file];
+}
+
+void BackgroundEditorDialogModel::setSaveAnglesCorrectFlag(bool on)
+{
+	auto& bg = getActiveBackground();
+	const bool before = bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file];
+	if (before == on)
+		return;
+
+	if (on)
+		bg.flags.set(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+	else
+		bg.flags.remove(Starfield::Background_Flags::Corrected_angles_in_mission_file);
+
+	set_modified();
 }
 
 SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames() const
