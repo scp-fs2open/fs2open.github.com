@@ -10,6 +10,6 @@ class PersonaColorComboBox : public QComboBox {
 	PersonaColorComboBox(QWidget* parent);
 
   private:
-	QStandardItemModel* getPersonaModel() const;
+	static QStandardItemModel* getPersonaModel();
 };
 } // namespace fso::fred

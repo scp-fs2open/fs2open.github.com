@@ -7,7 +7,7 @@ PersonaColorComboBox::PersonaColorComboBox(QWidget* parent) : QComboBox(parent)
 {
 	fredApp->runAfterInit([this]() { setModel(getPersonaModel()); });
 }
-QStandardItemModel* PersonaColorComboBox::getPersonaModel() const
+QStandardItemModel* PersonaColorComboBox::getPersonaModel()
 {
 	auto itemModel = new QStandardItemModel();
 	auto topitem = new QStandardItem("<none>");
