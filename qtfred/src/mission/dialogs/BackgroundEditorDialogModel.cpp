@@ -674,28 +674,6 @@ void BackgroundEditorDialogModel::setSunPitch(int deg)
 	refreshBackgroundPreview();
 }
 
-int BackgroundEditorDialogModel::getSunBank() const
-{
-	// Bank is not used for suns but this is added for consistency
-	/*auto* s = getActiveSun();
-	if (!s)
-		return 0;
-
-	return fl2ir(fl_degrees(s->ang.b) + delta);*/
-}
-
-void BackgroundEditorDialogModel::setSunBank(int deg)
-{
-	// Bank is not used for suns but this is added for consistency
-	/*auto* s = getActiveSun();
-	if (!s)
-		return;
-
-	CLAMP(deg, getOrientLimit().first, getOrientLimit().second);
-	modify(s->ang.b, fl_radians(deg));
-	refreshBackgroundPreview();*/
-}
-
 int BackgroundEditorDialogModel::getSunHeading() const
 {
 	auto* s = getActiveSun();
@@ -859,7 +837,7 @@ void BackgroundEditorDialogModel::setSelectedPoofs(const SCP_vector<SCP_string>&
 	clear_all_bits(Neb2_poof_flags.get(), Poof_info.size());
 	for (const auto& want : names) {
 		for (size_t i = 0; i < Poof_info.size(); ++i) {
-			if (!_stricmp(Poof_info[i].name, want.c_str())) {
+			if (!stricmp(Poof_info[i].name, want.c_str())) {
 				set_bit(Neb2_poof_flags.get(), i);
 				break;
 			}

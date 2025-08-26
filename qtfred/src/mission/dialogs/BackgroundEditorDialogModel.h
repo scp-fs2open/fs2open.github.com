@@ -77,8 +77,6 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	void setSunName(const SCP_string& name);
 	int getSunPitch() const;
 	void setSunPitch(int deg);
-	int getSunBank() const; // unused for suns but added for consistency
-	void setSunBank(int deg); // unused for suns but added for consistency
 	int getSunHeading() const;
 	void setSunHeading(int deg);
 	float getSunScale() const; // uses scale_x for both x and y
