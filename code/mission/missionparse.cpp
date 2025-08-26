@@ -346,6 +346,77 @@ flag_def_list_new<Object::Object_Flags> Parse_ship_object_flags[] = {
 const size_t Num_Parse_ship_object_flags =
 	sizeof(Parse_ship_object_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);
 
+// These are a little different than the object flags as they aren't used in traditional flag sexps or parsed flag lists
+// Instead, this list is used to popuplate QtFRED's mission specs flag checkboxes. As such the names can be more descriptive than other flag def lists
+// NOTE: Inactive flags and special flags are not added to the UI flag list. It is assumed that special flags exist in some other UI form
+flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[] = {
+	{"Mission Takes Place In Subspace",           Mission::Mission_Flags::Subspace,                   true, true},
+	{"Disallow Promotions/Badges",                Mission::Mission_Flags::No_promotion,               true, false},
+	{"Mission Takes Place In Full Nebula",        Mission::Mission_Flags::Fullneb,                    true, true},
+	{"Disable Built-in Messages",                 Mission::Mission_Flags::No_builtin_msgs,            true, false},
+	{"No Traitor",                                Mission::Mission_Flags::No_traitor,                 true, false},
+	{"Toggle Ship Trails",                        Mission::Mission_Flags::Toggle_ship_trails,         true, true},
+	{"Support Ship Repairs Hull",                 Mission::Mission_Flags::Support_repairs_hull,       true, true},
+	{"All Ships Beam-Freed By Default",           Mission::Mission_Flags::Beam_free_all_by_default,   true, false},
+	{"UNUSED 1",                                  Mission::Mission_Flags::Unused_1,                   false, false},
+	{"UNUSED 2",                                  Mission::Mission_Flags::Unused_2,                   false, false},
+	{"No Briefing",                               Mission::Mission_Flags::No_briefing,                true, false},
+	{"Toggle Debriefing (On/Off)",                Mission::Mission_Flags::Toggle_debriefing,          true, false},
+	{"UNUSED 3",                                  Mission::Mission_Flags::Unused_3,                   false, false},
+	{"UNUSED 4",                                  Mission::Mission_Flags::Unused_4,                   false, false},
+	{"2D Mission",                                Mission::Mission_Flags::Mission_2d,                 true, false},
+	{"UNUSED 5",                                  Mission::Mission_Flags::Unused_5,                   false, false},
+	{"Red Alert Mission",                         Mission::Mission_Flags::Red_alert,                  true, false},
+	{"Scramble Mission",                          Mission::Mission_Flags::Scramble,                   true, false},
+	{"Disable Built-in Command Messages",         Mission::Mission_Flags::No_builtin_command,         true, false},
+	{"Player Starts under AI Control (NO MULTI)", Mission::Mission_Flags::Player_start_ai,            true, false},
+	{"All Teams at War",                          Mission::Mission_Flags::All_attack,                 true, false},
+	{"Use Autopilot Cinematics",                  Mission::Mission_Flags::Use_ap_cinematics,          true, false},
+	{"Deactivate Hardcoded Autopilot",            Mission::Mission_Flags::Deactivate_ap,              true, false},
+	{"Toggle Showing Goals In Briefing",          Mission::Mission_Flags::Toggle_showing_goals,       true, false},
+	{"Mission End to Mainhall",                   Mission::Mission_Flags::End_to_mainhall,            true, false},
+	{"Override #Command with Command Info",       Mission::Mission_Flags::Override_hashcommand,       true, true},
+	{"Toggle Starting in Chase View",             Mission::Mission_Flags::Toggle_start_chase_view,    true, false},
+	{"Nebula Fog Color Override",                 Mission::Mission_Flags::Neb2_fog_color_override,    true, true},
+	{"Full Nebula Background Bitmaps",            Mission::Mission_Flags::Fullneb_background_bitmaps, true, true},
+	{"Preload Subspace Tunnel",                   Mission::Mission_Flags::Preload_subspace,           true, false}
+};
+
+parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[] = {
+	{Mission::Mission_Flags::Subspace,                   "Mission takes place in subspace"},
+	{Mission::Mission_Flags::No_promotion,               "Cannot get promoted or badges in this mission"},
+	{Mission::Mission_Flags::Fullneb,                    "Mission is a full nebula mission"},
+	{Mission::Mission_Flags::No_builtin_msgs,            "Disables all builtin messages except Command"},
+	{Mission::Mission_Flags::No_traitor,                 "Player cannot become a traitor"},
+	{Mission::Mission_Flags::Toggle_ship_trails,         "Toggles ship trails (off in nebula, on outside nebula)"},
+	{Mission::Mission_Flags::Support_repairs_hull,       "Toggles support ship repair of ship hulls"},
+	{Mission::Mission_Flags::Beam_free_all_by_default,   "All ships are beam-freed by default"},
+	{Mission::Mission_Flags::Unused_1,                   "UNUSED 1"}, // Necessary to not break parsing. Is this still true??
+	{Mission::Mission_Flags::Unused_2,                   "UNUSED 2"}, // Necessary to not break parsing. Is this still true??
+	{Mission::Mission_Flags::No_briefing,                "No briefing, mission starts immediately"},
+	{Mission::Mission_Flags::Toggle_debriefing,          "Toggles debriefing on for dogfight. Off for everything else"},
+	{Mission::Mission_Flags::Unused_3,                   "UNUSED 3"}, // Necessary to not break parsing. Is this still true??
+	{Mission::Mission_Flags::Unused_4,                   "UNUSED 4"}, // Necessary to not break parsing. Is this still true??
+	{Mission::Mission_Flags::Mission_2d,                 "Mission is meant to be played top-down style; 2D physics and movement."},
+	{Mission::Mission_Flags::Unused_5,                   "UNUSED 5"}, // Necessary to not break parsing. Is this still true??
+	{Mission::Mission_Flags::Red_alert,                  "A red-alert mission"},
+	{Mission::Mission_Flags::Scramble,                   "A scramble mission"},
+	{Mission::Mission_Flags::No_builtin_command,         "Disables builtin Command messages"},
+	{Mission::Mission_Flags::Player_start_ai,            "Player starts mission under AI Control"},
+	{Mission::Mission_Flags::All_attack,                 "All teams target each other"},
+	{Mission::Mission_Flags::Use_ap_cinematics,          "Use autopilot cinematics"},
+	{Mission::Mission_Flags::Deactivate_ap,              "Deactivate hardcoded autopilot"},
+	{Mission::Mission_Flags::Toggle_showing_goals,       "Show mission goals for training missions, hide otherwise"},
+	{Mission::Mission_Flags::End_to_mainhall,            "Return to the mainhall after debrief instead of starting the next mission"},
+	{Mission::Mission_Flags::Override_hashcommand,       "Override #Command with the Command info in Mission Specs"},
+	{Mission::Mission_Flags::Toggle_start_chase_view,    "Toggles whether the player starts the mission in chase view"},
+	{Mission::Mission_Flags::Neb2_fog_color_override,    "Whether to use explicit fog colors instead of checking the palette"},
+	{Mission::Mission_Flags::Fullneb_background_bitmaps, "Show background bitmaps despite full nebula"},
+	{Mission::Mission_Flags::Preload_subspace,         "Preload the subspace tunnel for both the sexp and specs checkbox"},
+};
+
+const size_t Num_parse_mission_flags = sizeof(Parse_mission_flags) / sizeof(flag_def_list_new<Mission::Mission_Flags>);
+
 flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[] = {
     { "cargo-known",					Mission::Parse_Object_Flags::SF_Cargo_known,			true, false },
     { "ignore-count",					Mission::Parse_Object_Flags::SF_Ignore_count,			true, false },

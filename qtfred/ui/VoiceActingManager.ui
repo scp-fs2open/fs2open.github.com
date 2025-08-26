@@ -2,20 +2,29 @@
 <ui version="4.0">
  <class>fso::fred::dialogs::VoiceActingManager</class>
  <widget class="QDialog" name="fso::fred::dialogs::VoiceActingManager">
+  <property name="windowModality">
+   <enum>Qt::WindowModal</enum>
+  </property>
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>737</width>
-    <height>402</height>
+    <width>836</width>
+    <height>457</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Voice Acting Manager</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_3">
+  <layout class="QHBoxLayout" name="horizontalLayout_3" stretch="3,0">
    <item>
     <widget class="QGroupBox" name="fileNameOptionsBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>3</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>File Name Options</string>
      </property>
@@ -34,7 +43,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QLineEdit" name="campaignAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevCampaignLineEdit"/>
          </item>
          <item row="1" column="0">
           <widget class="QLabel" name="missionLabel">
@@ -44,7 +53,7 @@
           </widget>
          </item>
          <item row="1" column="1">
-          <widget class="QLineEdit" name="missionAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevMissionLineEdit"/>
          </item>
          <item row="3" column="0">
           <widget class="QLabel" name="cmdBriefingStageLabel">
@@ -54,7 +63,7 @@
           </widget>
          </item>
          <item row="3" column="1">
-          <widget class="QLineEdit" name="cmdBriefingAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevCommandBriefingLineEdit"/>
          </item>
          <item row="4" column="0">
           <widget class="QLabel" name="briefingStageLabel">
@@ -64,7 +73,7 @@
           </widget>
          </item>
          <item row="4" column="1">
-          <widget class="QLineEdit" name="briefingAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevBriefingLineEdit"/>
          </item>
          <item row="5" column="0">
           <widget class="QLabel" name="debriefingStageLabel">
@@ -74,7 +83,7 @@
           </widget>
          </item>
          <item row="5" column="1">
-          <widget class="QLineEdit" name="debriefingAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevDebriefingLineEdit"/>
          </item>
          <item row="6" column="0">
           <widget class="QLabel" name="messageLabel">
@@ -84,10 +93,23 @@
           </widget>
          </item>
          <item row="6" column="1">
-          <widget class="QLineEdit" name="messageAbbrevEdit"/>
+          <widget class="QLineEdit" name="abbrevMessageLineEdit"/>
          </item>
         </layout>
        </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
       </item>
       <item>
        <widget class="QGroupBox" name="extensionLayout">
@@ -103,7 +125,7 @@
           </widget>
          </item>
          <item row="0" column="1">
-          <widget class="QComboBox" name="extensionCombo"/>
+          <widget class="QComboBox" name="suffixComboBox"/>
          </item>
         </layout>
        </widget>
@@ -118,7 +140,11 @@
          </widget>
         </item>
         <item>
-         <widget class="QLineEdit" name="exampleEdit"/>
+         <widget class="QLineEdit" name="exampleFilenameLabel">
+          <property name="readOnly">
+           <bool>true</bool>
+          </property>
+         </widget>
         </item>
        </layout>
       </item>
@@ -130,14 +156,14 @@
        </widget>
       </item>
       <item>
-       <widget class="QCheckBox" name="replaceFileNamesCheckBox">
+       <widget class="QCheckBox" name="replaceCheckBox">
         <property name="text">
          <string>Replace existing file names</string>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="generateFileNamesButton">
+       <widget class="QPushButton" name="generateFilenamesButton">
         <property name="text">
          <string>Generate File Names</string>
         </property>
@@ -148,6 +174,12 @@
    </item>
    <item>
     <widget class="QGroupBox" name="scriptOptionsBox">
+     <property name="sizePolicy">
+      <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+       <horstretch>1</horstretch>
+       <verstretch>0</verstretch>
+      </sizepolicy>
+     </property>
      <property name="title">
       <string>Script Options</string>
      </property>
@@ -157,123 +189,42 @@
         <property name="title">
          <string>Script Entry Format</string>
         </property>
-        <layout class="QHBoxLayout" name="horizontalLayout">
+        <layout class="QHBoxLayout" name="horizontalLayout" stretch="0">
          <item>
-          <widget class="QPlainTextEdit" name="scriptTextEdit">
-           <property name="plainText">
-            <string>Sender: $sender
-Persona: $persona
-File: $filename
-Message: $message</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLabel" name="scriptLegendLabel">
-           <property name="text">
-            <string>$filename - name of the message file
-$message - text of the message
-$persona - persona of the sender
-$sender - name of the sender
-
-Note that $persona and $sender will
-only appear for the Message section.</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="exportBox">
-        <property name="title">
-         <string>Export</string>
-        </property>
-        <layout class="QVBoxLayout" name="verticalLayout_3">
-         <item>
-          <widget class="QRadioButton" name="exportAllRadio">
-           <property name="text">
-            <string>Everything</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">exportOptionsButtonGroup</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="exportCmdBriefingRadio">
-           <property name="text">
-            <string>Command briefings only</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">exportOptionsButtonGroup</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="exportBriefingRadio">
-           <property name="text">
-            <string>Briefings only</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">exportOptionsButtonGroup</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="exportDebriefingRadio">
-           <property name="text">
-            <string>Debriefings only</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">exportOptionsButtonGroup</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <widget class="QRadioButton" name="exportMessageRadio">
-           <property name="text">
-            <string>Messages only</string>
-           </property>
-           <attribute name="buttonGroup">
-            <string notr="true">exportOptionsButtonGroup</string>
-           </attribute>
-          </widget>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_2">
+          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="3,2">
            <item>
-            <spacer name="horizontalSpacer">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QPlainTextEdit" name="scriptEntryFormatPlainTextEdit">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>17</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="groupSendMsgListCheckBox">
-             <property name="text">
-              <string>Group send-message-list messages before others</string>
+             <property name="plainText">
+              <string/>
              </property>
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_2">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
+            <widget class="QLabel" name="scriptLegendLabel">
+             <property name="text">
+              <string>$name - name of the message
+$filename - name of the message file
+$message - text of the message
+$persona - persona of the sender
+$sender - name of the sender
+$note - message notes
+
+Note that $persona and $sender will
+only appear for the Message section.</string>
              </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
+             <property name="alignment">
+              <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
              </property>
-            </spacer>
+             <property name="wordWrap">
+              <bool>true</bool>
+             </property>
+            </widget>
            </item>
           </layout>
          </item>
@@ -281,11 +232,178 @@ only appear for the Message section.</string>
        </widget>
       </item>
       <item>
-       <widget class="QPushButton" name="generateScriptButton">
-        <property name="text">
-         <string>Generate Script</string>
-        </property>
-       </widget>
+       <layout class="QHBoxLayout" name="horizontalLayout_4">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_6">
+          <item>
+           <widget class="QGroupBox" name="synPersonasBox">
+            <property name="title">
+             <string>Sync Personas</string>
+            </property>
+            <layout class="QVBoxLayout" name="verticalLayout_5">
+             <item>
+              <widget class="QComboBox" name="personaSyncComboBox"/>
+             </item>
+             <item>
+              <widget class="QPushButton" name="copyMsgToShipsButton">
+               <property name="text">
+                <string>Copy message personas to ships</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="copyShipsToMsgsButton">
+               <property name="text">
+                <string>Copy ship personas to messages</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="clearNonSendersButton">
+               <property name="text">
+                <string>Clear personas from ships that
+don't send messages</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="setHeadAnisButton">
+               <property name="text">
+                <string>Set head ANIs using personas
+in messages.tbl</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="checkAnyWingmanButton">
+            <property name="text">
+             <string>Check if messages sent by &quot;&lt;any
+wingman&gt;&quot; have at least one ship
+with that persona</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="QGroupBox" name="exportBox">
+          <property name="title">
+           <string>Export</string>
+          </property>
+          <layout class="QVBoxLayout" name="verticalLayout_3" stretch="0,0,0,0,0,0,1">
+           <item>
+            <widget class="QRadioButton" name="exportAllRadio">
+             <property name="text">
+              <string>Everything</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">exportOptionsButtonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="exportCmdBriefingRadio">
+             <property name="text">
+              <string>Command briefings only</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">exportOptionsButtonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="exportBriefingRadio">
+             <property name="text">
+              <string>Briefings only</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">exportOptionsButtonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="exportDebriefingRadio">
+             <property name="text">
+              <string>Debriefings only</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">exportOptionsButtonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <widget class="QRadioButton" name="exportMessageRadio">
+             <property name="text">
+              <string>Messages only</string>
+             </property>
+             <attribute name="buttonGroup">
+              <string notr="true">exportOptionsButtonGroup</string>
+             </attribute>
+            </widget>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <spacer name="horizontalSpacer">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>17</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="groupMessagesCheckBox">
+               <property name="text">
+                <string>Group send-message-list messages before others</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <spacer name="horizontalSpacer_2">
+               <property name="orientation">
+                <enum>Qt::Horizontal</enum>
+               </property>
+               <property name="sizeHint" stdset="0">
+                <size>
+                 <width>40</width>
+                 <height>20</height>
+                </size>
+               </property>
+              </spacer>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QPushButton" name="generateScriptButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Expanding">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="baseSize">
+              <size>
+               <width>0</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Generate Script</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </widget>
+        </item>
+       </layout>
       </item>
      </layout>
     </widget>

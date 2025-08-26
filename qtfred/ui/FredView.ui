@@ -242,6 +242,7 @@
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
     <addaction name="actionAlways_Save_Display_Names"/>
+    <addaction name="actionMusic_Player"/>
     <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
@@ -1538,6 +1539,11 @@
    </property>
    <property name="shortcut">
     <string>Shift+X</string>
+   </property>
+  </action>
+  <action name="actionMusic_Player">
+   <property name="text">
+    <string>Music Player</string>
    </property>
   </action>
  </widget>

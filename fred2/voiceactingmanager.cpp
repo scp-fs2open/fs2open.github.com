@@ -7,6 +7,7 @@
 #include "freddoc.h"
 #include "VoiceActingManager.h"
 #include "globalincs/vmallocator.h"
+#include "missioneditor/common.h"
 #include "missionui/missioncmdbrief.h"
 #include "mission/missionbriefcommon.h"
 #include "mission/missionmessage.h"
@@ -21,24 +22,6 @@
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
-
-#define INVALID_MESSAGE ((MMessage*)SIZE_T_MAX)
-
-// to keep track of data
-char Voice_abbrev_briefing[NAME_LENGTH];
-char Voice_abbrev_campaign[NAME_LENGTH];
-char Voice_abbrev_command_briefing[NAME_LENGTH];
-char Voice_abbrev_debriefing[NAME_LENGTH];
-char Voice_abbrev_message[NAME_LENGTH];
-char Voice_abbrev_mission[NAME_LENGTH];
-bool Voice_no_replace_filenames;
-char Voice_script_entry_format[NOTES_LENGTH];
-int Voice_export_selection;
-bool Voice_group_messages;
-
-constexpr int WINGMAN_PERSONAS = 0;
-constexpr int NON_WINGMAN_PERSONAS = 1;
-constexpr int SPECIFIC_PERSONAS_START_AT = 2;
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -141,15 +124,7 @@ BOOL VoiceActingManager::OnInitDialog()
 	box->SetCurSel(0);
 
 	// this text is too long for the .rc file, so set it here
-	GetDlgItem(IDC_ENTRY_FORMAT_DESC)->SetWindowText(
-		"$name - name of the message\r\n"
-		"$filename - name of the message file\r\n"
-		"$message - text of the message\r\n"
-		"$persona - persona of the sender\r\n"
-		"$sender - name of the sender\r\n"
-		"$note - message notes\r\n\r\n"
-		"Note that $persona and $sender will only appear for the Message section."
-	);
+	GetDlgItem(IDC_ENTRY_FORMAT_DESC)->SetWindowText(Voice_script_instructions_string.c_str());
 
 	// load saved data for file names
 	m_abbrev_briefing = _T(Voice_abbrev_briefing);
@@ -993,17 +968,17 @@ bool VoiceActingManager::check_persona(int persona)
 {
 	Assertion(SCP_vector_inbounds(Personas, persona), "The persona index provided to check_persona() is not in range!");
 
-	if (m_which_persona_to_sync == WINGMAN_PERSONAS)
+	if (m_which_persona_to_sync == static_cast<int>(PersonaSyncIndex::Wingman))
 	{
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) != 0;
 	}
-	else if (m_which_persona_to_sync == NON_WINGMAN_PERSONAS)
+	else if (m_which_persona_to_sync == static_cast<int>(PersonaSyncIndex::NonWingman))
 	{
 		return (Personas[persona].flags & PERSONA_FLAG_WINGMAN) == 0;
 	}
 	else
 	{
-		int real_persona_to_sync = m_which_persona_to_sync - SPECIFIC_PERSONAS_START_AT;
+		int real_persona_to_sync = m_which_persona_to_sync - static_cast<int>(PersonaSyncIndex::PersonasStart);
 		Assertion(SCP_vector_inbounds(Personas, real_persona_to_sync), "The m_which_persona_to_sync dropdown index is not in range!");
 		return real_persona_to_sync == persona;
 	}

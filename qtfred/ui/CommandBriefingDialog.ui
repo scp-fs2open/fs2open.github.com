@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>547</width>
-    <height>533</height>
+    <width>894</width>
+    <height>537</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,26 +32,6 @@
       <layout class="QHBoxLayout" name="stageManagementAndOKLayout">
        <item>
         <layout class="QGridLayout" name="stageManagementLayout">
-         <item row="1" column="2" alignment="Qt::AlignLeft">
-          <widget class="QPushButton" name="actionNextStage">
-           <property name="text">
-            <string>Next</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="6">
-          <spacer name="rightTeamSpacer">
-           <property name="orientation">
-            <enum>Qt::Horizontal</enum>
-           </property>
-           <property name="sizeHint" stdset="0">
-            <size>
-             <width>40</width>
-             <height>20</height>
-            </size>
-           </property>
-          </spacer>
-         </item>
          <item row="1" column="4">
           <widget class="QLabel" name="teamLabel">
            <property name="text">
@@ -59,10 +39,10 @@
            </property>
           </widget>
          </item>
-         <item row="1" column="5">
-          <widget class="QSpinBox" name="actionChangeTeams">
-           <property name="minimum">
-            <number>1</number>
+         <item row="1" column="2" alignment="Qt::AlignLeft">
+          <widget class="QPushButton" name="actionNextStage">
+           <property name="text">
+            <string>Next</string>
            </property>
           </widget>
          </item>
@@ -70,20 +50,6 @@
           <widget class="QPushButton" name="actionDeleteStage">
            <property name="text">
             <string>Delete</string>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="1" alignment="Qt::AlignRight">
-          <widget class="QPushButton" name="actionPrevStage">
-           <property name="text">
-            <string>Prev</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" alignment="Qt::AlignHCenter">
-          <widget class="QPushButton" name="actionAddStage">
-           <property name="text">
-            <string>Add</string>
            </property>
           </widget>
          </item>
@@ -107,13 +73,6 @@
            </property>
           </widget>
          </item>
-         <item row="2" column="4" colspan="2">
-          <widget class="QPushButton" name="actionCopyToOtherTeams">
-           <property name="text">
-            <string>Copy to Other Teams</string>
-           </property>
-          </widget>
-         </item>
          <item row="1" column="0">
           <widget class="QLabel" name="currentStageLabel">
            <property name="font">
@@ -123,6 +82,43 @@
            </property>
            <property name="text">
             <string>No Stages</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4" colspan="2">
+          <widget class="QPushButton" name="actionCopyToOtherTeams">
+           <property name="text">
+            <string>Copy to Other Teams</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QComboBox" name="actionChangeTeams"/>
+         </item>
+         <item row="1" column="6">
+          <spacer name="rightTeamSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="1" alignment="Qt::AlignRight">
+          <widget class="QPushButton" name="actionPrevStage">
+           <property name="text">
+            <string>Prev</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="actionAddStage">
+           <property name="text">
+            <string>Add</string>
            </property>
           </widget>
          </item>
@@ -155,7 +151,7 @@
           <enum>Qt::ScrollBarAlwaysOn</enum>
          </property>
          <property name="plainText">
-          <string>&lt;Text here&gt;</string>
+          <string/>
          </property>
         </widget>
        </item>
@@ -176,7 +172,7 @@
          <item row="2" column="2">
           <widget class="QLineEdit" name="speechFileName">
            <property name="text">
-            <string>none</string>
+            <string/>
            </property>
            <property name="maxLength">
             <number>31</number>
@@ -186,7 +182,7 @@
          <item row="6" column="2">
           <widget class="QLineEdit" name="actionHighResolutionFilenameEdit">
            <property name="text">
-            <string>&lt;default&gt;</string>
+            <string/>
            </property>
            <property name="maxLength">
             <number>31</number>
@@ -210,7 +206,7 @@
          <item row="5" column="2">
           <widget class="QLineEdit" name="actionLowResolutionFilenameEdit">
            <property name="text">
-            <string>&lt;default&gt;</string>
+            <string/>
            </property>
            <property name="maxLength">
             <number>31</number>
@@ -263,7 +259,7 @@
          <item row="1" column="2">
           <widget class="QLineEdit" name="animationFileName">
            <property name="text">
-            <string>&lt;default&gt;</string>
+            <string/>
            </property>
            <property name="maxLength">
             <number>31</number>
@@ -273,7 +269,12 @@
          <item row="2" column="4">
           <widget class="QPushButton" name="actionTestSpeechFileButton">
            <property name="text">
-            <string>Test Speech</string>
+            <string/>
+           </property>
+           <property name="icon">
+            <iconset>
+             <selectedon>:/images/play.png</selectedon>
+            </iconset>
            </property>
           </widget>
          </item>
@@ -321,7 +322,6 @@
   <tabstop>actionNextStage</tabstop>
   <tabstop>actionInsertStage</tabstop>
   <tabstop>actionDeleteStage</tabstop>
-  <tabstop>actionChangeTeams</tabstop>
   <tabstop>actionCopyToOtherTeams</tabstop>
   <tabstop>actionBriefingTextEditor</tabstop>
   <tabstop>animationFileName</tabstop>
@@ -334,23 +334,8 @@
   <tabstop>actionHighResolutionFilenameEdit</tabstop>
   <tabstop>actionHighResolutionBrowse</tabstop>
  </tabstops>
- <resources/>
- <connections>
-  <connection>
-   <sender>okAndCancelButtons</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::CommandBriefingDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>248</x>
-     <y>254</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>157</x>
-     <y>274</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
 </ui>

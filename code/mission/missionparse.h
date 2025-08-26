@@ -89,6 +89,15 @@ extern bool check_for_24_3_data();
 #define IS_MISSION_MULTI_TEAMS		(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 #define IS_MISSION_MULTI_DOGFIGHT	(The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)
 
+// Used in the mission editor
+inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [] {
+	std::vector<std::pair<SCP_string, int>> arr;
+	arr.reserve(MAX_TVT_TEAMS);
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i) {
+		arr.emplace_back("Team " + std::to_string(i + 1), i);
+	}
+	return arr;
+}();
 
 // Goober5000
 typedef struct support_ship_info {
@@ -155,6 +164,16 @@ typedef struct custom_string {
 	SCP_string value;
 	SCP_string text;
 } custom_string;
+
+inline bool operator==(const custom_string& a, const custom_string& b)
+{
+	return a.name == b.name && a.value == b.value && a.text == b.text;
+}
+
+inline bool operator!=(const custom_string& a, const custom_string& b)
+{
+	return !(a == b);
+}
 
 // descriptions of flags for FRED
 template <class T>
@@ -290,6 +309,9 @@ extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
 extern const char *Reinforcement_type_names[];
+extern flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[];
+extern parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[];
+extern const size_t Num_parse_mission_flags;
 extern char *Object_flags[];
 extern flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[];
 extern const size_t Num_Parse_ship_flags;

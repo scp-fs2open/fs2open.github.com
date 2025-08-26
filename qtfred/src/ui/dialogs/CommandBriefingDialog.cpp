@@ -4,295 +4,251 @@
 #include <globalincs/linklist.h>
 #include <ui/util/SignalBlockers.h>
 #include <QCloseEvent>
-#include <qfiledialog.h>
+#include <QFileDialog>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
+CommandBriefingDialog::CommandBriefingDialog(FredView* parent, EditorViewport* viewport)
+: QDialog(parent), ui(new Ui::CommandBriefingDialog()), _model(new CommandBriefingDialogModel(this, viewport)),
+_viewport(viewport)
+{
+	this->setFocus();
+	ui->setupUi(this);
 
-	CommandBriefingDialog::CommandBriefingDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::CommandBriefingDialog()), _model(new CommandBriefingDialogModel(this, viewport)),
-	_viewport(viewport)
-	{
-		this->setFocus();
-		ui->setupUi(this);
+	initializeUi();
+	updateUi();
 
-		connect(_model.get(), &AbstractDialogModel::modelChanged, this, &CommandBriefingDialog::updateUI);
-		connect(this, &QDialog::accepted, _model.get(), &CommandBriefingDialogModel::apply);
-		connect(viewport->editor, &Editor::currentObjectChanged, _model.get(), &CommandBriefingDialogModel::apply);
-		connect(viewport->editor, &Editor::objectMarkingChanged, _model.get(), &CommandBriefingDialogModel::apply);
-		connect(ui->okAndCancelButtons, &QDialogButtonBox::rejected, this, &CommandBriefingDialog::rejectHandler);
+	resize(QDialog::sizeHint());
 
-		connect(ui->actionChangeTeams,
-			static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-			this,
-			&CommandBriefingDialog::on_actionChangeTeams_clicked);
+}
 
-		connect(ui->actionBriefingTextEditor,
-			&QPlainTextEdit::textChanged,
-			this,
-			&CommandBriefingDialog::briefingTextChanged);
+CommandBriefingDialog::~CommandBriefingDialog() = default;
 
-		connect(ui->animationFileName,
-			static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
-			this,
-			&CommandBriefingDialog::animationFilenameChanged);
-
-		connect(ui->speechFileName,
-			static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
-			this,
-			&CommandBriefingDialog::speechFilenameChanged);
-
-		connect(ui->actionLowResolutionFilenameEdit,
-			static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
-			this,
-			&CommandBriefingDialog::lowResolutionFilenameChanged);
-
-		connect(ui->actionHighResolutionFilenameEdit,
-			static_cast<void (QLineEdit::*)(const QString&)>(&QLineEdit::textChanged),
-			this,
-			&CommandBriefingDialog::highResolutionFilenameChanged);
-
-		resize(QDialog::sizeHint());
-
-		_model->requestInitialUpdate();		
+void CommandBriefingDialog::accept()
+{
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
 	}
+	// else: validation failed, don’t close
+}
 
-	void CommandBriefingDialog::on_actionPrevStage_clicked() 
-	{ 
-		_model->gotoPreviousStage(); 
+void CommandBriefingDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
 	}
+	// else: do nothing, don't close
+}
 
-	void CommandBriefingDialog::on_actionNextStage_clicked() 
-	{ 
-		_model->gotoNextStage(); 
+void CommandBriefingDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+
+void CommandBriefingDialog::initializeUi()
+{
+	auto list = _model->getTeamList();
+
+	ui->actionChangeTeams->clear();
+
+	for (const auto& team : list) {
+		ui->actionChangeTeams->addItem(QString::fromStdString(team.first), team.second);
 	}
+}
 
-	void CommandBriefingDialog::on_actionAddStage_clicked() 
-	{ 
-		_model->addStage(); 
+void CommandBriefingDialog::updateUi()
+{
+
+	util::SignalBlockers blockers(this);
+
+	ui->actionChangeTeams->setCurrentIndex(ui->actionChangeTeams->findData(_model->getCurrentTeam()));
+
+	ui->actionBriefingTextEditor->setPlainText(_model->getBriefingText().c_str());
+	ui->animationFileName->setText(_model->getAnimationFilename().c_str());
+	ui->speechFileName->setText(_model->getSpeechFilename().c_str());
+	ui->actionLowResolutionFilenameEdit->setText(_model->getLowResolutionFilename().c_str());
+	ui->actionHighResolutionFilenameEdit->setText(_model->getHighResolutionFilename().c_str());
+
+	SCP_string stages = "No Stages";
+	int total = _model->getTotalStages();
+	int current = _model->getCurrentStage() + 1; // internal is 0 based, ui is 1 based
+	if (total > 0) {
+		stages = "Stage ";
+		stages += std::to_string(current);
+		stages += " of ";
+		stages += std::to_string(total);
 	}
+	ui->currentStageLabel->setText(stages.c_str());
 
-	void CommandBriefingDialog::on_actionInsertStage_clicked() 
-	{ 
-		_model->insertStage();  
-	}
+	enableDisableControls();
+}
 
-	void CommandBriefingDialog::on_actionDeleteStage_clicked() 
-	{ 
-		_model->deleteStage(); 
-	}
-
-	void CommandBriefingDialog::on_actionChangeTeams_clicked ()
-	{
-		// not yet supported
-	}
-
-	void CommandBriefingDialog::on_actionCopyToOtherTeams_clicked()
-	{
-		// not yet supported.
-	}
-
-	void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
-	{
-		QString filename;
-
-		if (CommandBriefingDialog::browseFile(&filename)) {
-			_model->setAnimationFilename(filename.toStdString());
-		}
-	}
-
-	void CommandBriefingDialog::on_actionBrowseSpeechFile_clicked()
-	{
-		QString filename;
-
-		if (CommandBriefingDialog::browseFile(&filename)) {
-			_model->setSpeechFilename(filename.toStdString());
-		}
-	}
+void CommandBriefingDialog::enableDisableControls()
+{
+	int total_stages = _model->getTotalStages();
+	int current = _model->getCurrentStage();
 	
-	void CommandBriefingDialog::on_actionTestSpeechFileButton_clicked()
-	{
-		_model->testSpeech();
+	ui->actionPrevStage->setEnabled(total_stages > 0 && current > 0);
+	ui->actionNextStage->setEnabled(total_stages > 0 && current < total_stages - 1);
+	ui->actionAddStage->setEnabled(total_stages < CMD_BRIEF_STAGES_MAX);
+	ui->actionInsertStage->setEnabled(total_stages < CMD_BRIEF_STAGES_MAX);
+	ui->actionDeleteStage->setEnabled(total_stages > 0);
+
+	ui->actionChangeTeams->setEnabled(_model->getMissionIsMultiTeam());
+	ui->actionCopyToOtherTeams->setEnabled(_model->getMissionIsMultiTeam());
+
+	ui->animationFileName->setEnabled(total_stages > 0);
+	ui->actionBrowseAnimation->setEnabled(total_stages > 0);
+	ui->speechFileName->setEnabled(total_stages > 0);
+	ui->actionBrowseSpeechFile->setEnabled(total_stages > 0);
+	ui->actionTestSpeechFileButton->setEnabled(total_stages > 0 && !_model->getSpeechFilename().empty());
+
+	ui->actionLowResolutionFilenameEdit->setEnabled(total_stages > 0);
+	ui->actionLowResolutionBrowse->setEnabled(total_stages > 0);
+	ui->actionHighResolutionFilenameEdit->setEnabled(total_stages > 0);
+	ui->actionHighResolutionBrowse->setEnabled(total_stages > 0);
+}
+
+void CommandBriefingDialog::on_okAndCancelButtons_accepted()
+{
+	accept();
+}
+
+void CommandBriefingDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
+}
+
+void CommandBriefingDialog::on_actionPrevStage_clicked() 
+{ 
+	_model->gotoPreviousStage();
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionNextStage_clicked() 
+{ 
+	_model->gotoNextStage();
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionAddStage_clicked() 
+{ 
+	_model->addStage();
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionInsertStage_clicked() 
+{ 
+	_model->insertStage();
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionDeleteStage_clicked() 
+{ 
+	_model->deleteStage();
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionCopyToOtherTeams_clicked()
+{
+	_model->copyToOtherTeams();
+}
+
+void CommandBriefingDialog::on_actionBrowseAnimation_clicked()
+{
+	QString filename;
+
+	if (CommandBriefingDialog::browseFile(&filename)) {
+		_model->setAnimationFilename(filename.toUtf8().constData());
+	}
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionBrowseSpeechFile_clicked()
+{
+	QString filename;
+
+	if (CommandBriefingDialog::browseFile(&filename)) {
+		_model->setSpeechFilename(filename.toUtf8().constData());
+	}
+	updateUi();
+}
+	
+void CommandBriefingDialog::on_actionTestSpeechFileButton_clicked()
+{
+	_model->testSpeech();
+}
+
+void CommandBriefingDialog::on_actionLowResolutionBrowse_clicked()
+{
+	QString filename;
+
+	if (CommandBriefingDialog::browseFile(&filename)) {
+		_model->setLowResolutionFilename(filename.toUtf8().constData());
+	}
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionHighResolutionBrowse_clicked()
+{
+	QString filename;
+
+	if (CommandBriefingDialog::browseFile(&filename)) {
+		_model->setHighResolutionFilename(filename.toUtf8().constData());
+	}
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionChangeTeams_currentIndexChanged(int index)
+{
+	_model->setCurrentTeam(ui->actionChangeTeams->itemData(index).toInt());
+	updateUi();
+}
+
+void CommandBriefingDialog::on_actionBriefingTextEditor_textChanged()
+{
+	_model->setBriefingText(ui->actionBriefingTextEditor->document()->toPlainText().toUtf8().constData());
+}
+
+void CommandBriefingDialog::on_animationFilename_textChanged(const QString& string)
+{
+	_model->setAnimationFilename(string.toUtf8().constData());
+}
+
+void CommandBriefingDialog::on_speechFilename_textChanged(const QString& string)
+{
+	_model->setSpeechFilename(string.toUtf8().constData());
+}
+
+void CommandBriefingDialog::on_actionLowResolutionFilenameEdit_textChanged(const QString& string)
+{
+	_model->setLowResolutionFilename(string.toStdString());
+}
+
+void CommandBriefingDialog::on_actionHighResolutionFilenameEdit_textChanged(const QString& string)
+{
+	_model->setHighResolutionFilename(string.toStdString());
+}
+
+// string in returns the file name, and the function returns true for success or false for fail.
+bool CommandBriefingDialog::browseFile(QString* stringIn) 
+{
+	QFileInfo fileInfo(QFileDialog::getOpenFileName());
+	*stringIn = fileInfo.fileName();
+
+	if (stringIn->length() >= CF_MAX_FILENAME_LENGTH) {
+		ReleaseWarning(LOCATION, "No filename in FSO can be %d characters or longer.", CF_MAX_FILENAME_LENGTH);
+		return false;
+	} else if (stringIn->isEmpty()) {
+		return false;
 	}
 
-	void CommandBriefingDialog::on_actionLowResolutionBrowse_clicked()
-	{
-		QString filename;
+	return true;
+}
 
-		if (CommandBriefingDialog::browseFile(&filename)) {
-			_model->setLowResolutionFilename(filename.toStdString());
-		}
-	}
-
-	void CommandBriefingDialog::on_actionHighResolutionBrowse_clicked()
-	{
-		QString filename;
-
-		if (CommandBriefingDialog::browseFile(&filename)) {
-			_model->setHighResolutionFilename(filename.toStdString());
-		}
-	}
-
-	void CommandBriefingDialog::updateUI()
-	{
-
-		util::SignalBlockers blockers(this);
-		disableTeams(); // until supported, keep it from blowing things up
-
-		// once supported, set the team here
-
-		// only do this when necessary because the cursor will get moved around if this is not handled properly.
-		if (_model->briefingUpdateRequired()) {
-				ui->actionBriefingTextEditor->setPlainText(_model->getBriefingText().c_str());
-		}
-
-		// these line edits always seems to work fine without having to check with the model first.
-		ui->animationFileName->setText(_model->getAnimationFilename().c_str());
-		ui->speechFileName->setText(_model->getSpeechFilename().c_str());
-		ui->actionLowResolutionFilenameEdit->setText(_model->getLowResolutionFilename().c_str());
-		ui->actionHighResolutionFilenameEdit->setText(_model->getHighResolutionFilename().c_str());
-
-		// needs to go at the end.
-		enableDisableControls();
-	}
-
-	void CommandBriefingDialog::enableDisableControls()
-	{
-
-		if (_model->stageNumberUpdateRequired()) {
-			int max_stage = _model->getTotalStages();
-
-			if (max_stage == 0) {
-				ui->actionPrevStage->setEnabled(false);
-				ui->actionNextStage->setEnabled(false);
-				ui->actionChangeTeams->setEnabled(false);
-				ui->actionInsertStage->setEnabled(false);
-				ui->actionDeleteStage->setEnabled(false);
-				ui->actionBrowseAnimation->setEnabled(false);
-				ui->animationFileName->setEnabled(false);
-				ui->actionBrowseSpeechFile->setEnabled(false);
-				ui->speechFileName->setEnabled(false);
-				ui->actionTestSpeechFileButton->setEnabled(false);
-
-				ui->currentStageLabel->setText("No Stages");
-				return;
-			}
-			else {
-				int current_stage = _model->getCurrentStage() + 1;
-
-				if (current_stage == 1) {
-					ui->actionPrevStage->setEnabled(false);
-				}
-				else {
-					ui->actionPrevStage->setEnabled(true);
-				}
-
-				if (current_stage == max_stage) {
-					ui->actionNextStage->setEnabled(false);
-				}
-				else {
-					ui->actionNextStage->setEnabled(true);
-				}
-
-				if (max_stage >= CMD_BRIEF_STAGES_MAX) {
-					ui->actionAddStage->setEnabled(false);
-					ui->actionInsertStage->setEnabled(false);
-				}
-				else {
-					ui->actionAddStage->setEnabled(true);
-					ui->actionInsertStage->setEnabled(true);
-				}
-
-				ui->actionDeleteStage->setEnabled(true);
-				ui->actionBrowseAnimation->setEnabled(true);
-				ui->animationFileName->setEnabled(true);
-				ui->actionBrowseSpeechFile->setEnabled(true);
-				ui->speechFileName->setEnabled(true);
-
-
-
-				SCP_string to_ui_string = "Stage ";
-				to_ui_string += std::to_string(current_stage);
-				to_ui_string += " of ";
-				to_ui_string += std::to_string(max_stage);
-
-				ui->currentStageLabel->setText(to_ui_string.c_str());
-			}
-		}
-
-		if (_model->soundTestUpdateRequired()) {
-			if (_model->getSpeechInstanceNumber() >= 0) {
-				ui->actionTestSpeechFileButton->setEnabled(true);
-			}
-			else {
-				ui->actionTestSpeechFileButton->setEnabled(false);
-			}
-		}
-	}
-
-	void CommandBriefingDialog::briefingTextChanged()
-	{
-		_model->setBriefingText(ui->actionBriefingTextEditor->document()->toPlainText().toStdString());
-	}
-
-	void CommandBriefingDialog::animationFilenameChanged(const QString& string)
-	{
-		_model->setAnimationFilename(string.toStdString());
-	}
-
-	void CommandBriefingDialog::speechFilenameChanged(const QString& string)
-	{
-		_model->setSpeechFilename(string.toStdString());
-	}
-
-	void CommandBriefingDialog::lowResolutionFilenameChanged(const QString& string)
-	{
-		_model->setLowResolutionFilename(string.toStdString());
-	}
-
-	void CommandBriefingDialog::highResolutionFilenameChanged(const QString& string)
-	{
-		_model->setHighResolutionFilename(string.toStdString());
-	}
-
-	// literally just here to keep things from blowing up until we have team Command Brief Support.
-	void CommandBriefingDialog::disableTeams()
-	{
-		ui->actionChangeTeams->setEnabled(false);
-		ui->actionCopyToOtherTeams->setEnabled(false);
-	}
-
-	// string in returns the file name, and the function returns true for success or false for fail.
-	bool CommandBriefingDialog::browseFile(QString* stringIn) 
-	{
-		QFileInfo fileInfo(QFileDialog::getOpenFileName());
-		*stringIn = fileInfo.fileName();
-
-		if (stringIn->length() >= CF_MAX_FILENAME_LENGTH) {
-			ReleaseWarning(LOCATION, "No filename in FSO can be %d characters or longer.", CF_MAX_FILENAME_LENGTH);
-			return false;
-		} else if (stringIn->isEmpty()) {
-			return false;
-		}
-
-		return true;
-	}
-
-
-	CommandBriefingDialog::~CommandBriefingDialog() {}; //NOLINT
-
-	void CommandBriefingDialog::closeEvent(QCloseEvent* e)
-	{
-		if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-			e->ignore();
-		};
-	}
-	void CommandBriefingDialog::rejectHandler()
-	{
-		this->close();
-	}
-	} // dialogs
-} // fred
-} // fso
+} // namespace fso::fred::dialogs

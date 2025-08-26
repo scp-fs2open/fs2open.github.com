@@ -1,11 +1,11 @@
+#pragma once
+
 #include "AbstractDialogModel.h"
 #include "globalincs/pstypes.h"
 #include "missionui/missioncmdbrief.h"
 
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 
 class CommandBriefingDialogModel: public AbstractDialogModel {
@@ -16,57 +16,43 @@ class CommandBriefingDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	bool briefingUpdateRequired();
-	bool stageNumberUpdateRequired();
-	bool soundTestUpdateRequired();
+	int getCurrentTeam() const;
+	void setCurrentTeam(int teamIn);
+	int getCurrentStage() const;
+	int getTotalStages();
 
 	SCP_string getBriefingText();
-	SCP_string getAnimationFilename();
-	SCP_string getSpeechFilename();
-	ubyte getCurrentTeam();
-	SCP_string getLowResolutionFilename();
-	SCP_string getHighResolutionFilename();
-	int getTotalStages();
-	int getCurrentStage();
-	int getSpeechInstanceNumber();
-
 	void setBriefingText(const SCP_string& briefingText);
+	SCP_string getAnimationFilename();
 	void setAnimationFilename(const SCP_string& animationFilename);
+	SCP_string getSpeechFilename();
 	void setSpeechFilename(const SCP_string& speechFilename);
-	void setCurrentTeam(const ubyte& teamIn); // not yet fully supported
+	SCP_string getLowResolutionFilename();
 	void setLowResolutionFilename(const SCP_string& lowResolutionFilename);
+	SCP_string getHighResolutionFilename();
 	void setHighResolutionFilename(const SCP_string& highResolutionFilename);
-
-	// work-around function to keep Command Brief Dialog from crashing unexpected on init
-	void requestInitialUpdate();
-
-	void testSpeech();
-	void stopSpeech();
-
+	
 	void gotoPreviousStage();
 	void gotoNextStage();
 	void addStage();
 	void insertStage();
 	void deleteStage();
-
-	void update_init();
+	void testSpeech();
+	void copyToOtherTeams();
+	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
+	static bool getMissionIsMultiTeam();
 
  private:
 	void initializeData();
-	void setWaveID();
+	void stopSpeech();
+	void initializeTeamList();
 
+	cmd_brief _wipCommandBrief[MAX_TVT_TEAMS];
 	int _currentTeam;
 	int _currentStage;
-	int _currentlyPlayingSound;
-
-	bool _briefingTextUpdateRequired;
-	bool _stageNumberUpdateRequired;
-	bool _soundTestUpdateRequired;
-
-	cmd_brief _wipCommandBrief;
+	int _waveId;
+	SCP_vector<std::pair<SCP_string, int>> _teamList;
 };
 
 
-}
-}
-}
+} // namespace fso::fred::dialogs
