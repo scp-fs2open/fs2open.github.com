@@ -44,7 +44,7 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 
 	// bitmap group
 	static SCP_vector<SCP_string> getAvailableBitmapNames();
-	SCP_vector<SCP_string> getMissionBitmapNames() const;
+	static SCP_vector<SCP_string> getMissionBitmapNames();
 	void setSelectedBitmapIndex(int index);
 	int getSelectedBitmapIndex() const;
 	void addMissionBitmapByName(const SCP_string& name);

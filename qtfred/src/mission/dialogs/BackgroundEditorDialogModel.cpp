@@ -300,7 +300,7 @@ SCP_vector<SCP_string> BackgroundEditorDialogModel::getAvailableBitmapNames()
 	return out;
 }
 
-SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionBitmapNames() const
+SCP_vector<SCP_string> BackgroundEditorDialogModel::getMissionBitmapNames()
 {
 	SCP_vector<SCP_string> out;
 	const auto& vec = getActiveBackground().bitmaps;
