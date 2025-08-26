@@ -5,7 +5,6 @@
 //Stubs Enums
 #define GL_CLIP_DISTANCE0					    0x3000
 #define GLAD_GL_ARB_draw_buffers_blend		    1
-#define GLAD_GL_ARB_buffer_storage			    1
 #define GL_MAP_PERSISTENT_BIT				    0x0040
 #define GLAD_GL_ARB_vertex_attrib_binding	    0
 #define GL_COMPRESSED_RGBA_BPTC_UNORM_ARB	    0x8E8C
@@ -32,11 +31,12 @@
 #define GLAD_GL_ARB_gpu_shader5				    GL_EXT_gpu_shader5
 #define GLAD_GL_ARB_get_program_binary		    GL_OES_get_program_binary
 #define GL_MULTISAMPLE						    GL_TRUE // Always enabled on ES
+#define GLAD_GL_ARB_buffer_storage			    GL_EXT_buffer_storage
 
 //Functions
 #define glBlendFunciARB					glBlendFunci
 #define glTexImage2DMultisample			glFramebufferTexture2DMultisampleEXT // Depends on GL_EXT_multisampled_render_to_texture
-#define glBufferStorage					glBufferData //could be improved with EXT_buffer_storage -> glBufferStorageEXT
+#define glBufferStorage					glBufferStorageEXT
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define gladLoadGLLoader                gladLoadGLES2Loader
 #define glDebugMessageCallbackARB       glDebugMessageCallback
