@@ -17,24 +17,24 @@
 #define GL_FILL                                 0x1B02
 #define GL_LINE                                 0x1B01
 #define GL_POINT                                0x1B00
-#define GLAD_GL_ARB_texture_compression_bptc    0
 #define GLAD_GL_ARB_timer_query                 1
 #define GL_TEXTURE_CUBE_MAP_SEAMLESS            0x884F
 #define GL_DOUBLE                               0x140A
 #define GL_TIMESTAMP							1
 
 //Enums
-#define GL_UNSIGNED_INT_8_8_8_8_REV		GL_UNSIGNED_BYTE
-#define GL_BGRA							GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
-#define GL_DEPTH_COMPONENT32			GL_DEPTH_COMPONENT24
-#define GL_UNSIGNED_SHORT_1_5_5_5_REV	GL_UNSIGNED_SHORT_5_5_5_1 // Not great changes alpha bit position, may need to convert it
-#define GL_RGB5							GL_RGB5_A1 // not going to work
-#define GL_BGR							GL_BGRA_EXT // only if BGRA8 and depends on GL_EXT_texture_format_BGRA8888
-#define GLAD_GL_ARB_texture_storage		1 // Part of 3.2
+#define GL_UNSIGNED_INT_8_8_8_8_REV				GL_UNSIGNED_BYTE
+#define GL_BGRA									GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
+#define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
+#define GL_UNSIGNED_SHORT_1_5_5_5_REV			GL_UNSIGNED_SHORT_5_5_5_1 // Not great changes alpha bit position, may need to convert it
+#define GL_RGB5									GL_RGB5_A1 // not going to work
+#define GL_BGR									GL_BGRA_EXT // only if BGRA8 and depends on GL_EXT_texture_format_BGRA8888
+#define GLAD_GL_ARB_texture_storage				1 // Part of 3.2
+#define GLAD_GL_ARB_texture_compression_bptc    GL_EXT_texture_compression_bptc
 
 //Functions
 #define glBlendFunciARB					glBlendFunci
-#define glTexImage2DMultisample			glFramebufferTexture2DMultisampleEXT // Depends on EXT_multisampled_render_to_texture
+#define glTexImage2DMultisample			glFramebufferTexture2DMultisampleEXT // Depends on EXT_framebuffer_multisample
 #define glBufferStorage					glBufferData //could be improved with EXT_buffer_storage -> glBufferStorageEXT
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define gladLoadGLLoader                gladLoadGLES2Loader
