@@ -71,6 +71,20 @@ private slots:
 	void on_ambientLightGreenSlider_valueChanged(int value);
 	void on_ambientLightBlueSlider_valueChanged(int value);
 
+	// Skybox
+	void on_skyboxButton_clicked();
+	void on_skyboxEdit_textChanged(const QString& arg1);
+	void on_skyboxPitchSpin_valueChanged(int arg1);
+	void on_skyboxBankSpin_valueChanged(int arg1);
+	void on_skyboxHeadingSpin_valueChanged(int arg1);
+	void on_skyboxNoLightingCheckBox_toggled(bool checked);
+	void on_noLightingCheckBox_toggled(bool checked);
+	void on_transparentCheckBox_toggled(bool checked);
+	void on_forceClampCheckBox_toggled(bool checked);
+	void on_noZBufferCheckBox_toggled(bool checked);
+	void on_noCullCheckBox_toggled(bool checked);
+	void on_noGlowmapsCheckBox_toggled(bool checked);
+
 private: // NOLINT(readability-redundant-access-specifiers)
     std::unique_ptr<Ui::BackgroundEditor> ui;
 	std::unique_ptr<BackgroundEditorDialogModel> _model;
@@ -87,6 +101,7 @@ private: // NOLINT(readability-redundant-access-specifiers)
 	void updateOldNebulaControls();
 	void updateAmbientLightControls();
 	void updateAmbientSwatch();
+	void updateSkyboxControls();
 };
 
 } // namespace fso::fred::dialogs

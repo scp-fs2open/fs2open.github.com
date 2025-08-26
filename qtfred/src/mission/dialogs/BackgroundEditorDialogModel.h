@@ -122,6 +122,28 @@ class BackgroundEditorDialogModel : public AbstractDialogModel {
 	int getAmbientB() const;
 	void setAmbientB(int b);
 
+	// skybox group
+	std::string getSkyboxModelName() const;
+	void setSkyboxModelName(const std::string& name);
+	bool getSkyboxNoLighting() const;
+	void setSkyboxNoLighting(bool on);
+	bool getSkyboxAllTransparent() const;
+	void setSkyboxAllTransparent(bool on);
+	bool getSkyboxNoZbuffer() const;
+	void setSkyboxNoZbuffer(bool on);
+	bool getSkyboxNoCull() const;
+	void setSkyboxNoCull(bool on);
+	bool getSkyboxNoGlowmaps() const;
+	void setSkyboxNoGlowmaps(bool on);
+	bool getSkyboxForceClamp() const;
+	void setSkyboxForceClamp(bool on);
+	int getSkyboxPitch() const;
+	void setSkyboxPitch(int deg);
+	int getSkyboxBank() const;
+	void setSkyboxBank(int deg);
+	int getSkyboxHeading() const;
+	void setSkyboxHeading(int deg);
+
   private:
 	void refreshBackgroundPreview();
 	background_t& getActiveBackground() const;

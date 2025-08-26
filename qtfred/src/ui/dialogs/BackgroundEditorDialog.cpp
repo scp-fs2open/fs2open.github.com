@@ -4,6 +4,9 @@
 #include "ui_BackgroundEditor.h"
 
 #include <QMessageBox>
+#include <QSettings>
+#include <QFileDialog>
+#include <QFileInfo>
 
 namespace fso::fred::dialogs {
 
@@ -93,6 +96,10 @@ void BackgroundEditorDialog::initializeUi()
 	ui->ambientSwatch->setFrameShape(QFrame::Box);
 
 	updateAmbientLightControls();
+
+	// Skybox
+
+	updateSkyboxControls();
 
 }
 
@@ -306,6 +313,34 @@ void BackgroundEditorDialog::updateAmbientLightControls()
 	ui->ambientLightBlueLabel->setText(blueText);
 
 	updateAmbientSwatch();
+}
+
+void BackgroundEditorDialog::updateSkyboxControls()
+{
+	util::SignalBlockers blockers(this);
+	
+	bool enabled = !_model->getSkyboxModelName().empty();
+
+	ui->skyboxPitchSpin->setEnabled(enabled);
+	ui->skyboxBankSpin->setEnabled(enabled);
+	ui->skyboxHeadingSpin->setEnabled(enabled);
+	ui->noLightingCheckBox->setEnabled(enabled);
+	ui->transparentCheckBox->setEnabled(enabled);
+	ui->forceClampCheckBox->setEnabled(enabled);
+	ui->noZBufferCheckBox->setEnabled(enabled);
+	ui->noCullCheckBox->setEnabled(enabled);
+	ui->noGlowMapsCheckBox->setEnabled(enabled);
+
+	ui->skyboxEdit->setText(QString::fromStdString(_model->getSkyboxModelName()));
+	ui->skyboxPitchSpin->setValue(_model->getSkyboxPitch());
+	ui->skyboxBankSpin->setValue(_model->getSkyboxBank());
+	ui->skyboxHeadingSpin->setValue(_model->getSkyboxHeading());
+	ui->noLightingCheckBox->setChecked(_model->getSkyboxNoLighting());
+	ui->transparentCheckBox->setChecked(_model->getSkyboxAllTransparent());
+	ui->forceClampCheckBox->setChecked(_model->getSkyboxForceClamp());
+	ui->noZBufferCheckBox->setChecked(_model->getSkyboxNoZbuffer());
+	ui->noCullCheckBox->setChecked(_model->getSkyboxNoCull());
+	ui->noGlowMapsCheckBox->setChecked(_model->getSkyboxNoGlowmaps());
 }
 
 void BackgroundEditorDialog::on_bitmapListWidget_currentRowChanged(int row)
@@ -668,6 +703,80 @@ void BackgroundEditorDialog::updateAmbientSwatch()
 			.arg(r)
 			.arg(g)
 			.arg(b));
+}
+
+void BackgroundEditorDialog::on_skyboxButton_clicked()
+{
+	QSettings settings("QtFRED", "BackgroundEditor");
+	const QString lastDir = settings.value("skybox/lastDir", QDir::homePath()).toString();
+
+	const QString path =
+		QFileDialog::getOpenFileName(this, tr("Select Skybox Model"), lastDir, tr("FS2 Models (*.pof);;All Files (*)"));
+	if (path.isEmpty())
+		return;
+
+	const QFileInfo fi(path);
+	settings.setValue("skybox/lastDir", fi.absolutePath());
+
+	const QString baseName = fi.completeBaseName();
+	_model->setSkyboxModelName(baseName.toStdString());
+
+	updateSkyboxControls();
+}
+
+void BackgroundEditorDialog::on_skyboxEdit_textChanged(const QString& arg1)
+{
+	_model->setSkyboxModelName(arg1.toUtf8().constData());
+}
+
+void BackgroundEditorDialog::on_skyboxPitchSpin_valueChanged(int arg1)
+{
+	_model->setSkyboxPitch(arg1);
+}
+
+void BackgroundEditorDialog::on_skyboxBankSpin_valueChanged(int arg1)
+{
+	_model->setSkyboxBank(arg1);
+}
+
+void BackgroundEditorDialog::on_skyboxHeadingSpin_valueChanged(int arg1)
+{
+	_model->setSkyboxHeading(arg1);
+}
+
+void BackgroundEditorDialog::on_skyboxNoLightingCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxNoLighting(checked);
+}
+
+void BackgroundEditorDialog::on_noLightingCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxNoLighting(checked);
+}
+
+void BackgroundEditorDialog::on_transparentCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxAllTransparent(checked);
+}
+
+void BackgroundEditorDialog::on_forceClampCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxForceClamp(checked);
+}
+
+void BackgroundEditorDialog::on_noZBufferCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxNoZbuffer(checked);
+}
+
+void BackgroundEditorDialog::on_noCullCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxNoCull(checked);
+}
+
+void BackgroundEditorDialog::on_noGlowmapsCheckBox_toggled(bool checked)
+{
+	_model->setSkyboxNoGlowmaps(checked);
 }
 
 } // namespace fso::fred::dialogs

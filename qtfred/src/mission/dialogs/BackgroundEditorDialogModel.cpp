@@ -48,6 +48,8 @@ void BackgroundEditorDialogModel::reject()
 void BackgroundEditorDialogModel::refreshBackgroundPreview()
 {
 	stars_load_background(Cur_background); // rebuild instances from Backgrounds[]
+	stars_set_background_model(The_mission.skybox_model, nullptr, The_mission.skybox_flags); // rebuild skybox
+	stars_set_background_orientation(&The_mission.skybox_orientation);
 	_editor->missionChanged();
 }
 
@@ -914,6 +916,196 @@ void BackgroundEditorDialogModel::setAmbientB(int b)
 
 	gr_set_ambient_light(r, g, b);
 	refreshBackgroundPreview();
+}
+
+std::string BackgroundEditorDialogModel::getSkyboxModelName() const
+{
+	return The_mission.skybox_model;
+}
+void BackgroundEditorDialogModel::setSkyboxModelName(const std::string& name)
+{
+	// empty string = no skybox
+	if (std::strncmp(The_mission.skybox_model, name.c_str(), NAME_LENGTH) != 0) {
+		std::memset(The_mission.skybox_model, 0, sizeof(The_mission.skybox_model));
+		std::strncpy(The_mission.skybox_model, name.c_str(), NAME_LENGTH - 1);
+	}
+
+	set_modified();
+	refreshBackgroundPreview();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxNoLighting() const
+{
+	return (The_mission.skybox_flags & MR_NO_LIGHTING) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxNoLighting(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_NO_LIGHTING;
+	} else {
+		The_mission.skybox_flags &= ~MR_NO_LIGHTING;
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxAllTransparent() const
+{
+	return (The_mission.skybox_flags & MR_ALL_XPARENT) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxAllTransparent(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_ALL_XPARENT;
+	} else {
+		The_mission.skybox_flags &= ~MR_ALL_XPARENT;
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxNoZbuffer() const
+{
+	return (The_mission.skybox_flags & MR_NO_ZBUFFER) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxNoZbuffer(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_NO_ZBUFFER;
+	} else {
+		The_mission.skybox_flags &= ~MR_NO_ZBUFFER;
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxNoCull() const
+{
+	return (The_mission.skybox_flags & MR_NO_CULL) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxNoCull(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_NO_CULL;
+	} else {
+		The_mission.skybox_flags &= ~MR_NO_CULL;
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxNoGlowmaps() const
+{
+	return (The_mission.skybox_flags & MR_NO_GLOWMAPS) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxNoGlowmaps(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_NO_GLOWMAPS;
+	} else {
+		The_mission.skybox_flags &= ~MR_NO_GLOWMAPS;
+	}
+
+	set_modified();
+}
+
+bool BackgroundEditorDialogModel::getSkyboxForceClamp() const
+{
+	return (The_mission.skybox_flags & MR_FORCE_CLAMP) != 0;
+}
+
+void BackgroundEditorDialogModel::setSkyboxForceClamp(bool on)
+{
+	if (on) {
+		The_mission.skybox_flags |= MR_FORCE_CLAMP;
+	} else {
+		The_mission.skybox_flags &= ~MR_FORCE_CLAMP;
+	}
+
+	set_modified();
+}
+
+int BackgroundEditorDialogModel::getSkyboxPitch() const
+{
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	int d = static_cast<int>(fl2ir(fl_degrees(a.p)));
+	if (d < 0)
+		d += 360;
+	if (d >= 360)
+		d -= 360;
+	return d;
+}
+
+void BackgroundEditorDialogModel::setSkyboxPitch(int deg)
+{
+	CLAMP(deg, 0, 359);
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	const int cur = static_cast<int>(fl2ir(fl_degrees(a.p)));
+	if (cur != deg) {
+		a.p = fl_radians(static_cast<float>(deg));
+		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
+		set_modified();
+		refreshBackgroundPreview();
+	}
+}
+
+int BackgroundEditorDialogModel::getSkyboxBank() const
+{
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	int d = static_cast<int>(fl2ir(fl_degrees(a.b)));
+	if (d < 0)
+		d += 360;
+	if (d >= 360)
+		d -= 360;
+	return d;
+}
+
+void BackgroundEditorDialogModel::setSkyboxBank(int deg)
+{
+	CLAMP(deg, 0, 359);
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	const int cur = static_cast<int>(fl2ir(fl_degrees(a.b)));
+	if (cur != deg) {
+		a.b = fl_radians(static_cast<float>(deg));
+		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
+		set_modified();
+		refreshBackgroundPreview();
+	}
+}
+
+int BackgroundEditorDialogModel::getSkyboxHeading() const
+{
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	int d = static_cast<int>(fl2ir(fl_degrees(a.h)));
+	if (d < 0)
+		d += 360;
+	if (d >= 360)
+		d -= 360;
+	return d;
+}
+
+void BackgroundEditorDialogModel::setSkyboxHeading(int deg)
+{
+	CLAMP(deg, 0, 359);
+	angles a;
+	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
+	const int cur = static_cast<int>(fl2ir(fl_degrees(a.h)));
+	if (cur != deg) {
+		a.h = fl_radians(static_cast<float>(deg));
+		vm_angles_2_matrix(&The_mission.skybox_orientation, &a);
+		set_modified();
+		refreshBackgroundPreview();
+	}
 }
 
 } // namespace fso::fred::dialogs
