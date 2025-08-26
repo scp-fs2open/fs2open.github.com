@@ -370,6 +370,9 @@ static SCP_string opengl_load_shader(const char* filename) {
 
 			cfread(&content[0], len + 1, 1, cf_shader);
 			cfclose(cf_shader);
+			#ifdef USE_OPENGL_ES
+			content = glsl_es_expand_includes(content);
+			#endif
 
 			return content;
 		}
