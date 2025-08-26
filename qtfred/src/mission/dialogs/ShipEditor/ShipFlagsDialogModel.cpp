@@ -25,9 +25,9 @@ int ShipFlagsDialogModel::tristate_set(int val, int cur_state)
 std::pair<SCP_string, int>* ShipFlagsDialogModel::getFlag(const SCP_string& flag_name)
 {
 
-	for (size_t i = 0; i < flags.size(); i++) {
-		if (!stricmp(flag_name.c_str(), flags[i].first.c_str())) {
-			return &flags[i];
+	for (auto& flag : flags) {
+		if (!stricmp(flag_name.c_str(), flag.first.c_str())) {
+			return &flag;
 		}
 	}
 	Assertion(false, "Illegal flag name \"[%s]\"", flag_name.c_str());
@@ -36,9 +36,9 @@ std::pair<SCP_string, int>* ShipFlagsDialogModel::getFlag(const SCP_string& flag
 
 void ShipFlagsDialogModel::setFlag(const SCP_string& flag_name, int value)
 {
-	for (size_t i = 0; i < flags.size(); i++) {
-		if (!stricmp(flag_name.c_str(), flags[i].first.c_str())) {
-			flags[i].second = value;
+	for (auto& flag : flags) {
+		if (!stricmp(flag_name.c_str(), flag.first.c_str())) {
+			flag.second = value;
 			set_modified();
 		}
 	}
@@ -49,7 +49,7 @@ void ShipFlagsDialogModel::setDestroyTime(int value)
 	modify(destroytime, value);
 }
 
-int ShipFlagsDialogModel::getDestroyTime()
+int ShipFlagsDialogModel::getDestroyTime() const
 {
 	return destroytime;
 }
@@ -59,7 +59,7 @@ void ShipFlagsDialogModel::setEscortPriority(int value)
 	modify(escortp, value);
 }
 
-int ShipFlagsDialogModel::getEscortPriority()
+int ShipFlagsDialogModel::getEscortPriority() const
 {
 	return escortp;
 }
@@ -69,7 +69,7 @@ void ShipFlagsDialogModel::setKamikazeDamage(int value)
 	modify(kamikazed, value);
 }
 
-int ShipFlagsDialogModel::getKamikazeDamage()
+int ShipFlagsDialogModel::getKamikazeDamage() const
 {
 	return kamikazed;
 }

@@ -883,7 +883,7 @@ bool ShipInitialStatusDialogModel::getIfMultpleShips() const
 	return m_multi_edit;
 }
 
-int ShipInitialStatusDialogModel::getGuardian()
+int ShipInitialStatusDialogModel::getGuardian() const
 {
 	return guardian_threshold;
 }

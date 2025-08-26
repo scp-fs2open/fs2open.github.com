@@ -25,7 +25,7 @@ class ShipInitialStatusDialog : public QDialog {
 
   private slots:
 	void on_guardianSpinBox_valueChanged(int);
-  private:
+  private://NOLINT
 	std::unique_ptr<Ui::ShipInitialStatusDialog> ui;
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;

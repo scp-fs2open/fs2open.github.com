@@ -27,10 +27,10 @@ class ShipFlagsDialogModel : public AbstractDialogModel {
 	void setFlag(const SCP_string& flag_name, int);
 
 	void setDestroyTime(int);
-	int getDestroyTime();
+	int getDestroyTime() const;
 	void setEscortPriority(int);
-	int getEscortPriority();
+	int getEscortPriority() const;
 	void setKamikazeDamage(int);
-	int getKamikazeDamage();
+	int getKamikazeDamage() const;
 };
 } // namespace fso::fred::dialogs

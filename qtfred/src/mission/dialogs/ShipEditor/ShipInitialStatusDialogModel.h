@@ -122,7 +122,7 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 	bool getUseTeamcolours() const;
 	bool getIfMultpleShips() const;
 
-	int getGuardian();
+	int getGuardian() const;
 	void setGuardian(int);
 };
 

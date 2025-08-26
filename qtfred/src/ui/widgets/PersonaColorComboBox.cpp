@@ -7,7 +7,7 @@ PersonaColorComboBox::PersonaColorComboBox(QWidget* parent) : QComboBox(parent)
 {
 	fredApp->runAfterInit([this]() { setModel(getPersonaModel()); });
 }
-QStandardItemModel* PersonaColorComboBox::getPersonaModel()
+QStandardItemModel* PersonaColorComboBox::getPersonaModel() const
 {
 	auto itemModel = new QStandardItemModel();
 	auto topitem = new QStandardItem("<none>");
@@ -25,7 +25,7 @@ QStandardItemModel* PersonaColorComboBox::getPersonaModel()
 					break;
 				}
 			}
-			QStandardItem* item = new QStandardItem(persona_name.c_str());
+			auto item = new QStandardItem(persona_name.c_str());
 			// if it is an exact species that isn't the first
 			if (species >= 0) {
 				species_info* sinfo = &Species_info[species];
