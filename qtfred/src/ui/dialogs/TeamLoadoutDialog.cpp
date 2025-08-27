@@ -1,5 +1,5 @@
-#include "LoadoutDialog.h"
-#include "ui_LoadoutDialog.h"
+#include "TeamLoadoutDialog.h"
+#include "ui_TeamLoadoutDialog.h"
 
 #include <QtWidgets/QMenuBar>
 #include <qlist.h>
@@ -11,26 +11,22 @@
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
-LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::LoadoutDialog()), _model(new LoadoutDialogModel(this, viewport)), _viewport(viewport)
+TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
+	: QDialog(parent), ui(new Ui::TeamLoadoutDialog()), _model(new TeamLoadoutDialogModel(this, viewport)), _viewport(viewport)
 {
 	this->setFocus();
 	ui->setupUi(this);
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &LoadoutDialog::updateUI);
-	connect(this, &QDialog::accepted, _model.get(), &LoadoutDialogModel::apply);
-	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &LoadoutDialog::rejectHandler);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &TeamLoadoutDialog::updateUI);
 
 	// Ship and Weapon lists, selection changed.
 	connect(ui->listShipsNotUsed, 
 		&QListWidget::itemClicked, 
 		this, 
-		&LoadoutDialog::onPotentialShipListClicked);
+		&TeamLoadoutDialog::onPotentialShipListClicked);
 
 	// We need a second trigger for each list when multiple items are selected because itemClicked doesn't trigger on
 	// those, and itemSelectionChanged doesn't really trigger if you select the same item that's already selected (I
@@ -38,153 +34,148 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	connect(ui->listShipsNotUsed, 
 		&QListWidget::itemSelectionChanged,
 		this, 
-		&LoadoutDialog::onPotentialShipListClicked);
+		&TeamLoadoutDialog::onPotentialShipListClicked);
 
 	connect(ui->listWeaponsNotUsed,
 		&QListWidget::itemClicked,
 		this, 
-		&LoadoutDialog::onPotentialWeaponListClicked);
+		&TeamLoadoutDialog::onPotentialWeaponListClicked);
 
 	connect(ui->listWeaponsNotUsed,
 		&QListWidget::itemSelectionChanged,
 		this,
-		&LoadoutDialog::onPotentialWeaponListClicked);
+		&TeamLoadoutDialog::onPotentialWeaponListClicked);
 
 	connect(ui->usedShipsList,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onUsedShipListClicked);
+		&TeamLoadoutDialog::onUsedShipListClicked);
 
 	connect(ui->usedShipsList, 
 		&QTableWidget::itemSelectionChanged, 
 		this, 
-		&LoadoutDialog::onUsedShipListClicked);
+		&TeamLoadoutDialog::onUsedShipListClicked);
 
 	connect(ui->usedWeaponsList,
 		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
 		this,
-		&LoadoutDialog::onUsedWeaponListClicked);
+		&TeamLoadoutDialog::onUsedWeaponListClicked);
 
 	connect(ui->usedWeaponsList, 
 		&QTableWidget::itemSelectionChanged, 
 		this, 
-		&LoadoutDialog::onUsedWeaponListClicked);
+		&TeamLoadoutDialog::onUsedWeaponListClicked);
 
 	// Selection convenience buttons
 	connect(ui->selectAllUnusedShipsButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::onSelectAllUnusedShipsPressed);
+		&TeamLoadoutDialog::onSelectAllUnusedShipsPressed);
 
 	connect(ui->clearUnusedShipSelectionButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onClearAllUnusedShipsPressed);
+		&TeamLoadoutDialog::onClearAllUnusedShipsPressed);
 
 	connect(ui->selectAllUnusedWeaponsButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onSelectAllUnusedWeaponsPressed);
+		&TeamLoadoutDialog::onSelectAllUnusedWeaponsPressed);
 
 	connect(ui->clearUnusedWeaponSelectionButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onClearAllUnusedWeaponsPressed);
+		&TeamLoadoutDialog::onClearAllUnusedWeaponsPressed);
 
 	connect(ui->selectAllUsedShipsButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::onSelectAllUsedShipsPressed);
+		&TeamLoadoutDialog::onSelectAllUsedShipsPressed);
 
 	connect(ui->clearUsedShipSelectionButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::onClearAllUsedShipsPressed);
+		&TeamLoadoutDialog::onClearAllUsedShipsPressed);
 
 	connect(ui->selectAllUsedWeaponsButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::onSelectAllUsedWeaponsPressed);
+		&TeamLoadoutDialog::onSelectAllUsedWeaponsPressed);
 
 	connect(ui->clearUsedWeaponSelectionButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onClearAllUsedWeaponsPressed);
+		&TeamLoadoutDialog::onClearAllUsedWeaponsPressed);
 
 	// And switching views between variable and lists
 	connect(ui->switchViewButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::onSwitchViewButtonPressed);
+		&TeamLoadoutDialog::onSwitchViewButtonPressed);
 
 	// Switch ships and weapons on the list
 	connect(ui->addShipButton, 
 		&QPushButton::clicked,
 		this, 
-		&LoadoutDialog::addShipButtonClicked);
+		&TeamLoadoutDialog::addShipButtonClicked);
 
 	connect(ui->addWeaponButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::addWeaponButtonClicked);
+		&TeamLoadoutDialog::addWeaponButtonClicked);
 
 	connect(ui->removeShipButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::removeShipButtonClicked);
+		&TeamLoadoutDialog::removeShipButtonClicked);
 
 	connect(ui->removeWeaponButton, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::removeWeaponButtonClicked);
+		&TeamLoadoutDialog::removeWeaponButtonClicked);
 
 	// Change item counts
 	connect(ui->extraItemSpinbox,
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
-		&LoadoutDialog::onExtraItemSpinboxUpdated);
+		&TeamLoadoutDialog::onExtraItemSpinboxUpdated);
 
 	connect(ui->extraItemsViaVariableCombo,
 		QOverload<int>::of(&QComboBox::currentIndexChanged),
 		this,
-		&LoadoutDialog::onExtraItemsViaVariableCombo);
+		&TeamLoadoutDialog::onExtraItemsViaVariableCombo);
 
 	// Team controls
 	connect(ui->currentTeamSpinbox,
 		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
 		this,
-		&LoadoutDialog::onCurrentTeamSpinboxUpdated);
+		&TeamLoadoutDialog::onCurrentTeamSpinboxUpdated);
 
 	connect(ui->copyLoadoutToOtherTeamsButton,
 		&QPushButton::clicked,
 		this,
-		&LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
+		&TeamLoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
 
 	// Miscellaneous controls
 	connect(ui->playerDelayDoubleSpinbox,
 		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
 		this,
-		&LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
+		&TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
 
 	connect(ui->editVariables, 
 		&QPushButton::clicked, 
 		this, 
-		&LoadoutDialog::openEditVariablePressed);
+		&TeamLoadoutDialog::openEditVariablePressed);
 
-	connect(ui->setSelectionRequired, 
-		&QPushButton::clicked, 
-		this, 
-		&LoadoutDialog::onSelectionRequiredPressed);
-
-	connect(ui->setSelectionNotRequired, 
-		&QPushButton::clicked, 
-		this, 
-		&LoadoutDialog::onSelectionNotRequiredPressed);
+	connect(ui->requiredWeaponCheckBox,
+		&QPushButton::clicked,
+		this,
+		&TeamLoadoutDialog::onSelectionRequiredCheckbox);
 
 	connect(ui->weaponValidationCheckbox,
 		&QCheckBox::clicked,
 		this,
-		&LoadoutDialog::onWeaponValidationCheckboxClicked);
+		&TeamLoadoutDialog::onWeaponValidationCheckboxClicked);
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
@@ -237,26 +228,44 @@ LoadoutDialog::LoadoutDialog(FredView* parent, EditorViewport* viewport)
 	updateUI();
 }
 
-// a result of competing CI requirements
-LoadoutDialog::~LoadoutDialog() {} // NOLINT
+TeamLoadoutDialog::~TeamLoadoutDialog() = default;
 
-void LoadoutDialog::closeEvent(QCloseEvent* e)
+void TeamLoadoutDialog::accept()
 {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
 }
 
-void LoadoutDialog::rejectHandler()
+void TeamLoadoutDialog::reject()
+{
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
+void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+
+void TeamLoadoutDialog::rejectHandler()
 {
 	this->close();
 }
 
-void LoadoutDialog::onSwitchViewButtonPressed()
+void TeamLoadoutDialog::onSwitchViewButtonPressed()
 {
 	// Change important lables.
 	if (_mode == TABLE_MODE) {
-		ui->tableVarLabel->setText("Loadout Editor: Variable View");
+		ui->tableVarLabel->setText("Variable View");
 		
 		ui->listShipsNotUsedLabel->setText("Potential Variables To Enable Ships");
 		ui->listWeaponsNotUsedLabel->setText("Potential Variables To Enable Weapons");
@@ -266,7 +275,7 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 		_mode = VARIABLE_MODE;
 	}
 	else {
-		ui->tableVarLabel->setText("Loadout Editor: Loadout View");
+		ui->tableVarLabel->setText("Loadout View");
 		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
 		ui->listWeaponsNotUsedLabel->setText("Weapons Not In Loadout");
 		ui->startingShipsLabel->setText("Ships in Loadout");
@@ -316,7 +325,7 @@ void LoadoutDialog::onSwitchViewButtonPressed()
 	updateUI();
 }
 
-void LoadoutDialog::addShipButtonClicked()
+void TeamLoadoutDialog::addShipButtonClicked()
 {
 	SCP_vector<SCP_string> list;
 
@@ -334,7 +343,7 @@ void LoadoutDialog::addShipButtonClicked()
 	updateUI();
 }
 
-void LoadoutDialog::addWeaponButtonClicked()
+void TeamLoadoutDialog::addWeaponButtonClicked()
 {
 	SCP_vector<SCP_string> list;
 	
@@ -352,7 +361,7 @@ void LoadoutDialog::addWeaponButtonClicked()
 	updateUI();
 }
 
-void LoadoutDialog::removeShipButtonClicked()
+void TeamLoadoutDialog::removeShipButtonClicked()
 {
 	SCP_vector<SCP_string> list;
 
@@ -370,7 +379,7 @@ void LoadoutDialog::removeShipButtonClicked()
 	updateUI();
 }
 
-void LoadoutDialog::removeWeaponButtonClicked()
+void TeamLoadoutDialog::removeWeaponButtonClicked()
 {
 	SCP_vector<SCP_string> list;
 
@@ -388,7 +397,7 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	updateUI();
 }
 
-void LoadoutDialog::onExtraItemSpinboxUpdated()
+void TeamLoadoutDialog::onExtraItemSpinboxUpdated()
 {
 	SCP_vector<SCP_string> list;
 
@@ -433,7 +442,7 @@ void LoadoutDialog::onExtraItemSpinboxUpdated()
 	updateUI();
 }
 
-void LoadoutDialog::onExtraItemsViaVariableCombo()
+void TeamLoadoutDialog::onExtraItemsViaVariableCombo()
 {
 	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS || _lastSelectionChanged == NONE) {
 		return;
@@ -446,7 +455,7 @@ void LoadoutDialog::onExtraItemsViaVariableCombo()
 	updateUI();
 }
 
-void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
+void TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
 {
 	if (ui->playerDelayDoubleSpinbox->value() < 0) {
 		ui->playerDelayDoubleSpinbox->setValue(0.0f);
@@ -455,13 +464,13 @@ void LoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
 	_model->setPlayerEntryDelay(static_cast<float>(ui->playerDelayDoubleSpinbox->value()));
 }
 
-void LoadoutDialog::onCurrentTeamSpinboxUpdated()
+void TeamLoadoutDialog::onCurrentTeamSpinboxUpdated()
 {
 	_model->switchTeam(ui->currentTeamSpinbox->value());
 	updateUI();
 }
 
-void LoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
+void TeamLoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
 {
 	QMessageBox msgBox;
 	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
@@ -483,80 +492,89 @@ switch (ret) {
 }
 
 
-void LoadoutDialog::onSelectAllUnusedShipsPressed() 
+void TeamLoadoutDialog::onSelectAllUnusedShipsPressed() 
 {
 	ui->listShipsNotUsed->selectAll();
 	_lastSelectionChanged = POTENTIAL_SHIPS;
 }
 
-void LoadoutDialog::onClearAllUnusedShipsPressed() 
+void TeamLoadoutDialog::onClearAllUnusedShipsPressed() 
 {
 	ui->listShipsNotUsed->clearSelection();
 	_lastSelectionChanged = POTENTIAL_SHIPS;
 }
 
-void LoadoutDialog::onSelectAllUnusedWeaponsPressed()
+void TeamLoadoutDialog::onSelectAllUnusedWeaponsPressed()
 {
 	ui->listWeaponsNotUsed->selectAll();
 	_lastSelectionChanged = POTENTIAL_WEAPONS;
 }
 
-void LoadoutDialog::onClearAllUnusedWeaponsPressed() 
+void TeamLoadoutDialog::onClearAllUnusedWeaponsPressed() 
 {
 	ui->listWeaponsNotUsed->clearSelection();
 	_lastSelectionChanged = POTENTIAL_WEAPONS;
 }
 
-void LoadoutDialog::onSelectAllUsedShipsPressed() 
+void TeamLoadoutDialog::onSelectAllUsedShipsPressed() 
 {
 	ui->usedShipsList->selectAll();
 	_lastSelectionChanged = USED_SHIPS;
 }
 
-void LoadoutDialog::onClearAllUsedShipsPressed() 
+void TeamLoadoutDialog::onClearAllUsedShipsPressed() 
 {
 	ui->usedShipsList->clearSelection();
 	_lastSelectionChanged = USED_SHIPS;
 }
 
-void LoadoutDialog::onSelectAllUsedWeaponsPressed() 
+void TeamLoadoutDialog::onSelectAllUsedWeaponsPressed() 
 {
 	ui->usedWeaponsList->selectAll();
 	_lastSelectionChanged = USED_WEAPONS;
 }
 
-void LoadoutDialog::onClearAllUsedWeaponsPressed() 
+void TeamLoadoutDialog::onClearAllUsedWeaponsPressed() 
 {
 	ui->usedWeaponsList->clearSelection();
 	_lastSelectionChanged = USED_WEAPONS;
 }
 
-void LoadoutDialog::openEditVariablePressed() 
+void TeamLoadoutDialog::openEditVariablePressed() 
 {
 	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
 }
 
-void LoadoutDialog::onSelectionRequiredPressed() 
+void TeamLoadoutDialog::onSelectionRequiredCheckbox()
+{
+	if (ui->weaponValidationCheckbox->isChecked()) {
+		onSelectionRequiredPressed();
+	} else {
+		onSelectionNotRequiredPressed();
+	}
+}
+
+void TeamLoadoutDialog::onSelectionRequiredPressed() 
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, true);
 	updateUI();
 }
 
-void LoadoutDialog::onSelectionNotRequiredPressed() 
+void TeamLoadoutDialog::onSelectionNotRequiredPressed() 
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, false);
 	updateUI();
 }
 
-void LoadoutDialog::onWeaponValidationCheckboxClicked() 
+void TeamLoadoutDialog::onWeaponValidationCheckboxClicked() 
 {
 	_model->setSkipValidation(ui->weaponValidationCheckbox->isChecked());
 }
 
 
-void LoadoutDialog::updateUI()
+void TeamLoadoutDialog::updateUI()
 {
 	// repopulate with the correct lists from the model.
 	SCP_vector<std::pair<SCP_string, bool>> newShipList;
@@ -816,11 +834,11 @@ void LoadoutDialog::updateUI()
 
 	// Only enable set required if we are working with ships and weapons that have already been enabled, and not variables.
 	if (_mode == TABLE_MODE && _lastSelectionChanged == USED_WEAPONS) {
-		ui->setSelectionNotRequired->setEnabled(true);
-		ui->setSelectionRequired->setEnabled(true);
+		ui->requiredWeaponCheckBox->setEnabled(true);
+		ui->toggleRequiredLabel->setEnabled(true); // TODO does this do anything? Maybe just set the text color
 	} else {
-		ui->setSelectionNotRequired->setEnabled(false);
-		ui->setSelectionRequired->setEnabled(false);
+		ui->requiredWeaponCheckBox->setEnabled(false);
+		ui->toggleRequiredLabel->setEnabled(false);
 	}
 
 
@@ -877,7 +895,7 @@ void LoadoutDialog::updateUI()
 	}
 }
 
-SCP_vector<SCP_string> LoadoutDialog::getSelectedShips() 
+SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedShips() 
 {
 	SCP_vector<SCP_string> namesOut;
 
@@ -891,7 +909,7 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedShips()
 	return namesOut;
 }
 
-SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
+SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedWeapons()
 {
 	SCP_vector<SCP_string> namesOut;
 
@@ -905,7 +923,15 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
 	return namesOut;
 }
 
+void TeamLoadoutDialog::on_okAndCancelButtons_accepted()
+{
+	accept();
+}
 
+void TeamLoadoutDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
 }
-}
-}
+
+
+} // namespace fso::fred::dialogs
