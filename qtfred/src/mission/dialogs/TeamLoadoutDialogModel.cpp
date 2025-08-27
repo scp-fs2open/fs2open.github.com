@@ -1,4 +1,4 @@
-#include "LoadoutEditorDialogModel.h"
+#include "TeamLoadoutDialogModel.h"
 #include "FredApplication.h"
 #include "mission/missionparse.h"
 #include "object/object.h"
@@ -7,21 +7,19 @@
 #include "weapon/weapon.h"
 #include <QMessageBox>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 // for variable-enabled weapons and ships, these are the defaults.
 constexpr int ShipVarDefault = 4;
 constexpr int WeaponVarDefault = 40;
 
-LoadoutDialogModel::LoadoutDialogModel(QObject* parent, EditorViewport* viewport) 
+TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
 {
 		initializeData();
 }
 
-void LoadoutDialogModel::initializeData()
+void TeamLoadoutDialogModel::initializeData()
 {
 	_currentTeam = 0;
 
@@ -224,12 +222,12 @@ void LoadoutDialogModel::initializeData()
 	modelChanged();
 }
 
-float LoadoutDialogModel::getPlayerEntryDelay()
+float TeamLoadoutDialogModel::getPlayerEntryDelay()
 {
 	return _playerEntryDelay;
 }
 
-void LoadoutDialogModel::setPlayerEntryDelay(float delay)
+void TeamLoadoutDialogModel::setPlayerEntryDelay(float delay)
 {
 	_playerEntryDelay = delay;
 	modelChanged();
@@ -237,38 +235,38 @@ void LoadoutDialogModel::setPlayerEntryDelay(float delay)
 
 }
 
-int LoadoutDialogModel::getCurrentTeam()
+int TeamLoadoutDialogModel::getCurrentTeam()
 {
 	return _currentTeam + 1;
 }
 
-SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipList()
+SCP_vector<std::pair<SCP_string, bool>> TeamLoadoutDialogModel::getShipList()
 {
 	return _shipList;
 }
 
-SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getWeaponList()
+SCP_vector<std::pair<SCP_string, bool>> TeamLoadoutDialogModel::getWeaponList()
 {
 	return _weaponList;
 }
 
-SCP_vector<SCP_string> LoadoutDialogModel::getRequiredWeapons() 
+SCP_vector<SCP_string> TeamLoadoutDialogModel::getRequiredWeapons() 
 {
 	return _requiredWeaponsList;
 }
 
-SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getShipEnablerVariables()
+SCP_vector<std::pair<SCP_string, bool>> TeamLoadoutDialogModel::getShipEnablerVariables()
 {
 	return _shipVarList;
 }
 
-SCP_vector<std::pair<SCP_string, bool>> LoadoutDialogModel::getWeaponEnablerVariables()
+SCP_vector<std::pair<SCP_string, bool>> TeamLoadoutDialogModel::getWeaponEnablerVariables()
 {
 	buildCurrentLists();
 	return _weaponVarList;
 }
 
-SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, const char* variableIn)
+SCP_string TeamLoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, const char* variableIn)
 {
 	// Using a pointer here seems to lead to memory corruption, so I'll just use a temp Loadout Item
 	LoadoutItem item;
@@ -311,7 +309,7 @@ SCP_string LoadoutDialogModel::createItemString(bool ship, bool variable, int it
 	return stringOut2;
 }
 
-void LoadoutDialogModel::copyToOtherTeam()
+void TeamLoadoutDialogModel::copyToOtherTeam()
 {
 	int index = 0;
 
@@ -332,7 +330,7 @@ void LoadoutDialogModel::copyToOtherTeam()
 	}
 }
 
-void LoadoutDialogModel::switchTeam(int teamIn) 
+void TeamLoadoutDialogModel::switchTeam(int teamIn) 
 {
 	if (teamIn < 1 || teamIn > static_cast<int>(_teams.size()))
 		return;
@@ -345,7 +343,7 @@ void LoadoutDialogModel::switchTeam(int teamIn)
 	modelChanged();
 }
 
-bool LoadoutDialogModel::apply() {
+bool TeamLoadoutDialogModel::apply() {
 
 	int currentTeam = 0;
 	int index = 0;
@@ -433,7 +431,7 @@ bool LoadoutDialogModel::apply() {
 
 } 
 
-void LoadoutDialogModel::reject() {
+void TeamLoadoutDialogModel::reject() {
 	// just clear out the info we're not going to end up using.
 	_shipList.clear();
 	_weaponList.clear();
@@ -445,7 +443,7 @@ void LoadoutDialogModel::reject() {
 
 } // let him go Harry, let him go
 
-void LoadoutDialogModel::buildCurrentLists()
+void TeamLoadoutDialogModel::buildCurrentLists()
 {
 	// we're rebuilding the whole list, so we have to clear the text lists out.
 	_shipList.clear();
@@ -501,7 +499,7 @@ void LoadoutDialogModel::buildCurrentLists()
 	}
 }
 
-SCP_string LoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn) 
+SCP_string TeamLoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn) 
 {
 	int tester = -1;
 	SCP_string out = "";
@@ -528,7 +526,7 @@ SCP_string LoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn)
 	return out;
 }
 
-SCP_string LoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn)
+SCP_string TeamLoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn)
 {
 	int tester = -1;
 	SCP_string out = "";
@@ -555,7 +553,7 @@ SCP_string LoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn
 	return out;
 }
 
-SCP_string LoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> namesIn) 
+SCP_string TeamLoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> namesIn) 
 {
 	int tester = -1;
 	SCP_string out = "";
@@ -582,7 +580,7 @@ SCP_string LoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> nam
 	return out;
 }
 
-SCP_string LoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> namesIn) 
+SCP_string TeamLoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> namesIn) 
 {
 	int tester = -1;
 	SCP_string out = "";
@@ -610,7 +608,7 @@ SCP_string LoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> n
 
 }
 
-int LoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn) 
+int TeamLoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn) 
 {
 	int out = -1;
 
@@ -634,7 +632,7 @@ int LoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn)
 	return out;
 }
 
-int LoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn) 
+int TeamLoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn) 
 {
 	int out = -1;
 
@@ -655,7 +653,7 @@ int LoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn)
 	return out;
 }
 
-int LoadoutDialogModel::getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn) 
+int TeamLoadoutDialogModel::getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn) 
 {
 	int out = -1;
 
@@ -674,7 +672,7 @@ int LoadoutDialogModel::getExtraAllocatedShipEnabler(SCP_vector<SCP_string> name
 	return out;
 }
 
-int LoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> namesIn) 
+int TeamLoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> namesIn) 
 {
 	int out = -1;
 
@@ -693,15 +691,15 @@ int LoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> na
 	return out;
 }
 
-SCP_vector<SCP_string> LoadoutDialogModel::getNumberVarList() 
+SCP_vector<SCP_string> TeamLoadoutDialogModel::getNumberVarList() 
 {
 	return _numberVarList;
 }
 
-bool LoadoutDialogModel::spinBoxUpdateRequired() { return _spinBoxUpdateRequired; };
+bool TeamLoadoutDialogModel::spinBoxUpdateRequired() { return _spinBoxUpdateRequired; };
 
 
-void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
+void TeamLoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
 {
 	for (const auto& item : list) {
 		for (auto& ship : _teams[_currentTeam].ships) {
@@ -727,7 +725,7 @@ void LoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool
 }
 
 
-void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
+void TeamLoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
 {
 	for (const auto& item : list) {
 		bool found = false;
@@ -760,7 +758,7 @@ void LoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& li
 }
 
 
-void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
+void TeamLoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
 {
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
@@ -785,7 +783,7 @@ void LoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bo
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
+void TeamLoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
 {
 	for (const auto& item : list) {
 		bool found = false;
@@ -819,7 +817,7 @@ void LoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& 
 }
 
 
-void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count) 
+void TeamLoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count) 
 {
 	for (const auto& item : list) {
 		for (auto& ship : _teams[_currentTeam].ships) {
@@ -833,7 +831,7 @@ void LoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
+void TeamLoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
 {
 	for (const auto& item : list) {
 		for (auto& ship : _teams[_currentTeam].varShips) {
@@ -847,7 +845,7 @@ void LoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count)
+void TeamLoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count)
 {
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
@@ -861,7 +859,7 @@ void LoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_strin
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
+void TeamLoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count)
 {
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].varWeapons) {
@@ -875,7 +873,7 @@ void LoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vect
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool isShip, const bool variableMode)
+void TeamLoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool isShip, const bool variableMode)
 {
 	int index = -1;
 
@@ -921,7 +919,7 @@ void LoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_strin
 	buildCurrentLists();
 }
 
-void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required)
+void TeamLoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required)
 {
 	for (const auto& item : list) {
 		for (auto& weapon : _teams[_currentTeam].weapons) {
@@ -936,11 +934,11 @@ void LoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, c
 	modelChanged();
 }
 
-bool LoadoutDialogModel::getSkipValidation() {
+bool TeamLoadoutDialogModel::getSkipValidation() {
 	return _teams[_currentTeam].skipValidation;
 }
 
-void LoadoutDialogModel::setSkipValidation(const bool skipIt) {
+void TeamLoadoutDialogModel::setSkipValidation(const bool skipIt) {
 	// this is designed to be a global control, so turn this off in TvT, until we hear from someone otherwise.
 	for (auto& team : _teams) {
 		team.skipValidation = skipIt;
@@ -948,6 +946,4 @@ void LoadoutDialogModel::setSkipValidation(const bool skipIt) {
 	}
 }
 
-}
-}
-}
+} // namespace fso::fred::dialogs

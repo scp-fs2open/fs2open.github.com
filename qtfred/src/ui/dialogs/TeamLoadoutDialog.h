@@ -1,18 +1,15 @@
-#ifndef TEAMLOADOUTDIALOG_H
-#define TEAMLOADOUTDIALOG_H
+#pragma once
 
 #include <QDialog>
 #include <QtWidgets/QDialog>
-#include <mission/dialogs/LoadoutEditorDialogModel.h>
+#include <mission/dialogs/TeamLoadoutDialogModel.h>
 #include <ui/FredView.h>
 
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
-class LoadoutDialog;
+class TeamLoadoutDialog;
 }
 
 constexpr int NONE = -1;
@@ -21,25 +18,29 @@ constexpr int POTENTIAL_WEAPONS = 1;
 constexpr int USED_SHIPS = 2;
 constexpr int USED_WEAPONS = 3;
 
-class LoadoutDialog : public QDialog
+class TeamLoadoutDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-	explicit LoadoutDialog(FredView* parent, EditorViewport* viewport);
-	~LoadoutDialog() override;
+	explicit TeamLoadoutDialog(FredView* parent, EditorViewport* viewport);
+	~TeamLoadoutDialog() override;
+
+	void accept() override;
+	void reject() override;
 
   protected:
-	/**
-	 * @brief Overides the Dialogs Close event to add a confermation dialog
-	 * @param [in] *e The event.
-	 */
 	void closeEvent(QCloseEvent*) override;
 	void rejectHandler();
 
-  private:
-	std::unique_ptr<Ui::LoadoutDialog> ui;
-	std::unique_ptr<LoadoutDialogModel> _model;
+  private slots:
+	// dialog controls
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
+
+  private: // NOLINT(readability-redundant-access-specifiers)
+	std::unique_ptr<Ui::TeamLoadoutDialog> ui;
+	std::unique_ptr<TeamLoadoutDialogModel> _model;
 	EditorViewport* _viewport;
 
 	void onSwitchViewButtonPressed();
@@ -79,6 +80,7 @@ public:
 	void onSelectAllUsedWeaponsPressed();
 	void onClearAllUsedWeaponsPressed();
 	void openEditVariablePressed();
+	void onSelectionRequiredCheckbox();
 	void onSelectionRequiredPressed();
 	void onSelectionNotRequiredPressed();
 	void onWeaponValidationCheckboxClicked();
@@ -92,8 +94,4 @@ public:
 	int _lastSelectionChanged;
 };
 
-}
-}
-}
-
-#endif // TEAMLOADOUTDIALOG_H
+} // namespace fso::fred::dialogs
