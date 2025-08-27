@@ -1374,6 +1374,7 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
 	#ifdef USE_OPENGL_ES
 	mprintf(("  ASTC texture support : %s\n", GLAD_GL_KHR_texture_compression_astc_ldr ? NOX("YES") : NOX("NO")));
+	mprintf(("  Cull distance support : %s\n", GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
 	mprintf(("  Precompiled shaders support : %s\n", GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
 	mprintf(("  Immutable buffer storage support : %s\n", GL_EXT_buffer_storage? NOX("YES") : NOX("NO")));
 	mprintf(("  BGRA8888 format support: %s\n", GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
@@ -1443,7 +1444,9 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	glClear(GL_DEPTH_BUFFER_BIT);
 	glClear(GL_STENCIL_BUFFER_BIT);
 
+	#ifndef USE_OPENGL_ES
 	glEnable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
+	#endif
 
 	glDepthRange(0.0, 1.0);
 
