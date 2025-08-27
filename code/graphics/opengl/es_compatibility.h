@@ -1,9 +1,10 @@
-﻿#ifdef USE_OPENGL_ES
+﻿#ifndef ES_COMPATIBILITY_H
+#define ES_COMPATIBILITY_H
+#ifdef USE_OPENGL_ES
 #include <glad/glad.h>
 #include <khr/khrplatform.h>
 
 //Stubs Enums
-#define GL_CLIP_DISTANCE0					    0x3000
 #define GLAD_GL_ARB_draw_buffers_blend		    1
 #define GL_MAP_PERSISTENT_BIT				    0x0040
 #define GLAD_GL_ARB_vertex_attrib_binding	    0
@@ -14,11 +15,11 @@
 #define GL_LINE                                 0x1B01
 #define GL_POINT                                0x1B00
 #define GLAD_GL_ARB_timer_query                 1
-#define GL_TEXTURE_CUBE_MAP_SEAMLESS            0x884F
 #define GL_DOUBLE                               0x140A
 #define GL_TIMESTAMP							1
 
 //Enums
+#define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance
 #define GL_UNSIGNED_INT_8_8_8_8_REV				GL_UNSIGNED_BYTE
 #define GL_BGRA									GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
 #define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
@@ -30,7 +31,6 @@
 #define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5
 #define GLAD_GL_ARB_gpu_shader5				    GL_EXT_gpu_shader5
 #define GLAD_GL_ARB_get_program_binary		    GL_OES_get_program_binary
-#define GL_MULTISAMPLE						    GL_TRUE // Always enabled on ES
 #define GLAD_GL_ARB_buffer_storage			    GL_EXT_buffer_storage
 
 //Functions
@@ -43,6 +43,39 @@
 #define glDebugMessageControlARB        glDebugMessageControl
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define glDepthRange                    glDepthRangef
+
+static inline void glTexImage3D(GLenum target,GLint level,GLint internalFormat,GLsizei width,GLsizei height,GLsizei depth,GLint border,GLenum format,GLenum type,const void* data)
+{
+	// stub, we likely need to do some conversion here
+	glTexImage3D_glad(target, level, internalFormat, width, height, depth, border, format, type, data);
+}
+
+static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
+{
+	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_5_5_5_1) {
+		format = GL_RGBA;
+	}
+
+	if (format == GL_BGRA && type == GL_UNSIGNED_BYTE) {
+		format = GL_RGB;
+	}
+
+	glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, data);
+}
+
+static inline void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data)
+{
+	if (internalformat == GL_RGBA16F) {
+		glTexImage2D_glad(target, level, internalformat, width, height, border, GL_RGBA, GL_HALF_FLOAT, data);
+	} else if (internalformat == GL_RGBA8) {
+		glTexImage2D_glad(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, data);
+	} else if (internalformat == GL_DEPTH_COMPONENT24) {
+		glTexImage2D_glad(target, level, internalformat, width, height, border, format, GL_UNSIGNED_INT, data);
+	} else {
+		glTexImage2D_glad(target, level, internalformat, width, height, border, format, type, data);
+	}
+}
+
 
 inline void glDrawBuffer(GLenum data)
 {
@@ -164,5 +197,6 @@ inline void glQueryCounter(GLuint id, GLenum target)
 #define GL_DEBUG_SEVERITY_MEDIUM_ARB            GL_DEBUG_SEVERITY_MEDIUM
 #define GL_DEBUG_SEVERITY_LOW_ARB               GL_DEBUG_SEVERITY_LOW
 #define GL_DEBUG_OUTPUT_SYNCHRONOUS_ARB         GL_DEBUG_OUTPUT_SYNCHRONOUS
+#endif
 
 #endif
