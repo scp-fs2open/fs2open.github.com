@@ -310,11 +310,13 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	sflags << "#version " << GLSL_version << " core\n";
 	#else
 	sflags << "#version " << GLSL_version << " es\n"; 
+	sflags << "#extension GL_EXT_clip_cull_distance : enable" << "\n"; 
 	sflags << "precision highp float;" << "\n";
 	sflags << "precision highp int;" << "\n"; 
 	sflags << "precision highp sampler2D;" << "\n";
 	sflags << "precision highp sampler2DArray;" << "\n";
 	sflags << "precision highp samplerCube;" << "\n";
+	sflags << "precision highp samplerBuffer;" << "\n";
 
 	#endif
 	if (Detail.lighting < 3) {
