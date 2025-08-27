@@ -354,7 +354,9 @@ void opengl_setup_scene_textures()
 	}
 
 	if (Cmdline_msaa_enabled > 0) {
+		#ifndef USE_OPENGL_ES
 		glEnable(GL_MULTISAMPLE);
+		#endif
 
 		// Make sure our MSAA setting are valid
 		int maxSamples;

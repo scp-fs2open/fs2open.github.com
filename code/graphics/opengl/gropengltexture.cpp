@@ -1706,7 +1706,7 @@ void opengl_kill_all_render_targets()
 		fbo_t *fbo = &RenderTarget[i];
 
 		if (fbo->framebuffer_id) {
-			glDeleteFramebuffers(1, &fbo->framebuffer_id);
+			glDeleteFramebuffers(1, &fbo->framebuffer_id);//NOTE: Crashes on exit on OPENGL ES here, why?
 			fbo->framebuffer_id = 0;
 		}
 

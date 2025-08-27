@@ -60,6 +60,10 @@ void gr_opengl_query_value(int obj, QueryType type) {
 bool gr_opengl_query_value_available(int obj) {
 	auto& slot = get_query_slot(obj);
 
+	//temporal fix to remove the error from the log, i still dont understand why this is invalid
+	if (slot.name == 1)
+		return GL_FALSE;
+
 	GLuint available;
 	glGetQueryObjectuiv(slot.name, GL_QUERY_RESULT_AVAILABLE, &available);
 
@@ -68,6 +72,10 @@ bool gr_opengl_query_value_available(int obj) {
 
 std::uint64_t gr_opengl_get_query_value(int obj) {
 	auto& slot = get_query_slot(obj);
+
+	// temporal fix to remove the error from the log, i still dont understand why this is invalid
+	if (slot.name == 1)
+		return GL_FALSE;
 
 	GLuint64 available;
 	#ifndef USE_OPENGL_ES
