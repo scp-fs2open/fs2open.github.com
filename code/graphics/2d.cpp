@@ -53,14 +53,9 @@
 #include "graphics/vulkan/gr_vulkan.h"
 #endif
 
-#include <SDL_surface.h>
-
 #include <algorithm>
 #include <climits>
 
-#if (SDL_VERSION_ATLEAST(1, 2, 7))
-#include "SDL_cpuinfo.h"
-#endif
 
 #define GR_CAPABILITY_ENTRY(capability) gr_capability_def{ gr_capability::CAPABILITY_##capability, #capability }
 
@@ -305,7 +300,78 @@ bool Save_custom_screen_size;
 bool Deferred_lighting = false;
 bool High_dynamic_range = false;
 
-static ushort* Gr_original_gamma_ramp = nullptr;
+// Get instace id of preferred display
+// Note that a displays instance id could change, so don't cache it
+SDL_DisplayID gr_get_preferred_display()
+{
+	SDL_DisplayID display = SDL_GetPrimaryDisplay();
+	int count = 0;
+
+	auto preferred = static_cast<int>(os_config_read_uint("Video", "Display", 0));
+
+	if (preferred <= 0) {
+		return display;
+	}
+
+	auto displays = SDL_GetDisplays(&count);
+
+	if ( !displays || (count == 1) || (preferred >= count) ) {
+		if (displays) {
+			SDL_free(displays);
+		}
+
+		return display;
+	}
+
+	// We're making the assumption here that displays will generally be in the
+	// same position between launches of FSO *and* that no display is unplugged
+	// or plugged in while FSO is running. But there is no guarantee that either
+	// of those things will happen.
+
+	// TODO: SDL3 => maybe sort displays based on x/y position for deterministic list?
+
+	for (int i = 0; displays[i]; ++i) {
+		if (i == preferred) {
+			display = displays[i];
+			break;
+		}
+	}
+
+	SDL_free(displays);
+
+	return display;
+}
+
+static void set_preferred_display(SDL_DisplayID display)
+{
+	int count = 0;
+
+	auto displays = SDL_GetDisplays(&count);
+
+	if ( !displays || (count == 1) ) {
+		if (displays) {
+			SDL_free(displays);
+		}
+
+		return;
+	}
+
+	// We're making the assumption here that displays will generally be in the
+	// same position between launches of FSO *and* that no display is unplugged
+	// or plugged in while FSO is running. But there is no guarantee that either
+	// of those things will happen.
+
+	// TODO: SDL3 => maybe sort displays based on x/y position for deterministic list?
+
+	for (int i = 0; displays[i]; ++i) {
+		if (displays[i] == display) {
+			os_config_write_uint("Video", "Display", static_cast<uint32_t>(i));
+			break;
+		}
+	}
+
+	SDL_free(displays);
+}
 
 static int videodisplay_deserializer(const json_t* value)
 {
@@ -316,24 +382,41 @@ static int videodisplay_deserializer(const json_t* value)
 		throw json_exception(err);
 	}
 
-	return id;
+	// a display id of zero is invalid in SDL3 but we need to support older
+	// builds so add 1 and hope it works out
+	return id+1;
 }
-static json_t* videodisplay_serializer(int value) { return json_pack("i", value); }
-static SCP_vector<int> videodisplay_enumerator()
+
+static json_t* videodisplay_serializer(SDL_DisplayID value)
 {
-	SCP_vector<int> vals;
-	for (int i = 0; i < SDL_GetNumVideoDisplays(); ++i) {
-		vals.push_back(i);
+	// a display id of zero is invalid in SDL3 but we need to support older
+	// builds so reduce by 1 and hope it works out
+	return json_pack("i", static_cast<int>(value)-1);
+}
+
+static SCP_vector<SDL_DisplayID> videodisplay_enumerator()
+{
+	SCP_vector<SDL_DisplayID> vals;
+
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if (displays) {
+		for (int i = 0; displays[i]; ++i) {
+			vals.push_back(displays[i]);
+		}
+
+		SDL_free(displays);
 	}
+
 	return vals;
 }
-static SCP_string videodisplay_display(int id)
+static SCP_string videodisplay_display(SDL_DisplayID id)
 {
 	SCP_string out;
-	sprintf(out, "(%d) %s", id + 1, SDL_GetDisplayName(id));
+	sprintf(out, "(%u) %s", id, SDL_GetDisplayName(id));
 	return out;
 }
-static bool videodisplay_change(int display, bool initial)
+static bool videodisplay_change(SDL_DisplayID display, bool initial)
 {
 	if (initial) {
 		return false;
@@ -344,6 +427,8 @@ static bool videodisplay_change(int display, bool initial)
 		return false;
 	}
 
+	set_preferred_display(display);
+
 	SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	return true;
 }
@@ -351,7 +436,7 @@ static bool videodisplay_change(int display, bool initial)
 // Video display cannot support default settings because graphics have not been
 // initialized so we can't validate the setting. But also, this should probably
 // only ever be a user setting
-static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
+static auto VideoDisplayOption = options::OptionBuilder<SDL_DisplayID>("Graphics.Display",
                      std::pair<const char*, int>{"Primary display", 1741},
                      std::pair<const char*, int>{"The display used for rendering", 1742})
                      .category(std::make_pair("Graphics", 1825))
@@ -361,7 +446,7 @@ static auto VideoDisplayOption = options::OptionBuilder<int>("Graphics.Display",
                      .enumerator(videodisplay_enumerator)
                      .display(videodisplay_display)
                      .flags({options::OptionFlags::ForceMultiValueSelection})
-                     .default_val(0)
+                     .default_val(1)
                      .change_listener(videodisplay_change)
                      .importance(99)
                      .finish();
@@ -397,14 +482,17 @@ static json_t* resolution_serializer(const ResolutionInfo& value)
 static SCP_vector<ResolutionInfo> resolution_enumerator()
 {
 	SCP_vector<ResolutionInfo> out;
-	auto display = VideoDisplayOption->getValue();
-	for (auto i = 0; i < SDL_GetNumDisplayModes(display); ++i) {
-		SDL_DisplayMode mode;
-		if (SDL_GetDisplayMode(display, i, &mode) != 0) {
-			continue;
-		}
 
-		auto res = ResolutionInfo(mode.w, mode.h);
+	auto modes = SDL_GetFullscreenDisplayModes(VideoDisplayOption->getValue(), nullptr);
+
+	if ( !modes ) {
+		return out;
+	}
+
+	for (int i = 0; modes[i]; ++i) {
+		auto mode = modes[i];
+
+		auto res = ResolutionInfo(mode->w, mode->h);
 		if (std::find(out.begin(), out.end(), res) == out.end()) {
 			out.emplace_back(res);
 		}
@@ -430,50 +518,45 @@ static SCP_string resolution_display(const ResolutionInfo& info)
 }
 static ResolutionInfo resolution_default()
 {
-	SDL_DisplayMode mode;
-	if (SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue(), &mode) != 0) {
+	auto mode = SDL_GetDesktopDisplayMode(VideoDisplayOption->getValue());
+
+	if ( !mode ) {
 		return {};
 	}
-	return {(uint32_t)mode.w, (uint32_t)mode.h};
+
+	return {(uint32_t)mode->w, (uint32_t)mode->h};
 }
 static ResolutionInfo resolution_vr_default()
 {
 	return {(uint32_t)2500, (uint32_t)2500};
 }
-static bool resolution_change(const ResolutionInfo& /*info*/, bool initial)
+static bool resolution_change(const ResolutionInfo& info, bool initial)
 {
 	if (initial) {
 		return false;
 	}
-	return false;
-	// The following code should change the size of the window properly but FSO currently can't handle that
-	/*
+
 	auto window = os::getSDLMainWindow();
 	if (window == nullptr) {
-	    return;
+		return false;
 	}
 
 	auto display = VideoDisplayOption->getValue();
 	if (SDL_GetWindowFlags(window) & SDL_WINDOW_FULLSCREEN) {
-	    SDL_DisplayMode target;
-	    target.w            = info.width;
-	    target.h            = info.height;
-	    target.format       = 0; // don't care
-	    target.refresh_rate = 0; // don't care
-	    target.driverdata   = 0; // initialize to 0
+		SDL_DisplayMode target;
 
-	    SDL_DisplayMode closest;
-	    if (SDL_GetClosestDisplayMode(display, &target, &closest) == nullptr) {
-	        return;
-	    }
+		if ( !SDL_GetClosestFullscreenDisplayMode(display, info.width, info.height, 0.0f, true, &target) ) {
+			return false;
+		}
 
-	    SDL_SetWindowDisplayMode(window, &closest);
+		SDL_SetWindowFullscreenMode(window, &target);
 	} else {
-	    SDL_SetWindowSize(window, info.width, info.height);
-	    // Recenter the window
-	    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
+		SDL_SetWindowSize(window, info.width, info.height);
+		// Recenter the window
+		SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED_DISPLAY(display), SDL_WINDOWPOS_CENTERED_DISPLAY(display));
 	}
-	 */
+
+	return true;
 }
 
 static bool resolution_vr_change(const ResolutionInfo& /*info*/, bool initial)
@@ -1288,15 +1371,6 @@ void gr_close()
 	if(Cmdline_enable_vr)
 		openxr_close();
 
-	if (Gr_original_gamma_ramp != nullptr && os::getSDLMainWindow() != nullptr) {
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-		                       (Gr_original_gamma_ramp + 512));
-	}
-
-	// This is valid even if Gr_original_gamma_ramp is nullptr
-	vm_free(Gr_original_gamma_ramp);
-	Gr_original_gamma_ramp = nullptr;
-
 	gpu_heap_deinit();
 
 	// Cleanup uniform buffer managers
@@ -1704,7 +1778,7 @@ static void init_window_icon() {
 
 	SDL_SetWindowIcon(sdl_wnd, surface);
 
-	SDL_FreeSurface(surface);
+	SDL_DestroySurface(surface);
 	bm_release(icon_handle);
 }
 
@@ -1765,18 +1839,16 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 		if (ptr == nullptr) {
 			// If we don't have a display mode, use SDL to get default settings
 			// We need to initialize SDL to do this
-
-			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == 0)
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO))
 			{
-				auto display = static_cast<int>(os_config_read_uint("Video", "Display", 0));
-				SDL_DisplayMode displayMode;
-				if (SDL_GetDesktopDisplayMode(display, &displayMode) == 0)
+				auto displayMode = SDL_GetDesktopDisplayMode(gr_get_preferred_display());
+				if (displayMode)
 				{
-					width = displayMode.w;
-					height = displayMode.h;
-					int sdlBits = SDL_BITSPERPIXEL(displayMode.format);
+					width = displayMode->w;
+					height = displayMode->h;
+					int sdlBits = SDL_BITSPERPIXEL(displayMode->format);
 
-					if (SDL_ISPIXELFORMAT_ALPHA(displayMode.format))
+					if (SDL_ISPIXELFORMAT_ALPHA(displayMode->format))
 					{
 						depth = sdlBits;
 					}
@@ -1802,6 +1874,8 @@ bool gr_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps, int d_mode, 
 
 					os_config_write_string(nullptr, NOX("VideocardFs2open"), videomode.c_str());
 				}
+
+				SDL_QuitSubSystem(SDL_INIT_VIDEO);
 			}
 		} else {
 			Assert(ptr != nullptr);
@@ -2995,62 +3069,72 @@ SCP_vector<DisplayData> gr_enumerate_displays()
 {
 	// It seems that linux cannot handle having the video subsystem inited
 	// too late
-	if (SDL_InitSubSystem(SDL_INIT_VIDEO) < 0) {
+	if ( !SDL_InitSubSystem(SDL_INIT_VIDEO) ) {
 		return SCP_vector<DisplayData>();
 	}
 
 	SCP_vector<DisplayData> data;
 
-	auto num_displays = SDL_GetNumVideoDisplays();
-	for (auto i = 0; i < num_displays; ++i) {
+	auto displays = SDL_GetDisplays(nullptr);
+
+	if ( !displays ) {
+		return data;
+	}
+
+	for (auto i = 0; displays[i]; ++i) {
+		SDL_DisplayID id = displays[i];
+
 		DisplayData display;
 		display.index = i;
 
 		SDL_Rect bounds;
-		if (SDL_GetDisplayBounds(i, &bounds) == 0) {
+		if ( !SDL_GetDisplayBounds(id, &bounds) ) {
 			display.x = bounds.x;
 			display.y = bounds.y;
 			display.width = bounds.w;
 			display.height = bounds.h;
 		}
 
-		auto name = SDL_GetDisplayName(i);
+		auto name = SDL_GetDisplayName(id);
 		if (name != nullptr) {
 			display.name = name;
 		}
 
-		auto num_mods = SDL_GetNumDisplayModes(i);
-		for (auto j = 0; j < num_mods; ++j) {
-			SDL_DisplayMode mode;
-			if (SDL_GetDisplayMode(i, j, &mode) != 0) {
-				continue;
-			}
-			
-			VideoModeData videoMode;
-			videoMode.width = mode.w;
-			videoMode.height = mode.h;
+		auto modes = SDL_GetFullscreenDisplayModes(id, nullptr);
 
-			int sdlBits = SDL_BITSPERPIXEL(mode.format);
+		if (modes) {
+			for (int j = 0; modes[j]; ++j) {
+				SDL_DisplayMode *mode = modes[j];
 
-			if (SDL_ISPIXELFORMAT_ALPHA(mode.format)) {
-				videoMode.bit_depth = sdlBits;
-			} else {
-				// Fix a few values
-				if (sdlBits == 24) {
-					videoMode.bit_depth = 32;
-				} else if (sdlBits == 15) {
-					videoMode.bit_depth = 16;
-				} else {
+				VideoModeData videoMode;
+				videoMode.width = mode->w;
+				videoMode.height = mode->h;
+
+				int sdlBits = SDL_BITSPERPIXEL(mode->format);
+
+				if (SDL_ISPIXELFORMAT_ALPHA(mode->format)) {
 					videoMode.bit_depth = sdlBits;
+				} else {
+					// Fix a few values
+					if (sdlBits == 24) {
+						videoMode.bit_depth = 32;
+					} else if (sdlBits == 15) {
+						videoMode.bit_depth = 16;
+					} else {
+						videoMode.bit_depth = sdlBits;
+					}
 				}
+
+				display.video_modes.push_back(videoMode);
 			}
 
-			display.video_modes.push_back(videoMode);
+			SDL_free(modes);
 		}
 
 		data.push_back(display);
 	}
-	
+
+	SDL_free(displays);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
 	return data;
@@ -3161,62 +3245,6 @@ void gr_heap_deallocate(GpuHeap heap_type, size_t data_offset)
 	gpuHeap->freeGpuData(data_offset);
 }
 
-// I feel dirty...
-static void make_gamma_ramp(float gamma, ushort* ramp)
-{
-	ushort x, y;
-	ushort base_ramp[256];
-
-	Assert(ramp != nullptr);
-
-	// generate the base ramp values first off
-
-	// if no gamma set then just do this quickly
-	if (gamma <= 0.0f) {
-		memset(ramp, 0, 3 * 256 * sizeof(ushort));
-		return;
-	}
-	// identity gamma, avoid all of the math
-	else if (gamma == 1.0f || Gr_original_gamma_ramp == nullptr) {
-		if (Gr_original_gamma_ramp != nullptr) {
-			memcpy(ramp, Gr_original_gamma_ramp, 3 * 256 * sizeof(ushort));
-		}
-		// set identity if no original ramp
-		else {
-			for (x = 0; x < 256; x++) {
-				ramp[x]       = (x << 8) | x;
-				ramp[x + 256] = (x << 8) | x;
-				ramp[x + 512] = (x << 8) | x;
-			}
-		}
-
-		return;
-	}
-	// for everything else we need to actually figure it up
-	else {
-		double g = 1.0 / (double)gamma;
-		double val;
-
-		Assert(Gr_original_gamma_ramp != nullptr);
-
-		for (x = 0; x < 256; x++) {
-			val = (pow(x / 255.0, g) * 65535.0 + 0.5);
-			CLAMP(val, 0., 65535.);
-
-			base_ramp[x] = (ushort)val;
-		}
-
-		for (y = 0; y < 3; y++) {
-			for (x = 0; x < 256; x++) {
-				val = (base_ramp[x] * 2) - Gr_original_gamma_ramp[x + y * 256];
-				CLAMP(val, 0., 65535.);
-
-				ramp[x + y * 256] = (ushort)val;
-			}
-		}
-	}
-}
-
 void gr_set_gamma(float gamma)
 {
 	if (gr_screen.mode == GR_STUB) {
@@ -3225,37 +3253,7 @@ void gr_set_gamma(float gamma)
 
 	Gr_gamma = gamma;
 
-	// new way - but not while running FRED
-	if (!Fred_running && !Cmdline_no_set_gamma && os::getSDLMainWindow() != nullptr) {
-		if (Gr_original_gamma_ramp == nullptr) {
-			// First time we are here so get the current (original) gamma ramp here so we can reset it later
-			Gr_original_gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-			if (Gr_original_gamma_ramp == nullptr) {
-				mprintf(("  Unable to allocate memory for gamma ramp!  Disabling...\n"));
-				Cmdline_no_set_gamma = 1;
-			} else {
-				SDL_GetWindowGammaRamp(os::getSDLMainWindow(), Gr_original_gamma_ramp, (Gr_original_gamma_ramp + 256),
-									   (Gr_original_gamma_ramp + 512));
-			}
-		}
-
-		auto gamma_ramp = (ushort*)vm_malloc(3 * 256 * sizeof(ushort), memory::quiet_alloc);
-
-		if (gamma_ramp == nullptr) {
-			Int3();
-			return;
-		}
-
-		memset(gamma_ramp, 0, 3 * 256 * sizeof(ushort));
-
-		// Create the Gamma lookup table
-		make_gamma_ramp(gamma, gamma_ramp);
-
-		SDL_SetWindowGammaRamp(os::getSDLMainWindow(), gamma_ramp, (gamma_ramp + 256), (gamma_ramp + 512));
-
-		vm_free(gamma_ramp);
-	}
+	// TODO: SDL3 => gamma ramp is no longer supported and should instead be handled via shaders
 }
 
 void gr_get_post_process_effect_names(SCP_vector<SCP_string>& names)
