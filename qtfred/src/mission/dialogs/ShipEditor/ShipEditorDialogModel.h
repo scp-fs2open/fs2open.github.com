@@ -71,6 +71,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 		bool texenable = true;
 
+	int respawn_priority;
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	void initializeData();
@@ -121,6 +123,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(const bool);
 	bool getPlayer() const;
+
+	void setRespawn(const int);
+	int getRespawn() const;
 
 	void setArrivalLocationIndex(const int);
 	int getArrivalLocationIndex() const;

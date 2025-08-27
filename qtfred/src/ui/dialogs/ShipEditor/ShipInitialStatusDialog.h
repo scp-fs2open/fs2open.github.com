@@ -23,7 +23,9 @@ class ShipInitialStatusDialog : public QDialog {
 	void closeEvent(QCloseEvent*) override;
 	void rejectHandler();
 
-  private:
+  private slots:
+	void on_guardianSpinBox_valueChanged(int);
+  private://NOLINT
 	std::unique_ptr<Ui::ShipInitialStatusDialog> ui;
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;

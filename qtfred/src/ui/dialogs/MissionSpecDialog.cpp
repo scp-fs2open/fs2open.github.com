@@ -122,7 +122,7 @@ void MissionSpecDialog::updateFlags()
 {
 	const auto flags = _model->getMissionFlagsList();
 
-	QVector<std::pair<QString, bool>> toWidget;
+	QVector<std::pair<QString, int>> toWidget;
 	toWidget.reserve(static_cast<int>(flags.size()));
 	for (const auto& p : flags) {
 		QString name = QString::fromUtf8(p.first.c_str());

@@ -267,6 +267,85 @@ const char *Old_game_types[OLD_MAX_GAME_TYPES] = {
 	"Training mission"
 };
 
+flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[] = {
+	{"cargo-known", Ship::Ship_Flags::Cargo_revealed, true, false},
+	{"ignore-count", Ship::Ship_Flags::Ignore_count, true, false},
+	{"reinforcement", Ship::Ship_Flags::Reinforcement, true, false},
+	{"escort", Ship::Ship_Flags::Escort, true, false},
+	{"no-arrival-music", Ship::Ship_Flags::No_arrival_music, true, false},
+	{"no-arrival-warp", Ship::Ship_Flags::No_arrival_warp, true, false},
+	{"no-departure-warp", Ship::Ship_Flags::No_departure_warp, true, false},
+	{"hidden-from-sensors", Ship::Ship_Flags::Hidden_from_sensors, true, false},
+	{"scannable", Ship::Ship_Flags::Scannable, true, false},
+	{"red-alert-carry", Ship::Ship_Flags::Red_alert_store_status, true, false},
+	{"vaporize", Ship::Ship_Flags::Vaporize, true, false},
+	{"stealth", Ship::Ship_Flags::Stealth, true, false},
+	{"friendly-stealth-invisible", Ship::Ship_Flags::Friendly_stealth_invis, true, false},
+	{"don't-collide-invisible", Ship::Ship_Flags::Dont_collide_invis, true, false},
+	{"primitive-sensors", Ship::Ship_Flags::Primitive_sensors, true, false},
+	{"no-subspace-drive", Ship::Ship_Flags::No_subspace_drive, true, false},
+	{"nav-carry-status", Ship::Ship_Flags::Navpoint_carry, true, false},
+	{"affected-by-gravity", Ship::Ship_Flags::Affected_by_gravity, true, false},
+	{"toggle-subsystem-scanning", Ship::Ship_Flags::Toggle_subsystem_scanning, true, false},
+	{"no-builtin-messages", Ship::Ship_Flags::No_builtin_messages, true, false},
+	{"primaries-locked", Ship::Ship_Flags::Primaries_locked, true, false},
+	{"secondaries-locked", Ship::Ship_Flags::Secondaries_locked, true, false},
+	{"no-death-scream", Ship::Ship_Flags::No_death_scream, true, false},
+	{"always-death-scream", Ship::Ship_Flags::Always_death_scream, true, false},
+	{"nav-needslink", Ship::Ship_Flags::Navpoint_needslink, true, false},
+	{"hide-ship-name", Ship::Ship_Flags::Hide_ship_name, true, false},
+	{"set-class-dynamically", Ship::Ship_Flags::Set_class_dynamically, true, false},
+	{"lock-all-turrets", Ship::Ship_Flags::Lock_all_turrets_initially, true, false},
+	{"afterburners-locked", Ship::Ship_Flags::Afterburner_locked, true, false},
+	{"no-ets", Ship::Ship_Flags::No_ets, true, false},
+	{"cloaked", Ship::Ship_Flags::Cloaked, true, false},
+	{"ship-locked", Ship::Ship_Flags::Ship_locked, true, false},
+	{"weapons-locked", Ship::Ship_Flags::Weapons_locked, true, false},
+	{"scramble-messages", Ship::Ship_Flags::Scramble_messages, true, false},
+	{"no-disabled-self-destruct", Ship::Ship_Flags::No_disabled_self_destruct, true, false},
+	{"hide-in-mission-log", Ship::Ship_Flags::Hide_mission_log, true, false},
+	{"same-arrival-warp-when-docked", Ship::Ship_Flags::Same_arrival_warp_when_docked, true, false},
+	{"same-departure-warp-when-docked", Ship::Ship_Flags::Same_departure_warp_when_docked, true, false},
+	{"fail-sound-locked-primary", Ship::Ship_Flags::Fail_sound_locked_primary, true, false},
+	{"fail-sound-locked-secondary", Ship::Ship_Flags::Fail_sound_locked_secondary, true, false},
+	{"aspect-immune", Ship::Ship_Flags::Aspect_immune, true, false},
+	{"cannot-perform-scan", Ship::Ship_Flags::Cannot_perform_scan, true, false},
+	{"no-targeting-limits", Ship::Ship_Flags::No_targeting_limits, true, false},
+	{"force-shields-on", Ship::Ship_Flags::Force_shields_on, true, false},
+	{"Destroy before Mission", Ship::Ship_Flags::Kill_before_mission,true, false}, //Not Printed to misson so can use descriptive name
+}
+;
+
+const size_t Num_Parse_ship_flags = sizeof(Parse_ship_flags) / sizeof(flag_def_list_new<Ship::Ship_Flags>);
+
+flag_def_list_new<AI::AI_Flags> Parse_ship_ai_flags[] = {
+	{"kamikaze", AI::AI_Flags::Kamikaze, true, false},
+	{"no-dynamic", AI::AI_Flags::No_dynamic, true, false},
+
+};
+
+const size_t Num_Parse_ship_ai_flags = sizeof(Parse_ship_ai_flags) / sizeof(flag_def_list_new<AI::AI_Flags>);
+
+flag_def_list_new<Object::Object_Flags> Parse_ship_object_flags[] = {
+	{"protect-ship", Object::Object_Flags::Protected, true, false},
+	{"no-shields", Object::Object_Flags::No_shields, true, false},
+	{"player-start", Object::Object_Flags::Player_ship, true, false},
+	{"invulnerable", Object::Object_Flags::Invulnerable, true, false},
+	{"beam-protect-ship", Object::Object_Flags::Beam_protected, true, false},
+	{"flak-protect-ship", Object::Object_Flags::Flak_protected, true, false},
+	{"laser-protect-ship", Object::Object_Flags::Laser_protected, true, false},
+	{"missile-protect-ship", Object::Object_Flags::Missile_protected, true, false},
+	{"special-warp", Object::Object_Flags::Special_warpin, true, false},
+	{"targetable-as-bomb", Object::Object_Flags::Targetable_as_bomb, true, false},
+	{"don't-change-position", Object::Object_Flags::Dont_change_position, true, false},
+	{"don't-change-orientation", Object::Object_Flags::Dont_change_orientation, true, false},
+	{"no_collide", Object::Object_Flags::Collides, true, false},
+	{"ai-attackable-if-no-collide", Object::Object_Flags::Attackable_if_no_collide, true, false},
+
+};
+const size_t Num_Parse_ship_object_flags =
+	sizeof(Parse_ship_object_flags) / sizeof(flag_def_list_new<Object::Object_Flags>);
+
 // These are a little different than the object flags as they aren't used in traditional flag sexps or parsed flag lists
 // Instead, this list is used to popuplate QtFRED's mission specs flag checkboxes. As such the names can be more descriptive than other flag def lists
 // NOTE: Inactive flags and special flags are not added to the UI flag list. It is assumed that special flags exist in some other UI form
@@ -2136,6 +2215,7 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	shipp->team = p_objp->team;
 	shipp->display_name = p_objp->display_name;
 	shipp->escort_priority = p_objp->escort_priority;
+	shipp->ship_guardian_threshold = p_objp->ship_guardian_threshold;
 	shipp->use_special_explosion = p_objp->use_special_explosion;
 	shipp->special_exp_damage = p_objp->special_exp_damage;
 	shipp->special_exp_blast = p_objp->special_exp_blast;
@@ -2892,9 +2972,6 @@ void resolve_parse_flags(object *objp, flagset<Mission::Parse_Object_Flags> &par
     if (parse_flags[Mission::Parse_Object_Flags::OF_Missile_protected])
         objp->flags.set(Object::Object_Flags::Missile_protected);
 
-    if (parse_flags[Mission::Parse_Object_Flags::SF_Guardian])
-        shipp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
-
     if (parse_flags[Mission::Parse_Object_Flags::SF_Vaporize])
         shipp->flags.set(Ship::Ship_Flags::Vaporize);
 
@@ -3459,6 +3536,15 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
     {
         stuff_int(&p_objp->escort_priority);
     }
+
+	if (optional_string("+Guardian Threshold:")) {
+
+		stuff_int(&p_objp->ship_guardian_threshold);
+	} else {
+		if (p_objp->flags[Mission::Parse_Object_Flags::SF_Guardian]) {
+			p_objp->ship_guardian_threshold = SHIP_GUARDIAN_THRESHOLD_DEFAULT;
+		}
+	}
 
     if (p_objp->flags[Mission::Parse_Object_Flags::OF_Player_start])
     {
