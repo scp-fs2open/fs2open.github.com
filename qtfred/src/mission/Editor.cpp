@@ -332,11 +332,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				}
 			}
 		}
-	}
-
-	int used_pool[MAX_WEAPON_TYPES] = {};
-	for (auto& pool : used_pool)
-		pool = 0; 
+	} 
 
 	for (i = 0; i < Num_teams; i++) {
 		generate_team_weaponry_usage_list(i, _weapon_usage[i]);
@@ -345,7 +341,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
 				&& (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
 				// convert weaponry_pool to be extras available beyond the current ships weapons
-				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
+				Team_data[i].weaponry_count[j] -= _weapon_usage[i][Team_data[i].weaponry_pool[j]];
 				if (Team_data[i].weaponry_count[j] < 0) {
 					Team_data[i].weaponry_count[j] = 0;
 				}
@@ -364,7 +360,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 				// add the weapon as a new entry
 				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
-				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j];
+				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = _weapon_usage[i][j];
 				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
 				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");
 			}
