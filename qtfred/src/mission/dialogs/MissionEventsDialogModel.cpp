@@ -1444,7 +1444,7 @@ void MissionEventsDialogModel::autoSelectPersona()
 			avi_name = "HEAD-CM1";
 		}
 
-		for (auto i = 0; i < (static_cast<int>(Personas.size()); i++) {
+		for (auto i = 0; i < (static_cast<int>(Personas.size())); i++) {
 			if (Personas[i].flags & mask) {
 				modify(m_messages[m_cur_msg].persona_index, i);
 			}
