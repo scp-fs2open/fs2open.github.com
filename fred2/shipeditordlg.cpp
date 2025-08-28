@@ -1291,6 +1291,8 @@ int CShipEditorDlg::update_ship(int ship)
 	CComboBox *box;
 	int persona;
 
+	lcl_fred_replace_stuff(m_ship_display_name);
+
 	// the display name was precalculated, so now just assign it
 	if (m_ship_display_name == m_ship_name || m_ship_display_name.CompareNoCase("<none>") == 0)
 	{
@@ -1332,6 +1334,7 @@ int CShipEditorDlg::update_ship(int ship)
 		MODIFY(Ships[ship].weapons.ai_class, m_ai_class);
 	}
 	if (strlen(m_cargo1)) {
+		lcl_fred_replace_stuff(m_cargo1);
 		z = string_lookup(m_cargo1, Cargo_names, Num_cargo);
 		if (z == -1) {
 			if (Num_cargo < MAX_CARGO) {

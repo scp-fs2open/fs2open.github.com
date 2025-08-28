@@ -2,6 +2,7 @@
 
 #include "globalincs/linklist.h"
 #include <jumpnode/jumpnode.h>
+#include <localization/localize.h>
 #include <mission/missionparse.h>
 #include <mission/object.h>
 #include <model/model.h>
@@ -38,6 +39,8 @@ bool JumpNodeEditorDialogModel::apply()
 	char old_name_buf[NAME_LENGTH];
 	std::strncpy(old_name_buf, jnp->GetName(), NAME_LENGTH - 1);
 	old_name_buf[NAME_LENGTH - 1] = '\0';
+
+	lcl_fred_replace_stuff(_display);
 
 	jnp->SetName(_name.c_str());
 	jnp->SetDisplayName(lcase_equal(_display, "<none>") ? _name.c_str() : _display.c_str());
