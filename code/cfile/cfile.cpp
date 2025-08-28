@@ -193,8 +193,8 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 		if(android_path == nullptr){
 			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Freespace Open needs permission to access the external storage.");
 			return 1;
-		}		
-		strncpy(buf, android_path, CFILE_ROOT_DIRECTORY_LEN - 1);
+		}
+		snprintf(buf, CFILE_ROOT_DIRECTORY_LEN, "%s/files", android_path);
 	#endif
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 
