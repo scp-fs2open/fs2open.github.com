@@ -24,7 +24,7 @@ bool MissionEventsDialogModel::apply()
 	}
 
 	// rename all sexp references to old events
-	for (int i = 0; i < (int)m_events.size(); i++) {
+	for (int i = 0; i < static_cast<int>(m_events.size()); i++) {
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_events[m_sig[i]].name, m_events[i].name);
 			Mission_events[m_sig[i]].result = 1;
@@ -63,9 +63,9 @@ bool MissionEventsDialogModel::apply()
 			free(Messages[i].wave_info.name);
 	}
 
-	Num_messages = (int)m_messages.size() + Num_builtin_messages;
+	Num_messages = static_cast<int>(m_messages.size()) + Num_builtin_messages;
 	Messages.resize(Num_messages);
-	for (int i = 0; i < (int)m_messages.size(); i++)
+	for (int i = 0; i < static_cast<int>(m_messages.size()); i++)
 		Messages[i + Num_builtin_messages] = m_messages[i];
 
 	applyAnnotations();
@@ -99,7 +99,7 @@ void MissionEventsDialogModel::initializeEvents()
 	m_events.clear();
 	m_sig.clear();
 	m_cur_event = -1;
-	for (auto i = 0; i < (int)Mission_events.size(); i++) {
+	for (auto i = 0; i < static_cast<int>(Mission_events.size()); i++) {
 		m_events.push_back(Mission_events[i]);
 		m_sig.push_back(i);
 
@@ -142,7 +142,7 @@ void MissionEventsDialogModel::initializeEvents()
 
 int MissionEventsDialogModel::findFormulaByOriginalEventIndex(int orig) const
 {
-	for (int cur = 0; cur < (int)m_sig.size(); ++cur)
+	for (int cur = 0; cur < static_cast<int>(m_sig.size()); ++cur)
 		if (m_sig[cur] == orig)
 			return m_events[cur].formula;
 	return -1;
@@ -422,7 +422,7 @@ bool MissionEventsDialogModel::checkMessageNameConflict(const SCP_string& name)
 	}
 
 	// Validate against existing messages
-	for (auto i = 0; i < (int)m_messages.size(); i++) {
+	for (auto i = 0; i < static_cast<int>(m_messages.size()); i++) {
 		if ((i != m_cur_msg) && (!stricmp(name.c_str(), m_messages[i].name))) {
 			_viewport->dialogProvider->showButtonDialog(DialogType::Warning,
 				"Invalid Message Name",
@@ -479,7 +479,7 @@ void MissionEventsDialogModel::setCurrentlySelectedEvent(int event)
 
 void MissionEventsDialogModel::setCurrentlySelectedEventByFormula(int formula)
 {
-	for (auto i = 0; i < (int)m_events.size(); i++) {
+	for (auto i = 0; i < static_cast<int>(m_events.size()); i++) {
 		if (m_events[i].formula == formula) {
 			setCurrentlySelectedEvent(i);
 			return;
@@ -547,7 +547,7 @@ void MissionEventsDialogModel::changeRootNodeFormula(int old, int node)
 void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& newOrderedFormulas)
 {
 	// Basic sanity: must be a 1:1 permutation of current roots
-	if ((int)newOrderedFormulas.size() != (int)m_events.size())
+	if (newOrderedFormulas.size() != m_events.size())
 		return;
 
 	// Build the permuted arrays (O(n^2) is fine for event counts)
@@ -558,7 +558,7 @@ void MissionEventsDialogModel::reorderByRootFormulaOrder(const SCP_vector<int>& 
 
 	for (int formula : newOrderedFormulas) {
 		int oldIdx = -1;
-		for (int i = 0; i < (int)m_events.size(); ++i) {
+		for (int i = 0; i < static_cast<int>(m_events.size()); ++i) {
 			if (m_events[i].formula == formula) {
 				oldIdx = i;
 				break;
@@ -1100,7 +1100,7 @@ void MissionEventsDialogModel::createMessage()
 	msg.persona_index = -1;
 	msg.multi_team = -1;
 	m_messages.push_back(msg);
-	auto id = (int)m_messages.size() - 1;
+	auto id = static_cast<int>(m_messages.size()) - 1;
 
 	setCurrentlySelectedMessage(id);
 
@@ -1184,7 +1184,7 @@ void MissionEventsDialogModel::moveMessageUp()
 
 void MissionEventsDialogModel::moveMessageDown()
 {
-	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg >= (int)m_messages.size() - 1)
+	if (!SCP_vector_inbounds(m_messages, m_cur_msg) || m_cur_msg >= static_cast<int>(m_messages.size()) - 1)
 		return;
 
 	std::swap(m_messages[m_cur_msg + 1], m_messages[m_cur_msg]);
@@ -1419,7 +1419,7 @@ void MissionEventsDialogModel::autoSelectPersona()
 
 	if ((wave_name[0] >= '1') && (wave_name[0] <= '9') && (wave_name[1] == '_')) {
 		auto i = wave_name[0] - '1';
-		if ((i < (int)Personas.size()) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
+		if ((i < static_cast<int>(Personas.size())) && (Personas[i].flags & PERSONA_FLAG_WINGMAN)) {
 			modify(m_messages[m_cur_msg].persona_index, i);
 			if (i == 0 || i == 1) {
 				avi_name = "HEAD-TP1";
@@ -1444,7 +1444,7 @@ void MissionEventsDialogModel::autoSelectPersona()
 			avi_name = "HEAD-CM1";
 		}
 
-		for (auto i = 0; i < (int)Personas.size(); i++) {
+		for (auto i = 0; i < (static_cast<int>(Personas.size()); i++) {
 			if (Personas[i].flags & mask) {
 				modify(m_messages[m_cur_msg].persona_index, i);
 			}

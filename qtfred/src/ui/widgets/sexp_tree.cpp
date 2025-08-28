@@ -7230,7 +7230,7 @@ void sexp_tree::editDataActionHandler() {
 QStringList sexp_tree::validOperatorsForNode(int nodeIndex)
 {
 	QStringList out;
-	if (nodeIndex < 0 || nodeIndex >= (int)tree_nodes.size())
+	if (nodeIndex < 0 || nodeIndex >= static_cast<int>(tree_nodes.size()))
 		return out;
 
 	const int parent = tree_nodes[nodeIndex].parent;
@@ -7315,7 +7315,7 @@ void sexp_tree::startOperatorQuickSearch(QTreeWidgetItem* item, const QString& s
 	int nodeIdx = -1;
 	for (uint i = 0; i < tree_nodes.size(); ++i) {
 		if (tree_nodes[i].handle == item) {
-			nodeIdx = (int)i;
+			nodeIdx = static_cast<int>(i);
 			break;
 		}
 	}
@@ -7459,7 +7459,7 @@ void sexp_tree::endOperatorQuickSearch(bool confirm)
 	_opNodeIndex = -1;
 
 	// Commit operator if we resolved one
-	if (confirm && !chosenOp.isEmpty() && node >= 0 && node < (int)tree_nodes.size()) {
+	if (confirm && !chosenOp.isEmpty() && node >= 0 && node < static_cast<int>(tree_nodes.size())) {
 		setCurrentItemIndex(node);
 		const int op_num = get_operator_index(chosenOp.toUtf8().constData());
 		if (op_num >= 0) {

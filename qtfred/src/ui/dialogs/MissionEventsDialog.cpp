@@ -642,7 +642,7 @@ void MissionEventsDialog::on_eventUpBtn_clicked()
 	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx - 1);
 	ui->eventTree->move_root(cur, dest, /*insert_before=*/true); // visual move + modified()
 
-	// Keep model in sync with the new root order
+	// Keep model in sync with the new root order TODO remove/add this pending sexp_tree widget refactor
 	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
 
 	// Ensure it stays selected and visible
@@ -664,6 +664,7 @@ void MissionEventsDialog::on_eventDownBtn_clicked()
 	QTreeWidgetItem* dest = ui->eventTree->topLevelItem(idx + 1);
 	ui->eventTree->move_root(cur, dest, /*insert_before=*/false); // visual move + modified()
 
+	// Keep model in sync with the new root order TODO remove/add this pending sexp_tree widget refactor
 	//_model->reorderByRootFormulaOrder(read_root_formula_order(ui->eventTree));
 
 	ui->eventTree->setCurrentItem(cur);
