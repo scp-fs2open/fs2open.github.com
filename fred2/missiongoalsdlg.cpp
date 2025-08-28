@@ -436,6 +436,7 @@ void CMissionGoalsDlg::OnChangeGoalDesc()
 	}
 
 	UpdateData(TRUE);
+	lcl_fred_replace_stuff(m_goal_desc);
 	string_copy(m_goals[cur_goal].message, m_goal_desc);
 }
 

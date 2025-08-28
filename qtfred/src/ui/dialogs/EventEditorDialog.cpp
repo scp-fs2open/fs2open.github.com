@@ -130,6 +130,7 @@ void EventEditorDialog::initEventWidgets() {
 			return;
 		}
 		m_events[cur_event].objective_text = value.toUtf8().constData();
+		lcl_fred_replace_stuff(m_events[cur_event].objective_text);
 
 		updateEventBitmap();
 	});
@@ -138,6 +139,7 @@ void EventEditorDialog::initEventWidgets() {
 			return;
 		}
 		m_events[cur_event].objective_key_text = value.toUtf8().constData();
+		lcl_fred_replace_stuff(m_events[cur_event].objective_key_text);
 	});
 	connectLogState(ui->checkLogTrue, MLF_SEXP_TRUE);
 	connectLogState(ui->checkLogFalse, MLF_SEXP_FALSE);

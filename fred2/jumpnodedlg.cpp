@@ -303,7 +303,9 @@ int jumpnode_dlg::update_data()
 			m_name = _T(jnp->GetName());
 			UpdateData(FALSE);
 		}
-		
+
+		lcl_fred_replace_stuff(m_display);
+
 		strcpy_s(old_name, jnp->GetName());
 		jnp->SetName((LPCSTR) m_name);
 		jnp->SetDisplayName((m_display.CompareNoCase("<none>") == 0) ? m_name : m_display);

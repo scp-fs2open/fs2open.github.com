@@ -1,3 +1,4 @@
+#include <localization/localize.h>
 #include "MissionGoalsDialogModel.h"
 
 
@@ -167,6 +168,7 @@ mission_goal& MissionGoalsDialogModel::createNewGoal() {
 void MissionGoalsDialogModel::setCurrentGoalMessage(const char* text) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 	getCurrentGoal().message = text;
+	lcl_fred_replace_stuff(getCurrentGoal().message);
 
 	set_modified();
 	modelChanged();

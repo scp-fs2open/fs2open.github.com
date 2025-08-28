@@ -599,6 +599,7 @@ void initial_status::change_subsys()
 
 		// update cargo name
 		if (strlen(m_cargo_name) > 0) { //-V805
+			lcl_fred_replace_stuff(m_cargo_name);
 			cargo_index = string_lookup(m_cargo_name, Cargo_names, Num_cargo);
 			if (cargo_index == -1) {
 				if (Num_cargo < MAX_CARGO);
