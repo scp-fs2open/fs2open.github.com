@@ -3538,12 +3538,22 @@ int CFred_mission_save::save_objects()
 
 		// optional alternate type name
 		if (strlen(Fred_alt_names[i])) {
-			fout("\n$Alt: %s\n", Fred_alt_names[i]);
+			if (optional_string_fred("$Alt:", "$Team:")) {
+				parse_comments();
+			} else {
+				fout("\n$Alt:");
+			}
+			fout(" %s", Fred_alt_names[i]);
 		}
 
 		// optional callsign
 		if (save_format != MissionFormat::RETAIL && strlen(Fred_callsigns[i])) {
-			fout("\n$Callsign: %s\n", Fred_callsigns[i]);
+			if (optional_string_fred("$Callsign:", "$Team:")) {
+				parse_comments();
+			} else {
+				fout("\n$Callsign:");
+			}
+			fout(" %s", Fred_callsigns[i]);
 		}
 
 		required_string_fred("$Team:");
