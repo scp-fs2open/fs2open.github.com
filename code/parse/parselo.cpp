@@ -960,7 +960,7 @@ char* alloc_text_until(const char* instr, const char* endstr)
 
 	if(foundstr == NULL)
 	{
-        Error(LOCATION, "Missing [%s] in file", endstr);
+        error_display(1, "Looking for [%s], but never found it.\n", endstr);
         throw parse::ParseException("End string not found");
 	}
 	else
@@ -994,7 +994,7 @@ void copy_text_until(char *outstr, const char *instr, const char *endstr, int ma
 	auto foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        error_display(1, "Looking for [%s], but never found it.\n", endstr);
         throw parse::ParseException("End string not found");
 	}
 
@@ -1003,9 +1003,8 @@ void copy_text_until(char *outstr, const char *instr, const char *endstr, int ma
 		outstr[foundstr - instr] = 0;
 
 	} else {
-		nprintf(("Error", "Error.  Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
-			foundstr - instr + strlen(endstr), max_chars, endstr));
-
+		error_display(1, "Too much text (" SIZE_T_ARG " chars, %i allowed) before %s\n",
+			foundstr - instr + strlen(endstr), max_chars, endstr);
         throw parse::ParseException("Too much text found");
 	}
 
@@ -1020,7 +1019,7 @@ void copy_text_until(SCP_string &outstr, const char *instr, const char *endstr)
 	auto foundstr = stristr(instr, endstr);
 
 	if (foundstr == NULL) {
-        nprintf(("Error", "Error.  Looking for [%s], but never found it.\n", endstr));
+        error_display(1, "Looking for [%s], but never found it.\n", endstr);
         throw parse::ParseException("End string not found");
 	}
 
@@ -1117,7 +1116,7 @@ char* alloc_block(const char* startstr, const char* endstr, int extra_chars)
 	//Check that we left the file
 	if(level > 0)
 	{
-        Error(LOCATION, "Unclosed pair of \"%s\" and \"%s\" on line %d in file", startstr, endstr, get_line_num());
+        error_display(1, "Unclosed pair of \"%s\" and \"%s\"", startstr, endstr);
         throw parse::ParseException("End string not found");
 	}
 	else
