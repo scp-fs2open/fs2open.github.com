@@ -2,7 +2,7 @@
 #define ES_COMPATIBILITY_H
 #ifdef USE_OPENGL_ES
 #include <glad/glad.h>
-#include <khr/khrplatform.h>
+#include <KHR/khrplatform.h>
 
 //Stubs Enums
 #define GLAD_GL_ARB_draw_buffers_blend		    1
