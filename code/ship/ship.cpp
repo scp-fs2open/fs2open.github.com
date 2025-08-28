@@ -14470,6 +14470,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 					shipp->weapon_energy -= wip->energy_consumed;
 				}
+
+				if (wip->wi_flags[Weapon::Info_Flags::Apply_Recoil]) {
+					float recoil_force = (wip->mass * wip->max_speed * wip->recoil_modifier * sip->ship_recoil_modifier);
+
+					vec3d impulse = firing_orient.vec.fvec * -recoil_force;
+
+					ship_apply_whack(&impulse, &firing_pos, obj);
+				}
 			}
 		}
 	}
