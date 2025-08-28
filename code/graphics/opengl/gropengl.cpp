@@ -1384,6 +1384,10 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	#endif
 	mprintf(("\n"));
 
+	#ifdef USE_OPENGL_ES
+	glEnable(GL_CLIP_DISTANCE0);
+	#endif
+
 	// Build a string identifier for this OpenGL implementation
 	GL_implementation_id.clear();
 	GL_implementation_id += reinterpret_cast<const char*>(glGetString(GL_VENDOR));
