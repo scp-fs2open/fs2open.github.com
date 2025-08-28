@@ -186,6 +186,7 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	char buf[CFILE_ROOT_DIRECTORY_LEN];
 
 	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 
 	// are we in a root directory?		
