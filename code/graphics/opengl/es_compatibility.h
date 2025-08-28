@@ -1,31 +1,38 @@
 ﻿#ifndef ES_COMPATIBILITY_H
 #define ES_COMPATIBILITY_H
 #ifdef USE_OPENGL_ES
+#include <vector>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
+//TODO: 
+//-Message:GL_INVALID_OPERATION in glBlitFramebuffer(source and destination color buffer cannot be the same), this may not be easy to handle
+//-IMGUI crashes on windows + opengl es
+//-gr_opengl_query_value_available() returning INVALID_OPERATION, no idea.
+//-limited color attachments to 4 in not a good way
+//-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE
 
-//Stubs Enums
+//Stubs Enums, this does not exist on GLES and need to be handled
 #define GLAD_GL_ARB_draw_buffers_blend		    1
 #define GL_MAP_PERSISTENT_BIT				    0x0040
 #define GLAD_GL_ARB_vertex_attrib_binding	    0
 #define GL_COMPRESSED_RGBA_BPTC_UNORM_ARB	    0x8E8C
-#define GL_PROXY_TEXTURE_2D					    GL_TEXTURE_2D // Huge NOPE, needs an alternative way to reeplace proxy
-#define GL_TEXTURE_COMPRESSED_IMAGE_SIZE	    0x86A0 // another nope, just compile fix
+#define GL_PROXY_TEXTURE_2D					    GL_TEXTURE_2D // needs an alternative way to reeplace proxy
+#define GL_TEXTURE_COMPRESSED_IMAGE_SIZE	    0x86A0 // just compile fix
 #define GL_FILL                                 0x1B02
 #define GL_LINE                                 0x1B01
 #define GL_POINT                                0x1B00
 #define GLAD_GL_ARB_timer_query                 1
 #define GL_DOUBLE                               0x140A
 #define GL_TIMESTAMP							1
+#define GL_UNSIGNED_SHORT_1_5_5_5_REV			0x1CCC
+#define GL_UNSIGNED_INT_8_8_8_8_REV				0xBAAA
+#define GL_BGR									0x2CCA
 
 //Enums
 #define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance
-#define GL_UNSIGNED_INT_8_8_8_8_REV				GL_UNSIGNED_BYTE
 #define GL_BGRA									GL_BGRA_EXT // Depends on GL_EXT_texture_format_BGRA8888
 #define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
-#define GL_UNSIGNED_SHORT_1_5_5_5_REV			GL_UNSIGNED_SHORT_5_5_5_1 // Not great changes alpha bit position, may need to convert it
 #define GL_RGB5									GL_RGB5_A1 // has extra alpha bit, not sure if it going to work
-#define GL_BGR									GL_BGRA_EXT // only if BGRA8 and depends on GL_EXT_texture_format_BGRA8888
 #define GLAD_GL_ARB_texture_storage				1 // Part of 3.2
 #define GLAD_GL_ARB_texture_compression_bptc    GL_EXT_texture_compression_bptc
 #define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5
@@ -44,27 +51,111 @@
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define glDepthRange                    glDepthRangef
 
-static inline void glTexImage3D(GLenum target,GLint level,GLint internalFormat,GLsizei width,GLsizei height,GLsizei depth,GLint border,GLenum format,GLenum type,const void* data)
+// Bring internalFormat info for glTexSubImage3D calls
+static inline GLint query_internalformat_3d(GLenum target, GLint level)
 {
-	// stub, we likely need to do some conversion here
-	glTexImage3D_glad(target, level, internalFormat, width, height, depth, border, format, type, data);
+	GLint ifmt = 0;
+	glGetTexLevelParameteriv(target, level, GL_TEXTURE_INTERNAL_FORMAT, &ifmt);
+	return ifmt;
+}
+
+// BGRA 1_5_5_5_REV -> RGBA 5_5_5_1
+static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* src, uint16_t* dst, size_t npx)
+{
+	for (size_t i = 0; i < npx; i++) {
+		const uint16_t s = src[i];
+		uint16_t a = (s >> 15) & 0x1;
+		uint16_t r = (s >> 10) & 0x1F;
+		uint16_t g = (s >> 5) & 0x1F;
+		uint16_t b = (s >> 0) & 0x1F;
+		dst[i] = static_cast<uint16_t>((r << 11) | (g << 6) | (b << 1) | a);
+	}
+}
+
+// BGRA1555_REV -> RGBA8888
+static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* src, uint8_t* dstRGBA8, size_t npx)
+{
+	for (size_t i = 0; i < npx; ++i) {
+		uint16_t s = src[i];
+		uint8_t A = (s >> 15) ? 255 : 0;
+		uint8_t R5 = (s >> 10) & 0x1F;
+		uint8_t G5 = (s >> 5) & 0x1F;
+		uint8_t B5 = s & 0x1F;
+		// expand 5 to 8 bits: (v<<3)|(v>>2)
+		uint8_t R = (R5 << 3) | (R5 >> 2);
+		uint8_t G = (G5 << 3) | (G5 >> 2);
+		uint8_t B = (B5 << 3) | (B5 >> 2);
+		size_t o = 4 * i;
+		dstRGBA8[o + 0] = R;
+		dstRGBA8[o + 1] = G;
+		dstRGBA8[o + 2] = B;
+		dstRGBA8[o + 3] = A;
+	}
+}
+
+// BGR -> RGB
+static inline void convert_BGR_to_RGB(uint8_t* p, size_t npx)
+{
+	for (size_t i = 0; i < npx; ++i) {
+		uint8_t* px = p + 3 * i;
+		uint8_t tmp = px[0]; // <- B
+		px[0] = px[2];		 // R -> B
+		px[2] = tmp;		 // B -> R
+	}
 }
 
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
-	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_5_5_5_1) {
-		format = GL_RGBA;
+	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) {
+		GLint internalFormat = query_internalformat_3d(target,level);
+		const size_t npx = size_t(w) * size_t(h);
+		if (internalFormat != GL_RGBA8)
+		{
+			format = GL_RGBA;
+			type = GL_UNSIGNED_SHORT_5_5_5_1;
+			if (data != nullptr) {
+				std::vector<uint8_t> scratch(npx * 2);
+				convert_BGRA1555_REV_to_RGBA5551(reinterpret_cast<const uint16_t*>(data),reinterpret_cast<uint16_t*>(scratch.data()),npx);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			}
+		} else {
+			format = GL_RGBA;
+			type = GL_UNSIGNED_BYTE;
+			if (data != nullptr) {
+				std::vector<uint8_t> scratch(npx * 4);
+				convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			} 
+			
+		}
 	}
 
-	if (format == GL_BGRA && type == GL_UNSIGNED_BYTE) {
+	if (format == GL_BGR && type == GL_UNSIGNED_BYTE) {
 		format = GL_RGB;
+		if (data != nullptr)
+		{
+			std::vector<uint8_t> scratch(w * h * 3);
+			memcpy(scratch.data(), data, scratch.size());
+			convert_BGR_to_RGB(scratch.data(), (size_t)w * (size_t)h);
+			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+			return;
+		}
+	}
+
+	if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) {
+		// will need converting too if device dosent support GL_BGRA_EXT
+		type = GL_UNSIGNED_BYTE;
 	}
 
 	glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, data);
 }
 
 static inline void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data)
-{
+{ 
 	if (internalformat == GL_RGBA16F) {
 		glTexImage2D_glad(target, level, internalformat, width, height, border, GL_RGBA, GL_HALF_FLOAT, data);
 	} else if (internalformat == GL_RGBA8) {
@@ -76,9 +167,10 @@ static inline void glTexImage2D(GLenum target, GLint level, GLint internalformat
 	}
 }
 
-
 inline void glDrawBuffer(GLenum data)
 {
+	if (data >= GL_COLOR_ATTACHMENT4)
+		return; //limit color attachments to 4
 	const GLenum buffer[] = { data };
 	glDrawBuffers(1, buffer);
 }
@@ -89,16 +181,17 @@ inline void glDrawBuffer(GLenum data)
 // glPolygonMode() is not supported on ES,  no wireframe, GL_FILL is default, GL_POINTS, and GL_LINES needs an alternative path
 #define glPolygonMode(face, mode) ((void)0)
 
-// glGetCompressedTexImage not present on GLES, stub
-static inline void glGetCompressedTexImage(GLenum /*target*/, GLint /*level*/, void* /*img*/) 
+// No support for this on ES, it is used for profiling?
+static inline void glQueryCounter(GLuint /*id*/, GLenum /*target*/) 
 {
-	
 }
 
-// does not exist, needs an alternative path, stub
-inline void glGetTexImage(GLenum, GLint, GLenum, GLenum, void*) 
-{
+// glGetCompressedTexImage not present on GLES and no equivalent
+#define glGetCompressedTexImage(target, level, pixels) ((void)0)
 
+// does not exist, needs an alternative path, stub
+inline void glGetTexImage(GLenum /*target*/, GLint /*level*/, GLenum /*format*/, GLenum /*type*/, void* /*pixels*/)
+{
 }
 
 // Convert the call to glMapBufferRange, Untested
@@ -126,12 +219,6 @@ inline void* glMapBuffer(GLenum target, GLenum access)
 	if (bufSize <= 0) return nullptr;
 
 	return glMapBufferRange(target, 0, bufSize, flags);
-}
-
-// No support for this on ES, it is used for profiling?
-inline void glQueryCounter(GLuint id, GLenum target)
-{
-
 }
 
 // Debug Enums
