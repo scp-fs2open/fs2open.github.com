@@ -461,7 +461,7 @@ public:
 
 	flagset<Mission::Parse_Object_Flags>	flags;								// mission savable flags
 	int	escort_priority = 0;					// priority in escort list
-	int ship_guardian_threshold;
+	int ship_guardian_threshold = 0;
 	int	ai_class = -1;
 	int	hotkey = -1;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score = 0;
