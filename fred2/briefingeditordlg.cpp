@@ -467,6 +467,7 @@ void briefing_editor_dlg::update_data(int update)
 			ptr->icons[m_last_icon].id = m_id;
 
 			string_copy(buf, m_icon_label, MAX_LABEL_LEN - 1);
+			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);
@@ -476,6 +477,7 @@ void briefing_editor_dlg::update_data(int update)
 			strcpy_s(ptr->icons[m_last_icon].label, buf);
 
 			string_copy(buf, m_icon_closeup_label, MAX_LABEL_LEN - 1);
+			lcl_fred_replace_stuff(buf, MAX_LABEL_LEN - 1);
 			if (stricmp(ptr->icons[m_last_icon].closeup_label, buf) && !m_change_local) {
 				set_modified();
 				reset_icon_loop(m_last_stage);

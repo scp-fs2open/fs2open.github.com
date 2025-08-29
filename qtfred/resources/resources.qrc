@@ -1,5 +1,7 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/arrow_down.png</file>
+    <file>images/arrow_up.png</file>
     <file>images/next.bmp</file>
     <file>images/play.bmp</file>
     <file>images/prev.bmp</file>
@@ -9,6 +11,7 @@
     <file>images/bmp00001.png</file>
     <file>images/chained.png</file>
     <file>images/chained_directive.png</file>
+    <file>images/comment.png</file>
     <file>images/constx.png</file>
     <file>images/constxy.png</file>
     <file>images/constxz.png</file>

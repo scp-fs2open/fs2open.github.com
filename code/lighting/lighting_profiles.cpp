@@ -385,6 +385,11 @@ void profile::parse(const char* filename, const SCP_string& profile_name, const 
 			profile_name,
 			&cockpit_light_radius_modifier);
 
+		parsed |= adjustment::parse(filename,
+			"$Cockpit light intensity modifier:",
+			profile_name,
+			&cockpit_light_intensity_modifier);
+
 		if (!parsed) {
 			stuff_string(buffer, F_RAW);
 			Warning(LOCATION, "Unhandled line in lighting profile\n\t%s", buffer.c_str());
@@ -445,6 +450,8 @@ void profile::reset()
 
 	cockpit_light_radius_modifier.reset();
 	cockpit_light_radius_modifier.set_multiplier(1.0f);
+	cockpit_light_intensity_modifier.reset();
+	cockpit_light_intensity_modifier.set_multiplier(1.0f);
 }
 
 profile& profile::operator=(const profile& rhs) = default;

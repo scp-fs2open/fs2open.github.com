@@ -14,6 +14,7 @@
 #include "mission/missionmessage.h"
 
 #include <globalincs/linklist.h>
+#include <localization/localize.h>
 #include <mission/object.h>
 
 #include <QtWidgets>
@@ -637,6 +638,8 @@ namespace fso {
 				int z, d;
 				SCP_string str;
 
+				lcl_fred_replace_stuff(_m_ship_display_name);
+
 				// the display name was precalculated, so now just assign it
 				if (_m_ship_display_name == _m_ship_name || stricmp(_m_ship_display_name.c_str(), "<none>") == 0)
 				{
@@ -675,6 +678,7 @@ namespace fso {
 					Ships[ship].weapons.ai_class = _m_ai_class;
 				}
 				if (!_m_cargo1.empty()) {
+					lcl_fred_replace_stuff(_m_cargo1);
 					z = string_lookup(_m_cargo1.c_str(), Cargo_names, Num_cargo);
 					if (z == -1) {
 						if (Num_cargo < MAX_CARGO) {

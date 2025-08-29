@@ -3,6 +3,7 @@
 #include "mission/object.h"
 
 #include <globalincs/linklist.h>
+#include <localization/localize.h>
 
 #include <QtWidgets>
 #include <object/objectdock.cpp>
@@ -795,6 +796,7 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 
 		// update cargo name
 		if (!m_cargo_name.empty()) { //-V805
+			lcl_fred_replace_stuff(m_cargo_name);
 			cargo_index = string_lookup(m_cargo_name.c_str(), Cargo_names, Num_cargo);
 			if (cargo_index == -1) {
 				if (Num_cargo < MAX_CARGO) {

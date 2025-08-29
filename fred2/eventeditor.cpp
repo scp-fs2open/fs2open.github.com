@@ -911,6 +911,8 @@ void event_editor::save_event(int e)
 	}
 
 	// handle objective text
+	lcl_fred_replace_stuff(m_obj_text);
+	lcl_fred_replace_stuff(m_obj_key_text);
 	m_events[e].objective_text = (LPCTSTR)m_obj_text;
 	m_events[e].objective_key_text = (LPCTSTR)m_obj_key_text;
 
