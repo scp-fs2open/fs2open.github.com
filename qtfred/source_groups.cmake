@@ -42,6 +42,8 @@ add_file_folder("Source/Mission/Dialogs"
     src/mission/dialogs/AbstractDialogModel.h
 	src/mission/dialogs/AsteroidEditorDialogModel.cpp
 	src/mission/dialogs/AsteroidEditorDialogModel.h
+	src/mission/dialogs/BackgroundEditorDialogModel.h
+	src/mission/dialogs/BackgroundEditorDialogModel.cpp
 	src/mission/dialogs/CampaignEditorDialogModel.cpp
 	src/mission/dialogs/CampaignEditorDialogModel.h
 	src/mission/dialogs/CommandBriefingDialogModel.cpp
