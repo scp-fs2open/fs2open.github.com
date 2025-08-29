@@ -34,11 +34,11 @@
 #define GL_DEPTH_COMPONENT32					GL_DEPTH_COMPONENT24
 #define GL_RGB5									GL_RGB5_A1 // has extra alpha bit, not sure if it going to work
 #define GLAD_GL_ARB_texture_storage				1 // Part of 3.2
-#define GLAD_GL_ARB_texture_compression_bptc    GL_EXT_texture_compression_bptc
+#define GLAD_GL_ARB_texture_compression_bptc	GLAD_GL_EXT_texture_compression_bptc
 #define GL_ARB_gpu_shader5						GL_EXT_gpu_shader5
-#define GLAD_GL_ARB_gpu_shader5				    GL_EXT_gpu_shader5
-#define GLAD_GL_ARB_get_program_binary		    GL_OES_get_program_binary
-#define GLAD_GL_ARB_buffer_storage			    GL_EXT_buffer_storage
+#define GLAD_GL_ARB_gpu_shader5					GLAD_GL_EXT_gpu_shader5
+#define GLAD_GL_ARB_get_program_binary			GLAD_GL_OES_get_program_binary
+#define GLAD_GL_ARB_buffer_storage				GLAD_GL_EXT_buffer_storage
 
 //Functions
 #define glBlendFunciARB					glBlendFunci
@@ -104,6 +104,21 @@ static inline void convert_BGR_to_RGB(uint8_t* p, size_t npx)
 	}
 }
 
+// BGRA 8888 -> RGBA 8888
+static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* src, uint8_t* dst, size_t npx)
+{
+	for (size_t i = 0; i < npx; i++) {
+		const uint8_t b = src[4 * i + 0];
+		const uint8_t g = src[4 * i + 1];
+		const uint8_t r = src[4 * i + 2];
+		const uint8_t a = src[4 * i + 3];
+		dst[4 * i + 0] = r;
+		dst[4 * i + 1] = g;
+		dst[4 * i + 2] = b;
+		dst[4 * i + 3] = a;
+	}
+}
+
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
 	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) {
@@ -146,9 +161,15 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 		}
 	}
 
-	if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) {
-		// will need converting too if device dosent support GL_BGRA_EXT
+	if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) { 
 		type = GL_UNSIGNED_BYTE;
+		if (data != nullptr /* && !GLAD_GL_EXT_texture_format_BGRA8888 //this check dosent work*/) {
+			// do conversion
+			const size_t npx = size_t(w) * size_t(h);
+			std::vector<uint8_t> scratch(npx * 4);
+			convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
+			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
+		}
 	}
 
 	glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, data);
