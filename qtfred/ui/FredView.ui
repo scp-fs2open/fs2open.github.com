@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -185,6 +185,7 @@
     <addaction name="separator"/>
     <addaction name="actionBackground"/>
     <addaction name="actionAsteroid_Field"/>
+    <addaction name="actionVolumetric_Nebula"/>
     <addaction name="separator"/>
     <addaction name="actionReinforcements"/>
     <addaction name="actionShield_System"/>
@@ -1544,6 +1545,11 @@
   <action name="actionMusic_Player">
    <property name="text">
     <string>Music Player</string>
+   </property>
+  </action>
+  <action name="actionVolumetric_Nebula">
+   <property name="text">
+    <string>Volumetric Nebula</string>
    </property>
   </action>
  </widget>

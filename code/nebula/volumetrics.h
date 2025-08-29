@@ -9,6 +9,9 @@
 namespace fso {
 	namespace fred {
 		class CFred_mission_save;
+		namespace dialogs {
+			class VolumetricNebulaDialogModel;
+		}
 	}
 }
 
@@ -87,7 +90,9 @@ class volumetric_nebula {
 	friend class CFred_mission_save; //FRED
 	friend class volumetrics_dlg; //FRED
 	friend class fso::fred::CFred_mission_save; //QtFRED
-public:
+	friend class fso::fred::dialogs::VolumetricNebulaDialogModel; // QtFRED
+
+  public:
 	volumetric_nebula();
 	~volumetric_nebula();
 
