@@ -22,21 +22,12 @@ ENDIF(MSVC60)
 # For android, build a library not a executable
 if (ANDROID)
     add_library(Freespace2 SHARED ${FREESPACE_SRC})
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     target_compile_definitions(Freespace2 PRIVATE PLATFORM_ANDROID)
-
-    # SDL2
-    find_package(SDL2 REQUIRED CONFIG PATHS ${SDL2_DIR} NO_DEFAULT_PATH)
-    target_link_libraries(Freespace2 PRIVATE SDL2::SDL2)
-
+    
     # NDK base libs
     find_library(log-lib log)
     find_library(android-lib android)
     target_link_libraries(Freespace2 PRIVATE ${log-lib} ${android-lib})
-    
-    # IMGUI needs to link against OpenGL ES 3
-    find_library(GLESv3_LIB GLESv3)
-    target_link_libraries(Freespace2 PRIVATE ${GLESv3_LIB})
 else()
     add_executable(Freespace2 ${EXE_GUI_TYPE} ${FREESPACE_SRC})
 endif()
@@ -54,7 +45,6 @@ if (ANDROID)
 		code
 		platform
 		compiler
-		${SDL2_LIBS}
 		${ANDROID_LIBS}
 	)
 else()
