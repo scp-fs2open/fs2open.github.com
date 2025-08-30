@@ -107,7 +107,7 @@ ELSE(WIN32)
 	
             	add_target_copy_files("${${name}_LIBS}")
             else()
-            	# Ugly workaround because the ffmpeg libs compiled for android were not detected by the code abode
+            	# workaround because the ffmpeg libs compiled for android were not detected by the code abode
 				file(GLOB ${name}_LIBS "${FFMPEG_PATH}/lib/lib${name}*")
 				
 				if(${name}_LIBS)
