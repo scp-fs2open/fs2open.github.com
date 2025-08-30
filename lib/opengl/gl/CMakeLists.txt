@@ -34,8 +34,20 @@ if (WIN32)
 	suppress_warnings(glad_wgl)
 	
 	# On Windows we need WGL which requires the OpenGL libraries
-	find_package(OpenGL)
-	target_link_libraries(glad_wgl PUBLIC "${OPENGL_LIBRARIES}")
+	if(NOT FSO_BUILD_WITH_OPENGL_ES)
+		find_package(OpenGL)
+		target_link_libraries(glad_wgl PUBLIC "${OPENGL_LIBRARIES}")
+	else()
+		# If we are building OpenGL ES, WGL need to be linked to Glad, not Glad ES
+			add_library(glad STATIC
+			"glad/include/glad/glad.h"
+			"glad/include/KHR/khrplatform.h"
+			"glad/src/glad.c")
+		target_include_directories(glad SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad/include")
+		set_target_properties(glad PROPERTIES FOLDER "3rdparty")
+		suppress_warnings(glad)
+		target_link_libraries(glad_wgl PUBLIC glad)
+	endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 	add_library(glad_glx STATIC
 			"glad_glx/include/glad/glad_glx.h"
