@@ -38,6 +38,14 @@ set_target_properties(imgui PROPERTIES FOLDER "3rdparty")
 TARGET_LINK_LIBRARIES(imgui PUBLIC sdl2)
 target_link_libraries(imgui PUBLIC compiler)
 
+if(FSO_BUILD_WITH_OPENGL_ES)
+    # IMGUI needs to link against OpenGL ES 3
+    if(ANDROID)
+    	find_library(GLESv3_LIB GLESv3)
+    	target_link_libraries(imgui PRIVATE ${GLESv3_LIB})
+    endif()
+endif()
+
 if (FSO_BUILD_WITH_VULKAN)
 	find_package(Vulkan REQUIRED)
     target_compile_definitions(imgui INTERFACE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1 VK_NO_PROTOTYPES)

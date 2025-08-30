@@ -49,18 +49,12 @@ PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
 if (ANDROID)
     message(STATUS "Building for Android (NDK)")
-    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
     add_definitions(-DPLATFORM_ANDROID)
 	set(FSO_BUILD_INCLUDED_LIBS ON FORCE)
 	set(USING_PREBUILT_LIBS ON FORCE)
 	set(FSO_BUILD_WITH_OPENGL_ES ON)
-	
-	#temporary, i could not get it to work in any other way
-	set(SDL2_ROOT "${FSO_PREBUILT_OVERRIDE}/sdl2")
-    set(SDL2_DIR "${SDL2_ROOT}/lib/cmake/SDL2")
-	set(SDL2_INCLUDE_DIR "${SDL2_ROOT}/include/SDL2")
-    find_package(SDL2 REQUIRED PATHS ${SDL2_ROOT} NO_DEFAULT_PATH)
-    target_include_directories(SDL2::SDL2 INTERFACE ${SDL2_INCLUDE_DIR})
+	set(SDL2_USE_PRECOMPILED ON FORCE)
+	set(OPENAL_USE_PRECOMPILED ON FORCE)
 endif()
 
 # Check if the external modules exists
