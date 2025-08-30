@@ -1,7 +1,6 @@
 #ifndef SHIPDEDITORDIALOG_H
 #define SHIPDEDITORDIALOG_H
 
-#include "PlayerOrdersDialog.h"
 #include "ShipCustomWarpDialog.h"
 #include "ShipFlagsDialog.h"
 #include "ShipGoalsDialog.h"
@@ -11,8 +10,6 @@
 #include "ShipTBLViewer.h"
 #include "ShipTextureReplacementDialog.h"
 #include "ShipWeaponsDialog.h"
-#include "ShipPathsDialog.h"
-#include "ShipCustomWarpDialog.h"
 #include "ShipAltShipClass.h"
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>

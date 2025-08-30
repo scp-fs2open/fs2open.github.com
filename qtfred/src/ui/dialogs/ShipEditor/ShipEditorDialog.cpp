@@ -10,6 +10,7 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <ui/dialogs/General/CheckBoxListDialog.h>
 
 namespace fso::fred::dialogs {
 
@@ -626,9 +627,33 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	// auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
+	// dialog->setAttribute(Qt::WA_DeleteOnClose);
+	// dialog->show();
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Player Orders Accepted");
+	// Get our flag list and convert it to Qt's internal types
+	auto wingFlags = _model->getAcceptedOrders();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+
+	for (const auto& flag : wingFlags) {
+		checkbox_list.append({flag.first.c_str(), flag.second});
+	}
+	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedFlags;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8().constData();
+			updatedFlags.emplace_back(name, returned_values[i]);
+		}
+
+		_model->setAcceptedOrders(updatedFlags);
+	}
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
@@ -746,7 +771,8 @@ void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
 {
 	_model->setPlayer(value);
 }
-void ShipEditorDialog::on_respawnSpinBox_valueChanged(int value) {
+void ShipEditorDialog::on_respawnSpinBox_valueChanged(int value)
+{
 	_model->setRespawn(value);
 }
 void ShipEditorDialog::on_arrivalLocationCombo_currentIndexChanged(int index)

@@ -73,6 +73,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	int respawn_priority;
 
+	std::vector<std::pair<SCP_string, bool>> orders;
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	void initializeData();
@@ -236,6 +237,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 * @brief Returns true if only a single ship is selected and it is a player ship
 	 */
 	int getIfPlayerShip() const;
+
+	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders();
+	void setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>&);
 };
 } // namespace dialogs
 } // namespace fred
