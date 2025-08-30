@@ -32,7 +32,7 @@
 #include "osapi/osapi.h"
 #include "parse/encrypt.h"
 #include "cfilesystem.h"
-
+#include <SDL_system.h>
 
 #include <limits>
 
@@ -68,7 +68,7 @@ cf_pathtype Pathtypes[CF_MAX_PATH_TYPES]  = {
 	{ CF_TYPE_MOVIES,				"data" DIR_SEPARATOR_STR "movies",											".mve .msb .ogg .mp4 .srt .webm .png",CF_TYPE_DATA	},
 	{ CF_TYPE_INTERFACE,			"data" DIR_SEPARATOR_STR "interface",										".pcx .ani .dds .tga .eff .png .jpg .rml .rcss",	CF_TYPE_DATA	},
 	{ CF_TYPE_FONT,					"data" DIR_SEPARATOR_STR "fonts",											".vf .ttf .otf",						CF_TYPE_DATA	},
-	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr",	CF_TYPE_DATA	},
+	{ CF_TYPE_EFFECTS,				"data" DIR_SEPARATOR_STR "effects",											".ani .eff .pcx .neb .tga .jpg .png .dds .sdr .vert .frag .glsl",	CF_TYPE_DATA	},
 	{ CF_TYPE_HUD,					"data" DIR_SEPARATOR_STR "hud",												".pcx .ani .eff .tga .jpg .png .dds",	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYERS,				"data" DIR_SEPARATOR_STR "players",											".hcf", /* DON'T add pilot files here!! */	CF_TYPE_DATA	},
 	{ CF_TYPE_PLAYER_IMAGES,		"data" DIR_SEPARATOR_STR "players" DIR_SEPARATOR_STR "images",				".pcx .png .dds",						CF_TYPE_PLAYERS	},
@@ -184,8 +184,18 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	}
 
 	char buf[CFILE_ROOT_DIRECTORY_LEN];
-
-	strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	
+	#ifndef __ANDROID__
+		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
+	#else
+		(void)exe_dir;
+		const char* android_path = SDL_AndroidGetExternalStoragePath();
+		if(android_path == nullptr){
+			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Freespace Open needs permission to access the external storage.");
+			return 1;
+		}
+		snprintf(buf, CFILE_ROOT_DIRECTORY_LEN, "%s/files", android_path);
+	#endif
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 
 	// are we in a root directory?		

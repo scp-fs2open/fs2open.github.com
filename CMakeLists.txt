@@ -47,6 +47,22 @@ endif()
 
 PROJECT(FS2_Open LANGUAGES ${FSO_LANGUAGES})
 
+if (ANDROID)
+    message(STATUS "Building for Android (NDK)")
+    set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+    add_definitions(-DPLATFORM_ANDROID)
+	set(FSO_BUILD_INCLUDED_LIBS ON FORCE)
+	set(USING_PREBUILT_LIBS ON FORCE)
+	set(FSO_BUILD_WITH_OPENGL_ES ON)
+	
+	#temporary, i could not get it to work in any other way
+	set(SDL2_ROOT "${FSO_PREBUILT_OVERRIDE}/sdl2")
+    set(SDL2_DIR "${SDL2_ROOT}/lib/cmake/SDL2")
+	set(SDL2_INCLUDE_DIR "${SDL2_ROOT}/include/SDL2")
+    find_package(SDL2 REQUIRED PATHS ${SDL2_ROOT} NO_DEFAULT_PATH)
+    target_include_directories(SDL2::SDL2 INTERFACE ${SDL2_INCLUDE_DIR})
+endif()
+
 # Check if the external modules exists
 IF(NOT IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/cmake/external/rpavlik-cmake-modules/launcher-templates")
 	message(FATAL_ERROR "External submodules could not be found. Please make sure you have updated your submodules.")
@@ -94,8 +110,8 @@ OPTION(FSO_DEVELOPMENT_MODE "Generate binaries in development mode, only use if 
 
 OPTION(FSO_BUILD_QTFRED "Build qtFRED2 binary" OFF)
 
-IF(WIN32 OR APPLE)
-	# On windows and mac the default should be to always build the included libraries
+IF(WIN32 OR APPLE OR ANDROID)
+	# On windows, mac and android the default should be to always build the included libraries
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT ON)
 ELSE()
 	SET(FSO_BUILD_INCLUDED_LIBS_DEFAULT OFF)
@@ -125,8 +141,18 @@ OPTION(FSO_BUILD_WITH_DISCORD "Build with Discord support" ON)
 
 OPTION(FSO_BUILD_WITH_OPENGL "Enable compilation of the OpenGL renderer" ON)
 OPTION(FSO_BUILD_WITH_OPENGL_DEBUG "Enables debug option for OpenGL" OFF)
+OPTION(FSO_BUILD_WITH_OPENGL_ES "When building OpenGL, use OpenGL ES path instead of core (for testing only!)" OFF)
 
 OPTION(FSO_BUILD_WITH_VULKAN "Enable compilation of the Vulkan renderer" OFF)
+
+if(NOT FSO_BUILD_WITH_OPENGL AND FSO_BUILD_WITH_OPENGL_ES)
+	# Disable GLES if not building with OpenGL
+	set(FSO_BUILD_WITH_OPENGL_ES OFF FORCE)
+endif()
+
+if(FSO_BUILD_WITH_OPENGL_ES)
+	add_definitions(-DUSE_OPENGL_ES)
+endif()
 
 IF(NOT APPLE)
 	SET(OPENXR_BUILD_DEFAULT ON)
@@ -134,8 +160,8 @@ ELSE()
 	SET(OPENXR_BUILD_DEFAULT OFF)
 ENDIF()
 OPTION(FSO_BUILD_WITH_OPENXR "Build with OpenXR support" ${OPENXR_BUILD_DEFAULT})
-IF(FSO_BUILD_WITH_OPENXR AND APPLE)
-	MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. Not supported on macOS - setting to OFF.")
+IF(FSO_BUILD_WITH_OPENXR AND (APPLE OR ANDROID))
+	MESSAGE(WARNING "FSO_BUILD_WITH_OPENXR is ON. Not supported on macOS/Android - setting to OFF.")
 	SET(FSO_BUILD_WITH_OPENXR OFF CACHE BOOL "" FORCE)
 ENDIF()
 
@@ -156,6 +182,7 @@ mark_as_advanced(FORCE FSO_BUILD_WITH_FFMPEG)
 mark_as_advanced(FORCE FSO_BUILD_WITH_DISCORD)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_DEBUG)
+mark_as_advanced(FORCE FSO_BUILD_WITH_OPENGL_ES)
 mark_as_advanced(FORCE FSO_BUILD_WITH_VULKAN)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR)
 mark_as_advanced(FORCE FSO_BUILD_WITH_OPENXR_DEBUG)
@@ -242,5 +269,6 @@ message(STATUS "Release logging: ${FSO_RELEASE_LOGGING}")
 message(STATUS "With FFmpeg: ${FSO_BUILD_WITH_FFMPEG}")
 message(STATUS "With Discord: ${FSO_BUILD_WITH_DISCORD}")
 message(STATUS "With OpenGL: ${FSO_BUILD_WITH_OPENGL}")
+message(STATUS "With OpenGL ES: ${FSO_BUILD_WITH_OPENGL_ES}")
 message(STATUS "With Vulkan: ${FSO_BUILD_WITH_VULKAN}")
 message(STATUS "With OpenXR: ${FSO_BUILD_WITH_OPENXR}")

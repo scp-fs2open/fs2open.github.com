@@ -28,6 +28,9 @@
 #include "lighting/lighting.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 GLuint Scene_framebuffer;
 GLuint Scene_framebuffer_ms;
@@ -351,7 +354,9 @@ void opengl_setup_scene_textures()
 	}
 
 	if (Cmdline_msaa_enabled > 0) {
+		#ifndef USE_OPENGL_ES
 		glEnable(GL_MULTISAMPLE);
+		#endif
 
 		// Make sure our MSAA setting are valid
 		int maxSamples;

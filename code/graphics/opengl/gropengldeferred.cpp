@@ -22,6 +22,9 @@
 #include "nebula/volumetrics.h"
 #include "render/3d.h"
 #include "tracing/tracing.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #include <math/bitarray.h>
 
