@@ -7,7 +7,6 @@
 //TODO: 
 //-Message:GL_INVALID_OPERATION in glBlitFramebuffer(source and destination color buffer cannot be the same), this may not be easy to handle
 //-IMGUI crashes on windows + opengl es
-//-gr_opengl_query_value_available() returning INVALID_OPERATION, no idea.
 //-limited color attachments to 4 in not a good way
 //-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE
 
@@ -21,7 +20,7 @@
 #define GL_FILL                                 0x1B02
 #define GL_LINE                                 0x1B01
 #define GL_POINT                                0x1B00
-#define GLAD_GL_ARB_timer_query                 1
+#define GLAD_GL_ARB_timer_query                 0
 #define GL_DOUBLE                               0x140A
 #define GL_TIMESTAMP							1
 #define GL_UNSIGNED_SHORT_1_5_5_5_REV			0x1CCC
