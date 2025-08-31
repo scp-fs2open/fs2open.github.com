@@ -80,6 +80,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/VariableDialogModel.h
 	src/mission/dialogs/VoiceActingManagerModel.h
 	src/mission/dialogs/VoiceActingManagerModel.cpp
+	src/mission/dialogs/VolumetricNebulaDialogModel.cpp
+	src/mission/dialogs/VolumetricNebulaDialogModel.h
 	src/mission/dialogs/WaypointEditorDialogModel.cpp
 	src/mission/dialogs/WaypointEditorDialogModel.h
 	src/mission/dialogs/WingEditorDialogModel.cpp
@@ -178,6 +180,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/VariableDialog.h
 	src/ui/dialogs/VoiceActingManager.h
 	src/ui/dialogs/VoiceActingManager.cpp
+	src/ui/dialogs/VolumetricNebulaDialog.h
+	src/ui/dialogs/VolumetricNebulaDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.cpp
 	src/ui/dialogs/WaypointEditorDialog.h
 	src/ui/dialogs/WingEditorDialog.cpp
@@ -286,6 +290,7 @@ add_file_folder("UI"
 	ui/ShieldSystemDialog.ui
 	ui/SoundEnvironmentDialog.ui
 	ui/VoiceActingManager.ui
+	ui/VolumetricNebulaDialog.ui
     ui/WaypointEditorDialog.ui
 	ui/ShipEditorDialog.ui
 	ui/ShipInitialStatus.ui

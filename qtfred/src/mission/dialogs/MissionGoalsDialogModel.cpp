@@ -77,7 +77,7 @@ void MissionGoalsDialogModel::initializeData() {
 	m_sig.clear();
 	for (size_t i=0; i<Mission_goals.size(); i++) {
 		m_goals.push_back(Mission_goals[i]);
-		m_sig.push_back(i);
+		m_sig.push_back(static_cast<int>(i));
 
 		if (m_goals[i].name.empty())
 			m_goals[i].name = "<Unnamed>";
