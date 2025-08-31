@@ -118,6 +118,20 @@ static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* src, uint8_t* dst
 	}
 }
 
+// BGR 3B -> RGBA 4B
+static inline void convert_BGR_to_RGBA(const uint8_t* src, uint8_t* dst, size_t npx)
+{
+	for (size_t i = 0; i < npx; ++i) {
+		const size_t s = i * 3;
+		const size_t t = i * 4;
+		dst[t + 0] = src[s + 2]; // R <- B
+		dst[t + 1] = src[s + 1]; // G
+		dst[t + 2] = src[s + 0]; // B <- R
+		dst[t + 3] = 255;        // A
+	}
+}
+
+
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
 	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) {
@@ -149,14 +163,31 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 	}
 
 	if (format == GL_BGR && type == GL_UNSIGNED_BYTE) {
-		format = GL_RGB;
-		if (data != nullptr)
+		GLint internalFormat = query_internalformat_3d(target, level);
+		if (internalFormat != GL_RGBA8)
 		{
-			std::vector<uint8_t> scratch(w * h * 3);
-			memcpy(scratch.data(), data, scratch.size());
-			convert_BGR_to_RGB(scratch.data(), (size_t)w * (size_t)h);
-			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
-			return;
+			format = GL_RGB;
+			if (data != nullptr)
+			{
+				std::vector<uint8_t> scratch(w * h * 3);
+				memcpy(scratch.data(), data, scratch.size());
+				convert_BGR_to_RGB(scratch.data(), (size_t)w * (size_t)h);
+				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			}
+		}
+		else
+		{
+			format = GL_RGBA;
+			if (data != nullptr) 
+			{
+				const size_t npx = size_t(w) * size_t(h) * size_t(d);
+				std::vector<uint8_t> scratch(npx * 4);
+				convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			}
 		}
 	}
 
