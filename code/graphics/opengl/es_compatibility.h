@@ -9,6 +9,7 @@
 //-IMGUI crashes on windows + opengl es
 //-limited color attachments to 4 in not a good way
 //-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE
+//-glGetTexImage()
 
 //Stubs Enums, this does not exist on GLES and need to be handled
 #define GLAD_GL_ARB_draw_buffers_blend		    1
@@ -233,15 +234,13 @@ inline void glDrawBuffer(GLenum data)
 #define glPolygonMode(face, mode) ((void)0)
 
 // No support for this on ES, it is used for profiling?
-static inline void glQueryCounter(GLuint /*id*/, GLenum /*target*/) 
-{
-}
+static inline void glQueryCounter(GLuint /*id*/, GLenum /*target*/) {}
 
-// glGetCompressedTexImage not present on GLES and no equivalent
+// glGetCompressedTexImage is not present on GLES and has no equivalent, called from opengl_compress_image() that is not used anywhere
 #define glGetCompressedTexImage(target, level, pixels) ((void)0)
 
 // does not exist, needs an alternative path, stub
-inline void glGetTexImage(GLenum /*target*/, GLint /*level*/, GLenum /*format*/, GLenum /*type*/, void* /*pixels*/)
+inline void glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, void* pixels)
 {
 }
 
