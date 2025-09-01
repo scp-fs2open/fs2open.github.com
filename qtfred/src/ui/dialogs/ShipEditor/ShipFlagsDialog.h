@@ -17,12 +17,14 @@ class ShipFlagsDialog : public QDialog {
   public:
 	explicit ShipFlagsDialog(QWidget* parent, EditorViewport* viewport);
 	~ShipFlagsDialog() override;
+	void accept() override;
+	void reject() override;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
-
-	void rejectHandler();
   private slots:
+	void on_okButton_clicked();
+	void on_cancelButton_clicked();
 	void on_destroySecondsSpinBox_valueChanged(int);
 	void on_escortPrioritySpinBox_valueChanged(int);
 	void on_kamikazeDamageSpinBox_valueChanged(int);
