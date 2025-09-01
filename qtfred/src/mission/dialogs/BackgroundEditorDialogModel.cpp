@@ -1218,10 +1218,7 @@ int BackgroundEditorDialogModel::getSkyboxPitch()
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
 	int d = static_cast<int>(fl2ir(fl_degrees(a.p)));
-	if (d < 0)
-		d += 360;
-	if (d >= 360)
-		d -= 360;
+	d = (d % 360 + 360) % 360; // wrap to [0, 359]
 	return d;
 }
 
@@ -1244,10 +1241,7 @@ int BackgroundEditorDialogModel::getSkyboxBank()
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
 	int d = static_cast<int>(fl2ir(fl_degrees(a.b)));
-	if (d < 0)
-		d += 360;
-	if (d >= 360)
-		d -= 360;
+	d = (d % 360 + 360) % 360; // wrap to [0, 359]
 	return d;
 }
 
@@ -1270,10 +1264,7 @@ int BackgroundEditorDialogModel::getSkyboxHeading()
 	angles a;
 	vm_extract_angles_matrix(&a, &The_mission.skybox_orientation);
 	int d = static_cast<int>(fl2ir(fl_degrees(a.h)));
-	if (d < 0)
-		d += 360;
-	if (d >= 360)
-		d -= 360;
+	d = (d % 360 + 360) % 360; // wrap to [0, 359]
 	return d;
 }
 

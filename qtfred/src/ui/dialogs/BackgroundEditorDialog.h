@@ -81,7 +81,7 @@ private slots:
 	void on_ambientLightBlueSlider_valueChanged(int value);
 
 	// Skybox
-	void on_skyboxButton_clicked();
+	void on_skyboxModelButton_clicked();
 	void on_skyboxEdit_textChanged(const QString& arg1);
 	void on_skyboxPitchSpin_valueChanged(int arg1);
 	void on_skyboxBankSpin_valueChanged(int arg1);

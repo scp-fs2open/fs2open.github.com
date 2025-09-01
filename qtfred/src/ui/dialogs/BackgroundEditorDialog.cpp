@@ -40,6 +40,9 @@ void BackgroundEditorDialog::initializeUi()
 	ui->bitmapScaleYDoubleSpinBox->setRange(_model->getBitmapScaleLimit().first, _model->getBitmapScaleLimit().second);
 	ui->bitmapDivXSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
 	ui->bitmapDivYSpinBox->setRange(_model->getDivisionLimit().first, _model->getDivisionLimit().second);
+	ui->skyboxPitchSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->skyboxBankSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
+	ui->skyboxHeadingSpin->setRange(_model->getOrientLimit().first, _model->getOrientLimit().second);
 
 	const auto& names = _model->getAvailableBitmapNames();
 
@@ -836,7 +839,7 @@ void BackgroundEditorDialog::updateAmbientSwatch()
 			.arg(b));
 }
 
-void BackgroundEditorDialog::on_skyboxButton_clicked()
+void BackgroundEditorDialog::on_skyboxModelButton_clicked()
 {
 	QSettings settings("QtFRED", "BackgroundEditor");
 	const QString lastDir = settings.value("skybox/lastDir", QDir::homePath()).toString();
@@ -858,6 +861,7 @@ void BackgroundEditorDialog::on_skyboxButton_clicked()
 void BackgroundEditorDialog::on_skyboxEdit_textChanged(const QString& arg1)
 {
 	_model->setSkyboxModelName(arg1.toUtf8().constData());
+	updateSkyboxControls();
 }
 
 void BackgroundEditorDialog::on_skyboxPitchSpin_valueChanged(int arg1)
