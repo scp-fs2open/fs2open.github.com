@@ -145,7 +145,7 @@ public:
 	float guard_big_orbit_max_speed_percent;   // Max percent of forward speed that is used in ai_big_guard() 
 
 	// AI attack any option --wookieejedi
-	float attack_any_idle_movement_radius; // Radius that AI circles around a point while waiting for new enemies in attack-any mode
+	float attack_any_idle_circle_distance; // Radius that AI circles around a point while waiting for new enemies in attack-any mode
 
     void reset();
 };

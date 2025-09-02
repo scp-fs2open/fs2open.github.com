@@ -699,8 +699,8 @@ void parse_ai_profiles_tbl(const char *filename)
 					}
 				}
 
-				if (optional_string("$attack-any idle movement radius:")) {
-					stuff_float(&profile->attack_any_idle_movement_radius);
+				if (optional_string("$attack-any idle circle distance:")) {
+					stuff_float(&profile->attack_any_idle_circle_distance);
 				}
 
 				set_flag(profile, "$unify usage of AI Shield Manage Delay:", AI::Profile_Flags::Unify_usage_ai_shield_manage_delay);
@@ -819,7 +819,7 @@ void ai_profile_t::reset()
 
 	guard_big_orbit_above_target_radius = 500.0f;
 	guard_big_orbit_max_speed_percent = 1.0f;
-	attack_any_idle_movement_radius = 200.0f;
+	attack_any_idle_circle_distance = 100.0f;
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
