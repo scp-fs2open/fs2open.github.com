@@ -25,8 +25,14 @@ const char* EngineName = "FreeSpaceOpen";
 
 const gameversion::version MinVulkanVersion(1, 1, 0, 0);
 
-VkBool32 VKAPI_PTR debugReportCallback(VkDebugReportFlagsEXT /*flags*/,
+VkBool32 VKAPI_PTR debugReportCallback(
+#if VK_HEADER_VERSION >= 304
+	vk::DebugReportFlagsEXT /*flags*/,
+	vk::DebugReportObjectTypeEXT /*objectType*/,
+#else
+	VkDebugReportFlagsEXT /*flags*/,
 	VkDebugReportObjectTypeEXT /*objectType*/,
+#endif
 	uint64_t /*object*/,
 	size_t /*location*/,
 	int32_t /*messageCode*/,
@@ -457,7 +463,11 @@ bool VulkanRenderer::initializeSurface()
 		return false;
 	}
 
+#if VK_HEADER_VERSION >= 301
+	const vk::detail::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
+#else
 	const vk::ObjectDestroy<vk::Instance, VULKAN_HPP_DEFAULT_DISPATCHER_TYPE> deleter(*m_vkInstance,
+#endif
 		nullptr,
 		VULKAN_HPP_DEFAULT_DISPATCHER);
 	m_vkSurface = vk::UniqueSurfaceKHR(vk::SurfaceKHR(surface), deleter);
