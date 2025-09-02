@@ -87,7 +87,7 @@ int ShipEditorDialogModel::getIfPlayerShip() const
 {
 	return player_ship;
 }
-std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getAcceptedOrders()
+std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getAcceptedOrders() const
 {
 	std::vector<std::pair<SCP_string, bool>> acceptedOrders;
 	object* objp;
@@ -123,6 +123,16 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getAcceptedOrder
 void ShipEditorDialogModel::setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>& newOrders)
 {
 	orders = newOrders;
+	set_modified();
+}
+void ShipEditorDialogModel::setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>& newOrders)
+{
+	arrivalPaths = newOrders;
+	set_modified();
+}
+void ShipEditorDialogModel::setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>& newOrders)
+{
+	departurePaths = newOrders;
 	set_modified();
 }
 void ShipEditorDialogModel::initializeData()
@@ -444,6 +454,51 @@ void ShipEditorDialogModel::initializeData()
 		enable = false;
 	}
 	modelChanged();
+}
+
+std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths() const
+{
+	std::vector<std::pair<SCP_string, bool>> m_path_list;
+	int target_class = Ships[_m_arrival_target].ship_info_index;
+	auto m_model = model_get(Ship_info[target_class].model_num);
+	Assert(m_model->ship_bay);
+	auto m_num_paths = m_model->ship_bay->num_paths;
+	Assert(m_num_paths > 0);
+	auto m_path_mask = Ships[single_ship].arrival_path_mask;
+
+	for (int i = 0; i < m_num_paths; i++) {
+		SCP_string name = "Path " + i2ch(i + 1);
+		bool allowed;
+		if (m_path_mask == 0) {
+			allowed = true;
+		} else {
+			allowed = (m_path_mask & (1 << i)) ? true : false;
+		}
+		m_path_list.emplace_back(name, allowed);
+	}
+	return m_path_list;
+}
+std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getDeparturePaths() const
+{
+	std::vector<std::pair<SCP_string, bool>> m_path_list;
+	int target_class = Ships[_m_arrival_target].ship_info_index;
+	auto m_model = model_get(Ship_info[target_class].model_num);
+	Assert(m_model->ship_bay);
+	auto m_num_paths = m_model->ship_bay->num_paths;
+	Assert(m_num_paths > 0);
+	auto m_path_mask = Ships[single_ship].departure_path_mask;
+
+	for (int i = 0; i < m_num_paths; i++) {
+		SCP_string name = "Path " + i2ch(i + 1);
+		bool allowed;
+		if (m_path_mask == 0) {
+			allowed = true;
+		} else {
+			allowed = (m_path_mask & (1 << i)) ? true : false;
+		}
+		m_path_list.emplace_back(name, allowed);
+	}
+	return m_path_list;
 }
 bool ShipEditorDialogModel::update_data()
 {
@@ -846,6 +901,34 @@ bool ShipEditorDialogModel::update_ship(int ship)
 				}
 		}
 		Ships[ship].orders_accepted = new_orders;
+	}
+	if (!arrivalPaths.empty()) {
+		int num_allowed = 0;
+		auto m_path_mask = 0;
+		for (auto i = 0; i < arrivalPaths.size(); i++) {
+			if (arrivalPaths[i].second == true) {
+				m_path_mask |= (1 << i);
+				num_allowed++;
+			}
+		}
+		if (num_allowed == arrivalPaths.size()) {
+			m_path_mask = 0;
+		}
+		Ships[ship].arrival_path_mask = m_path_mask;
+	}
+	if (!departurePaths.empty()) {
+		int num_allowed = 0;
+		auto m_path_mask = 0;
+		for (auto i = 0; i < departurePaths.size(); i++) {
+			if (departurePaths[i].second == true) {
+				m_path_mask |= (1 << i);
+				num_allowed++;
+			}
+		}
+		if (num_allowed == departurePaths.size()) {
+			m_path_mask = 0;
+		}
+		Ships[ship].departure_path_mask = m_path_mask;
 	}
 	_editor->missionChanged();
 	return false;

@@ -1,20 +1,16 @@
 #pragma once
 
 #include "../AbstractDialogModel.h"
-
 #include "mission/util.h"
 #include "ship/ship.h"
 #include "ui/widgets/sexp_tree.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 /**
  * @brief QTFred's Ship Editor's Model
  */
 class ShipEditorDialogModel : public AbstractDialogModel {
   private:
-
 	int _m_no_departure_warp;
 	int _m_no_arrival_warp;
 	bool _m_player_ship;
@@ -69,21 +65,24 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	std::set<size_t> ship_orders;
 
-		bool texenable = true;
+	bool texenable = true;
 
 	int respawn_priority;
 
 	std::vector<std::pair<SCP_string, bool>> orders;
+	std::vector<std::pair<SCP_string, bool>> arrivalPaths;
+	std::vector<std::pair<SCP_string, bool>> departurePaths;
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	void initializeData();
 	bool apply() override;
 	void reject() override;
 
-	void setShipName(const SCP_string &m_ship_name);
+	void setShipName(const SCP_string& m_ship_name);
 	SCP_string getShipName() const;
 
-	void setShipDisplayName(const SCP_string &m_ship_display_name);
+	void setShipDisplayName(const SCP_string& m_ship_display_name);
 	SCP_string getShipDisplayName() const;
 
 	void setShipClass(const int);
@@ -188,7 +187,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 * @param wing Takes an integer id of the wing
 	 */
 	bool wing_is_player_wing(const int) const;
-	const std::set<size_t> &getShipOrders() const;
+	const std::set<size_t>& getShipOrders() const;
 
 	bool getTexEditEnable() const;
 	/**
@@ -238,9 +237,13 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 */
 	int getIfPlayerShip() const;
 
-	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders();
+	std::vector<std::pair<SCP_string, bool>> getAcceptedOrders() const;
 	void setAcceptedOrders(const std::vector<std::pair<SCP_string, bool>>&);
+
+	std::vector<std::pair<SCP_string, bool>> getArrivalPaths() const;
+	void setArrivalPaths(const std::vector<std::pair<SCP_string, bool>>&);
+
+	std::vector<std::pair<SCP_string, bool>> getDeparturePaths() const;
+	void setDeparturePaths(const std::vector<std::pair<SCP_string, bool>>&);
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs

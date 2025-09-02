@@ -5,7 +5,6 @@
 #include "ShipFlagsDialog.h"
 #include "ShipGoalsDialog.h"
 #include "ShipInitialStatusDialog.h"
-#include "ShipPathsDialog.h"
 #include "ShipSpecialStatsDialog.h"
 #include "ShipTBLViewer.h"
 #include "ShipTextureReplacementDialog.h"
@@ -14,8 +13,6 @@
 
 #include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
 #include <ui/FredView.h>
-
-#include <QAbstractButton>
 #include <QtWidgets/QDialog>
 
 namespace fso::fred::dialogs {
