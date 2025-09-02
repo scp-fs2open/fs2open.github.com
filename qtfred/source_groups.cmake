@@ -322,6 +322,10 @@ if (WIN32)
 endif()
 
 add_file_folder("Resources/Images"
+	resources/images/arrow_down.png
+	resources/images/arrow_left.png
+	resources/images/arrow_right.png
+	resources/images/arrow_up.png
     resources/images/bitmap1.png
     resources/images/black_do.png
     resources/images/bmp00001.png
