@@ -7,6 +7,7 @@
 #include <QListWidget>
 #include <QMessageBox>
 #include <mission/util.h>
+#include "ui/util/SignalBlockers.h"
 
 constexpr int TABLE_MODE = 0;
 constexpr int VARIABLE_MODE = 1;
@@ -21,156 +22,6 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &TeamLoadoutDialog::updateUi);
-
-	// Ship and Weapon lists, selection changed.
-	connect(ui->listShipsNotUsed, 
-		&QListWidget::itemClicked, 
-		this, 
-		&TeamLoadoutDialog::onPotentialShipListClicked);
-
-	// We need a second trigger for each list when multiple items are selected because itemClicked doesn't trigger on
-	// those, and itemSelectionChanged doesn't really trigger if you select the same item that's already selected (I
-	// think) so keep both
-	connect(ui->listShipsNotUsed, 
-		&QListWidget::itemSelectionChanged,
-		this, 
-		&TeamLoadoutDialog::onPotentialShipListClicked);
-
-	connect(ui->listWeaponsNotUsed,
-		&QListWidget::itemClicked,
-		this, 
-		&TeamLoadoutDialog::onPotentialWeaponListClicked);
-
-	connect(ui->listWeaponsNotUsed,
-		&QListWidget::itemSelectionChanged,
-		this,
-		&TeamLoadoutDialog::onPotentialWeaponListClicked);
-
-	connect(ui->usedShipsList,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
-		this,
-		&TeamLoadoutDialog::onUsedShipListClicked);
-
-	connect(ui->usedShipsList, 
-		&QTableWidget::itemSelectionChanged, 
-		this, 
-		&TeamLoadoutDialog::onUsedShipListClicked);
-
-	connect(ui->usedWeaponsList,
-		static_cast<void (QTableWidget::*)(QTableWidgetItem*)>(&QTableWidget::itemClicked),
-		this,
-		&TeamLoadoutDialog::onUsedWeaponListClicked);
-
-	connect(ui->usedWeaponsList, 
-		&QTableWidget::itemSelectionChanged, 
-		this, 
-		&TeamLoadoutDialog::onUsedWeaponListClicked);
-
-	// Selection convenience buttons
-	connect(ui->selectAllUnusedShipsButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::onSelectAllUnusedShipsPressed);
-
-	connect(ui->clearUnusedShipSelectionButton,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onClearAllUnusedShipsPressed);
-
-	connect(ui->selectAllUnusedWeaponsButton,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onSelectAllUnusedWeaponsPressed);
-
-	connect(ui->clearUnusedWeaponSelectionButton,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onClearAllUnusedWeaponsPressed);
-
-	connect(ui->selectAllUsedShipsButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::onSelectAllUsedShipsPressed);
-
-	connect(ui->clearUsedShipSelectionButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::onClearAllUsedShipsPressed);
-
-	connect(ui->selectAllUsedWeaponsButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::onSelectAllUsedWeaponsPressed);
-
-	connect(ui->clearUsedWeaponSelectionButton,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onClearAllUsedWeaponsPressed);
-
-	// And switching views between variable and lists
-	connect(ui->switchViewButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::onSwitchViewButtonPressed);
-
-	// Switch ships and weapons on the list
-	connect(ui->addShipButton, 
-		&QPushButton::clicked,
-		this, 
-		&TeamLoadoutDialog::addShipButtonClicked);
-
-	connect(ui->addWeaponButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::addWeaponButtonClicked);
-
-	connect(ui->removeShipButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::removeShipButtonClicked);
-
-	connect(ui->removeWeaponButton, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::removeWeaponButtonClicked);
-
-	// Change item counts
-	connect(ui->extraItemSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&TeamLoadoutDialog::onExtraItemSpinboxUpdated);
-
-	connect(ui->extraItemsViaVariableCombo,
-		QOverload<int>::of(&QComboBox::currentIndexChanged),
-		this,
-		&TeamLoadoutDialog::onExtraItemsViaVariableCombo);
-
-	// Team controls
-	connect(ui->copyLoadoutToOtherTeamsButton,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed);
-
-	// Miscellaneous controls
-	connect(ui->playerDelayDoubleSpinbox,
-		static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged),
-		this,
-		&TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated);
-
-	connect(ui->editVariables, 
-		&QPushButton::clicked, 
-		this, 
-		&TeamLoadoutDialog::openEditVariablePressed);
-
-	connect(ui->requiredWeaponCheckBox,
-		&QPushButton::clicked,
-		this,
-		&TeamLoadoutDialog::onSelectionRequiredCheckbox);
-
-	connect(ui->weaponValidationCheckbox,
-		&QCheckBox::clicked,
-		this,
-		&TeamLoadoutDialog::onWeaponValidationCheckboxClicked);
 
 	// things that must be set for everything to work...
 	_mode = TABLE_MODE;
@@ -211,17 +62,10 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(false);
 	}
 
-	auto delay = _model->getPlayerEntryDelay();
-	if (delay >= 0.0f) {
-		ui->playerDelayDoubleSpinbox->setValue(static_cast<double>(delay));
-	} else {
-		ui->playerDelayDoubleSpinbox->setValue(0.0f);
-	}
-
 	ui->weaponValidationCheckbox->setChecked(_model->getSkipValidation());
 
-	updateUi();
 	initializeUi();
+	updateUi();
 }
 
 TeamLoadoutDialog::~TeamLoadoutDialog() = default;
@@ -252,326 +96,33 @@ void TeamLoadoutDialog::closeEvent(QCloseEvent* e)
 	e->ignore(); // Don't let the base class close the window
 }
 
-void TeamLoadoutDialog::rejectHandler()
+void TeamLoadoutDialog::initializeUi()
 {
-	this->close();
-}
+	auto list = _model->getTeamList();
 
-void TeamLoadoutDialog::onSwitchViewButtonPressed()
-{
-	// Change important lables.
-	if (_mode == TABLE_MODE) {
-		ui->tableVarLabel->setText("Variable View");
-		
-		ui->listShipsNotUsedLabel->setText("Potential Variables To Enable Ships");
-		ui->listWeaponsNotUsedLabel->setText("Potential Variables To Enable Weapons");
-		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
-		ui->startingWeaponsLabel->setText("Variables Used for Enabling Weapons");
+	ui->currentTeamComboBox->clear();
 
-		_mode = VARIABLE_MODE;
-	}
-	else {
-		ui->tableVarLabel->setText("Loadout View");
-		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
-		ui->listWeaponsNotUsedLabel->setText("Weapons Not In Loadout");
-		ui->startingShipsLabel->setText("Ships in Loadout");
-		ui->startingWeaponsLabel->setText("Weapons in Loadout");
-
-		_mode = TABLE_MODE;
+	for (const auto& team : list) {
+		ui->currentTeamComboBox->addItem(QString::fromStdString(team.first), team.second);
 	}
 
-	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
-		if (ui->listShipsNotUsed->item(x)) {
-			ui->listShipsNotUsed->item(x)->setText("");
-		}
-	}
-
-	for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
-		if (ui->listWeaponsNotUsed->item(x)) {
-			ui->listWeaponsNotUsed->item(x)->setText("");
-		}
-	}
-
-	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-		if (ui->usedShipsList->item(x, 0)) {
-			ui->usedShipsList->item(x, 0)->setText("");
-		}
-		if (ui->usedShipsList->item(x, 1)) {
-			ui->usedShipsList->item(x, 1)->setText("");
-		}
-	}
-
-	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-		if (ui->usedWeaponsList->item(x, 0)) {
-			ui->usedWeaponsList->item(x, 0)->setText("");
-		}
-		if (ui->usedWeaponsList->item(x, 1)) {
-			ui->usedWeaponsList->item(x, 1)->setText("");
-		}
-	}
-
-	// Since we're changing modes, clear what we selected previously.
-	ui->listShipsNotUsed->clearSelection();
-	ui->listWeaponsNotUsed->clearSelection();
-	ui->usedShipsList->clearSelection();
-	ui->usedWeaponsList->clearSelection();
-
-	// model does not keep track of whether the UI is editing the table values or the vars
-	// so, just update the UI
-	updateUi();
+	// set up the table headers
+	auto hh = ui->usedShipsList->horizontalHeader();
+	hh->setSectionsClickable(false);             // Qt 5
+	hh->setHighlightSections(false);             // no pressed/selected look
+	hh->setSectionsMovable(false);               // optional: prevent drag-reorder
+	hh->setSectionResizeMode(QHeaderView::Stretch);
 }
-
-void TeamLoadoutDialog::addShipButtonClicked()
-{
-	SCP_vector<SCP_string> list;
-
-	for (const auto& item : ui->listShipsNotUsed->selectedItems()){
-		SCP_string shipName = item->text().toUtf8().constData();
-		list.emplace_back(shipName);
-	}
-
-	if (_mode == TABLE_MODE) {
-		_model->setShipEnabled(list, true);	
-	} else {
-		_model->setShipVariableEnabled(list, true);
-	}
-
-	updateUi();
-}
-
-void TeamLoadoutDialog::addWeaponButtonClicked()
-{
-	SCP_vector<SCP_string> list;
-	
-	for (const auto& item: ui->listWeaponsNotUsed->selectedItems()){
-		SCP_string weaponName = item->text().toUtf8().constData();
-		list.emplace_back(weaponName);
-	}
-
-	if (_mode == TABLE_MODE) {
-		_model->setWeaponEnabled(list, true);
-	} else {
-		_model->setWeaponVariableEnabled(list, true);
-	}
-
-	updateUi();
-}
-
-void TeamLoadoutDialog::removeShipButtonClicked()
-{
-	SCP_vector<SCP_string> list;
-
-	for (const auto& item : ui->usedShipsList->selectedItems()){
-		SCP_string shipName = item->text().toUtf8().constData();
-		list.emplace_back(shipName);
-	}
-
-	if (_mode == TABLE_MODE) {
-		_model->setShipEnabled(list, false);
-	} else {
-		_model->setShipVariableEnabled(list, false);
-	}
-
-	updateUi();
-}
-
-void TeamLoadoutDialog::removeWeaponButtonClicked()
-{
-	SCP_vector<SCP_string> list;
-
-	for (const auto& item : ui->usedWeaponsList->selectedItems()){
-		SCP_string weaponName = item->text().toUtf8().constData();
-		list.emplace_back(weaponName);
-	}
-
-	if (_mode == TABLE_MODE) {
-		_model->setWeaponEnabled(list, false);	
-	} else {
-		_model->setWeaponVariableEnabled(list, false);
-	}
-
-	updateUi();
-}
-
-void TeamLoadoutDialog::onExtraItemSpinboxUpdated()
-{
-	SCP_vector<SCP_string> list;
-
-	if (_mode == TABLE_MODE) {
-		if (_lastSelectionChanged == USED_SHIPS) {
-			list = getSelectedShips();
-
-			if (ui->extraItemSpinbox->value() < 0) {
-				ui->extraItemSpinbox->setValue(0.0f);
-			}
-
-			_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
-		} else if (_lastSelectionChanged == USED_WEAPONS) {
-			list = getSelectedWeapons();
-
-			if (ui->extraItemSpinbox->value() < 0) {
-				ui->extraItemSpinbox->setValue(0.0f);
-			}
-
-			_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
-		}
-	} else {
-		if (_lastSelectionChanged == USED_SHIPS) {
-			list = getSelectedShips();
-
-			if (ui->extraItemSpinbox->value() < 0) {
-				ui->extraItemSpinbox->setValue(0.0f);
-			}
-
-			_model->setExtraAllocatedForShipVariablesCount(list, ui->extraItemSpinbox->value());
-		} else if (_lastSelectionChanged == USED_WEAPONS) {
-			list = getSelectedWeapons();
-
-			if (ui->extraItemSpinbox->value() < 0) {
-				ui->extraItemSpinbox->setValue(0.0f);
-			}
-
-			_model->setExtraAllocatedForWeaponVariablesCount(list, ui->extraItemSpinbox->value());
-		}
-	}
-
-	updateUi();
-}
-
-void TeamLoadoutDialog::onExtraItemsViaVariableCombo()
-{
-	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS || _lastSelectionChanged == NONE) {
-		return;
-	}
-
-	SCP_vector<SCP_string> list = (_lastSelectionChanged == USED_SHIPS) ? getSelectedShips() : getSelectedWeapons();
-	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toUtf8().constData();
-
-	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == VARIABLE_MODE);
-	updateUi();
-}
-
-void TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
-{
-	if (ui->playerDelayDoubleSpinbox->value() < 0) {
-		ui->playerDelayDoubleSpinbox->setValue(0.0f);
-	}
-
-	_model->setPlayerEntryDelay(static_cast<float>(ui->playerDelayDoubleSpinbox->value()));
-}
-
-void TeamLoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
-{
-	QMessageBox msgBox;
-	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
-	msgBox.setInformativeText("This can't be undone.");
-	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
-	msgBox.setDefaultButton(QMessageBox::Cancel);
-	int ret = msgBox.exec();
-
-switch (ret) {
-	case QMessageBox::Yes:
-		_model->copyToOtherTeam();
-		break;
-	case QMessageBox::Cancel:
-		break;
-	default:
-		UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
-		break;
-	}
-}
-
-
-void TeamLoadoutDialog::onSelectAllUnusedShipsPressed() 
-{
-	ui->listShipsNotUsed->selectAll();
-	_lastSelectionChanged = POTENTIAL_SHIPS;
-}
-
-void TeamLoadoutDialog::onClearAllUnusedShipsPressed() 
-{
-	ui->listShipsNotUsed->clearSelection();
-	_lastSelectionChanged = POTENTIAL_SHIPS;
-}
-
-void TeamLoadoutDialog::onSelectAllUnusedWeaponsPressed()
-{
-	ui->listWeaponsNotUsed->selectAll();
-	_lastSelectionChanged = POTENTIAL_WEAPONS;
-}
-
-void TeamLoadoutDialog::onClearAllUnusedWeaponsPressed() 
-{
-	ui->listWeaponsNotUsed->clearSelection();
-	_lastSelectionChanged = POTENTIAL_WEAPONS;
-}
-
-void TeamLoadoutDialog::onSelectAllUsedShipsPressed() 
-{
-	ui->usedShipsList->selectAll();
-	_lastSelectionChanged = USED_SHIPS;
-}
-
-void TeamLoadoutDialog::onClearAllUsedShipsPressed() 
-{
-	ui->usedShipsList->clearSelection();
-	_lastSelectionChanged = USED_SHIPS;
-}
-
-void TeamLoadoutDialog::onSelectAllUsedWeaponsPressed() 
-{
-	ui->usedWeaponsList->selectAll();
-	_lastSelectionChanged = USED_WEAPONS;
-}
-
-void TeamLoadoutDialog::onClearAllUsedWeaponsPressed() 
-{
-	ui->usedWeaponsList->clearSelection();
-	_lastSelectionChanged = USED_WEAPONS;
-}
-
-void TeamLoadoutDialog::openEditVariablePressed() 
-{
-	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
-}
-
-void TeamLoadoutDialog::onSelectionRequiredCheckbox()
-{
-	if (ui->weaponValidationCheckbox->isChecked()) {
-		onSelectionRequiredPressed();
-	} else {
-		onSelectionNotRequiredPressed();
-	}
-}
-
-void TeamLoadoutDialog::onSelectionRequiredPressed() 
-{
-	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
-	_model->setRequiredWeapon(namesOut, true);
-	updateUi();
-}
-
-void TeamLoadoutDialog::onSelectionNotRequiredPressed() 
-{
-	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
-	_model->setRequiredWeapon(namesOut, false);
-	updateUi();
-}
-
-void TeamLoadoutDialog::onWeaponValidationCheckboxClicked() 
-{
-	_model->setSkipValidation(ui->weaponValidationCheckbox->isChecked());
-}
-
 
 void TeamLoadoutDialog::updateUi()
 {
+	util::SignalBlockers blockers(this);
+	
 	// repopulate with the correct lists from the model.
-	SCP_vector<std::pair<SCP_string, bool>> newShipList;
-	SCP_vector<std::pair<SCP_string, bool>> newWeaponList;
+	SCP_vector<LoadoutItem> newShipList;
+	SCP_vector<LoadoutItem> newWeaponList;
 
 	if (_mode == TABLE_MODE) {
-
 		newShipList = _model->getShipList();
 		newWeaponList = _model->getWeaponList();
 	}
@@ -580,14 +131,84 @@ void TeamLoadoutDialog::updateUi()
 		newWeaponList = _model->getWeaponEnablerVariables();
 	}
 
+	/*ui->usedShipsList->clearContents();
+	ui->listShipsNotUsed->clear();
+
 	// build the ship lists...
-	for (const auto& newShip : newShipList) {		
+	for (auto& item : newShipList) {
+		if (item.enabled) {
+			ui->usedShipsList->insertRow(ui->usedShipsList->rowCount());
+
+			auto* name = new QTableWidgetItem(QString::fromStdString(item.name));
+			auto* counts = new QTableWidgetItem(QString("%1/%2").arg(item.countInWings).arg(item.extraAllocated));
+
+			ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 0, name);
+			ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 1, counts);
+		} else {
+			ui->listShipsNotUsed->addItem(QString::fromStdString(item.name));
+		}
+	}
+
+	ui->usedWeaponsList->clearContents();
+	ui->listWeaponsNotUsed->clear();
+
+	// build the weapon lists...
+	for (auto& item : newWeaponList) {
+		if (item.enabled) {
+			ui->usedWeaponsList->insertRow(ui->usedWeaponsList->rowCount());
+
+			auto* name = new QTableWidgetItem(QString::fromStdString(item.name));
+			auto* counts = new QTableWidgetItem(QString("%1/%2").arg(item.countInWings).arg(item.extraAllocated));
+			auto* required = new QTableWidgetItem(item.required ? "Yes" : "");
+
+			ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 0, name);
+			ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 1, counts);
+			ui->usedWeaponsList->setItem(ui->usedWeaponsList->rowCount() - 1, 2, required);
+		} else {
+			ui->listWeaponsNotUsed->addItem(QString::fromStdString(item.name));
+		}
+	}*/
+
+	for (auto& item : newShipList) {
+		if (item.enabled) {
+			bool found = false;
+
+			for (int x = 0; x < ui->usedShipsList->rowCount(); x++) {
+				SCP_string name = ui->usedShipsList->item(x, 0) ? ui->usedShipsList->item(x, 0)->text().toUtf8().constData() : "";
+				if (lcase_equal(name, item.name)) {
+					found = true;
+
+					// update the quantities here, and make sure it's visible
+					SCP_string countText = std::to_string(item.countInWings) + "/" + std::to_string(item.extraAllocated);
+					ui->usedShipsList->item(x, 1)->setText(countText.c_str());
+					ui->usedShipsList->setRowHidden(x, false);
+					break;
+				}
+			}
+
+			// This should only happen at init
+			if (!found) {
+				ui->usedShipsList->insertRow(ui->usedShipsList->rowCount());
+				QTableWidgetItem* nameItem = new QTableWidgetItem(item.name.c_str());
+
+				SCP_string countText = std::to_string(item.countInWings) + "/" + std::to_string(item.extraAllocated);
+				QTableWidgetItem* countItem = new QTableWidgetItem(countText.c_str());
+				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 0, nameItem);
+				ui->usedShipsList->setItem(ui->usedShipsList->rowCount() - 1, 1, countItem);
+			}
+		}
+	}
+
+	// build the ship lists...
+	/*for (const auto& newShip : newShipList) {		
 		// need to split the incoming string into the different parts.
 		size_t divider = newShip.first.rfind(" ");
 		SCP_string shipName = newShip.first.substr(0, divider);
 
 		if (newShip.second) {
 			bool found = false;
+
+			int rowCountTemp = ui->usedShipsList->rowCount();
 			
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x){
 				SCP_string usedShipName = ui->usedShipsList->item(x, 0)->text().toUtf8().constData();
@@ -776,7 +397,7 @@ void TeamLoadoutDialog::updateUi()
 				}
 			}
 		}
-	}
+	}*/
 	
 
 	SCP_vector<SCP_string> namesOut;
@@ -799,7 +420,7 @@ void TeamLoadoutDialog::updateUi()
 		ui->extraItemSpinbox->setEnabled(false);
 	}
 
-	if (requestSpinComboUpdate || _model->spinBoxUpdateRequired()) {
+	if (requestSpinComboUpdate /*|| _model->spinBoxUpdateRequired()*/) { // TODO FIXMEEEEE
 		int temp;
 
 		if (_mode == TABLE_MODE && _lastSelectionChanged == USED_SHIPS){
@@ -883,17 +504,34 @@ void TeamLoadoutDialog::updateUi()
 			}
 		}
 	}
+
+	updateModeLabels();
 }
 
-void TeamLoadoutDialog::initializeUi()
+void TeamLoadoutDialog::updateModeLabels()
 {
-	auto list = _model->getTeamList();
+	if (_mode == VARIABLE_MODE) {
+		ui->tableVarLabel->setText("Variable View");
+		ui->switchViewButton->setText("Switch to Loadout View");
 
-	ui->currentTeamComboBox->clear();
+		ui->listShipsNotUsedLabel->setText("Potential Variables To Enable Ships");
+		ui->listWeaponsNotUsedLabel->setText("Potential Variables To Enable Weapons");
+		ui->startingShipsLabel->setText("Variables Used for Enabling Ships");
+		ui->startingWeaponsLabel->setText("Variables Used for Enabling Weapons");
+	} else {
+		ui->tableVarLabel->setText("Loadout View");
+		ui->switchViewButton->setText("Switch to Variable View");
 
-	for (const auto& team : list) {
-		ui->currentTeamComboBox->addItem(QString::fromStdString(team.first), team.second);
+		ui->listShipsNotUsedLabel->setText("Ships Not in Loadout");
+		ui->listWeaponsNotUsedLabel->setText("Weapons Not In Loadout");
+		ui->startingShipsLabel->setText("Ships in Loadout");
+		ui->startingWeaponsLabel->setText("Weapons in Loadout");
 	}
+
+	const int w = std::max(ui->switchViewButton->sizeHint().width(), ui->switchViewButton->width());
+	ui->titleSpacer->changeSize(w, 0, QSizePolicy::Fixed, QSizePolicy::Minimum);
+	ui->viewRowHorizontalLayout->invalidate();
+
 }
 
 SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedShips() 
@@ -934,6 +572,58 @@ void TeamLoadoutDialog::on_okAndCancelButtons_rejected()
 	reject();
 }
 
+void TeamLoadoutDialog::on_switchViewButton_clicked()
+{
+	if (_mode == TABLE_MODE) {
+		_mode = VARIABLE_MODE;
+	} else {
+		_mode = TABLE_MODE;
+	}
+	
+	for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
+		if (ui->listShipsNotUsed->item(x)) {
+			ui->listShipsNotUsed->item(x)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
+		if (ui->listWeaponsNotUsed->item(x)) {
+			ui->listWeaponsNotUsed->item(x)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+		if (ui->usedShipsList->item(x, 0)) {
+			ui->usedShipsList->item(x, 0)->setText("");
+		}
+		if (ui->usedShipsList->item(x, 1)) {
+			ui->usedShipsList->item(x, 1)->setText("");
+		}
+	}
+
+	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+		if (ui->usedWeaponsList->item(x, 0)) {
+			ui->usedWeaponsList->item(x, 0)->setText("");
+		}
+		if (ui->usedWeaponsList->item(x, 1)) {
+			ui->usedWeaponsList->item(x, 1)->setText("");
+		}
+	}
+
+	// Since we're changing modes, clear what we selected previously.
+	ui->listShipsNotUsed->clearSelection();
+	ui->listWeaponsNotUsed->clearSelection();
+	ui->usedShipsList->clearSelection();
+	ui->usedWeaponsList->clearSelection();
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_editVariables_clicked()
+{
+	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
+}
+
 void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
 {
 	if (index < 0) {
@@ -943,6 +633,269 @@ void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
 	_model->switchTeam(team);
 
 	updateUi();
+}
+
+void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
+{
+	QMessageBox msgBox;
+	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
+	msgBox.setInformativeText("This can't be undone.");
+	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+	msgBox.setDefaultButton(QMessageBox::Cancel);
+	int ret = msgBox.exec();
+
+	switch (ret) {
+		case QMessageBox::Yes:
+			_model->copyToOtherTeam();
+			break;
+		case QMessageBox::Cancel:
+			break;
+		default:
+			UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+			break;
+	}
+}
+
+void TeamLoadoutDialog::on_clearUsedShipSelectionButton_clicked()
+{
+	ui->usedShipsList->clearSelection();
+	_lastSelectionChanged = USED_SHIPS;
+}
+
+void TeamLoadoutDialog::on_selectAllUsedShipsButton_clicked()
+{
+	ui->usedShipsList->selectAll();
+	_lastSelectionChanged = USED_SHIPS;
+}
+
+void TeamLoadoutDialog::on_usedShipsList_itemChanged(QTableWidgetItem* /*item*/)
+{
+	_lastSelectionChanged = USED_SHIPS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_usedShipsList_itemSelectionChanged()
+{
+	_lastSelectionChanged = USED_SHIPS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_clearUnusedShipSelectionButton_clicked()
+{
+	ui->listShipsNotUsed->clearSelection();
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+}
+
+void TeamLoadoutDialog::on_selectAllUnusedShipsButton_clicked()
+{
+	ui->listShipsNotUsed->selectAll();
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+}
+
+void TeamLoadoutDialog::on_listShipsNotUsed_itemChanged(QListWidgetItem* /*item*/)
+{
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_listShipsNotUsed_itemSelectionChanged()
+{
+	_lastSelectionChanged = POTENTIAL_SHIPS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_addShipButton_clicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->listShipsNotUsed->selectedItems()) {
+		SCP_string shipName = item->text().toUtf8().constData();
+		list.emplace_back(shipName);
+	}
+
+	if (_mode == TABLE_MODE) {
+		_model->setShipEnabled(list, true);
+	} else {
+		_model->setShipVariableEnabled(list, true);
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_removeShipButton_clicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->usedShipsList->selectedItems()) {
+		SCP_string shipName = item->text().toUtf8().constData();
+		list.emplace_back(shipName);
+	}
+
+	if (_mode == TABLE_MODE) {
+		_model->setShipEnabled(list, false);
+	} else {
+		_model->setShipVariableEnabled(list, false);
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_clearUsedWeaponSelectionButton_clicked()
+{
+	ui->usedWeaponsList->clearSelection();
+	_lastSelectionChanged = USED_WEAPONS;
+}
+
+void TeamLoadoutDialog::on_selectAllUsedWeaponsButton_clicked()
+{
+	ui->usedWeaponsList->selectAll();
+	_lastSelectionChanged = USED_WEAPONS;
+}
+
+void TeamLoadoutDialog::on_usedWeaponsList_itemChanged(QTableWidgetItem* /*item*/)
+{
+	_lastSelectionChanged = USED_WEAPONS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_usedWeaponsList_itemSelectionChanged()
+{
+	_lastSelectionChanged = USED_WEAPONS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_clearUnusedWeaponSelectionButton_clicked()
+{
+	ui->listWeaponsNotUsed->clearSelection();
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+}
+
+void TeamLoadoutDialog::on_selectAllUnusedWeaponsButton_clicked()
+{
+	ui->listWeaponsNotUsed->selectAll();
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+}
+
+void TeamLoadoutDialog::on_listWeaponsNotUsed_itemChanged(QListWidgetItem* /*item*/)
+{
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_listWeaponsNotUsed_itemSelectionChanged()
+{
+	_lastSelectionChanged = POTENTIAL_WEAPONS;
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_addWeaponButton_clicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->listWeaponsNotUsed->selectedItems()) {
+		SCP_string weaponName = item->text().toUtf8().constData();
+		list.emplace_back(weaponName);
+	}
+
+	if (_mode == TABLE_MODE) {
+		_model->setWeaponEnabled(list, true);
+	} else {
+		_model->setWeaponVariableEnabled(list, true);
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_removeWeaponButton_clicked()
+{
+	SCP_vector<SCP_string> list;
+
+	for (const auto& item : ui->usedWeaponsList->selectedItems()) {
+		SCP_string weaponName = item->text().toUtf8().constData();
+		list.emplace_back(weaponName);
+	}
+
+	if (_mode == TABLE_MODE) {
+		_model->setWeaponEnabled(list, false);
+	} else {
+		_model->setWeaponVariableEnabled(list, false);
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_extraItemSpinbox_valueChanged(int arg1)
+{
+	SCP_vector<SCP_string> list;
+
+	if (_mode == TABLE_MODE) {
+		if (_lastSelectionChanged == USED_SHIPS) {
+			list = getSelectedShips();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedShipCount(list, ui->extraItemSpinbox->value());
+		} else if (_lastSelectionChanged == USED_WEAPONS) {
+			list = getSelectedWeapons();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedWeaponCount(list, ui->extraItemSpinbox->value());
+		}
+	} else {
+		if (_lastSelectionChanged == USED_SHIPS) {
+			list = getSelectedShips();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedForShipVariablesCount(list, ui->extraItemSpinbox->value());
+		} else if (_lastSelectionChanged == USED_WEAPONS) {
+			list = getSelectedWeapons();
+
+			if (ui->extraItemSpinbox->value() < 0) {
+				ui->extraItemSpinbox->setValue(0.0f);
+			}
+
+			_model->setExtraAllocatedForWeaponVariablesCount(list, ui->extraItemSpinbox->value());
+		}
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_extraItemsViaVariableCombo_currentIndexChanged(int /*index*/)
+{
+	if (_lastSelectionChanged == POTENTIAL_SHIPS || _lastSelectionChanged == POTENTIAL_WEAPONS ||
+		_lastSelectionChanged == NONE) {
+		return;
+	}
+
+	SCP_vector<SCP_string> list = (_lastSelectionChanged == USED_SHIPS) ? getSelectedShips() : getSelectedWeapons();
+	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toUtf8().constData();
+
+	_model->setExtraAllocatedViaVariable(list,
+		chosenVariable,
+		_lastSelectionChanged == USED_SHIPS,
+		_mode == VARIABLE_MODE);
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_requiredWeaponCheckBox_clicked(bool checked)
+{
+	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
+	_model->setRequiredWeapon(namesOut, checked);
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_weaponValidationCheckbox_clicked(bool checked)
+{
+	_model->setSkipValidation(checked);
 }
 
 

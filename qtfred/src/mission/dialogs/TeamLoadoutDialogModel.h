@@ -11,6 +11,7 @@ struct LoadoutItem {
 	LoadoutItem(int infoIn,
 		bool enabledIn,
 		bool requiredIn,
+		bool fromVariableIn,
 		int countIn,
 		int extraIn,
 		int varCountIn,
@@ -19,6 +20,7 @@ struct LoadoutItem {
 		infoIndex = infoIn;
 		enabled = enabledIn;
 		required = requiredIn;
+		fromVariable = fromVariableIn;
 		countInWings = countIn;
 		extraAllocated = extraIn;
 		varCountIndex = varCountIn;
@@ -27,6 +29,7 @@ struct LoadoutItem {
 	int infoIndex; // for var items, this points to the sexp index.
 	bool enabled;
 	bool required;
+	bool fromVariable;
 	int countInWings;
 	int extraAllocated;
 	int varCountIndex;
@@ -64,14 +67,12 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	void reject() override;
 
 	int getCurrentTeam();
-	void setPlayerEntryDelay(float delay);
-	float getPlayerEntryDelay();
 
-	SCP_vector<std::pair<SCP_string, bool>> getShipList();
-	SCP_vector<std::pair<SCP_string, bool>> getWeaponList();
-	SCP_vector<SCP_string> getRequiredWeapons();
-	SCP_vector<std::pair<SCP_string, bool>> getShipEnablerVariables();
-	SCP_vector<std::pair<SCP_string, bool>> getWeaponEnablerVariables();
+	const SCP_vector<LoadoutItem>& getShipList() const;
+	const SCP_vector<LoadoutItem>& getWeaponList() const;
+	const SCP_vector<SCP_string>& getRequiredWeapons() const;
+	const SCP_vector<LoadoutItem>& getShipEnablerVariables() const;
+	const SCP_vector<LoadoutItem>& getWeaponEnablerVariables() const;
 
 	SCP_string getCountVarShips(SCP_vector<SCP_string> namesIn);
 	SCP_string getCountVarWeapons(SCP_vector<SCP_string> namesIn);
@@ -91,42 +92,33 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	void setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled);
 	void setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled);
 	void setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled);
-	void setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const uint count);
-	void setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const uint count);
-	void setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const uint count);
-	void setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const uint count);
+	void setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const int count);
+	void setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const int count);
+	void setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const int count);
+	void setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const int count);
 
-	void setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list,
-		const SCP_string& variable,
-		const bool ship,
-		const bool variableMode);
+	void setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool ship, const bool variableMode);
 	void setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required);
 	void setSkipValidation(const bool skipIt);
 
 	void switchTeam(int teamIn);
 	void copyToOtherTeam();
 
-	bool spinBoxUpdateRequired();
-
   private:
 	SCP_string createItemString(bool ship, bool variable, int itemIndex, const char* variableIn = "");
 	void buildCurrentLists();
 	void initializeData();
-	void initializeTeamList();
 
-	float _playerEntryDelay;
 	int _currentTeam;
 
 	SCP_vector<TeamLoadout> _teams; // all loadout info for each team
-	SCP_vector<std::pair<SCP_string, bool>> _shipList;
-	SCP_vector<std::pair<SCP_string, bool>> _weaponList;
-	SCP_vector<std::pair<SCP_string, bool>> _shipVarList;
-	SCP_vector<std::pair<SCP_string, bool>> _weaponVarList;
+	SCP_vector<LoadoutItem> _shipList;
+	SCP_vector<LoadoutItem> _weaponList;
+	SCP_vector<LoadoutItem> _shipVarList;
+	SCP_vector<LoadoutItem> _weaponVarList;
 	SCP_vector<SCP_string> _numberVarList;
 	SCP_vector<SCP_string> _requiredWeaponsList;
 	SCP_vector<std::pair<SCP_string, int>> _team_list;
-
-	bool _spinBoxUpdateRequired;
 };
 
 } // namespace fso::fred::dialogs
