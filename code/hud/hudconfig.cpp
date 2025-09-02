@@ -2035,7 +2035,7 @@ SCP_string create_custom_gauge_id(const SCP_string& gauge_name) {
 	Assertion(!gauge_name.empty(), "Custom gauge has no name!");
 
 	SCP_string id;
-	if (Mod_title.empty()) {
+	if (Mod_title.empty() && Cmdline_mod != nullptr) {
 		id = Cmdline_mod;
 
 		// Basic cleanup attempt
