@@ -79,6 +79,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	SCP_string getCountVarWeaponEnabler(SCP_vector<SCP_string> namesIn);
 
 	SCP_vector<SCP_string> getNumberVarList();
+	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 
 	int getExtraAllocatedShips(SCP_vector<SCP_string> namesIn);
 	int getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn);
@@ -111,6 +112,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	SCP_string createItemString(bool ship, bool variable, int itemIndex, const char* variableIn = "");
 	void buildCurrentLists();
 	void initializeData();
+	void initializeTeamList();
 
 	float _playerEntryDelay;
 	int _currentTeam;
@@ -122,6 +124,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	SCP_vector<std::pair<SCP_string, bool>> _weaponVarList;
 	SCP_vector<SCP_string> _numberVarList;
 	SCP_vector<SCP_string> _requiredWeaponsList;
+	SCP_vector<std::pair<SCP_string, int>> _team_list;
 
 	bool _spinBoxUpdateRequired;
 };

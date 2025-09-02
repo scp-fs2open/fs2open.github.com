@@ -38,6 +38,8 @@ public:
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
+	void on_currentTeamComboBox_currentIndexChanged(int index);
+
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::TeamLoadoutDialog> ui;
 	std::unique_ptr<TeamLoadoutDialogModel> _model;
@@ -47,7 +49,6 @@ public:
 	void onExtraItemSpinboxUpdated();
 	void onExtraItemsViaVariableCombo();
 	void onPlayerDelayDoubleSpinBoxUpdated();
-	void onCurrentTeamSpinboxUpdated();
 	void onCopyLoadoutToOtherTeamsButtonPressed();
 	void addShipButtonClicked();
 	void addWeaponButtonClicked();
@@ -56,19 +57,19 @@ public:
 	void onPotentialShipListClicked()
 	{
 		_lastSelectionChanged = POTENTIAL_SHIPS;
-		updateUI();
+		updateUi();
 	}
 	void onPotentialWeaponListClicked(){ 
 		_lastSelectionChanged = POTENTIAL_WEAPONS;
-		updateUI();
+		updateUi();
 	}
 	void onUsedShipListClicked(){ 
 		_lastSelectionChanged = USED_SHIPS;
-		updateUI();
+		updateUi();
 	}
 	void onUsedWeaponListClicked(){ 
 		_lastSelectionChanged = USED_WEAPONS;
-		updateUI();
+		updateUi();
 	}
 
 	void onSelectAllUnusedShipsPressed();
@@ -88,7 +89,8 @@ public:
 	SCP_vector<SCP_string> getSelectedShips(); 
 	SCP_vector<SCP_string> getSelectedWeapons(); 
 
-	void updateUI();
+	void updateUi();
+	void initializeUi();
 
 	int _mode;
 	int _lastSelectionChanged;
