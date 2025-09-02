@@ -188,13 +188,24 @@ int cfile_init(const char *exe_dir, const char *cdrom_dir)
 	#ifndef __ANDROID__
 		strncpy(buf, exe_dir, CFILE_ROOT_DIRECTORY_LEN - 1);
 	#else
+		//Android gets the working folder path from the cmdline argument, if not present fallback to SDL path
 		(void)exe_dir;
-		const char* android_path = SDL_AndroidGetExternalStoragePath();
-		if(android_path == nullptr){
-			os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR, "Freespace Open needs permission to access the external storage.");
-			return 1;
+		extern char* Cmdline_working_folder;
+		if (Cmdline_working_folder != nullptr)
+		{
+			strncpy(buf, Cmdline_working_folder, CFILE_ROOT_DIRECTORY_LEN - 1);
+		} 
+		else
+		{
+			// fallback
+			const char* android_path = SDL_AndroidGetExternalStoragePath();
+			if (android_path == nullptr) {
+				os::dialogs::Message(os::dialogs::MESSAGEBOX_ERROR,
+					"Freespace Open needs permission to access the external storage.");
+				return 1;
+			}
+			snprintf(buf, CFILE_ROOT_DIRECTORY_LEN, "%s/files", android_path);
 		}
-		snprintf(buf, CFILE_ROOT_DIRECTORY_LEN, "%s/files", android_path);
 	#endif
 	buf[CFILE_ROOT_DIRECTORY_LEN - 1] = '\0';
 
