@@ -20,7 +20,7 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 	ui->setupUi(this);
 
 	// Major Changes, like Applying the model, rejecting changes and updating the UI.
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &TeamLoadoutDialog::updateUI);
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &TeamLoadoutDialog::updateUi);
 
 	// Ship and Weapon lists, selection changed.
 	connect(ui->listShipsNotUsed, 
@@ -146,11 +146,6 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 		&TeamLoadoutDialog::onExtraItemsViaVariableCombo);
 
 	// Team controls
-	connect(ui->currentTeamSpinbox,
-		static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged),
-		this,
-		&TeamLoadoutDialog::onCurrentTeamSpinboxUpdated);
-
 	connect(ui->copyLoadoutToOtherTeamsButton,
 		&QPushButton::clicked,
 		this,
@@ -209,10 +204,10 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	// quickly enable or disable the team spin box (must not get to multiple teams if in SP!)
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
-		ui->currentTeamSpinbox->setEnabled(true);
+		ui->currentTeamComboBox->setEnabled(true); // TODO make an enable/disable function for all the controls
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(true);
 	} else {
-		ui->currentTeamSpinbox->setEnabled(false);
+		ui->currentTeamComboBox->setEnabled(false);
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(false);
 	}
 
@@ -225,7 +220,8 @@ TeamLoadoutDialog::TeamLoadoutDialog(FredView* parent, EditorViewport* viewport)
 
 	ui->weaponValidationCheckbox->setChecked(_model->getSkipValidation());
 
-	updateUI();
+	updateUi();
+	initializeUi();
 }
 
 TeamLoadoutDialog::~TeamLoadoutDialog() = default;
@@ -322,7 +318,7 @@ void TeamLoadoutDialog::onSwitchViewButtonPressed()
 
 	// model does not keep track of whether the UI is editing the table values or the vars
 	// so, just update the UI
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::addShipButtonClicked()
@@ -340,7 +336,7 @@ void TeamLoadoutDialog::addShipButtonClicked()
 		_model->setShipVariableEnabled(list, true);
 	}
 
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::addWeaponButtonClicked()
@@ -358,7 +354,7 @@ void TeamLoadoutDialog::addWeaponButtonClicked()
 		_model->setWeaponVariableEnabled(list, true);
 	}
 
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::removeShipButtonClicked()
@@ -376,7 +372,7 @@ void TeamLoadoutDialog::removeShipButtonClicked()
 		_model->setShipVariableEnabled(list, false);
 	}
 
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::removeWeaponButtonClicked()
@@ -394,7 +390,7 @@ void TeamLoadoutDialog::removeWeaponButtonClicked()
 		_model->setWeaponVariableEnabled(list, false);
 	}
 
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::onExtraItemSpinboxUpdated()
@@ -439,7 +435,7 @@ void TeamLoadoutDialog::onExtraItemSpinboxUpdated()
 		}
 	}
 
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::onExtraItemsViaVariableCombo()
@@ -452,7 +448,7 @@ void TeamLoadoutDialog::onExtraItemsViaVariableCombo()
 	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toUtf8().constData();
 
 	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == VARIABLE_MODE);
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
@@ -462,12 +458,6 @@ void TeamLoadoutDialog::onPlayerDelayDoubleSpinBoxUpdated()
 	}
 
 	_model->setPlayerEntryDelay(static_cast<float>(ui->playerDelayDoubleSpinbox->value()));
-}
-
-void TeamLoadoutDialog::onCurrentTeamSpinboxUpdated()
-{
-	_model->switchTeam(ui->currentTeamSpinbox->value());
-	updateUI();
 }
 
 void TeamLoadoutDialog::onCopyLoadoutToOtherTeamsButtonPressed()
@@ -558,14 +548,14 @@ void TeamLoadoutDialog::onSelectionRequiredPressed()
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, true);
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::onSelectionNotRequiredPressed() 
 {
 	SCP_vector<SCP_string> namesOut = getSelectedWeapons();
 	_model->setRequiredWeapon(namesOut, false);
-	updateUI();
+	updateUi();
 }
 
 void TeamLoadoutDialog::onWeaponValidationCheckboxClicked() 
@@ -574,7 +564,7 @@ void TeamLoadoutDialog::onWeaponValidationCheckboxClicked()
 }
 
 
-void TeamLoadoutDialog::updateUI()
+void TeamLoadoutDialog::updateUi()
 {
 	// repopulate with the correct lists from the model.
 	SCP_vector<std::pair<SCP_string, bool>> newShipList;
@@ -829,7 +819,7 @@ void TeamLoadoutDialog::updateUI()
 			ui->extraItemSpinbox->clear();
 		}
 
-		ui->currentTeamSpinbox->setValue(_model->getCurrentTeam());
+		ui->currentTeamComboBox->setCurrentIndex(ui->currentTeamComboBox->findData(_model->getCurrentTeam()));
 	}
 
 	// Only enable set required if we are working with ships and weapons that have already been enabled, and not variables.
@@ -895,6 +885,17 @@ void TeamLoadoutDialog::updateUI()
 	}
 }
 
+void TeamLoadoutDialog::initializeUi()
+{
+	auto list = _model->getTeamList();
+
+	ui->currentTeamComboBox->clear();
+
+	for (const auto& team : list) {
+		ui->currentTeamComboBox->addItem(QString::fromStdString(team.first), team.second);
+	}
+}
+
 SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedShips() 
 {
 	SCP_vector<SCP_string> namesOut;
@@ -931,6 +932,17 @@ void TeamLoadoutDialog::on_okAndCancelButtons_accepted()
 void TeamLoadoutDialog::on_okAndCancelButtons_rejected()
 {
 	reject();
+}
+
+void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
+{
+	if (index < 0) {
+		return;
+	}
+	int team = ui->currentTeamComboBox->itemData(index).toInt();
+	_model->switchTeam(team);
+
+	updateUi();
 }
 
 

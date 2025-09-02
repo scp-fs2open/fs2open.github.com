@@ -21,6 +21,8 @@ TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* 
 
 void TeamLoadoutDialogModel::initializeData()
 {
+	initializeTeamList();
+	
 	_currentTeam = 0;
 
 	_spinBoxUpdateRequired = true;
@@ -222,6 +224,14 @@ void TeamLoadoutDialogModel::initializeData()
 	modelChanged();
 }
 
+void TeamLoadoutDialogModel::initializeTeamList()
+{
+	_team_list.clear();
+	for (auto& team : Mission_event_teams_tvt) {
+		_team_list.emplace_back(team.first, team.second);
+	}
+}
+
 float TeamLoadoutDialogModel::getPlayerEntryDelay()
 {
 	return _playerEntryDelay;
@@ -237,7 +247,7 @@ void TeamLoadoutDialogModel::setPlayerEntryDelay(float delay)
 
 int TeamLoadoutDialogModel::getCurrentTeam()
 {
-	return _currentTeam + 1;
+	return _currentTeam;
 }
 
 SCP_vector<std::pair<SCP_string, bool>> TeamLoadoutDialogModel::getShipList()
@@ -332,11 +342,11 @@ void TeamLoadoutDialogModel::copyToOtherTeam()
 
 void TeamLoadoutDialogModel::switchTeam(int teamIn) 
 {
-	if (teamIn < 1 || teamIn > static_cast<int>(_teams.size()))
+	if (!SCP_vector_inbounds(_teams, teamIn))
 		return;
 
 	_spinBoxUpdateRequired = true;
-	_currentTeam = teamIn - 1;
+	_currentTeam = teamIn;
 
 	buildCurrentLists();
 
@@ -694,6 +704,11 @@ int TeamLoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string
 SCP_vector<SCP_string> TeamLoadoutDialogModel::getNumberVarList() 
 {
 	return _numberVarList;
+}
+
+const SCP_vector<std::pair<SCP_string, int>>& TeamLoadoutDialogModel::getTeamList()
+{
+	return _team_list;
 }
 
 bool TeamLoadoutDialogModel::spinBoxUpdateRequired() { return _spinBoxUpdateRequired; };
