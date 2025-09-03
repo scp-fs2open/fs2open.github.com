@@ -109,7 +109,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	void buildCurrentLists();
 	void initializeData();
 
-	int _currentTeam;
+	int _currentTeam = 0;
 
 	SCP_vector<TeamLoadout> _teams; // all loadout info for each team
 	SCP_vector<LoadoutItem> _shipList;
@@ -117,6 +117,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	SCP_vector<LoadoutItem> _shipVarList;
 	SCP_vector<LoadoutItem> _weaponVarList;
 	SCP_vector<SCP_string> _numberVarList;
+	SCP_vector<SCP_string> _stringVarList;
 	SCP_vector<SCP_string> _requiredWeaponsList;
 	SCP_vector<std::pair<SCP_string, int>> _team_list;
 };

@@ -5,7 +5,6 @@
 #include "mission/Editor.h"
 #include "ship/ship.cpp"
 #include "weapon/weapon.h"
-#include <QMessageBox>
 
 namespace fso::fred::dialogs {
 
@@ -19,6 +18,123 @@ TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* 
 		initializeData();
 }
 
+bool TeamLoadoutDialogModel::apply()
+{
+
+	for (int t = 0; t < Num_teams; ++t) {
+		auto& in = _teams[t];
+		auto& out = Team_data[t];
+
+		// reset per team outputs
+		out.num_ship_choices = 0;
+		out.num_weapon_choices = 0;
+		for (int k = 0; k < MAX_WEAPON_TYPES; ++k)
+			out.weapon_required[k] = false;
+
+		// Ships
+		int s = 0;
+
+		// var ships first
+		for (const auto& it : in.varShips)
+			if (it.enabled && it.infoIndex >= 0) {
+				out.ship_list[s] = -1;
+				// enabling var name
+				strcpy_s(out.ship_list_variables[s], Sexp_variables[it.infoIndex].variable_name);
+				// count: number-var or literal
+				if (it.varCountIndex >= 0) {
+					strcpy_s(out.ship_count_variables[s], Sexp_variables[it.varCountIndex].variable_name);
+					out.ship_count[s] = 0;
+				} else {
+					out.ship_count_variables[s][0] = '\0';
+					out.ship_count[s] = it.extraAllocated;
+				}
+				++s;
+			}
+
+		// static ships
+		auto presentShip = [](const LoadoutItem& it) {
+			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
+		};
+		for (const auto& it : in.ships)
+			if (presentShip(it)) {
+				out.ship_list[s] = it.infoIndex;
+				out.ship_list_variables[s][0] = '\0';
+				if (it.varCountIndex >= 0) {
+					strcpy_s(out.ship_count_variables[s], Sexp_variables[it.varCountIndex].variable_name);
+					out.ship_count[s] = 0;
+				} else {
+					out.ship_count_variables[s][0] = '\0';
+					out.ship_count[s] = it.extraAllocated;
+				}
+				++s;
+			}
+
+		out.num_ship_choices = s;
+
+		// Weapons
+		int w = 0;
+
+		// var weapons first
+		for (const auto& it : in.varWeapons)
+			if (it.enabled && it.infoIndex >= 0) {
+				out.weaponry_pool[w] = -1;
+				strcpy_s(out.weaponry_pool_variable[w], Sexp_variables[it.infoIndex].variable_name);
+				if (it.varCountIndex >= 0) {
+					strcpy_s(out.weaponry_amount_variable[w], Sexp_variables[it.varCountIndex].variable_name);
+					out.weaponry_count[w] = 0;
+				} else {
+					out.weaponry_amount_variable[w][0] = '\0';
+					out.weaponry_count[w] = it.extraAllocated;
+				}
+				++w;
+			}
+
+		// static weapons
+		auto presentWeap = [](const LoadoutItem& it) {
+			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1 || it.countInWings > 0);
+		};
+		for (const auto& it : in.weapons)
+			if (presentWeap(it)) {
+				out.weaponry_pool[w] = it.infoIndex;
+				out.weaponry_pool_variable[w][0] = '\0';
+
+				if (it.varCountIndex >= 0) {
+					strcpy_s(out.weaponry_amount_variable[w], Sexp_variables[it.varCountIndex].variable_name);
+					out.weaponry_count[w] = 0;
+				} else {
+					out.weaponry_amount_variable[w][0] = '\0';
+					out.weaponry_count[w] = it.extraAllocated;
+				}
+				++w;
+			}
+
+		out.num_weapon_choices = w;
+
+		// required weapons
+		for (const auto& it : in.weapons)
+			if (presentWeap(it) && it.required && it.infoIndex >= 0 && it.infoIndex < MAX_WEAPON_TYPES) {
+				out.weapon_required[it.infoIndex] = true;
+			}
+
+		out.do_not_validate = in.skipValidation;
+	}
+
+	return true;
+}
+
+void TeamLoadoutDialogModel::reject()
+{
+	// just clear out the info we're not going to end up using.
+	_shipList.clear();
+	_weaponList.clear();
+	_shipVarList.clear();
+	_weaponVarList.clear();
+	_numberVarList.clear();
+	_requiredWeaponsList.clear();
+	_teams.clear();
+
+} // let him go Harry, let him go
+
 void TeamLoadoutDialogModel::initializeData()
 {
 	
@@ -27,8 +143,20 @@ void TeamLoadoutDialogModel::initializeData()
 	for (auto& team : Mission_event_teams_tvt) {
 		_team_list.emplace_back(team.first, team.second);
 	}
-	
-	_currentTeam = 0;
+
+	// need to build list for count variables.
+	for (auto& sexp : Sexp_variables) {
+		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_NUMBER)) {
+			_numberVarList.push_back(sexp.variable_name);
+		}
+	}
+
+	// and a list of string variables for the enablers.
+	for (auto& sexp : Sexp_variables) {
+		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_STRING)) {
+			_stringVarList.push_back(sexp.variable_name);
+		}
+	}
 
 	TeamLoadout defaultEntry;
 	// make sure we have the correct number of teams.
@@ -39,192 +167,146 @@ void TeamLoadoutDialogModel::initializeData()
 	// this is basically raw data, so we have to make sure to calculate the indices correctly.
 	SCP_vector<int> usage = _editor->getStartingWingLoadoutUseCounts();
 	
-	Assert(usage.size() == MAX_SHIP_CLASSES * MAX_TVT_TEAMS * 2);
+	Assertion(usage.size() == (MAX_SHIP_CLASSES + MAX_WEAPON_TYPES) * MAX_TVT_TEAMS, "Starting wing loadout usage is unexpected size!");
 
-	int currentTeam = 0;
-	int index = 0;
+	for (int i = 0; i < Num_teams; i++) {
+		auto& team = _teams[i];
 
-	for (auto& ship : Ship_info){
-		if (ship.flags[Ship::Info_Flags::Player_ship]) {
-			for (auto& team : _teams) {
+		// First we get the ship pool
+		for (int j = 0; j < MAX_SHIP_CLASSES; j++) {
+			const auto& ship = Ship_info[j];
+			
+			if (ship.flags[Ship::Info_Flags::Player_ship]) {
+				int countInWings = usage.at((MAX_SHIP_CLASSES * i) + j);
 
-				// even though it gets created here, it's not complete because the enabled entries are in Team_data
-				// also not required until we read that data
-				team.ships.emplace_back(
-					index,
-					false,
-					false,
-					false,
-					usage.at((MAX_SHIP_CLASSES * currentTeam) + index),
-					0,
-					-1,
-					SCP_string(ship.name));
-
-				// make sure that starting ships are enabled.
-				if (team.ships.back().countInWings > 0) {
-					team.ships.back().enabled = true;
-				}
+				LoadoutItem item(
+					j,                // ship class index
+					countInWings > 0, // if it's in a starting wing, it's enabled
+					false,            // ships can't be required
+					false,            // not from a string variable
+					countInWings,
+					0,                // extra allocated starts at 0 ???
+					-1,               // no variable controlling count
+					SCP_string(ship.name)
+				);
 
 				// since we're here, add the countInWings to the total
-				_teams[currentTeam].startingShipCount += team.ships.back().countInWings;
-				
-				currentTeam++;
+				team.startingShipCount += countInWings;
+
+				team.ships.push_back(item);
 			}
-			
-			currentTeam = 0;
 		}
 
-		index++;
-	}
+		// then the weapon pool
+		for (int j = 0; j < MAX_WEAPON_TYPES; j++) {
+			const auto& weapon = Weapon_info[j];
 
-	index = 0;
+			if (weapon.wi_flags[Weapon::Info_Flags::Player_allowed]) {
+				int countInWings = usage.at((MAX_SHIP_CLASSES * MAX_TVT_TEAMS) + (MAX_WEAPON_TYPES * i) + j);
 
-	for (auto& weapon : Weapon_info){
-		if (weapon.wi_flags[Weapon::Info_Flags::Player_allowed]) {
-			for (auto& team : _teams) {
-				// even though it gets created here, it's not complete because the enabled entries are in Team_data
-				team.weapons.emplace_back(
-					index,
-					false,
-					false,
-					false,
-					usage[(MAX_SHIP_CLASSES * MAX_TVT_TEAMS) + (MAX_SHIP_CLASSES * currentTeam) + index],
-					0,
-					-1,
-					SCP_string(weapon.name));
+				LoadoutItem item(
+					j,                 // weapon index
+					countInWings > 0,  // if it's in a starting wing, it's enabled
+					false,             // required status defaults to false
+					false,             // not from a string variable
+					countInWings,
+					0,                 // extra allocated starts at 0
+					-1,                // no variable controlling count
+					SCP_string(weapon.name)
+				);
 
-				// make sure that weapons in starting wing slots are enabled.
-				if (team.weapons.back().countInWings > 0) {
-					team.weapons.back().enabled = true;
-				}
-
-				currentTeam++;
+				team.weapons.push_back(item);
 			}
-			currentTeam = 0;
 		}
 
-		index++;
-	}
+		// now merge in the data from Team_data
+		const auto& teamData = Team_data[i];
 
-	currentTeam = 0;
-
-	for (auto& team : Team_data) {		
-
-		for (index = 0; index < team.num_ship_choices; index++){
+		// first the ships
+		for (int j = 0; j < teamData.num_ship_choices; j++) {
 			// if it has an enabling variable, add it to the correct vector.
-			if (strlen(team.ship_list_variables[index])) {
-				_teams[currentTeam].varShips.emplace_back(
-					get_index_sexp_variable_name(team.ship_list_variables[index]),
+			if (strlen(teamData.ship_list_variables[j])) {
+
+				LoadoutItem varItem(
+					get_index_sexp_variable_name(teamData.ship_list_variables[j]), // variable index
 					true,
 					false,
 					true,
 					0, // 0 until proven otherwise in-game.
-					team.ship_count[index],
-					(strlen(team.ship_count_variables[index])) ? get_index_sexp_variable_name(team.ship_list_variables[index]) : -1,
-					SCP_string(team.ship_list_variables[index])
+					teamData.ship_count[j],
+					(strlen(teamData.ship_count_variables[j])) ? get_index_sexp_variable_name(teamData.ship_count_variables[j]) : -1,
+					SCP_string(teamData.ship_list_variables[j])
 				);
 
-			} // if it doesn't, enable the matching item.
-			else {
-				for (auto& item : _teams[currentTeam].ships) {
-					if (team.ship_list[index] == item.infoIndex) {
-						item.enabled = true;
-						item.extraAllocated = team.ship_count[index];
+				team.varShips.emplace_back(varItem);
 
-						if (strlen(team.ship_count_variables[index])) {
-							item.varCountIndex = get_index_sexp_variable_name(team.ship_count_variables[index]);
-						}
-						else {
+			// if it doesn't, enable the matching item.
+			} else {
+				for (auto& item : team.ships) {
+					if (teamData.ship_list[j] == item.infoIndex) {
+						item.enabled = true;
+						item.extraAllocated = teamData.ship_count[j];
+						if (strlen(teamData.ship_count_variables[j])) {
+							item.varCountIndex = get_index_sexp_variable_name(teamData.ship_count_variables[j]);
+						} else {
 							item.varCountIndex = -1;
 						}
-
-						if (Ship_info[item.infoIndex].num_primary_banks > _teams[currentTeam].largestPrimaryBankCount) {
-							_teams[currentTeam].largestPrimaryBankCount = Ship_info[item.infoIndex].num_primary_banks;
+						if (Ship_info[item.infoIndex].num_primary_banks > team.largestPrimaryBankCount) {
+							team.largestPrimaryBankCount = Ship_info[item.infoIndex].num_primary_banks;
 						}
-
 						int capacity = 0;
-
-						for (int i = 0; i < Ship_info[item.infoIndex].num_secondary_banks; i++){
-							capacity += Ship_info[item.infoIndex].secondary_bank_ammo_capacity[i];
+						for (int k = 0; k < Ship_info[item.infoIndex].num_secondary_banks; k++) {
+							capacity += Ship_info[item.infoIndex].secondary_bank_ammo_capacity[k];
 						}
-							
-						if (capacity > _teams[currentTeam].largestSecondaryCapacity) {
-							_teams[currentTeam].largestSecondaryCapacity = capacity;
+						if (capacity > team.largestSecondaryCapacity) {
+							team.largestSecondaryCapacity = capacity;
 						}
-
 						break;
 					}
 				}
 			}
 		}
 
-		for (index = 0; index < team.num_weapon_choices; index++){
+		// then the weapons
+		for (int j = 0; j < teamData.num_weapon_choices; j++) {
 			// if it has an enabling variable, add it to the correct vector.
-			if (strlen(team.weaponry_pool_variable[index])) {
-				_teams[currentTeam].varWeapons.emplace_back(
-					get_index_sexp_variable_name(team.weaponry_pool_variable[index]),
+			if (strlen(teamData.weaponry_pool_variable[j])) {
+
+				LoadoutItem varItem(
+					get_index_sexp_variable_name(teamData.weaponry_pool_variable[j]), // variable index
 					true,
-					team.weapon_required[index],
+					false, // was teamData.weapon_required[j]... I don't think variables can be required
 					true,
 					0, // 0 until proven otherwise in-game.
-					team.weaponry_count[index],
-					(strlen(team.weaponry_amount_variable[index])) ? get_index_sexp_variable_name(team.weaponry_pool_variable[index]) : -1,
-					SCP_string(team.weaponry_pool_variable[index])
+					teamData.weaponry_count[j],
+					(strlen(teamData.weaponry_amount_variable[j])) ? get_index_sexp_variable_name(teamData.weaponry_amount_variable[j]) : -1,
+					SCP_string(teamData.weaponry_pool_variable[j])
 				);
 
 				// it's impossible for this type to tell if it's secondary or its cargo size, so this default allows for a good number.
-				if (_teams[currentTeam].varWeapons.back().extraAllocated == 0) {
-					_teams[currentTeam].varWeapons.back().extraAllocated = WeaponVarDefault * _teams[currentTeam].startingShipCount;
+				if (varItem.extraAllocated == 0) {
+					varItem.extraAllocated = WeaponVarDefault * team.startingShipCount;
 				}
 
-			} // if it doesn't, enable the matching item.
-			else {
-				for (auto& item : _teams[currentTeam].weapons) {
-					if (team.weaponry_pool[index] == item.infoIndex) {
+				team.varWeapons.emplace_back(varItem);
+			// if it doesn't, enable the matching item.
+			} else {
+				for (auto& item : team.weapons) {
+					if (teamData.weaponry_pool[j] == item.infoIndex) {
 						item.enabled = true;
-						item.required = team.weapon_required[index];
-						item.extraAllocated = team.weaponry_count[index];
-
-						if (strlen(team.weaponry_amount_variable[index])) {
-							item.varCountIndex = get_index_sexp_variable_name(team.weaponry_amount_variable[index]);
-						}
-						else {
+						item.required = teamData.weapon_required[item.infoIndex];
+						item.extraAllocated = teamData.weaponry_count[j];
+						if (strlen(teamData.weaponry_amount_variable[j])) {
+							item.varCountIndex = get_index_sexp_variable_name(teamData.weaponry_amount_variable[j]);
+						} else {
 							item.varCountIndex = -1;
 						}
-
-						// if none are present set the meaningful default here.
-						if (item.extraAllocated == 0 && item.countInWings == 0) {
-							if (Weapon_info[item.infoIndex].subtype == WP_LASER) {
-								item.extraAllocated = (_teams[currentTeam].startingShipCount * _teams[currentTeam].largestPrimaryBankCount) / 2;
-							}
-							else {
-								Assert(Weapon_info[item.infoIndex].cargo_size > 0);
-								item.extraAllocated = (_teams[currentTeam].startingShipCount * _teams[currentTeam].largestSecondaryCapacity) / (2 * Weapon_info[item.infoIndex].cargo_size);
-							}
-						}
-
 						break;
 					}
 				}
 			}
 		}
-
-		currentTeam++;
-		if (currentTeam >= static_cast<int>(_teams.size())) {
-			break;
-		}
 	}
-
-	// need to build list for count variables.
-	for (auto& sexp : Sexp_variables) {
-		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_NUMBER)){	
-			_numberVarList.push_back(sexp.variable_name);
-		}
-	}
-
-	buildCurrentLists();
-
-	_currentTeam = 0;
 }
 
 int TeamLoadoutDialogModel::getCurrentTeam()
@@ -254,7 +336,6 @@ const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getShipEnablerVariables()
 
 const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getWeaponEnablerVariables() const
 {
-	//buildCurrentLists(); // A getter shouldn't do stuff so comment this out to see if we run into issues
 	return _teams[_currentTeam].varWeapons;
 }
 
@@ -331,103 +412,6 @@ void TeamLoadoutDialogModel::switchTeam(int teamIn)
 
 	buildCurrentLists();
 }
-
-bool TeamLoadoutDialogModel::apply() {
-
-	int currentTeam = 0;
-	int index = 0;
-
-	for (auto& modelTeam : _teams) {
-		for (auto& ship : modelTeam.ships) {
-			Team_data[currentTeam].ship_count[index] = ship.extraAllocated;
-
-			if (ship.varCountIndex > -1) {
-				strcpy_s(Team_data[currentTeam].ship_count_variables[index], Sexp_variables[ship.varCountIndex].variable_name);
-			}
-			else {
-				memset(Team_data[currentTeam].ship_count_variables[index], 0, TOKEN_LENGTH);
-			}
-
-			Team_data[currentTeam].ship_list[index] = ship.infoIndex;
-			memset(Team_data[currentTeam].ship_list_variables[index], 0, TOKEN_LENGTH);
-			index++;
-		}
-
-		for (auto& ship : modelTeam.varShips) {
-			if (ship.enabled) {
-
-				Team_data[currentTeam].ship_count[index] = ship.extraAllocated;
-
-				if (ship.varCountIndex > -1) {
-					strcpy_s(Team_data[currentTeam].ship_count_variables[index],
-						Sexp_variables[ship.varCountIndex].variable_name);
-				} else {
-					memset(Team_data[currentTeam].ship_count_variables[index], 0, TOKEN_LENGTH);
-				}
-
-				Team_data[currentTeam].ship_list[index] = ship.infoIndex;
-				strcpy_s(Team_data[currentTeam].ship_list_variables[index], ship.name.c_str());
-				index++;
-			}
-		}
-
-		Team_data[currentTeam].num_ship_choices = index;
-		index = 0;
-
-		for (auto& weapon : modelTeam.weapons) {
-			Team_data[currentTeam].weaponry_count[index] = weapon.extraAllocated;
-
-			if (weapon.varCountIndex > -1) {
-				strcpy_s(Team_data[currentTeam].weaponry_amount_variable[index], Sexp_variables[weapon.varCountIndex].variable_name);
-			}
-			else {
-				memset(Team_data[currentTeam].weaponry_amount_variable[index], 0, TOKEN_LENGTH);
-			}
-
-			Team_data[currentTeam].weaponry_pool[index] = weapon.infoIndex;
-			memset(Team_data[currentTeam].weaponry_pool_variable[index], 0, TOKEN_LENGTH);
-			Team_data[currentTeam].weapon_required[index] = weapon.required;
-			index++;
-		}
-
-		for (auto& weapon : modelTeam.varWeapons) {
-			if (weapon.enabled) {
-
-				Team_data[currentTeam].weaponry_count[index] = weapon.extraAllocated;
-
-				if (weapon.varCountIndex > -1) {
-					strcpy_s(Team_data[currentTeam].weaponry_amount_variable[index],
-						Sexp_variables[weapon.varCountIndex].variable_name);
-				} else {
-					memset(Team_data[currentTeam].weaponry_amount_variable[index], 0, TOKEN_LENGTH);
-				}
-
-				Team_data[currentTeam].weaponry_pool[index] = weapon.infoIndex;
-				strcpy_s(Team_data[currentTeam].weaponry_pool_variable[index], weapon.name.c_str());
-				index++;
-			}
-		}
-
-
-		Team_data[currentTeam].num_weapon_choices = index;
-		Team_data[currentTeam].do_not_validate = modelTeam.skipValidation;
-	}
-	
-	return true; 
-
-} 
-
-void TeamLoadoutDialogModel::reject() {
-	// just clear out the info we're not going to end up using.
-	_shipList.clear();
-	_weaponList.clear();
-	_shipVarList.clear();
-	_weaponVarList.clear();
-	_numberVarList.clear();
-	_requiredWeaponsList.clear();
-	_teams.clear();
-
-} // let him go Harry, let him go
 
 void TeamLoadoutDialogModel::buildCurrentLists()
 {
