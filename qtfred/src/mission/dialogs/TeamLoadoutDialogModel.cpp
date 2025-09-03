@@ -130,6 +130,7 @@ void TeamLoadoutDialogModel::reject()
 	_shipVarList.clear();
 	_weaponVarList.clear();
 	_numberVarList.clear();
+	_stringVarList.clear();
 	_requiredWeaponsList.clear();
 	_teams.clear();
 
