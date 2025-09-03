@@ -13244,8 +13244,6 @@ static void ai_preprocess_ignore_objnum(ai_info *aip)
 		aip->target_objnum = -1;
 }
 
-#define	CHASE_CIRCLE_DIST		100.0f
-
 void ai_chase_circle(object *objp)
 {
 	float		dist_to_goal;
@@ -13266,11 +13264,11 @@ void ai_chase_circle(object *objp)
 	if (aip->ignore_objnum == UNUSED_OBJNUM) {
 		dist_to_goal = vm_vec_dist_quick(&aip->goal_point, &objp->pos);
 
-		if (dist_to_goal > 2*CHASE_CIRCLE_DIST) {
+		if (dist_to_goal > 2 * The_mission.ai_profile->attack_any_idle_circle_distance) {
 			vec3d	vec_to_goal;
 			//	Too far from circle goal, create a new goal point.
 			vm_vec_normalized_dir(&vec_to_goal, &aip->goal_point, &objp->pos);
-			vm_vec_scale_add(&aip->goal_point, &objp->pos, &vec_to_goal, CHASE_CIRCLE_DIST);
+			vm_vec_scale_add(&aip->goal_point, &objp->pos, &vec_to_goal, The_mission.ai_profile->attack_any_idle_circle_distance);
 		}
 
 		goal_point = aip->goal_point;
