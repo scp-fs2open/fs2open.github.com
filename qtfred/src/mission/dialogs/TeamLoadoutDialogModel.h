@@ -66,7 +66,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	SCP_vector<SCP_string> getNumberVarList();
+	const SCP_vector<std::pair<SCP_string, int>>& getNumberVarList();
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 
 	void setCurrentTeam(int teamIn);
@@ -111,6 +111,9 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 
 	void copyToOtherTeams();
 
+	SCP_string getVariableName(int varIndex) const;	
+	SCP_string getVariableValueAsString(int varIndex) const;
+
   private:
 	void initializeData();
 	void recalcShipCapacities(TeamLoadout& team);
@@ -118,7 +121,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	int _currentTeam = 0;
 
 	SCP_vector<TeamLoadout> _teams; // all loadout info for each team
-	SCP_vector<SCP_string> _numberVarList;
+	SCP_vector<std::pair<SCP_string, int>> _numberVarList;
 	SCP_vector<std::pair<SCP_string, int>> _teamList;
 };
 

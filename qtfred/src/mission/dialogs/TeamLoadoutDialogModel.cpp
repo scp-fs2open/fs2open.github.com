@@ -162,9 +162,10 @@ void TeamLoadoutDialogModel::initializeData()
 
 	// need to build list for count variables.
 	_numberVarList.clear();
-	for (auto& sexp : Sexp_variables) {
-		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_NUMBER)) {
-			_numberVarList.push_back(sexp.variable_name);
+	_numberVarList.emplace_back("<none>", -1); // always have a none option
+	for (int i = 0; i < MAX_SEXP_VARIABLES; i++) {
+		if ((Sexp_variables[i].type & SEXP_VARIABLE_SET) && (Sexp_variables[i].type & SEXP_VARIABLE_NUMBER)) {
+			_numberVarList.emplace_back(Sexp_variables[i].variable_name, i);
 		}
 	}
 
@@ -184,7 +185,7 @@ void TeamLoadoutDialogModel::initializeData()
 		auto& team = _teams[i];
 
 		// First we get the ship pool
-		for (int j = 0; j < MAX_SHIP_CLASSES; j++) {
+		for (int j = 0; j < static_cast<int>(Ship_info.size()); j++) {
 			const auto& ship = Ship_info[j];
 			
 			if (ship.flags[Ship::Info_Flags::Player_ship]) {
@@ -209,7 +210,7 @@ void TeamLoadoutDialogModel::initializeData()
 		}
 
 		// then the weapon pool
-		for (int j = 0; j < MAX_WEAPON_TYPES; j++) {
+		for (int j = 0; j < static_cast<int>(Weapon_info.size()); j++) {
 			const auto& weapon = Weapon_info[j];
 
 			if (weapon.wi_flags[Weapon::Info_Flags::Player_allowed]) {
@@ -345,7 +346,7 @@ void TeamLoadoutDialogModel::recalcShipCapacities(TeamLoadout& team)
 	}
 }
 
-SCP_vector<SCP_string> TeamLoadoutDialogModel::getNumberVarList()
+const SCP_vector<std::pair<SCP_string, int>>& TeamLoadoutDialogModel::getNumberVarList()
 {
 	return _numberVarList;
 }
@@ -1059,6 +1060,28 @@ void TeamLoadoutDialogModel::copyToOtherTeams()
 
 		index++;
 	}
+}
+
+SCP_string TeamLoadoutDialogModel::getVariableName(int varIndex) const
+{
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return SCP_string();
+	return SCP_string(Sexp_variables[varIndex].variable_name);
+}
+
+SCP_string TeamLoadoutDialogModel::getVariableValueAsString(int varIndex) const
+{
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return SCP_string();
+	const auto& v = Sexp_variables[varIndex];
+	if (!(v.type & SEXP_VARIABLE_SET))
+		return SCP_string();
+	if (v.type & SEXP_VARIABLE_NUMBER) {
+		return v.text;
+	} else if (v.type & SEXP_VARIABLE_STRING) {
+		return v.text;
+	}
+	return SCP_string();
 }
 
 } // namespace fso::fred::dialogs
