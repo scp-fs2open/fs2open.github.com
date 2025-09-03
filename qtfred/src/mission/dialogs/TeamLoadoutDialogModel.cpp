@@ -3,7 +3,7 @@
 #include "mission/missionparse.h"
 #include "object/object.h"
 #include "mission/Editor.h"
-#include "ship/ship.cpp"
+#include "ship/ship.h"
 #include "weapon/weapon.h"
 
 namespace fso::fred::dialogs {
@@ -11,6 +11,9 @@ namespace fso::fred::dialogs {
 // for variable-enabled weapons and ships, these are the defaults.
 constexpr int ShipVarDefault = 4;
 constexpr int WeaponVarDefault = 40;
+
+constexpr int ShipStaticDefault = 4;
+constexpr int WeaponStaticDefault = 8;
 
 TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
@@ -142,14 +145,9 @@ bool TeamLoadoutDialogModel::apply()
 void TeamLoadoutDialogModel::reject()
 {
 	// just clear out the info we're not going to end up using.
-	_shipList.clear();
-	_weaponList.clear();
-	_shipVarList.clear();
-	_weaponVarList.clear();
 	_numberVarList.clear();
-	_stringVarList.clear();
-	_requiredWeaponsList.clear();
 	_teams.clear();
+	_teamList.clear();
 
 } // let him go Harry, let him go
 
@@ -157,22 +155,16 @@ void TeamLoadoutDialogModel::initializeData()
 {
 	
 	// first, build the team list same as other dialogs
-	_team_list.clear();
+	_teamList.clear();
 	for (auto& team : Mission_event_teams_tvt) {
-		_team_list.emplace_back(team.first, team.second);
+		_teamList.emplace_back(team.first, team.second);
 	}
 
 	// need to build list for count variables.
+	_numberVarList.clear();
 	for (auto& sexp : Sexp_variables) {
 		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_NUMBER)) {
 			_numberVarList.push_back(sexp.variable_name);
-		}
-	}
-
-	// and a list of string variables for the enablers.
-	for (auto& sexp : Sexp_variables) {
-		if ((sexp.type & SEXP_VARIABLE_SET) && (sexp.type & SEXP_VARIABLE_STRING)) {
-			_stringVarList.push_back(sexp.variable_name);
 		}
 	}
 
@@ -257,6 +249,10 @@ void TeamLoadoutDialogModel::initializeData()
 					SCP_string(teamData.ship_list_variables[j])
 				);
 
+				if (varItem.extraAllocated == 0) {
+					varItem.extraAllocated = ShipVarDefault;
+				}
+
 				team.varShips.emplace_back(varItem);
 
 			// if it doesn't, enable the matching item.
@@ -328,11 +324,43 @@ void TeamLoadoutDialogModel::initializeData()
 	}
 }
 
+void TeamLoadoutDialogModel::recalcShipCapacities(TeamLoadout& team)
+{
+	team.largestPrimaryBankCount = 0;
+	team.largestSecondaryCapacity = 0;
+	auto present = [](const LoadoutItem& it) {
+		return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
+	};
+	for (const auto& it : team.ships) {
+		if (!present(it))
+			continue;
+		const auto& si = Ship_info[it.infoIndex];
+		if (si.num_primary_banks > team.largestPrimaryBankCount)
+			team.largestPrimaryBankCount = si.num_primary_banks;
+		int secCap = 0;
+		for (int b = 0; b < si.num_secondary_banks; ++b)
+			secCap += si.secondary_bank_ammo_capacity[b];
+		if (secCap > team.largestSecondaryCapacity)
+			team.largestSecondaryCapacity = secCap;
+	}
+}
+
+SCP_vector<SCP_string> TeamLoadoutDialogModel::getNumberVarList()
+{
+	return _numberVarList;
+}
+
+const SCP_vector<std::pair<SCP_string, int>>& TeamLoadoutDialogModel::getTeamList()
+{
+	return _teamList;
+}
+
 void TeamLoadoutDialogModel::setCurrentTeam(int teamIn)
 {
 	if (!SCP_vector_inbounds(_teams, teamIn))
 		return;
-	_currentTeam = teamIn;
+
+	_currentTeam = teamIn; // This is explicitly not a modification
 }
 
 int TeamLoadoutDialogModel::getCurrentTeam()
@@ -340,75 +368,677 @@ int TeamLoadoutDialogModel::getCurrentTeam()
 	return _currentTeam;
 }
 
-const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getShipList() const
+const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarShips() const
 {
+	SCP_vector<LoadoutItem> out;
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return out;
+
+	const auto& team = _teams[_currentTeam];
+
+	// Map active rows by name for quick lookup
+	SCP_unordered_map<SCP_string, const LoadoutItem*> active;
+	for (const auto& li : team.varShips) {
+		active.emplace(li.name, &li);
+	}
+
+	// Enumerate string vars
+	for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
+		const auto& v = Sexp_variables[i];
+		if (!((v.type & SEXP_VARIABLE_SET) && (v.type & SEXP_VARIABLE_STRING)))
+			continue;
+
+		auto it = active.find(v.variable_name);
+		if (it != active.end()) {
+			out.emplace_back(*it->second); // copy the real row
+		} else {
+			LoadoutItem li;
+			li.infoIndex = i;
+			li.enabled = false;
+			li.required = false;
+			li.fromVariable = true;
+			li.countInWings = 0;
+			li.extraAllocated = 0;
+			li.varCountIndex = -1;
+			li.name = v.variable_name;
+			out.emplace_back(std::move(li));
+		}
+	}
+
+	// Stable UI order
+	std::sort(out.begin(), out.end(), [](const LoadoutItem& a, const LoadoutItem& b) {
+		return stricmp(a.name.c_str(), b.name.c_str()) < 0;
+	});
+
+	return out;
+}
+
+void TeamLoadoutDialogModel::setShipVarEnabled(int varIndex, bool enabled)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto type = Sexp_variables[varIndex].type;
+	if (!(type & SEXP_VARIABLE_SET) || !(type & SEXP_VARIABLE_STRING))
+		return;
+
+	// find existing by name
+	auto it = std::find_if(team.varShips.begin(), team.varShips.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varShips.end()) {
+		modify(it->enabled, enabled);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+
+		if (enabled && it->extraAllocated == 0 && it->varCountIndex == -1) {
+			modify(it->extraAllocated, ShipVarDefault);
+		}
+		return;
+	}
+
+	if (!enabled)
+		return; // no-op
+
+	// Create new var enabled row
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true;
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = ShipVarDefault;
+	li.varCountIndex = -1;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varShips.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setShipVarEnabled(const SCP_vector<std::pair<int, bool>>& updates)
+{
+	for (const auto& [idx, on] : updates)
+		setShipVarEnabled(idx, on);
+}
+
+void TeamLoadoutDialogModel::setShipVarExtra(int varIndex, int extra)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto type = Sexp_variables[varIndex].type;
+	if (!(type & SEXP_VARIABLE_SET) || !(type & SEXP_VARIABLE_STRING))
+		return;
+
+	auto it = std::find_if(team.varShips.begin(), team.varShips.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varShips.end()) {
+		modify(it->extraAllocated, (extra < 0) ? 0 : extra);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+		return;
+	}
+
+	// Create
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true; // auto enable
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = (extra < 0) ? 0 : extra;
+	li.varCountIndex = -1;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varShips.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setShipVarExtra(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [idx, val] : updates)
+		setShipVarExtra(idx, val);
+}
+
+void TeamLoadoutDialogModel::setShipVarCountVar(int varIndex, int numberVarIndex)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto enType = Sexp_variables[varIndex].type;
+	if (!(enType & SEXP_VARIABLE_SET) || !(enType & SEXP_VARIABLE_STRING))
+		return;
+
+	int amtVarIdx = numberVarIndex;
+	if (amtVarIdx < 0 || amtVarIdx >= MAX_SEXP_VARIABLES ||
+		!((Sexp_variables[amtVarIdx].type & SEXP_VARIABLE_SET) &&
+			(Sexp_variables[amtVarIdx].type & SEXP_VARIABLE_NUMBER))) {
+		amtVarIdx = -1;
+	}
+
+	auto it = std::find_if(team.varShips.begin(), team.varShips.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varShips.end()) {
+		modify(it->varCountIndex, amtVarIdx);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+
+		if (amtVarIdx == -1 && it->extraAllocated == 0) {
+			modify(it->extraAllocated, ShipVarDefault);
+		}
+		return;
+	}
+
+	// Create
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true; // auto enable
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = 0; // literal unused when var is set
+	li.varCountIndex = amtVarIdx;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varShips.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setShipVarCountVar(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [idx, numIdx] : updates)
+		setShipVarCountVar(idx, numIdx);
+}
+
+const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarWeapons() const
+{
+	SCP_vector<LoadoutItem> out;
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return out;
+
+	const auto& team = _teams[_currentTeam];
+
+	SCP_unordered_map<SCP_string, const LoadoutItem*> active;
+	for (const auto& li : team.varWeapons) {
+		active.emplace(li.name, &li);
+	}
+
+	for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
+		const auto& v = Sexp_variables[i];
+		if (!((v.type & SEXP_VARIABLE_SET) && (v.type & SEXP_VARIABLE_STRING)))
+			continue;
+
+		auto it = active.find(v.variable_name);
+		if (it != active.end()) {
+			out.emplace_back(*it->second);
+		} else {
+			LoadoutItem li;
+			li.infoIndex = i;
+			li.enabled = false;
+			li.required = false;
+			li.fromVariable = true;
+			li.countInWings = 0;
+			li.extraAllocated = 0;
+			li.varCountIndex = -1;
+			li.name = v.variable_name;
+			out.emplace_back(std::move(li));
+		}
+	}
+
+	std::sort(out.begin(), out.end(), [](const LoadoutItem& a, const LoadoutItem& b) {
+		return stricmp(a.name.c_str(), b.name.c_str()) < 0;
+	});
+
+	return out;
+}
+
+void TeamLoadoutDialogModel::setWeaponVarEnabled(int varIndex, bool enabled)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto type = Sexp_variables[varIndex].type;
+	if (!(type & SEXP_VARIABLE_SET) || !(type & SEXP_VARIABLE_STRING))
+		return;
+
+	auto it = std::find_if(team.varWeapons.begin(), team.varWeapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varWeapons.end()) {
+		modify(it->enabled, enabled);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+
+		if (enabled && it->extraAllocated == 0 && it->varCountIndex == -1) {
+			modify(it->extraAllocated, WeaponVarDefault * team.startingShipCount);
+		}
+		return;
+	}
+
+	if (!enabled)
+		return;
+
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true;
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = WeaponVarDefault * team.startingShipCount;
+	li.varCountIndex = -1;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varWeapons.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setWeaponVarEnabled(const SCP_vector<std::pair<int, bool>>& updates)
+{
+	for (const auto& [idx, on] : updates)
+		setWeaponVarEnabled(idx, on);
+}
+
+void TeamLoadoutDialogModel::setWeaponVarExtra(int varIndex, int extra)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto type = Sexp_variables[varIndex].type;
+	if (!(type & SEXP_VARIABLE_SET) || !(type & SEXP_VARIABLE_STRING))
+		return;
+
+	auto it = std::find_if(team.varWeapons.begin(), team.varWeapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varWeapons.end()) {
+		modify(it->extraAllocated, (extra < 0) ? 0 : extra);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+		return;
+	}
+
+	// Create
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true; // auto enable
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = (extra < 0) ? 0 : extra;
+	li.varCountIndex = -1;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varWeapons.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setWeaponVarExtra(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [idx, val] : updates)
+		setWeaponVarExtra(idx, val);
+}
+
+void TeamLoadoutDialogModel::setWeaponVarCountVar(int varIndex, int numberVarIndex)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
+		return;
+	const auto enType = Sexp_variables[varIndex].type;
+	if (!(enType & SEXP_VARIABLE_SET) || !(enType & SEXP_VARIABLE_STRING))
+		return;
+
+	int amtVarIdx = numberVarIndex;
+	if (amtVarIdx < 0 || amtVarIdx >= MAX_SEXP_VARIABLES ||
+		!((Sexp_variables[amtVarIdx].type & SEXP_VARIABLE_SET) &&
+			(Sexp_variables[amtVarIdx].type & SEXP_VARIABLE_NUMBER))) {
+		amtVarIdx = -1;
+	}
+
+	auto it = std::find_if(team.varWeapons.begin(), team.varWeapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == varIndex;
+	});
+
+	if (it != team.varWeapons.end()) {
+		modify(it->varCountIndex, amtVarIdx);
+		modify(it->name, SCP_string(Sexp_variables[varIndex].variable_name));
+
+		if (amtVarIdx == -1 && it->extraAllocated == 0) {
+			modify(it->extraAllocated, WeaponVarDefault * team.startingShipCount);
+		}
+		return;
+	}
+
+	// Create
+	LoadoutItem li;
+	li.infoIndex = varIndex;
+	li.enabled = true; // auto enable
+	li.required = false;
+	li.fromVariable = true;
+	li.countInWings = 0;
+	li.extraAllocated = 0;
+	li.varCountIndex = amtVarIdx;
+	li.name = Sexp_variables[varIndex].variable_name;
+
+	team.varWeapons.emplace_back(std::move(li));
+	set_modified();
+}
+
+void TeamLoadoutDialogModel::setWeaponVarCountVar(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [idx, numIdx] : updates)
+		setWeaponVarCountVar(idx, numIdx);
+}
+
+const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getShips() const
+{
+	static const SCP_vector<LoadoutItem> kEmpty;
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return kEmpty; // should not happen
+
 	return _teams[_currentTeam].ships;
 }
 
-const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getWeaponList() const
+void TeamLoadoutDialogModel::setShipEnabled(int classIndex, bool on)
 {
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Ship_info.size())
+		return;
+	if (!Ship_info[classIndex].flags[Ship::Info_Flags::Player_ship])
+		return;
+
+	auto it = std::find_if(team.ships.begin(), team.ships.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.ships.end())
+		return;
+
+	const bool wasPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+
+	if (on) {
+		modify(it->enabled, true);
+
+		if (it->extraAllocated == 0 && it->varCountIndex == -1 && it->countInWings == 0) {
+			modify(it->extraAllocated, ShipStaticDefault);
+		}
+	} else {
+		modify(it->enabled, false);
+		modify(it->extraAllocated, 0);
+		modify(it->varCountIndex, -1);
+	}
+
+	const bool isPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+	if (wasPresent != isPresent)
+		recalcShipCapacities(team);
+}
+
+void TeamLoadoutDialogModel::setShipEnabled(const SCP_vector<std::pair<int, bool>>& updates)
+{
+	for (const auto& [cls, on] : updates)
+		setShipEnabled(cls, on);
+}
+
+void TeamLoadoutDialogModel::setShipExtra(int classIndex, int count)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Ship_info.size())
+		return;
+	if (!Ship_info[classIndex].flags[Ship::Info_Flags::Player_ship])
+		return;
+
+	auto it = std::find_if(team.ships.begin(), team.ships.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.ships.end())
+		return;
+
+	const bool wasPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+
+	modify(it->extraAllocated, (count < 0) ? 0 : count);
+
+	const bool isPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+	if (wasPresent != isPresent)
+		recalcShipCapacities(team);
+}
+
+void TeamLoadoutDialogModel::setShipExtra(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [cls, cnt] : updates)
+		setShipExtra(cls, cnt);
+}
+
+void TeamLoadoutDialogModel::setShipCountVar(int classIndex, int numberVarIndex)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Ship_info.size())
+		return;
+	if (!Ship_info[classIndex].flags[Ship::Info_Flags::Player_ship])
+		return;
+
+	auto it = std::find_if(team.ships.begin(), team.ships.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.ships.end())
+		return;
+
+	const bool wasPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+
+	int idx = numberVarIndex;
+	if (idx >= 0) {
+		if (idx >= MAX_SEXP_VARIABLES)
+			idx = -1;
+		else {
+			const auto t = Sexp_variables[idx].type;
+			if (!((t & SEXP_VARIABLE_SET) && (t & SEXP_VARIABLE_NUMBER)))
+				idx = -1;
+		}
+	}
+
+	modify(it->varCountIndex, idx);
+
+	if (idx == -1 && it->enabled && it->extraAllocated == 0 && it->countInWings == 0) {
+		modify(it->extraAllocated, ShipStaticDefault);
+	}
+
+	const bool isPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+	if (wasPresent != isPresent)
+		recalcShipCapacities(team);
+}
+
+void TeamLoadoutDialogModel::setShipCountVar(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [cls, idx] : updates)
+		setShipCountVar(cls, idx);
+}
+
+const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getWeapons() const
+{
+	static const SCP_vector<LoadoutItem> kEmpty;
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return kEmpty; // should not happen
+
 	return _teams[_currentTeam].weapons;
 }
 
-const SCP_vector<SCP_string>& TeamLoadoutDialogModel::getRequiredWeapons() const
+void TeamLoadoutDialogModel::setWeaponEnabled(int classIndex, bool on)
 {
-	return _requiredWeaponsList;
-}
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
 
-const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getShipEnablerVariables() const
-{
-	return _teams[_currentTeam].varShips;
-}
+	if (classIndex < 0 || classIndex >= (int)Weapon_info.size())
+		return;
+	if (!Weapon_info[classIndex].wi_flags[Weapon::Info_Flags::Player_allowed])
+		return;
 
-const SCP_vector<LoadoutItem>& TeamLoadoutDialogModel::getWeaponEnablerVariables() const
-{
-	return _teams[_currentTeam].varWeapons;
-}
+	auto it = std::find_if(team.weapons.begin(), team.weapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.weapons.end())
+		return;
 
-SCP_string TeamLoadoutDialogModel::createItemString(bool ship, bool variable, int itemIndex, const char* variableIn)
-{
-	// Using a pointer here seems to lead to memory corruption, so I'll just use a temp Loadout Item
-	LoadoutItem item;
-	char stringOut[128];
+	if (on) {
+		modify(it->enabled, true);
 
-	if (variable) {
-		if (ship) {
-			item = _teams[_currentTeam].varShips[itemIndex];
-			strcpy(stringOut, variableIn);
-		} else {
-			item = _teams[_currentTeam].varWeapons[itemIndex];
-			strcpy(stringOut, variableIn);
+		if (it->extraAllocated == 0 && it->varCountIndex == -1 && it->countInWings == 0) {
+			modify(it->extraAllocated, WeaponStaticDefault);
 		}
-
 	} else {
-		if (ship) {
-			item = _teams[_currentTeam].ships[itemIndex];
-			strcpy(stringOut, Ship_info[item.infoIndex].name);
-		} else {
-			item = _teams[_currentTeam].weapons[itemIndex];
-			strcpy(stringOut, Weapon_info[item.infoIndex].name);
+		modify(it->enabled, false);
+		modify(it->extraAllocated, 0);
+		modify(it->varCountIndex, -1);
+	}
+}
+
+void TeamLoadoutDialogModel::setWeaponEnabled(const SCP_vector<std::pair<int, bool>>& updates)
+{
+	for (const auto& [cls, on] : updates)
+		setWeaponEnabled(cls, on);
+}
+
+void TeamLoadoutDialogModel::setWeaponExtra(int classIndex, int count)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Weapon_info.size())
+		return;
+	if (!Weapon_info[classIndex].wi_flags[Weapon::Info_Flags::Player_allowed])
+		return;
+
+	auto it = std::find_if(team.weapons.begin(), team.weapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.weapons.end())
+		return;
+
+	modify(it->extraAllocated, (count < 0) ? 0 : count);
+}
+
+void TeamLoadoutDialogModel::setWeaponExtra(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [cls, cnt] : updates)
+		setWeaponExtra(cls, cnt);
+}
+
+void TeamLoadoutDialogModel::setWeaponCountVar(int classIndex, int numberVarIndex)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Weapon_info.size())
+		return;
+	if (!Weapon_info[classIndex].wi_flags[Weapon::Info_Flags::Player_allowed])
+		return;
+
+	auto it = std::find_if(team.weapons.begin(), team.weapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.weapons.end())
+		return;
+
+	int idx = numberVarIndex;
+	if (idx >= 0) {
+		if (idx >= MAX_SEXP_VARIABLES)
+			idx = -1;
+		else {
+			const auto t = Sexp_variables[idx].type;
+			if (!((t & SEXP_VARIABLE_SET) && (t & SEXP_VARIABLE_NUMBER)))
+				idx = -1;
 		}
 	}
 
-	strcat(stringOut, " ");
+	modify(it->varCountIndex, idx);
 
-	if (!variable) {
-		strcat(stringOut, std::to_string(item.countInWings).c_str());
-		strcat(stringOut, "/");	
+	if (idx == -1 && it->enabled && it->extraAllocated == 0 && it->countInWings == 0) {
+		modify(it->extraAllocated, WeaponStaticDefault);
 	}
-
-	if (item.varCountIndex < 0) {
-		strcat(stringOut, std::to_string(item.extraAllocated).c_str());
-	}
-	else {
-		strcat(stringOut, Sexp_variables[item.varCountIndex].variable_name);
-	}
-
-	SCP_string stringOut2 = stringOut;
-	return stringOut2;
 }
 
-void TeamLoadoutDialogModel::copyToOtherTeam()
+void TeamLoadoutDialogModel::setWeaponCountVar(const SCP_vector<std::pair<int, int>>& updates)
+{
+	for (const auto& [cls, idx] : updates)
+		setWeaponCountVar(cls, idx);
+}
+
+void TeamLoadoutDialogModel::setWeaponRequired(int classIndex, bool on)
+{
+	if (!SCP_vector_inbounds(_teams, _currentTeam))
+		return;
+	auto& team = _teams[_currentTeam];
+
+	if (classIndex < 0 || classIndex >= (int)Weapon_info.size())
+		return;
+	if (!Weapon_info[classIndex].wi_flags[Weapon::Info_Flags::Player_allowed])
+		return;
+
+	auto it = std::find_if(team.weapons.begin(), team.weapons.end(), [&](const LoadoutItem& li) {
+		return li.infoIndex == classIndex;
+	});
+	if (it == team.weapons.end())
+		return;
+
+	// Only valid on static rows that are present
+	const bool presentStatic = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+
+	if (on && presentStatic) {
+		modify(it->enabled, true);
+	} else {
+		// Either toggling off or invalid context
+		modify(it->required, false);
+	}
+}
+
+void TeamLoadoutDialogModel::setWeaponRequired(const SCP_vector<std::pair<int, bool>>& updates)
+{
+	for (const auto& [cls, on] : updates)
+		setWeaponRequired(cls, on);
+}
+
+bool TeamLoadoutDialogModel::getSkipValidation()
+{
+	return _teams[_currentTeam].skipValidation;
+}
+
+void TeamLoadoutDialogModel::setSkipValidation(const bool skipIt)
+{
+	// this is designed to be a global control, so turn this off in TvT, until we hear from someone otherwise.
+	for (auto& team : _teams) {
+		modify(team.skipValidation, skipIt);
+	}
+}
+
+void TeamLoadoutDialogModel::copyToOtherTeams()
 {
 	int index = 0;
 
@@ -425,521 +1055,9 @@ void TeamLoadoutDialogModel::copyToOtherTeam()
 		destinationTeam.varWeapons = _teams[_currentTeam].varWeapons;
 		destinationTeam.weapons = _teams[_currentTeam].weapons;
 
+		set_modified();
+
 		index++;
-	}
-}
-
-void TeamLoadoutDialogModel::switchTeam(int teamIn) 
-{
-	if (!SCP_vector_inbounds(_teams, teamIn))
-		return;
-
-	_currentTeam = teamIn;
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::buildCurrentLists()
-{
-	// we're rebuilding the whole list, so we have to clear the text lists out.
-	_shipList.clear();
-	_weaponList.clear();
-	_shipVarList.clear();
-	_weaponVarList.clear();
-	_requiredWeaponsList.clear();
-
-	int index = 0;
-	for (auto& item : _teams[_currentTeam].ships) {
-		_shipList.emplace_back(item);
-		index++;
-	}
-
-	index = 0;
-
-	for (auto& item : _teams[_currentTeam].weapons) {
-		_weaponList.emplace_back(item);
-		if (item.required) {
-			_requiredWeaponsList.push_back(item.name);
-		}
-		index++;
-	}
-	
-	for (int x = 0; x < MAX_SEXP_VARIABLES; ++x) {
-		bool enabled = false;
-		SCP_string name = Sexp_variables[x].variable_name;
-
-		if ((Sexp_variables[x].type & SEXP_VARIABLE_SET) && (Sexp_variables[x].type & SEXP_VARIABLE_STRING)) {
-			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varShips.size()); ++y) {
-				if (_teams[_currentTeam].varShips[y].name == Sexp_variables[x].variable_name) {
-					enabled = _teams[_currentTeam].varShips[y].enabled;
-					name = createItemString(true, true, y, name.c_str());
-					break;
-				}
-			}
-
-			//_shipVarList.emplace_back(name, enabled);
-
-			enabled = false;
-			SCP_string name2 = Sexp_variables[x].variable_name;
-
-			for (int y = 0; y < static_cast<int>(_teams[_currentTeam].varWeapons.size()); ++y) {
-				if (_teams[_currentTeam].varWeapons[y].name == Sexp_variables[x].variable_name) {
-					enabled = _teams[_currentTeam].varWeapons[y].enabled;
-					name2 = createItemString(false, true, y, name2.c_str());
-					break;
-				}
-			}
-
-			//_weaponVarList.emplace_back(name2, enabled);
-		}
-	}
-}
-
-SCP_string TeamLoadoutDialogModel::getCountVarShips(SCP_vector<SCP_string> namesIn) 
-{
-	int tester = -1;
-	SCP_string out = "";
-
-	for (auto& name : namesIn) {
-		for (auto& currentShip : _teams[_currentTeam].ships) {
-			if (currentShip.name == name) {
-				if (tester > -1 && currentShip.varCountIndex != tester) {
-					return out;
-				}
-				else {
-					tester = currentShip.varCountIndex;
-				}
-			}
-		}
-	}
-
-	if (tester > -1) {
-		out = SCP_string(Sexp_variables[tester].text);
-	} else {
-		out = "<none>";
-	}
-
-	return out;
-}
-
-SCP_string TeamLoadoutDialogModel::getCountVarWeapons(SCP_vector<SCP_string> namesIn)
-{
-	int tester = -1;
-	SCP_string out = "";
-
-	for (auto& name : namesIn) {
-		for (auto& currentWep : _teams[_currentTeam].weapons) {
-			if (currentWep.name == name) {
-				if (tester > -1 && currentWep.varCountIndex != tester) {
-					return out;
-				}
-				else {
-					tester = currentWep.varCountIndex;
-				}
-			}
-		}
-	}
-
-	if (tester > -1) {
-		out = SCP_string(Sexp_variables[tester].text);
-	} else {
-		out = "<none>";
-	}
-
-	return out;
-}
-
-SCP_string TeamLoadoutDialogModel::getCountVarShipEnabler(SCP_vector<SCP_string> namesIn) 
-{
-	int tester = -1;
-	SCP_string out = "";
-
-	for (auto& name : namesIn) {
-		for (auto& currentShip : _teams[_currentTeam].varShips) {
-			if (currentShip.name == name) {
-				if (tester > -1 && currentShip.varCountIndex != tester) {
-					return out;
-				}
-				else {
-					tester = currentShip.varCountIndex;
-				}
-			}
-		}
-	}
-
-	if (tester > -1) {
-		out = SCP_string(Sexp_variables[tester].text);
-	} else {
-		out = "<none>";
-	}
-
-	return out;
-}
-
-SCP_string TeamLoadoutDialogModel::getCountVarWeaponEnabler(SCP_vector<SCP_string> namesIn) 
-{
-	int tester = -1;
-	SCP_string out = "";
-
-	for (auto& name : namesIn) {
-		for (auto& currentWep : _teams[_currentTeam].varWeapons) {
-			if (currentWep.name == name) {
-				if (tester > -1 && currentWep.varCountIndex != tester) {
-					return out;
-				}
-				else {
-					tester = currentWep.varCountIndex;
-				}
-			}
-		}
-	}
-
-	if (tester > -1) {
-		out = SCP_string(Sexp_variables[tester].text);
-	} else {
-		out = "<none>";
-	}
-
-	return out;
-
-}
-
-int TeamLoadoutDialogModel::getExtraAllocatedShips(SCP_vector<SCP_string> namesIn) 
-{
-	int out = -1;
-
-	for (auto& name : namesIn) {
-		for (auto& currentShip : _teams[_currentTeam].ships) {
-			if (currentShip.name == name) {
-				// if this ship has a variable establishing count for it, or it doesn't match a previously establish count
-				// then we cannot represent all entries with the same amount and should return -1
-				if (currentShip.varCountIndex > -1 || (out > -1 && currentShip.extraAllocated != out)) {
-					return -1;
-				}
-				else {
-					out = currentShip.extraAllocated;
-				}
-			}
-		}
-	}
-
-	return out;
-}
-
-int TeamLoadoutDialogModel::getExtraAllocatedWeapons(SCP_vector<SCP_string> namesIn) 
-{
-	int out = -1;
-
-	for (auto& name : namesIn) {
-		for (auto& currentWep : _teams[_currentTeam].weapons) {
-			if (currentWep.name == name) {
-				if (currentWep.varCountIndex > -1 || (out > -1 && currentWep.extraAllocated != out)) {
-					return -1;
-				} else {
-					out = currentWep.extraAllocated;
-				}
-			}
-		}
-	}
-
-	return out;
-}
-
-int TeamLoadoutDialogModel::getExtraAllocatedShipEnabler(SCP_vector<SCP_string> namesIn) 
-{
-	int out = -1;
-
-	for (auto& name : namesIn) {
-		for (auto& currentShip : _teams[_currentTeam].varShips) {
-			if (currentShip.name == name) {
-				if (out > -1 && currentShip.extraAllocated != out) {
-					return -1;
-				} else {
-					out = currentShip.extraAllocated;
-				}
-			}
-		}
-	}
-
-	return out;
-}
-
-int TeamLoadoutDialogModel::getExtraAllocatedWeaponEnabler(SCP_vector<SCP_string> namesIn) 
-{
-	int out = -1;
-
-	for (auto& name : namesIn) {
-		for (auto& currentWep : _teams[_currentTeam].varWeapons) {
-			if (currentWep.name == name) {
-				if (out > -1 && currentWep.extraAllocated != out) {
-					return -1;
-				} else {
-					out = currentWep.extraAllocated;
-				}
-			}
-		}
-	}
-
-	return out;
-}
-
-SCP_vector<SCP_string> TeamLoadoutDialogModel::getNumberVarList() 
-{
-	return _numberVarList;
-}
-
-const SCP_vector<std::pair<SCP_string, int>>& TeamLoadoutDialogModel::getTeamList()
-{
-	return _team_list;
-}
-
-void TeamLoadoutDialogModel::setShipEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
-{
-	for (const auto& item : list) {
-		for (auto& ship : _teams[_currentTeam].ships) {
-			if (item == ship.name) {
-				// if this is a first time enabling, set it to the default.				
-				if (!ship.enabled && enabled && ship.extraAllocated == 0) {
-					modify(ship.extraAllocated, 4); // TODO 4 should be a constant somewhere
-				} 
-
-				// If this is present in wings, it cannot be disabled, but we *can* remove the extra.
-				if (ship.enabled && !enabled && ship.countInWings > 0) {
-					modify(ship.extraAllocated, 0);
-				} else {
-					modify(ship.enabled, enabled);
-				}
-
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-
-void TeamLoadoutDialogModel::setShipVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
-{
-	for (const auto& item : list) {
-		bool found = false;
-		for (auto& ship : _teams[_currentTeam].varShips) {
-			if (item == ship.name) {
-				found = true;
-
-				// if this is a first time enabling, set it to the default.
-				if (!ship.enabled && enabled && ship.extraAllocated == 0) {
-					modify(ship.extraAllocated, ShipVarDefault);
-				}
-
-				modify(ship.enabled, enabled);
-				break;
-			}
-		}
-
-		if (!found && enabled) {
-			_teams[_currentTeam].varShips.emplace_back(get_index_sexp_variable_name(item.c_str()),
-				true,
-				false, // not required until specified
-				true,
-				0, // there cannot be any because this is var enabled.
-				ShipVarDefault,
-				-1, // no var for count until one can be selected.
-				item);
-			set_modified();
-		}
-	}
-
-	buildCurrentLists();
-}
-
-
-void TeamLoadoutDialogModel::setWeaponEnabled(const SCP_vector<SCP_string>& list, bool enabled) 
-{
-	for (const auto& item : list) {
-		for (auto& weapon : _teams[_currentTeam].weapons) {
-			if (item == weapon.name) {
-				// if this is a first time enabling, set it to the default.
-				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
-					modify(weapon.extraAllocated, 8); // TODO 8 should be a constant somewhere
-				}
-
-				// If this is present in wings, it cannot be disabled, but we *can* remove the extra.
-				if (weapon.enabled && !enabled && weapon.countInWings > 0) {
-					modify(weapon.extraAllocated, 0);
-				} else {
-					modify(weapon.enabled, enabled);
-				}
-
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setWeaponVariableEnabled(const SCP_vector<SCP_string>& list, bool enabled)
-{
-	for (const auto& item : list) {
-		bool found = false;
-		for (auto& weapon : _teams[_currentTeam].varWeapons) {
-			if (item == weapon.name) {
-				found = true;
-
-				// if this is a first time enabling, set it to the default.
-				if (!weapon.enabled && enabled && weapon.extraAllocated == 0) {
-					modify(weapon.extraAllocated, WeaponVarDefault);
-				}
-
-				modify(weapon.enabled, enabled);
-				break;
-			}
-		}
-
-		if (!found && enabled) {
-			_teams[_currentTeam].varWeapons.emplace_back(
-				get_index_sexp_variable_name(item.c_str()),
-				true,
-				false, // not required until specified
-				true,
-				0, // there cannot be any because this is var enabled.
-				WeaponVarDefault,
-				-1, // no var for count until one can be selected.
-				item);
-			set_modified();
-		}
-	}
-
-	buildCurrentLists();
-}
-
-
-void TeamLoadoutDialogModel::setExtraAllocatedShipCount(const SCP_vector<SCP_string>& list, const int count) 
-{
-	for (const auto& item : list) {
-		for (auto& ship : _teams[_currentTeam].ships) {
-			if (item == ship.name) {
-				modify(ship.extraAllocated, count);
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setExtraAllocatedForShipVariablesCount(const SCP_vector<SCP_string>& list, const int count)
-{
-	for (const auto& item : list) {
-		for (auto& ship : _teams[_currentTeam].varShips) {
-			if (item == ship.name) {
-				modify(ship.extraAllocated, count);
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setExtraAllocatedWeaponCount(const SCP_vector<SCP_string>& list, const int count)
-{
-	for (const auto& item : list) {
-		for (auto& weapon : _teams[_currentTeam].weapons) {
-			if (item == weapon.name) {
-				modify(weapon.extraAllocated, count);
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setExtraAllocatedForWeaponVariablesCount(const SCP_vector<SCP_string>& list, const int count)
-{
-	for (const auto& item : list) {
-		for (auto& weapon : _teams[_currentTeam].varWeapons) {
-			if (item == weapon.name) {
-				modify(weapon.extraAllocated, count);
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setExtraAllocatedViaVariable(const SCP_vector<SCP_string>& list, const SCP_string& variable, const bool isShip, const bool variableMode)
-{
-	int index = -1;
-
-	if (variable != "<none>" && variable != "") {
-		index = get_index_sexp_variable_name(variable.c_str());
-	}
-
-	for (const auto& item : list) {
-		if (isShip && !variableMode) {
-			for (auto& ship : _teams[_currentTeam].ships) {
-				if (ship.name == item) {
-					modify(ship.varCountIndex, index);
-					break;
-				}
-			}
-			
-		} else if (isShip && variableMode) {
-			for (auto& shipVar : _teams[_currentTeam].varShips) {
-				if (shipVar.name == item) {
-					modify(shipVar.varCountIndex, index);
-					break;
-				}
-			}
-
-		} else if (!isShip && !variableMode) {
-			for (auto& weapon : _teams[_currentTeam].weapons) {
-				if (weapon.name == item) {
-					modify(weapon.varCountIndex, index);
-					break;
-				}
-			}
-
-		} else {
-			for (auto& weaponVar : _teams[_currentTeam].varWeapons) {
-				if (weaponVar.name == item) {
-					modify(weaponVar.varCountIndex, index);
-					break;
-				}
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-void TeamLoadoutDialogModel::setRequiredWeapon(const SCP_vector<SCP_string>& list, const bool required)
-{
-	for (const auto& item : list) {
-		for (auto& weapon : _teams[_currentTeam].weapons) {
-			if (item == weapon.name) {
-				modify(weapon.required, required);
-				break;
-			}
-		}
-	}
-
-	buildCurrentLists();
-}
-
-bool TeamLoadoutDialogModel::getSkipValidation() {
-	return _teams[_currentTeam].skipValidation;
-}
-
-void TeamLoadoutDialogModel::setSkipValidation(const bool skipIt) {
-	// this is designed to be a global control, so turn this off in TvT, until we hear from someone otherwise.
-	for (auto& team : _teams) {
-		team.skipValidation = skipIt;
-		modify(team.skipValidation, skipIt);
 	}
 }
 

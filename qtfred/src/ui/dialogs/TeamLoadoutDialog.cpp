@@ -646,7 +646,7 @@ void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
 
 	switch (ret) {
 		case QMessageBox::Yes:
-			_model->copyToOtherTeam();
+			_model->copyToOtherTeams();
 			break;
 		case QMessageBox::Cancel:
 			break;
