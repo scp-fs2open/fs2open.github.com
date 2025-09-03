@@ -66,13 +66,16 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	void setCurrentTeam(int teamIn);
 	int getCurrentTeam();
+
+	const SCP_vector<LoadoutItem>& getShipEnablerVariables() const;
+	const SCP_vector<LoadoutItem>& getWeaponEnablerVariables() const;
 
 	const SCP_vector<LoadoutItem>& getShipList() const;
 	const SCP_vector<LoadoutItem>& getWeaponList() const;
 	const SCP_vector<SCP_string>& getRequiredWeapons() const;
-	const SCP_vector<LoadoutItem>& getShipEnablerVariables() const;
-	const SCP_vector<LoadoutItem>& getWeaponEnablerVariables() const;
+	
 
 	SCP_string getCountVarShips(SCP_vector<SCP_string> namesIn);
 	SCP_string getCountVarWeapons(SCP_vector<SCP_string> namesIn);

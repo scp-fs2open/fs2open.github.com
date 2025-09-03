@@ -21,6 +21,10 @@ TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* 
 bool TeamLoadoutDialogModel::apply()
 {
 
+	auto present = [](const LoadoutItem& it) {
+		return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
+	};
+	
 	for (int t = 0; t < Num_teams; ++t) {
 		auto& in = _teams[t];
 		auto& out = Team_data[t];
@@ -63,11 +67,8 @@ bool TeamLoadoutDialogModel::apply()
 			}
 
 		// static ships
-		auto presentShip = [](const LoadoutItem& it) {
-			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
-		};
 		for (const auto& it : in.ships)
-			if (presentShip(it)) {
+			if (present(it)) {
 				out.ship_list[s] = it.infoIndex;
 				out.ship_list_variables[s][0] = '\0';
 				if (it.varCountIndex >= 0) {
@@ -109,11 +110,8 @@ bool TeamLoadoutDialogModel::apply()
 			}
 
 		// static weapons
-		auto presentWeap = [](const LoadoutItem& it) {
-			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
-		};
 		for (const auto& it : in.weapons)
-			if (presentWeap(it)) {
+			if (present(it)) {
 				out.weaponry_pool[w] = it.infoIndex;
 				out.weaponry_pool_variable[w][0] = '\0';
 
@@ -131,7 +129,7 @@ bool TeamLoadoutDialogModel::apply()
 
 		// required weapons
 		for (const auto& it : in.weapons)
-			if (presentWeap(it) && it.required && it.infoIndex >= 0 && it.infoIndex < MAX_WEAPON_TYPES) {
+			if (present(it) && it.required && it.infoIndex >= 0 && it.infoIndex < MAX_WEAPON_TYPES) {
 				out.weapon_required[it.infoIndex] = true;
 			}
 
@@ -328,6 +326,13 @@ void TeamLoadoutDialogModel::initializeData()
 			}
 		}
 	}
+}
+
+void TeamLoadoutDialogModel::setCurrentTeam(int teamIn)
+{
+	if (!SCP_vector_inbounds(_teams, teamIn))
+		return;
+	_currentTeam = teamIn;
 }
 
 int TeamLoadoutDialogModel::getCurrentTeam()
