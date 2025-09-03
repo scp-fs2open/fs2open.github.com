@@ -91,7 +91,7 @@ bool TeamLoadoutDialogModel::apply()
 
 		// static weapons
 		auto presentWeap = [](const LoadoutItem& it) {
-			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1 || it.countInWings > 0);
+			return it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
 		};
 		for (const auto& it : in.weapons)
 			if (presentWeap(it)) {
@@ -158,6 +158,7 @@ void TeamLoadoutDialogModel::initializeData()
 		}
 	}
 
+	_teams.clear();
 	TeamLoadout defaultEntry;
 	// make sure we have the correct number of teams.
 	for (int i = 0; i < Num_teams; i++) {
