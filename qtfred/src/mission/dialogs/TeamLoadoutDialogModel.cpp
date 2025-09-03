@@ -37,6 +37,17 @@ bool TeamLoadoutDialogModel::apply()
 		// var ships first
 		for (const auto& it : in.varShips)
 			if (it.enabled && it.infoIndex >= 0) {
+				// validate
+				if (ship_info_lookup(Sexp_variables[it.infoIndex].text) < 0) {
+					SCP_string error = SCP_string("The variable '") + Sexp_variables[it.infoIndex].variable_name +
+									   "' is not a valid ship class. Please correct before applying.";
+					_viewport->dialogProvider->showButtonDialog(DialogType::Error,
+						"Error",
+						error,
+						{DialogButton::Ok});
+					continue; // Skip invalid entries
+				}
+
 				out.ship_list[s] = -1;
 				// enabling var name
 				strcpy_s(out.ship_list_variables[s], Sexp_variables[it.infoIndex].variable_name);
@@ -77,6 +88,14 @@ bool TeamLoadoutDialogModel::apply()
 		// var weapons first
 		for (const auto& it : in.varWeapons)
 			if (it.enabled && it.infoIndex >= 0) {
+				// validate
+				if (weapon_info_lookup(Sexp_variables[it.infoIndex].text) < 0) {
+					SCP_string error = SCP_string("The variable '") + Sexp_variables[it.infoIndex].variable_name +
+									   "' is not a valid weapon class. Please correct before applying.";
+					_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", error, {DialogButton::Ok});
+					continue; // Skip invalid entries
+				}
+
 				out.weaponry_pool[w] = -1;
 				strcpy_s(out.weaponry_pool_variable[w], Sexp_variables[it.infoIndex].variable_name);
 				if (it.varCountIndex >= 0) {
