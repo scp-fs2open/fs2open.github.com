@@ -17064,12 +17064,16 @@ void sexp_end_mission(int n)
 		send_debrief_event();
 	}
 
-	// Karajorma - callback all the clients here. 
-	if (MULTIPLAYER_MASTER)
-	{
-		multi_handle_sudden_mission_end();
-		send_force_end_mission_packet();
-	}
+	Current_sexp_network_packet.do_callback();
+}
+
+void multi_sexp_end_mission()
+{
+	// This is a bit of hack, but when in a debrief state clients will skip the
+	// warp out sequence when the endgame packet is processed.
+	send_debrief_event();
+	// Standard way to end mission (equivalent to Alt-J)
+	multi_handle_end_mission_request();
 }
 
 // Goober5000
@@ -27629,8 +27633,8 @@ void maybe_write_to_event_log(int result)
 {
 	char buffer [256]; 
 
-	int mask = generate_event_log_flags_mask(result); 
-	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name.c_str(), f2i(Missiontime), f2i((longlong)Missiontime * MILLISECONDS_PER_SECOND));
+	int mask = generate_event_log_flags_mask(result);
+	sprintf(buffer, "Event: %s at mission time %d seconds (%d milliseconds)", Mission_events[Event_index].name.c_str(), f2i(Missiontime), static_cast<int>(f2fl(Missiontime) * MILLISECONDS_PER_SECOND));
 	Current_event_log_buffer->push_back(buffer);
 		
 	if (!Snapshot_all_events && (!(mask &=  Mission_events[Event_index].mission_log_flags))) {
@@ -30676,6 +30680,10 @@ void multi_sexp_eval()
 
 			case OP_RED_ALERT:
 				multi_sexp_red_alert();
+				break;
+
+			case OP_END_MISSION:
+				multi_sexp_end_mission();
 				break;
 
 			// bad sexp in the packet

@@ -71,6 +71,8 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 		bool texenable = true;
 
+	int respawn_priority;
+
   public:
 	ShipEditorDialogModel(QObject* parent, EditorViewport* viewport);
 	void initializeData();
@@ -121,6 +123,9 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 
 	void setPlayer(const bool);
 	bool getPlayer() const;
+
+	void setRespawn(const int);
+	int getRespawn() const;
 
 	void setArrivalLocationIndex(const int);
 	int getArrivalLocationIndex() const;
@@ -181,7 +186,7 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	 * @brief Returns true if the wing is a player wing
 	 * @param wing Takes an integer id of the wing
 	 */
-	static bool wing_is_player_wing(const int);
+	bool wing_is_player_wing(const int) const;
 	const std::set<size_t> &getShipOrders() const;
 
 	bool getTexEditEnable() const;

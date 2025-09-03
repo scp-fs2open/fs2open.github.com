@@ -21,6 +21,7 @@ class RenderWidget;
 
 namespace dialogs {
 class ShipEditorDialog;
+class WingEditorDialog;
 }
 
 namespace Ui {
@@ -46,6 +47,9 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void openLoadMissionDialog();
 
 	void newMission();
+
+	// this can be triggered by the loadout dialog and so needs to be public
+	void on_actionVariables_triggered(bool);
 
  private slots:
 	 void on_actionSave_As_triggered(bool);
@@ -88,12 +92,16 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionCurrent_Ship_triggered(bool enabled);
 
 	void on_actionMission_Events_triggered(bool);
+	void on_actionMission_Cutscenes_triggered(bool);
 	void on_actionAsteroid_Field_triggered(bool);
+	void on_actionVolumetric_Nebula_triggered(bool);
 	void on_actionBriefing_triggered(bool);
 	void on_actionMission_Specs_triggered(bool);
 	void on_actionWaypoint_Paths_triggered(bool);
+	void on_actionJump_Nodes_triggered(bool);
 	void on_actionObjects_triggered(bool);
 	void on_actionShips_triggered(bool);
+	void on_actionWings_triggered(bool);
 	void on_actionCampaign_triggered(bool);
 	void on_actionCommand_Briefing_triggered(bool);
 	void on_actionReinforcements_triggered(bool);
@@ -140,9 +148,11 @@ class FredView: public QMainWindow, public IDialogProvider {
 	void on_actionAbout_triggered(bool);
 	void on_actionBackground_triggered(bool);
 	void on_actionShield_System_triggered(bool);
+	void on_actionSet_Global_Ship_Flags_triggered(bool);
 	void on_actionVoice_Acting_Manager_triggered(bool);
 	void on_actionFiction_Viewer_triggered(bool);
 	void on_actionMission_Goals_triggered(bool);
+	void on_actionMusic_Player_triggered(bool);
  signals:
 	/**
 	 * @brief Special version of FredApplication::onIdle which is limited to the lifetime of this object
@@ -211,6 +221,7 @@ class FredView: public QMainWindow, public IDialogProvider {
 	EditorViewport* _viewport = nullptr;
 
 	fso::fred::dialogs::ShipEditorDialog* _shipEditorDialog = nullptr;
+	fso::fred::dialogs::WingEditorDialog* _wingEditorDialog = nullptr;
 
 	bool _inKeyPressHandler = false;
 	bool _inKeyReleaseHandler = false;

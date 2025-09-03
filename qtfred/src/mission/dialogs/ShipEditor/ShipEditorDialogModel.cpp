@@ -14,6 +14,7 @@
 #include "mission/missionmessage.h"
 
 #include <globalincs/linklist.h>
+#include <localization/localize.h>
 #include <mission/object.h>
 
 #include <QtWidgets>
@@ -91,6 +92,7 @@ namespace fso {
 				int type, wing = -1;
 				int cargo = 0, base_ship, base_player, pship = -1;
 				int escort_count;
+				respawn_priority = 0;
 				texenable = true;
 				std::set<size_t> current_orders;
 				pship_count = 0;  // a total count of the player ships not marked
@@ -276,8 +278,9 @@ namespace fso {
 										_m_persona = Ships[i].persona_index;
 										_m_alt_name = Fred_alt_names[base_ship];
 										_m_callsign = Fred_callsigns[base_ship];
-
-
+										if (The_mission.game_type & MISSION_TYPE_MULTI) {
+											respawn_priority = Ships[i].respawn_priority;
+										}
 										// we use final_death_time member of ship structure for holding the amount of time before a mission
 										// to destroy this ship
 										wing = Ships[i].wingnum;
@@ -336,7 +339,6 @@ namespace fso {
 
 					_m_player_ship = pship;
 
-					_m_persona++;
 					if (_m_persona > 0) {
 						int persona_index = 0;
 						for (int i = 0; i < _m_persona; i++) {
@@ -636,6 +638,8 @@ namespace fso {
 				int z, d;
 				SCP_string str;
 
+				lcl_fred_replace_stuff(_m_ship_display_name);
+
 				// the display name was precalculated, so now just assign it
 				if (_m_ship_display_name == _m_ship_name || stricmp(_m_ship_display_name.c_str(), "<none>") == 0)
 				{
@@ -654,7 +658,10 @@ namespace fso {
 
 				ship_alt_name_close(ship);
 				ship_callsign_close(ship);
-
+				Ships[ship].respawn_priority = 0;
+				if (The_mission.game_type & MISSION_TYPE_MULTI) {
+					Ships[ship].respawn_priority = respawn_priority;
+				}
 				if ((Ships[ship].ship_info_index != _m_ship_class) && (_m_ship_class != -1)) {
 					change_ship_type(ship, _m_ship_class);
 				}
@@ -671,6 +678,7 @@ namespace fso {
 					Ships[ship].weapons.ai_class = _m_ai_class;
 				}
 				if (!_m_cargo1.empty()) {
+					lcl_fred_replace_stuff(_m_cargo1);
 					z = string_lookup(_m_cargo1.c_str(), Cargo_names, Num_cargo);
 					if (z == -1) {
 						if (Num_cargo < MAX_CARGO) {
@@ -1048,6 +1056,15 @@ namespace fso {
 				return _m_player_ship;
 			}
 
+			void ShipEditorDialogModel::setRespawn(const int value) {
+				modify(respawn_priority, value);
+			}
+
+			int ShipEditorDialogModel::getRespawn() const
+			{
+				return respawn_priority;
+			}
+
 			void ShipEditorDialogModel::setArrivalLocationIndex(const int value)
 			{
 				modify(_m_arrival_location, value);
@@ -1361,9 +1378,9 @@ namespace fso {
 				}
 			}
 
-			bool ShipEditorDialogModel::wing_is_player_wing(const int wing)
+			bool ShipEditorDialogModel::wing_is_player_wing(const int wing) const
 			{
-				return Editor::wing_is_player_wing(wing);
+				return _editor->wing_is_player_wing(wing);
 			}
 
 			const std::set<size_t> &ShipEditorDialogModel::getShipOrders() const

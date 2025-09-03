@@ -13,12 +13,11 @@
 #include "cfile/cfile.h"
 #include "localization/localize.h"
 #include "mission/missionmessage.h"
+#include "mission/mission_flags.h"
 
 #include <QtWidgets>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
@@ -26,6 +25,8 @@ MissionSpecDialogModel::MissionSpecDialogModel(QObject* parent, EditorViewport* 
 }
 
 void MissionSpecDialogModel::initializeData() {
+	prepareSquadLogoList();
+
 	_m_mission_title = The_mission.name;
 	_m_designer_name = The_mission.author;
 	_m_created = The_mission.created;
@@ -68,7 +69,35 @@ void MissionSpecDialogModel::initializeData() {
 	_m_contrail_threshold = The_mission.contrail_threshold;
 	_m_contrail_threshold_flag = (_m_contrail_threshold != CONTRAIL_THRESHOLD_DEFAULT);
 
+	_m_custom_data = The_mission.custom_data;
+	_m_custom_strings = The_mission.custom_strings;
+	_m_sound_env = The_mission.sound_environment;
+
+	// init starting wings
+	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+		_m_custom_starting_wings[i] = Starting_wing_names[i];
+	}
+
+	// init squadron wings
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		_m_custom_squadron_wings[i] = Squadron_wing_names[i];
+	}
+
+	// init tvt wings
+	for (int i = 0; i < MAX_TVT_WINGS; i++) {
+		_m_custom_tvt_wings[i] = TVT_wing_names[i];
+	}
+
 	modelChanged();
+}
+
+void MissionSpecDialogModel::prepareSquadLogoList()
+{
+	pilot_load_squad_pic_list();
+
+	for (int i = 0; i < Num_pilot_squad_images; i++) {
+		_m_squadLogoList.emplace_back(Pilot_squad_image_names[i]);
+	}
 }
 
 bool MissionSpecDialogModel::apply() {
@@ -148,6 +177,28 @@ bool MissionSpecDialogModel::apply() {
 	if ((The_mission.game_type & MISSION_TYPE_MULTI) && (The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)) {
 		Num_teams = 2;
 	}
+
+	The_mission.custom_data = _m_custom_data;
+	The_mission.custom_strings = _m_custom_strings;
+
+	The_mission.sound_environment = _m_sound_env;
+
+	// copy starting wings
+	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+		strcpy_s(Starting_wing_names[i], _m_custom_starting_wings[i].c_str());
+	}
+
+	// copy squadron wings
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		strcpy_s(Squadron_wing_names[i], _m_custom_squadron_wings[i].c_str());
+	}
+
+	// copy tvt wings
+	for (int i = 0; i < MAX_TVT_WINGS; i++) {
+		strcpy_s(TVT_wing_names[i], _m_custom_tvt_wings[i].c_str());
+	}
+
+	Editor::update_custom_wing_indexes();
 
 	return true;
 }
@@ -322,7 +373,23 @@ SCP_string MissionSpecDialogModel::getSubEventMusic() {
 	return _m_substitute_event_music;
 }
 
-void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool enabled) {
+void MissionSpecDialogModel::setMissionFlag(const SCP_string& flag_name, bool enabled)
+{
+	// Find the matching flagDef by name
+	for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+		if (!stricmp(flag_name.c_str(), Parse_mission_flags[i].name)) {
+			if (enabled)
+				_m_flags.set(Parse_mission_flags[i].def);
+			else
+				_m_flags.remove(Parse_mission_flags[i].def);
+			break;
+		}
+	}
+
+	set_modified();
+}
+
+void MissionSpecDialogModel::setMissionFlagDirect(Mission::Mission_Flags flag, bool enabled) {
 	if (_m_flags[flag] != enabled) {
 		_m_flags.set(flag, enabled);
 		set_modified();
@@ -330,8 +397,25 @@ void MissionSpecDialogModel::setMissionFlag(Mission::Mission_Flags flag, bool en
 	}
 }
 
-const flagset<Mission::Mission_Flags>& MissionSpecDialogModel::getMissionFlags() const {
-	return _m_flags;
+bool MissionSpecDialogModel::getMissionFlag(Mission::Mission_Flags flag) const {
+	return _m_flags[flag];
+}
+
+const SCP_vector<std::pair<SCP_string, bool>>& MissionSpecDialogModel::getMissionFlagsList() {
+	if (_m_flag_data.empty()) {
+		for (size_t i = 0; i < Num_parse_mission_flags; ++i) {
+			auto flagDef = Parse_mission_flags[i];
+
+			// Skip flags that have checkboxes elsewhere than the flag list or are inactive
+			if (flagDef.is_special || !flagDef.in_use) {
+				continue;
+			}
+
+			bool checked = _m_flags[flagDef.def];
+			_m_flag_data.emplace_back(flagDef.name, checked);
+		}
+	}
+	return _m_flag_data;
 }
 
 void MissionSpecDialogModel::setMissionFullWar(bool enabled) {
@@ -367,6 +451,71 @@ SCP_string MissionSpecDialogModel::getDesignerNoteText() {
 	return _m_mission_notes;
 }
 
+void MissionSpecDialogModel::setCustomData(const SCP_map<SCP_string, SCP_string>& custom_data)
+{
+	modify(_m_custom_data, custom_data);
+	set_modified();
 }
+
+SCP_map<SCP_string, SCP_string> MissionSpecDialogModel::getCustomData() const
+{
+	return _m_custom_data;
 }
+
+void MissionSpecDialogModel::setCustomStrings(const SCP_vector<custom_string>& custom_strings)
+{
+	modify(_m_custom_strings, custom_strings);
 }
+
+SCP_vector<custom_string> MissionSpecDialogModel::getCustomStrings() const
+{
+	return _m_custom_strings;
+}
+
+void MissionSpecDialogModel::setSoundEnvironmentParams(const sound_env& snd_env)
+{
+	modify(_m_sound_env, snd_env);
+}
+
+sound_env MissionSpecDialogModel::getSoundEnvironmentParams() const
+{
+	return _m_sound_env;
+}
+
+void MissionSpecDialogModel::setCustomStartingWings(const std::array<SCP_string, MAX_STARTING_WINGS>& starting_wings)
+{
+	for (int i = 0; i < MAX_STARTING_WINGS; i++) {
+		modify(_m_custom_starting_wings[i], starting_wings[i]);
+	}
+}
+
+std::array<SCP_string, MAX_STARTING_WINGS> MissionSpecDialogModel::getCustomStartingWings() const
+{
+	return _m_custom_starting_wings;
+}
+
+void MissionSpecDialogModel::setCustomSquadronWings(const std::array<SCP_string, MAX_SQUADRON_WINGS>& squadron_wings)
+{
+	for (int i = 0; i < MAX_SQUADRON_WINGS; i++) {
+		modify(_m_custom_squadron_wings[i], squadron_wings[i]);
+	}
+}
+
+std::array<SCP_string, MAX_SQUADRON_WINGS> MissionSpecDialogModel::getCustomSquadronWings() const
+{
+	return _m_custom_squadron_wings;
+}
+
+void MissionSpecDialogModel::setCustomTvTWings(const std::array<SCP_string, MAX_TVT_WINGS>& tvt_wings)
+{
+	for (int i = 0; i < MAX_TVT_WINGS; i++) {
+		modify(_m_custom_tvt_wings[i], tvt_wings[i]);
+	}
+}
+
+std::array<SCP_string, MAX_TVT_WINGS> MissionSpecDialogModel::getCustomTvTWings() const
+{
+	return _m_custom_tvt_wings;
+}
+
+} // namespace fso::fred::dialogs

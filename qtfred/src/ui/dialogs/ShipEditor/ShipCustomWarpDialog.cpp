@@ -15,6 +15,52 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
+	setupConnections();
+
+	if (departure) {
+		this->setWindowTitle("Edit Warp-Out Parameters");
+	} else {
+		this->setWindowTitle("Edit Warp-In Parameters");
+	}
+	updateUI(true);
+	// Resize the dialog to the minimum size
+	resize(QDialog::sizeHint());
+}
+
+// Wing mode constructor
+ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
+	EditorViewport* viewport,
+	bool departure,
+	int wingIndex,
+	bool wingMode)
+	: QDialog(parent), ui(new Ui::ShipCustomWarpDialog()), _viewport(viewport)
+{
+	ui->setupUi(this);
+
+	if (wingMode) {
+		_model.reset(new ShipCustomWarpDialogModel(this,
+			viewport,
+			departure,
+			ShipCustomWarpDialogModel::Target::Wing,
+			wingIndex));
+	} else {
+		_model.reset(new ShipCustomWarpDialogModel(this, viewport, departure));
+	}
+
+	setupConnections();
+
+	if (departure) {
+		this->setWindowTitle("Edit Warp-Out Parameters");
+	} else {
+		this->setWindowTitle("Edit Warp-In Parameters");
+	}
+	updateUI(true);
+	// Resize the dialog to the minimum size
+	resize(QDialog::sizeHint());
+}
+
+void ShipCustomWarpDialog::setupConnections()
+{
 	connect(this, &QDialog::accepted, _model.get(), &ShipCustomWarpDialogModel::apply);
 
 	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipCustomWarpDialog::rejectHandler);
@@ -55,15 +101,6 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
 		_model.get(),
 		&ShipCustomWarpDialogModel::setPlayerSpeed);
-
-	if (departure) {
-		this->setWindowTitle("Edit Warp-Out Parameters");
-	} else {
-		this->setWindowTitle("Edit Warp-In Parameters");
-	}
-	updateUI(true);
-	// Resize the dialog to the minimum size
-	resize(QDialog::sizeHint());
 }
 
 ShipCustomWarpDialog::~ShipCustomWarpDialog() = default;

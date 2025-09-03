@@ -55,6 +55,8 @@ elseif(PLATFORM_MAC)
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_LONG_VERSION_STRING "${FSO_FULL_VERSION_STRING}")
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_SHORT_VERSION_STRING "${FSO_PRODUCT_VERSION_STRING}")
     set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME "FreeSpace Open")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_DEPLOYMENT_TARGET "${CMAKE_OSX_DEPLOYMENT_TARGET}")
+    set_target_properties(Freespace2 PROPERTIES MACOSX_BUNDLE_GUI_IDENTIFIER "us.indiegames.scp.FreeSpaceOpen")
     
     # Copy everything from the Resources directory
     add_custom_command(TARGET Freespace2 POST_BUILD

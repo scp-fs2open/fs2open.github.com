@@ -2305,6 +2305,10 @@ void stars_draw_background()
 		return;
 	}
 
+	// detail settings
+	if (!Detail.planets_suns)
+		return;
+
 	if (Nmodel_num < 0)
 		return;
 
@@ -2322,7 +2326,19 @@ void stars_draw_background()
 	if (Nmodel_instance_num >= 0)
 		render_info.set_replacement_textures(model_get_instance(Nmodel_instance_num)->texture_replace);
 
+	// if No Z-Buffer is on in FRED then check mod flag to see 
+	// if skybox submodels should still have proper z-sorting
+	// wookieejedi
+	bool special_z_buff = ((Nmodel_flags & MR_NO_ZBUFFER) && Skybox_internal_depth_consistency);
+	if (special_z_buff) {
+		render_info.set_flags(Nmodel_flags & ~MR_NO_ZBUFFER);
+	}
+
 	model_render_immediate(&render_info, Nmodel_num, Nmodel_instance_num, &Nmodel_orient, &Eye_position, MODEL_RENDER_ALL, false);
+
+	if (special_z_buff) {
+		gr_zbuffer_clear(TRUE);
+	}
 }
 
 void stars_set_background_model(int new_model, int new_bitmap, uint64_t flags, float alpha)

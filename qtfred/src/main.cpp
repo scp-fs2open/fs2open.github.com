@@ -102,7 +102,7 @@ int main(int argc, char* argv[]) {
 	// Expect that the platform library is in the same directory
 	QCoreApplication::addLibraryPath(QCoreApplication::applicationDirPath());	
 
-	QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
+	//QGuiApplication::setApplicationDisplayName(QApplication::tr("qtFRED v%1").arg(FS_VERSION_FULL));
 
 #ifndef NDEBUG
 	QLoggingCategory::defaultCategory()->setEnabled(QtDebugMsg, true);

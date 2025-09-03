@@ -3,9 +3,7 @@
 #include "iff_defs/iff_defs.h"
 #include "mission/dialogs/AbstractDialogModel.h"
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 class ShieldSystemDialogModel: public AbstractDialogModel {
  Q_OBJECT
@@ -17,32 +15,30 @@ class ShieldSystemDialogModel: public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	int getCurrentTeam() const { return _currTeam; }
-	int getCurrentShipType() const { return _currType; }
-	void setCurrentTeam(int team) { Assert(team >= 0 && team < (int)Iff_info.size());  modify<int>(_currTeam, team); }
-	void setCurrentShipType(int type) { Assert(type >= 0 && type < MAX_SHIP_CLASSES); modify<int>(_currType, type); }
+	int getCurrentTeam() const;
+	int getCurrentShipType() const;
+	void setCurrentTeam(int team);
+	void setCurrentShipType(int type);
 
-	int getCurrentTeamShieldSys() const { return _teams[_currTeam]; }
-	int getCurrentTypeShieldSys() const { return _types[_currType]; }
-	void setCurrentTeamShieldSys(const int value) { Assert(value == 0 || value == 1); modify<int>(_teams[_currTeam], value); }
-	void setCurrentTypeShieldSys(const int value) { Assert(value == 0 || value == 1); modify<int>(_types[_currType], value); }
+	GlobalShieldStatus getCurrentTeamShieldSys() const;
+	GlobalShieldStatus getCurrentTypeShieldSys() const;
+	void setCurrentTeamShieldSys(bool value);
+	void setCurrentTypeShieldSys(bool value);
 
-	const std::vector<SCP_string>& getShipTypeOptions() const { return _shipTypeOptions; }
-	const std::vector<SCP_string>& getTeamOptions() const { return _teamOptions; }
+	const SCP_vector<SCP_string>& getShipTypeOptions() const;
+	const SCP_vector<SCP_string>& getTeamOptions() const;
 
 	bool query_modified() const;
  private:
 	void initializeData();
 
 
-	std::vector<SCP_string> _shipTypeOptions;
-	std::vector<SCP_string> _teamOptions;
-	std::vector<int> _teams;
-	std::vector<int> _types;
-	int		_currTeam;
-	int		_currType;
+	SCP_vector<SCP_string> _shipTypeOptions;
+	SCP_vector<SCP_string> _teamOptions;
+	SCP_vector<GlobalShieldStatus> _teams;
+	SCP_vector<GlobalShieldStatus> _types;
+	int	_currTeam;
+	int	_currType;
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs

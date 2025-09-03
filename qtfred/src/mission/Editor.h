@@ -21,6 +21,29 @@
 namespace fso {
 namespace fred {
 
+enum class WingNameError {
+	None,
+	Empty,
+	TooLong,
+	DuplicateWing,
+	DuplicateShip,
+	DuplicateTargetPriority,
+	DuplicateWaypointList,
+	DuplicateJumpNode,
+};
+
+struct WingNameCheck {
+	bool ok;
+	WingNameError error;
+	std::string message; // human-readable for dialogs
+};
+
+enum class GlobalShieldStatus {
+	HasShields,
+	NoShields,
+	MixedShields
+};
+
 /*! Game editor.
  * Handles everything needed to edit the game,
  * without any knowledge of the actual GUI framework stack.
@@ -159,7 +182,13 @@ class Editor : public QObject {
 
 	bool query_single_wing_marked();
 
-	static bool wing_is_player_wing(int);
+	bool wing_is_player_wing(int);
+
+	static bool wing_contains_player_start(int);
+
+	static WingNameCheck validate_wing_name(const SCP_string& new_name, int ignore_wing = -1);
+
+	bool rename_wing(int wing, const SCP_string& new_name, bool rename_members = true);
 
 	/**
 	 * @brief Delete a whole wing, leaving ships intact but wingless.
@@ -180,9 +209,9 @@ class Editor : public QObject {
 
 	SCP_vector<SCP_string> get_docking_list(int model_index);
 
-	bool compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const;
-	void exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const;
-	void importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types);
+	bool compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const;
+	void exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const;
+	void importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types);
 	void normalizeShieldSysData();
 
 	static void strip_quotation_marks(SCP_string& str);
@@ -208,8 +237,8 @@ class Editor : public QObject {
 
 	int numMarked = 0;
 
-	std::vector<int> Shield_sys_teams;
-	std::vector<int> Shield_sys_types;
+	SCP_vector<GlobalShieldStatus> Shield_sys_teams;
+	SCP_vector<GlobalShieldStatus> Shield_sys_types;
 
 	int delete_flag;
 

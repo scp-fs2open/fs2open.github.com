@@ -1073,10 +1073,18 @@ void ship_info::clone(const ship_info& other)
 
 	impact_spew = other.impact_spew;
 	damage_spew = other.damage_spew;
+	death_roll_exp_particles = other.death_roll_exp_particles;
+	pre_death_exp_particles = other.pre_death_exp_particles;
+	propagating_exp_particles = other.propagating_exp_particles;
 	split_particles = other.split_particles;
 	knossos_end_particles = other.knossos_end_particles;
 	regular_end_particles = other.regular_end_particles;
 	debris_flame_particles = other.debris_flame_particles;
+	shrapnel_flame_particles = other.shrapnel_flame_particles;
+	debris_end_particles = other.debris_end_particles;
+	shrapnel_end_particles = other.shrapnel_end_particles;
+	default_subsys_debris_flame_particles = other.default_subsys_debris_flame_particles;
+	default_subsys_shrapnel_flame_particles = other.default_subsys_shrapnel_flame_particles;
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1209,6 +1217,10 @@ void ship_info::clone(const ship_info& other)
 	strcpy_s(anim_filename, other.anim_filename);
 	strcpy_s(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+	fs2_effect_grid_color = other.fs2_effect_grid_color;
+	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
+	fs2_effect_grid_density = other.fs2_effect_grid_density;
+	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
@@ -1343,6 +1355,8 @@ void ship_info::clone(const ship_info& other)
 	ship_passive_arcs = other.ship_passive_arcs;
 
 	glowpoint_bank_override_map = other.glowpoint_bank_override_map;
+
+	default_subsys_death_effect = other.default_subsys_death_effect; 
 }
 
 void ship_info::move(ship_info&& other)
@@ -1430,10 +1444,18 @@ void ship_info::move(ship_info&& other)
 
 	std::swap(impact_spew, other.impact_spew);
 	std::swap(damage_spew, other.damage_spew);
+	std::swap(death_roll_exp_particles, other.death_roll_exp_particles);
+	std::swap(pre_death_exp_particles, other.pre_death_exp_particles);
+	std::swap(propagating_exp_particles, other.propagating_exp_particles);
 	std::swap(split_particles, other.split_particles);
 	std::swap(knossos_end_particles, other.knossos_end_particles);
 	std::swap(regular_end_particles, other.regular_end_particles);
 	std::swap(debris_flame_particles, other.debris_flame_particles);
+	std::swap(shrapnel_flame_particles, other.shrapnel_flame_particles);
+	std::swap(debris_end_particles, other.debris_end_particles);
+	std::swap(shrapnel_end_particles, other.shrapnel_end_particles);
+	std::swap(default_subsys_debris_flame_particles, other.default_subsys_debris_flame_particles);
+	std::swap(default_subsys_shrapnel_flame_particles, other.default_subsys_shrapnel_flame_particles);
 
 	debris_min_lifetime = other.debris_min_lifetime;
 	debris_max_lifetime = other.debris_max_lifetime;
@@ -1549,6 +1571,10 @@ void ship_info::move(ship_info&& other)
 	std::swap(anim_filename, other.anim_filename);
 	std::swap(overhead_filename, other.overhead_filename);
 	selection_effect = other.selection_effect;
+	fs2_effect_grid_color = other.fs2_effect_grid_color;
+	fs2_effect_scanline_color = other.fs2_effect_scanline_color;
+	fs2_effect_grid_density = other.fs2_effect_grid_density;
+	fs2_effect_wireframe_color = other.fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = other.wingmen_status_dot_override;
 
@@ -1680,6 +1706,8 @@ void ship_info::move(ship_info&& other)
 
 	animations = std::move(other.animations);
 	cockpit_animations = std::move(other.cockpit_animations);
+
+	default_subsys_death_effect = other.default_subsys_death_effect;
 }
 
 ship_info &ship_info::operator= (ship_info&& other) noexcept
@@ -1790,6 +1818,10 @@ ship_info::ship_info()
 	static auto default_damage_spew = default_ship_particle_effect(LegacyShipParticleType::DAMAGE_SPEW, 1, 0, 1.3f, 0.7f, 1.0f, 1.0f, 12.0f, 3.0f, 0.0f, 1.0f, particle::Anim_bitmap_id_smoke, 0.7f);
 	damage_spew = default_damage_spew;
 
+	death_roll_exp_particles = particle::ParticleEffectHandle::invalid();
+	pre_death_exp_particles = particle::ParticleEffectHandle::invalid();
+	propagating_exp_particles = particle::ParticleEffectHandle::invalid();
+
 	static auto default_split_particles = default_ship_particle_effect(LegacyShipParticleType::SPLIT_PARTICLES, 80, 40, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 2.0f, 1.0f, particle::Anim_bitmap_id_smoke2, 1.f);
 	split_particles = default_split_particles;
 
@@ -1800,6 +1832,11 @@ ship_info::ship_info()
 	regular_end_particles = default_regular_end_particles;
 
 	debris_flame_particles = particle::ParticleEffectHandle::invalid();
+	shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
+	debris_end_particles = particle::ParticleEffectHandle::invalid();
+	shrapnel_end_particles = particle::ParticleEffectHandle::invalid();
+	default_subsys_debris_flame_particles = particle::ParticleEffectHandle::invalid();
+	default_subsys_shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
 
 	debris_min_lifetime = -1.0f;
 	debris_max_lifetime = -1.0f;
@@ -1926,6 +1963,10 @@ ship_info::ship_info()
 	overhead_filename[0] = '\0';
 
 	selection_effect = Default_ship_select_effect;
+	fs2_effect_grid_color = Default_fs2_effect_grid_color;
+	fs2_effect_scanline_color = Default_fs2_effect_scanline_color;
+	fs2_effect_grid_density = Default_fs2_effect_grid_density;
+	fs2_effect_wireframe_color = Default_fs2_effect_wireframe_color;
 
 	wingmen_status_dot_override = -1;
 
@@ -2064,6 +2105,8 @@ ship_info::ship_info()
 	glowpoint_bank_override_map.clear();
 
 	ship_passive_arcs.clear();
+
+	default_subsys_death_effect = particle::ParticleEffectHandle::invalid();
 }
 
 ship_info::~ship_info()
@@ -3036,6 +3079,44 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->selection_effect = 0;
 	}
 
+	if (optional_string("$FS2 effect grid color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_grid_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect scanline color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_scanline_color, rgb[0], rgb[1], rgb[2]);
+	}
+
+	if (optional_string("$FS2 effect grid density:")) {
+		int tmp;
+		stuff_int(&tmp);
+		// only set value if it is above 0
+		if (tmp > 0) {
+			sip->fs2_effect_grid_density = tmp;
+		} else {
+			Warning(LOCATION, "The $FS2 effect grid density must be above 0.\n");
+		}
+	}
+
+	if (optional_string("$FS2 effect wireframe color:")) {
+		int rgb[3];
+		stuff_int_list(rgb, 3);
+		CLAMP(rgb[0], 0, 255);
+		CLAMP(rgb[1], 0, 255);
+		CLAMP(rgb[2], 0, 255);
+		gr_init_color(&sip->fs2_effect_wireframe_color, rgb[0], rgb[1], rgb[2]);
+	}
+
 	// This only works if the hud gauge defined uses $name assignment
 	if (optional_string("$HUD Gauge Configs:")) {
 		SCP_vector<SCP_string> gauge_configs;
@@ -3770,7 +3851,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		sip->explosion_splits_ship = sip->explosion_propagates == 1;
 	}
 
-	if(optional_string("$Propagating Expl Radius Multiplier:")){
+	if (optional_string("$Propagating Explosion Effect:")) {
+		sip->propagating_exp_particles = particle::util::parseEffect(sip->name);
+	} else if (optional_string("$Propagating Expl Radius Multiplier:")) {
 		stuff_float(&sip->prop_exp_rad_mult);
 		if(sip->prop_exp_rad_mult <= 0) {
 			// on invalid value return to default setting
@@ -3789,7 +3872,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->death_roll_base_time = 2;
 	}
 
-	if(optional_string("$Death-Roll Explosion Radius Mult:")){
+	if (optional_string("$Death Roll Explosion Effect:")) {
+		sip->death_roll_exp_particles = particle::util::parseEffect(sip->name);
+	} else if (optional_string("$Death-Roll Explosion Radius Mult:")) {
 		stuff_float(&sip->death_roll_r_mult);
 		if (sip->death_roll_r_mult < 0)
 			sip->death_roll_r_mult = 0;
@@ -3801,7 +3886,9 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			sip->death_roll_time_mult = 1.0f;
 	}
 
-	if(optional_string("$Death FX Explosion Radius Mult:")){
+	if (optional_string("$Death FX Explosion Effect:")) {
+		sip->pre_death_exp_particles = particle::util::parseEffect(sip->name);
+	} else if (optional_string("$Death FX Explosion Radius Mult:")) {
 		stuff_float(&sip->death_fx_r_mult);
 		if (sip->death_fx_r_mult < 0)
 			sip->death_fx_r_mult = 0;
@@ -3865,6 +3952,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if(optional_string("$Debris Flame Effect:"))
 	{
 		sip->debris_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Shrapnel Flame Effect:"))
+	{
+		sip->shrapnel_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Debris Death Effect:"))
+	{
+		sip->debris_end_particles = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Shrapnel Death Effect:"))
+	{
+		sip->shrapnel_end_particles = particle::util::parseEffect(sip->name);
 	}
 
 	auto skip_str = "$Skip Death Roll Percent Chance:";
@@ -5408,6 +5510,20 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		required_string("$end_custom_strings");
 	}
 
+	if (optional_string("$Default Subsystem Death Effect:")) {
+		sip->default_subsys_death_effect = particle::util::parseEffect(sip->name);
+	}
+
+	if(optional_string("$Default Subsystem Debris Flame Effect:"))
+	{
+		sip->default_subsys_debris_flame_particles = particle::util::parseEffect(sip->name);
+	}
+	
+	if(optional_string("$Default Subsystem Shrapnel Flame Effect:"))
+	{
+		sip->default_subsys_shrapnel_flame_particles = particle::util::parseEffect(sip->name);
+	}
+
 	int n_subsystems = 0;
 	int n_excess_subsystems = 0;
 	int cont_flag = 1;
@@ -5505,6 +5621,11 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				sp->turret_max_bomb_ownage = -1;
 				sp->turret_max_target_ownage = -1;
 				sp->density = 1.0f;
+        
+				sp->death_effect = particle::ParticleEffectHandle::invalid();
+				sp->debris_flame_particles = particle::ParticleEffectHandle::invalid();
+				sp->shrapnel_flame_particles = particle::ParticleEffectHandle::invalid();
+
 			}
 			sfo_return = stuff_float_optional(&percentage_of_hits);
 			if(sfo_return==2)
@@ -5691,8 +5812,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				}
 			}
 
+			if (optional_string("$Subsystem Death Effect:")) {
+				sp->death_effect = particle::util::parseEffect(sip->name);
+			}
+
 			if (optional_string("$Debris Density:")) {
 				stuff_float(&sp->density);
+			}
+
+			if(optional_string("$Debris Flame Effect:"))
+			{
+				sp->debris_flame_particles = particle::util::parseEffect(sip->name);
+			}
+			if(optional_string("$Shrapnel Debris Flame Effect:"))
+			{
+				sp->shrapnel_flame_particles = particle::util::parseEffect(sip->name);
 			}
 
 			if (optional_string("$Flags:")) {
@@ -9358,19 +9492,27 @@ static void ship_dying_frame(object *objp, int ship_num)
 
 				// Get a random point on the surface of a submodel
 				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
-
 				model_instance_local_to_global_point(&outpnt, &pnt1, shipp->model_instance_num, pm->detail[0], &objp->orient, &objp->pos );
 
-				float rad = objp->radius*0.1f;
+				if (sip->death_roll_exp_particles.isValid()) {
+					vec3d center_to_point = outpnt - objp->pos;
+					vm_vec_normalize(&center_to_point);
+					auto source = particle::ParticleManager::get()->createSource(sip->death_roll_exp_particles);
+					source->setHost(std::make_unique<EffectHostObject>(objp, pnt1));
+					source->setNormal(center_to_point);
+					source->finishCreation();
+				} else {
+					float rad = objp->radius*0.1f;
 				
-				if (sip->death_roll_r_mult != 1.0f)
-					rad *= sip->death_roll_r_mult;
+					if (sip->death_roll_r_mult != 1.0f)
+						rad *= sip->death_roll_r_mult;
 
-				int fireball_type = fireball_ship_explosion_type(sip);
-				if(fireball_type < 0) {
-					fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+					int fireball_type = fireball_ship_explosion_type(sip);
+					if(fireball_type < 0) {
+						fireball_type = FIREBALL_EXPLOSION_LARGE1 + Random::next(FIREBALL_NUM_LARGE_EXPLOSIONS);
+					}
+					fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				}
-				fireball_create( &outpnt, fireball_type, FIREBALL_LARGE_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				// start the next fireball up in the next 50 - 200 ms (2-3 per frame)
 				int min_time = 333;
 				int max_time = 500;
@@ -9461,24 +9603,33 @@ static void ship_dying_frame(object *objp, int ship_num)
 				}
 				// Find two random vertices on the model, then average them
 				// and make the piece start there.
-				vec3d tmp, outpnt;
+				vec3d avgpnt, outpnt;
 
 				// Gets two random points on the surface of a submodel [KNOSSOS]
 				vec3d pnt1 = submodel_get_random_point(pm->id, pm->detail[0]);
 				vec3d pnt2 = submodel_get_random_point(pm->id, pm->detail[0]);
 
-				vm_vec_avg( &tmp, &pnt1, &pnt2 );
-				model_instance_local_to_global_point(&outpnt, &tmp, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
+				vm_vec_avg( &avgpnt, &pnt1, &pnt2 );
+				model_instance_local_to_global_point(&outpnt, &avgpnt, pm, pmi, pm->detail[0], &objp->orient, &objp->pos );
 
-				float rad = objp->radius*0.40f;
+				if (sip->pre_death_exp_particles.isValid()) {
+					vec3d center_to_point = outpnt - objp->pos;
+					vm_vec_normalize(&center_to_point);
+					auto source = particle::ParticleManager::get()->createSource(sip->pre_death_exp_particles);
+					source->setHost(std::make_unique<EffectHostObject>(objp, avgpnt));
+					source->setNormal(center_to_point);
+					source->finishCreation();
+				} else {
+					float rad = objp->radius*0.40f;
 
-				rad *= sip->death_fx_r_mult;
+					rad *= sip->death_fx_r_mult;
 
-				int fireball_type = fireball_ship_explosion_type(sip);
-				if(fireball_type < 0) {
-					fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+					int fireball_type = fireball_ship_explosion_type(sip);
+					if(fireball_type < 0) {
+						fireball_type = FIREBALL_EXPLOSION_MEDIUM;
+					}
+					fireball_create( &outpnt, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 				}
-				fireball_create( &outpnt, fireball_type, FIREBALL_MEDIUM_EXPLOSION, OBJ_INDEX(objp), rad, false, &objp->phys_info.vel );
 			}
 		}
 
@@ -13836,7 +13987,7 @@ extern void ai_maybe_announce_shockwave_weapon(object *firing_objp, int weapon_i
 //                need to avoid firing when normally called
 int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 {
-	int			n, weapon_idx, j, bank, bank_adjusted, starting_bank_count = -1, num_fired;
+	int			n, weapon_idx, j, bank, bank_adjusted, num_fired;
 	ushort		starting_sig = 0;
 	ship			*shipp;
 	ship_weapon *swp;
@@ -13846,6 +13997,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 	polymodel	*pm;
 	vec3d		missile_point, pnt, firing_pos;
 	bool has_fired = false;		// Used to determine whether to fire the scripting hook
+	tracking_info tinfo;
 
 	Assert( obj != NULL );
 
@@ -13932,14 +14084,13 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 	if ( MULTIPLAYER_MASTER ) {
 		starting_sig = multi_get_next_network_signature( MULTI_SIG_NON_PERMANENT );
-		starting_bank_count = swp->secondary_bank_ammo[bank];
 	}
 
 	if (ship_fire_secondary_detonate(obj, swp)) {
 		// in multiplayer, master sends a secondary fired packet with starting signature of -1 -- indicates
 		// to client code to set the detonate timer to 0.
 		if ( MULTIPLAYER_MASTER ) {
-			send_secondary_fired_packet( shipp, 0, starting_bank_count, 1, allow_swarm );
+			send_secondary_fired_packet( shipp, 0, tinfo, 1, allow_swarm );
 		}
 	
 		//	For all banks, if ok to fire a weapon, make it wait a bit.
@@ -14112,10 +14263,6 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			return 0;		// we can make a quick out here!!!
 		}
 
-		int target_objnum;
-		ship_subsys *target_subsys;
-		int locked;
-
 		if ( obj == Player_obj || ( MULTIPLAYER_MASTER && obj->flags[Object::Object_Flags::Player_ship] ) ) {
 			// use missile lock slots
 			if ( !shipp->missile_locks_firing.empty() ) {
@@ -14132,39 +14279,35 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 				}
 
 				if (lock_data.obj != nullptr) {
-					target_objnum = OBJ_INDEX(lock_data.obj);
-					target_subsys = lock_data.subsys;
-					locked = 1;
+					tinfo.objnum = OBJ_INDEX(lock_data.obj);
+					tinfo.subsys = lock_data.subsys;
+					tinfo.locked = true;
 				} else {
-					target_objnum = -1;
-					target_subsys = nullptr;
-					locked = 0;
+					tinfo.objnum = -1;
+					tinfo.subsys = nullptr;
+					tinfo.locked = false;
 				}
-			} else if (wip->wi_flags[Weapon::Info_Flags::Homing_heat]) {
-				target_objnum = aip->target_objnum;
-				target_subsys = aip->targeted_subsys;
-				locked = aip->current_target_is_locked;
 			} else {
-				target_objnum = -1;
-				target_subsys = nullptr;
-				locked = 0;
+				tinfo.objnum = aip->target_objnum;
+				tinfo.subsys = aip->targeted_subsys;
+				tinfo.locked = aip->current_target_is_locked == 1;
 			}
 		} else if (wip->multi_lock && !aip->ai_missile_locks_firing.empty()) {
-			target_objnum = aip->ai_missile_locks_firing.back().first;
-			target_subsys = aip->ai_missile_locks_firing.back().second;
-			locked = 1;
+			tinfo.objnum = aip->ai_missile_locks_firing.back().first;
+			tinfo.subsys = aip->ai_missile_locks_firing.back().second;
+			tinfo.locked = true;
 			aip->ai_missile_locks_firing.pop_back();
 		} else {
-			target_objnum = aip->target_objnum;
-			target_subsys = aip->targeted_subsys;
-			locked = aip->current_target_is_locked;
+			tinfo.objnum = aip->target_objnum;
+			tinfo.subsys = aip->targeted_subsys;
+			tinfo.locked = aip->current_target_is_locked == 1;
 		}
 
 		num_slots = pm->missile_banks[bank].num_slots;
 		float target_radius = 0.f;
 
-		if (target_objnum >= 0) {
-			target_radius = Objects[target_objnum].radius;
+		if (tinfo.objnum >= 0) {
+			target_radius = Objects[tinfo.objnum].radius;
 		}
 
 		auto launch_curve_data = WeaponLaunchCurveData {
@@ -14286,7 +14429,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			// create the weapon -- for multiplayer, the net_signature is assigned inside
 			// of weapon_create
-			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, locked, false, 0.f, nullptr, launch_curve_data);
+			weapon_num = weapon_create( &firing_pos, &firing_orient, weapon_idx, OBJ_INDEX(obj), -1, tinfo.locked, false, 0.f, nullptr, launch_curve_data);
 
 			if (weapon_num == -1) {
 				// Weapon most likely failed to fire
@@ -14298,7 +14441,7 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 
 			if (weapon_num >= 0) {
 				weapon_idx = Weapons[Objects[weapon_num].instance].weapon_info_index;
-				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), target_objnum, locked, target_subsys);
+				weapon_set_tracking_info(weapon_num, OBJ_INDEX(obj), tinfo);
 				has_fired = true;
 
 				// create the muzzle flash effect
@@ -14326,6 +14469,14 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 						swp->secondary_bank_ammo[bank]--;
 
 					shipp->weapon_energy -= wip->energy_consumed;
+				}
+
+				if (wip->wi_flags[Weapon::Info_Flags::Apply_Recoil]) {
+					float recoil_force = (wip->mass * wip->max_speed * wip->recoil_modifier * sip->ship_recoil_modifier);
+
+					vec3d impulse = firing_orient.vec.fvec * -recoil_force;
+
+					ship_apply_whack(&impulse, &firing_pos, obj);
 				}
 			}
 		}
@@ -14362,7 +14513,7 @@ done_secondary:
 		// Cyborg17 - If this is a rollback shot, the server will let the player know within the packet.
 		if ( MULTIPLAYER_MASTER ) {			
 			Assert(starting_sig != 0);
-			send_secondary_fired_packet( shipp, starting_sig, starting_bank_count, num_fired, allow_swarm );			
+			send_secondary_fired_packet( shipp, starting_sig, tinfo, num_fired, allow_swarm );
 		}
 
 		// Handle Player only stuff, including stats and client secondary packets
@@ -15530,6 +15681,9 @@ int ship_get_subsys_index(const ship_subsys *subsys)
 {
 	Assertion(subsys != nullptr, "ship_get_subsys_index was called with a null ship_subsys parameter!");
 	if (subsys == nullptr)
+		return -1;
+
+	if (subsys->parent_objnum < 0)
 		return -1;
 
 	// might need to refresh the cache
@@ -18606,6 +18760,31 @@ int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type)
 	float size = (float)Weapon_info[ammo_type].cargo_size;
 	Assertion(size > 0.0f, "Weapon cargo size for %s must be greater than 0!", Weapon_info[ammo_type].name);
 	return (int)std::lround(capacity / size);
+}
+
+/**
+ * The same as above, but for a specific turret's bank.
+ */
+int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int ammo_type)
+{
+	float capacity, size;
+
+	Assertion(bank < MAX_SHIP_PRIMARY_BANKS,
+		"Invalid primary bank of %d (max is %d); get a coder!\n",
+		bank,
+		MAX_SHIP_PRIMARY_BANKS - 1);
+	Assertion(ammo_type < weapon_info_size(),
+		"Invalid ammo_type of %d is >= Weapon_info.size() (%d); get a coder!\n",
+		ammo_type,
+		weapon_info_size());
+
+	if (!swp || bank < 0 || ammo_type < 0 || !(Weapon_info[ammo_type].wi_flags[Weapon::Info_Flags::Ballistic])) {
+		return 0;
+	} else {
+		capacity = (float)swp->primary_bank_capacity[bank];
+		size = (float)Weapon_info[ammo_type].cargo_size;
+		return (int)(capacity / size);
+	}
 }
 
 /**

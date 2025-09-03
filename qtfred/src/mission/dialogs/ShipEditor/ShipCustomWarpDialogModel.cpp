@@ -3,7 +3,17 @@
 #include "ship/shipfx.h"
 namespace fso::fred::dialogs {
 ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent, EditorViewport* viewport, bool departure)
-	: AbstractDialogModel(parent, viewport), _m_departure(departure)
+	: AbstractDialogModel(parent, viewport), _m_departure(departure), _target(Target::Selection)
+{
+	initializeData();
+}
+
+ShipCustomWarpDialogModel::ShipCustomWarpDialogModel(QObject* parent,
+	EditorViewport* viewport,
+	bool departure,
+	Target target,
+	int wingIndex)
+	: AbstractDialogModel(parent, viewport), _m_departure(departure), _target(target), _wingIndex(wingIndex)
 {
 	initializeData();
 }
@@ -50,7 +60,7 @@ bool ShipCustomWarpDialogModel::apply()
 		params.accel_exp = _m_accel_exp;
 	}
 	if (_m_radius) {
-		params.accel_exp = _m_radius;
+		params.radius = _m_radius;
 	}
 	if (!_m_anim.empty()) {
 		strcpy_s(params.anim, _m_anim.c_str());
@@ -61,13 +71,28 @@ bool ShipCustomWarpDialogModel::apply()
 	}
 	int index = find_or_add_warp_params(params);
 
-	for (object* objp : list_range(&obj_used_list)) {
-		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
+	if (_target == Target::Wing && _wingIndex >= 0) {
+		for (object* objp : list_range(&obj_used_list)) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				auto& sh = Ships[objp->instance];
+				if (sh.wingnum != _wingIndex)
+					continue;
 				if (!_m_departure)
-					Ships[objp->instance].warpin_params_index = index;
+					sh.warpin_params_index = index;
 				else
-					Ships[objp->instance].warpout_params_index = index;
+					sh.warpout_params_index = index;
+			}
+		}
+	} else {
+		for (object* objp : list_range(&obj_used_list)) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
+					auto& sh = Ships[objp->instance];
+					if (!_m_departure)
+						sh.warpin_params_index = index;
+					else
+						sh.warpout_params_index = index;
+				}
 			}
 		}
 	}
@@ -146,18 +171,35 @@ void ShipCustomWarpDialogModel::initializeData()
 {
 	// find the params of the first marked ship
 	WarpParams* params = nullptr;
-	for (object* objp : list_range(&obj_used_list)) {
-		if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
-			if (objp->flags[Object::Object_Flags::Marked]) {
-				if (!_m_departure) {
-					params = &Warp_params[Ships[objp->instance].warpin_params_index];
-				} else {
-					params = &Warp_params[Ships[objp->instance].warpout_params_index];
+	if (_target == Target::Wing && _wingIndex >= 0) {
+		// Use first ship in the wing for initial values; mark _m_player if the wing contains the player
+		for (object* objp : list_range(&obj_used_list)) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				const auto& sh = Ships[objp->instance];
+				if (sh.wingnum == _wingIndex) {
+					if (!_m_departure)
+						params = &Warp_params[sh.warpin_params_index];
+					else
+						params = &Warp_params[sh.warpout_params_index];
+					if (objp->type == OBJ_START)
+						_m_player = true;
+					break;
 				}
-				if (objp->type == OBJ_START) {
-					_m_player = true;
+			}
+		}
+	} else {
+		for (object* objp : list_range(&obj_used_list)) {
+			if ((objp->type == OBJ_SHIP) || (objp->type == OBJ_START)) {
+				if (objp->flags[Object::Object_Flags::Marked]) {
+					const auto& sh = Ships[objp->instance];
+					if (!_m_departure)
+						params = &Warp_params[sh.warpin_params_index];
+					else
+						params = &Warp_params[sh.warpout_params_index];
+					if (objp->type == OBJ_START)
+						_m_player = true;
+					break;
 				}
-				break;
 			}
 		}
 	}

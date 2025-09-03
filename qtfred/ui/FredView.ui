@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>21</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -168,10 +168,13 @@
     <addaction name="actionWings"/>
     <addaction name="actionObjects"/>
     <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionJump_Nodes"/>
     <addaction name="separator"/>
     <addaction name="actionMission_Specs"/>
     <addaction name="actionMission_Goals"/>
     <addaction name="actionMission_Events"/>
+    <addaction name="actionVariables"/>
+    <addaction name="actionMission_Cutscenes"/>
     <addaction name="actionVoice_Acting_Manager"/>
     <addaction name="separator"/>
     <addaction name="actionFiction_Viewer"/>
@@ -182,6 +185,7 @@
     <addaction name="separator"/>
     <addaction name="actionBackground"/>
     <addaction name="actionAsteroid_Field"/>
+    <addaction name="actionVolumetric_Nebula"/>
     <addaction name="separator"/>
     <addaction name="actionReinforcements"/>
     <addaction name="actionShield_System"/>
@@ -239,6 +243,7 @@
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
     <addaction name="actionAlways_Save_Display_Names"/>
+    <addaction name="actionMusic_Player"/>
     <addaction name="actionError_Checker_Checks_Potential_Issues"/>
     <addaction name="actionError_Checker"/>
    </widget>
@@ -1508,6 +1513,43 @@
    </property>
    <property name="shortcut">
     <string>Shift+G</string>
+   </property>
+  </action>
+  <action name="actionVariables">
+   <property name="text">
+    <string>&amp;Variables</string>
+   </property>
+   <property name="toolTip">
+    <string>Open Variables and Containers Editor</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+V</string>
+   </property>
+  </action>
+  <action name="actionJump_Nodes">
+   <property name="text">
+    <string>Jump &amp;Nodes</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+J</string>
+   </property>
+  </action>
+  <action name="actionMission_Cutscenes">
+   <property name="text">
+    <string>Mission Cutscenes</string>
+   </property>
+   <property name="shortcut">
+    <string>Shift+X</string>
+   </property>
+  </action>
+  <action name="actionMusic_Player">
+   <property name="text">
+    <string>Music Player</string>
+   </property>
+  </action>
+  <action name="actionVolumetric_Nebula">
+   <property name="text">
+    <string>Volumetric Nebula</string>
    </property>
   </action>
  </widget>

@@ -17,6 +17,7 @@
 
 #include <QTreeView>
 #include <QTreeWidgetItem>
+#include <QListWidget>
 
 namespace fso {
 namespace fred {
@@ -58,6 +59,7 @@ FLAG_LIST(TreeFlags) {
 	LabeledRoot = 0,
 	RootDeletable,
 	RootEditable,
+	AnnotationsAllowed,
 
 	NUM_VALUES
 };
@@ -171,7 +173,12 @@ class sexp_tree: public QTreeWidget {
 
  Q_OBJECT
  public:
-	static const int FormulaDataRole = Qt::UserRole;
+	 enum {
+		 FormulaDataRole = Qt::UserRole + 1,
+		 SexpNodeIdRole = Qt::UserRole + 2,
+		 NoteRole = Qt::UserRole + 100,
+		 BgColorRole = Qt::UserRole + 101
+	 };
 
  	static QIcon convertNodeImageToIcon(NodeImage image);
 
@@ -217,6 +224,8 @@ class sexp_tree: public QTreeWidget {
 	void ensure_visible(int node);
 	int node_error(int node, const char* msg, int* bypass);
 	void expand_branch(QTreeWidgetItem* h);
+	void editNoteForItem(QTreeWidgetItem* h);
+	void editBgColorForItem(QTreeWidgetItem* h);
 	void expand_operator(int node);
 	void merge_operator(int node);
 	int identify_arg_type(int node);
@@ -380,6 +389,8 @@ class sexp_tree: public QTreeWidget {
 	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
 
 	void deleteCurrentItem();
+
+	static void applyVisuals(QTreeWidgetItem* it);
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
@@ -389,15 +400,31 @@ class sexp_tree: public QTreeWidget {
 	void rootNodeRenamed(int node);
 	void rootNodeFormulaChanged(int old, int node);
 	void nodeChanged(int node);
+	void rootOrderChanged();
 
 	void selectedRootChanged(int formula);
 
+	void nodeAnnotationChanged(void* handle, const QString& note);
+	void nodeBgColorChanged(void* handle, const QColor& color);
+
 	// Generated message map functions
  protected:
+	void keyPressEvent(QKeyEvent* e) override;
+	bool eventFilter(QObject* obj, QEvent* ev) override;
+	void mousePressEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* e) override;
+	void mouseReleaseEvent(QMouseEvent* e) override;
+
 	QTreeWidgetItem* insertWithIcon(const QString& lpszItem,
 									const QIcon& image,
 									QTreeWidgetItem* hParent = nullptr,
 									QTreeWidgetItem* hInsertAfter = nullptr);
+
+	//bool edit(const QModelIndex& index, QAbstractItemView::EditTrigger trigger, QEvent* event) override
+	//{
+		//_currently_editing = true; // mark explicit edit
+		//return QTreeWidget::edit(index, trigger, event);
+	//}
 
 	void customMenuHandler(const QPoint& pos);
 
@@ -436,6 +463,20 @@ class sexp_tree: public QTreeWidget {
 
 	int Add_count, Replace_count;
 	int Modify_variable;
+
+	//  Operator quick search popup
+	QFrame* _opPopup = nullptr;
+	QLineEdit* _opEdit = nullptr;
+	QListWidget* _opList = nullptr;
+	QStringList _opAll;    // all valid operators for current context
+	int _opNodeIndex = -1; // tree_nodes[] index of the node being edited
+	bool _opPopupActive = false;
+
+	void openNodeEditor(QTreeWidgetItem* item);
+	void startOperatorQuickSearch(QTreeWidgetItem* item, const QString& seed = QString());
+	void endOperatorQuickSearch(bool confirm);
+	void filterOperatorPopup(const QString& text);
+	QStringList validOperatorsForNode(int nodeIndex);
 
 	void handleItemChange(QTreeWidgetItem* item, int column);
 

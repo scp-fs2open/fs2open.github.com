@@ -1225,10 +1225,18 @@ public:
 
 	particle::ParticleEffectHandle		impact_spew;
 	particle::ParticleEffectHandle		damage_spew;
+	particle::ParticleEffectHandle		death_roll_exp_particles;
+	particle::ParticleEffectHandle		pre_death_exp_particles;
+	particle::ParticleEffectHandle		propagating_exp_particles;
 	particle::ParticleEffectHandle		split_particles;
 	particle::ParticleEffectHandle		knossos_end_particles;
 	particle::ParticleEffectHandle		regular_end_particles;
 	particle::ParticleEffectHandle 		debris_flame_particles;
+	particle::ParticleEffectHandle 		shrapnel_flame_particles;
+	particle::ParticleEffectHandle 		debris_end_particles;
+	particle::ParticleEffectHandle 		shrapnel_end_particles;
+	particle::ParticleEffectHandle 		default_subsys_debris_flame_particles;
+	particle::ParticleEffectHandle 		default_subsys_shrapnel_flame_particles;
 
 	//Debris stuff
 	float			debris_min_lifetime;
@@ -1257,6 +1265,7 @@ public:
 	// subsystem information
 	int		n_subsystems;						// this number comes from ships.tbl
     model_subsystem *subsystems;				// see model.h for structure definition
+	particle::ParticleEffectHandle default_subsys_death_effect;
 
 	// Energy Transfer System fields
 	float		power_output;					// power output of ships reactor (EU/s)
@@ -1354,6 +1363,10 @@ public:
 	char	anim_filename[MAX_FILENAME_LEN];	// filename for animation that plays in ship selection
 	char	overhead_filename[MAX_FILENAME_LEN];	// filename for animation that plays weapons loadout
 	int 	selection_effect;
+	color   fs2_effect_grid_color;				// color of the grid effect in the ship selection screen
+	color  fs2_effect_scanline_color;           // color of the scanline effect in the ship selection screen
+	int     fs2_effect_grid_density;			// density of the grid effect in the ship selection screen
+	color   fs2_effect_wireframe_color;         // color of the wireframe effect in the ship selection screen
 
 	int wingmen_status_dot_override; // optional wingmen dot status animation to use instead of default --wookieejedi
 
@@ -1903,6 +1916,8 @@ float ship_get_secondary_weapon_range(ship *shipp);
 
 // Goober5000
 int get_max_ammo_count_for_primary_bank(int ship_class, int bank, int ammo_type);
+int get_max_ammo_count_for_primary_turret_bank(ship_weapon* swp, int bank, int ammo_type);
+
 
 int get_max_ammo_count_for_bank(int ship_class, int bank, int ammo_type);
 int get_max_ammo_count_for_turret_bank(ship_weapon *swp, int bank, int ammo_type);

@@ -5,31 +5,11 @@ namespace fso::fred::dialogs {
  * @brief Model for QtFRED's Custom warp dialog
  */
 class ShipCustomWarpDialogModel : public AbstractDialogModel {
-  private:
-	/**
-	 * @brief Initialises data for the model
-	 */
-	void initializeData();
-	bool _m_departure;
-
-	int _m_warp_type;
-	SCP_string _m_start_sound;
-	SCP_string _m_end_sound;
-	float _m_warpout_engage_time;
-	float _m_speed;
-	float _m_time;
-	float _m_accel_exp;
-	float _m_radius;
-	SCP_string _m_anim;
-	bool _m_supercap_warp_physics;
-	float _m_player_warpout_speed;
-
-	bool _m_player = false;
-	/**
-	 * @brief Marks the model as modifed
-	 */
-
   public:
+	enum class Target {
+		Selection,
+		Wing
+	};
 	/**
 	 * @brief Constructor
 	 * @param [in] parent The parent dialog.
@@ -37,6 +17,7 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	 * @param [in] departure Whether the dialog is changeing warp-in or warp-out.
 	 */
 	ShipCustomWarpDialogModel(QObject* parent, EditorViewport* viewport, bool departure);
+	ShipCustomWarpDialogModel(QObject* parent, EditorViewport* viewport, bool departure, Target target, int wingIndex);
 	bool apply() override;
 	void reject() override;
 
@@ -119,6 +100,33 @@ class ShipCustomWarpDialogModel : public AbstractDialogModel {
 	void setAnim(const SCP_string&);
 	void setSupercap(const bool);
 	void setPlayerSpeed(const double);
+
+  private:
+	/**
+	 * @brief Initialises data for the model
+	 */
+	void initializeData();
+	bool _m_departure;
+
+	int _m_warp_type;
+	SCP_string _m_start_sound;
+	SCP_string _m_end_sound;
+	float _m_warpout_engage_time;
+	float _m_speed;
+	float _m_time;
+	float _m_accel_exp;
+	float _m_radius;
+	SCP_string _m_anim;
+	bool _m_supercap_warp_physics;
+	float _m_player_warpout_speed;
+
+	bool _m_player = false;
+	Target _target = Target::Selection;
+	int _wingIndex = -1;
+
+	/**
+	 * @brief Marks the model as modifed
+	 */
 };
 
 } // namespace dialogs

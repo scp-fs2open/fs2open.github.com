@@ -45,6 +45,9 @@ enum class DepartureLocation;
 #define SPECIAL_ARRIVAL_ANCHOR_FLAG				0x1000
 #define SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG		0x0100
 
+#define MIN_TARGET_ARRIVAL_DISTANCE             500.0f // float because that's how FRED does the math
+#define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
+
 int get_special_anchor(const char *name);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
@@ -86,6 +89,15 @@ extern bool check_for_24_3_data();
 #define IS_MISSION_MULTI_TEAMS		(The_mission.game_type & MISSION_TYPE_MULTI_TEAMS)
 #define IS_MISSION_MULTI_DOGFIGHT	(The_mission.game_type & MISSION_TYPE_MULTI_DOGFIGHT)
 
+// Used in the mission editor
+inline const std::vector<std::pair<SCP_string, int>> Mission_event_teams_tvt = [] {
+	std::vector<std::pair<SCP_string, int>> arr;
+	arr.reserve(MAX_TVT_TEAMS);
+	for (int i = 0; i < MAX_TVT_TEAMS; ++i) {
+		arr.emplace_back("Team " + std::to_string(i + 1), i);
+	}
+	return arr;
+}();
 
 // Goober5000
 typedef struct support_ship_info {
@@ -118,6 +130,22 @@ enum : int {
 	Num_movie_types
 };
 
+struct cutscene_type_data {
+	int value;         // enum
+	SCP_string label; // shown in combo boxes
+	SCP_string desc;   // short explanation for the description box
+};
+
+static const cutscene_type_data CutsceneMenuData[] = {
+	{MOVIE_PRE_FICTION,   "Fiction Viewer",   "Plays just before the fiction viewer game state"},
+	{MOVIE_PRE_CMD_BRIEF, "Command Briefing", "Plays just before the command briefing game state"},
+	{MOVIE_PRE_BRIEF,     "Briefing",         "Plays just before the briefing game state"},
+	{MOVIE_PRE_GAME,      "Pre-game",         "Plays just before the mission starts after Accept has been pressed"},
+	{MOVIE_PRE_DEBRIEF,   "Debriefing",       "Plays just before the debriefing game state"},
+	{MOVIE_POST_DEBRIEF,  "Post-debriefing",  "Plays when the debriefing has been accepted but before exiting the mission"},
+	{MOVIE_END_CAMPAIGN,  "End Campaign",     "Plays when the campaign has been completed"}
+};
+
 // defines a mission cutscene.
 typedef struct mission_cutscene {
 	int type; 
@@ -136,6 +164,16 @@ typedef struct custom_string {
 	SCP_string value;
 	SCP_string text;
 } custom_string;
+
+inline bool operator==(const custom_string& a, const custom_string& b)
+{
+	return a.name == b.name && a.value == b.value && a.text == b.text;
+}
+
+inline bool operator!=(const custom_string& a, const custom_string& b)
+{
+	return !(a == b);
+}
 
 // descriptions of flags for FRED
 template <class T>
@@ -271,10 +309,22 @@ extern const char *Departure_location_names[MAX_DEPARTURE_NAMES];
 extern const char *Goal_type_names[MAX_GOAL_TYPE_NAMES];
 
 extern const char *Reinforcement_type_names[];
+extern flag_def_list_new<Mission::Mission_Flags> Parse_mission_flags[];
+extern parse_object_flag_description<Mission::Mission_Flags> Parse_mission_flag_descriptions[];
+extern const size_t Num_parse_mission_flags;
 extern char *Object_flags[];
+extern flag_def_list_new<Ship::Ship_Flags> Parse_ship_flags[];
+extern const size_t Num_Parse_ship_flags;
+extern flag_def_list_new<AI::AI_Flags> Parse_ship_ai_flags[];
+extern const size_t Num_Parse_ship_ai_flags;
+extern flag_def_list_new<Object::Object_Flags> Parse_ship_object_flags[];
+extern const size_t Num_Parse_ship_object_flags;
 extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_object_flags[];
 extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_object_flag_descriptions[];
 extern const size_t Num_parse_object_flags;
+extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
+extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
+extern const size_t Num_parse_wing_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
@@ -336,11 +386,33 @@ extern SCP_vector<texture_replace> Fred_texture_replacements;
 // which ships have had the "immobile" flag migrated to "don't-change-position" and "don't-change-orientation"
 extern SCP_unordered_set<int> Fred_migrated_immobile_ships;
 
-typedef struct alt_class {
+struct alt_class {
 	int ship_class;				
 	int variable_index;			// if set allows the class to be set by a variable
 	bool default_to_this_class;
-}alt_class;
+	alt_class()
+	{
+		ship_class = -1;
+		variable_index = -1;
+		default_to_this_class = false;
+	}
+	alt_class(const alt_class& a) {
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+	}
+	bool operator==(const alt_class& a) const
+	{
+		return (ship_class == a.ship_class && variable_index == a.variable_index && default_to_this_class == a.default_to_this_class);
+	}
+	alt_class& operator=(const alt_class& a)
+	{
+		ship_class = a.ship_class;
+		variable_index = a.variable_index;
+		default_to_this_class = a.default_to_this_class;
+		return *this;
+	}
+};
 
 //	a parse object
 //	information from a $OBJECT: definition is read into this struct to
@@ -389,6 +461,7 @@ public:
 
 	flagset<Mission::Parse_Object_Flags>	flags;								// mission savable flags
 	int	escort_priority = 0;					// priority in escort list
+	int ship_guardian_threshold = 0;
 	int	ai_class = -1;
 	int	hotkey = -1;								// hotkey number (between 0 and 9) -1 means no hotkey
 	int	score = 0;

@@ -190,16 +190,19 @@ static bool override_fog = false;
 graphics::deferred_light_data*
 
 // common conversion operations to translate a game light data structure into a render-ready light uniform.
-prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner)
+prepare_light_uniforms(light& l, graphics::util::UniformAligner& uniformAligner, const ltp::profile* lp)
 {
 	graphics::deferred_light_data* light_data = uniformAligner.addTypedElement<graphics::deferred_light_data>();
 
 	light_data->lightType = static_cast<int>(l.type);
 
+	float intensity =
+		(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_intensity_modifier.handle(l.intensity) : l.intensity;
+
 	vec3d diffuse;
-	diffuse.xyz.x = l.r * l.intensity;
-	diffuse.xyz.y = l.g * l.intensity;
-	diffuse.xyz.z = l.b * l.intensity;
+	diffuse.xyz.x = l.r * intensity;
+	diffuse.xyz.y = l.g * intensity;
+	diffuse.xyz.z = l.b * intensity;
 
 	light_data->diffuseLightColor = diffuse;
 
@@ -342,7 +345,7 @@ void gr_opengl_deferred_lighting_finish()
 		bool first_directional = true;
 
 		for (auto& l : full_frame_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, lp);
 
 			if (l.type == Light_Type::Directional ) {
 				if (Shadow_quality != ShadowQuality::Disabled) {
@@ -372,7 +375,7 @@ void gr_opengl_deferred_lighting_finish()
 			}
 		}
 		for (auto& l : sphere_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, lp);
 
 			if (l.type == Light_Type::Cone) {
 				light_data->dualCone = (l.flags & LF_DUAL_CONE) ? 1.0f : 0.0f;
@@ -384,6 +387,7 @@ void gr_opengl_deferred_lighting_finish()
 							? lp->cockpit_light_radius_modifier.handle(MAX(l.rada, l.radb))
 							: MAX(l.rada, l.radb);
 			light_data->lightRadius = rad;
+
 			// A small padding factor is added to guard against potentially clipping the edges of the light with facets
 			// of the volume mesh.
 			light_data->scale.xyz.x = rad * 1.05f;
@@ -391,11 +395,12 @@ void gr_opengl_deferred_lighting_finish()
 			light_data->scale.xyz.z = rad * 1.05f;
 		}
 		for (auto& l : cylinder_lights) {
-			auto light_data = prepare_light_uniforms(l, light_uniform_aligner);
+			auto light_data = prepare_light_uniforms(l, light_uniform_aligner, lp);
 			float rad =
 				(Lighting_mode == lighting_mode::COCKPIT) ? lp->cockpit_light_radius_modifier.handle(l.radb) : l.radb;
 
 			light_data->lightRadius = rad;
+
 			light_data->lightType = LT_TUBE;
 
 			vec3d a;

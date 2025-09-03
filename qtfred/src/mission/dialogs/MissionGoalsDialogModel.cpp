@@ -1,12 +1,8 @@
-//
-//
-
+#include <localization/localize.h>
 #include "MissionGoalsDialogModel.h"
 
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::EditorViewport* viewport) :
 	AbstractDialogModel(parent, viewport) {
@@ -14,7 +10,6 @@ MissionGoalsDialogModel::MissionGoalsDialogModel(QObject* parent, fso::fred::Edi
 bool MissionGoalsDialogModel::apply()
 {
 	SCP_vector<std::pair<SCP_string, SCP_string>> names;
-	int i;
 
 	auto changes_detected = query_modified();
 
@@ -24,7 +19,7 @@ bool MissionGoalsDialogModel::apply()
 	}
 
 	// rename all sexp references to old goals
-	for (i=0; i<(int)m_goals.size(); i++) {
+	for (size_t i=0; i<m_goals.size(); i++) {
 		if (m_sig[i] >= 0) {
 			names.emplace_back(Mission_goals[m_sig[i]].name, m_goals[i].name);
 			Mission_goals[m_sig[i]].satisfied = 1;
@@ -50,7 +45,7 @@ bool MissionGoalsDialogModel::apply()
 		Mission_goals.push_back(dialog_goal);
 		Mission_goals.back().formula = _sexp_tree->save_tree(dialog_goal.formula);
 		if ( The_mission.game_type & MISSION_TYPE_MULTI_TEAMS ) {
-			Assert( dialog_goal.team != -1 );
+			Assertion(dialog_goal.team != -1, "Invalid goal team!");
 		}
 	}
 
@@ -70,19 +65,19 @@ void MissionGoalsDialogModel::reject() {
 	// Nothing to do here
 }
 mission_goal& MissionGoalsDialogModel::getCurrentGoal() {
-	Assertion(cur_goal >= 0 && cur_goal < (int)m_goals.size(), "Current goal index is not valid!");
+	Assertion(SCP_vector_inbounds(m_goals, cur_goal), "Current goal index is not valid!");
 
 	return m_goals[cur_goal];
 }
 bool MissionGoalsDialogModel::isCurrentGoalValid() const {
-	return cur_goal >= 0 && cur_goal < (int)m_goals.size();
+	return SCP_vector_inbounds(m_goals, cur_goal);
 }
 void MissionGoalsDialogModel::initializeData() {
 	m_goals.clear();
 	m_sig.clear();
-	for (int i=0; i<(int)Mission_goals.size(); i++) {
+	for (size_t i=0; i<Mission_goals.size(); i++) {
 		m_goals.push_back(Mission_goals[i]);
-		m_sig.push_back(i);
+		m_sig.push_back(static_cast<int>(i));
 
 		if (m_goals[i].name.empty())
 			m_goals[i].name = "<Unnamed>";
@@ -103,18 +98,17 @@ bool MissionGoalsDialogModel::isGoalVisible(const mission_goal& goal) const {
 	return (goal.type & GOAL_TYPE_MASK) == m_display_goal_types;
 }
 void MissionGoalsDialogModel::setGoalDisplayType(int type) {
-	m_display_goal_types = type;
+	modify(m_display_goal_types, type);
 }
-bool MissionGoalsDialogModel::query_modified() {
-	int i;
-
+bool MissionGoalsDialogModel::query_modified()
+{
 	if (modified)
 		return true;
 
 	if (Mission_goals.size() != m_goals.size())
 		return true;
 
-	for (i=0; i<(int)Mission_goals.size(); i++) {
+	for (size_t i=0; i<Mission_goals.size(); i++) {
 		if (!lcase_equal(Mission_goals[i].name, m_goals[i].name))
 			return true;
 		if (!lcase_equal(Mission_goals[i].message, m_goals[i].message))
@@ -133,29 +127,31 @@ void MissionGoalsDialogModel::setTreeControl(sexp_tree* tree) {
 	_sexp_tree = tree;
 }
 void MissionGoalsDialogModel::deleteGoal(int node) {
-	int i;
-	for (i=0; i<(int)m_goals.size(); i++)
+	size_t i;
+	for (i=0; i<m_goals.size(); i++)
 	if (m_goals[i].formula == node)
 		break;
 
-	Assert(i < (int)m_goals.size());
+	Assert(i < m_goals.size());
 	m_goals.erase(m_goals.begin() + i);
 	m_sig.erase(m_sig.begin() + i);
 
+	set_modified();
 	modelChanged();
 }
 void MissionGoalsDialogModel::changeFormula(int old_form, int new_form) {
-	int i;
+	size_t i;
 
-	for (i=0; i<(int)m_goals.size(); i++){
+	for (i=0; i<m_goals.size(); i++){
 		if (m_goals[i].formula == old_form){
 			break;
 		}
 	}
 
-	Assert(i < (int)m_goals.size());
+	Assert(i < m_goals.size());
 	m_goals[i].formula = new_form;
 
+	set_modified();
 	modelChanged();
 }
 mission_goal& MissionGoalsDialogModel::createNewGoal() {
@@ -166,12 +162,15 @@ mission_goal& MissionGoalsDialogModel::createNewGoal() {
 	m_goals.back().name = "Goal name";
 	m_goals.back().message = "Mission goal text";
 
+	set_modified();
 	return m_goals.back();
 }
 void MissionGoalsDialogModel::setCurrentGoalMessage(const char* text) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 	getCurrentGoal().message = text;
+	lcl_fred_replace_stuff(getCurrentGoal().message);
 
+	set_modified();
 	modelChanged();
 }
 void MissionGoalsDialogModel::setCurrentGoalCategory(int type) {
@@ -182,18 +181,21 @@ void MissionGoalsDialogModel::setCurrentGoalCategory(int type) {
 		m_goals[cur_goal].type |= INVALID_GOAL;
 	}
 
+	set_modified();
 	modelChanged();
 }
 void MissionGoalsDialogModel::setCurrentGoalScore(int value) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 	getCurrentGoal().score = value;
 
+	set_modified();
 	modelChanged();
 }
 void MissionGoalsDialogModel::setCurrentGoalName(const char* name) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 	getCurrentGoal().name = name;
 
+	set_modified();
 	modelChanged();
 }
 void MissionGoalsDialogModel::setCurrentGoalInvalid(bool invalid) {
@@ -204,22 +206,26 @@ void MissionGoalsDialogModel::setCurrentGoalInvalid(bool invalid) {
 	} else {
 		getCurrentGoal().type &= ~INVALID_GOAL;
 	}
+
+	set_modified();
 }
 void MissionGoalsDialogModel::setCurrentGoalNoMusic(bool noMusic) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 
 	if (noMusic) {
-		getCurrentGoal().type |= MGF_NO_MUSIC;
+		getCurrentGoal().flags |= MGF_NO_MUSIC;
 	} else {
-		getCurrentGoal().type &= ~MGF_NO_MUSIC;
+		getCurrentGoal().flags &= ~MGF_NO_MUSIC;
 	}
+
+	set_modified();
 }
 void MissionGoalsDialogModel::setCurrentGoalTeam(int team) {
 	Assertion(isCurrentGoalValid(), "Current goal is not valid!");
 
 	getCurrentGoal().team = team;
+
+	set_modified();
 }
 
-}
-}
-}
+} // namespace fso::fred::dialogs

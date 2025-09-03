@@ -151,9 +151,10 @@ FFmpegWaveFile::~FFmpegWaveFile()
 	av_frame_free(&m_decodeFrame);
 
 	if (m_audioCodecCtx) {
-		avcodec_close(m_audioCodecCtx);
 #if LIBAVCODEC_VERSION_INT > AV_VERSION_INT(57, 24, 255)
 		avcodec_free_context(&m_audioCodecCtx);
+#else
+		avcodec_close(m_audioCodecCtx);
 #endif
 		m_audioCodecCtx = nullptr;
 	}

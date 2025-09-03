@@ -5,11 +5,7 @@
 #include <mission/dialogs/FictionViewerDialogModel.h>
 #include <ui/FredView.h>
 
-#include <memory>
-
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class FictionViewerDialog;
@@ -21,30 +17,34 @@ public:
 	FictionViewerDialog(FredView* parent, EditorViewport* viewport);
 	~FictionViewerDialog() override;
 
-	void musicSelectionChanged(int index);
-	void storyFileTextChanged();
-	void fontFileTextChanged();
-	void voiceFileTextChanged();
+	void accept() override;
+	void reject() override;
 
  protected:
-	void keyPressEvent(QKeyEvent* event) override;
-	void closeEvent(QCloseEvent*) override;
-	void rejectHandler();
- private:
+	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+
+private slots:
+	// dialog controls
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
+
+	void on_storyFileEdit_textChanged(const QString& text);
+	void on_fontFileEdit_textChanged(const QString& text);
+	void on_voiceFileEdit_textChanged(const QString& text);
+	void on_musicComboBox_currentIndexChanged(int index);
+
+ private: // NOLINT(readability-redundant-access-specifiers)
+
+	void initializeUi();
+	void updateUi();
 
 	void updateMusicComboBox();
-
-	void updateUI();
 
 	
 
 	EditorViewport* _viewport = nullptr;
-	Editor* _editor = nullptr;
-	
 	std::unique_ptr<Ui::FictionViewerDialog> ui;
 	std::unique_ptr<FictionViewerDialogModel> _model;
 };
 
-}
-}
-}
+} // namespace fso::fred::dialogs

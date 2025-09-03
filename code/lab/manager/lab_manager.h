@@ -36,17 +36,29 @@ public:
 	// displayed object
 	void changeDisplayedObject(LabMode type, int info_index, int subtype = -1);
 
+	// Deletes all testing objects
+	void deleteTestObjects();
+
 	// Deletes the docker object if exists
 	void deleteDockerObject();
 
+	// Deletes the bay object if exists
+	void deleteBayObject();
+
 	// Spawns a docker object to use with dock or undock tests. Deletes the current docker object if it exists
 	void spawnDockerObject();
+
+	// Spawns a bay object to use with bay tests. Deletes the current bay object if it exists
+	void spawnBayObject();
 
 	// Begins the docking test
 	void beginDockingTest();
 
 	// Begins the undocking test
 	void beginUndockingTest();
+
+	// Begins the bay test
+	void beginBayTest();
 
 	void close() {
 		animation::ModelAnimationSet::stopAnimations();
@@ -78,9 +90,13 @@ public:
 	int CurrentSubtype = -1;
 	int CurrentClass = -1;
 	int DockerObject = -1;
+	int BayObject = -1;
 	int DockerClass = 0;
+	int BayClass = 0;
 	SCP_string DockerDockPoint;
 	SCP_string DockeeDockPoint;
+	int BayPathMask = 0;
+	BayMode BayTestMode = BayMode::Arrival;
 	vec3d CurrentPosition = vmd_zero_vector;
 	matrix CurrentOrientation = vmd_identity_matrix;
 	SCP_string ModelFilename;	

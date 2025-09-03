@@ -9,6 +9,7 @@
 #include "utils/RandomRange.h"
 #include "utils/id.h"
 #include "utils/modular_curves.h"
+#include "graphics/2d.h"
 
 #include <optional>
 
@@ -201,7 +202,7 @@ public:
 
 	bool isOnetime() const { return m_duration == Duration::ONETIME; }
 
-	float getApproximateVisualSize(const vec3d& pos) const;
+	float getApproximatePixelSize(const vec3d& pos) const;
 
 	constexpr static auto modular_curves_definition = make_modular_curve_definition<ParticleSource, ParticleCurvesOutput>(
 		std::array {
@@ -234,12 +235,20 @@ public:
 		std::pair {"Particle Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::num_particles>,
+			ModularCurvesMathOperators::division>{}},
+		std::pair {"Nebula Usage Score", modular_curves_math_input<
+		    modular_curves_global_submember_input<get_particle_count>,
+			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
 			ModularCurvesMathOperators::division>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
 	.derive_modular_curves_input_only_subset<vec3d>( //Sampled spawn position
-		std::pair {"Apparent Visual Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectVisualSize>{}}
+		std::pair {"Pixel Size At Emitter", modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>{}},
+		std::pair {"Apparent Size At Emitter", modular_curves_math_input<
+			modular_curves_functional_full_input<&ParticleSource::getEffectPixelSize>,
+			modular_curves_global_submember_input<gr_screen, &screen::max_w>,
+			ModularCurvesMathOperators::division>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);

@@ -112,6 +112,11 @@ typedef struct sound_env
 	float decay;
 } sound_env;
 
+inline bool operator==(const sound_env& a, const sound_env& b) {
+     return a.id == b.id && a.volume == b.volume && a.damping == b.damping && a.decay == b.decay;
+}
+inline bool operator!=(const sound_env& a, const sound_env& b) { return !(a == b); }
+
 extern int		Sound_enabled;
 extern float	Default_sound_volume;		// 0 -> 1.0
 extern float	Default_voice_volume;		// 0 -> 1.0

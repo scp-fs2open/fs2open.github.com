@@ -3044,14 +3044,13 @@ void process_cargo_hidden_packet( ubyte *data, header *hinfo )
 #define SFPF_TARGET_LOCKED		(1<<5)
 
 // send a packet indicating a secondary weapon was fired
-void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*starting_count*/, int num_fired, int allow_swarm )
+void send_secondary_fired_packet( ship *shipp, ushort starting_sig, tracking_info &tinfo, int num_fired, int allow_swarm )
 {
 	int packet_size, net_player_num;
 	ubyte data[MAX_PACKET_SIZE], sinfo, current_bank;
 	object *objp;
 	ushort target_net_signature;
 	int s_index;
-	ai_info *aip;
 
 	// Assert ( starting_count < UCHAR_MAX );
 
@@ -3063,8 +3062,6 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 			return;
 		}
 	}
-
-	aip = &Ai_info[shipp->ai_index];
 
 	current_bank = (ubyte)shipp->weapons.current_secondary_bank;
 	Assert( (current_bank < MAX_SHIP_SECONDARY_BANKS) );
@@ -3086,7 +3083,7 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 		sinfo |= SFPF_DUAL_FIRE;
 	}
 
-	if ( aip->current_target_is_locked ){
+	if ( tinfo.locked ){
 		sinfo |= SFPF_TARGET_LOCKED;
 	}
 
@@ -3095,14 +3092,14 @@ void send_secondary_fired_packet( ship *shipp, ushort starting_sig, int  /*start
 	// add the ship's target and any targeted subsystem
 	target_net_signature = 0;
 	s_index = -1;
-	if ( aip->target_objnum != -1) {
-		target_net_signature = Objects[aip->target_objnum].net_signature;
-		if ( (Objects[aip->target_objnum].type == OBJ_SHIP) && (aip->targeted_subsys != NULL) ) {
-			s_index = ship_get_subsys_index( aip->targeted_subsys );
+	if (tinfo.objnum != -1) {
+		target_net_signature = Objects[tinfo.objnum].net_signature;
+		if ( (Objects[tinfo.objnum].type == OBJ_SHIP) && (tinfo.subsys != nullptr) ) {
+			s_index = ship_get_subsys_index( tinfo.subsys );
 		}
 
-		if ( Objects[aip->target_objnum].type == OBJ_WEAPON ) {
-			Assert(Weapon_info[Weapons[Objects[aip->target_objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
+		if ( Objects[tinfo.objnum].type == OBJ_WEAPON ) {
+			Assert(Weapon_info[Weapons[Objects[tinfo.objnum].instance].weapon_info_index].wi_flags[Weapon::Info_Flags::Bomb]);
 		}
 
 	}
@@ -3955,22 +3952,6 @@ void process_ingame_nak(ubyte *data, header *hinfo)
 	}	
 }
 
-// If the end_mission SEXP has been used tell clients to skip straight to the debrief screen
-void send_force_end_mission_packet()
-{
-	ubyte data[MAX_PACKET_SIZE];
-	int packet_size;
-	
-	packet_size = 0;
-	BUILD_HEADER(FORCE_MISSION_END);	
-
-	if (Net_player->flags & NETINFO_FLAG_AM_MASTER)
-	{	
-		// tell everyone to leave the game		
-		multi_io_send_to_all_reliable(data, packet_size);
-	}
-}
-
 // process a packet indicating that we should jump straight to the debrief screen
 void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
 {
@@ -3980,13 +3961,13 @@ void process_force_end_mission_packet(ubyte * /*data*/, header *hinfo)
  	
 	PACKET_SET_SIZE();
 
-	ml_string("Receiving force end mission packet");
-
-	// Since only the server sends out these packets it should never receive one
-	Assert (!(Net_player->flags & NETINFO_FLAG_AM_MASTER)); 
-	
-	multi_handle_sudden_mission_end();
-	send_debrief_event();
+	// TODO: Obsolete packet - Remove on next multi bump
+	//
+	// This method of ending a mission was horribly broken and skipped over a
+	// lot of necessary state changes resulting in broken standalone net traffic
+	//
+	// We need to support receiving this packet for compatibility sake, but it
+	// should be removed on the next multi bump (as noted in #6927)
 }
 
 // send a packet telling players to end the mission

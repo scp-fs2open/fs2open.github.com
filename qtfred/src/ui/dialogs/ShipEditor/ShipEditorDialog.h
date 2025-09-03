@@ -1,33 +1,35 @@
 #ifndef SHIPDEDITORDIALOG_H
 #define SHIPDEDITORDIALOG_H
 
-#include <QtWidgets/QDialog>
-#include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
-#include <ui/FredView.h>
+#include "PlayerOrdersDialog.h"
+#include "ShipCustomWarpDialog.h"
+#include "ShipFlagsDialog.h"
 #include "ShipGoalsDialog.h"
 #include "ShipInitialStatusDialog.h"
-#include "ShipFlagsDialog.h"
-#include "PlayerOrdersDialog.h"
+#include "ShipPathsDialog.h"
 #include "ShipSpecialStatsDialog.h"
-#include "ShipTextureReplacementDialog.h"
 #include "ShipTBLViewer.h"
+#include "ShipTextureReplacementDialog.h"
+#include "ShipWeaponsDialog.h"
 #include "ShipPathsDialog.h"
 #include "ShipCustomWarpDialog.h"
+#include "ShipAltShipClass.h"
+
+#include <mission/dialogs/ShipEditor/ShipEditorDialogModel.h>
+#include <ui/FredView.h>
 
 #include <QAbstractButton>
+#include <QtWidgets/QDialog>
 
-
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class ShipEditorDialog;
 }
 
 /**
-* @brief QTFred's Ship Editor
-*/
+ * @brief QTFred's Ship Editor
+ */
 class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	Q_OBJECT
@@ -85,6 +87,41 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_restrictDeparturePathsButton_clicked();
 	void on_customWarpoutButton_clicked();
 
+	// column one
+	void on_shipNameEdit_editingFinished();
+	void on_shipDisplayNameEdit_editingFinished();
+	void on_shipClassCombo_currentIndexChanged(int);
+	void on_AIClassCombo_currentIndexChanged(int);
+	void on_teamCombo_currentIndexChanged(int);
+
+	// column two
+	void on_hotkeyCombo_currentIndexChanged(int);
+	void on_personaCombo_currentIndexChanged(int);
+	void on_killScoreEdit_valueChanged(int);
+	void on_assistEdit_valueChanged(int);
+	void on_playerShipCheckBox_toggled(bool);
+	void on_respawnSpinBox_valueChanged(int);
+
+	//arrival
+	void on_arrivalLocationCombo_currentIndexChanged(int);
+	void on_arrivalTargetCombo_currentIndexChanged(int);
+	void on_arrivalDistanceEdit_valueChanged(int);
+	void on_arrivalDelaySpinBox_valueChanged(int);
+	void on_updateArrivalCueCheckBox_toggled(bool);
+	void on_noArrivalWarpCheckBox_toggled(bool);
+	void on_arrivalTree_rootNodeFormulaChanged(int, int);
+	void on_arrivalTree_helpChanged(const QString&);
+	void on_arrivalTree_miniHelpChanged(const QString&);
+
+	//departure
+	void on_departureLocationCombo_currentIndexChanged(int);
+	void on_departureTargetCombo_currentIndexChanged(int);
+	void on_departureDelaySpinBox_valueChanged(int);
+	void on_updateDepartureCueCheckBox_toggled(bool);
+	void on_departureTree_rootNodeFormulaChanged(int, int);
+	void on_departureTree_helpChanged(const QString&);
+	void on_departureTree_miniHelpChanged(const QString&);
+	void on_noDepartureWarpCheckBox_toggled(bool);
   private:
 	std::unique_ptr<Ui::ShipEditorDialog> ui;
 	std::unique_ptr<ShipEditorDialogModel> _model;
@@ -92,47 +129,18 @@ class ShipEditorDialog : public QDialog, public SexpTreeEditorInterface {
 
 	void update();
 
-	void updateUI();
-	void updateColumnOne();
-	void updateColumnTwo();
-	void updateArrival();
-	void updateDeparture();
+	void updateUI(bool overwrite = false);
+	void updateColumnOne(bool overwrite = false);
+	void updateColumnTwo(bool ovewrite = false);
+	void updateArrival(bool overwrite = false);
+	void updateDeparture(bool overwrite = false);
 	void enableDisable();
 
-	//column one
-	void shipNameChanged();
-	void shipDisplayNameChanged();
-	void shipClassChanged(const int);
-	void aiClassChanged(const int);
-	void teamChanged(const int);
+	// column one
 	void cargoChanged();
 	void altNameChanged();
 	void callsignChanged();
-
-	//column two
-	void hotkeyChanged(const int);
-	void personaChanged(const int);
-	void scoreChanged(const int);
-	void assistChanged(const int);
-	void playerChanged(const bool);
-
-	//arrival
-	void arrivalLocationChanged(const int);
-	void arrivalTargetChanged(const int);
-	void arrivalDistanceChanged(const int);
-	void arrivalDelayChanged(const int);
-	void arrivalWarpChanged(const bool);
-	void ArrivalCueChanged(const bool);
-
-	//departure
-	void departureLocationChanged(const int);
-	void departureTargetChanged(const int);
-	void departureDelayChanged(const int);
-	void departureWarpChanged(const bool);
-	void DepartureCueChanged(const bool);
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
 
 #endif // SHIPDEDITORDIALOG_H

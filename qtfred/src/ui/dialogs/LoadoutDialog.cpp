@@ -321,7 +321,8 @@ void LoadoutDialog::addShipButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->listShipsNotUsed->selectedItems()){
-		list.emplace_back(item->text().toStdString());
+		SCP_string shipName = item->text().toUtf8().constData();
+		list.emplace_back(shipName);
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -338,7 +339,8 @@ void LoadoutDialog::addWeaponButtonClicked()
 	SCP_vector<SCP_string> list;
 	
 	for (const auto& item: ui->listWeaponsNotUsed->selectedItems()){
-		list.emplace_back(item->text().toStdString());
+		SCP_string weaponName = item->text().toUtf8().constData();
+		list.emplace_back(weaponName);
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -355,7 +357,8 @@ void LoadoutDialog::removeShipButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->usedShipsList->selectedItems()){
-		list.emplace_back(item->text().toStdString());
+		SCP_string shipName = item->text().toUtf8().constData();
+		list.emplace_back(shipName);
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -372,7 +375,8 @@ void LoadoutDialog::removeWeaponButtonClicked()
 	SCP_vector<SCP_string> list;
 
 	for (const auto& item : ui->usedWeaponsList->selectedItems()){
-		list.emplace_back(item->text().toStdString());
+		SCP_string weaponName = item->text().toUtf8().constData();
+		list.emplace_back(weaponName);
 	}
 
 	if (_mode == TABLE_MODE) {
@@ -436,7 +440,7 @@ void LoadoutDialog::onExtraItemsViaVariableCombo()
 	}
 
 	SCP_vector<SCP_string> list = (_lastSelectionChanged == USED_SHIPS) ? getSelectedShips() : getSelectedWeapons();
-	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toStdString();
+	SCP_string chosenVariable = ui->extraItemsViaVariableCombo->currentText().toUtf8().constData();
 
 	_model->setExtraAllocatedViaVariable(list, chosenVariable, _lastSelectionChanged == USED_SHIPS, _mode == VARIABLE_MODE);
 	updateUI();
@@ -527,9 +531,9 @@ void LoadoutDialog::onClearAllUsedWeaponsPressed()
 	_lastSelectionChanged = USED_WEAPONS;
 }
 
-// TODO!  Finish writing a trigger to open that dialog, once the variable editor is created
 void LoadoutDialog::openEditVariablePressed() 
 {
+	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
 }
 
 void LoadoutDialog::onSelectionRequiredPressed() 
@@ -578,7 +582,8 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 			
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x){
-				if (ui->usedShipsList->item(x,0) && lcase_equal(ui->usedShipsList->item(x, 0)->text().toStdString(), shipName)) {
+				SCP_string usedShipName = ui->usedShipsList->item(x, 0)->text().toUtf8().constData();
+				if (ui->usedShipsList->item(x,0) && lcase_equal(usedShipName, shipName)) {
 					found = true;
 					// update the quantities here, and make sure it's visible
 					ui->usedShipsList->item(x, 1)->setText(newShip.first.substr(divider + 1).c_str());
@@ -600,7 +605,8 @@ void LoadoutDialog::updateUI()
 
 			// remove from the unused list
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x) {
-				if (lcase_equal(ui->listShipsNotUsed->item(x)->text().toStdString(), shipName)) {
+				SCP_string usedShipName = ui->listShipsNotUsed->item(x)->text().toUtf8().constData();
+				if (lcase_equal(usedShipName, shipName)) {
 					ui->listShipsNotUsed->setRowHidden(x, true);
 					break;
 				}
@@ -610,7 +616,8 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listShipsNotUsed->count(); ++x){
-				if (lcase_equal(ui->listShipsNotUsed->item(x)->text().toStdString(), shipName)) {
+				SCP_string usedShipName = ui->listShipsNotUsed->item(x)->text().toUtf8().constData();
+				if (lcase_equal(usedShipName, shipName)) {
 					found = true;
 					ui->listShipsNotUsed->setRowHidden(x, false); 
 					break;
@@ -623,8 +630,9 @@ void LoadoutDialog::updateUI()
 
 				// remove from the used list
 			for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
+				SCP_string usedShipName = ui->usedShipsList->item(x, 0)->text().toUtf8().constData();
 				if (ui->usedShipsList->item(x, 0) &&
-					lcase_equal(ui->usedShipsList->item(x, 0)->text().toStdString(), shipName)) {
+					lcase_equal(usedShipName, shipName)) {
 					ui->usedShipsList->setRowHidden(x, true);
 					break;
 				}
@@ -641,7 +649,8 @@ void LoadoutDialog::updateUI()
 			
 			// Add or update in the used list
 			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-				if (ui->usedWeaponsList->item(x,0) && lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weaponName)) {
+				SCP_string usedWepName = ui->usedWeaponsList->item(x, 0)->text().toUtf8().constData();
+				if (ui->usedWeaponsList->item(x,0) && lcase_equal(usedWepName, weaponName)) {
 					found = true;
 					// only need to update the quantities here.
 					ui->usedWeaponsList->item(x, 1)->setText(newWeapon.first.substr(divider + 1).c_str());
@@ -664,7 +673,8 @@ void LoadoutDialog::updateUI()
 
 			// remove from the unused list
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x) {
-				if (lcase_equal(ui->listWeaponsNotUsed->item(x)->text().toStdString(), weaponName)) {
+				SCP_string usedWepName = ui->listWeaponsNotUsed->item(x)->text().toUtf8().constData();
+				if (lcase_equal(usedWepName, weaponName)) {
 					ui->listWeaponsNotUsed->setRowHidden(x, true);
 					break;
 				}
@@ -674,7 +684,8 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (int x = 0; x < ui->listWeaponsNotUsed->count(); ++x){
-				if (ui->listWeaponsNotUsed->item(x) && lcase_equal(ui->listWeaponsNotUsed->item(x)->text().toStdString(), weaponName)) {
+				SCP_string usedWepName = ui->listWeaponsNotUsed->item(x)->text().toUtf8().constData();
+				if (ui->listWeaponsNotUsed->item(x) && lcase_equal(usedWepName, weaponName)) {
 					found = true;
 					ui->listWeaponsNotUsed->setRowHidden(x, false);
 					break;
@@ -687,8 +698,9 @@ void LoadoutDialog::updateUI()
 			
 			// remove from the used list
 			for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
+				SCP_string usedWepName = ui->usedWeaponsList->item(x, 0)->text().toUtf8().constData();
 				if (ui->usedWeaponsList->item(x, 0) &&
-					lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weaponName)) {
+					lcase_equal(usedWepName, weaponName)) {
 					ui->usedWeaponsList->setRowHidden(x, true);
 					break;
 				}
@@ -832,8 +844,8 @@ void LoadoutDialog::updateUI()
 			ui->extraItemsViaVariableCombo->setCurrentIndex(0);
 		} else {
 			for (int x = 0; x < ui->extraItemsViaVariableCombo->count(); ++x) {
-				if (lcase_equal(ui->extraItemsViaVariableCombo->itemText(x).toStdString(),
-						currentVariable)) {
+				SCP_string variableName = ui->extraItemsViaVariableCombo->itemText(x).toUtf8().constData();
+				if (lcase_equal(variableName, currentVariable)) {
 					ui->extraItemsViaVariableCombo->setCurrentIndex(x);
 					break;
 				}
@@ -850,7 +862,8 @@ void LoadoutDialog::updateUI()
 			bool found = false;
 
 			for (const auto& weapon : requiredWeapons) {
-				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && lcase_equal(ui->usedWeaponsList->item(x, 0)->text().toStdString(), weapon)) {
+				SCP_string usedWepName = ui->usedWeaponsList->item(x, 0)->text().toUtf8().constData();
+				if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x,2) && lcase_equal(usedWepName, weapon)) {
 					found = true;
 					ui->usedWeaponsList->item(x, 2)->setText("Yes");
 					break;
@@ -870,7 +883,8 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedShips()
 
 	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
 		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x,0)->isSelected()) {
-			namesOut.emplace_back(ui->usedShipsList->item(x, 0)->text().toStdString());
+			SCP_string shipName = ui->usedShipsList->item(x, 0)->text().toUtf8().constData();
+			namesOut.emplace_back(shipName);
 		}
 	}
 
@@ -883,7 +897,8 @@ SCP_vector<SCP_string> LoadoutDialog::getSelectedWeapons()
 
 	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
 		if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x, 0)->isSelected()) {
-			namesOut.emplace_back(ui->usedWeaponsList->item(x, 0)->text().toStdString());
+			SCP_string weaponName = ui->usedWeaponsList->item(x, 0)->text().toUtf8().constData();
+			namesOut.emplace_back(weaponName);
 		}
 	}
 

@@ -22,9 +22,9 @@ static SCP_string HOST_NAME = "fs2open";
 
 static SCP_vector<int> mSockets;
 
-static in_addr IPv4_addr;
+static SOCKADDR_IN IPv4_addr;
 static bool has_ipv4 = false;
-static uint8_t IPv6_addr[sizeof(in6_addr)];
+static SOCKADDR_IN6 IPv6_addr;
 static bool has_ipv6 = false;
 
 
@@ -60,38 +60,156 @@ static int query_callback(int sock __UNUSED, const struct sockaddr *from __UNUSE
 
 static int service_callback(int sock, const struct sockaddr* from, size_t addrlen, mdns_entry_type_t entry,
 							uint16_t query_id, uint16_t rtype, uint16_t rclass, uint32_t ttl __UNUSED, const void* data,
-							size_t size, size_t name_offset __UNUSED, size_t name_length __UNUSED, size_t record_offset,
-							size_t record_length, void* user_data __UNUSED)
+							size_t size, size_t name_offset, size_t name_length __UNUSED, size_t record_offset __UNUSED,
+							size_t record_length __UNUSED, void* user_data __UNUSED)
 {
 	if (entry != MDNS_ENTRYTYPE_QUESTION) {
 		return 0;
 	}
 
-	std::array<char, 256> BUFFER{};
+	const SCP_string dns_sd = "_services._dns-sd._udp.local.";
+	const SCP_string SERVICE_INSTANCE = HOST_NAME + "." + SERVICE_NAME;
+	const SCP_string HOSTNAME_QUALIFIED = HOST_NAME + ".local.";
 
-	if (rtype == MDNS_RECORDTYPE_PTR) {
-		mdns_string_t service = mdns_record_parse_ptr(data, size, record_offset, record_length, BUFFER.data(), BUFFER.size());
+	std::array<char, 256> NAME{};
+	mdns_record_t answer;
+	SCP_vector<mdns_record_t> records;
+	mdns_record_t n_record;
 
-		// check for special discovery record and reply accordingly
-		const SCP_string dns_sd = "_services._dns-sd._udp.local.";
+	answer.type = MDNS_RECORDTYPE_IGNORE;
 
-		if ( (service.length == dns_sd.size()) && (dns_sd == service.str) ) {
-			mdns_discovery_answer(sock, from, addrlen, BUFFER.data(), BUFFER.size(), SERVICE_NAME.c_str(), SERVICE_NAME.size());
-			return 0;
+	size_t offset = name_offset;
+	const mdns_string_t name = mdns_string_extract(data, size, &offset, NAME.data(), NAME.size());
+
+	// check for special discovery record and reply accordingly
+	if ( (dns_sd.length() == name.length) && (dns_sd == name.str) ) {
+		if ( (rtype == MDNS_RECORDTYPE_PTR) || (rtype == MDNS_RECORDTYPE_ANY) ) {
+			answer.name = name;
+			answer.type = MDNS_RECORDTYPE_PTR;
+			answer.data.ptr.name = { SERVICE_NAME.c_str(), SERVICE_NAME.length() };
 		}
+	}
+	// look for our service
+	else if ( (SERVICE_NAME.length() == name.length) && (SERVICE_NAME == name.str) ) {
+		if ( (rtype == MDNS_RECORDTYPE_PTR) || (rtype == MDNS_RECORDTYPE_ANY) ) {
+			// base answer is PTR reverse mapping (service)
+			answer.name = { SERVICE_NAME.c_str(), SERVICE_NAME.length() };
+			answer.type = MDNS_RECORDTYPE_PTR;
+			answer.data.ptr.name = { SERVICE_INSTANCE.c_str(), SERVICE_INSTANCE.length() };
 
-		// ignore anything not meant for us
-		if ( (service.length != SERVICE_NAME.size()) || !(SERVICE_NAME == service.str) ) {
-			return 0;
+			// additional records...
+			records.reserve(3);
+
+			// SRV record mapping (service instance)
+			n_record.name = { SERVICE_INSTANCE.c_str(), SERVICE_INSTANCE.length() };
+			n_record.type = MDNS_RECORDTYPE_SRV;
+			n_record.data.srv.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+			n_record.data.srv.port = Psnet_default_port;
+			n_record.data.srv.priority = 0;
+			n_record.data.srv.weight = 0;
+
+			records.push_back(n_record);
+
+			// add A record
+			if (has_ipv4) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_A;
+				n_record.data.a.addr = IPv4_addr;
+
+				records.push_back(n_record);
+			}
+
+			// add AAAA record
+			if (has_ipv6) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_AAAA;
+				n_record.data.aaaa.addr = IPv6_addr;
+
+				records.push_back(n_record);
+			}
 		}
+	}
+	// look for direct service instance
+	else if ( (SERVICE_INSTANCE.length() == name.length) && (SERVICE_INSTANCE == name.str) ) {
+		if ( (rtype == MDNS_RECORDTYPE_SRV) || (rtype == MDNS_RECORDTYPE_ANY) ) {
+			// base answer is SRV record mapping (service instance)
+			answer.name = { SERVICE_INSTANCE.c_str(), SERVICE_INSTANCE.length() };
+			answer.type = MDNS_RECORDTYPE_SRV;
+			answer.data.srv.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+			answer.data.srv.port = Psnet_default_port;
+			answer.data.srv.priority = 0;
+			answer.data.srv.weight = 0;
 
-		uint16_t unicast = (rclass & MDNS_UNICAST_RESPONSE);
+			// additional records ...
+			records.reserve(2);
 
-		// this one call will send all required records
-		mdns_query_answer(sock, from, (unicast) ? addrlen : 0, BUFFER.data(), BUFFER.size(), query_id,
-						  SERVICE_NAME.c_str(), SERVICE_NAME.size(), HOST_NAME.c_str(), HOST_NAME.size(),
-						  has_ipv4 ? IPv4_addr.s_addr : 0, has_ipv6 ? IPv6_addr : nullptr,
-						  Psnet_default_port, nullptr, 0);
+			// add A record
+			if (has_ipv4) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_A;
+				n_record.data.a.addr = IPv4_addr;
+
+				records.push_back(n_record);
+			}
+
+			// add AAAA record
+			if (has_ipv6) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_AAAA;
+				n_record.data.aaaa.addr = IPv6_addr;
+
+				records.push_back(n_record);
+			}
+		}
+	}
+	// hostname A/AAAA records
+	else if ( (HOSTNAME_QUALIFIED.length() == name.length) && (HOSTNAME_QUALIFIED == name.str) ) {
+		if ( has_ipv4 && ((rtype == MDNS_RECORDTYPE_A) || (rtype == MDNS_RECORDTYPE_ANY)) ) {
+			// base answer is A record
+			answer.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+			answer.type = MDNS_RECORDTYPE_A;
+			answer.data.a.addr = IPv4_addr;
+
+			// additional records ...
+
+			// add AAAA record
+			if (has_ipv6) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_AAAA;
+				n_record.data.aaaa.addr = IPv6_addr;
+
+				records.push_back(n_record);
+			}
+		} else if ( has_ipv6 && ((rtype == MDNS_RECORDTYPE_AAAA) || (rtype == MDNS_RECORDTYPE_ANY)) ) {
+			// base answer is AAAA record
+			answer.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+			answer.type = MDNS_RECORDTYPE_AAAA;
+			answer.data.aaaa.addr = IPv6_addr;
+
+			// additional records ...
+
+			// add A record
+			if (has_ipv4) {
+				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
+				n_record.type = MDNS_RECORDTYPE_A;
+				n_record.data.a.addr = IPv4_addr;
+
+				records.push_back(n_record);
+			}
+		}
+	}
+
+	if (answer.type != MDNS_RECORDTYPE_IGNORE) {
+		const bool unicast = (rclass & MDNS_UNICAST_RESPONSE) == MDNS_UNICAST_RESPONSE;
+		mdns_record_t *records_ptr = records.empty() ? nullptr : &records.front();
+		std::array<uint8_t, 1024> buffer{};
+
+		if (unicast) {
+			mdns_query_answer_unicast(sock, from, addrlen, buffer.data(), buffer.size(), query_id, static_cast<mdns_record_type_t>(rtype),
+											name.str, name.length, answer, nullptr, 0, records_ptr, records.size());
+		} else {
+			mdns_query_answer_multicast(sock, buffer.data(), buffer.size(), answer, nullptr, 0, records_ptr, records.size());
+		}
 	}
 
 	return 0;
@@ -235,7 +353,7 @@ bool multi_mdns_service_init()
 	}
 
 	// setup local ip info
-	IPv4_addr.s_addr = INADDR_ANY;
+	memset(&IPv4_addr, 0, sizeof(IPv4_addr));
 	memset(&IPv6_addr, 0, sizeof(IPv6_addr));
 
 	has_ipv4 = false;
@@ -246,16 +364,16 @@ bool multi_mdns_service_init()
 	if (ip_mode & PSNET_IP_MODE_V4) {
 		auto *in6 = psnet_get_local_ip(AF_INET);
 
-		if (in6 && psnet_map6to4(in6, &IPv4_addr)) {
+		if (in6 && psnet_map6to4(in6, &IPv4_addr.sin_addr)) {
 			has_ipv4 = true;
 		}
 	}
 
 	if (ip_mode & PSNET_IP_MODE_V6) {
-		auto in6 = psnet_get_local_ip(AF_INET6);
+		auto *in6 = psnet_get_local_ip(AF_INET6);
 
 		if (in6) {
-			memcpy(&IPv6_addr, in6, sizeof(in6_addr));
+			memcpy(&IPv6_addr.sin6_addr, in6, sizeof(in6_addr));
 			has_ipv6 = true;
 		}
 	}

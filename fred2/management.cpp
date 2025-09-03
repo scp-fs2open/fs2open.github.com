@@ -436,7 +436,7 @@ bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	strcpy_s(Voice_abbrev_message, "");
 	strcpy_s(Voice_abbrev_mission, "");
 	Voice_no_replace_filenames = false;
-	strcpy_s(Voice_script_entry_format, "Sender: $sender\r\nPersona: $persona\r\nFile: $filename\r\nMessage: $message");
+	strcpy_s(Voice_script_entry_format, Voice_script_default_string.c_str());
 	Voice_export_selection = 0;
 
 	Show_waypoints = TRUE;

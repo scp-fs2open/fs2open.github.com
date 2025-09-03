@@ -3,6 +3,7 @@
 #include "mission/object.h"
 
 #include <globalincs/linklist.h>
+#include <localization/localize.h>
 
 #include <QtWidgets>
 #include <object/objectdock.cpp>
@@ -140,7 +141,7 @@ void ShipInitialStatusDialogModel::initializeData(bool multi)
 	m_velocity = static_cast<int>(Objects[_editor->currentObject].phys_info.speed);
 	m_shields = static_cast<int>(Objects[_editor->currentObject].shield_quadrant[0]);
 	m_hull = static_cast<int>(Objects[_editor->currentObject].hull_strength);
-
+	guardian_threshold = Ships[m_ship].ship_guardian_threshold;
 	if (Objects[_editor->currentObject].flags[Object::Object_Flags::No_shields])
 		m_has_shields = 0;
 	else
@@ -594,7 +595,7 @@ bool ShipInitialStatusDialogModel::apply()
 					objp->flags.set(Object::Object_Flags::No_shields);
 				}
 				auto shipp = &Ships[get_ship_from_obj(objp)];
-
+				shipp->ship_guardian_threshold = guardian_threshold;
 				// We need to ensure that we handle the inconsistent "boolean" value correctly
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
 				handle_inconsistent_flag(shipp->flags, Ship::Ship_Flags::Ship_locked, m_ship_locked);
@@ -614,7 +615,7 @@ bool ShipInitialStatusDialogModel::apply()
 		modify(Objects[_editor->currentObject].hull_strength, (float)m_hull);
 
 		Objects[_editor->currentObject].flags.set(Object::Object_Flags::No_shields, m_has_shields == 0);
-
+		Ships[m_ship].ship_guardian_threshold = guardian_threshold;
 		// We need to ensure that we handle the inconsistent "boolean" value correctly. Not strictly needed here but
 		// just to be safe...
 		handle_inconsistent_flag(Ships[m_ship].flags, Ship::Ship_Flags::Force_shields_on, m_force_shields);
@@ -795,6 +796,7 @@ void ShipInitialStatusDialogModel::change_subsys(const int new_subsys)
 
 		// update cargo name
 		if (!m_cargo_name.empty()) { //-V805
+			lcl_fred_replace_stuff(m_cargo_name);
 			cargo_index = string_lookup(m_cargo_name.c_str(), Cargo_names, Num_cargo);
 			if (cargo_index == -1) {
 				if (Num_cargo < MAX_CARGO) {
@@ -881,6 +883,16 @@ bool ShipInitialStatusDialogModel::getUseTeamcolours() const
 bool ShipInitialStatusDialogModel::getIfMultpleShips() const
 {
 	return m_multi_edit;
+}
+
+int ShipInitialStatusDialogModel::getGuardian() const
+{
+	return guardian_threshold;
+}
+
+void ShipInitialStatusDialogModel::setGuardian(int value)
+{
+	modify(guardian_threshold, value);
 }
 
 } // namespace dialogs

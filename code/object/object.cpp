@@ -1305,7 +1305,7 @@ void obj_move_all_post(object *objp, float frametime)
 				weapon_process_post( objp, frametime );
 
 			// Cast light
-			if ( Detail.lighting > 3 ) {
+			if ( (Detail.lighting > 3) && light_deferred_enabled() ) {
 				// Weapons cast light
 
 				int group_id = Weapons[objp->instance].group_id;

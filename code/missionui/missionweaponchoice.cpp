@@ -941,7 +941,7 @@ void draw_3d_overhead_view(int model_num,
 					gr_curve(lineendx, lineendy, 5, curve, resize_mode);
 
 					if (curve == 0 || curve == 1) {
-						lineendy = bank_coords[x][1] + lround(bank_y_offset * 1.5);
+						lineendy = bank_coords[x][1] + static_cast<int>(lround(bank_y_offset * 1.5));
 					} else {
 						lineendy = bank_coords[x][1] + (bank_y_offset / 2);
 					}
@@ -1015,7 +1015,7 @@ void draw_3d_overhead_view(int model_num,
 					if (curve == 1 || curve == 2) {
 						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + (bank_y_offset / 2);
 					} else {
-						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + lround(bank_y_offset * 1.5);
+						lineendy = bank_coords[x + MAX_SHIP_PRIMARY_BANKS][1] + static_cast<int>(lround(bank_y_offset * 1.5));
 					}
 
 					gr_line(xc, lineendy, xc, yc, resize_mode);
@@ -2813,6 +2813,13 @@ void weapon_select_do(float frametime)
 			modelIdx = model_load(wip->pofbitmap_name, nullptr, ErrorType::FATAL_ERROR);
 		}
 
+		select_effect_params params;
+		params.effect = wip->selection_effect;
+		params.fs2_grid_color = wip->fs2_effect_grid_color;
+		params.fs2_scanline_color = wip->fs2_effect_scanline_color;
+		params.fs2_grid_density = wip->fs2_effect_grid_density;
+		params.fs2_wireframe_color = wip->fs2_effect_wireframe_color;
+
 		model_render_params render_info;
 		draw_model_rotating(&render_info, 
 			modelIdx,
@@ -2826,7 +2833,7 @@ void weapon_select_do(float frametime)
 			REVOLUTION_RATE,
 			MR_IS_MISSILE | MR_AUTOCENTER | MR_NO_FOGGING,
 			GR_RESIZE_MENU,
-			wip->selection_effect);
+			params);
 	} else if ( Weapon_anim_class != -1 && ( Selected_wl_class == Weapon_anim_class )) {
 		Assert(Selected_wl_class >= 0 && Selected_wl_class < weapon_info_size());
 		if ( Weapon_anim_class != Selected_wl_class )

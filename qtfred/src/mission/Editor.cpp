@@ -101,7 +101,7 @@ extern void allocate_parse_text(size_t size);
 namespace fso {
 namespace fred {
 	
-Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), 0), Shield_sys_types(MAX_SHIP_CLASSES, 0) {
+Editor::Editor() : currentObject{ -1 }, Shield_sys_teams(Iff_info.size(), GlobalShieldStatus::HasShields), Shield_sys_types(MAX_SHIP_CLASSES, GlobalShieldStatus::HasShields) {
 	connect(fredApp, &FredApplication::onIdle, this, &Editor::update);
 
 	// When the mission changes we need to update all renderers
@@ -186,7 +186,6 @@ void Editor::maybeUseAutosave(std::string& filepath)
 bool Editor::loadMission(const std::string& mission_name, int flags) {
 	char name[512], * old_name;
 	int i, j, k, ob;
-	int used_pool[MAX_WEAPON_TYPES];
 	object* objp;
 
 	// activate the localizer hash table
@@ -333,7 +332,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 				}
 			}
 		}
-	}
+	} 
 
 	for (i = 0; i < Num_teams; i++) {
 		generate_team_weaponry_usage_list(i, _weapon_usage[i]);
@@ -342,7 +341,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 			if ((!strlen(Team_data[i].weaponry_pool_variable[j]))
 				&& (!strlen(Team_data[i].weaponry_amount_variable[j]))) {
 				// convert weaponry_pool to be extras available beyond the current ships weapons
-				Team_data[i].weaponry_count[j] -= used_pool[Team_data[i].weaponry_pool[j]];
+				Team_data[i].weaponry_count[j] -= _weapon_usage[i][Team_data[i].weaponry_pool[j]];
 				if (Team_data[i].weaponry_count[j] < 0) {
 					Team_data[i].weaponry_count[j] = 0;
 				}
@@ -361,7 +360,7 @@ bool Editor::loadMission(const std::string& mission_name, int flags) {
 
 				// add the weapon as a new entry
 				Team_data[i].weaponry_pool[Team_data[i].num_weapon_choices] = j;
-				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = used_pool[j];
+				Team_data[i].weaponry_count[Team_data[i].num_weapon_choices] = _weapon_usage[i][j];
 				strcpy_s(Team_data[i].weaponry_amount_variable[Team_data[i].num_weapon_choices], "");
 				strcpy_s(Team_data[i].weaponry_pool_variable[Team_data[i].num_weapon_choices++], "");
 			}
@@ -489,10 +488,10 @@ void Editor::clearMission(bool fast_reload) {
 	nebula_init(Nebula_index, Nebula_pitch, Nebula_bank, Nebula_heading);
 
 	Shield_sys_teams.clear();
-	Shield_sys_teams.resize(Iff_info.size(), 0);
+	Shield_sys_teams.resize(Iff_info.size(), GlobalShieldStatus::HasShields);
 
 	for (int i = 0; i < MAX_SHIP_CLASSES; i++) {
-		Shield_sys_types[i] = 0;
+		Shield_sys_types[i] = GlobalShieldStatus::HasShields;
 	}
 
 	setupCurrentObjectIndices(-1);
@@ -693,7 +692,7 @@ int Editor::create_player(vec3d* pos, matrix* orient, int type) {
 }
 
 int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
-	int obj, z1, z2;
+	int obj;
 	float temp_max_hull_strength;
 	ship_info* sip;
 
@@ -718,9 +717,9 @@ int Editor::create_ship(matrix* orient, vec3d* pos, int ship_type) {
 	// default shield setting
 	shipp->special_shield = -1;
 
-	z1 = Shield_sys_teams[shipp->team];
-	z2 = Shield_sys_types[ship_type];
-	if (((z1 == 1) && z2) || (z2 == 1)) {
+	auto z1 = Shield_sys_teams[shipp->team];
+	auto z2 = Shield_sys_types[ship_type];
+	if (((z1 == GlobalShieldStatus::NoShields) && z2 != GlobalShieldStatus::HasShields) || (z2 == GlobalShieldStatus::NoShields)) {
 		Objects[obj].flags.set(Object::Object_Flags::No_shields);
 	}
 
@@ -3240,59 +3239,58 @@ int Editor::global_error_check_mixed_player_wing(int w) {
 	return 0;
 }
 
-bool Editor::compareShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) const {
-	Assert(Shield_sys_teams.size() == teams.size());
-	Assert(Shield_sys_types.size() == types.size());
+bool Editor::compareShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) const {
+	Assertion(Shield_sys_teams.size() == teams.size(), "Mismatched shield data from global shield dialog!");
+	Assertion(Shield_sys_types.size() == types.size(), "Mismatched shield data from global shield dialog!");
 
 	return (Shield_sys_teams == teams) && (Shield_sys_types == types);
 }
 
-void Editor::exportShieldSysData(std::vector<int>& teams, std::vector<int>& types) const {
+void Editor::exportShieldSysData(SCP_vector<GlobalShieldStatus>& teams, SCP_vector<GlobalShieldStatus>& types) const {
 	teams = Shield_sys_teams;
 	types = Shield_sys_types;
 }
 
-void Editor::importShieldSysData(const std::vector<int>& teams, const std::vector<int>& types) {
-	Assert(Shield_sys_teams.size() == teams.size());
-	Assert(Shield_sys_types.size() == types.size());
+void Editor::importShieldSysData(const SCP_vector<GlobalShieldStatus>& teams, const SCP_vector<GlobalShieldStatus>& types) {
+	Assertion(Shield_sys_teams.size() == teams.size(), "Mismatched shield data from global shield dialog!");
+	Assertion(Shield_sys_types.size() == types.size(), "Mismatched shield data from global shield dialog!");
 
 	Shield_sys_teams = teams;
 	Shield_sys_types = types;
 
 	for (int i = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum >= 0) {
-			int z = Shield_sys_teams[Ships[i].team];
-			if (!Shield_sys_types[Ships[i].ship_info_index])
-				z = 0;
-			else if (Shield_sys_types[Ships[i].ship_info_index] == 1)
-				z = 1;
+			auto z = Shield_sys_teams[Ships[i].team];
+			if (Shield_sys_types[Ships[i].ship_info_index] == GlobalShieldStatus::HasShields)
+				z = GlobalShieldStatus::HasShields;
+			else if (Shield_sys_types[Ships[i].ship_info_index] == GlobalShieldStatus::NoShields)
+				z = GlobalShieldStatus::NoShields;
 
-			if (!z)
+			if (z == GlobalShieldStatus::HasShields)
 				Objects[Ships[i].objnum].flags.remove(Object::Object_Flags::No_shields);
-			else if (z == 1)
+			else if (z == GlobalShieldStatus::NoShields)
 				Objects[Ships[i].objnum].flags.set(Object::Object_Flags::No_shields);
 		}
 	}
 }
 
 // adapted from shield_sys_dlg OnInitDialog()
-// 0 = has shields, 1 = no shields, 2 = conflict/inconsistent
 void Editor::normalizeShieldSysData() {
 	std::vector<int> teams(Iff_info.size(), 0);
 	std::vector<int> types(MAX_SHIP_CLASSES, 0);
 
 	for (int i = 0; i < MAX_SHIPS; i++) {
 		if (Ships[i].objnum >= 0) {
-			int z = (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields]) ? 1 : 0;
+			auto z = (Objects[Ships[i].objnum].flags[Object::Object_Flags::No_shields]) ? GlobalShieldStatus::NoShields : GlobalShieldStatus::HasShields;
 			if (!teams[Ships[i].team])
 				Shield_sys_teams[Ships[i].team] = z;
 			else if (Shield_sys_teams[Ships[i].team] != z)
-				Shield_sys_teams[Ships[i].team] = 2;
+				Shield_sys_teams[Ships[i].team] = GlobalShieldStatus::MixedShields;
 
 			if (!types[Ships[i].ship_info_index])
 				Shield_sys_types[Ships[i].ship_info_index] = z;
 			else if (Shield_sys_types[Ships[i].ship_info_index] != z)
-				Shield_sys_types[Ships[i].ship_info_index] = 2;
+				Shield_sys_types[Ships[i].ship_info_index] = GlobalShieldStatus::MixedShields;
 
 			teams[Ships[i].team]++;
 			types[Ships[i].ship_info_index]++;

@@ -809,6 +809,10 @@ DCF(mj_remove, "Removes a multijoin game (multiplayer")
 	// handle any gui details related to deleting this item
 	multi_join_handle_item_cull(idx);
 
+	if (Active_games.empty()) {
+		return;
+	}
+
 	// delete the item
 	SCP_list<active_game>::iterator game = Active_games.begin();
 	std::advance(game, idx);
@@ -1793,19 +1797,27 @@ void multi_join_list_page_down()
 
 void multi_join_cull_timeouts()
 {
-	// traverse through the entire list if any items exist	
-	if(!Active_games.empty()){
-		int i = 0;
-		for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
-			if (game->heard_from_timer.isValid() && (ui_timestamp_elapsed(game->heard_from_timer))) {
+	if (Active_games.empty()) {
+		return;
+	}
 
-				// handle any gui details related to deleting this item
-				multi_join_handle_item_cull(i);
-				
-				// delete the item
-				Active_games.erase(game);
+	// traverse through the entire list if any items exist
+	int i = 0;
+	for (auto game = Active_games.begin(); game != Active_games.end(); ++game) {
+		if (game->heard_from_timer.isValid() && (ui_timestamp_elapsed(game->heard_from_timer))) {
+
+			// handle any gui details related to deleting this item
+			multi_join_handle_item_cull(i);
+
+			// this list may have been cleared so check for it
+			if (Active_games.empty()) {
+				break;
 			}
-			i++;
+
+			// delete the item
+			Active_games.erase(game);
+		} else {
+			++i;
 		}
 	}
 }
@@ -1815,11 +1827,7 @@ void multi_join_handle_item_cull(int item_index)
 {	
 	Assertion((item_index >= 0) && (item_index < static_cast<int>(Active_games.size())),
 		"Tried to cull a multiplayer game that doesn't exist! Please report!");
-	
-	//Get the item
-	SCP_list<active_game>::iterator game = Active_games.begin();
-	std::advance(game, item_index);
-	
+
 	// if this is the only item on the list, unset everything
 	if(Active_games.size() == 1){
 		Multi_join_list_selected = -1;
