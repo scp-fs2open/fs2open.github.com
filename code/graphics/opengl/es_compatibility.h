@@ -4,7 +4,7 @@
 #include <vector>
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
-//TODO: 
+//TODO/Good to have: 
 //-Message:GL_INVALID_OPERATION in glBlitFramebuffer(source and destination color buffer cannot be the same), this may not be easy to handle
 //-IMGUI crashes on windows + opengl es
 //-limited color attachments to 4 in not a good way
@@ -81,7 +81,7 @@ static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* src, uint8_t
 		uint8_t R5 = (s >> 10) & 0x1F;
 		uint8_t G5 = (s >> 5) & 0x1F;
 		uint8_t B5 = s & 0x1F;
-		// expand 5 to 8 bits: (v<<3)|(v>>2)
+		// expand 5 to 8 bits
 		uint8_t R = (R5 << 3) | (R5 >> 2);
 		uint8_t G = (G5 << 3) | (G5 >> 2);
 		uint8_t B = (B5 << 3) | (B5 >> 2);
@@ -173,6 +173,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				std::vector<uint8_t> scratch(w * h * 3);
 				memcpy(scratch.data(), data, scratch.size());
 				convert_BGR_to_RGB(scratch.data(), (size_t)w * (size_t)h);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			}
@@ -199,6 +200,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			const size_t npx = size_t(w) * size_t(h);
 			std::vector<uint8_t> scratch(npx * 4);
 			convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
+			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
 		}
 	}
@@ -240,11 +242,11 @@ static inline void glQueryCounter(GLuint /*id*/, GLenum /*target*/) {}
 #define glGetCompressedTexImage(target, level, pixels) ((void)0)
 
 // does not exist, needs an alternative path, stub
-inline void glGetTexImage(GLenum target, GLint level, GLenum format, GLenum type, void* pixels)
+inline void glGetTexImage(GLenum /*target*/, GLint /*level*/, GLenum /*format*/, GLenum /*type*/, void* /*pixels*/)
 {
 }
 
-// Convert the call to glMapBufferRange, Untested
+// Convert the call to glMapBufferRange
 inline void* glMapBuffer(GLenum target, GLenum access)
 {
 	GLbitfield flags = 0;
