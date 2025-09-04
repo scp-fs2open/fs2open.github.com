@@ -95,13 +95,6 @@
          </property>
         </spacer>
        </item>
-       <item>
-        <widget class="QPushButton" name="editVariables">
-         <property name="text">
-          <string>Modify Mission Variables</string>
-         </property>
-        </widget>
-       </item>
       </layout>
      </item>
      <item>
@@ -156,6 +149,16 @@
            <item>
             <layout class="QHBoxLayout" name="shipsLoadoutButtons">
              <item>
+              <widget class="QLabel" name="shipsFilterLabel">
+               <property name="text">
+                <string>Filter:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="shipsFilterLineEdit"/>
+             </item>
+             <item>
               <spacer name="horizontalSpacer_5">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -176,19 +179,6 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_4">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
               <widget class="QPushButton" name="selectAllShipsListButton">
                <property name="text">
                 <string>Select All</string>
@@ -196,17 +186,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_20">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QCheckBox" name="shipsMultiSelectCheckBox">
+               <property name="text">
+                <string>MultiSelect</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="checked">
+                <bool>true</bool>
                </property>
-              </spacer>
+              </widget>
              </item>
             </layout>
            </item>
@@ -304,6 +291,16 @@
            <item>
             <layout class="QHBoxLayout" name="weaponsLoadoutButtons">
              <item>
+              <widget class="QLabel" name="weaponsFilterLabel">
+               <property name="text">
+                <string>Filter:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="weaponsFilterLineEdit"/>
+             </item>
+             <item>
               <spacer name="horizontalSpacer_13">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -324,19 +321,6 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_11">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
               <widget class="QPushButton" name="selectAllWeaponsListButton">
                <property name="text">
                 <string>Select All</string>
@@ -344,17 +328,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_12">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QCheckBox" name="weaponsMultiSelectCheckBox">
+               <property name="text">
+                <string>MultiSelect</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="checked">
+                <bool>true</bool>
                </property>
-              </spacer>
+              </widget>
              </item>
             </layout>
            </item>
@@ -443,6 +424,16 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_4">
              <item>
+              <widget class="QLabel" name="shipsVarFilterLabel">
+               <property name="text">
+                <string>Filter:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="shipsVarFilterLineEdit"/>
+             </item>
+             <item>
               <spacer name="horizontalSpacer">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -463,19 +454,6 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_2">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
               <widget class="QPushButton" name="selectAllShipsVarListButton">
                <property name="text">
                 <string>Select All</string>
@@ -483,17 +461,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_6">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QCheckBox" name="shipsVarMultiSelectCheckBox">
+               <property name="text">
+                <string>MultiSelect</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="checked">
+                <bool>true</bool>
                </property>
-              </spacer>
+              </widget>
              </item>
             </layout>
            </item>
@@ -570,6 +545,16 @@
            <item>
             <layout class="QHBoxLayout" name="horizontalLayout_5">
              <item>
+              <widget class="QLabel" name="weaponsVarFilterLabel">
+               <property name="text">
+                <string>Filter:</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLineEdit" name="weaponsVarFilterLineEdit"/>
+             </item>
+             <item>
               <spacer name="horizontalSpacer_7">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
@@ -590,19 +575,6 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_9">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
-               </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
-               </property>
-              </spacer>
-             </item>
-             <item>
               <widget class="QPushButton" name="selectAllWeaponsVarListButton">
                <property name="text">
                 <string>Select All</string>
@@ -610,17 +582,14 @@
               </widget>
              </item>
              <item>
-              <spacer name="horizontalSpacer_8">
-               <property name="orientation">
-                <enum>Qt::Horizontal</enum>
+              <widget class="QCheckBox" name="weaponsVarMultiSelectCheckBox">
+               <property name="text">
+                <string>MultiSelect</string>
                </property>
-               <property name="sizeHint" stdset="0">
-                <size>
-                 <width>40</width>
-                 <height>20</height>
-                </size>
+               <property name="checked">
+                <bool>true</bool>
                </property>
-              </spacer>
+              </widget>
              </item>
             </layout>
            </item>

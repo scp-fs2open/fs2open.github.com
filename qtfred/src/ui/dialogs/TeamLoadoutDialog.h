@@ -39,48 +39,34 @@ public:
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
+	void on_currentTeamComboBox_currentIndexChanged(int index);
+	void on_copyLoadoutToOtherTeamsButton_clicked();
+	void on_weaponValidationCheckbox_toggled(bool checked);
+
+	void on_shipsFilterLineEdit_textChanged(const QString& arg1);
+	void on_weaponsFilterLineEdit_textChanged(const QString& arg1);
+	void on_shipsVarFilterLineEdit_textChanged(const QString& arg1);
+	void on_weaponsVarFilterLineEdit_textChanged(const QString& arg1);
+
+	void on_clearShipsListButton_clicked();
+	void on_clearWeaponsListButton_clicked();
+	void on_clearShipsVarListButton_clicked();
+	void on_clearWeaponsVarListButton_clicked();
+
+	void on_selectAllShipsListButton_clicked();
+	void on_selectAllWeaponsListButton_clicked();
+	void on_selectAllShipsVarListButton_clicked();
+	void on_selectAllWeaponsVarListButton_clicked();
+
+	void on_shipsMultiSelectCheckBox_toggled(bool checked);
+	void on_weaponsMultiSelectCheckBox_toggled(bool checked);
+	void on_shipsVarMultiSelectCheckBox_toggled(bool checked);
+	void on_weaponsVarMultiSelectCheckBox_toggled(bool checked);
+
 	void on_shipsList_itemChanged(QTableWidgetItem*);
 	void on_weaponsList_itemChanged(QTableWidgetItem*);
 	void on_shipVarsList_itemChanged(QTableWidgetItem*);
 	void on_weaponVarsList_itemChanged(QTableWidgetItem*);
-
-	//void on_switchViewButton_clicked();
-	//void on_editVariables_clicked();
-
-	//void on_currentTeamComboBox_currentIndexChanged(int index);
-	//void on_copyLoadoutToOtherTeamsButton_clicked();
-
-	//void on_clearUsedShipSelectionButton_clicked();
-	//void on_selectAllUsedShipsButton_clicked();
-	//void on_usedShipsList_itemChanged(QTableWidgetItem* /*item*/);
-	//void on_usedShipsList_itemSelectionChanged();
-
-	//void on_clearUnusedShipSelectionButton_clicked();
-	//void on_selectAllUnusedShipsButton_clicked();
-	//void on_listShipsNotUsed_itemChanged(QListWidgetItem* /*item*/);
-	//void on_listShipsNotUsed_itemSelectionChanged();
-
-	//void on_addShipButton_clicked();
-	//void on_removeShipButton_clicked();
-
-	//void on_clearUsedWeaponSelectionButton_clicked();
-	//void on_selectAllUsedWeaponsButton_clicked();
-	//void on_usedWeaponsList_itemChanged(QTableWidgetItem* /*item*/);
-	//void on_usedWeaponsList_itemSelectionChanged();
-
-	//void on_clearUnusedWeaponSelectionButton_clicked();
-	//void on_selectAllUnusedWeaponsButton_clicked();
-	//void on_listWeaponsNotUsed_itemChanged(QListWidgetItem* /*item*/);
-	//void on_listWeaponsNotUsed_itemSelectionChanged();
-
-	//void on_addWeaponButton_clicked();
-	//void on_removeWeaponButton_clicked();
-
-	//void on_extraItemSpinbox_valueChanged(int arg1);
-	//void on_extraItemsViaVariableCombo_currentIndexChanged(int /*index*/);
-	//void on_requiredWeaponCheckBox_clicked(bool checked);
-
-	//void on_weaponValidationCheckbox_clicked(bool checked);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::TeamLoadoutDialog> ui;

@@ -391,6 +391,9 @@ const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarShips() const
 		if (!((v.type & SEXP_VARIABLE_SET) && (v.type & SEXP_VARIABLE_STRING)))
 			continue;
 
+		if (ship_info_lookup(v.text) < 0)
+			continue; // not a valid ship class which is checked on Apply so might as well do it here, too
+
 		auto it = active.find(v.variable_name);
 		if (it != active.end()) {
 			out.emplace_back(*it->second); // copy the real row
@@ -581,6 +584,9 @@ const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarWeapons() const
 		const auto& v = Sexp_variables[i];
 		if (!((v.type & SEXP_VARIABLE_SET) && (v.type & SEXP_VARIABLE_STRING)))
 			continue;
+
+		if (weapon_info_lookup(v.text) < 0)
+			continue; // not a valid weapon class which is checked on Apply so might as well do it here, too
 
 		auto it = active.find(v.variable_name);
 		if (it != active.end()) {
