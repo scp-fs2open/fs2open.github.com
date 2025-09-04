@@ -7,7 +7,7 @@ namespace fso::fred {
 
 NoWheelComboBox::NoWheelComboBox(QWidget* parent) : QComboBox(parent)
 {
-	setFocusPolicy(Qt::ClickFocus); // don’t grab focus on scroll
+	setFocusPolicy(Qt::NoFocus); // don't grab focus on scroll
 	setSizeAdjustPolicy(QComboBox::AdjustToContents);
 }
 

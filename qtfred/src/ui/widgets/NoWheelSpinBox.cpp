@@ -6,8 +6,7 @@ namespace fso::fred {
 
 NoWheelSpinBox::NoWheelSpinBox(QWidget* parent) : QSpinBox(parent)
 {
-	// You can set other properties here if needed
-	setFocusPolicy(Qt::StrongFocus);
+	setFocusPolicy(Qt::NoFocus); // don't grab focus on scroll
 }
 
 // Override the wheelEvent to ignore mouse scrolling
