@@ -87,23 +87,38 @@ public:
 	std::unique_ptr<TeamLoadoutDialogModel> _model;
 	EditorViewport* _viewport;
 
-	SCP_vector<SCP_string> getSelectedShips(); 
-	SCP_vector<SCP_string> getSelectedWeapons(); 
-
 	void initializeUi();
 	void updateUi();
+
 	void populateShipsList();
 	void populateWeaponsList();
 	void populateShipVarsList();
 	void populateWeaponVarsList();
 
-	void rebuildShipRowFromModel(int row);
-	void refreshShipsRows(const QList<int>& tableRows);
-
 	static QList<int> selectedRowNumbers(QTableWidget* tbl);
 
-	int _mode;
-	int _lastSelectionChanged;
+	void rebuildShipRowFromModel(int row);
+	void refreshShipRows(const QList<int>& tableRows);
+	void rebuildWeaponRowFromModel(int row);
+	void refreshWeaponRows(const QList<int>& tableRows);
+	void rebuildShipVarRowFromModel(int row);
+	void refreshShipVarRows(const QList<int>& tableRows);
+	void rebuildWeaponVarRowFromModel(int row);
+	void refreshWeaponVarRows(const QList<int>& tableRows);
+
+	// Methods to create and set up widgets for a new row
+	void setupEnabledCell(QTableWidget* tbl, int row, int classIndex);
+	void setupNameCell(QTableWidget* tbl, int row, int classIndex, const QString& name);
+	void setupWingOrVarValueCell(QTableWidget* tbl, int row, int classIndex, const QString& value);
+	void setupExtraCountCell(QTableWidget* tbl, int row, int classIndex);
+	void setupVarCountCell(QTableWidget* tbl, int row, int classIndex);
+	void setupRequiredCell(QTableWidget* tbl, int row, int classIndex);
+
+	// Methods to refresh the state of widgets from the model
+	void refreshEnabledCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	void refreshExtraCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	void refreshVarCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	void refreshRequiredCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
 };
 
 } // namespace fso::fred::dialogs

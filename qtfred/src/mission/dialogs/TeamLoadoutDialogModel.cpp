@@ -821,7 +821,7 @@ void TeamLoadoutDialogModel::setShipExtra(int classIndex, int count)
 		return;
 
 	modify(it->extraAllocated, (count < 0) ? 0 : count);
-	setShipEnabled(classIndex, count > 0);
+	setShipEnabled(classIndex, (count > 0 || it->varCountIndex >=0));
 }
 
 void TeamLoadoutDialogModel::setShipExtra(const SCP_vector<std::pair<int, int>>& updates)
@@ -847,8 +847,6 @@ void TeamLoadoutDialogModel::setShipCountVar(int classIndex, int numberVarIndex)
 	if (it == team.ships.end())
 		return;
 
-	const bool wasPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-
 	int idx = numberVarIndex;
 	if (idx >= 0) {
 		if (idx >= MAX_SEXP_VARIABLES)
@@ -866,9 +864,7 @@ void TeamLoadoutDialogModel::setShipCountVar(int classIndex, int numberVarIndex)
 		modify(it->extraAllocated, ShipStaticDefault);
 	}
 
-	const bool isPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-	if (wasPresent != isPresent)
-		recalcShipCapacities(team);
+	setShipEnabled(classIndex, (numberVarIndex >= 0 || it->extraAllocated > 0));
 }
 
 void TeamLoadoutDialogModel::setShipCountVar(const SCP_vector<std::pair<int, int>>& updates)
@@ -913,6 +909,7 @@ void TeamLoadoutDialogModel::setWeaponEnabled(int classIndex, bool on)
 		modify(it->enabled, false);
 		modify(it->extraAllocated, 0);
 		modify(it->varCountIndex, -1);
+		modify(it->required, false);
 	}
 }
 
@@ -940,7 +937,7 @@ void TeamLoadoutDialogModel::setWeaponExtra(int classIndex, int count)
 		return;
 
 	modify(it->extraAllocated, (count < 0) ? 0 : count);
-	setWeaponEnabled(classIndex, count > 0);
+	setWeaponEnabled(classIndex, (count > 0 || it->varCountIndex >= 0));
 }
 
 void TeamLoadoutDialogModel::setWeaponExtra(const SCP_vector<std::pair<int, int>>& updates)
@@ -982,6 +979,8 @@ void TeamLoadoutDialogModel::setWeaponCountVar(int classIndex, int numberVarInde
 	if (idx == -1 && it->enabled && it->extraAllocated == 0 && it->countInWings == 0) {
 		modify(it->extraAllocated, WeaponStaticDefault);
 	}
+
+	setWeaponEnabled(classIndex, (numberVarIndex >= 0 || it->extraAllocated > 0));
 }
 
 void TeamLoadoutDialogModel::setWeaponCountVar(const SCP_vector<std::pair<int, int>>& updates)
@@ -1007,14 +1006,14 @@ void TeamLoadoutDialogModel::setWeaponRequired(int classIndex, bool on)
 	if (it == team.weapons.end())
 		return;
 
-	// Only valid on static rows that are present
-	const bool presentStatic = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
+	if (it->fromVariable) {
+		on = false; // cannot be required if from variable
+	}
 
-	if (on && presentStatic) {
-		modify(it->enabled, true);
-	} else {
-		// Either toggling off or invalid context
-		modify(it->required, false);
+	modify(it->required, on);
+
+	if (on && !it->enabled) { // required implies enabled
+		setWeaponEnabled(classIndex, true);
 	}
 }
 

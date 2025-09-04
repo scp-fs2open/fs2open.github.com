@@ -10,6 +10,7 @@ class NoWheelComboBox : public QComboBox {
 
   protected:
 	void wheelEvent(QWheelEvent* e) override;
+	void mousePressEvent(QMouseEvent* event) override;
 };
 
 } // namespace fso::fred

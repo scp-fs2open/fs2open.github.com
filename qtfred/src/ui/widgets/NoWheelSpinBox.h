@@ -11,6 +11,7 @@ class NoWheelSpinBox : public QSpinBox {
 
   protected:
 	void wheelEvent(QWheelEvent* event) override;
+	void mousePressEvent(QMouseEvent* event) override;
 };
 
 } // namespace fso::fred
