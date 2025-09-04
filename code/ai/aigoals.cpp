@@ -794,10 +794,6 @@ void ai_add_goal_sub_player(ai_goal_type type, ai_goal_mode mode, int submode, c
 	if ( (mode == AI_GOAL_STAY_NEAR_SHIP) || (mode == AI_GOAL_KEEP_SAFE_DISTANCE) )
 		aigp->priority = PLAYER_PRIORITY_SUPPORT_LOW;
 
-	// Goober5000 - same with form-on-wing, since it's a type of staying near
-	else if ( mode == AI_GOAL_FORM_ON_WING )
-		aigp->priority = PLAYER_PRIORITY_SUPPORT_LOW;
-
 	else if ( aigp->type == ai_goal_type::PLAYER_WING )	// NOLINT(readability-braces-around-statements)
 		aigp->priority = PLAYER_PRIORITY_WING;			// player wing goals not as high as ship goals
 	else
