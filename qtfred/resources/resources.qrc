@@ -1,5 +1,10 @@
 <RCC>
   <qresource prefix="/">
+    <file>images/arrow_left.png</file>
+    <file>images/arrow_right.png</file>
+    <file>images/next.png</file>
+    <file>images/prev.png</file>
+    <file>images/stop.png</file>
     <file>images/arrow_down.png</file>
     <file>images/arrow_up.png</file>
     <file>images/next.bmp</file>

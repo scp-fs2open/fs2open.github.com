@@ -35,7 +35,7 @@
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
-#include <ui/dialogs/LoadoutDialog.h>
+#include <ui/dialogs/TeamLoadoutDialog.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/dialogs/MusicPlayerDialog.h>
 #include <iff_defs/iff_defs.h>
@@ -815,7 +815,7 @@ void FredView::on_actionReinforcements_triggered(bool) {
 	editorDialog->show();
 }
 void FredView::on_actionLoadout_triggered(bool) {
-	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
+	auto editorDialog = new dialogs::TeamLoadoutDialog(this, _viewport);
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }

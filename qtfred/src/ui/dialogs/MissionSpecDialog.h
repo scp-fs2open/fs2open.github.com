@@ -41,6 +41,7 @@ private slots:
 	void on_m_type_Dogfight_toggled(bool checked);
 	void on_maxRespawnCount_valueChanged(int value);
 	void on_respawnDelayCount_valueChanged(int value);
+	void on_playerEntryDelayDoubleSpinBox_valueChanged(double value);
 	void on_customWingNameButton_clicked();
 	void on_squadronName_textChanged(const QString& string);
 	void on_squadronLogoButton_clicked();
