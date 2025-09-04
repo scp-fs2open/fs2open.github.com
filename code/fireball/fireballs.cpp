@@ -1151,12 +1151,12 @@ static float cutscene_wormhole(float t) {
 float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
-
-	float rad = cutscene_wormhole(t / fb->warp_open_duration);
+	float rad;
 
 	fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 
 	if (fi->warp_model_style == warp_style::CINEMATIC) {
+		rad  = cutscene_wormhole(t / fb->warp_open_duration);
 		rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
