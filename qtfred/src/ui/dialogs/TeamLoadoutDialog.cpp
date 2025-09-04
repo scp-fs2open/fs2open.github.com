@@ -6,13 +6,12 @@
 #include <qtablewidget.h>
 #include <QListWidget>
 #include <QMessageBox>
+#include <QLineEdit>
+#include <QTimer>
 #include <mission/util.h>
 #include "ui/util/SignalBlockers.h"
 #include "ui/widgets/NoWheelSpinBox.h"
 #include "ui/widgets/NoWheelComboBox.h"
-
-constexpr int TABLE_MODE = 0;
-constexpr int VARIABLE_MODE = 1;
 
 namespace fso::fred::dialogs {
 
@@ -87,15 +86,6 @@ void TeamLoadoutDialog::initializeUi()
 		ui->copyLoadoutToOtherTeamsButton->setEnabled(false);
 	}
 
-	// Populate the variable comboboxes
-	auto& numberVarList = _model->getNumberVarList();
-	for (const auto& item : numberVarList) {
-		ui->extraVarShipCombo->addItem(item.first.c_str(), item.second);
-		ui->extraVarWeaponCombo->addItem(item.first.c_str(), item.second);
-		ui->extraVarShipVarCombo->addItem(item.first.c_str(), item.second);
-		ui->extraVarWeaponVarCombo->addItem(item.first.c_str(), item.second);
-	}
-
 	// set up the table headers
 	populateShipsList();
 	populateWeaponsList();
@@ -128,99 +118,11 @@ void TeamLoadoutDialog::populateShipsList()
 	for (int r = 0; r < static_cast<int>(rows.size()); ++r) {
 		const auto& it = rows[r];
 
-		// 0) Enabled (user-editable checkbox with wing-only behavior handled in slot)
-		{
-			auto* item = new QTableWidgetItem();
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-			item->setCheckState(Qt::Unchecked);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex); // stash class index
-			tbl->setItem(r, COL_ENABLED, item);
-		}
-
-		// 1) Ship (name)
-		{
-			auto* item = new QTableWidgetItem(QString::fromUtf8(it.name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_NAME, item);
-		}
-
-		// 2) In Wings
-		{
-			auto* item = new QTableWidgetItem(QString::number(it.countInWings));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_INWINGS_OR_VARVALUE, item);
-		}
-
-		// 3) Extra (literal pool, not including wings)
-		{
-			// Underlying item carries the value for sorting + the change signal
-			auto* item = new QTableWidgetItem(QString::number(it.extraAllocated));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setData(Qt::EditRole, it.extraAllocated);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			// We don't set Qt::ItemIsEditable: edits happen via the spinbox, not the item editor
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			tbl->setItem(r, COL_EXTRA, item);
-
-			// Visual editor
-			auto* spin = new NoWheelSpinBox(tbl);
-			spin->setMinimum(0);
-			spin->setMaximum(_model->getLoadoutMaxValue());
-			spin->setAccelerated(true);
-			spin->setKeyboardTracking(false);
-
-			tbl->setCellWidget(r, COL_EXTRA, spin);
-
-			// Keep wiring minimal: spinbox only updates the item and fires itemChanged
-			connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [tbl, spin](int v) {
-				// Resolve row at runtime (robust to reordering)
-				const QModelIndex idx = tbl->indexAt(spin->mapTo(tbl, QPoint(1, 1)));
-				if (!idx.isValid())
-					return;
-				auto* extraItem = tbl->item(idx.row(), idx.column());
-				if (!extraItem)
-					return;
-				extraItem->setData(Qt::EditRole, v);
-				extraItem->setText(QString::number(v));
-			});
-		}
-
-		// 4) Extra Variable (number-var name, if any)
-		{
-			// Backing item holds roles + the chosen var index in EditRole
-			auto* back = new QTableWidgetItem();
-			back->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			back->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			back->setData(Qt::EditRole, it.varCountIndex); // -1 means “None”
-			tbl->setItem(r, COL_COUNTVAR, back);
-
-			// Build the combo as the cell widget
-			auto* combo = new NoWheelComboBox(tbl);
-
-			const auto& nums = _model->getNumberVarList(); // vector<pair<name, index>>
-			for (const auto& p : nums) {
-				combo->addItem(QString::fromUtf8(p.first.c_str()), p.second);
-			}
-
-			combo->setCurrentIndex(0);
-
-			// Put it in the cell
-			tbl->setCellWidget(r, COL_COUNTVAR, combo);
-
-			// When user changes selection, reflect into backing item (fires itemChanged)
-			connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [tbl, combo](int) {
-				const QModelIndex idx = tbl->indexAt(combo->mapTo(tbl, QPoint(1, 1)));
-				if (!idx.isValid())
-					return;
-				if (auto* cell = tbl->item(idx.row(), idx.column())) {
-					const int varIdx = combo->currentData(Qt::UserRole).toInt(); // -1 for None
-					cell->setData(Qt::EditRole, varIdx);
-				}
-			});
-		}
+		setupEnabledCell(tbl, r, it.infoIndex);
+		setupNameCell(tbl, r, it.infoIndex, QString::fromUtf8(it.name.c_str()));
+		setupWingOrVarValueCell(tbl, r, it.infoIndex, QString::number(it.countInWings));
+		setupExtraCountCell(tbl, r, it.infoIndex);
+		setupVarCountCell(tbl, r, it.infoIndex);
 
 		// Now set the data from the model
 		rebuildShipRowFromModel(r);
@@ -251,60 +153,16 @@ void TeamLoadoutDialog::populateWeaponsList()
 
 	for (int r = 0; r < (int)rows.size(); ++r) {
 		const auto& it = rows[r];
-		const bool present = it.enabled && (it.extraAllocated > 0 || it.varCountIndex != -1);
-		const bool wingOnly = !present && (it.countInWings > 0);
+		
+		setupEnabledCell(tbl, r, it.infoIndex);
+		setupNameCell(tbl, r, it.infoIndex, QString::fromUtf8(it.name.c_str()));
+		setupWingOrVarValueCell(tbl, r, it.infoIndex, QString::number(it.countInWings));
+		setupExtraCountCell(tbl, r, it.infoIndex);
+		setupVarCountCell(tbl, r, it.infoIndex);
+		setupRequiredCell(tbl, r, it.infoIndex);
 
-		// 0) Enabled (visual glyph)
-		{
-			auto* item = new QTableWidgetItem();
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-
-			item->setCheckState(present ? Qt::Checked : wingOnly ? Qt::PartiallyChecked : Qt::Unchecked);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex); // stash class index
-
-			if (wingOnly)
-				item->setToolTip("In starting wings (pool cleared)");
-			tbl->setItem(r, COL_ENABLED, item);
-		}
-		// 1) Name
-		{
-			auto* item = new QTableWidgetItem(QString::fromUtf8(it.name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_NAME, item);
-		}
-		// 2) Required
-		{
-			auto* item = new QTableWidgetItem(it.required ? QString::fromUtf8("Yes") : QString());
-			item->setTextAlignment(Qt::AlignCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_REQUIRED, item);
-		}
-		// 3) In Wings
-		{
-			auto* item = new QTableWidgetItem(QString::number(it.countInWings));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_INWINGS_OR_VARVALUE, item);
-		}
-		// 4) Extra
-		{
-			auto* item = new QTableWidgetItem(QString::number(it.extraAllocated));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_EXTRA, item);
-		}
-		// 5) Amount Variable
-		{
-			QString varName = _model->getVariableName(it.varCountIndex).c_str();
-			auto* item = new QTableWidgetItem(varName);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::ClassIndex), it.infoIndex);
-			tbl->setItem(r, COL_COUNTVAR, item);
-		}
+		// Now set the data from the model
+		rebuildWeaponRowFromModel(r);
 	}
 
 	auto* hh = tbl->horizontalHeader();
@@ -332,45 +190,14 @@ void TeamLoadoutDialog::populateShipVarsList()
 	for (int r = 0; r < (int)rows.size(); ++r) {
 		const auto& it = rows[r];
 
-		// 0) Enabled
-		{
-			auto* item = new QTableWidgetItem();
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-			item->setCheckState(it.enabled ? Qt::Checked : Qt::Unchecked);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex); // stash class index
-			tbl->setItem(r, COL_ENABLED, item);
-		}
-		// 1) Var name
-		{
-			auto* item = new QTableWidgetItem(QString::fromUtf8(it.name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_NAME, item);
-		}
-		{
-			SCP_string name;
-			name += " [" + _model->getVariableValueAsString(it.infoIndex) + "]";
-			auto* item = new QTableWidgetItem(QString::fromUtf8(name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_INWINGS_OR_VARVALUE, item);
-		}
-		// 2) Extra
-		{
-			auto* item = new QTableWidgetItem(QString::number(it.extraAllocated));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_EXTRA, item);
-		}
-		// 3) Amount var
-		{
-			QString varName = _model->getVariableName(it.varCountIndex).c_str();
-			auto* item = new QTableWidgetItem(varName);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_COUNTVAR, item);
-		}
+		setupEnabledCell(tbl, r, it.infoIndex);
+		setupNameCell(tbl, r, it.infoIndex, QString::fromUtf8(it.name.c_str()));
+		setupWingOrVarValueCell(tbl, r, it.infoIndex, QString::fromUtf8(_model->getVariableValueAsString(it.infoIndex).c_str()));
+		setupExtraCountCell(tbl, r, it.infoIndex);
+		setupVarCountCell(tbl, r, it.infoIndex);
+
+		// Now set the data from the model
+		rebuildShipVarRowFromModel(r);
 	}
 
 	auto* hh = tbl->horizontalHeader();
@@ -399,45 +226,14 @@ void TeamLoadoutDialog::populateWeaponVarsList()
 	for (int r = 0; r < (int)rows.size(); ++r) {
 		const auto& it = rows[r];
 
-		// 0) Enabled
-		{
-			auto* item = new QTableWidgetItem();
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
-			item->setCheckState(it.enabled ? Qt::Checked : Qt::Unchecked);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex); // stash class index
-			tbl->setItem(r, COL_ENABLED, item);
-		}
-		// 1) Var name
-		{
-			auto* item = new QTableWidgetItem(QString::fromUtf8(it.name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_NAME, item);
-		}
-		{
-			SCP_string name;
-			name += " [" + _model->getVariableValueAsString(it.infoIndex) + "]";
-			auto* item = new QTableWidgetItem(QString::fromUtf8(name.c_str()));
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_INWINGS_OR_VARVALUE, item);
-		}
-		// 2) Extra
-		{
-			auto* item = new QTableWidgetItem(QString::number(it.extraAllocated));
-			item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_EXTRA, item);
-		}
-		// 3) Amount var
-		{
-			QString varName = _model->getVariableName(it.varCountIndex).c_str();
-			auto* item = new QTableWidgetItem(varName);
-			item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
-			item->setData(static_cast<int>(Role::StringVarIndex), it.infoIndex);
-			tbl->setItem(r, COL_COUNTVAR, item);
-		}
+		setupEnabledCell(tbl, r, it.infoIndex);
+		setupNameCell(tbl, r, it.infoIndex, QString::fromUtf8(it.name.c_str()));
+		setupWingOrVarValueCell(tbl, r, it.infoIndex, QString::fromUtf8(_model->getVariableValueAsString(it.infoIndex).c_str()));
+		setupExtraCountCell(tbl, r, it.infoIndex);
+		setupVarCountCell(tbl, r, it.infoIndex);
+
+		// Now set the data from the model
+		rebuildWeaponVarRowFromModel(r);
 	}
 
 	auto* hh = tbl->horizontalHeader();
@@ -447,6 +243,18 @@ void TeamLoadoutDialog::populateWeaponVarsList()
 	hh->setSectionResizeMode(QHeaderView::ResizeToContents);
 	tbl->resizeColumnsToContents();
 	tbl->setSortingEnabled(true);
+}
+
+QList<int> TeamLoadoutDialog::selectedRowNumbers(QTableWidget* tbl)
+{
+	QList<int> rows;
+	const auto idxs = tbl->selectionModel()->selectedRows(/*column=*/0);
+	rows.reserve(idxs.size());
+	for (const auto& idx : idxs)
+		rows.append(idx.row());
+	std::sort(rows.begin(), rows.end());
+	rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
+	return rows;
 }
 
 void TeamLoadoutDialog::rebuildShipRowFromModel(int row)
@@ -466,63 +274,17 @@ void TeamLoadoutDialog::rebuildShipRowFromModel(int row)
 
 	// Pull fresh data
 	const auto& ships = _model->getShips();
-	const auto it =
-		std::find_if(ships.begin(), ships.end(), [&](const LoadoutItem& li) { return li.infoIndex == classIdx; });
+	const auto it = std::find_if(ships.begin(), ships.end(), [&](const LoadoutItem& li) { return li.infoIndex == classIdx; });
 	if (it == ships.end())
 		return;
 
-	const bool present = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-	const bool wingOnly = !present && (it->countInWings > 0);
-
-	// Enabled
-	if (auto* item = tbl->item(row, COL_ENABLED)) {
-		item->setCheckState(present ? Qt::Checked : wingOnly ? Qt::PartiallyChecked : Qt::Unchecked);
-		item->setToolTip(wingOnly ? "In starting wings (pool cleared)" : QString());
-		item->setData(static_cast<int>(Role::ClassIndex), it->infoIndex);
-	}
-
-	// Extra (backing item + existing spinbox)
-	if (auto* extraItem = tbl->item(row, COL_EXTRA)) {
-		// Update the backing item's value/text (keeps itemChanged pathways consistent)
-		extraItem->setData(Qt::EditRole, it->extraAllocated);
-		extraItem->setData(static_cast<int>(Role::ClassIndex), it->infoIndex);
-
-		// Update the existing spinbox in-place (no reconnects)
-		if (auto* spin = qobject_cast<NoWheelSpinBox*>(tbl->cellWidget(row, COL_EXTRA))) {
-			const bool editable = it->varCountIndex == -1;
-			spin->setEnabled(editable);
-			if (!editable) {
-				QString tip;
-				spin->setToolTip("Driven by count variable");
-			} else {
-				spin->setToolTip(QString());
-			}
-
-			spin->setValue(it->extraAllocated);
-		}
-	}
-
-	// Count Variable
-	if (auto* back = tbl->item(row, COL_COUNTVAR)) {
-		// Keep roles correct
-		back->setData(static_cast<int>(Role::ClassIndex), it->infoIndex);
-		back->setData(Qt::EditRole, it->varCountIndex);
-
-		if (auto* combo = qobject_cast<NoWheelComboBox*>(tbl->cellWidget(row, COL_COUNTVAR))) {
-			// Select current
-			int want = it->varCountIndex;
-			int toSet = 0;
-			for (int i = 0; i < combo->count(); ++i)
-				if (combo->itemData(i, Qt::UserRole).toInt() == want) {
-					toSet = i;
-					break;
-				}
-			combo->setCurrentIndex(toSet);
-		}
-	}
+	// Call the refresh helpers for each complex column
+	refreshEnabledCell(tbl, row, *it);
+	refreshExtraCountCell(tbl, row, *it);
+	refreshVarCountCell(tbl, row, *it);
 }
 
-void TeamLoadoutDialog::refreshShipsRows(const QList<int>& tableRows)
+void TeamLoadoutDialog::refreshShipRows(const QList<int>& tableRows)
 {
 	QTableWidget* tbl = ui->shipsList;
 	QSignalBlocker blockTbl(tbl); // no recursive itemChanged
@@ -533,44 +295,263 @@ void TeamLoadoutDialog::refreshShipsRows(const QList<int>& tableRows)
 	tbl->setSortingEnabled(wasSorting);
 }
 
-QList<int> TeamLoadoutDialog::selectedRowNumbers(QTableWidget* tbl)
+void TeamLoadoutDialog::rebuildWeaponRowFromModel(int row)
 {
-	QList<int> rows;
-	const auto idxs = tbl->selectionModel()->selectedRows(/*column=*/0);
-	rows.reserve(idxs.size());
-	for (const auto& idx : idxs)
-		rows.append(idx.row());
-	std::sort(rows.begin(), rows.end());
-	rows.erase(std::unique(rows.begin(), rows.end()), rows.end());
-	return rows;
+	QTableWidget* tbl = ui->weaponsList;
+	if (row < 0 || row >= tbl->rowCount())
+		return;
+
+	// Block re-entrancy while we poke items in this row
+	util::SignalBlockers blockers(this);
+
+	auto* idItem = tbl->item(row, COL_ENABLED);
+	if (!idItem)
+		return;
+
+	const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+
+	// Pull fresh data
+	const auto& weapons = _model->getWeapons();
+	const auto it = std::find_if(weapons.begin(), weapons.end(), [&](const LoadoutItem& li) { return li.infoIndex == classIdx; });
+	if (it == weapons.end())
+		return;
+
+	// Call the refresh helpers for each complex column
+	refreshEnabledCell(tbl, row, *it);
+	refreshExtraCountCell(tbl, row, *it);
+	refreshVarCountCell(tbl, row, *it);
+	refreshRequiredCell(tbl, row, *it);
 }
 
-SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedShips() 
+void TeamLoadoutDialog::refreshWeaponRows(const QList<int>& tableRows)
 {
-	/*SCP_vector<SCP_string> namesOut;
-
-	for (int x = 0; x < ui->usedShipsList->rowCount(); ++x) {
-		if (ui->usedShipsList->item(x, 0) && ui->usedShipsList->item(x,0)->isSelected()) {
-			SCP_string shipName = ui->usedShipsList->item(x, 0)->text().toUtf8().constData();
-			namesOut.emplace_back(shipName);
-		}
-	}
-
-	return namesOut;*/
+	QTableWidget* tbl = ui->weaponsList;
+	QSignalBlocker blockTbl(tbl); // no recursive itemChanged
+	const bool wasSorting = tbl->isSortingEnabled();
+	tbl->setSortingEnabled(false);
+	for (int r : tableRows)
+		rebuildWeaponRowFromModel(r);
+	tbl->setSortingEnabled(wasSorting);
 }
 
-SCP_vector<SCP_string> TeamLoadoutDialog::getSelectedWeapons()
+void TeamLoadoutDialog::rebuildShipVarRowFromModel(int row)
 {
-	/*SCP_vector<SCP_string> namesOut;
+	QTableWidget* tbl = ui->shipVarsList;
+	if (row < 0 || row >= tbl->rowCount())
+		return;
 
-	for (int x = 0; x < ui->usedWeaponsList->rowCount(); ++x) {
-		if (ui->usedWeaponsList->item(x, 0) && ui->usedWeaponsList->item(x, 0)->isSelected()) {
-			SCP_string weaponName = ui->usedWeaponsList->item(x, 0)->text().toUtf8().constData();
-			namesOut.emplace_back(weaponName);
+	// Block re-entrancy while we poke items in this row
+	util::SignalBlockers blockers(this);
+
+	auto* idItem = tbl->item(row, COL_ENABLED);
+	if (!idItem)
+		return;
+
+	const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+
+	// Pull fresh data
+	const auto& varShips = _model->getVarShips();
+	const auto it = std::find_if(varShips.begin(), varShips.end(), [&](const LoadoutItem& li) { return li.infoIndex == classIdx; });
+	if (it == varShips.end())
+		return;
+
+	// Call the refresh helpers for each complex column
+	refreshEnabledCell(tbl, row, *it);
+	refreshExtraCountCell(tbl, row, *it);
+	refreshVarCountCell(tbl, row, *it);
+}
+
+void TeamLoadoutDialog::refreshShipVarRows(const QList<int>& tableRows)
+{
+	QTableWidget* tbl = ui->shipVarsList;
+	QSignalBlocker blockTbl(tbl); // no recursive itemChanged
+	const bool wasSorting = tbl->isSortingEnabled();
+	tbl->setSortingEnabled(false);
+	for (int r : tableRows)
+		rebuildShipVarRowFromModel(r);
+	tbl->setSortingEnabled(wasSorting);
+}
+
+void TeamLoadoutDialog::rebuildWeaponVarRowFromModel(int row)
+{
+	QTableWidget* tbl = ui->weaponVarsList;
+	if (row < 0 || row >= tbl->rowCount())
+		return;
+
+	// Block re-entrancy while we poke items in this row
+	util::SignalBlockers blockers(this);
+
+	auto* idItem = tbl->item(row, COL_ENABLED);
+	if (!idItem)
+		return;
+
+	const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+
+	// Pull fresh data
+	const auto& varWeapons = _model->getVarWeapons();
+	const auto it = std::find_if(varWeapons.begin(), varWeapons.end(), [&](const LoadoutItem& li) { return li.infoIndex == classIdx; });
+	if (it == varWeapons.end())
+		return;
+
+	// Call the refresh helpers for each complex column
+	refreshEnabledCell(tbl, row, *it);
+	refreshExtraCountCell(tbl, row, *it);
+	refreshVarCountCell(tbl, row, *it);
+}
+
+void TeamLoadoutDialog::refreshWeaponVarRows(const QList<int>& tableRows)
+{
+	QTableWidget* tbl = ui->weaponVarsList;
+	QSignalBlocker blockTbl(tbl); // no recursive itemChanged
+	const bool wasSorting = tbl->isSortingEnabled();
+	tbl->setSortingEnabled(false);
+	for (int r : tableRows)
+		rebuildWeaponVarRowFromModel(r);
+	tbl->setSortingEnabled(wasSorting);
+}
+
+void TeamLoadoutDialog::setupEnabledCell(QTableWidget* tbl, int row, int classIndex)
+{
+	auto* item = new QTableWidgetItem();
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+	item->setCheckState(Qt::Unchecked); // Initial state, will be updated by refresh
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	tbl->setItem(row, COL_ENABLED, item);
+}
+
+void TeamLoadoutDialog::setupNameCell(QTableWidget* tbl, int row, int classIndex, const QString& name)
+{
+	auto* item = new QTableWidgetItem(name);
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	tbl->setItem(row, COL_NAME, item);
+}
+
+void TeamLoadoutDialog::setupWingOrVarValueCell(QTableWidget* tbl, int row, int classIndex, const QString& value)
+{
+	auto* item = new QTableWidgetItem(value);
+	item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	tbl->setItem(row, COL_INWINGS_OR_VARVALUE, item);
+}
+
+void TeamLoadoutDialog::setupExtraCountCell(QTableWidget* tbl, int row, int classIndex)
+{
+	// Backing item
+	auto* item = new QTableWidgetItem("0");
+	item->setTextAlignment(Qt::AlignHCenter | Qt::AlignVCenter);
+	item->setData(Qt::EditRole, 0);
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+	tbl->setItem(row, COL_EXTRA, item);
+
+	// Cell widget
+	auto* spin = new NoWheelSpinBox(tbl);
+	spin->setFocusPolicy(Qt::StrongFocus); // Prevents table selection changing during interaction
+	spin->setMinimum(0);
+	spin->setMaximum(_model->getLoadoutMaxValue());
+	spin->setAccelerated(true);
+	tbl->setCellWidget(row, COL_EXTRA, spin);
+
+	// Connection
+	connect(spin, QOverload<int>::of(&QSpinBox::valueChanged), this, [tbl, spin](int v) {
+		const QModelIndex idx = tbl->indexAt(spin->mapTo(tbl, QPoint(1, 1)));
+		if (!idx.isValid())
+			return;
+		if (auto* cell = tbl->item(idx.row(), idx.column())) {
+			cell->setData(Qt::EditRole, v);
+		}
+	});
+}
+
+void TeamLoadoutDialog::setupVarCountCell(QTableWidget* tbl, int row, int classIndex)
+{
+	// Backing item
+	auto* item = new QTableWidgetItem();
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	item->setData(Qt::EditRole, -1);
+	tbl->setItem(row, COL_COUNTVAR, item);
+
+	// Cell widget
+	auto* combo = new NoWheelComboBox(tbl);
+	combo->setFocusPolicy(Qt::NoFocus); // Prevents table selection changing during interaction
+	combo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+	const auto& nums = _model->getNumberVarList();
+	for (const auto& p : nums) {
+		combo->addItem(QString::fromStdString(p.first), p.second);
+	}
+	tbl->setCellWidget(row, COL_COUNTVAR, combo);
+
+	// Connection
+	connect(combo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [tbl, combo](int) {
+		const QModelIndex idx = tbl->indexAt(combo->mapTo(tbl, QPoint(1, 1)));
+		if (!idx.isValid())
+			return;
+		if (auto* cell = tbl->item(idx.row(), idx.column())) {
+			cell->setData(Qt::EditRole, combo->currentData(Qt::UserRole));
+		}
+	});
+}
+
+void TeamLoadoutDialog::setupRequiredCell(QTableWidget* tbl, int row, int classIndex)
+{
+	auto* item = new QTableWidgetItem();
+	item->setFlags(Qt::ItemIsEnabled | Qt::ItemIsSelectable | Qt::ItemIsUserCheckable);
+	item->setCheckState(Qt::Unchecked); // Set a default state
+	item->setData(static_cast<int>(Role::ClassIndex), classIndex);
+	tbl->setItem(row, COL_REQUIRED, item);
+}
+
+void TeamLoadoutDialog::refreshEnabledCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem)
+{
+	if (auto* item = tbl->item(row, COL_ENABLED)) {
+		const bool present = modelItem.enabled && (modelItem.extraAllocated > 0 || modelItem.varCountIndex != -1);
+		const bool wingOnly = !present && (modelItem.countInWings > 0);
+		item->setCheckState(present ? Qt::Checked : wingOnly ? Qt::PartiallyChecked : Qt::Unchecked);
+		item->setToolTip(wingOnly ? "In starting wings (pool cleared)" : QString());
+	}
+}
+
+void TeamLoadoutDialog::refreshExtraCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem)
+{
+	if (auto* item = tbl->item(row, COL_EXTRA)) {
+		item->setData(Qt::EditRole, modelItem.extraAllocated);
+	}
+	if (auto* spin = qobject_cast<NoWheelSpinBox*>(tbl->cellWidget(row, COL_EXTRA))) {
+		const bool isEditable = (modelItem.varCountIndex == -1);
+		spin->setEnabled(isEditable);
+		spin->setToolTip(isEditable ? QString() : "Driven by count variable");
+		spin->setValue(modelItem.extraAllocated);
+		if (!isEditable) {
+			if (QLineEdit* le = spin->findChild<QLineEdit*>()) {
+				// Defer this call until the next event loop cycle.
+				// This gives the QLineEdit time to be fully created.
+				QTimer::singleShot(0, le, [le]() { le->setText("-"); });
+			}
 		}
 	}
+}
 
-	return namesOut;*/
+void TeamLoadoutDialog::refreshVarCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem)
+{
+	if (auto* item = tbl->item(row, COL_COUNTVAR)) {
+		item->setData(Qt::EditRole, modelItem.varCountIndex);
+	}
+	if (auto* combo = qobject_cast<NoWheelComboBox*>(tbl->cellWidget(row, COL_COUNTVAR))) {
+		const int comboIndex = combo->findData(modelItem.varCountIndex);
+		if (comboIndex != -1) {
+			combo->setCurrentIndex(comboIndex);
+		}
+	}
+}
+
+void TeamLoadoutDialog::refreshRequiredCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem)
+{
+	if (auto* item = tbl->item(row, COL_REQUIRED)) {
+		item->setCheckState(modelItem.required ? Qt::Checked : Qt::Unchecked);
+	}
 }
 
 void TeamLoadoutDialog::on_okAndCancelButtons_accepted()
@@ -590,9 +571,6 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 		return;
 
 	const int col = changed->column();
-	if (col != COL_ENABLED && col != COL_EXTRA && col != COL_COUNTVAR)
-		return;
-
 	const int originRow = changed->row();
 
 	// Snapshot selection before mutating
@@ -601,172 +579,223 @@ void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 	if (!applyToSelection)
 		selRows = {originRow};
 
-	// Mutate the model based on the user's action
-	if (col == COL_ENABLED) {
-		const Qt::CheckState desired = changed->checkState();
-		for (int r : selRows) {
-			auto* chk = tbl->item(r, COL_ENABLED);
-			if (!chk)
-				continue;
-			const int classIdx = chk->data(static_cast<int>(Role::ClassIndex)).toInt();
-
-			_model->setShipEnabled(classIdx, desired != Qt::Unchecked);
+	switch (col) {
+		case COL_ENABLED: {
+			const Qt::CheckState desired = changed->checkState();
+			for (int r : selRows) {
+				if (auto* chk = tbl->item(r, COL_ENABLED)) {
+					const int classIdx = chk->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipEnabled(classIdx, desired != Qt::Unchecked);
+				}
+			}
+			break;
 		}
-	} else if (col == COL_EXTRA) {
-		const int newVal =
-			changed->data(Qt::EditRole).isValid() ? changed->data(Qt::EditRole).toInt() : changed->text().toInt();
-		const int clamped = std::max(0, newVal);
+		case COL_EXTRA: {
+			const int newVal = changed->data(Qt::EditRole).toInt();
+			const int clamped = std::max(0, newVal);
 
-		for (int r : selRows) {
-			auto* extraItem = tbl->item(r, COL_EXTRA);
-			if (!extraItem)
-				continue;
-			const int classIdx = extraItem->data(static_cast<int>(Role::ClassIndex)).toInt();
-
-			_model->setShipExtra(classIdx, clamped);
+			for (int r : selRows) {
+				if (auto* extraItem = tbl->item(r, COL_EXTRA)) {
+					const int classIdx = extraItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipExtra(classIdx, clamped);
+				}
+			}
+			break;
 		}
-	} else if (col == COL_COUNTVAR) {
-		// New value chosen in the combo (stored by our combo handler)
-		const int newVarIdx = changed->data(Qt::EditRole).toInt();
-
-		for (int r : selRows) {
-			auto* idItem = tbl->item(r, COL_ENABLED);
-			if (!idItem)
-				continue;
-
-			const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
-
-			// Update model
-			_model->setShipCountVar(classIdx, newVarIdx); // validates inside model
+		case COL_COUNTVAR: {
+			const int newVarIdx = changed->data(Qt::EditRole).toInt();
+			for (int r : selRows) {
+				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
+					const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipCountVar(classIdx, newVarIdx);
+				}
+			}
+			break;
 		}
+		default:
+			return; // not a column we handle
 	}
 
 	// Now repaint only the affected rows from the model’s *current* state.
-	refreshShipsRows(selRows);
+	refreshShipRows(selRows);
 }
 
 void TeamLoadoutDialog::on_weaponsList_itemChanged(QTableWidgetItem* changed)
 {
 	QTableWidget* tbl = ui->weaponsList;
-	if (!changed || changed->tableWidget() != tbl || changed->column() != COL_ENABLED)
+	if (!changed || changed->tableWidget() != tbl)
 		return;
 
-	const int rowChanged = changed->row();
-	const Qt::CheckState desired = changed->checkState();
+	const int col = changed->column();
+	const int originRow = changed->row();
 
-	// Snapshot selection BEFORE any changes
+	// Snapshot selection before mutating
 	auto selRows = selectedRowNumbers(tbl);
-	const bool applyToSelection = selRows.size() > 1 && selRows.contains(rowChanged);
+	const bool applyToSelection = selRows.size() > 1 && selRows.contains(originRow);
 	if (!applyToSelection)
-		selRows = {rowChanged};
+		selRows = {originRow};
 
-	QSignalBlocker blockTbl(tbl);
-	const bool wasSorting = tbl->isSortingEnabled();
-	tbl->setSortingEnabled(false);
-
-	// Snapshot model state we need for wing-only logic
-	const auto& weapsSnapshot = _model->getWeapons();
-
-	for (int r : selRows) {
-		auto* cell = tbl->item(r, COL_ENABLED);
-		if (!cell)
-			continue;
-
-		const int classIdx = cell->data(static_cast<int>(Role::ClassIndex)).toInt();
-
-		auto it = std::find_if(weapsSnapshot.begin(), weapsSnapshot.end(), [&](const LoadoutItem& li) {
-			return li.infoIndex == classIdx;
-		});
-		if (it == weapsSnapshot.end())
-			continue;
-
-		const bool present = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-		const bool wingOnly = !present && (it->countInWings > 0);
-
-		if (desired == Qt::Unchecked) {
-			if (wingOnly) {
-				cell->setCheckState(Qt::PartiallyChecked);
-				cell->setToolTip("In starting wings (pool cleared)");
-				continue;
+	switch (col) {
+		case COL_ENABLED: {
+			const Qt::CheckState desired = changed->checkState();
+			for (int r : selRows) {
+				if (auto* chk = tbl->item(r, COL_ENABLED)) {
+					const int classIdx = chk->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponEnabled(classIdx, desired != Qt::Unchecked);
+				}
 			}
-			_model->setWeaponEnabled(classIdx, false);
-			const bool stillWingOnly = (it->countInWings > 0);
-			cell->setCheckState(stillWingOnly ? Qt::PartiallyChecked : Qt::Unchecked);
-			cell->setToolTip(stillWingOnly ? "In starting wings (pool cleared)" : QString());
-		} else {
-			// Treat Checked and PartiallyChecked clicks as "enable"
-			_model->setWeaponEnabled(classIdx, true);
-			cell->setCheckState(Qt::Checked);
-			cell->setToolTip(QString());
+			break;
 		}
+		case COL_EXTRA: {
+			const int newVal = changed->data(Qt::EditRole).toInt();
+			const int clamped = std::max(0, newVal);
+
+			for (int r : selRows) {
+				if (auto* extraItem = tbl->item(r, COL_EXTRA)) {
+					const int classIdx = extraItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponExtra(classIdx, clamped);
+				}
+			}
+			break;
+		}
+		case COL_COUNTVAR: {
+			const int newVarIdx = changed->data(Qt::EditRole).toInt();
+			for (int r : selRows) {
+				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
+					const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponCountVar(classIdx, newVarIdx);
+				}
+			}
+			break;
+		}
+		case COL_REQUIRED: {
+			const bool isRequired = (changed->checkState() == Qt::Checked);
+			for (int r : selRows) {
+				if (auto* item = tbl->item(r, COL_REQUIRED)) {
+					const int classIdx = item->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponRequired(classIdx, isRequired); // Assumes this model function exists
+				}
+			}
+			break;
+		}
+		default:
+			return; // not a column we handle
 	}
 
-	tbl->setSortingEnabled(wasSorting);
+	// Now repaint only the affected rows from the model’s *current* state.
+	refreshWeaponRows(selRows);
 }
 
 void TeamLoadoutDialog::on_shipVarsList_itemChanged(QTableWidgetItem* changed)
 {
 	QTableWidget* tbl = ui->shipVarsList;
-	if (!changed || changed->tableWidget() != tbl || changed->column() != COL_ENABLED)
+	if (!changed || changed->tableWidget() != tbl)
 		return;
 
-	const int rowChanged = changed->row();
-	const bool enable = (changed->checkState() == Qt::Checked);
+	const int col = changed->column();
+	const int originRow = changed->row();
 
-	// Snapshot selection BEFORE mutating anything
-	auto selRows = selectedRowNumbers(tbl); // uses selectedRows(0) internally
-	const bool applyToSelection = selRows.size() > 1 && selRows.contains(rowChanged);
+	// Snapshot selection before mutating
+	auto selRows = selectedRowNumbers(tbl);
+	const bool applyToSelection = selRows.size() > 1 && selRows.contains(originRow);
 	if (!applyToSelection)
-		selRows = {rowChanged};
+		selRows = {originRow};
 
-	QSignalBlocker blockTbl(tbl);
-	const bool wasSorting = tbl->isSortingEnabled();
-	tbl->setSortingEnabled(false);
+	switch (col) {
+		case COL_ENABLED: {
+			const Qt::CheckState desired = changed->checkState();
+			for (int r : selRows) {
+				if (auto* chk = tbl->item(r, COL_ENABLED)) {
+					const int classIdx = chk->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipVarEnabled(classIdx, desired != Qt::Unchecked);
+				}
+			}
+			break;
+		}
+		case COL_EXTRA: {
+			const int newVal = changed->data(Qt::EditRole).toInt();
+			const int clamped = std::max(0, newVal);
 
-	for (int r : selRows) {
-		auto* cell = tbl->item(r, COL_ENABLED);
-		if (!cell)
-			continue;
-
-		const int varIdx = cell->data(static_cast<int>(Role::StringVarIndex)).toInt();
-		_model->setShipVarEnabled(varIdx, enable);
-
-		cell->setCheckState(enable ? Qt::Checked : Qt::Unchecked);
+			for (int r : selRows) {
+				if (auto* extraItem = tbl->item(r, COL_EXTRA)) {
+					const int classIdx = extraItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipVarExtra(classIdx, clamped);
+				}
+			}
+			break;
+		}
+		case COL_COUNTVAR: {
+			const int newVarIdx = changed->data(Qt::EditRole).toInt();
+			for (int r : selRows) {
+				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
+					const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setShipVarCountVar(classIdx, newVarIdx);
+				}
+			}
+			break;
+		}
+		default:
+			return; // not a column we handle
 	}
 
-	tbl->setSortingEnabled(wasSorting);
+	// Now repaint only the affected rows from the model’s *current* state.
+	refreshShipVarRows(selRows);
 }
 
 void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 {
 	QTableWidget* tbl = ui->weaponVarsList;
-	if (!changed || changed->tableWidget() != tbl || changed->column() != COL_ENABLED)
+	if (!changed || changed->tableWidget() != tbl)
 		return;
 
-	const int rowChanged = changed->row();
-	const bool enable = (changed->checkState() == Qt::Checked);
+	const int col = changed->column();
+	const int originRow = changed->row();
 
-	// Snapshot selection BEFORE mutating anything
-	auto selRows = selectedRowNumbers(tbl); // uses selectedRows(0) internally
-	const bool applyToSelection = selRows.size() > 1 && selRows.contains(rowChanged);
+	// Snapshot selection before mutating
+	auto selRows = selectedRowNumbers(tbl);
+	const bool applyToSelection = selRows.size() > 1 && selRows.contains(originRow);
 	if (!applyToSelection)
-		selRows = {rowChanged};
+		selRows = {originRow};
 
-	QSignalBlocker blockTbl(tbl);
-	const bool wasSorting = tbl->isSortingEnabled();
-	tbl->setSortingEnabled(false);
+	switch (col) {
+		case COL_ENABLED: {
+			const Qt::CheckState desired = changed->checkState();
+			for (int r : selRows) {
+				if (auto* chk = tbl->item(r, COL_ENABLED)) {
+					const int classIdx = chk->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponVarEnabled(classIdx, desired != Qt::Unchecked);
+				}
+			}
+			break;
+		}
+		case COL_EXTRA: {
+			const int newVal = changed->data(Qt::EditRole).toInt();
+			const int clamped = std::max(0, newVal);
 
-	for (int r : selRows) {
-		auto* cell = tbl->item(r, COL_ENABLED);
-		if (!cell)
-			continue;
-
-		const int varIdx = cell->data(static_cast<int>(Role::StringVarIndex)).toInt();
-		_model->setWeaponVarEnabled(varIdx, enable);
-		cell->setCheckState(enable ? Qt::Checked : Qt::Unchecked);
+			for (int r : selRows) {
+				if (auto* extraItem = tbl->item(r, COL_EXTRA)) {
+					const int classIdx = extraItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponVarExtra(classIdx, clamped);
+				}
+			}
+			break;
+		}
+		case COL_COUNTVAR: {
+			const int newVarIdx = changed->data(Qt::EditRole).toInt();
+			for (int r : selRows) {
+				if (auto* idItem = tbl->item(r, COL_COUNTVAR)) {
+					const int classIdx = idItem->data(static_cast<int>(Role::ClassIndex)).toInt();
+					_model->setWeaponVarCountVar(classIdx, newVarIdx);
+				}
+			}
+			break;
+		}
+		default:
+			return; // not a column we handle
 	}
 
-	tbl->setSortingEnabled(wasSorting);
+	// Now repaint only the affected rows from the model’s *current* state.
+	refreshWeaponVarRows(selRows);
 }
 
 //void TeamLoadoutDialog::on_editVariables_clicked()

@@ -7,8 +7,7 @@ namespace fso::fred {
 
 NoWheelComboBox::NoWheelComboBox(QWidget* parent) : QComboBox(parent)
 {
-	setFocusPolicy(Qt::NoFocus); // don't grab focus on scroll
-	setSizeAdjustPolicy(QComboBox::AdjustToContents);
+	
 }
 
 // Override the wheelEvent to ignore mouse scrolling when the popup is not open
@@ -21,6 +20,15 @@ void NoWheelComboBox::wheelEvent(QWheelEvent* e)
 	}
 	// Otherwise, ignore so the table can scroll instead of changing selection.
 	e->ignore();
+}
+
+void NoWheelComboBox::mousePressEvent(QMouseEvent* event)
+{
+	// Allow the combobox to process the event first, which lets it gain focus.
+	QComboBox::mousePressEvent(event);
+
+	// Now, accept the event to stop it from propagating to the parent
+	event->accept();
 }
 
 } // namespace fso::fred
