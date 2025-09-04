@@ -9,8 +9,7 @@
 namespace fso::fred::dialogs {
 
 DebriefingDialog::DebriefingDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent),
-	  SexpTreeEditorInterface({}), 
+	: QDialog(parent), SexpTreeEditorInterface(flagset<TreeFlags>()), 
 	  ui(new Ui::DebriefingDialog()), _model(new DebriefingDialogModel(this, viewport)), _viewport(viewport)
 {
 	this->setFocus();
