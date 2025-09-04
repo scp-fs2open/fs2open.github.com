@@ -250,6 +250,10 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.h
 	src/ui/widgets/FlagList.cpp
 	src/ui/widgets/FlagList.h
+	src/ui/widgets/NoWheelComboBox.cpp
+	src/ui/widgets/NoWheelComboBox.h
+	src/ui/widgets/NoWheelSpinBox.cpp
+	src/ui/widgets/NoWheelSpinBox.h
     src/ui/widgets/renderwidget.cpp
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp

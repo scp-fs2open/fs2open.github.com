@@ -114,6 +114,8 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	SCP_string getVariableName(int varIndex) const;	
 	SCP_string getVariableValueAsString(int varIndex) const;
 
+	int getLoadoutMaxValue() const;
+
   private:
 	void initializeData();
 	void recalcShipCapacities(TeamLoadout& team);

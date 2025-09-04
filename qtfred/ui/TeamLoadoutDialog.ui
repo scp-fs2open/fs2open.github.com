@@ -12,8 +12,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1141</width>
-    <height>620</height>
+    <width>1113</width>
+    <height>921</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -631,6 +631,11 @@
              </column>
              <column>
               <property name="text">
+               <string>Value</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
                <string>Extra</string>
               </property>
              </column>
@@ -776,6 +781,11 @@
              <column>
               <property name="text">
                <string>Variable</string>
+              </property>
+             </column>
+             <column>
+              <property name="text">
+               <string>Value</string>
               </property>
              </column>
              <column>
