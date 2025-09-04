@@ -74,6 +74,26 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 	return false;
 }
 
+// Auto-determine max texture size based on avail device ram for software decompression
+// 128 for <4GB, 256 for < 8GB, 512 for < 12GB and finally 1024
+static size_t calculate_resize_max_size()
+{
+	size_t size = 1024;
+	size_t ram_mib = SDL_GetSystemRAM();
+
+	if (ram_mib > 0)
+	{
+		if (ram_mib < 4 * 1024) // < 4GB
+			return 128;
+		if (ram_mib < 8 * 1024) // < 8GB
+			return 256;
+		if (ram_mib < 12 * 1024) // < 12GB
+			return 512;
+	}
+
+	return size;
+}
+
 // Memory usage for uncompressed textures is quite high. Some MVP assets can
 // require well over a GB of VRAM for a single ship after conversion. To help
 // alleviate this we need to resize those textures where possible. At 1024x1024
@@ -85,7 +105,7 @@ static bool conversion_needed(const DDS_HEADER &dds_header)
 // returns: number of mipmap levels to skip
 static uint conversion_resize(DDS_HEADER &dds_header)
 {
-	const size_t MAX_SIZE = 1024;
+	const size_t MAX_SIZE = calculate_resize_max_size();
 	uint width, height, depth, offset = 0;
 
 	if (dds_header.dwMipMapCount <= 1) {
