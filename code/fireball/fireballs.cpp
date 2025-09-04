@@ -437,47 +437,48 @@ static void parse_fireball_tbl(const char *table_filename)
 				default:
 					error_display(0, "Invalid warp model style. Must be classic or cinematic.");
 				}
+
+				// Set warp_model_style options if cinematic style is chosen
+				if (fi->warp_model_style == warp_style::CINEMATIC) {
+					if (optional_string("+Warp size ratio:")) {
+						stuff_float(&fi->warp_size_ratio);
+					} else {
+						fi->warp_size_ratio = 1.6f;
+					}
+
+					// The first two values need to be implied multiples of PI
+					// for convenience. These shouldn't need to be faster than a full
+					// rotation per second, which is already ridiculous.
+					if (optional_string("+Rotation anim:")) {
+						stuff_float_list(fi->rot_anim, 3);
+
+						CLAMP(fi->rot_anim[0], 0.0f, 2.0f);
+						CLAMP(fi->rot_anim[1], 0.0f, 2.0f);
+						fi->rot_anim[2] = MAX(0.0f, fi->rot_anim[2]);
+					} else {
+						// PI / 2.75f, PI / 10.0f, 2.0f
+						fi->rot_anim[0] = 0.365f;
+						fi->rot_anim[1] = 0.083f;
+						fi->rot_anim[2] = 2.0f;
+					}
+
+					// Variable frame rate for faster propagation of ripples
+					if (optional_string("+Frame anim:")) {
+						stuff_float_list(fi->frame_anim, 3);
+
+						// A frame rate that is 4 times the normal speed is ridiculous
+						CLAMP(fi->frame_anim[0], 0.0f, 4.0f);
+						CLAMP(fi->frame_anim[1], 1.0f, 4.0f);
+						fi->frame_anim[2] = MAX(0.0f, fi->frame_anim[2]);
+					} else {
+						fi->frame_anim[0] = 1.0f;
+						fi->frame_anim[1] = 1.0f;
+						fi->frame_anim[2] = 3.0f;
+					}
+				}
+
 			} else if (first_time) {
 				fi->warp_model_style = warp_style::CLASSIC;
-			}
-			
-			// Set warp_model_style options if cinematic style is chosen
-			if (fi->warp_model_style == warp_style::CINEMATIC) {
-				if (optional_string("+Warp size ratio:")) {
-					stuff_float(&fi->warp_size_ratio);
-				} else {
-					fi->warp_size_ratio = 1.6f;
-				}
-
-				// The first two values need to be implied multiples of PI
-				// for convenience. These shouldn't need to be faster than a full
-				// rotation per second, which is already ridiculous.
-				if (optional_string("+Rotation anim:")) {
-					stuff_float_list(fi->rot_anim, 3);
-
-					CLAMP(fi->rot_anim[0], 0.0f, 2.0f);
-					CLAMP(fi->rot_anim[1], 0.0f, 2.0f);
-					fi->rot_anim[2] = MAX(0.0f, fi->rot_anim[2]);
-				} else {
-					// PI / 2.75f, PI / 10.0f, 2.0f
-					fi->rot_anim[0] = 0.365f;
-					fi->rot_anim[1] = 0.083f;
-					fi->rot_anim[2] = 2.0f;
-				}
-
-				// Variable frame rate for faster propagation of ripples
-				if (optional_string("+Frame anim:")) {
-					stuff_float_list(fi->frame_anim, 3);
-
-					// A frame rate that is 4 times the normal speed is ridiculous
-					CLAMP(fi->frame_anim[0], 0.0f, 4.0f);
-					CLAMP(fi->frame_anim[1], 1.0f, 4.0f);
-					fi->frame_anim[2] = MAX(0.0f, fi->frame_anim[2]);
-				} else {
-					fi->frame_anim[0] = 1.0f;
-					fi->frame_anim[1] = 1.0f;
-					fi->frame_anim[2] = 3.0f;
-				}
 			}
 		}
 
@@ -1150,12 +1151,12 @@ static float cutscene_wormhole(float t) {
 float fireball_wormhole_intensity(fireball *fb)
 {
 	float t = fb->time_elapsed;
-
-	float rad = cutscene_wormhole(t / fb->warp_open_duration);
+	float rad;
 
 	fireball_info* fi = &Fireball_info[fb->fireball_info_index];
 
 	if (fi->warp_model_style == warp_style::CINEMATIC) {
+		rad  = cutscene_wormhole(t / fb->warp_open_duration);
 		rad *= cutscene_wormhole((fb->total_time - t) / fb->warp_close_duration);
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_open_duration));
 		rad /= cutscene_wormhole(fb->total_time / (2.0f * fb->warp_close_duration));
