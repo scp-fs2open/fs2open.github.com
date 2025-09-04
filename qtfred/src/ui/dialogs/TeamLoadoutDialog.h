@@ -93,18 +93,18 @@ public:
 	void refreshWeaponVarRows(const QList<int>& tableRows);
 
 	// Methods to create and set up widgets for a new row
-	void setupEnabledCell(QTableWidget* tbl, int row, int classIndex);
-	void setupNameCell(QTableWidget* tbl, int row, int classIndex, const QString& name);
-	void setupWingOrVarValueCell(QTableWidget* tbl, int row, int classIndex, const QString& value);
+	static void setupEnabledCell(QTableWidget* tbl, int row, int classIndex);
+	static void setupNameCell(QTableWidget* tbl, int row, int classIndex, const QString& name);
+	static void setupWingOrVarValueCell(QTableWidget* tbl, int row, int classIndex, const QString& value);
 	void setupExtraCountCell(QTableWidget* tbl, int row, int classIndex);
 	void setupVarCountCell(QTableWidget* tbl, int row, int classIndex);
-	void setupRequiredCell(QTableWidget* tbl, int row, int classIndex);
+	static void setupRequiredCell(QTableWidget* tbl, int row, int classIndex);
 
 	// Methods to refresh the state of widgets from the model
-	void refreshEnabledCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
-	void refreshExtraCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
-	void refreshVarCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
-	void refreshRequiredCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	static void refreshEnabledCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	static void refreshExtraCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	static void refreshVarCountCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
+	static void refreshRequiredCell(QTableWidget* tbl, int row, const LoadoutItem& modelItem);
 };
 
 } // namespace fso::fred::dialogs

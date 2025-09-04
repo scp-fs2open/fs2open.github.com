@@ -279,7 +279,7 @@ void MissionSpecDialogModel::setPlayerEntryDelay(float m_player_entry_delay) {
 	modify(_m_player_entry_delay, m_player_entry_delay);
 }
 
-float MissionSpecDialogModel::getPlayerEntryDelay() {
+float MissionSpecDialogModel::getPlayerEntryDelay() const {
 	return _m_player_entry_delay;
 }
 
