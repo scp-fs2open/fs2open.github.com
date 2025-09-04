@@ -84,9 +84,9 @@ IF(RESET_INSTALL_PREFIX)
 	ENDIF(NOT $ENV{FS2PATH} STREQUAL "")
 ENDIF(RESET_INSTALL_PREFIX)
 
-IF(WIN32 OR APPLE)
+IF(WIN32 OR APPLE OR ANDROID)
 	OPTION(FSO_USE_SPEECH "Use text-to-speach libraries" ON)
-ENDIF(WIN32 OR APPLE)
+ENDIF(WIN32 OR APPLE OR ANDROID)
 
 IF (WIN32)
 	OPTION(FSO_USE_VOICEREC "Enable voice recognition support" ON)
@@ -247,7 +247,7 @@ include(package)
 include(doxygen)
 
 # Print used options to log
-IF(WIN32 OR APPLE)
+IF(WIN32 OR APPLE OR ANDROID)
 	message(STATUS "Using text to speech: ${FSO_USE_SPEECH}")
 ENDIF()
 IF (WIN32)

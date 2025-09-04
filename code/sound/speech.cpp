@@ -71,6 +71,89 @@
 #include "utils/unicode.h"
 #include "speech.h"
 
+#ifdef __ANDROID__
+#include <jni.h>
+#include "SDL.h"
+#include "SDL_system.h"
+
+static JNIEnv* env = nullptr;
+static jclass tts_manager = nullptr;
+static jmethodID tts_speak = nullptr, tts_stop = nullptr, tts_pause = nullptr, tts_resume = nullptr, tts_isSpeaking = nullptr, tts_shutdown = nullptr;
+
+// Ask SDL for the JniEnviroment and get the name and path 
+// of the external TTSManager on the android side of things
+// Then assign all methods ids for later use
+bool android_tts_init()
+{
+	mprintf(("Speech : Init JNI TTSManager...\n"));
+	env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+	if (env == nullptr) {
+		mprintf(("Speech : Unable to get JNI environment!\n"));
+		return false;
+	}
+	tts_manager = env->FindClass("com/shivansps/fsowrapper/tts/TTSManager");
+	if (tts_manager == nullptr) {
+		mprintf(("Speech : Unable to find the TTSManager class!\n"));
+		return false;
+	}
+
+	tts_speak = env->GetStaticMethodID(tts_manager, "speak", "(Ljava/lang/String;)Z");
+	tts_stop = env->GetStaticMethodID(tts_manager, "stop", "()Z");
+	tts_pause = env->GetStaticMethodID(tts_manager, "pause", "()Z");
+	tts_resume = env->GetStaticMethodID(tts_manager, "resume", "()Z");
+	tts_isSpeaking = env->GetStaticMethodID(tts_manager, "isSpeaking", "()Z");
+	tts_shutdown = env->GetStaticMethodID(tts_manager, "shutdown", "()V");
+
+	if (!tts_speak || !tts_stop || !tts_pause || !tts_resume || !tts_isSpeaking || !tts_shutdown) {
+		mprintf(("Speech : Unable to map at least one TTS method!\n"));
+		return false;
+	}
+	mprintf(("Speech : Init Completed!\n"));
+	return true;
+}
+
+
+bool android_tts_play(const char* text) 
+{
+	if(env == nullptr || tts_manager == nullptr || tts_speak == nullptr)
+		return false;
+	jstring j_txt = env->NewStringUTF(text != nullptr ? text : "");
+	mprintf(("Speech : Playing TTS string: %s!\n",text ));
+	jboolean ok = env->CallStaticBooleanMethod(tts_manager, tts_speak, j_txt);
+	env->DeleteLocalRef(j_txt);
+	if (ok != JNI_TRUE) {
+		mprintf(("Speech : Error playing TTS string!\n"));
+		return false;
+	}
+	return true;
+}
+
+bool android_tts_stop() 
+{ 
+	return env->CallStaticBooleanMethod(tts_manager, tts_stop) == JNI_TRUE;
+}
+
+bool android_tts_pause() 
+{ 
+	return env->CallStaticBooleanMethod(tts_manager, tts_pause) == JNI_TRUE;
+}
+
+bool android_tts_resume() 
+{ 
+	return env->CallStaticBooleanMethod(tts_manager, tts_resume) == JNI_TRUE;
+}
+
+bool android_tts_is_speaking() 
+{ 
+	return env->CallStaticBooleanMethod(tts_manager, tts_isSpeaking) == JNI_TRUE;
+}
+
+void android_tts_deinit() 
+{ 
+	env->CallStaticVoidMethod(tts_manager, tts_shutdown); 
+}
+#endif
+
 
 bool Speech_init = false;
 
@@ -85,8 +168,9 @@ bool speech_init()
 		(void **)&Voice_device);
 
 	Speech_init = SUCCEEDED(hr);
+#elif defined(__ANDROID__)
+	Speech_init = android_tts_init();
 #else
-
 	speech_dev = open("/dev/speech", O_WRONLY | O_DIRECT);
 //	speech_dev = fopen("/dev/speech", "w");
 
@@ -109,6 +193,8 @@ void speech_deinit()
 
 #ifdef _WIN32
 	Voice_device->Release();
+#elif defined(__ANDROID__)
+	android_tts_deinit();
 #else
 	close(speech_dev);
 //	fclose(speech_dev);
@@ -161,6 +247,9 @@ bool speech_play(const char *text)
 
 	speech_stop();
 	return SUCCEEDED(Voice_device->Speak(wide_string.c_str(), SPF_ASYNC, NULL));
+#elif defined(__ANDROID__)
+	speech_stop();
+	return android_tts_play(text);
 #else
 	int len = strlen(text);
 	char Conversion_buffer[MAX_SPEECH_CHAR_LEN];
@@ -198,6 +287,8 @@ bool speech_pause()
 	if(Speech_init == false) return true;
 #ifdef _WIN32
 	return SUCCEEDED(Voice_device->Pause());
+#elif defined(__ANDROID__)
+	return android_tts_pause();
 #else
 	STUB_FUNCTION;
 
@@ -210,6 +301,8 @@ bool speech_resume()
 	if(Speech_init == false) return true;
 #ifdef _WIN32
 	return SUCCEEDED(Voice_device->Resume());
+#elif defined(__ANDROID__)
+	return android_tts_resume();
 #else
 	STUB_FUNCTION;
 
@@ -222,6 +315,8 @@ bool speech_stop()
 	if(Speech_init == false) return true;
 #ifdef _WIN32
     return SUCCEEDED(Voice_device->Speak( NULL, SPF_PURGEBEFORESPEAK, NULL ));
+#elif defined(__ANDROID__)
+	return android_tts_stop();
 #else
 	STUB_FUNCTION;
 
@@ -233,6 +328,9 @@ bool speech_set_volume(unsigned short volume)
 {
 #ifdef _WIN32
     return SUCCEEDED(Voice_device->SetVolume(volume));
+#elif defined(__ANDROID__)
+	(void)volume;
+	return true;
 #else
 	STUB_FUNCTION;
 
@@ -276,6 +374,9 @@ bool speech_set_voice(int voice)
 		count++;
 	}
 	return false;
+#elif defined(__ANDROID__)
+	(void)voice;
+	return true;
 #else
 	STUB_FUNCTION;
 
@@ -294,6 +395,8 @@ bool speech_is_speaking()
 	if (FAILED(hr)) return false;
 
 	return (pStatus.dwRunningState != SPRS_DONE);
+#elif defined(__ANDROID__)
+	return android_tts_is_speaking();
 #else
 	STUB_FUNCTION;
 
