@@ -41,7 +41,7 @@ class DebriefingDialogModel: public AbstractDialogModel {
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 	static bool getMissionIsMultiTeam();
 
-	SCP_vector<SCP_string> getMusicList() const;
+	static SCP_vector<SCP_string> getMusicList();
 	int getSuccessMusicTrack() const;
 	void setSuccessMusicTrack(int trackIndex);
 	int getAverageMusicTrack() const;
