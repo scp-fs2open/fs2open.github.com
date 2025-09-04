@@ -789,7 +789,7 @@ void TeamLoadoutDialogModel::setShipEnabled(int classIndex, bool on)
 	if (on) {
 		modify(it->enabled, true);
 
-		if (it->extraAllocated == 0 && it->varCountIndex == -1 && it->countInWings == 0) {
+		if (it->extraAllocated == 0 && it->varCountIndex == -1) {
 			modify(it->extraAllocated, ShipStaticDefault);
 		}
 	} else {
@@ -908,7 +908,7 @@ void TeamLoadoutDialogModel::setWeaponEnabled(int classIndex, bool on)
 	if (on) {
 		modify(it->enabled, true);
 
-		if (it->extraAllocated == 0 && it->varCountIndex == -1 && it->countInWings == 0) {
+		if (it->extraAllocated == 0 && it->varCountIndex == -1) {
 			modify(it->extraAllocated, WeaponStaticDefault);
 		}
 	} else {

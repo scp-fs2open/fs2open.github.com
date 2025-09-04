@@ -550,6 +550,19 @@ void TeamLoadoutDialog::refreshEnabledCell(QTableWidget* tbl, int row, const Loa
 		const bool wingOnly = !present && (modelItem.countInWings > 0);
 		item->setCheckState(present ? Qt::Checked : wingOnly ? Qt::PartiallyChecked : Qt::Unchecked);
 		item->setToolTip(wingOnly ? "In starting wings (pool cleared)" : QString());
+
+		// Do some custom styling for the partially checked state
+		// TODO this doesn't really look great. The bigger issue is a tristate checkbox doesn't seem
+		// to play nice with the table view. Maybe a custom delegate or directly setting the widget
+		// in the cell like we do for the spinbox and combobox would work better? For now the default,
+		// barely visible style will have to do.
+		/*if (item->checkState() == Qt::PartiallyChecked) {
+			// You can use any QColor here
+			item->setBackground(QColor(255, 240, 200)); // A light orange/yellow
+		} else {
+			// For all other states, clear the background to use the default table color.
+			item->setBackground(QBrush());
+		}*/
 	}
 }
 
