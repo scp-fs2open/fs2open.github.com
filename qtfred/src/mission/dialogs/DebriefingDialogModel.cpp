@@ -268,7 +268,7 @@ void DebriefingDialogModel::setFormula(int formula)
 	modify(_wipDebriefing[_currentTeam].stages[_currentStage].formula, formula);
 }
 
-SCP_vector<SCP_string> DebriefingDialogModel::getMusicList() const
+SCP_vector<SCP_string> DebriefingDialogModel::getMusicList()
 {
 	SCP_vector<SCP_string> music_list;
 	music_list.emplace_back("None");

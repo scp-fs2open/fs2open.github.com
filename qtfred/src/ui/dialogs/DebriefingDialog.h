@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QtWidgets/QDialog>
 #include <mission/dialogs/DebriefingDialogModel.h>
 #include <ui/FredView.h>
 
