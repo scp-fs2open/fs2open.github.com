@@ -12,8 +12,10 @@ namespace fso::fred::dialogs {
 constexpr int ShipVarDefault = 4;
 constexpr int WeaponVarDefault = 40;
 
-constexpr int ShipStaticDefault = 4;
-constexpr int WeaponStaticDefault = 8;
+constexpr int ShipStaticDefault = 5; // TODO : make this user settable?
+constexpr int WeaponStaticDefault = 100; // TODO : make this user settable?
+
+constexpr int MaxExtraItems = 9999;
 
 TeamLoadoutDialogModel::TeamLoadoutDialogModel(QObject* parent, EditorViewport* viewport) 
 		: AbstractDialogModel(parent, viewport)
@@ -818,13 +820,8 @@ void TeamLoadoutDialogModel::setShipExtra(int classIndex, int count)
 	if (it == team.ships.end())
 		return;
 
-	const bool wasPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-
 	modify(it->extraAllocated, (count < 0) ? 0 : count);
-
-	const bool isPresent = it->enabled && (it->extraAllocated > 0 || it->varCountIndex != -1);
-	if (wasPresent != isPresent)
-		recalcShipCapacities(team);
+	setShipEnabled(classIndex, count > 0);
 }
 
 void TeamLoadoutDialogModel::setShipExtra(const SCP_vector<std::pair<int, int>>& updates)
@@ -943,6 +940,7 @@ void TeamLoadoutDialogModel::setWeaponExtra(int classIndex, int count)
 		return;
 
 	modify(it->extraAllocated, (count < 0) ? 0 : count);
+	setWeaponEnabled(classIndex, count > 0);
 }
 
 void TeamLoadoutDialogModel::setWeaponExtra(const SCP_vector<std::pair<int, int>>& updates)
@@ -1082,6 +1080,11 @@ SCP_string TeamLoadoutDialogModel::getVariableValueAsString(int varIndex) const
 		return v.text;
 	}
 	return SCP_string();
+}
+
+int TeamLoadoutDialogModel::getLoadoutMaxValue() const
+{
+	return MaxExtraItems;
 }
 
 } // namespace fso::fred::dialogs

@@ -39,6 +39,11 @@ public:
 	void on_okAndCancelButtons_accepted();
 	void on_okAndCancelButtons_rejected();
 
+	void on_shipsList_itemChanged(QTableWidgetItem*);
+	void on_weaponsList_itemChanged(QTableWidgetItem*);
+	void on_shipVarsList_itemChanged(QTableWidgetItem*);
+	void on_weaponVarsList_itemChanged(QTableWidgetItem*);
+
 	//void on_switchViewButton_clicked();
 	//void on_editVariables_clicked();
 
@@ -91,6 +96,11 @@ public:
 	void populateWeaponsList();
 	void populateShipVarsList();
 	void populateWeaponVarsList();
+
+	void rebuildShipRowFromModel(int row);
+	void refreshShipsRows(const QList<int>& tableRows);
+
+	static QList<int> selectedRowNumbers(QTableWidget* tbl);
 
 	int _mode;
 	int _lastSelectionChanged;
