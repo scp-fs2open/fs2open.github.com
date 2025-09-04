@@ -577,7 +577,7 @@ void TeamLoadoutDialog::refreshExtraCountCell(QTableWidget* tbl, int row, const 
 		spin->setToolTip(isEditable ? QString() : "Driven by count variable");
 		spin->setValue(modelItem.extraAllocated);
 		if (!isEditable) {
-			if (QLineEdit* le = spin->findChild<QLineEdit*>()) {
+			if (auto* le = spin->findChild<QLineEdit*>()) {
 				// Defer this call until the next event loop cycle.
 				// This gives the QLineEdit time to be fully created.
 				QTimer::singleShot(0, le, [le]() { le->setText("-"); });

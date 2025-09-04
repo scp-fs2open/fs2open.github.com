@@ -82,7 +82,7 @@ public:
 	int getMaxRespawnDelay();
 
 	void setPlayerEntryDelay(float);
-	float getPlayerEntryDelay();
+	float getPlayerEntryDelay() const;
 
 	void setSquadronName(const SCP_string&);
 	SCP_string getSquadronName();

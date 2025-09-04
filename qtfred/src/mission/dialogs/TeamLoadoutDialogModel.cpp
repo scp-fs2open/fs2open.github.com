@@ -37,23 +37,21 @@ bool TeamLoadoutDialogModel::apply()
 		// reset per team outputs
 		out.num_ship_choices = 0;
 		out.num_weapon_choices = 0;
-		for (int k = 0; k < MAX_WEAPON_TYPES; ++k)
-			out.weapon_required[k] = false;
+		for (auto& w : out.weapon_required) {
+			w = false;
+		}
 
 		// Ships
 		int s = 0;
 
 		// var ships first
-		for (const auto& it : in.varShips)
+		for (const auto& it : in.varShips) {
 			if (it.enabled && it.infoIndex >= 0) {
 				// validate
 				if (ship_info_lookup(Sexp_variables[it.infoIndex].text) < 0) {
 					SCP_string error = SCP_string("The variable '") + Sexp_variables[it.infoIndex].variable_name +
 									   "' is not a valid ship class. Please correct before applying.";
-					_viewport->dialogProvider->showButtonDialog(DialogType::Error,
-						"Error",
-						error,
-						{DialogButton::Ok});
+					_viewport->dialogProvider->showButtonDialog(DialogType::Error, "Error", error, {DialogButton::Ok});
 					continue; // Skip invalid entries
 				}
 
@@ -70,9 +68,10 @@ bool TeamLoadoutDialogModel::apply()
 				}
 				++s;
 			}
+		}
 
 		// static ships
-		for (const auto& it : in.ships)
+		for (const auto& it : in.ships) {
 			if (present(it)) {
 				out.ship_list[s] = it.infoIndex;
 				out.ship_list_variables[s][0] = '\0';
@@ -85,6 +84,7 @@ bool TeamLoadoutDialogModel::apply()
 				}
 				++s;
 			}
+		}
 
 		out.num_ship_choices = s;
 
@@ -92,7 +92,7 @@ bool TeamLoadoutDialogModel::apply()
 		int w = 0;
 
 		// var weapons first
-		for (const auto& it : in.varWeapons)
+		for (const auto& it : in.varWeapons) {
 			if (it.enabled && it.infoIndex >= 0) {
 				// validate
 				if (weapon_info_lookup(Sexp_variables[it.infoIndex].text) < 0) {
@@ -113,9 +113,10 @@ bool TeamLoadoutDialogModel::apply()
 				}
 				++w;
 			}
+		}
 
 		// static weapons
-		for (const auto& it : in.weapons)
+		for (const auto& it : in.weapons) {
 			if (present(it)) {
 				out.weaponry_pool[w] = it.infoIndex;
 				out.weaponry_pool_variable[w][0] = '\0';
@@ -129,6 +130,7 @@ bool TeamLoadoutDialogModel::apply()
 				}
 				++w;
 			}
+		}
 
 		out.num_weapon_choices = w;
 
@@ -366,12 +368,12 @@ void TeamLoadoutDialogModel::setCurrentTeam(int teamIn)
 	_currentTeam = teamIn; // This is explicitly not a modification
 }
 
-int TeamLoadoutDialogModel::getCurrentTeam()
+int TeamLoadoutDialogModel::getCurrentTeam() const
 {
 	return _currentTeam;
 }
 
-const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarShips() const
+SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarShips() const
 {
 	SCP_vector<LoadoutItem> out;
 	if (!SCP_vector_inbounds(_teams, _currentTeam))
@@ -567,7 +569,7 @@ void TeamLoadoutDialogModel::setShipVarCountVar(const SCP_vector<std::pair<int, 
 		setShipVarCountVar(idx, numIdx);
 }
 
-const SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarWeapons() const
+SCP_vector<LoadoutItem> TeamLoadoutDialogModel::getVarWeapons() const
 {
 	SCP_vector<LoadoutItem> out;
 	if (!SCP_vector_inbounds(_teams, _currentTeam))
@@ -1065,29 +1067,30 @@ void TeamLoadoutDialogModel::copyToOtherTeams()
 	}
 }
 
-SCP_string TeamLoadoutDialogModel::getVariableName(int varIndex) const
+SCP_string TeamLoadoutDialogModel::getVariableName(int varIndex)
 {
 	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
-		return SCP_string();
+		return {};
+
 	return SCP_string(Sexp_variables[varIndex].variable_name);
 }
 
-SCP_string TeamLoadoutDialogModel::getVariableValueAsString(int varIndex) const
+SCP_string TeamLoadoutDialogModel::getVariableValueAsString(int varIndex)
 {
 	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
-		return SCP_string();
+		return {};
 	const auto& v = Sexp_variables[varIndex];
 	if (!(v.type & SEXP_VARIABLE_SET))
-		return SCP_string();
+		return {};
 	if (v.type & SEXP_VARIABLE_NUMBER) {
 		return v.text;
 	} else if (v.type & SEXP_VARIABLE_STRING) {
 		return v.text;
 	}
-	return SCP_string();
+	return {};
 }
 
-int TeamLoadoutDialogModel::getLoadoutMaxValue() const
+int TeamLoadoutDialogModel::getLoadoutMaxValue()
 {
 	return MaxExtraItems;
 }

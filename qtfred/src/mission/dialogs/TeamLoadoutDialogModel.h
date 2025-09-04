@@ -24,7 +24,7 @@ struct LoadoutItem {
 		countInWings = countIn;
 		extraAllocated = extraIn;
 		varCountIndex = varCountIn;
-		name = nameIn;
+		name = std::move(nameIn);
 	}
 	int infoIndex; // for var items, this points to the sexp index.
 	bool enabled;
@@ -70,9 +70,9 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	const SCP_vector<std::pair<SCP_string, int>>& getTeamList();
 
 	void setCurrentTeam(int teamIn);
-	int getCurrentTeam();
+	int getCurrentTeam() const;
 
-	const SCP_vector<LoadoutItem> getVarShips() const;
+	SCP_vector<LoadoutItem> getVarShips() const;
 	void setShipVarEnabled(int varIndex, bool enabled);
 	void setShipVarEnabled(const SCP_vector<std::pair<int, bool>>& updates);
 	void setShipVarExtra(int varIndex, int extra);
@@ -80,7 +80,7 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 	void setShipVarCountVar(int varIndex, int numberVarIndex);
 	void setShipVarCountVar(const SCP_vector<std::pair<int, int>>& updates);
 
-	const SCP_vector<LoadoutItem> getVarWeapons() const;
+	SCP_vector<LoadoutItem> getVarWeapons() const;
 	void setWeaponVarEnabled(int varIndex, bool enabled);
 	void setWeaponVarEnabled(const SCP_vector<std::pair<int, bool>>& updates);
 	void setWeaponVarExtra(int varIndex, int extra);
@@ -111,14 +111,14 @@ class TeamLoadoutDialogModel : public AbstractDialogModel {
 
 	void copyToOtherTeams();
 
-	SCP_string getVariableName(int varIndex) const;	
-	SCP_string getVariableValueAsString(int varIndex) const;
+	static SCP_string getVariableName(int varIndex);	
+	static SCP_string getVariableValueAsString(int varIndex);
 
-	int getLoadoutMaxValue() const;
+	static int getLoadoutMaxValue();
 
   private:
 	void initializeData();
-	void recalcShipCapacities(TeamLoadout& team);
+	static void recalcShipCapacities(TeamLoadout& team);
 
 	int _currentTeam = 0;
 
