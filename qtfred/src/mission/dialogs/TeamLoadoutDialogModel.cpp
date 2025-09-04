@@ -1072,7 +1072,7 @@ SCP_string TeamLoadoutDialogModel::getVariableName(int varIndex)
 	if (varIndex < 0 || varIndex >= MAX_SEXP_VARIABLES)
 		return {};
 
-	return SCP_string(Sexp_variables[varIndex].variable_name);
+	return Sexp_variables[varIndex].variable_name;
 }
 
 SCP_string TeamLoadoutDialogModel::getVariableValueAsString(int varIndex)
