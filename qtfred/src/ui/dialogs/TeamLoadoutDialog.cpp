@@ -91,6 +91,8 @@ void TeamLoadoutDialog::initializeUi()
 	populateWeaponsList();
 	populateShipVarsList();
 	populateWeaponVarsList();
+
+	ui->tabWidget->setCurrentIndex(0); // Always start on the static tab
 }
 
 void TeamLoadoutDialog::updateUi()
@@ -98,6 +100,43 @@ void TeamLoadoutDialog::updateUi()
 	util::SignalBlockers blockers(this);
 
 	ui->weaponValidationCheckbox->setChecked(_model->getSkipValidation());
+	ui->currentTeamComboBox->setCurrentIndex(ui->currentTeamComboBox->findData(_model->getCurrentTeam()));
+
+	// Refresh Ships List
+	QList<int> shipRows;
+	for (int i = 0; i < ui->shipsList->rowCount(); ++i) {
+		shipRows.append(i);
+	}
+	if (!shipRows.isEmpty()) {
+		refreshShipRows(shipRows);
+	}
+
+	// Refresh Weapons List
+	QList<int> weaponRows;
+	for (int i = 0; i < ui->weaponsList->rowCount(); ++i) {
+		weaponRows.append(i);
+	}
+	if (!weaponRows.isEmpty()) {
+		refreshWeaponRows(weaponRows);
+	}
+
+	// Refresh Ship Vars List
+	QList<int> shipVarRows;
+	for (int i = 0; i < ui->shipVarsList->rowCount(); ++i) {
+		shipVarRows.append(i);
+	}
+	if (!shipVarRows.isEmpty()) {
+		refreshShipVarRows(shipVarRows);
+	}
+
+	// Refresh Weapon Vars List
+	QList<int> weaponVarRows;
+	for (int i = 0; i < ui->weaponVarsList->rowCount(); ++i) {
+		weaponVarRows.append(i);
+	}
+	if (!weaponVarRows.isEmpty()) {
+		refreshWeaponVarRows(weaponVarRows);
+	}
 }
 
 void TeamLoadoutDialog::populateShipsList()
@@ -564,6 +603,209 @@ void TeamLoadoutDialog::on_okAndCancelButtons_rejected()
 	reject();
 }
 
+void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
+{
+	if (index < 0) {
+		return;
+	}
+	int team = ui->currentTeamComboBox->itemData(index).toInt();
+	_model->setCurrentTeam(team);
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
+{
+	QMessageBox msgBox;
+	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
+	msgBox.setInformativeText("This can't be undone.");
+	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
+	msgBox.setDefaultButton(QMessageBox::Cancel);
+	int ret = msgBox.exec();
+
+	switch (ret) {
+	case QMessageBox::Yes:
+		_model->copyToOtherTeams();
+		break;
+	case QMessageBox::Cancel:
+		break;
+	default:
+		UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
+		break;
+	}
+
+	updateUi();
+}
+
+void TeamLoadoutDialog::on_weaponValidationCheckbox_toggled(bool checked)
+{
+	_model->setSkipValidation(checked);
+}
+
+void TeamLoadoutDialog::on_shipsFilterLineEdit_textChanged(const QString& filterText)
+{
+	// Make the search case insensitive
+	const QString lowerFilter = filterText.toLower();
+
+	for (int i = 0; i < ui->shipsList->rowCount(); ++i) {
+		// Get the item from the Name column
+		QTableWidgetItem* item = ui->shipsList->item(i, COL_NAME);
+		if (!item) {
+			continue;
+		}
+
+		const bool match = item->text().toLower().contains(lowerFilter);
+
+		// Hide the row if it doesn't match the filter
+		ui->shipsList->setRowHidden(i, !match);
+	}
+}
+
+void TeamLoadoutDialog::on_weaponsFilterLineEdit_textChanged(const QString& filterText)
+{
+	// Make the search case insensitive
+	const QString lowerFilter = filterText.toLower();
+
+	for (int i = 0; i < ui->weaponsList->rowCount(); ++i) {
+		// Get the item from the Name column
+		QTableWidgetItem* item = ui->weaponsList->item(i, COL_NAME);
+		if (!item) {
+			continue;
+		}
+
+		const bool match = item->text().toLower().contains(lowerFilter);
+
+		// Hide the row if it doesn't match the filter
+		ui->weaponsList->setRowHidden(i, !match);
+	}
+}
+
+void TeamLoadoutDialog::on_shipsVarFilterLineEdit_textChanged(const QString& filterText)
+{
+	// Make the search case insensitive
+	const QString lowerFilter = filterText.toLower();
+
+	for (int i = 0; i < ui->shipVarsList->rowCount(); ++i) {
+		// Get the item from the Name column
+		QTableWidgetItem* item = ui->shipVarsList->item(i, COL_NAME);
+		if (!item) {
+			continue;
+		}
+
+		const bool match = item->text().toLower().contains(lowerFilter);
+
+		// Hide the row if it doesn't match the filter
+		ui->shipVarsList->setRowHidden(i, !match);
+	}
+}
+
+void TeamLoadoutDialog::on_weaponsVarFilterLineEdit_textChanged(const QString& filterText)
+{
+	// Make the search case insensitive
+	const QString lowerFilter = filterText.toLower();
+
+	for (int i = 0; i < ui->weaponVarsList->rowCount(); ++i) {
+		// Get the item from the Name column
+		QTableWidgetItem* item = ui->weaponVarsList->item(i, COL_NAME);
+		if (!item) {
+			continue;
+		}
+
+		const bool match = item->text().toLower().contains(lowerFilter);
+
+		// Hide the row if it doesn't match the filter
+		ui->weaponVarsList->setRowHidden(i, !match);
+	}
+}
+
+void TeamLoadoutDialog::on_clearShipsListButton_clicked()
+{
+	ui->shipsList->clearSelection();
+}
+
+void TeamLoadoutDialog::on_clearWeaponsListButton_clicked()
+{
+	ui->weaponsList->clearSelection();
+}
+
+void TeamLoadoutDialog::on_clearShipsVarListButton_clicked()
+{
+	ui->shipVarsList->clearSelection();
+}
+
+void TeamLoadoutDialog::on_clearWeaponsVarListButton_clicked()
+{
+	ui->weaponVarsList->clearSelection();
+}
+
+void TeamLoadoutDialog::on_selectAllShipsListButton_clicked()
+{
+	ui->shipsList->selectAll();
+}
+
+void TeamLoadoutDialog::on_selectAllWeaponsListButton_clicked()
+{
+	ui->weaponsList->selectAll();
+}
+
+void TeamLoadoutDialog::on_selectAllShipsVarListButton_clicked()
+{
+	ui->shipVarsList->selectAll();
+}
+
+void TeamLoadoutDialog::on_selectAllWeaponsVarListButton_clicked()
+{
+	ui->weaponVarsList->selectAll();
+}
+
+void TeamLoadoutDialog::on_shipsMultiSelectCheckBox_toggled(bool checked)
+{
+	if (checked) {
+		ui->shipsList->setSelectionMode(QAbstractItemView::MultiSelection);
+	} else {
+		ui->shipsList->setSelectionMode(QAbstractItemView::SingleSelection);
+		if (selectedRowNumbers(ui->shipsList).size() > 1) {
+			ui->shipsList->clearSelection();
+		}
+	}
+}
+
+void TeamLoadoutDialog::on_weaponsMultiSelectCheckBox_toggled(bool checked)
+{
+	if (checked) {
+		ui->weaponsList->setSelectionMode(QAbstractItemView::MultiSelection);
+	} else {
+		ui->weaponsList->setSelectionMode(QAbstractItemView::SingleSelection);
+		if (selectedRowNumbers(ui->weaponsList).size() > 1) {
+			ui->weaponsList->clearSelection();
+		}
+	}
+}
+
+void TeamLoadoutDialog::on_shipsVarMultiSelectCheckBox_toggled(bool checked)
+{
+	if (checked) {
+		ui->shipVarsList->setSelectionMode(QAbstractItemView::MultiSelection);
+	} else {
+		ui->shipVarsList->setSelectionMode(QAbstractItemView::SingleSelection);
+		if (selectedRowNumbers(ui->shipVarsList).size() > 1) {
+			ui->shipVarsList->clearSelection();
+		}
+	}
+}
+
+void TeamLoadoutDialog::on_weaponsVarMultiSelectCheckBox_toggled(bool checked)
+{
+	if (checked) {
+		ui->weaponVarsList->setSelectionMode(QAbstractItemView::MultiSelection);
+	} else {
+		ui->weaponVarsList->setSelectionMode(QAbstractItemView::SingleSelection);
+		if (selectedRowNumbers(ui->weaponVarsList).size() > 1) {
+			ui->weaponVarsList->clearSelection();
+		}
+	}
+}
+
 void TeamLoadoutDialog::on_shipsList_itemChanged(QTableWidgetItem* changed)
 {
 	QTableWidget* tbl = ui->shipsList;
@@ -797,42 +1039,5 @@ void TeamLoadoutDialog::on_weaponVarsList_itemChanged(QTableWidgetItem* changed)
 	// Now repaint only the affected rows from the model’s *current* state.
 	refreshWeaponVarRows(selRows);
 }
-
-//void TeamLoadoutDialog::on_editVariables_clicked()
-//{
-//	reinterpret_cast<FredView*>(parent())->on_actionVariables_triggered(true);
-//}
-
-//void TeamLoadoutDialog::on_currentTeamComboBox_currentIndexChanged(int index)
-//{
-//	if (index < 0) {
-//		return;
-//	}
-//	int team = ui->currentTeamComboBox->itemData(index).toInt();
-//	_model->switchTeam(team);
-//
-//	updateUi();
-//}
-
-/*void TeamLoadoutDialog::on_copyLoadoutToOtherTeamsButton_clicked()
-{
-	QMessageBox msgBox;
-	msgBox.setText("Are you sure that you want to overwrite the other team's loadout with this team's loadout?");
-	msgBox.setInformativeText("This can't be undone.");
-	msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::Cancel);
-	msgBox.setDefaultButton(QMessageBox::Cancel);
-	int ret = msgBox.exec();
-
-	switch (ret) {
-		case QMessageBox::Yes:
-			_model->copyToOtherTeams();
-			break;
-		case QMessageBox::Cancel:
-			break;
-		default:
-			UNREACHABLE("Bad return value from confirmation message box in the Loadout dialog editor.");
-			break;
-	}
-}*/
 
 } // namespace fso::fred::dialogs
