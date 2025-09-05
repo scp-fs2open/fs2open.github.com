@@ -86,9 +86,9 @@ class VariableDialog : public QDialog {
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	// Core UI and Model
+	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::VariableEditorDialog> ui;
 	std::unique_ptr<VariableDialogModel> _model;
-	EditorViewport* _viewport = nullptr;
 
 	// State trackers
 	int m_currentVariableIndex = -1;

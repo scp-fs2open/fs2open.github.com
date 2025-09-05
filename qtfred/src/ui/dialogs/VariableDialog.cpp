@@ -127,7 +127,7 @@ void VariableDialog::updateVariableList()
 	ui->variablesTable->setRowCount(0);
 
 	int table_row = 0;
-	for (int i = 0; i < variables.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(variables.size()); ++i) {
 		const auto& var = variables[i];
 
 		ui->variablesTable->insertRow(table_row);
@@ -151,7 +151,7 @@ void VariableDialog::updateVariableList()
 		table_row++;
 	}
 
-	if (m_currentVariableIndex >= 0 && m_currentVariableIndex < variables.size()) {
+	if (m_currentVariableIndex >= 0 && m_currentVariableIndex < static_cast<int>(variables.size())) {
 		ui->variablesTable->selectRow(m_currentVariableIndex);
 	} else if (!variables.empty()) {
 		m_currentVariableIndex = 0;
@@ -194,7 +194,7 @@ void VariableDialog::updateContainerList()
 	ui->containersTable->setRowCount(0);
 
 	int table_row = 0;
-	for (int i = 0; i < containers.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(containers.size()); ++i) {
 		const auto& cont = containers[i];
 
 		ui->containersTable->insertRow(table_row);
@@ -215,7 +215,7 @@ void VariableDialog::updateContainerList()
 		table_row++;
 	}
 
-	if (m_currentContainerIndex >= 0 && m_currentContainerIndex < containers.size()) {
+	if (m_currentContainerIndex >= 0 && m_currentContainerIndex < static_cast<int>(containers.size())) {
 		ui->containersTable->selectRow(m_currentContainerIndex);
 	} else if (!containers.empty()) {
 		m_currentContainerIndex = 0;
