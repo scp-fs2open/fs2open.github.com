@@ -88,10 +88,6 @@ bool VariableDialogModel::apply()
 	SCP_unordered_map<SCP_string, SCP_string, SCP_string_lcase_hash, SCP_string_lcase_equal_to> renamed_containers;
 
 	for (const auto& cont_info : m_containers) {
-		if (cont_info.deleted) {
-			continue; // Will be removed by update_sexp_containers
-		}
-
 		new_containers.push_back(createSexpContainerFromInfo(cont_info));
 
 		if (!cont_info.originalName.empty() && cont_info.name != cont_info.originalName) {
@@ -173,6 +169,60 @@ void VariableDialogModel::initializeData()
 	}
 }
 
+void VariableDialogModel::sortMap(int containerIndex)
+{
+	if (!SCP_vector_inbounds(m_containers, containerIndex)) {
+		return;
+	}
+
+	auto& cont = m_containers[containerIndex];
+	if (cont.is_list || cont.keys.size() < 2) {
+		return; // No need to sort
+	}
+
+	// 1. Create a list of indices (0, 1, 2, ...) that we can sort.
+	std::vector<size_t> indices(cont.keys.size());
+	std::iota(indices.begin(), indices.end(), 0);
+
+	// 2. Sort the indices based on the key values they point to.
+	std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
+		if (cont.keys_are_strings) {
+			return stricmp(cont.keys[a].c_str(), cont.keys[b].c_str()) < 0;
+		} else {
+			return atoi(cont.keys[a].c_str()) < atoi(cont.keys[b].c_str());
+		}
+	});
+
+	// 3. Use the sorted indices to build newly ordered data vectors.
+	SCP_vector<SCP_string> sorted_keys;
+	SCP_vector<SCP_string> sorted_string_values;
+	SCP_vector<int> sorted_number_values;
+
+	sorted_keys.reserve(cont.keys.size());
+	if (cont.values_are_strings) {
+		sorted_string_values.reserve(cont.stringValues.size());
+	} else {
+		sorted_number_values.reserve(cont.numberValues.size());
+	}
+
+	for (size_t original_idx : indices) {
+		sorted_keys.push_back(cont.keys[original_idx]);
+		if (cont.values_are_strings) {
+			sorted_string_values.push_back(cont.stringValues[original_idx]);
+		} else {
+			sorted_number_values.push_back(cont.numberValues[original_idx]);
+		}
+	}
+
+	// 4. Move the new, correctly sorted data back into the container.
+	cont.keys = std::move(sorted_keys);
+	if (cont.values_are_strings) {
+		cont.stringValues = std::move(sorted_string_values);
+	} else {
+		cont.numberValues = std::move(sorted_number_values);
+	}
+}
+
 bool VariableDialogModel::checkValidity()
 {
 	SCP_string error_message;
@@ -196,8 +246,6 @@ bool VariableDialogModel::checkValidity()
 	// Validate Containers
 	names_taken.clear();
 	for (const auto& cont : m_containers) {
-		if (cont.deleted)
-			continue;
 		if (cont.name.empty()) {
 			error_message += "A container has an empty name.\n";
 			break;
@@ -523,28 +571,20 @@ void VariableDialogModel::setVariablePersistenceType(int index, int type)
 
 void VariableDialogModel::addNewContainer()
 {
-	// Find a unique default name
-	SCP_string new_name;
+	ContainerInfo new_cont;
+
+	// Find a unique name
 	int count = 1;
-	bool name_is_unique = false;
-
-	while (!name_is_unique) {
-		new_name = "newContainer" + std::to_string(count);
-
-		name_is_unique = true; // Assume unique until a conflict is found
-		for (const auto& cont : m_containers) {
-			if (!cont.deleted && cont.name == new_name) {
-				name_is_unique = false;
-				count++;
-				break;
-			}
+	while (true) {
+		SCP_string candidate_name = "newContainer" + std::to_string(count);
+		if (isContainerNameUnique(candidate_name, -1)) {
+			new_cont.name = candidate_name;
+			break;
 		}
+		count++;
 	}
 
-	// Add the new container with default settings
-	auto& cont = m_containers.emplace_back();
-	cont.name = new_name;
-
+	m_containers.push_back(new_cont);
 	set_modified();
 }
 
@@ -554,46 +594,50 @@ void VariableDialogModel::copyContainer(int index)
 		return;
 	}
 
-	const auto& original_cont = m_containers[index];
-
-	// Create a new container as an exact copy of the original
-	ContainerInfo new_cont = original_cont;
-
-	// A copy is a new entity, so it has no original name and isn't deleted.
-	new_cont.originalName.clear();
-	new_cont.deleted = false;
+	ContainerInfo new_cont_data = m_containers[index];
+	new_cont_data.originalName.clear();
 
 	// Find a unique name for the copy
-	SCP_string new_name;
 	int count = 1;
-	bool name_is_unique = false;
-
-	while (!name_is_unique) {
-		SCP_string base_name = original_cont.name.substr(0, TOKEN_LENGTH - 5);
-		new_name = base_name + "_" + std::to_string(count).c_str();
-
-		name_is_unique = true;
-		for (const auto& cont : m_containers) {
-			if (!cont.deleted && cont.name == new_name) {
-				name_is_unique = false;
-				count++;
-				break;
-			}
+	const SCP_string base_name = new_cont_data.name.substr(0, TOKEN_LENGTH - 5);
+	while (true) {
+		SCP_string candidate_name = base_name + "_" + std::to_string(count).c_str();
+		if (isContainerNameUnique(candidate_name, -1)) {
+			new_cont_data.name = candidate_name;
+			break;
 		}
+		count++;
 	}
-	new_cont.name = new_name;
 
-	m_containers.push_back(std::move(new_cont));
+	m_containers.push_back(new_cont_data);
 	set_modified();
 }
 
-void VariableDialogModel::markContainerForDeletion(int index, bool deleted)
+void VariableDialogModel::markContainerForDeletion(int index)
 {
 	if (!SCP_vector_inbounds(m_containers, index)) {
 		return;
 	}
 
-	modify(m_containers[index].deleted, deleted);
+	// Just remove it from the active list. The replacement logic in apply() handles the rest.
+	m_containers.erase(m_containers.begin() + index);
+	set_modified();
+}
+
+bool VariableDialogModel::isContainerNameUnique(const SCP_string& name, int containerIndex) const
+{
+	for (int i = 0; i < m_containers.size(); ++i) {
+		// Don't compare the container against itself
+		if (i == containerIndex) {
+			continue;
+		}
+
+		// If we find a case-insensitive match, the name is not unique
+		if (!stricmp(m_containers[i].name.c_str(), name.c_str())) {
+			return false;
+		}
+	}
+	return true; // No conflicts found
 }
 
 bool VariableDialogModel::isContainerEmpty(int index) const
@@ -940,6 +984,36 @@ void VariableDialogModel::moveListItem(int containerIndex, int itemIndex, bool u
 	}
 }
 
+int VariableDialogModel::copyListItem(int containerIndex, int itemIndex)
+{
+	if (!SCP_vector_inbounds(m_containers, containerIndex)) {
+		return -1;
+	}
+
+	auto& cont = m_containers[containerIndex];
+	if (!cont.is_list) {
+		return -1;
+	}
+
+	const int new_index = itemIndex + 1;
+
+	if (cont.values_are_strings) {
+		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+			cont.stringValues.insert(cont.stringValues.begin() + new_index, cont.stringValues[itemIndex]);
+			set_modified();
+			return new_index;
+		}
+	} else {
+		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+			cont.numberValues.insert(cont.numberValues.begin() + new_index, cont.numberValues[itemIndex]);
+			set_modified();
+			return new_index;
+		}
+	}
+
+	return -1;
+}
+
 void VariableDialogModel::addMapItem(int containerIndex)
 {
 	if (SCP_vector_inbounds(m_containers, containerIndex)) {
@@ -1034,8 +1108,6 @@ void VariableDialogModel::setMapItemKey(int containerIndex, int itemIndex, const
 	}
 
 	modify(cont.keys[itemIndex], sanitized_key);
-
-	// Changing a key can affect the sort order
 	sortMap(containerIndex);
 }
 
@@ -1119,7 +1191,6 @@ void VariableDialogModel::swapMapKeysAndValues(int containerIndex)
 	// Swap the type flags
 	std::swap(cont.keys_are_strings, cont.values_are_strings);
 
-	sortMap(containerIndex);
 	set_modified();
 }
 
@@ -1176,56 +1247,6 @@ sexp_container VariableDialogModel::createSexpContainerFromInfo(const ContainerI
 	}
 
 	return sc;
-}
-
-void VariableDialogModel::sortMap(int containerIndex)
-{
-	if (!SCP_vector_inbounds(m_containers, containerIndex)) {
-		return;
-	}
-
-	auto& cont = m_containers[containerIndex];
-	if (cont.is_list || cont.keys.size() < 2) {
-		return; // No need to sort
-	}
-
-	// To sort keys and values together, we create a list of indices (0, 1, 2, ...),
-	// sort that list based on the key values, and then rebuild the data vectors
-	// in the new sorted order. This is much more efficient than repeated searching.
-	std::vector<size_t> indices(cont.keys.size());
-	std::iota(indices.begin(), indices.end(), 0);
-
-	// Sort the indices based on the keys they point to
-	std::sort(indices.begin(), indices.end(), [&](size_t a, size_t b) {
-		if (cont.keys_are_strings) {
-			// Case-insensitive string comparison for keys
-			return stricmp(cont.keys[a].c_str(), cont.keys[b].c_str()) < 0;
-		} else {
-			// Numeric comparison for keys
-			return atoi(cont.keys[a].c_str()) < atoi(cont.keys[b].c_str());
-		}
-	});
-
-	// Use the sorted indices to build newly ordered data vectors
-	ContainerInfo sorted_cont = cont; // Copy metadata
-	sorted_cont.keys.clear();
-	sorted_cont.stringValues.clear();
-	sorted_cont.numberValues.clear();
-
-	for (size_t sorted_idx : indices) {
-		sorted_cont.keys.push_back(cont.keys[sorted_idx]);
-		if (sorted_idx < cont.stringValues.size()) {
-			sorted_cont.stringValues.push_back(cont.stringValues[sorted_idx]);
-		}
-		if (sorted_idx < cont.numberValues.size()) {
-			sorted_cont.numberValues.push_back(cont.numberValues[sorted_idx]);
-		}
-	}
-
-	// Replace the old unsorted data with the new sorted data
-	cont.keys = std::move(sorted_cont.keys);
-	cont.stringValues = std::move(sorted_cont.stringValues);
-	cont.numberValues = std::move(sorted_cont.numberValues);
 }
 
 SCP_string VariableDialogModel::trimIntegerString(const SCP_string& source)
