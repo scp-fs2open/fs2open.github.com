@@ -231,6 +231,8 @@ void VariableDialog::updateContainerList()
 void VariableDialog::updateContainerControls()
 {
 	util::SignalBlockers blockers(this);
+
+	ui->containerItemFilterLineEdit->clear();
 	
 	const bool is_selected = m_currentContainerIndex != -1;
 	ui->setContainerAsListRadio->setChecked(is_selected && _model->getContainerType(m_currentContainerIndex));
@@ -362,6 +364,8 @@ void VariableDialog::enableDisableControls()
 
 	// Containers
 	const bool is_container_selected = (m_currentContainerIndex != -1);
+
+	ui->containerItemFilterLineEdit->setEnabled(is_container_selected);
 
 	// Main container actions
 	ui->copyContainerButton->setEnabled(is_container_selected);
@@ -534,7 +538,7 @@ void VariableDialog::on_containersTable_cellChanged(int row, int column)
 	updateContainerControls();
 }
 
-void VariableDialog::on_containersFilterLineEdit_textChanged(const QString& text)
+void VariableDialog::on_containerFilterLineEdit_textChanged(const QString& text)
 {
 	const int selected_row = ui->containersTable->currentRow();
 
@@ -606,7 +610,7 @@ void VariableDialog::on_containerContentsTable_cellChanged(int row, int column)
 	}
 }
 
-void VariableDialog::on_containerItemsFilterLineEdit_textChanged(const QString& text)
+void VariableDialog::on_containerItemFilterLineEdit_textChanged(const QString& text)
 {
 	if (m_currentContainerIndex == -1) {
 		return;
