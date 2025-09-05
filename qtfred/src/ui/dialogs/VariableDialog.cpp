@@ -106,6 +106,8 @@ void VariableDialog::initializeUi()
 	// We'll hide it for now. //TODO reimplement this in the UI layer
 	ui->selectFormatLabel->setVisible(false);
 	ui->selectFormatCombobox->setVisible(false);
+
+	ui->tabWidget->setCurrentIndex(0);
 }
 
 void VariableDialog::updateUi()
@@ -532,6 +534,25 @@ void VariableDialog::on_containersTable_cellChanged(int row, int column)
 	updateContainerControls();
 }
 
+void VariableDialog::on_containersFilterLineEdit_textChanged(const QString& text)
+{
+	const int selected_row = ui->containersTable->currentRow();
+
+	for (int i = 0; i < ui->containersTable->rowCount(); ++i) {
+		auto* item = ui->containersTable->item(i, ContName);
+		if (!item) {
+			continue;
+		}
+
+		const bool match = item->text().contains(text, Qt::CaseInsensitive);
+		ui->containersTable->setRowHidden(i, !match);
+	}
+
+	if (selected_row != -1 && ui->containersTable->isRowHidden(selected_row)) {
+		ui->containersTable->clearSelection();
+	}
+}
+
 void VariableDialog::on_containerContentsTable_itemSelectionChanged()
 {
 	auto selected = ui->containerContentsTable->selectedItems();
@@ -582,6 +603,39 @@ void VariableDialog::on_containerContentsTable_cellChanged(int row, int column)
 		} else if (column == ItemValue) {
 			_model->setMapItemValue(m_currentContainerIndex, item_idx, new_text);
 		}
+	}
+}
+
+void VariableDialog::on_containerItemsFilterLineEdit_textChanged(const QString& text)
+{
+	if (m_currentContainerIndex == -1) {
+		return;
+	}
+
+	const int selected_row = ui->containerContentsTable->currentRow();
+	const bool is_list = _model->getContainerType(m_currentContainerIndex);
+
+	for (int i = 0; i < ui->containerContentsTable->rowCount(); ++i) {
+		bool match = false;
+		if (is_list) {
+			auto* item = ui->containerContentsTable->item(i, ItemKey); // Value is in the "Key" column for lists
+			if (item) {
+				match = item->text().contains(text, Qt::CaseInsensitive);
+			}
+		} else { // Is a map, check both key and value
+			auto* keyItem = ui->containerContentsTable->item(i, ItemKey);
+			auto* valItem = ui->containerContentsTable->item(i, ItemValue);
+			if (keyItem && keyItem->text().contains(text, Qt::CaseInsensitive)) {
+				match = true;
+			} else if (valItem && valItem->text().contains(text, Qt::CaseInsensitive)) {
+				match = true;
+			}
+		}
+		ui->containerContentsTable->setRowHidden(i, !match);
+	}
+
+	if (selected_row != -1 && ui->containerContentsTable->isRowHidden(selected_row)) {
+		ui->containerContentsTable->clearSelection();
 	}
 }
 

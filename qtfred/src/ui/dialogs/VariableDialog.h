@@ -35,8 +35,10 @@ class VariableDialog : public QDialog {
 	void on_variablesFilterLineEdit_textChanged(const QString& text);
 	void on_containersTable_itemSelectionChanged();
 	void on_containersTable_cellChanged(int row, int column);
+	void on_containerFilterLineEdit_textChanged(const QString& text);
 	void on_containerContentsTable_itemSelectionChanged();
 	void on_containerContentsTable_cellChanged(int row, int column);
+	void on_containerItemsFilterLineEdit_textChanged(const QString& text);
 
 	// Variable Buttons
 	void on_addVariableButton_clicked();
