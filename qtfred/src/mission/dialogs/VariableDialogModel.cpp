@@ -374,7 +374,7 @@ void VariableDialogModel::markVariableForDeletion(int index)
 
 bool VariableDialogModel::isVariableNameUnique(const SCP_string& name, int variableIndex) const
 {
-	for (int i = 0; i < m_variables.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(m_variables.size()); ++i) {
 		// Don't compare the variable against itself
 		if (i == variableIndex) {
 			continue;
@@ -626,7 +626,7 @@ void VariableDialogModel::markContainerForDeletion(int index)
 
 bool VariableDialogModel::isContainerNameUnique(const SCP_string& name, int containerIndex) const
 {
-	for (int i = 0; i < m_containers.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(m_containers.size()); ++i) {
 		// Don't compare the container against itself
 		if (i == containerIndex) {
 			continue;
@@ -901,12 +901,12 @@ void VariableDialogModel::removeListItem(int containerIndex, int itemIndex)
 	}
 
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex)) {
 			cont.stringValues.erase(cont.stringValues.begin() + itemIndex);
 			set_modified();
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex)) {
 			cont.numberValues.erase(cont.numberValues.begin() + itemIndex);
 			set_modified();
 		}
@@ -923,11 +923,11 @@ SCP_string VariableDialogModel::getListItemValue(int containerIndex, int itemInd
 		return "";
 	}
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex)) {
 			return cont.stringValues[itemIndex];
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex)) {
 			return std::to_string(cont.numberValues[itemIndex]);
 		}
 	}
@@ -970,14 +970,12 @@ void VariableDialogModel::moveListItem(int containerIndex, int itemIndex, bool u
 	int targetIndex = up ? itemIndex - 1 : itemIndex + 1;
 
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size() && targetIndex >= 0 &&
-			targetIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex) && SCP_vector_inbounds(cont.stringValues, targetIndex)) {
 			std::swap(cont.stringValues[itemIndex], cont.stringValues[targetIndex]);
 			set_modified();
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size() && targetIndex >= 0 &&
-			targetIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex) && SCP_vector_inbounds(cont.numberValues, targetIndex)) {
 			std::swap(cont.numberValues[itemIndex], cont.numberValues[targetIndex]);
 			set_modified();
 		}
@@ -998,13 +996,13 @@ int VariableDialogModel::copyListItem(int containerIndex, int itemIndex)
 	const int new_index = itemIndex + 1;
 
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex)) {
 			cont.stringValues.insert(cont.stringValues.begin() + new_index, cont.stringValues[itemIndex]);
 			set_modified();
 			return new_index;
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex)) {
 			cont.numberValues.insert(cont.numberValues.begin() + new_index, cont.numberValues[itemIndex]);
 			set_modified();
 			return new_index;
@@ -1058,7 +1056,7 @@ void VariableDialogModel::removeMapItem(int containerIndex, int itemIndex)
 	}
 
 	auto& cont = m_containers[containerIndex];
-	if (cont.is_list || itemIndex < 0 || itemIndex >= cont.keys.size()) {
+	if (cont.is_list || !SCP_vector_inbounds(cont.keys, itemIndex)) {
 		return;
 	}
 
@@ -1067,11 +1065,11 @@ void VariableDialogModel::removeMapItem(int containerIndex, int itemIndex)
 
 	// Then remove the corresponding value from the active value vector
 	if (cont.values_are_strings) {
-		if (itemIndex < cont.stringValues.size()) {
+		if (itemIndex < static_cast<int>(cont.stringValues.size())) {
 			cont.stringValues.erase(cont.stringValues.begin() + itemIndex);
 		}
 	} else {
-		if (itemIndex < cont.numberValues.size()) {
+		if (itemIndex < static_cast<int>(cont.numberValues.size())) {
 			cont.numberValues.erase(cont.numberValues.begin() + itemIndex);
 		}
 	}
@@ -1085,7 +1083,7 @@ SCP_string VariableDialogModel::getMapItemKey(int containerIndex, int itemIndex)
 		return "";
 	}
 	const auto& cont = m_containers[containerIndex];
-	if (cont.is_list || itemIndex < 0 || itemIndex >= cont.keys.size()) {
+	if (cont.is_list || !SCP_vector_inbounds(cont.keys, itemIndex)) {
 		return "";
 	}
 	return cont.keys[itemIndex];
@@ -1098,7 +1096,7 @@ void VariableDialogModel::setMapItemKey(int containerIndex, int itemIndex, const
 	}
 
 	auto& cont = m_containers[containerIndex];
-	if (cont.is_list || itemIndex < 0 || itemIndex >= cont.keys.size()) {
+	if (cont.is_list || !SCP_vector_inbounds(cont.keys, itemIndex)) {
 		return;
 	}
 
@@ -1117,15 +1115,15 @@ SCP_string VariableDialogModel::getMapItemValue(int containerIndex, int itemInde
 		return "";
 	}
 	const auto& cont = m_containers[containerIndex];
-	if (cont.is_list || itemIndex < 0 || itemIndex >= cont.keys.size()) {
+	if (cont.is_list || !SCP_vector_inbounds(cont.keys, itemIndex)) {
 		return "";
 	}
 	if (cont.values_are_strings) {
-		if (itemIndex < cont.stringValues.size()) {
+		if (itemIndex < static_cast<int>(cont.stringValues.size())) {
 			return cont.stringValues[itemIndex];
 		}
 	} else {
-		if (itemIndex < cont.numberValues.size()) {
+		if (itemIndex < static_cast<int>(cont.numberValues.size())) {
 			return std::to_string(cont.numberValues[itemIndex]);
 		}
 	}
@@ -1144,11 +1142,11 @@ void VariableDialogModel::setMapItemValue(int containerIndex, int itemIndex, con
 	}
 
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex)) {
 			modify(cont.stringValues[itemIndex], value.substr(0, TOKEN_LENGTH - 1));
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex)) {
 			modify(cont.numberValues[itemIndex], atoi(trimIntegerString(value).c_str()));
 		}
 	}
