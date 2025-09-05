@@ -1143,15 +1143,24 @@ float neb2_get_fog_visibility(const vec3d *pos, float distance_mult)
 }
 
 bool nebula_handle_alpha(float& alpha, const vec3d* pos, float distance_mult) {
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb]) {
-		alpha *= neb2_get_fog_visibility(pos, distance_mult);
-		return true;
+
+	bool bHasNebula = false;
+	float fAlphaMult = 1.0f;
+
+	if (The_mission.flags[Mission::Mission_Flags::Fullneb])
+	{
+		fAlphaMult *= neb2_get_fog_visibility(pos, distance_mult);
+		bHasNebula = true;
 	}
-	else if (The_mission.volumetrics) {
-		alpha *= The_mission.volumetrics->getAlphaToPos(*pos, distance_mult);
-		return true;
+
+	if (The_mission.volumetrics)
+	{
+		fAlphaMult *= The_mission.volumetrics->getAlphaToPos(*pos, distance_mult);
+		bHasNebula = true;
 	}
-	return false;
+
+	alpha *= fAlphaMult;
+	return bHasNebula;
 }
 
 // fogging stuff --------------------------------------------------------------------
