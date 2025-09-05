@@ -529,7 +529,10 @@ void gr_opengl_deferred_lighting_finish()
 	// Now reset back to drawing into the color buffer
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
 
-	if (The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb2_render_mode != NEB2_RENDER_NONE && !override_fog) {
+	bool bDrawFullNeb = The_mission.flags[Mission::Mission_Flags::Fullneb] && Neb2_render_mode != NEB2_RENDER_NONE && !override_fog;
+	bool bDrawNebVolumetrics = The_mission.volumetrics && The_mission.volumetrics->get_enabled() && !override_fog;
+
+	if (bDrawFullNeb) {
 		GL_state.SetAlphaBlendMode(ALPHA_BLEND_NONE);
 		gr_zbuffer_set(GR_ZBUFF_NONE);
 		opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_SCENE_FOG, 0));
@@ -557,7 +560,26 @@ void gr_opengl_deferred_lighting_finish()
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
 	}
-	if (The_mission.volumetrics && The_mission.volumetrics->get_enabled() && !override_fog) {
+
+		if (bDrawNebVolumetrics) {
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+			glDrawBuffer(GL_COLOR_ATTACHMENT5);
+			glBlitFramebuffer(0,
+				0,
+				gr_screen.max_w,
+				gr_screen.max_h,
+				0,
+				0,
+				gr_screen.max_w,
+				gr_screen.max_h,
+				GL_COLOR_BUFFER_BIT,
+				GL_NEAREST);
+			glDrawBuffer(GL_COLOR_ATTACHMENT0);
+			glReadBuffer(GL_COLOR_ATTACHMENT0);
+		}
+		
+	} 
+	if (bDrawNebVolumetrics) {
 		GR_DEBUG_SCOPE("Volumetric Nebulae");
 		TRACE_SCOPE(tracing::Volumetrics);
 
@@ -637,7 +659,8 @@ void gr_opengl_deferred_lighting_finish()
 		gr_end_view_matrix();
 		gr_end_proj_matrix();
 	}
-	else {
+
+	if(!bDrawFullNeb && !bDrawNebVolumetrics) {
 		// Transfer the resolved lighting back to the color texture
 		// TODO: Maybe this could be improved so that it doesn't require the copy back operation?
 		glReadBuffer(GL_COLOR_ATTACHMENT5);
