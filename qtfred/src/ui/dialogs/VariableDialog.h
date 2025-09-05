@@ -76,6 +76,7 @@ class VariableDialog : public QDialog {
 
 	// Container Item Buttons
 	void on_addContainerItemButton_clicked();
+	void on_copyContainerItemButton_clicked();
 	void on_deleteContainerItemButton_clicked();
 	void on_shiftItemUpButton_clicked();
 	void on_shiftItemDownButton_clicked();
@@ -104,6 +105,8 @@ class VariableDialog : public QDialog {
 	void updateItemControls();
 
 	void enableDisableControls();
+
+	static QString formatContainerTypeString(const ContainerInfo& cont);
 };
 
 } // namespace fso::fred::dialogs

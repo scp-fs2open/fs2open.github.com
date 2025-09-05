@@ -69,38 +69,38 @@ void VariableDialog::initializeUi()
 	util::SignalBlockers blockers(this);
 
 	// Configure Variables Table
-	ui->variablesTable->setColumnCount(2);
-	ui->variablesTable->setHorizontalHeaderItem(VarName, new QTableWidgetItem("Name"));
-	ui->variablesTable->setHorizontalHeaderItem(VarValue, new QTableWidgetItem("Value"));
-	ui->variablesTable->setColumnWidth(VarName, 250);
-	ui->variablesTable->setColumnWidth(VarValue, 250);
-
-	// Create and apply the delegate for the 'Value' column
-	auto* variable_value_delegate = new LineEditDelegate(this);
-	ui->variablesTable->setItemDelegateForColumn(VarValue, variable_value_delegate);
-	ui->variablesTable->setItemDelegateForColumn(VarName, variable_value_delegate);
-
 	auto* var_header = ui->variablesTable->horizontalHeader();
 	var_header->setSectionsClickable(false);
 	var_header->setHighlightSections(false);
 	var_header->setSectionsMovable(false);
-	var_header->setSectionResizeMode(QHeaderView::Stretch);
+	var_header->setSectionResizeMode(0, QHeaderView::Stretch);
+	var_header->setSectionResizeMode(1, QHeaderView::Stretch);
+
+	// Create one delegate to be reused for all variable editing
+	auto* variable_value_delegate = new LineEditDelegate(this);
+	ui->variablesTable->setItemDelegateForColumn(VarValue, variable_value_delegate);
+	ui->variablesTable->setItemDelegateForColumn(VarName, variable_value_delegate);
 
 	// Configure Containers Table
-	ui->containersTable->setColumnCount(3);
-	ui->containersTable->setHorizontalHeaderItem(ContName, new QTableWidgetItem("Name"));
-	ui->containersTable->setHorizontalHeaderItem(ContType, new QTableWidgetItem("Types"));
-	ui->containersTable->setHorizontalHeaderItem(ContNotes, new QTableWidgetItem("Notes"));
-	ui->containersTable->setColumnWidth(ContName, 190);
-	ui->containersTable->setColumnWidth(ContType, 220);
-	ui->containersTable->setColumnWidth(ContNotes, 120);
+	auto* cont_header = ui->containersTable->horizontalHeader();
+	cont_header->setSectionsClickable(false);
+	cont_header->setHighlightSections(false);
+	cont_header->setSectionsMovable(false);
+	cont_header->setSectionResizeMode(0, QHeaderView::Stretch);
+	cont_header->setSectionResizeMode(1, QHeaderView::Stretch);
+
+	// Create one delegate to be reused for all container editing
+	auto* container_delegate = new LineEditDelegate(this);
+	ui->containersTable->setItemDelegateForColumn(ContName, container_delegate);
+	ui->containerContentsTable->setItemDelegate(container_delegate);
 
 	// Configure Items Table
-	ui->containerContentsTable->setColumnCount(2);
-	ui->containerContentsTable->setHorizontalHeaderItem(ItemKey, new QTableWidgetItem("Key"));
-	ui->containerContentsTable->setHorizontalHeaderItem(ItemValue, new QTableWidgetItem("Value"));
-	ui->containerContentsTable->setColumnWidth(ItemKey, 245);
-	ui->containerContentsTable->setColumnWidth(ItemValue, 245);
+	auto* cont_items_header = ui->containersTable->horizontalHeader();
+	cont_items_header->setSectionsClickable(false);
+	cont_items_header->setHighlightSections(false);
+	cont_items_header->setSectionsMovable(false);
+	cont_items_header->setSectionResizeMode(0, QHeaderView::Stretch);
+	cont_items_header->setSectionResizeMode(1, QHeaderView::Stretch);
 
 	// The old UI had a format combobox, which our model doesn't support.
 	// We'll hide it for now. //TODO reimplement this in the UI layer
@@ -184,20 +184,33 @@ void VariableDialog::updateVariableControls()
 void VariableDialog::updateContainerList()
 {
 	util::SignalBlockers blockers(this);
-	
+
 	const auto& containers = _model->getContainers();
 	ui->containersTable->clearContents();
-	ui->containersTable->setRowCount(containers.size());
 
+	// Start with an empty table and build it dynamically
+	ui->containersTable->setRowCount(0);
+
+	int table_row = 0;
 	for (int i = 0; i < containers.size(); ++i) {
 		const auto& cont = containers[i];
-		if (cont.deleted)
-			continue;
 
+		ui->containersTable->insertRow(table_row);
+
+		// Name Item
 		auto* nameItem = new QTableWidgetItem(cont.name.c_str());
 		nameItem->setData(Qt::UserRole, i);
-		ui->containersTable->setItem(i, ContName, nameItem);
-		// TODO Type and Notes columns
+		nameItem->setData(MaxLength, TOKEN_LENGTH - 1);
+		ui->containersTable->setItem(table_row, ContName, nameItem);
+
+		// Type Item (using our new helper)
+		auto* typeItem = new QTableWidgetItem(formatContainerTypeString(cont));
+		typeItem->setData(Qt::UserRole, i);
+		// Make the type column read-only
+		typeItem->setFlags(typeItem->flags() & ~Qt::ItemIsEditable);
+		ui->containersTable->setItem(table_row, ContType, typeItem);
+
+		table_row++;
 	}
 
 	if (m_currentContainerIndex >= 0 && m_currentContainerIndex < containers.size()) {
@@ -232,6 +245,8 @@ void VariableDialog::updateContainerControls()
 
 	ui->networkContainerCheckbox->setChecked(is_selected && _model->getContainerNetwork(m_currentContainerIndex));
 	ui->setContainerAsEternalCheckbox->setChecked(is_selected && _model->getContainerEternal(m_currentContainerIndex));
+
+	enableDisableControls();
 }
 
 void VariableDialog::updateItemList()
@@ -253,22 +268,47 @@ void VariableDialog::updateItemList()
 	ui->containerContentsTable->horizontalHeaderItem(ItemValue)->setText(is_list ? "" : "Value");
 	ui->containerContentsTable->setColumnHidden(ItemValue, is_list);
 
-	const int row_count =
-		is_list ? (container.values_are_strings ? container.stringValues.size() : container.numberValues.size())
-				: container.keys.size();
+	int row_count;
+	if (is_list) {
+		if (container.values_are_strings) {
+			row_count = static_cast<int>(container.stringValues.size());
+		} else {
+			row_count = static_cast<int>(container.numberValues.size());
+		}
+	} else {
+		row_count = static_cast<int>(container.keys.size());
+	}
 	ui->containerContentsTable->setRowCount(row_count);
 
 	for (int i = 0; i < row_count; ++i) {
+		const bool keys_are_strings = _model->getContainerKeyType(m_currentContainerIndex);
+		const bool values_are_strings = _model->getContainerValueType(m_currentContainerIndex);
+
 		if (is_list) {
 			auto* item = new QTableWidgetItem(_model->getListItemValue(m_currentContainerIndex, i).c_str());
 			item->setData(Qt::UserRole, i);
+			item->setData(IsStringRole, values_are_strings);
+			if (values_are_strings) {
+				item->setData(MaxLength, TOKEN_LENGTH - 1);
+			}
 			ui->containerContentsTable->setItem(i, ItemKey, item);
 		} else { // Is Map
+			// Key Item
 			auto* keyItem = new QTableWidgetItem(_model->getMapItemKey(m_currentContainerIndex, i).c_str());
 			keyItem->setData(Qt::UserRole, i);
+			keyItem->setData(IsStringRole, keys_are_strings);
+			if (keys_are_strings) {
+				keyItem->setData(MaxLength, TOKEN_LENGTH - 1);
+			}
+			ui->containerContentsTable->setItem(i, ItemKey, keyItem);
+
+			// Value Item
 			auto* valItem = new QTableWidgetItem(_model->getMapItemValue(m_currentContainerIndex, i).c_str());
 			valItem->setData(Qt::UserRole, i);
-			ui->containerContentsTable->setItem(i, ItemKey, keyItem);
+			valItem->setData(IsStringRole, values_are_strings);
+			if (values_are_strings) {
+				valItem->setData(MaxLength, TOKEN_LENGTH - 1);
+			}
 			ui->containerContentsTable->setItem(i, ItemValue, valItem);
 		}
 	}
@@ -281,13 +321,16 @@ void VariableDialog::updateItemList()
 	} else {
 		m_currentItemIndex = -1;
 	}
+
 	updateItemControls();
 }
 
+// Technically not needed but keeps the pattern consistent
 void VariableDialog::updateItemControls()
 {
-	// This function is for future use if we add item-specific editors.
 	util::SignalBlockers blockers(this);
+
+	enableDisableControls();
 }
 
 void VariableDialog::enableDisableControls()
@@ -315,7 +358,59 @@ void VariableDialog::enableDisableControls()
 		ui->setVariableAsEternalcheckbox->setEnabled(false);
 	}
 
-	// TODO: Implement logic for Containers section...
+	// Containers
+	const bool is_container_selected = (m_currentContainerIndex != -1);
+
+	// Main container actions
+	ui->copyContainerButton->setEnabled(is_container_selected);
+	ui->deleteContainerButton->setEnabled(is_container_selected);
+	ui->containerStructurePersistenceGroupBox->setEnabled(is_container_selected);
+
+	// The group boxes for contents and types are only enabled if a container is selected.
+	ui->containerContentsGroupBox->setEnabled(is_container_selected);
+	ui->containerTypesGroupBox->setEnabled(is_container_selected);
+
+	if (is_container_selected) {
+		// Get properties of the selected container for more detailed logic
+		const bool is_list = _model->getContainerType(m_currentContainerIndex);
+		const bool is_empty = _model->isContainerEmpty(m_currentContainerIndex);
+		const bool is_item_selected = (m_currentItemIndex != -1);
+		const int item_count = ui->containerContentsTable->rowCount();
+
+		// Persistence controls
+		const bool is_persistent = _model->getContainerPersistenceType(m_currentContainerIndex) != 0;
+		ui->setContainerAsEternalCheckbox->setEnabled(is_persistent);
+
+		// Item action buttons
+		ui->copyContainerItemButton->setEnabled(is_list && is_item_selected);
+		ui->deleteContainerItemButton->setEnabled(is_item_selected);
+
+		// List only buttons
+		ui->shiftItemUpButton->setEnabled(is_list && is_item_selected && m_currentItemIndex > 0);
+		ui->shiftItemDownButton->setEnabled(is_list && is_item_selected && m_currentItemIndex < item_count - 1);
+
+		// Map only button
+		ui->swapKeysAndValuesButton->setEnabled(!is_list && !is_empty);
+
+		// Type switching is only allowed for empty containers to prevent data loss
+		ui->containerBaseTypeGroupBox->setEnabled(is_empty);
+		ui->containerKeyTypeGroupBox->setEnabled(!is_list && is_empty); // Keys are only for maps
+		ui->containerDataTypeGroupBox->setEnabled(is_empty);
+	}
+}
+
+QString VariableDialog::formatContainerTypeString(const fso::fred::dialogs::ContainerInfo& cont)
+{
+	QString type_str = cont.is_list ? "List" : "Map";
+	QString value_type_str = cont.values_are_strings ? "String" : "Number";
+
+	if (cont.is_list) {
+		type_str += QString(" (%1)").arg(value_type_str);
+	} else {
+		QString key_type_str = cont.keys_are_strings ? "String" : "Number";
+		type_str += QString(" (%1 Keys, %2 Values)").arg(key_type_str, value_type_str);
+	}
+	return type_str;
 }
 
 void VariableDialog::on_okAndCancelButtons_accepted()
@@ -471,8 +566,19 @@ void VariableDialog::on_containerContentsTable_cellChanged(int row, int column)
 	} else { // Is a map
 		if (column == ItemKey) {
 			_model->setMapItemKey(m_currentContainerIndex, item_idx, new_text);
-			// A key change can cause a re-sort, so we must refresh the item list
+
+			// After changing a key, we must refresh the entire item list because the sort order may have changed.
 			updateItemList();
+
+			// Now, find the new row index for the key we just edited.
+			for (int i = 0; i < ui->containerContentsTable->rowCount(); ++i) {
+				SCP_string key = ui->containerContentsTable->item(i, ItemKey)->text().toUtf8().constData();
+				if (key == new_text) {
+					// We found it, so select its new row and stop searching.
+					ui->containerContentsTable->selectRow(i);
+					break;
+				}
+			}
 		} else if (column == ItemValue) {
 			_model->setMapItemValue(m_currentContainerIndex, item_idx, new_text);
 		}
@@ -584,6 +690,12 @@ void VariableDialog::on_addContainerButton_clicked()
 {
 	_model->addNewContainer();
 	updateUi();
+
+	// After updating, select the new item, which is now the last row.
+	const int last_row = ui->containersTable->rowCount() - 1;
+	if (last_row >= 0) {
+		ui->containersTable->selectRow(last_row);
+	}
 }
 
 void VariableDialog::on_copyContainerButton_clicked()
@@ -596,6 +708,12 @@ void VariableDialog::on_copyContainerButton_clicked()
 	_model->copyContainer(m_currentContainerIndex);
 
 	updateUi();
+
+	// After updating, select the new item, which is now the last row.
+	const int last_row = ui->containersTable->rowCount() - 1;
+	if (last_row >= 0) {
+		ui->containersTable->selectRow(last_row);
+	}
 }
 
 void VariableDialog::on_deleteContainerButton_clicked()
@@ -604,16 +722,25 @@ void VariableDialog::on_deleteContainerButton_clicked()
 		return;
 	}
 
+	const int row_to_delete = ui->containersTable->currentRow();
+
 	// Deleting is a destructive action, so we must ask the user for confirmation first.
 	QMessageBox::StandardButton reply;
 	reply = QMessageBox::question(this,
 		"Confirm Deletion",
-		"Are you sure you want to delete this container?",
+		"Are you sure you want to delete this container? This cannot be undone!",
 		QMessageBox::Yes | QMessageBox::No);
 
 	if (reply == QMessageBox::Yes) {
-		_model->markContainerForDeletion(m_currentContainerIndex, true);
+		_model->markContainerForDeletion(m_currentContainerIndex);
 		updateUi();
+
+		// After the UI is updated, intelligently select the next logical row.
+		const int new_row_count = ui->containersTable->rowCount();
+		if (new_row_count > 0) {
+			// Select the item that took the deleted item's place, or the new last item.
+			ui->containersTable->selectRow(std::min(row_to_delete, new_row_count - 1));
+		}
 	}
 }
 
@@ -700,7 +827,7 @@ void VariableDialog::on_setContainerAsNumberRadio_toggled(bool checked)
 {
 	if (checked && m_currentContainerIndex != -1) {
 		// If the type is already number, do nothing
-		if (!_model->getContainerValueType(m_currentContainerIndex) == false) {
+		if (!_model->getContainerValueType(m_currentContainerIndex)) {
 			return;
 		}
 
@@ -779,6 +906,22 @@ void VariableDialog::on_addContainerItemButton_clicked()
 
 	// Refresh the item list to show the new entry
 	updateItemList();
+}
+
+void VariableDialog::on_copyContainerItemButton_clicked()
+{
+	if (m_currentContainerIndex == -1 || m_currentItemIndex == -1) {
+		return;
+	}
+
+	// The model duplicates the item and returns the index of the new copy.
+	int new_item_index = _model->copyListItem(m_currentContainerIndex, m_currentItemIndex);
+	if (new_item_index != -1) {
+		// Set our selection tracker to this new index.
+		m_currentItemIndex = new_item_index;
+		// Refresh the item list, which will select the new row.
+		updateItemList();
+	}
 }
 
 void VariableDialog::on_deleteContainerItemButton_clicked()
