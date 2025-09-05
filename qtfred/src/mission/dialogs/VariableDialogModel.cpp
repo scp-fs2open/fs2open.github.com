@@ -946,11 +946,11 @@ void VariableDialogModel::setListItemValue(int containerIndex, int itemIndex, co
 	}
 
 	if (cont.values_are_strings) {
-		if (itemIndex >= 0 && itemIndex < cont.stringValues.size()) {
+		if (SCP_vector_inbounds(cont.stringValues, itemIndex)) {
 			modify(cont.stringValues[itemIndex], value.substr(0, TOKEN_LENGTH - 1));
 		}
 	} else {
-		if (itemIndex >= 0 && itemIndex < cont.numberValues.size()) {
+		if (SCP_vector_inbounds(cont.numberValues, itemIndex)) {
 			modify(cont.numberValues[itemIndex], atoi(trimIntegerString(value).c_str()));
 		}
 	}
