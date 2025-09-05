@@ -27,7 +27,7 @@ enum ItemCol {
 };
 
 VariableDialog::VariableDialog(FredView* parent, EditorViewport* viewport)
-	: QDialog(parent), ui(new Ui::VariableEditorDialog()), _viewport(viewport),
+	: QDialog(parent), _viewport(viewport), ui(new Ui::VariableEditorDialog()),
 	  _model(new VariableDialogModel(this, viewport))
 {
 	this->setFocus();
