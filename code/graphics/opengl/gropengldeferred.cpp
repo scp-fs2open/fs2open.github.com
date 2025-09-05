@@ -559,7 +559,6 @@ void gr_opengl_deferred_lighting_finish()
 		});
 
 		opengl_draw_full_screen_textured(0.0f, 0.0f, 1.0f, 1.0f);
-	}
 
 		if (bDrawNebVolumetrics) {
 			glReadBuffer(GL_COLOR_ATTACHMENT0);
