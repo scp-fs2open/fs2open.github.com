@@ -457,9 +457,9 @@ int mouse_up_count(int n) {
 	return tmp;
 }
 
-// returns 1 if mouse button btn is down, 0 otherwise
+// returns 1 << mouse button used, 0 otherwise
 
-int mouse_down(const CC_bind &bind)
+int mouse_get_btn_down(const CC_bind& bind)
 {
 	// Bail if the incoming bind is not the right CID according to mouse-fly mode
 	auto CID = bind.get_cid();
@@ -481,9 +481,19 @@ int mouse_down(const CC_bind &bind)
 		return 0;
 	}
 
-	btn = 1 << btn;
+	return 1 << btn;
+}
 
-	return mouse_down(btn);
+// returns 1 if mouse button btn is down, 0 otherwise
+
+int mouse_down(const CC_bind &bind)
+{
+	int btn = mouse_get_btn_down(bind);
+	if (btn) {
+		return mouse_down(btn);
+	} else {
+		return 0;
+	}
 }
 
 int mouse_down(int btn) {

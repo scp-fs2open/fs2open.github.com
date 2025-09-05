@@ -2889,8 +2889,8 @@ int check_control_used(int id, int key)
 	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
 	if (item.type == CC_TYPE_TRIGGER) {
 
-		int first_btn = 1 << item.first.get_btn();
-		int second_btn = 1 << item.second.get_btn();
+		int first_btn = mouse_get_btn_down(item.first);
+		int second_btn = mouse_get_btn_down(item.second);
 
 		if ( (first_btn >= LOWEST_MOUSE_WHEEL && first_btn <= HIGHEST_MOUSE_WHEEL) ||
 			 (second_btn >= LOWEST_MOUSE_WHEEL && second_btn <= HIGHEST_MOUSE_WHEEL) ) {
