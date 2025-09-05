@@ -18,7 +18,6 @@ struct VariableInfo {
 struct ContainerInfo {
 	SCP_string name = "<unnamed>";
 	SCP_string originalName;
-	bool deleted = false;
 	bool is_list = true;
 	bool values_are_strings = true;
 	bool keys_are_strings = true;
@@ -63,7 +62,8 @@ class VariableDialogModel : public AbstractDialogModel {
 	// Containers
 	void addNewContainer();
 	void copyContainer(int index);
-	void markContainerForDeletion(int index, bool deleted);
+	void markContainerForDeletion(int index);
+	bool isContainerNameUnique(const SCP_string& name, int containerIndex) const;
 	bool isContainerEmpty(int index) const;
 	SCP_string getContainerName(int index) const;
 	void setContainerName(int index, const SCP_string& newName);
@@ -86,6 +86,7 @@ class VariableDialogModel : public AbstractDialogModel {
 	SCP_string getListItemValue(int containerIndex, int itemIndex) const;
 	void setListItemValue(int containerIndex, int itemIndex, const SCP_string& value);
 	void moveListItem(int containerIndex, int itemIndex, bool up);
+	int copyListItem(int containerIndex, int itemIndex);
 
 	// Container Maps
 	void addMapItem(int containerIndex);
@@ -105,10 +106,11 @@ class VariableDialogModel : public AbstractDialogModel {
 	void initializeData();
 
 	static sexp_container createSexpContainerFromInfo(const ContainerInfo& info);
-	void sortMap(int containerIndex);
 
 	// Helper for converting user string input to a valid integer string
 	static SCP_string trimIntegerString(const SCP_string& source);
+
+	void sortMap(int containerIndex);
 
 	bool checkValidity();
 };
