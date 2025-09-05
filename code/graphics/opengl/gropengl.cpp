@@ -1369,18 +1369,17 @@ bool gr_opengl_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps)
 	mprintf(( "  GLSL Version	  : %s\n", glGetString(GL_SHADING_LANGUAGE_VERSION)));
 	mprintf(( "\n" ));
 	mprintf(("Extensions: \n"));
-	mprintf(("  Geo shader support : %s\n", GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Geo shader support : %s\n", GLAD_GL_ARB_gpu_shader5 ? NOX("YES") : NOX("NO")));
 	mprintf(("  S3TC texture support : %s\n", GLAD_GL_EXT_texture_compression_s3tc ? NOX("YES") : NOX("NO")));
 	mprintf(("  BPTC texture support : %s\n", GLAD_GL_ARB_texture_compression_bptc ? NOX("YES") : NOX("NO")));
 	#ifdef USE_OPENGL_ES
 	mprintf(("  ASTC texture support : %s\n", GLAD_GL_KHR_texture_compression_astc_ldr ? NOX("YES") : NOX("NO")));
-	mprintf(("  Cull distance support : %s\n", GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
-	mprintf(("  Precompiled shaders support : %s\n", GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
-	mprintf(("  Immutable buffer storage support : %s\n", GL_EXT_buffer_storage? NOX("YES") : NOX("NO")));
-	mprintf(("  BGRA8888 format support: %s\n", GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
-	mprintf(("  Anisotropic filter support: %s\n", GL_EXT_texture_filter_anisotropic ? NOX("YES") : NOX("NO")));
-	mprintf(("  Render to texture support: %s\n", GL_EXT_multisampled_render_to_texture ? NOX("YES") : NOX("NO")));
-	mprintf(("  Render to texture2 support: %s\n", GL_EXT_multisampled_render_to_texture2 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Cull distance support : %s\n", GLAD_GL_EXT_clip_cull_distance ? NOX("YES") : NOX("NO")));
+	mprintf(("  Precompiled shaders support : %s\n", GLAD_GL_OES_get_program_binary ? NOX("YES") : NOX("NO")));
+	mprintf(("  Immutable buffer storage support : %s\n", GLAD_GL_EXT_buffer_storage ? NOX("YES") : NOX("NO")));
+	mprintf(("  BGRA8888 format support: %s\n", GLAD_GL_EXT_texture_format_BGRA8888 ? NOX("YES") : NOX("NO")));
+	mprintf(("  Anisotropic filter support: %s\n", GLAD_GL_EXT_texture_filter_anisotropic ? NOX("YES") : NOX("NO")));
+	mprintf(("  Multisampled render to texture support: %s\n", GLAD_GL_EXT_multisampled_render_to_texture ? NOX("YES") : NOX("NO")));
 	#endif
 	mprintf(("\n"));
 

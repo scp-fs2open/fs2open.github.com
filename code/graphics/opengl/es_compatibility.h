@@ -94,13 +94,15 @@ static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* src, uint8_t
 }
 
 // BGR -> RGB
-static inline void convert_BGR_to_RGB(uint8_t* p, size_t npx)
+static inline void convert_BGR_to_RGB(const uint8_t* src, uint8_t* dst, size_t npx)
 {
-	for (size_t i = 0; i < npx; ++i) {
-		uint8_t* px = p + 3 * i;
-		uint8_t tmp = px[0]; // <- B
-		px[0] = px[2];		 // R -> B
-		px[2] = tmp;		 // B -> R
+	for (size_t i = 0, s = 0, t = 0; i < npx; ++i, s += 3, t += 3) {
+		uint8_t b = src[s + 0];
+		uint8_t g = src[s + 1];
+		uint8_t r = src[s + 2];
+		dst[t + 0] = r;
+		dst[t + 1] = g;
+		dst[t + 2] = b;
 	}
 }
 
@@ -135,44 +137,45 @@ static inline void convert_BGR_to_RGBA(const uint8_t* src, uint8_t* dst, size_t 
 
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
+	const size_t npx = size_t(w) * size_t(h) * size_t(d);
+
 	if (format == GL_BGRA && type == GL_UNSIGNED_SHORT_1_5_5_5_REV) {
 		GLint internalFormat = query_internalformat_3d(target,level);
-		const size_t npx = size_t(w) * size_t(h);
-		if (internalFormat != GL_RGBA8)
+		if (internalFormat == GL_RGBA8)
 		{
 			format = GL_RGBA;
-			type = GL_UNSIGNED_SHORT_5_5_5_1;
-			if (data != nullptr) {
-				std::vector<uint8_t> scratch(npx * 2);
-				convert_BGRA1555_REV_to_RGBA5551(reinterpret_cast<const uint16_t*>(data),reinterpret_cast<uint16_t*>(scratch.data()),npx);
-				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
-				return;
-			}
-		} else {
-			format = GL_RGBA;
 			type = GL_UNSIGNED_BYTE;
-			if (data != nullptr) {
-				std::vector<uint8_t> scratch(npx * 4);
+			if (data != nullptr) 
+			{
+				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
 				convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			} 
-			
+		} else {
+			format = GL_RGBA;
+			type = GL_UNSIGNED_SHORT_5_5_5_1;
+			if (data != nullptr) {
+				std::vector<uint8_t> scratch(npx * 2); // RGBA5551 = 2 BPP
+				convert_BGRA1555_REV_to_RGBA5551(reinterpret_cast<const uint16_t*>(data),
+					reinterpret_cast<uint16_t*>(scratch.data()),
+					npx);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			}
 		}
 	}
 
 	if (format == GL_BGR && type == GL_UNSIGNED_BYTE) {
 		GLint internalFormat = query_internalformat_3d(target, level);
-		if (internalFormat != GL_RGBA8)
+		if (internalFormat == GL_RGBA8)
 		{
-			format = GL_RGB;
-			if (data != nullptr)
-			{
-				std::vector<uint8_t> scratch(w * h * 3);
-				memcpy(scratch.data(), data, scratch.size());
-				convert_BGR_to_RGB(scratch.data(), (size_t)w * (size_t)h);
+			format = GL_RGBA;
+			if (data != nullptr) {
+				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
+				convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -180,12 +183,10 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 		}
 		else
 		{
-			format = GL_RGBA;
-			if (data != nullptr) 
-			{
-				const size_t npx = size_t(w) * size_t(h) * size_t(d);
-				std::vector<uint8_t> scratch(npx * 4);
-				convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
+			format = GL_RGB;
+			if (data != nullptr) {
+				std::vector<uint8_t> scratch(npx * 3); // RGB888 = 3 BPP
+				convert_BGR_to_RGB(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
@@ -195,13 +196,13 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 
 	if (format == GL_BGRA && type == GL_UNSIGNED_INT_8_8_8_8_REV) { 
 		type = GL_UNSIGNED_BYTE;
-		if (data != nullptr /* && !GLAD_GL_EXT_texture_format_BGRA8888 //this check dosent work*/) {
-			// do conversion
-			const size_t npx = size_t(w) * size_t(h);
+		if (data != nullptr /* && !GLAD_GL_EXT_texture_format_BGRA8888*/) {
+			// Conversion forced on because the check either does not work or buggy impl on Mali
 			std::vector<uint8_t> scratch(npx * 4);
 			convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
+			return;
 		}
 	}
 
