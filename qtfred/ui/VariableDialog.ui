@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>1012</width>
-    <height>862</height>
+    <height>853</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -30,610 +30,695 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_2">
    <item>
-    <widget class="QGroupBox" name="variablesGroupBox">
-     <property name="title">
-      <string>Variables</string>
+    <widget class="QTabWidget" name="tabWidget">
+     <property name="currentIndex">
+      <number>0</number>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_3">
-      <item>
-       <layout class="QVBoxLayout" name="variablesListLayout">
-        <item>
-         <layout class="QHBoxLayout" name="variablesFilterLayout">
+     <widget class="QWidget" name="tab">
+      <attribute name="title">
+       <string>Variables</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout">
+       <item>
+        <widget class="QGroupBox" name="variablesGroupBox">
+         <property name="title">
+          <string>Variables</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_3">
           <item>
-           <widget class="QLabel" name="variablesFilterLabel">
-            <property name="text">
-             <string>Filter</string>
-            </property>
-           </widget>
+           <layout class="QVBoxLayout" name="variablesListLayout">
+            <item>
+             <layout class="QHBoxLayout" name="variablesFilterLayout">
+              <item>
+               <widget class="QLabel" name="variablesFilterLabel">
+                <property name="text">
+                 <string>Filter</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="variablesFilterLineEdit"/>
+              </item>
+              <item>
+               <spacer name="variablesFilterSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
+                </property>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QTableWidget" name="variablesTable">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>200</height>
+               </size>
+              </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOn</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+              </property>
+              <property name="alternatingRowColors">
+               <bool>false</bool>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="gridStyle">
+               <enum>Qt::DotLine</enum>
+              </property>
+              <property name="cornerButtonEnabled">
+               <bool>false</bool>
+              </property>
+              <attribute name="horizontalHeaderHighlightSections">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderVisible">
+               <bool>false</bool>
+              </attribute>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Value</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
-           <widget class="QLineEdit" name="variablesFilterLineEdit"/>
+           <layout class="QVBoxLayout" name="variablesButtonsVerticalLayout">
+            <item>
+             <widget class="QPushButton" name="addVariableButton">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="copyVariableButton">
+              <property name="text">
+               <string>Copy</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="deleteVariableButton">
+              <property name="text">
+               <string>Delete</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QGroupBox" name="variablesTypeGroupBox">
+              <property name="title">
+               <string>Type</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_7">
+               <item>
+                <widget class="QRadioButton" name="setVariableAsStringRadio">
+                 <property name="text">
+                  <string>String</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="setVariableAsNumberRadio">
+                 <property name="text">
+                  <string>Number</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="variablesButtonsSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
           <item>
-           <spacer name="variablesFilterSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
+           <layout class="QVBoxLayout" name="variablesPersistenceVerticalLayout">
+            <item>
+             <widget class="QGroupBox" name="variablesPersistenceGroupBox">
+              <property name="title">
+               <string>Persistence</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_6">
+               <item>
+                <widget class="QRadioButton" name="doNotSaveVariableRadio">
+                 <property name="text">
+                  <string>No Persistence</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="saveVariableOnMissionCompletedRadio">
+                 <property name="text">
+                  <string>Save on Mission Completed</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
+                 <property name="text">
+                  <string>Save on Mission Close</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="setVariableAsEternalcheckbox">
+                 <property name="text">
+                  <string>Eternal</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="networkVariableCheckbox">
+                 <property name="text">
+                  <string>Network Variable</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="variablesPersistenceSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </item>
          </layout>
-        </item>
-        <item>
-         <widget class="QTableWidget" name="variablesTable">
-          <property name="verticalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOn</enum>
-          </property>
-          <property name="horizontalScrollBarPolicy">
-           <enum>Qt::ScrollBarAlwaysOff</enum>
-          </property>
-          <property name="editTriggers">
-           <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-          </property>
-          <property name="alternatingRowColors">
-           <bool>false</bool>
-          </property>
-          <property name="selectionMode">
-           <enum>QAbstractItemView::SingleSelection</enum>
-          </property>
-          <property name="selectionBehavior">
-           <enum>QAbstractItemView::SelectRows</enum>
-          </property>
-          <property name="gridStyle">
-           <enum>Qt::DotLine</enum>
-          </property>
-          <property name="cornerButtonEnabled">
-           <bool>false</bool>
-          </property>
-          <attribute name="horizontalHeaderHighlightSections">
-           <bool>false</bool>
-          </attribute>
-          <attribute name="horizontalHeaderStretchLastSection">
-           <bool>true</bool>
-          </attribute>
-          <attribute name="verticalHeaderVisible">
-           <bool>false</bool>
-          </attribute>
-          <column>
-           <property name="text">
-            <string>Name</string>
-           </property>
-          </column>
-          <column>
-           <property name="text">
-            <string>Value</string>
-           </property>
-          </column>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="variablesButtonsVerticalLayout">
-        <item>
-         <widget class="QPushButton" name="addVariableButton">
-          <property name="text">
-           <string>Add</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="copyVariableButton">
-          <property name="text">
-           <string>Copy</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="deleteVariableButton">
-          <property name="text">
-           <string>Delete</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QGroupBox" name="variablesTypeGroupBox">
-          <property name="title">
-           <string>Type</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_7">
-           <item>
-            <widget class="QRadioButton" name="setVariableAsStringRadio">
-             <property name="text">
-              <string>String</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="setVariableAsNumberRadio">
-             <property name="text">
-              <string>Number</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <spacer name="variablesButtonsSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QVBoxLayout" name="variablesPersistenceVerticalLayout">
-        <item>
-         <widget class="QGroupBox" name="variablesPersistenceGroupBox">
-          <property name="title">
-           <string>Persistence</string>
-          </property>
-          <layout class="QVBoxLayout" name="verticalLayout_6">
-           <item>
-            <widget class="QRadioButton" name="doNotSaveVariableRadio">
-             <property name="text">
-              <string>No Persistence</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="saveVariableOnMissionCompletedRadio">
-             <property name="text">
-              <string>Save on Mission Completed</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QRadioButton" name="saveVariableOnMissionCloseRadio">
-             <property name="text">
-              <string>Save on Mission Close</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="setVariableAsEternalcheckbox">
-             <property name="text">
-              <string>Eternal</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QCheckBox" name="networkVariableCheckbox">
-             <property name="text">
-              <string>Network Variable</string>
-             </property>
-            </widget>
-           </item>
-          </layout>
-         </widget>
-        </item>
-        <item>
-         <spacer name="variablesPersistenceSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </widget>
-   </item>
-   <item>
-    <widget class="Line" name="line">
-     <property name="orientation">
-      <enum>Qt::Horizontal</enum>
-     </property>
-    </widget>
-   </item>
-   <item>
-    <widget class="QGroupBox" name="containersGroupBox">
-     <property name="title">
-      <string>Containers</string>
-     </property>
-     <layout class="QVBoxLayout" name="verticalLayout_8">
-      <item>
-       <widget class="QGroupBox" name="containerStructureGroupBox">
-        <property name="title">
-         <string>Structure</string>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_4">
-         <item>
-          <widget class="QTableWidget" name="containersTable">
-           <property name="verticalScrollBarPolicy">
-            <enum>Qt::ScrollBarAlwaysOn</enum>
-           </property>
-           <property name="horizontalScrollBarPolicy">
-            <enum>Qt::ScrollBarAlwaysOff</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-           </property>
-           <property name="alternatingRowColors">
-            <bool>false</bool>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="gridStyle">
-            <enum>Qt::DotLine</enum>
-           </property>
-           <property name="cornerButtonEnabled">
-            <bool>false</bool>
-           </property>
-           <attribute name="horizontalHeaderHighlightSections">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>Name</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Types</string>
-            </property>
-           </column>
-          </widget>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="containerStructureButtonsVerticalLayout">
-           <item>
-            <widget class="QPushButton" name="addContainerButton">
-             <property name="text">
-              <string>Add</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="copyContainerButton">
-             <property name="text">
-              <string>Copy</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="deleteContainerButton">
-             <property name="font">
-              <font>
-               <pointsize>8</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Delete</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="selectFormatLabel">
-             <property name="text">
-              <string>Type Format</string>
-             </property>
-             <property name="alignment">
-              <set>Qt::AlignCenter</set>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QComboBox" name="selectFormatCombobox"/>
-           </item>
-           <item>
-            <spacer name="containerStuctureButtonsSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="containerStructurePersistenceVerticalLayout">
-           <item>
-            <widget class="QGroupBox" name="containerStructurePersistenceGroupBox">
-             <property name="title">
-              <string>Persistence</string>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_11">
+        </widget>
+       </item>
+      </layout>
+     </widget>
+     <widget class="QWidget" name="tab_2">
+      <attribute name="title">
+       <string>Containers</string>
+      </attribute>
+      <layout class="QVBoxLayout" name="verticalLayout_3">
+       <item>
+        <widget class="QGroupBox" name="containerStructureGroupBox">
+         <property name="title">
+          <string>Structure</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_4">
+          <item>
+           <layout class="QVBoxLayout" name="containerListLayout">
+            <item>
+             <layout class="QHBoxLayout" name="containerFilterLayout">
               <item>
-               <widget class="QRadioButton" name="doNotSaveContainerRadio">
+               <widget class="QLabel" name="containerFilterLabel">
                 <property name="text">
-                 <string>No Persistence</string>
+                 <string>Filter</string>
                 </property>
                </widget>
               </item>
               <item>
-               <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
-                <property name="text">
-                 <string>Save on Mission Completed</string>
-                </property>
-               </widget>
+               <widget class="QLineEdit" name="containerFilterLineEdit"/>
               </item>
               <item>
-               <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
-                <property name="text">
-                 <string>Save on Mission Close</string>
+               <spacer name="containerFilterSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
                 </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="setContainerAsEternalCheckbox">
-                <property name="text">
-                 <string>Eternal</string>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
                 </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QCheckBox" name="networkContainerCheckbox">
-                <property name="text">
-                 <string>Network Variable</string>
-                </property>
-               </widget>
+               </spacer>
               </item>
              </layout>
-            </widget>
-           </item>
-           <item>
-            <spacer name="containerPersistenceSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-      <item>
-       <widget class="QGroupBox" name="containerContentsGroupBox">
-        <property name="title">
-         <string>Contents</string>
-        </property>
-        <layout class="QHBoxLayout" name="horizontalLayout_5">
-         <item>
-          <widget class="QTableWidget" name="containerContentsTable">
-           <property name="verticalScrollBarPolicy">
-            <enum>Qt::ScrollBarAlwaysOn</enum>
-           </property>
-           <property name="editTriggers">
-            <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-           </property>
-           <property name="alternatingRowColors">
-            <bool>false</bool>
-           </property>
-           <property name="selectionMode">
-            <enum>QAbstractItemView::SingleSelection</enum>
-           </property>
-           <property name="selectionBehavior">
-            <enum>QAbstractItemView::SelectRows</enum>
-           </property>
-           <property name="gridStyle">
-            <enum>Qt::DotLine</enum>
-           </property>
-           <attribute name="horizontalHeaderHighlightSections">
-            <bool>false</bool>
-           </attribute>
-           <attribute name="horizontalHeaderStretchLastSection">
-            <bool>true</bool>
-           </attribute>
-           <attribute name="verticalHeaderVisible">
-            <bool>false</bool>
-           </attribute>
-           <column>
-            <property name="text">
-             <string>Key</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Value</string>
-            </property>
-           </column>
-          </widget>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="containerContentsButtonsVerticalLayout">
-           <item>
-            <widget class="QPushButton" name="addContainerItemButton">
-             <property name="text">
-              <string>Add</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="copyContainerItemButton">
-             <property name="text">
-              <string>Copy</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="shiftItemUpButton">
-             <property name="text">
-              <string>Shift Up</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="shiftItemDownButton">
-             <property name="text">
-              <string>Shift Down</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="swapKeysAndValuesButton">
-             <property name="text">
-              <string>Swap Key/Value</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QPushButton" name="deleteContainerItemButton">
-             <property name="font">
-              <font>
-               <pointsize>8</pointsize>
-              </font>
-             </property>
-             <property name="text">
-              <string>Delete</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <spacer name="containerContentsButtonsSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QVBoxLayout" name="containerTypesVerticalLayout">
-           <item>
-            <widget class="QGroupBox" name="containerTypesGroupBox">
-             <property name="title">
-              <string>Type</string>
-             </property>
-             <layout class="QVBoxLayout" name="verticalLayout_12">
+            </item>
+            <item>
+             <widget class="QTableWidget" name="containersTable">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>200</height>
+               </size>
+              </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOn</enum>
+              </property>
+              <property name="horizontalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOff</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+              </property>
+              <property name="alternatingRowColors">
+               <bool>false</bool>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="gridStyle">
+               <enum>Qt::DotLine</enum>
+              </property>
+              <property name="cornerButtonEnabled">
+               <bool>false</bool>
+              </property>
+              <attribute name="horizontalHeaderHighlightSections">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderVisible">
+               <bool>false</bool>
+              </attribute>
+              <column>
+               <property name="text">
+                <string>Name</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Types</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="containerStructureButtonsVerticalLayout">
+            <item>
+             <widget class="QPushButton" name="addContainerButton">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="copyContainerButton">
+              <property name="text">
+               <string>Copy</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="deleteContainerButton">
+              <property name="font">
+               <font>
+                <pointsize>8</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Delete</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLabel" name="selectFormatLabel">
+              <property name="text">
+               <string>Type Format</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QComboBox" name="selectFormatCombobox"/>
+            </item>
+            <item>
+             <spacer name="containerStuctureButtonsSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="containerStructurePersistenceVerticalLayout">
+            <item>
+             <widget class="QGroupBox" name="containerStructurePersistenceGroupBox">
+              <property name="title">
+               <string>Persistence</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_11">
+               <item>
+                <widget class="QRadioButton" name="doNotSaveContainerRadio">
+                 <property name="text">
+                  <string>No Persistence</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="saveContainerOnMissionCompletedRadio">
+                 <property name="text">
+                  <string>Save on Mission Completed</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QRadioButton" name="saveContainerOnMissionCloseRadio">
+                 <property name="text">
+                  <string>Save on Mission Close</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="setContainerAsEternalCheckbox">
+                 <property name="text">
+                  <string>Eternal</string>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="networkContainerCheckbox">
+                 <property name="text">
+                  <string>Network Variable</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="containerPersistenceSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+       <item>
+        <widget class="QGroupBox" name="containerContentsGroupBox">
+         <property name="title">
+          <string>Contents</string>
+         </property>
+         <layout class="QHBoxLayout" name="horizontalLayout_5">
+          <item>
+           <layout class="QVBoxLayout" name="containerItemListLayout">
+            <item>
+             <layout class="QHBoxLayout" name="containerItemFilterLayout">
               <item>
-               <widget class="QGroupBox" name="containerBaseTypeGroupBox">
-                <property name="title">
-                 <string>Container Type</string>
+               <widget class="QLabel" name="containerItemFilterLabel">
+                <property name="text">
+                 <string>Filter</string>
                 </property>
-                <layout class="QHBoxLayout" name="horizontalLayout_7">
-                 <item>
-                  <widget class="QRadioButton" name="setContainerAsListRadio">
-                   <property name="text">
-                    <string>List</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="setContainerAsMapRadio">
-                   <property name="text">
-                    <string>Map</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
                </widget>
               </item>
               <item>
-               <widget class="QGroupBox" name="containerKeyTypeGroupBox">
-                <property name="title">
-                 <string>Key Type</string>
-                </property>
-                <layout class="QHBoxLayout" name="horizontalLayout">
-                 <item>
-                  <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
-                   <property name="text">
-                    <string>String</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
-                   <property name="text">
-                    <string>Number</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
+               <widget class="QLineEdit" name="containerItemFilterLineEdit"/>
               </item>
               <item>
-               <widget class="QGroupBox" name="containerDataTypeGroupBox">
-                <property name="title">
-                 <string>Data Type</string>
+               <spacer name="containterItemFilterSpacer">
+                <property name="orientation">
+                 <enum>Qt::Horizontal</enum>
                 </property>
-                <layout class="QHBoxLayout" name="horizontalLayout_6">
-                 <item>
-                  <widget class="QRadioButton" name="setContainerAsStringRadio">
-                   <property name="text">
-                    <string>String</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QRadioButton" name="setContainerAsNumberRadio">
-                   <property name="text">
-                    <string>Number</string>
-                   </property>
-                  </widget>
-                 </item>
-                </layout>
-               </widget>
+                <property name="sizeHint" stdset="0">
+                 <size>
+                  <width>40</width>
+                  <height>20</height>
+                 </size>
+                </property>
+               </spacer>
               </item>
              </layout>
-            </widget>
-           </item>
-           <item>
-            <spacer name="containerContentsTypeSpacer">
-             <property name="orientation">
-              <enum>Qt::Vertical</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>20</width>
-               <height>40</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-        </layout>
-       </widget>
-      </item>
-     </layout>
+            </item>
+            <item>
+             <widget class="QTableWidget" name="containerContentsTable">
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>200</height>
+               </size>
+              </property>
+              <property name="verticalScrollBarPolicy">
+               <enum>Qt::ScrollBarAlwaysOn</enum>
+              </property>
+              <property name="editTriggers">
+               <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+              </property>
+              <property name="alternatingRowColors">
+               <bool>false</bool>
+              </property>
+              <property name="selectionMode">
+               <enum>QAbstractItemView::SingleSelection</enum>
+              </property>
+              <property name="selectionBehavior">
+               <enum>QAbstractItemView::SelectRows</enum>
+              </property>
+              <property name="gridStyle">
+               <enum>Qt::DotLine</enum>
+              </property>
+              <attribute name="horizontalHeaderHighlightSections">
+               <bool>false</bool>
+              </attribute>
+              <attribute name="horizontalHeaderStretchLastSection">
+               <bool>true</bool>
+              </attribute>
+              <attribute name="verticalHeaderVisible">
+               <bool>false</bool>
+              </attribute>
+              <column>
+               <property name="text">
+                <string>Key</string>
+               </property>
+              </column>
+              <column>
+               <property name="text">
+                <string>Value</string>
+               </property>
+              </column>
+             </widget>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="containerContentsButtonsVerticalLayout">
+            <item>
+             <widget class="QPushButton" name="addContainerItemButton">
+              <property name="text">
+               <string>Add</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="copyContainerItemButton">
+              <property name="text">
+               <string>Copy</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="shiftItemUpButton">
+              <property name="text">
+               <string>Shift Up</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="shiftItemDownButton">
+              <property name="text">
+               <string>Shift Down</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="swapKeysAndValuesButton">
+              <property name="text">
+               <string>Swap Key/Value</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="deleteContainerItemButton">
+              <property name="font">
+               <font>
+                <pointsize>8</pointsize>
+               </font>
+              </property>
+              <property name="text">
+               <string>Delete</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="containerContentsButtonsSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="containerTypesVerticalLayout">
+            <item>
+             <widget class="QGroupBox" name="containerTypesGroupBox">
+              <property name="title">
+               <string>Type</string>
+              </property>
+              <layout class="QVBoxLayout" name="verticalLayout_12">
+               <item>
+                <widget class="QGroupBox" name="containerBaseTypeGroupBox">
+                 <property name="title">
+                  <string>Container Type</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_7">
+                  <item>
+                   <widget class="QRadioButton" name="setContainerAsListRadio">
+                    <property name="text">
+                     <string>List</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="setContainerAsMapRadio">
+                    <property name="text">
+                     <string>Map</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="containerKeyTypeGroupBox">
+                 <property name="title">
+                  <string>Key Type</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout">
+                  <item>
+                   <widget class="QRadioButton" name="setContainerKeyAsStringRadio">
+                    <property name="text">
+                     <string>String</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="setContainerKeyAsNumberRadio">
+                    <property name="text">
+                     <string>Number</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+               <item>
+                <widget class="QGroupBox" name="containerDataTypeGroupBox">
+                 <property name="title">
+                  <string>Data Type</string>
+                 </property>
+                 <layout class="QHBoxLayout" name="horizontalLayout_6">
+                  <item>
+                   <widget class="QRadioButton" name="setContainerAsStringRadio">
+                    <property name="text">
+                     <string>String</string>
+                    </property>
+                   </widget>
+                  </item>
+                  <item>
+                   <widget class="QRadioButton" name="setContainerAsNumberRadio">
+                    <property name="text">
+                     <string>Number</string>
+                    </property>
+                   </widget>
+                  </item>
+                 </layout>
+                </widget>
+               </item>
+              </layout>
+             </widget>
+            </item>
+            <item>
+             <spacer name="containerContentsTypeSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
     </widget>
    </item>
    <item>
@@ -648,22 +733,6 @@
    </item>
   </layout>
  </widget>
- <tabstops>
-  <tabstop>addVariableButton</tabstop>
-  <tabstop>copyVariableButton</tabstop>
-  <tabstop>deleteVariableButton</tabstop>
-  <tabstop>containersTable</tabstop>
-  <tabstop>addContainerButton</tabstop>
-  <tabstop>copyContainerButton</tabstop>
-  <tabstop>deleteContainerButton</tabstop>
-  <tabstop>containerContentsTable</tabstop>
-  <tabstop>addContainerItemButton</tabstop>
-  <tabstop>copyContainerItemButton</tabstop>
-  <tabstop>shiftItemUpButton</tabstop>
-  <tabstop>shiftItemDownButton</tabstop>
-  <tabstop>swapKeysAndValuesButton</tabstop>
-  <tabstop>deleteContainerItemButton</tabstop>
- </tabstops>
  <resources/>
  <connections/>
 </ui>
