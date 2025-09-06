@@ -43,8 +43,7 @@ namespace CampaignEditorUtil {
 	};
 } // namespace CampaignEditorUtil
 
-class CampaignEditorDialog : public QDialog
-{
+class CampaignEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	Q_OBJECT
 	static CampaignEditorUtil::WarningVec warnings;
 
@@ -58,7 +57,8 @@ public:
 
 private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
-	std::unique_ptr<CampaignEditorDialogModel> model;
+	std::unique_ptr<ICampaignEditorTreeOps> _treeOps;
+	std::unique_ptr<CampaignEditorDialogModel> _model;
 	// no graphical (tree chart) view implemented
 
 	/**
@@ -66,7 +66,6 @@ private:
 	 */
 	void setModel(CampaignEditorDialogModel *model = nullptr);
 
-	QWidget *const parent;
 	EditorViewport *const viewport;
 
 	/**

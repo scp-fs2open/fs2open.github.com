@@ -21,13 +21,86 @@ CampaignEditorUtil::WarningMsg::WarningMsg(QString &&_title, QString &&_msg, QSt
 {}
 
 CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_viewport) :
-	QDialog(_parent),
+	QDialog(_parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
 	ui(new Ui::CampaignEditorDialog),
-	model(new CampaignEditorDialogModel(this, _viewport)),
-	parent(_parent),
 	viewport(_viewport)
 {
 	ui->setupUi(this);
+
+	// Build the Qt adapter for our data model
+	// This is kinda messy but the sexp_tree widget owns both the ui and the data for the tree
+	// Simultaneously our tree model needs to be able to tell the tree when things change and also
+	// be able to read data from the tree as needed. So we pass in this small adapter object with
+	// the relevant tree operations allowing the model to do all the cross talk it needs
+	struct QtCampaignTreeOps final : ICampaignEditorTreeOps {
+		explicit QtCampaignTreeOps(sexp_tree& t) : tree(t) {}
+		sexp_tree& tree;
+
+		int loadSexp(int formula_index) override
+		{
+			// The sexp_tree's load_sub_tree is what creates the internal model for a branch
+			return tree.load_sub_tree(formula_index, true, "true");
+		}
+
+		int saveSexp(int internal_node_id) override
+		{
+			// First, find the root of the branch that contains the edited node.
+			int root_node = tree.get_root(internal_node_id);
+
+			// Now, save the entire branch starting from its root.
+			return tree.save_tree(root_node);
+		}
+
+		int createDefaultSexp() override
+		{
+			// A default branch is just a "true" condition. We load it from an invalid index.
+			return tree.load_sub_tree(-1, true, "true");
+		}
+
+		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches) override
+		{
+			tree.clear(); // Clear the visual tree
+			for (const auto& branch : branches) {
+				QString root_text;
+				if (branch.next_mission_name.empty()) {
+					root_text = "End of Campaign";
+				} else if (branch.is_loop) {
+					root_text = QString("Repeat Mission (%1)").arg(branch.next_mission_name.c_str());
+				} else {
+					root_text = QString("Branch to %1").arg(branch.next_mission_name.c_str());
+				}
+
+				// Create the visual root item for the branch
+				auto* root_item = tree.insert(root_text);
+				root_item->setData(0, sexp_tree::FormulaDataRole, branch.sexp_formula);
+
+				// Tell the tree to build the visual sub-tree from its internal model
+				tree.add_sub_tree(branch.sexp_formula, root_item);
+			}
+		}
+
+		void expandBranch(int internal_node_id) override
+		{
+			// Find the visual tree item corresponding to the internal node
+			for (int i = 0; i < tree.topLevelItemCount(); ++i) {
+				auto* item = tree.topLevelItem(i);
+				if (item && item->data(0, sexp_tree::FormulaDataRole).toInt() == internal_node_id) {
+					// Call the widget's expand_branch method
+					tree.expand_branch(item);
+					break;
+				}
+			}
+		}
+	};
+
+	_treeOps = std::make_unique<QtCampaignTreeOps>(QtCampaignTreeOps{*ui->sxtBranches});
+
+	ui->sxtBranches->initializeEditor(viewport->editor, this);
+	ui->sxtBranches->clear_tree();
+	ui->sxtBranches->post_load();
+
+	// Now construct the model with reference to tree ops
+	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps);
 
 	connect(&warnings, &CampaignEditorUtil::WarningVec::gotMsg, this, [&]() {
 		for (auto warn_it = warnings.begin();
@@ -110,9 +183,9 @@ void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
 	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
 	ui->sxtBranches->initializeEditor(nullptr, model.get());
-	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection);
-	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr);
-	connect(ui->sxtBranches, &sexp_tree::nodeChanged, model.get(), [&](int node) {
+	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection); // will call removeBranch()
+	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr); // will call setCurrentBranchSelection()
+	connect(ui->sxtBranches, &sexp_tree::nodeChanged, model.get(), [&](int node) { // will call updateCurrentBranch()
 		bool success = model->setCurBrSexp(
 					ui->sxtBranches->save_tree(
 							ui->sxtBranches->get_root(node)));
