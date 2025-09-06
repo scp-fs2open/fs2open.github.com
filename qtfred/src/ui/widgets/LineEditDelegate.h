@@ -9,7 +9,8 @@ class LineEditDelegate : public QStyledItemDelegate {
   public:
 	explicit LineEditDelegate(QObject* parent = nullptr);
 
-	QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+	QWidget*
+	createEditor(QWidget* parent, const QStyleOptionViewItem& /*option*/, const QModelIndex& index) const override;
 };
 
 } // namespace fso::fred::dialogs

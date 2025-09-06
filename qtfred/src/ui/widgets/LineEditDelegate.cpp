@@ -29,7 +29,7 @@ class ClampingIntValidator : public QIntValidator {
 LineEditDelegate::LineEditDelegate(QObject* parent) : QStyledItemDelegate(parent) {}
 
 QWidget*
-LineEditDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const
+LineEditDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& /*option*/, const QModelIndex& index) const
 {
 	auto* editor = new QLineEdit(parent);
 
