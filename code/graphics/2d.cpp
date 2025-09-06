@@ -525,7 +525,11 @@ void removeResolutionVROption()
 	options::OptionsManager::instance()->removeOption(ResolutionVROption);
 }
 
+#ifndef USE_OPENGL_ES
 bool Gr_enable_soft_particles = true;
+#else
+bool Gr_enable_soft_particles = false;
+#endif
 
 static void parse_soft_particle_func() {
 	bool value;
@@ -696,7 +700,11 @@ static void parse_post_processing_func()
 	Gr_post_processing_enabled = value;
 }
 
+#ifndef USE_OPENGL_ES
 bool Gr_post_processing_enabled = true;
+#else
+bool Gr_post_processing_enabled = false;
+#endif
 
 static auto PostProcessOption __UNUSED = options::OptionBuilder<bool>("Graphics.PostProcessing",
                      std::pair<const char*, int>{"Post processing", 1726},
