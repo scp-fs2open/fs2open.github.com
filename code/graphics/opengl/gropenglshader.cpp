@@ -346,10 +346,6 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	return sflags.str();
 }
 
-#ifdef USE_OPENGL_ES
-SCP_string glsl_es_expand_includes(const SCP_string&);
-#endif
-
 /**
  * Load a shader file from disc or from the builtin defaults in def_files.cpp if none can be found.
  * This function will also create a list of preprocessor defines for the GLSL compiler based on the shader flags
@@ -371,9 +367,6 @@ static SCP_string opengl_load_shader(const char* filename) {
 
 			cfread(&content[0], len + 1, 1, cf_shader);
 			cfclose(cf_shader);
-			#ifdef USE_OPENGL_ES
-			content = glsl_es_expand_includes(content);
-			#endif
 
 			return content;
 		}
@@ -383,40 +376,9 @@ static SCP_string opengl_load_shader(const char* filename) {
 	nprintf(("shaders","   Loading built-in default shader for: %s\n", filename));
 	auto def_shader = defaults_get_file(filename);
 	content.assign(reinterpret_cast<const char*>(def_shader.data), def_shader.size);
-	#ifdef USE_OPENGL_ES
-	content = glsl_es_expand_includes(content);
-	#endif
 
 	return content;
 }
-
-#ifdef USE_OPENGL_ES
-/*
-*	This function will expand any includes a shader may have with GLSL ES
-*	Since shaders #includes are not supported.
-*/
-SCP_string glsl_es_expand_includes(const SCP_string& src)
-{
-	SCP_stringstream input(src);
-	SCP_stringstream output;
-	SCP_string line;
-
-	while (std::getline(input, line)) {
-		if (line.find("#include") != std::string::npos) {
-			auto start = line.find('"');
-			auto end = line.find('"', start + 1);
-			if (start != std::string::npos && end != std::string::npos) {
-				std::string filename = line.substr(start + 1, end - start - 1);
-				SCP_string included = opengl_load_shader(filename.c_str());
-				output << included << "\n";
-				continue;
-			}
-		}
-		output << line << "\n";
-	}
-	return output.str();
-}
-#endif
 
 static void handle_includes_impl(SCP_vector<SCP_string>& include_stack,
 								 SCP_stringstream& output,
