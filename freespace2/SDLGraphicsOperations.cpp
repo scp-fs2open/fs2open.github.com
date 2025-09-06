@@ -283,7 +283,11 @@ std::unique_ptr<os::OpenGLContext> SDLGraphicsOperations::createOpenGLContext(os
 
 	
 	ImGui_ImplSDL2_InitForOpenGL(viewport->toSDLWindow(), ctx);
+	#ifndef USE_OPENGL_ES
 	ImGui_ImplOpenGL3_Init();
+	#else
+	ImGui_ImplOpenGL3_Init("#version 300 es");
+	#endif
 
 	return std::unique_ptr<os::OpenGLContext>(new SDLOpenGLContext(ctx));
 }
