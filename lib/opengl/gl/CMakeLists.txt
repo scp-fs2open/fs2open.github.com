@@ -55,7 +55,11 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Linux")
 			"glad_glx/src/glad_glx.c")
 	target_include_directories(glad_glx SYSTEM PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/glad_glx/include")
 	set_target_properties(glad_glx PROPERTIES FOLDER "3rdparty")
-	target_link_libraries(glad_glx PUBLIC glad)
+	if(NOT FSO_BUILD_WITH_OPENGL_ES)
+		target_link_libraries(glad_glx PUBLIC glad)
+	else()
+		target_link_libraries(glad_glx PUBLIC glad_gles)
+	endif()
 	suppress_warnings(glad_glx)
 
 	# On Linux we need GLX in addition to OpenGL, so attach GLX to OGL if we're here
