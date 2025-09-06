@@ -106,19 +106,19 @@ void VariableDialogModel::initializeData()
 	m_containers.clear();
 
 	// Load variables
-	for (int i = 0; i < MAX_SEXP_VARIABLES; ++i) {
-		if (!(Sexp_variables[i].type & SEXP_VARIABLE_NOT_USED)) {
+	for (auto& var : Sexp_variables) {
+		if (!(var.type & SEXP_VARIABLE_NOT_USED)) {
 			auto& item = m_variables.emplace_back();
-			item.name = Sexp_variables[i].variable_name;
+			item.name = var.variable_name;
 			item.originalName = item.name;
-			item.flags = Sexp_variables[i].type;
+			item.flags = var.type;
 
-			if (Sexp_variables[i].type & SEXP_VARIABLE_STRING) {
+			if (var.type & SEXP_VARIABLE_STRING) {
 				item.is_string = true;
-				item.stringValue = Sexp_variables[i].text;
+				item.stringValue = var.text;
 			} else {
 				item.is_string = false;
-				item.numberValue = atoi(Sexp_variables[i].text);
+				item.numberValue = atoi(var.text);
 			}
 		}
 	}
@@ -334,7 +334,7 @@ void VariableDialogModel::copyVariable(int index)
 	int count = 1;
 	const SCP_string base_name = new_var_data.name.substr(0, TOKEN_LENGTH - 5);
 	while (true) {
-		SCP_string candidate_name = base_name + "_" + std::to_string(count).c_str();
+		SCP_string candidate_name = base_name + "_" + std::to_string(count);
 		if (isVariableNameUnique(candidate_name, -1)) {
 			new_var_data.name = candidate_name;
 			break;
@@ -601,7 +601,7 @@ void VariableDialogModel::copyContainer(int index)
 	int count = 1;
 	const SCP_string base_name = new_cont_data.name.substr(0, TOKEN_LENGTH - 5);
 	while (true) {
-		SCP_string candidate_name = base_name + "_" + std::to_string(count).c_str();
+		SCP_string candidate_name = base_name + "_" + std::to_string(count);
 		if (isContainerNameUnique(candidate_name, -1)) {
 			new_cont_data.name = candidate_name;
 			break;
@@ -1027,7 +1027,7 @@ void VariableDialogModel::addMapItem(int containerIndex)
 
 		do {
 			key_taken = false;
-			final_key = new_key_base + std::to_string(count).c_str();
+			final_key = new_key_base + std::to_string(count);
 			for (const auto& key : container.keys) {
 				if (key == final_key) {
 					key_taken = true;
