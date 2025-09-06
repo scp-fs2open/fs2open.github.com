@@ -4976,7 +4976,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		else if ( optional_string("$Afterburner Particle Bitmap:") )
 			afterburner = true;
 		else if ( optional_string("$Thruster Effect:") ) {
-			afterburner = true;
+			afterburner = false;
 			modern_particle = true;
 		}
 		else if ( optional_string("$Afterburner Effect:") ) {
