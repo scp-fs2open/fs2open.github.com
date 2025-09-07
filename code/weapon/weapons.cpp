@@ -775,7 +775,7 @@ static particle::ParticleEffectHandle convertLegacyPspewBuffer(const pspew_legac
 			IS_VEC_NULL(&pspew_buffer.particle_spew_offset) ? std::nullopt : std::optional(pspew_buffer.particle_spew_offset), //Local offset
 			::util::UniformFloatRange(pspew_buffer.particle_spew_lifetime), //Lifetime
 			::util::UniformFloatRange(pspew_buffer.particle_spew_radius), //Radius
-			hasAnim ? bm_load_animation(pspew_buffer.particle_spew_anim.c_str()) : particle::Anim_bitmap_id_smoke)); //Bitmap
+			hasAnim ? bm_load_either(pspew_buffer.particle_spew_anim.c_str()) : particle::Anim_bitmap_id_smoke)); //Bitmap or Anim
 }
 
 /**
