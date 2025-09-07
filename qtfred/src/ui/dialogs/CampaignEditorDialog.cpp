@@ -6,70 +6,10 @@
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QStringListModel>
-#include <QStyledItemDelegate>
+#include <QAbstractItemView>
 #include <ui/FredView.h>
 
 namespace fso::fred::dialogs {
-
-class MissionListModel : public QAbstractListModel {
-  public:
-	explicit MissionListModel(const SCP_vector<std::pair<SCP_string, bool>>& missions, QObject* parent = nullptr)
-		: QAbstractListModel(parent), m_missions(missions)
-	{
-	}
-
-	int rowCount(const QModelIndex& parent = QModelIndex()) const override
-	{
-		return static_cast<int>(m_missions.size());
-	}
-
-	QVariant data(const QModelIndex& index, int role = Qt::DisplayRole) const override
-	{
-		if (!index.isValid() || index.row() >= static_cast<int>(m_missions.size())) {
-			return QVariant();
-		}
-
-		const auto& mission = m_missions[index.row()];
-
-		if (role == Qt::DisplayRole) {
-			return QString::fromStdString(mission.first);
-		}
-
-		// We'll store the status in a custom role for the delegate to read
-		if (role == Qt::UserRole) {
-			return mission.second;
-		}
-
-		return QVariant();
-	}
-
-  private:
-	SCP_vector<std::pair<SCP_string, bool>> m_missions;
-};
-
-class MissionStatusDelegate : public QStyledItemDelegate {
-  public:
-	explicit MissionStatusDelegate(QObject* parent = nullptr) : QStyledItemDelegate(parent) {}
-
-	void paint(QPainter* painter, const QStyleOptionViewItem& option, const QModelIndex& index) const override
-	{
-		QStyleOptionViewItem opt = option;
-		initStyleOption(&opt, index);
-
-		// Get the status from our custom model role
-		bool editable = index.data(Qt::UserRole).toBool();
-
-		// Set the text color based on the status
-		if (!editable) {
-			opt.palette.setColor(QPalette::Text, QColor(128, 128, 0)); // Dark Yellow
-		}
-		// "Editable" will use the default text color
-
-		// Let the base class do the actual drawing with our modified options
-		QStyledItemDelegate::paint(painter, opt, index);
-	}
-};
 
 CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _viewport)
 	: QMainWindow(_parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
@@ -238,13 +178,19 @@ void CampaignEditorDialog::initializeUi()
 	ui->typeComboBox->clear();
 	ui->typeComboBox->addItems(typeList);
 
-	ui->availableMissionsListView->setItemDelegate(new MissionStatusDelegate(this));
+	int font_height = ui->availableMissionsListWidget->fontMetrics().height();
+	ui->availableMissionsListWidget->setGridSize(QSize(125, font_height + 2));
 
-	// Get the approximate height of one line of text for the available missions list
-	int font_height = ui->availableMissionsListView->fontMetrics().height();
+	auto disableDnD = [](QAbstractItemView* v) { // no dungeons OR dragons allowed!
+		v->setDragEnabled(false);
+		v->setAcceptDrops(false);
+		v->setDragDropMode(QAbstractItemView::NoDragDrop);
+		v->setDefaultDropAction(Qt::IgnoreAction);
+		v->setDropIndicatorShown(false);
+		v->setEditTriggers(QAbstractItemView::NoEditTriggers);
+	};
 
-	// Define the cell size.
-	ui->availableMissionsListView->setGridSize(QSize(125, font_height + 2));
+	disableDnD(ui->availableMissionsListWidget);
 }
 
 void CampaignEditorDialog::updateUi()
@@ -287,13 +233,19 @@ void CampaignEditorDialog::updateAvailableMissionsList()
 {
 	util::SignalBlockers blocker(this);
 
-	const auto& missions = _model->getAvailableMissionFiles();
+	ui->availableMissionsListWidget->clear();
 
-	// Create an instance of the custom model
-	auto* list_model = new MissionListModel(missions, this);
+	const QColor packagedColor(128, 128, 0); // dark yellow, matches your intent
 
-	// Set the new model on the view
-	ui->availableMissionsListView->setModel(list_model);
+	// model returns: SCP_vector<std::pair<SCP_string, bool>>
+	for (const auto& [name, isEditable] : _model->getAvailableMissionFiles()) {
+		auto* item = new QListWidgetItem(QString::fromStdString(name));
+		if (!isEditable) {
+			item->setForeground(packagedColor);
+		}
+		item->setData(Qt::UserRole, isEditable); // stash it if you need it later
+		ui->availableMissionsListWidget->addItem(item);
+	}
 }
 
 void CampaignEditorDialog::enableDisableControls()
