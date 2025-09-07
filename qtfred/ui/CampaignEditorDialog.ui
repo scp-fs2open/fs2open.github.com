@@ -148,11 +148,38 @@
         <item>
          <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0">
           <item>
-           <widget class="QLabel" name="availableMissionsLabel">
-            <property name="text">
-             <string>Available Missions</string>
-            </property>
-           </widget>
+           <layout class="QHBoxLayout" name="availableMissionsLayout">
+            <item>
+             <widget class="QLabel" name="availableMissionsLabel">
+              <property name="text">
+               <string>Available Missions</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <spacer name="availableMissionsSpacer">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>40</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item>
+             <widget class="QLabel" name="availableMissionsFilterLabel">
+              <property name="text">
+               <string>Filter</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QLineEdit" name="availableMissionsFilterLineEdit"/>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QListView" name="availableMissionsListView">
@@ -167,6 +194,9 @@
             </property>
             <property name="toolTip">
              <string/>
+            </property>
+            <property name="styleSheet">
+             <string notr="true"/>
             </property>
             <property name="autoScrollMargin">
              <number>16</number>
@@ -185,6 +215,12 @@
             </property>
             <property name="spacing">
              <number>0</number>
+            </property>
+            <property name="gridSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
             </property>
             <property name="viewMode">
              <enum>QListView::IconMode</enum>
