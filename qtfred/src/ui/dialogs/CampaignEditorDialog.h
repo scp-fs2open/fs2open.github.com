@@ -43,6 +43,8 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 
 	void on_errorCheckerButton_clicked();
 
+	void on_availableMissionsFilterLineEdit_textChanged(const QString& arg1);
+
   private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
 	std::unique_ptr<ICampaignEditorTreeOps> _treeOps;

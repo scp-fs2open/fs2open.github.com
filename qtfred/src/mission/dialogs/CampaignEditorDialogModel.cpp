@@ -639,7 +639,30 @@ void CampaignEditorDialogModel::setCampaignNumPlayers(int num_players)
 
 const SCP_vector<std::pair<SCP_string, bool>>& CampaignEditorDialogModel::getAvailableMissionFiles() const
 {
-	return m_available_mission_files;
+	// If there's no filter, return the full list
+	if (m_available_missions_filter.empty()) {
+		return m_available_mission_files;
+	}
+	
+	// Otherwise, build and return a temporary, filtered list.
+	static SCP_vector<std::pair<SCP_string, bool>> filtered_list;
+	filtered_list.clear();
+
+	for (const auto& mission_pair : m_available_mission_files) {
+		const SCP_string& filename = mission_pair.first;
+
+		// Check if the filename contains the filter text
+		if (stristr(filename.c_str(), m_available_missions_filter.c_str())) {
+			filtered_list.push_back(mission_pair);
+		}
+	}
+
+	return filtered_list;
+}
+
+void CampaignEditorDialogModel::setAvailableMissionsFilter(const SCP_string& filter)
+{
+	m_available_missions_filter = filter;
 }
 
 void CampaignEditorDialogModel::addMission(const SCP_string& filename, int level, int pos)
