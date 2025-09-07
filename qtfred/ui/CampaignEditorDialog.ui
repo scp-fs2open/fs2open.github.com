@@ -9,8 +9,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>815</width>
-    <height>717</height>
+    <width>958</width>
+    <height>915</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -31,34 +31,24 @@
         <item>
          <layout class="QHBoxLayout" name="spec1">
           <item>
-           <widget class="QLabel" name="lblName">
+           <widget class="QLabel" name="nameLabel">
             <property name="text">
              <string>Campaign Name</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="txtName"/>
+           <widget class="QLineEdit" name="nameLineEdit"/>
           </item>
           <item>
-           <widget class="QLabel" name="lblType">
+           <widget class="QLabel" name="typeLabel">
             <property name="text">
              <string>Type</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QLineEdit" name="txtType">
-            <property name="enabled">
-             <bool>false</bool>
-            </property>
-            <property name="sizePolicy">
-             <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-              <horstretch>0</horstretch>
-              <verstretch>0</verstretch>
-             </sizepolicy>
-            </property>
-           </widget>
+           <widget class="QComboBox" name="typeComboBox"/>
           </item>
          </layout>
         </item>
@@ -88,7 +78,7 @@
            </spacer>
           </item>
           <item>
-           <widget class="QCheckBox" name="chkTechReset">
+           <widget class="QCheckBox" name="resetTechAtStartCheckBox">
             <property name="layoutDirection">
              <enum>Qt::LeftToRight</enum>
             </property>
@@ -100,7 +90,7 @@
          </layout>
         </item>
         <item>
-         <widget class="QPlainTextEdit" name="txaDescr">
+         <widget class="QPlainTextEdit" name="descriptionPlainTextEdit">
           <property name="sizePolicy">
            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
             <horstretch>0</horstretch>
@@ -110,26 +100,26 @@
          </widget>
         </item>
         <item>
-         <layout class="QGridLayout" name="gridLayout_2">
+         <layout class="QGridLayout" name="techLayout">
           <item row="0" column="0">
-           <widget class="QLabel" name="lblShips">
+           <widget class="QLabel" name="shipsLabel">
             <property name="text">
              <string>Initially Available Ships</string>
             </property>
            </widget>
           </item>
           <item row="0" column="1">
-           <widget class="QLabel" name="lblWeapons">
+           <widget class="QLabel" name="weaponsLabel">
             <property name="text">
              <string>Initially Available Weapons</string>
             </property>
            </widget>
           </item>
           <item row="1" column="0">
-           <widget class="QListView" name="lstShips"/>
+           <widget class="QListWidget" name="shipsListWidget"/>
           </item>
           <item row="1" column="1">
-           <widget class="QListView" name="lstWeapons"/>
+           <widget class="QListWidget" name="weaponsListWidget"/>
           </item>
          </layout>
         </item>
@@ -156,16 +146,16 @@
          <number>11</number>
         </property>
         <item>
-         <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0,1">
+         <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0">
           <item>
-           <widget class="QLabel" name="lblMissions">
+           <widget class="QLabel" name="availableMissionsLabel">
             <property name="text">
              <string>Available Missions</string>
             </property>
            </widget>
           </item>
           <item>
-           <widget class="QListView" name="lstMissions">
+           <widget class="QListView" name="availableMissionsListView">
             <property name="sizePolicy">
              <sizepolicy hsizetype="MinimumExpanding" vsizetype="Maximum">
               <horstretch>0</horstretch>
@@ -190,16 +180,16 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="lstMissionDescr">
+           <layout class="QHBoxLayout" name="missionDescriptionLayout">
             <item>
-             <widget class="QLabel" name="lblMissionDescr1">
+             <widget class="QLabel" name="missionDescLabel1">
               <property name="text">
                <string>yellow=uneditable/packaged</string>
               </property>
              </widget>
             </item>
             <item>
-             <widget class="QLabel" name="lblMissionDescr2">
+             <widget class="QLabel" name="missionDescLabel2">
               <property name="text">
                <string>red=not found/loadable, please resolve!</string>
               </property>
@@ -210,7 +200,7 @@
           <item>
            <layout class="QHBoxLayout" name="layoutLoadMission">
             <item>
-             <widget class="QTextBrowser" name="txbMissionDescr">
+             <widget class="QTextBrowser" name="missionDescriptionTextBrowser">
               <property name="enabled">
                <bool>true</bool>
               </property>
@@ -223,7 +213,7 @@
              </widget>
             </item>
             <item>
-             <layout class="QVBoxLayout" name="layoutModMission">
+             <layout class="QVBoxLayout" name="modifyMissionButtonLayout">
               <property name="spacing">
                <number>0</number>
               </property>
@@ -231,7 +221,7 @@
                <enum>QLayout::SetMinimumSize</enum>
               </property>
               <item>
-               <widget class="QPushButton" name="btnFredMission">
+               <widget class="QPushButton" name="fredMissionButton">
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
@@ -241,7 +231,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="btnFirstMission">
+               <widget class="QPushButton" name="firstMissionButton">
                 <property name="enabled">
                  <bool>false</bool>
                 </property>
@@ -261,7 +251,7 @@
            <widget class="QGroupBox" name="missionOptions">
             <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0">
              <item row="0" column="0">
-              <widget class="QLabel" name="lblBriefingCutscene">
+              <widget class="QLabel" name="briefCutsceneLabel">
                <property name="text">
                 <string>Briefing Cutscene</string>
                </property>
@@ -271,7 +261,7 @@
               </widget>
              </item>
              <item row="0" column="2">
-              <widget class="QLabel" name="lblDebriefingPersona">
+              <widget class="QLabel" name="debriefPersonaLabel">
                <property name="text">
                 <string>Debriefing Persona Index</string>
                </property>
@@ -281,7 +271,7 @@
               </widget>
              </item>
              <item row="0" column="4">
-              <widget class="QLabel" name="lblMainhall">
+              <widget class="QLabel" name="mainhallLabel">
                <property name="text">
                 <string>Main Hall Name</string>
                </property>
@@ -291,7 +281,7 @@
               </widget>
              </item>
              <item row="1" column="4">
-              <widget class="QComboBox" name="cmbMainhall">
+              <widget class="QComboBox" name="mainhallComboBox">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -301,7 +291,7 @@
               </widget>
              </item>
              <item row="1" column="2">
-              <widget class="QComboBox" name="cmbDebriefingPersona">
+              <widget class="QComboBox" name="debriefPersonaComboBox">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -311,7 +301,7 @@
               </widget>
              </item>
              <item row="1" column="0">
-              <widget class="QComboBox" name="cmbBriefingCutscene">
+              <widget class="QComboBox" name="briefCutsceneComboBox">
                <property name="enabled">
                 <bool>false</bool>
                </property>
@@ -349,7 +339,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QLabel" name="lblLoopDescr">
+           <widget class="QLabel" name="loopDescriptionLabel">
             <property name="text">
              <string>Mission Loop Description</string>
             </property>
@@ -369,7 +359,7 @@
            </widget>
           </item>
           <item>
-           <layout class="QGridLayout" name="loopBrief">
+           <layout class="QGridLayout" name="loopBriefLayout">
             <item row="0" column="0">
              <widget class="QLabel" name="lblLoopAnim">
               <property name="text">
@@ -406,19 +396,6 @@
             </item>
            </layout>
           </item>
-          <item>
-           <spacer name="spaceBottom">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
          </layout>
         </item>
         <item>
@@ -432,7 +409,7 @@
              <x>0</x>
              <y>0</y>
              <width>416</width>
-             <height>575</height>
+             <height>544</height>
             </rect>
            </property>
           </widget>
@@ -443,9 +420,9 @@
      </widget>
     </item>
     <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_2">
+     <layout class="QHBoxLayout" name="errorCheckerLayout">
       <item>
-       <spacer name="horizontalSpacer_2">
+       <spacer name="errorCheckerSpacer">
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
@@ -473,7 +450,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>815</width>
+     <width>958</width>
      <height>22</height>
     </rect>
    </property>
