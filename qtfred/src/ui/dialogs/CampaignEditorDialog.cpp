@@ -2,28 +2,18 @@
 #include "ui_CampaignEditorDialog.h"
 
 #include "ui/util/SignalBlockers.h"
+#include "mission/util.h"
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QStringListModel>
 #include <ui/FredView.h>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
-CampaignEditorUtil::WarningVec CampaignEditorDialog::warnings{};
-
-CampaignEditorUtil::WarningMsg::WarningMsg(QString &&_title, QString &&_msg, QString &&_type) :
-	title(_title),
-	msg(_msg),
-	type(_type)
-{}
-
-CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_viewport) :
-	QDialog(_parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	ui(new Ui::CampaignEditorDialog),
-	viewport(_viewport)
+CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _viewport)
+	: QMainWindow(_parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
+	  ui(new Ui::CampaignEditorDialog), _viewport(_viewport)
 {
 	ui->setupUi(this);
 
@@ -95,17 +85,20 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	_treeOps = std::make_unique<QtCampaignTreeOps>(QtCampaignTreeOps{*ui->sxtBranches});
 
-	ui->sxtBranches->initializeEditor(viewport->editor, this);
+	ui->sxtBranches->initializeEditor(_viewport->editor, this);
 	ui->sxtBranches->clear_tree();
 	ui->sxtBranches->post_load();
 
 	// Now construct the model with reference to tree ops
 	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps);
 
-	connect(&warnings, &CampaignEditorUtil::WarningVec::gotMsg, this, [&]() {
-		for (auto warn_it = warnings.begin();
-			 warn_it != warnings.end();
-			 warn_it = warnings.erase(warn_it)) {
+	ui->mainTabs->setCurrentIndex(0); // Ensure the first tab is selected
+
+	initializeUi();
+	updateUi();
+
+	/*connect(&warnings, &CampaignEditorUtil::WarningVec::gotMsg, this, [&]() {
+		for (auto warn_it = warnings.begin(); warn_it != warnings.end(); warn_it = warnings.erase(warn_it)) {
 			if (warn_it->type.isEmpty()) {
 				QMessageBox::warning(this, warn_it->title, warn_it->msg);
 			}
@@ -126,25 +119,25 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 
 	connect(ui->lstMissions, &QListView::customContextMenuRequested, this, &CampaignEditorDialog::mnLinkMenu);
 
-	connect(ui->btnErrorChecker, &QPushButton::clicked, [](){
+	connect(ui->btnErrorChecker, &QPushButton::clicked, []() {
 		uiWarn(tr("Error Checker"), tr("Error checker not implemented. Try saving a copy."));
 	});
-	connect(ui->btnFredMission, &QPushButton::clicked, this, [&](){
+	connect(ui->btnFredMission, &QPushButton::clicked, this, [&]() {
 		reject();
-		if(result() == Rejected)
+		if (result() == Rejected)
 			qobject_cast<FredView*>(parent)->loadMissionFile(model->getCurMnFilename());
 	});
-	connect(ui->btnFirstMission, &QPushButton::clicked, this, [&](bool toggledOn){
+	connect(ui->btnFirstMission, &QPushButton::clicked, this, [&](bool toggledOn) {
 		Assertion(toggledOn, "Should not be able to unset first mission");
 		model->setCurMnFirst();
 		updateUIMission(false);
 	});
 	connect(ui->btnExit, &QPushButton::clicked, this, &CampaignEditorDialog::reject);
 
-	QMenu *menFile { new QMenu(this) };
+	QMenu* menFile{new QMenu(this)};
 	ui->btnMenu->setMenu(menFile);
-	QMenu *menFileNew { menFile->addMenu(tr("&New")) };
-	for (auto& campaignType: model->campaignTypes)
+	QMenu* menFileNew{menFile->addMenu(tr("&New"))};
+	for (auto& campaignType : model->campaignTypes)
 		menFileNew->addAction(campaignType, this, &CampaignEditorDialog::fileNew);
 	menFile->addSeparator();
 
@@ -155,59 +148,294 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget *_parent, EditorViewport *_vi
 	menFile->addSeparator();
 	menFile->addAction(tr("E&xit"), this, &QDialog::reject);
 
-	updateUIAll();
+	updateUIAll();*/
 }
 CampaignEditorDialog::~CampaignEditorDialog() = default;
 
-void CampaignEditorDialog::setModel(CampaignEditorDialogModel *new_model) {
+void CampaignEditorDialog::closeEvent(QCloseEvent* e)
+{
+	// First, ask the user if they want to save any pending changes.
+	if (questionSaveChanges()) {
+		// If the user didn't cancel, it's safe to accept the close event.
+		e->accept();
+	} else {
+		// If the user cancelled, we ignore the close event to keep the window open.
+		e->ignore();
+	}
+}
+
+void CampaignEditorDialog::initializeUi()
+{
+	util::SignalBlockers blocker(this);
+
+	// setup the types combo box
+	auto types = _model->getCampaignTypes();
+	QStringList typeList;
+	for (const auto& type : types) {
+		typeList.append(QString::fromStdString(type));
+	}
+
+	ui->typeComboBox->clear();
+	ui->typeComboBox->addItems(typeList);
+}
+
+void CampaignEditorDialog::updateUi()
+{
+	util::SignalBlockers blocker(this);
+
+	ui->nameLineEdit->setText(QString::fromStdString(_model->getCampaignName()));
+	ui->typeComboBox->setCurrentIndex(_model->getCampaignType());
+	ui->resetTechAtStartCheckBox->setChecked(_model->getCampaignTechReset());
+	ui->descriptionPlainTextEdit->setPlainText(QString::fromStdString(_model->getCampaignDescription()));
+	
+	updateTechLists();
+}
+
+void CampaignEditorDialog::updateTechLists()
+{
+	util::SignalBlockers blocker(this);
+	ui->shipsListWidget->clear();
+	ui->weaponsListWidget->clear();
+
+	// Get the pre-filtered list of ships from the model
+	for (const auto& [name, index, is_allowed] : _model->getAllowedShips()) {
+		auto* item = new QListWidgetItem(QString::fromStdString(name), ui->shipsListWidget);
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(is_allowed ? Qt::Checked : Qt::Unchecked);
+		item->setData(Qt::UserRole, index); // Store the original index
+	}
+
+	// Get the pre-filtered list of weapons from the model
+	for (const auto& [name, index, is_allowed] : _model->getAllowedWeapons()) {
+		auto* item = new QListWidgetItem(QString::fromStdString(name), ui->weaponsListWidget);
+		item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		item->setCheckState(is_allowed ? Qt::Checked : Qt::Unchecked);
+		item->setData(Qt::UserRole, index); // Store the original index
+	}
+}
+
+void CampaignEditorDialog::enableDisableControls()
+{
+	
+}
+
+bool CampaignEditorDialog::questionSaveChanges()
+{
+	if (!_model->query_modified()) {
+		return true; // No changes, safe to proceed.
+	}
+
+	QMessageBox::StandardButton reply;
+	reply = QMessageBox::question(this,
+		"Unsaved Changes",
+		"This campaign has been modified.\n\nSave changes?",
+		QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
+
+	if (reply == QMessageBox::Cancel) {
+		return false; // User cancelled, abort the operation.
+	}
+
+	if (reply == QMessageBox::Save) {
+		on_actionSave_triggered();
+	}
+
+	// If we get here, the user chose Save or Discard.
+	return true;
+}
+
+void CampaignEditorDialog::on_actionNew_triggered()
+{
+	// Check if there are unsaved changes.
+	if (!questionSaveChanges()) {
+		return; // User cancelled.
+	}
+
+	_model->createNewCampaign();
+	updateUi();
+}
+
+void CampaignEditorDialog::on_actionOpen_triggered()
+{
+	// Check if there are unsaved changes.
+	if (!questionSaveChanges()) {
+		return; // User cancelled the operation.
+	}
+
+	// Open a file dialog to let the user select a campaign file.
+	QString pathName = QFileDialog::getOpenFileName(this, "Load Campaign", "", "FS2 Campaigns (*.fc2)");
+
+	if (pathName.isEmpty()) {
+		return; // User cancelled the file dialog.
+	}
+
+	QString nativePath = QDir::toNativeSeparators(pathName);
+
+	_model->loadCampaignFromFile(nativePath.toUtf8().constData());
+	updateUi();
+}
+
+void CampaignEditorDialog::on_actionSave_triggered()
+{
+	// This action saves to the currently known filename.
+	// If the filename is empty (because it's a new campaign), this will
+	// delegate to the Save As logic.
+	if (_model->getCampaignFilename().empty()) {
+		on_actionSave_As_triggered();
+		return;
+	}
+
+	_model->saveCampaign(""); // Pass empty string to use the current filename.
+}
+
+void CampaignEditorDialog::on_actionSave_As_triggered()
+{
+	// Open a file dialog to let the user choose a save location and filename.
+	QString pathName = QFileDialog::getSaveFileName(this, "Save Campaign As", "", "FS2 Campaigns (*.fc2)");
+
+	if (pathName.isEmpty()) {
+		return; // User cancelled the file dialog.
+	}
+
+	// The model will handle the actual save operation.
+	_model->saveCampaign(pathName.toUtf8().constData());
+}
+
+void CampaignEditorDialog::on_actionExit_triggered()
+{
+	this->close();
+}
+
+void CampaignEditorDialog::on_nameLineEdit_textChanged(const QString& arg1)
+{
+	_model->setCampaignName(arg1.toUtf8().constData());
+}
+
+void CampaignEditorDialog::on_typeComboBox_currentIndexChanged(int index)
+{
+	// The model should have a list of campaign types matching the combo box.
+	if (SCP_vector_inbounds(_model->getCampaignTypes(), index)) {
+		_model->setCampaignType(index);
+	}
+}
+
+void CampaignEditorDialog::on_resetTechAtStartCheckBox_toggled(bool checked)
+{
+	_model->setCampaignTechReset(checked);
+}
+
+void CampaignEditorDialog::on_descriptionPlainTextEdit_textChanged()
+{
+	_model->setCampaignDescription(ui->descriptionPlainTextEdit->toPlainText().toUtf8().constData());
+}
+
+void CampaignEditorDialog::on_shipsListWidget_itemChanged(QListWidgetItem* item)
+{
+	if (!item) {
+		return;
+	}
+
+	const int ship_class_index = item->data(Qt::UserRole).toInt();
+	const bool is_allowed = (item->checkState() == Qt::Checked);
+	_model->setAllowedShip(ship_class_index, is_allowed);
+}
+
+void CampaignEditorDialog::on_weaponsListWidget_itemChanged(QListWidgetItem* item)
+{
+	if (!item) {
+		return;
+	}
+
+	const int weapon_class_index = item->data(Qt::UserRole).toInt();
+	const bool is_allowed = (item->checkState() == Qt::Checked);
+	_model->setAllowedWeapon(weapon_class_index, is_allowed);
+}
+
+void CampaignEditorDialog::on_errorCheckerButton_clicked()
+{
+	_model->checkValidity();
+}
+
+/*void CampaignEditorDialog::setModel(CampaignEditorDialogModel* new_model)
+{
 	if (new_model)
 		model = std::unique_ptr<CampaignEditorDialogModel>(new_model);
 
 	ui->cmbBriefingCutscene->setModel(new QStringListModel{CampaignEditorDialogModel::cutscenes(), model.get()});
 	ui->cmbMainhall->setModel(new QStringListModel{CampaignEditorDialogModel::mainhalls(), model.get()});
-	ui->cmbDebriefingPersona->setModel(new QStringListModel{CampaignEditorDialogModel::debriefingPersonas(), model.get()});
+	ui->cmbDebriefingPersona->setModel(
+		new QStringListModel{CampaignEditorDialogModel::debriefingPersonas(), model.get()});
 	ui->cmbLoopAnim->setModel(new QStringListModel{CampaignEditorDialogModel::loopAnims(), model.get()});
 	ui->cmbLoopVoice->setModel(new QStringListModel{CampaignEditorDialogModel::loopVoices(), model.get()});
 
 	model->supplySubModels(*(ui->lstShips), *(ui->lstWeapons), *(ui->lstMissions), *(ui->txaDescr));
 
-	connect(ui->lstMissions->selectionModel(), &QItemSelectionModel::selectionChanged, model.get(), &CampaignEditorDialogModel::missionSelectionChanged);
+	connect(ui->lstMissions->selectionModel(),
+		&QItemSelectionModel::selectionChanged,
+		model.get(),
+		&CampaignEditorDialogModel::missionSelectionChanged);
 
 	connect(ui->txtName, &QLineEdit::textChanged, model.get(), &CampaignEditorDialogModel::setCampaignName);
 	connect(ui->chkTechReset, &QCheckBox::stateChanged, model.get(), [&](int changed) {
 		model->setCampaignTechReset(changed == Qt::Checked);
 	});
 
-	connect(ui->cmbBriefingCutscene, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnBriefingCutscene);
-	connect(ui->cmbMainhall, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnMainhall);
-	connect(ui->cmbDebriefingPersona, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurMnDebriefingPersona);
+	connect(ui->cmbBriefingCutscene,
+		&QComboBox::currentTextChanged,
+		model.get(),
+		&CampaignEditorDialogModel::setCurMnBriefingCutscene);
+	connect(ui->cmbMainhall,
+		&QComboBox::currentTextChanged,
+		model.get(),
+		&CampaignEditorDialogModel::setCurMnMainhall);
+	connect(ui->cmbDebriefingPersona,
+		&QComboBox::currentTextChanged,
+		model.get(),
+		&CampaignEditorDialogModel::setCurMnDebriefingPersona);
 
 	ui->sxtBranches->initializeEditor(nullptr, model.get());
-	connect(ui->sxtBranches, &sexp_tree::rootNodeDeleted, model.get(), &CampaignEditorDialogModel::delCurMnBranch, Qt::QueuedConnection); // will call removeBranch()
-	connect(ui->sxtBranches, &QTreeWidget::currentItemChanged, model.get(), &CampaignEditorDialogModel::selectCurBr); // will call setCurrentBranchSelection()
-	connect(ui->sxtBranches, &sexp_tree::nodeChanged, model.get(), [&](int node) { // will call updateCurrentBranch()
-		bool success = model->setCurBrSexp(
-					ui->sxtBranches->save_tree(
-							ui->sxtBranches->get_root(node)));
-		if (!success) {
-			int old = model->getCurBrIdx();
-			restoreBranchOpen(old);
-		}
-	}, Qt::QueuedConnection);
+	connect(ui->sxtBranches,
+		&sexp_tree::rootNodeDeleted,
+		model.get(),
+		&CampaignEditorDialogModel::delCurMnBranch,
+		Qt::QueuedConnection); // will call removeBranch()
+	connect(ui->sxtBranches,
+		&QTreeWidget::currentItemChanged,
+		model.get(),
+		&CampaignEditorDialogModel::selectCurBr); // will call setCurrentBranchSelection()
+	connect(
+		ui->sxtBranches,
+		&sexp_tree::nodeChanged,
+		model.get(),
+		[&](int node) { // will call updateCurrentBranch()
+			bool success = model->setCurBrSexp(ui->sxtBranches->save_tree(ui->sxtBranches->get_root(node)));
+			if (!success) {
+				int old = model->getCurBrIdx();
+				restoreBranchOpen(old);
+			}
+		},
+		Qt::QueuedConnection);
 
-	connect(ui->cmbLoopAnim, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopAnim);
-	connect(ui->cmbLoopVoice, &QComboBox::currentTextChanged, model.get(), &CampaignEditorDialogModel::setCurLoopVoice);
+	connect(ui->cmbLoopAnim,
+		&QComboBox::currentTextChanged,
+		model.get(),
+		&CampaignEditorDialogModel::setCurLoopAnim);
+	connect(ui->cmbLoopVoice,
+		&QComboBox::currentTextChanged,
+		model.get(),
+		&CampaignEditorDialogModel::setCurLoopVoice);
 }
 
-void CampaignEditorDialog::reject() {  //merely means onClose
-	if (! questionSaveChanges())
+void CampaignEditorDialog::reject()
+{ // merely means onClose
+	if (!questionSaveChanges())
 		return;
 
 	QDialog::reject();
 	deleteLater();
 }
 
-void CampaignEditorDialog::updateUISpec() {
+void CampaignEditorDialog::updateUISpec()
+{
 	util::SignalBlockers blockers(this);
 
 	setWindowTitle(model->campaignFile.isEmpty() ? "Untitled" : model->campaignFile + ".fc2");
@@ -220,10 +448,11 @@ void CampaignEditorDialog::updateUISpec() {
 	ui->chkTechReset->setChecked(model->getCampaignTechReset());
 }
 
-void CampaignEditorDialog::updateUIMission(bool updateBranch) {
+void CampaignEditorDialog::updateUIMission(bool updateBranch)
+{
 	util::SignalBlockers blockers(this);
 
-	ui->btnFirstMission->setEnabled(model->getCurMnIncluded() && ! model->isCurMnFirst());
+	ui->btnFirstMission->setEnabled(model->getCurMnIncluded() && !model->isCurMnFirst());
 	ui->btnFirstMission->setChecked(model->isCurMnFirst());
 	ui->btnFredMission->setEnabled(model->getCurMnFredable());
 	ui->txbMissionDescr->setText(model->getCurMnDescr());
@@ -247,7 +476,8 @@ void CampaignEditorDialog::updateUIMission(bool updateBranch) {
 		updateUIBranch();
 }
 
-void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
+void CampaignEditorDialog::updateUIBranch(int selectedIdx)
+{
 	util::SignalBlockers blockers(this);
 
 	if (selectedIdx >= 0)
@@ -258,9 +488,8 @@ void CampaignEditorDialog::updateUIBranch(int selectedIdx) {
 	bool sel = selectedIdx >= 0;
 
 	if (sel) {
-		ui->sxtBranches->selectionModel()->select(
-					ui->sxtBranches->model()->index(selectedIdx, 0),
-					QItemSelectionModel::Select);
+		ui->sxtBranches->selectionModel()->select(ui->sxtBranches->model()->index(selectedIdx, 0),
+			QItemSelectionModel::Select);
 	}
 
 	bool loop = model->isCurBrLoop();
@@ -282,57 +511,62 @@ void fso::fred::dialogs::CampaignEditorDialog::restoreBranchOpen(int branch)
 	ui->sxtBranches->expand_branch(ui->sxtBranches->topLevelItem(branch));
 }
 
-bool CampaignEditorDialog::questionSaveChanges() {
+bool CampaignEditorDialog::questionSaveChanges()
+{
 	QMessageBox::StandardButton resBtn = QMessageBox::Discard;
 	if (model->query_modified()) {
-		QString msg =
-				tr("This campaign has been modified.\n")
-				+ (model->missionDropped() ?
-					   tr("Additionally, packaged/missing\nmission(s) have been removed,\nwhich cannot be added again.\n") : "")
-				+ tr("\nSave changes?");
-		resBtn = QMessageBox::question( this, tr("Unsaved changes"),
-										msg,
-										QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save,
-										QMessageBox::Save);
+		QString msg = tr("This campaign has been modified.\n") +
+						(model->missionDropped() ? tr("Additionally, packaged/missing\nmission(s) have been "
+													"removed,\nwhich cannot be added again.\n")
+												: "") +
+						tr("\nSave changes?");
+		resBtn = QMessageBox::question(this,
+			tr("Unsaved changes"),
+			msg,
+			QMessageBox::Cancel | QMessageBox::Discard | QMessageBox::Save,
+			QMessageBox::Save);
 	}
 
 	switch (resBtn) {
-		case QMessageBox::Discard :
-			model->reject();
-			return true;
-		case QMessageBox::Save :
-			return fileSave();
-		case QMessageBox::Cancel :
-			return false;
-		default:
-			UNREACHABLE("An unhandled button was pressed. A coder must handle the buttons they provide.");
-			return false;
+	case QMessageBox::Discard:
+		model->reject();
+		return true;
+	case QMessageBox::Save:
+		return fileSave();
+	case QMessageBox::Cancel:
+		return false;
+	default:
+		UNREACHABLE("An unhandled button was pressed. A coder must handle the buttons they provide.");
+		return false;
 	}
 }
 
-void CampaignEditorDialog::fileNew() {
-	if (! questionSaveChanges())
+void CampaignEditorDialog::fileNew()
+{
+	if (!questionSaveChanges())
 		return;
 
-	auto *act = qobject_cast<QAction*>(sender());
-	if (! act)
+	auto* act = qobject_cast<QAction*>(sender());
+	if (!act)
 		return;
 
 	setModel(new CampaignEditorDialogModel(this,
-										   viewport,
-										   "",
-										   act->text(),
-										   act->text().contains("multi") ?
-											   QInputDialog::getInt(this, "Campaign Player Number", "Enter campaign player number", 2, 2) :
-											   0));
+		viewport,
+		"",
+		act->text(),
+		act->text().contains("multi")
+			? QInputDialog::getInt(this, "Campaign Player Number", "Enter campaign player number", 2, 2)
+			: 0));
 	updateUIAll();
 }
 
-void CampaignEditorDialog::fileOpen() {
-	if (! questionSaveChanges())
+void CampaignEditorDialog::fileOpen()
+{
+	if (!questionSaveChanges())
 		return;
 
-	QString pathName = QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
+	QString pathName =
+		QFileDialog::getOpenFileName(this, tr("Load campaign"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 
 	if (pathName.isEmpty())
 		return;
@@ -349,7 +583,8 @@ void CampaignEditorDialog::fileOpen() {
 	updateUIAll();
 }
 
-bool CampaignEditorDialog::fileSave() {
+bool CampaignEditorDialog::fileSave()
+{
 	if (model->campaignFile.isEmpty())
 		return fileSaveAs();
 
@@ -359,8 +594,12 @@ bool CampaignEditorDialog::fileSave() {
 	return res;
 }
 
-bool CampaignEditorDialog::fileSaveAs() {
-	QString pathName = QFileDialog::getSaveFileName(this, tr("Save campaign as"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
+bool CampaignEditorDialog::fileSaveAs()
+{
+	QString pathName = QFileDialog::getSaveFileName(this,
+		tr("Save campaign as"),
+		model->campaignFile,
+		tr("FS2 campaigns (*.fc2)"));
 	if (pathName.isEmpty())
 		return false;
 
@@ -372,52 +611,56 @@ bool CampaignEditorDialog::fileSaveAs() {
 	return res;
 }
 
-void CampaignEditorDialog::fileSaveCopyAs() {
-	QString pathName = QFileDialog::getSaveFileName(this, tr("Save copy as"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
+void CampaignEditorDialog::fileSaveCopyAs()
+{
+	QString pathName =
+		QFileDialog::getSaveFileName(this, tr("Save copy as"), model->campaignFile, tr("FS2 campaigns (*.fc2)"));
 	if (pathName.isEmpty())
 		return;
 
 	model->saveTo(pathName);
 }
 
-void CampaignEditorDialog::lstMissionsClicked(const QModelIndex &idx) {
-	QItemSelectionModel &sel = *ui->lstMissions->selectionModel();
+void CampaignEditorDialog::lstMissionsClicked(const QModelIndex& idx)
+{
+	QItemSelectionModel& sel = *ui->lstMissions->selectionModel();
 	bool same = sel.selectedIndexes().contains(idx);
 	sel.clearSelection();
 	if (!same)
 		sel.select(idx, QItemSelectionModel::Toggle | QItemSelectionModel::Rows);
 }
 
-void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
+void CampaignEditorDialog::mnLinkMenu(const QPoint& pos)
+{
 	QModelIndex here = ui->lstMissions->indexAt(pos);
 	if (here.data(Qt::CheckStateRole) != Qt::Checked)
 		return;
 
-	const QString *mnName = model->missionName(here);
-	if (! mnName)
+	const QString* mnName = model->missionName(here);
+	if (!mnName)
 		return;
-	const QStringList *goals{ model->missionGoals(here) };
-	if (! goals)
+	const QStringList* goals{model->missionGoals(here)};
+	if (!goals)
 		return;
-	const QStringList *evts{ model->missionEvents(here) };
-	if (! evts)
+	const QStringList* evts{model->missionEvents(here)};
+	if (!evts)
 		return;
 
-	QMenu menu{ ui->lstMissions };
+	QMenu menu{ui->lstMissions};
 
-	QAction *to = menu.addAction(tr("Add branch to ") + mnName);
-	QAction *from = menu.addAction(tr("Add branch from ") + mnName);
-	QAction *end = menu.addAction(tr("Add campaign end"));
-	bool mnSel{ model->isCurMnSelected() };
+	QAction* to = menu.addAction(tr("Add branch to ") + mnName);
+	QAction* from = menu.addAction(tr("Add branch from ") + mnName);
+	QAction* end = menu.addAction(tr("Add campaign end"));
+	bool mnSel{model->isCurMnSelected()};
 	to->setEnabled(mnSel);
 	from->setEnabled(mnSel);
 	end->setEnabled(mnSel);
-	if (! mnSel) {
+	if (!mnSel) {
 		menu.exec(ui->lstMissions->mapToGlobal(pos));
 		return;
 	}
 
-	QMenu *par{ nullptr };
+	QMenu* par{nullptr};
 
 	if (model->getCurBrIdx() < 0) {
 		menu.addSection(tr("Select a branch to choose conditions!"));
@@ -425,26 +668,26 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 	} else {
 		menu.addSection(tr("Branch Conditions"));
 
-		QMenu *gt = menu.addMenu("is-previous-goal-true");
-		QMenu *gf = menu.addMenu("is-previous-goal-false");
+		QMenu* gt = menu.addMenu("is-previous-goal-true");
+		QMenu* gf = menu.addMenu("is-previous-goal-false");
 		for (auto& g : *goals) {
 			gt->addAction(g);
 			gf->addAction(g);
 		}
-		connect(gt, &QMenu::aboutToShow, this, [&](){par = gt;});
-		connect(gf, &QMenu::aboutToShow, this, [&](){par = gf;});
+		connect(gt, &QMenu::aboutToShow, this, [&]() { par = gt; });
+		connect(gf, &QMenu::aboutToShow, this, [&]() { par = gf; });
 
-		QMenu *et = menu.addMenu("is-previous-event-true");
-		QMenu *ef = menu.addMenu("is-previous-event-false");
+		QMenu* et = menu.addMenu("is-previous-event-true");
+		QMenu* ef = menu.addMenu("is-previous-event-false");
 		for (auto& e : *evts) {
 			et->addAction(e);
 			ef->addAction(e);
 		}
-		connect(et, &QMenu::aboutToShow, this, [&](){par = et;});
-		connect(ef, &QMenu::aboutToShow, this, [&](){par = ef;});
+		connect(et, &QMenu::aboutToShow, this, [&]() { par = et; });
+		connect(ef, &QMenu::aboutToShow, this, [&]() { par = ef; });
 	}
 
-	const QAction *choice = menu.exec(ui->lstMissions->mapToGlobal(pos));
+	const QAction* choice = menu.exec(ui->lstMissions->mapToGlobal(pos));
 
 	int res_branch{-1};
 	if (choice == to) {
@@ -452,15 +695,13 @@ void CampaignEditorDialog::mnLinkMenu(const QPoint &pos){
 	} else if (choice == from) {
 		res_branch = model->addCurMnBranchTo(&here, true);
 	} else if (choice == end) {
-		res_branch = model->addCurMnBranchTo(/*end*/);
+		res_branch = model->addCurMnBranchTo(end);
 	} else if (choice && par) {
 		res_branch = model->setCurBrCond(par->title(), *mnName, choice->text());
-	} //else menu was dismissed
+	} // else menu was dismissed
 
 	if (res_branch != -1)
 		restoreBranchOpen(res_branch);
-}
+}*/
 
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
