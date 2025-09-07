@@ -161,53 +161,58 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 void CampaignEditorDialogModel::loadAvailableMissions()
 {
 	extern int Skip_packfile_search; // from cfilesystem.cpp
-
-	auto is_mission_compatible = [](const mission& mission_info, int campaign_type, int campaign_num_players) -> bool {
-		if (campaign_type == CAMPAIGN_TYPE_SINGLE) {
+	
+	// Compatibility check lambda
+	auto is_mission_compatible = [&](const mission& mission_info) -> bool {
+		if (m_campaign_type == CAMPAIGN_TYPE_SINGLE) {
 			return (mission_info.game_type & (MISSION_TYPE_SINGLE | MISSION_TYPE_TRAINING));
 		}
-		if (campaign_type == CAMPAIGN_TYPE_MULTI_COOP) {
+		if (m_campaign_type == CAMPAIGN_TYPE_MULTI_COOP) {
 			return (mission_info.game_type & MISSION_TYPE_MULTI_COOP) &&
-				   (campaign_num_players == -1 || campaign_num_players == mission_info.num_players); // Player count must match, OR be -1
+				   (m_num_players == -1 || m_num_players == mission_info.num_players);
 		}
-		if (campaign_type == CAMPAIGN_TYPE_MULTI_TEAMS) {
+		if (m_campaign_type == CAMPAIGN_TYPE_MULTI_TEAMS) {
 			return (mission_info.game_type & MISSION_TYPE_MULTI_TEAMS) &&
-				   (campaign_num_players == -1 || campaign_num_players == mission_info.num_players); // Player count must match, OR be -1
+				   (m_num_players == -1 || m_num_players == mission_info.num_players);
 		}
 		return false;
 	};
-	
+
 	m_available_mission_files.clear();
 
-	// Get all loose mission filenames from the game directory
-	SCP_vector<SCP_string> all_mission_files;
-
-	// This global flag tells the engine to find only non-VP, editable missions
-	Skip_packfile_search = 1;
-	cf_get_file_list(all_mission_files, CF_TYPE_MISSIONS, "*.fs2", CF_SORT_NAME);
+	// Get all editable mission files
+	SCP_vector<SCP_string> editable_files;
+	Skip_packfile_search = 1; // This global flag forces the search to ignore VPs
+	cf_get_file_list(editable_files, CF_TYPE_MISSIONS, "*.fs2", CF_SORT_NAME);
 	Skip_packfile_search = 0;
 
-	// Build a quick lookup set of missions already in the campaign for efficient checking
+	// For quick lookups, put the editable filenames into a set
+	std::unordered_set<SCP_string> editable_set(editable_files.begin(), editable_files.end());
+
+	// Get all mission files including packaged ones
+	SCP_vector<SCP_string> all_files;
+	cf_get_file_list(all_files, CF_TYPE_MISSIONS, "*.fs2", CF_SORT_NAME);
+
+	// Get missions already in the campaign
 	std::unordered_set<SCP_string> active_missions;
 	for (const auto& mission_data : m_missions) {
 		active_missions.insert(mission_data.name);
 	}
 
-	// Iterate, filter, and add valid missions
-	m_available_mission_files.reserve(all_mission_files.size());
-	for (const auto& filename : all_mission_files) {
-		// Check if it's already in the campaign
+	// Build the final list of available missions
+	for (const auto& filename : all_files) {
+		// Skip missions already in the campaign
 		if (active_missions.count(filename)) {
 			continue;
 		}
 
-		// Get mission info to check for compatibility
 		mission mission_info;
 		get_mission_info(filename.c_str(), &mission_info);
 
-		// Check if the mission type and player count match the campaign
-		if (is_mission_compatible(mission_info, m_campaign_type, m_num_players)) {
-			m_available_mission_files.push_back(filename);
+		if (is_mission_compatible(mission_info)) {
+			// Check if the filename exists in our set of loose, editable files
+			bool is_editable = (editable_set.count(filename) > 0);
+			m_available_mission_files.emplace_back(filename + ".fs2", is_editable);
 		}
 	}
 }
@@ -632,7 +637,7 @@ void CampaignEditorDialogModel::setCampaignNumPlayers(int num_players)
 	loadAvailableMissions();
 }
 
-const SCP_vector<SCP_string>& CampaignEditorDialogModel::getAvailableMissionFiles() const
+const SCP_vector<std::pair<SCP_string, bool>>& CampaignEditorDialogModel::getAvailableMissionFiles() const
 {
 	return m_available_mission_files;
 }
