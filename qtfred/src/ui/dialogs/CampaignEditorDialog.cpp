@@ -437,6 +437,12 @@ void CampaignEditorDialog::on_errorCheckerButton_clicked()
 	_model->checkValidity();
 }
 
+void CampaignEditorDialog::on_availableMissionsFilterLineEdit_textChanged(const QString& arg1)
+{
+	_model->setAvailableMissionsFilter(arg1.toUtf8().constData());
+	updateAvailableMissionsList();
+}
+
 /*void CampaignEditorDialog::setModel(CampaignEditorDialogModel* new_model)
 {
 	if (new_model)
