@@ -336,6 +336,28 @@ void CampaignEditorDialogModel::stopSpeech()
 	}
 }
 
+SCP_vector<SCP_string> CampaignEditorDialogModel::getCampaignTypes()
+{
+	SCP_vector<SCP_string> types;
+	for (auto& type : campaign_types) {
+		types.push_back(type);
+	}
+	
+	return types;
+}
+
+void CampaignEditorDialogModel::createNewCampaign()
+{
+	stopSpeech();
+
+	// First, clear the global state to ensure a clean load.
+	clearCampaignGlobal();
+
+	// Initialize the model to a clean "new campaign" state.
+	initializeData();
+}
+	
+
 void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 {
 	stopSpeech();
@@ -488,6 +510,17 @@ void CampaignEditorDialogModel::setCurrentBranchSelection(int branch_index)
 	stopSpeech();
 	
 	m_current_branch_index = branch_index;
+}
+
+const SCP_string& CampaignEditorDialogModel::getCampaignFilename() const
+{
+	return m_campaign_filename;
+}
+
+void CampaignEditorDialogModel::setCampaignFilename(const SCP_string& filename)
+{
+	SCP_string truncated_filename = filename.substr(0, MAX_FILENAME_LEN - 1);
+	modify(m_campaign_filename, truncated_filename);
 }
 
 const SCP_string& CampaignEditorDialogModel::getCampaignName() const
@@ -935,9 +968,15 @@ void CampaignEditorDialogModel::updateCurrentBranch(int internal_node_id)
 	m_tree_ops.expandBranch(internal_node_id);
 }
 
-const SCP_vector<bool>& CampaignEditorDialogModel::getAllowedShips() const
+const SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedShips() const
 {
-	return m_ships_allowed;
+	SCP_vector<std::tuple<SCP_string, int, bool>> ship_list;
+	for (int i = 0; i < static_cast<int>(Ship_info.size()); i++) {
+		if (Ship_info[i].flags[Ship::Info_Flags::Player_ship]) {
+			ship_list.emplace_back(Ship_info[i].name, i, m_ships_allowed[i]);
+		}
+	}
+	return ship_list;
 }
 
 void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowed)
@@ -950,9 +989,15 @@ void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowe
 	}
 }
 
-const SCP_vector<bool>& CampaignEditorDialogModel::getAllowedWeapons() const
+const SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedWeapons() const
 {
-	return m_weapons_allowed;
+	SCP_vector<std::tuple<SCP_string, int, bool>> weapon_list;
+	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
+		if (Weapon_info[i].wi_flags[Weapon::Info_Flags::Player_allowed]) {
+			weapon_list.emplace_back(Weapon_info[i].name, i, m_weapons_allowed[i]);
+		}
+	}
+	return weapon_list;
 }
 
 void CampaignEditorDialogModel::setAllowedWeapon(int weapon_class_index, bool allowed)

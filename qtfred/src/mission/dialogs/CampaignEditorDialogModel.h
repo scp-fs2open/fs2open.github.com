@@ -8,9 +8,6 @@
 
 namespace fso::fred::dialogs {
 
-/**
- * @brief A simple data structure to hold the working copy of a campaign mission's branch.
- */
 struct CampaignBranchData {
 	int sexp_formula = -1;
 	SCP_string next_mission_name;
@@ -21,9 +18,7 @@ struct CampaignBranchData {
 	SCP_string loop_briefing_sound;
 };
 
-/**
- * @brief A simple data structure to hold the working copy of a mission within the campaign.
- */
+
 struct CampaignMissionData {
 	SCP_string name;
 	int level = 0;
@@ -37,11 +32,6 @@ struct CampaignMissionData {
 	SCP_vector<CampaignBranchData> branches;
 };
 
-/**
- * @brief An abstract interface that defines the contract for how the model
- * communicates with the UI's SEXP tree widget. This keeps the model
- * completely decoupled from any specific UI implementation.
- */
 struct ICampaignEditorTreeOps {
 	virtual ~ICampaignEditorTreeOps() = default;
 
@@ -61,10 +51,6 @@ struct ICampaignEditorTreeOps {
 	virtual void expandBranch(int internal_node_id) = 0;
 };
 
-/**
- * @brief The data model for the Campaign Editor. Manages all campaign data
- * and business logic in a UI-agnostic way.
- */
 class CampaignEditorDialogModel : public AbstractDialogModel {
 	Q_OBJECT
 
@@ -77,6 +63,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
+	static SCP_vector<SCP_string> getCampaignTypes();
+
+	void createNewCampaign();
 	void loadCampaignFromFile(const SCP_string& filename);
 	void saveCampaign(const SCP_string& filename);
 	bool checkValidity();
@@ -85,6 +74,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setCurrentBranchSelection(int branch_index);
 
 	// Base Campaign Data
+	const SCP_string& getCampaignFilename() const;
+	void setCampaignFilename(const SCP_string& filename);
 	const SCP_string& getCampaignName() const;
 	void setCampaignName(const SCP_string& name);
 	const SCP_string& getCampaignDescription() const;
@@ -130,9 +121,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void updateCurrentBranch(int internal_node_id);
 
 	// Tech
-	const SCP_vector<bool>& getAllowedShips() const;
+	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedShips() const;
 	void setAllowedShip(int ship_class_index, bool allowed);
-	const SCP_vector<bool>& getAllowedWeapons() const;
+	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedWeapons() const;
 	void setAllowedWeapon(int weapon_class_index, bool allowed);
 
   private:
