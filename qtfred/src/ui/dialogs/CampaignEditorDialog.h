@@ -52,6 +52,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void initializeUi();
 	void updateUi();
 	void updateTechLists();
+	void updateAvailableMissionsList();
 	void enableDisableControls();
 
 	bool questionSaveChanges();
