@@ -88,7 +88,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setCampaignNumPlayers(int num_players);
 
 	// Available Missions
-	const SCP_vector<SCP_string>& getAvailableMissionFiles() const;
+	const SCP_vector<std::pair<SCP_string, bool>>& getAvailableMissionFiles() const;
 	void addMission(const SCP_string& filename, int level, int pos);
 	void removeMission(int mission_index);
 	void updateMissionPosition(int mission_index, int new_level, int new_pos);
@@ -141,7 +141,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	SCP_vector<CampaignMissionData> m_missions;
 
 	// List of mission files in the game directory that are not yet in the campaign
-	SCP_vector<SCP_string> m_available_mission_files;
+	SCP_vector<std::pair<SCP_string, bool>> m_available_mission_files;
 
 	// Pointers/indices to the currently selected items for context
 	int m_current_mission_index = -1;
