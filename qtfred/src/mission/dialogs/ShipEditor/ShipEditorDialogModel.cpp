@@ -905,13 +905,13 @@ bool ShipEditorDialogModel::update_ship(int ship)
 	if (!arrivalPaths.empty()) {
 		int num_allowed = 0;
 		auto m_path_mask = 0;
-		for (auto i = 0; i < arrivalPaths.size(); i++) {
+		for (auto i = 0; i < static_cast<int>(arrivalPaths.size()); i++) {
 			if (arrivalPaths[i].second == true) {
 				m_path_mask |= (1 << i);
 				num_allowed++;
 			}
 		}
-		if (num_allowed == arrivalPaths.size()) {
+		if (num_allowed == static_cast<int>(arrivalPaths.size())) {
 			m_path_mask = 0;
 		}
 		Ships[ship].arrival_path_mask = m_path_mask;
@@ -919,13 +919,13 @@ bool ShipEditorDialogModel::update_ship(int ship)
 	if (!departurePaths.empty()) {
 		int num_allowed = 0;
 		auto m_path_mask = 0;
-		for (auto i = 0; i < departurePaths.size(); i++) {
+		for (auto i = 0; i < static_cast<int>(departurePaths.size()); i++) {
 			if (departurePaths[i].second == true) {
 				m_path_mask |= (1 << i);
 				num_allowed++;
 			}
 		}
-		if (num_allowed == departurePaths.size()) {
+		if (num_allowed == static_cast<int>(departurePaths.size())) {
 			m_path_mask = 0;
 		}
 		Ships[ship].departure_path_mask = m_path_mask;
