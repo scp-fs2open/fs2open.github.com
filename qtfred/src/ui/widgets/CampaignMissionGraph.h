@@ -17,6 +17,7 @@ class QGraphicsScene;
 namespace detail {
 class MissionNodeItem;
 class EdgeItem;
+class EndSinkItem;
 } // namespace detail
 
 /**
@@ -66,6 +67,17 @@ struct CampaignGraphStyle {
 	qreal badgePad{6.0};
 	QSizeF badgeSize{34.0, 18.0}; // pill
 	QColor badgeDisabled{180, 180, 180};
+
+	// END sink visuals/placement
+	QSizeF endSinkSize{120.0, 36.0};
+	QColor endSinkFill{255, 235, 235};
+	QColor endSinkBorder{200, 60, 60};
+	QColor endSinkText{120, 20, 20};
+	qreal endSinkRadius{14.0};
+	qreal endSinkMargin{160.0}; // distance below the lowest node row
+
+	qreal contentMarginX{400.0}; // extra scene space left/right of content on rebuild
+	qreal contentMarginY{400.0}; // extra scene space above/below content on rebuild
 };
 
 /**
@@ -110,11 +122,12 @@ class CampaignMissionGraph final : public QGraphicsView {
 
   private:
 	void initScene();
+	void updateSceneRectToContent(bool scrollToTopLeft);
 	void drawGrid(QPainter* p, const QRectF& rect);
 	void buildMissionNodes();
 	void buildMissionEdges();
+	void ensureEndSink();
 
-  private:
 	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
 	QPointer<fso::fred::dialogs::CampaignEditorDialogModel> m_model;
 
@@ -124,6 +137,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	// Items we create (aligned to model order)
 	std::vector<detail::MissionNodeItem*> m_nodeItems;
 	std::vector<detail::EdgeItem*> m_edgeItems;
+	QPointer<detail::EndSinkItem> m_endSink{nullptr};
 
 	bool m_gridVisible{true};
 	bool m_zoomEnabled{true};
@@ -239,6 +253,65 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	QPointF m_lastSegmentP2; // last point (path end)
 
 	std::vector<QPointF> m_points; // cached polyline points for arrow placement
+};
+
+/**
+ * End of campaign pill to visualize the "END" target for branches with no next mission.
+ */
+class EndSinkItem final : public QGraphicsObject {
+	Q_OBJECT
+  public:
+	explicit EndSinkItem(const CampaignGraphStyle& style, QGraphicsItem* parent = nullptr)
+		: QGraphicsObject(parent), m_style(style)
+	{
+	}
+
+	QRectF boundingRect() const override
+	{
+		// Expand upward by nub radius so the top nub isn't clipped
+		QRectF pill(QPointF(0, 0), m_style.endSinkSize);
+		return pill.adjusted(-1.0, -m_style.nubRadius, +1.0, +1.0);
+	}
+
+	void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*) override
+	{
+		p->setRenderHint(QPainter::Antialiasing, true);
+
+		// Geometry: draw relative to the pill rect (not the expanded boundingRect)
+		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
+
+		// 1) Inbound nub (green), centered on the pill's top edge so only half shows
+		QPen nubPen(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		p->setPen(nubPen);
+		p->setBrush(m_style.inboundGreen);
+		const QPointF nubCenter(pill.center().x(), pill.top());
+		p->drawEllipse(nubCenter, m_style.nubRadius, m_style.nubRadius);
+
+		// 2) Pill on top
+		QPen border(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		p->setPen(border);
+		p->setBrush(m_style.endSinkFill);
+		p->drawRoundedRect(pill, m_style.endSinkRadius, m_style.endSinkRadius);
+
+		// 3) Label
+		p->setPen(m_style.endSinkText);
+		QFont f = p->font();
+		f.setBold(true);
+		p->setFont(f);
+		p->drawText(pill, Qt::AlignCenter, QStringLiteral("END"));
+	}
+
+	// Anchor where inbound edges terminate (top-center of pill)
+	QPointF inboundAnchorScenePos() const
+	{
+		// Anchor on the pill's top-center (independent of expanded boundingRect)
+		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
+		return mapToScene(QPointF(pill.center().x(), pill.top()));
+	}
+
+
+  private:
+	const CampaignGraphStyle& m_style;
 };
 
 } // namespace detail

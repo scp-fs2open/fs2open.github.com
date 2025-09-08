@@ -4,6 +4,7 @@
 
 #include "mission/missionparse.h"
 
+#include <QScrollBar>
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -399,14 +400,46 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	setDragMode(QGraphicsView::ScrollHandDrag);
 	setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
 	setBackgroundBrush(m_style.bgColor);
-	setFrameShape(QFrame::NoFrame); // optional
+	setFrameShape(QFrame::NoFrame);
+
+	// Ensure when the scene is smaller than the viewport it sits at the top-left,
+	// and when we reset the scene rect we can scroll to (0,0).
+	setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
 
 void CampaignMissionGraph::initScene()
 {
 	m_scene = new QGraphicsScene(this);
 	setScene(m_scene);
-	m_scene->setSceneRect(QRectF(-4000, -4000, 8000, 8000));
+}
+
+void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
+{
+	if (!m_scene)
+		return;
+
+	QRectF itemsRect = m_scene->itemsBoundingRect();
+
+	// If no items yet, create a small default rect near (0,0)
+	if (!itemsRect.isValid() || itemsRect.isEmpty()) {
+		itemsRect = QRectF(0, 0, m_style.nodeSize.width() * 3.0, m_style.nodeSize.height() * 2.0);
+	}
+
+	// Expand by margins so there’s breathing room to pan/drag
+	const QRectF sceneRect = itemsRect.adjusted(-m_style.contentMarginX,
+		-m_style.contentMarginY,
+		+m_style.contentMarginX,
+		+m_style.contentMarginY);
+	m_scene->setSceneRect(sceneRect);
+
+	if (scrollToTopLeft) {
+		// Align top-left and reset scroll bars to the minimum (top-left corner)
+		setAlignment(Qt::AlignLeft | Qt::AlignTop);
+		if (horizontalScrollBar())
+			horizontalScrollBar()->setValue(horizontalScrollBar()->minimum());
+		if (verticalScrollBar())
+			verticalScrollBar()->setValue(verticalScrollBar()->minimum());
+	}
 }
 
 void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
@@ -419,15 +452,30 @@ void CampaignMissionGraph::rebuildAll()
 {
 	if (!m_scene)
 		return;
+
+	// Clean up END sink explicitly to avoid dangling pointer across clears
+	if (m_endSink) {
+		m_scene->removeItem(m_endSink);
+		delete m_endSink.data();
+		m_endSink = nullptr;
+	}
+
+	// Reset scene content
 	m_scene->clear();
 	m_nodeItems.clear();
 	m_edgeItems.clear();
 
-	if (!m_model)
+	if (!m_model) {
+		// Even with no model, give a small usable scene area
+		updateSceneRectToContent(true);
 		return;
+	}
 
 	buildMissionNodes();
 	buildMissionEdges();
+
+	// Size scene to the items and put the view at the top-left
+	updateSceneRectToContent(true);
 }
 
 static detail::SpecialMode deriveMode(const CampaignEditorDialogModel& model, int missionIdx)
@@ -503,6 +551,9 @@ void CampaignMissionGraph::buildMissionEdges()
 	if (missions.empty())
 		return;
 
+	// Ensure END sink exists/positioned if any MAIN branch uses it
+	ensureEndSink();
+
 	// Map mission name -> index (for branch targets)
 	std::unordered_map<std::string, int> nameToIndex;
 	nameToIndex.reserve(missions.size());
@@ -525,9 +576,28 @@ void CampaignMissionGraph::buildMissionEdges()
 		int mainIdx = 0, specIdx = 0;
 
 		for (const auto& b : m.branches) {
-			// END: skip here (empty next_mission_name). We'll add an END sink later.
-			if (b.next_mission_name.empty())
+			// MAIN ? END (empty target) allowed
+			if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) {
+				if (m_endSink) {
+					const int sibCount = mainTotal;
+					const int sibIndex = mainIdx++;
+
+					const QPointF srcPt = srcNode->mainNubScenePos();
+					const QPointF dstPt = m_endSink->inboundAnchorScenePos();
+
+					auto* edge = new detail::EdgeItem(i, b.id, /*isSpecial*/ false, mode, m_style);
+					edge->setEndpoints(srcPt, dstPt, sibIndex, sibCount);
+					m_scene->addItem(edge);
+					m_edgeItems.push_back(edge);
+				}
+				continue; // handled
+			}
+
+			// SPECIAL with empty target is nonsensical; ignore
+			if ((b.is_loop || b.is_fork) && b.next_mission_name.empty()) {
+				// optional: qWarning() << "Special branch with empty next_mission_name ignored for mission" << i;
 				continue;
+			}
 
 			auto it = nameToIndex.find(b.next_mission_name);
 			if (it == nameToIndex.end())
@@ -567,6 +637,53 @@ void CampaignMissionGraph::buildMissionEdges()
 			m_scene->addItem(edge);
 			m_edgeItems.push_back(edge);
 		}
+	}
+}
+
+void CampaignMissionGraph::ensureEndSink()
+{
+	// Needs END only if any MAIN branch (non-special) ends the campaign
+	bool needsEnd = false;
+	if (m_model) {
+		const auto& missions = m_model->getCampaignMissions();
+		for (const auto& m : missions) {
+			for (const auto& b : m.branches) {
+				if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) { // MAIN ? END only
+					needsEnd = true;
+					break;
+				}
+			}
+			if (needsEnd)
+				break;
+		}
+	}
+
+	// Remove if not needed
+	if (!needsEnd) {
+		if (m_endSink) {
+			m_scene->removeItem(m_endSink);
+			delete m_endSink;
+			m_endSink = nullptr;
+		}
+		return;
+	}
+
+	// Create if missing
+	if (!m_endSink) {
+		m_endSink = new detail::EndSinkItem(m_style);
+		m_endSink->setZValue(9.0); // above edges (5), below nodes (10)
+		m_scene->addItem(m_endSink);
+	}
+
+	// Position below the union of mission nodes
+	if (!m_nodeItems.empty()) {
+		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->boundingRect());
+		for (size_t i = 1; i < m_nodeItems.size(); ++i) {
+			nodesRect = nodesRect.united(m_nodeItems[i]->mapRectToScene(m_nodeItems[i]->boundingRect()));
+		}
+		const qreal x = nodesRect.center().x() - m_style.endSinkSize.width() * 0.5;
+		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
+		m_endSink->setPos(QPointF(x, y));
 	}
 }
 
@@ -615,17 +732,17 @@ void CampaignMissionGraph::wheelEvent(QWheelEvent* e)
 
 void CampaignMissionGraph::drawBackground(QPainter* p, const QRectF& rect)
 {
-	Q_UNUSED(rect);
 	if (!m_gridVisible)
 		return;
 
 	p->save();
 	p->setRenderHint(QPainter::Antialiasing, false);
 
-	// Fill bg (in case view brush is transparent)
-	p->fillRect(this->rect(), m_style.bgColor);
+	// Fill the currently exposed SCENE area (not the widget rect)
+	p->fillRect(rect, m_style.bgColor);
 
-	drawGrid(p, mapToScene(this->rect()).boundingRect());
+	// Draw grid over the same scene rect
+	drawGrid(p, rect);
 
 	p->restore();
 }
@@ -648,13 +765,13 @@ void CampaignMissionGraph::drawGrid(QPainter* p, const QRectF& sceneRect)
 	penMajor.setCosmetic(true);
 	penMajor.setWidthF(1.2);
 
-	// Vertical
+	// Vertical lines
 	for (qreal x = left; x <= right; x += minor) {
 		const bool isMajor = qFuzzyIsNull(std::fmod(std::abs(x), major));
 		p->setPen(isMajor ? penMajor : penMinor);
 		p->drawLine(QPointF(x, top), QPointF(x, bottom));
 	}
-	// Horizontal
+	// Horizontal lines
 	for (qreal y = top; y <= bottom; y += minor) {
 		const bool isMajor = qFuzzyIsNull(std::fmod(std::abs(y), major));
 		p->setPen(isMajor ? penMajor : penMinor);
