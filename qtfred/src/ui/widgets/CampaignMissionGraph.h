@@ -1,5 +1,9 @@
 #pragma once
 
+#include "globalincs/pstypes.h"
+
+#include "mission/dialogs/CampaignEditorDialogModel.h"
+
 #include <QGraphicsObject>
 #include <QGraphicsPathItem>
 #include <QGraphicsView>
@@ -9,6 +13,7 @@
 // Forward declaration to avoid coupling for now
 namespace fso::fred::dialogs {
 class CampaignEditorDialogModel;
+enum class CampaignSpecialMode;
 } // namespace fso::fred::dialogs
 
 class QGraphicsScene;
@@ -94,6 +99,10 @@ class CampaignMissionGraph final : public QGraphicsView {
 	// Rebuild/redraw the entire scene from the model
 	void rebuildAll();
 
+	void
+	setSelectedMission(int missionIndex, bool makeVisible = true, bool centerOnItem = false, bool emitSignal = false);
+	void clearSelectedMission();
+
 	// View helpers
 	void zoomToFitAll(qreal margin = 40.0);
 	void setGridVisible(bool on);
@@ -135,8 +144,8 @@ class CampaignMissionGraph final : public QGraphicsView {
 	CampaignGraphStyle m_style;
 
 	// Items we create (aligned to model order)
-	std::vector<detail::MissionNodeItem*> m_nodeItems;
-	std::vector<detail::EdgeItem*> m_edgeItems;
+	SCP_vector<detail::MissionNodeItem*> m_nodeItems;
+	SCP_vector<detail::EdgeItem*> m_edgeItems;
 	QPointer<detail::EndSinkItem> m_endSink{nullptr};
 
 	bool m_gridVisible{true};
@@ -150,10 +159,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 
 namespace detail {
 
-enum class SpecialMode {
-	Loop,
-	Fork
-};
+using fso::fred::dialogs::CampaignSpecialMode;
 
 /**
  * One mission node item.
@@ -165,7 +171,7 @@ class MissionNodeItem final : public QGraphicsObject {
 		const QString& fileLabel,
 		const QString& nameLabel,
 		int graphColorRgb, // -1 = none else 0xRRGGBB
-		SpecialMode mode,
+		CampaignSpecialMode mode,
 		int mainBranchCount,
 		int specialBranchCount,
 		const CampaignGraphStyle& style,
@@ -195,7 +201,7 @@ class MissionNodeItem final : public QGraphicsObject {
 	QString m_file;
 	QString m_name;
 	int m_graphColor{-1};
-	SpecialMode m_mode{SpecialMode::Loop};
+	CampaignSpecialMode m_mode{CampaignSpecialMode::Loop};
 	int m_mainCount{0};
 	int m_specCount{0};
 
@@ -217,7 +223,7 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	EdgeItem(int missionIndex,
 		int branchId,
 		bool isSpecial,
-		SpecialMode mode,
+		CampaignSpecialMode mode,
 		const CampaignGraphStyle& style,
 		QGraphicsItem* parent = nullptr);
 
@@ -242,7 +248,7 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	int m_missionIndex{-1};
 	int m_branchId{-1};
 	bool m_isSpecial{false};
-	SpecialMode m_mode{SpecialMode::Loop};
+	CampaignSpecialMode m_mode{CampaignSpecialMode::Loop};
 	const CampaignGraphStyle& m_style;
 
 	QColor m_color;
@@ -252,7 +258,7 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	QPointF m_lastSegmentP1; // second-to-last point
 	QPointF m_lastSegmentP2; // last point (path end)
 
-	std::vector<QPointF> m_points; // cached polyline points for arrow placement
+	SCP_vector<QPointF> m_points; // cached polyline points for arrow placement
 };
 
 /**
