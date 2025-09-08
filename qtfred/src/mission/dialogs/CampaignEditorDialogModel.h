@@ -31,7 +31,7 @@ struct CampaignBranchData {
 
 
 struct CampaignMissionData {
-	SCP_string name;
+	SCP_string filename;
 	int level = 0;
 	int position = 0;
 	int graph_x = INT_MIN; // For UI layout only

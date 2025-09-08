@@ -46,7 +46,7 @@ struct CampaignGraphStyle {
 	QColor loopOrange{243, 156, 18};   // special out nub when LOOP
 	QColor forkPurple{155, 89, 182};   // special out nub when FORK
 	qreal nubRadius{6.0};
-	qreal nubSpacingBottom{6.0};
+	qreal nubSpacingBottom{6.0}; // retained for future
 	qreal nubOffsetX{42.0};
 
 	// Edge routing
@@ -54,6 +54,13 @@ struct CampaignGraphStyle {
 	qreal fanoutStep{10.0};  // horizontal separation between sibling edges
 	qreal edgeWidth{3.0};
 	qreal arrowSize{8.0}; // arrowhead size
+	qreal arrowTargetInset{10.0};
+	qreal arrowInterval{100.0}; // place an arrow every N px along straight segments
+
+	// Self-loop display
+	bool showSelfLoops{false};
+	qreal selfLoopMargin{32.0}; // how far outside the node to wrap
+	qreal selfLoopSpread{10.0}; // per-sibling additional spacing
 
 	// Badge
 	qreal badgePad{6.0};
@@ -92,7 +99,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void missionSelected(int missionIndex);
 	// Emitted when the LOOP/FORK badge is clicked (only when no special branches exist)
 	void specialModeToggleRequested(int missionIndex);
-	// Emitted when an edge is clicked
+	// (Edges are now non-interactive, keeping this signal around is harmless if you already wired it)
 	void branchSelected(int missionIndex, int branchId);
 
   protected:
@@ -188,6 +195,7 @@ class MissionNodeItem final : public QGraphicsObject {
 
 /**
  * Edge between missions (with arrowhead). Drawn with Manhattan routing and fan-out.
+ * Non-interactive: edges ignore mouse events and are not selectable.
  */
 class EdgeItem final : public QObject, public QGraphicsPathItem {
 	Q_OBJECT
@@ -199,22 +207,22 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 		const CampaignGraphStyle& style,
 		QGraphicsItem* parent = nullptr);
 
-	// Compute and apply a Manhattan path given endpoints and fan-out parameters
+	// Standard (non-self) edge
 	void setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount);
 
-	// Colors/pens are selected by ctor args (main vs loop vs fork)
-	void setSelectedVisual(bool sel);
+	// Self-loop variant (wrap outside node rect on the appropriate side)
+	void setSelfLoop(const QRectF& nodeRectScene, bool sourceIsRightSide, int siblingIndex, int siblingCount);
 
-  signals:
-	void edgeClicked(int missionIndex, int branchId);
+	// (kept for completeness; not used now)
+	void setSelectedVisual(bool sel);
 
   protected:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
-	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
 
   private:
-	// Non-const now: updates cached last segment points for arrowhead
 	QPainterPath buildPath(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount);
+	QPainterPath
+	buildSelfLoopPath(const QRectF& nodeRectScene, bool sourceIsRightSide, int siblingIndex, int siblingCount);
 
   private:
 	int m_missionIndex{-1};
@@ -229,6 +237,8 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	// Cache for arrow drawing
 	QPointF m_lastSegmentP1; // second-to-last point
 	QPointF m_lastSegmentP2; // last point (path end)
+
+	std::vector<QPointF> m_points; // cached polyline points for arrow placement
 };
 
 } // namespace detail

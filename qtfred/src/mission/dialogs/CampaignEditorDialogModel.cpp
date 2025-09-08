@@ -58,7 +58,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 			const auto& source_mission = Campaign.missions[i];
 			auto& dest_mission = m_missions.emplace_back();
 
-			dest_mission.name = source_mission.name;
+			dest_mission.filename = source_mission.name;
 			dest_mission.level = source_mission.level;
 			dest_mission.position = source_mission.pos;
 			dest_mission.briefing_cutscene = source_mission.briefing_cutscene;
@@ -155,7 +155,7 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 	if (is_loop) {
 		const cmission* source_cmission = nullptr;
 		for (int i = 0; i < Campaign.num_missions; ++i) {
-			if (mission.name == Campaign.missions[i].name) {
+			if (mission.filename == Campaign.missions[i].name) {
 				source_cmission = &Campaign.missions[i];
 				break;
 			}
@@ -218,7 +218,7 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 	// Get missions already in the campaign
 	std::unordered_set<SCP_string> active_missions;
 	for (const auto& mission_data : m_missions) {
-		active_missions.insert(mission_data.name);
+		active_missions.insert(mission_data.filename);
 	}
 
 	// Build the final list of available missions
@@ -270,7 +270,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		const auto& source_mission = m_missions[i];
 		auto& dest_mission = Campaign.missions[i];
 
-		dest_mission.name = strdup(source_mission.name.c_str());
+		dest_mission.name = strdup(source_mission.filename.c_str());
 		dest_mission.level = source_mission.level;
 		dest_mission.pos = source_mission.position;
 		strcpy_s(dest_mission.briefing_cutscene, source_mission.briefing_cutscene.c_str());
@@ -481,8 +481,8 @@ bool CampaignEditorDialogModel::checkValidity()
 	// Duplicate Mission Names
 	std::unordered_set<SCP_string> mission_names;
 	for (const auto& mission : m_missions) {
-		if (!mission_names.insert(mission.name).second) {
-			error_message += "Mission \"" + mission.name + "\" is included more than once in the campaign.\n";
+		if (!mission_names.insert(mission.filename).second) {
+			error_message += "Mission \"" + mission.filename + "\" is included more than once in the campaign.\n";
 		}
 	}
 
@@ -490,9 +490,9 @@ bool CampaignEditorDialogModel::checkValidity()
 	if (m_campaign_type != CAMPAIGN_TYPE_SINGLE) {
 		for (const auto& mission_data : m_missions) {
 			mission mission_info;
-			get_mission_info(mission_data.name.c_str(), &mission_info);
+			get_mission_info(mission_data.filename.c_str(), &mission_info);
 			if (mission_info.num_players != m_num_players) {
-				error_message += "Mission \"" + mission_data.name + "\" has " +
+				error_message += "Mission \"" + mission_data.filename + "\" has " +
 								 std::to_string(mission_info.num_players) + " players, but the campaign is set to " +
 								 std::to_string(m_num_players) + " players.\n";
 			}
@@ -505,11 +505,11 @@ bool CampaignEditorDialogModel::checkValidity()
 			if (!branch.next_mission_name.empty()) {
 				// Check if the target mission actually exists in the campaign
 				auto it = std::find_if(m_missions.begin(), m_missions.end(), [&](const CampaignMissionData& m) {
-					return m.name == branch.next_mission_name;
+					return m.filename == branch.next_mission_name;
 				});
 
 				if (it == m_missions.end()) {
-					error_message += "Mission \"" + mission.name +
+					error_message += "Mission \"" + mission.filename +
 									 "\" has a broken branch pointing to a non-existent mission \"" +
 									 branch.next_mission_name + "\".\n";
 				}
@@ -723,7 +723,7 @@ void CampaignEditorDialogModel::addMission(const SCP_string& filename, int level
 
 	// Create and populate the new mission data
 	auto& new_mission = m_missions.emplace_back();
-	new_mission.name = filename;
+	new_mission.filename = filename;
 	new_mission.level = level;
 	new_mission.position = pos;
 
@@ -760,7 +760,7 @@ void CampaignEditorDialogModel::updateMissionPosition(int mission_index, int new
 	}
 
 	// Get the name of the mission we are moving so we can find it again after the sort.
-	SCP_string mission_name_to_find = m_missions[mission_index].name;
+	SCP_string mission_name_to_find = m_missions[mission_index].filename;
 
 	// Update the mission's position data.
 	auto& mission = m_missions[mission_index];
@@ -772,7 +772,7 @@ void CampaignEditorDialogModel::updateMissionPosition(int mission_index, int new
 
 	// Find the new index of our mission and update the selection.
 	for (int i = 0; i < static_cast<int>(m_missions.size()); ++i) {
-		if (m_missions[i].name == mission_name_to_find) {
+		if (m_missions[i].filename == mission_name_to_find) {
 			setCurrentMissionSelection(i);
 			break;
 		}
@@ -880,7 +880,7 @@ SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
 		return "";
 	}
-	return m_missions[m_current_mission_index].name;
+	return m_missions[m_current_mission_index].filename;
 }
 
 // Changing a mission's filename is a complex operation beyond a simple setter,
@@ -1100,7 +1100,7 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 	}
 
 	auto& from_mission = m_missions[from_mission_index];
-	const auto& to_mission_name = m_missions[to_mission_index].name;
+	const auto& to_mission_name = m_missions[to_mission_index].filename;
 
 	// Prevent creating a duplicate branch to the same mission
 	for (const auto& existing_branch : from_mission.branches) {
