@@ -13,6 +13,11 @@ enum class CampaignFormat {
 	FSO
 };
 
+enum class CampaignSpecialMode {
+	Loop,
+	Fork
+};
+
 struct CampaignBranchData {
 	int id = -1;
 	int sexp_formula = -1;
@@ -39,6 +44,8 @@ struct CampaignMissionData {
 	int debrief_persona_index = 0;
 
 	bool retail_bastion = false;
+
+	CampaignSpecialMode special_mode_hint = CampaignSpecialMode::Loop;
 
 	SCP_vector<CampaignBranchData> branches;
 };
@@ -112,6 +119,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setMissionGraphY(int i, int y);
 	int getMissionGraphColor(int i) const; // -1 = unset, else 0xRRGGBB
 	void setMissionGraphColor(int i, int rgb0xRRGGBB);
+	CampaignSpecialMode getMissionSpecialMode(int i) const;
+	void setMissionSpecialMode(int i, CampaignSpecialMode mode); 
 
 	// Current Mission
 	SCP_string getCurrentMissionFilename() const;

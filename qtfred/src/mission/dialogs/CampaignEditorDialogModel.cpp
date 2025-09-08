@@ -85,6 +85,11 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 			if (source_mission.flags & CMISSION_FLAG_HAS_LOOP) {
 				parseBranchesFromFormula(dest_mission, source_mission.mission_loop_formula, true);
 			}
+
+			bool has_special_branches = false;
+			const auto& ms = dest_mission.branches;
+			has_special_branches = std::any_of(ms.begin(), ms.end(), [](const CampaignBranchData& b) { return b.is_loop || b.is_fork; });
+			dest_mission.special_mode_hint = has_special_branches ? CampaignSpecialMode::Loop : CampaignSpecialMode::Fork;
 		}
 
 		// Copy ship and weapon permissions from the global Campaign struct
@@ -834,6 +839,41 @@ void CampaignEditorDialogModel::setMissionGraphColor(int i, int rgb0xRRGGBB)
 	}
 }
 
+CampaignSpecialMode CampaignEditorDialogModel::getMissionSpecialMode(int i) const
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return CampaignSpecialMode::Loop; // default visual mode
+	}
+	const auto& m = m_missions[i];
+
+	// If any special branches exist, derive mode from them
+	for (const auto& b : m.branches) {
+		if (b.is_loop)
+			return CampaignSpecialMode::Loop;
+	}
+	for (const auto& b : m.branches) {
+		if (b.is_fork)
+			return CampaignSpecialMode::Fork;
+	}
+	// Otherwise use the editor hint (default LOOP)
+	return m.special_mode_hint;
+}
+
+void CampaignEditorDialogModel::setMissionSpecialMode(int i, CampaignSpecialMode mode)
+{
+	if (!SCP_vector_inbounds(m_missions, i))
+		return;
+
+	bool has_special_branches = false;
+	const auto& ms = m_missions[i].branches;
+	has_special_branches = std::any_of(ms.begin(), ms.end(), [](const CampaignBranchData& b) { return b.is_loop || b.is_fork; });
+
+	// If special branches already exist, mode is locked
+	if (has_special_branches)
+		return;
+
+	modify(m_missions[i].special_mode_hint, mode);
+}
 
 SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
 {
