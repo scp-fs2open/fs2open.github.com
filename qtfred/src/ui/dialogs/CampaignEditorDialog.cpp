@@ -94,6 +94,43 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 
 	ui->mainTabs->setCurrentIndex(0); // Ensure the first tab is selected
 
+	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps); // model exists now
+	ui->graphView->setModel(_model.get());
+
+	// TODO move these to auto slots
+	connect(ui->graphView, &CampaignMissionGraph::missionSelected, this, [this](int idx) {
+		_model->setCurrentMissionSelection(idx);
+
+		SCP_string filename = _model->getCurrentMissionFilename();
+		mission mission_info;
+		if (get_mission_info(filename.c_str(), &mission_info) != 0) {
+			// Failed to retrieve mission info, clear fields and return
+			ui->missionNameLineEdit->clear();
+			ui->missionDescriptionPlainTextEdit->clear();
+			return;
+		}
+
+		if (mission_info.name) {
+			ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
+		} else {
+			ui->missionNameLineEdit->clear();
+		}
+
+		if (mission_info.notes) {
+			ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
+		} else {
+			ui->missionDescriptionPlainTextEdit->clear();
+		}
+	});
+
+	connect(ui->graphView, &CampaignMissionGraph::specialModeToggleRequested, this, [this](int idx) {
+		// Only toggle if mission has no special branches (view already enforces)
+		// You can add a tiny setter later; for now just flip your hint if you’ve added it
+		// model->setMissionSpecialMode(idx, ... toggled value ...);
+		// ui refresh after change:
+		ui->graphView->rebuildAll();
+	});
+
 	initializeUi();
 	updateUi();
 
@@ -204,6 +241,8 @@ void CampaignEditorDialog::updateUi()
 	
 	updateTechLists();
 	updateAvailableMissionsList();
+
+	ui->graphView->rebuildAll();
 }
 
 void CampaignEditorDialog::updateTechLists()
@@ -286,6 +325,7 @@ void CampaignEditorDialog::on_actionNew_triggered()
 
 	_model->createNewCampaign();
 	updateUi();
+	ui->graphView->zoomToFitAll();
 }
 
 void CampaignEditorDialog::on_actionOpen_triggered()
@@ -306,6 +346,7 @@ void CampaignEditorDialog::on_actionOpen_triggered()
 
 	_model->loadCampaignFromFile(nativePath.toUtf8().constData());
 	updateUi();
+	ui->graphView->zoomToFitAll();
 }
 
 void CampaignEditorDialog::on_actionSave_triggered()
@@ -386,7 +427,9 @@ void CampaignEditorDialog::on_weaponsListWidget_itemChanged(QListWidgetItem* ite
 
 void CampaignEditorDialog::on_errorCheckerButton_clicked()
 {
-	_model->checkValidity();
+	if (_model->checkValidity()) {
+		QMessageBox ::information(this, "No Issues Found", "No issues were found in the campaign.");
+	}
 }
 
 void CampaignEditorDialog::on_availableMissionsFilterLineEdit_textChanged(const QString& arg1)
