@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="mainTabs">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="campaignSpecs">
        <attribute name="title">
@@ -55,27 +55,11 @@
         <item>
          <layout class="QHBoxLayout" name="spec2">
           <item>
-           <widget class="QLabel" name="lblDescr">
+           <widget class="QLabel" name="campaignDescriptionLabel">
             <property name="text">
              <string>Campaign Description</string>
             </property>
            </widget>
-          </item>
-          <item>
-           <spacer name="horizontalSpacer">
-            <property name="orientation">
-             <enum>Qt::Horizontal</enum>
-            </property>
-            <property name="sizeType">
-             <enum>QSizePolicy::Fixed</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>40</width>
-              <height>20</height>
-             </size>
-            </property>
-           </spacer>
           </item>
           <item>
            <widget class="QCheckBox" name="resetTechAtStartCheckBox">
@@ -84,6 +68,13 @@
             </property>
             <property name="text">
              <string>Reset tech db at start of campaign</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QPushButton" name="campaignCustomDataButton">
+            <property name="text">
+             <string>Custom Data</string>
             </property>
            </widget>
           </item>
