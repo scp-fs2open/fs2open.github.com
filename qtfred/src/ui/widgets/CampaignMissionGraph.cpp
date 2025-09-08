@@ -8,7 +8,10 @@
 #include <QStyleOptionGraphicsItem>
 #include <QWheelEvent>
 #include <QtMath>
+#include <cmath>
+#include <unordered_map>
 
+using detail::EdgeItem;
 using detail::MissionNodeItem;
 using detail::SpecialMode;
 using fso::fred::dialogs::CampaignEditorDialogModel;
@@ -117,8 +120,8 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	} else {
 		const QPointF c = badgeRect.center();
 		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x(), badgeRect.bottom() - 3));
-		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x() - 6, badgeRect.top() + 8));
-		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x() + 6, badgeRect.top() + 8));
+		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x() - 6, c.y() - 3));
+		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x() + 6, c.y() - 3));
 	}
 
 	// 5) Text: filename (top) and mission name (below stripe)
@@ -191,44 +194,124 @@ QPointF MissionNodeItem::specialNubScenePos() const
 }
 
 // ----------------------------
-// CampaignMissionGraph impl
+// EdgeItem definitions
 // ----------------------------
 
-CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
+EdgeItem::EdgeItem(int missionIndex,
+	int branchId,
+	bool isSpecial,
+	SpecialMode mode,
+	const CampaignGraphStyle& style,
+	QGraphicsItem* parent)
+	: QObject(), QGraphicsPathItem(parent), m_missionIndex(missionIndex), m_branchId(branchId), m_isSpecial(isSpecial),
+	  m_mode(mode), m_style(style)
 {
-	initScene();
+	setZValue(5); // below nodes (nodes use 10)
+	setAcceptHoverEvents(true);
+	setFlag(QGraphicsItem::ItemIsSelectable, true);
 
-	// View behavior
-	setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-	setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-	setDragMode(QGraphicsView::ScrollHandDrag);
-	setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-	setBackgroundBrush(m_style.bgColor);
-	setFrameShape(QFrame::NoFrame); // optional
+	if (!m_isSpecial) {
+		m_color = m_style.mainBlue;
+		m_dash = Qt::SolidLine;
+	} else {
+		if (m_mode == SpecialMode::Loop) {
+			m_color = m_style.loopOrange;
+			m_dash = Qt::DashLine;
+		} else {
+			m_color = m_style.forkPurple;
+			m_dash = Qt::DashDotLine;
+		}
+	}
+	QPen pen(m_color, m_style.edgeWidth, m_dash, Qt::RoundCap, Qt::RoundJoin);
+	pen.setCosmetic(true);
+	setPen(pen);
 }
 
-void CampaignMissionGraph::initScene()
+void EdgeItem::setSelectedVisual(bool sel)
 {
-	m_scene = new QGraphicsScene(this);
-	setScene(m_scene);
-	m_scene->setSceneRect(QRectF(-4000, -4000, 8000, 8000));
+	QPen pen = this->pen();
+	pen.setWidthF(sel ? m_style.edgeWidth + 1.5 : m_style.edgeWidth);
+	setPen(pen);
+	update();
 }
 
-void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
+void EdgeItem::setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
 {
-	m_model = model;
-	rebuildAll();
+	const auto path = buildPath(src, dst, siblingIndex, siblingCount);
+	setPath(path);
+	update();
 }
 
-void CampaignMissionGraph::rebuildAll()
+QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
 {
-	if (!m_scene)
+	// Sibling offset centered around zero
+	const qreal offset = (siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.fanoutStep) : 0.0;
+
+	// Start with a short vertical out from source
+	const QPointF p0 = src;
+	const QPointF p1 = p0 + QPointF(0, m_style.fanoutStart); // down
+
+	// Fan-out horizontally from source side
+	const bool sourceIsRight = (m_isSpecial); // special nub is on right side of node
+	const qreal fanDir = sourceIsRight ? +1.0 : -1.0;
+	const QPointF p2 = p1 + QPointF(offset * fanDir, 0);
+
+	// Approach target: vertical near target then into it
+	const QPointF p3(dst.x(), p2.y());
+	const QPointF p4(dst.x(), dst.y() - m_style.fanoutStart);
+	const QPointF p5 = dst; // final into inbound nub (vertical)
+
+	QPainterPath path(p0);
+	path.lineTo(p1);
+	path.lineTo(p2);
+	path.lineTo(p3);
+	path.lineTo(p4);
+	path.lineTo(p5);
+
+	// Cache last segment for arrowhead (non-const method now)
+	m_lastSegmentP1 = p4;
+	m_lastSegmentP2 = p5;
+
+	return path;
+}
+
+void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
+{
+	QGraphicsPathItem::paint(painter, option, widget);
+
+	// Arrowhead at the end (toward m_lastSegmentP2)
+	const QPointF a = m_lastSegmentP1;
+	const QPointF b = m_lastSegmentP2;
+	const QPointF v = b - a;
+	const qreal len = std::hypot(v.x(), v.y());
+	if (len < 0.001)
 		return;
-	m_scene->clear();
-	if (!m_model)
-		return;
 
-	buildMissionNodes();
+	const QPointF dir = v / len;
+	const QPointF ortho(-dir.y(), dir.x());
+	const qreal s = m_style.arrowSize;
+
+	QPolygonF arrow;
+	arrow << b << (b - dir * s + ortho * (s * 0.5)) << (b - dir * s - ortho * (s * 0.5));
+
+	QBrush brush(this->pen().color());
+	QPen pen = this->pen();
+	pen.setCapStyle(Qt::SquareCap);
+	painter->setPen(pen);
+	painter->setBrush(brush);
+	painter->drawPolygon(arrow);
+}
+
+void EdgeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+{
+	if (event->button() == Qt::LeftButton) {
+		Q_EMIT edgeClicked(m_missionIndex, m_branchId);
+		setSelected(true);
+		setSelectedVisual(true);
+		event->accept();
+		return;
+	}
+	QGraphicsPathItem::mousePressEvent(event);
 }
 
 static detail::SpecialMode deriveMode(const CampaignEditorDialogModel& model, int missionIdx)
@@ -253,6 +336,8 @@ void CampaignMissionGraph::buildMissionNodes()
 {
 	const auto& missions = m_model->getCampaignMissions();
 	const QPointF fallbackStep(240, 160);
+
+	m_nodeItems.reserve(missions.size());
 
 	for (int i = 0; i < (int)missions.size(); ++i) {
 		const auto& m = missions[i];
@@ -287,7 +372,114 @@ void CampaignMissionGraph::buildMissionNodes()
 			&CampaignMissionGraph::specialModeToggleRequested);
 
 		m_scene->addItem(item);
+		m_nodeItems.push_back(item);
 	}
+}
+
+void CampaignMissionGraph::buildMissionEdges()
+{
+	const auto& missions = m_model->getCampaignMissions();
+	if (missions.empty())
+		return;
+
+	// Map mission name -> index (for branch targets)
+	std::unordered_map<std::string, int> nameToIndex;
+	nameToIndex.reserve(missions.size());
+	for (int i = 0; i < (int)missions.size(); ++i) {
+		nameToIndex[missions[i].name] = i;
+	}
+
+	// For each mission, build edges to other missions (skip END for now: empty next_mission_name)
+	for (int i = 0; i < (int)missions.size(); ++i) {
+		const auto& m = missions[i];
+		const auto* srcNode = m_nodeItems[i];
+
+		// Determine mode for special styling
+		const auto mode = deriveMode(*m_model, i);
+
+		// Prepare sibling counters for fan-out
+		int mainTotal = 0, specTotal = 0;
+		for (const auto& b : m.branches) {
+			(b.is_loop || b.is_fork) ? ++specTotal : ++mainTotal;
+		}
+		int mainIdx = 0, specIdx = 0;
+
+		for (const auto& b : m.branches) {
+			// Skip END for now
+			if (b.next_mission_name.empty())
+				continue;
+
+			auto it = nameToIndex.find(b.next_mission_name);
+			if (it == nameToIndex.end()) {
+				// Target mission name not found (possibly missing from list); skip gracefully
+				continue;
+			}
+			const int j = it->second;
+			const auto* dstNode = m_nodeItems[j];
+			if (!srcNode || !dstNode)
+				continue;
+
+			const bool isSpecial = (b.is_loop || b.is_fork);
+			const int sibCount = isSpecial ? specTotal : mainTotal;
+			const int sibIndex = isSpecial ? specIdx++ : mainIdx++;
+
+			const QPointF srcPt = isSpecial ? srcNode->specialNubScenePos() : srcNode->mainNubScenePos();
+			const QPointF dstPt = dstNode->inboundNubScenePos();
+
+			auto* edge = new EdgeItem(i, b.id, isSpecial, mode, m_style);
+			edge->setEndpoints(srcPt, dstPt, sibIndex, sibCount);
+
+			connect(edge, &EdgeItem::edgeClicked, this, [this](int mi, int bid) { Q_EMIT branchSelected(mi, bid); });
+
+			m_scene->addItem(edge);
+			m_edgeItems.push_back(edge);
+		}
+	}
+}
+
+// ----------------------------
+// View helpers
+// ----------------------------
+
+CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
+{
+	initScene();
+
+	// View behavior
+	setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+	setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+	setDragMode(QGraphicsView::ScrollHandDrag);
+	setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+	setBackgroundBrush(m_style.bgColor);
+	setFrameShape(QFrame::NoFrame); // optional
+}
+
+void CampaignMissionGraph::initScene()
+{
+	m_scene = new QGraphicsScene(this);
+	setScene(m_scene);
+	m_scene->setSceneRect(QRectF(-4000, -4000, 8000, 8000));
+}
+
+void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
+{
+	m_model = model;
+	rebuildAll();
+}
+
+void CampaignMissionGraph::rebuildAll()
+{
+	if (!m_scene)
+		return;
+	m_scene->clear();
+	m_nodeItems.clear();
+	m_edgeItems.clear();
+
+	if (!m_model)
+		return;
+
+	buildMissionNodes();
+	buildMissionEdges();
 }
 
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
