@@ -908,7 +908,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		int num_allowed = 0;
 		auto m_path_mask = 0;
 		for (auto i = 0; i < static_cast<int>(arrivalPaths.size()); i++) {
-			if (arrivalPaths[i].second == true) {
+			if (arrivalPaths[i].second) {
 				m_path_mask |= (1 << i);
 				num_allowed++;
 			}
@@ -1085,7 +1085,7 @@ int ShipEditorDialogModel::getTeam() const
 	return _m_team;
 }
 
-void ShipEditorDialogModel::setCargo(const SCP_string m_cargo)
+void ShipEditorDialogModel::setCargo(const SCP_string& m_cargo)
 {
 	modify(_m_cargo1, m_cargo);
 }
@@ -1095,7 +1095,7 @@ SCP_string ShipEditorDialogModel::getCargo() const
 	return _m_cargo1;
 }
 
-void ShipEditorDialogModel::setAltName(const SCP_string m_altName)
+void ShipEditorDialogModel::setAltName(const SCP_string& m_altName)
 {
 	modify(_m_alt_name, m_altName);
 }
@@ -1105,7 +1105,7 @@ SCP_string ShipEditorDialogModel::getAltName() const
 	return _m_alt_name;
 }
 
-void ShipEditorDialogModel::setCallsign(const SCP_string m_callsign)
+void ShipEditorDialogModel::setCallsign(const SCP_string& m_callsign)
 {
 	modify(_m_callsign, m_callsign);
 }
