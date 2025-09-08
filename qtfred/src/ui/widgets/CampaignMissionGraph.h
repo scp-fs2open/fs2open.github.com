@@ -1,8 +1,10 @@
 #pragma once
 
 #include <QGraphicsObject>
+#include <QGraphicsPathItem>
 #include <QGraphicsView>
 #include <QPointer>
+#include <vector>
 
 // Forward declaration to avoid coupling for now
 namespace fso::fred::dialogs {
@@ -10,6 +12,12 @@ class CampaignEditorDialogModel;
 } // namespace fso::fred::dialogs
 
 class QGraphicsScene;
+
+// Forward-declare internal items so we can use pointers before the full namespace block
+namespace detail {
+class MissionNodeItem;
+class EdgeItem;
+} // namespace detail
 
 /**
  * Visual style knobs for the graph. Kept public so both the graph and items use the same values.
@@ -38,11 +46,14 @@ struct CampaignGraphStyle {
 	QColor loopOrange{243, 156, 18};   // special out nub when LOOP
 	QColor forkPurple{155, 89, 182};   // special out nub when FORK
 	qreal nubRadius{6.0};
-	qreal nubOffsetX{42.0};      // +/- from node center to place the two bottom nubs
+	qreal nubSpacingBottom{6.0};
+	qreal nubOffsetX{42.0};
 
-	// Future edge fan-out (used by edges later)
+	// Edge routing
 	qreal fanoutStart{12.0}; // vertical run from nub before spreading
 	qreal fanoutStep{10.0};  // horizontal separation between sibling edges
+	qreal edgeWidth{3.0};
+	qreal arrowSize{8.0}; // arrowhead size
 
 	// Badge
 	qreal badgePad{6.0};
@@ -52,9 +63,6 @@ struct CampaignGraphStyle {
 
 /**
  * @brief Canvas for the campaign mission graph.
- *
- * v1 renders mission nodes (no edges yet), supports pan/zoom,
- * and exposes signals for node selection & special-mode badge toggling.
  */
 class CampaignMissionGraph final : public QGraphicsView {
 	Q_OBJECT
@@ -83,7 +91,9 @@ class CampaignMissionGraph final : public QGraphicsView {
 	// Emitted when a mission node is clicked/selected
 	void missionSelected(int missionIndex);
 	// Emitted when the LOOP/FORK badge is clicked (only when no special branches exist)
-	void specialModeToggleRequested(int missionIndex); // caller toggles in model
+	void specialModeToggleRequested(int missionIndex);
+	// Emitted when an edge is clicked
+	void branchSelected(int missionIndex, int branchId);
 
   protected:
 	// Pan/zoom
@@ -95,6 +105,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void initScene();
 	void drawGrid(QPainter* p, const QRectF& rect);
 	void buildMissionNodes();
+	void buildMissionEdges();
 
   private:
 	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
@@ -103,6 +114,10 @@ class CampaignMissionGraph final : public QGraphicsView {
 	// Centralized visuals
 	CampaignGraphStyle m_style;
 
+	// Items we create (aligned to model order)
+	std::vector<detail::MissionNodeItem*> m_nodeItems;
+	std::vector<detail::EdgeItem*> m_edgeItems;
+
 	bool m_gridVisible{true};
 	bool m_zoomEnabled{true};
 	qreal m_currentScale{1.0};
@@ -110,7 +125,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	const qreal kMaxScale{3.0};
 };
 
-// ---------- Internal item that lives only with this widget (Q_OBJECT in header so AUTOMOC runs) ----------
+// ---------- Internal items (Q_OBJECT in header so AUTOMOC runs) ----------
 
 namespace detail {
 
@@ -120,13 +135,7 @@ enum class SpecialMode {
 };
 
 /**
- * One mission node item:
- * - rounded rect, filename/mission labels, user color stripe
- * - top inbound nub (green)
- * - two bottom outbound nubs: main (blue) and special (orange/purple)
- * - clickable badge to toggle LOOP/FORK when unlocked (no special branches yet)
- *
- * Exposes nub positions (scene coords) for anchoring edges later.
+ * One mission node item.
  */
 class MissionNodeItem final : public QGraphicsObject {
 	Q_OBJECT
@@ -144,7 +153,7 @@ class MissionNodeItem final : public QGraphicsObject {
 	QRectF boundingRect() const override;
 	void paint(QPainter* p, const QStyleOptionGraphicsItem* opt, QWidget* w) override;
 
-	// Nub anchor points (scene coordinates), for edges later
+	// Nub anchor points (scene coordinates)
 	QPointF inboundNubScenePos() const;
 	QPointF mainNubScenePos() const;
 	QPointF specialNubScenePos() const;
@@ -175,6 +184,51 @@ class MissionNodeItem final : public QGraphicsObject {
 	QRectF m_badgeRect;
 	qreal m_titleH{18.0};
 	qreal m_nameH{24.0};
+};
+
+/**
+ * Edge between missions (with arrowhead). Drawn with Manhattan routing and fan-out.
+ */
+class EdgeItem final : public QObject, public QGraphicsPathItem {
+	Q_OBJECT
+  public:
+	EdgeItem(int missionIndex,
+		int branchId,
+		bool isSpecial,
+		SpecialMode mode,
+		const CampaignGraphStyle& style,
+		QGraphicsItem* parent = nullptr);
+
+	// Compute and apply a Manhattan path given endpoints and fan-out parameters
+	void setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount);
+
+	// Colors/pens are selected by ctor args (main vs loop vs fork)
+	void setSelectedVisual(bool sel);
+
+  signals:
+	void edgeClicked(int missionIndex, int branchId);
+
+  protected:
+	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
+	void mousePressEvent(QGraphicsSceneMouseEvent* event) override;
+
+  private:
+	// Non-const now: updates cached last segment points for arrowhead
+	QPainterPath buildPath(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount);
+
+  private:
+	int m_missionIndex{-1};
+	int m_branchId{-1};
+	bool m_isSpecial{false};
+	SpecialMode m_mode{SpecialMode::Loop};
+	const CampaignGraphStyle& m_style;
+
+	QColor m_color;
+	Qt::PenStyle m_dash{Qt::SolidLine};
+
+	// Cache for arrow drawing
+	QPointF m_lastSegmentP1; // second-to-last point
+	QPointF m_lastSegmentP2; // last point (path end)
 };
 
 } // namespace detail

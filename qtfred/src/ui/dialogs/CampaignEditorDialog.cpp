@@ -131,6 +131,15 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 		ui->graphView->rebuildAll();
 	});
 
+	connect(ui->graphView, &CampaignMissionGraph::branchSelected, this, [this](int missionIdx, int branchId) {
+		// find branch by id in missionIdx and select in your forms/sexp_tree
+		if (auto* br = _model->findBranchById(missionIdx, branchId)) {
+			_model->setCurrentMissionSelection(missionIdx);
+			_model->setCurrentBranchSelection(0/* index of br in vector if you need */); // need a way to set by id maybe?
+			// expand formula in sexp_tree, etc.
+		}
+	});
+
 	initializeUi();
 	updateUi();
 
