@@ -14,6 +14,7 @@ enum class CampaignFormat {
 };
 
 struct CampaignBranchData {
+	int id = -1;
 	int sexp_formula = -1;
 	SCP_string next_mission_name;
 	bool is_loop = false;
@@ -28,6 +29,9 @@ struct CampaignMissionData {
 	SCP_string name;
 	int level = 0;
 	int position = 0;
+	int graph_x = INT_MIN; // For UI layout only
+	int graph_y = INT_MIN; // For UI layout only
+	int graph_color = -1;  // For UI layout only
 
 	SCP_string briefing_cutscene;
 	SCP_string main_hall;
@@ -102,6 +106,12 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void addMission(const SCP_string& filename, int level, int pos);
 	void removeMission(int mission_index);
 	void updateMissionPosition(int mission_index, int new_level, int new_pos);
+	int getMissionGraphX(int i) const;
+	void setMissionGraphX(int i, int x);
+	int getMissionGraphY(int i) const;
+	void setMissionGraphY(int i, int y);
+	int getMissionGraphColor(int i) const; // -1 = unset, else 0xRRGGBB
+	void setMissionGraphColor(int i, int rgb0xRRGGBB);
 
 	// Current Mission
 	SCP_string getCurrentMissionFilename() const;
@@ -133,6 +143,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void addBranch(int from_mission_index, int to_mission_index);
 	void removeBranch(int mission_index, int branch_index);
 	void updateCurrentBranch(int internal_node_id);
+	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once
+	CampaignBranchData* findBranchById(int missionIdx, int branchId);
 
 	// Tech
 	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedShips() const;
