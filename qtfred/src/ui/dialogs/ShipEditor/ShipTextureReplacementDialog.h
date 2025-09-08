@@ -63,7 +63,7 @@ class ShipTextureReplacementDialog : public QDialog {
 	void on_inheritAmbiantTexturecheckbox_toggled(bool);
 	void on_inheritReflectTexturecheckbox_toggled(bool);
 
-  private:
+  private://NOLINT
 	std::unique_ptr<Ui::ShipTextureReplacementDialog> ui;
 	std::unique_ptr<ShipTextureReplacementDialogModel> _model;
 	EditorViewport* _viewport;

@@ -94,13 +94,13 @@ class ShipEditorDialogModel : public AbstractDialogModel {
 	void setTeam(const int);
 	int getTeam() const;
 
-	void setCargo(const SCP_string);
+	void setCargo(const SCP_string&);
 	SCP_string getCargo() const;
 
-	void setAltName(const SCP_string);
+	void setAltName(const SCP_string&);
 	SCP_string getAltName() const;
 
-	void setCallsign(const SCP_string);
+	void setCallsign(const SCP_string&);
 	SCP_string getCallsign() const;
 
 	/**

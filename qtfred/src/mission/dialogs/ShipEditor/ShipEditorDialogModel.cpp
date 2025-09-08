@@ -112,10 +112,10 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getAcceptedOrder
 
 	for (size_t order_id : default_orders) {
 		SCP_string name = Player_orders[order_id].localized_name;
-		bool state = 0;
+		bool state = false;
 		const SCP_set<size_t>& orders_accepted = Ships[_editor->cur_ship].orders_accepted;
 		if (orders_accepted.contains(order_id))
-			state = 1;
+			state = true;
 		acceptedOrders.emplace_back(name, state);
 	}
 	return acceptedOrders;
@@ -215,7 +215,7 @@ void ShipEditorDialogModel::initializeData()
 	ship_orders.clear(); // assume they are all the same type
 	if (ship_count) {
 		if (!multi_edit) {
-			Assert((ship_count == 1) && (base_ship >= 0));
+			Assert((ship_count == 1) && (base_ship >= 0)); //NOLINT
 			_m_ship_name = Ships[base_ship].ship_name;
 			_m_ship_display_name = Ships[base_ship].has_display_name() ? Ships[base_ship].get_display_name() : "<none>";
 		} else {
@@ -473,7 +473,7 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getArrivalPaths(
 		if (m_path_mask == 0) {
 			allowed = true;
 		} else {
-			allowed = (m_path_mask & (1 << i)) ? true : false;
+			allowed = (m_path_mask & (1 << i)) != 0;
 		}
 		m_path_list.emplace_back(name, allowed);
 	}
@@ -635,7 +635,7 @@ bool ShipEditorDialogModel::update_data()
 
 		wing = Ships[single_ship].wingnum;
 		if (wing >= 0) {
-			Assert((wing < MAX_WINGS) && Wings[wing].wave_count);
+			Assert((wing < MAX_WINGS) && Wings[wing].wave_count); //NOLINT
 			int j;
 			for (j = 0; j < Wings[wing].wave_count; j++)
 				if (_editor->wing_objects[wing][j] == Ships[single_ship].objnum)
@@ -922,7 +922,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		int num_allowed = 0;
 		auto m_path_mask = 0;
 		for (auto i = 0; i < static_cast<int>(departurePaths.size()); i++) {
-			if (departurePaths[i].second == true) {
+			if (departurePaths[i].second) {
 				m_path_mask |= (1 << i);
 				num_allowed++;
 			}

@@ -30,7 +30,7 @@ QVariant MapModel::data(const QModelIndex& index, int role) const
 			return (QSize(0, 0));
 		}
 	}
-	return QVariant();
+	return {};
 }
 
 ShipTextureReplacementDialog::ShipTextureReplacementDialog(QDialog* parent, EditorViewport* viewport, bool multiEdit)
