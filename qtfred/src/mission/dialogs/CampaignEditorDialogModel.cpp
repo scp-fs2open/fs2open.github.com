@@ -126,6 +126,7 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 	// The formula is a 'cond' expression. We walk its branches.
 	for (int branch_sexp = CDR(formula_index); branch_sexp != -1; branch_sexp = CDR(branch_sexp)) {
 		auto& new_branch = mission.branches.emplace_back();
+		addBranchIdIfMissing(new_branch);
 		new_branch.is_loop = is_loop;
 
 		// The first part of the branch is the condition SEXP.
@@ -773,6 +774,67 @@ void CampaignEditorDialogModel::updateMissionPosition(int mission_index, int new
 	}
 }
 
+int CampaignEditorDialogModel::getMissionGraphX(int i) const
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return INT_MIN;
+	}
+	return m_missions[i].graph_x; // INT_MIN means "unset"
+}
+
+void CampaignEditorDialogModel::setMissionGraphX(int i, int x)
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return;
+	}
+	auto& m = m_missions[i];
+	if (m.graph_x != x) {
+		modify(m.graph_x, x);
+	}
+}
+
+int CampaignEditorDialogModel::getMissionGraphY(int i) const
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return INT_MIN;
+	}
+	return m_missions[i].graph_y; // INT_MIN means "unset"
+}
+
+void CampaignEditorDialogModel::setMissionGraphY(int i, int y)
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return;
+	}
+	auto& m = m_missions[i];
+	if (m.graph_y != y) {
+		modify(m.graph_y, y);
+	}
+}
+
+int CampaignEditorDialogModel::getMissionGraphColor(int i) const
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return -1;
+	}
+	return m_missions[i].graph_color; // -1 means "unset"
+}
+
+void CampaignEditorDialogModel::setMissionGraphColor(int i, int rgb0xRRGGBB)
+{
+	if (!SCP_vector_inbounds(m_missions, i)) {
+		return;
+	}
+	// Accept -1 (unset) or mask to 24-bit RGB
+	const int normalized = (rgb0xRRGGBB < 0) ? -1 : (rgb0xRRGGBB & 0x00FFFFFF);
+
+	auto& m = m_missions[i];
+	if (m.graph_color != normalized) {
+		modify(m.graph_color, normalized);
+	}
+}
+
+
 SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
@@ -1009,6 +1071,7 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 
 	// Create the new branch data
 	auto& new_branch = from_mission.branches.emplace_back();
+	addBranchIdIfMissing(new_branch);
 	new_branch.next_mission_name = to_mission_name;
 
 	// Ask the UI's tree to create a default SEXP ("true") for this new branch
@@ -1060,6 +1123,39 @@ void CampaignEditorDialogModel::updateCurrentBranch(int internal_node_id)
 
 	m_tree_ops.expandBranch(internal_node_id);
 }
+
+int CampaignEditorDialogModel::addBranchIdIfMissing(CampaignBranchData& b)
+{
+	if (b.id >= 0) {
+		return b.id;
+	}
+
+	// Find the current max id across all missions to avoid collisions,
+	// then assign the next integer.
+	int maxId = -1;
+	for (const auto& mission : m_missions) {
+		for (const auto& br : mission.branches) {
+			maxId = std::max(maxId, br.id);
+		}
+	}
+	b.id = maxId + 1;
+	return b.id;
+}
+
+CampaignBranchData* CampaignEditorDialogModel::findBranchById(int missionIdx, int branchId)
+{
+	if (!SCP_vector_inbounds(m_missions, missionIdx) || branchId < 0) {
+		return nullptr;
+	}
+	auto& branches = m_missions[missionIdx].branches;
+	for (auto& br : branches) {
+		if (br.id == branchId) {
+			return &br;
+		}
+	}
+	return nullptr;
+}
+
 
 const SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedShips() const
 {
