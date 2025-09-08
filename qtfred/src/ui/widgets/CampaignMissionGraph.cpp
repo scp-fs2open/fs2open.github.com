@@ -1,7 +1,5 @@
 #include "ui/widgets/campaignmissiongraph.h"
 
-#include "mission/dialogs/CampaignEditorDialogModel.h"
-
 #include "mission/missionparse.h"
 
 #include <QScrollBar>
@@ -16,7 +14,7 @@
 
 using detail::EdgeItem;
 using detail::MissionNodeItem;
-using detail::SpecialMode;
+using detail::CampaignSpecialMode;
 using fso::fred::dialogs::CampaignEditorDialogModel;
 
 // ----------------------------
@@ -27,7 +25,7 @@ MissionNodeItem::MissionNodeItem(int missionIndex,
 	const QString& fileLabel,
 	const QString& nameLabel,
 	int graphColorRgb,
-	SpecialMode mode,
+	CampaignSpecialMode mode,
 	int mainBranchCount,
 	int specialBranchCount,
 	const CampaignGraphStyle& style,
@@ -80,7 +78,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	p->drawEllipse(mainNub, m_style.nubRadius, m_style.nubRadius);
 
 	// Bottom special (loop/fork color)
-	const QColor specColor = (m_mode == SpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
+	const QColor specColor = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
 	p->setBrush(specColor);
 	p->drawEllipse(specNub, m_style.nubRadius, m_style.nubRadius);
 
@@ -105,7 +103,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 		m_style.badgeSize.height());
 	m_badgeRect = badgeRect;
 
-	QColor badgeCol = (m_mode == SpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
+	QColor badgeCol = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
 	if (badgeDisabled)
 		badgeCol = m_style.badgeDisabled;
 
@@ -115,7 +113,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 
 	// Icon placeholder (swap for your QIcon later)
 	p->setPen(QPen(Qt::white, 2));
-	if (m_mode == SpecialMode::Loop) {
+	if (m_mode == CampaignSpecialMode::Loop) {
 		const QRectF arcRect = badgeRect.adjusted(4, 2, -4, -2);
 		p->drawArc(arcRect, 45 * 16, 270 * 16);
 		p->drawLine(QPointF(arcRect.center().x(), arcRect.top() + 2),
@@ -198,7 +196,7 @@ QPointF MissionNodeItem::specialNubScenePos() const
 EdgeItem::EdgeItem(int missionIndex,
 	int branchId,
 	bool isSpecial,
-	SpecialMode mode,
+	CampaignSpecialMode mode,
 	const CampaignGraphStyle& style,
 	QGraphicsItem* parent)
 	: QObject(), QGraphicsPathItem(parent), m_missionIndex(missionIndex), m_branchId(branchId), m_isSpecial(isSpecial),
@@ -214,7 +212,7 @@ EdgeItem::EdgeItem(int missionIndex,
 		m_color = m_style.mainBlue;
 		m_dash = Qt::SolidLine;
 	} else {
-		if (m_mode == SpecialMode::Loop) {
+		if (m_mode == CampaignSpecialMode::Loop) {
 			m_color = m_style.loopOrange;
 			m_dash = Qt::DashLine;
 		} else {
@@ -478,22 +476,46 @@ void CampaignMissionGraph::rebuildAll()
 	updateSceneRectToContent(true);
 }
 
-static detail::SpecialMode deriveMode(const CampaignEditorDialogModel& model, int missionIdx)
+void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible, bool centerOnItem, bool emitSignal)
 {
-	const auto& missions = model.getCampaignMissions();
-	if (missionIdx < 0 || missionIdx >= (int)missions.size())
-		return detail::SpecialMode::Loop;
-	const auto& m = missions[missionIdx];
-	bool anyLoop = false, anyFork = false;
-	for (const auto& b : m.branches) {
-		anyLoop |= b.is_loop;
-		anyFork |= b.is_fork;
+	if (!m_scene)
+		return;
+
+	// Clear any previous selection first
+	m_scene->clearSelection();
+
+	// Out of range or negative = no selection
+	if (!SCP_vector_inbounds(m_nodeItems, missionIndex)) {
+		return;
 	}
-	if (anyLoop)
-		return detail::SpecialMode::Loop;
-	if (anyFork)
-		return detail::SpecialMode::Fork;
-	return detail::SpecialMode::Loop; // default when none exist
+
+	auto* item = m_nodeItems[missionIndex];
+	if (!item)
+		return;
+
+	item->setSelected(true);
+
+	// bring the item into view
+	if (makeVisible) {
+		// use a small margin so borders/badge are visible
+		ensureVisible(item, 40, 40);
+	}
+	if (centerOnItem) {
+		centerOn(item);
+	}
+
+	// mirror the user-selection signal for listeners
+	if (emitSignal) {
+		Q_EMIT missionSelected(missionIndex);
+	}
+}
+
+void CampaignMissionGraph::clearSelectedMission()
+{
+	if (!m_scene)
+		return;
+	m_scene->clearSelection();
+	Q_EMIT missionSelected(-1);
 }
 
 void CampaignMissionGraph::buildMissionNodes()
@@ -519,7 +541,7 @@ void CampaignMissionGraph::buildMissionNodes()
 		for (const auto& b : m.branches) {
 			(b.is_loop || b.is_fork) ? ++specCount : ++mainCount;
 		}
-		const auto mode = deriveMode(*m_model, i);
+		const auto mode = m.special_mode_hint;
 
 		// Labels
 		QString fileLabel = QString::fromStdString(m.filename);
@@ -566,7 +588,7 @@ void CampaignMissionGraph::buildMissionEdges()
 		const auto& m = missions[i];
 		const auto* srcNode = m_nodeItems[i];
 
-		const auto mode = deriveMode(*m_model, i);
+		const auto mode = m.special_mode_hint;
 
 		// Prepare sibling counters for fan-out
 		int mainTotal = 0, specTotal = 0;
