@@ -120,7 +120,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int getMissionGraphColor(int i) const; // -1 = unset, else 0xRRGGBB
 	void setMissionGraphColor(int i, int rgb0xRRGGBB);
 	CampaignSpecialMode getMissionSpecialMode(int i) const;
-	void setMissionSpecialMode(int i, CampaignSpecialMode mode); 
+	void toggleMissionSpecialMode(int i); 
 
 	// Current Mission
 	SCP_string getCurrentMissionFilename() const;

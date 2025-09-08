@@ -98,7 +98,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 	ui->graphView->setModel(_model.get());
 
 	// TODO move these to auto slots
-	connect(ui->graphView, &CampaignMissionGraph::missionSelected, this, [this](int idx) {
+	/*connect(ui->graphView, &CampaignMissionGraph::missionSelected, this, [this](int idx) {
 		_model->setCurrentMissionSelection(idx);
 
 		SCP_string filename = _model->getCurrentMissionFilename();
@@ -129,7 +129,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 		// model->setMissionSpecialMode(idx, ... toggled value ...);
 		// ui refresh after change:
 		ui->graphView->rebuildAll();
-	});
+	});*/
 
 	initializeUi();
 	updateUi();
@@ -241,6 +241,8 @@ void CampaignEditorDialog::updateUi()
 	
 	updateTechLists();
 	updateAvailableMissionsList();
+	updateMissionDetails();
+	enableDisableControls();
 
 	ui->graphView->rebuildAll();
 }
@@ -287,9 +289,21 @@ void CampaignEditorDialog::updateAvailableMissionsList()
 	}
 }
 
+void CampaignEditorDialog::updateMissionDetails()
+{
+	util::SignalBlockers blocker(this);
+	// TODO fill in mission details from model
+
+	enableDisableControls();
+}
+
 void CampaignEditorDialog::enableDisableControls()
 {
-	
+	bool has_mission = (!_model->getCurrentMissionFilename().empty()); // TODO Add an actual validator to the model??
+
+	ui->sxtBranches->setEnabled(has_mission);
+
+	// TODO enable/disable other controls based on context
 }
 
 bool CampaignEditorDialog::questionSaveChanges()
@@ -440,6 +454,11 @@ void CampaignEditorDialog::on_availableMissionsFilterLineEdit_textChanged(const 
 
 void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
 {
+	// Since we share some of the UI we need to clear it first
+	// so that it's clear what the user is working on
+	ui->graphView->clearSelectedMission();
+	updateMissionDetails();
+	
 	// Get the currently selected item
 	QListWidgetItem* selected_item = ui->availableMissionsListWidget->currentItem();
 
@@ -465,6 +484,39 @@ void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
 	} else {
 		ui->missionDescriptionPlainTextEdit->clear();
 	}
+}
+
+void CampaignEditorDialog::on_graphView_missionSelected(int missionIndex) {
+	_model->setCurrentMissionSelection(missionIndex);
+
+	SCP_string filename = _model->getCurrentMissionFilename();
+	mission mission_info;
+	if (get_mission_info(filename.c_str(), &mission_info) != 0) {
+		// Failed to retrieve mission info, clear fields and return
+		ui->missionNameLineEdit->clear();
+		ui->missionDescriptionPlainTextEdit->clear();
+		return;
+	}
+
+	if (mission_info.name) {
+		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
+	} else {
+		ui->missionNameLineEdit->clear();
+	}
+
+	if (mission_info.notes) {
+		ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
+	} else {
+		ui->missionDescriptionPlainTextEdit->clear();
+	}
+
+	updateMissionDetails();
+}
+
+void CampaignEditorDialog::on_graphView_specialModeToggleRequested(int missionIndex)
+{
+	_model->toggleMissionSpecialMode(missionIndex);
+	ui->graphView->rebuildAll();
 }
 
 /*void CampaignEditorDialog::setModel(CampaignEditorDialogModel* new_model)

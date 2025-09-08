@@ -86,10 +86,21 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 				parseBranchesFromFormula(dest_mission, source_mission.mission_loop_formula, true);
 			}
 
-			bool has_special_branches = false;
-			const auto& ms = dest_mission.branches;
-			has_special_branches = std::any_of(ms.begin(), ms.end(), [](const CampaignBranchData& b) { return b.is_loop || b.is_fork; });
-			dest_mission.special_mode_hint = has_special_branches ? CampaignSpecialMode::Loop : CampaignSpecialMode::Fork;
+			bool anyLoop = false, anyFork = false;
+			for (const auto& b : dest_mission.branches) {
+				anyLoop |= b.is_loop;
+				anyFork |= b.is_fork;
+			}
+
+			auto mode = CampaignSpecialMode::Loop;
+
+			if (anyLoop || anyFork) {
+				// If branches exist, effective mode follows the branch type.
+				// If (invalid) mixed types ever appear, prefer Loop (and the UI should block mixing).
+				mode = anyLoop ? CampaignSpecialMode::Loop : CampaignSpecialMode::Fork;
+			}
+
+			dest_mission.special_mode_hint = mode;
 		}
 
 		// Copy ship and weapon permissions from the global Campaign struct
@@ -554,6 +565,14 @@ void CampaignEditorDialogModel::setCurrentMissionSelection(int index)
 
 	// When a new mission is selected, any previous branch selection is no longer valid.
 	m_current_branch_index = -1;
+
+	// Notify the tree UI to load the branches for the newly selected mission.
+	if (SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		const auto& mission = m_missions[m_current_mission_index];
+		m_tree_ops.rebuildBranchTree(mission.branches);
+	} else {
+		m_tree_ops.rebuildBranchTree({});
+	}
 }
 
 void CampaignEditorDialogModel::setCurrentBranchSelection(int branch_index)
@@ -859,7 +878,7 @@ CampaignSpecialMode CampaignEditorDialogModel::getMissionSpecialMode(int i) cons
 	return m.special_mode_hint;
 }
 
-void CampaignEditorDialogModel::setMissionSpecialMode(int i, CampaignSpecialMode mode)
+void CampaignEditorDialogModel::toggleMissionSpecialMode(int i)
 {
 	if (!SCP_vector_inbounds(m_missions, i))
 		return;
@@ -871,6 +890,9 @@ void CampaignEditorDialogModel::setMissionSpecialMode(int i, CampaignSpecialMode
 	// If special branches already exist, mode is locked
 	if (has_special_branches)
 		return;
+
+	CampaignSpecialMode current = getMissionSpecialMode(i);
+	CampaignSpecialMode mode = (current == CampaignSpecialMode::Loop) ? CampaignSpecialMode::Fork : CampaignSpecialMode::Loop;
 
 	modify(m_missions[i].special_mode_hint, mode);
 }
