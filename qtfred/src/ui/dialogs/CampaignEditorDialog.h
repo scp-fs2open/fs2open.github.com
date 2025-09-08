@@ -44,6 +44,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_errorCheckerButton_clicked();
 
 	void on_availableMissionsFilterLineEdit_textChanged(const QString& arg1);
+	void on_availableMissionsListWidget_itemSelectionChanged();
 
   private:
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
