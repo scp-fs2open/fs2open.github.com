@@ -235,15 +235,15 @@ void CampaignEditorDialog::updateAvailableMissionsList()
 
 	ui->availableMissionsListWidget->clear();
 
-	const QColor packagedColor(128, 128, 0); // dark yellow, matches your intent
+	const QColor packagedColor(128, 128, 0); // dark yellow
 
-	// model returns: SCP_vector<std::pair<SCP_string, bool>>
 	for (const auto& [name, isEditable] : _model->getAvailableMissionFiles()) {
 		auto* item = new QListWidgetItem(QString::fromStdString(name));
 		if (!isEditable) {
 			item->setForeground(packagedColor);
+			item->setToolTip("This mission is packaged in a VP and cannot be modified.");
 		}
-		item->setData(Qt::UserRole, isEditable); // stash it if you need it later
+		item->setData(Qt::UserRole, isEditable); // save whether it's editable
 		ui->availableMissionsListWidget->addItem(item);
 	}
 }
