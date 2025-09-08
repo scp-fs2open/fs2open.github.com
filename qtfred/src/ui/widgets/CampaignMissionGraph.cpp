@@ -2,6 +2,8 @@
 
 #include "mission/dialogs/CampaignEditorDialogModel.h"
 
+#include "mission/missionparse.h"
+
 #include <QGraphicsScene>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -127,16 +129,14 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	// 5) Text: filename (top) and mission name (below stripe)
 	p->setPen(Qt::black);
 	QFont f = p->font();
-	// filename (smaller)
 	f.setPointSizeF(f.pointSizeF() - 1);
 	p->setFont(f);
-	const QRectF fileRect = QRectF(m_rect.left() + m_style.padding,
+	const QRectF fileRect(m_rect.left() + m_style.padding,
 		m_rect.top() + m_style.padding,
 		m_rect.width() - 2 * m_style.padding - m_style.badgeSize.width() - m_style.badgePad * 2,
 		m_titleH);
 	p->drawText(fileRect, Qt::AlignVCenter | Qt::AlignLeft | Qt::TextSingleLine, m_file);
 
-	// mission name (bold)
 	QFont f2 = p->font();
 	f2.setPointSizeF(f.pointSizeF() + 2);
 	f2.setBold(true);
@@ -177,19 +177,16 @@ void MissionNodeItem::updateGeometry()
 
 QPointF MissionNodeItem::inboundNubScenePos() const
 {
-	// Center right on the top edge; only outer half visible
 	return mapToScene(QPointF(m_rect.center().x(), m_rect.top()));
 }
 
 QPointF MissionNodeItem::mainNubScenePos() const
 {
-	// Center right on the bottom edge; only outer half visible
 	return mapToScene(QPointF(m_rect.center().x() - m_style.nubOffsetX, m_rect.bottom()));
 }
 
 QPointF MissionNodeItem::specialNubScenePos() const
 {
-	// Center right on the bottom edge; only outer half visible
 	return mapToScene(QPointF(m_rect.center().x() + m_style.nubOffsetX, m_rect.bottom()));
 }
 
@@ -207,9 +204,11 @@ EdgeItem::EdgeItem(int missionIndex,
 	  m_mode(mode), m_style(style)
 {
 	setZValue(5); // below nodes (nodes use 10)
-	setAcceptHoverEvents(true);
-	setFlag(QGraphicsItem::ItemIsSelectable, true);
+	// non-interactive
+	setAcceptedMouseButtons(Qt::NoButton);
+	setAcceptHoverEvents(false);
 
+	// color / dash
 	if (!m_isSpecial) {
 		m_color = m_style.mainBlue;
 		m_dash = Qt::SolidLine;
@@ -229,6 +228,7 @@ EdgeItem::EdgeItem(int missionIndex,
 
 void EdgeItem::setSelectedVisual(bool sel)
 {
+	// kept for future; no-op visual tweak if desired
 	QPen pen = this->pen();
 	pen.setWidthF(sel ? m_style.edgeWidth + 1.5 : m_style.edgeWidth);
 	setPen(pen);
@@ -238,6 +238,13 @@ void EdgeItem::setSelectedVisual(bool sel)
 void EdgeItem::setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
 {
 	const auto path = buildPath(src, dst, siblingIndex, siblingCount);
+	setPath(path);
+	update();
+}
+
+void EdgeItem::setSelfLoop(const QRectF& nodeRectScene, bool sourceIsRightSide, int siblingIndex, int siblingCount)
+{
+	const auto path = buildSelfLoopPath(nodeRectScene, sourceIsRightSide, siblingIndex, siblingCount);
 	setPath(path);
 	update();
 }
@@ -259,7 +266,10 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 	// Approach target: vertical near target then into it
 	const QPointF p3(dst.x(), p2.y());
 	const QPointF p4(dst.x(), dst.y() - m_style.fanoutStart);
-	const QPointF p5 = dst; // final into inbound nub (vertical)
+
+	// Stop short of the target nub so the head stays visible
+	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
+	const QPointF p5 = dst - QPointF(0, inset);
 
 	QPainterPath path(p0);
 	path.lineTo(p1);
@@ -268,50 +278,156 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 	path.lineTo(p4);
 	path.lineTo(p5);
 
-	// Cache last segment for arrowhead (non-const method now)
+	// Cache for painting
 	m_lastSegmentP1 = p4;
 	m_lastSegmentP2 = p5;
+
+	// Full point list for arrow placement
+	m_points = {p0, p1, p2, p3, p4, p5};
+
+	return path;
+}
+
+QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightSide, int siblingIndex, int siblingCount)
+{
+	// Offset spread for multiple self-loops
+	const qreal spread =
+		(siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.selfLoopSpread) : 0.0;
+
+	const qreal sideX = sourceIsRightSide ? (node.right() + m_style.selfLoopMargin + std::abs(spread))
+										  : (node.left() - m_style.selfLoopMargin - std::abs(spread));
+
+	const QPointF src = sourceIsRightSide ? QPointF(node.center().x() + m_style.nubOffsetX, node.bottom())
+										  : QPointF(node.center().x() - m_style.nubOffsetX, node.bottom());
+
+	const QPointF dst(node.center().x(), node.top());
+
+	// Rectangular wrap outside node bounds
+	const QPointF p0 = src;
+	const QPointF p1 = p0 + QPointF(0, m_style.fanoutStart);
+	const QPointF p2(sideX, p1.y());
+	const QPointF p3(sideX, node.top() - m_style.fanoutStart);
+
+	// Stop short of inbound nub so arrow is visible (not under node)
+	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
+	const QPointF p4(node.center().x(), p3.y());
+	const QPointF p5 = dst - QPointF(0, inset);
+
+	QPainterPath path(p0);
+	path.lineTo(p1);
+	path.lineTo(p2);
+	path.lineTo(p3);
+	path.lineTo(p4);
+	path.lineTo(p5);
+
+	m_lastSegmentP1 = p4;
+	m_lastSegmentP2 = p5;
+
+	// Full point list for arrow placement
+	m_points = {p0, p1, p2, p3, p4, p5};
 
 	return path;
 }
 
 void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget)
 {
+	// Draw the line/path first
 	QGraphicsPathItem::paint(painter, option, widget);
 
-	// Arrowhead at the end (toward m_lastSegmentP2)
-	const QPointF a = m_lastSegmentP1;
-	const QPointF b = m_lastSegmentP2;
-	const QPointF v = b - a;
-	const qreal len = std::hypot(v.x(), v.y());
-	if (len < 0.001)
+	// Helper to draw a single arrow at 'tip' pointing along 'dir' (dir must be normalized)
+	auto drawArrowAt = [&](const QPointF& tip, const QPointF& dir, qreal size) {
+		if (size <= 0.0)
+			return;
+		const QPointF ortho(-dir.y(), dir.x());
+		QPolygonF arrow;
+		arrow << tip << (tip - dir * size + ortho * (size * 0.5)) << (tip - dir * size - ortho * (size * 0.5));
+		QBrush brush(this->pen().color());
+		QPen pen = this->pen();
+		pen.setCapStyle(Qt::SquareCap);
+		painter->setPen(pen);
+		painter->setBrush(brush);
+		painter->drawPolygon(arrow);
+	};
+
+	// 1) Arrow at the very end (towards m_lastSegmentP2)
+	{
+		const QPointF a = m_lastSegmentP1;
+		const QPointF b = m_lastSegmentP2;
+		const QPointF v = b - a;
+		const qreal len = std::hypot(v.x(), v.y());
+		if (len > 0.001) {
+			drawArrowAt(b, v / len, m_style.arrowSize);
+		}
+	}
+
+	// 2) Arrows at regular intervals along each straight segment (no turn arrows)
+	if (m_points.size() < 2)
 		return;
 
-	const QPointF dir = v / len;
-	const QPointF ortho(-dir.y(), dir.x());
-	const qreal s = m_style.arrowSize;
+	const qreal interval = std::max<qreal>(12.0, m_style.arrowInterval);
+	const qreal endMargin = std::max<qreal>(m_style.arrowSize + 2.0, 10.0); // keep away from corners/ends
 
-	QPolygonF arrow;
-	arrow << b << (b - dir * s + ortho * (s * 0.5)) << (b - dir * s - ortho * (s * 0.5));
+	for (size_t i = 0; i + 1 < m_points.size(); ++i) {
+		const QPointF p1 = m_points[i];
+		const QPointF p2 = m_points[i + 1];
+		const QPointF seg = p2 - p1;
+		const qreal segLen = std::hypot(seg.x(), seg.y());
+		if (segLen <= endMargin)
+			continue;
 
-	QBrush brush(this->pen().color());
-	QPen pen = this->pen();
-	pen.setCapStyle(Qt::SquareCap);
-	painter->setPen(pen);
-	painter->setBrush(brush);
-	painter->drawPolygon(arrow);
+		const QPointF dir = seg / segLen;
+
+		const qreal start = std::max(interval, endMargin); // first arrow along the segment
+		for (qreal d = start; d <= segLen - endMargin; d += interval) {
+			const QPointF pos = p1 + dir * d;
+			drawArrowAt(pos, dir, m_style.arrowSize);
+		}
+	}
 }
 
-void EdgeItem::mousePressEvent(QGraphicsSceneMouseEvent* event)
+// ----------------------------
+// CampaignMissionGraph impl
+// ----------------------------
+
+CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
 {
-	if (event->button() == Qt::LeftButton) {
-		Q_EMIT edgeClicked(m_missionIndex, m_branchId);
-		setSelected(true);
-		setSelectedVisual(true);
-		event->accept();
+	initScene();
+
+	// View behavior
+	setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
+	setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
+	setDragMode(QGraphicsView::ScrollHandDrag);
+	setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
+	setBackgroundBrush(m_style.bgColor);
+	setFrameShape(QFrame::NoFrame); // optional
+}
+
+void CampaignMissionGraph::initScene()
+{
+	m_scene = new QGraphicsScene(this);
+	setScene(m_scene);
+	m_scene->setSceneRect(QRectF(-4000, -4000, 8000, 8000));
+}
+
+void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
+{
+	m_model = model;
+	rebuildAll();
+}
+
+void CampaignMissionGraph::rebuildAll()
+{
+	if (!m_scene)
 		return;
-	}
-	QGraphicsPathItem::mousePressEvent(event);
+	m_scene->clear();
+	m_nodeItems.clear();
+	m_edgeItems.clear();
+
+	if (!m_model)
+		return;
+
+	buildMissionNodes();
+	buildMissionEdges();
 }
 
 static detail::SpecialMode deriveMode(const CampaignEditorDialogModel& model, int missionIdx)
@@ -357,9 +473,14 @@ void CampaignMissionGraph::buildMissionNodes()
 		}
 		const auto mode = deriveMode(*m_model, i);
 
-		// Labels (filename as primary for now)
-		const QString fileLabel = QString::fromStdString(m.name);
-		const QString nameLabel; // optional mission title later
+		// Labels
+		QString fileLabel = QString::fromStdString(m.filename);
+		QString nameLabel;
+
+		mission mission_info;
+		if (get_mission_info(m.filename.c_str(), &mission_info) == 0) {
+			nameLabel = QString::fromStdString(mission_info.name);
+		}
 
 		auto* item = new MissionNodeItem(i, fileLabel, nameLabel, m.graph_color, mode, mainCount, specCount, m_style);
 		item->setPos(pos);
@@ -386,15 +507,14 @@ void CampaignMissionGraph::buildMissionEdges()
 	std::unordered_map<std::string, int> nameToIndex;
 	nameToIndex.reserve(missions.size());
 	for (int i = 0; i < (int)missions.size(); ++i) {
-		nameToIndex[missions[i].name] = i;
+		nameToIndex[missions[i].filename] = i;
 	}
 
-	// For each mission, build edges to other missions (skip END for now: empty next_mission_name)
+	// For each mission, build edges to other missions (and self)
 	for (int i = 0; i < (int)missions.size(); ++i) {
 		const auto& m = missions[i];
 		const auto* srcNode = m_nodeItems[i];
 
-		// Determine mode for special styling
 		const auto mode = deriveMode(*m_model, i);
 
 		// Prepare sibling counters for fan-out
@@ -405,15 +525,14 @@ void CampaignMissionGraph::buildMissionEdges()
 		int mainIdx = 0, specIdx = 0;
 
 		for (const auto& b : m.branches) {
-			// Skip END for now
+			// END: skip here (empty next_mission_name). We'll add an END sink later.
 			if (b.next_mission_name.empty())
 				continue;
 
 			auto it = nameToIndex.find(b.next_mission_name);
-			if (it == nameToIndex.end()) {
-				// Target mission name not found (possibly missing from list); skip gracefully
+			if (it == nameToIndex.end())
 				continue;
-			}
+
 			const int j = it->second;
 			const auto* dstNode = m_nodeItems[j];
 			if (!srcNode || !dstNode)
@@ -423,63 +542,32 @@ void CampaignMissionGraph::buildMissionEdges()
 			const int sibCount = isSpecial ? specTotal : mainTotal;
 			const int sibIndex = isSpecial ? specIdx++ : mainIdx++;
 
+			auto* edge = new EdgeItem(i, b.id, isSpecial, mode, m_style);
+
+			if (i == j) {
+				// Self-loop: draw outside node (unless disabled)
+				if (m_style.showSelfLoops) {
+					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->boundingRect());
+					const bool sourceRight = isSpecial; // special nub on right; main on left
+					edge->setSelfLoop(nodeRectScene, sourceRight, sibIndex, sibCount);
+					m_scene->addItem(edge);
+					m_edgeItems.push_back(edge);
+				} else {
+					delete edge;
+				}
+				continue;
+			}
+
+			// Normal edge
 			const QPointF srcPt = isSpecial ? srcNode->specialNubScenePos() : srcNode->mainNubScenePos();
 			const QPointF dstPt = dstNode->inboundNubScenePos();
 
-			auto* edge = new EdgeItem(i, b.id, isSpecial, mode, m_style);
 			edge->setEndpoints(srcPt, dstPt, sibIndex, sibCount);
-
-			connect(edge, &EdgeItem::edgeClicked, this, [this](int mi, int bid) { Q_EMIT branchSelected(mi, bid); });
 
 			m_scene->addItem(edge);
 			m_edgeItems.push_back(edge);
 		}
 	}
-}
-
-// ----------------------------
-// View helpers
-// ----------------------------
-
-CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
-{
-	initScene();
-
-	// View behavior
-	setRenderHints(QPainter::Antialiasing | QPainter::TextAntialiasing);
-	setViewportUpdateMode(QGraphicsView::BoundingRectViewportUpdate);
-	setDragMode(QGraphicsView::ScrollHandDrag);
-	setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-	setBackgroundBrush(m_style.bgColor);
-	setFrameShape(QFrame::NoFrame); // optional
-}
-
-void CampaignMissionGraph::initScene()
-{
-	m_scene = new QGraphicsScene(this);
-	setScene(m_scene);
-	m_scene->setSceneRect(QRectF(-4000, -4000, 8000, 8000));
-}
-
-void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
-{
-	m_model = model;
-	rebuildAll();
-}
-
-void CampaignMissionGraph::rebuildAll()
-{
-	if (!m_scene)
-		return;
-	m_scene->clear();
-	m_nodeItems.clear();
-	m_edgeItems.clear();
-
-	if (!m_model)
-		return;
-
-	buildMissionNodes();
-	buildMissionEdges();
 }
 
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
@@ -507,6 +595,7 @@ void CampaignMissionGraph::wheelEvent(QWheelEvent* e)
 		QGraphicsView::wheelEvent(e);
 		return;
 	}
+
 	const QPoint numDeg = e->angleDelta();
 	if (numDeg.isNull()) {
 		e->ignore();
