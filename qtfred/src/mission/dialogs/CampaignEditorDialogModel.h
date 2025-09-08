@@ -8,6 +8,11 @@
 
 namespace fso::fred::dialogs {
 
+enum class CampaignFormat {
+	Retail,
+	FSO
+};
+
 struct CampaignBranchData {
 	int sexp_formula = -1;
 	SCP_string next_mission_name;
@@ -28,6 +33,8 @@ struct CampaignMissionData {
 	SCP_string main_hall;
 	SCP_string substitute_main_hall;
 	int debrief_persona_index = 0;
+
+	bool retail_bastion = false;
 
 	SCP_vector<CampaignBranchData> branches;
 };
@@ -69,6 +76,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void loadCampaignFromFile(const SCP_string& filename);
 	void saveCampaign(const SCP_string& filename);
 	bool checkValidity();
+	CampaignFormat getSaveFormat() const;
+	void setSaveFormat(CampaignFormat fmt);
 
 	void setCurrentMissionSelection(int index);
 	void setCurrentBranchSelection(int branch_index);
@@ -105,6 +114,10 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setCurrentMissionSubstituteMainhall(const SCP_string& mainhall);
 	int getCurrentMissionDebriefingPersona() const;
 	void setCurrentMissionDebriefingPersona(int persona_index);
+
+	// Legacy Retail Data
+	bool getCurrentMissionRetailBastion() const;
+	void setCurrentMissionRetailBastion(bool enabled);
 
 	// Loop Data
 	SCP_string getCurrentBranchLoopDescription() const;
@@ -150,6 +163,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int m_current_branch_index = -1;
 
 	int _waveId;
+
+	CampaignFormat m_save_format = CampaignFormat::FSO;
 
 	void initializeData(const char* filename = nullptr);
 	void parseBranchesFromFormula(CampaignMissionData& mission, int formula_index, bool is_loop);

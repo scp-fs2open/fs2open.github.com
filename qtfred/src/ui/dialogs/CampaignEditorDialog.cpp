@@ -395,6 +395,35 @@ void CampaignEditorDialog::on_availableMissionsFilterLineEdit_textChanged(const 
 	updateAvailableMissionsList();
 }
 
+void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
+{
+	// Get the currently selected item
+	QListWidgetItem* selected_item = ui->availableMissionsListWidget->currentItem();
+
+	// Get the filename from the item's text
+	SCP_string filename = selected_item->text().toUtf8().constData();
+
+	mission mission_info;
+	if (get_mission_info(filename.c_str(), &mission_info) != 0) {
+		// Failed to retrieve mission info, clear fields and return
+		ui->missionNameLineEdit->clear();
+		ui->missionDescriptionPlainTextEdit->clear();
+		return;
+	}
+
+	if (mission_info.name) {
+		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
+	} else {
+		ui->missionNameLineEdit->clear();
+	}
+
+	if (mission_info.notes) {
+		ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
+	} else {
+		ui->missionDescriptionPlainTextEdit->clear();
+	}
+}
+
 /*void CampaignEditorDialog::setModel(CampaignEditorDialogModel* new_model)
 {
 	if (new_model)

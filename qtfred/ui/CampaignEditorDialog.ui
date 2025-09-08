@@ -146,7 +146,7 @@
          <number>11</number>
         </property>
         <item>
-         <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,0,0,0,0,0,0">
+         <layout class="QVBoxLayout" name="editorControls" stretch="0,0,0,1,0,0,1,0,0">
           <item>
            <layout class="QHBoxLayout" name="availableMissionsLayout">
             <item>
@@ -210,22 +210,46 @@
            </widget>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="missionDescriptionLayout">
+           <widget class="QPushButton" name="fredMissionButton">
+            <property name="enabled">
+             <bool>false</bool>
+            </property>
+            <property name="text">
+             <string>Open Selected Mission in Mission Editor</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QVBoxLayout" name="missionDetailsLayout">
             <item>
-             <widget class="QLabel" name="missionDescLabel1">
+             <layout class="QHBoxLayout" name="missionNameLayout">
+              <item>
+               <widget class="QLabel" name="missionNameLabel">
+                <property name="text">
+                 <string>Mission Name</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QLineEdit" name="missionNameLineEdit">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <widget class="QLabel" name="label">
               <property name="text">
-               <string>yellow=uneditable/packaged</string>
+               <string>Mission Description</string>
               </property>
              </widget>
             </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="layoutLoadMission">
             <item>
-             <widget class="QTextBrowser" name="missionDescriptionTextBrowser">
+             <widget class="QPlainTextEdit" name="missionDescriptionPlainTextEdit">
               <property name="enabled">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
               <property name="sizePolicy">
                <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
@@ -235,106 +259,85 @@
               </property>
              </widget>
             </item>
-            <item>
-             <layout class="QVBoxLayout" name="modifyMissionButtonLayout">
-              <property name="spacing">
-               <number>0</number>
-              </property>
-              <property name="sizeConstraint">
-               <enum>QLayout::SetMinimumSize</enum>
-              </property>
-              <item>
-               <widget class="QPushButton" name="fredMissionButton">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>FRED Mission</string>
-                </property>
-               </widget>
-              </item>
-              <item>
-               <widget class="QPushButton" name="firstMissionButton">
-                <property name="enabled">
-                 <bool>false</bool>
-                </property>
-                <property name="text">
-                 <string>First Mission</string>
-                </property>
-                <property name="checkable">
-                 <bool>true</bool>
-                </property>
-               </widget>
-              </item>
-             </layout>
-            </item>
            </layout>
           </item>
           <item>
-           <widget class="QGroupBox" name="missionOptions">
-            <layout class="QGridLayout" name="gridLayout" columnstretch="0,0,0,0,0">
-             <item row="0" column="0">
-              <widget class="QLabel" name="briefCutsceneLabel">
-               <property name="text">
-                <string>Briefing Cutscene</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="2">
-              <widget class="QLabel" name="debriefPersonaLabel">
-               <property name="text">
-                <string>Debriefing Persona Index</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="0" column="4">
-              <widget class="QLabel" name="mainhallLabel">
-               <property name="text">
-                <string>Main Hall Name</string>
-               </property>
-               <property name="alignment">
-                <set>Qt::AlignCenter</set>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="4">
-              <widget class="QComboBox" name="mainhallComboBox">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="editable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="2">
-              <widget class="QComboBox" name="debriefPersonaComboBox">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="editable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-             <item row="1" column="0">
-              <widget class="QComboBox" name="briefCutsceneComboBox">
-               <property name="enabled">
-                <bool>false</bool>
-               </property>
-               <property name="editable">
-                <bool>true</bool>
-               </property>
-              </widget>
-             </item>
-            </layout>
-           </widget>
+           <layout class="QFormLayout" name="missionSettingsLayout">
+            <item row="0" column="0">
+             <widget class="QLabel" name="briefCutsceneLabel">
+              <property name="text">
+               <string>Briefing Cutscene</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="briefCutsceneComboBox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="debriefPersonaLabel">
+              <property name="text">
+               <string>Debriefing Persona Index</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="debriefPersonaComboBox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="mainhallLabel">
+              <property name="text">
+               <string>Main Hall Name</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="mainhallComboBox">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="editable">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="0">
+             <widget class="QLabel" name="mainhallBastionFlagLabel">
+              <property name="text">
+               <string>Main Hall Bastion Flag</string>
+              </property>
+             </widget>
+            </item>
+            <item row="3" column="1">
+             <widget class="QCheckBox" name="mainhallBastionFlagCheckBox">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+           </layout>
           </item>
           <item>
            <widget class="QGroupBox" name="missionBranches">
@@ -431,7 +434,7 @@
             <rect>
              <x>0</x>
              <y>0</y>
-             <width>561</width>
+             <width>616</width>
              <height>773</height>
             </rect>
            </property>
@@ -444,6 +447,13 @@
     </item>
     <item>
      <layout class="QHBoxLayout" name="errorCheckerLayout">
+      <item>
+       <widget class="QCheckBox" name="retailFormatCheckbox">
+        <property name="text">
+         <string>Use Retail Format for Saving</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <spacer name="errorCheckerSpacer">
         <property name="orientation">

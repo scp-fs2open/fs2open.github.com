@@ -65,6 +65,20 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 			dest_mission.main_hall = source_mission.main_hall.c_str();
 			dest_mission.substitute_main_hall = source_mission.substitute_main_hall.c_str();
 			dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
+			dest_mission.retail_bastion = (source_mission.flags & CMISSION_FLAG_BASTION) != 0;
+
+			// The presence of the Bastion flag almost certainly means the file is
+			// a retail campaign, so we set the save format accordingly.
+			if (dest_mission.retail_bastion) {
+				m_save_format = CampaignFormat::Retail;
+			}
+
+			// Normalize explicit main hall for editor use:
+			// - If file had explicit +Main Hall:, keep it (dest_mission.main_hall is non-empty).
+			// - Else synthesize legacy defaults: "1" if Bastion, otherwise "0".
+			if (dest_mission.main_hall.empty()) {
+				dest_mission.main_hall = dest_mission.retail_bastion ? "1" : "0";
+			}
 
 			// Parse the SEXP formulas to build the branch data for this mission.
 			parseBranchesFromFormula(dest_mission, source_mission.formula, false);
@@ -180,10 +194,12 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 
 	m_available_mission_files.clear();
 
+	SCP_string search_pattern = "*" + SCP_string(FS_MISSION_FILE_EXT);
+
 	// Get all editable mission files
 	SCP_vector<SCP_string> editable_files;
 	Skip_packfile_search = 1; // This global flag forces the search to ignore VPs
-	cf_get_file_list(editable_files, CF_TYPE_MISSIONS, "*.fs2", CF_SORT_NAME);
+	cf_get_file_list(editable_files, CF_TYPE_MISSIONS, search_pattern.c_str(), CF_SORT_NAME);
 	Skip_packfile_search = 0;
 
 	// For quick lookups, put the editable filenames into a set
@@ -191,7 +207,7 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 
 	// Get all mission files including packaged ones
 	SCP_vector<SCP_string> all_files;
-	cf_get_file_list(all_files, CF_TYPE_MISSIONS, "*.fs2", CF_SORT_NAME);
+	cf_get_file_list(all_files, CF_TYPE_MISSIONS, search_pattern.c_str(), CF_SORT_NAME);
 
 	// Get missions already in the campaign
 	std::unordered_set<SCP_string> active_missions;
@@ -212,7 +228,7 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 		if (is_mission_compatible(mission_info)) {
 			// Check if the filename exists in our set of loose, editable files
 			bool is_editable = (editable_set.count(filename) > 0);
-			m_available_mission_files.emplace_back(filename + ".fs2", is_editable);
+			m_available_mission_files.emplace_back(filename + FS_MISSION_FILE_EXT, is_editable);
 		}
 	}
 }
@@ -252,7 +268,18 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		dest_mission.level = source_mission.level;
 		dest_mission.pos = source_mission.position;
 		strcpy_s(dest_mission.briefing_cutscene, source_mission.briefing_cutscene.c_str());
-		dest_mission.main_hall = source_mission.main_hall;
+
+		if (m_save_format == CampaignFormat::Retail) {
+			// Use emptiness to control whether the saver sets the Bastion flag.
+			// Retail "Bastion on" == write "1"
+			// Retail "Bastion off" == write empty string.
+			const bool bastion = source_mission.retail_bastion || (source_mission.main_hall == "1");
+			dest_mission.main_hall = bastion ? "1" : "";
+		} else {
+			// persist the explicit +Main Hall: string; default to "0" if empty.
+			dest_mission.main_hall = dest_mission.main_hall.empty() ? SCP_string("0") : source_mission.main_hall;
+		}
+
 		dest_mission.substitute_main_hall = source_mission.substitute_main_hall;
 		dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
 
@@ -497,6 +524,19 @@ bool CampaignEditorDialogModel::checkValidity()
 
 	// If we get here, everything is valid.
 	return true;
+}
+
+CampaignFormat CampaignEditorDialogModel::getSaveFormat() const
+{
+	return m_save_format;
+}
+
+void CampaignEditorDialogModel::setSaveFormat(CampaignFormat fmt)
+{
+	if (m_save_format != fmt) {
+		m_save_format = fmt;
+		set_modified();
+	}
 }
 
 void CampaignEditorDialogModel::setCurrentMissionSelection(int index)
@@ -819,6 +859,31 @@ void CampaignEditorDialogModel::setCurrentMissionDebriefingPersona(int persona_i
 
 	auto& mission = m_missions[m_current_mission_index];
 	modify(mission.debrief_persona_index, persona_index);
+}
+
+bool CampaignEditorDialogModel::getCurrentMissionRetailBastion() const
+{
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index))
+		return false;
+	return m_missions[m_current_mission_index].retail_bastion;
+}
+
+void CampaignEditorDialogModel::setCurrentMissionRetailBastion(bool enabled)
+{
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index))
+		return;
+
+	auto& m = m_missions[m_current_mission_index];
+	if (m.retail_bastion != enabled) {
+		modify(m.retail_bastion, enabled);
+
+		// Keep main_hall convenient for round-trip when switching formats:
+		// Retail true == "1", Retail false == "0"
+		if (m_save_format == CampaignFormat::Retail) {
+			SCP_string hall = enabled ? "1" : "0";
+			modify(m.main_hall, hall);
+		}
+	}
 }
 
 SCP_string CampaignEditorDialogModel::getCurrentBranchLoopDescription() const
