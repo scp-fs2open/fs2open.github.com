@@ -49,7 +49,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_graphView_missionSelected(int missionIndex);
 	void on_graphView_specialModeToggleRequested(int missionIndex);
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
 	std::unique_ptr<ICampaignEditorTreeOps> _treeOps;
 	std::unique_ptr<CampaignEditorDialogModel> _model;

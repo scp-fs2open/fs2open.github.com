@@ -33,7 +33,7 @@ MissionNodeItem::MissionNodeItem(int missionIndex,
 	: QGraphicsObject(parent), m_idx(missionIndex), m_file(fileLabel), m_name(nameLabel), m_graphColor(graphColorRgb),
 	  m_mode(mode), m_mainCount(mainBranchCount), m_specCount(specialBranchCount), m_style(style)
 {
-	setFlags(ItemIsSelectable | ItemSendsScenePositionChanges);
+	setFlags(ItemIsSelectable | ItemIsMovable | ItemSendsScenePositionChanges);
 	setAcceptHoverEvents(true);
 	setCursor(Qt::PointingHandCursor);
 	updateGeometry();
@@ -167,6 +167,22 @@ void MissionNodeItem::mouseReleaseEvent(QGraphicsSceneMouseEvent* e)
 	QGraphicsObject::mouseReleaseEvent(e);
 }
 
+QVariant MissionNodeItem::itemChange(GraphicsItemChange change, const QVariant& value)
+{
+	// Snap while dragging; emit final position after it changes
+	if (change == ItemPositionChange) {
+		const QPointF p = value.toPointF();
+		const qreal s = m_style.minorStep;
+		const QPointF snapped(std::round(p.x() / s) * s, std::round(p.y() / s) * s);
+		return snapped;
+	}
+	if (change == ItemPositionHasChanged) {
+		// Emit scene-space top-left for persistence
+		Q_EMIT nodeMoved(m_idx, mapToScene(QPointF(0, 0)));
+	}
+	return QGraphicsObject::itemChange(change, value);
+}
+
 void MissionNodeItem::updateGeometry()
 {
 	m_titleH = 18.0;
@@ -250,39 +266,75 @@ void EdgeItem::setSelfLoop(const QRectF& nodeRectScene, bool sourceIsRightSide, 
 
 QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
 {
-	// Sibling offset centered around zero
-	const qreal offset = (siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.fanoutStep) : 0.0;
+	// Sibling separation centered around zero
+	const qreal sibOffset = (siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.fanoutStep) : 0.0;
 
-	// Start with a short vertical out from source
-	const QPointF p0 = src;
-	const QPointF p1 = p0 + QPointF(0, m_style.fanoutStart); // down
+	// Decide horizontal direction at the source:
+	//  - If enabled, head toward the target's X so we don't "jog the wrong way".
+	//  - Otherwise, you can keep the legacy main-left/special-right feel.
+	qreal dirX = +1.0;
+	if (m_style.outboundDirectionTowardTarget) {
+		dirX = (dst.x() - src.x() >= 0.0) ? +1.0 : -1.0;
+	} else {
+		dirX = m_isSpecial ? +1.0 : -1.0;
+	}
 
-	// Fan-out horizontally from source side
-	const bool sourceIsRight = (m_isSpecial); // special nub is on right side of node
-	const qreal fanDir = sourceIsRight ? +1.0 : -1.0;
-	const QPointF p2 = p1 + QPointF(offset * fanDir, 0);
+	// Per-type drop/jog (used only if outboundApproachEnabled)
+	const qreal typeDrop = m_isSpecial ? m_style.outboundDropSpecial : m_style.outboundDropMain;
+	const qreal typeJogX = m_isSpecial ? m_style.outboundJogSpecial : m_style.outboundJogMain;
 
-	// Approach target: vertical near target then into it
-	const QPointF p3(dst.x(), p2.y());
-	const QPointF p4(dst.x(), dst.y() - m_style.fanoutStart);
+	const qreal drop =
+		m_style.outboundApproachEnabled ? std::max<qreal>(m_style.fanoutStart, typeDrop) : m_style.fanoutStart;
 
-	// Stop short of the target nub so the head stays visible
+	const qreal baseJogX = m_style.outboundApproachEnabled ? typeJogX : 0.0;
+
+	// --- Source side: p0..p2 ---
+	const QPointF p0 = src;                                            // at nub
+	const QPointF p1 = p0 + QPointF(0, drop);                          // vertical drop
+	const QPointF p2 = p1 + QPointF((sibOffset + baseJogX) * dirX, 0); // horizontal jog + sibling fanout
+
+	// --- Target side (inbound jogs you already added) ---
 	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
-	const QPointF p5 = dst - QPointF(0, inset);
+
+	QPointF p3, p4, p5;
+	if (m_style.inboundApproachEnabled) {
+		const qreal dx = dst.x() - p2.x();
+		const qreal dirInX = (dx >= 0.0) ? +1.0 : -1.0;
+		const qreal jogX = m_style.inboundApproachJog;
+		const qreal rise = std::max<qreal>(m_style.fanoutStart, m_style.inboundApproachRise);
+
+		const qreal jogXPos = dst.x() - dirInX * jogX;
+		p3 = QPointF(jogXPos, p2.y());
+		p4 = QPointF(jogXPos, dst.y() - rise);
+		p5 = QPointF(dst.x(), p4.y());
+	} else {
+		p3 = QPointF(dst.x(), p2.y());
+		p4 = QPointF(dst.x(), dst.y() - m_style.fanoutStart);
+		p5 = p4;
+	}
+
+	// Final short vertical into the arrow tip (stop short so the arrowhead is visible)
+	const QPointF p6 = dst - QPointF(0, inset);
 
 	QPainterPath path(p0);
 	path.lineTo(p1);
 	path.lineTo(p2);
 	path.lineTo(p3);
 	path.lineTo(p4);
-	path.lineTo(p5);
+	if (m_style.inboundApproachEnabled) {
+		path.lineTo(p5);
+	}
+	path.lineTo(p6);
 
-	// Cache for painting
-	m_lastSegmentP1 = p4;
-	m_lastSegmentP2 = p5;
+	// Cache for arrow at the end + interval arrows
+	m_lastSegmentP1 = m_style.inboundApproachEnabled ? p5 : p4;
+	m_lastSegmentP2 = p6;
 
-	// Full point list for arrow placement
-	m_points = {p0, p1, p2, p3, p4, p5};
+	if (m_style.inboundApproachEnabled) {
+		m_points = {p0, p1, p2, p3, p4, p5, p6};
+	} else {
+		m_points = {p0, p1, p2, p3, p4, p6};
+	}
 
 	return path;
 }
@@ -302,8 +354,11 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	const QPointF dst(node.center().x(), node.top());
 
 	// Rectangular wrap outside node bounds
+	const qreal typeDrop = m_isSpecial ? m_style.outboundDropSpecial : m_style.outboundDropMain;
+	const qreal drop = m_style.outboundApproachEnabled ? std::max<qreal>(m_style.fanoutStart, typeDrop) : m_style.fanoutStart;
+
 	const QPointF p0 = src;
-	const QPointF p1 = p0 + QPointF(0, m_style.fanoutStart);
+	const QPointF p1 = p0 + QPointF(0, drop);
 	const QPointF p2(sideX, p1.y());
 	const QPointF p3(sideX, node.top() - m_style.fanoutStart);
 
@@ -403,6 +458,21 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	// Ensure when the scene is smaller than the viewport it sits at the top-left,
 	// and when we reset the scene rect we can scroll to (0,0).
 	setAlignment(Qt::AlignLeft | Qt::AlignTop);
+}
+
+void CampaignMissionGraph::onNodeMoved(int missionIndex, QPointF sceneTopLeft)
+{
+	if (!m_model)
+		return;
+	// Persist snapped scene position back into the model (ints are fine)
+	m_model->setMissionGraphX(missionIndex, (int)std::lround(sceneTopLeft.x()));
+	m_model->setMissionGraphY(missionIndex, (int)std::lround(sceneTopLeft.y()));
+
+	// Rebuild only edges (faster than full rebuild) and keep the current viewport
+	rebuildEdgesOnly();
+
+	// Expand scene rect if needed (don’t auto-scroll to top-left here)
+	updateSceneRectToContent(/*scrollToTopLeft=*/false);
 }
 
 void CampaignMissionGraph::initScene()
@@ -521,7 +591,7 @@ void CampaignMissionGraph::clearSelectedMission()
 void CampaignMissionGraph::buildMissionNodes()
 {
 	const auto& missions = m_model->getCampaignMissions();
-	const QPointF fallbackStep(240, 160);
+	const QPointF fallbackStep(m_style.layoutStepX, m_style.layoutStepY);
 
 	m_nodeItems.reserve(missions.size());
 
@@ -548,7 +618,7 @@ void CampaignMissionGraph::buildMissionNodes()
 		QString nameLabel;
 
 		mission mission_info;
-		if (get_mission_info(m.filename.c_str(), &mission_info) == 0) {
+		if (get_mission_info(m.filename.c_str(), &mission_info) == 0) { //TODO make this a model getter and remove missionparse.h include
 			nameLabel = QString::fromStdString(mission_info.name);
 		}
 
@@ -561,6 +631,7 @@ void CampaignMissionGraph::buildMissionNodes()
 			&MissionNodeItem::specialModeToggleRequested,
 			this,
 			&CampaignMissionGraph::specialModeToggleRequested);
+		connect(item, &MissionNodeItem::nodeMoved, this, &CampaignMissionGraph::onNodeMoved); // NEW
 
 		m_scene->addItem(item);
 		m_nodeItems.push_back(item);
@@ -707,6 +778,22 @@ void CampaignMissionGraph::ensureEndSink()
 		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
 		m_endSink->setPos(QPointF(x, y));
 	}
+}
+
+void CampaignMissionGraph::rebuildEdgesOnly()
+{
+	// Remove existing edges
+	for (auto* e : m_edgeItems) {
+		m_scene->removeItem(e);
+		delete e;
+	}
+	m_edgeItems.clear();
+
+	// Re-position/create END sink (based on current node geometry)
+	ensureEndSink();
+
+	// Rebuild edges using current node positions & model branches
+	buildMissionEdges();
 }
 
 void CampaignMissionGraph::zoomToFitAll(qreal margin)

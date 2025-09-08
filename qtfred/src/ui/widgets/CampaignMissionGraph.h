@@ -42,6 +42,8 @@ struct CampaignGraphStyle {
 	qreal nodeRadius{8.0};
 	QSizeF nodeSize{240.0, 120.0}; // base size; can grow later
 	qreal padding{8.0};
+	qreal layoutStepX{240.0}; // default horizontal spacing for fallback layout
+	qreal layoutStepY{200.0}; // default vertical   spacing for fallback layout
 
 	// Stripe (user color)
 	qreal stripeHeight{10.0};
@@ -54,6 +56,15 @@ struct CampaignGraphStyle {
 	qreal nubRadius{6.0};
 	qreal nubSpacingBottom{6.0}; // retained for future
 	qreal nubOffsetX{42.0};
+	bool inboundApproachEnabled{true}; // add a small jog near the inbound nub
+	qreal inboundApproachJog{30.0};    // horizontal jog distance before the final vertical
+	qreal inboundApproachRise{30.0};   // vertical distance above inbound nub
+	bool outboundApproachEnabled{true}; // add a small jog right after the source nub
+	bool outboundDirectionTowardTarget{true}; // if true, outbound jog heads toward dst.x()
+	qreal outboundJogMain{30.0};              // X jog right after source for MAIN
+	qreal outboundJogSpecial{30.0};           // X jog right after source for SPECIAL
+	qreal outboundDropMain{30.0};             // Y drop right after source for MAIN
+	qreal outboundDropSpecial{40.0};          // Y drop right after source for SPECIAL (often a bit larger)
 
 	// Edge routing
 	qreal fanoutStart{12.0}; // vertical run from nub before spreading
@@ -129,13 +140,17 @@ class CampaignMissionGraph final : public QGraphicsView {
 	// Grid background
 	void drawBackground(QPainter* painter, const QRectF& rect) override;
 
-  private:
+  private slots:
+	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
+
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void initScene();
 	void updateSceneRectToContent(bool scrollToTopLeft);
 	void drawGrid(QPainter* p, const QRectF& rect);
 	void buildMissionNodes();
 	void buildMissionEdges();
 	void ensureEndSink();
+	void rebuildEdgesOnly();
 
 	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
 	QPointer<fso::fred::dialogs::CampaignEditorDialogModel> m_model;
@@ -188,10 +203,12 @@ class MissionNodeItem final : public QGraphicsObject {
   signals:
 	void missionSelected(int missionIndex);
 	void specialModeToggleRequested(int missionIndex);
+	void nodeMoved(int missionIndex, QPointF sceneTopLeft);
 
   protected:
 	void mousePressEvent(QGraphicsSceneMouseEvent* e) override;
 	void mouseReleaseEvent(QGraphicsSceneMouseEvent* e) override;
+	QVariant itemChange(GraphicsItemChange change, const QVariant& value) override;
 
   private:
 	void updateGeometry();
