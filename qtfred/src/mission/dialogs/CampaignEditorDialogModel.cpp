@@ -94,9 +94,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 
 			auto mode = CampaignSpecialMode::Loop;
 
+			// If branches exist, effective mode follows the branch type.
 			if (anyLoop || anyFork) {
-				// If branches exist, effective mode follows the branch type.
-				// If (invalid) mixed types ever appear, prefer Loop (and the UI should block mixing).
 				mode = anyLoop ? CampaignSpecialMode::Loop : CampaignSpecialMode::Fork;
 			}
 
