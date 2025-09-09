@@ -933,14 +933,6 @@ void CampaignEditorDialogModel::toggleMissionSpecialMode(int i)
 	modify(m_missions[i].special_mode_hint, mode);
 }
 
-SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
-{
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return "";
-	}
-	return m_missions[m_current_mission_index].filename;
-}
-
 void CampaignEditorDialogModel::setMissionAsFirst(int mission_index)
 {
 	if (!SCP_vector_inbounds(m_missions, mission_index)) {
@@ -953,10 +945,18 @@ void CampaignEditorDialogModel::setMissionAsFirst(int mission_index)
 	set_modified();
 }
 
+SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
+{
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return "";
+	}
+	return m_missions[m_current_mission_index].filename;
+}
+
 // Changing a mission's filename is a complex operation beyond a simple setter,
 // as it's the unique ID for the mission. This would be better handled by a
 // dedicated "replace mission" action, so we will leave this unimplemented for now.
-void CampaignEditorDialogModel::setCurrentMissionFilename(const SCP_string& filename)
+void CampaignEditorDialogModel::setCurrentMissionFilename(const SCP_string& /*filename*/)
 {
 	// Not implemented.
 }

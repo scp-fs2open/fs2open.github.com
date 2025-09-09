@@ -125,9 +125,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void toggleMissionSpecialMode(int i); 
 
 	// Current Mission
-	SCP_string getCurrentMissionFilename() const;
 	void setMissionAsFirst(int mission_index);
-	void setCurrentMissionFilename(const SCP_string& filename);
+	SCP_string getCurrentMissionFilename() const;
+	void setCurrentMissionFilename(const SCP_string& /*filename*/);
 	SCP_string getCurrentMissionBriefingCutscene() const;
 	void setCurrentMissionBriefingCutscene(const SCP_string& cutscene);
 	SCP_string getCurrentMissionMainhall() const;
