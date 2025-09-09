@@ -7,6 +7,8 @@
 #include "ship/ship.h"
 #include "weapon/weapon.h"
 #include "sound/audiostr.h"
+#include "cutscene/cutscenes.h"
+#include "menuui/mainhallmenu.h"
 
 namespace fso::fred::dialogs {
 
@@ -1379,6 +1381,37 @@ void CampaignEditorDialogModel::setAllowedWeapon(int weapon_class_index, bool al
 			set_modified();
 		}
 	}
+}
+
+SCP_vector<SCP_string> CampaignEditorDialogModel::getCutsceneList()
+{
+	SCP_vector<SCP_string> out;
+
+	out.emplace_back("<None>");
+
+	for (const auto& cs : Cutscenes) {
+		out.emplace_back(cs.filename);
+	}
+
+	return out;
+}
+
+SCP_vector<SCP_string> CampaignEditorDialogModel::getMainhallList()
+{
+	SCP_vector<SCP_string> out;
+	out.emplace_back("<None>");
+
+	// De-dupe by name (some mods define multiple resolutions/variants per mainhall)
+	std::unordered_set<SCP_string> seen;
+	for (const auto& mh : Main_hall_defines) {
+		if (mh.size() < 1) { // shouldn't happen but let's be safe
+			continue;
+		}
+		const auto& hall = mh[0];
+		out.emplace_back(hall.name);
+	}
+
+	return out;
 }
 
 } // namespace fso::fred::dialogs
