@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="mainTabs">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="campaignSpecs">
        <attribute name="title">
@@ -543,7 +543,7 @@
      <x>0</x>
      <y>0</y>
      <width>958</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -595,7 +595,7 @@
   <customwidget>
    <class>CampaignMissionGraph</class>
    <extends>QGraphicsView</extends>
-   <header>ui/widgets/campaignmissiongraph.h</header>
+   <header>ui/widgets/CampaignMissionGraph.h</header>
   </customwidget>
  </customwidgets>
  <resources>
