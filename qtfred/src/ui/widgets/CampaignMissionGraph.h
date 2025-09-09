@@ -72,7 +72,7 @@ struct CampaignGraphStyle {
 	// Edge routing
 	qreal fanoutStart{12.0}; // vertical run from port before spreading
 	qreal fanoutStep{10.0};  // horizontal separation between sibling edges
-	qreal edgeWidth{3.0};
+	qreal edgeWidth{2.0};
 	qreal arrowSize{8.0}; // arrowhead size
 	qreal arrowTargetInset{10.0};
 	qreal arrowInterval{100.0}; // place an arrow every N px along straight segments
