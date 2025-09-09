@@ -19,10 +19,6 @@ using detail::MissionNodeItem;
 using detail::CampaignSpecialMode;
 using fso::fred::dialogs::CampaignEditorDialogModel;
 
-// ----------------------------
-// MissionNodeItem definitions
-// ----------------------------
-
 MissionNodeItem::MissionNodeItem(int missionIndex,
 	const QString& fileLabel,
 	const QString& nameLabel,
@@ -61,35 +57,35 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	const qreal borderW = isSelected() ? 2.0 : 1.0;
 	const QPen borderPen(m_style.nodeBorder, borderW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
-	const qreal topPortY = m_rect.top();       // center exactly on edge -> half visible
-	const qreal bottomPortY = m_rect.bottom(); // center exactly on edge -> half visible
+	const qreal topPortY = m_rect.top();       // center exactly on edge; half visible
+	const qreal bottomPortY = m_rect.bottom(); // center exactly on edge; half visible
 	const qreal centerX = m_rect.center().x();
 	const QPointF inboundPort(centerX, topPortY);
 	const QPointF mainPort(centerX - m_style.portOffsetX, bottomPortY);
 	const QPointF specPort(centerX + m_style.portOffsetX, bottomPortY);
 
-	// --- 1) PORTS FIRST (under the card so only half shows) ---
+	// Ports first
 	p->setPen(borderPen);
 
-	// Top inbound (green)
-	p->setBrush(m_style.inboundGreen);
+	// Top inbound
+	p->setBrush(m_style.inboundPortColor);
 	p->drawEllipse(inboundPort, m_style.portRadius, m_style.portRadius);
 
-	// Bottom main (blue)
-	p->setBrush(m_style.mainBlue);
+	// Bottom main
+	p->setBrush(m_style.standardPortColor);
 	p->drawEllipse(mainPort, m_style.portRadius, m_style.portRadius);
 
-	// Bottom special (loop/fork color)
-	const QColor specColor = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
+	// Bottom special
+	const QColor specColor = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopPortColor : m_style.forkPortColor;
 	p->setBrush(specColor);
 	p->drawEllipse(specPort, m_style.portRadius, m_style.portRadius);
 
-	// --- 2) CARD ON TOP (covers inner halves of the ports) ---
+	// Mission Card
 	p->setPen(borderPen);
 	p->setBrush(m_style.nodeFill);
 	p->drawPath(roundedRectPath(m_rect, m_style.nodeRadius));
 
-	// 3) User color stripe (on top of card)
+	// User color stripe
 	if (m_graphColor >= 0) {
 		const QColor stripe((m_graphColor >> 16) & 0xFF, (m_graphColor >> 8) & 0xFF, (m_graphColor) & 0xFF);
 		p->fillRect(
@@ -97,7 +93,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 			stripe);
 	}
 
-	// 4) Badge (icon pill) in header; disabled if special branches exist
+	// Special Port Type Select Badge
 	const bool badgeDisabled = (m_specCount > 0) || !m_style.forksEnabled;
 	const QRectF badgeRect(m_rect.right() - m_style.badgePad - m_style.badgeSize.width(),
 		m_rect.top() + m_style.badgePad,
@@ -105,7 +101,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 		m_style.badgeSize.height());
 	m_badgeRect = badgeRect;
 
-	QColor badgeCol = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
+	QColor badgeCol = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopPortColor : m_style.forkPortColor;
 	if (badgeDisabled)
 		badgeCol = m_style.badgeDisabled;
 
@@ -113,7 +109,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	p->setPen(Qt::NoPen);
 	p->drawRoundedRect(badgeRect, badgeRect.height() / 2.0, badgeRect.height() / 2.0);
 
-	// Icon placeholder (swap for your QIcon later)
+	// Icon placeholder // TODO: replace with real icon
 	p->setPen(QPen(Qt::white, 2));
 	if (m_mode == CampaignSpecialMode::Loop) {
 		const QRectF arcRect = badgeRect.adjusted(4, 2, -4, -2);
@@ -127,7 +123,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 		p->drawLine(QPointF(c.x(), badgeRect.top() + 3), QPointF(c.x() + 6, c.y() - 3));
 	}
 
-	// 5) Text: filename (top) and mission name (below stripe)
+	// Text: filename and mission name
 	p->setPen(Qt::black);
 	QFont f = p->font();
 	f.setPointSizeF(f.pointSizeF() - 1);
@@ -181,7 +177,7 @@ QVariant MissionNodeItem::itemChange(GraphicsItemChange change, const QVariant& 
 		return snapped;
 	}
 	if (change == ItemPositionHasChanged) {
-		// Emit scene-space top-left for persistence
+		// Emit scenespace topleft for persistence
 		Q_EMIT nodeMoved(m_idx, mapToScene(QPointF(0, 0)));
 	}
 	return QGraphicsObject::itemChange(change, value);
@@ -191,7 +187,7 @@ void MissionNodeItem::updateGeometry()
 {
 	m_titleH = 18.0;
 	m_nameH = 24.0;
-	m_rect = QRectF(0, 0, 240.0, 120.0); // sync with CampaignGraphStyle defaults
+	m_rect = QRectF(0, 0, 240.0, 120.0);
 }
 
 detail::MissionNodeItem::Port detail::MissionNodeItem::hitTestPortScene(const QPointF& sp) const
@@ -231,10 +227,6 @@ QPointF MissionNodeItem::specialPortScenePos() const
 	return mapToScene(QPointF(m_rect.center().x() + m_style.portOffsetX, m_rect.bottom()));
 }
 
-// ----------------------------
-// EdgeItem definitions
-// ----------------------------
-
 EdgeItem::EdgeItem(int missionIndex,
 	int branchId,
 	bool isSpecial,
@@ -245,20 +237,20 @@ EdgeItem::EdgeItem(int missionIndex,
 	  m_mode(mode), m_style(style)
 {
 	setZValue(5); // below nodes (nodes use 10)
-	// non-interactive
+	// noninteractive
 	setAcceptedMouseButtons(Qt::NoButton);
 	setAcceptHoverEvents(false);
 
 	// color / dash
 	if (!m_isSpecial) {
-		m_color = m_style.mainBlue;
+		m_color = m_style.standardPortColor;
 		m_dash = Qt::SolidLine;
 	} else {
 		if (m_mode == CampaignSpecialMode::Loop) {
-			m_color = m_style.loopOrange;
+			m_color = m_style.loopPortColor;
 			m_dash = Qt::DashLine;
 		} else {
-			m_color = m_style.forkPurple;
+			m_color = m_style.forkPortColor;
 			m_dash = Qt::DashDotLine;
 		}
 	}
@@ -269,7 +261,7 @@ EdgeItem::EdgeItem(int missionIndex,
 
 void EdgeItem::setSelectedVisual(bool sel)
 {
-	// kept for future; no-op visual tweak if desired
+	// kept for future use
 	QPen pen = this->pen();
 	pen.setWidthF(sel ? m_style.edgeWidth + 1.5 : m_style.edgeWidth);
 	setPen(pen);
@@ -280,16 +272,13 @@ void EdgeItem::setEmphasis(Emphasis e)
 {
 	m_emphasis = e;
 
-	// Drive visual emphasis via item opacity (+ a small Z tweak so highlights sit above fades)
+	// Drive visual emphasis via item opacity and a small Z tweak so highlights sit above fades
 	const qreal op = (e == Emphasis::Highlighted) ? m_style.highlightedEdgeOpacity : m_style.fadedEdgeOpacity;
 	setOpacity(op);
 
 	// Keep edges under nodes; just separate the two edge groups a bit
-	const qreal baseZ = 5.0; // keep consistent with your existing z for edges
+	const qreal baseZ = 5.0; // keep consistent with existing z for edges
 	setZValue(baseZ + ((e == Emphasis::Highlighted) ? 1.0 : 0.0));
-
-	// If you later want to hide interval arrows for fades, you can toggle a flag here and
-	// branch in paint(); for now opacity alone gives clean de-emphasis without extra changes.
 }
 
 void EdgeItem::setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
@@ -312,8 +301,8 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 	const qreal sibOffset = (siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.fanoutStep) : 0.0;
 
 	// Decide horizontal direction at the source:
-	//  - If enabled, head toward the target's X so we don't "jog the wrong way".
-	//  - Otherwise, you can keep the legacy main-left/special-right feel.
+	//  - If enabled, head toward the target's X so we don't jog the wrong way.
+	//  - Otherwise, keep the legacy main-left/special-right feel.
 	qreal dirX = +1.0;
 	if (m_style.outboundDirectionTowardTarget) {
 		dirX = (dst.x() - src.x() >= 0.0) ? +1.0 : -1.0;
@@ -321,7 +310,7 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 		dirX = m_isSpecial ? +1.0 : -1.0;
 	}
 
-	// Per-type drop/jog (used only if outboundApproachEnabled)
+	// Per type drop/jog
 	const qreal typeDrop = m_isSpecial ? m_style.outboundDropSpecial : m_style.outboundDropMain;
 	const qreal typeJogX = m_isSpecial ? m_style.outboundJogSpecial : m_style.outboundJogMain;
 
@@ -330,12 +319,12 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 
 	const qreal baseJogX = m_style.outboundApproachEnabled ? typeJogX : 0.0;
 
-	// --- Source side: p0..p2 ---
+	// Source side: p0..p2
 	const QPointF p0 = src;                                            // at port
 	const QPointF p1 = p0 + QPointF(0, drop);                          // vertical drop
 	const QPointF p2 = p1 + QPointF((sibOffset + baseJogX) * dirX, 0); // horizontal jog + sibling fanout
 
-	// --- Target side (inbound jogs you already added) ---
+	// Target side
 	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
 
 	QPointF p3, p4, p5;
@@ -355,7 +344,7 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 		p5 = p4;
 	}
 
-	// Final short vertical into the arrow tip (stop short so the arrowhead is visible)
+	// Final short vertical into the arrow tip, stop short so the arrowhead is visible
 	const QPointF p6 = dst - QPointF(0, inset);
 
 	QPainterPath path(p0);
@@ -383,7 +372,7 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 
 QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightSide, int siblingIndex, int siblingCount)
 {
-	// Offset spread for multiple self-loops
+	// Offset spread for multiple selfloops
 	const qreal spread =
 		(siblingCount > 1) ? ((siblingIndex - (siblingCount - 1) * 0.5) * m_style.selfLoopSpread) : 0.0;
 
@@ -404,7 +393,7 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	const QPointF p2(sideX, p1.y());
 	const QPointF p3(sideX, node.top() - m_style.fanoutStart);
 
-	// Stop short of inbound port so arrow is visible (not under node)
+	// Stop short of inbound port so arrow is visible
 	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
 	const QPointF p4(node.center().x(), p3.y());
 	const QPointF p5 = dst - QPointF(0, inset);
@@ -430,7 +419,7 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 	// Draw the line/path first
 	QGraphicsPathItem::paint(painter, option, widget);
 
-	// Helper to draw a single arrow at 'tip' pointing along 'dir' (dir must be normalized)
+	// Helper to draw a single arrow at tip pointing along dir
 	auto drawArrowAt = [&](const QPointF& tip, const QPointF& dir, qreal size) {
 		if (size <= 0.0)
 			return;
@@ -445,7 +434,7 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 		painter->drawPolygon(arrow);
 	};
 
-	// 1) Arrow at the very end (towards m_lastSegmentP2)
+	// Arrow at the very end
 	{
 		const QPointF a = m_lastSegmentP1;
 		const QPointF b = m_lastSegmentP2;
@@ -456,7 +445,7 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 		}
 	}
 
-	// 2) Arrows at regular intervals along each straight segment (no turn arrows)
+	// Arrows at regular intervals along each straight segment
 	if (m_points.size() < 2)
 		return;
 
@@ -473,17 +462,13 @@ void EdgeItem::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, 
 
 		const QPointF dir = seg / segLen;
 
-		const qreal start = std::max(interval, endMargin); // first arrow along the segment
+		const qreal start = std::max(interval, endMargin);
 		for (qreal d = start; d <= segLen - endMargin; d += interval) {
 			const QPointF pos = p1 + dir * d;
 			drawArrowAt(pos, dir, m_style.arrowSize);
 		}
 	}
 }
-
-// ----------------------------
-// CampaignMissionGraph impl
-// ----------------------------
 
 CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(parent)
 {
@@ -497,7 +482,7 @@ CampaignMissionGraph::CampaignMissionGraph(QWidget* parent) : QGraphicsView(pare
 	setBackgroundBrush(m_style.bgColor);
 	setFrameShape(QFrame::NoFrame);
 
-	// Ensure when the scene is smaller than the viewport it sits at the top-left,
+	// Ensure when the scene is smaller than the viewport it sits at the topleft,
 	// and when we reset the scene rect we can scroll to (0,0).
 	setAlignment(Qt::AlignLeft | Qt::AlignTop);
 }
@@ -506,26 +491,26 @@ void CampaignMissionGraph::onNodeMoved(int missionIndex, QPointF sceneTopLeft)
 {
 	if (!m_model)
 		return;
-	// Persist snapped scene position back into the model (ints are fine)
-	m_model->setMissionGraphX(missionIndex, (int)std::lround(sceneTopLeft.x()));
-	m_model->setMissionGraphY(missionIndex, (int)std::lround(sceneTopLeft.y()));
+	// Persist snapped scene position back into the model
+	m_model->setMissionGraphX(missionIndex, static_cast<int>(std::lround(sceneTopLeft.x())));
+	m_model->setMissionGraphY(missionIndex, static_cast<int>(std::lround(sceneTopLeft.y())));
 
-	// Rebuild only edges (faster than full rebuild) and keep the current viewport
+	// Rebuild only edges and keep the current viewport
 	rebuildEdgesOnly();
 
-	// Expand scene rect if needed (don’t auto-scroll to top-left here)
+	// Expand scene rect if needed but don't autoscroll to topleft
 	updateSceneRectToContent(/*scrollToTopLeft=*/false);
 }
 
 void CampaignMissionGraph::onSceneSelectionChanged()
 {
-	// Ignore signals we caused ourselves (setSelectedMission)
+	// Ignore signals we caused ourselves
 	if (m_internallySelecting)
 		return;
 	if (!m_scene)
 		return;
 
-	// Find the first selected mission node (single-select UX); if none -> -1
+	// Find the first selected mission node
 	int idx = -1;
 	const auto items = m_scene->selectedItems();
 	for (QGraphicsItem* gi : items) {
@@ -535,11 +520,10 @@ void CampaignMissionGraph::onSceneSelectionChanged()
 		}
 	}
 
-	// Update internal selection and emphasis without re-tweaking scene selection again
+	// Update internal selection and emphasis without tweaking scene selection again
 	m_selectedMissionIndex = idx;
 	applyFocusEmphasis();
 
-	// Let listeners know (dialog form etc.)
 	Q_EMIT missionSelected(idx);
 }
 
@@ -569,13 +553,13 @@ void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
 		itemsRect = QRectF(0, 0, m_style.nodeSize.width() * 3.0, m_style.nodeSize.height() * 2.0);
 	}
 
-	// Proposed rect = content ± margins
+	// Proposed rect = content margins
 	QRectF proposed = itemsRect.adjusted(-m_style.contentMarginX,
 		-m_style.contentMarginY,
 		+m_style.contentMarginX,
 		+m_style.contentMarginY);
 
-	// Avoid endless churn: if effectively unchanged, bail.
+	// Avoid endless churn
 	const QRectF current = m_scene->sceneRect();
 	if (rectNearlyEqual(proposed, current)) {
 		// Still optionally scroll on first build
@@ -589,8 +573,7 @@ void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
 		return;
 	}
 
-	// During interactive moves we only want to GROW the rect, not shrink it (prevents oscillation).
-	// Heuristic: when a drag is active (preview edge or mouse grabber), clamp to non-shrinking.
+	// During interactive moves we only want to grow the rect, not shrink it
 	bool interactiveMove = m_drag.active || (scene() && scene()->mouseGrabberItem());
 	if (interactiveMove) {
 		// Expand each side to at least the current extents
@@ -598,12 +581,12 @@ void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
 		proposed.setTop(std::min(proposed.top(), current.top()));
 		proposed.setRight(std::max(proposed.right(), current.right()));
 		proposed.setBottom(std::max(proposed.bottom(), current.bottom()));
-		// If after clamping it’s still effectively the same, bail
+		
 		if (rectNearlyEqual(proposed, current))
 			return;
 	}
 
-	// Re-entrancy guard around setSceneRect()
+	// Reentrancy guard
 	m_updatingSceneRect = true;
 	m_scene->setSceneRect(proposed);
 	m_updatingSceneRect = false;
@@ -689,7 +672,6 @@ void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible
 	// Recompute edge emphasis after every selection change
 	applyFocusEmphasis();
 
-	// send the user-selection signal for listeners
 	Q_EMIT missionSelected(missionIndex);
 }
 
@@ -713,7 +695,7 @@ void CampaignMissionGraph::buildMissionNodes()
 
 	m_nodeItems.reserve(missions.size());
 
-	for (int i = 0; i < (int)missions.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(missions.size()); ++i) {
 		const auto& m = missions[i];
 
 		// Position
@@ -724,7 +706,7 @@ void CampaignMissionGraph::buildMissionNodes()
 			pos = QPointF(m.position * fallbackStep.x(), m.level * fallbackStep.y());
 		}
 
-		// Branch counts & special mode
+		// Branch counts and special mode
 		int mainCount = 0, specCount = 0;
 		for (const auto& b : m.branches) {
 			(b.is_loop || b.is_fork) ? ++specCount : ++mainCount;
@@ -768,21 +750,21 @@ void CampaignMissionGraph::buildMissionEdges()
 	// Ensure END sink exists/positioned if any MAIN branch uses it
 	ensureEndSink();
 
-	// Map mission name -> index (for branch targets)
+	// Map mission name to index for branch targets
 	std::unordered_map<std::string, int> nameToIndex;
 	nameToIndex.reserve(missions.size());
-	for (int i = 0; i < (int)missions.size(); ++i) {
+	for (int i = 0; i < static_cast<int>(missions.size()); ++i) {
 		nameToIndex[missions[i].filename] = i;
 	}
 
-	// For each mission, build edges to other missions (and self)
-	for (int i = 0; i < (int)missions.size(); ++i) {
+	// For each mission, build edges to other missions and self if the feature is active
+	for (int i = 0; i < static_cast<int>(missions.size()); ++i) {
 		const auto& m = missions[i];
 		const auto* srcNode = m_nodeItems[i];
 
 		const auto mode = m.special_mode_hint;
 
-		// Prepare sibling counters for fan-out
+		// Prepare sibling counters for fanout
 		int mainTotal = 0, specTotal = 0;
 		for (const auto& b : m.branches) {
 			(b.is_loop || b.is_fork) ? ++specTotal : ++mainTotal;
@@ -790,7 +772,7 @@ void CampaignMissionGraph::buildMissionEdges()
 		int mainIdx = 0, specIdx = 0;
 
 		for (const auto& b : m.branches) {
-			// MAIN ? END (empty target) allowed
+			// Normal MAIN branch to END sink if no target
 			if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) {
 				if (m_endSink) {
 					const int sibCount = mainTotal;
@@ -810,7 +792,7 @@ void CampaignMissionGraph::buildMissionEdges()
 
 			// SPECIAL with empty target is nonsensical; ignore
 			if ((b.is_loop || b.is_fork) && b.next_mission_name.empty()) {
-				// optional: qWarning() << "Special branch with empty next_mission_name ignored for mission" << i;
+				// Error checker should warn about this if it doesn't
 				continue;
 			}
 
@@ -831,7 +813,7 @@ void CampaignMissionGraph::buildMissionEdges()
 			edge->setTargetIndex(j);
 
 			if (i == j) {
-				// Self-loop: draw outside node (unless disabled)
+				// Selfloop: draw outside node
 				if (m_style.showSelfLoops) {
 					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->boundingRect());
 					const bool sourceRight = isSpecial; // special port on right; main on left
@@ -860,21 +842,11 @@ void CampaignMissionGraph::buildMissionEdges()
 
 void CampaignMissionGraph::ensureEndSink()
 {
-	// Needs END only if any MAIN branch (non-special) ends the campaign
+	// Needs END only if any mission node exists
 	bool needsEnd = false;
 	if (m_model) {
 		const auto& missions = m_model->getCampaignMissions();
 		needsEnd = !missions.empty();
-		/*for (const auto& m : missions) {
-			for (const auto& b : m.branches) {
-				if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) { // MAIN ? END only
-					needsEnd = true;
-					break;
-				}
-			}
-			if (needsEnd)
-				break;
-		}*/
 	}
 
 	// Remove if not needed
@@ -890,11 +862,12 @@ void CampaignMissionGraph::ensureEndSink()
 	// Create if missing
 	if (!m_endSink) {
 		m_endSink = new detail::EndSinkItem(m_style);
-		m_endSink->setZValue(9.0); // above edges (5), below nodes (10)
+		m_endSink->setZValue(9.0);
 		m_scene->addItem(m_endSink);
 	}
 
 	// Position below the union of mission nodes
+	// Future TODO: Let the user move this around. Will require being able to save it's position to the campaign file
 	if (!m_nodeItems.empty()) {
 		QRectF nodesRect = m_nodeItems.front()->mapRectToScene(m_nodeItems.front()->boundingRect());
 		for (size_t i = 1; i < m_nodeItems.size(); ++i) {
@@ -923,10 +896,10 @@ void CampaignMissionGraph::rebuildEdgesOnly()
 	}
 	m_edgeItems.clear();
 
-	// Re-position/create END sink (based on current node geometry)
+	// Reposition/create END sink
 	ensureEndSink();
 
-	// Rebuild edges using current node positions & model branches
+	// Rebuild edges using current node positions and model branches
 	buildMissionEdges();
 }
 
@@ -939,12 +912,11 @@ bool CampaignMissionGraph::hasRepeatBranch(int missionIndex) const
 		return false;
 
 	const auto& m = missions[missionIndex];
-	// Use the same key you store in next_mission_name (filename)
 	const auto& selfName = m.filename;
 
 	for (const auto& b : m.branches) {
 		if (!b.is_loop && !b.is_fork && b.next_mission_name == selfName) {
-			return true; // normal self-branch already present
+			return true; // normal selfbranch already present
 		}
 	}
 	return false;
@@ -956,7 +928,7 @@ detail::MissionNodeItem* CampaignMissionGraph::nodeAtScenePos(const QPointF& sce
 	if (!m_scene)
 		return nullptr;
 
-	// Items returns top-most first; skip anything not actually in this scene anymore.
+	// Items returns top most first; skip anything not actually in this scene anymore.
 	const auto itemsHere = m_scene->items(scenePt);
 	for (QGraphicsItem* gi : itemsHere) {
 		if (!gi || gi->scene() != m_scene)
@@ -975,7 +947,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 
 	const qreal hitR = m_style.portRadius + m_style.portHitExtra;
 
-	// 1) END sink (MAIN only)
+	// END sink
 	if (!m_drag.isSpecial && m_endSink) {
 		const QPointF anchor = m_endSink->inboundAnchorScenePos();
 		if (QLineF(scenePt, anchor).length() <= hitR) {
@@ -984,7 +956,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 		}
 	}
 
-	// 2) Mission inbound port
+	// Mission inbound port
 	if (auto* dst = nodeAtScenePos(scenePt)) {
 		const QPointF anchor = dst->inboundPortScenePos();
 		if (QLineF(scenePt, anchor).length() <= hitR) {
@@ -998,16 +970,16 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 		}
 	}
 
-	// 3) Empty space ? ask dialog to create a new mission here and connect
-	//    (Snap drop to grid; use it as the node’s top-left)
+	// Empty space: ask dialog to create a new mission here and connect
+	// Snap drop to grid; use it as the node's top-left
 	const qreal s = m_style.minorStep;
 	const QPointF snapped(qRound(scenePt.x() / s) * s, qRound(scenePt.y() / s) * s);
 
-	// Don’t spawn if we actually clicked on an item’s body (just to be safe)
+	// Don't spawn if we actually clicked on an item's body
 	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->sceneBoundingRect().contains(scenePt))) {
 		m_spawnPending = true;
 		Q_EMIT createMissionAtAndConnectRequested(snapped, m_drag.fromIndex, m_drag.isSpecial);
-		// return false so caller won’t rebuild; dialog will rebuild after it adds the mission
+		// return false so caller won't rebuild; dialog will rebuild after it adds the mission
 		return false;
 	}
 
@@ -1016,7 +988,7 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 
 void CampaignMissionGraph::cancelDrag()
 {
-	// If a rebuild cleared the scene, QPointer auto-nulls and this will no-op safely
+	// If a rebuild cleared the scene, QPointer auto nulls and this will noop safely
 	if (m_drag.preview) {
 		if (m_drag.preview->scene()) {
 			m_drag.preview->scene()->removeItem(m_drag.preview);
@@ -1052,7 +1024,7 @@ void CampaignMissionGraph::applyFocusEmphasis()
 			if (m_style.focusCountIncoming && e->targetIndex() == sel)
 				connected = true;
 		} else {
-			// No selection -> everything de-emphasized (per your spec)
+			// No selection means everything de-emphasized
 			connected = false;
 		}
 
@@ -1111,7 +1083,7 @@ void CampaignMissionGraph::drawBackground(QPainter* p, const QRectF& rect)
 	p->save();
 	p->setRenderHint(QPainter::Antialiasing, false);
 
-	// Fill the currently exposed SCENE area (not the widget rect)
+	// Fill the currently exposed area
 	p->fillRect(rect, m_style.bgColor);
 
 	// Draw grid over the same scene rect
@@ -1124,7 +1096,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 {
 	const QPointF sp = mapToScene(ev->pos());
 
-	// If we’re already dragging, ignore
+	// If we're already dragging, ignore
 	if (!m_drag.active) {
 		if (auto* raw = nodeAtScenePos(sp)) {
 			QPointer<detail::MissionNodeItem> n(raw);
@@ -1141,7 +1113,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 				m_drag.active = true;
 				m_drag.isSpecial = (hit == detail::MissionNodeItem::Port::Special);
 
-				// Re-check pointer right before using it again
+				// Recheck pointer right before using it again
 				if (!n) {
 					ev->ignore();
 					return;
@@ -1160,7 +1132,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 				m_drag.preview->setEmphasis(detail::EdgeItem::Emphasis::Highlighted);
 				m_scene->addItem(m_drag.preview);
 
-				// Disable hand-drag while connecting
+				// Disable hand drag while connecting
 				setDragMode(QGraphicsView::NoDrag);
 				ev->accept();
 				return;
@@ -1168,7 +1140,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 		}
 	}
 
-	// not starting a connect — fall back to normal behavior (panning/selection)
+	// not starting a connect; fall back to normal behavior
 	QGraphicsView::mousePressEvent(ev);
 }
 
@@ -1182,7 +1154,7 @@ void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 		setDragMode(QGraphicsView::ScrollHandDrag);
 
 		if (made) {
-			// Edges now reflect the new branch; keep viewport stable
+			// Edges reflect the new branch; keep viewport stable
 			rebuildEdgesOnly();
 			updateSceneRectToContent(/*scrollToTopLeft=*/false);
 		} else if (m_spawnPending) {
@@ -1231,17 +1203,17 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 		return;
 	}
 
-	// END sink under cursor? (no special menu yet; fall back)
+	// END sink under cursor? no special menu
 	if (m_endSink && m_endSink->sceneBoundingRect().contains(sp)) {
 		QGraphicsView::contextMenuEvent(e);
 		return;
 	}
 
-	// Empty-space menu: "Add mission here"
+	// Empty space menu: "Add mission here"
 	QMenu menu(this);
 	QAction* actAdd = menu.addAction(tr("Add mission here"));
 
-	// Snap to grid (top-left of new node)
+	// Snap to grid
 	const qreal s = m_style.minorStep;
 	const QPointF snapped(qRound(sp.x() / s) * s, qRound(sp.y() / s) * s);
 

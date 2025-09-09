@@ -44,7 +44,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		// LOADING AN EXISTING CAMPAIGN
 
 		// This assumes the global 'Campaign' struct has just been populated by a
-		// call to mission_campaign_load() in our loadCampaignFromFile() method.
+		// call to mission_campaign_load() in the loadCampaignFromFile() method.
 
 		// Copy simple properties from the global Campaign struct
 		m_campaign_filename = Campaign.filename;
@@ -167,7 +167,7 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 		}
 
 		if (source_cmission) {
-			// In our new model, all branches can have loop data. We apply the single
+			// All branches can have loop data. We apply the single
 			// set of metadata from the file to all of them.
 			for (auto& branch : mission.branches) {
 				if (branch.is_loop) {
@@ -307,7 +307,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		dest_mission.substitute_main_hall = sub_hall;
 		dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
 
-		// Convert the flexible CampaignBranchData back into the rigid cmission formula structure
+		// Convert the CampaignBranchData back into the cmission formula structure
 		dest_mission.formula = -1;
 		dest_mission.mission_loop_formula = -1;
 
@@ -910,7 +910,7 @@ CampaignSpecialMode CampaignEditorDialogModel::getMissionSpecialMode(int i) cons
 		if (b.is_fork)
 			return CampaignSpecialMode::Fork;
 	}
-	// Otherwise use the editor hint (default LOOP)
+	// Otherwise use the editor hint
 	return m.special_mode_hint;
 }
 
@@ -1184,7 +1184,7 @@ void CampaignEditorDialogModel::removeBranchByTreeId(int formula_id)
 
 	m_current_branch_index = -1; // set no branch selected
 
-	// Rebuild the visual tree from the model’s authoritative state
+	// Rebuild the visual tree from the model's authoritative state
 	if (SCP_vector_inbounds(m_missions, m_current_mission_index)) {
 		auto& cur = m_missions[m_current_mission_index];
 		m_tree_ops.rebuildBranchTree(cur.branches, cur.filename);
@@ -1268,10 +1268,10 @@ void CampaignEditorDialogModel::addSpecialBranch(int from_mission_index, int to_
 	const bool asLoop = (from.special_mode_hint == CampaignSpecialMode::Loop);
 	const bool asFork = (from.special_mode_hint == CampaignSpecialMode::Fork);
 
-	// No mixing here; UI should enforce, but guard anyway
+	// No mixing here
 	for (const auto& b : from.branches) {
 		if ((b.is_loop || b.is_fork) && (b.is_loop != asLoop || b.is_fork != asFork)) {
-			// Conflicting special types present; refuse new special (optional: log)
+			// Conflicting special types present
 			return;
 		}
 	}
@@ -1305,8 +1305,6 @@ void CampaignEditorDialogModel::removeBranch(int mission_index, int branch_index
 	if (!SCP_vector_inbounds(mission.branches, branch_index)) {
 		return;
 	}
-
-	// Do we need to free sexps here?
 
 	// The model's only job is to update its own data.
 	mission.branches.erase(mission.branches.begin() + branch_index);

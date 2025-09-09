@@ -18,7 +18,6 @@ enum class CampaignSpecialMode;
 
 class QGraphicsScene;
 
-// Forward-declare internal items so we can use pointers before the full namespace block
 namespace detail {
 class MissionNodeItem;
 class EdgeItem;
@@ -52,10 +51,10 @@ struct CampaignGraphStyle {
 	qreal stripeHeight{10.0};
 
 	// Ports
-	QColor inboundGreen{46, 204, 113}; // top port
-	QColor mainBlue{52, 152, 219};     // main out port
-	QColor loopOrange{243, 156, 18};   // special out port when LOOP
-	QColor forkPurple{155, 89, 182};   // special out port when FORK
+	QColor inboundPortColor{46, 204, 113}; // top port
+	QColor standardPortColor{52, 152, 219};     // main out port
+	QColor loopPortColor{243, 156, 18};   // special out port when LOOP
+	QColor forkPortColor{155, 89, 182};   // special out port when FORK
 	qreal portRadius{6.0};
 	qreal portOffsetX{42.0};
 	bool inboundApproachEnabled{true}; // add a small jog near the inbound port
@@ -66,8 +65,8 @@ struct CampaignGraphStyle {
 	qreal outboundJogMain{30.0};              // X jog right after source for MAIN
 	qreal outboundJogSpecial{30.0};           // X jog right after source for SPECIAL
 	qreal outboundDropMain{30.0};             // Y drop right after source for MAIN
-	qreal outboundDropSpecial{40.0};          // Y drop right after source for SPECIAL (often a bit larger)
-	qreal portHitExtra{30.0};                 // extra pixels added to port radius for hit-testing
+	qreal outboundDropSpecial{40.0};          // Y drop right after source for SPECIAL
+	qreal portHitExtra{30.0};                 // extra pixels added to port radius for hit testing
 
 	// Edge routing
 	qreal fanoutStart{12.0}; // vertical run from port before spreading
@@ -78,9 +77,9 @@ struct CampaignGraphStyle {
 	qreal arrowInterval{100.0}; // place an arrow every N px along straight segments
 
 	// Self-loop display
-	bool showSelfLoops{false};  // if true, self-loops are drawn with edges. Disabled because it clutters the view.
+	bool showSelfLoops{false};  // if true, self loops are drawn with edges. Disabled because it clutters the view.
 	qreal selfLoopMargin{32.0}; // how far outside the node to wrap
-	qreal selfLoopSpread{10.0}; // per-sibling additional spacing
+	qreal selfLoopSpread{10.0}; // per sibling additional spacing
 
 	// Badge
 	qreal badgePad{6.0}; // Used to toggle between LOOP or FORK
@@ -114,7 +113,7 @@ class CampaignMissionGraph final : public QGraphicsView {
   public:
 	explicit CampaignMissionGraph(QWidget* parent = nullptr);
 
-	// Hook up the working campaign data (read-only from the view)
+	// Hook up the working campaign data
 	void setModel(fso::fred::dialogs::CampaignEditorDialogModel* model);
 
 	// Rebuild/redraw the entire scene from the model
@@ -143,9 +142,9 @@ class CampaignMissionGraph final : public QGraphicsView {
   signals:
 	// Emitted when a mission node is clicked/selected
 	void missionSelected(int missionIndex);
-	// Emitted when the LOOP/FORK badge is clicked (only when no special branches exist)
+	// Emitted when the LOOP/FORK badge is clicked and no special branch exists
 	void specialModeToggleRequested(int missionIndex);
-	// (Edges are now non-interactive, keeping this signal around is harmless if you already wired it)
+	// Edges are now noninteractive, keeping this signal for future use
 	void branchSelected(int missionIndex, int branchId);
 	// Emitted when a request is made to create a new mission node
 	void addMissionHereRequested(QPointF sceneTopLeft);
@@ -198,13 +197,12 @@ class CampaignMissionGraph final : public QGraphicsView {
 
 	void applyFocusEmphasis(); // recompute fade/highlight on all edges
 
-	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
+	QGraphicsScene* m_scene{nullptr};
 	QPointer<fso::fred::dialogs::CampaignEditorDialogModel> m_model;
 
 	// Centralized visuals
 	CampaignGraphStyle m_style;
 
-	// Items we create (aligned to model order)
 	SCP_vector<detail::MissionNodeItem*> m_nodeItems;
 	SCP_vector<detail::EdgeItem*> m_edgeItems;
 	QPointer<detail::EndSinkItem> m_endSink{nullptr};
@@ -223,8 +221,6 @@ class CampaignMissionGraph final : public QGraphicsView {
 	bool m_internallySelecting{false}; // guard to avoid recursion when we set selection programmatically
 	bool m_sceneHooksInstalled{false}; // ensure we only connect once
 };
-
-// ---------- Internal items (Q_OBJECT in header so AUTOMOC runs) ----------
 
 namespace detail {
 
@@ -264,7 +260,7 @@ class MissionNodeItem final : public QGraphicsObject {
 
 	Port hitTestPortScene(const QPointF& scenePos) const;
 
-	// Port anchor points (scene coordinates)
+	// Port anchor points
 	QPointF inboundPortScenePos() const;
 	QPointF mainPortScenePos() const;
 	QPointF specialPortScenePos() const;
@@ -286,7 +282,7 @@ class MissionNodeItem final : public QGraphicsObject {
 	int m_idx{-1};
 	QString m_file;
 	QString m_name;
-	int m_graphColor{-1};
+	int m_graphColor{-1}; // TODO future ability for users to arbitrarily color mission nodes. Will add when missionsave is refactored
 	CampaignSpecialMode m_mode{CampaignSpecialMode::Loop};
 	int m_mainCount{0};
 	int m_specCount{0};
@@ -300,8 +296,8 @@ class MissionNodeItem final : public QGraphicsObject {
 };
 
 /**
- * Edge between missions (with arrowhead). Drawn with Manhattan routing and fan-out.
- * Non-interactive: edges ignore mouse events and are not selectable.
+ * Edge between missions.
+ * Edges ignore mouse events and are not selectable.
  */
 class EdgeItem final : public QObject, public QGraphicsPathItem {
 	Q_OBJECT
@@ -313,21 +309,21 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 		const CampaignGraphStyle& style,
 		QGraphicsItem* parent = nullptr);
 
-	// Standard (non-self) edge
+	// Standard edge
 	void setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount);
 
-	// Self-loop variant (wrap outside node rect on the appropriate side)
+	// Selfloop variant, wraps outside node rect on the appropriate side
 	void setSelfLoop(const QRectF& nodeRectScene, bool sourceIsRightSide, int siblingIndex, int siblingCount);
 
-	// (kept for completeness; not used now)
+	// kept for completeness; not used now
 	void setSelectedVisual(bool sel);
 
-	// Emphasis state (for focus mode)
+	// Emphasis state
 	enum class Emphasis { Faded, Highlighted };
 	void setEmphasis(Emphasis e);
 	Emphasis emphasis() const { return m_emphasis; }
 
-	// For focus-mode connectivity checks
+	// For focus mode connectivity checks
 	int sourceIndex() const { return m_missionIndex; }
 	int targetIndex() const { return m_targetIndex; }
 	void setTargetIndex(int idx) { m_targetIndex = idx; }
@@ -351,8 +347,8 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	Qt::PenStyle m_dash{Qt::SolidLine};
 
 	// Cache for arrow drawing
-	QPointF m_lastSegmentP1; // second-to-last point
-	QPointF m_lastSegmentP2; // last point (path end)
+	QPointF m_lastSegmentP1; // second to last point
+	QPointF m_lastSegmentP2; // last point
 
 	SCP_vector<QPointF> m_points; // cached polyline points for arrow placement
 
@@ -382,23 +378,23 @@ class EndSinkItem final : public QGraphicsObject {
 	{
 		p->setRenderHint(QPainter::Antialiasing, true);
 
-		// Geometry: draw relative to the pill rect (not the expanded boundingRect)
+		// draw relative to the pill rect (not the expanded boundingRect)
 		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
 
-		// 1) Inbound port (green), centered on the pill's top edge so only half shows
+		// Inbound port, centered on the pill's top edge
 		QPen portPen(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 		p->setPen(portPen);
-		p->setBrush(m_style.inboundGreen);
+		p->setBrush(m_style.inboundPortColor);
 		const QPointF portCenter(pill.center().x(), pill.top());
 		p->drawEllipse(portCenter, m_style.portRadius, m_style.portRadius);
 
-		// 2) Pill on top
+		// Pill on top
 		QPen border(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 		p->setPen(border);
 		p->setBrush(m_style.endSinkFill);
 		p->drawRoundedRect(pill, m_style.endSinkRadius, m_style.endSinkRadius);
 
-		// 3) Label
+		// Label
 		p->setPen(m_style.endSinkText);
 		QFont f = p->font();
 		f.setBold(true);
@@ -406,10 +402,10 @@ class EndSinkItem final : public QGraphicsObject {
 		p->drawText(pill, Qt::AlignCenter, QStringLiteral("END"));
 	}
 
-	// Anchor where inbound edges terminate (top-center of pill)
+	// Anchor where inbound edges terminate
 	QPointF inboundAnchorScenePos() const
 	{
-		// Anchor on the pill's top-center (independent of expanded boundingRect)
+		// Anchor on the pill's top-center
 		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
 		return mapToScene(QPointF(pill.center().x(), pill.top()));
 	}
