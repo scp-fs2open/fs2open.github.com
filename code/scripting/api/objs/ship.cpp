@@ -1647,17 +1647,19 @@ ADE_FUNC(clearOrders, l_Ship, NULL, "Clears a ship's orders list", "boolean", "T
 	return ADE_RETURN_TRUE;
 }
 
-ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders", "boolean", "True if order was given, otherwise false or nil")
+ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem TargetSubsystem=nil, number Priority=1.0, shipclass TargetShipclass=nil, shiptype TargetShiptype=nil]", "Uses the goal code to execute orders.  NOTE: This function uses a scale from 0.0-1.0 (up to 2.0) rather than the usual 0-100 (up to 200)", "boolean", "True if order was given, otherwise false or nil")
 {
 	object_h *objh = NULL;
 	enum_h *eh = NULL;
-	float priority = 1.0f;
+	float priority = 1.0f;	// default to PLAYER_PRIORITY_SHIP
 	int sclass = -1;
 	int stype = -1;
 	object_h *tgh = NULL;
 	ship_subsys_h *tgsh = NULL;
-	if(!ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype)))
+	int n_args = ade_get_args(L, "oo|oofoo", l_Object.GetPtr(&objh), l_Enum.GetPtr(&eh), l_Object.GetPtr(&tgh), l_Subsystem.GetPtr(&tgsh), &priority, l_Shipclass.Get(&sclass), l_Shiptype.Get(&stype));
+	if (n_args < 2)
 		return ADE_RETURN_NIL;
+	bool omitted_priority = (n_args < 5);
 
 	if(!objh->isValid() || !eh->isValid())
 		return ade_set_error(L, "b", false);
@@ -1665,7 +1667,10 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 	//wtf...
 	if(priority < 0.0f)
 		return ade_set_error(L, "b", false);
-
+	//at minimum use MIN_GOAL_PRIORITY
+	else if(priority < 0.01f)
+		priority = 0.01f;
+	//don't exceed MAX_GOAL_PRIORITY
 	if(priority > 2.0f)
 		priority = 2.0f;
 
@@ -1711,7 +1716,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 		{
 			if(tgh_valid && tgh->objp()->type == OBJ_WAYPOINT)
 			{
-				ai_mode = eh->index == LE_ORDER_WAYPOINTS_ONCE ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
+				ai_mode = (eh->index == LE_ORDER_WAYPOINTS_ONCE) ? AI_GOAL_WAYPOINTS_ONCE : AI_GOAL_WAYPOINTS;
 				int wp_list_index, wp_index;
 				calc_waypoint_indexes(tgh->objp()->instance, wp_list_index, wp_index);
 				if (wp_list_index >= 0 && wp_index >= 0)
@@ -1735,6 +1740,9 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 				ai_mode = AI_GOAL_FORM_ON_WING;
 				ai_shipname = Ships[tgh->objp()->instance].ship_name;
 				ai_submode = 0;
+
+				if (omitted_priority)
+					priority = The_mission.ai_profile->default_form_on_wing_priority / 100.0f;
 			}
 			break;
 		}
@@ -1923,7 +1931,7 @@ ADE_FUNC(giveOrder, l_Ship, "enumeration Order, [object Target=nil, subsystem Ta
 		return ade_set_error(L, "b", false);
 
 	//Fire off the goal
-	ai_add_ship_goal_scripting(ai_mode, ai_submode, (int)(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data);
+	ai_add_ship_goal_scripting(ai_mode, ai_submode, fl2i(priority*100.0f), ai_shipname, &Ai_info[Ships[objh->objp()->instance].ai_index], int_data, float_data);
 
 	return ADE_RETURN_TRUE;
 }
