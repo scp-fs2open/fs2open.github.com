@@ -154,6 +154,8 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void addRepeatBranchRequested(int missionIndex);
 	// Emitted when an outbound connection drag is started from a node port and ends in empty space
 	void createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
+	// Emitted when a request is made to make the current mission the first campaign mission
+	void setFirstMissionRequested(int missionIndex);
 
   protected:
 	// Pan/zoom

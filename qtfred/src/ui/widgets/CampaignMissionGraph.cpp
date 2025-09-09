@@ -1176,6 +1176,7 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 		const int idx = n->missionIndex();
 
 		QMenu menu(this);
+		QAction* actSetFirst = menu.addAction(tr("Set as First Mission"));
 		QAction* actDelete = menu.addAction(tr("Delete mission"));
 		QAction* actRepeat = menu.addAction(tr("Add Repeat Mission"));
 
@@ -1183,12 +1184,20 @@ void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
 		const bool canAddRepeat = !hasRepeatBranch(idx);
 		actRepeat->setEnabled(canAddRepeat);
 
+		// Disable "Set as First Mission" if already first
+		actSetFirst->setEnabled(!(idx == 0));
+
 		QAction* chosen = menu.exec(e->globalPos());
 		if (!chosen) {
 			e->ignore();
 			return;
 		}
 
+		if (chosen == actSetFirst) {
+			Q_EMIT setFirstMissionRequested(idx);
+			e->accept();
+			return;
+		}
 		if (chosen == actDelete) {
 			Q_EMIT deleteMissionRequested(idx);
 			e->accept();
