@@ -3,7 +3,7 @@ name: Check a pull request
 on: [pull_request]
 
 env:
-  QT_VERSION: 5.12.12
+  QT_VERSION: 6.9.1
 
 jobs:
   build_linux:
@@ -50,11 +50,11 @@ jobs:
           JOB_CMAKE_OPTIONS: ${{ matrix.cmake_options }}
           CCACHE_PATH: /usr/local/bin/ccache
           ENABLE_QTFRED: ON
-          Qt5_DIR: /qt/${{ env.QT_VERSION }}/gcc_64/lib/cmake/Qt5
+          Qt6_DIR: /qt/${{ env.QT_VERSION }}/gcc_64/lib/cmake/Qt6
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
-        run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
+        run: LD_LIBRARY_PATH=$Qt6_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
       - name: Run Tests
         working-directory: ./build
         env:
@@ -223,7 +223,7 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
-        run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja all
+        run: LD_LIBRARY_PATH=$Qt6_DIR/lib:$LD_LIBRARY_PATH ninja all
       - name: Run Tests
         working-directory: ./build
         env:

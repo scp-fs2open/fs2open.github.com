@@ -6,7 +6,7 @@ on:
       - 'test/*'
 
 env:
-  QT_VERSION: 5.12.12
+  QT_VERSION: 6.9.1
 
 jobs:
   build_linux:
@@ -38,7 +38,7 @@ jobs:
         env:
           CONFIGURATION: ${{ matrix.configuration }}
         run: |
-          LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
+          LD_LIBRARY_PATH=$Qt6_DIR/lib:$LD_LIBRARY_PATH ninja -k 20 all
       - name: Run Tests
         working-directory: ./build
         env:
@@ -274,7 +274,7 @@ jobs:
         run: $GITHUB_WORKSPACE/ci/linux/configure_cmake.sh
       - name: Compile
         working-directory: ./build
-        run: LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH ninja all
+        run: LD_LIBRARY_PATH=$Qt6_DIR/lib:$LD_LIBRARY_PATH ninja all
       - name: Run Tests
         working-directory: ./build
         env:
