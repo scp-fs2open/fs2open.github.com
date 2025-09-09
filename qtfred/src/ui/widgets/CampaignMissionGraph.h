@@ -95,6 +95,13 @@ struct CampaignGraphStyle {
 	qreal endSinkRadius{14.0};
 	qreal endSinkMargin{160.0}; // distance below the lowest node row
 
+	// Focus mode / path de-emphasis
+	bool focusModeEnabled{true};       // master toggle
+	qreal fadedEdgeOpacity{0.25};      // opacity for de-emphasized edges
+	qreal highlightedEdgeOpacity{1.0}; // opacity for emphasized edges
+	bool focusCountOutgoing{true};     // edges with source == selected are emphasized
+	bool focusCountIncoming{true};     // edges with target == selected are emphasized
+
 	qreal contentMarginX{400.0}; // extra scene space left/right of content on rebuild
 	qreal contentMarginY{400.0}; // extra scene space above/below content on rebuild
 };
@@ -163,6 +170,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 
   private slots:
 	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
+	void onSceneSelectionChanged();
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	struct DragState {
@@ -180,12 +188,15 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void buildMissionNodes();
 	void buildMissionEdges();
 	void ensureEndSink();
+	void ensureSceneHooks();
 	void rebuildEdgesOnly();
 	bool hasRepeatBranch(int missionIndex) const;
 
 	detail::MissionNodeItem* nodeAtScenePos(const QPointF& scenePt) const;
 	bool tryFinishConnectionAt(const QPointF& scenePt);
 	void cancelDrag();
+
+	void applyFocusEmphasis(); // recompute fade/highlight on all edges
 
 	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
 	QPointer<fso::fred::dialogs::CampaignEditorDialogModel> m_model;
@@ -206,6 +217,11 @@ class CampaignMissionGraph final : public QGraphicsView {
 
 	bool m_updatingSceneRect{false};
 	bool m_spawnPending{false};
+
+	int m_selectedMissionIndex{-1};
+
+	bool m_internallySelecting{false}; // guard to avoid recursion when we set selection programmatically
+	bool m_sceneHooksInstalled{false}; // ensure we only connect once
 };
 
 // ---------- Internal items (Q_OBJECT in header so AUTOMOC runs) ----------
@@ -306,6 +322,16 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	// (kept for completeness; not used now)
 	void setSelectedVisual(bool sel);
 
+	// Emphasis state (for focus mode)
+	enum class Emphasis { Faded, Highlighted };
+	void setEmphasis(Emphasis e);
+	Emphasis emphasis() const { return m_emphasis; }
+
+	// For focus-mode connectivity checks
+	int sourceIndex() const { return m_missionIndex; }
+	int targetIndex() const { return m_targetIndex; }
+	void setTargetIndex(int idx) { m_targetIndex = idx; }
+
   protected:
 	void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget) override;
 
@@ -329,6 +355,9 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	QPointF m_lastSegmentP2; // last point (path end)
 
 	SCP_vector<QPointF> m_points; // cached polyline points for arrow placement
+
+	Emphasis m_emphasis{Emphasis::Faded};
+	int m_targetIndex{-1}; // -1 = unknown/END; else mission index
 };
 
 /**
