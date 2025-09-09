@@ -29,6 +29,9 @@ class EndSinkItem;
  * Visual style knobs for the graph. Kept public so both the graph and items use the same values.
  */
 struct CampaignGraphStyle {
+	// Global
+	bool forksEnabled{false}; // if true, FORK special branches are allowed (else only LOOP)
+
 	// Background & grid
 	QColor bgColor{245, 245, 245};
 	QColor gridMinor{230, 230, 230};
@@ -125,6 +128,10 @@ class CampaignMissionGraph final : public QGraphicsView {
 	{
 		m_zoomEnabled = on;
 	}
+	bool forksEnabled() const
+	{
+		return m_style.forksEnabled;
+	}
 
   signals:
 	// Emitted when a mission node is clicked/selected
@@ -139,11 +146,24 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void wheelEvent(QWheelEvent* e) override;
 	// Grid background
 	void drawBackground(QPainter* painter, const QRectF& rect) override;
+	// Mouse events
+	void mousePressEvent(QMouseEvent* e) override;
+	void mouseMoveEvent(QMouseEvent* e) override;
+	void mouseReleaseEvent(QMouseEvent* e) override;
 
   private slots:
 	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
 
   private: // NOLINT(readability-redundant-access-specifiers)
+	struct DragState {
+		bool active{false};
+		bool isSpecial{false};
+		int fromIndex{-1};
+		QPointF srcPt;
+		detail::EdgeItem* preview{nullptr};
+	};
+	DragState m_drag;
+
 	void initScene();
 	void updateSceneRectToContent(bool scrollToTopLeft);
 	void drawGrid(QPainter* p, const QRectF& rect);
@@ -151,6 +171,10 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void buildMissionEdges();
 	void ensureEndSink();
 	void rebuildEdgesOnly();
+
+	detail::MissionNodeItem* nodeAtScenePos(const QPointF& scenePt) const;
+	bool tryFinishConnectionAt(const QPointF& scenePt);
+	void cancelDrag();
 
 	QGraphicsScene* m_scene{nullptr}; // owned by view (parented)
 	QPointer<fso::fred::dialogs::CampaignEditorDialogModel> m_model;
@@ -194,6 +218,21 @@ class MissionNodeItem final : public QGraphicsObject {
 
 	QRectF boundingRect() const override;
 	void paint(QPainter* p, const QStyleOptionGraphicsItem* opt, QWidget* w) override;
+
+	int missionIndex() const
+	{
+		return m_idx;
+	}
+
+
+	enum class Nub {
+		None,
+		Inbound,
+		Main,
+		Special
+	};
+
+	Nub hitTestNubScene(const QPointF& scenePos) const;
 
 	// Nub anchor points (scene coordinates)
 	QPointF inboundNubScenePos() const;

@@ -63,7 +63,7 @@ struct ICampaignEditorTreeOps {
 	virtual int createDefaultSexp() = 0;
 
 	// Asks the tree to completely rebuild its view from a list of branches
-	virtual void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches) = 0;
+	virtual void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) = 0;
 
 	// Asks the tree to expand the visual branch for a given internal node ID
 	virtual void expandBranch(int internal_node_id) = 0;
@@ -150,6 +150,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	// Campaign Graph
 	const SCP_vector<CampaignMissionData>& getCampaignMissions() const;
 	void addBranch(int from_mission_index, int to_mission_index);
+	void addEndBranch(int from_mission_index);
+	void addSpecialBranch(int from_mission_index, int to_mission_index);
 	void removeBranch(int mission_index, int branch_index);
 	void updateCurrentBranch(int internal_node_id);
 	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once

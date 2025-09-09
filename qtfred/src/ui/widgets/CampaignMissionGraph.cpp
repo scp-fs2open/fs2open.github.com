@@ -96,7 +96,7 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	}
 
 	// 4) Badge (icon pill) in header; disabled if special branches exist
-	const bool badgeDisabled = (m_specCount > 0);
+	const bool badgeDisabled = (m_specCount > 0) || !m_style.forksEnabled;
 	const QRectF badgeRect(m_rect.right() - m_style.badgePad - m_style.badgeSize.width(),
 		m_rect.top() + m_style.badgePad,
 		m_style.badgeSize.width(),
@@ -151,7 +151,9 @@ void MissionNodeItem::mousePressEvent(QGraphicsSceneMouseEvent* e)
 {
 	if (m_badgeRect.contains(e->pos())) {
 		if (m_specCount == 0) {
-			Q_EMIT specialModeToggleRequested(m_idx);
+			if (m_style.forksEnabled) {
+				Q_EMIT specialModeToggleRequested(m_idx);
+			}
 			e->accept();
 			return;
 		}
@@ -189,6 +191,25 @@ void MissionNodeItem::updateGeometry()
 	m_nameH = 24.0;
 	m_rect = QRectF(0, 0, 240.0, 120.0); // sync with CampaignGraphStyle defaults
 }
+
+MissionNodeItem::Nub MissionNodeItem::hitTestNubScene(const QPointF& sp) const
+{
+	const qreal r = m_style.nubRadius + 3.0; // small tolerance
+	auto near = [&](const QPointF& a, const QPointF& b) { return QLineF(a, b).length() <= r; };
+
+	const QPointF inP = inboundNubScenePos();
+	const QPointF mainP = mainNubScenePos();
+	const QPointF specP = specialNubScenePos();
+
+	if (near(sp, mainP))
+		return Nub::Main;
+	if (near(sp, specP))
+		return Nub::Special;
+	if (near(sp, inP))
+		return Nub::Inbound;
+	return Nub::None;
+}
+
 
 QPointF MissionNodeItem::inboundNubScenePos() const
 {
@@ -796,6 +817,62 @@ void CampaignMissionGraph::rebuildEdgesOnly()
 	buildMissionEdges();
 }
 
+detail::MissionNodeItem* CampaignMissionGraph::nodeAtScenePos(const QPointF& scenePt) const
+{
+	if (!m_scene)
+		return nullptr;
+	for (QGraphicsItem* gi : m_scene->items(scenePt)) {
+		if (auto* n = qgraphicsitem_cast<detail::MissionNodeItem*>(gi)) {
+			return n;
+		}
+	}
+	return nullptr;
+}
+
+bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
+{
+	if (!m_model || m_drag.fromIndex < 0)
+		return false;
+
+	// 1) END sink (MAIN only)
+	if (!m_drag.isSpecial && m_endSink) {
+		const QPointF anchor = m_endSink->inboundAnchorScenePos();
+		const qreal r = m_style.nubRadius + 4.0;
+		if (QLineF(scenePt, anchor).length() <= r) {
+			m_model->addEndBranch(m_drag.fromIndex);
+			return true;
+		}
+	}
+
+	// 2) Mission inbound nub
+	if (auto* dst = nodeAtScenePos(scenePt)) {
+		const QPointF anchor = dst->inboundNubScenePos();
+		const qreal r = m_style.nubRadius + 4.0;
+		if (QLineF(scenePt, anchor).length() <= r) {
+			const int toIdx = dst->missionIndex();
+			if (m_drag.isSpecial) {
+				m_model->addSpecialBranch(m_drag.fromIndex, toIdx);
+			} else {
+				m_model->addBranch(m_drag.fromIndex, toIdx);
+			}
+			return true;
+		}
+	}
+
+	// No valid target
+	return false;
+}
+
+void CampaignMissionGraph::cancelDrag()
+{
+	if (m_drag.preview) {
+		m_scene->removeItem(m_drag.preview);
+		delete m_drag.preview;
+	}
+	m_drag = DragState{};
+}
+
+
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
 {
 	if (!m_scene || m_scene->items().isEmpty())
@@ -854,6 +931,73 @@ void CampaignMissionGraph::drawBackground(QPainter* p, const QRectF& rect)
 	drawGrid(p, rect);
 
 	p->restore();
+}
+
+void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
+{
+	const QPointF sp = mapToScene(ev->pos());
+
+	// If we’re already dragging, ignore
+	if (!m_drag.active) {
+		if (auto* n = nodeAtScenePos(sp)) {
+			const auto hit = n->hitTestNubScene(sp);
+			if (hit == detail::MissionNodeItem::Nub::Main || hit == detail::MissionNodeItem::Nub::Special) {
+				// begin drag
+				m_drag.active = true;
+				m_drag.isSpecial = (hit == detail::MissionNodeItem::Nub::Special);
+				m_drag.fromIndex = n->missionIndex();
+				m_drag.srcPt = m_drag.isSpecial ? n->specialNubScenePos() : n->mainNubScenePos();
+
+				// Build preview edge
+				const auto& missions = m_model->getCampaignMissions();
+				const auto mode = missions[m_drag.fromIndex].special_mode_hint;
+
+				m_drag.preview = new detail::EdgeItem(m_drag.fromIndex, /*branchId*/ -1, m_drag.isSpecial, mode, m_style);
+				m_drag.preview->setZValue(6.0);
+				m_drag.preview->setEndpoints(m_drag.srcPt, sp, /*sibIndex*/ 0, /*sibCount*/ 1);
+				m_scene->addItem(m_drag.preview);
+
+				// Disable hand-drag while connecting
+				setDragMode(QGraphicsView::NoDrag);
+				ev->accept();
+				return;
+			}
+		}
+	}
+
+	// not starting a connect — fall back to normal behavior (panning/selection)
+	QGraphicsView::mousePressEvent(ev);
+}
+
+void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
+{
+	if (m_drag.active) {
+		const QPointF sp = mapToScene(ev->pos());
+		bool made = tryFinishConnectionAt(sp);
+
+		cancelDrag();
+		setDragMode(QGraphicsView::ScrollHandDrag);
+
+		if (made) {
+			// Edges now reflect the new branch; keep viewport stable
+			rebuildEdgesOnly();
+			updateSceneRectToContent(/*scrollToTopLeft=*/false);
+		}
+		ev->accept();
+		return;
+	}
+	QGraphicsView::mouseReleaseEvent(ev);
+}
+
+void CampaignMissionGraph::mouseMoveEvent(QMouseEvent* ev)
+{
+	if (m_drag.active && m_drag.preview) {
+		const QPointF sp = mapToScene(ev->pos());
+		m_drag.preview->setEndpoints(m_drag.srcPt, sp, /*sibIndex*/ 0, /*sibCount*/ 1);
+		ev->accept();
+		return;
+	}
+	QGraphicsView::mouseMoveEvent(ev);
 }
 
 void CampaignMissionGraph::drawGrid(QPainter* p, const QRectF& sceneRect)

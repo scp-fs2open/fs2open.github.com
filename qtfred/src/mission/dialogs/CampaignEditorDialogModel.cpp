@@ -568,9 +568,9 @@ void CampaignEditorDialogModel::setCurrentMissionSelection(int index)
 	// Notify the tree UI to load the branches for the newly selected mission.
 	if (SCP_vector_inbounds(m_missions, m_current_mission_index)) {
 		const auto& mission = m_missions[m_current_mission_index];
-		m_tree_ops.rebuildBranchTree(mission.branches);
+		m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
 	} else {
-		m_tree_ops.rebuildBranchTree({});
+		m_tree_ops.rebuildBranchTree({}, "");
 	}
 }
 
@@ -1125,7 +1125,8 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 
 	// Prevent creating a duplicate branch to the same mission
 	for (const auto& existing_branch : from_mission.branches) {
-		if (existing_branch.next_mission_name == to_mission_name) {
+		if (!existing_branch.is_loop && !existing_branch.is_fork &&
+			existing_branch.next_mission_name == to_mission_name) {
 			return;
 		}
 	}
@@ -1134,14 +1135,78 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 	auto& new_branch = from_mission.branches.emplace_back();
 	addBranchIdIfMissing(new_branch);
 	new_branch.next_mission_name = to_mission_name;
+	new_branch.is_loop = false;
+	new_branch.is_fork = false;
 
 	// Ask the UI's tree to create a default SEXP ("true") for this new branch
 	new_branch.sexp_formula = m_tree_ops.createDefaultSexp();
 
 	set_modified();
 
-	m_tree_ops.rebuildBranchTree(from_mission.branches);
+	m_tree_ops.rebuildBranchTree(from_mission.branches, from_mission.filename);
 }
+
+void CampaignEditorDialogModel::addEndBranch(int from_mission_index)
+{
+	if (!SCP_vector_inbounds(m_missions, from_mission_index)) {
+		return;
+	}
+	auto& from = m_missions[from_mission_index];
+
+	// Prevent duplicate "end" branch (empty next)
+	for (const auto& b : from.branches) {
+		if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) {
+			return;
+		}
+	}
+
+	auto& nb = from.branches.emplace_back();
+	nb.next_mission_name.clear(); // END
+	nb.is_loop = false;
+	nb.is_fork = false;
+	nb.sexp_formula = m_tree_ops.createDefaultSexp();
+
+	set_modified();
+	m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+}
+
+void CampaignEditorDialogModel::addSpecialBranch(int from_mission_index, int to_mission_index)
+{
+	if (!SCP_vector_inbounds(m_missions, from_mission_index) || !SCP_vector_inbounds(m_missions, to_mission_index)) {
+		return;
+	}
+	auto& from = m_missions[from_mission_index];
+	const auto& to_name = m_missions[to_mission_index].filename;
+
+	// Determine special flavor from the mission's current mode
+	const bool asLoop = (from.special_mode_hint == CampaignSpecialMode::Loop);
+	const bool asFork = (from.special_mode_hint == CampaignSpecialMode::Fork);
+
+	// No mixing here; UI should enforce, but guard anyway
+	for (const auto& b : from.branches) {
+		if ((b.is_loop || b.is_fork) && (b.is_loop != asLoop || b.is_fork != asFork)) {
+			// Conflicting special types present; refuse new special (optional: log)
+			return;
+		}
+	}
+
+	// Prevent duplicate special edge to same target
+	for (const auto& b : from.branches) {
+		if (b.next_mission_name == to_name && b.is_loop == asLoop && b.is_fork == asFork) {
+			return;
+		}
+	}
+
+	auto& nb = from.branches.emplace_back();
+	nb.next_mission_name = to_name;
+	nb.is_loop = asLoop;
+	nb.is_fork = asFork;
+	nb.sexp_formula = m_tree_ops.createDefaultSexp();
+
+	set_modified();
+	m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+}
+
 
 void CampaignEditorDialogModel::removeBranch(int mission_index, int branch_index)
 {
