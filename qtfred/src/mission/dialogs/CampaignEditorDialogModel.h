@@ -150,10 +150,13 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 
 	// Campaign Graph
 	const SCP_vector<CampaignMissionData>& getCampaignMissions() const;
+	int getNumBranches() const;
 	void addBranch(int from_mission_index, int to_mission_index);
 	void addEndBranch(int from_mission_index);
 	void addSpecialBranch(int from_mission_index, int to_mission_index);
 	void removeBranch(int mission_index, int branch_index);
+	void moveBranchUp();
+	void moveBranchDown();
 	void updateCurrentBranch(int internal_node_id);
 	bool getCurrentBranchIsSpecial() const;
 	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once
