@@ -151,6 +151,8 @@ void ShipEditorDialogModel::initializeData()
 	pvalid_count = 0;
 	player_ship = 0;
 	ship_orders.clear();
+	arrivalPaths.clear();
+	departurePaths.clear();
 	object* objp;
 	if (The_mission.game_type & MISSION_TYPE_MULTI) {
 		mission_type = 0; // multi player mission
@@ -215,7 +217,7 @@ void ShipEditorDialogModel::initializeData()
 	ship_orders.clear(); // assume they are all the same type
 	if (ship_count) {
 		if (!multi_edit) {
-			Assert((ship_count == 1) && (base_ship >= 0)); //NOLINT
+			Assert((ship_count == 1) && (base_ship >= 0)); // NOLINT
 			_m_ship_name = Ships[base_ship].ship_name;
 			_m_ship_display_name = Ships[base_ship].has_display_name() ? Ships[base_ship].get_display_name() : "<none>";
 		} else {
@@ -452,6 +454,8 @@ void ShipEditorDialogModel::initializeData()
 		_m_no_departure_warp = false;
 		m_wing = "None";
 		enable = false;
+		arrivalPaths.clear();
+		departurePaths.clear();
 	}
 	modelChanged();
 }
@@ -496,7 +500,7 @@ std::vector<std::pair<SCP_string, bool>> ShipEditorDialogModel::getDeparturePath
 		if (m_path_mask == 0) {
 			allowed = true;
 		} else {
-			allowed = (m_path_mask & (1 << i)) ? true : false;
+			allowed = (m_path_mask & (1 << i)) != 0;
 		}
 		m_path_list.emplace_back(name, allowed);
 	}
@@ -635,7 +639,7 @@ bool ShipEditorDialogModel::update_data()
 
 		wing = Ships[single_ship].wingnum;
 		if (wing >= 0) {
-			Assert((wing < MAX_WINGS) && Wings[wing].wave_count); //NOLINT
+			Assert((wing < MAX_WINGS) && Wings[wing].wave_count); // NOLINT
 			int j;
 			for (j = 0; j < Wings[wing].wave_count; j++)
 				if (_editor->wing_objects[wing][j] == Ships[single_ship].objnum)
@@ -894,13 +898,14 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		SCP_set<size_t> new_orders;
 		default_orders = ship_get_default_orders_accepted(&Ship_info[Ships[ship].ship_info_index]);
 		for (size_t order_id : default_orders) {
-			for (auto& order : orders)
+			for (auto& order : orders) {
 				if (order.first == Player_orders[order_id].localized_name) {
 					if (order.second) {
 						new_orders.insert(order_id);
 					}
 					continue;
 				}
+			}
 		}
 		Ships[ship].orders_accepted = new_orders;
 	}
