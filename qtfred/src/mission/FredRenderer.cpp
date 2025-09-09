@@ -1000,16 +1000,19 @@ void FredRenderer::render_models(int cur_object_index,
 }
 
 void FredRenderer::render_frame(int cur_object_index,
-								subsys_to_render& Render_subsys,
-								bool box_marking,
-								const Marking_box& marking_box,
-								bool Bg_bitmap_dialog) {
+	subsys_to_render& Render_subsys,
+	bool box_marking,
+	const Marking_box& marking_box,
+	bool Bg_bitmap_dialog,
+	qreal scale)
+{
 
 	// Make sure our OpenGL context is used for rendering
 	gr_use_viewport(_targetView);
-
+	uint32_t width = _targetView->getSize().first * scale;
+	uint32_t height = _targetView->getSize().second * scale;
 	// Resize the rendering window in case the previous size was different
-	gr_screen_resize(_targetView->getSize().first, _targetView->getSize().second);
+	gr_screen_resize(width, height);
 
 	char buf[256];
 	int x, y, w, h, inst;

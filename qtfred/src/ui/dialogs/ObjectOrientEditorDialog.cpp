@@ -32,7 +32,7 @@ void ObjectOrientEditorDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void ObjectOrientEditorDialog::reject()

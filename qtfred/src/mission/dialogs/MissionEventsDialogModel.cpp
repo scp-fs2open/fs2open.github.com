@@ -647,7 +647,7 @@ void MissionEventsDialogModel::insertEvent()
 	m_sig.insert(m_sig.begin() + pos, -1);
 	auto& event = m_events[pos];
 
-	// Place after the previous root if it exists and is valid; otherwise we’ll fix index explicitly
+	// Place after the previous root if it exists and is valid; otherwise we'll fix index explicitly
 	int after = (pos > 0 && m_events[pos - 1].formula >= 0) ? m_events[pos - 1].formula : -1;
 
 	event.formula = m_event_tree_ops.build_default_root(event.name, after);

@@ -42,7 +42,7 @@ void CustomDataDialog::accept()
 	if (_model->apply()) {
 		QDialog::accept();
 	}
-	// else: validation failed, don’t close
+	// else: validation failed, don't close
 }
 
 void CustomDataDialog::reject()
@@ -104,7 +104,7 @@ void CustomDataDialog::buildView()
 	auto* hdr = ui->stringsTableView->horizontalHeader();
 	hdr->setSectionsClickable(false);  // no click/press behavior
 	hdr->setSortIndicatorShown(false); // hide sort arrow
-	hdr->setHighlightSections(false);  // don’t change look when selected
+	hdr->setHighlightSections(false);  // don't change look when selected
 	hdr->setSectionsMovable(false);    // no drag-to-reorder columns
 	hdr->setFocusPolicy(Qt::NoFocus);
 

@@ -13,7 +13,7 @@ if [ "$COMPILER" = "clang-16" ]; then
     export CXX=clang++-16
 fi
 
-LD_LIBRARY_PATH=$Qt5_DIR/lib:$LD_LIBRARY_PATH
+LD_LIBRARY_PATH=$Qt6_DIR/lib:$LD_LIBRARY_PATH
 if [ "$RUNNER_OS" = "macOS" ]; then
     CXXFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
     CFLAGS="-mtune=generic -pipe -Wno-unknown-pragmas"
