@@ -276,6 +276,22 @@ void EdgeItem::setSelectedVisual(bool sel)
 	update();
 }
 
+void EdgeItem::setEmphasis(Emphasis e)
+{
+	m_emphasis = e;
+
+	// Drive visual emphasis via item opacity (+ a small Z tweak so highlights sit above fades)
+	const qreal op = (e == Emphasis::Highlighted) ? m_style.highlightedEdgeOpacity : m_style.fadedEdgeOpacity;
+	setOpacity(op);
+
+	// Keep edges under nodes; just separate the two edge groups a bit
+	const qreal baseZ = 5.0; // keep consistent with your existing z for edges
+	setZValue(baseZ + ((e == Emphasis::Highlighted) ? 1.0 : 0.0));
+
+	// If you later want to hide interval arrows for fades, you can toggle a flag here and
+	// branch in paint(); for now opacity alone gives clean de-emphasis without extra changes.
+}
+
 void EdgeItem::setEndpoints(const QPointF& src, const QPointF& dst, int siblingIndex, int siblingCount)
 {
 	const auto path = buildPath(src, dst, siblingIndex, siblingCount);
@@ -501,6 +517,32 @@ void CampaignMissionGraph::onNodeMoved(int missionIndex, QPointF sceneTopLeft)
 	updateSceneRectToContent(/*scrollToTopLeft=*/false);
 }
 
+void CampaignMissionGraph::onSceneSelectionChanged()
+{
+	// Ignore signals we caused ourselves (setSelectedMission)
+	if (m_internallySelecting)
+		return;
+	if (!m_scene)
+		return;
+
+	// Find the first selected mission node (single-select UX); if none -> -1
+	int idx = -1;
+	const auto items = m_scene->selectedItems();
+	for (QGraphicsItem* gi : items) {
+		if (auto* n = qgraphicsitem_cast<detail::MissionNodeItem*>(gi)) {
+			idx = n->missionIndex();
+			break;
+		}
+	}
+
+	// Update internal selection and emphasis without re-tweaking scene selection again
+	m_selectedMissionIndex = idx;
+	applyFocusEmphasis();
+
+	// Let listeners know (dialog form etc.)
+	Q_EMIT missionSelected(idx);
+}
+
 void CampaignMissionGraph::initScene()
 {
 	m_scene = new QGraphicsScene(this);
@@ -586,6 +628,8 @@ void CampaignMissionGraph::rebuildAll()
 	if (!m_scene)
 		return;
 
+	ensureSceneHooks();
+
 	// Clean up END sink explicitly to avoid dangling pointer across clears
 	if (m_endSink) {
 		m_scene->removeItem(m_endSink);
@@ -609,6 +653,8 @@ void CampaignMissionGraph::rebuildAll()
 
 	// Size scene to the items and put the view at the top-left
 	updateSceneRectToContent(true);
+
+	applyFocusEmphasis();
 }
 
 void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible, bool centerOnItem, bool emitSignal)
@@ -616,30 +662,34 @@ void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible
 	if (!m_scene)
 		return;
 
+	m_internallySelecting = true; // guard scene signal while we change selection
+
 	// Clear any previous selection first
 	m_scene->clearSelection();
 
-	// Out of range or negative = no selection
-	if (!SCP_vector_inbounds(m_nodeItems, missionIndex)) {
-		return;
+	// Track selection for focus mode
+	m_selectedMissionIndex = (missionIndex >= 0 && missionIndex < static_cast<int>(m_nodeItems.size())) ? missionIndex : -1;
+
+	// Apply selection to the item, if in range
+	if (m_selectedMissionIndex >= 0) {
+		auto* item = m_nodeItems[m_selectedMissionIndex];
+		if (item)
+			item->setSelected(true);
+
+		if (makeVisible && item) {
+			QGraphicsView::ensureVisible(item, 40, 40);
+		}
+		if (centerOnItem && item) {
+			this->centerOn(item);
+		}
 	}
 
-	auto* item = m_nodeItems[missionIndex];
-	if (!item)
-		return;
+	m_internallySelecting = false; // done with programmatic change
 
-	item->setSelected(true);
+	// Recompute edge emphasis after every selection change
+	applyFocusEmphasis();
 
-	// bring the item into view
-	if (makeVisible) {
-		// use a small margin so borders/badge are visible
-		ensureVisible(item, 40, 40);
-	}
-	if (centerOnItem) {
-		centerOn(item);
-	}
-
-	// mirror the user-selection signal for listeners
+	// send the user-selection signal for listeners
 	if (emitSignal) {
 		Q_EMIT missionSelected(missionIndex);
 	}
@@ -649,7 +699,12 @@ void CampaignMissionGraph::clearSelectedMission()
 {
 	if (!m_scene)
 		return;
+	m_internallySelecting = true;
 	m_scene->clearSelection();
+	m_internallySelecting = false;
+
+	m_selectedMissionIndex = -1;
+	applyFocusEmphasis();
 	Q_EMIT missionSelected(-1);
 }
 
@@ -696,7 +751,10 @@ void CampaignMissionGraph::buildMissionNodes()
 			&MissionNodeItem::specialModeToggleRequested,
 			this,
 			&CampaignMissionGraph::specialModeToggleRequested);
-		connect(item, &MissionNodeItem::nodeMoved, this, &CampaignMissionGraph::onNodeMoved); // NEW
+		connect(item, &MissionNodeItem::nodeMoved, this, &CampaignMissionGraph::onNodeMoved);
+		connect(item, &detail::MissionNodeItem::missionSelected, this, [this](int idx) {
+			setSelectedMission(idx, /*makeVisible=*/true, /*centerOnItem=*/false, /*emitSignal=*/true);
+		});
 
 		m_scene->addItem(item);
 		m_nodeItems.push_back(item);
@@ -744,6 +802,7 @@ void CampaignMissionGraph::buildMissionEdges()
 					const QPointF dstPt = m_endSink->inboundAnchorScenePos();
 
 					auto* edge = new detail::EdgeItem(i, b.id, /*isSpecial*/ false, mode, m_style);
+					edge->setTargetIndex(-1);
 					edge->setEndpoints(srcPt, dstPt, sibIndex, sibCount);
 					m_scene->addItem(edge);
 					m_edgeItems.push_back(edge);
@@ -771,6 +830,7 @@ void CampaignMissionGraph::buildMissionEdges()
 			const int sibIndex = isSpecial ? specIdx++ : mainIdx++;
 
 			auto* edge = new EdgeItem(i, b.id, isSpecial, mode, m_style);
+			edge->setTargetIndex(j);
 
 			if (i == j) {
 				// Self-loop: draw outside node (unless disabled)
@@ -796,6 +856,8 @@ void CampaignMissionGraph::buildMissionEdges()
 			m_edgeItems.push_back(edge);
 		}
 	}
+
+	applyFocusEmphasis();
 }
 
 void CampaignMissionGraph::ensureEndSink()
@@ -844,6 +906,14 @@ void CampaignMissionGraph::ensureEndSink()
 		const qreal y = nodesRect.bottom() + m_style.endSinkMargin;
 		m_endSink->setPos(QPointF(x, y));
 	}
+}
+
+void CampaignMissionGraph::ensureSceneHooks()
+{
+	if (!m_scene || m_sceneHooksInstalled)
+		return;
+	connect(m_scene, &QGraphicsScene::selectionChanged, this, &CampaignMissionGraph::onSceneSelectionChanged);
+	m_sceneHooksInstalled = true;
 }
 
 void CampaignMissionGraph::rebuildEdgesOnly()
@@ -959,6 +1029,39 @@ void CampaignMissionGraph::cancelDrag()
 	m_drag = DragState{}; // resets flags and clears the QPointer
 }
 
+void CampaignMissionGraph::applyFocusEmphasis()
+{
+	if (!m_style.focusModeEnabled) {
+		// Focus mode off: everything highlighted
+		for (auto* e : m_edgeItems) {
+			if (!e)
+				continue;
+			e->setEmphasis(detail::EdgeItem::Emphasis::Highlighted);
+		}
+		return;
+	}
+
+	const int sel = m_selectedMissionIndex;
+
+	for (auto* e : m_edgeItems) {
+		if (!e)
+			continue;
+
+		bool connected = false;
+		if (sel >= 0) {
+			if (m_style.focusCountOutgoing && e->sourceIndex() == sel)
+				connected = true;
+			if (m_style.focusCountIncoming && e->targetIndex() == sel)
+				connected = true;
+		} else {
+			// No selection -> everything de-emphasized (per your spec)
+			connected = false;
+		}
+
+		e->setEmphasis(connected ? detail::EdgeItem::Emphasis::Highlighted : detail::EdgeItem::Emphasis::Faded);
+	}
+}
+
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
 {
 	if (!m_scene || m_scene->items().isEmpty())
@@ -1056,6 +1159,7 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 				m_drag.preview = new detail::EdgeItem(m_drag.fromIndex, /*branchId*/ -1, m_drag.isSpecial, mode, m_style);
 				m_drag.preview->setZValue(6.0);
 				m_drag.preview->setEndpoints(m_drag.srcPt, sp, /*sibIndex*/ 0, /*sibCount*/ 1);
+				m_drag.preview->setEmphasis(detail::EdgeItem::Emphasis::Highlighted);
 				m_scene->addItem(m_drag.preview);
 
 				// Disable hand-drag while connecting
