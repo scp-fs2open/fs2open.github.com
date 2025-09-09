@@ -43,8 +43,6 @@ struct CampaignMissionData {
 	SCP_string substitute_main_hall;
 	int debrief_persona_index = 0;
 
-	bool retail_bastion = false;
-
 	CampaignSpecialMode special_mode_hint = CampaignSpecialMode::Loop;
 
 	SCP_vector<CampaignBranchData> branches;
@@ -136,10 +134,6 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int getCurrentMissionDebriefingPersona() const;
 	void setCurrentMissionDebriefingPersona(int persona_index);
 
-	// Legacy Retail Data
-	bool getCurrentMissionRetailBastion() const;
-	void setCurrentMissionRetailBastion(bool enabled);
-
 	// Loop Data
 	SCP_string getCurrentBranchLoopDescription() const;
 	void setCurrentBranchLoopDescription(const SCP_string& descr);
@@ -159,6 +153,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void addSpecialBranch(int from_mission_index, int to_mission_index);
 	void removeBranch(int mission_index, int branch_index);
 	void updateCurrentBranch(int internal_node_id);
+	bool getCurrentBranchIsSpecial() const;
 	int addBranchIdIfMissing(CampaignBranchData& b); // assigns a unique id once
 	CampaignBranchData* findBranchById(int missionIdx, int branchId);
 
@@ -170,7 +165,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 
 	// Lists
 	static SCP_vector<SCP_string> getCutsceneList();
-	static SCP_vector<SCP_string> getMainhallList();
+	SCP_vector<SCP_string> getMainhallList() const;
 
   private:
 	// The model's only link to the SEXP tree UI
