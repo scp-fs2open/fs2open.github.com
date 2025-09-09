@@ -2,6 +2,7 @@
 #include "ui_CampaignEditorDialog.h"
 
 #include "ui/widgets/sexp_tree.h"
+#include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"
 #include <QInputDialog>
@@ -525,6 +526,109 @@ void CampaignEditorDialog::on_graphView_specialModeToggleRequested(int missionIn
 {
 	_model->toggleMissionSpecialMode(missionIndex);
 	ui->graphView->rebuildAll();
+}
+
+void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTopLeft)
+{
+	const auto selections = ui->availableMissionsListWidget->selectedItems();
+	SCP_string filename;
+	// Only one item should be selected
+	if (selections.size() > 0) {
+		filename = selections[0]->text().toUtf8().constData();
+	}
+
+	if (filename.empty()) {
+		QList<QString> availableMissions;
+		for (const auto& [name, isEditable] : _model->getAvailableMissionFiles()) {
+			availableMissions.append(QString::fromStdString(name));
+		}
+
+		SimpleListSelectDialog dlg(availableMissions, this);
+		dlg.setTitle("Choose mission");
+		dlg.setPlaceholder("Filter missions...");
+
+		if (dlg.exec() == QDialog::Accepted) {
+			filename = dlg.selectedText().toUtf8().constData();
+		}
+
+		if (filename.empty())
+			return; // user canceled
+	}
+
+	// add
+	_model->addMission(filename, 0, 0);
+
+	// New mission index is the last element now (or look it up by filename)
+	const int idx = static_cast<int>(_model->getCampaignMissions().size() - 1);
+
+	// persist graph placement
+	_model->setMissionGraphX(idx, static_cast<int>(std::lround(sceneTopLeft.x())));
+	_model->setMissionGraphY(idx, static_cast<int>(std::lround(sceneTopLeft.y())));
+
+	// refresh graph and select the new node
+	ui->graphView->rebuildAll();
+	ui->graphView->setSelectedMission(idx, /*makeVisible=*/true);
+
+	updateAvailableMissionsList();
+}
+
+void CampaignEditorDialog::on_graphView_deleteMissionRequested(int missionIndex)
+{
+	ui->graphView->clearSelectedMission();
+	updateMissionDetails();
+	_model->removeMission(missionIndex);
+	ui->graphView->rebuildAll();
+	updateAvailableMissionsList();
+}
+
+void CampaignEditorDialog::on_graphView_addRepeatBranchRequested(int missionIndex)
+{
+	_model->addBranch(missionIndex, missionIndex);
+	ui->graphView->rebuildAll();
+}
+
+void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial)
+{
+	// 1) Ask user via your available-missions listwidget
+	QList<QString> availableMissions;
+	for (const auto& [name, isEditable] : _model->getAvailableMissionFiles()) {
+		availableMissions.append(QString::fromStdString(name));
+	}
+
+	SimpleListSelectDialog dlg(availableMissions, this);
+	dlg.setTitle("Choose mission");
+	dlg.setPlaceholder("Filter missions...");
+
+	SCP_string picked;
+	if (dlg.exec() == QDialog::Accepted) {
+		picked = dlg.selectedText().toUtf8().constData();
+	}
+
+	if (picked.empty())
+		return; // user canceled
+
+	// 2) Add the mission to the model
+	_model->addMission(picked, /*level*/ 0, /*position*/ 0);
+
+	// New mission index (last)
+	const auto& ms = _model->getCampaignMissions();
+	const int newIdx = static_cast<int>(ms.size()) - 1;
+
+	// 3) Persist graph placement
+	_model->setMissionGraphX(newIdx, static_cast<int>(std::lround(sceneTopLeft.x())));
+	_model->setMissionGraphY(newIdx, static_cast<int>(std::lround(sceneTopLeft.y())));
+
+	// 4) Connect from source to the new mission
+	if (isSpecial) {
+		_model->addSpecialBranch(fromIndex, newIdx);
+	} else {
+		_model->addBranch(fromIndex, newIdx);
+	}
+
+	// 5) Rebuild & focus new node
+	ui->graphView->rebuildAll();
+	ui->graphView->setSelectedMission(newIdx, /*makeVisible=*/true);
+	updateAvailableMissionsList();
 }
 
 /*void CampaignEditorDialog::setModel(CampaignEditorDialogModel* new_model)
