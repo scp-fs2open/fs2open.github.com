@@ -535,13 +535,13 @@ void CampaignEditorDialog::on_graphView_missionSelected(int missionIndex) {
 		return;
 	}
 
-	if (mission_info.name) {
+	if (mission_info.name[0] != '\0') {
 		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
 	} else {
 		ui->missionNameLineEdit->clear();
 	}
 
-	if (mission_info.notes) {
+	if (mission_info.notes[0] != '\0') {
 		ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
 	} else {
 		ui->missionDescriptionPlainTextEdit->clear();
