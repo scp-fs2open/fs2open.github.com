@@ -242,8 +242,8 @@ add_file_folder("Source/UI/Util"
 )
 
 add_file_folder("Source/UI/Widgets"
-    src/ui/widgets/campaignmissiongraph.cpp
-	src/ui/widgets/campaignmissiongraph.h
+    src/ui/widgets/CampaignMissionGraph.cpp
+	src/ui/widgets/CampaignMissionGraph.h
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h
 	src/ui/widgets/FlagList.cpp
