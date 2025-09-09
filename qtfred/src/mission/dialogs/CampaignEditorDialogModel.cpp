@@ -67,19 +67,11 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 			dest_mission.main_hall = source_mission.main_hall.c_str();
 			dest_mission.substitute_main_hall = source_mission.substitute_main_hall.c_str();
 			dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
-			dest_mission.retail_bastion = (source_mission.flags & CMISSION_FLAG_BASTION) != 0;
+			bool retail_bastion = (source_mission.flags & CMISSION_FLAG_BASTION) != 0;
 
-			// The presence of the Bastion flag almost certainly means the file is
-			// a retail campaign, so we set the save format accordingly.
-			if (dest_mission.retail_bastion) {
-				m_save_format = CampaignFormat::Retail;
-			}
-
-			// Normalize explicit main hall for editor use:
-			// - If file had explicit +Main Hall:, keep it (dest_mission.main_hall is non-empty).
-			// - Else synthesize legacy defaults: "1" if Bastion, otherwise "0".
-			if (dest_mission.main_hall.empty()) {
-				dest_mission.main_hall = dest_mission.retail_bastion ? "1" : "0";
+			// Normalize explicit main hall flag
+			if (retail_bastion) {
+				dest_mission.main_hall = retail_bastion ? "1" : "0";
 			}
 
 			// Parse the SEXP formulas to build the branch data for this mission.
@@ -285,20 +277,32 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 		dest_mission.name = strdup(source_mission.filename.c_str());
 		dest_mission.level = source_mission.level;
 		dest_mission.pos = source_mission.position;
-		strcpy_s(dest_mission.briefing_cutscene, source_mission.briefing_cutscene.c_str());
+		SCP_string cutscene = source_mission.briefing_cutscene;
+		if (cutscene == "<None>") {
+			cutscene = "";
+		}
+		strcpy_s(dest_mission.briefing_cutscene, cutscene.c_str());
 
 		if (m_save_format == CampaignFormat::Retail) {
-			// Use emptiness to control whether the saver sets the Bastion flag.
-			// Retail "Bastion on" == write "1"
-			// Retail "Bastion off" == write empty string.
-			const bool bastion = source_mission.retail_bastion || (source_mission.main_hall == "1");
-			dest_mission.main_hall = bastion ? "1" : "";
+			// It's unlikely that we could have any other value in this case but 1 or 0 but let's be explicit.
+			dest_mission.main_hall = (source_mission.main_hall == "1") ? "1" : "0";
+			if (dest_mission.main_hall == "1") {
+				dest_mission.flags |= CMISSION_FLAG_BASTION;
+			}
 		} else {
 			// persist the explicit +Main Hall: string; default to "0" if empty.
-			dest_mission.main_hall = dest_mission.main_hall.empty() ? SCP_string("0") : source_mission.main_hall;
+			SCP_string hall = source_mission.main_hall;
+			if (hall == "<None>") {
+				hall = "";
+			}
+			dest_mission.main_hall = hall.empty() ? "0" : hall;
 		}
 
-		dest_mission.substitute_main_hall = source_mission.substitute_main_hall;
+		SCP_string sub_hall = source_mission.substitute_main_hall;
+		if (sub_hall == "<None>") {
+			sub_hall = "";
+		}
+		dest_mission.substitute_main_hall = sub_hall;
 		dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
 
 		// Convert the flexible CampaignBranchData back into the rigid cmission formula structure
@@ -935,9 +939,11 @@ void CampaignEditorDialogModel::setCurrentMissionFilename(const SCP_string& file
 SCP_string CampaignEditorDialogModel::getCurrentMissionBriefingCutscene() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return "";
+		return "<None>";
 	}
-	return m_missions[m_current_mission_index].briefing_cutscene;
+
+	SCP_string cutscene = m_missions[m_current_mission_index].briefing_cutscene;
+	return cutscene.empty() ? "<None>" : cutscene;
 }
 
 void CampaignEditorDialogModel::setCurrentMissionBriefingCutscene(const SCP_string& cutscene)
@@ -953,9 +959,12 @@ void CampaignEditorDialogModel::setCurrentMissionBriefingCutscene(const SCP_stri
 SCP_string CampaignEditorDialogModel::getCurrentMissionMainhall() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return "";
+		return "<None>";
 	}
-	return m_missions[m_current_mission_index].main_hall;
+
+	SCP_string hall = m_missions[m_current_mission_index].main_hall;
+
+	return hall.empty() ? "<None>" : hall;
 }
 
 void CampaignEditorDialogModel::setCurrentMissionMainhall(const SCP_string& mainhall)
@@ -971,9 +980,12 @@ void CampaignEditorDialogModel::setCurrentMissionMainhall(const SCP_string& main
 SCP_string CampaignEditorDialogModel::getCurrentMissionSubstituteMainhall() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
-		return "";
+		return "<None>";
 	}
-	return m_missions[m_current_mission_index].substitute_main_hall;
+
+	SCP_string hall = m_missions[m_current_mission_index].substitute_main_hall;
+
+	return hall.empty() ? "<None>" : hall;
 }
 
 void CampaignEditorDialogModel::setCurrentMissionSubstituteMainhall(const SCP_string& mainhall)
@@ -1004,31 +1016,6 @@ void CampaignEditorDialogModel::setCurrentMissionDebriefingPersona(int persona_i
 	modify(mission.debrief_persona_index, persona_index);
 }
 
-bool CampaignEditorDialogModel::getCurrentMissionRetailBastion() const
-{
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index))
-		return false;
-	return m_missions[m_current_mission_index].retail_bastion;
-}
-
-void CampaignEditorDialogModel::setCurrentMissionRetailBastion(bool enabled)
-{
-	if (!SCP_vector_inbounds(m_missions, m_current_mission_index))
-		return;
-
-	auto& m = m_missions[m_current_mission_index];
-	if (m.retail_bastion != enabled) {
-		modify(m.retail_bastion, enabled);
-
-		// Keep main_hall convenient for round-trip when switching formats:
-		// Retail true == "1", Retail false == "0"
-		if (m_save_format == CampaignFormat::Retail) {
-			SCP_string hall = enabled ? "1" : "0";
-			modify(m.main_hall, hall);
-		}
-	}
-}
-
 SCP_string CampaignEditorDialogModel::getCurrentBranchLoopDescription() const
 {
 	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
@@ -1036,6 +1023,11 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopDescription() const
 	}
 	const auto& mission = m_missions[m_current_mission_index];
 	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+		return "";
+	}
+
+	const auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
 		return "";
 	}
 
@@ -1053,6 +1045,10 @@ void CampaignEditorDialogModel::setCurrentBranchLoopDescription(const SCP_string
 	}
 
 	auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
+		return;
+	}
+
 	modify(branch.loop_description, descr.substr(0, MISSION_DESC_LENGTH - 1));
 }
 
@@ -1063,6 +1059,11 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopAnim() const
 	}
 	const auto& mission = m_missions[m_current_mission_index];
 	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+		return "";
+	}
+
+	const auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
 		return "";
 	}
 
@@ -1080,6 +1081,10 @@ void CampaignEditorDialogModel::setCurrentBranchLoopAnim(const SCP_string& anim)
 	}
 
 	auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
+		return;
+	}
+
 	modify(branch.loop_briefing_anim, anim.substr(0, NAME_LENGTH - 1));
 }
 
@@ -1090,6 +1095,11 @@ SCP_string CampaignEditorDialogModel::getCurrentBranchLoopVoice() const
 	}
 	const auto& mission = m_missions[m_current_mission_index];
 	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+		return "";
+	}
+
+	const auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
 		return "";
 	}
 
@@ -1107,6 +1117,10 @@ void CampaignEditorDialogModel::setCurrentBranchLoopVoice(const SCP_string& voic
 	}
 
 	auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
+		return;
+	}
+
 	modify(branch.loop_briefing_sound, voice.substr(0, NAME_LENGTH - 1));
 }
 
@@ -1123,7 +1137,10 @@ void CampaignEditorDialogModel::testCurrentBranchLoopVoice()
 		return;
 	}
 
-	auto& branch = mission.branches[m_current_branch_index];
+	const auto& branch = mission.branches[m_current_branch_index];
+	if (!branch.is_loop && !branch.is_fork) {
+		return;
+	}
 
 	_waveId = audiostream_open(branch.loop_briefing_sound.c_str(), ASF_EVENTMUSIC);
 	audiostream_play(_waveId, 1.0f, 0);
@@ -1308,6 +1325,19 @@ void CampaignEditorDialogModel::updateCurrentBranch(int internal_node_id)
 	m_tree_ops.expandBranch(internal_node_id);
 }
 
+bool CampaignEditorDialogModel::getCurrentBranchIsSpecial() const
+{
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return false;
+	}
+	const auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index)) {
+		return false;
+	}
+	const auto& branch = mission.branches[m_current_branch_index];
+	return branch.is_loop || branch.is_fork;
+}
+
 int CampaignEditorDialogModel::addBranchIdIfMissing(CampaignBranchData& b)
 {
 	if (b.id >= 0) {
@@ -1396,19 +1426,24 @@ SCP_vector<SCP_string> CampaignEditorDialogModel::getCutsceneList()
 	return out;
 }
 
-SCP_vector<SCP_string> CampaignEditorDialogModel::getMainhallList()
+SCP_vector<SCP_string> CampaignEditorDialogModel::getMainhallList() const
 {
 	SCP_vector<SCP_string> out;
-	out.emplace_back("<None>");
+	if (m_save_format == CampaignFormat::FSO) {
+		out.emplace_back("<None>");
 
-	// De-dupe by name (some mods define multiple resolutions/variants per mainhall)
-	std::unordered_set<SCP_string> seen;
-	for (const auto& mh : Main_hall_defines) {
-		if (mh.size() < 1) { // shouldn't happen but let's be safe
-			continue;
+		// De-dupe by name (some mods define multiple resolutions/variants per mainhall)
+		std::unordered_set<SCP_string> seen;
+		for (const auto& mh : Main_hall_defines) {
+			if (mh.size() < 1) { // shouldn't happen but let's be safe
+				continue;
+			}
+			const auto& hall = mh[0];
+			out.emplace_back(hall.name);
 		}
-		const auto& hall = mh[0];
-		out.emplace_back(hall.name);
+	} else if (m_save_format == CampaignFormat::Retail) {
+		out.emplace_back("0");
+		out.emplace_back("1");
 	}
 
 	return out;
