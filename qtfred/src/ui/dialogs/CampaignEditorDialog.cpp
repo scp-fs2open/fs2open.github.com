@@ -1,6 +1,7 @@
 #include "CampaignEditorDialog.h"
 #include "ui_CampaignEditorDialog.h"
 
+#include "ui/widgets/sexp_tree.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"
 #include <QInputDialog>
@@ -47,25 +48,32 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 			return tree.load_sub_tree(-1, true, "true");
 		}
 
-		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches) override
+		void rebuildBranchTree(const SCP_vector<CampaignBranchData>& branches, const SCP_string& currentMissionName) override
 		{
-			tree.clear(); // Clear the visual tree
+			// Reset the visual tree
+			tree.clear();
+
 			for (const auto& branch : branches) {
-				QString root_text;
+				// Determine caption (original FRED uses a generic "Branch to ..." except for END/self-loop)
+				QString rootText;
 				if (branch.next_mission_name.empty()) {
-					root_text = "End of Campaign";
-				} else if (branch.is_loop) {
-					root_text = QString("Repeat Mission (%1)").arg(branch.next_mission_name.c_str());
+					rootText = QStringLiteral("End of Campaign");
 				} else {
-					root_text = QString("Branch to %1").arg(branch.next_mission_name.c_str());
+					rootText = QStringLiteral("Branch to %1").arg(QString::fromStdString(branch.next_mission_name));
 				}
 
-				// Create the visual root item for the branch
-				auto* root_item = tree.insert(root_text);
-				root_item->setData(0, sexp_tree::FormulaDataRole, branch.sexp_formula);
+				// For self-loops, use a special caption
+				if (!branch.next_mission_name.empty() && branch.next_mission_name == currentMissionName) {
+					rootText = QStringLiteral("Repeat mission");
+				}
 
-				// Tell the tree to build the visual sub-tree from its internal model
-				tree.add_sub_tree(branch.sexp_formula, root_item);
+				// Pick the icon
+				const auto icon = (branch.is_loop || branch.is_fork) ? fso::fred::NodeImage::ROOT : fso::fred::NodeImage::BLACK_DOT;
+
+				// Insert the visual root row with icon and add
+				QTreeWidgetItem* rootItem = tree.insert(rootText, icon);
+				rootItem->setData(0, sexp_tree::FormulaDataRole, branch.sexp_formula);
+				tree.add_sub_tree(branch.sexp_formula, rootItem);
 			}
 		}
 
