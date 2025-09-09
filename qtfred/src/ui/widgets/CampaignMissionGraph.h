@@ -30,7 +30,7 @@ class EndSinkItem;
  */
 struct CampaignGraphStyle {
 	// Global
-	bool forksEnabled{false}; // if true, FORK special branches are allowed (else only LOOP)
+	bool forksEnabled{false}; // if true, FORK special branches are allowed. Disabled for now since the feature is incomplete.
 
 	// Background & grid
 	QColor bgColor{245, 245, 245};
@@ -43,21 +43,20 @@ struct CampaignGraphStyle {
 	QColor nodeFill{230, 230, 230}; // Qt grey
 	QColor nodeBorder{20, 20, 20};
 	qreal nodeRadius{8.0};
-	QSizeF nodeSize{240.0, 120.0}; // base size; can grow later
+	QSizeF nodeSize{240.0, 120.0}; // base size
 	qreal padding{8.0};
-	qreal layoutStepX{240.0}; // default horizontal spacing for fallback layout
-	qreal layoutStepY{200.0}; // default vertical   spacing for fallback layout
+	qreal layoutStepX{240.0}; // default horizontal spacing for fallback layout from position/level
+	qreal layoutStepY{200.0}; // default vertical   spacing for fallback layout from position/level
 
-	// Stripe (user color)
+	// User color stripe
 	qreal stripeHeight{10.0};
 
 	// Ports
-	QColor inboundGreen{46, 204, 113}; // top port (inbound)
+	QColor inboundGreen{46, 204, 113}; // top port
 	QColor mainBlue{52, 152, 219};     // main out port
 	QColor loopOrange{243, 156, 18};   // special out port when LOOP
 	QColor forkPurple{155, 89, 182};   // special out port when FORK
 	qreal portRadius{6.0};
-	qreal portSpacingBottom{6.0}; // retained for future
 	qreal portOffsetX{42.0};
 	bool inboundApproachEnabled{true}; // add a small jog near the inbound port
 	qreal inboundApproachJog{30.0};    // horizontal jog distance before the final vertical
@@ -68,7 +67,7 @@ struct CampaignGraphStyle {
 	qreal outboundJogSpecial{30.0};           // X jog right after source for SPECIAL
 	qreal outboundDropMain{30.0};             // Y drop right after source for MAIN
 	qreal outboundDropSpecial{40.0};          // Y drop right after source for SPECIAL (often a bit larger)
-	qreal portHitExtra{20.0};                   // extra pixels added to port radius for hit-testing
+	qreal portHitExtra{30.0};                 // extra pixels added to port radius for hit-testing
 
 	// Edge routing
 	qreal fanoutStart{12.0}; // vertical run from port before spreading
@@ -79,13 +78,13 @@ struct CampaignGraphStyle {
 	qreal arrowInterval{100.0}; // place an arrow every N px along straight segments
 
 	// Self-loop display
-	bool showSelfLoops{false};
+	bool showSelfLoops{false};  // if true, self-loops are drawn with edges. Disabled because it clutters the view.
 	qreal selfLoopMargin{32.0}; // how far outside the node to wrap
 	qreal selfLoopSpread{10.0}; // per-sibling additional spacing
 
 	// Badge
-	qreal badgePad{6.0};
-	QSizeF badgeSize{34.0, 18.0}; // pill
+	qreal badgePad{6.0}; // Used to toggle between LOOP or FORK
+	QSizeF badgeSize{34.0, 18.0}; // pill size
 	QColor badgeDisabled{180, 180, 180};
 
 	// END sink visuals/placement
