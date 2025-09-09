@@ -254,6 +254,9 @@
           </item>
           <item>
            <layout class="QFormLayout" name="missionSettingsLayout">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
             <item row="0" column="0">
              <widget class="QLabel" name="briefCutsceneLabel">
               <property name="text">
@@ -270,7 +273,7 @@
                <bool>false</bool>
               </property>
               <property name="editable">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -285,12 +288,9 @@
              </widget>
             </item>
             <item row="1" column="1">
-             <widget class="QComboBox" name="debriefPersonaComboBox">
+             <widget class="QSpinBox" name="debriefingPersonaSpinBox">
               <property name="enabled">
                <bool>false</bool>
-              </property>
-              <property name="editable">
-               <bool>true</bool>
               </property>
              </widget>
             </item>
@@ -310,21 +310,21 @@
                <bool>false</bool>
               </property>
               <property name="editable">
-               <bool>true</bool>
+               <bool>false</bool>
               </property>
              </widget>
             </item>
             <item row="3" column="0">
-             <widget class="QLabel" name="mainhallBastionFlagLabel">
+             <widget class="QLabel" name="substituteMainhallNameLabel">
               <property name="text">
-               <string>Main Hall Bastion Flag</string>
+               <string>Substitute Main Hall Name</string>
               </property>
              </widget>
             </item>
             <item row="3" column="1">
-             <widget class="QCheckBox" name="mainhallBastionFlagCheckBox">
-              <property name="text">
-               <string/>
+             <widget class="QComboBox" name="substituteMainhallComboBox">
+              <property name="enabled">
+               <bool>false</bool>
               </property>
              </widget>
             </item>
@@ -363,7 +363,7 @@
            </widget>
           </item>
           <item>
-           <widget class="QPlainTextEdit" name="txaLoopDescr">
+           <widget class="QPlainTextEdit" name="loopDescriptionPlainTextEdit">
             <property name="enabled">
              <bool>false</bool>
             </property>
@@ -376,40 +376,80 @@
            </widget>
           </item>
           <item>
-           <layout class="QGridLayout" name="loopBriefLayout">
+           <layout class="QFormLayout" name="loopDetailsForm">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
             <item row="0" column="0">
-             <widget class="QLabel" name="lblLoopAnim">
+             <widget class="QLabel" name="loopAnimLabel">
               <property name="text">
                <string>Loop brief anim</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="1">
-             <widget class="QComboBox" name="cmbLoopVoice">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="editable">
-               <bool>true</bool>
-              </property>
-             </widget>
-            </item>
-            <item row="0" column="1">
-             <widget class="QLabel" name="lblLoopVoice">
+            <item row="1" column="0">
+             <widget class="QLabel" name="loopVoiceLabel">
               <property name="text">
                <string>Loop brief voice</string>
               </property>
              </widget>
             </item>
-            <item row="2" column="0">
-             <widget class="QComboBox" name="cmbLoopAnim">
-              <property name="enabled">
-               <bool>false</bool>
-              </property>
-              <property name="editable">
-               <bool>true</bool>
-              </property>
-             </widget>
+            <item row="0" column="1">
+             <layout class="QHBoxLayout" name="loopAnimControlsLayout">
+              <item>
+               <widget class="QLineEdit" name="loopAnimLineEdit">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="loopAnimBrowseButton">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item row="1" column="1">
+             <layout class="QHBoxLayout" name="loopVoiceControlsLayout">
+              <item>
+               <widget class="QLineEdit" name="loopVoiceLineEdit">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="loopVoiceBrowseButton">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="testVoiceButton">
+                <property name="enabled">
+                 <bool>false</bool>
+                </property>
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset>
+                  <selectedon>:/images/play.png</selectedon>
+                 </iconset>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
            </layout>
           </item>
@@ -475,7 +515,7 @@
      <x>0</x>
      <y>0</y>
      <width>958</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -530,6 +570,8 @@
    <header>ui/widgets/campaignmissiongraph.h</header>
   </customwidget>
  </customwidgets>
- <resources/>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
  <connections/>
 </ui>

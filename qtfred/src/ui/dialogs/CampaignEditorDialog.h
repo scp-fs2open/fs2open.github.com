@@ -53,6 +53,20 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_graphView_addRepeatBranchRequested(int missionIndex);
 	void on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
 
+	void on_briefCutsceneComboBox_currentIndexChanged(const QString& arg1);
+	void on_debriefingPersonaSpinBox_valueChanged(int arg1);
+	void on_mainhallComboBox_currentIndexChanged(const QString& arg1);
+	void on_substituteMainhallComboBox_currentIndexChanged(const QString& arg1);
+
+	void on_loopDescriptionPlainTextEdit_textChanged();
+	void on_loopAnimLineEdit_textChanged(const QString& arg1);
+	void on_loopVoiceLineEdit_textChanged(const QString& arg1);
+	void on_loopAnimBrowseButton_clicked();
+	void on_loopVoiceBrowseButton_clicked();
+	void on_testVoiceButton_clicked();
+
+	void on_retailFormatCheckbox_toggled(bool checked);
+
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;
 	std::unique_ptr<ICampaignEditorTreeOps> _treeOps;
@@ -64,6 +78,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void updateTechLists();
 	void updateAvailableMissionsList();
 	void updateMissionDetails();
+	void updateLoopDetails();
 	void enableDisableControls();
 
 	bool questionSaveChanges();
