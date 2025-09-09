@@ -10,6 +10,8 @@
 #include "cutscene/cutscenes.h"
 #include "menuui/mainhallmenu.h"
 
+extern int Skip_packfile_search; // from cfilesystem.cpp
+
 namespace fso::fred::dialogs {
 
 CampaignEditorDialogModel::CampaignEditorDialogModel(QObject* parent, fso::fred::EditorViewport* viewport, ICampaignEditorTreeOps& tree_ops)
@@ -184,9 +186,7 @@ void CampaignEditorDialogModel::parseBranchesFromFormula(CampaignMissionData& mi
 }
 
 void CampaignEditorDialogModel::loadAvailableMissions()
-{
-	extern int Skip_packfile_search; // from cfilesystem.cpp
-	
+{	
 	// Compatibility check lambda
 	auto is_mission_compatible = [&](const mission& mission_info) -> bool {
 		if (m_campaign_type == CAMPAIGN_TYPE_SINGLE) {
@@ -209,9 +209,9 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 
 	// Get all editable mission files
 	SCP_vector<SCP_string> editable_files;
-	Skip_packfile_search = 1; // This global flag forces the search to ignore VPs
+	::Skip_packfile_search = 1; // This global flag forces the search to ignore VPs
 	cf_get_file_list(editable_files, CF_TYPE_MISSIONS, search_pattern.c_str(), CF_SORT_NAME);
-	Skip_packfile_search = 0;
+	::Skip_packfile_search = 0;
 
 	// For quick lookups, put the editable filenames into a set
 	std::unordered_set<SCP_string> editable_set(editable_files.begin(), editable_files.end());
