@@ -21,7 +21,7 @@
     <item>
      <widget class="QTabWidget" name="mainTabs">
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="campaignSpecs">
        <attribute name="title">
@@ -351,6 +351,34 @@
                 <string/>
                </property>
               </widget>
+             </item>
+             <item>
+              <layout class="QVBoxLayout" name="verticalLayout_3">
+               <item>
+                <widget class="QPushButton" name="moveBranchUpButton">
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset>
+                   <selectedon>:/images/arrow_up.png</selectedon>
+                  </iconset>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QPushButton" name="moveBranchDownButton">
+                 <property name="text">
+                  <string/>
+                 </property>
+                 <property name="icon">
+                  <iconset>
+                   <selectedon>:/images/arrow_down.png</selectedon>
+                  </iconset>
+                 </property>
+                </widget>
+               </item>
+              </layout>
              </item>
             </layout>
            </widget>
