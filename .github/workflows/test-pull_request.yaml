@@ -3,7 +3,7 @@ name: Check a pull request
 on: [pull_request]
 
 env:
-  QT_VERSION: 6.9.1
+  QT_VERSION: 6.9.2
 
 jobs:
   build_linux:
@@ -88,12 +88,12 @@ jobs:
         name: Checkout
         with:
           submodules: true
-      - name: Cache Qt
-        id: cache-qt-win
-        uses: actions/cache@v4
-        with:
-           path: ${{ github.workspace }}/../Qt
-           key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
+      #- name: Cache Qt
+        #id: cache-qt-win
+        #uses: actions/cache@v4https://github.com/jurplel/install-qt-action
+        #with:
+           #path: ${{ github.workspace }}/../Qt
+          # key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
       - name: Install Qt (32 bit)
         uses: jurplel/install-qt-action@v4
         if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'Win32' }}
@@ -101,7 +101,6 @@ jobs:
            version: ${{ env.QT_VERSION }}
            dir: ${{ github.workspace }}/..
            arch: win32_msvc2022
-           cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
       - name: Install Qt (64 bit)
         uses: jurplel/install-qt-action@v4
         if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'x64' }}
@@ -109,7 +108,6 @@ jobs:
            version: ${{ env.QT_VERSION }}
            dir: ${{ github.workspace }}/..
            arch: win64_msvc2022_64
-           cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
