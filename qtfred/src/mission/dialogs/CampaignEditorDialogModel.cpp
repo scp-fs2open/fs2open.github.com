@@ -941,6 +941,18 @@ SCP_string CampaignEditorDialogModel::getCurrentMissionFilename() const
 	return m_missions[m_current_mission_index].filename;
 }
 
+void CampaignEditorDialogModel::setMissionAsFirst(int mission_index)
+{
+	if (!SCP_vector_inbounds(m_missions, mission_index)) {
+		return;
+	}
+	// Move the selected mission to the front of the list.
+	auto mission = m_missions[mission_index];
+	m_missions.erase(m_missions.begin() + mission_index);
+	m_missions.insert(m_missions.begin(), mission);
+	set_modified();
+}
+
 // Changing a mission's filename is a complex operation beyond a simple setter,
 // as it's the unique ID for the mission. This would be better handled by a
 // dedicated "replace mission" action, so we will leave this unimplemented for now.
