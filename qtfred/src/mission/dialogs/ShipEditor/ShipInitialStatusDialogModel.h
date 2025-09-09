@@ -3,6 +3,7 @@
 #include "../AbstractDialogModel.h"
 
 #include <object/objectdock.h>
+#include <mission/management.h>
 
 namespace fso {
 namespace fred {
@@ -137,9 +138,9 @@ class ShipInitialStatusDialogModel : public AbstractDialogModel {
 template <typename T>
 static void handle_inconsistent_flag(flagset<T>& flags, T flag, int value)
 {
-	if (value == Qt::Checked) {
+	if (value == CheckState::Checked) {
 		flags.set(flag);
-	} else if (value == Qt::Unchecked) {
+	} else if (value == CheckState::Unchecked) {
 		flags.remove(flag);
 	}
 }

@@ -3537,8 +3537,8 @@ int parse_object(mission *pm, int  /*flag*/, p_object *p_objp)
         stuff_int(&p_objp->escort_priority);
     }
 
-	if (optional_string("+Guardian Threshold:")) {
-
+	if (optional_string("+Guardian Threshold:")) 
+	{
 		stuff_int(&p_objp->ship_guardian_threshold);
 	} else {
 		if (p_objp->flags[Mission::Parse_Object_Flags::SF_Guardian]) {

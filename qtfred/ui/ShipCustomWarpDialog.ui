@@ -10,7 +10,7 @@
     <x>0</x>
     <y>0</y>
     <width>333</width>
-    <height>356</height>
+    <height>377</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -189,22 +189,5 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>buttonBox</sender>
-   <signal>accepted()</signal>
-   <receiver>fso::fred::dialogs::ShipCustomWarpDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>206</x>
-     <y>331</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>94</x>
-     <y>329</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

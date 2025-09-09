@@ -27,7 +27,7 @@ class ShipAltShipClass : public QDialog {
 	/**
 	 * @brief Constructor
 	 * @param [in] parent The parent dialog.
-	 * @param [in] viewport The viewport this dialog is attacted to.
+	 * @param [in] viewport The viewport this dialog is attatched to.
 	 */
 	explicit ShipAltShipClass(QDialog* parent, EditorViewport* viewport);
 	~ShipAltShipClass() override;

@@ -15,7 +15,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent, EditorViewport* view
 	  _model(new ShipCustomWarpDialogModel(this, viewport, departure)), _viewport(viewport)
 {
 	ui->setupUi(this);
-	setupConnections();
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -47,7 +47,7 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 		_model.reset(new ShipCustomWarpDialogModel(this, viewport, departure));
 	}
 
-	setupConnections();
+	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
 
 	if (departure) {
 		this->setWindowTitle("Edit Warp-Out Parameters");
@@ -58,57 +58,99 @@ ShipCustomWarpDialog::ShipCustomWarpDialog(QDialog* parent,
 	// Resize the dialog to the minimum size
 	resize(QDialog::sizeHint());
 }
-
-void ShipCustomWarpDialog::setupConnections()
+void ShipCustomWarpDialog::on_buttonBox_accepted()
 {
-	connect(this, &QDialog::accepted, _model.get(), &ShipCustomWarpDialogModel::apply);
-
-	connect(ui->buttonBox, &QDialogButtonBox::rejected, this, &ShipCustomWarpDialog::rejectHandler);
-
-	connect(_model.get(), &AbstractDialogModel::modelChanged, this, [this]() { updateUI(false); });
-
-	connect(ui->comboBoxType,
-		static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setType);
-	connect(ui->lineEditStartSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::startSoundChanged);
-	connect(ui->lineEditEndSound, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::endSoundChanged);
-	connect(ui->doubleSpinBoxEngage,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setEngageTime);
-	connect(ui->doubleSpinBoxSpeed,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setSpeed);
-	connect(ui->doubleSpinBoxTime,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setTime);
-	connect(ui->doubleSpinBoxExponent,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setExponent);
-	connect(ui->doubleSpinBoxRadius,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setRadius);
-	connect(ui->checkBoxSupercap, &QCheckBox::toggled, _model.get(), [=](bool param) {
-		static_cast<ShipCustomWarpDialogModel*>(_model.get())->setSupercap(param);
-	});
-	connect(ui->lineEditAnim, &QLineEdit::editingFinished, this, &ShipCustomWarpDialog::animChanged);
-	connect(ui->doubleSpinBoxPlayerSpeed,
-		QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-		_model.get(),
-		&ShipCustomWarpDialogModel::setPlayerSpeed);
+	accept();
+}
+void ShipCustomWarpDialog::on_buttonBox_rejected()
+{
+	reject();
+}
+void ShipCustomWarpDialog::on_comboBoxType_currentIndexChanged(int index)
+{
+	_model->setType(index);
+}
+void ShipCustomWarpDialog::on_lineEditStartSound_editingFinished()
+{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditStartSound->text());
+	if (!temp.isEmpty()) {
+		_model->setStartSound(temp.toLatin1().constData());
+	} else {
+		_model->setStartSound("");
+	}
+}
+void ShipCustomWarpDialog::on_lineEditEndSound_editingFinished()
+{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditEndSound->text());
+	if (!temp.isEmpty()) {
+		_model->setEndSound(temp.toLatin1().constData());
+	} else {
+		_model->setEndSound("");
+	}
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxEngage_valueChanged(double value)
+{
+	_model->setEngageTime(value);
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxSpeed_valueChanged(double value)
+{
+	_model->setSpeed(value);
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxTime_valueChanged(double value)
+{
+	_model->setTime(value);
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxExponent_valueChanged(double value)
+{
+	_model->setExponent(value);
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxRadius_valueChanged(double value)
+{
+	_model->setRadius(value);
+}
+void ShipCustomWarpDialog::on_lineEditAnim_editingFinished()
+{ // String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
+	// enviroments
+	QString temp(ui->lineEditAnim->text());
+	if (!temp.isEmpty()) {
+		_model->setAnim(temp.toLatin1().constData());
+	} else {
+		_model->setAnim("");
+	}
+}
+void ShipCustomWarpDialog::on_checkBoxSupercap_toggled(bool state)
+{
+	_model->setSupercap(state);
+}
+void ShipCustomWarpDialog::on_doubleSpinBoxPlayerSpeed_valueChanged(double value)
+{
+	_model->setPlayerSpeed(value);
 }
 
 ShipCustomWarpDialog::~ShipCustomWarpDialog() = default;
+void ShipCustomWarpDialog::accept()
+{
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
+}
+void ShipCustomWarpDialog::reject()
+{ // Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
 void ShipCustomWarpDialog::closeEvent(QCloseEvent* e)
 {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
+	reject();
+	e->ignore(); // Don't let the base class close the window
 }
 void ShipCustomWarpDialog::updateUI(const bool firstrun)
 {
@@ -171,44 +213,6 @@ void ShipCustomWarpDialog::updateUI(const bool firstrun)
 	} else {
 		ui->doubleSpinBoxExponent->setEnabled(false);
 		ui->labelExponent->setEnabled(false);
-	}
-}
-void ShipCustomWarpDialog::rejectHandler()
-{
-	this->close();
-}
-
-void ShipCustomWarpDialog::startSoundChanged()
-{
-	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditStartSound->text());
-	if (!temp.isEmpty()) {
-		_model->setStartSound(temp.toLatin1().constData());
-	} else {
-		_model->setStartSound("");
-	}
-}
-void ShipCustomWarpDialog::endSoundChanged()
-{
-	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditEndSound->text());
-	if (!temp.isEmpty()) {
-		_model->setEndSound(temp.toLatin1().constData());
-	} else {
-		_model->setEndSound("");
-	}
-}
-void ShipCustomWarpDialog::animChanged()
-{
-	// String wrangling reqired in order to avoid crashes when directly converting from Qstring to std::string on some
-	// enviroments
-	QString temp(ui->lineEditAnim->text());
-	if (!temp.isEmpty()) {
-		_model->setAnim(temp.toLatin1().constData());
-	} else {
-		_model->setAnim("");
 	}
 }
 } // namespace fso::fred::dialogs
