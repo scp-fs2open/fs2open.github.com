@@ -36,6 +36,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_nameLineEdit_textChanged(const QString& arg1);
 	void on_typeComboBox_currentIndexChanged(int index);
 	void on_resetTechAtStartCheckBox_toggled(bool checked);
+	void on_campaignCustomDataButton_clicked();
 	void on_descriptionPlainTextEdit_textChanged();
 
 	void on_shipsListWidget_itemChanged(QListWidgetItem* item);
