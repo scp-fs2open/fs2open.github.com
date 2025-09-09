@@ -68,14 +68,21 @@ else()
 
     if(USING_PREBUILT_LIBS)
         message(STATUS "Using pre-built SDL2 library.")
-
         unset(SDL2_LOCATION CACHE)
-        find_library(SDL2_LOCATION NAMES SDL2 SDL2-2.0 PATHS "${SDL2_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+        if(NOT ANDROID)
+        	find_library(SDL2_LOCATION NAMES SDL2 SDL2-2.0 PATHS "${SDL2_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+	
+        	get_filename_component(FULL_LIB_PATH "${SDL2_LOCATION}" REALPATH)
+        	ADD_IMPORTED_LIB(sdl2 "${SDL2_ROOT_DIR}/include" "${FULL_LIB_PATH}")
+			message("${SDL2_LOCATION}")
+        	file(GLOB SDL2_LIBS "${SDL2_ROOT_DIR}/lib/libSDL2-2*")
+        	add_target_copy_files("${SDL2_LIBS}")
+        else()
+        	# workaround, find_library() was not finding anything
+        	ADD_IMPORTED_LIB(sdl2 "${SDL2_ROOT_DIR}/include/SDL2" "${SDL2_ROOT_DIR}/lib/libSDL2.so")
+        	file(GLOB SDL2_LIBS "${SDL2_ROOT_DIR}/lib/libSDL2.so")
+        	add_target_copy_files("${SDL2_LIBS}")
+        endif()
 
-        get_filename_component(FULL_LIB_PATH "${SDL2_LOCATION}" REALPATH)
-        ADD_IMPORTED_LIB(sdl2 "${SDL2_ROOT_DIR}/include" "${FULL_LIB_PATH}")
-
-        file(GLOB SDL2_LIBS "${SDL2_ROOT_DIR}/lib/libSDL2-2*")
-        add_target_copy_files("${SDL2_LIBS}")
     endif()
 endif()

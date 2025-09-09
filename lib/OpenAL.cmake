@@ -41,8 +41,7 @@ ELSE(WIN32)
         set(OpenAL_ROOT_DIR "${PREBUILT_PATH}/openal")
         set(USING_PREBUILT_LIBS TRUE)
     else()
-        FIND_PACKAGE(OpenAL)
-
+    	FIND_PACKAGE(OpenAL)
         if(OpenAL_FOUND)
             ADD_IMPORTED_LIB(openal "${OPENAL_INCLUDE_DIR}" "${OPENAL_LIBRARY}")
         else()
@@ -58,12 +57,20 @@ ELSE(WIN32)
         message(STATUS "Using pre-built OpenAL library.")
 
         unset(OpenAL_LOCATION CACHE)
-        find_library(OpenAL_LOCATION openal PATHS "${OpenAL_ROOT_DIR}/lib" NO_DEFAULT_PATH)
-
-        get_filename_component(FULL_LIB_PATH "${OpenAL_LOCATION}" REALPATH)
-        ADD_IMPORTED_LIB(openal "${OpenAL_ROOT_DIR}/include" "${FULL_LIB_PATH}")
-
-        file(GLOB OpenAL_LIBS "${OpenAL_ROOT_DIR}/lib/libopenal*")
-        add_target_copy_files("${OpenAL_LIBS}")
+        if(NOT ANDROID)
+        	find_library(OpenAL_LOCATION openal PATHS "${OpenAL_ROOT_DIR}/lib" NO_DEFAULT_PATH)
+	
+        	get_filename_component(FULL_LIB_PATH "${OpenAL_LOCATION}" REALPATH)
+        	ADD_IMPORTED_LIB(openal "${OpenAL_ROOT_DIR}/include" "${FULL_LIB_PATH}")
+	
+        	file(GLOB OpenAL_LIBS "${OpenAL_ROOT_DIR}/lib/libopenal*")
+        	add_target_copy_files("${OpenAL_LIBS}")
+        else()
+			# workaround, it was not being detected by find_library
+			ADD_IMPORTED_LIB(openal "${OpenAL_ROOT_DIR}/include" "${OpenAL_ROOT_DIR}/lib/libopenal.so")
+    		file(GLOB OpenAL_LIBS "${OpenAL_ROOT_DIR}/lib/libopenal*")
+        	add_target_copy_files("${OpenAL_LIBS}")
+    	endif()
+    	
     endif()
 ENDIF(WIN32)
