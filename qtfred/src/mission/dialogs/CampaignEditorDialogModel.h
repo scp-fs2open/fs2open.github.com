@@ -168,6 +168,10 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedWeapons() const;
 	void setAllowedWeapon(int weapon_class_index, bool allowed);
 
+	// Lists
+	static SCP_vector<SCP_string> getCutsceneList();
+	static SCP_vector<SCP_string> getMainhallList();
+
   private:
 	// The model's only link to the SEXP tree UI
 	ICampaignEditorTreeOps& m_tree_ops;
