@@ -146,40 +146,6 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 		&CampaignEditorDialogModel::updateCurrentBranch,
 		Qt::QueuedConnection);
 
-	// TODO move these to auto slots
-	/*connect(ui->graphView, &CampaignMissionGraph::missionSelected, this, [this](int idx) {
-		_model->setCurrentMissionSelection(idx);
-
-		SCP_string filename = _model->getCurrentMissionFilename();
-		mission mission_info;
-		if (get_mission_info(filename.c_str(), &mission_info) != 0) {
-			// Failed to retrieve mission info, clear fields and return
-			ui->missionNameLineEdit->clear();
-			ui->missionDescriptionPlainTextEdit->clear();
-			return;
-		}
-
-		if (mission_info.name) {
-			ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
-		} else {
-			ui->missionNameLineEdit->clear();
-		}
-
-		if (mission_info.notes) {
-			ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
-		} else {
-			ui->missionDescriptionPlainTextEdit->clear();
-		}
-	});
-
-	connect(ui->graphView, &CampaignMissionGraph::specialModeToggleRequested, this, [this](int idx) {
-		// Only toggle if mission has no special branches (view already enforces)
-		// You can add a tiny setter later; for now just flip your hint if you’ve added it
-		// model->setMissionSpecialMode(idx, ... toggled value ...);
-		// ui refresh after change:
-		ui->graphView->rebuildAll();
-	});*/
-
 	initializeUi();
 	updateUi();
 
