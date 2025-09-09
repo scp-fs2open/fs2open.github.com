@@ -212,7 +212,8 @@ void ShipEditorDialog::updateColumnOne(bool overwrite)
 			if (overwrite) {
 				ui->callsignCombo->addItem("<none>");
 				for (auto j = 0; j < Mission_callsign_count; j++) {
-					ui->callsignCombo->addItem(Mission_callsigns[j], QVariant(Mission_callsigns[j]));
+					SCP_string current = Mission_callsigns[j];
+					ui->callsignCombo->addItem(Mission_callsigns[j], current.c_str());
 				}
 
 				if (ui->callsignCombo->findText(QString(callsign.c_str()))) {
