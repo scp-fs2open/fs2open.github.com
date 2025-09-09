@@ -258,6 +258,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
+	src/ui/widgets/SimpleListSelectDialog.cpp
+	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
 	src/ui/widgets/bankTree.cpp
