@@ -620,10 +620,10 @@ void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
 void CampaignMissionGraph::setModel(CampaignEditorDialogModel* model)
 {
 	m_model = model;
-	rebuildAll();
+	rebuildAll(true);
 }
 
-void CampaignMissionGraph::rebuildAll()
+void CampaignMissionGraph::rebuildAll(bool refocus)
 {
 	if (!m_scene)
 		return;
@@ -644,7 +644,7 @@ void CampaignMissionGraph::rebuildAll()
 
 	if (!m_model) {
 		// Even with no model, give a small usable scene area
-		updateSceneRectToContent(true);
+		updateSceneRectToContent(refocus);
 		return;
 	}
 
@@ -652,12 +652,12 @@ void CampaignMissionGraph::rebuildAll()
 	buildMissionEdges();
 
 	// Size scene to the items and put the view at the top-left
-	updateSceneRectToContent(true);
+	updateSceneRectToContent(refocus);
 
 	applyFocusEmphasis();
 }
 
-void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible, bool centerOnItem, bool emitSignal)
+void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible, bool centerOnItem)
 {
 	if (!m_scene)
 		return;
@@ -690,9 +690,7 @@ void CampaignMissionGraph::setSelectedMission(int missionIndex, bool makeVisible
 	applyFocusEmphasis();
 
 	// send the user-selection signal for listeners
-	if (emitSignal) {
-		Q_EMIT missionSelected(missionIndex);
-	}
+	Q_EMIT missionSelected(missionIndex);
 }
 
 void CampaignMissionGraph::clearSelectedMission()
@@ -753,7 +751,7 @@ void CampaignMissionGraph::buildMissionNodes()
 			&CampaignMissionGraph::specialModeToggleRequested);
 		connect(item, &MissionNodeItem::nodeMoved, this, &CampaignMissionGraph::onNodeMoved);
 		connect(item, &detail::MissionNodeItem::missionSelected, this, [this](int idx) {
-			setSelectedMission(idx, /*makeVisible=*/true, /*centerOnItem=*/false, /*emitSignal=*/true);
+			setSelectedMission(idx, /*makeVisible=*/true, /*centerOnItem=*/false);
 		});
 
 		m_scene->addItem(item);

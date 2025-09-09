@@ -118,10 +118,10 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void setModel(fso::fred::dialogs::CampaignEditorDialogModel* model);
 
 	// Rebuild/redraw the entire scene from the model
-	void rebuildAll();
+	void rebuildAll(bool refocus = false);
 
 	void
-	setSelectedMission(int missionIndex, bool makeVisible = true, bool centerOnItem = false, bool emitSignal = false);
+	setSelectedMission(int missionIndex, bool makeVisible = false, bool centerOnItem = false);
 	void clearSelectedMission();
 
 	// View helpers

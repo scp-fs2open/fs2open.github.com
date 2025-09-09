@@ -574,11 +574,21 @@ void CampaignEditorDialogModel::setCurrentMissionSelection(int index)
 	}
 }
 
+int CampaignEditorDialogModel::getCurrentMissionSelection()
+{
+	return m_current_mission_index;
+}
+
 void CampaignEditorDialogModel::setCurrentBranchSelection(int branch_index)
 {
 	stopSpeech();
 	
 	m_current_branch_index = branch_index;
+}
+
+int CampaignEditorDialogModel::getCurrentBranchSelection()
+{
+	return m_current_branch_index;
 }
 
 const SCP_string& CampaignEditorDialogModel::getCampaignFilename() const
@@ -1117,6 +1127,38 @@ void CampaignEditorDialogModel::testCurrentBranchLoopVoice()
 	audiostream_play(_waveId, 1.0f, 0);
 }
 
+void CampaignEditorDialogModel::removeBranchByTreeId(int formula_id)
+{
+	// Ensure we have a valid mission context
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+
+	auto& mission = m_missions[m_current_mission_index];
+
+	// Find the branch row that corresponds to this formula root
+	int branch_index = -1;
+	for (size_t i = 0; i < mission.branches.size(); ++i) {
+		if (mission.branches[i].sexp_formula == formula_id) {
+			branch_index = static_cast<int>(i);
+			break;
+		}
+	}
+	if (branch_index < 0) {
+		return;
+	}
+
+	removeBranch(m_current_mission_index, branch_index);
+
+	m_current_branch_index = -1; // set no branch selected
+
+	// Rebuild the visual tree from the model’s authoritative state
+	if (SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		auto& cur = m_missions[m_current_mission_index];
+		m_tree_ops.rebuildBranchTree(cur.branches, cur.filename);
+	}
+}
+
 const SCP_vector<CampaignMissionData>& CampaignEditorDialogModel::getCampaignMissions() const
 {
 	return m_missions;
@@ -1151,7 +1193,9 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 
 	set_modified();
 
-	m_tree_ops.rebuildBranchTree(from_mission.branches, from_mission.filename);
+	if (m_current_mission_index == from_mission_index) { // only rebuild if we're on the affected mission
+		m_tree_ops.rebuildBranchTree(from_mission.branches, from_mission.filename);
+	}
 }
 
 void CampaignEditorDialogModel::addEndBranch(int from_mission_index)
@@ -1175,7 +1219,9 @@ void CampaignEditorDialogModel::addEndBranch(int from_mission_index)
 	nb.sexp_formula = m_tree_ops.createDefaultSexp();
 
 	set_modified();
-	m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+	if (m_current_mission_index == from_mission_index) { // only rebuild if we're on the affected mission
+		m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+	}
 }
 
 void CampaignEditorDialogModel::addSpecialBranch(int from_mission_index, int to_mission_index)
@@ -1212,7 +1258,9 @@ void CampaignEditorDialogModel::addSpecialBranch(int from_mission_index, int to_
 	nb.sexp_formula = m_tree_ops.createDefaultSexp();
 
 	set_modified();
-	m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+	if (m_current_mission_index == from_mission_index) { // only rebuild if we're on the affected mission
+		m_tree_ops.rebuildBranchTree(from.branches, from.filename);
+	}
 }
 
 
