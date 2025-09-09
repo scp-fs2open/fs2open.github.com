@@ -6,7 +6,7 @@ on:
       - 'test/*'
 
 env:
-  QT_VERSION: 6.9.1
+  QT_VERSION: 6.9.2
 
 jobs:
   build_linux:
@@ -123,15 +123,13 @@ jobs:
           # arch: win32_msvc2017
           # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
           # aqtversion: ==0.8
-      # - name: Install Qt (64 bit)
-        # uses: jurplel/install-qt-action@v2
-        # if: ${{ matrix.arch == 'x64' }}
-        # with:
-          # version: ${{ env.QT_VERSION }}
-          # dir: ${{ github.workspace }}/..
-          # arch: win64_msvc2017_64
-          # cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
-          # aqtversion: ==0.8
+      - name: Install Qt (64 bit)
+        uses: jurplel/install-qt-action@v4
+        if: ${{ matrix.arch == 'x64' }}
+        with:
+          version: ${{ env.QT_VERSION }}
+          dir: ${{ github.workspace }}/..
+          arch: win64_msvc2022_64
       - name: Prepare Vulkan SDK
         uses: humbletim/setup-vulkan-sdk@v1.2.1
         with:
