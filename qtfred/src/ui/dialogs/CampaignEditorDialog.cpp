@@ -14,9 +14,9 @@
 
 namespace fso::fred::dialogs {
 
-CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _viewport)
-	: QMainWindow(_parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
-	  ui(new Ui::CampaignEditorDialog), _viewport(_viewport)
+CampaignEditorDialog::CampaignEditorDialog(QWidget* parent, EditorViewport* viewport)
+	: QMainWindow(parent), SexpTreeEditorInterface({TreeFlags::LabeledRoot, TreeFlags::RootDeletable}),
+	  ui(new Ui::CampaignEditorDialog), _viewport(viewport)
 {
 	ui->setupUi(this);
 
@@ -510,13 +510,13 @@ void CampaignEditorDialog::on_availableMissionsListWidget_itemSelectionChanged()
 		return;
 	}
 
-	if (mission_info.name) {
+	if (mission_info.name[0] != '\0') {
 		ui->missionNameLineEdit->setText(QString::fromUtf8(mission_info.name));
 	} else {
 		ui->missionNameLineEdit->clear();
 	}
 
-	if (mission_info.notes) {
+	if (mission_info.notes[0] != '\0') {
 		ui->missionDescriptionPlainTextEdit->setPlainText(QString::fromUtf8(mission_info.notes));
 	} else {
 		ui->missionDescriptionPlainTextEdit->clear();
@@ -665,7 +665,7 @@ void CampaignEditorDialog::on_graphView_setFirstMissionRequested(int missionInde
 	_model->setMissionAsFirst(missionIndex);
 	ui->graphView->rebuildAll();
 
-	if (current_selection = missionIndex) {
+	if (current_selection == missionIndex) {
 		// If we changed the first mission, the selection index changed too
 		current_selection = 0;
 	}
