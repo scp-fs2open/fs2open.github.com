@@ -1196,6 +1196,14 @@ const SCP_vector<CampaignMissionData>& CampaignEditorDialogModel::getCampaignMis
 	return m_missions;
 }
 
+int CampaignEditorDialogModel::getNumBranches() const
+{
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return 0;
+	}
+	return static_cast<int>(m_missions[m_current_mission_index].branches.size());
+}
+
 void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission_index)
 {
 	if (!SCP_vector_inbounds(m_missions, from_mission_index) || !SCP_vector_inbounds(m_missions, to_mission_index)) {
@@ -1228,6 +1236,44 @@ void CampaignEditorDialogModel::addBranch(int from_mission_index, int to_mission
 	if (m_current_mission_index == from_mission_index) { // only rebuild if we're on the affected mission
 		m_tree_ops.rebuildBranchTree(from_mission.branches, from_mission.filename);
 	}
+}
+
+void CampaignEditorDialogModel::moveBranchUp()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == 0) {
+		return;
+	}
+	// Swap the selected branch with the one above it.
+	std::swap(mission.branches[m_current_branch_index], mission.branches[m_current_branch_index - 1]);
+	set_modified();
+	
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
+}
+
+void CampaignEditorDialogModel::moveBranchDown()
+{
+	// Ensure a mission and a branch are currently selected.
+	if (!SCP_vector_inbounds(m_missions, m_current_mission_index)) {
+		return;
+	}
+	auto& mission = m_missions[m_current_mission_index];
+	if (!SCP_vector_inbounds(mission.branches, m_current_branch_index) || m_current_branch_index == static_cast<int>(mission.branches.size()) - 1) {
+		return;
+	}
+	// Swap the selected branch with the one below it.
+	std::swap(mission.branches[m_current_branch_index], mission.branches[m_current_branch_index + 1]);
+	set_modified();
+	
+	m_current_branch_index = -1; // set no branch selected
+	// Rebuild the visual tree from the model's authoritative state
+	m_tree_ops.rebuildBranchTree(mission.branches, mission.filename);
 }
 
 void CampaignEditorDialogModel::addEndBranch(int from_mission_index)

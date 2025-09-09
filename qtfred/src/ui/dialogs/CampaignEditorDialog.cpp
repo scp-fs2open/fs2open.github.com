@@ -318,6 +318,10 @@ void CampaignEditorDialog::enableDisableControls()
 	ui->substituteMainhallComboBox->setEnabled(has_mission);
 	ui->debriefingPersonaSpinBox->setEnabled(has_mission);
 
+	bool branch_selected = (_model->getCurrentBranchSelection() >= 0);
+	ui->moveBranchUpButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() > 0);
+	ui->moveBranchDownButton->setEnabled(branch_selected && _model->getCurrentBranchSelection() < _model->getNumBranches() -1);
+
 	bool special_branch_selected = _model->getCurrentBranchIsSpecial();
 	ui->loopDescriptionPlainTextEdit->setEnabled(special_branch_selected);
 	ui->loopAnimBrowseButton->setEnabled(special_branch_selected);
@@ -673,6 +677,26 @@ void CampaignEditorDialog::on_mainhallComboBox_currentIndexChanged(const QString
 void CampaignEditorDialog::on_substituteMainhallComboBox_currentIndexChanged(const QString& arg1)
 {
 	_model->setCurrentMissionSubstituteMainhall(arg1.toUtf8().constData());
+}
+
+void CampaignEditorDialog::on_moveBranchUpButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+	_model->moveBranchUp();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
+}
+
+void CampaignEditorDialog::on_moveBranchDownButton_clicked()
+{
+	int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+	
+	_model->moveBranchDown();
+	ui->graphView->rebuildAll();
+
+	ui->graphView->setSelectedMission(mission_selection);
 }
 
 void CampaignEditorDialog::on_loopDescriptionPlainTextEdit_textChanged()
