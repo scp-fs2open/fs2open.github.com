@@ -88,24 +88,24 @@ jobs:
         name: Checkout
         with:
           submodules: true
-       - name: Cache Qt
-         id: cache-qt-win
-         uses: actions/cache@v1
-         with:
+      - name: Cache Qt
+        id: cache-qt-win
+        uses: actions/cache@v1
+        with:
            path: ${{ github.workspace }}/../Qt
            key: ${{ runner.os }}-${{ matrix.arch }}-QtCache-${{ env.QT_VERSION }}
-       - name: Install Qt (32 bit)
-         uses: jurplel/install-qt-action@v4
-         if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'Win32' }}
-         with:
+      - name: Install Qt (32 bit)
+        uses: jurplel/install-qt-action@v4
+        if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'Win32' }}
+        with:
            version: ${{ env.QT_VERSION }}
            dir: ${{ github.workspace }}/..
            arch: win32_msvc2022
            cached: ${{ steps.cache-qt-win.outputs.cache-hit }}
-       - name: Install Qt (64 bit)
-         uses: jurplel/install-qt-action@v4
-         if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'x64' }}
-         with:
+      - name: Install Qt (64 bit)
+        uses: jurplel/install-qt-action@v4
+        if: ${{ matrix.compiler  == 'MSVC' && matrix.arch == 'x64' }}
+        with:
            version: ${{ env.QT_VERSION }}
            dir: ${{ github.workspace }}/..
            arch: win64_msvc2022_64
