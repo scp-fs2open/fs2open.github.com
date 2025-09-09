@@ -5,6 +5,7 @@
 #include "ui/widgets/SimpleListSelectDialog.h"
 #include "ui/util/SignalBlockers.h"
 #include "mission/util.h"
+#include <ui/dialogs/MissionSpecs/CustomDataDialog.h>
 #include <QInputDialog>
 #include <QFileDialog>
 #include <QMessageBox>
@@ -432,6 +433,16 @@ void CampaignEditorDialog::on_typeComboBox_currentIndexChanged(int index)
 void CampaignEditorDialog::on_resetTechAtStartCheckBox_toggled(bool checked)
 {
 	_model->setCampaignTechReset(checked);
+}
+
+void CampaignEditorDialog::on_campaignCustomDataButton_clicked()
+{
+	CustomDataDialog dlg(this, _viewport);
+	dlg.setInitial(_model->getCustomData());
+
+	if (dlg.exec() == QDialog::Accepted) {
+		_model->setCustomData(dlg.items());
+	}
 }
 
 void CampaignEditorDialog::on_descriptionPlainTextEdit_textChanged()
