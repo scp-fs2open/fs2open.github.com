@@ -53,6 +53,7 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 		m_campaign_type = Campaign.type;
 		m_num_players = Campaign.num_players;
 		m_flags = Campaign.flags;
+		m_custom_data = Campaign.custom_data;
 
 		// Copy mission data from the global Campaign struct
 		m_missions.reserve(Campaign.num_missions);
@@ -260,6 +261,7 @@ void CampaignEditorDialogModel::commitWorkingCopyToGlobal()
 	Campaign.num_players = m_num_players;
 	Campaign.flags = m_flags;
 	Campaign.num_missions = static_cast<int>(m_missions.size());
+	Campaign.custom_data = m_custom_data;
 
 	// Copy ship and weapon permissions
 	for (int i = 0; i < MAX_SHIP_CLASSES; ++i) {
@@ -715,6 +717,17 @@ void CampaignEditorDialogModel::setCampaignNumPlayers(int num_players)
 	// If the player count changed, we must reload the available missions list
 	// to apply the new filter.
 	loadAvailableMissions();
+}
+
+void CampaignEditorDialogModel::setCustomData(const SCP_map<SCP_string, SCP_string>& custom_data)
+{
+	modify(m_custom_data, custom_data);
+	set_modified();
+}
+
+SCP_map<SCP_string, SCP_string> CampaignEditorDialogModel::getCustomData() const
+{
+	return m_custom_data;
 }
 
 const SCP_vector<std::pair<SCP_string, bool>>& CampaignEditorDialogModel::getAvailableMissionFiles() const

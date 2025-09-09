@@ -34,7 +34,7 @@ struct CampaignMissionData {
 	SCP_string filename;
 	int level = 0;
 	int position = 0;
-	int graph_x = INT_MIN; // For UI layout only
+	int graph_x = INT_MIN; // For UI layout only // TODO after missionsave.cpp is refactored, save these to the campaign file
 	int graph_y = INT_MIN; // For UI layout only
 	int graph_color = -1;  // For UI layout only
 
@@ -106,6 +106,8 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setCampaignTechReset(bool reset);
 	int getCampaignNumPlayers() const;
 	void setCampaignNumPlayers(int num_players);
+	SCP_map<SCP_string, SCP_string> getCustomData() const;
+	void setCustomData(const SCP_map<SCP_string, SCP_string>& custom_data);
 
 	// Available Missions
 	const SCP_vector<std::pair<SCP_string, bool>>& getAvailableMissionFiles() const;
@@ -179,6 +181,7 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	int m_flags = 0;
 	SCP_vector<bool> m_ships_allowed;
 	SCP_vector<bool> m_weapons_allowed;
+	SCP_map<SCP_string, SCP_string> m_custom_data;
 	SCP_vector<CampaignMissionData> m_missions;
 
 	// List of mission files in the game directory that are not yet in the campaign
