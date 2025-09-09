@@ -659,6 +659,20 @@ void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPoin
 	updateAvailableMissionsList();
 }
 
+void CampaignEditorDialog::on_graphView_setFirstMissionRequested(int missionIndex)
+{
+	int current_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+	_model->setMissionAsFirst(missionIndex);
+	ui->graphView->rebuildAll();
+
+	if (current_selection = missionIndex) {
+		// If we changed the first mission, the selection index changed too
+		current_selection = 0;
+	}
+
+	ui->graphView->setSelectedMission(current_selection);
+}
+
 void CampaignEditorDialog::on_briefCutsceneComboBox_currentIndexChanged(const QString& arg1)
 {
 	_model->setCurrentMissionBriefingCutscene(arg1.toUtf8().constData());

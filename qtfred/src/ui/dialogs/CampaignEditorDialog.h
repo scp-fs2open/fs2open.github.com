@@ -53,6 +53,7 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 	void on_graphView_deleteMissionRequested(int missionIndex);
 	void on_graphView_addRepeatBranchRequested(int missionIndex);
 	void on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
+	void on_graphView_setFirstMissionRequested(int missionIndex);
 
 	void on_briefCutsceneComboBox_currentIndexChanged(const QString& arg1);
 	void on_debriefingPersonaSpinBox_valueChanged(int arg1);
