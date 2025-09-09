@@ -11,7 +11,7 @@ on:
     - cron: "5 0 * * 5" # Run once per a week on Friday morning (midnight UTC, 4 AM EST), to avoid Coverity's submission limits
 
 env:
-  QT_VERSION: 5.12.12
+  QT_VERSION: 6.9.1
   coverity_email: SirKnightlySCP@gmail.com
   coverity_token: ${{ secrets.COVERITY_TOKEN }}
 
