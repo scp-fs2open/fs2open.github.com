@@ -48,6 +48,10 @@ class CampaignEditorDialog : public QMainWindow, public SexpTreeEditorInterface 
 
 	void on_graphView_missionSelected(int missionIndex);
 	void on_graphView_specialModeToggleRequested(int missionIndex);
+	void on_graphView_addMissionHereRequested(QPointF sceneTopLeft);
+	void on_graphView_deleteMissionRequested(int missionIndex);
+	void on_graphView_addRepeatBranchRequested(int missionIndex);
+	void on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::CampaignEditorDialog> ui;

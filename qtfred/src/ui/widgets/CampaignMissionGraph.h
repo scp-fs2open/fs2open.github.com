@@ -51,26 +51,27 @@ struct CampaignGraphStyle {
 	// Stripe (user color)
 	qreal stripeHeight{10.0};
 
-	// Ports (nubs)
-	QColor inboundGreen{46, 204, 113}; // top nub (inbound)
-	QColor mainBlue{52, 152, 219};     // main out nub
-	QColor loopOrange{243, 156, 18};   // special out nub when LOOP
-	QColor forkPurple{155, 89, 182};   // special out nub when FORK
-	qreal nubRadius{6.0};
-	qreal nubSpacingBottom{6.0}; // retained for future
-	qreal nubOffsetX{42.0};
-	bool inboundApproachEnabled{true}; // add a small jog near the inbound nub
+	// Ports
+	QColor inboundGreen{46, 204, 113}; // top port (inbound)
+	QColor mainBlue{52, 152, 219};     // main out port
+	QColor loopOrange{243, 156, 18};   // special out port when LOOP
+	QColor forkPurple{155, 89, 182};   // special out port when FORK
+	qreal portRadius{6.0};
+	qreal portSpacingBottom{6.0}; // retained for future
+	qreal portOffsetX{42.0};
+	bool inboundApproachEnabled{true}; // add a small jog near the inbound port
 	qreal inboundApproachJog{30.0};    // horizontal jog distance before the final vertical
-	qreal inboundApproachRise{30.0};   // vertical distance above inbound nub
-	bool outboundApproachEnabled{true}; // add a small jog right after the source nub
+	qreal inboundApproachRise{30.0};   // vertical distance above inbound port
+	bool outboundApproachEnabled{true}; // add a small jog right after the source port
 	bool outboundDirectionTowardTarget{true}; // if true, outbound jog heads toward dst.x()
 	qreal outboundJogMain{30.0};              // X jog right after source for MAIN
 	qreal outboundJogSpecial{30.0};           // X jog right after source for SPECIAL
 	qreal outboundDropMain{30.0};             // Y drop right after source for MAIN
 	qreal outboundDropSpecial{40.0};          // Y drop right after source for SPECIAL (often a bit larger)
+	qreal portHitExtra{20.0};                   // extra pixels added to port radius for hit-testing
 
 	// Edge routing
-	qreal fanoutStart{12.0}; // vertical run from nub before spreading
+	qreal fanoutStart{12.0}; // vertical run from port before spreading
 	qreal fanoutStep{10.0};  // horizontal separation between sibling edges
 	qreal edgeWidth{3.0};
 	qreal arrowSize{8.0}; // arrowhead size
@@ -140,6 +141,14 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void specialModeToggleRequested(int missionIndex);
 	// (Edges are now non-interactive, keeping this signal around is harmless if you already wired it)
 	void branchSelected(int missionIndex, int branchId);
+	// Emitted when a request is made to create a new mission node
+	void addMissionHereRequested(QPointF sceneTopLeft);
+	// Emitted when a request is made to delete a mission node
+	void deleteMissionRequested(int missionIndex);
+	// Emitted when a request is made to make a mission repeat to self
+	void addRepeatBranchRequested(int missionIndex);
+	// Emitted when an outbound connection drag is started from a node port and ends in empty space
+	void createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial);
 
   protected:
 	// Pan/zoom
@@ -150,6 +159,8 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void mousePressEvent(QMouseEvent* e) override;
 	void mouseMoveEvent(QMouseEvent* e) override;
 	void mouseReleaseEvent(QMouseEvent* e) override;
+	// Context menu
+	void contextMenuEvent(QContextMenuEvent* e) override;
 
   private slots:
 	void onNodeMoved(int missionIndex, QPointF sceneTopLeft);
@@ -160,7 +171,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 		bool isSpecial{false};
 		int fromIndex{-1};
 		QPointF srcPt;
-		detail::EdgeItem* preview{nullptr};
+		QPointer<detail::EdgeItem> preview;
 	};
 	DragState m_drag;
 
@@ -171,6 +182,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 	void buildMissionEdges();
 	void ensureEndSink();
 	void rebuildEdgesOnly();
+	bool hasRepeatBranch(int missionIndex) const;
 
 	detail::MissionNodeItem* nodeAtScenePos(const QPointF& scenePt) const;
 	bool tryFinishConnectionAt(const QPointF& scenePt);
@@ -192,6 +204,9 @@ class CampaignMissionGraph final : public QGraphicsView {
 	qreal m_currentScale{1.0};
 	const qreal kMinScale{0.2};
 	const qreal kMaxScale{3.0};
+
+	bool m_updatingSceneRect{false};
+	bool m_spawnPending{false};
 };
 
 // ---------- Internal items (Q_OBJECT in header so AUTOMOC runs) ----------
@@ -225,19 +240,19 @@ class MissionNodeItem final : public QGraphicsObject {
 	}
 
 
-	enum class Nub {
+	enum class Port {
 		None,
 		Inbound,
 		Main,
 		Special
 	};
 
-	Nub hitTestNubScene(const QPointF& scenePos) const;
+	Port hitTestPortScene(const QPointF& scenePos) const;
 
-	// Nub anchor points (scene coordinates)
-	QPointF inboundNubScenePos() const;
-	QPointF mainNubScenePos() const;
-	QPointF specialNubScenePos() const;
+	// Port anchor points (scene coordinates)
+	QPointF inboundPortScenePos() const;
+	QPointF mainPortScenePos() const;
+	QPointF specialPortScenePos() const;
 
   signals:
 	void missionSelected(int missionIndex);
@@ -261,7 +276,7 @@ class MissionNodeItem final : public QGraphicsObject {
 	int m_mainCount{0};
 	int m_specCount{0};
 
-	const CampaignGraphStyle& m_style;
+	CampaignGraphStyle m_style;
 
 	QRectF m_rect;
 	QRectF m_badgeRect;
@@ -305,7 +320,7 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	int m_branchId{-1};
 	bool m_isSpecial{false};
 	CampaignSpecialMode m_mode{CampaignSpecialMode::Loop};
-	const CampaignGraphStyle& m_style;
+	CampaignGraphStyle m_style;
 
 	QColor m_color;
 	Qt::PenStyle m_dash{Qt::SolidLine};
@@ -330,9 +345,9 @@ class EndSinkItem final : public QGraphicsObject {
 
 	QRectF boundingRect() const override
 	{
-		// Expand upward by nub radius so the top nub isn't clipped
+		// Expand upward by port radius so the top port isn't clipped
 		QRectF pill(QPointF(0, 0), m_style.endSinkSize);
-		return pill.adjusted(-1.0, -m_style.nubRadius, +1.0, +1.0);
+		return pill.adjusted(-1.0, -m_style.portRadius, +1.0, +1.0);
 	}
 
 	void paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidget*) override
@@ -342,12 +357,12 @@ class EndSinkItem final : public QGraphicsObject {
 		// Geometry: draw relative to the pill rect (not the expanded boundingRect)
 		const QRectF pill(QPointF(0, 0), m_style.endSinkSize);
 
-		// 1) Inbound nub (green), centered on the pill's top edge so only half shows
-		QPen nubPen(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
-		p->setPen(nubPen);
+		// 1) Inbound port (green), centered on the pill's top edge so only half shows
+		QPen portPen(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
+		p->setPen(portPen);
 		p->setBrush(m_style.inboundGreen);
-		const QPointF nubCenter(pill.center().x(), pill.top());
-		p->drawEllipse(nubCenter, m_style.nubRadius, m_style.nubRadius);
+		const QPointF portCenter(pill.center().x(), pill.top());
+		p->drawEllipse(portCenter, m_style.portRadius, m_style.portRadius);
 
 		// 2) Pill on top
 		QPen border(m_style.endSinkBorder, 1.5, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
@@ -373,7 +388,7 @@ class EndSinkItem final : public QGraphicsObject {
 
 
   private:
-	const CampaignGraphStyle& m_style;
+	CampaignGraphStyle m_style;
 };
 
 } // namespace detail

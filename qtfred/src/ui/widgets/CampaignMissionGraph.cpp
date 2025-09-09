@@ -9,6 +9,8 @@
 #include <QStyleOptionGraphicsItem>
 #include <QWheelEvent>
 #include <QtMath>
+#include <QMenu>
+#include <QContextMenuEvent>
 #include <cmath>
 #include <unordered_map>
 
@@ -59,30 +61,30 @@ void MissionNodeItem::paint(QPainter* p, const QStyleOptionGraphicsItem*, QWidge
 	const qreal borderW = isSelected() ? 2.0 : 1.0;
 	const QPen borderPen(m_style.nodeBorder, borderW, Qt::SolidLine, Qt::RoundCap, Qt::RoundJoin);
 
-	const qreal topNubY = m_rect.top();       // center exactly on edge -> half visible
-	const qreal bottomNubY = m_rect.bottom(); // center exactly on edge -> half visible
+	const qreal topPortY = m_rect.top();       // center exactly on edge -> half visible
+	const qreal bottomPortY = m_rect.bottom(); // center exactly on edge -> half visible
 	const qreal centerX = m_rect.center().x();
-	const QPointF inboundNub(centerX, topNubY);
-	const QPointF mainNub(centerX - m_style.nubOffsetX, bottomNubY);
-	const QPointF specNub(centerX + m_style.nubOffsetX, bottomNubY);
+	const QPointF inboundPort(centerX, topPortY);
+	const QPointF mainPort(centerX - m_style.portOffsetX, bottomPortY);
+	const QPointF specPort(centerX + m_style.portOffsetX, bottomPortY);
 
-	// --- 1) NUBS FIRST (under the card so only half shows) ---
+	// --- 1) PORTS FIRST (under the card so only half shows) ---
 	p->setPen(borderPen);
 
 	// Top inbound (green)
 	p->setBrush(m_style.inboundGreen);
-	p->drawEllipse(inboundNub, m_style.nubRadius, m_style.nubRadius);
+	p->drawEllipse(inboundPort, m_style.portRadius, m_style.portRadius);
 
 	// Bottom main (blue)
 	p->setBrush(m_style.mainBlue);
-	p->drawEllipse(mainNub, m_style.nubRadius, m_style.nubRadius);
+	p->drawEllipse(mainPort, m_style.portRadius, m_style.portRadius);
 
 	// Bottom special (loop/fork color)
 	const QColor specColor = (m_mode == CampaignSpecialMode::Loop) ? m_style.loopOrange : m_style.forkPurple;
 	p->setBrush(specColor);
-	p->drawEllipse(specNub, m_style.nubRadius, m_style.nubRadius);
+	p->drawEllipse(specPort, m_style.portRadius, m_style.portRadius);
 
-	// --- 2) CARD ON TOP (covers inner halves of the nubs) ---
+	// --- 2) CARD ON TOP (covers inner halves of the ports) ---
 	p->setPen(borderPen);
 	p->setBrush(m_style.nodeFill);
 	p->drawPath(roundedRectPath(m_rect, m_style.nodeRadius));
@@ -192,38 +194,41 @@ void MissionNodeItem::updateGeometry()
 	m_rect = QRectF(0, 0, 240.0, 120.0); // sync with CampaignGraphStyle defaults
 }
 
-MissionNodeItem::Nub MissionNodeItem::hitTestNubScene(const QPointF& sp) const
+detail::MissionNodeItem::Port detail::MissionNodeItem::hitTestPortScene(const QPointF& sp) const
 {
-	const qreal r = m_style.nubRadius + 3.0; // small tolerance
+	// If this item is no longer in a scene, treat as no port (avoids mapToScene on a dying item)
+	if (!scene())
+		return Port::None;
+	
+	const qreal r = m_style.portRadius + m_style.portHitExtra; // configurable hit radius
 	auto near = [&](const QPointF& a, const QPointF& b) { return QLineF(a, b).length() <= r; };
 
-	const QPointF inP = inboundNubScenePos();
-	const QPointF mainP = mainNubScenePos();
-	const QPointF specP = specialNubScenePos();
+	const QPointF inP = inboundPortScenePos();
+	const QPointF mainP = mainPortScenePos();
+	const QPointF specP = specialPortScenePos();
 
 	if (near(sp, mainP))
-		return Nub::Main;
+		return Port::Main;
 	if (near(sp, specP))
-		return Nub::Special;
+		return Port::Special;
 	if (near(sp, inP))
-		return Nub::Inbound;
-	return Nub::None;
+		return Port::Inbound;
+	return Port::None;
 }
 
-
-QPointF MissionNodeItem::inboundNubScenePos() const
+QPointF MissionNodeItem::inboundPortScenePos() const
 {
 	return mapToScene(QPointF(m_rect.center().x(), m_rect.top()));
 }
 
-QPointF MissionNodeItem::mainNubScenePos() const
+QPointF MissionNodeItem::mainPortScenePos() const
 {
-	return mapToScene(QPointF(m_rect.center().x() - m_style.nubOffsetX, m_rect.bottom()));
+	return mapToScene(QPointF(m_rect.center().x() - m_style.portOffsetX, m_rect.bottom()));
 }
 
-QPointF MissionNodeItem::specialNubScenePos() const
+QPointF MissionNodeItem::specialPortScenePos() const
 {
-	return mapToScene(QPointF(m_rect.center().x() + m_style.nubOffsetX, m_rect.bottom()));
+	return mapToScene(QPointF(m_rect.center().x() + m_style.portOffsetX, m_rect.bottom()));
 }
 
 // ----------------------------
@@ -310,7 +315,7 @@ QPainterPath EdgeItem::buildPath(const QPointF& src, const QPointF& dst, int sib
 	const qreal baseJogX = m_style.outboundApproachEnabled ? typeJogX : 0.0;
 
 	// --- Source side: p0..p2 ---
-	const QPointF p0 = src;                                            // at nub
+	const QPointF p0 = src;                                            // at port
 	const QPointF p1 = p0 + QPointF(0, drop);                          // vertical drop
 	const QPointF p2 = p1 + QPointF((sibOffset + baseJogX) * dirX, 0); // horizontal jog + sibling fanout
 
@@ -369,8 +374,8 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	const qreal sideX = sourceIsRightSide ? (node.right() + m_style.selfLoopMargin + std::abs(spread))
 										  : (node.left() - m_style.selfLoopMargin - std::abs(spread));
 
-	const QPointF src = sourceIsRightSide ? QPointF(node.center().x() + m_style.nubOffsetX, node.bottom())
-										  : QPointF(node.center().x() - m_style.nubOffsetX, node.bottom());
+	const QPointF src = sourceIsRightSide ? QPointF(node.center().x() + m_style.portOffsetX, node.bottom())
+										  : QPointF(node.center().x() - m_style.portOffsetX, node.bottom());
 
 	const QPointF dst(node.center().x(), node.top());
 
@@ -383,7 +388,7 @@ QPainterPath EdgeItem::buildSelfLoopPath(const QRectF& node, bool sourceIsRightS
 	const QPointF p2(sideX, p1.y());
 	const QPointF p3(sideX, node.top() - m_style.fanoutStart);
 
-	// Stop short of inbound nub so arrow is visible (not under node)
+	// Stop short of inbound port so arrow is visible (not under node)
 	const qreal inset = std::max<qreal>(2.0, m_style.arrowTargetInset);
 	const QPointF p4(node.center().x(), p3.y());
 	const QPointF p5 = dst - QPointF(0, inset);
@@ -502,27 +507,66 @@ void CampaignMissionGraph::initScene()
 	setScene(m_scene);
 }
 
+static inline bool nearlyEqual(qreal a, qreal b, qreal eps = 0.5)
+{
+	return std::abs(a - b) <= eps;
+}
+static inline bool rectNearlyEqual(const QRectF& a, const QRectF& b, qreal eps = 0.5)
+{
+	return nearlyEqual(a.left(), b.left(), eps) && nearlyEqual(a.top(), b.top(), eps) &&
+		   nearlyEqual(a.right(), b.right(), eps) && nearlyEqual(a.bottom(), b.bottom(), eps);
+}
+
 void CampaignMissionGraph::updateSceneRectToContent(bool scrollToTopLeft)
 {
-	if (!m_scene)
+	if (!m_scene || m_updatingSceneRect)
 		return;
 
 	QRectF itemsRect = m_scene->itemsBoundingRect();
-
-	// If no items yet, create a small default rect near (0,0)
 	if (!itemsRect.isValid() || itemsRect.isEmpty()) {
 		itemsRect = QRectF(0, 0, m_style.nodeSize.width() * 3.0, m_style.nodeSize.height() * 2.0);
 	}
 
-	// Expand by margins so there’s breathing room to pan/drag
-	const QRectF sceneRect = itemsRect.adjusted(-m_style.contentMarginX,
+	// Proposed rect = content ± margins
+	QRectF proposed = itemsRect.adjusted(-m_style.contentMarginX,
 		-m_style.contentMarginY,
 		+m_style.contentMarginX,
 		+m_style.contentMarginY);
-	m_scene->setSceneRect(sceneRect);
+
+	// Avoid endless churn: if effectively unchanged, bail.
+	const QRectF current = m_scene->sceneRect();
+	if (rectNearlyEqual(proposed, current)) {
+		// Still optionally scroll on first build
+		if (scrollToTopLeft) {
+			setAlignment(Qt::AlignLeft | Qt::AlignTop);
+			if (horizontalScrollBar())
+				horizontalScrollBar()->setValue(horizontalScrollBar()->minimum());
+			if (verticalScrollBar())
+				verticalScrollBar()->setValue(verticalScrollBar()->minimum());
+		}
+		return;
+	}
+
+	// During interactive moves we only want to GROW the rect, not shrink it (prevents oscillation).
+	// Heuristic: when a drag is active (preview edge or mouse grabber), clamp to non-shrinking.
+	bool interactiveMove = m_drag.active || (scene() && scene()->mouseGrabberItem());
+	if (interactiveMove) {
+		// Expand each side to at least the current extents
+		proposed.setLeft(std::min(proposed.left(), current.left()));
+		proposed.setTop(std::min(proposed.top(), current.top()));
+		proposed.setRight(std::max(proposed.right(), current.right()));
+		proposed.setBottom(std::max(proposed.bottom(), current.bottom()));
+		// If after clamping it’s still effectively the same, bail
+		if (rectNearlyEqual(proposed, current))
+			return;
+	}
+
+	// Re-entrancy guard around setSceneRect()
+	m_updatingSceneRect = true;
+	m_scene->setSceneRect(proposed);
+	m_updatingSceneRect = false;
 
 	if (scrollToTopLeft) {
-		// Align top-left and reset scroll bars to the minimum (top-left corner)
 		setAlignment(Qt::AlignLeft | Qt::AlignTop);
 		if (horizontalScrollBar())
 			horizontalScrollBar()->setValue(horizontalScrollBar()->minimum());
@@ -696,7 +740,7 @@ void CampaignMissionGraph::buildMissionEdges()
 					const int sibCount = mainTotal;
 					const int sibIndex = mainIdx++;
 
-					const QPointF srcPt = srcNode->mainNubScenePos();
+					const QPointF srcPt = srcNode->mainPortScenePos();
 					const QPointF dstPt = m_endSink->inboundAnchorScenePos();
 
 					auto* edge = new detail::EdgeItem(i, b.id, /*isSpecial*/ false, mode, m_style);
@@ -732,7 +776,7 @@ void CampaignMissionGraph::buildMissionEdges()
 				// Self-loop: draw outside node (unless disabled)
 				if (m_style.showSelfLoops) {
 					const QRectF nodeRectScene = srcNode->mapRectToScene(srcNode->boundingRect());
-					const bool sourceRight = isSpecial; // special nub on right; main on left
+					const bool sourceRight = isSpecial; // special port on right; main on left
 					edge->setSelfLoop(nodeRectScene, sourceRight, sibIndex, sibCount);
 					m_scene->addItem(edge);
 					m_edgeItems.push_back(edge);
@@ -743,8 +787,8 @@ void CampaignMissionGraph::buildMissionEdges()
 			}
 
 			// Normal edge
-			const QPointF srcPt = isSpecial ? srcNode->specialNubScenePos() : srcNode->mainNubScenePos();
-			const QPointF dstPt = dstNode->inboundNubScenePos();
+			const QPointF srcPt = isSpecial ? srcNode->specialPortScenePos() : srcNode->mainPortScenePos();
+			const QPointF dstPt = dstNode->inboundPortScenePos();
 
 			edge->setEndpoints(srcPt, dstPt, sibIndex, sibCount);
 
@@ -760,7 +804,8 @@ void CampaignMissionGraph::ensureEndSink()
 	bool needsEnd = false;
 	if (m_model) {
 		const auto& missions = m_model->getCampaignMissions();
-		for (const auto& m : missions) {
+		needsEnd = !missions.empty();
+		/*for (const auto& m : missions) {
 			for (const auto& b : m.branches) {
 				if (!b.is_loop && !b.is_fork && b.next_mission_name.empty()) { // MAIN ? END only
 					needsEnd = true;
@@ -769,7 +814,7 @@ void CampaignMissionGraph::ensureEndSink()
 			}
 			if (needsEnd)
 				break;
-		}
+		}*/
 	}
 
 	// Remove if not needed
@@ -817,11 +862,37 @@ void CampaignMissionGraph::rebuildEdgesOnly()
 	buildMissionEdges();
 }
 
+bool CampaignMissionGraph::hasRepeatBranch(int missionIndex) const
+{
+	if (!m_model)
+		return false;
+	const auto& missions = m_model->getCampaignMissions();
+	if (!SCP_vector_inbounds(missions, missionIndex))
+		return false;
+
+	const auto& m = missions[missionIndex];
+	// Use the same key you store in next_mission_name (filename)
+	const auto& selfName = m.filename;
+
+	for (const auto& b : m.branches) {
+		if (!b.is_loop && !b.is_fork && b.next_mission_name == selfName) {
+			return true; // normal self-branch already present
+		}
+	}
+	return false;
+}
+
+
 detail::MissionNodeItem* CampaignMissionGraph::nodeAtScenePos(const QPointF& scenePt) const
 {
 	if (!m_scene)
 		return nullptr;
-	for (QGraphicsItem* gi : m_scene->items(scenePt)) {
+
+	// Items returns top-most first; skip anything not actually in this scene anymore.
+	const auto itemsHere = m_scene->items(scenePt);
+	for (QGraphicsItem* gi : itemsHere) {
+		if (!gi || gi->scene() != m_scene)
+			continue; // being removed or belongs elsewhere
 		if (auto* n = qgraphicsitem_cast<detail::MissionNodeItem*>(gi)) {
 			return n;
 		}
@@ -834,21 +905,21 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 	if (!m_model || m_drag.fromIndex < 0)
 		return false;
 
+	const qreal hitR = m_style.portRadius + m_style.portHitExtra;
+
 	// 1) END sink (MAIN only)
 	if (!m_drag.isSpecial && m_endSink) {
 		const QPointF anchor = m_endSink->inboundAnchorScenePos();
-		const qreal r = m_style.nubRadius + 4.0;
-		if (QLineF(scenePt, anchor).length() <= r) {
+		if (QLineF(scenePt, anchor).length() <= hitR) {
 			m_model->addEndBranch(m_drag.fromIndex);
 			return true;
 		}
 	}
 
-	// 2) Mission inbound nub
+	// 2) Mission inbound port
 	if (auto* dst = nodeAtScenePos(scenePt)) {
-		const QPointF anchor = dst->inboundNubScenePos();
-		const qreal r = m_style.nubRadius + 4.0;
-		if (QLineF(scenePt, anchor).length() <= r) {
+		const QPointF anchor = dst->inboundPortScenePos();
+		if (QLineF(scenePt, anchor).length() <= hitR) {
 			const int toIdx = dst->missionIndex();
 			if (m_drag.isSpecial) {
 				m_model->addSpecialBranch(m_drag.fromIndex, toIdx);
@@ -859,19 +930,34 @@ bool CampaignMissionGraph::tryFinishConnectionAt(const QPointF& scenePt)
 		}
 	}
 
-	// No valid target
+	// 3) Empty space ? ask dialog to create a new mission here and connect
+	//    (Snap drop to grid; use it as the node’s top-left)
+	const qreal s = m_style.minorStep;
+	const QPointF snapped(qRound(scenePt.x() / s) * s, qRound(scenePt.y() / s) * s);
+
+	// Don’t spawn if we actually clicked on an item’s body (just to be safe)
+	if (!nodeAtScenePos(scenePt) && !(m_endSink && m_endSink->sceneBoundingRect().contains(scenePt))) {
+		m_spawnPending = true;
+		Q_EMIT createMissionAtAndConnectRequested(snapped, m_drag.fromIndex, m_drag.isSpecial);
+		// return false so caller won’t rebuild; dialog will rebuild after it adds the mission
+		return false;
+	}
+
 	return false;
 }
 
 void CampaignMissionGraph::cancelDrag()
 {
+	// If a rebuild cleared the scene, QPointer auto-nulls and this will no-op safely
 	if (m_drag.preview) {
-		m_scene->removeItem(m_drag.preview);
-		delete m_drag.preview;
+		if (m_drag.preview->scene()) {
+			m_drag.preview->scene()->removeItem(m_drag.preview);
+		}
+		delete m_drag.preview.data();
 	}
-	m_drag = DragState{};
-}
 
+	m_drag = DragState{}; // resets flags and clears the QPointer
+}
 
 void CampaignMissionGraph::zoomToFitAll(qreal margin)
 {
@@ -939,14 +1025,29 @@ void CampaignMissionGraph::mousePressEvent(QMouseEvent* ev)
 
 	// If we’re already dragging, ignore
 	if (!m_drag.active) {
-		if (auto* n = nodeAtScenePos(sp)) {
-			const auto hit = n->hitTestNubScene(sp);
-			if (hit == detail::MissionNodeItem::Nub::Main || hit == detail::MissionNodeItem::Nub::Special) {
+		if (auto* raw = nodeAtScenePos(sp)) {
+			QPointer<detail::MissionNodeItem> n(raw);
+
+			// If the item is already gone, bail safely
+			if (!n) {
+				ev->ignore();
+				return;
+			}
+
+			const auto hit = n->hitTestPortScene(sp);
+			if (hit == detail::MissionNodeItem::Port::Main || hit == detail::MissionNodeItem::Port::Special) {
 				// begin drag
 				m_drag.active = true;
-				m_drag.isSpecial = (hit == detail::MissionNodeItem::Nub::Special);
+				m_drag.isSpecial = (hit == detail::MissionNodeItem::Port::Special);
+
+				// Re-check pointer right before using it again
+				if (!n) {
+					ev->ignore();
+					return;
+				}
+
 				m_drag.fromIndex = n->missionIndex();
-				m_drag.srcPt = m_drag.isSpecial ? n->specialNubScenePos() : n->mainNubScenePos();
+				m_drag.srcPt = m_drag.isSpecial ? n->specialPortScenePos() : n->mainPortScenePos();
 
 				// Build preview edge
 				const auto& missions = m_model->getCampaignMissions();
@@ -982,11 +1083,74 @@ void CampaignMissionGraph::mouseReleaseEvent(QMouseEvent* ev)
 			// Edges now reflect the new branch; keep viewport stable
 			rebuildEdgesOnly();
 			updateSceneRectToContent(/*scrollToTopLeft=*/false);
+		} else if (m_spawnPending) {
+			// Dialog will add mission & rebuild; just clear the flag.
+			m_spawnPending = false;
 		}
 		ev->accept();
 		return;
 	}
 	QGraphicsView::mouseReleaseEvent(ev);
+}
+
+void CampaignMissionGraph::contextMenuEvent(QContextMenuEvent* e)
+{
+	const QPointF sp = mapToScene(e->pos());
+
+	// Node under cursor?
+	if (auto* n = nodeAtScenePos(sp)) {
+		const int idx = n->missionIndex();
+
+		QMenu menu(this);
+		QAction* actDelete = menu.addAction(tr("Delete mission"));
+		QAction* actRepeat = menu.addAction(tr("Add Repeat Mission"));
+
+		// Disable "Add Repeat Mission" if one already exists
+		const bool canAddRepeat = !hasRepeatBranch(idx);
+		actRepeat->setEnabled(canAddRepeat);
+
+		QAction* chosen = menu.exec(e->globalPos());
+		if (!chosen) {
+			e->ignore();
+			return;
+		}
+
+		if (chosen == actDelete) {
+			Q_EMIT deleteMissionRequested(idx);
+			e->accept();
+			return;
+		}
+		if (chosen == actRepeat) {
+			Q_EMIT addRepeatBranchRequested(idx);
+			e->accept();
+			return;
+		}
+		e->ignore();
+		return;
+	}
+
+	// END sink under cursor? (no special menu yet; fall back)
+	if (m_endSink && m_endSink->sceneBoundingRect().contains(sp)) {
+		QGraphicsView::contextMenuEvent(e);
+		return;
+	}
+
+	// Empty-space menu: "Add mission here"
+	QMenu menu(this);
+	QAction* actAdd = menu.addAction(tr("Add mission here"));
+
+	// Snap to grid (top-left of new node)
+	const qreal s = m_style.minorStep;
+	const QPointF snapped(qRound(sp.x() / s) * s, qRound(sp.y() / s) * s);
+
+	QAction* chosen = menu.exec(e->globalPos());
+	if (chosen == actAdd) {
+		Q_EMIT addMissionHereRequested(snapped);
+		e->accept();
+		return;
+	}
+
+	QGraphicsView::contextMenuEvent(e);
 }
 
 void CampaignMissionGraph::mouseMoveEvent(QMouseEvent* ev)

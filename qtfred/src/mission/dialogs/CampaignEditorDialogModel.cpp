@@ -234,7 +234,7 @@ void CampaignEditorDialogModel::loadAvailableMissions()
 	// Build the final list of available missions
 	for (const auto& filename : all_files) {
 		// Skip missions already in the campaign
-		if (active_missions.count(filename)) {
+		if (active_missions.count(filename + FS_MISSION_FILE_EXT)) {
 			continue;
 		}
 
@@ -731,6 +731,14 @@ void CampaignEditorDialogModel::setAvailableMissionsFilter(const SCP_string& fil
 
 void CampaignEditorDialogModel::addMission(const SCP_string& filename, int level, int pos)
 {
+	// Check that the mission isn't already in the campaign.
+	for (const auto& mission : m_missions) {
+		if (mission.filename == filename) {
+			// Mission is already in the campaign; do nothing.
+			return;
+		}
+	}
+	
 	// Before adding, check if this is the first mission for a multiplayer campaign.
 	if (m_campaign_type != CAMPAIGN_TYPE_SINGLE && m_missions.empty()) {
 		// If so, this mission's player count sets the standard for the whole campaign.
