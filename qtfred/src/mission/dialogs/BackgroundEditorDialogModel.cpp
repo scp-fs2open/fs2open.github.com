@@ -60,7 +60,7 @@ void BackgroundEditorDialogModel::refreshBackgroundPreview()
 background_t& BackgroundEditorDialogModel::getActiveBackground()
 {
 	if (!SCP_vector_inbounds(Backgrounds, Cur_background)) {
-		// Fall back to first background if Cur_background isn’t set
+		// Fall back to first background if Cur_background isn't set
 		Cur_background = 0;
 	}
 	return Backgrounds[Cur_background];
