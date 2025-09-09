@@ -1,4 +1,4 @@
-#include "ui/widgets/campaignmissiongraph.h"
+#include "ui/widgets/CampaignMissionGraph.h"
 
 #include "mission/missionparse.h"
 
