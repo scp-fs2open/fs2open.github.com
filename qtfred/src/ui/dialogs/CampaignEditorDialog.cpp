@@ -64,7 +64,7 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 					rootText = QStringLiteral("Branch to %1").arg(QString::fromStdString(branch.next_mission_name));
 				}
 
-				// For self-loops, use a special caption
+				// For selfloops, use a special caption
 				if (!branch.next_mission_name.empty() && branch.next_mission_name == currentMissionName) {
 					rootText = QStringLiteral("Repeat mission");
 				}
@@ -582,7 +582,7 @@ void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTop
 	// add
 	_model->addMission(filename, 0, 0);
 
-	// New mission index is the last element now (or look it up by filename)
+	// New mission index is the last element now
 	const int idx = static_cast<int>(_model->getCampaignMissions().size() - 1);
 
 	// persist graph placement
@@ -613,7 +613,7 @@ void CampaignEditorDialog::on_graphView_addRepeatBranchRequested(int missionInde
 
 void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPointF sceneTopLeft, int fromIndex, bool isSpecial)
 {
-	// 1) Ask user via your available-missions listwidget
+	// Ask user via available missions dialog
 	QList<QString> availableMissions;
 	for (const auto& [name, isEditable] : _model->getAvailableMissionFiles()) {
 		availableMissions.append(QString::fromStdString(name));
@@ -631,25 +631,25 @@ void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPoin
 	if (picked.empty())
 		return; // user canceled
 
-	// 2) Add the mission to the model
+	// Add the mission to the model
 	_model->addMission(picked, /*level*/ 0, /*position*/ 0);
 
 	// New mission index (last)
 	const auto& ms = _model->getCampaignMissions();
 	const int newIdx = static_cast<int>(ms.size()) - 1;
 
-	// 3) Persist graph placement
+	// Persist graph placement
 	_model->setMissionGraphX(newIdx, static_cast<int>(std::lround(sceneTopLeft.x())));
 	_model->setMissionGraphY(newIdx, static_cast<int>(std::lround(sceneTopLeft.y())));
 
-	// 4) Connect from source to the new mission
+	// Connect from source to the new mission
 	if (isSpecial) {
 		_model->addSpecialBranch(fromIndex, newIdx);
 	} else {
 		_model->addBranch(fromIndex, newIdx);
 	}
 
-	// 5) Rebuild & focus new node
+	// Rebuild
 	ui->graphView->rebuildAll();
 	ui->graphView->setSelectedMission(newIdx);
 	updateAvailableMissionsList();
