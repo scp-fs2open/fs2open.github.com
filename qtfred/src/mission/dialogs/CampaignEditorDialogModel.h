@@ -91,7 +91,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setSaveFormat(CampaignFormat fmt);
 
 	void setCurrentMissionSelection(int index);
+	int getCurrentMissionSelection();
 	void setCurrentBranchSelection(int branch_index);
+	int getCurrentBranchSelection();
 
 	// Base Campaign Data
 	const SCP_string& getCampaignFilename() const;
@@ -146,6 +148,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	SCP_string getCurrentBranchLoopVoice() const;
 	void setCurrentBranchLoopVoice(const SCP_string& voice);
 	void testCurrentBranchLoopVoice();
+
+	// Sexp tree
+	void removeBranchByTreeId(int formula_id);
 
 	// Campaign Graph
 	const SCP_vector<CampaignMissionData>& getCampaignMissions() const;

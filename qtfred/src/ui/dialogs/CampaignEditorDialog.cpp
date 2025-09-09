@@ -106,6 +106,46 @@ CampaignEditorDialog::CampaignEditorDialog(QWidget* _parent, EditorViewport* _vi
 	_model = std::make_unique<CampaignEditorDialogModel>(this, _viewport, *_treeOps); // model exists now
 	ui->graphView->setModel(_model.get());
 
+	// Connect sexp tree signals
+	connect(
+		ui->sxtBranches,
+		&sexp_tree::rootNodeDeleted,
+		this,
+		[this](int formulaNodeId) {
+			int mission_selection = _model->getCurrentMissionSelection(); // save now because rebuild clears it
+
+			// Remove the branch
+			_model->removeBranchByTreeId(formulaNodeId);
+
+			// Rebuild the graph view
+			ui->graphView->rebuildAll();
+			ui->graphView->setSelectedMission(mission_selection);
+		},
+		Qt::QueuedConnection);
+
+	connect(ui->sxtBranches,
+		&QTreeWidget::currentItemChanged,
+		this,
+		[this](QTreeWidgetItem* current, QTreeWidgetItem* /*previous*/) {
+			if (!current || current->parent()) {
+				_model->setCurrentBranchSelection(-1);
+				return;
+			}
+
+			if (auto* tw = current->treeWidget()) {
+				const int idx = tw->indexOfTopLevelItem(current);
+				_model->setCurrentBranchSelection(idx >= 0 ? idx : -1);
+			} else {
+				_model->setCurrentBranchSelection(-1);
+			}
+		});
+
+	connect(ui->sxtBranches,
+		&sexp_tree::nodeChanged,
+		_model.get(),
+		&CampaignEditorDialogModel::updateCurrentBranch,
+		Qt::QueuedConnection);
+
 	// TODO move these to auto slots
 	/*connect(ui->graphView, &CampaignMissionGraph::missionSelected, this, [this](int idx) {
 		_model->setCurrentMissionSelection(idx);
@@ -567,7 +607,7 @@ void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTop
 
 	// refresh graph and select the new node
 	ui->graphView->rebuildAll();
-	ui->graphView->setSelectedMission(idx, /*makeVisible=*/true);
+	ui->graphView->setSelectedMission(idx);
 
 	updateAvailableMissionsList();
 }
@@ -627,7 +667,7 @@ void CampaignEditorDialog::on_graphView_createMissionAtAndConnectRequested(QPoin
 
 	// 5) Rebuild & focus new node
 	ui->graphView->rebuildAll();
-	ui->graphView->setSelectedMission(newIdx, /*makeVisible=*/true);
+	ui->graphView->setSelectedMission(newIdx);
 	updateAvailableMissionsList();
 }
 
