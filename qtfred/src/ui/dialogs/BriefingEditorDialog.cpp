@@ -64,6 +64,27 @@ void BriefingEditorDialog::initializeUi()
 		ui->teamComboBox->addItem(QString::fromStdString(team.first), team.second);
 	}
 
+	auto icons = _model->getIconList();
+	for (const auto& icon : icons) {
+		ui->iconImageComboBox->addItem(icon.second.c_str(), icon.first);
+	}
+
+	auto ships = _model->getShipList();
+	for (const auto& ship : ships) {
+		ui->iconShipTypeComboBox->addItem(ship.second.c_str(), ship.first);
+	}
+
+	auto iffs = _model->getIffList();
+	for (const auto& iff : iffs) {
+		ui->iconTeamComboBox->addItem(iff.second.c_str(), iff.first);
+	}
+
+	auto musicList = _model->getMusicList();
+	for (const auto& m : musicList) {
+		ui->defaultMusicComboBox->addItem(m.c_str());
+		ui->musicPackComboBox->addItem(m.c_str());
+	}
+
 	// Initialize the formula tree editor
 	ui->formulaTreeView->initializeEditor(_viewport->editor, this);
 }
@@ -75,8 +96,15 @@ void BriefingEditorDialog::updateUi()
 
 	ui->teamComboBox->setCurrentIndex(ui->teamComboBox->findData(_model->getCurrentTeam()));
 
+	ui->cameraTransitionTimeSpinBox->setValue(_model->getCameraTransitionTime());
+	ui->cutToNextStageCheckBox->setChecked(_model->getCutToNext());
+	ui->cutToPrevStageCheckBox->setChecked(_model->getCutFromPrev());
+	ui->disableGridCheckBox->setChecked(_model->getDisableGrid());
+
 	ui->stageTextPlainTextEdit->setPlainText(QString::fromStdString(_model->getStageText()));
 	ui->voiceFileLineEdit->setText(QString::fromStdString(_model->getSpeechFilename()));
+	ui->defaultMusicComboBox->setCurrentIndex(_model->getBriefingMusicIndex());
+	ui->musicPackComboBox->setCurrentIndex(ui->musicPackComboBox->findText(_model->getSubstituteBriefingMusicName().c_str()));
 
 	SCP_string stages = "No Stages";
 	int total = _model->getTotalStages();
@@ -106,9 +134,11 @@ void BriefingEditorDialog::enableDisableControls()
 
 	ui->prevStageButton->setEnabled(stage_exists && current > 0);
 	ui->nextStageButton->setEnabled(stage_exists && current < total_stages - 1);
-	ui->addStageButton->setEnabled(total_stages < MAX_DEBRIEF_STAGES);
-	ui->insertStageButton->setEnabled(stage_exists && total_stages < MAX_DEBRIEF_STAGES);
+	ui->addStageButton->setEnabled(total_stages < MAX_BRIEF_STAGES);
+	ui->insertStageButton->setEnabled(stage_exists && total_stages < MAX_BRIEF_STAGES);
 	ui->deleteStageButton->setEnabled(stage_exists);
+	ui->saveViewButton->setEnabled(stage_exists);
+	ui->gotoViewButton->setEnabled(stage_exists);
 
 	ui->teamComboBox->setEnabled(_model->getMissionIsMultiTeam());
 	ui->copyToOtherTeamsButton->setEnabled(_model->getMissionIsMultiTeam());
@@ -118,6 +148,10 @@ void BriefingEditorDialog::enableDisableControls()
 	ui->voiceFileBrowseButton->setEnabled(stage_exists);
 	ui->voiceFilePlayButton->setEnabled(stage_exists && !_model->getSpeechFilename().empty());
 	ui->formulaTreeView->setEnabled(stage_exists);
+	
+	const bool icon_selected = stage_exists && _model->getCurrentIconIndex() >= 0;
+	ui->currentIconInfoGroupBox->setEnabled(icon_selected);
+
 }
 
 void BriefingEditorDialog::on_okAndCancelButtons_accepted()
@@ -160,6 +194,27 @@ void BriefingEditorDialog::on_deleteStageButton_clicked()
 	updateUi();
 }
 
+void BriefingEditorDialog::on_saveViewButton_clicked()
+{
+	//_model->saveStageView(pos, orient); // Get them from the renderer when the renderer exists
+}
+
+void BriefingEditorDialog::on_gotoViewButton_clicked()
+{
+	const auto& view = _model->getStageView();
+	// Tell the renderer to go to this view
+}
+
+void BriefingEditorDialog::on_copyViewButton_clicked()
+{
+	_model->copyStageViewToClipboard();
+}
+
+void BriefingEditorDialog::on_pasteViewButton_clicked()
+{
+	_model->pasteClipboardViewToStage();
+}
+
 void BriefingEditorDialog::on_copyToOtherTeamsButton_clicked()
 {
 	_model->copyToOtherTeams();
@@ -169,6 +224,106 @@ void BriefingEditorDialog::on_teamComboBox_currentIndexChanged(int index)
 {
 	_model->setCurrentTeam(ui->teamComboBox->itemData(index).toInt());
 	updateUi();
+}
+
+void BriefingEditorDialog::on_cameraTransitionTimeSpinBox_valueChanged(int arg1)
+{
+	_model->setCameraTransitionTime(arg1);
+}
+
+void BriefingEditorDialog::on_cutToNextStageCheckBox_toggled(bool checked)
+{
+	_model->setCutToNext(checked);
+}
+
+void BriefingEditorDialog::on_cutToPrevStageCheckBox_toggled(bool checked)
+{
+	_model->setCutFromPrev(checked);
+}
+
+void BriefingEditorDialog::on_disableGridCheckBox_toggled(bool checked)
+{
+	_model->setDisableGrid(checked);
+}
+
+void BriefingEditorDialog::on_iconIdSpinBox_valueChanged(int arg1)
+{
+	_model->setIconId(arg1);
+}
+
+void BriefingEditorDialog::on_iconLabelLineEdit_textChanged(const QString& string)
+{
+	_model->setIconLabel(string.toUtf8().constData());
+}
+
+void BriefingEditorDialog::on_iconCloseupLabelLineEdit_textChanged(const QString& string)
+{
+	_model->setIconCloseupLabel(string.toUtf8().constData());
+}
+
+void BriefingEditorDialog::on_iconImageComboBox_currentIndexChanged(int index)
+{
+	_model->setIconTypeIndex(index);
+}
+
+void BriefingEditorDialog::on_iconShipTypeComboBox_currentIndexChanged(int index)
+{
+	_model->setIconShipTypeIndex(index);
+}
+
+void BriefingEditorDialog::on_iconTeamComboBox_currentIndexChanged(int index)
+{
+	_model->setIconTeamIndex(index);
+}
+
+void BriefingEditorDialog::on_iconScaleDoubleSpinBox_valueChanged(double arg1)
+{
+	_model->setIconScaleFactor(static_cast<float>(arg1));
+}
+
+void BriefingEditorDialog::on_drawLinesCheckBox_toggled(bool checked)
+{
+	_model->applyDrawLines(checked); // Assumes multi selection has already been set by the renderer
+}
+
+void BriefingEditorDialog::on_changeLocallyCheckBox_toggled(bool checked)
+{
+	_model->setChangeLocally(checked);
+}
+
+void BriefingEditorDialog::on_flipIconCheckBox_toggled(bool checked)
+{
+	_model->setIconFlipped(checked);
+}
+
+void BriefingEditorDialog::on_highlightCheckBox_toggled(bool checked)
+{
+	_model->setIconHighlighted(checked);
+}
+
+void BriefingEditorDialog::on_useWingCheckBox_toggled(bool checked)
+{
+	_model->setIconUseWing(checked);
+}
+
+void BriefingEditorDialog::on_useCargoCheckBox_toggled(bool checked)
+{
+	_model->setIconUseCargo(checked);
+}
+
+void BriefingEditorDialog::on_makeIconButton_clicked()
+{
+	//_model->makeIcon("New Icon", 0, 0, 0); // Get data from the ui when the ui exists
+}
+
+void BriefingEditorDialog::on_deleteIconButton_clicked()
+{
+	_model->deleteCurrentIcon();
+}
+
+void BriefingEditorDialog::on_propagateIconButton_clicked()
+{
+	_model->propagateCurrentIconForward();
 }
 
 void BriefingEditorDialog::on_stageTextPlainTextEdit_textChanged()
@@ -208,6 +363,16 @@ void BriefingEditorDialog::on_voiceFilePlayButton_clicked()
 void BriefingEditorDialog::on_formulaTreeView_nodeChanged(int newTree)
 {
 	_model->setFormula(newTree);
+}
+
+void BriefingEditorDialog::on_defaultMusicComboBox_currentIndexChanged(int index)
+{
+	_model->setBriefingMusicIndex(index);
+}
+
+void BriefingEditorDialog::on_musicPackComboBox_currentIndexChanged(int index)
+{
+	_model->setSubstituteBriefingMusicName(ui->musicPackComboBox->currentText().toUtf8().constData());
 }
 
 } // namespace fso::fred::dialogs
