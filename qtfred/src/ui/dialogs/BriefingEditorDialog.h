@@ -1,30 +1,22 @@
-#ifndef BRIEFINGEDITORDIALOG_H
-#define BRIEFINGEDITORDIALOG_H
+#pragma once
 
 #include <QDialog>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class BriefingEditorDialog;
 }
 
-class BriefingEditorDialog : public QDialog
-{
-    Q_OBJECT
+class BriefingEditorDialog : public QDialog {
+	Q_OBJECT
 
-public:
-    explicit BriefingEditorDialog(QWidget *parent = 0);
-    ~BriefingEditorDialog() override;
+  public:
+	explicit BriefingEditorDialog(QWidget* parent = 0);
+	~BriefingEditorDialog() override;
 
-private:
-    Ui::BriefingEditorDialog *ui;
+  private:
+	Ui::BriefingEditorDialog* ui;
 };
 
-}
-}
-}
-
-#endif // BRIEFINGEDITORDIALOG_H
+} // namespace fso::fred::dialogs
