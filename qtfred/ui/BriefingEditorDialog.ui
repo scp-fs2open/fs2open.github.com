@@ -33,9 +33,9 @@
        <item>
         <layout class="QVBoxLayout" name="stageControlsLayout">
          <item>
-          <widget class="QLabel" name="stageLabel">
+          <widget class="QLabel" name="currentStageLabel">
            <property name="text">
-            <string>Stage</string>
+            <string>No Stages</string>
            </property>
            <property name="alignment">
             <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
@@ -240,186 +240,224 @@
         </layout>
        </item>
        <item>
-        <widget class="QGroupBox" name="currentIconInfoGroupBox">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>300</height>
-          </size>
-         </property>
-         <property name="title">
-          <string>Current Icon Info</string>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_15">
-          <item>
-           <layout class="QHBoxLayout" name="iconDetailsLayout" stretch="0,1">
+        <layout class="QVBoxLayout" name="stageSubControlsLayout_2">
+         <item>
+          <layout class="QHBoxLayout" name="teamControlsLayout">
+           <item>
+            <widget class="QLabel" name="teamLabel">
+             <property name="text">
+              <string>Teams</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="teamComboBox"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="copyToOtherTeamsButton">
+             <property name="text">
+              <string>Copy To Other Teams</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="teamSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="currentIconInfoGroupBox">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>300</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Current Icon Info</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_15">
             <item>
-             <layout class="QFormLayout" name="iconLabelsForm">
-              <property name="labelAlignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-              <item row="0" column="0">
-               <widget class="QLabel" name="iconIdLabel">
-                <property name="text">
-                 <string>ID</string>
+             <layout class="QHBoxLayout" name="iconDetailsLayout" stretch="0,1">
+              <item>
+               <layout class="QFormLayout" name="iconLabelsForm">
+                <property name="labelAlignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                 </property>
-               </widget>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="iconIdLabel">
+                  <property name="text">
+                   <string>ID</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QLineEdit" name="iconIdLineEdit"/>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="iconLabelLabel">
+                  <property name="text">
+                   <string>Label</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QLineEdit" name="iconLabelLineEdit"/>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="iconCloseupLabelLabel">
+                  <property name="text">
+                   <string>Closeup Label</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QLineEdit" name="iconCloseupLabelLineEdit"/>
+                </item>
+               </layout>
               </item>
-              <item row="0" column="1">
-               <widget class="QLineEdit" name="iconIdLineEdit"/>
-              </item>
-              <item row="1" column="0">
-               <widget class="QLabel" name="iconLabelLabel">
-                <property name="text">
-                 <string>Label</string>
+              <item>
+               <layout class="QFormLayout" name="iconVisualsLayout">
+                <property name="labelAlignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
                 </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
-               <widget class="QLineEdit" name="iconLabelLineEdit"/>
-              </item>
-              <item row="2" column="0">
-               <widget class="QLabel" name="iconCloseupLabelLabel">
-                <property name="text">
-                 <string>Closeup Label</string>
-                </property>
-               </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QLineEdit" name="iconCloseupLabelLineEdit"/>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="iconImageLabel">
+                  <property name="text">
+                   <string>Icon Image</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QComboBox" name="iconImageComboBox"/>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="iconShipTypeLabel">
+                  <property name="text">
+                   <string>Ship Type</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QComboBox" name="iconShipTypeComboBox"/>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="iconTeamLabel">
+                  <property name="text">
+                   <string>Team</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QComboBox" name="iconTeamComboBox"/>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="iconScaleLabel">
+                  <property name="text">
+                   <string>Scale</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QSpinBox" name="scaleSpinBox"/>
+                </item>
+               </layout>
               </item>
              </layout>
             </item>
             <item>
-             <layout class="QFormLayout" name="iconVisualsLayout">
-              <property name="labelAlignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
-              </property>
-              <item row="0" column="0">
-               <widget class="QLabel" name="iconImageLabel">
+             <layout class="QGridLayout" name="iconCheckboxesLayout">
+              <item row="0" column="0" colspan="2">
+               <widget class="QCheckBox" name="drawLinesCheckBox">
                 <property name="text">
-                 <string>Icon Image</string>
+                 <string>Draw lines between marked icons</string>
                 </property>
                </widget>
               </item>
-              <item row="0" column="1">
-               <widget class="QComboBox" name="iconImageComboBox"/>
-              </item>
               <item row="1" column="0">
-               <widget class="QLabel" name="iconShipTypeLabel">
+               <widget class="QCheckBox" name="changeLocallyCheckBox">
                 <property name="text">
-                 <string>Ship Type</string>
+                 <string>Change locally</string>
                 </property>
                </widget>
               </item>
               <item row="1" column="1">
-               <widget class="QComboBox" name="iconShipTypeComboBox"/>
+               <widget class="QCheckBox" name="highlightCheckBox">
+                <property name="text">
+                 <string>Highlight</string>
+                </property>
+               </widget>
               </item>
               <item row="2" column="0">
-               <widget class="QLabel" name="iconTeamLabel">
+               <widget class="QCheckBox" name="flipIconCheckBox">
                 <property name="text">
-                 <string>Team</string>
+                 <string>Flip Icon</string>
                 </property>
                </widget>
-              </item>
-              <item row="2" column="1">
-               <widget class="QComboBox" name="iconTeamComboBox"/>
-              </item>
-              <item row="3" column="0">
-               <widget class="QLabel" name="iconScaleLabel">
-                <property name="text">
-                 <string>Scale</string>
-                </property>
-               </widget>
-              </item>
-              <item row="3" column="1">
-               <widget class="QSpinBox" name="scaleSpinBox"/>
               </item>
              </layout>
             </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QGridLayout" name="iconCheckboxesLayout">
-            <item row="0" column="0" colspan="2">
-             <widget class="QCheckBox" name="drawLinesCheckBox">
-              <property name="text">
-               <string>Draw lines between marked icons</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="0">
-             <widget class="QCheckBox" name="changeLocallyCheckBox">
-              <property name="text">
-               <string>Change locally</string>
-              </property>
-             </widget>
-            </item>
-            <item row="1" column="1">
-             <widget class="QCheckBox" name="highlightCheckBox">
-              <property name="text">
-               <string>Highlight</string>
-              </property>
-             </widget>
-            </item>
-            <item row="2" column="0">
-             <widget class="QCheckBox" name="flipIconCheckBox">
-              <property name="text">
-               <string>Flip Icon</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="iconSetupButtonsLayout">
             <item>
-             <widget class="QPushButton" name="makeIconButton">
-              <property name="text">
-               <string>Make Icon</string>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-             </widget>
+             <layout class="QHBoxLayout" name="iconSetupButtonsLayout">
+              <item>
+               <widget class="QPushButton" name="makeIconButton">
+                <property name="text">
+                 <string>Make Icon</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="deleteIconButton">
+                <property name="text">
+                 <string>Delete Icon</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="propagateIconButton">
+                <property name="text">
+                 <string>Propagate</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </item>
             <item>
-             <widget class="QPushButton" name="deleteIconButton">
-              <property name="text">
-               <string>Delete Icon</string>
+             <spacer name="iconInfoSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
               </property>
-              <property name="autoDefault">
-               <bool>false</bool>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
               </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="propagateIconButton">
-              <property name="text">
-               <string>Propagate</string>
-              </property>
-              <property name="autoDefault">
-               <bool>false</bool>
-              </property>
-             </widget>
+             </spacer>
             </item>
            </layout>
-          </item>
-          <item>
-           <spacer name="iconInfoSpacer">
-            <property name="orientation">
-             <enum>Qt::Vertical</enum>
-            </property>
-            <property name="sizeHint" stdset="0">
-             <size>
-              <width>20</width>
-              <height>40</height>
-             </size>
-            </property>
-           </spacer>
-          </item>
-         </layout>
-        </widget>
+          </widget>
+         </item>
+        </layout>
        </item>
       </layout>
      </item>
@@ -461,7 +499,7 @@
          </property>
          <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QTreeView" name="usageFormulaView">
+           <widget class="fso::fred::sexp_tree" name="formulaTreeView">
             <property name="sizePolicy">
              <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
               <horstretch>0</horstretch>
@@ -566,7 +604,7 @@
             <item>
              <layout class="QHBoxLayout" name="voiceFileButtonsLayout">
               <item>
-               <widget class="QPushButton" name="browseVoiceFileButton">
+               <widget class="QPushButton" name="voiceFileBrowseButton">
                 <property name="text">
                  <string>Browse</string>
                 </property>
@@ -576,7 +614,7 @@
                </widget>
               </item>
               <item>
-               <widget class="QPushButton" name="playVoiceFileButton">
+               <widget class="QPushButton" name="voiceFilePlayButton">
                 <property name="text">
                  <string/>
                 </property>
@@ -620,20 +658,20 @@
         <item>
          <widget class="QPlainTextEdit" name="stageTextPlainTextEdit"/>
         </item>
-        <item>
-         <widget class="QDialogButtonBox" name="okAndCancelButtons">
-          <property name="layoutDirection">
-           <enum>Qt::LeftToRight</enum>
-          </property>
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-          <property name="standardButtons">
-           <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
-          </property>
-         </widget>
-        </item>
        </layout>
+      </widget>
+     </item>
+     <item>
+      <widget class="QDialogButtonBox" name="okAndCancelButtons">
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
+       </property>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+       </property>
       </widget>
      </item>
     </layout>
@@ -641,6 +679,13 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
