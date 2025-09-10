@@ -597,7 +597,7 @@
             <item>
              <widget class="QLineEdit" name="voiceFileLineEdit">
               <property name="text">
-               <string>none.wav</string>
+               <string/>
               </property>
              </widget>
             </item>
