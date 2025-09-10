@@ -201,7 +201,7 @@ void BriefingEditorDialog::on_saveViewButton_clicked()
 
 void BriefingEditorDialog::on_gotoViewButton_clicked()
 {
-	const auto& view = _model->getStageView();
+	//const auto& view = _model->getStageView();
 	// Tell the renderer to go to this view
 }
 
