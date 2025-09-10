@@ -370,7 +370,7 @@ void BriefingEditorDialog::on_defaultMusicComboBox_currentIndexChanged(int index
 	_model->setBriefingMusicIndex(index);
 }
 
-void BriefingEditorDialog::on_musicPackComboBox_currentIndexChanged(int index)
+void BriefingEditorDialog::on_musicPackComboBox_currentIndexChanged(int /*index*/)
 {
 	_model->setSubstituteBriefingMusicName(ui->musicPackComboBox->currentText().toUtf8().constData());
 }
