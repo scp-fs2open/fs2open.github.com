@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>26</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -239,6 +239,7 @@
     <addaction name="separator"/>
     <addaction name="actionMark_Wing"/>
     <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionCalculate_Relative_Coordinates"/>
     <addaction name="actionMove_Ships_When_Undocking"/>
     <addaction name="actionMission_Statistics"/>
     <addaction name="separator"/>
@@ -1550,6 +1551,11 @@
   <action name="actionVolumetric_Nebula">
    <property name="text">
     <string>Volumetric Nebula</string>
+   </property>
+  </action>
+  <action name="actionCalculate_Relative_Coordinates">
+   <property name="text">
+    <string>Calculate Relative Coordinates</string>
    </property>
   </action>
  </widget>
