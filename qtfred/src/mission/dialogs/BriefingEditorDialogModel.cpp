@@ -20,12 +20,8 @@ bool BriefingEditorDialogModel::apply()
 	stopSpeech();
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		Debriefings[i] = _wipDebriefing[i];
+		Briefings[i] = _wipBriefings[i];
 	}
-
-	Mission_music[SCORE_DEBRIEFING_SUCCESS] = _successMusic;
-	Mission_music[SCORE_DEBRIEFING_AVERAGE] = _averageMusic;
-	Mission_music[SCORE_DEBRIEFING_FAILURE] = _failureMusic;
 
 	return true;
 }
@@ -41,15 +37,12 @@ void BriefingEditorDialogModel::initializeData()
 
 	// Make a working copy
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
-		_wipDebriefing[i] = Debriefings[i];
+		_wipBriefings[i] = Briefings[i];
 	}
-
-	_successMusic = Mission_music[SCORE_DEBRIEFING_SUCCESS];
-	_averageMusic = Mission_music[SCORE_DEBRIEFING_AVERAGE];
-	_failureMusic = Mission_music[SCORE_DEBRIEFING_FAILURE];
 
 	_currentTeam = 0;
 	_currentStage = 0;
+	_currentIcon = 0;
 }
 
 void BriefingEditorDialogModel::gotoPreviousStage()
@@ -65,13 +58,13 @@ void BriefingEditorDialogModel::gotoPreviousStage()
 
 void BriefingEditorDialogModel::gotoNextStage()
 {
-	if (_currentStage >= MAX_DEBRIEF_STAGES - 1) {
-		_currentStage = MAX_DEBRIEF_STAGES - 1;
+	if (_currentStage >= MAX_BRIEF_STAGES - 1) {
+		_currentStage = MAX_BRIEF_STAGES - 1;
 		return;
 	}
 
-	if (_currentStage >= _wipDebriefing[_currentTeam].num_stages - 1) {
-		_currentStage = _wipDebriefing[_currentTeam].num_stages - 1;
+	if (_currentStage >= _wipBriefings[_currentTeam].num_stages - 1) {
+		_currentStage = _wipBriefings[_currentTeam].num_stages - 1;
 		return;
 	}
 
@@ -83,19 +76,18 @@ void BriefingEditorDialogModel::addStage()
 {
 	stopSpeech();
 
-	if (_wipDebriefing[_currentTeam].num_stages >= MAX_DEBRIEF_STAGES) {
-		_wipDebriefing[_currentTeam].num_stages = MAX_DEBRIEF_STAGES;
-		_currentStage = _wipDebriefing[_currentTeam].num_stages - 1;
+	if (_wipBriefings[_currentTeam].num_stages >= MAX_BRIEF_STAGES) {
+		_wipBriefings[_currentTeam].num_stages = MAX_BRIEF_STAGES;
+		_currentStage = _wipBriefings[_currentTeam].num_stages - 1;
 		return;
 	}
 
-	_wipDebriefing[_currentTeam].num_stages++;
-	_currentStage = _wipDebriefing[_currentTeam].num_stages - 1;
-	_wipDebriefing[_currentTeam].stages[_currentStage].text = "<Text here>";
-	_wipDebriefing[_currentTeam].stages[_currentStage].recommendation_text = "<Recommendation text here>";
-	strcpy_s(_wipDebriefing[_currentTeam].stages[_currentStage].voice,
+	_wipBriefings[_currentTeam].num_stages++;
+	_currentStage = _wipBriefings[_currentTeam].num_stages - 1;
+	_wipBriefings[_currentTeam].stages[_currentStage].text = "<Text here>";
+	strcpy_s(_wipBriefings[_currentTeam].stages[_currentStage].voice,
 		"none.wav"); // Really? Seeding with none.wav is gross
-	_wipDebriefing[_currentTeam].stages[_currentStage].formula = -1;
+	_wipBriefings[_currentTeam].stages[_currentStage].formula = -1;
 
 	set_modified();
 }
@@ -105,16 +97,16 @@ void BriefingEditorDialogModel::insertStage()
 {
 	stopSpeech();
 
-	if (_wipDebriefing[_currentTeam].num_stages >= MAX_DEBRIEF_STAGES) {
-		_wipDebriefing[_currentTeam].num_stages = MAX_DEBRIEF_STAGES;
+	if (_wipBriefings[_currentTeam].num_stages >= MAX_BRIEF_STAGES) {
+		_wipBriefings[_currentTeam].num_stages = MAX_BRIEF_STAGES;
 		set_modified();
 		return;
 	}
 
-	_wipDebriefing[_currentTeam].num_stages++;
+	_wipBriefings[_currentTeam].num_stages++;
 
-	for (int i = _wipDebriefing[_currentTeam].num_stages - 1; i > _currentStage; i--) {
-		_wipDebriefing[_currentTeam].stages[i] = _wipDebriefing[_currentTeam].stages[i - 1];
+	for (int i = _wipBriefings[_currentTeam].num_stages - 1; i > _currentStage; i--) {
+		_wipBriefings[_currentTeam].stages[i] = _wipBriefings[_currentTeam].stages[i - 1];
 	}
 
 	// Future TODO: Add a QtFRED Option to clear the inserted stage instead of copying the current one.
@@ -127,33 +119,31 @@ void BriefingEditorDialogModel::deleteStage()
 	stopSpeech();
 
 	// Clear everything if we were on the last stage.
-	if (_wipDebriefing[_currentTeam].num_stages <= 1) {
-		_wipDebriefing[_currentTeam].num_stages = 0;
-		_wipDebriefing[_currentTeam].stages[0].text.clear();
-		_wipDebriefing[_currentTeam].stages[0].recommendation_text.clear();
-		memset(_wipDebriefing[_currentTeam].stages[0].voice, 0, CF_MAX_FILENAME_LENGTH);
-		_wipDebriefing[_currentTeam].stages[0].formula = -1;
+	if (_wipBriefings[_currentTeam].num_stages <= 1) {
+		_wipBriefings[_currentTeam].num_stages = 0;
+		_wipBriefings[_currentTeam].stages[0].text.clear();
+		memset(_wipBriefings[_currentTeam].stages[0].voice, 0, CF_MAX_FILENAME_LENGTH);
+		_wipBriefings[_currentTeam].stages[0].formula = -1;
 		set_modified();
 		return;
 	}
 
 	// copy the stages backwards until we get to the stage we're on
-	for (int i = _currentStage; i + 1 < _wipDebriefing[_currentTeam].num_stages; i++) {
-		_wipDebriefing[_currentTeam].stages[i] = _wipDebriefing[_currentTeam].stages[i + 1];
+	for (int i = _currentStage; i + 1 < _wipBriefings[_currentTeam].num_stages; i++) {
+		_wipBriefings[_currentTeam].stages[i] = _wipBriefings[_currentTeam].stages[i + 1];
 	}
 
-	_wipDebriefing[_currentTeam].num_stages--;
+	_wipBriefings[_currentTeam].num_stages--;
 
 	// Clear the tail
-	const int tail = _wipDebriefing[_currentTeam].num_stages; // index of the old last element
-	_wipDebriefing[_currentTeam].stages[tail].text.clear();
-	_wipDebriefing[_currentTeam].stages[tail].recommendation_text.clear();
-	std::memset(_wipDebriefing[_currentTeam].stages[tail].voice, 0, CF_MAX_FILENAME_LENGTH);
-	_wipDebriefing[_currentTeam].stages[tail].formula = -1;
+	const int tail = _wipBriefings[_currentTeam].num_stages; // index of the old last element
+	_wipBriefings[_currentTeam].stages[tail].text.clear();
+	std::memset(_wipBriefings[_currentTeam].stages[tail].voice, 0, CF_MAX_FILENAME_LENGTH);
+	_wipBriefings[_currentTeam].stages[tail].formula = -1;
 
 	// make sure that the current stage is valid.
-	if (_wipDebriefing[_currentTeam].num_stages <= _currentStage) {
-		_currentStage = _wipDebriefing[_currentTeam].num_stages - 1;
+	if (_wipBriefings[_currentTeam].num_stages <= _currentStage) {
+		_currentStage = _wipBriefings[_currentTeam].num_stages - 1;
 	}
 
 	set_modified();
@@ -167,7 +157,7 @@ void BriefingEditorDialogModel::testSpeech()
 
 	stopSpeech();
 
-	_waveId = audiostream_open(_wipDebriefing[_currentTeam].stages[_currentStage].voice, ASF_EVENTMUSIC);
+	_waveId = audiostream_open(_wipBriefings[_currentTeam].stages[_currentStage].voice, ASF_EVENTMUSIC);
 	audiostream_play(_waveId, 1.0f, 0);
 }
 
@@ -177,7 +167,7 @@ void BriefingEditorDialogModel::copyToOtherTeams()
 
 	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
 		if (i != _currentTeam) {
-			_wipDebriefing[i] = _wipDebriefing[_currentTeam];
+			_wipBriefings[i] = _wipBriefings[_currentTeam];
 		}
 	}
 	set_modified();
@@ -226,48 +216,38 @@ int BriefingEditorDialogModel::getCurrentStage() const
 
 int BriefingEditorDialogModel::getTotalStages()
 {
-	return _wipDebriefing[_currentTeam].num_stages;
+	return _wipBriefings[_currentTeam].num_stages;
 }
 
 SCP_string BriefingEditorDialogModel::getStageText()
 {
-	return _wipDebriefing[_currentTeam].stages[_currentStage].text;
+	return _wipBriefings[_currentTeam].stages[_currentStage].text;
 }
 
 void BriefingEditorDialogModel::setStageText(const SCP_string& text)
 {
-	modify(_wipDebriefing[_currentTeam].stages[_currentStage].text, text);
-}
-
-SCP_string BriefingEditorDialogModel::getRecommendationText()
-{
-	return _wipDebriefing[_currentTeam].stages[_currentStage].recommendation_text;
-}
-
-void BriefingEditorDialogModel::setRecommendationText(const SCP_string& text)
-{
-	modify(_wipDebriefing[_currentTeam].stages[_currentStage].recommendation_text, text);
+	modify(_wipBriefings[_currentTeam].stages[_currentStage].text, text);
 }
 
 SCP_string BriefingEditorDialogModel::getSpeechFilename()
 {
-	return _wipDebriefing[_currentTeam].stages[_currentStage].voice;
+	return _wipBriefings[_currentTeam].stages[_currentStage].voice;
 }
 
 void BriefingEditorDialogModel::setSpeechFilename(const SCP_string& speechFilename)
 {
-	strcpy_s(_wipDebriefing[_currentTeam].stages[_currentStage].voice, speechFilename.c_str());
+	strcpy_s(_wipBriefings[_currentTeam].stages[_currentStage].voice, speechFilename.c_str());
 	set_modified();
 }
 
 int BriefingEditorDialogModel::getFormula() const
 {
-	return _wipDebriefing[_currentTeam].stages[_currentStage].formula;
+	return _wipBriefings[_currentTeam].stages[_currentStage].formula;
 }
 
 void BriefingEditorDialogModel::setFormula(int formula)
 {
-	modify(_wipDebriefing[_currentTeam].stages[_currentStage].formula, formula);
+	modify(_wipBriefings[_currentTeam].stages[_currentStage].formula, formula);
 }
 
 SCP_vector<SCP_string> BriefingEditorDialogModel::getMusicList()
@@ -280,31 +260,6 @@ SCP_vector<SCP_string> BriefingEditorDialogModel::getMusicList()
 	}
 
 	return music_list;
-}
-
-int BriefingEditorDialogModel::getSuccessMusicTrack() const
-{
-	return _successMusic;
-}
-void BriefingEditorDialogModel::setSuccessMusicTrack(int trackIndex)
-{
-	modify(_successMusic, trackIndex);
-}
-int BriefingEditorDialogModel::getAverageMusicTrack() const
-{
-	return _averageMusic;
-}
-void BriefingEditorDialogModel::setAverageMusicTrack(int trackIndex)
-{
-	modify(_averageMusic, trackIndex);
-}
-int BriefingEditorDialogModel::getFailureMusicTrack() const
-{
-	return _failureMusic;
-}
-void BriefingEditorDialogModel::setFailureMusicTrack(int trackIndex)
-{
-	modify(_failureMusic, trackIndex);
 }
 
 } // namespace fso::fred::dialogs
