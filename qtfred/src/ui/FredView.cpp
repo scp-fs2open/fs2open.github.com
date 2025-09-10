@@ -38,6 +38,7 @@
 #include <ui/dialogs/LoadoutDialog.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/dialogs/MusicPlayerDialog.h>
+#include <ui/dialogs/RelativeCoordinatesDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -1231,6 +1232,12 @@ void FredView::on_actionMission_Goals_triggered(bool) {
 void FredView::on_actionMusic_Player_triggered(bool)
 {
 	auto dialog = new dialogs::MusicPlayerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionCalculate_Relative_Coordinates_triggered(bool) {
+	auto dialog = new dialogs::RelativeCoordinatesDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }
