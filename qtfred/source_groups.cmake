@@ -56,8 +56,6 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/GlobalShipFlagsDialogModel.h
 	src/mission/dialogs/JumpNodeEditorDialogModel.cpp
 	src/mission/dialogs/JumpNodeEditorDialogModel.h
-	src/mission/dialogs/LoadoutEditorDialogModel.cpp
-	src/mission/dialogs/LoadoutEditorDialogModel.h
 	src/mission/dialogs/MissionCutscenesDialogModel.cpp
 	src/mission/dialogs/MissionCutscenesDialogModel.h
 	src/mission/dialogs/MissionEventsDialogModel.cpp
@@ -78,6 +76,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/SelectionDialogModel.h
 	src/mission/dialogs/ShieldSystemDialogModel.cpp
 	src/mission/dialogs/ShieldSystemDialogModel.h
+	src/mission/dialogs/TeamLoadoutDialogModel.cpp
+	src/mission/dialogs/TeamLoadoutDialogModel.h
 	src/mission/dialogs/VariableDialogModel.cpp
 	src/mission/dialogs/VariableDialogModel.h
 	src/mission/dialogs/VoiceActingManagerModel.h
@@ -156,8 +156,6 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/GlobalShipFlagsDialog.h
 	src/ui/dialogs/JumpNodeEditorDialog.cpp
 	src/ui/dialogs/JumpNodeEditorDialog.h
-	src/ui/dialogs/LoadoutDialog.cpp	
-	src/ui/dialogs/LoadoutDialog.h
 	src/ui/dialogs/MissionCutscenesDialog.cpp
 	src/ui/dialogs/MissionCutscenesDialog.h
 	src/ui/dialogs/MissionEventsDialog.cpp
@@ -178,6 +176,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/SelectionDialog.h
 	src/ui/dialogs/ShieldSystemDialog.h
 	src/ui/dialogs/ShieldSystemDialog.cpp
+	src/ui/dialogs/TeamLoadoutDialog.cpp	
+	src/ui/dialogs/TeamLoadoutDialog.h
 	src/ui/dialogs/VariableDialog.cpp
 	src/ui/dialogs/VariableDialog.h
 	src/ui/dialogs/VoiceActingManager.h
@@ -250,6 +250,10 @@ add_file_folder("Source/UI/Widgets"
     src/ui/widgets/ColorComboBox.h
 	src/ui/widgets/FlagList.cpp
 	src/ui/widgets/FlagList.h
+	src/ui/widgets/NoWheelComboBox.cpp
+	src/ui/widgets/NoWheelComboBox.h
+	src/ui/widgets/NoWheelSpinBox.cpp
+	src/ui/widgets/NoWheelSpinBox.h
     src/ui/widgets/renderwidget.cpp
     src/ui/widgets/renderwidget.h
 	src/ui/widgets/sexp_tree.cpp
@@ -280,7 +284,7 @@ add_file_folder("UI"
     ui/FredView.ui
 	ui/GlobalShipFlagsDialog.ui
 	ui/JumpNodeEditorDialog.ui
-	ui/LoadoutDialog.ui
+	ui/TeamLoadoutDialog.ui
 	ui/MissionCutscenesDialog.ui
 	ui/MissionEventsDialog.ui
 	ui/MissionGoalsDialog.ui
@@ -322,6 +326,10 @@ if (WIN32)
 endif()
 
 add_file_folder("Resources/Images"
+	resources/images/arrow_down.png
+	resources/images/arrow_left.png
+	resources/images/arrow_right.png
+	resources/images/arrow_up.png
     resources/images/bitmap1.png
     resources/images/black_do.png
     resources/images/bmp00001.png

@@ -79,6 +79,7 @@ void MissionSpecDialog::updateUi() {
 	ui->respawnDelayCount->setEnabled(_model->getMissionType() & MISSION_TYPE_MULTI);
 	ui->maxRespawnCount->setValue(_model->getNumRespawns());
 	ui->respawnDelayCount->setValue(_model->getMaxRespawnDelay());
+	ui->playerEntryDelayDoubleSpinBox->setValue(_model->getPlayerEntryDelay());
 
 	ui->squadronName->setText(_model->getSquadronName().c_str());
 	ui->squadronLogo->setEnabled(false);
@@ -289,6 +290,10 @@ void MissionSpecDialog::on_maxRespawnCount_valueChanged(int value) {
 
 void MissionSpecDialog::on_respawnDelayCount_valueChanged(int value) {
 	_model->setMaxRespawnDelay(value);
+}
+
+void MissionSpecDialog::on_playerEntryDelayDoubleSpinBox_valueChanged(double value) {
+	_model->setPlayerEntryDelay(static_cast<float>(value));
 }
 
 void MissionSpecDialog::on_squadronName_textChanged(const QString & string) {
