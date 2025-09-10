@@ -202,14 +202,14 @@
             <number>0</number>
            </property>
            <item>
-            <widget class="QCheckBox" name="cutToNextStageCheckbox">
+            <widget class="QCheckBox" name="cutToNextStageCheckBox">
              <property name="text">
               <string>Cut to next stage</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QCheckBox" name="cutToPrevStageCheckbox">
+            <widget class="QCheckBox" name="cutToPrevStageCheckBox">
              <property name="text">
               <string>Cut to previous stage</string>
              </property>
