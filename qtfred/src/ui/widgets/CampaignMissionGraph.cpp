@@ -20,16 +20,16 @@ using detail::CampaignSpecialMode;
 using fso::fred::dialogs::CampaignEditorDialogModel;
 
 MissionNodeItem::MissionNodeItem(int missionIndex,
-	const QString& fileLabel,
-	const QString& nameLabel,
+	QString fileLabel,
+	QString nameLabel,
 	int graphColorRgb,
 	CampaignSpecialMode mode,
 	int mainBranchCount,
 	int specialBranchCount,
-	const CampaignGraphStyle& style,
+	CampaignGraphStyle style,
 	QGraphicsItem* parent)
-	: QGraphicsObject(parent), m_idx(missionIndex), m_file(fileLabel), m_name(nameLabel), m_graphColor(graphColorRgb),
-	  m_mode(mode), m_mainCount(mainBranchCount), m_specCount(specialBranchCount), m_style(style)
+	: QGraphicsObject(parent), m_idx(missionIndex), m_file(std::move(fileLabel)), m_name(std::move(nameLabel)), m_graphColor(graphColorRgb),
+	  m_mode(mode), m_mainCount(mainBranchCount), m_specCount(specialBranchCount), m_style(std::move(style))
 {
 	setFlags(ItemIsSelectable | ItemIsMovable | ItemSendsScenePositionChanges);
 	setAcceptHoverEvents(true);
@@ -231,10 +231,10 @@ EdgeItem::EdgeItem(int missionIndex,
 	int branchId,
 	bool isSpecial,
 	CampaignSpecialMode mode,
-	const CampaignGraphStyle& style,
+	CampaignGraphStyle style,
 	QGraphicsItem* parent)
-	: QObject(), QGraphicsPathItem(parent), m_missionIndex(missionIndex), m_branchId(branchId), m_isSpecial(isSpecial),
-	  m_mode(mode), m_style(style)
+	: QGraphicsPathItem(parent), m_missionIndex(missionIndex), m_branchId(branchId), m_isSpecial(isSpecial),
+	  m_mode(mode), m_style(std::move(style))
 {
 	setZValue(5); // below nodes (nodes use 10)
 	// noninteractive
@@ -914,12 +914,9 @@ bool CampaignMissionGraph::hasRepeatBranch(int missionIndex) const
 	const auto& m = missions[missionIndex];
 	const auto& selfName = m.filename;
 
-	for (const auto& b : m.branches) {
-		if (!b.is_loop && !b.is_fork && b.next_mission_name == selfName) {
-			return true; // normal selfbranch already present
-		}
-	}
-	return false;
+	return std::any_of(m.branches.begin(), m.branches.end(), [&](const auto& b) {
+		return !b.is_loop && !b.is_fork && b.next_mission_name == selfName;
+	});
 }
 
 
@@ -1247,7 +1244,7 @@ void CampaignMissionGraph::mouseMoveEvent(QMouseEvent* ev)
 	QGraphicsView::mouseMoveEvent(ev);
 }
 
-void CampaignMissionGraph::drawGrid(QPainter* p, const QRectF& sceneRect)
+void CampaignMissionGraph::drawGrid(QPainter* p, const QRectF& sceneRect) const
 {
 	const qreal minor = m_style.minorStep;
 	const qreal major = minor * m_style.majorEvery;
