@@ -30,7 +30,6 @@ class SimpleListSelectDialog final : public QDialog {
   private: // NOLINT(readability-redundant-access-specifiers)
 	int proxyToSourceRow(const QModelIndex& proxyIndex) const;
 
-  private:
 	QLineEdit* m_filter = nullptr;
 	QListView* m_list = nullptr;
 	QPushButton* m_okBtn = nullptr;
