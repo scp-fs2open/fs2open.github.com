@@ -256,8 +256,9 @@ void BriefingEditorDialogModel::saveStageView(const vec3d& pos, const matrix& or
 	}
 
 	brief_stage& s = briefing.stages[_currentStage];
-	modify(s.camera_pos, pos);
-	modify(s.camera_orient, orient);
+	s.camera_pos = pos; //TODO make modify() support these
+	s.camera_orient = orient;
+	set_modified();
 }
 
 // Returns the camera position and orientation for the current stage so the UI can tell the render camera to move there
@@ -297,8 +298,9 @@ void BriefingEditorDialogModel::pasteClipboardViewToStage()
 	}
 
 	brief_stage& s = briefing.stages[_currentStage];
-	modify(s.camera_pos, _viewClipboardPos);
-	modify(s.camera_orient, _viewClipboardOri);
+	s.camera_pos = _viewClipboardPos; // TODO make modify() support these
+	s.camera_orient = _viewClipboardOri;
+	set_modified();
 }
 
 void BriefingEditorDialogModel::testSpeech()
@@ -428,7 +430,8 @@ void BriefingEditorDialogModel::setCameraPosition(const vec3d& pos)
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return;
 	auto& s = b.stages[_currentStage];
-	modify(s.camera_pos, pos);
+	s.camera_pos = pos; // TODO make modify() support these
+	set_modified();
 }
 
 void BriefingEditorDialogModel::setCameraOrientation(const matrix& orient)
@@ -437,7 +440,8 @@ void BriefingEditorDialogModel::setCameraOrientation(const matrix& orient)
 	if (b.num_stages <= 0 || _currentStage < 0 || _currentStage >= b.num_stages)
 		return;
 	auto& s = b.stages[_currentStage];
-	modify(s.camera_orient, orient);
+	s.camera_orient = orient; // TODO make modify() support these
+	set_modified();
 }
 
 bool BriefingEditorDialogModel::getCutToNext() const
