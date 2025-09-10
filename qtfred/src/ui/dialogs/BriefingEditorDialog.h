@@ -77,7 +77,7 @@ class BriefingEditorDialog : public QDialog, public SexpTreeEditorInterface {
 	void on_formulaTreeView_nodeChanged(int newTree);
 
 	void on_defaultMusicComboBox_currentIndexChanged(int index);
-	void on_musicPackComboBox_currentIndexChanged(int index);
+	void on_musicPackComboBox_currentIndexChanged(int /*index*/);
 
   private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::BriefingEditorDialog> ui;
