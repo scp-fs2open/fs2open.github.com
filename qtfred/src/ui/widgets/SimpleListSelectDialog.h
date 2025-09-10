@@ -27,7 +27,7 @@ class SimpleListSelectDialog final : public QDialog {
 	void onItemActivated(const QModelIndex& proxyIndex); // double-click/Enter
 	void onFilterReturnPressed();
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	int proxyToSourceRow(const QModelIndex& proxyIndex) const;
 
   private:

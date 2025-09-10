@@ -561,7 +561,7 @@ void CampaignEditorDialog::on_graphView_addMissionHereRequested(QPointF sceneTop
 	const auto selections = ui->availableMissionsListWidget->selectedItems();
 	SCP_string filename;
 	// Only one item should be selected
-	if (selections.size() > 0) {
+	if (!selections.empty()) {
 		filename = selections[0]->text().toUtf8().constData();
 	}
 

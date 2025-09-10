@@ -67,8 +67,8 @@ void CampaignEditorDialogModel::initializeData(const char* filename)
 			dest_mission.level = source_mission.level;
 			dest_mission.position = source_mission.pos;
 			dest_mission.briefing_cutscene = source_mission.briefing_cutscene;
-			dest_mission.main_hall = source_mission.main_hall.c_str();
-			dest_mission.substitute_main_hall = source_mission.substitute_main_hall.c_str();
+			dest_mission.main_hall = source_mission.main_hall;
+			dest_mission.substitute_main_hall = source_mission.substitute_main_hall;
 			dest_mission.debrief_persona_index = source_mission.debrief_persona_index;
 			bool retail_bastion = (source_mission.flags & CMISSION_FLAG_BASTION) != 0;
 
@@ -396,7 +396,7 @@ SCP_vector<SCP_string> CampaignEditorDialogModel::getCampaignTypes()
 {
 	SCP_vector<SCP_string> types;
 	for (auto& type : campaign_types) {
-		types.push_back(type);
+		types.emplace_back(type);
 	}
 	
 	return types;
@@ -436,7 +436,6 @@ void CampaignEditorDialogModel::loadCampaignFromFile(const SCP_string& filename)
 
 	// Immediately clear the global struct again now that we have our safe working copy.
 	clearCampaignGlobal();
-	return;
 }
 
 void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
@@ -475,7 +474,6 @@ void CampaignEditorDialogModel::saveCampaign(const SCP_string& filename)
 
 	// Clean up the global struct now that the save is complete.
 	clearCampaignGlobal();
-	return;
 }
 
 bool CampaignEditorDialogModel::checkValidity()
@@ -582,7 +580,7 @@ void CampaignEditorDialogModel::setCurrentMissionSelection(int index)
 	}
 }
 
-int CampaignEditorDialogModel::getCurrentMissionSelection()
+int CampaignEditorDialogModel::getCurrentMissionSelection() const
 {
 	return m_current_mission_index;
 }
@@ -594,7 +592,7 @@ void CampaignEditorDialogModel::setCurrentBranchSelection(int branch_index)
 	m_current_branch_index = branch_index;
 }
 
-int CampaignEditorDialogModel::getCurrentBranchSelection()
+int CampaignEditorDialogModel::getCurrentBranchSelection() const
 {
 	return m_current_branch_index;
 }
@@ -1440,7 +1438,7 @@ CampaignBranchData* CampaignEditorDialogModel::findBranchById(int missionIdx, in
 }
 
 
-const SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedShips() const
+SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedShips() const
 {
 	SCP_vector<std::tuple<SCP_string, int, bool>> ship_list;
 	for (int i = 0; i < static_cast<int>(Ship_info.size()); i++) {
@@ -1461,7 +1459,7 @@ void CampaignEditorDialogModel::setAllowedShip(int ship_class_index, bool allowe
 	}
 }
 
-const SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedWeapons() const
+SCP_vector<std::tuple<SCP_string, int, bool>> CampaignEditorDialogModel::getAllowedWeapons() const
 {
 	SCP_vector<std::tuple<SCP_string, int, bool>> weapon_list;
 	for (int i = 0; i < static_cast<int>(Weapon_info.size()); i++) {
@@ -1504,7 +1502,7 @@ SCP_vector<SCP_string> CampaignEditorDialogModel::getMainhallList() const
 		// De-dupe by name (some mods define multiple resolutions/variants per mainhall)
 		std::unordered_set<SCP_string> seen;
 		for (const auto& mh : Main_hall_defines) {
-			if (mh.size() < 1) { // shouldn't happen but let's be safe
+			if (mh.empty()) { // shouldn't happen but let's be safe
 				continue;
 			}
 			const auto& hall = mh[0];
