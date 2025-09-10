@@ -301,9 +301,6 @@
                   </property>
                  </widget>
                 </item>
-                <item row="0" column="1">
-                 <widget class="QLineEdit" name="iconIdLineEdit"/>
-                </item>
                 <item row="1" column="0">
                  <widget class="QLabel" name="iconLabelLabel">
                   <property name="text">
@@ -323,6 +320,16 @@
                 </item>
                 <item row="2" column="1">
                  <widget class="QLineEdit" name="iconCloseupLabelLineEdit"/>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QSpinBox" name="iconIdSpinBox">
+                  <property name="buttonSymbols">
+                   <enum>QAbstractSpinBox::NoButtons</enum>
+                  </property>
+                  <property name="maximum">
+                   <number>16777215</number>
+                  </property>
+                 </widget>
                 </item>
                </layout>
               </item>
@@ -369,7 +376,7 @@
                  </widget>
                 </item>
                 <item row="3" column="1">
-                 <widget class="QSpinBox" name="scaleSpinBox"/>
+                 <widget class="QDoubleSpinBox" name="scaleDoubleSpinBox"/>
                 </item>
                </layout>
               </item>
@@ -377,31 +384,48 @@
             </item>
             <item>
              <layout class="QGridLayout" name="iconCheckboxesLayout">
-              <item row="0" column="0" colspan="2">
-               <widget class="QCheckBox" name="drawLinesCheckBox">
-                <property name="text">
-                 <string>Draw lines between marked icons</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="0">
-               <widget class="QCheckBox" name="changeLocallyCheckBox">
-                <property name="text">
-                 <string>Change locally</string>
-                </property>
-               </widget>
-              </item>
-              <item row="1" column="1">
+              <item row="3" column="1">
                <widget class="QCheckBox" name="highlightCheckBox">
                 <property name="text">
                  <string>Highlight</string>
                 </property>
                </widget>
               </item>
-              <item row="2" column="0">
+              <item row="4" column="1">
+               <widget class="QCheckBox" name="useWingIconCheckBox">
+                <property name="text">
+                 <string>Use Wing Icon</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QCheckBox" name="changeLocallyCheckBox">
+                <property name="text">
+                 <string>Change locally</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QCheckBox" name="drawLinesCheckBox">
+                <property name="text">
+                 <string>Draw lines between marked icons</string>
+                </property>
+                <property name="tristate">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
                <widget class="QCheckBox" name="flipIconCheckBox">
                 <property name="text">
                  <string>Flip Icon</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QCheckBox" name="useCargoIconCheckBox">
+                <property name="text">
+                 <string>Use Cargo Icon</string>
                 </property>
                </widget>
               </item>
