@@ -12,10 +12,10 @@ class RelativeCoordinatesDialogModel : public AbstractDialogModel {
 	bool apply() override;
 	void reject() override;
 
-	float getDistance();
-	float getPitch();
-	float getBank();
-	float getHeading();
+	float getDistance() const;
+	float getPitch() const;
+	float getBank() const;
+	float getHeading() const;
 
 	int getOrigin() const;
 	void setOrigin(int index);

@@ -21,7 +21,7 @@ class RelativeCoordinatesDialog final : public QDialog {
 	void on_originListWidget_currentRowChanged(int row);
 	void on_satelliteListWidget_currentRowChanged(int row);
 
-  private:
+  private: // NOLINT(readability-redundant-access-specifiers)
 	void initializeUi();
 	void updateUi();
 

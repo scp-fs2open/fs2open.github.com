@@ -57,19 +57,19 @@ void RelativeCoordinatesDialogModel::reject()
 	// Read only dialog
 }
 
-float RelativeCoordinatesDialogModel::getDistance()
+float RelativeCoordinatesDialogModel::getDistance() const
 {
 	return _distance;
 }
-float RelativeCoordinatesDialogModel::getPitch()
+float RelativeCoordinatesDialogModel::getPitch() const
 {
 	return _orientation_p;
 }
-float RelativeCoordinatesDialogModel::getBank()
+float RelativeCoordinatesDialogModel::getBank() const
 {
 	return _orientation_b;
 }
-float RelativeCoordinatesDialogModel::getHeading()
+float RelativeCoordinatesDialogModel::getHeading() const
 {
 	return _orientation_h;
 }
