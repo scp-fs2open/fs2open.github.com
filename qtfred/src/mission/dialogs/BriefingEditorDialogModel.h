@@ -23,8 +23,6 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 
 	SCP_string getStageText();
 	void setStageText(const SCP_string& text);
-	SCP_string getRecommendationText();
-	void setRecommendationText(const SCP_string& text);
 	SCP_string getSpeechFilename();
 	void setSpeechFilename(const SCP_string& speechFilename);
 	int getFormula() const;
@@ -41,25 +39,17 @@ class BriefingEditorDialogModel : public AbstractDialogModel {
 	static bool getMissionIsMultiTeam();
 
 	static SCP_vector<SCP_string> getMusicList();
-	int getSuccessMusicTrack() const;
-	void setSuccessMusicTrack(int trackIndex);
-	int getAverageMusicTrack() const;
-	void setAverageMusicTrack(int trackIndex);
-	int getFailureMusicTrack() const;
-	void setFailureMusicTrack(int trackIndex);
 
   private:
 	void initializeData();
 	void stopSpeech();
 	void initializeTeamList();
 
-	debriefing _wipDebriefing[MAX_TVT_TEAMS];
-	int _successMusic;
-	int _averageMusic;
-	int _failureMusic;
+	briefing _wipBriefings[MAX_TVT_TEAMS];
 
 	int _currentTeam;
 	int _currentStage;
+	int _currentIcon;
 	int _waveId;
 	SCP_vector<std::pair<SCP_string, int>> _teamList;
 };
