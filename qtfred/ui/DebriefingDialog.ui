@@ -1,0 +1,291 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>fso::fred::dialogs::DebriefingDialog</class>
+ <widget class="QDialog" name="fso::fred::dialogs::DebriefingDialog">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>894</width>
+    <height>704</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>Debriefing</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout_3">
+   <item row="2" column="2">
+    <layout class="QVBoxLayout" name="topLevelVerticalLayout">
+     <item>
+      <widget class="QLabel" name="stageControlLabel">
+       <property name="font">
+        <font>
+         <pointsize>10</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>Stage Controls</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="stageManagementAndOKLayout">
+       <item>
+        <layout class="QGridLayout" name="stageManagementLayout">
+         <item row="1" column="4">
+          <widget class="QLabel" name="teamLabel">
+           <property name="text">
+            <string>Team</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="2" alignment="Qt::AlignLeft">
+          <widget class="QPushButton" name="actionNextStage">
+           <property name="text">
+            <string>Next</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="2">
+          <widget class="QPushButton" name="actionDeleteStage">
+           <property name="text">
+            <string>Delete</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="3">
+          <spacer name="leftTeamSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="2" column="1">
+          <widget class="QPushButton" name="actionInsertStage">
+           <property name="text">
+            <string>Insert</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="0">
+          <widget class="QLabel" name="currentStageLabel">
+           <property name="font">
+            <font>
+             <pointsize>10</pointsize>
+            </font>
+           </property>
+           <property name="text">
+            <string>No Stages</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="4" colspan="2">
+          <widget class="QPushButton" name="actionCopyToOtherTeams">
+           <property name="text">
+            <string>Copy to Other Teams</string>
+           </property>
+          </widget>
+         </item>
+         <item row="1" column="5">
+          <widget class="QComboBox" name="actionChangeTeams"/>
+         </item>
+         <item row="1" column="6">
+          <spacer name="rightTeamSpacer">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item row="1" column="1" alignment="Qt::AlignRight">
+          <widget class="QPushButton" name="actionPrevStage">
+           <property name="text">
+            <string>Prev</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0">
+          <widget class="QPushButton" name="actionAddStage">
+           <property name="text">
+            <string>Add</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </item>
+       <item alignment="Qt::AlignTop">
+        <widget class="QDialogButtonBox" name="okAndCancelButtons">
+         <property name="orientation">
+          <enum>Qt::Vertical</enum>
+         </property>
+         <property name="standardButtons">
+          <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
+         </property>
+        </widget>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <layout class="QHBoxLayout" name="stageDetailsLayout">
+       <item>
+        <layout class="QVBoxLayout" name="formulaLayout">
+         <item>
+          <widget class="QLabel" name="formulaLabel">
+           <property name="text">
+            <string>Usage Formula</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="fso::fred::sexp_tree" name="formulaTreeView"/>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="secondaryVerticalLayout">
+         <item>
+          <widget class="QLabel" name="debriefingTextLabel">
+           <property name="text">
+            <string>Stage Text</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="debriefingTextEdit">
+           <property name="verticalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOn</enum>
+           </property>
+           <property name="plainText">
+            <string/>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="voiceFileLayout">
+           <item>
+            <widget class="QLabel" name="voiceFileLabel">
+             <property name="text">
+              <string>Voice Wave File</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="voiceFileLineEdit"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="voiceFileBrowseButton">
+             <property name="text">
+              <string>Browse</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="voiceFilePlayButton">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset>
+               <selectedon>:/images/play.png</selectedon>
+              </iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QLabel" name="recommendationLabel">
+           <property name="text">
+            <string>Recommendation Text</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QPlainTextEdit" name="recommendationTextEdit">
+           <property name="verticalScrollBarPolicy">
+            <enum>Qt::ScrollBarAlwaysOn</enum>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="musicLayout">
+           <property name="title">
+            <string>Debriefing Music</string>
+           </property>
+           <layout class="QFormLayout" name="formLayout">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="successMusicLabel">
+              <property name="text">
+               <string>Success</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="successMusicComboBox"/>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="averageMusicLabel">
+              <property name="text">
+               <string>Average</string>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="averageMusicComboBox"/>
+            </item>
+            <item row="2" column="0">
+             <widget class="QLabel" name="failureMusicLabel">
+              <property name="text">
+               <string>Failure</string>
+              </property>
+             </widget>
+            </item>
+            <item row="2" column="1">
+             <widget class="QComboBox" name="failureMusicComboBox"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+    </layout>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
+ <tabstops>
+  <tabstop>actionAddStage</tabstop>
+  <tabstop>actionPrevStage</tabstop>
+  <tabstop>actionNextStage</tabstop>
+  <tabstop>actionInsertStage</tabstop>
+  <tabstop>actionDeleteStage</tabstop>
+  <tabstop>actionCopyToOtherTeams</tabstop>
+  <tabstop>debriefingTextEdit</tabstop>
+ </tabstops>
+ <resources>
+  <include location="../resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>
