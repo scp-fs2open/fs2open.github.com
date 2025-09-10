@@ -185,7 +185,7 @@ class CampaignMissionGraph final : public QGraphicsView {
 
 	void initScene();
 	void updateSceneRectToContent(bool scrollToTopLeft);
-	void drawGrid(QPainter* p, const QRectF& rect);
+	void drawGrid(QPainter* p, const QRectF& rect) const;
 	void buildMissionNodes();
 	void buildMissionEdges();
 	void ensureEndSink();
@@ -235,13 +235,13 @@ class MissionNodeItem final : public QGraphicsObject {
 	Q_OBJECT
   public:
 	MissionNodeItem(int missionIndex,
-		const QString& fileLabel,
-		const QString& nameLabel,
+		QString fileLabel,
+		QString nameLabel,
 		int graphColorRgb, // -1 = none else 0xRRGGBB
 		CampaignSpecialMode mode,
 		int mainBranchCount,
 		int specialBranchCount,
-		const CampaignGraphStyle& style,
+		CampaignGraphStyle style,
 		QGraphicsItem* parent = nullptr);
 
 	QRectF boundingRect() const override;
@@ -280,7 +280,6 @@ class MissionNodeItem final : public QGraphicsObject {
   private:
 	void updateGeometry();
 
-  private:
 	int m_idx{-1};
 	QString m_file;
 	QString m_name;
@@ -308,7 +307,7 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 		int branchId,
 		bool isSpecial,
 		CampaignSpecialMode mode,
-		const CampaignGraphStyle& style,
+		CampaignGraphStyle style,
 		QGraphicsItem* parent = nullptr);
 
 	// Standard edge
@@ -338,7 +337,6 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 	QPainterPath
 	buildSelfLoopPath(const QRectF& nodeRectScene, bool sourceIsRightSide, int siblingIndex, int siblingCount);
 
-  private:
 	int m_missionIndex{-1};
 	int m_branchId{-1};
 	bool m_isSpecial{false};
@@ -364,8 +362,8 @@ class EdgeItem final : public QObject, public QGraphicsPathItem {
 class EndSinkItem final : public QGraphicsObject {
 	Q_OBJECT
   public:
-	explicit EndSinkItem(const CampaignGraphStyle& style, QGraphicsItem* parent = nullptr)
-		: QGraphicsObject(parent), m_style(style)
+	explicit EndSinkItem(CampaignGraphStyle style, QGraphicsItem* parent = nullptr)
+		: QGraphicsObject(parent), m_style(std::move(style))
 	{
 	}
 

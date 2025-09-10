@@ -89,9 +89,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	void setSaveFormat(CampaignFormat fmt);
 
 	void setCurrentMissionSelection(int index);
-	int getCurrentMissionSelection();
+	int getCurrentMissionSelection() const;
 	void setCurrentBranchSelection(int branch_index);
-	int getCurrentBranchSelection();
+	int getCurrentBranchSelection() const;
 
 	// Base Campaign Data
 	const SCP_string& getCampaignFilename() const;
@@ -164,9 +164,9 @@ class CampaignEditorDialogModel : public AbstractDialogModel {
 	CampaignBranchData* findBranchById(int missionIdx, int branchId);
 
 	// Tech
-	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedShips() const;
+	SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedShips() const;
 	void setAllowedShip(int ship_class_index, bool allowed);
-	const SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedWeapons() const;
+	SCP_vector<std::tuple<SCP_string, int, bool>> getAllowedWeapons() const;
 	void setAllowedWeapon(int weapon_class_index, bool allowed);
 
 	// Lists
