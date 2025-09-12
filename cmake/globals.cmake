@@ -9,14 +9,19 @@ else()
 endif()
 
 set(IS_ARM64 FALSE)
+set(IS_ARMV7A FALSE)
 
 if (NOT "${CMAKE_GENERATOR_PLATFORM}" STREQUAL "")   # needed to cover Visual Studio generator
     if(CMAKE_GENERATOR_PLATFORM MATCHES "^(aarch64|arm64|ARM64)")
         set(IS_ARM64 TRUE)
+	elseif(CMAKE_GENERATOR_PLATFORM MATCHES "^(armv7)")
+        set(IS_ARMV7A TRUE)
     endif()
 else()
     if(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64|arm64|ARM64)")
         set(IS_ARM64 TRUE)
+    elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(armv7)")
+        set(IS_ARMV7A TRUE)
     endif()
 endif()
 
@@ -33,6 +38,6 @@ else()
 endif()
 
 set(IS_X86 FALSE)
-if (NOT IS_ARM64 AND NOT IS_RISCV)
+if (NOT IS_ARM64 AND NOT IS_RISCV AND NOT IS_ARMV7A)
     set(IS_X86 TRUE)
 endif()
