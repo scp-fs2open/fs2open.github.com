@@ -88,10 +88,22 @@ void gr_opengl_deferred_lighting_begin(bool clearNonColorBufs)
 	} else {
 		// Copy the existing color data into the emissive part of the G-buffer since everything that already existed is
 		// treated as emissive
+		#ifndef USE_OPENGL_ES
 		glDrawBuffer(GL_COLOR_ATTACHMENT4);
 		glReadBuffer(GL_COLOR_ATTACHMENT0);
 		glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
-
+		#else
+		// one again ES does not consider GL_COLOR_ATTACHMENT4 as valid draw buffer
+		GLint prev_read_fbo = 0, prev_tex2d = 0;
+		glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prev_read_fbo);
+		glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex2d);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, Scene_framebuffer);
+		glReadBuffer(GL_COLOR_ATTACHMENT0);
+		glBindTexture(GL_TEXTURE_2D, Scene_emissive_texture);
+		glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, gr_screen.max_w, gr_screen.max_h);
+		glBindTexture(GL_TEXTURE_2D, prev_tex2d);
+		glBindFramebuffer(GL_READ_FRAMEBUFFER, prev_read_fbo);
+		#endif
 	}
 	
 	glDrawBuffers(6, buffers);
@@ -231,8 +243,8 @@ void gr_opengl_deferred_lighting_finish()
 	// GL_state.DepthMask(GL_FALSE);
 
 	opengl_shader_set_current(gr_opengl_maybe_create_shader(SDR_TYPE_DEFERRED_LIGHTING, ENVMAP > 0 ? SDR_FLAG_ENV_MAP : 0));
-
-	// Render on top of the composite buffer texture
+	
+	#ifndef USE_OPENGL_ES
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glReadBuffer(GL_COLOR_ATTACHMENT4);
 	glBlitFramebuffer(0,
@@ -245,6 +257,18 @@ void gr_opengl_deferred_lighting_finish()
 		gr_screen.max_h,
 		GL_COLOR_BUFFER_BIT,
 		GL_NEAREST);
+	#else
+	//Another case of ES not considering GL_COLOR_ATTACHMENT5 as valid draw buffer
+	GLint prev_read_fbo = 0, prev_tex2d = 0;
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prev_read_fbo);
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex2d);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, Scene_framebuffer);
+	glReadBuffer(GL_COLOR_ATTACHMENT4);
+	glBindTexture(GL_TEXTURE_2D, Scene_composite_texture);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, gr_screen.max_w, gr_screen.max_h);
+	glBindTexture(GL_TEXTURE_2D, prev_tex2d);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, prev_read_fbo);
+	#endif
 
 	GL_state.Texture.Enable(0, GL_TEXTURE_2D, Scene_color_texture);
 	GL_state.Texture.Enable(1, GL_TEXTURE_2D, Scene_normal_texture);

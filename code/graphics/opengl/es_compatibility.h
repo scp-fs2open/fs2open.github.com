@@ -5,10 +5,11 @@
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
 //TODO/Good to have: 
-//-Message:GL_INVALID_OPERATION in glBlitFramebuffer(source and destination color buffer cannot be the same), this may not be easy to handle
 //-IMGUI crashes on windows + opengl es
-//-limited color attachments to 4 in not a good way
-//-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE
+//-Deferred is broken
+//-MSAA causes ASSERTION: "GL_state.ValidForFlip()" at gropengl.cpp:141
+//-The entire MSAA path is broken in ES on multiple places
+//-GL_PROXY_TEXTURE_2D and GL_TEXTURE_COMPRESSED_IMAGE_SIZE solution
 //-glGetTexImage()
 
 //Stubs Enums, this does not exist on GLES and need to be handled
@@ -134,7 +135,30 @@ static inline void convert_BGR_to_RGBA(const uint8_t* src, uint8_t* dst, size_t 
 	}
 }
 
+// BGRA1555_REV -> RGB888
+static inline void convert_BGRA1555_REV_to_RGB888(const uint16_t* src, uint8_t* dstRGB8, size_t npx)
+{
+	for (size_t i = 0; i < npx; ++i) {
+		uint16_t s = src[i];
+		uint8_t R5 = (s >> 10) & 0x1F;
+		uint8_t G5 = (s >> 5) & 0x1F;
+		uint8_t B5 = s & 0x1F;
 
+		// expand 5 to 8 bits
+		uint8_t R = (R5 << 3) | (R5 >> 2);
+		uint8_t G = (G5 << 3) | (G5 >> 2);
+		uint8_t B = (B5 << 3) | (B5 >> 2);
+
+		size_t o = 3 * i;
+		dstRGB8[o + 0] = R;
+		dstRGB8[o + 1] = G;
+		dstRGB8[o + 2] = B;
+	}
+}
+
+#ifdef glTexSubImage3D
+#undef glTexSubImage3D
+#endif
 static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint yoff, GLint zoff, GLsizei w, GLsizei h, GLsizei d, GLenum format, GLenum type, const void* data)
 {
 	const size_t npx = size_t(w) * size_t(h) * size_t(d);
@@ -150,9 +174,20 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
 				convert_BGRA1555_REV_to_RGBA8888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			} 
+		} else if (internalFormat == GL_RGB8) {
+			format = GL_RGB;
+			type = GL_UNSIGNED_BYTE;
+			if (data != nullptr)
+			{
+				std::vector<uint8_t> scratch(npx * 3); // RGB888 = 3 BPP
+				convert_BGRA1555_REV_to_RGB888(reinterpret_cast<const uint16_t*>(data), scratch.data(), npx);
+				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				return;
+			}
 		} else {
 			format = GL_RGBA;
 			type = GL_UNSIGNED_SHORT_5_5_5_1;
@@ -162,7 +197,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 					reinterpret_cast<uint16_t*>(scratch.data()),
 					npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			}
 		}
@@ -177,7 +212,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				std::vector<uint8_t> scratch(npx * 4); // RGBA8888 = 4 BPP
 				convert_BGR_to_RGBA(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			}
 		}
@@ -188,7 +223,7 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 				std::vector<uint8_t> scratch(npx * 3); // RGB888 = 3 BPP
 				convert_BGR_to_RGB(static_cast<const uint8_t*>(data), scratch.data(), npx);
 				glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-				glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
+				glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, scratch.data());
 				return;
 			}
 		}
@@ -201,31 +236,62 @@ static inline void glTexSubImage3D(GLenum target, GLint level, GLint xoff, GLint
 			std::vector<uint8_t> scratch(npx * 4);
 			convert_BGRA8888_to_RGBA8888(reinterpret_cast<const uint8_t*>(data), scratch.data(), npx);
 			glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
-			glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
+			glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, GL_RGBA, type, scratch.data());
 			return;
 		}
 	}
 
-	glTexSubImage3D_glad(target, level, xoff, yoff, zoff, w, h, d, format, type, data);
+	glad_glTexSubImage3D(target, level, xoff, yoff, zoff, w, h, d, format, type, data);
 }
 
+#ifdef glTexImage2D
+#undef glTexImage2D
+#endif
 static inline void glTexImage2D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLint border, GLenum format, GLenum type, const void* data)
 { 
 	if (internalformat == GL_RGBA16F) {
-		glTexImage2D_glad(target, level, internalformat, width, height, border, GL_RGBA, GL_HALF_FLOAT, data);
+		glad_glTexImage2D(target, level, internalformat, width, height, border, GL_RGBA, GL_HALF_FLOAT, data);
 	} else if (internalformat == GL_RGBA8) {
-		glTexImage2D_glad(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, data);
+		glad_glTexImage2D(target, level, internalformat, width, height, border, GL_RGBA, GL_UNSIGNED_BYTE, data);
 	} else if (internalformat == GL_DEPTH_COMPONENT24) {
-		glTexImage2D_glad(target, level, internalformat, width, height, border, format, GL_UNSIGNED_INT, data);
+		glad_glTexImage2D(target, level, internalformat, width, height, border, format, GL_UNSIGNED_INT, data);
 	} else {
-		glTexImage2D_glad(target, level, internalformat, width, height, border, format, type, data);
+		glad_glTexImage2D(target, level, internalformat, width, height, border, format, type, data);
 	}
+}
+
+#ifdef glTexImage3D
+#undef glTexImage3D
+#endif
+static inline void glTexImage3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void *data)
+{ 
+	if (internalformat == GL_DEPTH_COMPONENT24) {
+		glad_glTexImage3D(target, level, internalformat, width, height, depth, border, format, GL_UNSIGNED_INT, data);
+	} else if (type == GL_UNSIGNED_INT_8_8_8_8_REV) {
+		if (internalformat == GL_RGBA16F) {
+			glad_glTexImage3D(target, level, internalformat, width, height, depth, border, format, GL_HALF_FLOAT, data);
+		} if (internalformat == GL_RGBA32F) {
+			glad_glTexImage3D(target, level, internalformat, width, height, depth, border, format, GL_FLOAT, data);
+		} else {
+			glad_glTexImage3D(target, level, internalformat, width, height, depth, border, format, GL_UNSIGNED_BYTE, data);
+		}
+	} else {
+		glad_glTexImage3D(target, level, internalformat, width, height, depth, border, format, type, data);
+	}
+}
+
+#ifdef glReadPixels
+#undef glReadPixels
+#endif
+static inline void glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height, GLenum format, GLenum type, void* data)
+{
+	if (type == GL_UNSIGNED_INT_8_8_8_8_REV)
+		type = GL_UNSIGNED_BYTE;
+	glad_glReadPixels(x, y, width, height, format, type, data);
 }
 
 inline void glDrawBuffer(GLenum data)
 {
-	if (data >= GL_COLOR_ATTACHMENT4)
-		return; //limit color attachments to 4
 	const GLenum buffer[] = { data };
 	glDrawBuffers(1, buffer);
 }
