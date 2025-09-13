@@ -309,15 +309,9 @@ static SCP_string opengl_shader_get_header(shader_type type_id, int flags, bool 
 	#ifndef USE_OPENGL_ES
 	sflags << "#version " << GLSL_version << " core\n";
 	#else
-	sflags << "#version " << GLSL_version << " es\n"; 
-	sflags << "precision highp float;" << "\n";
-	sflags << "precision highp int;" << "\n"; 
-	sflags << "precision highp sampler2D;" << "\n";
-	sflags << "precision highp sampler2DArray;" << "\n";
-	sflags << "precision highp samplerCube;" << "\n";
-	sflags << "precision highp samplerBuffer;" << "\n";
-
+	sflags << "#version " << GLSL_version << " es\n";
 	#endif
+
 	if (Detail.lighting < 3) {
 		sflags << "#define FLAG_LIGHT_MODEL_BLINN_PHONG\n";
 	}

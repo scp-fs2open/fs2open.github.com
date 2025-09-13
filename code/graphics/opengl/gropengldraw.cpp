@@ -809,11 +809,28 @@ void gr_opengl_copy_effect_texture()
 		return;
 	}
 
+	#ifndef USE_OPENGL_ES
     //Make sure we're reading from the up-to-date color texture
     glReadBuffer(GL_COLOR_ATTACHMENT0);
 	glDrawBuffer(GL_COLOR_ATTACHMENT5);
 	glBlitFramebuffer(0, 0, gr_screen.max_w, gr_screen.max_h, 0, 0, gr_screen.max_w, gr_screen.max_h, GL_COLOR_BUFFER_BIT, GL_NEAREST);
 	glDrawBuffer(GL_COLOR_ATTACHMENT0);
+	#else
+	// For some reason, ES considers glDrawBuffer(GL_COLOR_ATTACHMENT5) as invalid here
+	// try to copy to Scene_composite_texture in an alternative way
+	// save states
+	GLint prev_read_fbo = 0, prev_tex2d = 0;
+	glGetIntegerv(GL_READ_FRAMEBUFFER_BINDING, &prev_read_fbo);
+	glGetIntegerv(GL_TEXTURE_BINDING_2D, &prev_tex2d);
+	// copy texture to scene_composite_texture
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, Scene_framebuffer);
+	glReadBuffer(GL_COLOR_ATTACHMENT0);
+	glBindTexture(GL_TEXTURE_2D, Scene_composite_texture);
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, gr_screen.max_w, gr_screen.max_h);
+	// restore states
+	glBindTexture(GL_TEXTURE_2D, prev_tex2d);
+	glBindFramebuffer(GL_READ_FRAMEBUFFER, prev_read_fbo);
+	#endif
 }
 
 void gr_opengl_render_shield_impact(shield_material* material_info,
