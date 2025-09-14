@@ -349,8 +349,13 @@ namespace particle
 		int framenum;
 		int cur_frame;
 		if (part->nframes > 1) {
-			framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
-			cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
+			if (source_effect.m_lifetime_curves.has_curve(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE)) {
+				framenum = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, *part));
+			}
+			else {
+				framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
+				cur_frame = part->reverse ? (part->nframes - framenum - 1) : framenum;
+			}
 		}
 		else
 		{
@@ -371,7 +376,7 @@ namespace particle
 			if (part->attached_objnum >= 0) {
 				vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
 			}
-			p1 *= part->length;
+			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, *part);
 			p1 += p_pos;
 
 			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);

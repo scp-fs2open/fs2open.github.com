@@ -87,6 +87,8 @@ public:
 	enum class ParticleLifetimeCurvesOutput : uint8_t {
 		VELOCITY_MULT,
 		RADIUS_MULT,
+		LENGTH_MULT,
+		ANIM_STATE,
 
 		NUM_VALUES
 	};
@@ -260,6 +262,8 @@ public:
 		std::array {
 				std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
 				std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
+				std::pair {"Length", ParticleLifetimeCurvesOutput::LENGTH_MULT},
+				std::pair {"Anim State", ParticleLifetimeCurvesOutput::ANIM_STATE},
 		},
 		//Should you ever need to access something from the effect as a modular curve input:
 		//std::pair {"", modular_curves_submember_input<&particle::parent_effect, &ParticleSubeffectHandle::getParticleEffect, &ParticleEffect::>{}}
@@ -267,7 +271,9 @@ public:
 		std::pair {"Lifetime", modular_curves_math_input<
 		     modular_curves_submember_input<&particle::age>,
 			 modular_curves_submember_input<&particle::max_life>,
-			 ModularCurvesMathOperators::division>{}}
+			 ModularCurvesMathOperators::division>{}},
+		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
+		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
