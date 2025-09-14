@@ -354,7 +354,7 @@ namespace particle
 		int cur_frame;
 		if (part->nframes > 1) {
 			if (source_effect.m_lifetime_curves.has_curve(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE)) {
-				framenum = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, curve_input));
+				cur_frame = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, curve_input));
 			}
 			else {
 				framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
