@@ -273,7 +273,9 @@ public:
 			 modular_curves_submember_input<&particle::max_life>,
 			 ModularCurvesMathOperators::division>{}},
 		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
-		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}}
+		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}})
+	.derive_modular_curves_input_only_subset<float>(
+		std::pair {"Post-Curves Velocity", modular_curves_self_input{}}
 		);
 
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);

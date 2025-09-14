@@ -232,7 +232,7 @@ namespace particle
 
 		const auto& source_effect = part->parent_effect.getParticleEffect();
 
-		float vel_scalar = source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, *part);
+		float vel_scalar = source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity)) );
 
 		// move as a regular particle
 		part->pos += (part->velocity * vel_scalar) * frametime;
@@ -345,12 +345,16 @@ namespace particle
 
 		const auto& source_effect = part->parent_effect.getParticleEffect();
 
+		//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
+		const auto& curve_input = std::forward_as_tuple(*part,
+			vm_vec_mag_quick(&part->velocity) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity))));
+
 		// figure out which frame we should be using
 		int framenum;
 		int cur_frame;
 		if (part->nframes > 1) {
 			if (source_effect.m_lifetime_curves.has_curve(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE)) {
-				framenum = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, *part));
+				framenum = fl2i(i2fl(part->nframes - 1) * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, curve_input));
 			}
 			else {
 				framenum = bm_get_anim_frame(part->bitmap, part->age, part->max_life, part->looping);
@@ -366,7 +370,7 @@ namespace particle
 
 		Assert( cur_frame < part->nframes );
 
-		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, *part);
+		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, curve_input);
 
 		if (part->length != 0.0f) {
 			vec3d p0 = p_pos;
@@ -376,7 +380,7 @@ namespace particle
 			if (part->attached_objnum >= 0) {
 				vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
 			}
-			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, *part);
+			p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
 			p1 += p_pos;
 
 			batching_add_laser(framenum + cur_frame, &p0, radius, &p1, radius);
