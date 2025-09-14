@@ -48,5 +48,7 @@ CheckOptions:
     value:        'std::vector;std::deque;std::list;SCP_vector;SCP_deque;SCP_list'
   - key:          'readability-braces-around-statements.ShortStatementLines'
     value:        '4' # Avoid flagging simple if (...) return false; statements
+  - key:          'performance-move-const-arg.CheckTriviallyCopyableMove' # This isn't actually performance relevant, but using move on trivially copyable types can well indicate that the variable should not be used anymore, such as when passing a builder type to the finialization function
+    value:        'false'
 ...
 
