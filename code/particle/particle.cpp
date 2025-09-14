@@ -177,13 +177,13 @@ namespace particle
 	WeakParticlePtr createPersistent(particle&& new_particle)
 	{
 		if (maybe_cull_particle(new_particle))
-			return WeakParticlePtr();
+			return {};
 
 		ParticlePtr new_particle_ptr = std::make_shared<particle>(new_particle);
 
 		Persistent_particles.push_back(new_particle_ptr);
 
-		return WeakParticlePtr(new_particle_ptr);
+		return {new_particle_ptr};
 	}
 
 	/**
