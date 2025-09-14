@@ -287,8 +287,8 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsy
     if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
 		// default debris shard creation is flag dependent --wookieejedi
 		int num_shards;
-		if ((Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_debris]) ||
-			(subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris])) {
+		if ((Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_explosion_shards]) ||
+			(subsys->system_info->flags[Model::Subsystem_Flags::No_explosion_shards])) {
 			num_shards = 0;
 		} else {
 			num_shards = 50;

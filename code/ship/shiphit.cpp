@@ -797,8 +797,8 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 	if (!global_damage) {
 		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
 
-		if ( !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_debris]) && 
-			( subsys == nullptr || !(subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) ) ) {
+		if ( !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_shards]) && 
+			( subsys == nullptr || !(subsys->system_info->flags[Model::Subsystem_Flags::No_impact_shards]) ) ) {
 			create_generic_debris(ship_objp, hitpos, 1.0f, 5.0f, 1.0f, false);
 		}
 	}
