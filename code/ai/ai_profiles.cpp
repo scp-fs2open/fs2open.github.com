@@ -588,6 +588,8 @@ void parse_ai_profiles_tbl(const char *filename)
 					stuff_float(&profile->better_collision_avoid_aggression_combat);
 				}
 
+				set_flag(profile, "+combat collision avoidance for fightercraft includes target:", AI::Profile_Flags::Better_combat_collision_avoid_includes_target);
+
 				set_flag(profile, "$better guard collision avoidance for fightercraft:", AI::Profile_Flags::Better_guard_collision_avoidance);
 
 				if (optional_string("+guard collision avoidance aggression for fightercraft:")) {

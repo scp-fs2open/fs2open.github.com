@@ -7711,7 +7711,7 @@ bool maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d
 			aip->ai_flags.remove(AI::AI_Flags::Avoiding_small_ship);
 			aip->avoid_ship_num = -1;
 			next_check_time = (int) (1500 * time_scale);
-			aip->avoid_check_timestamp = timestamp(1500);
+			aip->avoid_check_timestamp = timestamp(next_check_time);
 		}
 	}
 	
@@ -7737,7 +7737,7 @@ bool maybe_avoid_big_ship(object *objp, object *ignore_objp, ai_info *aip, vec3d
  * Return true if small ship and it will likely collide with large ship
  * developed by Asteroth
  */
-bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_aggression, object* pl_objp, object* en_objp)
+bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_aggression, object* pl_objp, object* ignore_objp)
 {
 	ship* shipp = &Ships[pl_objp->instance];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
@@ -7748,7 +7748,7 @@ bool better_collision_avoidance_triggered(bool flag_to_check, float avoidance_ag
 		collide_vec *= radius_contribution;
 
 		collide_vec += pl_objp->pos;
-		return (maybe_avoid_big_ship(pl_objp, en_objp, &Ai_info[shipp->ai_index], &collide_vec, 0.f, 0.1f));
+		return (maybe_avoid_big_ship(pl_objp, ignore_objp, &Ai_info[shipp->ai_index], &collide_vec, 0.f, 0.1f));
 	}
 	return false;
 }
@@ -8978,7 +8978,8 @@ void ai_chase()
 	if (better_collision_avoidance_triggered(
 			The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance],
 			The_mission.ai_profile->better_collision_avoid_aggression_combat,
-			Pl_objp, En_objp)) {
+			Pl_objp, 
+			The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoid_includes_target] ? nullptr : En_objp)) {
 		return;
 	}
 
@@ -10896,7 +10897,8 @@ void ai_guard()
 	if (better_collision_avoidance_triggered(
 			The_mission.ai_profile->flags[AI::Profile_Flags::Better_guard_collision_avoidance],
 			The_mission.ai_profile->better_collision_avoid_aggression_guard,
-			Pl_objp, En_objp)) {
+			Pl_objp, 
+			En_objp)) {
 		return;
 	}
 
@@ -14190,7 +14192,8 @@ void ai_execute_behavior(ai_info *aip)
 			if (!(better_collision_avoidance_triggered(
 					The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoidance],
 					The_mission.ai_profile->better_collision_avoid_aggression_combat,
-					Pl_objp, En_objp))) {
+					Pl_objp, 
+					The_mission.ai_profile->flags[AI::Profile_Flags::Better_combat_collision_avoid_includes_target] ? nullptr : En_objp))) {
 				ai_big_strafe();	// strafe a big ship
 			}
 		} else {
