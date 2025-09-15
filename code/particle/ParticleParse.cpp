@@ -283,20 +283,7 @@ namespace particle {
 		}
 
 		static void parseModularCurvesLifetime(ParticleEffect& effect) {
-			//TODO The following loop behaves as a true subset of how parsing will work once the particle modular curve set is implemented.
-			//As such, once that's added the loop can be replaced with a modular_curve_set.parse without worry about breaking tables.
-			while (optional_string("$Particle Lifetime Curve:")) {
-				required_string("+Input: Lifetime");
-
-				required_string("+Output:");
-				int output = required_string_one_of(2, "Radius", "Velocity");
-				//The required string part enforces this to be either 0 or 1
-				required_string(output == 0 ? "Radius" : "Velocity");
-				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
-
-				required_string_either("+Curve Name:", "+Curve:", true);
-				curve = curve_parse(" Unknown curve requested for modular curves!");
-			}
+			effect.m_lifetime_curves.parse("$Particle Lifetime Curve:");
 		}
 
 		static void parseModularCurvesSource(ParticleEffect& effect) {
@@ -368,13 +355,13 @@ namespace particle {
 
 		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
-				effect.m_size_lifetime_curve = curve_parse("");
+				effect.m_lifetime_curves.add_curve("Lifetime", ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, modular_curves_entry{curve_parse("")});
 			}
 		}
 
 		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				effect.m_vel_lifetime_curve = curve_parse("");
+				effect.m_lifetime_curves.add_curve("Lifetime", ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, modular_curves_entry{curve_parse("")});
 			}
 		}
 

@@ -7,6 +7,8 @@
 
 #include "freespace.h"
 
+#include "particle/ParticleEffect.h"
+
 EffectHostParticle::EffectHostParticle(particle::WeakParticlePtr particle, matrix orientationOverride, bool orientationOverrideRelative) :
 	EffectHost(orientationOverride, orientationOverrideRelative), m_particle(std::move(particle)) {}
 
@@ -16,10 +18,7 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool /*re
 
 	vec3d pos;
 	if (interp != 0.0f) {
-		float vel_scalar = 1.0f;
-		if (particle->vel_lifetime_curve >= 0) {
-			vel_scalar = Curves[particle->vel_lifetime_curve].GetValue(particle->age / particle->max_life);
-		}
+		float vel_scalar = particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*particle, vm_vec_mag_quick(&particle->velocity)));
 		vec3d pos_last = particle->pos - (particle->velocity * vel_scalar * flFrametime);
 		vm_vec_linear_interpolate(&pos, &particle->pos, &pos_last, interp);
 	} else {
@@ -52,11 +51,11 @@ float EffectHostParticle::getLifetime() const {
 
 float EffectHostParticle::getScale() const {
 	const auto& particle = m_particle.lock();
-	int idx = particle->size_lifetime_curve;
-	if (idx >= 0)
-		return particle->radius * Curves[idx].GetValue(particle->age / particle->max_life);
-	else
-		return particle->radius;
+	//For anything apart from the velocity curve, "Post-Curves Velocity" is well defined. This is needed to facilitate complex but common particle scaling and appearance curves.
+	const auto& curve_input = std::forward_as_tuple(*particle,
+		vm_vec_mag_quick(&particle->velocity) * particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::ANIM_STATE, std::forward_as_tuple(*particle, vm_vec_mag_quick(&particle->velocity))));
+
+	return particle->radius * particle->parent_effect.getParticleEffect().m_lifetime_curves.get_output(particle::ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 }
 
 bool EffectHostParticle::isValid() const {
