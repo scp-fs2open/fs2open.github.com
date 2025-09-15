@@ -39,12 +39,26 @@ struct modular_curves_submember_input {
 		}
 		//Pointer to static variable, i.e. used to index into things.
 		else if constexpr (std::is_pointer_v<decltype(grabber)>) {
-			static_assert(std::is_integral_v<std::remove_cv_t<std::remove_reference_t<input_type>>>, "Can only index into array from an integral input");
-			using indexing_type = std::decay_t<decltype((*grabber)[input])>;
-			if (input >= 0)
-				return std::optional<std::reference_wrapper<const indexing_type>>{ std::cref((*grabber)[input]) };
-			else
-				return std::optional<std::reference_wrapper<const indexing_type>>(std::nullopt);
+			if constexpr (std::is_invocable_v<decltype(grabber), decltype(input)>) {
+				//Global func by ref
+				return grabber(input);
+			}
+			else if constexpr (is_dereferenceable_pointer_v<std::remove_reference_t<input_type>> && std::is_invocable_v<decltype(grabber), std::remove_pointer_t<std::decay_t<decltype(input)>>>) {
+				//Global func by ref from ptr
+				return grabber(*input);
+			}
+			else if constexpr (std::is_invocable_v<decltype(grabber), decltype(&input)>) {
+				//Global func by ptr
+				return grabber(&input);
+			}
+			else {
+				static_assert(std::is_integral_v<std::remove_cv_t<std::remove_reference_t<input_type>>>, "Can only index into array from an integral input");
+				using indexing_type = std::decay_t<decltype((*grabber)[input])>;
+				if (input >= 0)
+					return std::optional<std::reference_wrapper<const indexing_type>>{std::cref((*grabber)[input])};
+				else
+					return std::optional<std::reference_wrapper<const indexing_type>>(std::nullopt);
+			}
 		}
 		//Integer, used to index into tuples. Should be rarely used by actual users, but is required to do child-types.
 		else if constexpr (std::is_integral_v<decltype(grabber)>) {

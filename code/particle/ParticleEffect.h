@@ -84,14 +84,24 @@ public:
 		NUM_VALUES
 	};
 
+	enum class ParticleLifetimeCurvesOutput : uint8_t {
+		VELOCITY_MULT,
+		RADIUS_MULT,
+		LENGTH_MULT,
+		ANIM_STATE,
+
+		NUM_VALUES
+	};
+
  private:
 	friend struct ParticleParse;
-
+	friend class ParticleManager;
 	friend int ::parse_weapon(int, bool, const char*);
-
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
 
 	SCP_string m_name; //!< The name of this effect
+
+	ParticleSubeffectHandle m_self;
 
 	Duration m_duration;
 	RotationType m_rotation_type;
@@ -137,9 +147,6 @@ public:
 	std::optional<vec3d> m_manual_velocity_offset;
 
 	ParticleEffectHandle m_particleTrail;
-
-	int m_size_lifetime_curve; //This is a curve of the particle, not of the particle effect, as such, it should not be part of the curve set
-	int m_vel_lifetime_curve; //This is a curve of the particle, not of the particle effect, as such, it should not be part of the curve set
 
 	float m_particleChance; //Deprecated. Use particle num random ranges instead.
 	float m_distanceCulled; //Kinda deprecated. Only used by the oldest of legacy effects.
@@ -251,7 +258,28 @@ public:
 			ModularCurvesMathOperators::division>{}}
 		);
 
+	constexpr static auto modular_curves_lifetime_definition = make_modular_curve_definition<particle, ParticleLifetimeCurvesOutput>(
+		std::array {
+				std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
+				std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
+				std::pair {"Length", ParticleLifetimeCurvesOutput::LENGTH_MULT},
+				std::pair {"Anim State", ParticleLifetimeCurvesOutput::ANIM_STATE},
+		},
+		//Should you ever need to access something from the effect as a modular curve input:
+		//std::pair {"", modular_curves_submember_input<&particle::parent_effect, &ParticleSubeffectHandle::getParticleEffect, &ParticleEffect::>{}}
+		std::pair {"Age", modular_curves_submember_input<&particle::age>{}},
+		std::pair {"Lifetime", modular_curves_math_input<
+		     modular_curves_submember_input<&particle::age>,
+			 modular_curves_submember_input<&particle::max_life>,
+			 ModularCurvesMathOperators::division>{}},
+		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
+		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}})
+	.derive_modular_curves_input_only_subset<float>(
+		std::pair {"Post-Curves Velocity", modular_curves_self_input{}}
+		);
+
 	MODULAR_CURVE_SET(m_modular_curves, modular_curves_definition);
+	MODULAR_CURVE_SET(m_lifetime_curves, modular_curves_lifetime_definition);
 
   private:
 	float getCurrentFrequencyMult(decltype(modular_curves_definition)::input_type_t source) const;
