@@ -257,12 +257,12 @@ namespace particle
 			}
 
 			//TODO: Curvify
-			float light_radius = light_source.light_radius;
-			float source_radius = light_source.source_radius;
-			float intensity = light_source.intensity;
-			float r = light_source.r;
-			float g = light_source.g;
-			float b = light_source.b;
+			float light_radius = light_source.light_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT, curve_input);
+			float source_radius = light_source.source_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT, curve_input);
+			float intensity = light_source.intensity * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_INTENSITY_MULT, curve_input);
+			float r = light_source.r * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_R_MULT, curve_input);
+			float g = light_source.g * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_G_MULT, curve_input);
+			float b = light_source.b * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_B_MULT, curve_input);
 
 			switch (light_source.light_source_mode) {
 			case ParticleEffect::LightInformation::LightSourceMode::POINT:
