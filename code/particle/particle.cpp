@@ -255,8 +255,7 @@ namespace particle
 			{
 				p_pos = part->pos;
 			}
-
-			//TODO: Curvify
+			
 			float light_radius = light_source.light_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT, curve_input);
 			float source_radius = light_source.source_radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT, curve_input);
 			float intensity = light_source.intensity * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_INTENSITY_MULT, curve_input);
