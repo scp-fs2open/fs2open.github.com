@@ -89,6 +89,12 @@ public:
 		RADIUS_MULT,
 		LENGTH_MULT,
 		ANIM_STATE,
+		LIGHT_RADIUS_MULT,
+		LIGHT_SOURCE_RADIUS_MULT,
+		LIGHT_INTENSITY_MULT,
+		LIGHT_R_MULT,
+		LIGHT_G_MULT,
+		LIGHT_B_MULT,
 
 		NUM_VALUES
 	};
@@ -278,10 +284,18 @@ public:
 
 	constexpr static auto modular_curves_lifetime_definition = make_modular_curve_definition<particle, ParticleLifetimeCurvesOutput>(
 		std::array {
-				std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
-				std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
-				std::pair {"Length", ParticleLifetimeCurvesOutput::LENGTH_MULT},
-				std::pair {"Anim State", ParticleLifetimeCurvesOutput::ANIM_STATE},
+			std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
+			std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
+			std::pair {"Radius Mult", ParticleLifetimeCurvesOutput::RADIUS_MULT}, // Modern Naming Alias
+			std::pair {"Velocity Mult", ParticleLifetimeCurvesOutput::VELOCITY_MULT}, // Modern Naming Alias
+			std::pair {"Length Mult", ParticleLifetimeCurvesOutput::LENGTH_MULT},
+			std::pair {"Anim State Mult", ParticleLifetimeCurvesOutput::ANIM_STATE},
+			std::pair {"Light Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT},
+			std::pair {"Light Source Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT},
+			std::pair {"Light Intensity Mult", ParticleLifetimeCurvesOutput::LIGHT_INTENSITY_MULT},
+			std::pair {"Light R Mult", ParticleLifetimeCurvesOutput::LIGHT_R_MULT},
+			std::pair {"Light G Mult", ParticleLifetimeCurvesOutput::LIGHT_G_MULT},
+			std::pair {"Light B Mult", ParticleLifetimeCurvesOutput::LIGHT_B_MULT},
 		},
 		//Should you ever need to access something from the effect as a modular curve input:
 		//std::pair {"", modular_curves_submember_input<&particle::parent_effect, &ParticleSubeffectHandle::getParticleEffect, &ParticleEffect::>{}}
