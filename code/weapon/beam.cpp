@@ -4026,8 +4026,7 @@ void beam_handle_collisions(beam *b)
 						auto particleSource = particle::ParticleManager::get()->createSource(wi->piercing_impact_effect);
 
 						particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
-// TODO: see comment above
-//						particleSource->setNormal(worldNormal);
+						particleSource->setNormal(worldNormal);
 						particleSource->setTriggerRadius(width);
 						particleSource->finishCreation();
 					}
