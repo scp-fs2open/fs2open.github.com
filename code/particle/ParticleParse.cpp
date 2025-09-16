@@ -282,6 +282,43 @@ namespace particle {
 			}
 		}
 
+		static void parseLightEmissionSettings(ParticleEffect& effect) {
+			if (optional_string("$Emits Light:")) {
+				ParticleEffect::LightInformation& light = effect.m_light_source.emplace();
+
+				required_string("+Type:");
+				switch(required_string_one_of(3, "Point", "As Particle", "To Last Position")) {
+					case 0:
+						Mp += 5;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::POINT;
+						break;
+					case 1:
+						Mp += 11;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::AS_PARTICLE;
+						break;
+					case 2:
+						Mp += 16;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS;
+						break;
+				}
+
+				required_string("+Light Radius:");
+				stuff_float(&light.light_radius);
+
+				if (optional_string("+Light Source Radius:")) {
+					stuff_float(&light.source_radius);
+				}
+
+				required_string("+Intensity:");
+				stuff_float(&light.intensity);
+
+				required_string("+Color:");
+				stuff_float(&light.r);
+				stuff_float(&light.g);
+				stuff_float(&light.b);
+			}
+		}
+
 		static void parseModularCurvesLifetime(ParticleEffect& effect) {
 			effect.m_lifetime_curves.parse("$Particle Lifetime Curve:");
 		}
@@ -324,6 +361,7 @@ namespace particle {
 			parseLength(effect);
 			parseLifetime(effect);
 			parseParentLocal(effect);
+			parseLightEmissionSettings(effect);
 
 			//Spawner Settings
 			parseTiming(effect);

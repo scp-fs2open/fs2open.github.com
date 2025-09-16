@@ -104,6 +104,8 @@ public:
 			AS_PARTICLE,
 			TO_LAST_POS
 		} light_source_mode;
+
+		constexpr LightInformation() : light_radius(0.f), source_radius(0.f), intensity(0.f), r(0.f), g(0.f), b(0.f), light_source_mode(LightSourceMode::POINT) {}
 	};
 
  private:
