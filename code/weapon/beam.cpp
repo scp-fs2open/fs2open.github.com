@@ -3964,7 +3964,7 @@ void beam_handle_collisions(beam *b)
 				particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
 // TODO: Commenting out until the collision code can be enhanced to return a valid normal when a beam collides with an edge.
 // (This can happen when a slash beam moves off the edge of a model; edge_hit will be true and hit_normal will be 0,0,0.)
-//				particleSource->setNormal(worldNormal);
+				particleSource->setNormal(worldNormal);
 				particleSource->setTriggerRadius(width);
 				particleSource->finishCreation();
 			}
@@ -3973,7 +3973,7 @@ void beam_handle_collisions(beam *b)
 				auto particleSource = particle::ParticleManager::get()->createSource(wi->impact_weapon_expl_effect);
 				particleSource->setHost(beam_hit_make_effect_host(b, &Objects[target], b->f_collisions[idx].cinfo.hit_submodel, &b->f_collisions[idx].cinfo.hit_point_world, &b->f_collisions[idx].cinfo.hit_point));
 // TODO: see comment above
-//				particleSource->setNormal(worldNormal);
+				particleSource->setNormal(worldNormal);
 				particleSource->setTriggerRadius(width);
 				particleSource->finishCreation();
 			}

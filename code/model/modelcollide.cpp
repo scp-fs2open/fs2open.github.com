@@ -323,6 +323,7 @@ static void mc_check_sphereline_face( int nv, vec3d ** verts, vec3d * plane_pnt,
 				// This is closer than best so far
 				Mc->hit_dist = sphere_time;
 				Mc->hit_point = hit_point;
+				Mc->hit_normal = *plane_norm;
 				Mc->hit_submodel = Mc_submodel;
 				Mc->edge_hit = true;
 
