@@ -93,11 +93,25 @@ public:
 		NUM_VALUES
 	};
 
+	struct LightInformation {
+		float light_radius;
+		float source_radius;
+		float intensity;
+		float r, g, b;
+
+		enum class LightSourceMode : uint8_t {
+			POINT,
+			AS_PARTICLE,
+			TO_LAST_POS
+		} light_source_mode;
+	};
+
  private:
 	friend struct ParticleParse;
 	friend class ParticleManager;
 	friend int ::parse_weapon(int, bool, const char*);
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
+	friend bool move_particle(float frametime, particle* part);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -145,6 +159,8 @@ public:
 
 	std::optional<vec3d> m_manual_offset;
 	std::optional<vec3d> m_manual_velocity_offset;
+
+	std::optional<LightInformation> m_light_source;
 
 	ParticleEffectHandle m_particleTrail;
 

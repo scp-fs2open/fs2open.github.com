@@ -15,6 +15,7 @@
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
+#include "lighting/lighting.h"
 #include "math/curve.h"
 #include "render/3d.h"
 #include "render/batching.h"
@@ -192,7 +193,7 @@ namespace particle
 	 * @param part The particle to process for movement
 	 * @return @c true if the particle has expired and should be removed, @c false otherwise
 	 */
-	static bool move_particle(float frametime, particle* part) {
+	bool move_particle(float frametime, particle* part) {
 		if (part->age == 0.0f)
 		{
 			part->age = 0.00001f;
@@ -232,10 +233,72 @@ namespace particle
 
 		const auto& source_effect = part->parent_effect.getParticleEffect();
 
-		float vel_scalar = source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, vm_vec_mag_quick(&part->velocity)) );
+		float part_velocity =  vm_vec_mag_quick(&part->velocity);
+		float vel_scalar = source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, std::forward_as_tuple(*part, part_velocity) );
 
 		// move as a regular particle
+		vec3d prev_pos = part->pos;
 		part->pos += (part->velocity * vel_scalar) * frametime;
+
+		const auto& curve_input = std::forward_as_tuple(*part, part_velocity * vel_scalar);
+
+		if (source_effect.m_light_source) {
+			const auto& light_source = *source_effect.m_light_source;
+
+			vec3d p_pos;
+			if (part->attached_objnum >= 0)
+			{
+				vm_vec_unrotate(&p_pos, &part->pos, &Objects[part->attached_objnum].orient);
+				vm_vec_add2(&p_pos, &Objects[part->attached_objnum].pos);
+			}
+			else
+			{
+				p_pos = part->pos;
+			}
+
+			//TODO: Curvify
+			float light_radius = light_source.light_radius;
+			float source_radius = light_source.source_radius;
+			float intensity = light_source.intensity;
+			float r = light_source.r;
+			float g = light_source.g;
+			float b = light_source.b;
+
+			switch (light_source.light_source_mode) {
+			case ParticleEffect::LightInformation::LightSourceMode::POINT:
+				light_add_point(&p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
+				break;
+			case ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS: {
+				vec3d p_prev_pos;
+				if (part->attached_objnum >= 0)
+				{
+					vm_vec_unrotate(&p_prev_pos, &prev_pos, &Objects[part->attached_objnum].last_orient);
+					vm_vec_add2(&p_prev_pos, &Objects[part->attached_objnum].last_pos);
+				}
+				else
+				{
+					p_prev_pos = prev_pos;
+				}
+				light_add_tube(&p_prev_pos, &p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
+			}
+			break;
+			case ParticleEffect::LightInformation::LightSourceMode::AS_PARTICLE:
+				if (part->length != 0.0f) {
+					vec3d p1;
+					vm_vec_copy_normalize_safe(&p1, &part->velocity);
+					if (part->attached_objnum >= 0) {
+						vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
+					}
+					p1 *= part->length * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LENGTH_MULT, curve_input);
+					p1 += p_pos;
+					light_add_tube(&p_pos, &p1, light_radius, light_radius, intensity, r, g, b, source_radius);
+				}
+				else {
+					light_add_point(&p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
+				}
+				break;
+			}
+		}
 
 		return false;
 	}
