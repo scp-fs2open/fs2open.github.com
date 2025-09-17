@@ -52,6 +52,9 @@
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define glDepthRange                    glDepthRangef
 
+struct ConvertedKey { int handle, mip, layer, fmt; };
+struct ConvertedTex { std::vector<uint8_t> data; int w, h, fmt; };
+
 // Bring internalFormat info for glTexSubImage3D calls
 static inline GLint query_internalformat_3d(GLenum target, GLint level)
 {
@@ -61,7 +64,7 @@ static inline GLint query_internalformat_3d(GLenum target, GLint level)
 }
 
 // BGRA 1_5_5_5_REV -> RGBA 5_5_5_1
-static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* src, uint16_t* dst, size_t npx)
+static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* __restrict src, uint16_t* __restrict dst, size_t npx)
 {
 	for (size_t i = 0; i < npx; i++) {
 		const uint16_t s = src[i];
@@ -74,7 +77,7 @@ static inline void convert_BGRA1555_REV_to_RGBA5551(const uint16_t* src, uint16_
 }
 
 // BGRA1555_REV -> RGBA8888
-static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* src, uint8_t* dstRGBA8, size_t npx)
+static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* __restrict src, uint8_t* __restrict dstRGBA8, size_t npx)
 {
 	for (size_t i = 0; i < npx; ++i) {
 		uint16_t s = src[i];
@@ -95,7 +98,7 @@ static inline void convert_BGRA1555_REV_to_RGBA8888(const uint16_t* src, uint8_t
 }
 
 // BGR -> RGB
-static inline void convert_BGR_to_RGB(const uint8_t* src, uint8_t* dst, size_t npx)
+static inline void convert_BGR_to_RGB(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
 {
 	for (size_t i = 0, s = 0, t = 0; i < npx; ++i, s += 3, t += 3) {
 		uint8_t b = src[s + 0];
@@ -108,7 +111,7 @@ static inline void convert_BGR_to_RGB(const uint8_t* src, uint8_t* dst, size_t n
 }
 
 // BGRA 8888 -> RGBA 8888
-static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* src, uint8_t* dst, size_t npx)
+static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
 {
 	for (size_t i = 0; i < npx; i++) {
 		const uint8_t b = src[4 * i + 0];
@@ -123,7 +126,7 @@ static inline void convert_BGRA8888_to_RGBA8888(const uint8_t* src, uint8_t* dst
 }
 
 // BGR 3B -> RGBA 4B
-static inline void convert_BGR_to_RGBA(const uint8_t* src, uint8_t* dst, size_t npx)
+static inline void convert_BGR_to_RGBA(const uint8_t* __restrict src, uint8_t* __restrict dst, size_t npx)
 {
 	for (size_t i = 0; i < npx; ++i) {
 		const size_t s = i * 3;
@@ -136,7 +139,7 @@ static inline void convert_BGR_to_RGBA(const uint8_t* src, uint8_t* dst, size_t 
 }
 
 // BGRA1555_REV -> RGB888
-static inline void convert_BGRA1555_REV_to_RGB888(const uint16_t* src, uint8_t* dstRGB8, size_t npx)
+static inline void convert_BGRA1555_REV_to_RGB888(const uint16_t* __restrict src, uint8_t* __restrict dstRGB8, size_t npx)
 {
 	for (size_t i = 0; i < npx; ++i) {
 		uint16_t s = src[i];
