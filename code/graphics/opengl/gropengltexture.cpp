@@ -24,6 +24,7 @@
 #include "math/vecmat.h"
 #include "options/Option.h"
 #include "osapi/osregistry.h"
+#include <ktxutils/ktxutils.h>
 #ifdef USE_OPENGL_ES
 #include "es_compatibility.h"
 #endif
@@ -419,7 +420,8 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 
 	// check for compressed image types
 	auto block_size = 0;
-	switch (bm_is_compressed(bitmap_handle)) {
+	auto bm_handle = bm_is_compressed(bitmap_handle);
+	switch (bm_handle) {
 	case DDS_DXT1:
 	case DDS_CUBEMAP_DXT1:
 		intFormat  = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -441,6 +443,20 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	case DDS_BC7:
 		intFormat = GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
 		block_size = 16;
+		break;
+
+	case KTX_ETC2_RGB:
+	case KTX_ETC2_RGBA_EAC:
+	case KTX_EAC_R11:
+	case KTX_EAC_RG11:
+	case KTX_ETC2_SRGB:
+	case KTX_ETC2_SRGBA_EAC:
+	case KTX_ETC2_RGB_A1:
+	case KTX_ETC2_SRGB_A1:
+	case KTX_EAC_R11_SNORM:
+	case KTX_EAC_RG11_SNORM:
+		intFormat = ktx_map_ktx_type_to_gl_internal(bm_handle);
+		block_size = ktx_etc_block_bytes(intFormat);
 		break;
 	}
 
@@ -740,7 +756,8 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 	auto byte_mult = (bpp >> 3);
 
 	// check for compressed image types
-	switch ( bm_is_compressed(handle) ) {
+	auto bm_handle = bm_is_compressed(handle);
+	switch (bm_handle) {
 		case DDS_DXT1:
 		case DDS_CUBEMAP_DXT1:
 			return GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
@@ -756,6 +773,18 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 
 		case DDS_BC7:
 			return GL_COMPRESSED_RGBA_BPTC_UNORM_ARB;
+
+		case KTX_ETC2_RGB:
+		case KTX_ETC2_RGBA_EAC:
+		case KTX_EAC_R11:
+		case KTX_EAC_RG11:
+		case KTX_ETC2_SRGB:
+		case KTX_ETC2_SRGBA_EAC:
+		case KTX_ETC2_RGB_A1:
+		case KTX_ETC2_SRGB_A1:
+		case KTX_EAC_R11_SNORM:
+		case KTX_EAC_RG11_SNORM:
+			return ktx_map_ktx_type_to_gl_internal(bm_handle);
 
 		default:
 			// Not compressed
@@ -842,6 +871,26 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 				case DDS_CUBEMAP_DXT5:
 					bpp = 32;
 					flags |= BMP_TEX_CUBEMAP;
+					break;
+
+				case KTX_ETC2_RGB:
+					bpp = 24;
+					flags |= BMP_TEX_ETC2_RGB;
+					break;
+
+				case KTX_ETC2_RGBA_EAC:
+					bpp = 32;
+					flags |= BMP_TEX_ETC2_RGBA_EAC;
+					break;
+
+				case KTX_EAC_R11:
+					bpp = 8;
+					flags |= BMP_TEX_EAC_R11;
+					break;
+
+				case KTX_EAC_RG11:
+					bpp = 16;
+					flags |= BMP_TEX_EAC_RG11;
 					break;
 
 				default:
