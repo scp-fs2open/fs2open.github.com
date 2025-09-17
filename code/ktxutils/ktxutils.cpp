@@ -6,12 +6,6 @@
 
 static const uint8_t KTX_ID[12] = { 0xAB, 'K', 'T', 'X', ' ', '1', '1', 0xBB, '\r', '\n', 0x1A, '\n' };
 
-// copied from ddsutils
-static inline int is_power_of_two(int w, int h)
-{
-	return ((w && !(w & (w - 1))) && (h && !(h & (h - 1))));
-}
-
 // BPB ETC/EAC
 uint32_t ktx_etc_block_bytes(GLenum internal_format)
 {
