@@ -1,7 +1,6 @@
 ﻿#include "ktxutils.h"
 #include "bmpman/bmpman.h"
 #include "cfile/cfile.h"
-#include <glad/glad.h>
 //KTX1 Spec definition https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html
 //ETC2 formats spec https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.inline.html#ETC2
 
