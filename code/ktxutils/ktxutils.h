@@ -1,7 +1,9 @@
 #pragma once
 #include "globalincs/pstypes.h"
 #include "cfile/cfile.h"
+#ifdef WITH_OPENGL
 #include <glad/glad.h>
+#endif
 
 // ETC2 types
 #define KTX_ETC2_RGB		101
