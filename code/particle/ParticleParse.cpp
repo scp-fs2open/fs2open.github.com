@@ -287,7 +287,7 @@ namespace particle {
 				ParticleEffect::LightInformation& light = effect.m_light_source.emplace();
 
 				required_string("+Type:");
-				switch(required_string_one_of(3, "Point", "As Particle", "To Last Position")) {
+				switch(required_string_one_of(4, "Point", "As Particle", "To Last Position", "Cone")) {
 					case 0:
 						Mp += 5;
 						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::POINT;
@@ -299,6 +299,10 @@ namespace particle {
 					case 2:
 						Mp += 16;
 						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS;
+						break;
+					case 3:
+						Mp+=4;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::CONE;
 						break;
 				}
 
@@ -316,6 +320,14 @@ namespace particle {
 				stuff_float(&light.r);
 				stuff_float(&light.g);
 				stuff_float(&light.b);
+
+				if (optional_string("+Cone Angle:")) {
+					stuff_float(&light.cone_angle);
+				}
+
+				if (optional_string("+Cone Inner Angle:")) {
+					stuff_float(&light.cone_inner_angle);
+				}
 			}
 		}
 

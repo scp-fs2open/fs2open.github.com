@@ -95,6 +95,8 @@ public:
 		LIGHT_R_MULT,
 		LIGHT_G_MULT,
 		LIGHT_B_MULT,
+		LIGHT_CONE_ANGLE_MULT,
+		LIGHT_CONE_INNER_ANGLE_MULT,
 
 		NUM_VALUES
 	};
@@ -104,14 +106,16 @@ public:
 		float source_radius;
 		float intensity;
 		float r, g, b;
+		float cone_angle, cone_inner_angle;
 
 		enum class LightSourceMode : uint8_t {
 			POINT,
 			AS_PARTICLE,
-			TO_LAST_POS
+			TO_LAST_POS,
+			CONE
 		} light_source_mode;
 
-		constexpr LightInformation() : light_radius(0.f), source_radius(0.f), intensity(0.f), r(0.f), g(0.f), b(0.f), light_source_mode(LightSourceMode::POINT) {}
+		constexpr LightInformation() : light_radius(0.f), source_radius(0.f), intensity(0.f), r(0.f), g(0.f), b(0.f), cone_angle(0.f), cone_inner_angle(0.f), light_source_mode(LightSourceMode::POINT) {}
 	};
 
  private:
@@ -296,6 +300,8 @@ public:
 			std::pair {"Light R Mult", ParticleLifetimeCurvesOutput::LIGHT_R_MULT},
 			std::pair {"Light G Mult", ParticleLifetimeCurvesOutput::LIGHT_G_MULT},
 			std::pair {"Light B Mult", ParticleLifetimeCurvesOutput::LIGHT_B_MULT},
+			std::pair {"Light Cone Angle Mult", ParticleLifetimeCurvesOutput::LIGHT_CONE_ANGLE_MULT},
+			std::pair {"Light Cone Inner Angle Mult", ParticleLifetimeCurvesOutput::LIGHT_CONE_INNER_ANGLE_MULT},
 		},
 		//Should you ever need to access something from the effect as a modular curve input:
 		//std::pair {"", modular_curves_submember_input<&particle::parent_effect, &ParticleSubeffectHandle::getParticleEffect, &ParticleEffect::>{}}

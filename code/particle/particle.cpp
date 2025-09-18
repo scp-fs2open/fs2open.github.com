@@ -296,6 +296,18 @@ namespace particle
 					light_add_point(&p_pos, light_radius, light_radius, intensity, r, g, b, source_radius);
 				}
 				break;
+			case ParticleEffect::LightInformation::LightSourceMode::CONE: {
+				float cone_angle = light_source.cone_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_ANGLE_MULT, curve_input);
+				float cone_inner_angle = light_source.cone_inner_angle * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::LIGHT_CONE_INNER_ANGLE_MULT, curve_input);
+				vec3d p1;
+				vm_vec_copy_normalize_safe(&p1, &part->velocity);
+				if (part->attached_objnum >= 0) {
+					vm_vec_unrotate(&p1, &p1, &Objects[part->attached_objnum].orient);
+				}
+
+				light_add_cone(&p_pos, &p1, cone_angle, cone_inner_angle, false, light_radius, light_radius, intensity, r, g, b, source_radius);
+			}
+			break;
 			}
 		}
 
