@@ -73,7 +73,7 @@ void campaign_editor::DoDataExchange(CDataExchange* pDX)
 	DDX_CBIndex(pDX, IDC_CAMPAIGN_TYPE, m_type);
 	DDX_Text(pDX, IDC_NUM_PLAYERS, m_num_players);
 	DDX_Text(pDX, IDC_DESC2, m_desc);
-	DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
+	//DDV_MaxChars(pDX, m_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_MISSION_LOOP_DESC, m_branch_desc);
 	DDV_MaxChars(pDX, m_branch_desc, MISSION_DESC_LENGTH - 1);
 	DDX_Text(pDX, IDC_LOOP_BRIEF_ANIM, m_branch_brief_anim);
@@ -251,8 +251,8 @@ void campaign_editor::initialize( bool init_files, bool clear_path )
 	m_type = Campaign.type;
 	m_num_players.Format("%d", Campaign.num_players);
 
-	if (Campaign.desc) {
-		convert_multiline_string(m_desc, Campaign.desc);
+	if (!Campaign.description.empty()) {
+		convert_multiline_string(m_desc, Campaign.description);
 	} else {
 		m_desc = _T("");
 	}
@@ -303,8 +303,6 @@ void campaign_editor::mission_selected(int num)
 
 void campaign_editor::update()
 {
-	char buf[MISSION_DESC_LENGTH];
-
 	// get data from dlog box
 	UpdateData(TRUE);
 
@@ -317,15 +315,11 @@ void campaign_editor::update()
 	Campaign.type = m_type;
 
 	// update campaign desc
-	deconvert_multiline_string(buf, m_desc, MISSION_DESC_LENGTH - 1);
-	if (Campaign.desc) {
-		free(Campaign.desc);
-	}
+	SCP_string desc_buf;
+	deconvert_multiline_string(desc_buf, m_desc);
 
-	Campaign.desc = NULL;
-	if (strlen(buf)) {
-		Campaign.desc = strdup(buf);
-	}
+	Campaign.description.clear();
+	Campaign.description = desc_buf;
 
 	// update flags
 	Campaign.flags = CF_DEFAULT_VALUE;
