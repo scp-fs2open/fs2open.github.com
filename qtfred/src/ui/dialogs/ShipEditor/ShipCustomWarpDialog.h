@@ -47,7 +47,7 @@ class ShipCustomWarpDialog : public QDialog {
 	void on_lineEditAnim_editingFinished();
 	void on_checkBoxSupercap_toggled(bool);
 	void on_doubleSpinBoxPlayerSpeed_valueChanged(double);
-  private: //NOLINT
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipCustomWarpDialog> ui;
 	std::unique_ptr<ShipCustomWarpDialogModel> _model;
 	EditorViewport* _viewport;

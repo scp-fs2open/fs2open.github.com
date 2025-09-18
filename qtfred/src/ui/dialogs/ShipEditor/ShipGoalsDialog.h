@@ -26,7 +26,7 @@ class ShipGoalsDialog : public QDialog {
 	void on_okButton_clicked();
 	void on_cancelButton_clicked();
 
-  private://NOLINT
+  private:// NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipGoalsDialog> ui;
 	std::unique_ptr<ShipGoalsDialogModel> _model;
 	EditorViewport* _viewport;

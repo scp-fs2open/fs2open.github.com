@@ -29,7 +29,7 @@ class ShipFlagsDialog : public QDialog {
 	void on_escortPrioritySpinBox_valueChanged(int);
 	void on_kamikazeDamageSpinBox_valueChanged(int);
 
-  private: //NOLINT
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipFlagsDialog> ui;
 	std::unique_ptr<ShipFlagsDialogModel> _model;
 	EditorViewport* _viewport;

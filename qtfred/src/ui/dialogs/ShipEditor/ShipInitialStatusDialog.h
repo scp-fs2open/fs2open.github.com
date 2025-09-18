@@ -47,7 +47,7 @@ class ShipInitialStatusDialog : public QDialog {
 	void on_cargoEdit_editingFinished();
 	void on_colourComboBox_currentIndexChanged(int);
 
-  private: // NOLINT
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipInitialStatusDialog> ui;
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;
