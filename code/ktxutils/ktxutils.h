@@ -3,6 +3,8 @@
 #include "cfile/cfile.h"
 #ifdef WITH_OPENGL
 #include <glad/glad.h>
+#else
+#define GLenum int
 #endif
 
 // ETC2 types
