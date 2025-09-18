@@ -455,7 +455,7 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 	case KTX_ETC2_SRGB_A1:
 	case KTX_EAC_R11_SNORM:
 	case KTX_EAC_RG11_SNORM:
-		intFormat = ktx_map_ktx_type_to_gl_internal(bm_handle);
+		intFormat = ktx_map_ktx_format_to_gl_internal(bm_handle);
 		block_size = ktx_etc_block_bytes(intFormat);
 		break;
 	}
@@ -784,7 +784,7 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 		case KTX_ETC2_SRGB_A1:
 		case KTX_EAC_R11_SNORM:
 		case KTX_EAC_RG11_SNORM:
-			return ktx_map_ktx_type_to_gl_internal(bm_handle);
+			return ktx_map_ktx_format_to_gl_internal(bm_handle);
 
 		default:
 			// Not compressed

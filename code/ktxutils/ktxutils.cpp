@@ -7,7 +7,7 @@
 static const uint8_t KTX_ID[12] = { 0xAB, 'K', 'T', 'X', ' ', '1', '1', 0xBB, '\r', '\n', 0x1A, '\n' };
 
 // BPB ETC/EAC
-uint32_t ktx_etc_block_bytes(GLenum internal_format)
+uint32_t ktx_etc_block_bytes(const int internal_format)
 {
 	switch (internal_format) 
 	{
@@ -31,7 +31,7 @@ uint32_t ktx_etc_block_bytes(GLenum internal_format)
 }
 
 
-int ktx_map_ktx_type_to_gl_internal(unsigned int ktx_format)
+int ktx_map_ktx_format_to_gl_internal(const int ktx_format)
 {
 	switch (ktx_format) 
 	{
@@ -60,7 +60,7 @@ int ktx_map_ktx_type_to_gl_internal(unsigned int ktx_format)
 	}
 }
 
-int ktx_map_gl_internal_to_bm(GLenum internal_format)
+int ktx_map_gl_internal_to_bm(const int internal_format)
 {
 	switch (internal_format) 
 	{
