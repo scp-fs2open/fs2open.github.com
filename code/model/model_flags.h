@@ -69,7 +69,7 @@ namespace Model {
         Share_fire_direction,		// (DahBlount) Whenever the turret fires a beam, make all beams fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
 		No_impact_shards,    // Don't spawn the small debris shards on impact - m!m
-		No_explosion_shards, // Don't spawn the small debris shards on expolsion - wookieejedi
+		No_explosion_shards, // Don't spawn the small debris shards on explosion - wookieejedi
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
