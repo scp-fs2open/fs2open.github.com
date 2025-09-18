@@ -353,7 +353,7 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "don't autorepair if disabled", Model::Subsystem_Flags::No_autorepair_if_disabled,        true, false },
 	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false },
 	{ "no damage spew",             Model::Subsystem_Flags::No_sparks,                          true, false },
-	{ "no impact debris",           Model::Subsystem_Flags::No_impact_shards,                   true, false },
+	{ "no impact shards",           Model::Subsystem_Flags::No_impact_shards,                   true, false },
 	{ "no explosion shards",        Model::Subsystem_Flags::No_explosion_shards,                true, false },
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
@@ -413,7 +413,7 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
 	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
 	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
 	{ "large ship deathroll",		Info_Flags::Large_ship_deathroll,	true, false },
-	{ "no impact debris",			Info_Flags::No_impact_shards,		true, false },
+	{ "no impact shards",			Info_Flags::No_impact_shards,		true, false },
 	{ "no explosion shards",		Info_Flags::No_explosion_shards,		true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
@@ -4459,6 +4459,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::Dont_clamp_max_velocity);
 			}
+			if (!stricmp(cur_flag, "no impact debris")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::No_impact_shards);
+			}
 
 			if ( !flag_found && (ship_type_index < 0) )
 				Warning(LOCATION, "Bogus string in ship flags: %s\n", cur_flag);
@@ -5835,7 +5839,25 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
                 SCP_vector<SCP_string> errors;
                 flagset<Model::Subsystem_Flags> tmp_flags;
                 parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
-                
+ 
+				// Map of deprecated strings to their new flags
+				static const SCP_unordered_map<SCP_string, Model::Subsystem_Flags, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+				deprecated_map = {
+					{"no impact debris", Model::Subsystem_Flags::No_impact_shards},
+					// { "old name", Model::Subsystem_Flags::New_flag },   // future additions
+				};
+
+				// Walk through errors, remap if deprecated
+				for (auto it = errors.begin(); it != errors.end();) {
+					auto found = deprecated_map.find(*it);
+					if (found != deprecated_map.end()) {
+						tmp_flags.set(found->second);
+						it = errors.erase(it); // remove so no bogus warning
+					} else {
+						++it;
+					}
+				}
+
                 if (optional_string("+noreplace")) {
                     sp->flags |= tmp_flags;
                 }
