@@ -444,7 +444,7 @@ namespace particle
 
 		Assert( (cur_frame < part->nframes) || (part->nframes == 0 && cur_frame == 0) );
 
-		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, curve_input);
+		float radius = part->radius * source_effect.m_lifetime_curves.get_output(ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, curve_input);
 
 		if (part->length != 0.0f) {
 			vec3d p0 = p_pos;
