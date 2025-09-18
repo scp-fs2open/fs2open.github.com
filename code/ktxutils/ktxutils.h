@@ -3,21 +3,21 @@
 #include "cfile/cfile.h"
 #ifdef WITH_OPENGL
 #include <glad/glad.h>
-#else
-#define GLenum int
 #endif
 
 // ETC2 types
-#define KTX_ETC2_RGB		101
-#define KTX_ETC2_RGBA_EAC	102
-#define KTX_EAC_R11			103
-#define KTX_EAC_RG11		104
-#define KTX_ETC2_SRGB		105
-#define KTX_ETC2_SRGBA_EAC	106
-#define KTX_ETC2_RGB_A1		107
-#define KTX_ETC2_SRGB_A1	108
-#define KTX_EAC_R11_SNORM	109
-#define KTX_EAC_RG11_SNORM	110
+enum KTX_Format {
+	KTX_ETC2_RGB = 100,
+	KTX_ETC2_RGBA_EAC,
+	KTX_EAC_R11,
+	KTX_EAC_RG11,
+	KTX_ETC2_SRGB,
+	KTX_ETC2_SRGBA_EAC,
+	KTX_ETC2_RGB_A1,
+	KTX_ETC2_SRGB_A1,
+	KTX_EAC_R11_SNORM,
+	KTX_EAC_RG11_SNORM
+};
 
 // GLenum definitions, ETC2 is guarranted on ES 3.2, but in desktop GL it is supported from 4.3
 // glad loader is GL 3.2 and these definitions are not there. But these will work if the GPU is GL 4.3
@@ -80,6 +80,6 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 
 int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp);
 
-int ktx_map_ktx_type_to_gl_internal(unsigned int ktx_format);
+int ktx_map_ktx_format_to_gl_internal(const int ktx_format);
 
-uint32_t ktx_etc_block_bytes(GLenum internal_format);
+uint32_t ktx_etc_block_bytes(const int internal_format);
