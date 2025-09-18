@@ -47,6 +47,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_spawnNoise(nullptr),
 	  m_manual_offset (std::nullopt),
 	  m_manual_velocity_offset(std::nullopt),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
 	  m_particleChance(1.f),
 	  m_distanceCulled(-1.f)
@@ -116,6 +117,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_spawnNoise(nullptr),
 	  m_manual_offset(offsetLocal),
 	  m_manual_velocity_offset(velocityOffsetLocal),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(particleTrail),
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}

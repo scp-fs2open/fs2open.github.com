@@ -63,6 +63,7 @@ void MissionSpecDialogModel::initializeData() {
 
 	_m_num_respawns = The_mission.num_respawns;
 	_m_max_respawn_delay = The_mission.max_respawn_delay;
+	_m_player_entry_delay = f2fl(Entry_delay_time);
 	_m_max_hull_repair_val = The_mission.support_ships.max_hull_repair_val;
 	_m_max_subsys_repair_val = The_mission.support_ships.max_subsys_repair_val;
 
@@ -118,6 +119,7 @@ bool MissionSpecDialogModel::apply() {
 	The_mission.game_type = new_m_type;
 	The_mission.num_respawns = _m_num_respawns;
 	The_mission.max_respawn_delay = _m_max_respawn_delay;
+	Entry_delay_time = fl2f(_m_player_entry_delay);
 	The_mission.support_ships.max_support_ships = (_m_disallow_support) ? 0 : -1;
 	The_mission.support_ships.max_hull_repair_val = _m_max_hull_repair_val;
 	The_mission.support_ships.max_subsys_repair_val = _m_max_subsys_repair_val;
@@ -267,6 +269,18 @@ void MissionSpecDialogModel::setMaxRespawnDelay(int m_max_respawn_delay) {
 
 int MissionSpecDialogModel::getMaxRespawnDelay() {
 	return _m_max_respawn_delay;
+}
+
+void MissionSpecDialogModel::setPlayerEntryDelay(float m_player_entry_delay) {
+	if (m_player_entry_delay < 0.0f) {
+		m_player_entry_delay = 0.0f;
+	}
+
+	modify(_m_player_entry_delay, m_player_entry_delay);
+}
+
+float MissionSpecDialogModel::getPlayerEntryDelay() const {
+	return _m_player_entry_delay;
 }
 
 void MissionSpecDialogModel::setSquadronName(const SCP_string& m_squad_name) {

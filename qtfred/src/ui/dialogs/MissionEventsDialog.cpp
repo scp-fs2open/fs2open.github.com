@@ -517,7 +517,7 @@ void MissionEventsDialog::updateMessageUi()
 		ui->personaCombo->setCurrentIndex(-1);
 		ui->waveCombo->setEditText("");
 		ui->messageTeamCombo->setCurrentIndex(-1);
-		ui->btnMsgNote->setText("Add Node");
+		ui->btnMsgNote->setText("Add Note");
 	} else {
 		ui->messageName->setText(QString().fromStdString(_model->getMessageName()));
 		ui->messageContent->setPlainText(QString().fromStdString(_model->getMessageText()));
