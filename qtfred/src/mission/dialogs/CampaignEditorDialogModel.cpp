@@ -4,7 +4,7 @@
 #include "menuui/mainhallmenu.h"
 #include "stats/scoring.h"
 #include "mission/missiongoals.h"
-#include "mission/missionsave.h"
+#include "missioneditor/missionsave.h"
 
 #include <QMessageBox>
 #include <QPlainTextDocumentLayout>
@@ -593,7 +593,16 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 		Campaign.num_missions = i;
 	}
 
-	CFred_mission_save save;
+	Fred_mission_save save;
+	// TODO FredView save format actions currently don't do anything
+	// will need to wire this up when those are finalized
+	/*if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}*/
 	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
 }
 
