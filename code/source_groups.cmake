@@ -840,6 +840,8 @@ add_file_folder("Mission"
 add_file_folder("MissionEditor"
 	missioneditor/common.cpp
 	missioneditor/common.h
+	missioneditor/missionsave.cpp
+	missioneditor/missionsave.h
 )
 
 # MissionUI files
