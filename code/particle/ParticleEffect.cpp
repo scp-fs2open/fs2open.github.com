@@ -337,10 +337,8 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		info.length = m_length.next() * lengthMultiplier;
 
 		int fps = 1;
-		if (info.nframes < 0) {
-			Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
-			bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
-		}
+		Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
+		bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
 
 		if (m_hasLifetime) {
 			if (m_keep_anim_length_if_available && info.nframes > 1) {
