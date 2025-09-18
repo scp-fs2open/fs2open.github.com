@@ -91,9 +91,9 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 {
 	CFILE* cf;
 	char real_name[MAX_FILENAME_LEN];
-	if (img_cfp == NULL) {
+	if (img_cfp == nullptr) {
 		// this better not happen.. ever
-		Assert(filename != NULL);
+		Assert(filename != nullptr);
 
 		// make sure there is an extension
 		strcpy_s(real_name, filename);
@@ -107,7 +107,7 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 		cf = cfopen(real_name, "rb");
 
 		// file not found
-		if (cf == NULL)
+		if (cf == nullptr)
 			return KTX1_ERROR_INVALID_FILENAME;
 	} else {
 		cf = img_cfp;
@@ -218,7 +218,7 @@ int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp)
 	CFILE* cf;
 	char real_name[MAX_FILENAME_LEN];
 	// this better not happen.. ever
-	Assert(filename != NULL);
+	Assert(filename != nullptr);
 
 	// make sure there is an extension
 	strcpy_s(real_name, filename);
@@ -232,7 +232,7 @@ int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp)
 	cf = cfopen(real_name, "rb");
 
 	// file not found
-	if (cf == NULL)
+	if (cf == nullptr)
 		return KTX1_ERROR_INVALID_FILENAME;
 
 	KTX1_Header hdr{};
