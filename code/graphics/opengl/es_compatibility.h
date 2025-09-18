@@ -52,9 +52,6 @@
 #define glGetDebugMessageLogARB         glGetDebugMessageLog
 #define glDepthRange                    glDepthRangef
 
-struct ConvertedKey { int handle, mip, layer, fmt; };
-struct ConvertedTex { std::vector<uint8_t> data; int w, h, fmt; };
-
 // Bring internalFormat info for glTexSubImage3D calls
 static inline GLint query_internalformat_3d(GLenum target, GLint level)
 {
