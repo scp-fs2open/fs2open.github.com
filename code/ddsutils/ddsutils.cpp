@@ -96,6 +96,11 @@ static uint conversion_resize(DDS_HEADER &dds_header)
 	// drop levels until we get to an appropriate size, but make sure we have
 	// at least 1 mipmap level remaining at the end (in case there's not a full chain)
 	while (((width > MAX_SIZE) || (height > MAX_SIZE)) && (offset < dds_header.dwMipMapCount-1)) {
+		// this shouldn't happen, but catch the obscure case (like 8192x4)
+		if ((width <= 4) || (height <= 4)) {
+			break;
+		}
+
 		width >>= 1;
 		height >>= 1;
 		depth >>= 1;
@@ -194,15 +199,27 @@ static int _dds_read_header(CFILE *ddsfile, DDS_HEADER &dds_header, DDS_HEADER_D
 	return DDS_ERROR_NONE;
 }
 
-static size_t compute_dds_size(const DDS_HEADER &dds_header)
+static size_t compute_dds_size(const DDS_HEADER &dds_header, bool converting = false)
 {
-	uint d_width, d_height, d_depth;
+	const uint block_sz = 4;
+	uint d_width = 0, d_height = 0, d_depth = 0;
 	size_t d_size = 0;
 
 	for (uint i = 0; i < dds_header.dwMipMapCount; i++) {
 		d_width = std::max(1U, dds_header.dwWidth >> i);
 		d_height = std::max(1U, dds_header.dwHeight >> i);
 		d_depth = std::max(1U, dds_header.dwDepth >> i);
+
+		// When converting we need to pad a bit to compensate for the decompression
+		// size on smaller mipmap levels. We need to ensure there is always enough
+		// room to decode an entire 4x4 block in rgba space
+		if (converting) {
+			auto sz = std::min(d_width, d_height);
+
+			if (sz < block_sz) {
+				d_size += ((block_sz * block_sz) - (sz * sz)) * d_depth * 4;
+			}
+		}
 
 		if (dds_header.ddspf.dwFlags & DDPF_FOURCC) {
 			// size of data block (4x4)
@@ -247,6 +264,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	int retval = DDS_ERROR_NONE;
 	int ct = DDS_UNCOMPRESSED;
 	int is_cubemap = 0;
+	bool convert = false;
 
 
 	if (img_cfp == NULL) {
@@ -337,7 +355,9 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 	}
 
 	// maybe do conversion if format not supported
-	if (conversion_needed(dds_header)) {
+	convert = conversion_needed(dds_header);
+
+	if (convert) {
 		// switch to uncompressed format and reset vars
 		dds_header.ddspf.dwFlags &= ~DDPF_FOURCC;
 		dds_header.ddspf.dwFlags |= DDPF_RGB;
@@ -359,7 +379,7 @@ int dds_read_header(const char *filename, CFILE *img_cfp, int *width, int *heigh
 
 	// stuff important info
 	if (size)
-		*size = compute_dds_size(dds_header);
+		*size = compute_dds_size(dds_header, convert);
 
 	if (bpp)
 		*bpp = get_bit_count(dds_header);
@@ -385,6 +405,9 @@ Done:
 
 	return retval;
 }
+
+static void (*decompress_dds)(const void *in, void *out, int pitch) = nullptr;
+static uint32_t BLOCK_SIZE = 0;
 
 //reads pixel info from a dds file
 int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
@@ -423,7 +446,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 
 	cfseek(cfp, (dds_header.ddspf.dwFourCC == FOURCC_DX10) ? DX10_OFFSET : DDS_OFFSET, CF_SEEK_SET);
 
-	size = compute_dds_size(dds_header);
+	size = compute_dds_size(dds_header);	// don't add padding on this one!!
 
 	// read in the data
 	if ( !conversion_needed(dds_header) ) {
@@ -447,6 +470,28 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 		const int num_faces = (dds_header.dwCaps2 & DDSCAPS2_CUBEMAP) ? 6 : 1;
 		const bool has_depth = (dds_header.dwFlags & DDSD_DEPTH) == DDSD_DEPTH;
 
+		switch (dds_header.ddspf.dwFourCC) {
+			case FOURCC_DX10:
+				decompress_dds = bcdec_bc7;
+				BLOCK_SIZE = BCDEC_BC7_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT5:
+				decompress_dds = bcdec_bc3;
+				BLOCK_SIZE = BCDEC_BC3_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT1:
+				decompress_dds = bcdec_bc1;
+				BLOCK_SIZE = BCDEC_BC1_BLOCK_SIZE;
+				break;
+			case FOURCC_DXT3:
+				decompress_dds = bcdec_bc2;
+				BLOCK_SIZE = BCDEC_BC2_BLOCK_SIZE;
+				break;
+			default:
+				Error(LOCATION, "Invalid FourCC (%d) for DDS decompression!", dds_header.ddspf.dwFourCC);
+				break;
+		}
+
 		for (int f = 0; f < num_faces; ++f) {
 			// if we resized then skip over all of that data (altering values to match pre-resize)
 			for (uint x = 0; x < mipmap_offset; ++x) {
@@ -454,7 +499,7 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 				d_height = std::max(1U, dds_header.dwHeight << (mipmap_offset - x));
 				d_depth = has_depth ? std::max(1U, dds_header.dwDepth << (mipmap_offset - x)) : 1U;
 
-				src += (d_width * d_height * d_depth);
+				src += ((d_width + 3) / 4) * ((d_height + 3) / 4) * d_depth * BLOCK_SIZE;
 			}
 
 			for (uint m = mipmap_offset; m < dds_header.dwMipMapCount; ++m) {
@@ -464,23 +509,14 @@ int dds_read_bitmap(const char *filename, ubyte *data, ubyte *bpp, int cf_type)
 				d_depth = std::max(1U, dds_header.dwDepth >> (m - mipmap_offset));
 
 				for (uint d = 0; d < d_depth; ++d) {
+					auto depth_offset = d * d_width * d_height * 4;
+
 					for (uint i = 0; i < d_height; i += 4) {
 						for (uint j = 0; j < d_width; j += 4) {
-							dst = data + data_offset + ((i * d_width + j) * 4);
+							dst = data + data_offset + depth_offset + ((i * d_width + j) * 4);
 
-							if (dds_header.ddspf.dwFourCC == FOURCC_DX10) {
-								bcdec_bc7(src, dst, d_width * 4);
-								src += BCDEC_BC7_BLOCK_SIZE;
-							} else if (dds_header.ddspf.dwFourCC == FOURCC_DXT5) {
-								bcdec_bc3(src, dst, d_width * 4);
-								src += BCDEC_BC3_BLOCK_SIZE;
-							} else if (dds_header.ddspf.dwFourCC == FOURCC_DXT1) {
-								bcdec_bc1(src, dst, d_width * 4);
-								src += BCDEC_BC1_BLOCK_SIZE;
-							} else if (dds_header.ddspf.dwFourCC == FOURCC_DXT3) {
-								bcdec_bc2(src, dst, d_width * 4);
-								src += BCDEC_BC2_BLOCK_SIZE;
-							}
+							decompress_dds(src, dst, d_width * 4);
+							src += BLOCK_SIZE;
 						}
 					}
 				}

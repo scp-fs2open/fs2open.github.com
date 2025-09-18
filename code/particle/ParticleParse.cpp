@@ -282,21 +282,57 @@ namespace particle {
 			}
 		}
 
-		static void parseModularCurvesLifetime(ParticleEffect& effect) {
-			//TODO The following loop behaves as a true subset of how parsing will work once the particle modular curve set is implemented.
-			//As such, once that's added the loop can be replaced with a modular_curve_set.parse without worry about breaking tables.
-			while (optional_string("$Particle Lifetime Curve:")) {
-				required_string("+Input: Lifetime");
+		static void parseLightEmissionSettings(ParticleEffect& effect) {
+			if (optional_string("$Emits Light:")) {
+				ParticleEffect::LightInformation& light = effect.m_light_source.emplace();
 
-				required_string("+Output:");
-				int output = required_string_one_of(2, "Radius", "Velocity");
-				//The required string part enforces this to be either 0 or 1
-				required_string(output == 0 ? "Radius" : "Velocity");
-				int& curve = output == 0 ? effect.m_size_lifetime_curve : effect.m_vel_lifetime_curve;
+				required_string("+Type:");
+				switch(required_string_one_of(4, "Point", "As Particle", "To Last Position", "Cone")) {
+					case 0:
+						Mp += 5;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::POINT;
+						break;
+					case 1:
+						Mp += 11;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::AS_PARTICLE;
+						break;
+					case 2:
+						Mp += 16;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::TO_LAST_POS;
+						break;
+					case 3:
+						Mp+=4;
+						light.light_source_mode = ParticleEffect::LightInformation::LightSourceMode::CONE;
+						break;
+				}
 
-				required_string_either("+Curve Name:", "+Curve:", true);
-				curve = curve_parse(" Unknown curve requested for modular curves!");
+				required_string("+Light Radius:");
+				stuff_float(&light.light_radius);
+
+				if (optional_string("+Light Source Radius:")) {
+					stuff_float(&light.source_radius);
+				}
+
+				required_string("+Intensity:");
+				stuff_float(&light.intensity);
+
+				required_string("+Color:");
+				stuff_float(&light.r);
+				stuff_float(&light.g);
+				stuff_float(&light.b);
+
+				if (optional_string("+Cone Angle:")) {
+					stuff_float(&light.cone_angle);
+				}
+
+				if (optional_string("+Cone Inner Angle:")) {
+					stuff_float(&light.cone_inner_angle);
+				}
 			}
+		}
+
+		static void parseModularCurvesLifetime(ParticleEffect& effect) {
+			effect.m_lifetime_curves.parse("$Particle Lifetime Curve:");
 		}
 
 		static void parseModularCurvesSource(ParticleEffect& effect) {
@@ -337,6 +373,7 @@ namespace particle {
 			parseLength(effect);
 			parseLifetime(effect);
 			parseParentLocal(effect);
+			parseLightEmissionSettings(effect);
 
 			//Spawner Settings
 			parseTiming(effect);
@@ -368,13 +405,13 @@ namespace particle {
 
 		static void parseSizeLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Size over lifetime curve:")) {
-				effect.m_size_lifetime_curve = curve_parse("");
+				effect.m_lifetime_curves.add_curve("Lifetime", ParticleEffect::ParticleLifetimeCurvesOutput::RADIUS_MULT, modular_curves_entry{curve_parse("")});
 			}
 		}
 
 		static void parseVelocityLifetimeCurve(ParticleEffect &effect) {
 			if (optional_string("+Velocity scalar over lifetime curve:")) {
-				effect.m_vel_lifetime_curve = curve_parse("");
+				effect.m_lifetime_curves.add_curve("Lifetime", ParticleEffect::ParticleLifetimeCurvesOutput::VELOCITY_MULT, modular_curves_entry{curve_parse("")});
 			}
 		}
 

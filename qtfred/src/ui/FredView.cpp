@@ -35,9 +35,10 @@
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
-#include <ui/dialogs/LoadoutDialog.h>
+#include <ui/dialogs/TeamLoadoutDialog.h>
 #include <ui/dialogs/VariableDialog.h>
 #include <ui/dialogs/MusicPlayerDialog.h>
+#include <ui/dialogs/RelativeCoordinatesDialog.h>
 #include <iff_defs/iff_defs.h>
 
 #include "mission/Editor.h"
@@ -815,7 +816,7 @@ void FredView::on_actionReinforcements_triggered(bool) {
 	editorDialog->show();
 }
 void FredView::on_actionLoadout_triggered(bool) {
-	auto editorDialog = new dialogs::LoadoutDialog(this, _viewport);
+	auto editorDialog = new dialogs::TeamLoadoutDialog(this, _viewport);
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }
@@ -1231,6 +1232,12 @@ void FredView::on_actionMission_Goals_triggered(bool) {
 void FredView::on_actionMusic_Player_triggered(bool)
 {
 	auto dialog = new dialogs::MusicPlayerDialog(this, _viewport);
+	dialog->setAttribute(Qt::WA_DeleteOnClose);
+	dialog->show();
+}
+
+void FredView::on_actionCalculate_Relative_Coordinates_triggered(bool) {
+	auto dialog = new dialogs::RelativeCoordinatesDialog(this, _viewport);
 	dialog->setAttribute(Qt::WA_DeleteOnClose);
 	dialog->show();
 }

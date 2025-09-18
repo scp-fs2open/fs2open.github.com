@@ -135,9 +135,13 @@ ParticleEffectHandle ParticleManager::addEffect(SCP_vector<ParticleEffect>&& eff
 	}
 #endif
 
-	m_effects.emplace_back(std::move(effect));
+	auto& effect_after_emplace = m_effects.emplace_back(std::move(effect));
 
-	return ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
+	auto handle = ParticleEffectHandle(static_cast<ParticleEffectHandle::impl_type>(m_effects.size() - 1));
+	for (size_t i = 0; i < effect_after_emplace.size(); i++)
+		effect_after_emplace[i].m_self = ParticleSubeffectHandle{handle, i};
+
+	return handle;
 }
 
 void ParticleManager::pageIn() {

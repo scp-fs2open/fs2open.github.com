@@ -804,13 +804,13 @@ void parse_mission_info(mission *pm, bool basic = false)
 		stuff_float(&Neb2_fog_far_mult);
 	}
 
-	if (optional_string("+Volumetric Nebula:")) {
-		pm->volumetrics.emplace().parse_volumetric_nebula();
-	}
-
 	// Goober5000 - ship contrail speed threshold
 	if (optional_string("$Contrail Speed Threshold:")){
 		stuff_int(&pm->contrail_threshold);
+	}
+
+	if (optional_string("+Volumetric Nebula:")) {
+		pm->volumetrics.emplace().parse_volumetric_nebula();
 	}
 
 	// get the number of players if in a multiplayer mission

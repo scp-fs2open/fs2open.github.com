@@ -36,6 +36,7 @@ private:
 	bool		_m_full_war;
 	uint		_m_num_respawns;
 	int			_m_max_respawn_delay;
+	float       _m_player_entry_delay;
 	bool		_m_disallow_support;
 	float		_m_max_hull_repair_val;
 	float		_m_max_subsys_repair_val;
@@ -79,6 +80,9 @@ public:
 
 	void setMaxRespawnDelay(int);
 	int getMaxRespawnDelay();
+
+	void setPlayerEntryDelay(float);
+	float getPlayerEntryDelay() const;
 
 	void setSquadronName(const SCP_string&);
 	SCP_string getSquadronName();

@@ -21,6 +21,19 @@ extern bool Randomize_particle_rotation;
 
 namespace particle
 {
+
+	class ParticleEffect;
+	struct particle_effect_tag {
+	};
+	using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
+
+	struct ParticleSubeffectHandle {
+		ParticleEffectHandle handle;
+		size_t subeffect;
+
+		const ParticleEffect& getParticleEffect() const;
+	};
+
 	//============================================================================
 	//==================== PARTICLE SYSTEM GAME SEQUENCING CODE ==================
 	//============================================================================
@@ -56,29 +69,6 @@ namespace particle
 	extern int Anim_bitmap_id_smoke2;
 	extern int Anim_num_frames_smoke2;
 
-	// particle creation stuff
-	typedef struct particle_info {
-		// old-style particle info
-		vec3d pos = vmd_zero_vector;
-		vec3d vel = vmd_zero_vector;
-		float lifetime = -1.0f;
-		float starting_age = 0.0f;
-		float rad = -1.0f;
-		int bitmap = -1;
-		int nframes = -1;
-
-		// new-style particle info
-		int attached_objnum = -1;				// if these are set, the pos is relative to the pos of the origin of the attached object
-		int attached_sig = -1;					// to make sure the object hasn't changed or died. velocity is ignored in this case
-		bool reverse = false;					// play any animations in reverse
-		bool lifetime_from_animation = true;	// if the particle plays an animation then use the anim length for the particle life
-		float length = 0.f;						// if set, makes the particle render like a laser, oriented along its path
-		bool use_angle = Randomize_particle_rotation;	// whether particles created from this will use angles (i.e. can be rotated)
-														// (the field is initialized to the game_settings variable here because not all particle creation goes through ParticleProperties::createParticle)
-		int size_lifetime_curve = -1;			// a curve idx for size over lifetime, if applicable
-		int vel_lifetime_curve = -1;			// a curve idx for velocity over lifetime, if applicable
-	} particle_info;
-
 	typedef struct particle {
 		// old style data
 		vec3d	pos;				// position
@@ -97,8 +87,8 @@ namespace particle
 		float   length;				// the length of the particle for laser-style rendering
 		float	angle;
 		bool	use_angle;			// whether this particle can be rotated
-		int		size_lifetime_curve;// a curve idx for size over lifetime, if applicable
-		int		vel_lifetime_curve;		// a curve idx for velocity over lifetime, if applicable
+
+		ParticleSubeffectHandle parent_effect;
 	} particle;
 
 	typedef std::weak_ptr<particle> WeakParticlePtr;
@@ -113,22 +103,7 @@ namespace particle
 	 *
 	 * @param pinfo A structure containg information about how the particle should be created
 	 */
-	void create(particle_info* pinfo);
-
-	/**
-	 * @brief Convenience function for creating a non-persistent particle without explicitly creating a particle_info
-	 * structure.
-	 * @return The particle handle
-	 *
-	 * @see particle::create(particle_info* pinfo)
-	 */
-	void create(const vec3d* pos,
-				const vec3d* vel,
-				float lifetime,
-				float rad,
-				int bitmap = -1,
-				const object* objp = nullptr,
-				bool reverse = false);
+	void create(particle&& new_particle);
 
 	/**
 	 * @brief Creates a persistent particle
@@ -140,7 +115,7 @@ namespace particle
 	 * @param pinfo A structure containg information about how the particle should be created
 	 * @return A weak reference to the particle
 	 */
-    WeakParticlePtr createPersistent(particle_info* pinfo);
+	WeakParticlePtr createPersistent(particle&& new_particle);
 }
 
 #endif // _PARTICLE_H

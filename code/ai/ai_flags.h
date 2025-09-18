@@ -142,6 +142,7 @@ namespace AI {
 		Fightercraft_nonshielded_ships_can_manage_ets,
 		Ships_playing_dead_dont_manage_ets,
 		Better_combat_collision_avoidance,
+		Better_combat_collision_avoid_includes_target,
 		Better_guard_collision_avoidance,
 		Require_exact_los,
 		Improved_missile_avoidance,

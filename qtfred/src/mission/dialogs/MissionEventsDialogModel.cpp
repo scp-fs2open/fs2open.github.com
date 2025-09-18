@@ -865,6 +865,7 @@ void MissionEventsDialogModel::setEventDirectiveText(const SCP_string& text)
 	}
 	auto& event = m_events[m_cur_event];
 	modify(event.objective_text, text);
+	lcl_fred_replace_stuff(event.objective_text);
 }
 
 SCP_string MissionEventsDialogModel::getEventDirectiveKeyText() const
@@ -882,6 +883,7 @@ void MissionEventsDialogModel::setEventDirectiveKeyText(const SCP_string& text)
 	}
 	auto& event = m_events[m_cur_event];
 	modify(event.objective_key_text, text);
+	lcl_fred_replace_stuff(event.objective_key_text);
 }
 
 bool MissionEventsDialogModel::getLogTrue() const

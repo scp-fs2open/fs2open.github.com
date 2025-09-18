@@ -47,9 +47,8 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_spawnNoise(nullptr),
 	  m_manual_offset (std::nullopt),
 	  m_manual_velocity_offset(std::nullopt),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
-	  m_size_lifetime_curve(-1),
-	  m_vel_lifetime_curve (-1),
 	  m_particleChance(1.f),
 	  m_distanceCulled(-1.f)
 	{}
@@ -118,9 +117,8 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_spawnNoise(nullptr),
 	  m_manual_offset(offsetLocal),
 	  m_manual_velocity_offset(velocityOffsetLocal),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(particleTrail),
-	  m_size_lifetime_curve(-1),
-	  m_vel_lifetime_curve (-1),
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}
 
@@ -268,11 +266,11 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 	for (uint i = 0; i < num_spawn; ++i) {
 		float particleFraction = static_cast<float>(i) / static_cast<float>(num_spawn);
 
-		particle_info info;
+		particle info;
 
 		info.reverse = m_reverseAnimation;
 		info.pos = pos;
-		info.vel = velParent;
+		info.velocity = velParent;
 
 		if (m_parent_local) {
 			info.attached_objnum = parent;
@@ -284,9 +282,9 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		}
 
 		if (m_vel_inherit_absolute)
-			vm_vec_normalize_safe(&info.vel, true);
+			vm_vec_normalize_safe(&info.velocity, true);
 
-		info.vel *= (m_ignore_velocity_inherit_if_has_parent && parent >= 0) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
+		info.velocity *= (m_ignore_velocity_inherit_if_has_parent && parent >= 0) ? 0.f : m_vel_inherit.next() * inheritVelocityMultiplier;
 
 		vec3d localVelocity = velNoise;
 		vec3d localPos = posNoise;
@@ -325,32 +323,43 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 				m_velocity_directional_scaling == VelocityScaling::DOT ? dot : 1.f / std::max(0.001f, dot));
 		}
 
-		info.vel += localVelocity;
-		info.pos += localPos + info.vel * (interp * f2fl(Frametime));
+		info.velocity += localVelocity;
+		info.pos += localPos + info.velocity * (interp * f2fl(Frametime));
 
 		info.bitmap = m_bitmap_list[m_bitmap_range.next()];
 
 		if (m_parentScale)
 			// if we were spawned by a particle, parentRadius is the parent's radius and m_radius is a factor of that
-			info.rad = parentRadius * m_radius.next() * radiusMultiplier;
+			info.radius = parentRadius * m_radius.next() * radiusMultiplier;
 		else
-			info.rad = m_radius.next() * radiusMultiplier;
+			info.radius = m_radius.next() * radiusMultiplier;
 
 		info.length = m_length.next() * lengthMultiplier;
-		if (m_hasLifetime) {
-			if (m_parentLifetime)
-				// if we were spawned by a particle, parentLifetime is the parent's remaining lifetime and m_lifetime is a factor of that
-				info.lifetime = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
-			else
-				info.lifetime = m_lifetime.next() * lifetimeMultiplier;
 
-			info.lifetime_from_animation = m_keep_anim_length_if_available;
+		int fps = 1;
+		if (info.nframes < 0) {
+			Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
+			bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
+		}
+
+		if (m_hasLifetime) {
+			if (m_keep_anim_length_if_available && info.nframes > 1) {
+				// Recalculate max life for ani's
+				info.max_life = i2fl(info.nframes) / i2fl(fps);
+			}
+			else {
+				if (m_parentLifetime)
+					// if we were spawned by a particle, parentLifetime is the parent's remaining lifetime and m_lifetime is a factor of that
+					info.max_life = parentLifetime * m_lifetime.next() * lifetimeMultiplier;
+				else
+					info.max_life = m_lifetime.next() * lifetimeMultiplier;
+			}
 		}
 		
-		info.starting_age = interp * f2fl(Frametime);
-		
-		info.size_lifetime_curve = m_size_lifetime_curve;
-		info.vel_lifetime_curve = m_vel_lifetime_curve;
+		info.age = interp * f2fl(Frametime);
+		info.looping = false;
+		info.angle = frand_range(0.0f, PI2);
+		info.parent_effect = m_self;
 
 		switch (m_rotation_type) {
 			case RotationType::DEFAULT:
@@ -367,7 +376,7 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		}
 
 		if (m_particleTrail.isValid()) {
-			auto part = createPersistent(&info);
+			auto part = createPersistent(std::move(info));
 
 			if constexpr (isPersistent)
 				createdParticles.push_back(part);
@@ -381,12 +390,12 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 			}
 		} else {
 			if constexpr (isPersistent){
-				auto part = createPersistent(&info);
+				auto part = createPersistent(std::move(info));
 				createdParticles.push_back(part);
 			}
 			else {
 				// We don't have a trail so we don't need a persistent particle
-				create(&info);
+				create(std::move(info));
 			}
 		}
 	}

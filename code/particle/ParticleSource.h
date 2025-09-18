@@ -19,11 +19,6 @@ struct weapon_info;
 enum class WeaponState: uint32_t;
 
 namespace particle {
-	
-class ParticleEffect;
-struct particle_effect_tag {
-};
-using ParticleEffectHandle = ::util::ID<particle_effect_tag, ptrdiff_t, -1>;
 
 /**
  * @brief The orientation of a particle source
