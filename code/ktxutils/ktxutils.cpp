@@ -213,7 +213,7 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 	return KTX1_ERROR_NONE;
 }
 
-int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp, int cf_type)
+int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp)
 {
 	CFILE* cf;
 	char real_name[MAX_FILENAME_LEN];

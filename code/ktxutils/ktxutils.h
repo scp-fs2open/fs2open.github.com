@@ -78,7 +78,7 @@ struct KTX1_Header {
 
 int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* bpp, int* c_type, int* mip_levels, size_t* total_size);
 
-int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp, int cf_type);
+int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp);
 
 int ktx_map_ktx_type_to_gl_internal(unsigned int ktx_format);
 

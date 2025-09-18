@@ -3520,7 +3520,7 @@ void bm_lock_ktx1(int handle, bitmap_slot* bs, bitmap* bmp, int bpp, uint flags)
 	// this will populate filename[] whether it's EFF or not
 	EFF_FILENAME_CHECK;
 
-	ktx_error = ktx1_read_bitmap(filename, data, &ktx_bpp, be->dir_type);
+	ktx_error = ktx1_read_bitmap(filename, data, &ktx_bpp);
 
 	if (ktx_error != KTX1_ERROR_NONE) 
 	{
