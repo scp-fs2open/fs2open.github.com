@@ -44,7 +44,7 @@
 
 #include "mission/Editor.h"
 #include "mission/management.h"
-#include "mission/missionsave.h"
+#include "missioneditor/missionsave.h"
 
 #include "widgets/ColorComboBox.h"
 
@@ -183,7 +183,21 @@ void FredView::on_actionExit_triggered(bool) {
 }
 
 void FredView::on_actionSave_triggered(bool state) {
-	CFred_mission_save save(_viewport);
+	Fred_mission_save save;
+	// TODO FredView save format actions currently don't do anything
+	// will need to wire this up when those are finalized
+	/*if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}*/
+	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_view_pos(_viewport->view_pos);
+	save.set_view_orient(_viewport->view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
 
 	if (saveName.isEmpty()) {
 		on_actionSave_As_triggered(state);
@@ -193,7 +207,21 @@ void FredView::on_actionSave_triggered(bool state) {
 	save.save_mission_file(saveName.replace('/', DIR_SEPARATOR_CHAR).toUtf8().constData());
 }
 void FredView::on_actionSave_As_triggered(bool) {
-	CFred_mission_save save(_viewport);
+	Fred_mission_save save;
+	// TODO FredView save format actions currently don't do anything
+	// will need to wire this up when those are finalized
+	/*if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}*/
+	save.set_always_save_display_names(_viewport->Always_save_display_names);
+	save.set_view_pos(_viewport->view_pos);
+	save.set_view_orient(_viewport->view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
 
 	saveName = QFileDialog::getSaveFileName(this, tr("Save mission"), QString(), tr("FS2 missions (*.fs2)"));
 
