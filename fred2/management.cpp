@@ -26,6 +26,7 @@
 #include "mission/missionmessage.h"
 #include "mission/missiongoals.h"
 #include "mission/missionbriefcommon.h"
+#include "missioneditor/common.h"
 #include "model/modelreplace.h"
 #include "Management.h"
 #include "cfile/cfile.h"
@@ -2393,7 +2394,7 @@ void management_add_ships_to_combo( CComboBox *box, int flags )
 			for (i = 0; i < (int)Iff_info.size(); i++)
 			{
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, 0);
+				stuff_special_arrival_anchor_name(tmp, i, restrict_to_players, false);
 
 				id = box->AddString(tmp);
 				box->SetItemData(id, get_special_anchor(tmp));
@@ -2526,38 +2527,6 @@ void update_custom_wing_indexes()
 }
 
 // Goober5000
-void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to_players, int retail_format)
-{
-	char *iff_name = Iff_info[iff_index].iff_name;
-
-	// stupid retail hack
-	if (retail_format && !stricmp(iff_name, "hostile") && !restrict_to_players)
-		iff_name = "enemy";
-
-	if (restrict_to_players)
-		sprintf(buf, "<any %s player>", iff_name);
-	else
-		sprintf(buf, "<any %s>", iff_name);
-
-	strlwr(buf);
-}
-
-// Goober5000
-void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_format)
-{
-	// filter out iff
-	int iff_index = anchor_num;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_FLAG;
-	iff_index &= ~SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG;
-
-	// filter players
-	int restrict_to_players = (anchor_num & SPECIAL_ARRIVAL_ANCHOR_PLAYER_FLAG);
-
-	// get name
-	stuff_special_arrival_anchor_name(buf, iff_index, restrict_to_players, retail_format);
-}
-
-// Goober5000
 void update_texture_replacements(const char *old_name, const char *new_name)
 {
 	for (SCP_vector<texture_replace>::iterator ii = Fred_texture_replacements.begin(); ii != Fred_texture_replacements.end(); ++ii)
@@ -2565,9 +2534,4 @@ void update_texture_replacements(const char *old_name, const char *new_name)
 		if (!stricmp(ii->ship_name, old_name))
 			strcpy_s(ii->ship_name, new_name);
 	}
-}
-
-void time_to_mission_info_string(const std::tm* src, char* dest, size_t dest_max_len)
-{
-	std::strftime(dest, dest_max_len, "%x at %X", src);
 }

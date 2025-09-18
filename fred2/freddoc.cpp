@@ -26,7 +26,6 @@
 #include "MainFrm.h"
 #include "Management.h"
 #include "MessageEditorDlg.h"
-#include "MissionSave.h"
 
 #include "ai/ai.h"
 #include "ai/aigoals.h"
@@ -139,7 +138,20 @@ bool CFREDDoc::autoload() {
 
 int CFREDDoc::autosave(char *desc) {
 	int i;
-	CFred_mission_save save;
+	Fred_mission_save save;
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+	save.set_always_save_display_names(Always_save_display_names);
+	save.set_view_pos(view_pos);
+	save.set_view_orient(view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+
 	CWaitCursor wait;
 
 	if (Autosave_disabled) {
@@ -489,7 +501,19 @@ void CFREDDoc::OnFileImportFSM() {
 
 		CString fs1_path_mfc(dlgFile.GetNextPathName(pos));
 		num_files++;
-		CFred_mission_save save;
+		Fred_mission_save save;
+		if (Mission_save_format == FSO_FORMAT_RETAIL) {
+			save.set_save_format(MissionFormat::RETAIL);
+		} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+			save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+		} else {
+			save.set_save_format(MissionFormat::STANDARD);
+		}
+		save.set_always_save_display_names(Always_save_display_names);
+		save.set_view_pos(view_pos);
+		save.set_view_orient(view_orient);
+		save.set_fred_alt_names(Fred_alt_names);
+		save.set_fred_callsigns(Fred_callsigns);
 
 		DWORD attrib;
 		FILE *fp;
@@ -672,7 +696,20 @@ BOOL CFREDDoc::OnOpenDocument(LPCTSTR pathname)
 #endif
 
 BOOL CFREDDoc::OnSaveDocument(LPCTSTR pathname) {
-	CFred_mission_save save;
+	Fred_mission_save save;
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+	save.set_always_save_display_names(Always_save_display_names);
+	save.set_view_pos(view_pos);
+	save.set_view_orient(view_orient);
+	save.set_fred_alt_names(Fred_alt_names);
+	save.set_fred_callsigns(Fred_callsigns);
+
 	DWORD attrib;
 	FILE *fp;
 

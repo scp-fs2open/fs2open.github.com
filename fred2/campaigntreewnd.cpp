@@ -17,7 +17,7 @@
 #include "Management.h"
 #include "MainFrm.h"
 #include "FREDView.h"
-#include "MissionSave.h"
+#include "missioneditor/missionsave.h"
 #include "InitialShips.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
@@ -159,7 +159,19 @@ void campaign_tree_wnd::OnDestroy()
 
 void campaign_tree_wnd::OnCpgnFileSave() 
 {
-	CFred_mission_save save;
+	Fred_mission_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
+
 
 	Campaign_tree_formp->update();
 	if (!Campaign.filename[0]) {
@@ -190,6 +202,10 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	*/	
 
 	auto full_path = (LPCSTR)Campaign_tree_formp->GetCurrentCampaignPath();
+
+	Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+	Campaign_tree_viewp->sort_elements();
+
 	if (save.save_campaign_file(full_path))
 	{
 		MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
@@ -203,7 +219,18 @@ void campaign_tree_wnd::OnCpgnFileSave()
 void campaign_tree_wnd::OnCpgnFileSaveAs() 
 {
 	const char *old_name = nullptr;
-	CFred_mission_save save;
+	Fred_mission_save save;
+
+	// This if/else is not strictly necessary as the underlying enum values match
+	// the Mission_save_format values but it is clearer to read and more robust against
+	// future changes.
+	if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}
 
 	Campaign_tree_formp->update();
 	if (Campaign.filename[0])
@@ -227,6 +254,10 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		}
 
 		string_copy(Campaign.filename, name, MAX_FILENAME_LEN - 1);
+
+		Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
+		Campaign_tree_viewp->sort_elements();
+
 		if (save.save_campaign_file((LPCSTR)dlg.GetPathName()))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
