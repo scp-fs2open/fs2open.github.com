@@ -23,8 +23,8 @@ class ShipFlagsDialog : public QDialog {
   protected:
 	void closeEvent(QCloseEvent*) override;
   private slots:
-	void on_okButton_clicked();
-	void on_cancelButton_clicked();
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
 	void on_destroySecondsSpinBox_valueChanged(int);
 	void on_escortPrioritySpinBox_valueChanged(int);
 	void on_kamikazeDamageSpinBox_valueChanged(int);

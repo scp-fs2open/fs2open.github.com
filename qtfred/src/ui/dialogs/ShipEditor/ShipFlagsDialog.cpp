@@ -63,11 +63,11 @@ void ShipFlagsDialog::closeEvent(QCloseEvent* e)
 	reject();
 	e->ignore(); // Don't let the base class close the window
 }
-void ShipFlagsDialog::on_okButton_clicked()
+void ShipFlagsDialog::on_okAndCancelButtons_accepted()
 {
 	accept();
 }
-void ShipFlagsDialog::on_cancelButton_clicked()
+void ShipFlagsDialog::on_okAndCancelButtons_rejected()
 {
 	reject();
 }
