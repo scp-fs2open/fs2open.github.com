@@ -87,8 +87,6 @@ set(FRED2_SOURCES
 	missiongoalsdlg.h
 	missionnotesdlg.cpp
 	missionnotesdlg.h
-	missionsave.cpp
-	missionsave.h
 	modifyvariabledlg.cpp
 	modifyvariabledlg.h
 	musicplayerdlg.cpp

@@ -20,6 +20,7 @@
 #include "FREDView.h"
 #include "starfield/starfield.h"
 #include "jumpnode/jumpnode.h"
+#include "missioneditor/common.h"
 #include "cfile/cfile.h"
 #include "restrictpaths.h"
 #include "iff_defs/iff_defs.h"
@@ -385,7 +386,7 @@ void wing_editor::initialize_data_safe(int full_update)
 			{
 				// figure out what the box represents this as
 				char tmp[NAME_LENGTH + 15];
-				stuff_special_arrival_anchor_name(tmp, m_arrival_target, 0);
+				stuff_special_arrival_anchor_name(tmp, m_arrival_target, false);
 	
 				// find it in the box
 				m_arrival_target = arrival_box->FindStringExact(-1, tmp);
