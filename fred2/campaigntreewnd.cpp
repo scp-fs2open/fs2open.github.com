@@ -17,7 +17,7 @@
 #include "Management.h"
 #include "MainFrm.h"
 #include "FREDView.h"
-#include "missioneditor/missionsave.h"
+#include "missioneditor/campaignsave.h"
 #include "InitialShips.h"
 #include "mission/missionparse.h"
 #include "parse/parselo.h"
@@ -159,7 +159,7 @@ void campaign_tree_wnd::OnDestroy()
 
 void campaign_tree_wnd::OnCpgnFileSave() 
 {
-	Fred_mission_save save;
+	Fred_campaign_save save;
 
 	// This if/else is not strictly necessary as the underlying enum values match
 	// the Mission_save_format values but it is clearer to read and more robust against
@@ -219,7 +219,7 @@ void campaign_tree_wnd::OnCpgnFileSave()
 void campaign_tree_wnd::OnCpgnFileSaveAs() 
 {
 	const char *old_name = nullptr;
-	Fred_mission_save save;
+	Fred_campaign_save save;
 
 	// This if/else is not strictly necessary as the underlying enum values match
 	// the Mission_save_format values but it is clearer to read and more robust against

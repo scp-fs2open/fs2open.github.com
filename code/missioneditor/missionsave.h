@@ -75,20 +75,6 @@ class Fred_mission_save {
 	int autosave_mission_file(char* pathname);
 
 	/**
-	 * @brief Saves the campaign file to the given full pathname
-	 *
-	 * @param[in] pathname The full pathname to save to
-	 *
-	 * @details Returns the value of CFred_mission_save::err, which is:
-	 *
-	 * @returns 0 for no error, or
-	 * @returns A negative value if an error occurred
-	 *
-	 * @see save_mission_internal()
-	 */
-	int save_campaign_file(const char* pathname);
-
-	/**
 	 * @brief Saves the mission file to the given full pathname
 	 *
 	 * @param[in] pathname The full pathname to save to
@@ -102,7 +88,13 @@ class Fred_mission_save {
 	 */
 	int save_mission_file(const char* pathname);
 
-  private:
+  protected:
+
+	FredSaveConfig save_config{};
+	char* raw_ptr = nullptr;
+	SCP_vector<SCP_string> fso_ver_comment;
+	int err = 0;
+	CFILE* fp = nullptr;
 
 	/**
 	 * @brief Move past the comment without copying it to the output file. Used for special FSO comment tags
@@ -165,6 +157,8 @@ class Fred_mission_save {
 	 * @param[in] ...
 	 */
 	int fout_version(char* format, ...);
+
+  private:
 
 	/**
 	 * @brief Saves the ai_goals to file
@@ -248,14 +242,6 @@ class Fred_mission_save {
 	 * @returns A negative value if an error occurred
 	 */
 	int save_briefing();
-
-	/**
-	 * @brief Save the campaign sexp to file
-	 *
-	 * @param[in] node Index of the sexp node
-	 * @param[in] link Mission index of the next mission. Is -1 if this is the last link
-	 */
-	void save_campaign_sexp(int node, int link);
 
 	/**
 	 * @brief Save the command briefing to file
@@ -536,10 +522,4 @@ class Fred_mission_save {
 	 * handling newlines properly
 	 */
 	void fout_raw_comment(const char* comment_start);
-
-	FredSaveConfig save_config{};
-	char* raw_ptr = nullptr;
-	SCP_vector<SCP_string> fso_ver_comment;
-	int err = 0;
-	CFILE* fp = nullptr;
 };
