@@ -31,7 +31,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname)
 
 	required_string_fred("$Name:");
 	parse_comments(0);
-	fout(" %s", Campaign.name);
+	fout_ext(" ", "%s", Campaign.name);
 
 	Assert((Campaign.type >= 0) && (Campaign.type < MAX_CAMPAIGN_TYPES));
 	required_string_fred("$Type:");
@@ -39,10 +39,10 @@ int Fred_campaign_save::save_campaign_file(const char* pathname)
 	fout(" %s", campaign_types[Campaign.type]);
 
 	// XSTR
-	if (Campaign.desc) {
+	if (!Campaign.description.empty()) {
 		required_string_fred("+Description:");
 		parse_comments();
-		fout_ext("\n", "%s", Campaign.desc);
+		fout_ext("\n", "%s", Campaign.description.c_str());
 		fout("\n$end_multi_text");
 	}
 
