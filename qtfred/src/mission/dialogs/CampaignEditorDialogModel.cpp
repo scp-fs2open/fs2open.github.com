@@ -100,7 +100,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	initialWeapons(Weapon_info, &initWeps, this),
 	missionData(getMissions(), &CampaignMissionData::initMissions, this),
 	campaignName(Campaign.name),		//missioncampaign.h globals
-	campaignDescr(Campaign.desc),
+	campaignDescr(Campaign.description.c_str()),
 	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
 	Assertion(_numPlayers == 0 || campaignFile.isEmpty(), "The editor should only allow setting a player number when a new campaign is created. Please report.");
@@ -447,7 +447,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	Campaign.type = campaignTypes.indexOf(campaignType);
 
 	if (!modified_desc.isEmpty())
-		Campaign.desc = vm_strdup(qPrintable(modified_desc));
+		Campaign.description = modified_desc.toUtf8().constData();
 
 	Campaign.num_players = numPlayers;
 
