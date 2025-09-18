@@ -23,7 +23,7 @@ bool loadHandleToQImage(int bmHandle, QImage& outImage, QString* outError)
 	}
 
 	int w = 0, h = 0;
-	ushort flags = 0;
+	uint flags = 0;
 	int nframes = 0, fps = 0;
 
 	// Use the returned handle (first frame if this is an animation.. TODO: Handle animations. Will be useful for Heads)
