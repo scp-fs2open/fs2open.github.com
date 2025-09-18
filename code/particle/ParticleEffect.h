@@ -89,8 +89,33 @@ public:
 		RADIUS_MULT,
 		LENGTH_MULT,
 		ANIM_STATE,
+		LIGHT_RADIUS_MULT,
+		LIGHT_SOURCE_RADIUS_MULT,
+		LIGHT_INTENSITY_MULT,
+		LIGHT_R_MULT,
+		LIGHT_G_MULT,
+		LIGHT_B_MULT,
+		LIGHT_CONE_ANGLE_MULT,
+		LIGHT_CONE_INNER_ANGLE_MULT,
 
 		NUM_VALUES
+	};
+
+	struct LightInformation {
+		float light_radius;
+		float source_radius;
+		float intensity;
+		float r, g, b;
+		float cone_angle, cone_inner_angle;
+
+		enum class LightSourceMode : uint8_t {
+			POINT,
+			AS_PARTICLE,
+			TO_LAST_POS,
+			CONE
+		} light_source_mode;
+
+		constexpr LightInformation() : light_radius(0.f), source_radius(0.f), intensity(0.f), r(0.f), g(0.f), b(0.f), cone_angle(0.f), cone_inner_angle(0.f), light_source_mode(LightSourceMode::POINT) {}
 	};
 
  private:
@@ -98,6 +123,7 @@ public:
 	friend class ParticleManager;
 	friend int ::parse_weapon(int, bool, const char*);
 	friend ParticleEffectHandle scripting::api::getLegacyScriptingParticleEffect(int bitmap, bool reversed);
+	friend bool move_particle(float frametime, particle* part);
 
 	SCP_string m_name; //!< The name of this effect
 
@@ -145,6 +171,8 @@ public:
 
 	std::optional<vec3d> m_manual_offset;
 	std::optional<vec3d> m_manual_velocity_offset;
+
+	std::optional<LightInformation> m_light_source;
 
 	ParticleEffectHandle m_particleTrail;
 
@@ -260,10 +288,20 @@ public:
 
 	constexpr static auto modular_curves_lifetime_definition = make_modular_curve_definition<particle, ParticleLifetimeCurvesOutput>(
 		std::array {
-				std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
-				std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
-				std::pair {"Length", ParticleLifetimeCurvesOutput::LENGTH_MULT},
-				std::pair {"Anim State", ParticleLifetimeCurvesOutput::ANIM_STATE},
+			std::pair {"Radius", ParticleLifetimeCurvesOutput::RADIUS_MULT},
+			std::pair {"Velocity", ParticleLifetimeCurvesOutput::VELOCITY_MULT},
+			std::pair {"Radius Mult", ParticleLifetimeCurvesOutput::RADIUS_MULT}, // Modern Naming Alias
+			std::pair {"Velocity Mult", ParticleLifetimeCurvesOutput::VELOCITY_MULT}, // Modern Naming Alias
+			std::pair {"Length Mult", ParticleLifetimeCurvesOutput::LENGTH_MULT},
+			std::pair {"Anim State Mult", ParticleLifetimeCurvesOutput::ANIM_STATE},
+			std::pair {"Light Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT},
+			std::pair {"Light Source Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT},
+			std::pair {"Light Intensity Mult", ParticleLifetimeCurvesOutput::LIGHT_INTENSITY_MULT},
+			std::pair {"Light R Mult", ParticleLifetimeCurvesOutput::LIGHT_R_MULT},
+			std::pair {"Light G Mult", ParticleLifetimeCurvesOutput::LIGHT_G_MULT},
+			std::pair {"Light B Mult", ParticleLifetimeCurvesOutput::LIGHT_B_MULT},
+			std::pair {"Light Cone Angle Mult", ParticleLifetimeCurvesOutput::LIGHT_CONE_ANGLE_MULT},
+			std::pair {"Light Cone Inner Angle Mult", ParticleLifetimeCurvesOutput::LIGHT_CONE_INNER_ANGLE_MULT},
 		},
 		//Should you ever need to access something from the effect as a modular curve input:
 		//std::pair {"", modular_curves_submember_input<&particle::parent_effect, &ParticleSubeffectHandle::getParticleEffect, &ParticleEffect::>{}}

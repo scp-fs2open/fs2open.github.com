@@ -47,6 +47,7 @@ ParticleEffect::ParticleEffect(SCP_string name)
 	  m_spawnNoise(nullptr),
 	  m_manual_offset (std::nullopt),
 	  m_manual_velocity_offset(std::nullopt),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(ParticleEffectHandle::invalid()),
 	  m_particleChance(1.f),
 	  m_distanceCulled(-1.f)
@@ -116,6 +117,7 @@ ParticleEffect::ParticleEffect(SCP_string name,
 	  m_spawnNoise(nullptr),
 	  m_manual_offset(offsetLocal),
 	  m_manual_velocity_offset(velocityOffsetLocal),
+	  m_light_source(std::nullopt),
 	  m_particleTrail(particleTrail),
 	  m_particleChance(particleChance),
 	  m_distanceCulled(distanceCulled) {}
@@ -335,14 +337,12 @@ auto ParticleEffect::processSourceInternal(float interp, const ParticleSource& s
 		info.length = m_length.next() * lengthMultiplier;
 
 		int fps = 1;
-		if (info.nframes < 0) {
-			// Temporal WCS particle crash hack
-			// DO NOT MERGE!
-			if (!bm_is_valid(info.bitmap))
-				continue;
-			//Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
-			bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
-		}
+    // Temporal WCS particle crash hack
+    // DO NOT MERGE!
+    if (!bm_is_valid(info.bitmap))
+      continue;
+    //Assertion(bm_is_valid(info.bitmap), "Invalid bitmap handle passed to particle create.");
+    bm_get_info(info.bitmap, nullptr, nullptr, nullptr, &info.nframes, &fps);
 
 		if (m_hasLifetime) {
 			if (m_keep_anim_length_if_available && info.nframes > 1) {
