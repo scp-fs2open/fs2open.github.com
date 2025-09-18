@@ -105,6 +105,7 @@ protected:
 	afx_msg void OnUpdateViewWaypoints(CCmdUI* pCmdUI);
 	afx_msg void OnLButtonDown(UINT nFlags, CPoint point);
 	afx_msg void OnEditorsShips();
+	afx_msg void OnEditorsProps();
 	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnKeyUp(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnSetFocus(CWnd* pOldWnd);
