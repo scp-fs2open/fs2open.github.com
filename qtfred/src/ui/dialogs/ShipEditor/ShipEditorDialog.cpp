@@ -627,9 +627,6 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	// auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
-	// dialog->setAttribute(Qt::WA_DeleteOnClose);
-	// dialog->show();
 	CheckBoxListDialog dlg(this);
 	dlg.setCaption("Player Orders Accepted");
 	// Get our flag list and convert it to Qt's internal types
@@ -681,10 +678,6 @@ void ShipEditorDialog::on_hideCuesButton_clicked()
 }
 void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 {
-	//int target_class = Ships[_model->getArrivalTarget()].ship_info_index;
-	//auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, false);
-	//dialog->setAttribute(Qt::WA_DeleteOnClose);
-	//dialog->show();
 	CheckBoxListDialog dlg(this);
 	dlg.setCaption("Restrict Arrival Paths");
 	auto arrivalPaths = _model->getArrivalPaths();
@@ -716,10 +709,6 @@ void ShipEditorDialog::on_customWarpinButton_clicked()
 }
 void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
-	//int target_class = Ships[_model->getDepartureTarget()].ship_info_index;
-	//auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, true);
-	//dialog->setAttribute(Qt::WA_DeleteOnClose);
-	//dialog->show();
 	CheckBoxListDialog dlg(this);
 	dlg.setCaption("Restrict Departure Paths");
 	auto departurePaths = _model->getDeparturePaths();
