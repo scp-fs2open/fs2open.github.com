@@ -504,7 +504,7 @@ int mission_campaign_load(const char* filename, const char* full_path, player* p
 			Error(LOCATION, "Unknown campaign type %s!", type);
 
 		if (optional_string("+Description:"))
-			Campaign.desc = stuff_and_malloc_string(F_MULTITEXT, NULL);
+			stuff_string(Campaign.description, F_MULTITEXT);
 
 		// if the type is multiplayer -- get the number of players
 		if ( Campaign.type != CAMPAIGN_TYPE_SINGLE) {
@@ -1204,10 +1204,7 @@ void mission_campaign_clear()
 {
 	int i;
 
-	if (Campaign.desc != NULL) {
-		vm_free(Campaign.desc);
-		Campaign.desc = NULL;
-	}
+	Campaign.description.clear();
 
 	// be sure to remove all old malloced strings of Mission_names
 	// we must also free any goal stuff that was from a previous campaign
