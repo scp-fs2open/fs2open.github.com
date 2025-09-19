@@ -1,52 +1,100 @@
-/*
- * Copyright (C) Volition, Inc. 1999.  All rights reserved.
- *
- * All source code herein is the property of Volition, Inc. You may not sell
- * or otherwise commercially exploit the source or things you created based on the
- * source.
- *
- */
 #pragma once
 
+#include "ai/ai.h"
+#include "cfile/cfile.h"
+#include "mission/missionparse.h"
+#include "object/waypoint.h"
+#include "parse/parselo.h"
+#include "ship/ship.h"
+#include "ship/shipfx.h"
 
-#include <ai/ai.h>
-#include <cfile/cfile.h>
-#include <mission/missionparse.h>
-#include <object/waypoint.h>
-#include <parse/parselo.h>
-#include <ship/ship.h>
-#include <ship/shipfx.h>
-
-#include "mission/Editor.h"
-
-#include <string>
-#include <cstdio>
+#define MISSION_BACKUP_NAME "Backup"
+inline constexpr int MISSION_BACKUP_DEPTH = 9; // TODO make user configurable in QtFRED's future settings menu
 
 struct sexp_container;
 
-namespace fso {
-namespace fred {
-
 enum class MissionFormat {
-	RETAIL = 0, STANDARD = 1, COMPATIBILITY_MODE = 2
+	RETAIL = 0,
+	STANDARD = 1,
+	COMPATIBILITY_MODE = 2
+};
+
+struct FredSaveConfig {
+
+	vec3d view_pos{};
+	matrix view_orient{};
+
+	bool always_save_display_names = false;
+
+	// These are a little strange since mission saving and campaign saving use the same class here
+	// which may be worth splitting up in the future. For now these will assert if not set when saving
+	// a mission but are ignored when saving a campaign.
+	const char (*fred_alt_names)[NAME_LENGTH + 1] = nullptr;
+	const char (*fred_callsigns)[NAME_LENGTH + 1] = nullptr;
+
+	MissionFormat save_format = MissionFormat::STANDARD;
+
+	int mission_backup_depth = MISSION_BACKUP_DEPTH; // TODO make user configurable
+	SCP_string mission_backup_name = MISSION_BACKUP_NAME; // TODO make user configurable
 };
 
 /**
- * @class CFred_mission_save
+ * @class Fred_mission_save
  *
  * @brief Class which saves a mission file
  *
  * @details Most of the private save functions are an API which are used similarly to parselo.  Many operate on
  *   sections of the save file, and a few are general purpose (the later take in arguments).
  */
-class CFred_mission_save {
- public:
+class Fred_mission_save {
+  public:
+	Fred_mission_save() = default;
+
+	void set_save_format(MissionFormat fmt) { save_config.save_format = fmt; }
+	void set_view_pos(const vec3d& pos) { save_config.view_pos = pos; }
+	void set_view_orient(const matrix& orient) { save_config.view_orient = orient; }
+	void set_fred_alt_names(const char (*names)[NAME_LENGTH + 1]) { save_config.fred_alt_names = names; }
+	void set_fred_callsigns(const char (*callsigns)[NAME_LENGTH + 1]) { save_config.fred_callsigns = callsigns; }
+	void set_always_save_display_names(bool always) { save_config.always_save_display_names = always; }
+	void set_mission_backup_depth(int depth) { save_config.mission_backup_depth = depth; }
+	void set_mission_backup_name(const SCP_string& name) { save_config.mission_backup_name = name; }
+
+
 	/**
-	 * @brief Default constructor
+	 * @brief Saves the mission onto the undo stack
+	 *
+	 * @param[in] pathname The full pathname
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occured.
+	 *
+	 * @see save_mission_internal()
 	 */
-	explicit CFred_mission_save(EditorViewport* viewport = nullptr, MissionFormat format = MissionFormat::STANDARD) :
-		save_format(format), _editor(viewport ? viewport->editor : nullptr), _viewport(viewport) {
-	}
+	int autosave_mission_file(char* pathname);
+
+	/**
+	 * @brief Saves the mission file to the given full pathname
+	 *
+	 * @param[in] pathname The full pathname to save to
+	 *
+	 * @details Returns the value of CFred_mission_save::err, which is:
+	 *
+	 * @returns 0 for no error, or
+	 * @returns A negative value if an error occurred
+	 *
+	 * @see save_mission_internal()
+	 */
+	int save_mission_file(const char* pathname);
+
+  protected:
+
+	FredSaveConfig save_config{};
+	char* raw_ptr = nullptr;
+	SCP_vector<SCP_string> fso_ver_comment;
+	int err = 0;
+	CFILE* fp = nullptr;
 
 	/**
 	 * @brief Move past the comment without copying it to the output file. Used for special FSO comment tags
@@ -110,19 +158,7 @@ class CFred_mission_save {
 	 */
 	int fout_version(const char* format, ...);
 
-	/**
-	 * @brief Saves the mission onto the undo stack
-	 *
-	 * @param[in] pathname The full pathname
-	 *
-	 * @details Returns the value of CFred_mission_save::err, which is:
-	 *
-	 * @returns 0 for no error, or
-	 * @returns A negative value if an error occured.
-	 *
-	 * @see save_mission_internal()
-	 */
-	int autosave_mission_file(char* pathname);
+  private:
 
 	/**
 	 * @brief Saves the ai_goals to file
@@ -145,33 +181,6 @@ class CFred_mission_save {
 	int save_bitmaps();
 
 	/**
-	 * @brief Saves the campaign file to the given full pathname
-	 *
-	 * @param[in] pathname The full pathname to save to
-	 *
-	 * @details Returns the success of saving, as far as can be ascertained:
-	 *
-	 * @returns 0 for no error, or
-	 * @returns -1 if the file cannot be opened
-	 *
-	 */
-	int save_campaign_file(const char *pathname);
-
-	/**
-	 * @brief Saves the mission file to the given full pathname
-	 *
-	 * @param[in] pathname The full pathname to save to
-	 *
-	 * @details Returns the value of CFred_mission_save::err, which is:
-	 *
-	 * @returns 0 for no error, or
-	 * @returns A negative value if an error occurred
-	 *
-	 * @see save_mission_internal()
-	 */
-	int save_mission_file(const char* pathname);
-
-	/**
 	 * @brief Save the reinforcements to file
 	 *
 	 * @details Returns the value of CFred_mission_save::err, which is:
@@ -191,12 +200,11 @@ class CFred_mission_save {
 	 */
 	void save_turret_info(ship_subsys* ptr, int ship);
 
- private:
 	/**
 	 * @brief Converts $escaped tags into their retail equivalent
 	 * @author Goober5000
 	 */
-	void convert_special_tags_to_retail();
+	void convert_special_tags_to_retail() const;
 
 	/**
 	 * @brief Converts $escaped tags in the given cstring
@@ -204,14 +212,14 @@ class CFred_mission_save {
 	 * @param[in,out] text    Text to check for tags
 	 * @param[in] max_len size of text
 	 */
-	void convert_special_tags_to_retail(char* text, int max_len);
+	static void convert_special_tags_to_retail(char* text, int max_len);
 
 	/**
 	 * @brief Converts $escaped tags in the given SCP_string
 	 *
 	 * @param[in,out] text Text to check for tags
 	 */
-	void convert_special_tags_to_retail(SCP_string& text);
+	static void convert_special_tags_to_retail(SCP_string& text);
 
 	/**
 	 * @brief Save asteroid field (singular) to file
@@ -234,14 +242,6 @@ class CFred_mission_save {
 	 * @returns A negative value if an error occurred
 	 */
 	int save_briefing();
-
-	/**
-	 * @brief Save the campaign sexp to file
-	 *
-	 * @param[in] node Index of the sexp node
-	 * @param[in] link Mission index of the next mission. Is -1 if this is the last link
-	 */
-	void save_campaign_sexp(int node, int link);
 
 	/**
 	 * @brief Save the command briefing to file
@@ -281,15 +281,17 @@ class CFred_mission_save {
 	 *
 	 * @param[in] expected_string_640  Optional. "$Background 640:"
 	 * @param[in] expected_string_1024 Optional. "$Background 1024:"
-	 * @param[in] string_field_640     (Required if expected_string_640 defined)  Name of the background for 640 resolution
-	 * @param[in] string_field_1024    (Required if expected_string_1024 defined) Name of the background for 1024 resolution
+	 * @param[in] string_field_640     (Required if expected_string_640 defined)  Name of the background for 640
+	 * resolution
+	 * @param[in] string_field_1024    (Required if expected_string_1024 defined) Name of the background for 1024
+	 * resolution
 	 * @param[in] blank_lines          Optional. Pads the bitmap entry by this many blank lines
 	 */
 	void save_custom_bitmap(const char* expected_string_640,
-							const char* expected_string_1024,
-							const char* string_field_640,
-							const char* string_field_1024,
-							int blank_lines = 0);
+		const char* expected_string_1024,
+		const char* string_field_640,
+		const char* string_field_1024,
+		int blank_lines = 0);
 
 	/**
 	 * @brief Saves cutscenes to file
@@ -353,7 +355,6 @@ class CFred_mission_save {
 	 */
 	int save_matrix(matrix& m);
 
-
 	/**
 	 * @brief Saves the messages/in-mission dialog to file
 	 *
@@ -405,9 +406,9 @@ class CFred_mission_save {
 	int save_custom_data();
 
 	/**
-	* Helper function for save_objects().
-	*/
-	int save_warp_params(WarpDirection direction, ship *shipp);
+	 * Helper function for save_objects().
+	 */
+	int save_warp_params(WarpDirection direction, ship* shipp);
 
 	/**
 	 * @brief Saves object entries to a file
@@ -470,7 +471,7 @@ class CFred_mission_save {
 	 */
 	int save_containers();
 	// helper function for non-type options, called only by save_containers()
-	void save_container_options(const sexp_container &container);
+	void save_container_options(const sexp_container& container);
 
 	/**
 	 * @brief Saves the given vector to file
@@ -517,19 +518,8 @@ class CFred_mission_save {
 	int save_wings();
 
 	/**
-	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while handling newlines properly
+	 * @brief Utility function to save a raw comment, the start of which precedes the current raw_ptr, to a file while
+	 * handling newlines properly
 	 */
-	void fout_raw_comment(const char *comment_start);
-
-	char* raw_ptr = nullptr;
-	SCP_vector<SCP_string> fso_ver_comment;
-	int err = 0;
-	CFILE* fp = nullptr;
-
-	MissionFormat save_format = MissionFormat::STANDARD;
-	Editor* _editor = nullptr;
-	EditorViewport* _viewport = nullptr;
+	void fout_raw_comment(const char* comment_start);
 };
-
-}
-}

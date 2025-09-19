@@ -4,7 +4,7 @@
 #include "menuui/mainhallmenu.h"
 #include "stats/scoring.h"
 #include "mission/missiongoals.h"
-#include "mission/missionsave.h"
+#include "missioneditor/campaignsave.h"
 
 #include <QMessageBox>
 #include <QPlainTextDocumentLayout>
@@ -100,7 +100,7 @@ CampaignEditorDialogModel::CampaignEditorDialogModel(CampaignEditorDialog* _pare
 	initialWeapons(Weapon_info, &initWeps, this),
 	missionData(getMissions(), &CampaignMissionData::initMissions, this),
 	campaignName(Campaign.name),		//missioncampaign.h globals
-	campaignDescr(Campaign.desc),
+	campaignDescr(Campaign.description.c_str()),
 	campaignTechReset(Campaign.flags & CF_CUSTOM_TECH_DATABASE)
 {
 	Assertion(_numPlayers == 0 || campaignFile.isEmpty(), "The editor should only allow setting a player number when a new campaign is created. Please report.");
@@ -447,7 +447,7 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	Campaign.type = campaignTypes.indexOf(campaignType);
 
 	if (!modified_desc.isEmpty())
-		Campaign.desc = vm_strdup(qPrintable(modified_desc));
+		Campaign.description = modified_desc.toUtf8().constData();
 
 	Campaign.num_players = numPlayers;
 
@@ -593,8 +593,20 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 		Campaign.num_missions = i;
 	}
 
-	CFred_mission_save save;
-	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
+	Fred_campaign_save save;
+	// TODO FredView save format actions currently don't do anything
+	// will need to wire this up when those are finalized
+	/*if (Mission_save_format == FSO_FORMAT_RETAIL) {
+		save.set_save_format(MissionFormat::RETAIL);
+	} else if (Mission_save_format == FSO_FORMAT_COMPATIBILITY_MODE) {
+		save.set_save_format(MissionFormat::COMPATIBILITY_MODE);
+	} else {
+		save.set_save_format(MissionFormat::STANDARD);
+	}*/
+
+	// TODO create the links vector properly after the campaign editor update is merged
+	SCP_vector<campaign_link> links;
+	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), links);
 }
 
 bool CampaignEditorDialogModel::deleteLinksTo(const CampaignMissionData &target) {
