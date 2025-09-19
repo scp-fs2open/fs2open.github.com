@@ -134,7 +134,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 			fout(" %s", cm.main_hall.c_str());
 		} else {
 			// save Bastion flag properly
-			fout(" %d", flags_to_save | ((cm.main_hall != "") ? CMISSION_FLAG_BASTION : 0));
+			fout(" %d", flags_to_save | ((!cm.main_hall.empty()) ? CMISSION_FLAG_BASTION : 0));
 		}
 
 		if (!cm.substitute_main_hall.empty()) {
@@ -280,7 +280,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 
 	required_string_fred("#End");
 	parse_comments(2);
-	token_found = NULL;
+	token_found = nullptr;
 	parse_comments();
 	fout("\n");
 
