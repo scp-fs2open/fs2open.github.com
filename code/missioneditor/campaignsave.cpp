@@ -33,6 +33,7 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 	parse_comments(0);
 	fout_ext(" ", "%s", Campaign.name);
 
+	// TODO make type an enum to clean this up
 	Assert((Campaign.type >= 0) && (Campaign.type < MAX_CAMPAIGN_TYPES));
 	required_string_fred("$Type:");
 	parse_comments();
