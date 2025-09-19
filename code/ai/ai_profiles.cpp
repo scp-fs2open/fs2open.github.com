@@ -719,6 +719,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$ETS energy same regardless of system presence:", AI::Profile_Flags::ETS_energy_same_regardless_of_system_presence);
 
+				set_flag(profile, "$don't issue form-on-wing goals at mission start:", AI::Profile_Flags::Dont_form_on_wing_at_mission_start);
+
 
 				// end of options ----------------------------------------
 

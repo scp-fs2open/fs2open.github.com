@@ -180,6 +180,7 @@ namespace AI {
 		Freespace_1_missile_behavior,
 		ETS_uses_power_output,
 		ETS_energy_same_regardless_of_system_presence,
+		Dont_form_on_wing_at_mission_start,
 
 		NUM_VALUES
 	};
