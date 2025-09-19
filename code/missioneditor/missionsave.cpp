@@ -139,7 +139,7 @@ void Fred_mission_save::convert_special_tags_to_retail(SCP_string& text)
 	replace_all(text, "$semicolon", ",");
 }
 
-void Fred_mission_save::convert_special_tags_to_retail()
+void Fred_mission_save::convert_special_tags_to_retail() const
 {
 	int i, team, stage;
 
@@ -3997,7 +3997,7 @@ int Fred_mission_save::save_objects()
 			// multiply docked
 			else {
 				// save all instances for all ships
-				for (dock_instance* dock_ptr = Objects[shipp->objnum].dock_list; dock_ptr != NULL;
+				for (dock_instance* dock_ptr = Objects[shipp->objnum].dock_list; dock_ptr != nullptr;
 					dock_ptr = dock_ptr->next) {
 					save_single_dock_instance(&Ships[i], dock_ptr);
 				}
@@ -4297,8 +4297,8 @@ int Fred_mission_save::save_players()
 
 		// make sure we have at least one dogfight weapon for each ship type in a dogfight mission
 		if (IS_MISSION_MULTI_DOGFIGHT && (num_dogfight_weapons != Team_data[i].num_ship_choices)) {
-			for (int numErrors = 0; numErrors < static_cast<int>(dogfight_ships.size()); numErrors++) {
-				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
+			for (const auto& d_ship : dogfight_ships) {
+				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", d_ship.c_str()));
 			}
 			SCP_string msg =
 				"This mission is a dogfight mission but no dogfight weapons are available for at least one ship in the "
