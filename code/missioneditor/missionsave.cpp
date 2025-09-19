@@ -228,13 +228,10 @@ int Fred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 	}
 	// _does_ exist, so just write it out as it is
 	else {
-		char buf[10];
-		sprintf(buf, "%d", str_id);
-
 		str_out_scp += " XSTR(\"";
 		str_out_scp += str_scp;
 		str_out_scp += "\", ";
-		str_out_scp += buf;
+		str_out_scp += std::to_string(str_id);
 		str_out_scp += ")";
 	}
 
@@ -5049,9 +5046,9 @@ int Fred_mission_save::save_wings()
 			fout("\n+Flags: (");
 
 		auto get_flag_name = [](Ship::Wing_Flags flag) -> const char* {
-			for (size_t i = 0; i < Num_parse_wing_flags; ++i) {
-				if (Parse_wing_flags[i].def == flag) {
-					return Parse_wing_flags[i].name;
+			for (size_t j = 0; j < Num_parse_wing_flags; ++j) {
+				if (Parse_wing_flags[j].def == flag) {
+					return Parse_wing_flags[j].name;
 				}
 			}
 			return nullptr;
