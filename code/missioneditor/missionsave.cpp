@@ -4832,14 +4832,14 @@ int Fred_mission_save::save_waypoint_list(const waypoint_list* wp_list)
 int Fred_mission_save::save_wings()
 {
 	SCP_string sexp_out;
-	int i, j, z, count = 0;
+	int count = 0;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Wings");
 	parse_comments(2);
 	fout("\t\t;! %d total", Num_wings);
 
-	for (i = 0; i < MAX_WINGS; i++) {
+	for (int i = 0; i < MAX_WINGS; i++) {
 		if (!Wings[i].wave_count)
 			continue;
 
@@ -4909,7 +4909,7 @@ int Fred_mission_save::save_wings()
 			else
 				fout("\n$Arrival Anchor:");
 
-			z = Wings[i].arrival_anchor;
+			int z = Wings[i].arrival_anchor;
 			if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
@@ -5014,7 +5014,7 @@ int Fred_mission_save::save_wings()
 		parse_comments();
 		fout(" (\t\t;! %d total\n", Wings[i].wave_count);
 
-		for (j = 0; j < Wings[i].wave_count; j++) {
+		for (int j = 0; j < Wings[i].wave_count; j++) {
 			//ship = Wings[i].ship_index[j];
 			//			if (Objects[Ships[ship].objnum].type == OBJ_START)
 			//				fout("\t\"Player 1\"\n");
