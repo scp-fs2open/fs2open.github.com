@@ -178,7 +178,6 @@ int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vecto
 					flag = 1;
 				}
 
-				// save_campaign_sexp(Links[j].sexp, Campaign.missions[Links[j].to].name);
 				if (link.is_mission_loop) {
 					mission_loop = true;
 				} else if (link.is_mission_fork && (save_config.save_format != MissionFormat::RETAIL)) {

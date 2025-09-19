@@ -1828,11 +1828,9 @@ int Fred_mission_save::save_cutscenes()
 			required_string_fred("#end");
 			parse_comments();
 		} else {
-			MessageBox(nullptr,
-				"Warning: This mission contains cutscene data, but you are saving in the retail mission format. This "
-				"information will be lost.",
-				"Incompatibility with retail mission format",
-				MB_OK);
+			SCP_string msg = "Warning: This mission contains cutscene data, but you are saving in the retail mission "
+							 "format. This information will be lost.";
+			Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 		}
 	}
 
@@ -2207,10 +2205,9 @@ int Fred_mission_save::save_fiction()
 					optional_string_fred("$Formula:");
 			}
 		} else {
-			MessageBox(nullptr,
-				"Warning: This mission contains fiction viewer data, but you are saving in the retail mission format.",
-				"Incompatibility with retail mission format",
-				MB_OK);
+			SCP_string msg = "Warning: This mission contains fiction viewer data, but you are saving in the retail "
+							 "mission format. This information will be lost.";
+			Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 		}
 	}
 
@@ -2418,11 +2415,9 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 	if (save_config.save_format != MissionFormat::STANDARD && !Displayed_retail_background_warning) {
 		for (const auto& bg : Backgrounds) {
 			if (bg.flags[Starfield::Background_Flags::Corrected_angles_in_mission_file]) {
-				MessageBox(nullptr,
-					"Warning: Background flags (including the fixed-angles-in-mission-file flag) are not supported in "
-					"retail.  The sun and bitmap angles will be loaded differently by previous versions.",
-					"Incompatibility with retail mission format",
-					MB_OK);
+				SCP_string msg = "Background flags (including the fixed-angles-in-mission-file flag) are not supported in retail. "
+					             "The sun and bitmap angles will be loaded differently by previous versions.";
+				Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 				Displayed_retail_background_warning = true;
 				break;
 			}
@@ -3903,12 +3898,12 @@ int Fred_mission_save::save_objects()
 					fout("\n+Special Exp index:");
 					fout(" %d", special_exp_index);
 				} else {
-					SCP_string text = "You are saving in the retail mission format, but ";
-					text += "the mission has too many special explosions defined. \"";
-					text += shipp->ship_name;
-					text += "\" has therefore lost any special explosion data that was defined for it. ";
-					text += "\" Either remove special explosions or SEXP variables if you need it to have one ";
-					Warning(LOCATION, text.c_str());
+					SCP_string msg = "You are saving in the retail mission format, but the mission has too many "
+									 "special explosions defined.";
+					msg += shipp->ship_name;
+					msg += " has therefore lost any special explosion data that was defined for it. Either remove "
+						   "special explosions or SEXP variables if you need it to have one.";
+					Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 				}
 			}
 		}
@@ -3972,11 +3967,11 @@ int Fred_mission_save::save_objects()
 			if (save_config.save_format == MissionFormat::RETAIL && !dock_check_docked_one_on_one(&Objects[shipp->objnum])) {
 				static bool warned = false;
 				if (!warned) {
-					SCP_string text = "You are saving in the retail mission format, but \"";
-					text += shipp->ship_name;
-					text += "\" is docked to more than one ship.  If you wish to run this mission in retail, ";
-					text += "you should remove the additional ships and save the mission again.";
-					Warning(LOCATION, text.c_str());
+					SCP_string msg = "You are saving in the retail mission format, but \"";
+					msg += shipp->ship_name;
+					msg += "\" is docked to more than one ship.  If you wish to run this mission in retail, you should "
+						   "remove the additional ships and save the mission again.";
+					Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 
 					warned = true; // to avoid zillions of boxes
 				}
@@ -4297,11 +4292,11 @@ int Fred_mission_save::save_players()
 			for (int numErrors = 0; numErrors < (int)dogfight_ships.size(); numErrors++) {
 				mprintf(("Warning: Ship %s has no dogfight weapons allowed\n", dogfight_ships[numErrors].c_str()));
 			}
-			MessageBox(nullptr,
-				"Warning: This mission is a dogfight mission but no dogfight weapons are available for at least one "
-				"ship in the loadout! In Debug mode a list of ships will be printed to the log.",
-				"No dogfight weapons",
-				MB_OK);
+			SCP_string msg =
+				"This mission is a dogfight mission but no dogfight weapons are available for at least one ship in the "
+				"loadout!\n\nA list of ships has been printed to the log. Please fix this problem before "
+				"distributing the mission.";
+			Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 		}
 
 		if (optional_string_fred("+Weaponry Pool:", "$Starting Shipname:")) {
@@ -4358,11 +4353,9 @@ int Fred_mission_save::save_players()
 		// sanity check
 		if (save_config.save_format == MissionFormat::RETAIL && wrote_fso_data) {
 			// this is such an unlikely (and hard-to-fix) case that a warning should be sufficient
-			MessageBox(nullptr,
-				"Warning: This mission contains variable-based team loadout information, but you are saving in the "
-				"retail mission format. Retail FRED and FS2 will not be able to read this information.",
-				"Incompatibility with retail mission format",
-				MB_OK);
+			SCP_string msg = "This mission contains variable-based team loadout information, but you are saving in the "
+							 "retail mission format. Retail FRED and FS2 will not be able to read this information.";
+			Message(os::dialogs::MESSAGEBOX_ERROR, msg.c_str());
 		}
 
 		// Goober5000 - mjn.mixael's required weapon feature
