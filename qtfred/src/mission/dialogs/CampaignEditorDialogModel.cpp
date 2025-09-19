@@ -603,7 +603,10 @@ bool CampaignEditorDialogModel::_saveTo(QString file) const {
 	} else {
 		save.set_save_format(MissionFormat::STANDARD);
 	}*/
-	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)));
+
+	// TODO create the links vector properly after the campaign editor update is merged
+	SCP_vector<campaign_link> links;
+	return !save.save_campaign_file(qPrintable(file.replace('/',DIR_SEPARATOR_CHAR)), links);
 }
 
 bool CampaignEditorDialogModel::deleteLinksTo(const CampaignMissionData &target) {
