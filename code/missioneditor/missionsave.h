@@ -122,7 +122,7 @@ class Fred_mission_save {
 	 *
 	 * @see scan_fso_version_string()
 	 */
-	void fso_comment_push(char* ver);
+	void fso_comment_push(const char* ver);
 
 	/**
 	 * @brief Saves comments from previous campaign/mission file
@@ -137,7 +137,7 @@ class Fred_mission_save {
 	 *
 	 * @see printf() for formatting
 	 */
-	int fout(char* format, ...);
+	int fout(const char* format, ...);
 
 	/**
 	 * @brief Puts the given string as an XSTR() into the file
@@ -148,7 +148,7 @@ class Fred_mission_save {
 	 *
 	 * @TODO verify
 	 */
-	int fout_ext(char* pre_str, char* format, ...);
+	int fout_ext(const char* pre_str, const char* format, ...);
 
 	/**
 	 * @brief Puts the given version string into the file
@@ -156,7 +156,7 @@ class Fred_mission_save {
 	 * @param[in] format
 	 * @param[in] ...
 	 */
-	int fout_version(char* format, ...);
+	int fout_version(const char* format, ...);
 
   private:
 

@@ -168,7 +168,7 @@ void Fred_mission_save::convert_special_tags_to_retail()
 	}
 }
 
-int Fred_mission_save::fout(char* format, ...)
+int Fred_mission_save::fout(const char* format, ...)
 {
 	// don't output anything if we're saving in retail and have version-specific comments active
 	if (save_config.save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
@@ -190,7 +190,7 @@ int Fred_mission_save::fout(char* format, ...)
 	return 0;
 }
 
-int Fred_mission_save::fout_ext(char* pre_str, char* format, ...)
+int Fred_mission_save::fout_ext(const char* pre_str, const char* format, ...)
 {
 	// don't output anything if we're saving in retail and have version-specific comments active
 	if (save_config.save_format == MissionFormat::RETAIL && !fso_ver_comment.empty()) {
@@ -298,7 +298,7 @@ int Fred_mission_save::fout_ext(char* pre_str, char* format, ...)
 	return 0;
 }
 
-int Fred_mission_save::fout_version(char* format, ...)
+int Fred_mission_save::fout_version(const char* format, ...)
 {
 	SCP_string str_scp;
 	char* ch = NULL;
@@ -563,7 +563,8 @@ void Fred_mission_save::parse_comments(int newlines)
 
 void Fred_mission_save::save_ai_goals(ai_goal* goalp, int ship)
 {
-	char *str = NULL, buf[80];
+	const char* str = NULL;
+	char buf[80];
 	int i, valid, flag = 1;
 
 	for (i = 0; i < MAX_AI_GOALS; i++) {
@@ -1389,7 +1390,7 @@ int Fred_mission_save::save_cmd_briefs()
 	return err;
 }
 
-void Fred_mission_save::fso_comment_push(char* ver)
+void Fred_mission_save::fso_comment_push(const char* ver)
 {
 	if (fso_ver_comment.empty()) {
 		fso_ver_comment.push_back(SCP_string(ver));
@@ -1406,7 +1407,7 @@ void Fred_mission_save::fso_comment_push(char* ver)
 	elem2 = scan_fso_version_string(ver, &in_major, &in_minor, &in_build, &in_revis);
 
 	// check consistency
-	if (elem1 == 3 && elem2 == 4 || elem1 == 4 && elem2 == 3) {
+	if ((elem1 == 3 && elem2 == 4) || (elem1 == 4 && elem2 == 3)) {
 		elem1 = elem2 = 3;
 	} else if ((elem1 >= 3 && elem2 >= 3) && (revis < 1000 || in_revis < 1000)) {
 		elem1 = elem2 = 3;
@@ -2437,7 +2438,9 @@ int Fred_mission_save::save_mission_file(const char* pathname)
 			*ext_ch = 0;
 
 		strcat_s(backup_name, ".bak");
+#ifdef _WIN32
 		cf_attrib(pathname, 0, FILE_ATTRIBUTE_READONLY, CF_TYPE_MISSIONS);
+#endif
 		cf_delete(backup_name, CF_TYPE_MISSIONS);
 		cf_rename(pathname, backup_name, CF_TYPE_MISSIONS);
 		cf_rename(savepath, pathname, CF_TYPE_MISSIONS);
@@ -4836,7 +4839,7 @@ int Fred_mission_save::save_waypoint_list(const waypoint_list* wp_list)
 int Fred_mission_save::save_wings()
 {
 	SCP_string sexp_out;
-	int i, j, z, ship, count = 0;
+	int i, j, z, count = 0;
 
 	fred_parse_flag = 0;
 	required_string_fred("#Wings");
@@ -5019,7 +5022,7 @@ int Fred_mission_save::save_wings()
 		fout(" (\t\t;! %d total\n", Wings[i].wave_count);
 
 		for (j = 0; j < Wings[i].wave_count; j++) {
-			ship = Wings[i].ship_index[j];
+			//ship = Wings[i].ship_index[j];
 			//			if (Objects[Ships[ship].objnum].type == OBJ_START)
 			//				fout("\t\"Player 1\"\n");
 			//			else
