@@ -197,6 +197,11 @@ void ai_maybe_add_form_goal(wing* wingp)
 		return;
 	}
 
+	// we may simply not want the mission to do this
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Dont_form_on_wing_at_mission_start]) {
+		return;
+	}
+
 	int j;
 
 	// iterate through the ship_index list of this wing and check for orders.  We will do
