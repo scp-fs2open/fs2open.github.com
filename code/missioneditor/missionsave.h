@@ -9,7 +9,7 @@
 #include "ship/shipfx.h"
 
 #define MISSION_BACKUP_NAME "Backup"
-#define MISSION_BACKUP_DEPTH 9
+inline constexpr int MISSION_BACKUP_DEPTH = 9; // TODO make user configurable in QtFRED's future settings menu
 
 struct sexp_container;
 
@@ -212,14 +212,14 @@ class Fred_mission_save {
 	 * @param[in,out] text    Text to check for tags
 	 * @param[in] max_len size of text
 	 */
-	void convert_special_tags_to_retail(char* text, int max_len);
+	static void convert_special_tags_to_retail(char* text, int max_len);
 
 	/**
 	 * @brief Converts $escaped tags in the given SCP_string
 	 *
 	 * @param[in,out] text Text to check for tags
 	 */
-	void convert_special_tags_to_retail(SCP_string& text);
+	static void convert_special_tags_to_retail(SCP_string& text);
 
 	/**
 	 * @brief Save asteroid field (singular) to file
