@@ -204,7 +204,7 @@ class Fred_mission_save {
 	 * @brief Converts $escaped tags into their retail equivalent
 	 * @author Goober5000
 	 */
-	void convert_special_tags_to_retail();
+	void convert_special_tags_to_retail() const;
 
 	/**
 	 * @brief Converts $escaped tags in the given cstring
