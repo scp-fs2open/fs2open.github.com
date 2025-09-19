@@ -1312,9 +1312,11 @@ void create_generic_debris(object* ship_objp, const vec3d* pos, float min_num_de
 	vec3d create_pos = *pos;
 	for (int i = 0; i < num_debris; i++) {
 		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
-		// if using default debris shards then only proceed if flag is enabled --wookeejedi
-		if (model_num >= 0 || !(Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::No_explosion_shards]))
-			debris_create(ship_objp, model_num, -1, &create_pos, pos, false, speed_mult);
+		// only proceed if generic debris is allowed --wookeejedi
+		if ( !(Ship_info[Ships[ship_objp->instance].ship_info_index].flags[Ship::Info_Flags::Disable_all_generic_explosion_debris]) &&
+			((model_num >= 0) || !(Disable_all_noncustom_generic_debris)) ) {
+				debris_create(ship_objp, model_num, -1, &create_pos, pos, false, speed_mult);
+		}
 	}
 }
 
