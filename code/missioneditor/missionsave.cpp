@@ -3817,6 +3817,19 @@ int Fred_mission_save::save_objects()
 			fout(" %d", shipp->escort_priority);
 		}
 
+		// Custom Guardian Thrshold
+		if (save_config.save_format != MissionFormat::RETAIL) {
+			if (shipp->ship_guardian_threshold != 0) {
+				if (optional_string_fred("+Guardian Threshold:", "$Name:")) {
+					parse_comments();
+				} else {
+					fout("\n+Guardian Threshold:");
+				}
+
+				fout(" %d", shipp->ship_guardian_threshold);
+			}
+		}
+
 		// special explosions
 		if (save_config.save_format != MissionFormat::RETAIL) {
 			if (shipp->use_special_explosion) {
@@ -4841,77 +4854,77 @@ int Fred_mission_save::save_wings()
 	parse_comments(2);
 	fout("\t\t;! %d total", Num_wings);
 
-	for (auto& wing : Wings) {
-		if (!wing.wave_count)
+	for (auto& w : Wings) {
+		if (!w.wave_count)
 			continue;
 
 		count++;
 		required_string_either_fred("$Name:", "#Events");
 		required_string_fred("$Name:");
 		parse_comments(2);
-		fout(" %s", wing.name);
+		fout(" %s", w.name);
 
 		// squad logo - Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
-			if (strlen(wing.wing_squad_filename) > 0) //-V805
+			if (strlen(w.wing_squad_filename) > 0) //-V805
 			{
 				if (optional_string_fred("+Squad Logo:", "$Name:"))
 					parse_comments();
 				else
 					fout("\n+Squad Logo:");
 
-				fout(" %s", wing.wing_squad_filename);
+				fout(" %s", w.wing_squad_filename);
 			}
 		}
 
 		required_string_fred("$Waves:");
 		parse_comments();
-		fout(" %d", wing.num_waves);
+		fout(" %d", w.num_waves);
 
 		required_string_fred("$Wave Threshold:");
 		parse_comments();
-		fout(" %d", wing.threshold);
+		fout(" %d", w.threshold);
 
 		required_string_fred("$Special Ship:");
 		parse_comments();
-		fout(" %d\t\t;! %s", wing.special_ship, Ships[wing.ship_index[wing.special_ship]].ship_name);
+		fout(" %d\t\t;! %s", w.special_ship, Ships[w.ship_index[w.special_ship]].ship_name);
 
 		if (save_config.save_format != MissionFormat::RETAIL) {
-			if (wing.formation >= 0 && wing.formation < static_cast<int>(Wing_formations.size())) {
+			if (w.formation >= 0 && w.formation < static_cast<int>(Wing_formations.size())) {
 				if (optional_string_fred("+Formation:", "$Name:")) {
 					parse_comments();
 				} else {
 					fout("\n+Formation:");
 				}
-				fout(" %s", Wing_formations[wing.formation].name);
+				fout(" %s", Wing_formations[w.formation].name);
 			}
-			if (!fl_equal(wing.formation_scale, 1.0f, 0.001f)) {
+			if (!fl_equal(w.formation_scale, 1.0f, 0.001f)) {
 				if (optional_string_fred("+Formation Scale:", "$Name:")) {
 					parse_comments();
 				} else {
 					fout("\n+Formation Scale:");
 				}
-				fout(" %f", wing.formation_scale);
+				fout(" %f", w.formation_scale);
 			}
 		}
 
 		required_string_fred("$Arrival Location:");
 		parse_comments();
-		fout(" %s", Arrival_location_names[static_cast<int>(wing.arrival_location)]);
+		fout(" %s", Arrival_location_names[static_cast<int>(w.arrival_location)]);
 
-		if (wing.arrival_location != ArrivalLocation::AT_LOCATION) {
+		if (w.arrival_location != ArrivalLocation::AT_LOCATION) {
 			if (optional_string_fred("+Arrival Distance:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Arrival Distance:");
 
-			fout(" %d", wing.arrival_distance);
+			fout(" %d", w.arrival_distance);
 			if (optional_string_fred("$Arrival Anchor:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n$Arrival Anchor:");
 
-			int z = wing.arrival_anchor;
+			int z = w.arrival_anchor;
 			if (z < 0) {
 				fout(" <error>");
 			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
@@ -4928,18 +4941,18 @@ int Fred_mission_save::save_wings()
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
-			if ((wing.arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (wing.arrival_path_mask > 0)) {
+			if ((w.arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (w.arrival_path_mask > 0)) {
 				int anchor_shipnum;
 				polymodel* pm;
 
-				anchor_shipnum = wing.arrival_anchor;
+				anchor_shipnum = w.arrival_anchor;
 				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
 
 				fout("\n+Arrival Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
-					if (wing.arrival_path_mask & (1 << n)) {
+					if (w.arrival_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
@@ -4948,48 +4961,48 @@ int Fred_mission_save::save_wings()
 			}
 		}
 
-		if (wing.arrival_delay) {
+		if (w.arrival_delay) {
 			if (optional_string_fred("+Arrival delay:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Arrival delay:");
 
-			fout(" %d", wing.arrival_delay);
+			fout(" %d", w.arrival_delay);
 		}
 
 		required_string_fred("$Arrival Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, wing.arrival_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, w.arrival_cue, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
 
 		required_string_fred("$Departure Location:");
 		parse_comments();
-		fout(" %s", Departure_location_names[static_cast<int>(wing.departure_location)]);
+		fout(" %s", Departure_location_names[static_cast<int>(w.departure_location)]);
 
-		if (wing.departure_location != DepartureLocation::AT_LOCATION) {
+		if (w.departure_location != DepartureLocation::AT_LOCATION) {
 			required_string_fred("$Departure Anchor:");
 			parse_comments();
 
-			if (wing.departure_anchor >= 0)
-				fout(" %s", Ships[wing.departure_anchor].ship_name);
+			if (w.departure_anchor >= 0)
+				fout(" %s", Ships[w.departure_anchor].ship_name);
 			else
 				fout(" <error>");
 		}
 
 		// Goober5000
 		if (save_config.save_format != MissionFormat::RETAIL) {
-			if ((wing.departure_location == DepartureLocation::TO_DOCK_BAY) && (wing.departure_path_mask > 0)) {
+			if ((w.departure_location == DepartureLocation::TO_DOCK_BAY) && (w.departure_path_mask > 0)) {
 				int anchor_shipnum;
 				polymodel* pm;
 
-				anchor_shipnum = wing.departure_anchor;
+				anchor_shipnum = w.departure_anchor;
 				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
 
 				fout("\n+Departure Paths: ( ");
 
 				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
-					if (wing.departure_path_mask & (1 << n)) {
+					if (w.departure_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
 					}
 				}
@@ -4998,43 +5011,43 @@ int Fred_mission_save::save_wings()
 			}
 		}
 
-		if (wing.departure_delay) {
+		if (w.departure_delay) {
 			if (optional_string_fred("+Departure delay:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Departure delay:");
 
-			fout(" %d", wing.departure_delay);
+			fout(" %d", w.departure_delay);
 		}
 
 		required_string_fred("$Departure Cue:");
 		parse_comments();
-		convert_sexp_to_string(sexp_out, wing.departure_cue, SEXP_SAVE_MODE);
+		convert_sexp_to_string(sexp_out, w.departure_cue, SEXP_SAVE_MODE);
 		fout(" %s", sexp_out.c_str());
 
 		required_string_fred("$Ships:");
 		parse_comments();
-		fout(" (\t\t;! %d total\n", wing.wave_count);
+		fout(" (\t\t;! %d total\n", w.wave_count);
 
-		for (int j = 0; j < wing.wave_count; j++) {
-			//ship = wing.ship_index[j];
+		for (int j = 0; j < w.wave_count; j++) {
+			//ship = w.ship_index[j];
 			//			if (Objects[Ships[ship].objnum].type == OBJ_START)
 			//				fout("\t\"Player 1\"\n");
 			//			else
-			fout("\t\"%s\"\n", Ships[wing.ship_index[j]].ship_name);
+			fout("\t\"%s\"\n", Ships[w.ship_index[j]].ship_name);
 		}
 
 		fout(")");
 
-		save_ai_goals(wing.ai_goals, -1);
+		save_ai_goals(w.ai_goals, -1);
 
-		if (wing.hotkey != -1) {
+		if (w.hotkey != -1) {
 			if (optional_string_fred("+Hotkey:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Hotkey:");
 
-			fout(" %d", wing.hotkey);
+			fout(" %d", w.hotkey);
 		}
 
 		if (optional_string_fred("+Flags:", "$Name:")) {
@@ -5052,49 +5065,49 @@ int Fred_mission_save::save_wings()
 			return nullptr;
 		};
 
-		if (wing.flags[Ship::Wing_Flags::Ignore_count])
+		if (w.flags[Ship::Wing_Flags::Ignore_count])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Ignore_count));
-		if (wing.flags[Ship::Wing_Flags::Reinforcement])
+		if (w.flags[Ship::Wing_Flags::Reinforcement])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Reinforcement));
-		if (wing.flags[Ship::Wing_Flags::No_arrival_music])
+		if (w.flags[Ship::Wing_Flags::No_arrival_music])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_music));
-		if (wing.flags[Ship::Wing_Flags::No_arrival_message])
+		if (w.flags[Ship::Wing_Flags::No_arrival_message])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_message));
-		if (wing.flags[Ship::Wing_Flags::No_first_wave_message])
+		if (w.flags[Ship::Wing_Flags::No_first_wave_message])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_first_wave_message));
-		if (wing.flags[Ship::Wing_Flags::No_arrival_warp])
+		if (w.flags[Ship::Wing_Flags::No_arrival_warp])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_arrival_warp));
-		if (wing.flags[Ship::Wing_Flags::No_departure_warp])
+		if (w.flags[Ship::Wing_Flags::No_departure_warp])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_departure_warp));
-		if (wing.flags[Ship::Wing_Flags::No_dynamic])
+		if (w.flags[Ship::Wing_Flags::No_dynamic])
 			fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::No_dynamic));
 		if (save_config.save_format != MissionFormat::RETAIL) {
-			if (wing.flags[Ship::Wing_Flags::Nav_carry])
+			if (w.flags[Ship::Wing_Flags::Nav_carry])
 				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Nav_carry));
-			if (wing.flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
+			if (w.flags[Ship::Wing_Flags::Same_arrival_warp_when_docked])
 				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Same_arrival_warp_when_docked));
-			if (wing.flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
+			if (w.flags[Ship::Wing_Flags::Same_departure_warp_when_docked])
 				fout(" \"%s\"", get_flag_name(Ship::Wing_Flags::Same_departure_warp_when_docked));
 		}
 
 		fout(" )");
 
-		if (wing.wave_delay_min) {
+		if (w.wave_delay_min) {
 			if (optional_string_fred("+Wave Delay Min:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Wave Delay Min:");
 
-			fout(" %d", wing.wave_delay_min);
+			fout(" %d", w.wave_delay_min);
 		}
 
-		if (wing.wave_delay_max) {
+		if (w.wave_delay_max) {
 			if (optional_string_fred("+Wave Delay Max:", "$Name:"))
 				parse_comments();
 			else
 				fout("\n+Wave Delay Max:");
 
-			fout(" %d", wing.wave_delay_max);
+			fout(" %d", w.wave_delay_max);
 		}
 
 		fso_comment_pop();
