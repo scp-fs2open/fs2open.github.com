@@ -10,7 +10,7 @@
 
 // Bodies copied from the old implementations in missionsave.cpp,
 // unchanged except for the new class name and include.
-int Fred_campaign_save::save_campaign_file(const char* pathname)
+int Fred_campaign_save::save_campaign_file(const char* pathname, const SCP_vector<campaign_link>& links)
 {
 	// This is original FRED code. These were moved to the call sites as the data should be fully
 	// prepared before calling this function.
@@ -162,55 +162,100 @@ int Fred_campaign_save::save_campaign_file(const char* pathname)
 			bypass_comment(";;FSO 3.6.8;; +Debriefing Persona Index:");
 		}
 
-		// new save cmission sexps
-		if (optional_string_fred("+Formula:", "$Mission:")) {
-			parse_comments();
-		} else {
-			fout("\n+Formula:");
+		// save campaign link sexp
+		bool mission_loop = false;
+		bool mission_fork = false;
+		int flag = 0;
+		for (auto& link : links) {
+			if (link.from == i) {
+				if (!flag) {
+					if (optional_string_fred("+Formula:", "$Mission:"))
+						parse_comments();
+					else
+						fout("\n+Formula:");
+
+					fout(" ( cond\n");
+					flag = 1;
+				}
+
+				// save_campaign_sexp(Links[j].sexp, Campaign.missions[Links[j].to].name);
+				if (link.is_mission_loop) {
+					mission_loop = true;
+				} else if (link.is_mission_fork && (save_config.save_format != MissionFormat::RETAIL)) {
+					mission_fork = true;
+				} else {
+					save_campaign_sexp(link.sexp, link.to);
+				}
+			}
 		}
 
-		{
-			SCP_string sexp_out{};
-			convert_sexp_to_string(sexp_out, cm.formula, SEXP_SAVE_MODE);
-			fout(" %s", sexp_out.c_str());
+		if (flag) {
+			fout(")");
 		}
 
-		bool mission_loop = cm.flags & CMISSION_FLAG_HAS_LOOP;
-
-		Assertion(cm.flags ^ CMISSION_FLAG_HAS_FORK,
-			"scpFork campaigns cannot be saved, use axemFork.\n Should be detected on load.");
-
-		if (mission_loop) {
-			required_string_fred("\n+Mission Loop:");
+		// now save campaign loop sexp
+		if (mission_loop || mission_fork) {
+			if (mission_loop)
+				required_string_fred("\n+Mission Loop:");
+			else
+				required_string_fred("\n+Mission Fork:");
 			parse_comments();
 
-			if (cm.mission_branch_desc) {
-				required_string_fred("+Mission Loop Text:");
-				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_desc);
-				fout("\n$end_multi_text");
-			}
+			int num_mission_special = 0;
+			for (auto& link : links) {
+				if ((link.from == i) && (link.is_mission_loop || link.is_mission_fork)) {
 
-			if (cm.mission_branch_brief_anim) {
-				required_string_fred("+Mission Loop Brief Anim:");
-				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_brief_anim);
-				fout("\n$end_multi_text");
-			}
+					num_mission_special++;
 
-			if (cm.mission_branch_brief_sound) {
-				required_string_fred("+Mission Loop Brief Sound:");
-				parse_comments();
-				fout_ext("\n", "%s", cm.mission_branch_brief_sound);
-				fout("\n$end_multi_text");
-			}
+					if ((num_mission_special == 1) && link.mission_branch_txt) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Text:");
+						else
+							required_string_fred("+Mission Fork Text:");
+						parse_comments();
+						fout_ext("\n", "%s", link.mission_branch_txt);
+						fout("\n$end_multi_text");
+					}
 
-			// write out mission loop formula
-			fout("\n+Formula:");
-			{
-				SCP_string sexp_out{};
-				convert_sexp_to_string(sexp_out, cm.mission_loop_formula, SEXP_SAVE_MODE);
-				fout(" %s", sexp_out.c_str());
+					if ((num_mission_special == 1) && link.mission_branch_brief_anim) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Anim:");
+						else
+							required_string_fred("+Mission Fork Brief Anim:");
+						parse_comments();
+						fout_ext("\n", "%s", link.mission_branch_brief_anim);
+						fout("\n$end_multi_text");
+					}
+
+					if ((num_mission_special == 1) && link.mission_branch_brief_sound) {
+						if (mission_loop)
+							required_string_fred("+Mission Loop Brief Sound:");
+						else
+							required_string_fred("+Mission Fork Brief Sound:");
+						parse_comments();
+						fout_ext("\n", "%s", link.mission_branch_brief_sound);
+						fout("\n$end_multi_text");
+					}
+
+					if (num_mission_special == 1) {
+						// write out mission loop formula
+						fout("\n+Formula:");
+						fout(" ( cond\n");
+						save_campaign_sexp(link.sexp, link.to);
+						fout(")");
+					}
+					if (mission_fork) {
+						fout("Option: ", Campaign.missions[link.to].name);
+					}
+				}
+			}
+			if (mission_loop && num_mission_special > 1) {
+				char buffer[1024];
+				sprintf(buffer,
+					"Multiple branching loop error from mission %s\nEdit campaign for *at most* 1 loop from each "
+					"mission.",
+					cm.name);
+				Message(os::dialogs::MESSAGEBOX_ERROR, buffer);
 			}
 		}
 

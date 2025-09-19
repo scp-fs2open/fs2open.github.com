@@ -206,7 +206,24 @@ void campaign_tree_wnd::OnCpgnFileSave()
 	Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
 	Campaign_tree_viewp->sort_elements();
 
-	if (save.save_campaign_file(full_path))
+	SCP_vector<campaign_link> links;
+	for (int i = 0; i < Total_links; i++) {
+		campaign_link link{
+			Links[i].from,
+			Links[i].to,
+			Links[i].sexp,
+			Links[i].node,
+			Links[i].is_mission_loop,
+			Links[i].is_mission_fork,
+			Links[i].mission_branch_txt,
+			Links[i].mission_branch_brief_anim,
+			Links[i].mission_branch_brief_sound
+		};
+
+		links.emplace_back(link);
+	}
+
+	if (save.save_campaign_file(full_path, links))
 	{
 		MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 		return;
@@ -258,7 +275,22 @@ void campaign_tree_wnd::OnCpgnFileSaveAs()
 		Campaign_tree_formp->save_tree(); // flush all changes so they get saved.
 		Campaign_tree_viewp->sort_elements();
 
-		if (save.save_campaign_file((LPCSTR)dlg.GetPathName()))
+		SCP_vector<campaign_link> links;
+		for (int i = 0; i < Total_links; i++) {
+			campaign_link link{Links[i].from,
+				Links[i].to,
+				Links[i].sexp,
+				Links[i].node,
+				Links[i].is_mission_loop,
+				Links[i].is_mission_fork,
+				Links[i].mission_branch_txt,
+				Links[i].mission_branch_brief_anim,
+				Links[i].mission_branch_brief_sound};
+
+			links.emplace_back(link);
+		}
+
+		if (save.save_campaign_file((LPCSTR)dlg.GetPathName(), links))
 		{
 			MessageBox("An error occured while saving!", "Error", MB_OK | MB_ICONEXCLAMATION);
 			return;
