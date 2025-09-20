@@ -447,14 +447,10 @@ static int opengl_texture_set_level(int bitmap_handle, int bitmap_type, int bmap
 
 	case KTX_ETC2_RGB:
 	case KTX_ETC2_RGBA_EAC:
-	case KTX_EAC_R11:
-	case KTX_EAC_RG11:
 	case KTX_ETC2_SRGB:
 	case KTX_ETC2_SRGBA_EAC:
 	case KTX_ETC2_RGB_A1:
 	case KTX_ETC2_SRGB_A1:
-	case KTX_EAC_R11_SNORM:
-	case KTX_EAC_RG11_SNORM:
 		intFormat = ktx_map_ktx_format_to_gl_internal(bm_handle);
 		block_size = ktx_etc_block_bytes(intFormat);
 		break;
@@ -776,14 +772,10 @@ static GLenum opengl_get_internal_format(int handle, int bitmap_type, int bpp) {
 
 		case KTX_ETC2_RGB:
 		case KTX_ETC2_RGBA_EAC:
-		case KTX_EAC_R11:
-		case KTX_EAC_RG11:
 		case KTX_ETC2_SRGB:
 		case KTX_ETC2_SRGBA_EAC:
 		case KTX_ETC2_RGB_A1:
 		case KTX_ETC2_SRGB_A1:
-		case KTX_EAC_R11_SNORM:
-		case KTX_EAC_RG11_SNORM:
 			return ktx_map_ktx_format_to_gl_internal(bm_handle);
 
 		default:
@@ -874,23 +866,21 @@ void opengl_determine_bpp_and_flags(int bitmap_handle, int bitmap_type, ushort& 
 					break;
 
 				case KTX_ETC2_RGB:
+				case KTX_ETC2_SRGB:
 					bpp = 24;
-					flags |= BMP_TEX_ETC2_RGB;
+					flags |= BMP_TEX_ETC2_RGB8;
+					break;
+
+				case KTX_ETC2_RGB_A1:
+				case KTX_ETC2_SRGB_A1:
+					bpp = 24;
+					flags |= BMP_TEX_ETC2_RGBA1;
 					break;
 
 				case KTX_ETC2_RGBA_EAC:
+				case KTX_ETC2_SRGBA_EAC:
 					bpp = 32;
-					flags |= BMP_TEX_ETC2_RGBA_EAC;
-					break;
-
-				case KTX_EAC_R11:
-					bpp = 8;
-					flags |= BMP_TEX_EAC_R11;
-					break;
-
-				case KTX_EAC_RG11:
-					bpp = 16;
-					flags |= BMP_TEX_EAC_RG11;
+					flags |= BMP_TEX_ETC2_RGBA8;
 					break;
 
 				default:

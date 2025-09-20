@@ -34,7 +34,7 @@
 
 // Flag positions for bitmap.flags
 // ***** NOTE:  bitmap.flags is an 8-bit value, no more BMP_TEX_* flags can be added unless the type is changed!! ******
-// Update: type changed to 16-bit
+// Update: bitmap.flags type changed to 16-bit
 #define	BMP_AABITMAP        (1<<0)      //!< antialiased bitmap
 #define	BMP_TEX_XPARENT     (1<<1)      //!< transparent texture
 #define	BMP_TEX_OTHER       (1<<2)      //!< so we can identify all "normal" textures
@@ -44,14 +44,14 @@
 #define BMP_TEX_BC7			(1<<6)		//!< BC7  compressed 8r8g8b8a (32bit)
 #define BMP_TEX_CUBEMAP     (1<<7)      //!< a texture made for cubic environment map
 #define BMP_MASK_BITMAP     (1<<8)      //!< a bitmap that will be used for masking mouse interaction. Typically not used in render operations
-#define BMP_TEX_ETC2_RGB		(1 << 9)
-#define BMP_TEX_ETC2_RGBA_EAC	(1 << 10)
-#define BMP_TEX_EAC_R11			(1 << 11)
-#define BMP_TEX_EAC_RG11		(1 << 12)
+#define BMP_TEX_ETC2_RGB8	(1 << 9)	//!< ETC2 RGB compressed	(24bit, no alpha)
+#define BMP_TEX_ETC2_RGBA1	(1 << 10)	//!< ETC2 RGBA1 compressed	(24bit, 1 alpha)
+#define BMP_TEX_ETC2_RGBA8	(1 << 11)	//!< ETC2 RGBA8 compressed	(32bit, 8 alpha)
+
 
 // Combined flags
-#define BMP_TEX_COMP		( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 | BMP_TEX_BC7 | BMP_TEX_ETC2_RGB |\
-							  BMP_TEX_ETC2_RGBA_EAC | BMP_TEX_EAC_R11 | BMP_TEX_EAC_RG11 )  //!< Compressed textures
+#define BMP_TEX_COMP		( BMP_TEX_DXT1 | BMP_TEX_DXT3 | BMP_TEX_DXT5 | BMP_TEX_BC7 | BMP_TEX_ETC2_RGB8 |\
+							  BMP_TEX_ETC2_RGBA1 | BMP_TEX_ETC2_RGBA8 )		//!< Compressed textures
 #define BMP_TEX_NONCOMP     ( BMP_TEX_XPARENT | BMP_TEX_OTHER )             //!< Non-compressed textures
 #define	BMP_TEX_ANY         ( BMP_TEX_COMP | BMP_TEX_NONCOMP )              //!< Any texture
 
@@ -88,11 +88,14 @@ enum BM_TYPE
 	BM_TYPE_CUBEMAP_DXT5,    //!< 32-bit cubemap        (compressed cubemap surface)
 
 	BM_TYPE_3D,				//!< 3D in-memory
-	BM_TYPE_KTX,			//!< generic identifier for KTX
-	BM_TYPE_ETC2_RGB,		//!< 24 bit without alpha
-	BM_TYPE_ETC2_RGBA_EAC,	//!< 32 bit with alpha
-	BM_TYPE_EAC_R11,		//!< BC4 equivalent
-	BM_TYPE_EAC_RG11		//!< BC5 equivalent
+
+	BM_TYPE_KTX,			//!< generic identifier for KTX1
+	BM_TYPE_ETC2_RGB,		//!< 24 bit, no alpha
+	BM_TYPE_ETC2_SRGB,      //!< 24 bit, no alpha, signed
+	BM_TYPE_ETC2_RGBA1,		//!< 24 bit, 1 bit alpha
+	BM_TYPE_ETC2_SRGBA1,    //!< 24 bit, 1 bit alpha, signed
+	BM_TYPE_ETC2_RGBA_EAC,	//!< 32 bit, 8 bit alpha
+	BM_TYPE_ETC2_SRGBA_EAC  //!< 32 bit, 8 bit alpha, signed
 };
 
 /**

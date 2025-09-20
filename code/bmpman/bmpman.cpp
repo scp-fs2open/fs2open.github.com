@@ -1059,14 +1059,20 @@ int bm_is_compressed(int num) {
 	case BM_TYPE_ETC2_RGB:
 		return KTX_ETC2_RGB;
 
+	case BM_TYPE_ETC2_SRGB:
+		return KTX_ETC2_SRGB;
+
 	case BM_TYPE_ETC2_RGBA_EAC:
 		return KTX_ETC2_RGBA_EAC;
 
-	case BM_TYPE_EAC_R11:
-		return KTX_EAC_R11;
+	case BM_TYPE_ETC2_SRGBA_EAC:
+		return KTX_ETC2_SRGBA_EAC;
 
-	case BM_TYPE_EAC_RG11:
-		return KTX_EAC_RG11;
+	case BM_TYPE_ETC2_RGBA1:
+		return KTX_ETC2_RGB_A1;
+
+	case BM_TYPE_ETC2_SRGBA1:
+		return KTX_ETC2_SRGB_A1;
 
 	default:
 		return 0;
@@ -2797,19 +2803,18 @@ void bm_page_in_texture(int bitmapnum, int nframes) {
 			continue;
 
 		case BM_TYPE_ETC2_RGB:
-			frame_entry->used_flags = BMP_TEX_ETC2_RGB;
+		case BM_TYPE_ETC2_SRGB:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGB8;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA1:
+		case BM_TYPE_ETC2_SRGBA1:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGBA1;
 			continue;
 
 		case BM_TYPE_ETC2_RGBA_EAC:
-			frame_entry->used_flags = BMP_TEX_ETC2_RGBA_EAC;
-			continue;
-
-		case BM_TYPE_EAC_R11:
-			frame_entry->used_flags = BMP_TEX_EAC_R11;
-			continue;
-
-		case BM_TYPE_EAC_RG11:
-			frame_entry->used_flags = BMP_TEX_EAC_RG11;
+		case BM_TYPE_ETC2_SRGBA_EAC:
+			frame_entry->used_flags = BMP_TEX_ETC2_RGBA8;
 			continue;
 
 		default:
@@ -2858,19 +2863,18 @@ void bm_page_in_xparent_texture(int bitmapnum, int nframes) {
 			continue;
 
 		case BM_TYPE_ETC2_RGB:
-			entry->used_flags = BMP_TEX_ETC2_RGB;
+		case BM_TYPE_ETC2_SRGB:
+			entry->used_flags = BMP_TEX_ETC2_RGB8;
+			continue;
+
+		case BM_TYPE_ETC2_RGBA1:
+		case BM_TYPE_ETC2_SRGBA1:
+			entry->used_flags = BMP_TEX_ETC2_RGBA1;
 			continue;
 
 		case BM_TYPE_ETC2_RGBA_EAC:
-			entry->used_flags = BMP_TEX_ETC2_RGBA_EAC;
-			continue;
-
-		case BM_TYPE_EAC_R11:
-			entry->used_flags = BMP_TEX_EAC_R11;
-			continue;
-
-		case BM_TYPE_EAC_RG11:
-			entry->used_flags = BMP_TEX_EAC_RG11;
+		case BM_TYPE_ETC2_SRGBA_EAC:
+			entry->used_flags = BMP_TEX_ETC2_RGBA8;
 			continue;
 
 		default:
