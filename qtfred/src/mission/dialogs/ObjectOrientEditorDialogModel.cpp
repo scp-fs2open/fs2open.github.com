@@ -179,7 +179,7 @@ bool ObjectOrientEditorDialogModel::apply()
 
 	// ----- Transform mode -----
 	// If multiple marked and using Relative to Origin, move/rotate the origin first, then
-	// bring everyone else along by the origin’s delta rotation and position.
+	// bring everyone else along by the origin's delta rotation and position.
 	matrix origin_rotation = vmd_identity_matrix;
 	vec3d origin_prev_pos = vmd_zero_vector;
 
