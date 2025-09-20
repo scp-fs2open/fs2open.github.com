@@ -3,6 +3,13 @@
 #include "cfile/cfile.h"
 //KTX1 Spec definition https://registry.khronos.org/KTX/specs/1.0/ktxspec.v1.html
 //ETC2 formats spec https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.inline.html#ETC2
+/*
+	KTX 1 Parser - Format supported by Etc2Comp and AMD Compressonator
+	ETC2 support for the formats supported by AMD compressonator and their signed alternatives:
+	ETC2_RGB / ETC2_SRGB -> 24 bit no alpha
+	ETC2_RGBA1 / ETC2_SRGBA1 -> 24 bit with 1 bit punchthrough alpha
+	ETC2_RGBA / ETC2_SRGBA -> 32 bit with 8 bit alpha
+*/
 
 static const uint8_t KTX_ID[12] = { 0xAB, 'K', 'T', 'X', ' ', '1', '1', 0xBB, '\r', '\n', 0x1A, '\n' };
 
@@ -15,14 +22,10 @@ uint32_t ktx_etc_block_bytes(const int internal_format)
 		case GL_COMPRESSED_SRGB8_ETC2:
 		case GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2:
 		case GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2:
-		case GL_COMPRESSED_R11_EAC:
-		case GL_COMPRESSED_SIGNED_R11_EAC:
 			return 8;
 
 		case GL_COMPRESSED_RGBA8_ETC2_EAC:
 		case GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC:
-		case GL_COMPRESSED_RG11_EAC:
-		case GL_COMPRESSED_SIGNED_RG11_EAC:
 			return 16;
 
 		default:
@@ -39,10 +42,6 @@ int ktx_map_ktx_format_to_gl_internal(const int ktx_format)
 			return GL_COMPRESSED_RGB8_ETC2;
 		case KTX_ETC2_RGBA_EAC:
 			return GL_COMPRESSED_RGBA8_ETC2_EAC;
-		case KTX_EAC_R11:
-			return GL_COMPRESSED_R11_EAC;
-		case KTX_EAC_RG11:
-			return GL_COMPRESSED_RG11_EAC;
 		case KTX_ETC2_SRGB:
 			return GL_COMPRESSED_SRGB8_ETC2;
 		case KTX_ETC2_SRGBA_EAC:
@@ -51,10 +50,6 @@ int ktx_map_ktx_format_to_gl_internal(const int ktx_format)
 			return GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2;
 		case KTX_ETC2_SRGB_A1:
 			return GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2;
-		case KTX_EAC_R11_SNORM:
-			return GL_COMPRESSED_SIGNED_R11_EAC;
-		case KTX_EAC_RG11_SNORM:
-			return GL_COMPRESSED_SIGNED_RG11_EAC;
 
 		default: return 0;
 	}
@@ -65,22 +60,19 @@ int ktx_map_gl_internal_to_bm(const int internal_format)
 	switch (internal_format) 
 	{
 		case GL_COMPRESSED_RGB8_ETC2:
-		case GL_COMPRESSED_SRGB8_ETC2:
-		case GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2:
-		case GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2:
 			return BM_TYPE_ETC2_RGB;
+		case GL_COMPRESSED_SRGB8_ETC2:
+			return BM_TYPE_ETC2_SRGB;
+
+		case GL_COMPRESSED_RGB8_PUNCHTHROUGH_ALPHA1_ETC2:
+			return BM_TYPE_ETC2_RGBA1;
+		case GL_COMPRESSED_SRGB8_PUNCHTHROUGH_ALPHA1_ETC2:
+			return BM_TYPE_ETC2_SRGBA1;
 
 		case GL_COMPRESSED_RGBA8_ETC2_EAC:
-		case GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC:
 			return BM_TYPE_ETC2_RGBA_EAC;
-
-		case GL_COMPRESSED_R11_EAC:
-		case GL_COMPRESSED_SIGNED_R11_EAC:
-			return BM_TYPE_EAC_R11;
-
-		case GL_COMPRESSED_RG11_EAC:
-		case GL_COMPRESSED_SIGNED_RG11_EAC:
-			return BM_TYPE_EAC_RG11;
+		case GL_COMPRESSED_SRGB8_ALPHA8_ETC2_EAC:
+			return BM_TYPE_ETC2_SRGBA_EAC;
 
 		default:
 			return BM_TYPE_NONE;
@@ -91,6 +83,7 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 {
 	CFILE* cf;
 	char real_name[MAX_FILENAME_LEN];
+	//copied from ddsutils
 	if (img_cfp == nullptr) {
 		// this better not happen.. ever
 		Assert(filename != nullptr);
@@ -187,17 +180,16 @@ int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* 
 		switch (bm_ct) 
 		{
 			case BM_TYPE_ETC2_RGB:
+			case BM_TYPE_ETC2_SRGB:
+			case BM_TYPE_ETC2_RGBA1:
+			case BM_TYPE_ETC2_SRGBA1:
 				*bpp = 24;
 				break;
 			case BM_TYPE_ETC2_RGBA_EAC:
+			case BM_TYPE_ETC2_SRGBA_EAC:
 				*bpp = 32;
 				break;
-			case BM_TYPE_EAC_R11:
-				*bpp = 8;
-				break;
-			case BM_TYPE_EAC_RG11:
-				*bpp = 16;
-				break;
+
 			default:
 				*bpp = 0;
 				break;
@@ -217,6 +209,7 @@ int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp)
 {
 	CFILE* cf;
 	char real_name[MAX_FILENAME_LEN];
+	// copied from ddsutils
 	// this better not happen.. ever
 	Assert(filename != nullptr);
 
