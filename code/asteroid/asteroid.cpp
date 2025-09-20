@@ -32,6 +32,7 @@
 #include "object/objcollide.h"
 #include "object/object.h"
 #include "parse/parselo.h"
+#include "particle/ParticleEffect.h"
 #include "scripting/global_hooks.h"
 #include "particle/hosts/EffectHostVector.h"
 #include "render/3d.h"

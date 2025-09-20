@@ -1,8 +1,8 @@
 #include <math/bitarray.h>
 #include "freespace.h"
 #include "particle/ParticleSource.h"
+#include "particle/ParticleEffect.h"
 #include "weapon/weapon.h"
-#include "ship/ship.h"
 
 namespace particle {
 

@@ -13,6 +13,7 @@
 #include "object/object.h"
 #include "parse/parselo.h"
 #include "particle/particle.h"
+#include "particle/ParticleEffect.h"
 #include "weapon/muzzleflash.h"
 #include "model/modelrender.h"
 

@@ -12,6 +12,7 @@
 #include "bmpman/bmpman.h"
 #include "particle/particle.h"
 #include "particle/ParticleManager.h"
+#include "particle/ParticleEffect.h"
 #include "debugconsole/console.h"
 #include "globalincs/systemvars.h"
 #include "graphics/2d.h"
