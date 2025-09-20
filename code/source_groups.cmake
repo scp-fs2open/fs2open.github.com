@@ -1034,6 +1034,7 @@ add_file_folder("Object"
 	object/waypoint.cpp
 	object/waypoint.h
 	object/object_flags.h
+	object/object_instance.h
 )
 
 # Observer files
