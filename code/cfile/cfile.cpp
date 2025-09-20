@@ -22,10 +22,6 @@
 #include <windows.h>
 #endif
 
-#ifdef SCP_UNIX
-#include <glob.h>
-#endif
-
 #include "cfile/cfile.h"
 #include "cfile/cfilearchive.h"
 #include "cfile/cfilesystem.h"
@@ -369,56 +365,41 @@ int cfile_pop_dir()
 int cfile_flush_dir(int dir_type)
 {
 	int del_count;
+	SDL_PathInfo pinfo;
+	SCP_string filespec;
+	SCP_string fullpath;
 
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	// attempt to change the directory to the passed type
-	if(cfile_push_chdir(dir_type)){
-		return 0;
-	}
+	cf_create_default_path_string(filespec, dir_type);
 
 	// proceed to delete the files
 	del_count = 0;
-#if defined _WIN32
-	intptr_t find_handle;
-	_finddata_t find;
-	find_handle = _findfirst( "*", &find );
-	if (find_handle != -1) {
-		do {			
-			if (!(find.attrib & _A_SUBDIR) && !(find.attrib & _A_RDONLY)) {
-				// delete the file
-				cf_delete(find.name,dir_type);				
 
-				// increment the deleted count
-				del_count++;
+	auto results = SDL_GlobDirectory(filespec.c_str(), "*", 0, nullptr);
+
+	if (results) {
+		for (int i = 0; results[i]; ++i) {
+			fullpath = filespec;
+			fullpath += results[i];
+
+			if ( !SDL_GetPathInfo(fullpath.c_str(), &pinfo) ) {
+				continue;
 			}
-		} while (!_findnext(find_handle, &find));
-		_findclose( find_handle );
-	}
-#elif defined SCP_UNIX
-	glob_t globinfo;
-	memset(&globinfo, 0, sizeof(globinfo));
-	int status = glob("*", 0, NULL, &globinfo);
-	if (status == 0) {
-		for (unsigned int i = 0;  i < globinfo.gl_pathc;  i++) {
-			// Determine if this is a regular file
-			struct stat statbuf;
 
-			stat(globinfo.gl_pathv[i], &statbuf);
-			if (S_ISREG(statbuf.st_mode)) {
-				// delete the file
-				cf_delete(globinfo.gl_pathv[i], dir_type);				
+			if (pinfo.type != SDL_PATHTYPE_FILE) {
+				continue;
+			}
 
+			// delete the file
+			if ( SDL_RemovePath(fullpath.c_str()) ) {
 				// increment the deleted count
-				del_count++;				
+				++del_count;
 			}
 		}
-		globfree(&globinfo);
-	}
-#endif
 
-	// pop the directory back
-	cfile_pop_dir();
+		SDL_free(results);
+	}
 
 	// return the # of files deleted
 	return del_count;
@@ -463,7 +444,7 @@ int cf_delete(const char *filename, int path_type, uint32_t location_flags)
 
 	cf_create_default_path_string(longname, path_type, filename, location_flags);
 
-	return (_unlink(longname.c_str()) != -1);
+	return SDL_RemovePath(longname.c_str());
 }
 
 
@@ -542,80 +523,31 @@ int cf_rename(const char *old_name, const char *name, int dir_type)
 {
 	Assert( CF_TYPE_SPECIFIED(dir_type) );
 
-	int ret_code;
 	SCP_string old_longname;
 	SCP_string new_longname;
 	
 	cf_create_default_path_string(old_longname, dir_type, old_name);
 	cf_create_default_path_string(new_longname, dir_type, name);
 
-	ret_code = rename(old_longname.c_str(), new_longname.c_str());
-	if(ret_code != 0){
-		switch(errno){
-		case EACCES :
-			return CF_RENAME_FAIL_ACCESS;
-		case ENOENT :
-		default:
-			return CF_RENAME_FAIL_EXIST;
-		}
+	if (SDL_RenamePath(old_longname.c_str(), new_longname.c_str())) {
+		return CF_RENAME_SUCCESS;
 	}
 
-	return CF_RENAME_SUCCESS;
-	
-
-}
-
-
-// This takes a path (e.g. "C:\Games\FreeSpace2\Lots\More\Directories") and creates it in its entirety.
-// Do note that this requires the path to have normalized directory separators as defined by DIR_SEPARATOR_CHAR
-static void mkdir_recursive(const char *path) {
-    size_t pre = 0, pos;
-    SCP_string tmp(path);
-    SCP_string dir;
-
-    if (tmp[tmp.size() - 1] != DIR_SEPARATOR_CHAR) {
-        // force trailing / so we can handle everything in loop
-        tmp += DIR_SEPARATOR_CHAR;
-    }
-
-    while ((pos = tmp.find_first_of(DIR_SEPARATOR_CHAR, pre)) != std::string::npos) {
-        dir = tmp.substr(0, pos++);
-        pre = pos;
-        if (dir.empty()) continue; // if leading / first time is 0 length
-        
-        _mkdir(dir.c_str());
-    }
+	return CF_RENAME_FAIL_ACCESS;
 }
 
 // Creates the directory path if it doesn't exist. Even creates all its
 // parent paths.
 void cf_create_directory(int dir_type, uint32_t location_flags)
 {
-	int num_dirs = 0;
-	int dir_tree[CF_MAX_PATH_TYPES];
 	SCP_string longname;
-	struct stat statbuf;
 
 	Assertion( CF_TYPE_SPECIFIED(dir_type), "Invalid dir_type passed to cf_create_directory." );
 
-	int current_dir = dir_type;
+	cf_create_default_path_string(longname, dir_type, nullptr, location_flags);
 
-	do {
-		Assert( num_dirs < CF_MAX_PATH_TYPES );		// Invalid Pathtypes data?
-
-		dir_tree[num_dirs++] = current_dir;
-		current_dir = Pathtypes[current_dir].parent_index;
-
-	} while( current_dir != CF_TYPE_ROOT );
-
-	int i;
-
-	for (i=num_dirs-1; i>=0; i-- )	{
-		cf_create_default_path_string(longname, dir_tree[i], nullptr, location_flags);
-		if (stat(longname.c_str(), &statbuf) != 0) {
-			mprintf(( "CFILE: Creating new directory '%s'\n", longname.c_str() ));
-			mkdir_recursive(longname.c_str());
-		}
+	if (SDL_CreateDirectory(longname.c_str())) {
+		mprintf(("CFILE: Creating new directory '%s'\n", longname.c_str()));
 	}
 }
 
