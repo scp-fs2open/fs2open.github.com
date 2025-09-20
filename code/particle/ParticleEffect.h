@@ -13,6 +13,8 @@
 
 #include "object/objectshield.h"
 #include "ship/ship.h"
+#include "object/object_instance.h"
+#include "hud/hudets.h"
 
 #include <optional>
 
@@ -278,8 +280,15 @@ public:
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Host Object Hitpoints", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>{}},
-		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>{}})
-		//Ideally we check ship properties as well if the parent is a ship, since this is pretty common. Unfortunately, we cannot include ship here. There needs to be something here that fixes the circular include
+		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>{}},
+		std::pair {"Host Ship AB Fuel Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
+		std::pair {"Host Ship Countermeasures Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
+		std::pair {"Host Ship Weapon Energy Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
+		std::pair {"Host Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Ship EMP Intensity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
+		std::pair {"Host Ship Time Until Explosion", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
@@ -318,7 +327,15 @@ public:
 		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
 		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}},
 		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>{}},
-		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>{}})
+		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>{}},
+		std::pair {"Parent Ship AB Fuel Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
+		std::pair {"Parent Ship Countermeasures Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
+		std::pair {"Parent Ship Weapon Energy Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
+		std::pair {"Parent Ship ETS Engines", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::engine_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship ETS Shields", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::shield_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship ETS Weapons", modular_curves_math_input<modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_recharge_index>, modular_curves_global_submember_input<MAX_ENERGY_INDEX>, ModularCurvesMathOperators::division>{}},
+		std::pair {"Parent Ship EMP Intensity",	modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::emp_intensity>{}},
+		std::pair {"Parent Ship Time Until Explosion", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::final_death_time, static_cast<int (*)(int)>(&timestamp_until)>{}})
 	.derive_modular_curves_input_only_subset<float>(
 		std::pair {"Post-Curves Velocity", modular_curves_self_input{}}
 		);
