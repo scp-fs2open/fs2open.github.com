@@ -2,12 +2,11 @@
 #define SHIPINITIALSTATUSDIALOG_H
 
 #include <mission/dialogs/ShipEditor/ShipInitialStatusDialogModel.h>
+
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QListWidget>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 
 namespace Ui {
 class ShipInitialStatusDialog;
@@ -19,17 +18,39 @@ class ShipInitialStatusDialog : public QDialog {
 	explicit ShipInitialStatusDialog(QDialog* parent, EditorViewport* viewport, bool editMultiple);
 	~ShipInitialStatusDialog() override;
 
+	void accept() override;
+	void reject() override;
+
   protected:
 	void closeEvent(QCloseEvent*) override;
-	void rejectHandler();
 
   private slots:
+	void on_okPushButton_clicked();
+	void on_cancelPushButton_clicked();
 	void on_guardianSpinBox_valueChanged(int);
-  private://NOLINT
+	void on_velocitySpinBox_valueChanged(int);
+	void on_dockpointList_currentItemChanged(QListWidgetItem*);
+	void on_dockeeComboBox_currentIndexChanged(int);
+	void on_dockeePointComboBox_currentIndexChanged(int);
+	void on_hullSpinBox_valueChanged(int);
+	void on_hasShieldCheckBox_stateChanged(int);
+	void on_shieldHullSpinBox_valueChanged(int);
+	void on_forceShieldsCheckBox_stateChanged(int);
+	void on_shipLockCheckBox_stateChanged(int);
+	void on_weaponLockCheckBox_stateChanged(int);
+	void on_primaryLockCheckBox_stateChanged(int);
+	void on_secondaryLockCheckBox_stateChanged(int);
+	void on_turretLockCheckBox_stateChanged(int);
+	void on_afterburnerLockCheckBox_stateChanged(int);
+	void on_subsystemList_currentRowChanged(int);
+	void on_subIntegritySpinBox_valueChanged(int);
+	void on_cargoEdit_editingFinished();
+	void on_colourComboBox_currentIndexChanged(int);
+
+  private: // NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipInitialStatusDialog> ui;
 	std::unique_ptr<ShipInitialStatusDialogModel> _model;
 	EditorViewport* _viewport;
-
 
 	void updateUI();
 	void updateFlags();
@@ -42,31 +63,7 @@ class ShipInitialStatusDialog : public QDialog {
 	int cur_docker_point = -1;
 	int cur_dockee = -1;
 	int cur_dockee_point = -1;
-
-	void velocityChanged(int);
-	void hullChanged(int);
-	void hasShieldChanged(int);
-	void shieldHullChanged(int);
-	// Flags
-	void forceShieldChanged(int);
-	void shipLockChanged(int);
-	void weaponLockChanged(int);
-	void primaryLockChanged(int);
-	void secondaryLockChanged(int);
-	void turretLockChanged(int);
-	void afterburnerLockChanged(int);
-	// Docking
-	void dockChanged(QListWidgetItem*);
-	void dockeeComboChanged(int);
-	void dockeePointChanged(int);
-	// Subsystems
-	void subsystemChanged(int);
-	void subIntegrityChanged(int);
-	void cargoChanged();
-	void colourChanged(int);
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
 
 #endif // !SHIPINITIALSTATUSDIALOG_H

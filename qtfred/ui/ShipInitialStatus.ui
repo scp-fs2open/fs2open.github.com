@@ -414,22 +414,5 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>okPushButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipInitialStatusDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>278</x>
-     <y>565</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>251</x>
-     <y>509</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

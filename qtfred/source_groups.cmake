@@ -110,8 +110,6 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipGoalsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipFlagsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipFlagsDialogModel.h
-	src/mission/dialogs/ShipEditor/PlayerOrdersDialogModel.h
-	src/mission/dialogs/ShipEditor/PlayerOrdersDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipSpecialStatsDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipSpecialStatsDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipTextureReplacementDialogModel.h
@@ -122,8 +120,6 @@ add_file_folder("Source/Mission/Dialogs/ShipEditor"
 	src/mission/dialogs/ShipEditor/ShipWeaponsDialogModel.h
 	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.cpp
 	src/mission/dialogs/ShipEditor/WeaponsTBLViewerModel.h
-	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.cpp
-	src/mission/dialogs/ShipEditor/ShipPathsDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipCustomWarpDialogModel.h
 	src/mission/dialogs/ShipEditor/ShipCustomWarpDialogModel.cpp
 	src/mission/dialogs/ShipEditor/ShipAltShipClassModel.h
@@ -212,8 +208,6 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipGoalsDialog.h
 	src/ui/dialogs/ShipEditor/ShipFlagsDialog.h
 	src/ui/dialogs/ShipEditor/ShipFlagsDialog.cpp
-	src/ui/dialogs/ShipEditor/PlayerOrdersDialog.h
-	src/ui/dialogs/ShipEditor/PlayerOrdersDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipSpecialStatsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipSpecialStatsDialog.h
 	src/ui/dialogs/ShipEditor/ShipTextureReplacementDialog.h
@@ -224,8 +218,6 @@ add_file_folder("Source/UI/Dialogs/ShipEditor"
 	src/ui/dialogs/ShipEditor/ShipWeaponsDialog.h
 	src/ui/dialogs/ShipEditor/BankModel.cpp
 	src/ui/dialogs/ShipEditor/BankModel.h
-	src/ui/dialogs/ShipEditor/ShipPathsDialog.h
-	src/ui/dialogs/ShipEditor/ShipPathsDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.h
 	src/ui/dialogs/ShipEditor/ShipCustomWarpDialog.cpp
 	src/ui/dialogs/ShipEditor/ShipAltShipClass.h
@@ -308,10 +300,8 @@ add_file_folder("UI"
 	ui/ShipGoalsDialog.ui
 	ui/ShipSpecialStatsDialog.ui
 	ui/ShipFlagsDialog.ui
-	ui/PlayerOrdersDialog.ui
 	ui/ShipTextureReplacementDialog.ui
 	ui/ShipTBLViewer.ui
-	ui/ShipPathsDialog.ui
 	ui/ShipCustomWarpDialog.ui
 	ui/ShipAltShipClass.ui
 	ui/ShipWeaponsDialog.ui
