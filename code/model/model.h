@@ -23,7 +23,7 @@
 #include "model/model_flags.h"
 #include "object/object.h"
 #include "ship/ship_flags.h"
-#include "particle/ParticleEffect.h"
+#include "particle/particle.h"
 
 class object;
 class ship_info;

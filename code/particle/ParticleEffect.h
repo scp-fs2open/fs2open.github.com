@@ -12,6 +12,7 @@
 #include "graphics/2d.h"
 
 #include "object/objectshield.h"
+#include "ship/ship.h"
 
 #include <optional>
 
