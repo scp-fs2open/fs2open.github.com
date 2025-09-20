@@ -162,9 +162,10 @@ void neb2_render_setup(camid cid);
 
 // turns a poof on or off
 void neb2_toggle_poof(int poof_idx, bool enabling);
+void neb2_toggle_poof_finalize();	// must be called after all poofs have been toggled
 
 // fades poofs
-void neb2_fade_poofs(int poof_idx, int time, bool type);
+void neb2_fade_poof(int poof_idx, int time, bool type);
 
 // render the player nebula
 void neb2_render_poofs();
