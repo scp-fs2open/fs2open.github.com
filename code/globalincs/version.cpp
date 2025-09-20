@@ -203,6 +203,9 @@ SCP_string get_version_string()
 	switch (gr_screen.mode) {
 	case GR_OPENGL:
 		str += " OpenGL";
+		#ifdef USE_OPENGL_ES
+		str += " ES";
+		#endif
 		break;
 	case GR_VULKAN:
 		str += " Vulkan";
