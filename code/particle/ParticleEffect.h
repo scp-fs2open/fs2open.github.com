@@ -11,6 +11,8 @@
 #include "utils/modular_curves.h"
 #include "graphics/2d.h"
 
+#include "object/objectshield.h"
+
 #include <optional>
 
 class EffectHost;
@@ -261,7 +263,6 @@ public:
 		std::pair {"Trigger Velocity", modular_curves_submember_input<&ParticleSource::m_triggerVelocity>{}},
 		std::pair {"Host Radius", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getHostRadius>{}},
 		std::pair {"Host Velocity", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getVelocityMagnitude>{}},
-		//TODO Long term, this should have access to a lot of interesting host properties, especially also those that change during gameplay like current hitpoints
 		std::pair {"Effects Running", modular_curves_math_input<
 		    modular_curves_submember_input<&ParticleSource::m_effect_is_running, &decltype(ParticleSource::m_effect_is_running)::count>,
 			modular_curves_submember_input<&ParticleSource::getEffect, &SCP_vector<ParticleEffect>::size>,
@@ -274,7 +275,10 @@ public:
 		std::pair {"Nebula Usage Score", modular_curves_math_input<
 		    modular_curves_global_submember_input<get_particle_count>,
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
-			ModularCurvesMathOperators::division>{}})
+			ModularCurvesMathOperators::division>{}},
+		std::pair {"Host Object Hitpoints", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>{}},
+		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>{}})
+		//Ideally we check ship properties as well if the parent is a ship, since this is pretty common. Unfortunately, we cannot include ship here. There needs to be something here that fixes the circular include
 	.derive_modular_curves_input_only_subset<size_t>( //Effect Number
 		std::pair {"Spawntime Left", modular_curves_functional_full_input<&ParticleSource::getEffectRemainingTime>{}},
 		std::pair {"Time Running", modular_curves_functional_full_input<&ParticleSource::getEffectRunningTime>{}})
@@ -293,7 +297,7 @@ public:
 			std::pair {"Radius Mult", ParticleLifetimeCurvesOutput::RADIUS_MULT}, // Modern Naming Alias
 			std::pair {"Velocity Mult", ParticleLifetimeCurvesOutput::VELOCITY_MULT}, // Modern Naming Alias
 			std::pair {"Length Mult", ParticleLifetimeCurvesOutput::LENGTH_MULT},
-			std::pair {"Anim State Mult", ParticleLifetimeCurvesOutput::ANIM_STATE},
+			std::pair {"Anim State", ParticleLifetimeCurvesOutput::ANIM_STATE},
 			std::pair {"Light Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_RADIUS_MULT},
 			std::pair {"Light Source Radius Mult", ParticleLifetimeCurvesOutput::LIGHT_SOURCE_RADIUS_MULT},
 			std::pair {"Light Intensity Mult", ParticleLifetimeCurvesOutput::LIGHT_INTENSITY_MULT},
@@ -311,7 +315,9 @@ public:
 			 modular_curves_submember_input<&particle::max_life>,
 			 ModularCurvesMathOperators::division>{}},
 		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
-		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}})
+		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}},
+		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>{}},
+		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>{}})
 	.derive_modular_curves_input_only_subset<float>(
 		std::pair {"Post-Curves Velocity", modular_curves_self_input{}}
 		);

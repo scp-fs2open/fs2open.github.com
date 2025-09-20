@@ -136,8 +136,12 @@ struct modular_curves_submember_input {
 	static inline float grab(const input_type& input) {
 		const auto& result = grab_internal<std::decay_t<decltype(grab_from_tuple<tuple_idx, input_type>(input).get())>, grabbers...>(grab_from_tuple<tuple_idx, input_type>(input));
 		if constexpr (is_optional_v<typename std::decay_t<decltype(result)>>) {
-			if (result.has_value())
-				return number_to_float(result->get());
+			if (result.has_value()) {
+				if constexpr (is_instance_of_v<std::decay_t<decltype(*result)>, std::reference_wrapper>)
+					return number_to_float(result->get());
+				else
+					return number_to_float(*result);
+			}
 			else
 				return 1.0f;
 		}
