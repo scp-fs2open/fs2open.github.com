@@ -280,7 +280,15 @@ public:
 			modular_curves_global_submember_input<Detail, &detail_levels::nebula_detail>,
 			ModularCurvesMathOperators::division>{}},
 		std::pair {"Host Object Hitpoints", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>{}},
+		std::pair {"Host Ship Hitpoints Fraction", modular_curves_math_input<
+		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &object::hull_strength>,
+			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
+			ModularCurvesMathOperators::division>{}},
 		std::pair {"Host Object Shield", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>{}},
+		std::pair {"Host Ship Shield Fraction", modular_curves_math_input<
+		    modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &shield_get_strength>,
+			modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
+			ModularCurvesMathOperators::division>{}},
 		std::pair {"Host Ship AB Fuel Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
 		std::pair {"Host Ship Countermeasures Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
 		std::pair {"Host Ship Weapon Energy Left", modular_curves_submember_input<&ParticleSource::m_host, &EffectHost::getParentObjAndSig, 0, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
@@ -327,7 +335,15 @@ public:
 		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
 		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}},
 		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>{}},
+		std::pair {"Parent Ship Hitpoints Fraction", modular_curves_math_input<
+			modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>,
+			modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_hull_strength>,
+			ModularCurvesMathOperators::division>{}},
 		std::pair {"Parent Object Shield", modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>{}},
+		std::pair {"Parent Ship Shield Fraction", modular_curves_math_input<
+			modular_curves_submember_input<&particle::attached_objnum, &Objects, &shield_get_strength>,
+			modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::ship_max_shield_strength>,
+			ModularCurvesMathOperators::division>{}},
 		std::pair {"Parent Ship AB Fuel Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::afterburner_fuel>{}},
 		std::pair {"Parent Ship Countermeasures Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::cmeasure_count>{}},
 		std::pair {"Parent Ship Weapon Energy Left", modular_curves_submember_input<&particle::attached_objnum, &Objects, &obj_get_instance_maybe<OBJ_SHIP>, &ship::weapon_energy>{}},
