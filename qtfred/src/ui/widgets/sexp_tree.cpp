@@ -6409,6 +6409,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_KEY_RESET:
 					case OP_SET_ASTEROID_FIELD:
 					case OP_SET_DEBRIS_FIELD:
+					case OP_NEBULA_TOGGLE_POOF:
+					case OP_NEBULA_FADE_POOF:
 						j = (int) op_menu.size();    // don't allow these operators to be visible
 						break;
 					}
@@ -6491,6 +6493,8 @@ std::unique_ptr<QMenu> sexp_tree::buildContextMenu(QTreeWidgetItem* h) {
 					case OP_KEY_RESET:
 					case OP_SET_ASTEROID_FIELD:
 					case OP_SET_DEBRIS_FIELD:
+					case OP_NEBULA_TOGGLE_POOF:
+					case OP_NEBULA_FADE_POOF:
 						j = (int) op_submenu.size();    // don't allow these operators to be visible
 						break;
 					}
