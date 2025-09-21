@@ -3544,7 +3544,7 @@ int Fred_mission_save::save_objects()
 				fout("\n$Arrival Anchor:");
 			}
 
-			int z = shipp->arrival_anchor;
+			z = shipp->arrival_anchor;
 			if (z < 0) {
 				fout(" <error>");
 			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
