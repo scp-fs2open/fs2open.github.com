@@ -2640,7 +2640,7 @@ int button_function(int n)
 
 			// target the next hostile target
 			case TARGET_NEXT_CLOSEST_HOSTILE:
-				hud_target_next_list();
+				hud_target_next_list(1,0);
 				break;
 
 			// target the previous closest hostile
@@ -2650,7 +2650,7 @@ int button_function(int n)
 
 			// target the next friendly ship
 			case TARGET_NEXT_CLOSEST_FRIENDLY:
-				hud_target_next_list(0);
+				hud_target_next_list(0,1);
 				break;
 
 			// target the closest friendly ship
@@ -2769,11 +2769,11 @@ int button_function(int n)
 			break;
 			
 		case TARGET_NEXT_BOMB:
-			hud_target_hostile_bomb_or_bomber(Player_obj, 1, true, true);
+			hud_target_hostile_bomb_or_bomber(Player_obj, 1, true, true, false);
 			break;
 
 		case TARGET_PREV_BOMB:
-			hud_target_hostile_bomb_or_bomber(Player_obj, 0, true, true);
+			hud_target_hostile_bomb_or_bomber(Player_obj, 0, true, true, false);
 			break;
 
 		// wingman message: attack current target

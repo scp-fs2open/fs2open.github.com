@@ -1440,137 +1440,173 @@ ship_obj *get_ship_obj_ptr_from_index(int index);
 //			next_flag	=>		0 -> previous 1 -> next
 // 			target_bombs =>		true to target bombs or false to skip targeting of bombs
 //			target_bombers =>	true to target bombers or false to skip targeting of bombers
+//			target_closest =>	true to target closest objects instead of just next in list
 //
-// NOTE: this function allows targeting or hostile bombs or bombers
-void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool target_bombs, bool target_bombers)
+// NOTE: this function allows targeting hostile bombs or bombers
+void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool target_bombs, bool target_bombers, bool use_distance_sort)
 {
-	object		*A, *target_objp;
-	ai_info		*aip;
-	bool		target_found = false;
-
-	if ( source_obj->type != OBJ_SHIP )
+	if (source_obj->type != OBJ_SHIP)
 		return;
 
-	Assert( Ships[source_obj->instance].ai_index != -1 );
-	aip = &Ai_info[Ships[source_obj->instance].ai_index];
+	Assert(Ships[source_obj->instance].ai_index != -1);
 
-	// first search for bomb weapon
-	if (target_bombs) {
-		weapon* wp;
-		weapon_info* wip;
-		missile_obj *mo_end, *mo_start, *mo_current;
+	ai_info* aip = &Ai_info[Ships[source_obj->instance].ai_index];
+	float current_distance = 0.0f;
+	if (aip->target_objnum >= 0)
+		current_distance = hud_find_target_distance(&Objects[aip->target_objnum], Player_obj);
 
-		mo_end = &Missile_obj_list;
-		if (aip->target_objnum != -1) {
-			target_objp = &Objects[aip->target_objnum];
-			if ( target_objp->type == OBJ_WEAPON && Weapon_info[Weapons[target_objp->instance].weapon_info_index].subtype == WP_MISSILE )	{	// must be a missile
-				mo_end = missile_obj_return_address(Weapons[target_objp->instance].missile_list_index);
+	object* A = nullptr;
+	object* nearest_object_ptr = nullptr;
+	object* minimum_object_ptr = nullptr;
+	object* maximum_object_ptr = nullptr;
+
+	float nearest_distance = (next_flag > 0) ? 1e20f : 0.0f;
+	float minimum_distance = 1e20f;
+	float maximum_distance = 0.0f;
+
+	// track sequential fallback candidates
+	object* sequential_candidate = nullptr;
+	object* first_candidate = nullptr; // track first valid candidate for wraparound
+	bool passed_current = false;
+
+	// helper lambda to process possible targets
+	auto process_candidate = [&](object* A) {
+		if (use_distance_sort) {
+			float new_distance = hud_find_target_distance(A, Player_obj);
+
+			// min/max tracking
+			if (new_distance <= minimum_distance) {
+				minimum_distance = new_distance;
+				minimum_object_ptr = A;
 			}
-		}
-
-		mo_start = advance_missile_obj(mo_end, next_flag);
-
-		for ( mo_current = mo_start; mo_current != mo_end; mo_current = advance_missile_obj(mo_current, next_flag) ) {
-			if ( mo_current == &Missile_obj_list ){
-				continue;
+			if (new_distance >= maximum_distance) {
+				maximum_distance = new_distance;
+				maximum_object_ptr = A;
 			}
 
-			Assert(mo_current->objnum >= 0 && mo_current->objnum < MAX_OBJECTS);
-			A = &Objects[mo_current->objnum];
-			if (A->flags[Object::Object_Flags::Should_be_dead])
-				continue;
-
-			Assert(A->type == OBJ_WEAPON);
-			Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
-			wp = &Weapons[A->instance];
-			wip = &Weapon_info[wp->weapon_info_index];
-
-			// only allow targeting of bombs
-			if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-				if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
-					continue;
+			// nearest "next/previous" check - fixed logic
+			if (next_flag > 0) { // forward - find closest target farther than current
+				if (new_distance > current_distance && new_distance < nearest_distance) {
+					nearest_distance = new_distance;
+					nearest_object_ptr = A;
+				}
+			} else { // backward - find farthest target closer than current
+				if (new_distance < current_distance && new_distance > nearest_distance) {
+					nearest_distance = new_distance;
+					nearest_object_ptr = A;
 				}
 			}
-
-			if (wp->lssm_stage==3){
-				continue;
+		} else {
+			// sequential cycling logic - fixed to not return early
+			if (first_candidate == nullptr) {
+				first_candidate = A; // always track first candidate for wraparound
 			}
 
-			// only allow targeting of hostile bombs
-			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
-				continue;
+			if (aip->target_objnum >= 0 && &Objects[aip->target_objnum] == A) {
+				passed_current = true;
+				// Don't return here - continue processing
+			} else if (sequential_candidate == nullptr) {
+				if (passed_current && next_flag > 0) {
+					// first one after the current target (forward)
+					sequential_candidate = A;
+				} else if (!passed_current && next_flag < 0) {
+					// for backwards cycling, keep track of the last seen before current
+					sequential_candidate = A;
+				}
+			} else if (next_flag < 0 && !passed_current) {
+				// keep updating until we hit the current target (backward)
+				sequential_candidate = A;
 			}
-
-			if(hud_target_invalid_awacs(A)){
-				continue;
-			}
-
-			// if we've reached here, got a new target
-			target_found = true;
-			set_target_objnum( aip, OBJ_INDEX(A) );
-			hud_shield_hit_reset(A);
-			break;
-		}	// end for
-	}
-
-	// if no bomb weapon is found, search for bomber ship
-	if ( !target_found && target_bombers ) {
-		ship_obj *so_end, *so_start, *so_current;
-
-		so_end = &Ship_obj_list;
-		if ( (aip->target_objnum != -1)
-			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
-			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags[Ship::Info_Flags::Bomber])
-				|| (Objects[aip->target_objnum].flags[Object::Object_Flags::Targetable_as_bomb]))) {
-			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
-			so_end = get_ship_obj_ptr_from_index(index);
 		}
+	};
 
-		so_start = advance_ship(so_end, next_flag);
+	// check bomb weapons
+	if (target_bombs) {
+		for (missile_obj* mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo)) {
+			A = &Objects[mo->objnum];
 
-		for ( so_current = so_start; so_current != so_end; so_current = advance_ship(so_current, next_flag) ) {
-
-			// don't look at header
-			if (so_current == &Ship_obj_list) {
-				continue;
-			}
-
-			A = &Objects[so_current->objnum];
 			if (A->flags[Object::Object_Flags::Should_be_dead])
 				continue;
 
-			Assertion(A->type == OBJ_SHIP, "hud_target_hostile_bomb_or_bomber was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
+			weapon* wp = &Weapons[A->instance];
+			weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
-			// only allow targeting of hostile bombs
-			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
+			if (!(wip->wi_flags[Weapon::Info_Flags::Bomb]))
 				continue;
-			}
 
-			if(hud_target_invalid_awacs(A)){
+			if (wp->lssm_stage == 3)
 				continue;
-			}
 
-			// check if ship type is bomber
-			if ( !(Ship_info[Ships[A->instance].ship_info_index].flags[Ship::Info_Flags::Bomber]) && !(A->flags[Object::Object_Flags::Targetable_as_bomb]) ) {
+			if (!iff_x_attacks_y(Player_ship->team, obj_team(A)))
 				continue;
-			}
 
-			// check if ignore
-			if ( should_be_ignored(&Ships[A->instance]) ){
+			if (hud_target_invalid_awacs(A))
 				continue;
-			}
 
-			// found a good one
-			target_found = true;
-			set_target_objnum( aip, OBJ_INDEX(A) );
-			hud_shield_hit_reset(A);
-			break;
+			process_candidate(A);
 		}
 	}
 
-	if ( !target_found ) {
-		snd_play( gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f );
+	// check bomber ships
+	if (target_bombers) {
+		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+			A = &Objects[so->objnum];
+
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
+
+			if (!iff_x_attacks_y(Player_ship->team, obj_team(A)))
+				continue;
+
+			if (hud_target_invalid_awacs(A))
+				continue;
+
+			// check if ship type is bomber
+			if (!(Ship_info[Ships[A->instance].ship_info_index].flags[Ship::Info_Flags::Bomber]) && !(A->flags[Object::Object_Flags::Targetable_as_bomb]))
+				continue;
+
+			if (should_be_ignored(&Ships[A->instance]))
+				continue;
+
+			process_candidate(A);
+		}
 	}
+
+	// choose final target
+	object* target_to_set = nullptr;
+
+	if (use_distance_sort) {
+		if (nearest_object_ptr != nullptr) {
+			target_to_set = nearest_object_ptr;
+		} else {
+			// wraparound logic
+			if (next_flag > 0 && minimum_object_ptr != nullptr) {
+				target_to_set = minimum_object_ptr;
+			} else if (next_flag <= 0 && maximum_object_ptr != nullptr) {
+				target_to_set = maximum_object_ptr;
+			}
+		}
+	} else {
+		// sequential targeting with proper wraparound
+		if (sequential_candidate != nullptr) {
+			target_to_set = sequential_candidate;
+		} else if (first_candidate != nullptr) {
+			// wraparound - if no sequential candidate found, use first/last
+			target_to_set = first_candidate;
+		}
+	}
+
+	bool target_found = false;
+
+	if (target_to_set != nullptr) {
+		target_found = true;
+		set_target_objnum(aip, OBJ_INDEX(target_to_set));
+		hud_shield_hit_reset(target_to_set);
+	}
+
+	// fail sound if no target
+	if (!target_found)
+		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f);
 }
 
 // Return !0 if shipp can be scanned, otherwise return 0
