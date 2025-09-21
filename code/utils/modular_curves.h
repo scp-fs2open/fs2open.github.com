@@ -83,20 +83,34 @@ struct modular_curves_submember_input {
 			const auto& current_access = grab_part<input_type, grabber>(input.get());
 			//If the current grabber isn't guaranteed to succeed, check for completion first
 			if constexpr (is_optional_v<std::decay_t<decltype(current_access)>>) {
-				using lower_return_type = decltype(grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access));
-				using return_type = typename std::conditional_t<is_optional_v<std::decay_t<lower_return_type>>, lower_return_type, std::optional<lower_return_type>>;
-				//If we're already nullopt (i.e. this array access failed) return early
-				if (current_access.has_value()) {
-					//Now, it's possible that lower acceses _also_ produce optionals. In this case, we need to forward the lower result, not re-wrap it.
-					if constexpr (is_optional_v<std::decay_t<lower_return_type>>) {
-						return grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access);
-					}
-					else{
-						return return_type(grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access));
-					}
+				if constexpr (is_instance_of_v<std::decay_t<decltype(*current_access)>, std::reference_wrapper>) {
+					using lower_return_type = decltype(grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access));
+					using return_type = typename std::conditional_t<is_optional_v<std::decay_t<lower_return_type>>, lower_return_type, std::optional<lower_return_type>>;
+					//If we're already nullopt (i.e. this array access failed) return early
+					if (current_access.has_value()) {
+						//Now, it's possible that lower acceses _also_ produce optionals. In this case, we need to forward the lower result, not re-wrap it.
+						if constexpr (is_optional_v<std::decay_t<lower_return_type>>) {
+							return grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access);
+						} else {
+							return return_type(grab_internal<std::decay_t<decltype((*current_access).get())>, other_grabbers...>(*current_access));
+						}
+					} else
+						return return_type(std::nullopt);
 				}
-				else
-				    return return_type(std::nullopt);
+				else {
+					using lower_return_type = decltype(grab_internal<std::decay_t<decltype(*current_access)>, other_grabbers...>(*current_access));
+					using return_type = typename std::conditional_t<is_optional_v<std::decay_t<lower_return_type>>, lower_return_type, std::optional<lower_return_type>>;
+					//If we're already nullopt (i.e. this array access failed) return early
+					if (current_access.has_value()) {
+						//Now, it's possible that lower acceses _also_ produce optionals. In this case, we need to forward the lower result, not re-wrap it.
+						if constexpr (is_optional_v<std::decay_t<lower_return_type>>) {
+							return grab_internal<std::decay_t<decltype(*current_access)>, other_grabbers...>(*current_access);
+						} else {
+							return return_type(grab_internal<std::decay_t<decltype(*current_access)>, other_grabbers...>(*current_access));
+						}
+					} else
+						return return_type(std::nullopt);
+				}
 			}
 			//Otherwise just send it on to the next grabber
 			else if constexpr (is_instance_of_v<std::decay_t<decltype(current_access)>, std::reference_wrapper>) {
@@ -136,8 +150,12 @@ struct modular_curves_submember_input {
 	static inline float grab(const input_type& input) {
 		const auto& result = grab_internal<std::decay_t<decltype(grab_from_tuple<tuple_idx, input_type>(input).get())>, grabbers...>(grab_from_tuple<tuple_idx, input_type>(input));
 		if constexpr (is_optional_v<typename std::decay_t<decltype(result)>>) {
-			if (result.has_value())
-				return number_to_float(result->get());
+			if (result.has_value()) {
+				if constexpr (is_instance_of_v<std::decay_t<decltype(*result)>, std::reference_wrapper>)
+					return number_to_float(result->get());
+				else
+					return number_to_float(*result);
+			}
 			else
 				return 1.0f;
 		}
