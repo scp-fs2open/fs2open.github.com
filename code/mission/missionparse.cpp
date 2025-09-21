@@ -7654,6 +7654,8 @@ int mission_set_arrival_location(int anchor, ArrivalLocation location, int dist,
 		return -1;
 
 	Assert(anchor >= 0);
+	if (anchor < 0)
+		return -1;	// should never happen, but if it does, fail gracefully
 
 	// this ship might possibly arrive at another location.  The location is based on the
 	// proximity of some ship (and some other special tokens)
@@ -8281,7 +8283,9 @@ int mission_do_departure(object *objp, bool goal_is_to_warp)
 	if (location == DepartureLocation::TO_DOCK_BAY)
 	{
 		Assert(anchor >= 0);
-		auto anchor_ship_entry = ship_registry_get(Parse_names[anchor]);
+		auto anchor_ship_entry = (anchor >= 0)
+			? ship_registry_get(Parse_names[anchor])
+			: nullptr;	// should never happen, but if it does, fail gracefully
 
 		// see if ship is yet to arrive.  If so, then warp.
 		if (!anchor_ship_entry || anchor_ship_entry->status == ShipStatus::NOT_YET_PRESENT)
