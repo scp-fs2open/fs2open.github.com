@@ -2769,11 +2769,11 @@ int button_function(int n)
 			break;
 			
 		case TARGET_NEXT_BOMB:
-			hud_target_missile(Player_obj, 1);
+			hud_target_hostile_bomb_or_bomber(Player_obj, 1, true, true);
 			break;
 
 		case TARGET_PREV_BOMB:
-			hud_target_missile(Player_obj, 0);
+			hud_target_hostile_bomb_or_bomber(Player_obj, 0, true, true);
 			break;
 
 		// wingman message: attack current target

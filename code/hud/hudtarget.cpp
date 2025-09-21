@@ -1432,22 +1432,21 @@ static object* select_next_target_by_distance(const bool targeting_from_closest_
 
 ship_obj *get_ship_obj_ptr_from_index(int index);
 // -------------------------------------------------------------------
-// hud_target_missile()
+// hud_target_hostile_bomb_or_bomber()
 //
 // Target the closest locked missile that is locked on locked_obj
 //
 //	input:	source_obj	=>		pointer to object that fired weapon
-//				next_flag	=>		0 -> previous 1 -> next
+//			next_flag	=>		0 -> previous 1 -> next
+// 			target_bombs =>		true to target bombs or false to skip targeting of bombs
+//			target_bombers =>	true to target bombers or false to skip targeting of bombers
 //
-// NOTE: this function is only allows targeting bombs
-void hud_target_missile(object *source_obj, int next_flag)
+// NOTE: this function allows targeting or hostile bombs or bombers
+void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool target_bombs, bool target_bombers)
 {
-	missile_obj	*end, *start, *mo;
 	object		*A, *target_objp;
 	ai_info		*aip;
-	weapon		*wp;
-	weapon_info	*wip;
-	int			target_found = 0;
+	bool		target_found = false;
 
 	if ( source_obj->type != OBJ_SHIP )
 		return;
@@ -1455,84 +1454,92 @@ void hud_target_missile(object *source_obj, int next_flag)
 	Assert( Ships[source_obj->instance].ai_index != -1 );
 	aip = &Ai_info[Ships[source_obj->instance].ai_index];
 
-	end = &Missile_obj_list;
-	if (aip->target_objnum != -1) {
-		target_objp = &Objects[aip->target_objnum];
-		if ( target_objp->type == OBJ_WEAPON && Weapon_info[Weapons[target_objp->instance].weapon_info_index].subtype == WP_MISSILE )	{	// must be a missile
-			end = missile_obj_return_address(Weapons[target_objp->instance].missile_list_index);
-		}
-	}
+	// first search for bomb weapon
+	if (target_bombs) {
+		weapon* wp;
+		weapon_info* wip;
+		missile_obj *mo_end, *mo_start, *mo_current;
 
-	start = advance_missile_obj(end, next_flag);
-
-	for ( mo = start; mo != end; mo = advance_missile_obj(mo, next_flag) ) {
-		if ( mo == &Missile_obj_list ){
-			continue;
-		}
-
-		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-		A = &Objects[mo->objnum];
-		if (A->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
-		Assert(A->type == OBJ_WEAPON);
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
-		wp = &Weapons[A->instance];
-		wip = &Weapon_info[wp->weapon_info_index];
-
-		// only allow targeting of bombs
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
-				continue;
+		mo_end = &Missile_obj_list;
+		if (aip->target_objnum != -1) {
+			target_objp = &Objects[aip->target_objnum];
+			if ( target_objp->type == OBJ_WEAPON && Weapon_info[Weapons[target_objp->instance].weapon_info_index].subtype == WP_MISSILE )	{	// must be a missile
+				mo_end = missile_obj_return_address(Weapons[target_objp->instance].missile_list_index);
 			}
 		}
 
-		if (wp->lssm_stage==3){
-			continue;
-		}
+		mo_start = advance_missile_obj(mo_end, next_flag);
 
-		// only allow targeting of hostile bombs
-		if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
-			continue;
-		}
+		for ( mo_current = mo_start; mo_current != mo_end; mo_current = advance_missile_obj(mo_current, next_flag) ) {
+			if ( mo_current == &Missile_obj_list ){
+				continue;
+			}
 
-		if(hud_target_invalid_awacs(A)){
-			continue;
-		}
+			Assert(mo_current->objnum >= 0 && mo_current->objnum < MAX_OBJECTS);
+			A = &Objects[mo_current->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
 
-		// if we've reached here, got a new target
-		target_found = TRUE;
-		set_target_objnum( aip, OBJ_INDEX(A) );
-		hud_shield_hit_reset(A);
-		break;
-	}	// end for
+			Assert(A->type == OBJ_WEAPON);
+			Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+			wp = &Weapons[A->instance];
+			wip = &Weapon_info[wp->weapon_info_index];
 
-	if ( !target_found ) {
-	// if no bomb is found, search for bombers
-		ship_obj *startShip, *so;
+			// only allow targeting of bombs
+			if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
+				if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
+					continue;
+				}
+			}
 
+			if (wp->lssm_stage==3){
+				continue;
+			}
+
+			// only allow targeting of hostile bombs
+			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
+				continue;
+			}
+
+			if(hud_target_invalid_awacs(A)){
+				continue;
+			}
+
+			// if we've reached here, got a new target
+			target_found = true;
+			set_target_objnum( aip, OBJ_INDEX(A) );
+			hud_shield_hit_reset(A);
+			break;
+		}	// end for
+	}
+
+	// if no bomb weapon is found, search for bomber ship
+	if ( !target_found && target_bombers ) {
+		ship_obj *so_end, *so_start, *so_current;
+
+		so_end = &Ship_obj_list;
 		if ( (aip->target_objnum != -1)
 			&& (Objects[aip->target_objnum].type == OBJ_SHIP)
 			&& ((Ship_info[Ships[Objects[aip->target_objnum].instance].ship_info_index].flags[Ship::Info_Flags::Bomber])
 				|| (Objects[aip->target_objnum].flags[Object::Object_Flags::Targetable_as_bomb]))) {
 			int index = Ships[Objects[aip->target_objnum].instance].ship_list_index;
-			startShip = get_ship_obj_ptr_from_index(index);
-		} else {
-			startShip = GET_FIRST(&Ship_obj_list);
+			so_end = get_ship_obj_ptr_from_index(index);
 		}
 
-		for (so=advance_ship(startShip, next_flag); so!=startShip; so=advance_ship(so, next_flag)) {
+		so_start = advance_ship(so_end, next_flag);
+
+		for ( so_current = so_start; so_current != so_end; so_current = advance_ship(so_current, next_flag) ) {
 
 			// don't look at header
-			if (so == &Ship_obj_list) {
+			if (so_current == &Ship_obj_list) {
 				continue;
 			}
 
-			A = &Objects[so->objnum];
+			A = &Objects[so_current->objnum];
 			if (A->flags[Object::Object_Flags::Should_be_dead])
 				continue;
 
-			Assertion(A->type == OBJ_SHIP, "hud_target_missile was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
+			Assertion(A->type == OBJ_SHIP, "hud_target_hostile_bomb_or_bomber was about to call obj_team with a non-ship obejct with type %d. Please report!", A->type);
 
 			// only allow targeting of hostile bombs
 			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
@@ -1554,7 +1561,7 @@ void hud_target_missile(object *source_obj, int next_flag)
 			}
 
 			// found a good one
-			target_found = TRUE;
+			target_found = true;
 			set_target_objnum( aip, OBJ_INDEX(A) );
 			hud_shield_hit_reset(A);
 			break;
