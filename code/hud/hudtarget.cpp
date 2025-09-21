@@ -1470,52 +1470,52 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 	bool passed_current = false;
 
 	// helper lambda to process possible targets
-	auto process_candidate = [&](object* A) {
+	auto process_candidate = [&](object* c_obj) {
 		if (use_distance_sort) {
-			float new_distance = hud_find_target_distance(A, Player_obj);
+			float new_distance = hud_find_target_distance(c_obj, Player_obj);
 
 			// min/max tracking
 			if (new_distance <= minimum_distance) {
 				minimum_distance = new_distance;
-				minimum_object_ptr = A;
+				minimum_object_ptr = c_obj;
 			}
 			if (new_distance >= maximum_distance) {
 				maximum_distance = new_distance;
-				maximum_object_ptr = A;
+				maximum_object_ptr = c_obj;
 			}
 
 			// nearest "next/previous" check - fixed logic
 			if (next_flag > 0) { // forward - find closest target farther than current
 				if (new_distance > current_distance && new_distance < nearest_distance) {
 					nearest_distance = new_distance;
-					nearest_object_ptr = A;
+					nearest_object_ptr = c_obj;
 				}
 			} else { // backward - find farthest target closer than current
 				if (new_distance < current_distance && new_distance > nearest_distance) {
 					nearest_distance = new_distance;
-					nearest_object_ptr = A;
+					nearest_object_ptr = c_obj;
 				}
 			}
 		} else {
 			// sequential cycling logic - fixed to not return early
 			if (first_candidate == nullptr) {
-				first_candidate = A; // always track first candidate for wraparound
+				first_candidate = c_obj; // always track first candidate for wraparound
 			}
 
-			if (aip->target_objnum >= 0 && &Objects[aip->target_objnum] == A) {
+			if (aip->target_objnum >= 0 && &Objects[aip->target_objnum] == c_obj) {
 				passed_current = true;
 				// Don't return here - continue processing
 			} else if (sequential_candidate == nullptr) {
 				if (passed_current && next_flag > 0) {
 					// first one after the current target (forward)
-					sequential_candidate = A;
+					sequential_candidate = c_obj;
 				} else if (!passed_current && next_flag < 0) {
 					// for backwards cycling, keep track of the last seen before current
-					sequential_candidate = A;
+					sequential_candidate = c_obj;
 				}
 			} else if (next_flag < 0 && !passed_current) {
 				// keep updating until we hit the current target (backward)
-				sequential_candidate = A;
+				sequential_candidate = c_obj;
 			}
 		}
 	};
