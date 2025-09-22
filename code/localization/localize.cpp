@@ -36,10 +36,10 @@ SCP_vector<lang_info> Lcl_languages;
 // These are the original languages supported by FS2. The code expects these languages to be supported even if the tables don't
 
 lang_info Lcl_builtin_languages[NUM_BUILTIN_LANGUAGES] = {
-	{ "English",  -1, "",   {127,0,176,0,0}, 589986744},    // English ("" is correct; the game data files do not use a language extension for English)
-	{ "German",   -1, "gr", {164,0,176,0,0}, -1132430286 }, // German
-	{ "French",   -1, "fr", {164,0,176,0,0}, 0 },           // French
-	{ "Polish",   -1, "pl", {127,0,176,0,0}, -1131728960},  // Polish
+	{ "English",  1888, "",   {127,0,176,0,0}, 589986744},    // English ("" is correct; the game data files do not use a language extension for English)
+	{ "German",   1889, "gr", {164,0,176,0,0}, -1132430286 }, // German
+	{ "French",   1890, "fr", {164,0,176,0,0}, 0 },           // French
+	{ "Polish",   1891, "pl", {127,0,176,0,0}, -1131728960},  // Polish
 };
 
 int Lcl_special_chars;
@@ -64,7 +64,7 @@ bool *Lcl_unexpected_tstring_check = nullptr;
 // NOTE: with map storage of XSTR strings, the indexes no longer need to be contiguous,
 // but internal strings should still increment XSTR_SIZE to avoid collisions.
 // retail XSTR_SIZE = 1570
-// #define XSTR_SIZE	1888 // This is the next available ID
+// #define XSTR_SIZE	1892 // This is the next available ID
 
 // struct to allow for strings.tbl-determined x offset
 // offset is 0 for english, by default
