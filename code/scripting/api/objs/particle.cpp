@@ -4,6 +4,8 @@
 #include "particle.h"
 #include "vecmath.h"
 #include "object.h"
+#include "particle/ParticleManager.h"
+#include "particle/ParticleEffect.h"
 
 namespace scripting {
 namespace api {
@@ -19,7 +21,6 @@ particle::WeakParticlePtr particle_h::Get() const {
 bool particle_h::isValid() const {
 	return !part.expired();
 }
-
 
 //**********HANDLE: Particle
 ADE_OBJ(l_Particle, particle_h, "particle", "Handle to a particle");
@@ -213,6 +214,24 @@ ADE_FUNC_DEPRECATED(setColor, l_Particle, "number r, number g, number b", "Sets 
 	return ADE_RETURN_NIL;
 }
 
+
+ADE_OBJ(l_ParticleEffect, ::particle::ParticleEffectHandle, "particle_effect", "Handle to a tabled particle effect");
+
+ADE_FUNC(getName, l_ParticleEffect, nullptr, "Returns the name under which this effect is stored", "string", "the name of the particle effect, or an empty string for an invalid handle")
+{
+	::particle::ParticleEffectHandle ph;
+	if (!ade_get_args(L, "o", l_ParticleEffect.Get(&ph)))
+		return ade_set_error(L, "s", "");
+
+	if (!ph.isValid())
+		return ade_set_error(L, "s", "");
+
+	const auto& particle_effect = particle::ParticleManager::get()->getEffect(ph);
+	if (particle_effect.empty())
+		return ade_set_error(L, "s", "");
+
+	return ade_set_args(L, "s", particle_effect.front().getName().c_str());
+}
 
 }
 }
