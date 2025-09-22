@@ -847,6 +847,12 @@ add_file_folder("MissionEditor"
 	missioneditor/campaignsave.h
 	missioneditor/missionsave.cpp
 	missioneditor/missionsave.h
+	missioneditor/sexp_tree_model.cpp
+	missioneditor/sexp_tree_model.h
+	missioneditor/sexp_tree_opf.cpp
+	missioneditor/sexp_tree_opf.h
+	missioneditor/sexp_tree_actions.cpp
+	missioneditor/sexp_tree_actions.h
 )
 
 # MissionUI files
