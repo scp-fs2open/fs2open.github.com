@@ -22,6 +22,19 @@ bool particle_h::isValid() const {
 	return !part.expired();
 }
 
+particle_source_h::particle_source_h(particle::ParticleSource* source_p, uint32_t sourceValidityCounter_p) {
+	this->source = source_p;
+	this->sourceValidityCounter = sourceValidityCounter_p;
+}
+
+particle::ParticleSource* particle_source_h::Get() const {
+	return isValid() ? this->source : nullptr;
+}
+
+bool particle_source_h::isValid() const {
+	return particle::ParticleManager::get()->getSourceValidityCounter() == sourceValidityCounter;
+}
+
 //**********HANDLE: Particle
 ADE_OBJ(l_Particle, particle_h, "particle", "Handle to a particle");
 
@@ -232,6 +245,21 @@ ADE_FUNC(getName, l_ParticleEffect, nullptr, "Returns the name under which this 
 
 	return ade_set_args(L, "s", particle_effect.front().getName().c_str());
 }
+
+ADE_FUNC(createSource, l_ParticleEffect, nullptr, "Creates a new particle source, spawning particles as per this particle effect", "particle_source", "the particle source, or nil for an invalid handle")
+{
+	::particle::ParticleEffectHandle ph;
+	if (!ade_get_args(L, "o", l_ParticleEffect.Get(&ph)))
+		return ADE_RETURN_NIL;
+
+	if (!ph.isValid())
+		return ADE_RETURN_NIL;
+
+	auto source = particle::ParticleManager::get()->createSource(ph);
+	return ade_set_args(L, "s", l_ParticleSource.Set(particle_source_h(source, particle::ParticleManager::get()->getSourceValidityCounter())));
+}
+
+ADE_OBJ(l_ParticleSource, particle_source_h, "particle_source", "Handle to a particle source. Only valid immediately after acquiring.");
 
 }
 }
