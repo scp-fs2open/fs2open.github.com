@@ -563,7 +563,8 @@ void sexp_tree::add_sub_tree(int node, HTREEITEM root)
 		}
 	}
 
-	root = tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, bitmap, root);
+	tree_nodes[node].handle = insert(tree_nodes[node].text, bitmap, bitmap, root);
+	root = tree_item_handle(tree_nodes[node]);
 
 	node = node2;
 	while (node != -1) {
@@ -1811,7 +1812,8 @@ int sexp_tree::edit_label(HTREEITEM h, bool *is_operator)
 
 		SetItemText(h, tree_nodes[i].text);
 		tree_nodes[i].flags = OPERAND;
-		item_handle = tree_nodes[data].handle = insert(tree_nodes[data].text, tree_nodes[data].type, tree_nodes[data].flags, h);
+		tree_nodes[data].handle = insert(tree_nodes[data].text, tree_nodes[data].type, tree_nodes[data].flags, h);
+		item_handle = tree_item_handle(tree_nodes[data]);
 		tree_nodes[data].flags = EDITABLE;
 		Expand(h, TVE_EXPAND);
 		SelectItem(item_handle);
@@ -2043,7 +2045,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 	HTREEITEM h;
 
 	if ((item_index >= 0) && (item_index < total_nodes) && !tree_nodes.empty())
-		item_handle = tree_nodes[item_index].handle;
+		item_handle = tree_item_handle(tree_nodes[item_index]);
 
 	id = LOWORD(wParam);
 	data = HIWORD(wParam);
@@ -2388,7 +2390,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 		type &= ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME);
 		replace_container_data(containers[container_index], (type | SEXPT_CONTAINER_DATA), true, true, true);
 
-		HTREEITEM handle = tree_nodes[item_index].handle;
+		HTREEITEM handle = tree_item_handle(tree_nodes[item_index]);
 		expand_branch(handle);
 	}
 
@@ -2413,10 +2415,10 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
 			tree_nodes[node].flags = flags;
 			if (z >= 0)
-				h = tree_nodes[z].handle;
+				h = tree_item_handle(tree_nodes[z]);
 
 			else {
-				h = GetParentItem(tree_nodes[item_index].handle);
+				h = GetParentItem(tree_item_handle(tree_nodes[item_index]));
 				if (m_mode == MODE_GOALS) {
 					Assert(Goal_editor_dlg);
 					Goal_editor_dlg->insert_handler(item_index, node);
@@ -2437,7 +2439,8 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 				}
 			}
 
-			item_handle = tree_nodes[node].handle = insert(Operators[op].text.c_str(), BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_nodes[item_index].handle);
+			tree_nodes[node].handle = insert(Operators[op].text.c_str(), BITMAP_OPERATOR, BITMAP_OPERATOR, h, tree_item_handle(tree_nodes[item_index]));
+			item_handle = tree_item_handle(tree_nodes[node]);
 			move_branch(item_index, node);
 
 			item_index = node;
@@ -2497,9 +2500,9 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			} else {
 				replace_data("number", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			EditLabel(tree_nodes[item_index].handle);
+			EditLabel(tree_item_handle(tree_nodes[item_index]));
 			return 1;
-	
+
 		case ID_REPLACE_STRING:
 			expand_operator(item_index);
 			if (tree_nodes[item_index].type & SEXPT_MODIFIER) {
@@ -2507,7 +2510,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			} else {
 				replace_data("string", (SEXPT_STRING | SEXPT_VALID));
 			}
-			EditLabel(tree_nodes[item_index].handle);
+			EditLabel(tree_item_handle(tree_nodes[item_index]));
 			return 1;
 
 		case ID_ADD_STRING:	{
@@ -2518,7 +2521,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			} else {
 				theNode = add_data("string", (SEXPT_STRING | SEXPT_VALID));
 			}
-			EditLabel(tree_nodes[theNode].handle);
+			EditLabel(tree_item_handle(tree_nodes[theNode]));
 			return 1;
 		}
 
@@ -2530,7 +2533,7 @@ BOOL sexp_tree::OnCommand(WPARAM wParam, LPARAM lParam)
 			} else {
 				theNode = add_data("number", (SEXPT_NUMBER | SEXPT_VALID));
 			}
-			EditLabel(tree_nodes[theNode].handle);
+			EditLabel(tree_item_handle(tree_nodes[theNode]));
 			return 1;
 		}
 
@@ -2663,7 +2666,7 @@ void sexp_tree::NodeDelete()
 		SetItem(h_parent, TVIF_TEXT, buf, 0, 0, 0, 0, 0);
 		tree_nodes[parent].flags = OPERAND | EDITABLE;
 		tree_nodes[node].flags = COMBINED;
-		DeleteItem(tree_nodes[node].handle);
+		DeleteItem(tree_item_handle(tree_nodes[node]));
 	}*/
 
 	*modified = 1;
@@ -2706,7 +2709,7 @@ void sexp_tree::NodeReplacePaste()
 			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
 			i = tree_nodes[item_index].child;
 			while (i != -1) {
-				add_sub_tree(i, tree_nodes[item_index].handle);
+				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
 				i = tree_nodes[i].next;
 			}
 		}
@@ -2726,7 +2729,7 @@ void sexp_tree::NodeReplacePaste()
 			load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
 			i = tree_nodes[item_index].child;
 			while (i != -1) {
-				add_sub_tree(i, tree_nodes[item_index].handle);
+				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
 				i = tree_nodes[i].next;
 			}
 		} else {
@@ -2784,7 +2787,7 @@ void sexp_tree::NodeAddPaste()
 			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
 			i = tree_nodes[item_index].child;
 			while (i != -1) {
-				add_sub_tree(i, tree_nodes[item_index].handle);
+				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
 				i = tree_nodes[i].next;
 			}
 		}
@@ -2797,7 +2800,7 @@ void sexp_tree::NodeAddPaste()
 			load_branch(modifier_node, item_index);
 			i = tree_nodes[item_index].child;
 			while (i != -1) {
-				add_sub_tree(i, tree_nodes[item_index].handle);
+				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
 				i = tree_nodes[i].next;
 			}
 		} else {
@@ -2843,7 +2846,7 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 
 				if (i < 0) {  // everything is ok, so we can keep old arguments with new operator
 					set_node(item_index, (SEXPT_OPERATOR | SEXPT_VALID), Operators[op].text.c_str());
-					SetItemText(tree_nodes[item_index].handle, Operators[op].text.c_str());
+					SetItemText(tree_item_handle(tree_nodes[item_index]), Operators[op].text.c_str());
 					tree_nodes[item_index].flags = OPERAND;
 					return;
 				}
@@ -2862,91 +2865,7 @@ void sexp_tree::add_or_replace_operator(int op, int replace_flag)
 	Expand(item_handle, TVE_EXPAND);
 }
 
-// initialize node, type operator
-//
-void sexp_list_item::set_op(int op_num)
-{
-	int i;
-
-	if (op_num >= FIRST_OP) {  // do we have an op value instead of an op number (index)?
-		for (i=0; i<(int)Operators.size(); i++)
-			if (op_num == Operators[i].value)
-				op_num = i;  // convert op value to op number
-	}
-
-	op = op_num;
-	text = Operators[op].text;
-	type = (SEXPT_OPERATOR | SEXPT_VALID);
-}
-
-// initialize node, type data
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::set_data(const char *str, int t)
-{
-	op = -1;
-	text = str;
-	type = t;
-}
-
-// add a node to end of list
-//
-void sexp_list_item::add_op(int op_num)
-{
-	sexp_list_item *item, *ptr;
-
-	item = new sexp_list_item;
-	ptr = this;
-	while (ptr->next)
-		ptr = ptr->next;
-
-	ptr->next = item;
-	item->set_op(op_num);
-}
-
-// add a node to end of list
-// Defaults: t = SEXPT_STRING
-//
-void sexp_list_item::add_data(const char *str, int t)
-{
-	sexp_list_item *item, *ptr;
-
-	item = new sexp_list_item;
-	ptr = this;
-	while (ptr->next)
-		ptr = ptr->next;
-
-	ptr->next = item;
-	item->set_data(str, t);
-}
-
-// add an sexp list to end of another list (join lists)
-//
-void sexp_list_item::add_list(sexp_list_item *list)
-{
-	sexp_list_item *ptr;
-
-	ptr = this;
-	while (ptr->next)
-		ptr = ptr->next;
-
-	ptr->next = list;
-}
-
-// free all nodes of list
-//
-void sexp_list_item::destroy()
-{
-	sexp_list_item *ptr, *ptr2;
-
-	ptr = this;
-	while (ptr) {
-		ptr2 = ptr->next;
-
-		delete ptr;
-		ptr = ptr2;
-	}
-}
+// sexp_list_item methods are now in the shared sexp_tree_model.cpp
 
 int sexp_tree::add_default_operator(int op_index, int argnum)
 {
@@ -3793,7 +3712,7 @@ void sexp_tree::expand_operator(int node)
 
 	if ((tree_nodes[node].flags & OPERAND) && (tree_nodes[node].flags & EDITABLE)) {  // expandable?
 		Assert(tree_nodes[node].type & SEXPT_OPERATOR);
-		h = tree_nodes[node].handle;
+		h = tree_item_handle(tree_nodes[node]);
 		data = tree_nodes[node].child;
 		Assert(data != -1 && tree_nodes[data].next == -1 && tree_nodes[data].child == -1);
 
@@ -3829,10 +3748,10 @@ void sexp_tree::merge_operator(int node)
 		child = tree_nodes[node].child;
 		if (child != -1 && tree_nodes[child].next == -1 && tree_nodes[child].child == -1) {
 			sprintf(buf, "%s %s", tree_nodes[node].text, tree_nodes[child].text);
-			SetItemText(tree_nodes[node].handle, buf);
+			SetItemText(tree_item_handle(tree_nodes[node]), buf);
 			tree_nodes[node].flags = OPERAND | EDITABLE;
 			tree_nodes[child].flags = COMBINED;
-			DeleteItem(tree_nodes[child].handle);
+			DeleteItem(tree_item_handle(tree_nodes[child]));
 			tree_nodes[child].handle = NULL;
 			return;
 		}
@@ -3848,7 +3767,7 @@ int sexp_tree::add_data(const char *data, int type)
 	node = allocate_node(item_index);
 	set_node(node, type, data);
 	int bmap = get_data_image(node);
-	tree_nodes[node].handle = insert(data, bmap, bmap, tree_nodes[item_index].handle);
+	tree_nodes[node].handle = insert(data, bmap, bmap, tree_item_handle(tree_nodes[item_index]));
 	tree_nodes[node].flags = EDITABLE;
 	*modified = 1;
 	return node;
@@ -3864,7 +3783,7 @@ int sexp_tree::add_variable_data(const char *data, int type)
 	expand_operator(item_index);
 	node = allocate_node(item_index);
 	set_node(node, type, data);
-	tree_nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, tree_nodes[item_index].handle);
+	tree_nodes[node].handle = insert(data, BITMAP_VARIABLE, BITMAP_VARIABLE, tree_item_handle(tree_nodes[item_index]));
 	tree_nodes[node].flags = NOT_EDITABLE;
 	*modified = 1;
 	return node;
@@ -3882,7 +3801,7 @@ int sexp_tree::add_container_name(const char *container_name)
 	int node = allocate_node(item_index);
 	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_NAME | SEXPT_STRING), container_name);
 	tree_nodes[node].handle =
-		insert(container_name, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, tree_nodes[item_index].handle);
+		insert(container_name, BITMAP_CONTAINER_NAME, BITMAP_CONTAINER_NAME, tree_item_handle(tree_nodes[item_index]));
 	tree_nodes[node].flags = NOT_EDITABLE;
 	*modified = 1;
 	return node;
@@ -3898,7 +3817,7 @@ void sexp_tree::add_container_data(const char *container_name)
 	const int node = allocate_node(item_index);
 	set_node(node, (SEXPT_VALID | SEXPT_CONTAINER_DATA | SEXPT_STRING), container_name);
 	tree_nodes[node].handle =
-		insert(container_name, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_nodes[item_index].handle);
+		insert(container_name, BITMAP_CONTAINER_DATA, BITMAP_CONTAINER_DATA, tree_item_handle(tree_nodes[item_index]));
 	tree_nodes[node].flags = NOT_EDITABLE;
 	item_index = node;
 	*modified = 1;
@@ -3913,13 +3832,15 @@ void sexp_tree::add_operator(const char *op, HTREEITEM h)
 	if (item_index == -1) {
 		node = allocate_node(-1);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		item_handle = tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, h);
+		tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, h);
+		item_handle = tree_item_handle(tree_nodes[node]);
 
 	} else {
 		expand_operator(item_index);
 		node = allocate_node(item_index);
 		set_node(node, (SEXPT_OPERATOR | SEXPT_VALID), op);
-		item_handle = tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, tree_nodes[item_index].handle);
+		tree_nodes[node].handle = insert(op, BITMAP_OPERATOR, BITMAP_OPERATOR, tree_item_handle(tree_nodes[item_index]));
+		item_handle = tree_item_handle(tree_nodes[node]);
 	}
 
 	tree_nodes[node].flags = OPERAND;
@@ -3941,7 +3862,7 @@ void sexp_tree::add_operator(const char *op, HTREEITEM h)
 	set_node(node1, SEXPT_OPERATOR, op);
 	set_node(node2, type, data);
 	sprintf(str, "%s %s", op, data);
-	tree_nodes[node1].handle = insert(str, tree_nodes[item_index].handle);
+	tree_nodes[node1].handle = insert(str, tree_item_handle(tree_nodes[item_index]));
 	tree_nodes[node1].flags = OPERAND | EDITABLE;
 	tree_nodes[node2].flags = COMBINED;
 	*modified = 1;
@@ -4127,9 +4048,9 @@ int sexp_tree::node_error(int node, const char *msg, int *bypass)
 		*bypass = 1;
 
 	item_index = node;
-	item_handle = tree_nodes[node].handle;
+	item_handle = tree_item_handle(tree_nodes[node]);
 	if (tree_nodes[node].flags & COMBINED)
-		item_handle = tree_nodes[tree_nodes[node].parent].handle;
+		item_handle = tree_item_handle(tree_nodes[tree_nodes[node].parent]);
 
 	ensure_visible(node);
 	SelectItem(item_handle);
@@ -4143,7 +4064,7 @@ int sexp_tree::node_error(int node, const char *msg, int *bypass)
 void sexp_tree::hilite_item(int node)
 {
 	ensure_visible(node);
-	SelectItem(tree_nodes[node].handle);
+	SelectItem(tree_item_handle(tree_nodes[node]));
 }
 
 // because the MFC function EnsureVisible() doesn't do what it says it does, I wrote this.
@@ -4154,7 +4075,7 @@ void sexp_tree::ensure_visible(int node)
 		ensure_visible(tree_nodes[node].parent);  // expand all parents first
 
 	if (tree_nodes[node].child != -1)  // expandable?
-		Expand(tree_nodes[node].handle, TVE_EXPAND);  // expand this item
+		Expand(tree_item_handle(tree_nodes[node]), TVE_EXPAND);  // expand this item
 }
 
 void sexp_tree::link_modified(int *ptr)
@@ -4399,7 +4320,7 @@ void sexp_tree::replace_data(const char *data, int type)
 		free_node2(node);
 
 	tree_nodes[item_index].child = -1;
-	h = tree_nodes[item_index].handle;
+	h = tree_item_handle(tree_nodes[item_index]);
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 
@@ -4431,7 +4352,7 @@ void sexp_tree::replace_variable_data(int var_idx, int type)
 		free_node2(node);
 
 	tree_nodes[item_index].child = -1;
-	h = tree_nodes[item_index].handle;
+	h = tree_item_handle(tree_nodes[item_index]);
 	while (ItemHasChildren(h)) {
 		DeleteItem(GetChildItem(h));
 	}
@@ -4453,14 +4374,14 @@ void sexp_tree::replace_variable_data(int var_idx, int type)
 
 void sexp_tree::replace_container_name(const sexp_container &container)
 {
-	HTREEITEM h = tree_nodes[item_index].handle;
+	HTREEITEM h = tree_item_handle(tree_nodes[item_index]);
 
 	// clean up any child nodes
 	int node = tree_nodes[item_index].child;
 	if (node != -1)
 		free_node2(node);
 	tree_nodes[item_index].child = -1;
-	h = tree_nodes[item_index].handle;
+	h = tree_item_handle(tree_nodes[item_index]);
 	while (ItemHasChildren(h)) {
 		DeleteItem(GetChildItem(h));
 	}
@@ -4480,7 +4401,7 @@ void sexp_tree::replace_container_data(const sexp_container &container,
 	bool delete_child_nodes,
 	bool set_default_modifier)
 {
-	HTREEITEM h = tree_nodes[item_index].handle;
+	HTREEITEM h = tree_item_handle(tree_nodes[item_index]);
 
 	// if this is already a container of the right type, don't alter the child nodes
 	if (test_child_nodes && (tree_nodes[item_index].type & SEXPT_CONTAINER_DATA)) {
@@ -4564,7 +4485,7 @@ void sexp_tree::replace_operator(const char *op)
 		free_node2(node);
 
 	tree_nodes[item_index].child = -1;
-	h = tree_nodes[item_index].handle;
+	h = tree_item_handle(tree_nodes[item_index]);
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 
@@ -4589,7 +4510,7 @@ void sexp_tree::replace_operator(const char *op)
 		free_node2(node);
 
 	tree_nodes[item_index].child = -1;
-	h = tree_nodes[item_index].handle;
+	h = tree_item_handle(tree_nodes[item_index]);
 	while (ItemHasChildren(h))
 		DeleteItem(GetChildItem(h));
 	
@@ -4640,10 +4561,10 @@ void sexp_tree::move_branch(int source, int parent)
 				tree_nodes[node].next = source;
 			}
 
-			move_branch(tree_nodes[source].handle, tree_nodes[parent].handle);
+			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
 
 		} else
-			move_branch(tree_nodes[source].handle);
+			move_branch(tree_item_handle(tree_nodes[source]));
 	}
 }
 
@@ -4981,7 +4902,7 @@ void sexp_tree::OnDestroy()
 
 HTREEITEM sexp_tree::handle(int node)
 {
-	return tree_nodes[node].handle;
+	return tree_item_handle(tree_nodes[node]);
 }
 
 const char *sexp_tree::help(int code)
@@ -8251,7 +8172,7 @@ bool sexp_tree::rename_container_nodes(const SCP_string &old_name, const SCP_str
 	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
 		if (is_matching_container_node(node_idx, old_name)) {
 			strcpy_s(tree_nodes[node_idx].text, new_name.c_str());
-			SetItemText(tree_nodes[node_idx].handle, new_name.c_str());
+			SetItemText(tree_item_handle(tree_nodes[node_idx]), new_name.c_str());
 			renamed_anything = true;
 		}
 	}

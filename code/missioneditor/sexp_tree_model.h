@@ -169,7 +169,7 @@ public:
 	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags);
 	virtual ~SexpTreeEditorInterface();
 
-	virtual bool hasDefaultMessageParameter();
+	virtual bool hasDefaultMessageParamter();
 	virtual SCP_vector<SCP_string> getMessages();
 
 	virtual SCP_vector<SCP_string> getMissionGoals(const SCP_string& reference_name);

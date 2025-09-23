@@ -112,7 +112,7 @@ SexpTreeEditorInterface::SexpTreeEditorInterface(const flagset<TreeFlags>& flags
 
 SexpTreeEditorInterface::~SexpTreeEditorInterface() = default;
 
-bool SexpTreeEditorInterface::hasDefaultMessageParameter()
+bool SexpTreeEditorInterface::hasDefaultMessageParamter()
 {
 	return Num_messages > Num_builtin_messages;
 }

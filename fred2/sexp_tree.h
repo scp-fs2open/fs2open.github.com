@@ -14,6 +14,7 @@
 #pragma warning(disable: 4786)
 
 #include "OperatorComboBox.h"
+#include "missioneditor/sexp_tree_model.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -23,101 +24,32 @@
 //#define MAX_SEXP_TREE_SIZE 1050
 //#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
 
-// tree_node type
-#define SEXPT_UNUSED	0x0000
-#define SEXPT_UNINIT	0x0001
-#define SEXPT_UNKNOWN	0x0002
-
-#define SEXPT_VALID		0x1000
-#define SEXPT_TYPE_MASK	0x07ff
-#define SEXPT_TYPE(X)	(SEXPT_TYPE_MASK & X)
-
-#define SEXPT_OPERATOR	0x0010
-#define SEXPT_NUMBER	0x0020
-#define SEXPT_STRING	0x0040
-#define SEXPT_VARIABLE	0x0080
-#define SEXPT_CONTAINER_NAME	0x0100
-#define SEXPT_CONTAINER_DATA	0x0200
-#define SEXPT_MODIFIER	0x0400
-
-// tree_node flag
-#define NOT_EDITABLE	0x00
-#define OPERAND			0x01
-#define EDITABLE		0x02
-#define COMBINED		0x04
-
-// Bitmaps
-#define BITMAP_OPERATOR			0
-#define BITMAP_DATA				1
-#define BITMAP_VARIABLE			2
-#define BITMAP_ROOT				3
-#define BITMAP_ROOT_DIRECTIVE	4
-#define BITMAP_CHAIN			5
-#define BITMAP_CHAIN_DIRECTIVE	6
-#define BITMAP_GREEN_DOT		7
-#define BITMAP_BLACK_DOT		8
-#define BITMAP_BLUE_DOT			BITMAP_ROOT
-#define BITMAP_RED_DOT			BITMAP_ROOT_DIRECTIVE
-#define BITMAP_NUMBERED_DATA	9
+// FRED2 BITMAP_* compatibility aliases (map to shared NodeImage enum values)
+#define BITMAP_OPERATOR         static_cast<int>(NodeImage::OPERATOR)
+#define BITMAP_DATA             static_cast<int>(NodeImage::DATA)
+#define BITMAP_VARIABLE         static_cast<int>(NodeImage::VARIABLE)
+#define BITMAP_ROOT             static_cast<int>(NodeImage::ROOT)
+#define BITMAP_ROOT_DIRECTIVE   static_cast<int>(NodeImage::ROOT_DIRECTIVE)
+#define BITMAP_CHAIN            static_cast<int>(NodeImage::CHAIN)
+#define BITMAP_CHAIN_DIRECTIVE  static_cast<int>(NodeImage::CHAIN_DIRECTIVE)
+#define BITMAP_GREEN_DOT        static_cast<int>(NodeImage::GREEN_DOT)
+#define BITMAP_BLACK_DOT        static_cast<int>(NodeImage::BLACK_DOT)
+#define BITMAP_BLUE_DOT         BITMAP_ROOT
+#define BITMAP_RED_DOT          BITMAP_ROOT_DIRECTIVE
+#define BITMAP_NUMBERED_DATA    static_cast<int>(NodeImage::DATA_00)
 // There are 20 number bitmaps, 9 to 28, counting by 5s from 0 to 95
-#define BITMAP_COMMENT			29
-#define BITMAP_CONTAINER_NAME	30
-#define BITMAP_CONTAINER_DATA	31
-
-
-// tree behavior modes (or tree subtype)
-#define ST_LABELED_ROOT		0x10000
-#define ST_ROOT_DELETABLE	0x20000
-#define ST_ROOT_EDITABLE	0x40000
-
-#define MODE_GOALS		(1 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-#define MODE_EVENTS		(2 | ST_LABELED_ROOT | ST_ROOT_DELETABLE | ST_ROOT_EDITABLE)
-#define MODE_CAMPAIGN	(3 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
-#define MODE_CUTSCENES	(4 | ST_LABELED_ROOT | ST_ROOT_DELETABLE)
+#define BITMAP_COMMENT          static_cast<int>(NodeImage::COMMENT)
+#define BITMAP_CONTAINER_NAME   static_cast<int>(NodeImage::CONTAINER_NAME)
+#define BITMAP_CONTAINER_DATA   static_cast<int>(NodeImage::CONTAINER_DATA)
 
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED	1
 #define ROOT_RENAMED	2
 
-/*
- * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
- * these node items.
- */
-
-class sexp_tree_item
-{
-public:
-	sexp_tree_item() : type(SEXPT_UNUSED) {}
-
-	int type;
-	int parent;	// pointer to parent of this item
-	int child;	// pointer to first child of this item
-	int next;	// pointer to next sibling
-	int flags;
-	char text[2 * TOKEN_LENGTH + 2];
-	HTREEITEM handle;
-};
-
-class sexp_list_item
-{
-public:
-	int type;
-	int op;
-	SCP_string text;
-	sexp_list_item *next;
-
-	sexp_list_item() : next(nullptr) {}
-
-	void set_op(int op_num);
-	void set_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-
-	void add_op(int op_num);
-	void add_data(const char *str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_list(sexp_list_item *list);
-
-	void shallow_copy(const sexp_list_item *src);
-	void destroy();
-};
+// Typed handle accessors for FRED2 (MFC HTREEITEM)
+inline HTREEITEM tree_item_handle(const sexp_tree_item& item) {
+	return static_cast<HTREEITEM>(item.handle);
+}
 
 class sexp_tree : public CTreeCtrl
 {

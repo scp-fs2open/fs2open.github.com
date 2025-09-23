@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "missioneditor/sexp_tree_model.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -19,155 +20,24 @@
 #include <QTreeWidgetItem>
 #include <QListWidget>
 
-namespace fso {
-namespace fred {
-
-// Goober5000 - it's dynamic now
-//#define MAX_SEXP_TREE_SIZE 500
-//#define MAX_SEXP_TREE_SIZE 1050
-//#define MAX_SEXP_TREE_SIZE ((MAX_SEXP_NODES)*2/3)
-
-// tree_node type
-#define SEXPT_UNUSED    0x0000
-#define SEXPT_UNINIT    0x0001
-#define SEXPT_UNKNOWN    0x0002
-
-#define SEXPT_VALID        0x1000
-#define SEXPT_TYPE_MASK    0x07ff
-#define SEXPT_TYPE(X)    (SEXPT_TYPE_MASK & X)
-
-#define SEXPT_OPERATOR    0x0010
-#define SEXPT_NUMBER    0x0020
-#define SEXPT_STRING    0x0040
-#define SEXPT_VARIABLE    0x0080
-#define SEXPT_CONTAINER_NAME	0x0100
-#define SEXPT_CONTAINER_DATA	0x0200
-#define SEXPT_MODIFIER	0x0400
-
-// tree_node flag
-#define NOT_EDITABLE    0x00
-#define OPERAND            0x01
-#define EDITABLE        0x02
-#define COMBINED        0x04
-
 // various tree operations notification codes (to be handled by derived class)
 #define ROOT_DELETED    1
 #define ROOT_RENAMED    2
 
-// tree behavior modes (or tree subtype)
-FLAG_LIST(TreeFlags) {
-	LabeledRoot = 0,
-	RootDeletable,
-	RootEditable,
-	AnnotationsAllowed,
+namespace fso {
+namespace fred {
 
-	NUM_VALUES
-};
+// Bring shared types into the fso::fred namespace so existing code compiles unchanged
+using ::sexp_tree_item;
+using ::sexp_list_item;
+using ::NodeImage;
+using ::TreeFlags;
+using ::SexpTreeEditorInterface;
 
-enum class NodeImage {
-	OPERATOR = 0,
-	DATA,
-	VARIABLE,
-	ROOT,
-	ROOT_DIRECTIVE,
-	CHAIN,
-	CHAIN_DIRECTIVE,
-	GREEN_DOT,
-	BLACK_DOT,
-	DATA_00,
-	DATA_05,
-	DATA_10,
-	DATA_15,
-	DATA_20,
-	DATA_25,
-	DATA_30,
-	DATA_35,
-	DATA_40,
-	DATA_45,
-	DATA_50,
-	DATA_55,
-	DATA_60,
-	DATA_65,
-	DATA_70,
-	DATA_75,
-	DATA_80,
-	DATA_85,
-	DATA_90,
-	DATA_95,
-	COMMENT,
-	CONTAINER_NAME,
-	CONTAINER_DATA
-};
-
-/**
- * @brief Generic interface for operations that may depend on the context of the SEXP tree
- */
-class SexpTreeEditorInterface {
-	flagset<TreeFlags> _flags;
- public:
-	SexpTreeEditorInterface();
-	explicit SexpTreeEditorInterface(const flagset<TreeFlags>& flags);
-	virtual ~SexpTreeEditorInterface();
-
-	virtual bool hasDefaultMessageParamter();
-	virtual SCP_vector<SCP_string> getMessages();
-
-	virtual QStringList getMissionGoals(const QString& reference_name);
-	virtual bool hasDefaultGoal(int operator_value);
-
-	virtual QStringList getMissionEvents(const QString& reference_name);
-	virtual bool hasDefaultEvent(int operator_value);
-
-	virtual QStringList getMissionNames();
-	virtual bool hasDefaultMissionName();
-
-	virtual int getRootReturnType() const;
-
-	const flagset<TreeFlags>& getFlags() const;
-
-	virtual bool requireCampaignOperators() const;
-
-	virtual QList<QAction *> getContextMenuExtras(QObject *parent = nullptr);
-};
-
-/*
- * Notes: An sexp_tree_item is basically a node in a tree.  The sexp_tree is an array of
- * these node items.
- */
-
-class sexp_tree_item {
- public:
-	sexp_tree_item() : type(SEXPT_UNUSED) {
-	}
-
-	int type;
-	int parent;    // pointer to parent of this item
-	int child;    // pointer to first child of this item
-	int next;    // pointer to next sibling
-	int flags;
-	char text[2 * TOKEN_LENGTH + 2];
-	QTreeWidgetItem* handle;
-};
-
-class sexp_list_item {
- public:
-	int type;
-	int op;
-	SCP_string text;
-	sexp_list_item* next;
-
-	sexp_list_item() : next(nullptr) {
-	}
-
-	void set_op(int op_num);
-	void set_data(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
-
-	void add_op(int op_num);
-	void add_data(const char* str, int t = (SEXPT_STRING | SEXPT_VALID));
-	void add_list(sexp_list_item* list);
-
-	void destroy();
-};
+// Typed handle accessor for QtFRED (Qt QTreeWidgetItem*)
+inline QTreeWidgetItem* tree_item_handle(const sexp_tree_item& item) {
+	return static_cast<QTreeWidgetItem*>(item.handle);
+}
 
 class sexp_tree: public QTreeWidget {
 
