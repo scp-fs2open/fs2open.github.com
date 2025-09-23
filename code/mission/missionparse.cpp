@@ -6622,6 +6622,15 @@ bool post_process_mission(mission *pm)
 
 	// convert all ship name indices to ship indices now that mission has been loaded
 	if (Fred_running) {
+		// lambda for seeing whether the anchors actually work for arrival/departure
+		SCP_string message;
+		SCP_set<int> anchors_checked;
+		auto check_anchor = [&message, &anchors_checked](int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival) {
+			check_anchor_for_hangar_bay(message, anchors_checked, anchor_shipnum, other_name, other_is_ship, is_arrival);
+			if (!message.empty())
+				Warning(LOCATION, "%s", message.c_str());
+		};
+
 		i = 0;
 		for (const auto &parse_name: Parse_names) {
 			auto ship_entry = ship_registry_get(parse_name);
@@ -6632,21 +6641,32 @@ bool post_process_mission(mission *pm)
 		}
 
 		for (i=0; i<MAX_SHIPS; i++) {
-			if ((Ships[i].objnum >= 0) && (Ships[i].arrival_anchor >= 0) && (Ships[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG))
+			if ((Ships[i].objnum >= 0) && (Ships[i].arrival_anchor >= 0) && (Ships[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 				Ships[i].arrival_anchor = indices[Ships[i].arrival_anchor];
+				if (Ships[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY)
+					check_anchor(Ships[i].arrival_anchor, Ships[i].ship_name, true, true);
+			}
 
-			if ( (Ships[i].objnum >= 0) && (Ships[i].departure_anchor >= 0) )
+			if ((Ships[i].objnum >= 0) && (Ships[i].departure_anchor >= 0)) {
 				Ships[i].departure_anchor = indices[Ships[i].departure_anchor];
+				if (Ships[i].departure_location == DepartureLocation::TO_DOCK_BAY)
+					check_anchor(Ships[i].departure_anchor, Ships[i].ship_name, true, false);
+			}
 		}
 
 		for (i=0; i<MAX_WINGS; i++) {
-			if (Wings[i].wave_count  && (Wings[i].arrival_anchor >= 0) && (Wings[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG))
+			if (Wings[i].wave_count && (Wings[i].arrival_anchor >= 0) && (Wings[i].arrival_anchor < SPECIAL_ARRIVAL_ANCHOR_FLAG)) {
 				Wings[i].arrival_anchor = indices[Wings[i].arrival_anchor];
+				if (Wings[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY)
+					check_anchor(Wings[i].arrival_anchor, Wings[i].name, false, true);
+			}
 
-			if (Wings[i].wave_count  && (Wings[i].departure_anchor >= 0) )
+			if (Wings[i].wave_count && (Wings[i].departure_anchor >= 0)) {
 				Wings[i].departure_anchor = indices[Wings[i].departure_anchor];
+				if (Wings[i].departure_location == DepartureLocation::TO_DOCK_BAY)
+					check_anchor(Wings[i].departure_anchor, Wings[i].name, false, false);
+			}
 		}
-
 	}
 
 	// before doing anything else, we must validate all of the sexpressions that were loaded into the mission.
@@ -8672,6 +8692,27 @@ int get_anchor(const char *name)
 
 	return get_parse_name_index(name);
 }
+
+/**
+ * See if an arrival/departure anchor is missing a hangar bay.  If it is, the message parameter will be populated with an appropriate error.
+ */
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchor_shipnums_checked, int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival)
+{
+	message.clear();
+
+	if (anchor_shipnum < 0)
+		return;
+	if (anchor_shipnums_checked.contains(anchor_shipnum))
+		return;
+	anchor_shipnums_checked.insert(anchor_shipnum);
+
+	if (!ship_has_dock_bay(anchor_shipnum))
+	{
+		auto shipp = &Ships[anchor_shipnum];
+		sprintf(message, "%s (%s) is used as a%s anchor by %s %s (and possibly elsewhere too), but it does not have a hangar bay!", shipp->ship_name,
+			Ship_info[shipp->ship_info_index].name, is_arrival ? "n arrival" : " departure", other_is_ship ? "ship" : "wing", other_name);
+	}
+};
 
 /**
  * Fixup the goals/ai references for player objects in the mission

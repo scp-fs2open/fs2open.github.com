@@ -19981,9 +19981,21 @@ bool ship_has_dock_bay(int shipnum)
 {
 	Assert(shipnum >= 0 && shipnum < MAX_SHIPS);
 
-	polymodel *pm;
-				
-	pm = model_get( Ship_info[Ships[shipnum].ship_info_index].model_num );
+	auto sip = &Ship_info[Ships[shipnum].ship_info_index];
+
+	// the model might not be loaded yet, so load it explicitly here
+	if (sip->model_num < 0)
+	{
+		if (VALID_FNAME(sip->pof_file))
+			sip->model_num = model_load(sip->pof_file, sip);
+	}
+	if (sip->model_num < 0)
+	{
+		Warning(LOCATION, "%s does not have a valid model number!", sip->name);
+		return false;
+	}
+
+	auto pm = model_get(sip->model_num);
 	Assert( pm );
 
 	return ( pm->ship_bay && (pm->ship_bay->num_paths > 0) );
