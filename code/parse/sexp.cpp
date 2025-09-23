@@ -766,7 +766,9 @@ SCP_vector<sexp_oper> Operators = {
 	{ "nebula-change-fog-color",		OP_NEBULA_CHANGE_FOG_COLOR,				3,	3,			SEXP_ACTION_OPERATOR,   },	// Asteroth
 	{ "nebula-change-storm",			OP_NEBULA_CHANGE_STORM,					1,	1,			SEXP_ACTION_OPERATOR,	},	// phreak
 	{ "nebula-toggle-poof",				OP_NEBULA_TOGGLE_POOF,					2,	2,			SEXP_ACTION_OPERATOR,	},	// phreak
+	{ "nebula-set-poofs",				OP_NEBULA_SET_POOFS,					1,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "nebula-fade-poof",				OP_NEBULA_FADE_POOF,					3,	3,			SEXP_ACTION_OPERATOR,	},	// MjnMixael
+	{ "nebula-fade-poofs",				OP_NEBULA_FADE_POOFS,					2,	INT_MAX,	SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "nebula-set-range",				OP_NEBULA_SET_RANGE,					1,	1,			SEXP_ACTION_OPERATOR,	},	// Goober5000
 	{ "volumetrics-toggle", 			OP_VOLUMETRICS_TOGGLE, 					1,	1,			SEXP_ACTION_OPERATOR,	},	// Lafiel
 	{ "set-skybox-model",				OP_SET_SKYBOX_MODEL,					1,	8,			SEXP_ACTION_OPERATOR,	},	// taylor
@@ -16588,47 +16590,94 @@ void sexp_nebula_change_storm(int n)
 	nebl_set_storm(CTEXT(n));
 }
 
-void sexp_nebula_toggle_poof(int n)
+void sexp_nebula_set_poofs(int node, bool legacy)
 {
-	auto name = CTEXT(n);
-	bool result = is_sexp_true(CDR(n));
-	size_t i;
+	bool result;
+	int n = node;
 
-	for (i = 0; i < Poof_info.size(); i++)
+	// new and legacy sexps have different argument orders
+	if (legacy)
+		result = is_sexp_true(CDR(n));
+	else
 	{
-		if (!stricmp(name, Poof_info[i].name))
-			break;
+		result = is_sexp_true(n);
+		n = CDR(n);
 	}
 
-	//coulnd't find the poof
-	if (i == Poof_info.size()) return;
+	// toggle all the poofs
+	if (n < 0)
+	{
+		int count = static_cast<int>(Poof_info.size());
+		for (int i = 0; i < count; ++i)
+			neb2_toggle_poof(i, result);
+	}
+	// toggle the selected poofs
+	else
+	{
+		for (; n >= 0; n = CDR(n))
+		{
+			auto name = CTEXT(n);
 
-	neb2_toggle_poof(static_cast<int>(i), result);
+			int index = find_item_with_string(Poof_info, &poof_info::name, name);
+			if (index >= 0)
+				neb2_toggle_poof(index, result);
+
+			if (legacy)
+				break;	// the legacy sexp affects only one poof
+		}
+	}
+
+	// do this once at the end of all the toggling
+	neb2_toggle_poof_finalize();
 }
 
-void sexp_nebula_fade_poofs(int n)
+void sexp_nebula_fade_poofs(int node, bool legacy)
 {
-	bool is_nan, is_nan_forever;
-	
-	auto name = CTEXT(n);
-	n = CDR(n);
-	int time = eval_num(n, is_nan, is_nan_forever);
-	if (is_nan || is_nan_forever)
-		return;
-	n = CDR(n);
-	bool result = is_sexp_true(n);
-	size_t i;
+	bool result, is_nan, is_nan_forever;
+	int duration;
+	int n = node;
 
-	for (i = 0; i < Poof_info.size(); i++) {
-		if (!stricmp(name, Poof_info[i].name))
-			break;
+	// new and legacy sexps have different argument orders
+	if (legacy)
+	{
+		duration = eval_num(CDR(n), is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+		result = is_sexp_true(CDDR(n));
+	}
+	else
+	{
+		result = is_sexp_true(n);
+		n = CDR(n);
+
+		duration = eval_num(n, is_nan, is_nan_forever);
+		if (is_nan || is_nan_forever)
+			return;
+		n = CDR(n);
 	}
 
-	// coulnd't find the poof
-	if (i == Poof_info.size())
-		return;
+	// fade all the poofs
+	if (n < 0)
+	{
+		int count = static_cast<int>(Poof_info.size());
+		for (int i = 0; i < count; ++i)
+			neb2_fade_poof(i, duration, result);
+	}
+	// fade the specified poofs
+	else
+	{
+		for (; n >= 0; n = CDR(n))
+		{
+			auto name = CTEXT(n);
 
-	neb2_fade_poofs(static_cast<int>(i), time, result);
+			int index = find_item_with_string(Poof_info, &poof_info::name, name);
+			if (index >= 0)
+				neb2_fade_poof(index, duration, result);
+
+			if (legacy)
+				break;	// the legacy sexp affects only one poof
+		}
+	}
 }
 
 void sexp_nebula_change_pattern(int n)
@@ -29017,12 +29066,14 @@ int eval_sexp(int cur_node, int referenced_node)
 				break;
 
 			case OP_NEBULA_TOGGLE_POOF:
-				sexp_nebula_toggle_poof(node);
+			case OP_NEBULA_SET_POOFS:
+				sexp_nebula_set_poofs(node, op_num == OP_NEBULA_TOGGLE_POOF);
 				sexp_val = SEXP_TRUE;
 				break;
 
 			case OP_NEBULA_FADE_POOF:
-				sexp_nebula_fade_poofs(node);
+			case OP_NEBULA_FADE_POOFS:
+				sexp_nebula_fade_poofs(node, op_num == OP_NEBULA_FADE_POOF);
 				sexp_val = SEXP_TRUE;
 				break;
 
@@ -31513,7 +31564,9 @@ int query_operator_return_type(int op)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_SET_POOFS:
 		case OP_NEBULA_FADE_POOF:
+		case OP_NEBULA_FADE_POOFS:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_NEBULA_SET_RANGE:
@@ -34248,6 +34301,12 @@ int query_operator_argument_type(int op, int argnum)
 			else
 				return OPF_BOOL;
 
+		case OP_NEBULA_SET_POOFS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else
+				return OPF_NEBULA_POOF;
+
 		case OP_NEBULA_FADE_POOF:
 			if (argnum == 0)
 				return OPF_NEBULA_POOF;
@@ -34255,6 +34314,14 @@ int query_operator_argument_type(int op, int argnum)
 				return OPF_POSITIVE;
 			else
 				return OPF_BOOL;
+
+		case OP_NEBULA_FADE_POOFS:
+			if (argnum == 0)
+				return OPF_BOOL;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_NEBULA_POOF;
 
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_NEBULA_SET_RANGE:
@@ -36579,7 +36646,9 @@ int get_category(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_SET_POOFS:
 		case OP_NEBULA_FADE_POOF:
+		case OP_NEBULA_FADE_POOFS:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_NEBULA_SET_RANGE:
@@ -37223,7 +37292,9 @@ int get_subcategory(int op_id)
 		case OP_REMOVE_SUN_BITMAP:
 		case OP_NEBULA_CHANGE_STORM:
 		case OP_NEBULA_TOGGLE_POOF:
+		case OP_NEBULA_SET_POOFS:
 		case OP_NEBULA_FADE_POOF:
+		case OP_NEBULA_FADE_POOFS:
 		case OP_NEBULA_CHANGE_PATTERN:
 		case OP_NEBULA_CHANGE_FOG_COLOR:
 		case OP_NEBULA_SET_RANGE:
@@ -41979,34 +42050,49 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_NEBULA_CHANGE_STORM, "nebula-change-storm\r\n"
-		"\tChanges the current nebula storm\r\n\r\n"
+		"\tChanges the current nebula storm.  Has no effect if the nebula is not currently active.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tNebula storm to change to\r\n"
 	},
 
-	{ OP_NEBULA_TOGGLE_POOF, "nebula-toggle-poof\r\n"
+	{ OP_NEBULA_TOGGLE_POOF, "nebula-toggle-poof (deprecated in favor of nebula-set-poofs)\r\n"
 		"\tToggles the state of a nebula poof\r\n\r\n"
 		"Takes 2 arguments...\r\n"
-		"\t1:\tName of nebula poof to toggle\r\n"
-		"\t2:\tA True boolean expression will toggle this poof on.  A false one will do the opposite."
+		"\t1:\tName of the nebula poof to toggle\r\n"
+		"\t2:\tA true boolean expression will turn this poof on.  A false one will turn this poof off."
 	},
 
-	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof\r\n"
+	{ OP_NEBULA_SET_POOFS, "nebula-set-poofs\r\n"
+		"\tSets the state of one or more nebula poofs\r\n\r\n"
+		"Takes 1 or more arguments...\r\n"
+		"\t1:\tA true boolean expression will turn the poofs on.  A false one will turn them off.\r\n"
+		"\tRest:\tName of a nebula poof to set.  If no poofs are listed, all tabled poofs will be set.\r\n"
+	},
+
+	{ OP_NEBULA_FADE_POOF, "nebula-fade-poof (deprecated in favor of nebula-fade-poofs)\r\n"
 		"\tSets a poof pattern to fade in or out over time\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tName of the nebula poof to fade\r\n"
 		"\t2:\tTime in milliseconds to fade\r\n"
-		"\t3:\tWhether or not to fade in or out. True to fade in, false to fade out\r\n"
+		"\t3:\tWhether to fade in or out.  True to fade in, false to fade out\r\n"
+	},
+
+	{ OP_NEBULA_FADE_POOFS, "nebula-fade-poofs\r\n"
+		"\tSets one or more poof patterns to fade in or out over time\r\n"
+		"Takes 2 or more arguments...\r\n"
+		"\t1:\tWhether to fade in or out.  True to fade in, false to fade out.\r\n"
+		"\t2:\tTime in milliseconds to fade.\r\n"
+		"\tRest:\tName of a nebula poof to fade.  If no poofs are listed, all tabled poofs will be faded.\r\n"
 	},
 
 	{ OP_NEBULA_CHANGE_PATTERN, "nebula-change-pattern\r\n"
-	"\tChanges the current nebula background pattern (as defined in nebula.tbl)\r\n\r\n"
+	"\tChanges the current nebula background pattern (as defined in nebula.tbl).  Has no effect if the nebula is not currently active.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tNebula background pattern to change to\r\n"
 	},
 
 	{ OP_NEBULA_CHANGE_FOG_COLOR, "nebula-change-fog-color\r\n"
-	"\tChanges the current nebula fog color\r\n\r\n"
+	"\tChanges the current nebula fog color.  Has no effect if the nebula is not currently active.\r\n\r\n"
 		"Takes 3 arguments...\r\n"
 		"\t1:\tRed (0 - 255)\r\n"
 		"\t2:\tGreen (0 - 255)\r\n"
