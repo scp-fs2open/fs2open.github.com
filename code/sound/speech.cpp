@@ -87,11 +87,53 @@ bool android_tts_init()
 {
 	mprintf(("Speech : Init JNI TTSManager...\n"));
 	env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+
 	if (env == nullptr) {
 		mprintf(("Speech : Unable to get JNI environment!\n"));
 		return false;
 	}
-	tts_manager = env->FindClass("com/shivansps/fsowrapper/tts/TTSManager");
+
+	jobject activity = (jobject)SDL_AndroidGetActivity();
+
+	if (activity == nullptr) {
+		mprintf(("Speech : Unable to get SDL Android activity!\n"));
+		return false;
+	}
+
+	jclass activity_class = env->GetObjectClass(activity);
+
+	if (activity_class == nullptr) {
+		mprintf(("Speech : Unable to get SDL Android activity class!\n"));
+		return false;
+	}
+
+	jmethodID pkg_name_method = env->GetMethodID(activity_class, "getPackageName", "()Ljava/lang/String;");
+
+	if (pkg_name_method == nullptr) {
+		mprintf(("Speech : Unable to get JNI pkg name method!\n"));
+		return false;
+	}
+
+	jstring pkg = (jstring)env->CallObjectMethod(activity, pkg_name_method);
+
+	if (pkg == nullptr) {
+		mprintf(("Speech : Unable to get JNI pkg!\n"));
+		return false;
+	}
+
+	const char* pkg_chars = env->GetStringUTFChars(pkg, nullptr);
+	SCP_string tts_cls_name = pkg_chars;
+	for (char& c : tts_cls_name)
+	{
+		if (c == '.')
+			c = '/';
+	}
+	tts_cls_name += "/tts/TTSManager";
+
+	mprintf(("Speech : Try TTSManager class path: %s\n", tts_cls_name.c_str()));
+	tts_manager = env->FindClass(tts_cls_name.c_str());
+	env->ReleaseStringUTFChars(pkg, pkg_chars);
+
 	if (tts_manager == nullptr) {
 		mprintf(("Speech : Unable to find the TTSManager class!\n"));
 		return false;
