@@ -5,7 +5,6 @@
 #include <glad/glad.h>
 #include <KHR/khrplatform.h>
 //TODO/Good to have: 
-//-IMGUI crashes on windows + opengl es
 //-Deferred is broken
 //-MSAA causes ASSERTION: "GL_state.ValidForFlip()" at gropengl.cpp:141
 //-The entire MSAA path is broken in ES on multiple places
