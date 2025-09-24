@@ -192,3 +192,75 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 {
 	return false;
 }
+
+// -----------------------------------------------------------------------
+// SexpTreeModel implementation
+// -----------------------------------------------------------------------
+
+SexpTreeModel::SexpTreeModel()
+	: total_nodes(0), m_mode(0), item_index(-1), _interface(nullptr)
+{
+}
+
+SexpTreeModel::~SexpTreeModel() = default;
+
+// Goober5000
+int SexpTreeModel::find_argument_number(int parent_node, int child_node) const
+{
+	int arg_num, current_node;
+
+	// code moved/adapted from match_closest_operator
+	arg_num = 0;
+	current_node = tree_nodes[parent_node].child;
+	while (current_node >= 0)
+	{
+		// found?
+		if (current_node == child_node)
+			return arg_num;
+
+		// continue iterating
+		arg_num++;
+		current_node = tree_nodes[current_node].next;
+	}
+
+	// not found
+	return -1;
+}
+
+// Goober5000
+// backtrack through parents until we find the operator matching
+// parent_op, then find the argument we went through
+int SexpTreeModel::find_ancestral_argument_number(int parent_op, int child_node) const
+{
+	if (child_node == -1)
+		return -1;
+
+	int parent_node;
+	int current_node;
+
+	current_node = child_node;
+	parent_node = tree_nodes[current_node].parent;
+
+	while (parent_node >= 0)
+	{
+		// check if the parent operator is the one we're looking for
+		if (get_operator_const(tree_nodes[parent_node].text) == parent_op)
+			return find_argument_number(parent_node, current_node);
+
+		// continue iterating up the tree
+		current_node = parent_node;
+		parent_node = tree_nodes[current_node].parent;
+	}
+
+	return -1;
+}
+
+bool SexpTreeModel::is_node_eligible_for_special_argument(int parent_node) const
+{
+	Assertion(parent_node != -1,
+		"Attempt to access invalid parent node for special arg eligibility check. Please report!");
+
+	const int w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
+	const int e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
+	return w_arg >= 1 || e_arg >= 1;
+}
