@@ -1047,8 +1047,8 @@ void BriefingEditorDialogModel::makeIcon(const SCP_string& label, int typeIndex,
 
 	// Clamp incoming indices to safe ranges
 	const int safeType = clamp(typeIndex, 0, MIN_BRIEF_ICONS - 1);
-	const int safeTeam = clamp(teamIndex, 0, (int)Iff_info.size() - 1);
-	const int safeClass = (shipClassIndex < 0) ? -1 : clamp(shipClassIndex, 0, (int)Ship_info.size() - 1);
+	const int safeTeam = clamp(teamIndex, 0, static_cast<int>(Iff_info.size()) - 1);
+	const int safeClass = (shipClassIndex < 0) ? -1 : clamp(shipClassIndex, 0, static_cast<int>(Ship_info.size()) - 1);
 
 	// Allocate slot
 	const int idx = s.num_icons;
@@ -1212,7 +1212,7 @@ SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getIconList()
 SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getShipList()
 {
 	SCP_vector<std::pair<int, SCP_string>> out;
-	out.reserve((int)Ship_info.size());
+	out.reserve(static_cast<int>(Ship_info.size()));
 	int idx = 0;
 	for (auto it = Ship_info.cbegin(); it != Ship_info.cend(); ++it, ++idx) {
 		out.emplace_back(idx, it->name);
@@ -1223,8 +1223,8 @@ SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getShipList()
 SCP_vector<std::pair<int, SCP_string>> BriefingEditorDialogModel::getIffList()
 {
 	SCP_vector<std::pair<int, SCP_string>> out;
-	out.reserve((int)Iff_info.size());
-	for (int i = 0; i < (int)Iff_info.size(); ++i) {
+	out.reserve(static_cast<int>(Iff_info.size()));
+	for (int i = 0; i < static_cast<int>(Iff_info.size()); ++i) {
 		out.emplace_back(i, Iff_info[i].iff_name);
 	}
 	return out;
