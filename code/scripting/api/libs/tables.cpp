@@ -380,7 +380,7 @@ ADE_LIB_DERIV(l_Tables_ParticleEffects, "ParticleEffects", nullptr, nullptr, l_T
 ADE_INDEXER(l_Tables_ParticleEffects, "string Name", "Array of particle effects", "particle_effect", "Particle Effect handle, or invalid handle if name is invalid")
 {
 	const char* name;
-	if (!ade_get_args(L, "s", &name))
+	if (!ade_get_args(L, "*s", &name))
 		return ade_set_error(L, "o", l_ParticleEffect.Set(particle::ParticleEffectHandle::invalid()));
 
 	return ade_set_args(L, "o", l_ParticleEffect.Set(particle::ParticleManager::get()->getEffectByName(name)));

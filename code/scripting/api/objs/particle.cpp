@@ -257,7 +257,7 @@ ADE_FUNC(createSource, l_ParticleEffect, nullptr, "Creates a new particle source
 		return ADE_RETURN_NIL;
 
 	auto source = particle::ParticleManager::get()->createSource(ph);
-	return ade_set_args(L, "s", l_ParticleSource.Set(particle_source_h(source, particle::ParticleManager::get()->getSourceValidityCounter())));
+	return ade_set_args(L, "o", l_ParticleSource.Set(particle_source_h(source, particle::ParticleManager::get()->getSourceValidityCounter())));
 }
 
 ADE_OBJ(l_ParticleSource, particle_source_h, "particle_source", "Handle to a particle source. Only valid immediately after acquiring.");
