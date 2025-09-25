@@ -1,7 +1,5 @@
 #include "spacemouse.h"
 
-#include <hidapi.h>
-
 using namespace io::spacemouse;
 
 #pragma pack(push,1)
@@ -43,7 +41,7 @@ void SpaceMouse::poll() {
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_OLD: {
 			static connexion_3d_old_protocol data;
 
-			bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_old_protocol));
+			bytes_read = SDL_hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_old_protocol));
 			if (bytes_read <= 0)
 				continue;
 
@@ -69,7 +67,7 @@ void SpaceMouse::poll() {
 		case SpaceMouseDefinition::Protocol::CONNEXION_3D_NEW: {
 			static connexion_3d_new_protocol data;
 
-			bytes_read = hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_new_protocol));
+			bytes_read = SDL_hid_read(m_deviceHandle, reinterpret_cast<unsigned char*>(&data), sizeof(connexion_3d_new_protocol));
 			if (bytes_read <= 0)
 				continue;
 
@@ -106,14 +104,15 @@ void SpaceMouse::pollMaybe() {
 	}
 }
 
-SpaceMouse::SpaceMouse(const SpaceMouseDefinition& definition, hid_device* deviceHandle, int pollingFrequency)
+SpaceMouse::SpaceMouse(const SpaceMouseDefinition& definition, SDL_hid_device* deviceHandle, int pollingFrequency)
 	: m_definition(definition), m_pollingFrequency(pollingFrequency), m_deviceHandle(deviceHandle),
 	  m_current({ ZERO_VECTOR, ZERO_ANGLES }), m_keypresses(definition.buttons, false), m_lastPolled(UI_TIMESTAMP::never()) {
-	hid_set_nonblocking(m_deviceHandle, 1);
+	SDL_hid_set_nonblocking(m_deviceHandle, 1);
 }
 
 SpaceMouse::~SpaceMouse() {
-	hid_close(m_deviceHandle);
+	SDL_hid_close(m_deviceHandle);
+	SDL_hid_exit();
 }
 
 const SpaceMouseMovement& SpaceMouse::getMovement() {
@@ -146,14 +145,14 @@ const static SCP_vector<SpaceMouseDefinition> knownSpaceMice {
 std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMice(int pollingFrequency) {
 	std::unique_ptr<SpaceMouse> mouse = nullptr;
 	
-	hid_device_info* devices = hid_enumerate(0, 0);
+	auto devices = SDL_hid_enumerate(0, 0);
 
-	for (const hid_device_info* head = devices; head != nullptr && mouse == nullptr; head = head->next) {
+	for (auto head = devices; head != nullptr && mouse == nullptr; head = head->next) {
 		for (const SpaceMouseDefinition& mouseDef : knownSpaceMice) {
 			if (mouseDef.vendorID != head->vendor_id || mouseDef.productID != head->product_id)
 				continue;
 
-			hid_device* device = hid_open_path(head->path);
+			auto device = SDL_hid_open_path(head->path);
 
 			if (device != nullptr) {
 				mouse = std::unique_ptr<SpaceMouse>(new SpaceMouse(mouseDef, device, pollingFrequency));
@@ -162,7 +161,7 @@ std::unique_ptr<SpaceMouse> SpaceMouse::searchSpaceMice(int pollingFrequency) {
 		}
 	}
 
-	hid_free_enumeration(devices);
+	SDL_hid_free_enumeration(devices);
 
 	return mouse;
 }
