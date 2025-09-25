@@ -11,7 +11,7 @@ EffectHostBeam::EffectHostBeam(object* objp, matrix orientationOverride, bool or
 
 //Beam hosts can never have a parent, so it'll always return global space
 std::pair<vec3d, matrix> EffectHostBeam::getPositionAndOrientation(bool /*relativeToParent*/, float /*interp*/, const std::optional<vec3d>& tabled_offset) const {
-	const beam& bm = Beams[m_objnum];
+	const beam& bm = Beams[Objects[m_objnum].instance];
 	vec3d pos = bm.last_start;
 
 	// weight the random points towards the start linearly
