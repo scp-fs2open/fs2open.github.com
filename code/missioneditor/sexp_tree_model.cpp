@@ -13,9 +13,22 @@
 #include "missioneditor/sexp_tree_model.h"
 
 #include "parse/sexp.h"
+#include "parse/sexp_container.h"
 #include "mission/missiongoals.h"
 #include "mission/missionmessage.h"
 #include "mission/missionparse.h"
+#include "mission/missioncampaign.h"
+#include "object/object.h"
+#include "object/waypoint.h"
+#include "ship/ship.h"
+#include "ai/ailua.h"
+#include "asteroid/asteroid.h"
+#include "hud/hudartillery.h"
+#include "nebula/neblightning.h"
+#include "starfield/starfield.h"
+#include "stats/scoring.h"
+
+#define TREE_NODE_INCREMENT  100
 
 // -----------------------------------------------------------------------
 // sexp_list_item implementation
@@ -198,11 +211,545 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 // -----------------------------------------------------------------------
 
 SexpTreeModel::SexpTreeModel()
-	: total_nodes(0), m_mode(0), item_index(-1), _interface(nullptr)
+	: total_nodes(0), m_mode(0), item_index(-1), _interface(nullptr), modified(nullptr)
 {
 }
 
 SexpTreeModel::~SexpTreeModel() = default;
+
+// -----------------------------------------------------------------------
+// Tree node management
+// -----------------------------------------------------------------------
+
+int SexpTreeModel::find_free_node() const
+{
+	for (int i = 0; i < (int)tree_nodes.size(); i++) {
+		if (tree_nodes[i].type == SEXPT_UNUSED)
+			return i;
+	}
+
+	return -1;
+}
+
+// allocate a node.  Remains used until freed.
+int SexpTreeModel::allocate_node()
+{
+	int node = find_free_node();
+
+	// need more tree nodes?
+	if (node < 0) {
+		int old_size = (int)tree_nodes.size();
+
+		Assert(TREE_NODE_INCREMENT > 0);
+
+		// allocate in blocks of TREE_NODE_INCREMENT
+		tree_nodes.resize(tree_nodes.size() + TREE_NODE_INCREMENT);
+
+		mprintf(("Bumping dynamic tree node limit from %d to %d...\n", old_size, (int)tree_nodes.size()));
+
+#ifndef NDEBUG
+		for (int i = old_size; i < (int)tree_nodes.size(); i++) {
+			sexp_tree_item* item = &tree_nodes[i];
+			Assert(item->type == SEXPT_UNUSED);
+		}
+#endif
+
+		// our new sexp is the first out of the ones we just created
+		node = old_size;
+	}
+
+	// reset the new node
+	tree_nodes[node].type = SEXPT_UNINIT;
+	tree_nodes[node].parent = -1;
+	tree_nodes[node].child = -1;
+	tree_nodes[node].next = -1;
+	tree_nodes[node].flags = 0;
+	strcpy_s(tree_nodes[node].text, "<uninitialized tree node>");
+	tree_nodes[node].handle = nullptr;
+
+	total_nodes++;
+	return node;
+}
+
+// allocate a child node under 'parent'.  Appends to end of list.
+int SexpTreeModel::allocate_node(int parent, int after)
+{
+	int i, index = allocate_node();
+
+	if (parent != -1) {
+		i = tree_nodes[parent].child;
+		if (i == -1) {
+			tree_nodes[parent].child = index;
+
+		} else {
+			while ((i != after) && (tree_nodes[i].next != -1))
+				i = tree_nodes[i].next;
+
+			tree_nodes[index].next = tree_nodes[i].next;
+			tree_nodes[i].next = index;
+		}
+	}
+
+	tree_nodes[index].parent = parent;
+	return index;
+}
+
+// initialize the data for a node.  Should be called right after a new node is allocated.
+void SexpTreeModel::set_node(int node, int type, const char* text)
+{
+	Assert(type != SEXPT_UNUSED);
+	Assert(tree_nodes[node].type != SEXPT_UNUSED);
+	tree_nodes[node].type = type;
+	size_t max_length;
+	if (type & SEXPT_VARIABLE) {
+		max_length = 2 * TOKEN_LENGTH + 2;
+	} else if (type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) {
+		max_length = sexp_container::NAME_MAX_LENGTH + 1;
+	} else {
+		max_length = TOKEN_LENGTH;
+	}
+	Assert(strlen(text) < max_length);
+	strcpy_s(tree_nodes[node].text, text);
+}
+
+// free a node and all its children.  Also clears pointers to it, if any.
+//   node = node chain to free
+//   cascade =  0: free just this node and children under it. (default)
+//             !0: free this node and all siblings after it.
+void SexpTreeModel::free_node(int node, int cascade)
+{
+	int i;
+
+	// clear the pointer to node
+	i = tree_nodes[node].parent;
+	Assert(i != -1);
+	if (tree_nodes[i].child == node)
+		tree_nodes[i].child = tree_nodes[node].next;
+
+	else {
+		i = tree_nodes[i].child;
+		while (tree_nodes[i].next != -1) {
+			if (tree_nodes[i].next == node) {
+				tree_nodes[i].next = tree_nodes[node].next;
+				break;
+			}
+
+			i = tree_nodes[i].next;
+		}
+	}
+
+	if (!cascade)
+		tree_nodes[node].next = -1;
+
+	// now free up the node and its children
+	free_node2(node);
+}
+
+// more simple node freer, which works recursively.  It frees the given node and all siblings
+// that come after it, as well as all children of these.  Doesn't clear any links to any of
+// these freed nodes, so make sure all links are broken first. (i.e. use free_node() if you can)
+void SexpTreeModel::free_node2(int node)
+{
+	Assert(node != -1);
+	Assert(tree_nodes[node].type != SEXPT_UNUSED);
+	Assert(total_nodes > 0);
+	if (modified)
+		*modified = 1;
+	tree_nodes[node].type = SEXPT_UNUSED;
+	total_nodes--;
+	if (tree_nodes[node].child != -1)
+		free_node2(tree_nodes[node].child);
+
+	if (tree_nodes[node].next != -1)
+		free_node2(tree_nodes[node].next);
+}
+
+// -----------------------------------------------------------------------
+// Tree serialization
+// -----------------------------------------------------------------------
+
+// get variable name from sexp_tree node .text
+static void var_name_from_sexp_tree_text(char* var_name, const char* text)
+{
+	auto var_name_length = strcspn(text, "(");
+	Assert(var_name_length < TOKEN_LENGTH - 1);
+
+	strncpy(var_name, text, var_name_length);
+	var_name[var_name_length] = '\0';
+}
+
+// builds an sexp of the tree and returns the index of it.  This allocates sexp nodes.
+int SexpTreeModel::save_tree(int node) const
+{
+	Assert(node >= 0);
+	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
+	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	return save_branch(node);
+}
+
+#define NO_PREVIOUS_NODE -9
+// called recursively to save a tree branch and everything under it
+// SEXPT_CONTAINER_NAME and SEXPT_MODIFIER require no special handling here
+int SexpTreeModel::save_branch(int cur, int at_root) const
+{
+	int start, node = -1, last = NO_PREVIOUS_NODE;
+	char var_name_text[TOKEN_LENGTH];
+
+	start = -1;
+	while (cur != -1) {
+		if (tree_nodes[cur].type & SEXPT_OPERATOR) {
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_OPERATOR, -1, save_branch(tree_nodes[cur].child));
+
+			if ((tree_nodes[cur].parent >= 0) && !at_root) {
+				node = alloc_sexp("", SEXP_LIST, SEXP_ATOM_LIST, node, -1);
+			}
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_NAME) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree. Please report!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_NAME, -1, -1);
+		} else if (tree_nodes[cur].type & SEXPT_CONTAINER_DATA) {
+			Assertion(get_sexp_container(tree_nodes[cur].text) != nullptr,
+				"Attempt to save unknown container %s from SEXP tree. Please report!",
+				tree_nodes[cur].text);
+			node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_CONTAINER_DATA, save_branch(tree_nodes[cur].child), -1);
+		} else if (tree_nodes[cur].type & SEXPT_NUMBER) {
+			// allocate number, maybe variable
+			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
+				var_name_from_sexp_tree_text(var_name_text, tree_nodes[cur].text);
+				node = alloc_sexp(var_name_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_NUMBER, -1, -1);
+			} else {
+				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_NUMBER, -1, -1);
+			}
+		} else if (tree_nodes[cur].type & SEXPT_STRING) {
+			// allocate string, maybe variable
+			if (tree_nodes[cur].type & SEXPT_VARIABLE) {
+				var_name_from_sexp_tree_text(var_name_text, tree_nodes[cur].text);
+				node = alloc_sexp(var_name_text, (SEXP_ATOM | SEXP_FLAG_VARIABLE), SEXP_ATOM_STRING, -1, -1);
+			} else {
+				node = alloc_sexp(tree_nodes[cur].text, SEXP_ATOM, SEXP_ATOM_STRING, -1, -1);
+			}
+		} else {
+			Assert(0); // unknown and/or invalid type
+		}
+
+		if (last == NO_PREVIOUS_NODE) {
+			start = node;
+		} else if (last >= 0) {
+			Sexp_nodes[last].rest = node;
+		}
+
+		last = node;
+		Assert(last != NO_PREVIOUS_NODE);  // should be impossible
+		cur = tree_nodes[cur].next;
+		if (at_root) {
+			return start;
+		}
+	}
+
+	return start;
+}
+
+// -----------------------------------------------------------------------
+// Default argument availability
+// -----------------------------------------------------------------------
+
+int SexpTreeModel::query_default_argument_available(int op) const
+{
+	int i;
+
+	Assert(op >= 0);
+	for (i = 0; i < Operators[op].min; i++)
+		if (!query_default_argument_available(op, i))
+			return 0;
+
+	return 1;
+}
+
+int SexpTreeModel::query_default_argument_available(int op, int i) const
+{
+	int j, type;
+	object* ptr;
+
+	type = query_operator_argument_type(op, i);
+	switch (type) {
+		case OPF_NONE:
+		case OPF_NULL:
+		case OPF_BOOL:
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+		case OPF_IFF:
+		case OPF_AI_CLASS:
+		case OPF_WHO_FROM:
+		case OPF_PRIORITY:
+		case OPF_SHIP_TYPE:
+		case OPF_SUBSYSTEM:
+		case OPF_AWACS_SUBSYSTEM:
+		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_TRANSLATING_SUBSYSTEM:
+		case OPF_SUBSYSTEM_TYPE:
+		case OPF_DOCKER_POINT:
+		case OPF_DOCKEE_POINT:
+		case OPF_AI_GOAL:
+		case OPF_KEYPRESS:
+		case OPF_AI_ORDER:
+		case OPF_SKILL_LEVEL:
+		case OPF_MEDAL_NAME:
+		case OPF_WEAPON_NAME:
+		case OPF_INTEL_NAME:
+		case OPF_SHIP_CLASS_NAME:
+		case OPF_PROP_CLASS_NAME:
+		case OPF_HUGE_WEAPON:
+		case OPF_JUMP_NODE_NAME:
+		case OPF_AMBIGUOUS:
+		case OPF_CARGO:
+		case OPF_ARRIVAL_LOCATION:
+		case OPF_DEPARTURE_LOCATION:
+		case OPF_ARRIVAL_ANCHOR_ALL:
+		case OPF_SUPPORT_SHIP_CLASS:
+		case OPF_SHIP_WITH_BAY:
+		case OPF_SOUNDTRACK_NAME:
+		case OPF_STRING:
+		case OPF_FLEXIBLE_ARGUMENT:
+		case OPF_ANYTHING:
+		case OPF_DATA_OR_STR_CONTAINER:
+		case OPF_SKYBOX_MODEL_NAME:
+		case OPF_SKYBOX_FLAGS:
+		case OPF_SHIP_OR_NONE:
+		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
+		case OPF_SUBSYS_OR_GENERIC:
+		case OPF_BACKGROUND_BITMAP:
+		case OPF_SUN_BITMAP:
+		case OPF_NEBULA_STORM_TYPE:
+		case OPF_NEBULA_POOF:
+		case OPF_TURRET_TARGET_ORDER:
+		case OPF_TURRET_TYPE:
+		case OPF_POST_EFFECT:
+		case OPF_TARGET_PRIORITIES:
+		case OPF_ARMOR_TYPE:
+		case OPF_DAMAGE_TYPE:
+		case OPF_FONT:
+		case OPF_HUD_ELEMENT:
+		case OPF_SOUND_ENVIRONMENT:
+		case OPF_SOUND_ENVIRONMENT_OPTION:
+		case OPF_EXPLOSION_OPTION:
+		case OPF_AUDIO_VOLUME_OPTION:
+		case OPF_WEAPON_BANK_NUMBER:
+		case OPF_MESSAGE_OR_STRING:
+		case OPF_BUILTIN_HUD_GAUGE:
+		case OPF_CUSTOM_HUD_GAUGE:
+		case OPF_ANY_HUD_GAUGE:
+		case OPF_SHIP_EFFECT:
+		case OPF_ANIMATION_TYPE:
+		case OPF_SHIP_FLAG:
+		case OPF_WING_FLAG:
+		case OPF_NEBULA_PATTERN:
+		case OPF_NAV_POINT:
+		case OPF_TEAM_COLOR:
+		case OPF_GAME_SND:
+		case OPF_FIREBALL:
+		case OPF_SPECIES:
+		case OPF_LANGUAGE:
+		case OPF_FUNCTIONAL_WHEN_EVAL_TYPE:
+		case OPF_ANIMATION_NAME:
+		case OPF_CONTAINER_VALUE:
+		case OPF_WING_FORMATION:
+		case OPF_CHILD_LUA_ENUM:
+		case OPF_MESSAGE_TYPE:
+			return 1;
+
+		case OPF_SHIP:
+		case OPF_SHIP_WING:
+		case OPF_SHIP_POINT:
+		case OPF_SHIP_WING_POINT:
+		case OPF_SHIP_WING_WHOLETEAM:
+		case OPF_SHIP_WING_SHIPONTEAM_POINT:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_SHIP_PROP:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP || ptr->type == OBJ_START || ptr->type == OBJ_PROP)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_PROP:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_PROP)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+			return 0;
+
+		case OPF_SHIP_NOT_PLAYER:
+		case OPF_ORDER_RECIPIENT:
+			ptr = GET_FIRST(&obj_used_list);
+			while (ptr != END_OF_LIST(&obj_used_list)) {
+				if (ptr->type == OBJ_SHIP)
+					return 1;
+
+				ptr = GET_NEXT(ptr);
+			}
+
+			return 0;
+
+		case OPF_WING:
+			for (j = 0; j < MAX_WINGS; j++)
+				if (Wings[j].wave_count)
+					return 1;
+
+			return 0;
+
+		case OPF_PERSONA:
+			return Personas.empty() ? 0 : 1;
+
+		case OPF_POINT:
+		case OPF_WAYPOINT_PATH:
+			return Waypoint_lists.empty() ? 0 : 1;
+
+		case OPF_MISSION_NAME:
+			if (m_mode != MODE_CAMPAIGN) {
+				if (_interface && !_interface->hasDefaultMissionName())
+					return 0;
+
+				return 1;
+			}
+
+			if (Campaign.num_missions > 0)
+				return 1;
+
+			return 0;
+
+		case OPF_GOAL_NAME: {
+			int value;
+
+			value = Operators[op].value;
+
+			if (m_mode == MODE_CAMPAIGN)
+				return 1;
+
+			else if (_interface && _interface->hasDefaultGoal(value))
+				return 1;
+
+			return 0;
+		}
+
+		case OPF_EVENT_NAME: {
+			int value;
+
+			value = Operators[op].value;
+
+			if (m_mode == MODE_CAMPAIGN)
+				return 1;
+
+			else if (_interface && _interface->hasDefaultEvent(value))
+				return 1;
+
+			return 0;
+		}
+
+		case OPF_MESSAGE:
+			if (_interface && _interface->hasDefaultMessageParamter())
+				return 1;
+
+			return 0;
+
+		case OPF_VARIABLE_NAME:
+			return (sexp_variable_count() > 0) ? 1 : 0;
+
+		case OPF_SSM_CLASS:
+			return Ssm_info.empty() ? 0 : 1;
+
+		case OPF_MISSION_MOOD:
+			return Builtin_moods.empty() ? 0 : 1;
+
+		case OPF_CONTAINER_NAME:
+			return get_all_sexp_containers().empty() ? 0 : 1;
+
+		case OPF_LIST_CONTAINER_NAME:
+			for (const auto& container : get_all_sexp_containers()) {
+				if (container.is_list()) {
+					return 1;
+				}
+			}
+			return 0;
+
+		case OPF_MAP_CONTAINER_NAME:
+			for (const auto& container : get_all_sexp_containers()) {
+				if (container.is_map()) {
+					return 1;
+				}
+			}
+			return 0;
+
+		case OPF_ASTEROID_TYPES:
+			if (!get_list_valid_asteroid_subtypes().empty()) {
+				return 1;
+			}
+			return 0;
+
+		case OPF_DEBRIS_TYPES:
+			for (const auto& this_asteroid : Asteroid_info) {
+				if (this_asteroid.type == ASTEROID_TYPE_DEBRIS) {
+					return 1;
+				}
+			}
+			return 0;
+
+		case OPF_MOTION_DEBRIS:
+			if (Motion_debris_info.size() > 0) {
+				return 1;
+			}
+			return 0;
+
+		case OPF_BOLT_TYPE:
+			if (Bolt_types.size() > 0) {
+				return 1;
+			}
+			return 0;
+
+		case OPF_TRAITOR_OVERRIDE:
+			return Traitor_overrides.empty() ? 0 : 1;
+
+		case OPF_LUA_GENERAL_ORDER:
+			return (ai_lua_get_num_general_orders() > 0) ? 1 : 0;
+
+		case OPF_MISSION_CUSTOM_STRING:
+			return The_mission.custom_strings.empty() ? 0 : 1;
+
+		default:
+			if (!Dynamic_enums.empty()) {
+				if ((type - First_available_opf_id) < (int)Dynamic_enums.size()) {
+					return 1;
+				} else {
+					UNREACHABLE("Unhandled SEXP argument type!");
+				}
+			} else {
+				UNREACHABLE("Unhandled SEXP argument type!");
+			}
+	}
+
+	return 0;
+}
+
+// -----------------------------------------------------------------------
+// Tree navigation helpers
+// -----------------------------------------------------------------------
 
 // Goober5000
 int SexpTreeModel::find_argument_number(int parent_node, int child_node) const
@@ -263,4 +810,228 @@ bool SexpTreeModel::is_node_eligible_for_special_argument(int parent_node) const
 	const int w_arg = find_ancestral_argument_number(OP_WHEN_ARGUMENT, parent_node);
 	const int e_arg = find_ancestral_argument_number(OP_EVERY_TIME_ARGUMENT, parent_node);
 	return w_arg >= 1 || e_arg >= 1;
+}
+
+// -----------------------------------------------------------------------
+// Query / analysis functions
+// -----------------------------------------------------------------------
+
+int SexpTreeModel::count_args(int node) const
+{
+	int count = 0;
+
+	while (node != -1) {
+		count++;
+		node = tree_nodes[node].next;
+	}
+
+	return count;
+}
+
+// identify what type of argument this is.  You call it with the node of the first argument
+// of an operator.  It will search through enough of the arguments to determine what type of
+// data they are.
+int SexpTreeModel::identify_arg_type(int node) const
+{
+	int type = -1;
+
+	while (node != -1) {
+		Assert(tree_nodes[node].type & SEXPT_VALID);
+		switch (SEXPT_TYPE(tree_nodes[node].type)) {
+			case SEXPT_OPERATOR:
+				type = get_operator_const(tree_nodes[node].text);
+				Assert(type);
+				return query_operator_return_type(type);
+
+			case SEXPT_NUMBER:
+				return OPR_NUMBER;
+
+			case SEXPT_STRING:  // either a ship or a wing
+				type = SEXP_ATOM_STRING;
+				break;  // don't return, because maybe we can narrow selection down more.
+		}
+
+		node = tree_nodes[node].next;
+	}
+
+	return type;
+}
+
+// given a tree node, returns the argument type it should be.
+// OPF_NULL means no value (or a "void" value) is returned.  OPF_NONE means there shouldn't
+// be any argument at this position at all.
+int SexpTreeModel::query_node_argument_type(int node) const
+{
+	int parent_node = tree_nodes[node].parent;
+	if (parent_node < 0) {		// parent nodes are -1 for a top-level operator like 'when'
+		return OPF_NULL;
+	}
+
+	int argnum = find_argument_number(parent_node, node);
+	if (argnum < 0) {
+		return OPF_NONE;
+	}
+
+	int op_num = get_operator_index(tree_nodes[parent_node].text);
+	if (op_num < 0) {
+		return OPF_NONE;
+	}
+
+	return query_operator_argument_type(op_num, argnum);
+}
+
+// Determine if a given opf code has a restricted argument range (i.e. has a specific, limited
+// set of argument values, or has virtually unlimited possibilities.  For example, boolean values
+// only have true or false, so it is restricted, but a number could be anything, so it's not.
+int SexpTreeModel::query_restricted_opf_range(int opf) const
+{
+	switch (opf) {
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+		case OPF_WHO_FROM:
+
+		// Goober5000 - these are needed too (otherwise the arguments revert to their defaults)
+		case OPF_STRING:
+		case OPF_ANYTHING:
+		case OPF_CONTAINER_VALUE: // jg18
+		case OPF_DATA_OR_STR_CONTAINER: // jg18
+			return 0;
+	}
+
+	return 1;
+}
+
+int SexpTreeModel::get_sibling_place(int node) const
+{
+	if (tree_nodes[node].parent < 0 || tree_nodes[node].parent > (int)tree_nodes.size())
+		return -1;
+
+	const sexp_tree_item* myparent = &tree_nodes[tree_nodes[node].parent];
+
+	if (myparent->child == -1)
+		return -1;
+
+	const sexp_tree_item* mysibling = &tree_nodes[myparent->child];
+
+	int count = 0;
+	while (true) {
+		if (mysibling == &tree_nodes[node])
+			break;
+
+		if (mysibling->next == -1)
+			break;
+
+		count++;
+		mysibling = &tree_nodes[mysibling->next];
+	}
+
+	return count;
+}
+
+NodeImage SexpTreeModel::get_data_image(int node) const
+{
+	int count = get_sibling_place(node) + 1;
+
+	if (count <= 0) {
+		return NodeImage::DATA;
+	}
+
+	if (count % 5 != 0) {
+		return NodeImage::DATA;
+	}
+
+	int idx = (count % 100) / 5;
+
+	// There are 20 numbered data icons (DATA_00 through DATA_95)
+	if (idx > 20) {
+		return NodeImage::DATA;
+	}
+
+	return static_cast<NodeImage>(static_cast<int>(NodeImage::DATA_00) + idx);
+}
+
+int SexpTreeModel::query_false(int node) const
+{
+	Assert(node >= 0);
+	Assert(tree_nodes[node].type == (SEXPT_OPERATOR | SEXPT_VALID));
+	Assert(tree_nodes[node].next == -1);  // must make this assumption or else it will confuse code!
+	if (get_operator_const(tree_nodes[node].text) == OP_FALSE) {
+		return TRUE;
+	}
+
+	return FALSE;
+}
+
+// Look for the valid operator that is the closest match for 'str' and return the operator
+// number of it.  What operators are valid is determined by 'node', and an operator is valid
+// if it is allowed to fit at position 'node'
+const SCP_string& SexpTreeModel::match_closest_operator(const SCP_string& str, int node) const
+{
+	int z, op, arg_num, opf;
+
+	z = tree_nodes[node].parent;
+	if (z < 0) {
+		return str;
+	}
+
+	op = get_operator_index(tree_nodes[z].text);
+	if (op < 0)
+		return str;
+
+	// determine which argument we are of the parent
+	arg_num = find_argument_number(z, node);
+	opf = query_operator_argument_type(op, arg_num);	// check argument type at this position
+
+	// find the best operator
+	int best = sexp_match_closest_operator(str, opf);
+	if (best < 0) {
+		Warning(LOCATION, "Unable to find an operator match for string '%s' and argument type %d", str.c_str(), opf);
+		return str;
+	}
+	return Operators[best].text;
+}
+
+const char* SexpTreeModel::help(int code)
+{
+	int i;
+
+	i = (int)Sexp_help.size();
+	while (i--) {
+		if (Sexp_help[i].id == code)
+			break;
+	}
+
+	if (i >= 0)
+		return Sexp_help[i].help.c_str();
+
+	return nullptr;
+}
+
+int SexpTreeModel::find_text(const char* text, int* find, int max_depth) const
+{
+	int find_count;
+
+	// initialize find
+	for (int i = 0; i < max_depth; i++) {
+		find[i] = -1;
+	}
+
+	find_count = 0;
+
+	for (size_t i = 0; i < tree_nodes.size(); i++) {
+		// only look at used and editable nodes
+		if ((tree_nodes[i].flags & EDITABLE) && (tree_nodes[i].type != SEXPT_UNUSED)) {
+			// find the text
+			if (!stricmp(tree_nodes[i].text, text)) {
+				find[find_count++] = static_cast<int>(i);
+
+				// don't exceed max count - array bounds
+				if (find_count == max_depth) {
+					break;
+				}
+			}
+		}
+	}
+
+	return find_count;
 }

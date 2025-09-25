@@ -212,10 +212,42 @@ public:
 	// Editor context interface (set by UI layer)
 	SexpTreeEditorInterface* _interface;
 
-	// --- Tree navigation helpers (used by OPF functions) ---
+	// Modification tracking — UI layer sets this to point at its dirty flag.
+	// Model code sets *modified = 1 when tree data changes.
+	int* modified;
+
+	// --- Tree navigation helpers ---
 	int find_argument_number(int parent_node, int child_node) const;
 	int find_ancestral_argument_number(int parent_op, int child_node) const;
 	bool is_node_eligible_for_special_argument(int parent_node) const;
+
+	// --- Tree node management ---
+	int find_free_node() const;
+	int allocate_node();
+	int allocate_node(int parent, int after = -1);
+	void set_node(int node, int type, const char* text);
+	void free_node(int node, int cascade = 0);
+	void free_node2(int node);
+
+	// --- Tree serialization ---
+	int save_tree(int node) const;
+	int save_branch(int cur, int at_root = 0) const;
+
+	// --- Default argument availability ---
+	int query_default_argument_available(int op) const;
+	int query_default_argument_available(int op, int i) const;
+
+	// --- Query / analysis functions ---
+	int count_args(int node) const;
+	int identify_arg_type(int node) const;
+	int query_node_argument_type(int node) const;
+	int query_restricted_opf_range(int opf) const;
+	int get_sibling_place(int node) const;
+	NodeImage get_data_image(int node) const;
+	int query_false(int node) const;
+	const SCP_string& match_closest_operator(const SCP_string& str, int node) const;
+	static const char* help(int code);
+	int find_text(const char* text, int* find, int max_depth) const;
 
 	// --- OPF listing functions (implemented in sexp_tree_opf.cpp) ---
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
