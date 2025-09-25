@@ -2167,6 +2167,7 @@ int parse_create_object(p_object *pobjp, bool standalone_ship)
 }
 
 void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum);
+void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip);
 
 /**
  * Given a stuffed p_object struct, create an object and fill in the necessary fields.
@@ -2200,6 +2201,20 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	// Goober5000 - set the collision group if one was provided
 	Objects[objnum].collision_group_id = p_objp->collision_group_id;
 
+	// Goober5000 - set some fields that the mission log might need (if logged via parse_bring_in_docked_wing just below)
+	shipp->display_name = p_objp->display_name;
+	shipp->alt_type_index = p_objp->alt_type_index;
+	shipp->callsign_index = p_objp->callsign_index;
+	shipp->team = p_objp->team;
+	shipp->ship_iff_color = p_objp->alt_iff_color;
+
+	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
+	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0) && p_objp->flags[Mission::Parse_Object_Flags::SF_From_player_wing])
+		shipp->team = Iff_traitor;
+
+	if (Ship_info[shipp->ship_info_index].uses_team_colors && !p_objp->team_color_setting.empty())
+		shipp->team_name = p_objp->team_color_setting;
+
 	// Goober5000 - if this object is being created because he's docked to something,
 	// and he's in a wing, then mark the wing as having arrived
 	if (object_is_docked(p_objp) && !(p_objp->flags[Mission::Parse_Object_Flags::SF_Dock_leader]) && (p_objp->wingnum >= 0))
@@ -2212,8 +2227,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	}
 
 	shipp->group = p_objp->group;
-	shipp->team = p_objp->team;
-	shipp->display_name = p_objp->display_name;
 	shipp->escort_priority = p_objp->escort_priority;
 	shipp->ship_guardian_threshold = p_objp->ship_guardian_threshold;
 	shipp->use_special_explosion = p_objp->use_special_explosion;
@@ -2227,8 +2240,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 
 	shipp->special_hitpoints = p_objp->special_hitpoints;
 	shipp->special_shield = p_objp->special_shield;
-
-	shipp->ship_iff_color = p_objp->alt_iff_color;
 
 	shipp->ship_max_shield_strength = p_objp->ship_max_shield_strength;
 	shipp->ship_max_hull_strength =  p_objp->ship_max_hull_strength;
@@ -2258,14 +2269,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	Objects[objnum].hull_strength = shipp->ship_max_hull_strength;
 
 	shipp->respawn_priority = p_objp->respawn_priority;
-
-	// if this is a multiplayer dogfight game, and its from a player wing, make it team traitor
-	if (MULTI_DOGFIGHT && (p_objp->wingnum >= 0) && p_objp->flags[Mission::Parse_Object_Flags::SF_From_player_wing])
-		shipp->team = Iff_traitor;
-
-	// alternate stuff
-	shipp->alt_type_index = p_objp->alt_type_index;
-	shipp->callsign_index = p_objp->callsign_index;
 
 	// AI stuff.  Note a lot of the AI was already initialized in ship_create.
 	aip = &(Ai_info[shipp->ai_index]);
@@ -2302,8 +2305,6 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 	shipp->score = p_objp->score;
 	shipp->assist_score_pct = p_objp->assist_score_pct;
 	shipp->persona_index = p_objp->persona_index;
-	if (Ship_info[shipp->ship_info_index].uses_team_colors && !p_objp->team_color_setting.empty())
-		shipp->team_name = p_objp->team_color_setting;
 
 	if (p_objp->warpin_params_index >= 0)
 		shipp->warpin_params_index = p_objp->warpin_params_index;
@@ -2453,6 +2454,9 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
 			p_objp->ai_goals = -1;
 		}
 	}
+
+	if (brought_in_docked_wing)
+		parse_copy_wing_ai_to_ship(&Wings[p_objp->wingnum], aip);
 
 	Assert(sip->model_num != -1);
 
@@ -2835,6 +2839,8 @@ int parse_create_object_sub(p_object *p_objp, bool standalone_ship)
  * then it will create its component ships.  If a wing arrives because all its ships were docked
  * to something else, these assumptions are turned inside out.  So we have to sort of bootstrap
  * the creation of the wing by running a subset of the code from parse_wing_create_ships().
+ * 
+ * Note that parse_copy_wing_ai_to_ship() needs to be done too but will be called in a different spot.
  */
 void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 {
@@ -2874,19 +2880,19 @@ void parse_bring_in_docked_wing(p_object *p_objp, int wingnum, int shipnum)
 	// copy to parse object
 	p_objp->wing_status_wing_index = Ships[shipnum].wing_status_wing_index;
 	p_objp->wing_status_wing_pos = Ships[shipnum].wing_status_wing_pos;
+}
 
-	// handle AI
-	ai_info *aip = &Ai_info[Ships[shipnum].ai_index];
-
-	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
-
+void parse_copy_wing_ai_to_ship(wing *wingp, ai_info *aip)
+{
 	// copy any goals from the wing to the newly created ship
 	for (int index = 0; index < MAX_AI_GOALS; index++)
 	{
 		if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
 			ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
 	}
+
+	if (wingp->flags[Ship::Wing_Flags::No_dynamic])
+		aip->ai_flags.set(AI::AI_Flags::No_dynamic);
 }
 
 // Goober5000
@@ -4504,7 +4510,6 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 	// (since created objects plus anything they're docked to will be removed from it)
 	for (SCP_vector<p_object>::iterator ii = Parse_objects.begin(); ii != Parse_objects.end(); ++ii)
 	{
-		int index;
 		ai_info *aip;
 		p_object *p_objp = &(*ii);
 
@@ -4617,15 +4622,7 @@ int parse_wing_create_ships( wing *wingp, int num_to_create, bool force_create, 
 		objnum = parse_create_object(p_objp);
 		aip = &Ai_info[Ships[Objects[objnum].instance].ai_index];
 
-		// copy any goals from the wing to the newly created ship
-		for (index = 0; index < MAX_AI_GOALS; index++)
-		{
-			if (wingp->ai_goals[index].ai_mode != AI_GOAL_NONE)
-				ai_copy_mission_wing_goal(&wingp->ai_goals[index], aip);
-		}
-
-		if (wingp->flags[Ship::Wing_Flags::No_dynamic])
-			aip->ai_flags.set(AI::AI_Flags::No_dynamic);
+		parse_copy_wing_ai_to_ship(wingp, aip);
 
 		// update housekeeping variables
 		// NOTE:  for the initial wing setup we use actual position to get around
