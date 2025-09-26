@@ -29,6 +29,7 @@ extern waypoint* cur_waypoint;
 extern waypoint_list* cur_waypoint_list;
 extern int Update_ship;
 extern int Update_wing;
+extern int Update_prop;
 
 extern ai_goal_list Ai_goal_list[];
 extern int Ai_goal_list_size;
@@ -63,8 +64,8 @@ CString get_display_name_for_text_box(const char *orig_name);
 bool fred_init(std::unique_ptr<os::GraphicsOperations>&& graphicsOps);
 void set_physics_controls();
 int dup_object(object* objp);
-int create_object_on_grid(int waypoint_instance = -1);
-int create_object(vec3d* pos, int waypoint_instance = -1);
+int create_object_on_grid(int waypoint_instance = -1, bool prop = false);
+int create_object(vec3d* pos, int waypoint_instance = -1, bool prop = false);
 int create_player(vec3d* pos, matrix* orient, int type = -1);
 void create_new_mission();
 void reset_mission();

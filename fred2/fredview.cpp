@@ -31,6 +31,7 @@
 #include "ai/ai.h"
 #include "ai/aigoals.h"
 #include "ship/ship.h"	// for ship names
+#include "prop/prop.h" // for prop names
 #include "MissionGoalsDlg.h"
 #include "MissionCutscenesDlg.h"
 #include "wing.h"
@@ -149,6 +150,7 @@ BEGIN_MESSAGE_MAP(CFREDView, CView)
 	ON_UPDATE_COMMAND_UI(ID_SHOW_WAYPOINTS, OnUpdateViewWaypoints)
 	ON_WM_LBUTTONDOWN()
 	ON_COMMAND(ID_EDITORS_SHIPS, OnEditorsShips)
+	ON_COMMAND(ID_EDITORS_PROPS, OnEditorsProps)
 	ON_WM_KEYDOWN()
 	ON_WM_KEYUP()
 	ON_WM_SETFOCUS()
@@ -966,23 +968,31 @@ void CFREDView::OnLButtonDown(UINT nFlags, CPoint point)
 	drag_rotate_save_backup();
 	
 	if (nFlags & MK_CONTROL)	{  // add a new object
-		if (!Bg_bitmap_dialog) {
-			if (on_object == -1) {
-				Selection_lock = 0;  // force off selection lock
-				on_object = create_object_on_grid(waypoint_instance);
+		bool shift_down = (GetAsyncKeyState(VK_SHIFT) & 0x8000) != 0;
 
-			} else
-				Dup_drag = 1;
-
+		if (shift_down) {
+			Selection_lock = 0; // force off selection lock
+			on_object = create_object_on_grid(waypoint_instance, true);
 		} else {
-			/*
-			Selection_lock = 0;  // force off selection lock
-			on_object = Cur_bitmap = create_bg_bitmap();
-			Bg_bitmap_dialog->update_data();
-			Update_window = 1;
-			if (Cur_bitmap == -1)
-				MessageBox("Background bitmap limit reached.\nCan't add more.");
-			*/
+
+			if (!Bg_bitmap_dialog) {
+				if (on_object == -1) {
+					Selection_lock = 0; // force off selection lock
+					on_object = create_object_on_grid(waypoint_instance);
+
+				} else
+					Dup_drag = 1;
+
+			} else {
+				/*
+				Selection_lock = 0;  // force off selection lock
+				on_object = Cur_bitmap = create_bg_bitmap();
+				Bg_bitmap_dialog->update_data();
+				Update_window = 1;
+				if (Cur_bitmap == -1)
+					MessageBox("Background bitmap limit reached.\nCan't add more.");
+				*/
+			}
 		}
 
 	} else if (!Selection_lock) {
@@ -1185,6 +1195,18 @@ void CFREDView::OnEditorsShips()
 	Ship_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
 		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
 	Ship_editor_dialog.ShowWindow(SW_RESTORE);
+}
+
+void CFREDView::OnEditorsProps()
+{
+	Assert(Prop_editor_dialog.GetSafeHwnd());
+
+	if (!theApp.init_window(&Prop_wnd_data, &Prop_editor_dialog, 0))
+		return;
+
+	Prop_editor_dialog.SetWindowPos(&wndTop, 0, 0, 0, 0,
+		SWP_SHOWWINDOW | SWP_NOMOVE | SWP_NOSIZE);
+	Prop_editor_dialog.ShowWindow(SW_RESTORE);
 }
 
 void CFREDView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT lParam)
@@ -1452,10 +1474,14 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 			else {
 				CString str;
 
-				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP))
+				if ((Objects[objnum].type == OBJ_START) || (Objects[objnum].type == OBJ_SHIP)) {
 					str.Format("Edit %s", Ships[Objects[objnum].instance].ship_name);
 
-				else if (Objects[objnum].type == OBJ_JUMP_NODE) {
+				} else if (Objects[objnum].type == OBJ_PROP) {
+					id = ID_EDITORS_PROPS;
+					str.Format("Edit %s", prop_id_lookup(Objects[objnum].instance)->prop_name);
+
+				} else if (Objects[objnum].type == OBJ_JUMP_NODE) {
 					auto jnp = jumpnode_get_by_objnum(objnum);
 					Assert(jnp != nullptr);
 
@@ -1991,6 +2017,10 @@ void CFREDView::OnLButtonDblClk(UINT nFlags, CPoint point)
 			case OBJ_SHIP:
 			case OBJ_START:
 				OnEditorsShips();
+				break;
+
+			case OBJ_PROP:
+				OnEditorsProps();
 				break;
 
 			case OBJ_WAYPOINT:
@@ -2585,7 +2615,7 @@ int CFREDView::global_error_check()
 			//Shouldn't be needed anymore.
 			//If we really do need it, call me and I'll write a is_valid function for jumpnodes -WMC
 		} 
-		else if (ptr->type == OBJ_JUMP_NODE)
+		else if (ptr->type == OBJ_JUMP_NODE || ptr->type == OBJ_PROP)
 		{
 			//nothing needs to be done here, we just need to make sure the else doesn't occur
 		}
