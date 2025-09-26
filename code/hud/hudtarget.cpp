@@ -1257,27 +1257,6 @@ void hud_target_prev(int team_mask)
 	hud_target_common(team_mask, 0);
 }
 
-// -------------------------------------------------------------------
-// advance_missile_obj()
-//
-missile_obj *advance_missile_obj(missile_obj *mo, int next_flag)
-{
-	if (next_flag){
-		return GET_NEXT(mo);
-	}
-
-	return GET_LAST(mo);
-}
-
-ship_obj *advance_ship(ship_obj *so, int next_flag)
-{
-	if (next_flag){
-		return GET_NEXT(so);
-	}
-
-	return GET_LAST(so);
-}
-
 /// \brief Iterates down to and selects the next target in a linked list
 ///        fashion ordered from closest to farthest from the
 ///        attacked_object_number, returning the next valid target.
@@ -1522,7 +1501,7 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 
 	// check bomb weapons
 	if (target_bombs) {
-		for (missile_obj* mo = GET_FIRST(&Missile_obj_list); mo != END_OF_LIST(&Missile_obj_list); mo = GET_NEXT(mo)) {
+		for (auto mo : list_range(&Missile_obj_list)) {
 			A = &Objects[mo->objnum];
 
 			if (A->flags[Object::Object_Flags::Should_be_dead])
@@ -1531,8 +1510,12 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 			weapon* wp = &Weapons[A->instance];
 			weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
-			if (!(wip->wi_flags[Weapon::Info_Flags::Bomb]))
-				continue;
+			// only allow targeting of bombs
+			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted])) {
+				if (!(wip->wi_flags[Weapon::Info_Flags::Bomb])) {
+					continue;
+				}
+			}
 
 			if (wp->lssm_stage == 3)
 				continue;
@@ -1549,7 +1532,7 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 
 	// check bomber ships
 	if (target_bombers) {
-		for (ship_obj* so = GET_FIRST(&Ship_obj_list); so != END_OF_LIST(&Ship_obj_list); so = GET_NEXT(so)) {
+		for (auto so : list_range(&Ship_obj_list)) {
 			A = &Objects[so->objnum];
 
 			if (A->flags[Object::Object_Flags::Should_be_dead])
