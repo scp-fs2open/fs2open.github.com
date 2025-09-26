@@ -748,7 +748,7 @@ void FredView::on_actionVolumetric_Nebula_triggered(bool)
 	volumetricNebulaEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
-	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	auto eventEditor = new dialogs::BriefingEditorDialog(this, _viewport);
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
