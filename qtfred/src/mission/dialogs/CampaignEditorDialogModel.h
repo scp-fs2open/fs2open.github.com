@@ -10,7 +10,8 @@ namespace fso::fred::dialogs {
 
 enum class CampaignFormat {
 	Retail,
-	FSO
+	FSO,
+	CompatibilityMode = FSO // alias as it's currently unused
 };
 
 enum class CampaignSpecialMode {
