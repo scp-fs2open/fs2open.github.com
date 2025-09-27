@@ -123,6 +123,21 @@ ParticleEffectHandle ParticleManager::addEffect(SCP_vector<ParticleEffect>&& eff
 
 	Assert(!effect.empty());
 
+	for (const auto& subeffect : effect) {
+		for (const auto& bitmap : subeffect.m_bitmap_list) {
+			if (bitmap < 0) {
+				if (effect.front().getName().empty()) {
+					mprintf(("Internal legacy particle effect did not have a valid bitmap. Check particleexp01, particlesmoke01, and particlesmoke02!\n"));
+				}
+				else {
+					// I suspect we cannot get here. Parsing systems should prevent creation of named particles with invalid bitmaps, but just to be safe...
+					Warning(LOCATION, "Particle effect with name '%s' contains invalid bitmaps!", effect.front().getName().c_str());
+				}
+				return ParticleEffectHandle::invalid();
+			}
+		}
+	}
+
 #ifndef NDEBUG
 	if (!effect.front().getName().empty()) {
 		// This check is a bit expensive and will only be used in debug

@@ -3,7 +3,6 @@
 #pragma once
 
 #include "globalincs/pstypes.h"
-#include "particle/ParticleEffect.h"
 #include "utils/id.h"
 
 #include "particle/hosts/EffectHostBeam.h"

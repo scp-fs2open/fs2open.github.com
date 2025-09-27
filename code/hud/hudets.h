@@ -21,7 +21,7 @@ class object;
 #define INTIAL_ENGINE_RECHARGE_INDEX	4		// default engine charge rate (index in Energy_levels[])
 
 #define NUM_ENERGY_LEVELS	13
-#define MAX_ENERGY_INDEX	(NUM_ENERGY_LEVELS - 1)
+inline constexpr int MAX_ENERGY_INDEX = (NUM_ENERGY_LEVELS - 1);
 
 #define AI_MODIFY_ETS_INTERVAL 500	// time between ets modifications for ai's (in milliseconds)
 

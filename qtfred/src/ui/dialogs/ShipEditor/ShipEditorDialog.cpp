@@ -10,6 +10,7 @@
 #include <ui/util/SignalBlockers.h>
 
 #include <QCloseEvent>
+#include <ui/dialogs/General/CheckBoxListDialog.h>
 
 namespace fso::fred::dialogs {
 
@@ -626,9 +627,30 @@ void ShipEditorDialog::on_weaponsButton_clicked()
 }
 void ShipEditorDialog::on_playerOrdersButton_clicked()
 {
-	auto dialog = new dialogs::PlayerOrdersDialog(this, _viewport, getIfMultipleShips());
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Player Orders Accepted");
+	// Get our flag list and convert it to Qt's internal types
+	auto playerOrders = _model->getAcceptedOrders();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+
+	for (const auto& porder : playerOrders) {
+		checkbox_list.append({porder.first.c_str(), porder.second});
+	}
+	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedOrders;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8().constData();
+			updatedOrders.emplace_back(name, returned_values[i]);
+		}
+
+		_model->setAcceptedOrders(updatedOrders);
+	}
 }
 void ShipEditorDialog::on_specialStatsButton_clicked()
 {
@@ -656,10 +678,28 @@ void ShipEditorDialog::on_hideCuesButton_clicked()
 }
 void ShipEditorDialog::on_restrictArrivalPathsButton_clicked()
 {
-	int target_class = Ships[_model->getArrivalTarget()].ship_info_index;
-	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, false);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Restrict Arrival Paths");
+	auto arrivalPaths = _model->getArrivalPaths();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+	for (const auto& path : arrivalPaths) {
+		checkbox_list.append({path.first.c_str(), path.second});
+	}
+	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedPaths;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8().constData();
+			updatedPaths.emplace_back(name, returned_values[i]);
+		}
+
+		_model->setArrivalPaths(updatedPaths);
+	}
 }
 void ShipEditorDialog::on_customWarpinButton_clicked()
 {
@@ -669,10 +709,28 @@ void ShipEditorDialog::on_customWarpinButton_clicked()
 }
 void ShipEditorDialog::on_restrictDeparturePathsButton_clicked()
 {
-	int target_class = Ships[_model->getDepartureTarget()].ship_info_index;
-	auto dialog = new dialogs::ShipPathsDialog(this, _viewport, _model->getSingleShip(), target_class, true);
-	dialog->setAttribute(Qt::WA_DeleteOnClose);
-	dialog->show();
+	CheckBoxListDialog dlg(this);
+	dlg.setCaption("Restrict Departure Paths");
+	auto departurePaths = _model->getDeparturePaths();
+
+	QVector<std::pair<QString, bool>> checkbox_list;
+	for (const auto& path : departurePaths) {
+		checkbox_list.append({path.first.c_str(), path.second});
+	}
+	dlg.setOptions(checkbox_list); // TODO upgrade checkbox to accept and display item descriptions
+	if (dlg.exec() == QDialog::Accepted) {
+		auto returned_values = dlg.getCheckedStates();
+
+		std::vector<std::pair<SCP_string, bool>> updatedPaths;
+
+		for (int i = 0; i < checkbox_list.size(); ++i) {
+			// Convert back to std::string
+			std::string name = checkbox_list[i].first.toUtf8().constData();
+			updatedPaths.emplace_back(name, returned_values[i]);
+		}
+
+		_model->setDeparturePaths(updatedPaths);
+	}
 }
 void ShipEditorDialog::on_customWarpoutButton_clicked()
 {
@@ -746,7 +804,8 @@ void ShipEditorDialog::on_playerShipCheckBox_toggled(bool value)
 {
 	_model->setPlayer(value);
 }
-void ShipEditorDialog::on_respawnSpinBox_valueChanged(int value) {
+void ShipEditorDialog::on_respawnSpinBox_valueChanged(int value)
+{
 	_model->setRespawn(value);
 }
 void ShipEditorDialog::on_arrivalLocationCombo_currentIndexChanged(int index)

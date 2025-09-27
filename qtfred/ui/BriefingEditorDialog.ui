@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>622</width>
-    <height>732</height>
+    <width>1505</width>
+    <height>725</height>
    </rect>
   </property>
   <property name="minimumSize">
@@ -25,540 +25,680 @@
   <property name="modal">
    <bool>true</bool>
   </property>
-  <layout class="QVBoxLayout" name="mainLayout">
-   <property name="spacing">
-    <number>0</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
+  <layout class="QHBoxLayout" name="horizontalLayout_8">
    <item>
-    <layout class="QGridLayout" name="contentLayout">
-     <property name="leftMargin">
-      <number>11</number>
-     </property>
-     <property name="topMargin">
-      <number>11</number>
-     </property>
-     <property name="rightMargin">
-      <number>11</number>
-     </property>
-     <property name="bottomMargin">
-      <number>11</number>
-     </property>
-     <item row="2" column="0" colspan="2">
-      <widget class="QPlainTextEdit" name="stageText"/>
+    <layout class="QVBoxLayout" name="leftPaneLayout">
+     <item>
+      <layout class="QHBoxLayout" name="leftPaneControlsLayout">
+       <item>
+        <layout class="QVBoxLayout" name="stageControlsLayout">
+         <item>
+          <widget class="QLabel" name="currentStageLabel">
+           <property name="text">
+            <string>No Stages</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <layout class="QGridLayout" name="stageButtons" columnstretch="0,0,0">
+           <property name="spacing">
+            <number>5</number>
+           </property>
+           <item row="0" column="0">
+            <widget class="QPushButton" name="prevStageButton">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Prev</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QPushButton" name="nextStageButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Next</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="2">
+            <widget class="QPushButton" name="gotoViewButton">
+             <property name="text">
+              <string>Goto View</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="2">
+            <widget class="QPushButton" name="pasteViewButton">
+             <property name="text">
+              <string>Paste View</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="2">
+            <widget class="QPushButton" name="saveViewButton">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Save View</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="0" colspan="2">
+            <widget class="QPushButton" name="addStageButton">
+             <property name="text">
+              <string>Add Stage</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="0" colspan="2">
+            <widget class="QPushButton" name="deleteStageButton">
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Delete Stage</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="0" colspan="2">
+            <widget class="QPushButton" name="insertStageButton">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="maximumSize">
+              <size>
+               <width>16777215</width>
+               <height>16777215</height>
+              </size>
+             </property>
+             <property name="text">
+              <string>Insert Stage</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="2">
+            <widget class="QPushButton" name="copyViewButton">
+             <property name="text">
+              <string>Copy View</string>
+             </property>
+             <property name="autoDefault">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="cameraTransitionTimeGroupBox">
+           <property name="title">
+            <string>Camera Transition Time (ms)</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout">
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <item>
+             <widget class="QSpinBox" name="cameraTransitionTimeSpinBox">
+              <property name="maximum">
+               <number>16777215</number>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <layout class="QVBoxLayout" name="stageFlagsLayout">
+           <property name="spacing">
+            <number>0</number>
+           </property>
+           <item>
+            <widget class="QCheckBox" name="cutToNextStageCheckBox">
+             <property name="text">
+              <string>Cut to next stage</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="cutToPrevStageCheckBox">
+             <property name="text">
+              <string>Cut to previous stage</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="disableGridCheckBox">
+             <property name="text">
+              <string>Disable grid rendering</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <spacer name="stageControlsSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="stageSubControlsLayout_2">
+         <item>
+          <layout class="QHBoxLayout" name="teamControlsLayout">
+           <item>
+            <widget class="QLabel" name="teamLabel">
+             <property name="text">
+              <string>Teams</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="teamComboBox"/>
+           </item>
+           <item>
+            <widget class="QPushButton" name="copyToOtherTeamsButton">
+             <property name="text">
+              <string>Copy To Other Teams</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <spacer name="teamSpacer">
+             <property name="orientation">
+              <enum>Qt::Horizontal</enum>
+             </property>
+             <property name="sizeHint" stdset="0">
+              <size>
+               <width>40</width>
+               <height>20</height>
+              </size>
+             </property>
+            </spacer>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="currentIconInfoGroupBox">
+           <property name="minimumSize">
+            <size>
+             <width>0</width>
+             <height>300</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Current Icon Info</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_15">
+            <item>
+             <layout class="QHBoxLayout" name="iconDetailsLayout" stretch="0,1">
+              <item>
+               <layout class="QFormLayout" name="iconLabelsForm">
+                <property name="labelAlignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="iconIdLabel">
+                  <property name="text">
+                   <string>ID</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="iconLabelLabel">
+                  <property name="text">
+                   <string>Label</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QLineEdit" name="iconLabelLineEdit"/>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="iconCloseupLabelLabel">
+                  <property name="text">
+                   <string>Closeup Label</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QLineEdit" name="iconCloseupLabelLineEdit"/>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QSpinBox" name="iconIdSpinBox">
+                  <property name="buttonSymbols">
+                   <enum>QAbstractSpinBox::NoButtons</enum>
+                  </property>
+                  <property name="maximum">
+                   <number>16777215</number>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+              <item>
+               <layout class="QFormLayout" name="iconVisualsLayout">
+                <property name="labelAlignment">
+                 <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+                </property>
+                <item row="0" column="0">
+                 <widget class="QLabel" name="iconImageLabel">
+                  <property name="text">
+                   <string>Icon Image</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QComboBox" name="iconImageComboBox"/>
+                </item>
+                <item row="1" column="0">
+                 <widget class="QLabel" name="iconShipTypeLabel">
+                  <property name="text">
+                   <string>Ship Type</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="1" column="1">
+                 <widget class="QComboBox" name="iconShipTypeComboBox"/>
+                </item>
+                <item row="2" column="0">
+                 <widget class="QLabel" name="iconTeamLabel">
+                  <property name="text">
+                   <string>Team</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="2" column="1">
+                 <widget class="QComboBox" name="iconTeamComboBox"/>
+                </item>
+                <item row="3" column="0">
+                 <widget class="QLabel" name="iconScaleLabel">
+                  <property name="text">
+                   <string>Scale</string>
+                  </property>
+                 </widget>
+                </item>
+                <item row="3" column="1">
+                 <widget class="QDoubleSpinBox" name="scaleDoubleSpinBox"/>
+                </item>
+               </layout>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QGridLayout" name="iconCheckboxesLayout">
+              <item row="3" column="1">
+               <widget class="QCheckBox" name="highlightCheckBox">
+                <property name="text">
+                 <string>Highlight</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="1">
+               <widget class="QCheckBox" name="useWingIconCheckBox">
+                <property name="text">
+                 <string>Use Wing Icon</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="1">
+               <widget class="QCheckBox" name="changeLocallyCheckBox">
+                <property name="text">
+                 <string>Change locally</string>
+                </property>
+               </widget>
+              </item>
+              <item row="1" column="0">
+               <widget class="QCheckBox" name="drawLinesCheckBox">
+                <property name="text">
+                 <string>Draw lines between marked icons</string>
+                </property>
+                <property name="tristate">
+                 <bool>true</bool>
+                </property>
+               </widget>
+              </item>
+              <item row="3" column="0">
+               <widget class="QCheckBox" name="flipIconCheckBox">
+                <property name="text">
+                 <string>Flip Icon</string>
+                </property>
+               </widget>
+              </item>
+              <item row="4" column="0">
+               <widget class="QCheckBox" name="useCargoIconCheckBox">
+                <property name="text">
+                 <string>Use Cargo Icon</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="iconSetupButtonsLayout">
+              <item>
+               <widget class="QPushButton" name="makeIconButton">
+                <property name="text">
+                 <string>Make Icon</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="deleteIconButton">
+                <property name="text">
+                 <string>Delete Icon</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="propagateIconButton">
+                <property name="text">
+                 <string>Propagate</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+            <item>
+             <spacer name="iconInfoSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
+          </widget>
+         </item>
+        </layout>
+       </item>
+      </layout>
      </item>
-     <item row="3" column="1">
-      <widget class="QGroupBox" name="iconInfoBox">
-       <property name="title">
-        <string>Current Icon Info</string>
+     <item>
+      <widget class="QWidget" name="mapView" native="true">
+       <property name="enabled">
+        <bool>true</bool>
        </property>
-       <layout class="QGridLayout" name="iconInfoBoxLayout">
-        <item row="0" column="0">
-         <layout class="QGridLayout" name="iconButtons">
-          <item row="0" column="0">
-           <widget class="QPushButton" name="makeIconButton">
-            <property name="text">
-             <string>Make Icon</string>
-            </property>
-            <property name="autoDefault">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QPushButton" name="deleteIconButton">
-            <property name="text">
-             <string>Delete Icon</string>
-            </property>
-            <property name="autoDefault">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="2">
-           <widget class="QPushButton" name="propagateIconButton">
-            <property name="text">
-             <string>Propagate</string>
-            </property>
-            <property name="autoDefault">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item row="1" column="0">
-         <layout class="QGridLayout" name="iconInfo">
-          <item row="3" column="0">
-           <widget class="QLabel" name="iconImage">
-            <property name="text">
-             <string>Icon Image</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="0">
-           <widget class="QLabel" name="iconID">
-            <property name="text">
-             <string>ID</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QLineEdit" name="iconIDEdit"/>
-          </item>
-          <item row="5" column="0">
-           <widget class="QLabel" name="iconTeam">
-            <property name="text">
-             <string>Team</string>
-            </property>
-           </widget>
-          </item>
-          <item row="4" column="0">
-           <widget class="QLabel" name="iconShipType">
-            <property name="text">
-             <string>Ship Type</string>
-            </property>
-           </widget>
-          </item>
-          <item row="3" column="1">
-           <widget class="QComboBox" name="iconImageCombo"/>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="iconLabel">
-            <property name="text">
-             <string>Label</string>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QLineEdit" name="iconLabelEdit"/>
-          </item>
-          <item row="5" column="1">
-           <widget class="QComboBox" name="iconTeamCombo"/>
-          </item>
-          <item row="4" column="1">
-           <widget class="QComboBox" name="iconShipTypeCombo"/>
-          </item>
-          <item row="2" column="1">
-           <widget class="QLineEdit" name="iconcloseupLabel"/>
-          </item>
-          <item row="2" column="0">
-           <widget class="QLabel" name="closeup">
-            <property name="text">
-             <string>Closeup Label</string>
-            </property>
-           </widget>
-          </item>
-		  <item row="0" column="0">
-		   <widget class="QLabel" name="iconScale">
-		    <property name="text">
-		     <string>Scale</string>
-		    </property>
-		   </widget>
-		  </item>
-         </layout>
-        </item>
-        <item row="2" column="0">
-         <layout class="QVBoxLayout" name="iconText">
+       <property name="sizePolicy">
+        <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+         <horstretch>0</horstretch>
+         <verstretch>0</verstretch>
+        </sizepolicy>
+       </property>
+       <property name="minimumSize">
+        <size>
+         <width>888</width>
+         <height>371</height>
+        </size>
+       </property>
+       <property name="styleSheet">
+        <string notr="true">QWidget {
+    background-color: #333333;
+    border: 1px solid #555555;
+}</string>
+       </property>
+      </widget>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QVBoxLayout" name="rightPaneLayout">
+     <item>
+      <layout class="QHBoxLayout" name="stageSubControlsLayout">
+       <item>
+        <widget class="QGroupBox" name="usageFormulaGroupBox">
+         <property name="title">
+          <string>Usage Formula</string>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
           <item>
-           <widget class="QLabel" name="iconTextLabel">
-            <property name="text">
-             <string>Text</string>
+           <widget class="fso::fred::sexp_tree" name="formulaTreeView">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+              <horstretch>0</horstretch>
+              <verstretch>0</verstretch>
+             </sizepolicy>
             </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="iconTextEdit">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>0</height>
+             </size>
+            </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
             </property>
            </widget>
           </item>
          </layout>
-        </item>
-        <item row="3" column="0">
-         <layout class="QGridLayout" name="iconInfoCheckboxes">
-          <item row="0" column="0" colspan="2">
-           <widget class="QCheckBox" name="drawLinesCheck">
-            <property name="text">
-             <string>Draw lines between marked icons</string>
+        </widget>
+       </item>
+       <item>
+        <layout class="QVBoxLayout" name="stageAudioControlsLayout">
+         <item>
+          <widget class="QGroupBox" name="briefingMusicLayout">
+           <property name="minimumSize">
+            <size>
+             <width>200</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="sizeIncrement">
+            <size>
+             <width>0</width>
+             <height>0</height>
+            </size>
+           </property>
+           <property name="title">
+            <string>Briefing Music</string>
+           </property>
+           <layout class="QFormLayout" name="formLayout">
+            <property name="labelAlignment">
+             <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QCheckBox" name="changeLocallyCheck">
-            <property name="text">
-             <string>Change locally</string>
+            <property name="verticalSpacing">
+             <number>3</number>
             </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QCheckBox" name="highlightCheck">
-            <property name="text">
-             <string>Highlight</string>
+            <property name="leftMargin">
+             <number>6</number>
             </property>
-           </widget>
-          </item>
-          <item row="2" column="0">
-           <widget class="QCheckBox" name="flipIconCheck">
-            <property name="text">
-             <string>Flip Icon</string>
+            <property name="topMargin">
+             <number>3</number>
             </property>
-           </widget>
-          </item>
-         </layout>
+            <property name="rightMargin">
+             <number>6</number>
+            </property>
+            <property name="bottomMargin">
+             <number>3</number>
+            </property>
+            <item row="0" column="0">
+             <widget class="QLabel" name="defaultMusicLabel">
+              <property name="text">
+               <string>Default</string>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="1">
+             <widget class="QComboBox" name="defaultMusicComboBox">
+              <property name="editable">
+               <bool>false</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="0">
+             <widget class="QLabel" name="musicPackLabel">
+              <property name="text">
+               <string>If music pack is present</string>
+              </property>
+              <property name="wordWrap">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="1" column="1">
+             <widget class="QComboBox" name="musicPackComboBox"/>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <widget class="QGroupBox" name="voiceFileGroupBox">
+           <property name="title">
+            <string>Voice File</string>
+           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_13">
+            <item>
+             <widget class="QLineEdit" name="voiceFileLineEdit">
+              <property name="text">
+               <string/>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="voiceFileButtonsLayout">
+              <item>
+               <widget class="QPushButton" name="voiceFileBrowseButton">
+                <property name="text">
+                 <string>Browse</string>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="voiceFilePlayButton">
+                <property name="text">
+                 <string/>
+                </property>
+                <property name="icon">
+                 <iconset resource="../resources/resources.qrc">
+                  <normaloff>:/images/bmp00001.png</normaloff>:/images/bmp00001.png</iconset>
+                </property>
+                <property name="autoDefault">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
+          </widget>
+         </item>
+         <item>
+          <spacer name="audioControlsSpacer">
+           <property name="orientation">
+            <enum>Qt::Vertical</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>20</width>
+             <height>40</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+        </layout>
+       </item>
+      </layout>
+     </item>
+     <item>
+      <widget class="QGroupBox" name="stageTextGroupBox">
+       <property name="title">
+        <string>Stage Text</string>
+       </property>
+       <layout class="QVBoxLayout" name="verticalLayout_6">
+        <item>
+         <widget class="QPlainTextEdit" name="stageTextPlainTextEdit"/>
         </item>
        </layout>
       </widget>
      </item>
-     <item row="3" column="0">
-      <layout class="QGridLayout" name="voiceInfo">
-       <item row="0" column="0">
-        <layout class="QHBoxLayout" name="voiceFileLayout">
-         <property name="spacing">
-          <number>5</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="voiceFileLabel">
-           <property name="text">
-            <string>Voice Wave File</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QLineEdit" name="voiceFileLine">
-           <property name="text">
-            <string>none.wav</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="browseVoiceFileButton">
-           <property name="text">
-            <string>Browse</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QPushButton" name="playVoiceFileButton">
-           <property name="text">
-            <string/>
-           </property>
-           <property name="icon">
-            <iconset resource="../resources/resources.qrc">
-             <normaloff>:/images/bmp00001.png</normaloff>:/images/bmp00001.png</iconset>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="1" column="0">
-        <widget class="QLabel" name="usageFormulaLabel">
-         <property name="text">
-          <string>Usage Formula</string>
-         </property>
-        </widget>
-       </item>
-       <item row="2" column="0">
-        <widget class="QTreeView" name="usageFormulaView">
-         <property name="minimumSize">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="frameShape">
-          <enum>QFrame::StyledPanel</enum>
-         </property>
-        </widget>
-       </item>
-      </layout>
-     </item>
-     <item row="0" column="0" colspan="2">
-      <layout class="QGridLayout" name="stageInfo">
-       <item row="0" column="0">
-        <widget class="QLabel" name="stageLabel">
-         <property name="text">
-          <string>Stage</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignTop</set>
-         </property>
-        </widget>
-       </item>
-       <item row="0" column="1" rowspan="3">
-        <widget class="QGroupBox" name="briefingMusicBox">
-         <property name="minimumSize">
-          <size>
-           <width>200</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="sizeIncrement">
-          <size>
-           <width>0</width>
-           <height>0</height>
-          </size>
-         </property>
-         <property name="title">
-          <string>Briefing Music</string>
-         </property>
-         <layout class="QGridLayout" name="musicBoxLayout">
-          <property name="leftMargin">
-           <number>6</number>
-          </property>
-          <property name="topMargin">
-           <number>3</number>
-          </property>
-          <property name="rightMargin">
-           <number>6</number>
-          </property>
-          <property name="bottomMargin">
-           <number>3</number>
-          </property>
-          <property name="verticalSpacing">
-           <number>3</number>
-          </property>
-          <item row="0" column="0">
-           <widget class="QLabel" name="defaultMusicLabel">
-            <property name="text">
-             <string>Default</string>
-            </property>
-           </widget>
-          </item>
-          <item row="0" column="1">
-           <widget class="QComboBox" name="defaultMusicCombo">
-            <property name="editable">
-             <bool>false</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="0">
-           <widget class="QLabel" name="musicPackLabel">
-            <property name="text">
-             <string>If music pack is present</string>
-            </property>
-            <property name="wordWrap">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item row="1" column="1">
-           <widget class="QComboBox" name="musicPackCombo"/>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item row="0" column="2" rowspan="4">
-        <layout class="QGridLayout" name="stageButtons" columnstretch="0,0,0">
-         <property name="spacing">
-          <number>5</number>
-         </property>
-         <item row="0" column="0">
-          <widget class="QPushButton" name="prevStageButton">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Prev</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="1">
-          <widget class="QPushButton" name="nextStageButton">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Next</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="0" column="2">
-          <widget class="QPushButton" name="saveViewButton">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Save View</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="0" colspan="2">
-          <widget class="QPushButton" name="addStageButton">
-           <property name="text">
-            <string>Add Stage</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
-          <widget class="QPushButton" name="insertStageButton">
-           <property name="sizePolicy">
-            <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-             <horstretch>0</horstretch>
-             <verstretch>0</verstretch>
-            </sizepolicy>
-           </property>
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Insert Stage</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="0" colspan="2">
-          <widget class="QPushButton" name="deleteStageButton">
-           <property name="maximumSize">
-            <size>
-             <width>16777215</width>
-             <height>16777215</height>
-            </size>
-           </property>
-           <property name="text">
-            <string>Delete Stage</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="2">
-          <widget class="QPushButton" name="copyViewButton">
-           <property name="text">
-            <string>Copy View</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="3" column="2">
-          <widget class="QPushButton" name="pasteViewButton">
-           <property name="text">
-            <string>Paste View</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-         <item row="1" column="2">
-          <widget class="QPushButton" name="gotoViewButton">
-           <property name="text">
-            <string>Goto View</string>
-           </property>
-           <property name="autoDefault">
-            <bool>false</bool>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-       <item row="1" column="0">
-        <layout class="QVBoxLayout" name="verticalLayout">
-         <property name="rightMargin">
-          <number>6</number>
-         </property>
-         <item>
-          <widget class="QLabel" name="transitionLabel">
-           <property name="text">
-            <string>Camera Transition Time (ms)</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QSpinBox" name="transitionTime"/>
-         </item>
-        </layout>
-       </item>
-       <item row="2" column="0">
-        <layout class="QVBoxLayout" name="cutStage">
-         <property name="spacing">
-          <number>0</number>
-         </property>
-         <item>
-          <widget class="QCheckBox" name="nextStage">
-           <property name="text">
-            <string>Cut to next stage</string>
-           </property>
-          </widget>
-         </item>
-         <item>
-          <widget class="QCheckBox" name="prevStage">
-           <property name="text">
-            <string>Cut to previous stage</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </item>
-	   <item>
-		<widget class="QCheckBox" name="disableGrid">
-		 <property name="text">
-		  <string>Disable grid rendering</string>
-		</property>
-	   </widget>
-	  </item>
-      </layout>
-     </item>
-     <item row="1" column="0">
-      <widget class="QLabel" name="textLabel">
-       <property name="text">
-        <string>Text</string>
+     <item>
+      <widget class="QDialogButtonBox" name="okAndCancelButtons">
+       <property name="layoutDirection">
+        <enum>Qt::LeftToRight</enum>
        </property>
-       <property name="alignment">
-        <set>Qt::AlignBottom|Qt::AlignLeading|Qt::AlignLeft</set>
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="standardButtons">
+        <set>QDialogButtonBox::Cancel|QDialogButtonBox::Ok</set>
        </property>
       </widget>
      </item>
@@ -567,6 +707,13 @@
   </layout>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>fso::fred::sexp_tree</class>
+   <extends>QTreeView</extends>
+   <header>ui/widgets/sexp_tree.h</header>
+  </customwidget>
+ </customwidgets>
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>

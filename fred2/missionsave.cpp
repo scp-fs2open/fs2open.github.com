@@ -3722,17 +3722,17 @@ int CFred_mission_save::save_objects()
 			}
 
 			z = shipp->arrival_anchor;
-			if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			if (z < 0) {
+				fout(" <error>");
+			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, Mission_save_format == FSO_FORMAT_RETAIL ? 1 : 0);
 
 				// save it
 				fout(" %s", tmp);
-			} else if (z >= 0) {
-				fout(" %s", Ships[z].ship_name);
 			} else {
-				fout(" <error>");
+				fout(" %s", Ships[z].ship_name);
 			}
 		}
 
@@ -5073,17 +5073,17 @@ int CFred_mission_save::save_wings()
 				fout("\n$Arrival Anchor:");
 
 			z = Wings[i].arrival_anchor;
-			if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
+			if (z < 0) {
+				fout(" <error>");
+			} else if (z & SPECIAL_ARRIVAL_ANCHOR_FLAG) {
 				// get name
 				char tmp[NAME_LENGTH + 15];
 				stuff_special_arrival_anchor_name(tmp, z, Mission_save_format == FSO_FORMAT_RETAIL ? 1 : 0);
 
 				// save it
 				fout(" %s", tmp);
-			} else if (z >= 0) {
-				fout(" %s", Ships[z].ship_name);
 			} else {
-				fout(" <error>");
+				fout(" %s", Ships[z].ship_name);
 			}
 		}
 

@@ -15,9 +15,6 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 {
 	ui->setupUi(this);
 
-	connect(this, &QDialog::accepted, _model.get(), &ShipFlagsDialogModel::apply);
-	connect(ui->cancelButton, &QPushButton::clicked, this, &ShipFlagsDialog::rejectHandler);
-	connect(this, &QDialog::rejected, _model.get(), &ShipFlagsDialogModel::reject);
 
 	// Column One
 
@@ -26,7 +23,7 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 		updateUI();
 	});
 
-	const auto flags = _model->getFlagsList();
+	const auto& flags = _model->getFlagsList();
 
 	QVector<std::pair<QString, int>> toWidget;
 	toWidget.reserve(static_cast<int>(flags.size()));
@@ -43,15 +40,36 @@ ShipFlagsDialog::ShipFlagsDialog(QWidget* parent, EditorViewport* viewport)
 
 ShipFlagsDialog::~ShipFlagsDialog() = default;
 
+void ShipFlagsDialog::accept() {
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
+}
+
+void ShipFlagsDialog::reject() {
+	// Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
 void ShipFlagsDialog::closeEvent(QCloseEvent* e)
 {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
+	reject();
+	e->ignore(); // Don't let the base class close the window
 }
-void ShipFlagsDialog::rejectHandler()
+void ShipFlagsDialog::on_okAndCancelButtons_accepted()
 {
-	this->close();
+	accept();
+}
+void ShipFlagsDialog::on_okAndCancelButtons_rejected()
+{
+	reject();
 }
 void ShipFlagsDialog::on_destroySecondsSpinBox_valueChanged(int value)
 {

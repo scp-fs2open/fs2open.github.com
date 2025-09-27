@@ -7,9 +7,7 @@
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QSpinBox>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 namespace Ui {
 class ShipGoalsDialog;
 }
@@ -18,14 +16,17 @@ class ShipGoalsDialog : public QDialog {
   public:
 	explicit ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool editMultiple, int shipID, int wingID);
 	~ShipGoalsDialog() override;
-
+	void accept() override;
+	void reject() override;
 
   protected:
 	void closeEvent(QCloseEvent*) override;
 
-	void rejectHandler();
+  private slots:
+	void on_okButton_clicked();
+	void on_cancelButton_clicked();
 
-  private:
+  private:// NOLINT(readability-redundant-access-specifiers)
 	std::unique_ptr<Ui::ShipGoalsDialog> ui;
 	std::unique_ptr<ShipGoalsDialogModel> _model;
 	EditorViewport* _viewport;
@@ -38,7 +39,5 @@ class ShipGoalsDialog : public QDialog {
 
 	void updateUI();
 };
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+} // namespace fso::fred::dialogs
 #endif // !SHIPGOALSDIALOG_H
