@@ -1855,8 +1855,8 @@ static void ship_vaporize(ship *shipp)
 	object *ship_objp;
 
 	// sanity
-	Assert(shipp != NULL);
-	if (shipp == NULL) {
+	Assert(shipp != nullptr);
+	if (shipp == nullptr) {
 		return;
 	}
 	Assert((shipp->objnum >= 0) && (shipp->objnum < MAX_OBJECTS));
