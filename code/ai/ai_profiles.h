@@ -31,7 +31,6 @@ public:
 
 	// difficulty-related values
 	int max_incoming_asteroids[NUM_SKILL_LEVELS];			// max number of asteroids thrown at friendlies
-	int max_allies_rearming_threshold[NUM_SKILL_LEVELS];	// max number of allies allowed to be rearming at the same time
 	int	max_allowed_player_homers[NUM_SKILL_LEVELS];		// max number of simultaneous homing weapons on player
 	int	max_attackers[NUM_SKILL_LEVELS];					// max number of ships that can attack a ship
 	fix predict_position_delay[NUM_SKILL_LEVELS];			// how long until AI predicts a ship position
@@ -101,6 +100,9 @@ public:
 	float player_autoaim_fov[NUM_SKILL_LEVELS];
 
 	float detail_distance_mult[MAX_DETAIL_VALUE + 1];	//MAX_DETAIL_VALUE really needs to be 4
+
+	// max number of allies allowed to be rearming at the same time
+	int max_allies_rearming_threshold;	
 
 	// minimum radius for the line-of-sight (los) detection --wookieejedi
 	float los_min_detection_radius;

@@ -226,7 +226,7 @@ void parse_ai_profiles_tbl(const char *filename)
 					parse_int_list(profile->max_incoming_asteroids, NUM_SKILL_LEVELS);
 
 				if (optional_string("$Max Allies Rearming Threshold:"))
-					parse_int_list(profile->max_allies_rearming_threshold, NUM_SKILL_LEVELS);
+				 	stuff_int(&profile->max_allies_rearming_threshold);
 
 				if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
 					parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
@@ -830,7 +830,6 @@ void ai_profile_t::reset()
 
     for (int i = 0; i < NUM_SKILL_LEVELS; ++i) {
         max_incoming_asteroids[i] = 0;
-		max_allies_rearming_threshold[i] = 0;
         max_allowed_player_homers[i] = 0;
         max_attackers[i] = 0;
         predict_position_delay[i] = 0;
