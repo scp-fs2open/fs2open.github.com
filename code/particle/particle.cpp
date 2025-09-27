@@ -109,7 +109,7 @@ namespace particle
 		if (Anim_bitmap_id_smoke2 < 0)
 		{
 			Anim_bitmap_id_smoke2 = bm_load_animation("particlesmoke02", &Anim_num_frames_smoke2, nullptr, NULL, 0);
-			if (Anim_bitmap_id_fire < 0)
+			if (Anim_bitmap_id_smoke2 < 0)
 				Warning(LOCATION, "Could not load legacy smoke2 particle bitmap (particlesmoke02)!");
 		}
 	}
