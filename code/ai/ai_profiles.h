@@ -147,6 +147,8 @@ public:
 	// AI attack any option --wookieejedi
 	float attack_any_idle_circle_distance; // Radius that AI circles around a point while waiting for new enemies in attack-any mode
 
+	int default_form_on_wing_priority;	// the priority used if not specified in the sexp
+
     void reset();
 };
 
