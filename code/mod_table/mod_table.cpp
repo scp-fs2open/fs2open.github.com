@@ -162,6 +162,7 @@ bool Disabled_or_disrupted_engines_silent;
 std::array<std::tuple<float, float>, 6> Fred_spacemouse_nonlinearity;
 bool Randomize_particle_rotation;
 bool Disable_shield_effects;
+bool Disable_all_noncustom_generic_debris;
 bool Calculate_subsystem_hitpoints_after_parsing;
 bool Disable_internal_loadout_restoration_system;
 bool Contrails_use_absolute_speed;
@@ -995,6 +996,10 @@ void parse_mod_table(const char *filename)
 				stuff_boolean(&Disable_shield_effects);
 			}
 
+			if (optional_string("$Disable all non-custom generic debris:")) {
+				stuff_boolean(&Disable_all_noncustom_generic_debris);
+			}
+
 			optional_string("#NETWORK SETTINGS");
 
 			if (optional_string("$FS2NetD port:")) {
@@ -1823,6 +1828,7 @@ void mod_table_reset()
 			std::tuple<float, float>{ 1.0f, 1.0f }
 		}};
 	Randomize_particle_rotation = false;
+	Disable_all_noncustom_generic_debris = false;
 	Disable_shield_effects = false;
 	Calculate_subsystem_hitpoints_after_parsing = false;
 	Disable_internal_loadout_restoration_system = false;

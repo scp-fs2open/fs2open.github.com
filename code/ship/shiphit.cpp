@@ -797,8 +797,8 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 	if (!global_damage) {
 		auto subsys = ship_get_subsys_for_submodel(ship_p, submodel_num);
 
-		if ( !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::No_impact_debris]) && 
-			( subsys == nullptr || !(subsys->system_info->flags[Model::Subsystem_Flags::No_impact_debris]) ) ) {
+		if ( !(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Disable_all_generic_impact_debris]) && 
+			( subsys == nullptr || !(subsys->system_info->flags[Model::Subsystem_Flags::Disable_all_generic_impact_debris]) ) ) {
 			create_generic_debris(ship_objp, hitpos, 1.0f, 5.0f, 1.0f, false);
 		}
 	}
@@ -1855,19 +1855,21 @@ static void ship_vaporize(ship *shipp)
 	object *ship_objp;
 
 	// sanity
-	Assert(shipp != NULL);
-	if(shipp == NULL){
+	Assert(shipp != nullptr);
+	if (shipp == nullptr) {
 		return;
 	}
 	Assert((shipp->objnum >= 0) && (shipp->objnum < MAX_OBJECTS));
-	if((shipp->objnum < 0) || (shipp->objnum >= MAX_OBJECTS)){
+	if ( (shipp->objnum < 0) || (shipp->objnum >= MAX_OBJECTS) ) {
 		return;
 	}
 	ship_objp = &Objects[shipp->objnum];
 	ship_info* sip = &Ship_info[shipp->ship_info_index];
 
 	// create debris shards
-	create_generic_debris(ship_objp, &ship_objp->pos, (float)sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
+	if ( !(sip->flags[Ship::Info_Flags::Disable_all_generic_explosion_debris]) ) {
+		create_generic_debris(ship_objp, &ship_objp->pos, (float)sip->generic_debris_spew_num, sip->generic_debris_spew_num * 2.0f, 1.4f, true);
+	}
 }
 
 //	*ship_objp was hit and we've determined he's been killed!  By *other_obj!
