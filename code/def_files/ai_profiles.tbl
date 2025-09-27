@@ -69,7 +69,7 @@ $Max Incoming Asteroids: 3, 4, 5, 7, 10
 
 ;; maximum number of allies allowed to be rearming at the same time 
 ;; before the AI will hold off on requesting support
-$Max Allies Rearming Threshold: 2, 2, 2, 2, 2
+$Max Allies Rearming Threshold: 2
 																		
 ;; factor applied to damage suffered by the player						
 $Player Damage Factor: 0.25, 0.5, 0.65, 0.85, 1							
