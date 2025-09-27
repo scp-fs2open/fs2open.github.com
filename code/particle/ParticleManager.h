@@ -37,6 +37,8 @@ class ParticleManager {
 	SCP_vector<ParticleSource> m_sources; //!< The currently active sources
 
 	bool m_processingSources = false; //!< @c true if sources are currently being processed
+
+	uint32_t m_sourceValidityCounter = 0;
 	/**
 	 * If the sources are currently being processed, no additional sources can be added. Instead, they are added to this
 	 * vector and then added to the main vector when processing is done.
@@ -148,6 +150,8 @@ class ParticleManager {
 	 * @return A wrapper class which allows access to the created sources
 	 */
 	ParticleSource* createSource(ParticleEffectHandle index);
+
+	uint32_t getSourceValidityCounter() const;
 };
 
 namespace internal {
