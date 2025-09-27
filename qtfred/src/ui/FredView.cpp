@@ -34,6 +34,7 @@
 #include <ui/dialogs/SelectionDialog.h>
 #include <ui/dialogs/FictionViewerDialog.h>
 #include <ui/dialogs/CommandBriefingDialog.h>
+#include <ui/dialogs/DebriefingDialog.h>
 #include <ui/dialogs/ReinforcementsEditorDialog.h>
 #include <ui/dialogs/TeamLoadoutDialog.h>
 #include <ui/dialogs/VariableDialog.h>
@@ -747,7 +748,7 @@ void FredView::on_actionVolumetric_Nebula_triggered(bool)
 	volumetricNebulaEditor->show();
 }
 void FredView::on_actionBriefing_triggered(bool) {
-	auto eventEditor = new dialogs::BriefingEditorDialog(this);
+	auto eventEditor = new dialogs::BriefingEditorDialog(this, _viewport);
 	eventEditor->setAttribute(Qt::WA_DeleteOnClose);
 	eventEditor->show();
 }
@@ -807,6 +808,12 @@ void FredView::on_actionObjects_triggered(bool) {
 }
 void FredView::on_actionCommand_Briefing_triggered(bool) {
 	auto editorDialog = new dialogs::CommandBriefingDialog(this, _viewport);
+	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
+	editorDialog->show();
+}
+void FredView::on_actionDebriefing_triggered(bool)
+{
+	auto editorDialog = new dialogs::DebriefingDialog(this, _viewport);
 	editorDialog->setAttribute(Qt::WA_DeleteOnClose);
 	editorDialog->show();
 }

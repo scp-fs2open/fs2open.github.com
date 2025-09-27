@@ -44,10 +44,14 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/AsteroidEditorDialogModel.h
 	src/mission/dialogs/BackgroundEditorDialogModel.h
 	src/mission/dialogs/BackgroundEditorDialogModel.cpp
+	src/mission/dialogs/BriefingEditorDialogModel.cpp
+    src/mission/dialogs/BriefingEditorDialogModel.h
 	src/mission/dialogs/CampaignEditorDialogModel.cpp
 	src/mission/dialogs/CampaignEditorDialogModel.h
 	src/mission/dialogs/CommandBriefingDialogModel.cpp
 	src/mission/dialogs/CommandBriefingDialogModel.h
+	src/mission/dialogs/DebriefingDialogModel.cpp
+	src/mission/dialogs/DebriefingDialogModel.h
     src/mission/dialogs/FictionViewerDialogModel.cpp
     src/mission/dialogs/FictionViewerDialogModel.h
 	src/mission/dialogs/FormWingDialogModel.cpp
@@ -146,6 +150,8 @@ add_file_folder("Source/UI/Dialogs"
 	src/ui/dialogs/CampaignEditorDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.cpp
 	src/ui/dialogs/CommandBriefingDialog.h
+	src/ui/dialogs/DebriefingDialog.cpp
+	src/ui/dialogs/DebriefingDialog.h
 	src/ui/dialogs/FictionViewerDialog.cpp
 	src/ui/dialogs/FictionViewerDialog.h
 	src/ui/dialogs/FormWingDialog.cpp
@@ -242,8 +248,12 @@ add_file_folder("Source/UI/Util"
 )
 
 add_file_folder("Source/UI/Widgets"
+    src/ui/widgets/CampaignMissionGraph.cpp
+	src/ui/widgets/CampaignMissionGraph.h
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h
+	src/ui/widgets/LineEditDelegate.cpp
+	src/ui/widgets/LineEditDelegate.h
 	src/ui/widgets/FlagList.cpp
 	src/ui/widgets/FlagList.h
 	src/ui/widgets/NoWheelComboBox.cpp
@@ -256,6 +266,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
+	src/ui/widgets/SimpleListSelectDialog.cpp
+	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
 	src/ui/widgets/bankTree.cpp
@@ -275,6 +287,7 @@ add_file_folder("UI"
 	ui/CustomDataDialog.ui
 	ui/CustomStringsDialog.ui
 	ui/CustomWingNamesDialog.ui
+	ui/DebriefingDialog.ui
 	ui/FictionViewerDialog.ui
 	ui/FormWingDialog.ui
     ui/FredView.ui

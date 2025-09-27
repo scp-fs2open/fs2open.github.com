@@ -90,21 +90,27 @@ namespace particle
 		}
 
 		// FIRE!!!
-		if (Anim_bitmap_id_fire == -1)
+		if (Anim_bitmap_id_fire < 0)
 		{
 			Anim_bitmap_id_fire = bm_load_animation("particleexp01", &Anim_num_frames_fire, nullptr, NULL, 0);
+			if (Anim_bitmap_id_fire < 0)
+				Warning(LOCATION, "Could not load legacy fire particle bitmap (particleexp01)!");
 		}
 
 		// Cough, cough
-		if (Anim_bitmap_id_smoke == -1)
+		if (Anim_bitmap_id_smoke < 0)
 		{
 			Anim_bitmap_id_smoke = bm_load_animation("particlesmoke01", &Anim_num_frames_smoke, nullptr, NULL, 0);
+			if (Anim_bitmap_id_smoke < 0)
+				Warning(LOCATION, "Could not load legacy smoke particle bitmap (particlesmoke01)!");
 		}
 
 		// wheeze
-		if (Anim_bitmap_id_smoke2 == -1)
+		if (Anim_bitmap_id_smoke2 < 0)
 		{
 			Anim_bitmap_id_smoke2 = bm_load_animation("particlesmoke02", &Anim_num_frames_smoke2, nullptr, NULL, 0);
+			if (Anim_bitmap_id_smoke2 < 0)
+				Warning(LOCATION, "Could not load legacy smoke2 particle bitmap (particlesmoke02)!");
 		}
 	}
 

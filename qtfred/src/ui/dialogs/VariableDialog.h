@@ -1,9 +1,9 @@
 #pragma once
 
 #include <mission/dialogs/VariableDialogModel.h>
-#include <QDialog>
-#include <QtWidgets/QDialog>
 #include <ui/FredView.h>
+
+#include <QDialog>
 
 namespace fso::fred::dialogs {
 
@@ -18,85 +18,97 @@ class VariableDialog : public QDialog {
 	explicit VariableDialog(FredView* parent, EditorViewport* viewport);
 	~VariableDialog() override;
 
-  private:
+	void accept() override;
+	void reject() override;
+
+  protected:
+	void closeEvent(QCloseEvent* e) override; // funnel all Window X presses through reject()
+
+  private slots:
+	// Dialog Controls
+	void on_okAndCancelButtons_accepted();
+	void on_okAndCancelButtons_rejected();
+
+	// Table Selection and Edits
+	void on_variablesTable_itemSelectionChanged();
+	void on_variablesTable_cellChanged(int row, int column);
+	void on_variablesFilterLineEdit_textChanged(const QString& text);
+	void on_containersTable_itemSelectionChanged();
+	void on_containersTable_cellChanged(int row, int column);
+	void on_containerFilterLineEdit_textChanged(const QString& text);
+	void on_containerContentsTable_itemSelectionChanged();
+	void on_containerContentsTable_cellChanged(int row, int column);
+	void on_containerItemFilterLineEdit_textChanged(const QString& text);
+
+	// Variable Buttons
+	void on_addVariableButton_clicked();
+	void on_copyVariableButton_clicked();
+	void on_deleteVariableButton_clicked();
+
+	// Variable Type Radios
+	void on_setVariableAsStringRadio_toggled(bool checked);
+	void on_setVariableAsNumberRadio_toggled(bool checked);
+
+	// Variable Persistence Radios
+	void on_doNotSaveVariableRadio_toggled(bool checked);
+	void on_saveVariableOnMissionCompletedRadio_toggled(bool checked);
+	void on_saveVariableOnMissionCloseRadio_toggled(bool checked);
+	void on_networkVariableCheckbox_toggled(bool checked);
+	void on_setVariableAsEternalcheckbox_toggled(bool checked);
+
+	// Container Buttons
+	void on_addContainerButton_clicked();
+	void on_copyContainerButton_clicked();
+	void on_deleteContainerButton_clicked();
+
+	// Container Type Radios
+	void on_setContainerAsListRadio_toggled(bool checked);
+	void on_setContainerAsMapRadio_toggled(bool checked);
+	void on_setContainerKeyAsStringRadio_toggled(bool checked);
+	void on_setContainerKeyAsNumberRadio_toggled(bool checked);
+	void on_setContainerAsStringRadio_toggled(bool checked);
+	void on_setContainerAsNumberRadio_toggled(bool checked);
+
+	// Container Persistence Radios
+	void on_doNotSaveContainerRadio_toggled(bool checked);
+	void on_saveContainerOnMissionCompletedRadio_toggled(bool checked);
+	void on_saveContainerOnMissionCloseRadio_toggled(bool checked);
+	void on_networkContainerCheckbox_toggled(bool checked);
+	void on_setContainerAsEternalCheckbox_toggled(bool checked);
+
+	// Container Item Buttons
+	void on_addContainerItemButton_clicked();
+	void on_copyContainerItemButton_clicked();
+	void on_deleteContainerItemButton_clicked();
+	void on_shiftItemUpButton_clicked();
+	void on_shiftItemDownButton_clicked();
+	void on_swapKeysAndValuesButton_clicked();
+
+  private: // NOLINT(readability-redundant-access-specifiers)
+	// Core UI and Model
+	EditorViewport* _viewport = nullptr;
 	std::unique_ptr<Ui::VariableEditorDialog> ui;
 	std::unique_ptr<VariableDialogModel> _model;
-	EditorViewport* _viewport;
 
-	// basically UpdateUI, but called when there is an inconsistency between model and UI
-	void applyModel();
-	void checkValidModel();
+	// State trackers
+	int m_currentVariableIndex = -1;
+	int m_currentContainerIndex = -1;
+	int m_currentItemIndex = -1;
 
-	// Helper functions for this
-	void updateVariableOptions(bool safeToAlter);
-	void updateContainerOptions(bool safeToAlter);
-	void updateContainerDataOptions(bool list, bool safeToAlter);
+	void initializeUi();
+	void updateUi();
 
-	void onVariablesTableUpdated();
-	void onVariablesSelectionChanged();
-	void onContainersTableUpdated();
-	void onContainersSelectionChanged();
-	void onContainerContentsTableUpdated();
-	void onContainerContentsSelectionChanged();
-	void onAddVariableButtonPressed();
-	void onDeleteVariableButtonPressed();
-	void onCopyVariableButtonPressed();
-	void onSetVariableAsStringRadioSelected();
-	void onSetVariableAsNumberRadioSelected();
-	void onDoNotSaveVariableRadioSelected();
-	void onSaveVariableOnMissionCompleteRadioSelected();
-	void onSaveVariableOnMissionCloseRadioSelected();
-	void onSaveVariableAsEternalCheckboxClicked();
-	void onNetworkVariableCheckboxClicked();
+	// Granular update methods
+	void updateVariableList();
+	void updateVariableControls();
+	void updateContainerList();
+	void updateContainerControls();
+	void updateItemList();
+	void updateItemControls();
 
-	void onAddContainerButtonPressed();
-	void onDeleteContainerButtonPressed();
-	void onCopyContainerButtonPressed();
-	void onSetContainerAsMapRadioSelected();
-	void onSetContainerAsListRadioSelected();
-	void onSetContainerAsStringRadioSelected();
-	void onSetContainerAsNumberRadioSelected();
-	void onSetContainerKeyAsStringRadioSelected();
-	void onSetContainerKeyAsNumberRadioSelected();
-	void onDoNotSaveContainerRadioSelected();
-	void onSaveContainerOnMissionCloseRadioSelected();
-	void onSaveContainerOnMissionCompletedRadioSelected();
-	void onNetworkContainerCheckboxClicked();
-	void onSetContainerAsEternalCheckboxClicked();
-	void onAddContainerItemButtonPressed();
-	void onCopyContainerItemButtonPressed();
-	void onDeleteContainerItemButtonPressed();
-	void onShiftItemUpButtonPressed();
-	void onShiftItemDownButtonPressed();
-	void onSwapKeysAndValuesButtonPressed();
-	void onSelectFormatComboboxSelectionChanged();
+	void enableDisableControls();
 
-	int getCurrentVariableRow();
-	int getCurrentContainerRow();
-	int getCurrentContainerItemRow();
-
-	bool _applyingModel = false;
-	SCP_string _currentVariable;
-	SCP_string _currentVariableData;
-	SCP_string _currentContainer;
-	SCP_string _currentContainerItemCol1;
-	SCP_string _currentContainerItemCol2;
-	
-	void reject() override 
-	{
-		QMessageBox msgBox;
-		msgBox.setText("Are you sure you want to discard your changes?");
-		msgBox.setStandardButtons(QMessageBox::Yes | QMessageBox::No);
-		int ret = msgBox.exec();
-
-		if (ret == QMessageBox::Yes) {
-			QDialog::reject();
-		}
-	}	
+	static QString formatContainerTypeString(const ContainerInfo& cont);
 };
 
-
-
-
-
-} // namespace 
+} // namespace fso::fred::dialogs
