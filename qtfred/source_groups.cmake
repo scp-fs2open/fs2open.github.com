@@ -44,6 +44,8 @@ add_file_folder("Source/Mission/Dialogs"
 	src/mission/dialogs/AsteroidEditorDialogModel.h
 	src/mission/dialogs/BackgroundEditorDialogModel.h
 	src/mission/dialogs/BackgroundEditorDialogModel.cpp
+	src/mission/dialogs/BriefingEditorDialogModel.cpp
+    src/mission/dialogs/BriefingEditorDialogModel.h
 	src/mission/dialogs/CampaignEditorDialogModel.cpp
 	src/mission/dialogs/CampaignEditorDialogModel.h
 	src/mission/dialogs/CommandBriefingDialogModel.cpp
@@ -246,8 +248,12 @@ add_file_folder("Source/UI/Util"
 )
 
 add_file_folder("Source/UI/Widgets"
+    src/ui/widgets/CampaignMissionGraph.cpp
+	src/ui/widgets/CampaignMissionGraph.h
     src/ui/widgets/ColorComboBox.cpp
     src/ui/widgets/ColorComboBox.h
+	src/ui/widgets/LineEditDelegate.cpp
+	src/ui/widgets/LineEditDelegate.h
 	src/ui/widgets/FlagList.cpp
 	src/ui/widgets/FlagList.h
 	src/ui/widgets/NoWheelComboBox.cpp
@@ -260,6 +266,8 @@ add_file_folder("Source/UI/Widgets"
 	src/ui/widgets/sexp_tree.h
 	src/ui/widgets/ShipFlagCheckbox.h
 	src/ui/widgets/ShipFlagCheckbox.cpp
+	src/ui/widgets/SimpleListSelectDialog.cpp
+	src/ui/widgets/SimpleListSelectDialog.h
 	src/ui/widgets/weaponList.cpp
 	src/ui/widgets/weaponList.h
 	src/ui/widgets/bankTree.cpp

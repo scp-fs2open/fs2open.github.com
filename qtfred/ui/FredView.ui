@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>926</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -160,39 +160,6 @@
     <addaction name="menuMovement"/>
     <addaction name="menuRotation"/>
    </widget>
-   <widget class="QMenu" name="menuEditors">
-    <property name="title">
-     <string>Edito&amp;rs</string>
-    </property>
-    <addaction name="actionShips"/>
-    <addaction name="actionWings"/>
-    <addaction name="actionObjects"/>
-    <addaction name="actionWaypoint_Paths"/>
-    <addaction name="actionJump_Nodes"/>
-    <addaction name="separator"/>
-    <addaction name="actionMission_Specs"/>
-    <addaction name="actionMission_Goals"/>
-    <addaction name="actionMission_Events"/>
-    <addaction name="actionVariables"/>
-    <addaction name="actionMission_Cutscenes"/>
-    <addaction name="actionVoice_Acting_Manager"/>
-    <addaction name="separator"/>
-    <addaction name="actionFiction_Viewer"/>
-    <addaction name="actionCommand_Briefing"/>
-    <addaction name="actionLoadout"/>
-    <addaction name="actionBriefing"/>
-    <addaction name="actionDebriefing"/>
-    <addaction name="separator"/>
-    <addaction name="actionBackground"/>
-    <addaction name="actionAsteroid_Field"/>
-    <addaction name="actionVolumetric_Nebula"/>
-    <addaction name="separator"/>
-    <addaction name="actionReinforcements"/>
-    <addaction name="actionShield_System"/>
-    <addaction name="actionSet_Global_Ship_Flags"/>
-    <addaction name="separator"/>
-    <addaction name="actionCampaign"/>
-   </widget>
    <widget class="QMenu" name="menuGroups">
     <property name="title">
      <string>&amp;Groups</string>
@@ -223,31 +190,6 @@
     <addaction name="separator"/>
     <addaction name="menuSet_Group"/>
    </widget>
-   <widget class="QMenu" name="menuMisc">
-    <property name="title">
-     <string>&amp;Misc</string>
-    </property>
-    <addaction name="actionNext_Object"/>
-    <addaction name="actionPrev_Object"/>
-    <addaction name="actionControl_Object"/>
-    <addaction name="actionLevel_Object"/>
-    <addaction name="actionAlign_Object"/>
-    <addaction name="separator"/>
-    <addaction name="actionNext_Subsystem"/>
-    <addaction name="actionPrev_Subsystem"/>
-    <addaction name="actionCancel_Subsystem"/>
-    <addaction name="separator"/>
-    <addaction name="actionMark_Wing"/>
-    <addaction name="actionAdjust_Grid"/>
-    <addaction name="actionCalculate_Relative_Coordinates"/>
-    <addaction name="actionMove_Ships_When_Undocking"/>
-    <addaction name="actionMission_Statistics"/>
-    <addaction name="separator"/>
-    <addaction name="actionAlways_Save_Display_Names"/>
-    <addaction name="actionMusic_Player"/>
-    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
-    <addaction name="actionError_Checker"/>
-   </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
      <string>He&amp;lp</string>
@@ -257,13 +199,93 @@
     <addaction name="separator"/>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuObjects">
+    <property name="title">
+     <string>Objects</string>
+    </property>
+    <addaction name="actionShips"/>
+    <addaction name="actionWings"/>
+    <addaction name="actionObjects"/>
+    <addaction name="actionWaypoint_Paths"/>
+    <addaction name="actionJump_Nodes"/>
+    <addaction name="separator"/>
+    <addaction name="actionControl_Object"/>
+    <addaction name="actionNext_Object"/>
+    <addaction name="actionPrev_Object"/>
+    <addaction name="actionLevel_Object"/>
+    <addaction name="actionAlign_Object"/>
+    <addaction name="separator"/>
+    <addaction name="actionNext_Subsystem"/>
+    <addaction name="actionPrev_Subsystem"/>
+    <addaction name="actionCancel_Subsystem"/>
+    <addaction name="separator"/>
+    <addaction name="actionMark_Wing"/>
+   </widget>
+   <widget class="QMenu" name="menuEnvironment">
+    <property name="title">
+     <string>Environment</string>
+    </property>
+    <addaction name="actionBackground"/>
+    <addaction name="actionAsteroid_Field"/>
+    <addaction name="actionVolumetric_Nebula"/>
+   </widget>
+   <widget class="QMenu" name="menuMission">
+    <property name="title">
+     <string>Mission</string>
+    </property>
+    <addaction name="actionMission_Specs"/>
+    <addaction name="actionMission_Goals"/>
+    <addaction name="actionMission_Events"/>
+    <addaction name="actionMission_Cutscenes"/>
+    <addaction name="separator"/>
+    <addaction name="actionVariables"/>
+    <addaction name="actionLoadout"/>
+    <addaction name="actionReinforcements"/>
+    <addaction name="actionShield_System"/>
+   </widget>
+   <widget class="QMenu" name="menuNarrative">
+    <property name="title">
+     <string>Narrative</string>
+    </property>
+    <addaction name="actionFiction_Viewer"/>
+    <addaction name="actionCommand_Briefing"/>
+    <addaction name="actionBriefing"/>
+    <addaction name="actionDebriefing"/>
+    <addaction name="separator"/>
+    <addaction name="actionCampaign"/>
+   </widget>
+   <widget class="QMenu" name="menuTools">
+    <property name="title">
+     <string>Tools</string>
+    </property>
+    <addaction name="actionVoice_Acting_Manager"/>
+    <addaction name="actionSet_Global_Ship_Flags"/>
+    <addaction name="actionCalculate_Relative_Coordinates"/>
+    <addaction name="actionMusic_Player"/>
+    <addaction name="actionError_Checker"/>
+   </widget>
+   <widget class="QMenu" name="menuSeetings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionPreferences"/>
+    <addaction name="actionAdjust_Grid"/>
+    <addaction name="actionMove_Ships_When_Undocking"/>
+    <addaction name="separator"/>
+    <addaction name="actionAlways_Save_Display_Names"/>
+    <addaction name="actionError_Checker_Checks_Potential_Issues"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
    <addaction name="menuView"/>
    <addaction name="menuSpeed"/>
-   <addaction name="menuEditors"/>
    <addaction name="menuGroups"/>
-   <addaction name="menuMisc"/>
+   <addaction name="menuObjects"/>
+   <addaction name="menuEnvironment"/>
+   <addaction name="menuMission"/>
+   <addaction name="menuNarrative"/>
+   <addaction name="menuTools"/>
+   <addaction name="menuSeetings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -1518,7 +1540,7 @@
   </action>
   <action name="actionVariables">
    <property name="text">
-    <string>&amp;Variables</string>
+    <string>&amp;Variables and Containers</string>
    </property>
    <property name="toolTip">
     <string>Open Variables and Containers Editor</string>
@@ -1556,6 +1578,11 @@
   <action name="actionCalculate_Relative_Coordinates">
    <property name="text">
     <string>Calculate Relative Coordinates</string>
+   </property>
+  </action>
+  <action name="actionPreferences">
+   <property name="text">
+    <string>Preferences</string>
    </property>
   </action>
  </widget>
