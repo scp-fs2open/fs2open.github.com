@@ -816,6 +816,7 @@ void ai_profile_t::reset()
 	ai_range_aware_secondary_select_mode = AI_RANGE_AWARE_SEC_SEL_MODE_RETAIL;
 	turret_target_recheck_time = 2000.0f;
 	rot_fac_multiplier_ply_collisions = 0.0f;
+	max_allies_rearming_threshold = 2;
 
 	better_collision_avoid_aggression_combat = 3.5f;
 	better_collision_avoid_aggression_guard = 3.5f;
