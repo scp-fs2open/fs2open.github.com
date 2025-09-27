@@ -1443,14 +1443,17 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 	float minimum_distance = 1e20f;
 	float maximum_distance = 0.0f;
 
-	// track sequential fallback candidates
-	object* sequential_candidate = nullptr;
-	object* first_candidate = nullptr; // track first valid candidate for wraparound
-	bool passed_current = false;
+	// sequential targeting - collect candidates
+	std::vector<object*> candidates;
+	int current_target_index = -1;
 
 	// helper lambda to process possible targets
 	auto process_candidate = [&](object* c_obj) {
 		if (use_distance_sort) {
+			// Distance targeting - skip current target
+			if (aip->target_objnum >= 0 && c_obj == &Objects[aip->target_objnum])
+				return;
+
 			float new_distance = hud_find_target_distance(c_obj, Player_obj);
 
 			// min/max tracking
@@ -1463,43 +1466,35 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 				maximum_object_ptr = c_obj;
 			}
 
-			// nearest "next/previous" check - fixed logic
+			// nearest "next/previous" check 
+			float diff = 0.0f;
 			if (next_flag > 0) { // forward - find closest target farther than current
-				if (new_distance > current_distance && new_distance < nearest_distance) {
-					nearest_distance = new_distance;
-					nearest_object_ptr = c_obj;
+				diff = new_distance - current_distance;
+				if (diff > 0.0f) { 
+					if (diff < (nearest_distance - current_distance)) {
+						nearest_distance = new_distance;
+						nearest_object_ptr = c_obj;
+					}
 				}
 			} else { // backward - find farthest target closer than current
-				if (new_distance < current_distance && new_distance > nearest_distance) {
-					nearest_distance = new_distance;
-					nearest_object_ptr = c_obj;
+				diff = current_distance - new_distance;
+				if (diff > 0.0f) {
+					if (diff < (current_distance - nearest_distance)) {
+						nearest_distance = new_distance;
+						nearest_object_ptr = c_obj;
+					}
 				}
 			}
 		} else {
-			// sequential cycling logic - fixed to not return early
-			if (first_candidate == nullptr) {
-				first_candidate = c_obj; // always track first candidate for wraparound
-			}
-
-			if (aip->target_objnum >= 0 && &Objects[aip->target_objnum] == c_obj) {
-				passed_current = true;
-				// Don't return here - continue processing
-			} else if (sequential_candidate == nullptr) {
-				if (passed_current && next_flag > 0) {
-					// first one after the current target (forward)
-					sequential_candidate = c_obj;
-				} else if (!passed_current && next_flag < 0) {
-					// for backwards cycling, keep track of the last seen before current
-					sequential_candidate = c_obj;
-				}
-			} else if (next_flag < 0 && !passed_current) {
-				// keep updating until we hit the current target (backward)
-				sequential_candidate = c_obj;
+			// sequential targeting - add to candidates
+			candidates.push_back(c_obj);
+			if (aip->target_objnum >= 0 && c_obj == &Objects[aip->target_objnum]) {
+				current_target_index = static_cast<int>(candidates.size()) - 1;
 			}
 		}
 	};
 
-	// check bomb weapons
+	// process bomb weapons
 	if (target_bombs) {
 		for (auto mo : list_range(&Missile_obj_list)) {
 			A = &Objects[mo->objnum];
@@ -1511,11 +1506,8 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 			weapon_info* wip = &Weapon_info[wp->weapon_info_index];
 
 			// only allow targeting of bombs
-			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted])) {
-				if (!(wip->wi_flags[Weapon::Info_Flags::Bomb])) {
-					continue;
-				}
-			}
+			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) && !(wip->wi_flags[Weapon::Info_Flags::Bomb]))
+				continue;
 
 			if (wp->lssm_stage == 3)
 				continue;
@@ -1530,7 +1522,7 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 		}
 	}
 
-	// check bomber ships
+	// process bomber ships
 	if (target_bombers) {
 		for (auto so : list_range(&Ship_obj_list)) {
 			A = &Objects[so->objnum];
@@ -1559,10 +1551,10 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 	object* target_to_set = nullptr;
 
 	if (use_distance_sort) {
+		// distance targeting
 		if (nearest_object_ptr != nullptr) {
 			target_to_set = nearest_object_ptr;
 		} else {
-			// wraparound logic
 			if (next_flag > 0 && minimum_object_ptr != nullptr) {
 				target_to_set = minimum_object_ptr;
 			} else if (next_flag <= 0 && maximum_object_ptr != nullptr) {
@@ -1570,26 +1562,34 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 			}
 		}
 	} else {
-		// sequential targeting with proper wraparound
-		if (sequential_candidate != nullptr) {
-			target_to_set = sequential_candidate;
-		} else if (first_candidate != nullptr) {
-			// wraparound - if no sequential candidate found, use first/last
-			target_to_set = first_candidate;
+		// sequential targeting
+		if (!candidates.empty()) {
+			if (current_target_index == -1) {
+				// no current target, pick first
+				target_to_set = candidates[0];
+			} else {
+				// cycle with wraparound
+				int next_index;
+				int num_candiates = static_cast<int>(candidates.size());
+				if (next_flag > 0) {
+					next_index = (current_target_index + 1) % num_candiates;
+				} else {
+					next_index = (current_target_index - 1 + num_candiates) % num_candiates;
+				}
+				target_to_set = candidates[next_index];
+			}
 		}
 	}
 
-	bool target_found = false;
-
 	if (target_to_set != nullptr) {
-		target_found = true;
+		// set if target found
 		set_target_objnum(aip, OBJ_INDEX(target_to_set));
 		hud_shield_hit_reset(target_to_set);
+	} else {
+		// fail sound if no target
+		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f);
 	}
 
-	// fail sound if no target
-	if (!target_found)
-		snd_play(gamesnd_get_game_sound(GameSounds::TARGET_FAIL), 0.0f);
 }
 
 // Return !0 if shipp can be scanned, otherwise return 0
