@@ -322,22 +322,5 @@
  <resources>
   <include location="../resources/resources.qrc"/>
  </resources>
- <connections>
-  <connection>
-   <sender>okButton</sender>
-   <signal>clicked()</signal>
-   <receiver>fso::fred::dialogs::ShipGoalsDialog</receiver>
-   <slot>accept()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>628</x>
-     <y>19</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>357</x>
-     <y>297</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>

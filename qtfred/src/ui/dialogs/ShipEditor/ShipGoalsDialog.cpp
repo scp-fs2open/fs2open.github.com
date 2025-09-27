@@ -2,19 +2,18 @@
 
 #include "ui_ShipGoalsDialog.h"
 
+#include "mission/util.h"
+
 #include <globalincs/linklist.h>
 #include <mission/object.h>
 #include <ui/util/SignalBlockers.h>
-#include "mission/util.h"
+
 #include <QCloseEvent>
 
-namespace fso {
-namespace fred {
-namespace dialogs {
+namespace fso::fred::dialogs {
 ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool editMultiple, int shipID, int wingID)
-	: QDialog(parent), ui(new Ui::ShipGoalsDialog()), _model(new ShipGoalsDialogModel(this,
-														  viewport, editMultiple, shipID, wingID)),
-	  _viewport(viewport)
+	: QDialog(parent), ui(new Ui::ShipGoalsDialog()),
+	  _model(new ShipGoalsDialogModel(this, viewport, editMultiple, shipID, wingID)), _viewport(viewport)
 {
 	ui->setupUi(this);
 	behaviors[0] = ui->comBehavior1;
@@ -71,8 +70,6 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 	priority[7] = ui->prioritySpinBox8;
 	priority[8] = ui->prioritySpinBox9;
 	priority[9] = ui->prioritySpinBox10;
-	connect(this, &QDialog::accepted, _model.get(), &ShipGoalsDialogModel::apply);
-	connect(ui->cancelButton, &QPushButton::clicked, this, &ShipGoalsDialog::rejectHandler);
 
 	connect(_model.get(), &AbstractDialogModel::modelChanged, this, &ShipGoalsDialog::updateUI);
 	for (int i = 0; i < ED_MAX_GOALS; i++) {
@@ -105,17 +102,38 @@ ShipGoalsDialog::ShipGoalsDialog(QWidget* parent, EditorViewport* viewport, bool
 
 ShipGoalsDialog::~ShipGoalsDialog() = default;
 
-void ShipGoalsDialog::closeEvent(QCloseEvent* e)
+void ShipGoalsDialog::accept()
 {
-	if (!rejectOrCloseHandler(this, _model.get(), _viewport)) {
-		e->ignore();
-	};
-}
-void ShipGoalsDialog::rejectHandler()
-{
-	this->close();
+	// If apply() returns true, close the dialog
+	if (_model->apply()) {
+		QDialog::accept();
+	}
+	// else: validation failed, don’t close
 }
 
+void ShipGoalsDialog::reject()
+{ // Asks the user if they want to save changes, if any
+	// If they do, it runs _model->apply() and returns the success value
+	// If they don't, it runs _model->reject() and returns true
+	if (rejectOrCloseHandler(this, _model.get(), _viewport)) {
+		QDialog::reject(); // actually close
+	}
+	// else: do nothing, don't close
+}
+
+void ShipGoalsDialog::closeEvent(QCloseEvent* e)
+{
+	reject();
+	e->ignore(); // Don't let the base class close the window
+}
+void ShipGoalsDialog::on_okButton_clicked()
+{
+	accept();
+}
+void ShipGoalsDialog::on_cancelButton_clicked()
+{
+	reject();
+}
 void ShipGoalsDialog::updateUI()
 {
 	util::SignalBlockers blockers(this);
@@ -126,7 +144,7 @@ void ShipGoalsDialog::updateUI()
 		subsys[i]->clear();
 		docks[i]->clear();
 
-		for (const auto &entry : _model->get_ai_goal_combo_data()) {
+		for (const auto& entry : _model->get_ai_goal_combo_data()) {
 			behaviors[i]->addItem(entry.first);
 		}
 
@@ -183,7 +201,8 @@ void ShipGoalsDialog::updateUI()
 					if (ptr->type == OBJ_WAYPOINT) {
 						objects[i]->addItem(object_name(OBJ_INDEX(ptr)), QVariant(int(OBJ_INDEX(ptr) | TYPE_WAYPOINT)));
 						if ((_model->getObject(i) == (OBJ_INDEX(ptr) | TYPE_WAYPOINT)))
-							objects[i]->setCurrentIndex(objects[i]->findData(QVariant(int(OBJ_INDEX(ptr) | TYPE_WAYPOINT))));
+							objects[i]->setCurrentIndex(
+								objects[i]->findData(QVariant(int(OBJ_INDEX(ptr) | TYPE_WAYPOINT))));
 					}
 
 					ptr = GET_NEXT(ptr);
@@ -304,8 +323,7 @@ void ShipGoalsDialog::updateUI()
 				}
 				if (subsysvalue.empty()) {
 					subsys[i]->setCurrentIndex(0);
-				}
-				else {
+				} else {
 					subsys[i]->setCurrentIndex(subsys[i]->findData(subsysvalue.c_str()));
 				}
 				priority[i]->setEnabled(true);
@@ -343,11 +361,8 @@ void ShipGoalsDialog::updateUI()
 				_model->setSubsys(i, blank);
 				priority[i]->setEnabled(true);
 				priority[i]->setValue(_model->getPriority(i));
-
 			}
 		}
 	}
-} // namespace dialogs
-} // namespace dialogs
-} // namespace fred
-} // namespace fso
+}
+} // namespace fso::fred::dialogs
