@@ -49,7 +49,7 @@ bool parse_optional_color3i_into(const SCP_string& field_name, hdr_color* out_co
 {
 	if (optional_string(field_name.c_str())) {
 		int components[3] = {255, 255, 255};
-		stuff_int_list(components, 3, RAW_INTEGER_TYPE);
+		stuff_int_list(components, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		if (out_color == nullptr) {
 			Assertion(out_color,"out_color pointer is null for field %s",field_name.c_str());
 			return false;

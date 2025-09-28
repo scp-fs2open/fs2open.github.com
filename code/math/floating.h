@@ -32,9 +32,11 @@ inline bool fl_is_nan(float fl) {
 #define fl_abs(fl) fabsf(fl)
 #define i2fl(i) (static_cast<float>(i))                                     // int to float
 #define i2ch(i) (static_cast<char>(i))                                      // int to char
+#define i2sz(i) (static_cast<size_t>(i))                                    // int to size_t
 #define l2d(l) (static_cast<double>(l))                                     // long to double
 #define fl2i(fl) (static_cast<int>(fl))                                     // float to int
 #define ch2i(ch) (static_cast<int>(ch))                                     // char to int
+#define sz2i(sz) (static_cast<int>(sz))                                     // size_t to int
 #define d2l(d) (static_cast<long>(d))                                       // double to long
 #define fl2ir(fl) (static_cast<int>(fl + (((fl) < 0.0f) ? -0.5f : 0.5f)))   // float to int, rounding
 #define d2lr(d) (static_cast<long>(d + (((d) < 0.0) ? -0.5 : 0.5)))         // double to long, rounding
