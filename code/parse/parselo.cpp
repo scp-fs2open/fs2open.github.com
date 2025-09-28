@@ -3203,6 +3203,8 @@ const char* get_lookup_type_name(ParseLookupType lookup_type)
 			return "Weapon Types";
 		case ParseLookupType::WEAPON_POOL_TYPE:
 			return "Weapon Pool";
+		case ParseLookupType::FIREBALL_INFO_TYPE:
+			return "Fireball Types";
 		case ParseLookupType::MISSION_LOADOUT_SHIP_LIST:
 			return "Mission Loadout Ships";
 		case ParseLookupType::MISSION_LOADOUT_WEAPON_LIST:
@@ -3258,6 +3260,12 @@ struct StuffIntListParser
 						valid_negative = true;
 					else if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
+					break;
+
+				case ParseLookupType::FIREBALL_INFO_TYPE:
+					num = fireball_info_lookup(str.c_str());
+					if (num < 0 && warn_on_lookup_failure)
+						error_display(0, "Unable to find fireball type %s in stuff_int_list!", str.c_str());
 					break;
 
 				case ParseLookupType::RAW_INTEGER_TYPE:
