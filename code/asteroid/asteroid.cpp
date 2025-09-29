@@ -2488,7 +2488,7 @@ static void asteroid_parse_tbl(const char* filename)
 			Asteroid_impact_explosion_ani = particle::util::parseEffect();
 		}
 		else {
-			char impact_ani_file[MAX_FILENAME_LEN];
+			char impact_ani_file[MAX_FILENAME_LEN] = {0};
 			float Asteroid_impact_explosion_radius;
 			int num_frames;
 
