@@ -11,6 +11,7 @@
 #include "scripting/api/objs/team_colors.h"
 #include "scripting/api/objs/weaponclass.h"
 #include "scripting/api/objs/wingformation.h"
+#include "scripting/api/objs/particle.h"
 
 #include "decals/decals.h"
 #include "fireball/fireballs.h"
@@ -18,6 +19,7 @@
 #include "mission/missionmessage.h"
 #include "ship/ship.h"
 #include "weapon/weapon.h"
+#include "particle/ParticleManager.h"
 
 
 extern bool Ships_inited;
@@ -371,6 +373,17 @@ ADE_INDEXER(l_Tables_TeamColors, "number/string IndexOrName", "Array of team col
 ADE_FUNC(__len, l_Tables_TeamColors, nullptr, "Number of  team colors", "number", "Number of team colors")
 {
 	return ade_set_args(L, "i", static_cast<int>(Team_Names.size()));
+}
+
+//*****SUBLIBRARY: Tables/ShipTypes
+ADE_LIB_DERIV(l_Tables_ParticleEffects, "ParticleEffects", nullptr, nullptr, l_Tables);
+ADE_INDEXER(l_Tables_ParticleEffects, "string Name", "Array of particle effects", "particle_effect", "Particle Effect handle, or invalid handle if name is invalid")
+{
+	const char* name;
+	if (!ade_get_args(L, "*s", &name))
+		return ade_set_error(L, "o", l_ParticleEffect.Set(particle::ParticleEffectHandle::invalid()));
+
+	return ade_set_args(L, "o", l_ParticleEffect.Set(particle::ParticleManager::get()->getEffectByName(name)));
 }
 
 }
