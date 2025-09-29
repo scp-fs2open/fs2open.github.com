@@ -1305,14 +1305,21 @@ void create_generic_debris(object* ship_objp, const vec3d* pos, float min_num_de
 	if (ship_objp->type != OBJ_SHIP)
 		return;
 
+	// determine if using custom or non-custom generic debris
+	int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
+
+	// if using non-custom generic debris, then bail early if that kind of debris is not allowed --wookeejedi
+	if ( (model_num < 0) && (Disable_all_noncustom_generic_debris) ) {
+		return;
+	}
+
 	float num_debris = frand_range(min_num_debris, max_num_debris);
 
 	num_debris *= (Detail.num_small_debris + 0.5f) / 4.5f;
 
 	vec3d create_pos = *pos;
 	for (int i = 0; i < num_debris; i++) {
-		int model_num = use_ship_debris ? Ship_info[Ships[ship_objp->instance].ship_info_index].generic_debris_model_num : -1;
-		debris_create(ship_objp, model_num, -1, &create_pos, pos, 0, speed_mult);
+		debris_create(ship_objp, model_num, -1, &create_pos, pos, false, speed_mult);
 	}
 }
 
