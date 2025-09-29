@@ -1221,7 +1221,7 @@ void parse_mod_table(const char *filename)
 					mprintf(("Game Settings Table: Using 3D weapon icons\n"));
 			}
 
-			if (optional_string("$FS2 effect grid color:")) {
+			if (optional_string_either("$FS2 effect grid color:", "$FS2 effect grid colour:") >= 0) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				CLAMP(rgb[0], 0, 255);
@@ -1230,7 +1230,7 @@ void parse_mod_table(const char *filename)
 				gr_init_color(&Default_fs2_effect_grid_color, rgb[0], rgb[1], rgb[2]);
 			}
 
-			if (optional_string("$FS2 effect scanline color:")) {
+			if (optional_string_either("$FS2 effect scanline color:", "$FS2 effect scanline colour:") >= 0) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				CLAMP(rgb[0], 0, 255);
@@ -1250,7 +1250,7 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
-			if (optional_string("$FS2 effect wireframe color:")) {
+			if (optional_string_either("$FS2 effect wireframe color:", "$FS2 effect wireframe colour:") >= 0) {
 				int rgb[3];
 				stuff_int_list(rgb, 3);
 				CLAMP(rgb[0], 0, 255);
@@ -1277,25 +1277,25 @@ void parse_mod_table(const char *filename)
 				}
 			}
 
-			if (optional_string("+Overhead Line Color 1:")) {
+			if (optional_string_either("+Overhead Line Color 1:", "+Overhead Line Colour 1:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
 				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[0], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
-			if (optional_string("+Overhead Line Color 2:")) {
+			if (optional_string_either("+Overhead Line Color 2:", "+Overhead Line Colour 2:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
 				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[1], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
-			if (optional_string("+Overhead Line Color 3:")) {
+			if (optional_string_either("+Overhead Line Color 3:", "+Overhead Line Colour 3:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
 				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[2], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
-			if (optional_string("+Overhead Line Color 4:")) {
+			if (optional_string_either("+Overhead Line Color 4:", "+Overhead Line Colour 4:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
 				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[3], rgba[0], rgba[1], rgba[2], rgba[3]);

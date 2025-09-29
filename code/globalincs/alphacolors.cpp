@@ -388,7 +388,7 @@ void parse_everything_else(const char *filename)
 					Warning(LOCATION, "Team color in '%s' defined with a name of '%s'; this won't be usable due to 'None' being used for a lack of a team color by the engine.\n", filename, temp2);
 				}
 
-				if (required_string("$Team Stripe Color:")) {
+				if (required_string_either("$Team Stripe Color:", "$Team Stripe Colour:") >= 0) {
 					int rgb[3];
 					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 					for (i = 0; i < 3; i++) {
@@ -400,7 +400,7 @@ void parse_everything_else(const char *filename)
 					temp_color.stripe.b = rgb[2] / 255.0f;
 				}
 
-				if (required_string("$Team Base Color:")) {
+				if (required_string_either("$Team Base Color:", "$Team Base Colour:") >= 0) {
 					int rgb[3];
 					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 					for (i = 0; i < 3; i++) {
