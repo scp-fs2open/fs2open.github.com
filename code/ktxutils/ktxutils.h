@@ -60,10 +60,14 @@ struct KTX1_Header {
 	uint32_t bytesOfKeyValueData;
 };
 
+//reads a dds header and returns a KTX1_Error
 int ktx1_read_header(const char* filename, CFILE* img_cfp, int* w, int* h, int* bpp, int* c_type, int* mip_levels, size_t* total_size);
 
+//reads bitmap and returns a KTX1_Error
 int ktx1_read_bitmap(const char* filename, ubyte* dst, ubyte* out_bpp);
 
+//Get the GL enum type for this KTX format type, returns 0 if type is invalid.
 int ktx_map_ktx_format_to_gl_internal(const int ktx_format);
 
+//Get ktx bits per byte from GL internat format enum, returns 0 if internal format is invalid
 uint32_t ktx_etc_block_bytes(const int internal_format);

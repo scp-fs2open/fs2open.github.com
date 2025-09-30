@@ -24,6 +24,7 @@
 #include "math/vecmat.h"
 #include "options/Option.h"
 #include "osapi/osregistry.h"
+#include <ktxutils/ktxutils.h>
 matrix4 GL_texture_matrix;
 
 int GL_texture_ram = 0;
