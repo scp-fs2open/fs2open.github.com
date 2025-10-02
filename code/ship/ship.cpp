@@ -5332,7 +5332,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			WarningEx(LOCATION, "%s '%s'\nIFF colour when IFF is \"%s\" invalid!", info_type_name, sip->name, iff_2);
 
 		// Set the color
-		required_string("+As Color:");
+		required_string_either("+As Color:", "+As Colour:");
 		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
 		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
@@ -5446,21 +5446,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			new_info.width = 0.0f;
 		}
 
-		if (optional_string("+Primary color 1:")) {
+		if (optional_string_either("+Primary color 1:", "+Primary colour 1:") >= 0) {
 			int rgb[3];
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_1 = Arc_color_damage_p1;
 		}
-		if (optional_string("+Primary color 2:")) {
+		if (optional_string_either("+Primary color 2:", "+Primary colour 2:") >= 0) {
 			int rgb[3];
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_2 = Arc_color_damage_p2;
 		}
-		if (optional_string("+Secondary color:")) {
+		if (optional_string_either("+Secondary color:", "+Secondary colour:") >= 0) {
 			int rgb[3];
 			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
