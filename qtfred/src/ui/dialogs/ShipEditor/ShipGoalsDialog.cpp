@@ -246,6 +246,7 @@ void ShipGoalsDialog::updateUI()
 			case AI_GOAL_IGNORE:
 			case AI_GOAL_IGNORE_NEW:
 			case AI_GOAL_STAY_NEAR_SHIP:
+			case AI_GOAL_FORM_ON_WING:
 			case AI_GOAL_STAY_STILL:
 				object* ptr;
 				int inst, t;
