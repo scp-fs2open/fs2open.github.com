@@ -14377,7 +14377,7 @@ int maybe_request_support(object *objp)
 		try_to_rearm = true;
 	} else if (ai_bad_time_to_rearm(objp)) {
 		try_to_rearm = false;
-	} else if (num_allies_rearming(objp) < 2) {
+	} else if (num_allies_rearming(objp) < The_mission.ai_profile->max_allies_rearming_threshold) {
 		if (desire >= 8) {	//	guarantees disabled will cause repair request
 			try_to_rearm = true;
 		} else if (desire >= 3) {		//	>= 3 means having a single subsystem fully blown will cause repair.
