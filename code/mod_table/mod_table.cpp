@@ -1279,25 +1279,25 @@ void parse_mod_table(const char *filename)
 
 			if (optional_string_either("+Overhead Line Color 1:", "+Overhead Line Colour 1:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
-				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[0], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
 			if (optional_string_either("+Overhead Line Color 2:", "+Overhead Line Colour 2:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
-				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[1], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
 			if (optional_string_either("+Overhead Line Color 3:", "+Overhead Line Colour 3:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
-				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[2], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 
 			if (optional_string_either("+Overhead Line Color 4:", "+Overhead Line Colour 4:") >= 0) {
 				int rgba[4] = {0, 0, 0, 0};
-				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&Overhead_line_colors[3], rgba[0], rgba[1], rgba[2], rgba[3]);
 			}
 

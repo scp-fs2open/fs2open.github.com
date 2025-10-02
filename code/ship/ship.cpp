@@ -2705,7 +2705,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 				break;
 			}
 
-			num_allowed = (int)stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_allowed = sz2i(stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_LIST_TYPE));
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2745,9 +2745,9 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	{
 		// get weapon list
 		if (num_banks != NULL)
-			*num_banks = (int)stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			*num_banks = sz2i(stuff_int_list(bank_default_weapons, max_banks, ParseLookupType::WEAPON_LIST_TYPE));
 		else
-			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			stuff_int_list(bank_default_weapons, max_banks, ParseLookupType::WEAPON_LIST_TYPE);
 	}
 
 	// we initialize to the previous parse, which presumably worked
@@ -2756,7 +2756,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	if (optional_string(bank_capacities_str))
 	{
 		// get capacity list
-		num_bank_capacities = (int)stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+		num_bank_capacities = sz2i(stuff_int_list(bank_capacities, max_banks, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	// num_banks can be null if we're parsing weapons for a turret
@@ -3320,7 +3320,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if(optional_string("$Detail distance:")) {
-		sip->num_detail_levels = (int)stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		sip->num_detail_levels = sz2i(stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	if(optional_string("$Collision LOD:")) {
@@ -5333,7 +5333,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		// Set the color
 		required_string_either("+As Color:", "+As Colour:");
-		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
+		stuff_int_list(iff_color_data, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
 
@@ -5448,21 +5448,21 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 		if (optional_string_either("+Primary color 1:", "+Primary colour 1:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_1 = Arc_color_damage_p1;
 		}
 		if (optional_string_either("+Primary color 2:", "+Primary colour 2:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_2 = Arc_color_damage_p2;
 		}
 		if (optional_string_either("+Secondary color:", "+Secondary colour:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.secondary_color = Arc_color_damage_s1;

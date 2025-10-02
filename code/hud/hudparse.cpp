@@ -390,7 +390,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 		if (optional_string_either("$Wireframe Color Override:", "$Wireframe Colour Override:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&Targetbox_color, rgb[0], rgb[1], rgb[2]);
 			Targetbox_color_override = true;
 		}
@@ -492,7 +492,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				int shiparray[256];
 
-				n_ships = (int)stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+				n_ships = sz2i(stuff_int_list(shiparray, 256, ParseLookupType::SHIP_INFO_TYPE));
 
 				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
@@ -632,7 +632,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			required_string("$Base:");
 
 			// get the base width and height describing this HUD
-			stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
+			stuff_int_list(base_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 			// gauge scaling for this base res?
 			if (optional_string("$Scale Gauges:")) {
@@ -665,7 +665,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// check minimum resolution
 			if (optional_string("$Min:")) {
 				int min_res[2];
-				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
+				stuff_int_list(min_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 				if (min_res[0] > gr_screen.max_w) {
 					prune_config = true;
@@ -680,7 +680,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// check maximum resolution
 			if (optional_string("$Max:")) {
 				int max_res[2];
-				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+				stuff_int_list(max_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 				if (max_res[0] < gr_screen.max_w) {
 					prune_config = true;
@@ -3550,7 +3550,7 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	}
 	if (optional_string_either("Wireframe Color:", "Wireframe Colour:") >= 0) {
 		int rgb[3];
-		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		gr_init_color(&wirecolor, rgb[0], rgb[1], rgb[2]);
 		wirecoloroverride = true;
 	}

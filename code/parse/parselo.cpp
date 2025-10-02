@@ -3189,39 +3189,42 @@ size_t stuff_string_list(char slp[][NAME_LENGTH], size_t max_strings)
 	return list.size();
 }
 
-const char* get_lookup_type_name(int lookup_type)
+const char* get_lookup_type_name(ParseLookupType lookup_type)
 {
-	switch (lookup_type) {
-		case SHIP_TYPE:
-			return "Ships";
-		case SHIP_INFO_TYPE:
-			return "Ship Classes";
-		case WEAPON_POOL_TYPE:
-			return "Weapon Pool";
-		case WEAPON_LIST_TYPE:
-			return "Weapon Types";
-		case RAW_INTEGER_TYPE:
+	switch (lookup_type)
+	{
+		case ParseLookupType::RAW_INTEGER_TYPE:
 			return "Untyped integer list";
-		case MISSION_LOADOUT_SHIP_LIST:
+		case ParseLookupType::SHIP_TYPE:
+			return "Ships";
+		case ParseLookupType::SHIP_INFO_TYPE:
+			return "Ship Classes";
+		case ParseLookupType::WEAPON_LIST_TYPE:
+			return "Weapon Types";
+		case ParseLookupType::WEAPON_POOL_TYPE:
+			return "Weapon Pool";
+		case ParseLookupType::FIREBALL_INFO_TYPE:
+			return "Fireball Types";
+		case ParseLookupType::MISSION_LOADOUT_SHIP_LIST:
 			return "Mission Loadout Ships";
-		case MISSION_LOADOUT_WEAPON_LIST:
+		case ParseLookupType::MISSION_LOADOUT_WEAPON_LIST:
 			return "Mission Loadout Weapons";
-		case CAMPAIGN_LOADOUT_SHIP_LIST:
+		case ParseLookupType::CAMPAIGN_LOADOUT_SHIP_LIST:
 			return "Campaign Loadout Ships";
-		case CAMPAIGN_LOADOUT_WEAPON_LIST:
+		case ParseLookupType::CAMPAIGN_LOADOUT_WEAPON_LIST:
 			return "Campaign Loadout Weapons";
+		default:
+			return "Unknown lookup type, tell a coder!";
 	}
-
-	return "Unknown lookup type, tell a coder!";
 }
 
 // use a functor here so that we don't need to re-roll the parsing function for both variants of stuff_int_lists
 struct StuffIntListParser
 {
-	int lookup_type;
+	ParseLookupType lookup_type;
 	bool warn_on_lookup_failure;
 
-	StuffIntListParser(int _lookup_type, bool _warn_on_lookup_failure)
+	StuffIntListParser(ParseLookupType _lookup_type, bool _warn_on_lookup_failure)
 		: lookup_type(_lookup_type), warn_on_lookup_failure(_warn_on_lookup_failure)
 	{}
 
@@ -3233,25 +3236,25 @@ struct StuffIntListParser
 			get_string(str);
 
 			switch (lookup_type) {
-				case SHIP_TYPE:
+				case ParseLookupType::SHIP_TYPE:
 					num = ship_name_lookup(str.c_str());	// returns index of Ship[] entry with name
 					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find ship %s in stuff_int_list!", str.c_str());
 					break;
 
-				case SHIP_INFO_TYPE:
+				case ParseLookupType::SHIP_INFO_TYPE:
 					num = ship_info_lookup(str.c_str());	// returns index of Ship_info[] entry with name
 					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find ship class %s in stuff_int_list!", str.c_str());
 					break;
 
-				case WEAPON_POOL_TYPE:
+				case ParseLookupType::WEAPON_POOL_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (num < 0 && warn_on_lookup_failure)
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
-				case WEAPON_LIST_TYPE:
+				case ParseLookupType::WEAPON_LIST_TYPE:
 					num = weapon_info_lookup(str.c_str());
 					if (str.empty())
 						valid_negative = true;
@@ -3259,13 +3262,19 @@ struct StuffIntListParser
 						error_display(0, "Unable to find weapon class %s in stuff_int_list!", str.c_str());
 					break;
 
-				case RAW_INTEGER_TYPE:
+				case ParseLookupType::FIREBALL_INFO_TYPE:
+					num = fireball_info_lookup(str.c_str());
+					if (num < 0 && warn_on_lookup_failure)
+						error_display(0, "Unable to find fireball type %s in stuff_int_list!", str.c_str());
+					break;
+
+				case ParseLookupType::RAW_INTEGER_TYPE:
 					num = atoi(str.c_str());
 					valid_negative = true;
 					break;
 
 				default:
-					error_display(1, "Unknown lookup_type %d in stuff_int_list", lookup_type);
+					UNREACHABLE("Unsupported lookup_type %d in stuff_int_list", static_cast<int>(lookup_type));
 					break;
 			}
 
@@ -3285,7 +3294,7 @@ struct StuffIntListParser
 //	This is of the form ( i* )
 //	  where i is an integer.
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type, bool warn_on_lookup_failure)
+size_t stuff_int_list(int *ilp, size_t max_ints, ParseLookupType lookup_type, bool warn_on_lookup_failure)
 {
 	return stuff_token_list(ilp, max_ints, StuffIntListParser(lookup_type, warn_on_lookup_failure), get_lookup_type_name(lookup_type));
 }
@@ -3294,14 +3303,14 @@ size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type, bool warn_on_l
 //	This is of the form ( i* )
 //	  where i is an integer.
 // For example, (1) () (1 2 3) ( 1 ) are legal integer lists.
-void stuff_int_list(SCP_vector<int> &ilp, int lookup_type, bool warn_on_lookup_failure)
+void stuff_int_list(SCP_vector<int> &ilp, ParseLookupType lookup_type, bool warn_on_lookup_failure)
 {
 	stuff_token_list(ilp, StuffIntListParser(lookup_type, warn_on_lookup_failure), get_lookup_type_name(lookup_type));
 }
 
 // Karajorma/Goober5000 - Stuffs a loadout list by parsing a list of ship or weapon choices.
 // Unlike stuff_int_list it can deal with variables
-void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
+void stuff_loadout_list(SCP_vector<loadout_row> &list, ParseLookupType lookup_type)
 {
 	stuff_token_list(list, [&](loadout_row *buf)->bool {
 		SCP_string str;
@@ -3310,7 +3319,7 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 		// if we've got a variable get the variable index and copy its value into str so that regardless of whether we found
 		// a variable or not it now holds the name of the ship or weapon we're interested in.
 		if (variable_found) {
-			Assert(lookup_type != CAMPAIGN_LOADOUT_SHIP_LIST);
+			Assert(lookup_type != ParseLookupType::CAMPAIGN_LOADOUT_SHIP_LIST);
 			buf->index_sexp_var = get_index_sexp_variable_name(str);
 
 			if (buf->index_sexp_var < 0) {
@@ -3321,18 +3330,18 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 		}
 
 		switch (lookup_type) {
-			case MISSION_LOADOUT_SHIP_LIST:
-			case CAMPAIGN_LOADOUT_SHIP_LIST:
+			case ParseLookupType::MISSION_LOADOUT_SHIP_LIST:
+			case ParseLookupType::CAMPAIGN_LOADOUT_SHIP_LIST:
 				buf->index = ship_info_lookup(str.c_str());
 				break;
 
-			case MISSION_LOADOUT_WEAPON_LIST:
-			case CAMPAIGN_LOADOUT_WEAPON_LIST:
+			case ParseLookupType::MISSION_LOADOUT_WEAPON_LIST:
+			case ParseLookupType::CAMPAIGN_LOADOUT_WEAPON_LIST:
 				buf->index = weapon_info_lookup(str.c_str());
 				break;
 
 			default:
-				Assertion(false, "Unsupported lookup type %d", lookup_type);
+				UNREACHABLE("Unsupported lookup_type %d in stuff_loadout_list", static_cast<int>(lookup_type));
 				return false;
 		}
 
@@ -3340,24 +3349,24 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 
 		// Complain if this isn't a valid ship or weapon and we are loading a mission. Campaign files can be loaded containing
 		// no ships from the current tables (when swapping mods) so don't report that as an error.
-		if (buf->index < 0 && (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)) {
+		if (buf->index < 0 && (lookup_type == ParseLookupType::MISSION_LOADOUT_SHIP_LIST || lookup_type == ParseLookupType::MISSION_LOADOUT_WEAPON_LIST)) {
 			error_display(0, "Invalid type \"%s\" found in loadout of mission file...skipping", str.c_str());
 			skip_this_entry = true;
 
 			// increment counter for release FRED builds.
 			Num_unknown_loadout_classes++;
 		}
-		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[buf->index].maximum_children_spawned > 300)){
+		else if ((Game_mode & GM_MULTIPLAYER) && (lookup_type == ParseLookupType::MISSION_LOADOUT_WEAPON_LIST) && (Weapon_info[buf->index].maximum_children_spawned > 300)){
 			Warning(LOCATION, "Weapon '%s' has more than 300 possible spawned weapons over its lifetime! This can cause issues for Multiplayer.", Weapon_info[buf->index].name);
 		}
 
 		if (!skip_this_entry) {
 			// similarly, complain if this is a valid ship or weapon class that the player can't use
-			if ((lookup_type == MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[buf->index].flags[Ship::Info_Flags::Player_ship])) ) {
+			if ((lookup_type == ParseLookupType::MISSION_LOADOUT_SHIP_LIST) && (!(Ship_info[buf->index].flags[Ship::Info_Flags::Player_ship])) ) {
 				error_display(0, "Ship type \"%s\" found in loadout of mission file. This class is not marked as a player ship...skipping", str.c_str());
 				skip_this_entry = true;
 			}
-			else if ((lookup_type == MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[buf->index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
+			else if ((lookup_type == ParseLookupType::MISSION_LOADOUT_WEAPON_LIST) && (!(Weapon_info[buf->index].wi_flags[Weapon::Info_Flags::Player_allowed])) ) {
 				nprintf(("Warning",  "Warning: Weapon type %s found in loadout of mission file. This class is not marked as a player allowed weapon...skipping\n", str.c_str()));
 				if ( !Is_standalone )
 					error_display(0, "Weapon type \"%s\" found in loadout of mission file. This class is not marked as a player allowed weapon...skipping", str.c_str());
@@ -3366,7 +3375,7 @@ void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type)
 		}
 
 		// Loadout counts are only needed for missions
-		if (lookup_type == MISSION_LOADOUT_SHIP_LIST || lookup_type == MISSION_LOADOUT_WEAPON_LIST)
+		if (lookup_type == ParseLookupType::MISSION_LOADOUT_SHIP_LIST || lookup_type == ParseLookupType::MISSION_LOADOUT_WEAPON_LIST)
 		{
 			ignore_white_space();
 

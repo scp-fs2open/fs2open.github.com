@@ -324,7 +324,7 @@ void parse_colors(const char *filename)
 					// if so, get its rgba values and initialise it using them
 					mprintf(("'%s' has been redefined.\n", color_names[i]));
 					//if (check_for_string("(")) {
-					stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+					stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 					for (j = 0; j < 4; j++) {
 						if (rgba[j] < 0) {
 							Warning(LOCATION, "RGBA value for '%s' in %s too low (%d), capping to 0.\n", color_names[i], filename, rgba[j]);
@@ -390,7 +390,7 @@ void parse_everything_else(const char *filename)
 
 				if (required_string_either("$Team Stripe Color:", "$Team Stripe Colour:") >= 0) {
 					int rgb[3];
-					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+					stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 					for (i = 0; i < 3; i++) {
 						CLAMP(rgb[i], 0, 255);
 					}
@@ -402,7 +402,7 @@ void parse_everything_else(const char *filename)
 
 				if (required_string_either("$Team Base Color:", "$Team Base Colour:") >= 0) {
 					int rgb[3];
-					stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+					stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 					for (i = 0; i < 3; i++) {
 						CLAMP(rgb[i], 0, 255);
 					}
@@ -445,7 +445,7 @@ void parse_everything_else(const char *filename)
 					mprintf(("'%s' has been redefined.\n", color_names[i]));
 					if (check_for_string("(")) {
 						// If we have a list of integers, use them.
-						stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+						stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 						for (j = 0; j < 4; j++) {
 							if (rgba[j] < 0)
 							{
@@ -523,7 +523,7 @@ void parse_everything_else(const char *filename)
 					rgba[3] = 255;	// Odds are pretty high you want it to have full alpha...
 
 					if (check_for_string("(")) {
-						stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+						stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 						for (j = 0; j < 4; j++) {
 							if (rgba[j] < 0)
 							{
