@@ -305,7 +305,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					required_string("+XSTR ID:");
 					stuff_int(&preset.xstr);
 
-					required_string_either("+Color:", "+Colour:");
+					required_string_either("+Color:", "+Colour:", true);
 					int rgb[3] = {255, 255, 255};
 					stuff_int_list(rgb, 3);
 
