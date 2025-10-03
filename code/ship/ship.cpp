@@ -5332,7 +5332,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			WarningEx(LOCATION, "%s '%s'\nIFF colour when IFF is \"%s\" invalid!", info_type_name, sip->name, iff_2);
 
 		// Set the color
-		required_string_either("+As Color:", "+As Colour:");
+		required_string_either("+As Color:", "+As Colour:", true);
 		stuff_int_list(iff_color_data, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
