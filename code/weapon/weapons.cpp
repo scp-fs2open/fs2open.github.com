@@ -368,16 +368,6 @@ void missle_obj_list_remove(int index)
 }
 
 /**
- * Called externally to generate an address from an index into
- * the Missile_objs[] array
- */
-missile_obj *missile_obj_return_address(int index)
-{
-	Assert(index >= 0 && index < MAX_MISSILE_OBJS);
-	return &Missile_objs[index];
-}
-
-/**
  * Return the index of Weapon_info[].name that is *name.
  */
 int weapon_info_lookup(const char *name)
