@@ -216,7 +216,7 @@ class NoteBadgeDelegate final : public QStyledItemDelegate {
 };
 
 // constructor
-sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
+sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent), _actions(_model, *this) {
 	setSelectionMode(QTreeWidget::SingleSelection);
 	setSelectionBehavior(QTreeWidget::SelectItems);
 
@@ -237,6 +237,69 @@ sexp_tree::sexp_tree(QWidget* parent) : QTreeWidget(parent) {
 }
 
 sexp_tree::~sexp_tree() = default;
+
+// --- ISexpTreeUI implementation ---
+
+void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
+{
+	auto* hParent = static_cast<QTreeWidgetItem*>(parent_handle);
+	auto* hAfter = static_cast<QTreeWidgetItem*>(insert_after);
+	auto* item = insert(QString::fromUtf8(text), image, hParent, hAfter);
+	return static_cast<void*>(item);
+}
+
+void sexp_tree::ui_delete_item(void* handle)
+{
+	delete static_cast<QTreeWidgetItem*>(handle);
+}
+
+void sexp_tree::ui_set_item_text(void* handle, const char* text)
+{
+	static_cast<QTreeWidgetItem*>(handle)->setText(0, QString::fromUtf8(text));
+}
+
+void sexp_tree::ui_set_item_image(void* handle, NodeImage image)
+{
+	static_cast<QTreeWidgetItem*>(handle)->setIcon(0, convertNodeImageToIcon(image));
+}
+
+void* sexp_tree::ui_get_child_item(void* handle)
+{
+	auto* item = static_cast<QTreeWidgetItem*>(handle);
+	if (item->childCount() > 0)
+		return static_cast<void*>(item->child(0));
+	return nullptr;
+}
+
+bool sexp_tree::ui_has_children(void* handle)
+{
+	return static_cast<QTreeWidgetItem*>(handle)->childCount() > 0;
+}
+
+void sexp_tree::ui_expand_item(void* handle)
+{
+	static_cast<QTreeWidgetItem*>(handle)->setExpanded(true);
+}
+
+void sexp_tree::ui_select_item(void* handle)
+{
+	setCurrentItem(static_cast<QTreeWidgetItem*>(handle));
+}
+
+void sexp_tree::ui_ensure_visible(void* handle)
+{
+	scrollToItem(static_cast<QTreeWidgetItem*>(handle));
+}
+
+void sexp_tree::ui_notify_modified()
+{
+	modified();
+}
+
+void sexp_tree::ui_update_help(void* handle)
+{
+	update_help(static_cast<QTreeWidgetItem*>(handle));
+}
 
 // clears out the tree, so all the nodes are unused.
 void sexp_tree::clear_tree(const char* op) {

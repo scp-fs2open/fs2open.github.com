@@ -15,6 +15,7 @@
 
 #include "OperatorComboBox.h"
 #include "missioneditor/sexp_tree_model.h"
+#include "missioneditor/sexp_tree_actions.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -51,9 +52,13 @@ inline HTREEITEM tree_item_handle(const sexp_tree_item& item) {
 	return static_cast<HTREEITEM>(item.handle);
 }
 
-class sexp_tree : public CTreeCtrl
+class sexp_tree : public CTreeCtrl, public ISexpTreeUI
 {
 public:
+	// Shared model and action layer (must be declared before reference aliases below)
+	SexpTreeModel _model;
+	SexpTreeActions _actions;
+
 	sexp_tree();
 
 	int find_text(const char *text, int *find);
@@ -260,8 +265,8 @@ public:
 
 	bool is_node_eligible_for_special_argument(int parent_node) const;
 
-	int m_mode;
-	int item_index;
+	int& m_mode = _model.m_mode;
+	int& item_index = _model.item_index;
 	int select_sexp_node;  // used to select an sexp item on dialog box open.
 	BOOL		m_dragging;
 	HTREEITEM	m_h_drag;
@@ -274,6 +279,19 @@ public:
 
 	void start_operator_edit(HTREEITEM h);
 	void end_operator_edit(bool confirm);
+
+	// ISexpTreeUI implementation
+	void* ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after) override;
+	void ui_delete_item(void* handle) override;
+	void ui_set_item_text(void* handle, const char* text) override;
+	void ui_set_item_image(void* handle, NodeImage image) override;
+	void* ui_get_child_item(void* handle) override;
+	bool ui_has_children(void* handle) override;
+	void ui_expand_item(void* handle) override;
+	void ui_select_item(void* handle) override;
+	void ui_ensure_visible(void* handle) override;
+	void ui_notify_modified() override;
+	void ui_update_help(void* handle) override;
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(sexp_tree)
@@ -306,14 +324,14 @@ protected:
 	void free_node2(int node);
 
 	int flag;
-	int *modified;
+	int*& modified = _model.modified;
 	bool m_operator_popup_active;
 	bool m_operator_popup_created;
 	int m_font_height;
 	int m_font_max_width;
 
-	SCP_vector<sexp_tree_item> tree_nodes;
-	int total_nodes;
+	SCP_vector<sexp_tree_item>& tree_nodes = _model.tree_nodes;
+	int& total_nodes = _model.total_nodes;
 
 	HTREEITEM item_handle;
 	int root_item;

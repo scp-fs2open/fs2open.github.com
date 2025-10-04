@@ -10,6 +10,7 @@
 #pragma once
 
 #include "missioneditor/sexp_tree_model.h"
+#include "missioneditor/sexp_tree_actions.h"
 #include "parse/sexp.h"
 #include "parse/sexp_container.h"
 #include "parse/parselo.h"
@@ -33,16 +34,23 @@ using ::sexp_list_item;
 using ::NodeImage;
 using ::TreeFlags;
 using ::SexpTreeEditorInterface;
+using ::ISexpTreeUI;
+using ::SexpTreeModel;
+using ::SexpTreeActions;
 
 // Typed handle accessor for QtFRED (Qt QTreeWidgetItem*)
 inline QTreeWidgetItem* tree_item_handle(const sexp_tree_item& item) {
 	return static_cast<QTreeWidgetItem*>(item.handle);
 }
 
-class sexp_tree: public QTreeWidget {
+class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 
  Q_OBJECT
  public:
+	// Shared model and action layer (must be declared before reference aliases below)
+	SexpTreeModel _model;
+	SexpTreeActions _actions;
+
 	 enum {
 		 FormulaDataRole = Qt::UserRole + 1,
 		 SexpNodeIdRole = Qt::UserRole + 2,
@@ -264,6 +272,20 @@ class sexp_tree: public QTreeWidget {
 	void deleteCurrentItem();
 
 	static void applyVisuals(QTreeWidgetItem* it);
+
+	// ISexpTreeUI implementation
+	void* ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after) override;
+	void ui_delete_item(void* handle) override;
+	void ui_set_item_text(void* handle, const char* text) override;
+	void ui_set_item_image(void* handle, NodeImage image) override;
+	void* ui_get_child_item(void* handle) override;
+	bool ui_has_children(void* handle) override;
+	void ui_expand_item(void* handle) override;
+	void ui_select_item(void* handle) override;
+	void ui_ensure_visible(void* handle) override;
+	void ui_notify_modified() override;
+	void ui_update_help(void* handle) override;
+
  signals:
 	void miniHelpChanged(const QString& text);
 	void helpChanged(const QString& text);
@@ -311,8 +333,8 @@ class sexp_tree: public QTreeWidget {
 
 	int flag;
 
-	SCP_vector<sexp_tree_item> tree_nodes;
-	int total_nodes;
+	SCP_vector<sexp_tree_item>& tree_nodes = _model.tree_nodes;
+	int& total_nodes = _model.total_nodes;
 
 	// This flag is used for keeping track if we are currently editing a tree node
 	bool _currently_editing = false;
@@ -326,10 +348,10 @@ class sexp_tree: public QTreeWidget {
 	int add_instance;  // a source reference index indicator for adding data
 	int replace_instance;  // a source reference index indicator for replacing data
 
-	int item_index;
+	int& item_index = _model.item_index;
 
 	Editor* _editor = nullptr;
-	SexpTreeEditorInterface* _interface = nullptr;
+	SexpTreeEditorInterface*& _interface = _model._interface;
 
 	// If there is no special interface then we supply a default one which needs to be stored somewhere
 	std::unique_ptr<SexpTreeEditorInterface> _owned_interface;

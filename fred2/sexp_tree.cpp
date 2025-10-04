@@ -90,7 +90,7 @@ static int Modify_variable;
 
 // constructor
 sexp_tree::sexp_tree()
-	: m_operator_box(help)
+	: m_operator_box(help), _actions(_model, *this)
 {
 	select_sexp_node = -1;
 	root_item = -1;
@@ -104,6 +104,68 @@ sexp_tree::sexp_tree()
 	m_operator_popup_created = false;
 	m_font_height = 0;
 	m_font_max_width = 0;
+}
+
+// --- ISexpTreeUI implementation ---
+
+void* sexp_tree::ui_insert_item(const char* text, NodeImage image, void* parent_handle, void* insert_after)
+{
+	int img = static_cast<int>(image);
+	HTREEITEM hParent = parent_handle ? static_cast<HTREEITEM>(parent_handle) : TVI_ROOT;
+	HTREEITEM hAfter = insert_after ? static_cast<HTREEITEM>(insert_after) : TVI_LAST;
+	return static_cast<void*>(InsertItem(text, img, img, hParent, hAfter));
+}
+
+void sexp_tree::ui_delete_item(void* handle)
+{
+	DeleteItem(static_cast<HTREEITEM>(handle));
+}
+
+void sexp_tree::ui_set_item_text(void* handle, const char* text)
+{
+	SetItemText(static_cast<HTREEITEM>(handle), text);
+}
+
+void sexp_tree::ui_set_item_image(void* handle, NodeImage image)
+{
+	int img = static_cast<int>(image);
+	SetItemImage(static_cast<HTREEITEM>(handle), img, img);
+}
+
+void* sexp_tree::ui_get_child_item(void* handle)
+{
+	return static_cast<void*>(GetChildItem(static_cast<HTREEITEM>(handle)));
+}
+
+bool sexp_tree::ui_has_children(void* handle)
+{
+	return ItemHasChildren(static_cast<HTREEITEM>(handle)) != 0;
+}
+
+void sexp_tree::ui_expand_item(void* handle)
+{
+	Expand(static_cast<HTREEITEM>(handle), TVE_EXPAND);
+}
+
+void sexp_tree::ui_select_item(void* handle)
+{
+	SelectItem(static_cast<HTREEITEM>(handle));
+}
+
+void sexp_tree::ui_ensure_visible(void* handle)
+{
+	EnsureVisible(static_cast<HTREEITEM>(handle));
+}
+
+void sexp_tree::ui_notify_modified()
+{
+	if (modified)
+		*modified = 1;
+}
+
+void sexp_tree::ui_update_help(void* handle)
+{
+	update_help(static_cast<HTREEITEM>(handle));
 }
 
 // clears out the tree, so all the nodes are unused.
