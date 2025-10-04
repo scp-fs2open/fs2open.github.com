@@ -155,7 +155,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	sexp_list_item* get_listing_opf_positive();
 	sexp_list_item* get_listing_opf_number();
 	sexp_list_item* get_listing_opf_ship(int parent_node = -1);
-	static sexp_list_item* get_listing_opf_prop();
+	sexp_list_item* get_listing_opf_prop();
 	sexp_list_item* get_listing_opf_wing();
 	sexp_list_item* get_listing_opf_subsystem(int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_subsystem_type(int parent_node);
@@ -186,7 +186,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	sexp_list_item* get_listing_opf_medal_name();
 	sexp_list_item* get_listing_opf_weapon_name();
 	sexp_list_item* get_listing_opf_ship_class_name();
-	static sexp_list_item* get_listing_opf_prop_class_name();
+	sexp_list_item* get_listing_opf_prop_class_name();
 	sexp_list_item* get_listing_opf_huge_weapon();
 	sexp_list_item* get_listing_opf_ship_not_player();
 	sexp_list_item* get_listing_opf_jump_nodes();
@@ -237,15 +237,15 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	sexp_list_item* get_listing_opf_team_colors();
 	sexp_list_item* get_listing_opf_nebula_patterns();
 	sexp_list_item* get_listing_opf_motion_debris();
-	static sexp_list_item* get_listing_opf_asteroid_types();
-	static sexp_list_item* get_listing_opf_debris_types();
+	sexp_list_item* get_listing_opf_asteroid_types();
+	sexp_list_item* get_listing_opf_debris_types();
 	sexp_list_item* get_listing_opf_game_snds();
 	sexp_list_item* get_listing_opf_fireball();
 	sexp_list_item *get_listing_opf_species();
 	sexp_list_item *get_listing_opf_language();
 	sexp_list_item *get_listing_opf_functional_when_eval_type();
 	sexp_list_item *get_listing_opf_animation_name(int parent_node);
-	static sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
+	sexp_list_item *get_listing_opf_sexp_containers(ContainerType con_type);
 	sexp_list_item *get_listing_opf_wing_formation();
 	sexp_list_item *check_for_dynamic_sexp_enum(int opf);
 	sexp_list_item *get_listing_opf_bolt_types();
@@ -257,7 +257,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 
 	// container modifier options for container data nodes
 	sexp_list_item *get_container_modifiers(int con_data_node) const;
-	static sexp_list_item *get_list_container_modifiers();
+	sexp_list_item *get_list_container_modifiers();
 	sexp_list_item *get_map_container_modifiers(int con_data_node) const;
 	sexp_list_item *get_container_multidim_modifiers(int con_data_node) const;
 
