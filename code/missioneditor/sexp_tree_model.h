@@ -188,8 +188,45 @@ public:
 	virtual bool requireCampaignOperators() const;
 };
 
+// -----------------------------------------------------------------------
+// Shared free-function utilities for sexp tree variable text
+// -----------------------------------------------------------------------
+
+// Extract variable name from "varname(value)" format
+void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name);
+// Extract default value from "varname(value)" format
+void get_variable_default_text_from_variable_text(char* text, char* default_text);
+
 // Forward declaration for OPF function parameter
 enum class ContainerType;
+
+// -----------------------------------------------------------------------
+// ISexpTreeUI — callback interface for UI operations
+// -----------------------------------------------------------------------
+// Action code in SexpTreeActions calls these to update the UI widget.
+// FRED2 implements with MFC CTreeCtrl calls; QtFRED with QTreeWidget calls.
+// Handles are opaque void* — each UI layer casts to its native type.
+
+class ISexpTreeUI {
+public:
+	virtual ~ISexpTreeUI() = default;
+
+	// Tree widget manipulation
+	virtual void* ui_insert_item(const char* text, NodeImage image,
+								  void* parent_handle, void* insert_after) = 0;
+	virtual void ui_delete_item(void* handle) = 0;
+	virtual void ui_set_item_text(void* handle, const char* text) = 0;
+	virtual void ui_set_item_image(void* handle, NodeImage image) = 0;
+	virtual void* ui_get_child_item(void* handle) = 0;
+	virtual bool ui_has_children(void* handle) = 0;
+	virtual void ui_expand_item(void* handle) = 0;
+	virtual void ui_select_item(void* handle) = 0;
+	virtual void ui_ensure_visible(void* handle) = 0;
+
+	// Notifications
+	virtual void ui_notify_modified() = 0;
+	virtual void ui_update_help(void* handle) = 0;
+};
 
 // -----------------------------------------------------------------------
 // SexpTreeModel — shared UI-independent sexp tree model
@@ -233,7 +270,8 @@ public:
 	int save_tree(int node) const;
 	int save_branch(int cur, int at_root = 0) const;
 
-	// --- Default argument availability ---
+	// --- Default argument values ---
+	int get_default_value(sexp_list_item* item, char* text_buf, int op, int i);
 	int query_default_argument_available(int op) const;
 	int query_default_argument_available(int op, int i) const;
 

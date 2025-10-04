@@ -23,10 +23,15 @@
 #include "ship/ship.h"
 #include "ai/ailua.h"
 #include "asteroid/asteroid.h"
+#include "fireball/fireballs.h"
+#include "gamesnd/gamesnd.h"
+#include "graphics/software/FontManager.h"
 #include "hud/hudartillery.h"
+#include "model/model.h"
 #include "nebula/neblightning.h"
 #include "starfield/starfield.h"
 #include "stats/scoring.h"
+#include "weapon/emp.h"
 
 #define TREE_NODE_INCREMENT  100
 
@@ -747,6 +752,459 @@ int SexpTreeModel::query_default_argument_available(int op, int i) const
 	return 0;
 }
 
+// Determine and return the default value for operator argument position i.
+// Returns 0 on success, -1 if no default available.
+int SexpTreeModel::get_default_value(sexp_list_item* item, char* text_buf, int op, int i)
+{
+	const char* str = nullptr;
+	int type, index;
+	sexp_list_item* list;
+
+	index = item_index;
+	type = query_operator_argument_type(op, i);
+	switch (type)
+	{
+		case OPF_NULL:
+			item->set_op(OP_NOP);
+			return 0;
+
+		case OPF_BOOL:
+			item->set_op(OP_TRUE);
+			return 0;
+
+		case OPF_ANYTHING:
+			if (Operators[op].value == OP_INVALIDATE_ARGUMENT || Operators[op].value == OP_VALIDATE_ARGUMENT)
+				item->set_data(SEXP_ARGUMENT_STRING);
+			else
+				item->set_data("<any data>");
+			return 0;
+
+		case OPF_DATA_OR_STR_CONTAINER:
+			item->set_data("<any data or string container>");
+			return 0;
+
+		case OPF_NUMBER:
+		case OPF_POSITIVE:
+		case OPF_AMBIGUOUS:
+			// if the top level operator is an AI goal, and we are adding the last number required,
+			// assume that this number is a priority and make it 89 instead of 1.
+			if ((query_operator_return_type(op) == OPR_AI_GOAL) && (i == (Operators[op].min - 1)))
+			{
+				item->set_data("89", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (((Operators[op].value == OP_HAS_DOCKED_DELAY) || (Operators[op].value == OP_HAS_UNDOCKED_DELAY) || (Operators[op].value == OP_TIME_DOCKED) || (Operators[op].value == OP_TIME_UNDOCKED)) && (i == 2))
+			{
+				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if ((Operators[op].value == OP_SHIP_TYPE_DESTROYED) || (Operators[op].value == OP_GOOD_SECONDARY_TIME))
+			{
+				item->set_data("100", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_SET_SUPPORT_SHIP)
+			{
+				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if ((Operators[op].value == OP_SHIP_TAG) && (i == 1) || (Operators[op].value == OP_TRIGGER_SUBMODEL_ANIMATION) && (i == 3))
+			{
+				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_EXPLOSION_EFFECT)
+			{
+				int temp;
+				char sexp_str_token[TOKEN_LENGTH];
+
+				switch (i)
+				{
+					case 3:
+						temp = 10;
+						break;
+					case 4:
+						temp = 10;
+						break;
+					case 5:
+						temp = 100;
+						break;
+					case 6:
+						temp = 10;
+						break;
+					case 7:
+						temp = 100;
+						break;
+					case 11:
+						temp = (int)EMP_DEFAULT_INTENSITY;
+						break;
+					case 12:
+						temp = (int)EMP_DEFAULT_TIME;
+						break;
+					default:
+						temp = 0;
+						break;
+				}
+
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_WARP_EFFECT)
+			{
+				int temp;
+				char sexp_str_token[TOKEN_LENGTH];
+
+				switch (i)
+				{
+					case 6:
+						temp = 100;
+						break;
+					case 7:
+						temp = 10;
+						break;
+					default:
+						temp = 0;
+						break;
+				}
+
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_CHANGE_BACKGROUND)
+			{
+				item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_ADD_BACKGROUND_BITMAP || Operators[op].value == OP_ADD_BACKGROUND_BITMAP_NEW)
+			{
+				int temp = 0;
+				char sexp_str_token[TOKEN_LENGTH];
+
+				switch (i)
+				{
+					case 4:
+					case 5:
+						temp = 100;
+						break;
+
+					case 6:
+					case 7:
+						temp = 1;
+						break;
+				}
+
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_ADD_SUN_BITMAP || Operators[op].value == OP_ADD_SUN_BITMAP_NEW)
+			{
+				int temp = 0;
+				char sexp_str_token[TOKEN_LENGTH];
+
+				if (i == 4)
+					temp = 100;
+
+				sprintf(sexp_str_token, "%d", temp);
+				item->set_data(sexp_str_token, (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_MISSION_SET_NEBULA)
+			{
+				if (i == 0)
+					item->set_data("1", (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data("3000", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_MODIFY_VARIABLE)
+			{
+				if (get_modify_variable_type(index) == OPF_NUMBER)
+					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_MODIFY_VARIABLE_XSTR)
+			{
+				if (i == 1)
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+				else
+					item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_SET_VARIABLE_BY_INDEX)
+			{
+				if (i == 0)
+					item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data("<any data>", (SEXPT_STRING | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_JETTISON_CARGO_NEW)
+			{
+				item->set_data("25", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else if (Operators[op].value == OP_TECH_ADD_INTEL_XSTR || Operators[op].value == OP_TECH_REMOVE_INTEL_XSTR)
+			{
+				item->set_data("-1", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+			else
+			{
+				item->set_data("0", (SEXPT_NUMBER | SEXPT_VALID));
+			}
+
+			return 0;
+
+		// Goober5000 - special cases that used to be numbers but are now hybrids
+		case OPF_GAME_SND:
+		{
+			gamesnd_id sound_index;
+
+			if ((Operators[op].value == OP_EXPLOSION_EFFECT))
+			{
+				sound_index = GameSounds::SHIP_EXPLODE_1;
+			}
+			else if ((Operators[op].value == OP_WARP_EFFECT))
+			{
+				sound_index = (i == 8) ? GameSounds::CAPITAL_WARP_IN : GameSounds::CAPITAL_WARP_OUT;
+			}
+
+			if (sound_index.isValid())
+			{
+				game_snd* snd = gamesnd_get_game_sound(sound_index);
+				if (can_construe_as_integer(snd->name.c_str()))
+					item->set_data(snd->name.c_str(), (SEXPT_NUMBER | SEXPT_VALID));
+				else
+					item->set_data(snd->name.c_str(), (SEXPT_STRING | SEXPT_VALID));
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
+		}
+
+		// Goober5000 - ditto
+		case OPF_FIREBALL:
+		{
+			int fireball_index = -1;
+
+			if (Operators[op].value == OP_EXPLOSION_EFFECT)
+			{
+				fireball_index = FIREBALL_MEDIUM_EXPLOSION;
+			}
+			else if (Operators[op].value == OP_WARP_EFFECT)
+			{
+				fireball_index = FIREBALL_WARP;
+			}
+
+			if (fireball_index >= 0)
+			{
+				char* unique_id = Fireball_info[fireball_index].unique_id;
+				if (strlen(unique_id) > 0)
+					item->set_data(unique_id, (SEXPT_STRING | SEXPT_VALID));
+				else
+				{
+					char num_str[NAME_LENGTH];
+					sprintf(num_str, "%d", fireball_index);
+					item->set_data(num_str, (SEXPT_NUMBER | SEXPT_VALID));
+				}
+				return 0;
+			}
+
+			// if no hardcoded default, just use the listing default
+			break;
+		}
+
+		// new default value
+		case OPF_PRIORITY:
+			item->set_data("Normal", (SEXPT_STRING | SEXPT_VALID));
+			return 0;
+	}
+
+	list = get_listing_opf(type, index, i);
+
+	// Goober5000 - the way this is done is really stupid, so stupid hacks are needed to deal with it
+	// this particular hack is necessary because the argument string should never be a default
+	if (list && list->text == SEXP_ARGUMENT_STRING)
+	{
+		sexp_list_item* first_ptr;
+
+		first_ptr = list;
+		list = list->next;
+
+		delete first_ptr;
+	}
+
+	if (list)
+	{
+		// copy the information from the list to the passed-in item
+		*item = *list;
+
+		// but use the provided text buffer
+		strcpy(text_buf, list->text.c_str());
+		item->text = text_buf;
+
+		// get rid of the list, since we're done with it
+		list->destroy();
+		item->next = nullptr;
+
+		return 0;
+	}
+
+	// catch anything that doesn't have a default value.  Just describe what should be here instead
+	switch (type)
+	{
+		case OPF_SHIP:
+		case OPF_SHIP_NOT_PLAYER:
+		case OPF_SHIP_POINT:
+		case OPF_SHIP_WING:
+		case OPF_SHIP_PROP:
+		case OPF_SHIP_WING_WHOLETEAM:
+		case OPF_SHIP_WING_SHIPONTEAM_POINT:
+		case OPF_SHIP_WING_POINT:
+			str = "<name of ship here>";
+			break;
+
+		case OPF_PROP:
+			str = "<name of prop here>";
+			break;
+
+		case OPF_ORDER_RECIPIENT:
+			str = "<all fighters>";
+			break;
+
+		case OPF_SHIP_OR_NONE:
+		case OPF_SUBSYSTEM_OR_NONE:
+		case OPF_SHIP_WING_POINT_OR_NONE:
+			str = SEXP_NONE_STRING;
+			break;
+
+		case OPF_WING:
+			str = "<name of wing here>";
+			break;
+
+		case OPF_DOCKER_POINT:
+			str = "<docker point>";
+			break;
+
+		case OPF_DOCKEE_POINT:
+			str = "<dockee point>";
+			break;
+
+		case OPF_SUBSYSTEM:
+		case OPF_AWACS_SUBSYSTEM:
+		case OPF_ROTATING_SUBSYSTEM:
+		case OPF_TRANSLATING_SUBSYSTEM:
+		case OPF_SUBSYS_OR_GENERIC:
+			str = "<name of subsystem>";
+			break;
+
+		case OPF_SUBSYSTEM_TYPE:
+			str = Subsystem_types[SUBSYSTEM_NONE];
+			break;
+
+		case OPF_POINT:
+			str = "<waypoint>";
+			break;
+
+		case OPF_MESSAGE:
+			str = "<Message>";
+			break;
+
+		case OPF_WHO_FROM:
+			str = "<any wingman>";
+			break;
+
+		case OPF_WAYPOINT_PATH:
+			str = "<waypoint path>";
+			break;
+
+		case OPF_MISSION_NAME:
+			str = "<mission name>";
+			break;
+
+		case OPF_GOAL_NAME:
+			str = "<goal name>";
+			break;
+
+		case OPF_SHIP_TYPE:
+			str = "<ship type here>";
+			break;
+
+		case OPF_EVENT_NAME:
+			str = "<event name>";
+			break;
+
+		case OPF_HUGE_WEAPON:
+			str = "<huge weapon type>";
+			break;
+
+		case OPF_JUMP_NODE_NAME:
+			str = "<Jump node name>";
+			break;
+
+		case OPF_NAV_POINT:
+			str = "<Nav 1>";
+			break;
+
+		case OPF_ANYTHING:
+			str = "<any data>";
+			break;
+
+		case OPF_DATA_OR_STR_CONTAINER:
+			str = "<any data or string container>";
+			break;
+
+		case OPF_PERSONA:
+			str = "<persona name>";
+			break;
+
+		case OPF_FONT:
+			str = font::FontManager::getFont(0)->getName().c_str();
+			break;
+
+		case OPF_AUDIO_VOLUME_OPTION:
+			str = "Music";
+			break;
+
+		case OPF_POST_EFFECT:
+			str = "<Effect Name>";
+			break;
+
+		case OPF_CUSTOM_HUD_GAUGE:
+			str = "<Custom hud gauge>";
+			break;
+
+		case OPF_ANY_HUD_GAUGE:
+			str = "<Custom or builtin hud gauge>";
+			break;
+
+		case OPF_ANIMATION_NAME:
+			str = "<Animation trigger name>";
+			break;
+
+		case OPF_CONTAINER_VALUE:
+			str = "<container value>";
+			break;
+
+		case OPF_MESSAGE_TYPE:
+			str = Builtin_messages[0].name;
+			break;
+
+		case OPF_VARIABLE_NAME:
+			str = "<variable name>";
+			break;
+
+		case OPF_CONTAINER_NAME:
+			str = "<container name>";
+			break;
+
+		case OPF_LIST_CONTAINER_NAME:
+			str = "<list container name>";
+			break;
+
+		case OPF_MAP_CONTAINER_NAME:
+			str = "<map container name>";
+			break;
+
+		default:
+			str = "<new default required!>";
+			break;
+	}
+
+	item->set_data(str, (SEXPT_STRING | SEXPT_VALID));
+	return 0;
+}
+
 // -----------------------------------------------------------------------
 // Tree navigation helpers
 // -----------------------------------------------------------------------
@@ -1034,6 +1492,35 @@ int SexpTreeModel::find_text(const char* text, int* find, int max_depth) const
 	}
 
 	return find_count;
+}
+
+// -----------------------------------------------------------------------
+// Free-function utilities for sexp tree variable text
+// -----------------------------------------------------------------------
+
+void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name)
+{
+	auto length = strcspn(text, "(");
+
+	strncpy(var_name, text, length);
+	var_name[length] = '\0';
+}
+
+void get_variable_default_text_from_variable_text(char* text, char* default_text)
+{
+	char* start;
+
+	// find '('
+	start = strstr(text, "(");
+	Assert(start);
+	start++;
+
+	// get length and copy all but last char ")"
+	auto len = strlen(start);
+	strncpy(default_text, start, len - 1);
+
+	// add null termination
+	default_text[len - 1] = '\0';
 }
 
 // -----------------------------------------------------------------------
