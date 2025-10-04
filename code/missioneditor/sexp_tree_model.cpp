@@ -1035,3 +1035,160 @@ int SexpTreeModel::find_text(const char* text, int* find, int max_depth) const
 
 	return find_count;
 }
+
+// -----------------------------------------------------------------------
+// Variable / container utilities
+// -----------------------------------------------------------------------
+
+int SexpTreeModel::get_item_index_to_var_index() const
+{
+	// check valid item index and node is a variable
+	if ((item_index > 0) && (tree_nodes[item_index].type & SEXPT_VARIABLE)) {
+		return get_tree_name_to_sexp_variable_index(tree_nodes[item_index].text);
+	} else {
+		return -1;
+	}
+}
+
+int SexpTreeModel::get_tree_name_to_sexp_variable_index(const char* tree_name)
+{
+	char var_name[TOKEN_LENGTH];
+
+	auto chars_to_copy = strcspn(tree_name, "(");
+	Assert(chars_to_copy < TOKEN_LENGTH - 1);
+
+	// Copy up to '(' and add null termination
+	strncpy(var_name, tree_name, chars_to_copy);
+	var_name[chars_to_copy] = '\0';
+
+	// Look up index
+	return get_index_sexp_variable_name(var_name);
+}
+
+int SexpTreeModel::get_modify_variable_type(int parent) const
+{
+	int sexp_var_index = -1;
+
+	Assert(parent >= 0);
+	int op_const = get_operator_const(tree_nodes[parent].text);
+
+	Assert(tree_nodes[parent].child >= 0);
+	char* node_text = tree_nodes[tree_nodes[parent].child].text;
+
+	if (op_const == OP_MODIFY_VARIABLE) {
+		sexp_var_index = get_tree_name_to_sexp_variable_index(node_text);
+	} else if (op_const == OP_SET_VARIABLE_BY_INDEX) {
+		if (can_construe_as_integer(node_text)) {
+			sexp_var_index = atoi(node_text);
+		} else if (strchr(node_text, '(') && strchr(node_text, ')')) {
+			// the variable index is itself a variable!
+			return OPF_AMBIGUOUS;
+		}
+	} else {
+		Int3();  // should not be called otherwise
+	}
+
+	// if we don't have a valid variable, allow replacement with anything
+	if (sexp_var_index < 0)
+		return OPF_AMBIGUOUS;
+
+	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_BLOCK || Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NOT_USED) {
+		// assume number so that we can allow tree display of number operators
+		return OPF_NUMBER;
+	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+		return OPF_NUMBER;
+	} else if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING) {
+		return OPF_AMBIGUOUS;
+	} else {
+		Int3();
+		return 0;
+	}
+}
+
+int SexpTreeModel::get_variable_count(const char* var_name) const
+{
+	int count = 0;
+	char compare_name[64];
+
+	// get name to compare
+	strcpy_s(compare_name, var_name);
+	strcat_s(compare_name, "(");
+
+	// look for compare name
+	for (size_t idx = 0; idx < tree_nodes.size(); idx++) {
+		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if (strstr(tree_nodes[idx].text, compare_name)) {
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+
+// Returns the number of times a variable with this name has been used by player loadout
+int SexpTreeModel::get_loadout_variable_count(int var_index) const
+{
+	// we shouldn't be being passed the index of variables that do not exist
+	Assert(var_index >= 0 && var_index < MAX_SEXP_VARIABLES);
+
+	int idx;
+	int count = 0;
+
+	for (int i = 0; i < MAX_TVT_TEAMS; i++) {
+		for (idx = 0; idx < Team_data[i].num_ship_choices; idx++) {
+			if (!strcmp(Team_data[i].ship_list_variables[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
+			}
+
+			if (!strcmp(Team_data[i].ship_count_variables[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
+			}
+		}
+
+		for (idx = 0; idx < Team_data[i].num_weapon_choices; idx++) {
+			if (!strcmp(Team_data[i].weaponry_pool_variable[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
+			}
+			if (!strcmp(Team_data[i].weaponry_amount_variable[idx], Sexp_variables[var_index].variable_name)) {
+				count++;
+			}
+		}
+	}
+
+	return count;
+}
+
+int SexpTreeModel::get_container_usage_count(const SCP_string& container_name) const
+{
+	int count = 0;
+
+	for (int node_idx = 0; node_idx < (int)tree_nodes.size(); node_idx++) {
+		if (is_matching_container_node(node_idx, container_name)) {
+			count++;
+		}
+	}
+
+	return count;
+}
+
+bool SexpTreeModel::is_matching_container_node(int node, const SCP_string& container_name) const
+{
+	return (tree_nodes[node].type & SEXPT_VALID) &&
+		   (tree_nodes[node].type & (SEXPT_CONTAINER_NAME | SEXPT_CONTAINER_DATA)) &&
+		   !stricmp(tree_nodes[node].text, container_name.c_str());
+}
+
+bool SexpTreeModel::is_container_name_argument(int node) const
+{
+	Assertion(node >= 0 && node < (int)tree_nodes.size(),
+		"Attempt to check if out-of-range node %d is a container name argument. Please report!",
+		node);
+
+	if (tree_nodes[node].parent == -1) {
+		return false;
+	}
+
+	const int arg_opf_type = query_node_argument_type(node);
+	return is_container_name_opf_type(arg_opf_type);
+}

@@ -249,6 +249,16 @@ public:
 	static const char* help(int code);
 	int find_text(const char* text, int* find, int max_depth) const;
 
+	// --- Variable / container utilities ---
+	int get_item_index_to_var_index() const;
+	static int get_tree_name_to_sexp_variable_index(const char* tree_name);
+	int get_modify_variable_type(int parent) const;
+	int get_variable_count(const char* var_name) const;
+	int get_loadout_variable_count(int var_index) const;
+	int get_container_usage_count(const SCP_string& container_name) const;
+	bool is_matching_container_node(int node, const SCP_string& container_name) const;
+	bool is_container_name_argument(int node) const;
+
 	// --- OPF listing functions (implemented in sexp_tree_opf.cpp) ---
 	sexp_list_item* get_listing_opf(int opf, int parent_node, int arg_index);
 	sexp_list_item* get_listing_opf_null();
