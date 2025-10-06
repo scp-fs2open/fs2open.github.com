@@ -225,9 +225,6 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Max Incoming Asteroids:"))
 					parse_int_list(profile->max_incoming_asteroids, NUM_SKILL_LEVELS);
 
-				if (optional_string("$Max Allies Rearming Threshold:"))
-				 	stuff_int(&profile->max_allies_rearming_threshold);
-
 				if (optional_string("$Player Damage Factor:") || optional_string("$AI Damage Reduction to Player Hull:"))
 					parse_float_list(profile->player_damage_scale, NUM_SKILL_LEVELS);
 
@@ -381,6 +378,9 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				if (optional_string("$Detail Distance Multiplier:"))
 					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_VALUE + 1);
+
+				if (optional_string("$Max Allies Rearming Threshold:"))
+				 	stuff_int(&profile->max_allies_rearming_threshold);
 
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
