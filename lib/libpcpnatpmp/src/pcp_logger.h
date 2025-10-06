@@ -80,7 +80,7 @@ void pcp_logger(pcp_loglvl_e log_level, const char *fmt, ...)
 #define PCP_LOG(level, fmt, ...)                                               \
     {                                                                          \
         if (level <= PCP_MAX_LOG_LEVEL)                                        \
-            pcp_logger(level, fmt, __VA_ARGS__);                               \
+            pcp_logger(level, fmt, ##__VA_ARGS__);                               \
     }
 
 #define PCP_LOG_END(level)

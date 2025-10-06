@@ -26,6 +26,12 @@
 #ifndef PCP_GETTIMEOFDAY
 #define PCP_GETTIMEOFDAY
 
+#ifdef WIN32
+#include <winsock2.h>
+#else
+#include <sys/time.h>
+#endif
+
 int gettimeofday(struct timeval *tv, struct timezone *tz);
 
 #endif /*PCP_GETTIMEOFDAY*/

@@ -81,7 +81,7 @@ static inline const char *pcp_inet_ntop(int af, const void *src, char *dst,
 
 #define getpid GetCurrentProcessId
 
-int gettimeofday(struct timeval *tv, struct timezone *tz);
+#include "pcp_gettimeofday.h"
 
 #define MSG_DONTWAIT 0x0
 
