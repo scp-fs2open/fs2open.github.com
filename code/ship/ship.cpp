@@ -3754,6 +3754,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	if (optional_string("$Aims at Flight Cursor:")) {
 		stuff_boolean(&sip->aims_at_flight_cursor);
 
+		if (optional_string("+Secondary Aims at Flight Cursor:")) {
+			stuff_boolean(&sip->aims_at_flight_cursor_secondary);
+		}
+
 		if (optional_string("+Extent:")) {
 			stuff_float(&sip->flight_cursor_aim_extent);
 			sip->flight_cursor_aim_extent = fl_radians(sip->flight_cursor_aim_extent);
@@ -14416,7 +14420,12 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 
 			matrix firing_orient;
-			if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
+			if (obj == Player_obj && sip->aims_at_flight_cursor_secondary)
+			{
+				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
+				firing_orient = firing_orient * obj->orient;
+			} 
+			else if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
 			{
 				firing_orient = obj->orient;
 			}
