@@ -235,7 +235,7 @@ void parse_species_tbl(const char *filename)
 			// Goober5000 - FRED color
 			if (optional_string("$FRED Color:") || optional_string("$FRED Colour:"))
 			{
-				stuff_int_list(species->fred_color.a1d, 3, RAW_INTEGER_TYPE);
+				stuff_int_list(species->fred_color.a1d, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			}
 			else if (!no_create)
 			{

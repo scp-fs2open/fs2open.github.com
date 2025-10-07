@@ -178,10 +178,11 @@ static auto GammaOption __UNUSED = options::OptionBuilder<float>("Graphics.Gamma
 
 static void parse_lighting_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);

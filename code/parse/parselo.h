@@ -56,19 +56,22 @@ enum class LineEndingType { UNKNOWN, CR, CRLF, LF };
 
 #define PARSE_BUF_SIZE			4096
 
-#define	SHIP_TYPE			0	// used to identify which kind of array to do a search for a name in
-#define	SHIP_INFO_TYPE		1
-#define	WEAPON_LIST_TYPE	2	//	to parse an int_list of weapons
-#define	RAW_INTEGER_TYPE	3	//	to parse a list of integers
-#define	WEAPON_POOL_TYPE	4
+enum class ParseLookupType
+{
+	RAW_INTEGER_TYPE,   // to parse a list of integers
+	SHIP_TYPE,          // used to identify which kind of array to do a search for a name in
+	SHIP_INFO_TYPE,
+	WEAPON_LIST_TYPE,   // to parse an int_list of weapons
+	WEAPON_POOL_TYPE,
+	FIREBALL_INFO_TYPE,
+	MISSION_LOADOUT_SHIP_LIST,
+	MISSION_LOADOUT_WEAPON_LIST,
+	CAMPAIGN_LOADOUT_SHIP_LIST,
+	CAMPAIGN_LOADOUT_WEAPON_LIST,
+};
 
 // Karajorma - Used by the stuff_ship_list and stuff_weapon_list SEXPs
 #define NOT_SET_BY_SEXP_VARIABLE	-1
-
-#define MISSION_LOADOUT_SHIP_LIST		5
-#define MISSION_LOADOUT_WEAPON_LIST		6
-#define CAMPAIGN_LOADOUT_SHIP_LIST		7
-#define CAMPAIGN_LOADOUT_WEAPON_LIST	8
 
 #define SEXP_SAVE_MODE				1
 #define SEXP_ERROR_CHECK_MODE		2
@@ -257,8 +260,8 @@ void stuff_flagset(T *dest) {
     diag_printf("Stuffed flagset: %" PRIu64 "\n", dest->to_u64());
 }
 
-extern size_t stuff_int_list(int *ilp, size_t max_ints, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
-extern void stuff_int_list(SCP_vector<int> &ilp, int lookup_type = RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
+extern size_t stuff_int_list(int *ilp, size_t max_ints, ParseLookupType lookup_type = ParseLookupType::RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
+extern void stuff_int_list(SCP_vector<int> &ilp, ParseLookupType lookup_type = ParseLookupType::RAW_INTEGER_TYPE, bool warn_on_lookup_failure = true);
 extern size_t stuff_float_list(float* flp, size_t max_floats);
 extern void stuff_float_list(SCP_vector<float>& flp);
 extern size_t stuff_vec3d_list(vec3d *vlp, size_t max_vecs);
@@ -449,7 +452,7 @@ struct loadout_row
 };
 
 //Karajorma/Goober5000 - Parses mission and campaign ship loadouts.
-void stuff_loadout_list(SCP_vector<loadout_row> &list, int lookup_type);
+void stuff_loadout_list(SCP_vector<loadout_row> &list, ParseLookupType lookup_type);
 int get_string_or_variable (char *str);
 int get_string_or_variable (SCP_string &str);
 #define PARSING_FOUND_STRING		0

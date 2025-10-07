@@ -1296,7 +1296,7 @@ int fireball_get_count()
 
 void stuff_fireball_index_list(SCP_vector<int> &list, const char *name)
 {
-	stuff_int_list(list, RAW_INTEGER_TYPE);
+	stuff_int_list(list, ParseLookupType::FIREBALL_INFO_TYPE);
 
 	list.erase(std::remove_if(list.begin(), list.end(), [&](int index) {
 		if (!SCP_vector_inbounds(Fireball_info, index)) {

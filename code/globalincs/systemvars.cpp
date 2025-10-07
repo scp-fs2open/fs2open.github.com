@@ -242,10 +242,11 @@ const SCP_vector<std::pair<int, std::pair<const char*, int>>> DetailLevelValues 
 
 static void parse_model_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
@@ -272,10 +273,11 @@ const auto ModelDetailOption __UNUSED = options::OptionBuilder<int>("Graphics.De
 
 static void parse_texture_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
@@ -302,10 +304,11 @@ const auto TexturesOption __UNUSED = options::OptionBuilder<int>("Graphics.Textu
 
 static void parse_particles_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
@@ -332,10 +335,11 @@ const auto ParticlesOption __UNUSED = options::OptionBuilder<int>("Graphics.Part
 
 static void parse_debris_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
@@ -362,10 +366,11 @@ const auto SmallDebrisOption __UNUSED = options::OptionBuilder<int>("Graphics.Sm
 
 static void parse_shield_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
@@ -392,10 +397,11 @@ const auto ShieldEffectsOption __UNUSED = options::OptionBuilder<int>("Graphics.
 
 static void parse_stars_detail_func()
 {
-	int value[static_cast<int>(DefaultDetailPreset::Num_detail_presets)];
-	stuff_int_list(value, static_cast<int>(DefaultDetailPreset::Num_detail_presets), RAW_INTEGER_TYPE);
+	constexpr int num_detail_presets = static_cast<int>(DefaultDetailPreset::Num_detail_presets);
+	int value[num_detail_presets];
+	stuff_int_list(value, num_detail_presets, ParseLookupType::RAW_INTEGER_TYPE);
 
-	for (int i = 0; i < static_cast<int>(DefaultDetailPreset::Num_detail_presets); i++) {
+	for (int i = 0; i < num_detail_presets; i++) {
 
 		if (value[i] < 0 || value[i] > MAX_DETAIL_VALUE) {
 			error_display(0, "%i is an invalid detail level value!", value[i]);
