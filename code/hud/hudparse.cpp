@@ -296,7 +296,8 @@ void parse_hud_gauges_tbl(const char *filename)
 
 			for (int i = 0; i < NUM_HUD_COLOR_PRESETS; i++) {
 				SCP_string colorPresetString = "$Color Preset " + std::to_string(i + 1) + ":";
-				if (optional_string(colorPresetString.c_str())) {
+				SCP_string colourPresetString = "$Colour Preset " + std::to_string(i + 1) + ":";
+				if (optional_string_either(colorPresetString.c_str(), colourPresetString.c_str()) >= 0) {
 					hc_col preset;
 					required_string("+Name:");
 					stuff_string(preset.name, F_NAME);
@@ -304,7 +305,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					required_string("+XSTR ID:");
 					stuff_int(&preset.xstr);
 
-					required_string("+Color:");
+					required_string_either("+Color:", "+Colour:", true);
 					int rgb[3] = {255, 255, 255};
 					stuff_int_list(rgb, 3);
 
@@ -334,7 +335,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			stuff_boolean(&Hud_retail);
 		}
 
-		if (optional_string("$Color:")) {
+		if (optional_string_either("$Color:", "$Colour:") >= 0) {
 			stuff_int_list(colors, 3);
 
 			check_color(colors);
@@ -387,9 +388,9 @@ void parse_hud_gauges_tbl(const char *filename)
 			}
 		}
 
-		if (optional_string("$Wireframe Color Override:")) {
+		if (optional_string_either("$Wireframe Color Override:", "$Wireframe Colour Override:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&Targetbox_color, rgb[0], rgb[1], rgb[2]);
 			Targetbox_color_override = true;
 		}
@@ -462,7 +463,7 @@ void parse_hud_gauges_tbl(const char *filename)
 						stuff_boolean(&Ship_info[ship_idx].hud_retail);
 					}
 
-					if (optional_string("$Color:")) {
+					if (optional_string_either("$Color:", "$Colour:") >= 0) {
 						stuff_int_list(colors, 3);
 
 						check_color(colors);
@@ -491,7 +492,7 @@ void parse_hud_gauges_tbl(const char *filename)
 
 				int shiparray[256];
 
-				n_ships = (int)stuff_int_list(shiparray, 256, SHIP_INFO_TYPE);
+				n_ships = sz2i(stuff_int_list(shiparray, 256, ParseLookupType::SHIP_INFO_TYPE));
 
 				if (optional_string("$Load Retail Configuration:")) {
 					stuff_boolean(&retail_config);
@@ -503,7 +504,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					Ship_info[shiparray[i]].hud_retail = retail_config;
 				}
 
-				if (optional_string("$Color:")) {
+				if (optional_string_either("$Color:", "$Colour:") >= 0) {
 					stuff_int_list(colors, 3);
 
 					check_color(colors);
@@ -590,7 +591,7 @@ void parse_hud_gauges_tbl(const char *filename)
 					}
 				}
 
-				if (optional_string("$Color:")) {
+				if (optional_string_either("$Color:", "$Colour:") >= 0) {
 					stuff_int_list(colors, 3);
 
 					check_color(colors);
@@ -631,7 +632,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			required_string("$Base:");
 
 			// get the base width and height describing this HUD
-			stuff_int_list(base_res, 2, RAW_INTEGER_TYPE);
+			stuff_int_list(base_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 			// gauge scaling for this base res?
 			if (optional_string("$Scale Gauges:")) {
@@ -664,7 +665,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// check minimum resolution
 			if (optional_string("$Min:")) {
 				int min_res[2];
-				stuff_int_list(min_res, 2, RAW_INTEGER_TYPE);
+				stuff_int_list(min_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 				if (min_res[0] > gr_screen.max_w) {
 					prune_config = true;
@@ -679,7 +680,7 @@ void parse_hud_gauges_tbl(const char *filename)
 			// check maximum resolution
 			if (optional_string("$Max:")) {
 				int max_res[2];
-				stuff_int_list(max_res, 2, RAW_INTEGER_TYPE);
+				stuff_int_list(max_res, 2, ParseLookupType::RAW_INTEGER_TYPE);
 
 				if (max_res[0] < gr_screen.max_w) {
 					prune_config = true;
@@ -1520,7 +1521,7 @@ std::unique_ptr<T> gauge_load_common(gauge_settings* settings, T* preAllocated =
 			colors[2] = settings->use_clr->blue;
 
 			lock_color = true;
-		} else if ( optional_string("Color:") ) {
+		} else if ( optional_string_either("Color:", "Colour:") >= 0 ) {
 			stuff_int_list(colors, 3);
 
 			check_color(colors);
@@ -1696,7 +1697,7 @@ void load_gauge_custom(gauge_settings* settings)
 			colors[2] = settings->use_clr->blue;
 
 			lock_color = true;
-		} else if ( optional_string("Color:") ) {
+		} else if ( optional_string_either("Color:", "Colour:") >= 0 ) {
 			stuff_int_list(colors, 3);
 
 			check_color(colors);
@@ -3547,9 +3548,9 @@ void load_gauge_target_monitor(gauge_settings* settings)
 	if (optional_string("Wireframe:")) {
 		stuff_int(&wireframe);
 	}
-	if (optional_string("Wireframe Color:")) {
+	if (optional_string_either("Wireframe Color:", "Wireframe Colour:") >= 0) {
 		int rgb[3];
-		stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+		stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		gr_init_color(&wirecolor, rgb[0], rgb[1], rgb[2]);
 		wirecoloroverride = true;
 	}
@@ -4156,11 +4157,11 @@ void load_gauge_auto_target(gauge_settings* settings)
 		stuff_int_list(target_text_offset, 2);
 	}
 
-	if ( optional_string("On Text Color:") ) {
+	if ( optional_string_either("On Text Color:", "On Text Colour:") >= 0 ) {
 		stuff_int_list(on_color, 4);
 	}
 
-	if ( optional_string("Off Text Color:") ) {
+	if ( optional_string_either("Off Text Color:", "Off Text Colour:") >= 0 ) {
 		stuff_int_list(off_color, 4);
 	}
 
@@ -4215,11 +4216,11 @@ void load_gauge_auto_speed(gauge_settings* settings)
 		stuff_int_list(speed_text_offset, 2);
 	}
 
-	if ( optional_string("On Text Color:") ) {
+	if ( optional_string_either("On Text Color:", "On Text Colour:") >= 0 ) {
 		stuff_int_list(on_color, 4);
 	}
 
-	if ( optional_string("Off Text Color:") ) {
+	if ( optional_string_either("Off Text Color:", "Off Text Colour:") >= 0 ) {
 		stuff_int_list(off_color, 4);
 	}
 
@@ -4376,7 +4377,7 @@ void load_gauge_wingman_status(gauge_settings* settings)
 	}
 
 	bool use_expanded_colors = false;
-	if (optional_string("Use Expanded Colors:")) {
+	if (optional_string_either("Use Expanded Colors:", "Use Expanded Colours:") >= 0) {
 		stuff_boolean(&use_expanded_colors);
 	}
 

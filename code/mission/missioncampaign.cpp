@@ -395,7 +395,7 @@ void mission_campaign_get_sw_info()
     int i, count, ship_list[MAX_SHIP_CLASSES], weapon_list[MAX_WEAPON_TYPES];
 
     if (optional_string("+Starting Ships:")) {
-        count = (int)stuff_int_list(ship_list, MAX_SHIP_CLASSES, SHIP_INFO_TYPE);
+        count = sz2i(stuff_int_list(ship_list, MAX_SHIP_CLASSES, ParseLookupType::SHIP_INFO_TYPE));
 
         // now set the array elements stating which ships we are allowed
         for (i = 0; i < count; i++) {
@@ -412,7 +412,7 @@ void mission_campaign_get_sw_info()
 	}
 
     if (optional_string("+Starting Weapons:")) {
-        count = (int)stuff_int_list(weapon_list, MAX_WEAPON_TYPES, WEAPON_POOL_TYPE);
+        count = sz2i(stuff_int_list(weapon_list, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_POOL_TYPE));
 
         // now set the array elements stating which ships we are allowed
 		for (i = 0; i < count; i++) {

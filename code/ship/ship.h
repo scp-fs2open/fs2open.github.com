@@ -1450,6 +1450,7 @@ public:
 	float bank_autoaim_fov[MAX_SHIP_PRIMARY_BANKS];
 
 	bool aims_at_flight_cursor;
+	bool aims_at_flight_cursor_secondary;
 	float flight_cursor_aim_extent;
 
 	bool topdown_offset_def;

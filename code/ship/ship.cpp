@@ -353,7 +353,8 @@ flag_def_list_new<Model::Subsystem_Flags> Subsystem_flags[] = {
 	{ "don't autorepair if disabled", Model::Subsystem_Flags::No_autorepair_if_disabled,        true, false },
 	{ "share fire direction",       Model::Subsystem_Flags::Share_fire_direction,               true, false },
 	{ "no damage spew",             Model::Subsystem_Flags::No_sparks,                          true, false },
-	{ "no impact debris",           Model::Subsystem_Flags::No_impact_debris,                   true, false },
+	{ "disable all generic impact debris",    Model::Subsystem_Flags::Disable_all_generic_impact_debris,    true, false },
+	{ "disable all generic explosion debris", Model::Subsystem_Flags::Disable_all_generic_explosion_debris, true, false },
 	{ "hide turret from loadout stats", Model::Subsystem_Flags::Hide_turret_from_loadout_stats, true, false },
 	{ "turret has distant firepoint", Model::Subsystem_Flags::Turret_distant_firepoint,         true, false },
 	{ "override submodel impact",   Model::Subsystem_Flags::Override_submodel_impact,           true, false },
@@ -412,7 +413,8 @@ flag_def_list_new<Info_Flags> Ship_flags[] = {
 	{ "don't clamp max velocity",	Info_Flags::Dont_clamp_max_velocity,	true, false },
 	{ "instantaneous acceleration",	Info_Flags::Instantaneous_acceleration,	true, false },
 	{ "large ship deathroll",		Info_Flags::Large_ship_deathroll,	true, false },
-	{ "no impact debris",			Info_Flags::No_impact_debris,		true, false },
+	{ "disable all generic impact debris",    Info_Flags::Disable_all_generic_impact_debris,    true, false },
+	{ "disable all generic explosion debris", Info_Flags::Disable_all_generic_explosion_debris, true, false },
     // to keep things clean, obsolete options go last
     { "ballistic primaries",		Info_Flags::Ballistic_primaries,	false, false }
 };
@@ -2705,7 +2707,7 @@ static void parse_allowed_weapons(ship_info *sip, const bool is_primary, const b
 				break;
 			}
 
-			num_allowed = (int)stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_allowed = sz2i(stuff_int_list(allowed_weapons, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_LIST_TYPE));
 
 			// actually say which weapons are allowed
 			for ( i = 0; i < num_allowed; i++ )
@@ -2745,9 +2747,9 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	{
 		// get weapon list
 		if (num_banks != NULL)
-			*num_banks = (int)stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			*num_banks = sz2i(stuff_int_list(bank_default_weapons, max_banks, ParseLookupType::WEAPON_LIST_TYPE));
 		else
-			stuff_int_list(bank_default_weapons, max_banks, WEAPON_LIST_TYPE);
+			stuff_int_list(bank_default_weapons, max_banks, ParseLookupType::WEAPON_LIST_TYPE);
 	}
 
 	// we initialize to the previous parse, which presumably worked
@@ -2756,7 +2758,7 @@ static void parse_weapon_bank(ship_info *sip, bool is_primary, int *num_banks, i
 	if (optional_string(bank_capacities_str))
 	{
 		// get capacity list
-		num_bank_capacities = (int)stuff_int_list(bank_capacities, max_banks, RAW_INTEGER_TYPE);
+		num_bank_capacities = sz2i(stuff_int_list(bank_capacities, max_banks, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	// num_banks can be null if we're parsing weapons for a turret
@@ -3320,7 +3322,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 	}
 
 	if(optional_string("$Detail distance:")) {
-		sip->num_detail_levels = (int)stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		sip->num_detail_levels = sz2i(stuff_int_list(sip->detail_distance, MAX_SHIP_DETAIL_LEVELS, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	if(optional_string("$Collision LOD:")) {
@@ -3753,6 +3755,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 
 	if (optional_string("$Aims at Flight Cursor:")) {
 		stuff_boolean(&sip->aims_at_flight_cursor);
+
+		if (optional_string("+Secondary Aims at Flight Cursor:")) {
+			stuff_boolean(&sip->aims_at_flight_cursor_secondary);
+		}
 
 		if (optional_string("+Extent:")) {
 			stuff_float(&sip->flight_cursor_aim_extent);
@@ -4456,6 +4462,10 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			if (!stricmp(cur_flag, "dont clamp max velocity")) {
 				flag_found = true;
 				sip->flags.set(Ship::Info_Flags::Dont_clamp_max_velocity);
+			}
+			if (!stricmp(cur_flag, "no impact debris")) {
+				flag_found = true;
+				sip->flags.set(Ship::Info_Flags::Disable_all_generic_impact_debris);
 			}
 
 			if ( !flag_found && (ship_type_index < 0) )
@@ -5332,8 +5342,8 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			WarningEx(LOCATION, "%s '%s'\nIFF colour when IFF is \"%s\" invalid!", info_type_name, sip->name, iff_2);
 
 		// Set the color
-		required_string("+As Color:");
-		stuff_int_list(iff_color_data, 3, RAW_INTEGER_TYPE);
+		required_string_either("+As Color:", "+As Colour:", true);
+		stuff_int_list(iff_color_data, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		sip->ship_iff_info[{iff_data[0],iff_data[1]}] = iff_init_color(iff_color_data[0], iff_color_data[1], iff_color_data[2]);
 	}
 
@@ -5446,23 +5456,23 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 			new_info.width = 0.0f;
 		}
 
-		if (optional_string("+Primary color 1:")) {
+		if (optional_string_either("+Primary color 1:", "+Primary colour 1:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_1, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_1 = Arc_color_damage_p1;
 		}
-		if (optional_string("+Primary color 2:")) {
+		if (optional_string_either("+Primary color 2:", "+Primary colour 2:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.primary_color_2, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.primary_color_2 = Arc_color_damage_p2;
 		}
-		if (optional_string("+Secondary color:")) {
+		if (optional_string_either("+Secondary color:", "+Secondary colour:") >= 0) {
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&new_info.secondary_color, rgb[0], rgb[1], rgb[2]);
 		} else {
 			new_info.secondary_color = Arc_color_damage_s1;
@@ -5833,7 +5843,25 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
                 SCP_vector<SCP_string> errors;
                 flagset<Model::Subsystem_Flags> tmp_flags;
                 parse_string_flag_list(tmp_flags, Subsystem_flags, Num_subsystem_flags, &errors);
-                
+ 
+				// Map of deprecated strings to their new flags
+				static const SCP_unordered_map<SCP_string, Model::Subsystem_Flags, SCP_string_lcase_hash, SCP_string_lcase_equal_to>
+				deprecated_map = {
+					{"no impact debris", Model::Subsystem_Flags::Disable_all_generic_impact_debris},
+					// { "old name", Model::Subsystem_Flags::New_flag },   // future additions
+				};
+
+				// Walk through errors, remap if deprecated
+				for (auto it = errors.begin(); it != errors.end();) {
+					auto found = deprecated_map.find(*it);
+					if (found != deprecated_map.end()) {
+						tmp_flags.set(found->second);
+						it = errors.erase(it); // remove so no bogus warning
+					} else {
+						++it;
+					}
+				}
+
                 if (optional_string("+noreplace")) {
                     sp->flags |= tmp_flags;
                 }
@@ -14416,7 +14444,12 @@ int ship_fire_secondary( object *obj, int allow_swarm, bool rollback_shot )
 			}
 
 			matrix firing_orient;
-			if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
+			if (obj == Player_obj && sip->aims_at_flight_cursor_secondary)
+			{
+				vm_angles_2_matrix(&firing_orient, &Player_flight_cursor);
+				firing_orient = firing_orient * obj->orient;
+			} 
+			else if(!(sip->flags[Ship::Info_Flags::Gun_convergence]))
 			{
 				firing_orient = obj->orient;
 			}

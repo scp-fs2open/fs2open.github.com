@@ -1112,7 +1112,7 @@ void parse_player_info2(mission *pm)
 		}
 
 		required_string("$Ship Choices:");
-		stuff_loadout_list(list, MISSION_LOADOUT_SHIP_LIST);
+		stuff_loadout_list(list, ParseLookupType::MISSION_LOADOUT_SHIP_LIST);
 
 		num_choices = 0;
 
@@ -1180,7 +1180,7 @@ void parse_player_info2(mission *pm)
 			ptr->default_ship = ptr->ship_list[0];
 
 		required_string("+Weaponry Pool:");
-		stuff_loadout_list(list2, MISSION_LOADOUT_WEAPON_LIST);
+		stuff_loadout_list(list2, ParseLookupType::MISSION_LOADOUT_WEAPON_LIST);
 
 		num_choices = 0;
 
@@ -1231,7 +1231,7 @@ void parse_player_info2(mission *pm)
 		{
 			int num_weapons;
 			int weapon_list_buf[MAX_WEAPON_TYPES];
-			num_weapons = (int)stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, WEAPON_LIST_TYPE);
+			num_weapons = sz2i(stuff_int_list(weapon_list_buf, MAX_WEAPON_TYPES, ParseLookupType::WEAPON_LIST_TYPE));
 
 			for (i = 0; i < num_weapons; i++)
 				ptr->weapon_required[weapon_list_buf[i]] = true;
@@ -1699,7 +1699,7 @@ void parse_briefing(mission * /*pm*/, int flags)
 
 			if (optional_string("$grid_color:")) {
 				int rgba[4] = {0, 0, 0, 0};
-				stuff_int_list(rgba, 4, RAW_INTEGER_TYPE);
+				stuff_int_list(rgba, 4, ParseLookupType::RAW_INTEGER_TYPE);
 				gr_init_alphacolor(&bs->grid_color, rgba[0], rgba[1], rgba[2], rgba[3]);
 			} else {
 				bs->grid_color = Color_briefing_grid;
@@ -4033,17 +4033,17 @@ void parse_common_object_data(p_object *p_objp)
 		}
 
 		if (optional_string("+Primary Banks:"))
-			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, WEAPON_LIST_TYPE);
+			stuff_int_list(Subsys_status[i].primary_banks, MAX_SHIP_PRIMARY_BANKS, ParseLookupType::WEAPON_LIST_TYPE);
 
 		// Goober5000
 		if (optional_string("+Pbank Ammo:"))
-			stuff_int_list(Subsys_status[i].primary_ammo, MAX_SHIP_PRIMARY_BANKS, RAW_INTEGER_TYPE);
+			stuff_int_list(Subsys_status[i].primary_ammo, MAX_SHIP_PRIMARY_BANKS, ParseLookupType::RAW_INTEGER_TYPE);
 
 		if (optional_string("+Secondary Banks:"))
-			stuff_int_list(Subsys_status[i].secondary_banks, MAX_SHIP_SECONDARY_BANKS, WEAPON_LIST_TYPE);
+			stuff_int_list(Subsys_status[i].secondary_banks, MAX_SHIP_SECONDARY_BANKS, ParseLookupType::WEAPON_LIST_TYPE);
 
 		if (optional_string("+Sbank Ammo:"))
-			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SHIP_SECONDARY_BANKS, RAW_INTEGER_TYPE);
+			stuff_int_list(Subsys_status[i].secondary_ammo, MAX_SHIP_SECONDARY_BANKS, ParseLookupType::RAW_INTEGER_TYPE);
 	}
 }
 
@@ -5943,7 +5943,7 @@ void parse_bitmaps(mission *pm)
 	if (optional_string("+Neb2Color:")) {
 		nebula = true;
 		int neb_colors[3];
-		stuff_int_list(neb_colors, 3, RAW_INTEGER_TYPE);
+		stuff_int_list(neb_colors, 3, ParseLookupType::RAW_INTEGER_TYPE);
 		Neb2_fog_color[0] = (ubyte)neb_colors[0];
 		Neb2_fog_color[1] = (ubyte)neb_colors[1];
 		Neb2_fog_color[2] = (ubyte)neb_colors[2];

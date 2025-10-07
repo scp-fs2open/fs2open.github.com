@@ -68,7 +68,8 @@ namespace Model {
         No_autorepair_if_disabled,	// Inversion of the previous; disallows this particular subsystem if the ship-wide flag is set (MageKing17)
         Share_fire_direction,		// (DahBlount) Whenever the turret fires a beam, make all beams fire in the same direction.
         No_sparks,          // Subsystem does not generate sparks if hit - m!m
-		No_impact_debris,    // Don't spawn the small debris on impact - m!m
+		Disable_all_generic_impact_debris,    // Don't spawn generic debris pieces on impact - m!m
+		Disable_all_generic_explosion_debris, // Don't spawn generic debris pieces on explosion - wookieejedi
 		Hide_turret_from_loadout_stats, // Turret is not accounted for in auto-generated "Turrets" line in the ship loadout window --wookieejedi
 		Turret_distant_firepoint,	//Turret barrel is very long and should be taken into account when aiming -- Kiloku
 		Override_submodel_impact,	// if a weapon impacted a submodel, but this subsystem is within range, the subsystem takes priority -- Goober5000
