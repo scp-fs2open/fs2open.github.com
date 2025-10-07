@@ -1465,50 +1465,55 @@ void hud_target_missile(object *source_obj, int next_flag)
 
 	start = advance_missile_obj(end, next_flag);
 
-	for ( mo = start; mo != end; mo = advance_missile_obj(mo, next_flag) ) {
-		if ( mo == &Missile_obj_list ){
-			continue;
-		}
-
-		Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
-		A = &Objects[mo->objnum];
-		if (A->flags[Object::Object_Flags::Should_be_dead])
-			continue;
-
-		Assert(A->type == OBJ_WEAPON);
-		Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
-		wp = &Weapons[A->instance];
-		wip = &Weapon_info[wp->weapon_info_index];
-
-		// only allow targeting of bombs
-		if ( !(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted]) ) {
-			if ( !(wip->wi_flags[Weapon::Info_Flags::Bomb]) ) {
+	// start with search for bomb weapon
+	if ( (Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) ||
+		 (Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBS) ) {
+		for (mo = start; mo != end; mo = advance_missile_obj(mo, next_flag)) {
+			if (mo == &Missile_obj_list) {
 				continue;
 			}
-		}
 
-		if (wp->lssm_stage==3){
-			continue;
-		}
+			Assert(mo->objnum >= 0 && mo->objnum < MAX_OBJECTS);
+			A = &Objects[mo->objnum];
+			if (A->flags[Object::Object_Flags::Should_be_dead])
+				continue;
 
-		// only allow targeting of hostile bombs
-		if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
-			continue;
-		}
+			Assert(A->type == OBJ_WEAPON);
+			Assert((A->instance >= 0) && (A->instance < MAX_WEAPONS));
+			wp = &Weapons[A->instance];
+			wip = &Weapon_info[wp->weapon_info_index];
 
-		if(hud_target_invalid_awacs(A)){
-			continue;
-		}
+			// only allow targeting of bombs
+			if (!(wip->wi_flags[Weapon::Info_Flags::Can_be_targeted])) {
+				if (!(wip->wi_flags[Weapon::Info_Flags::Bomb])) {
+					continue;
+				}
+			}
 
-		// if we've reached here, got a new target
-		target_found = TRUE;
-		set_target_objnum( aip, OBJ_INDEX(A) );
-		hud_shield_hit_reset(A);
-		break;
-	}	// end for
+			if (wp->lssm_stage == 3) {
+				continue;
+			}
 
-	if ( !target_found ) {
-	// if no bomb is found, search for bombers
+			// only allow targeting of hostile bombs
+			if (!iff_x_attacks_y(Player_ship->team, obj_team(A))) {
+				continue;
+			}
+
+			if (hud_target_invalid_awacs(A)) {
+				continue;
+			}
+
+			// if we've reached here, got a new target
+			target_found = TRUE;
+			set_target_objnum(aip, OBJ_INDEX(A));
+			hud_shield_hit_reset(A);
+			break;
+		} // end for
+	}
+
+	// if no bomb weapon is found, search for bomber ships
+	if ( !target_found && ((Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) ||
+		 (Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBERS)) ) {
 		ship_obj *startShip, *so;
 
 		if ( (aip->target_objnum != -1)
