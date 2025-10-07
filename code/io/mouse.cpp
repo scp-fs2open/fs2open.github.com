@@ -492,7 +492,8 @@ int mouse_down(int btn, bool must_be_wheel) {
 	// Bail if not a button or wheel direction
 	if ((btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0;
 
-	if (must_be_wheel && !(btn >= LOWEST_MOUSE_WHEEL && btn <= HIGHEST_MOUSE_WHEEL)) return 0;
+	// Bail if needs to be a mouse wheel and is not --wookieejedi 
+	if (must_be_wheel && (btn < LOWEST_MOUSE_WHEEL || btn > HIGHEST_MOUSE_WHEEL)) return 0;
 
 
 	SDL_LockMutex( mouse_lock );
