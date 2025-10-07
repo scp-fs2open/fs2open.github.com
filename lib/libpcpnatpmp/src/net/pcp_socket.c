@@ -528,7 +528,7 @@ static ssize_t pcp_socket_sendto_impl(PCP_SOCKET sock, const void *buf,
         if (WSAIoctl(sock, SIO_GET_EXTENSION_FUNCTION_POINTER, &WSARecvMsg_GUID,
                      sizeof(GUID), &WSARecvMsg, sizeof(WSARecvMsg),
                      &dwBytesReturned, NULL, NULL) == SOCKET_ERROR) {
-            PCP_LOG(PCP_LOGLVL_PERR, ("WSAIoctl failed"));
+            PCP_LOG(PCP_LOGLVL_PERR, "WSAIoctl failed");
             return 1;
         }
 

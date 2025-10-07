@@ -54,7 +54,7 @@ if (WIN32)
         target_compile_definitions(pcpnatpmp PRIVATE HAVE_GETTIMEOFDAY)
     endif(MINGW)
 
-    target_link_libraries (pcpnatpmp INTERFACE ws2_32.lib Iphlpapi.lib)
+    target_link_libraries (pcpnatpmp INTERFACE ws2_32.lib iphlpapi.lib)
 endif ()
 
 suppress_warnings(pcpnatpmp)

@@ -2324,7 +2324,7 @@ static void asteroid_parse_section()
 	}
 
 	if (optional_string("$Detail distance:")) {
-		asteroid_p->num_detail_levels = (int)stuff_int_list(asteroid_p->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		asteroid_p->num_detail_levels = sz2i(stuff_int_list(asteroid_p->detail_distance, MAX_ASTEROID_DETAIL_LEVELS, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	if (optional_string("$Max Speed:")) {
@@ -2488,8 +2488,8 @@ static void asteroid_parse_tbl(const char* filename)
 			Asteroid_impact_explosion_ani = particle::util::parseEffect();
 		}
 		else {
-			char impact_ani_file[MAX_FILENAME_LEN];
-			float Asteroid_impact_explosion_radius;
+			char impact_ani_file[MAX_FILENAME_LEN] = {0};
+			float Asteroid_impact_explosion_radius = 0.0f;
 			int num_frames;
 
 			if (optional_string("$Impact Explosion:")) {

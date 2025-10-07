@@ -1075,7 +1075,7 @@ int parse_weapon(int subtype, bool replace, const char *filename)
 		stuff_int(&wip->hud_target_lod);
 
 	if(optional_string("$Detail distance:")) {
-		wip->num_detail_levels = (int)stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+		wip->num_detail_levels = sz2i(stuff_int_list(wip->detail_distance, MAX_MODEL_DETAIL_LEVELS, ParseLookupType::RAW_INTEGER_TYPE));
 	}
 
 	if ( optional_string("$External Model File:") )

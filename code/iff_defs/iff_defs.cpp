@@ -291,7 +291,7 @@ void parse_iff_table(const char* filename)
 		// Marks various stuff... like asteroids
 		if ((optional_string("$Selection Color:")) || (optional_string("$Selection Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			IFF_COLOR_SELECTION = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
 		else if (!Parsing_modular_table)
@@ -300,7 +300,7 @@ void parse_iff_table(const char* filename)
 		// Marks the ship currently saying something
 		if ((optional_string("$Message Color:")) || (optional_string("$Message Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			IFF_COLOR_MESSAGE = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
 		else if (!Parsing_modular_table)
@@ -309,7 +309,7 @@ void parse_iff_table(const char* filename)
 		// Marks the tagged ships
 		if ((optional_string("$Tagged Color:")) || (optional_string("$Tagged Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			IFF_COLOR_TAGGED = iff_init_color(rgb[0], rgb[1], rgb[2]);
 		}
 		else if (!Parsing_modular_table)
@@ -350,7 +350,7 @@ void parse_iff_table(const char* filename)
 		// Parse blip colours, their order is hardcoded.
 		if ((optional_string("$Missile Blip Color:")) || (optional_string("$Missile Blip Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			for (i = 0; i < 3; i++)
 			{
 				Assert(rgb[i] >= 0 && rgb[i] <= 255);
@@ -361,7 +361,7 @@ void parse_iff_table(const char* filename)
 
 		if ((optional_string("$Navbuoy Blip Color:")) || (optional_string("$Navbuoy Blip Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			for (i = 0; i < 3; i++)
 			{
 				Assert(rgb[i] >= 0 && rgb[i] <= 255);
@@ -372,7 +372,7 @@ void parse_iff_table(const char* filename)
 
 		if ((optional_string("$Warping Blip Color:")) || (optional_string("$Warping Blip Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			for (i = 0; i < 3; i++)
 			{
 				Assert(rgb[i] >= 0 && rgb[i] <= 255);
@@ -383,7 +383,7 @@ void parse_iff_table(const char* filename)
 
 		if ((optional_string("$Node Blip Color:")) || (optional_string("$Node Blip Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			for (i = 0; i < 3; i++)
 			{
 				Assert(rgb[i] >= 0 && rgb[i] <= 255);
@@ -394,7 +394,7 @@ void parse_iff_table(const char* filename)
 
 		if ((optional_string("$Tagged Blip Color:")) || (optional_string("$Tagged Blip Colour:")))
 		{
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			for (i = 0; i < 3; i++)
 			{
 				Assert(rgb[i] >= 0 && rgb[i] <= 255);
@@ -488,13 +488,13 @@ void parse_iff_table(const char* filename)
 
 			// get the iff color
 			if (optional_string_either("$Colour:", "$Color:") != -1) {
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 				iffp->color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
 			// get the accessiblity iff color
 			if (optional_string_either("$Accessibility Colour:", "$Accessibility Color:") != -1) {
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 				iffp->accessibility_color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
@@ -514,7 +514,7 @@ void parse_iff_table(const char* filename)
 				required_string("As:");
 
 				// get color observed
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 				observed_color_table[cur_iff].back().color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
@@ -526,7 +526,7 @@ void parse_iff_table(const char* filename)
 				required_string("As:");
 
 				// get color observed
-				stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+				stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 				accessibility_observed_color_table[cur_iff].back().color_index = iff_init_color(rgb[0], rgb[1], rgb[2]);
 			}
 
