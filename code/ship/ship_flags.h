@@ -217,7 +217,8 @@ namespace Ship {
 		Instantaneous_acceleration,		// Goober5000
 		Has_display_name,				// Goober5000
 		Large_ship_deathroll,			// Asteroth - big ships dont normally deathroll, this makes them do it!
-		No_impact_debris,				// wookieejedi - Don't spawn the small debris on impact
+		Disable_all_generic_impact_debris,    // wookieejedi - Don't spawn debris on impact
+		Disable_all_generic_explosion_debris, // wookieejedi - Don't spawn debris on explosion
 
 		NUM_VALUES
 	};

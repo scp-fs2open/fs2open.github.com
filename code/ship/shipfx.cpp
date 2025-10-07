@@ -285,10 +285,19 @@ void shipfx_blow_off_subsystem(object *ship_objp, ship *ship_p, const ship_subsy
 
 	// create debris shards
     if (!(subsys->flags[Ship::Subsystem_Flags::Vanished]) && !no_explosion) {
-		shipfx_blow_up_model(ship_objp, psub->subobj_num, 50, &subobj_pos, subsys );
+		// default debris shard creation is flag dependent --wookieejedi
+		int num_shards;
+		if (Disable_all_noncustom_generic_debris ||  
+			(Ship_info[ship_p->ship_info_index].flags[Ship::Info_Flags::Disable_all_generic_explosion_debris]) ||
+			(subsys->system_info->flags[Model::Subsystem_Flags::Disable_all_generic_explosion_debris])) {
+			num_shards = 0;
+		} else {
+			num_shards = 50;
+		}
+		shipfx_blow_up_model(ship_objp, psub->subobj_num, num_shards, &subobj_pos, subsys);
 
 		// create live debris objects, if any
-		// TODO:  some MULTIPLAYER implcations here!!
+		// TODO:  some MULTIPLAYER implications here!!
 		shipfx_subsystem_maybe_create_live_debris(ship_objp, ship_p, subsys, exp_center, 1.0f, no_fireballs);
 		
 		if (!no_fireballs) {
