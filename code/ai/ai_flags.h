@@ -188,6 +188,7 @@ namespace AI {
 		Do_not_clear_goals_when_running_stay_still,
 		Do_not_set_override_when_assigning_form_on_wing,
 		Purge_player_issued_form_on_wing_after_subsequent_order,
+		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
 
 		NUM_VALUES
 	};
