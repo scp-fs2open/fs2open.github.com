@@ -379,9 +379,6 @@ void parse_ai_profiles_tbl(const char *filename)
 				if (optional_string("$Detail Distance Multiplier:"))
 					parse_float_list(profile->detail_distance_mult, MAX_DETAIL_VALUE + 1);
 
-				if (optional_string("$Max Allies Rearming Threshold:"))
-				 	stuff_int(&profile->max_allies_rearming_threshold);
-
 				set_flag(profile, "$big ships can attack beam turrets on untargeted ships:", AI::Profile_Flags::Big_ships_can_attack_beam_turrets_on_untargeted_ships);
 
 				set_flag(profile, "$smart primary weapon selection:", AI::Profile_Flags::Smart_primary_weapon_selection);
@@ -479,6 +476,9 @@ void parse_ai_profiles_tbl(const char *filename)
 				set_flag(profile, "$ai guards specific ship in wing:", AI::Profile_Flags::Ai_guards_specific_ship_in_wing);
 
 				set_flag(profile, "$support don't add primaries:", AI::Profile_Flags::Support_dont_add_primaries);
+
+				if (optional_string("$max allies rearming threshold:"))
+				 	stuff_int(&profile->max_allies_rearming_threshold);
 
 				set_flag(profile, "$firing requires exact los:", AI::Profile_Flags::Require_exact_los);
 
