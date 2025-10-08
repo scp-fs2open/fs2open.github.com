@@ -721,6 +721,8 @@ void parse_ai_profiles_tbl(const char *filename)
 
 				set_flag(profile, "$don't issue form-on-wing goals at mission start:", AI::Profile_Flags::Dont_form_on_wing_at_mission_start);
 
+				set_flag(profile, "$cancel future waves of any wing launched from an exited ship:", AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
+
 
 				// end of options ----------------------------------------
 
@@ -938,5 +940,6 @@ void ai_profile_t::reset()
 	}
 	if (mod_supports_version(25, 0, 0)) {
 		flags.set(AI::Profile_Flags::Fix_avoid_shockwave_bugs);
+		flags.set(AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship);
 	}
 }
