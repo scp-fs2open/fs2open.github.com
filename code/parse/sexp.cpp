@@ -15480,10 +15480,16 @@ void sexp_self_destruct(int node)
 
 void sexp_cancel_future_waves(int node)
 {
-	for (int n = node; n != -1; n = CDR(n))	{
+	for (int n = node; n != -1; n = CDR(n))
+	{
 		auto wingp = eval_wing(n);
-		if (wingp) {
+		if (wingp)
+		{
+			// prevent any more waves from arriving by marking this as the last wave
 			wingp->num_waves = wingp->current_wave;
+
+			// we might need to clean up this wing if there are no ships currently in the mission
+			wing_maybe_cleanup(wingp);
 		}
 	}
 }
@@ -40094,10 +40100,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
-		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. is-destroyed-delay, ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false. That wing is not marked as destroyed.\r\n\r\n"
+		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. The is-destroyed-delay, "
+		"ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing "
+		"which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false; and that wing is not marked as destroyed. "
+		"Otherwise, wings will be marked as destroyed or departed in the same manner as they would have been if they were truly on the last wave.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe name of a wing to cancel." },
-
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
