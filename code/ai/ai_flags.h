@@ -181,6 +181,7 @@ namespace AI {
 		ETS_uses_power_output,
 		ETS_energy_same_regardless_of_system_presence,
 		Dont_form_on_wing_at_mission_start,
+		Cancel_future_waves_of_any_wing_launched_from_an_exited_ship,
 
 		NUM_VALUES
 	};

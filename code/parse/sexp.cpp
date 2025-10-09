@@ -4218,19 +4218,23 @@ int check_sexp_potential_issues(int node, int *bad_node, SCP_string &issue_msg)
 			case OP_IS_DESTROYED:
 			case OP_TIME_WING_DESTROYED:
 			{
-				for (int n = first_arg_node; n >= 0; n = CDR(n))
+				if (!The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship])
 				{
-					int wingnum = wing_lookup(CTEXT(n));
-					if (wingnum >= 0)
+					for (int n = first_arg_node; n >= 0; n = CDR(n))
 					{
-						auto wingp = &Wings[wingnum];
-						if (wingp->num_waves > 1 && wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY)
+						int wingnum = wing_lookup(CTEXT(n));
+						if (wingnum >= 0)
 						{
-							issue_msg = "Wing ";
-							issue_msg += wingp->name;
-							issue_msg += " has more than one wave and arrives from a docking bay.  Be careful when checking for this wing's destruction.  If the "
-								"mothership is destroyed before all waves have arrived, the wing will not be considered destroyed.";
-							return SEXP_CHECK_POTENTIAL_ISSUE;
+							auto wingp = &Wings[wingnum];
+							if (wingp->num_waves > 1 && wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY)
+							{
+								issue_msg = "Wing ";
+								issue_msg += wingp->name;
+								issue_msg += " has more than one wave and arrives from a docking bay.  Be careful when checking for this wing's destruction.  If the "
+									"mothership is destroyed before all waves have arrived, the wing will not be considered destroyed.  Note that the "
+									"$cancel future waves of any wing launched from an exited ship: flag can be used to fix this.";
+								return SEXP_CHECK_POTENTIAL_ISSUE;
+							}
 						}
 					}
 				}
