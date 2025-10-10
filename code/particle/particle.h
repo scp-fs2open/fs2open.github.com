@@ -29,7 +29,7 @@ namespace particle
 
 	struct ParticleSubeffectHandle {
 		ParticleEffectHandle handle;
-		size_t subeffect;
+		size_t subeffect = 0;
 
 		const ParticleEffect& getParticleEffect() const;
 	};
