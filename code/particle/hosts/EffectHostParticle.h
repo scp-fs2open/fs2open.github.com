@@ -14,6 +14,9 @@ public:
 
 	vec3d getVelocity() const override;
 
+	//Particles can inherit parent particle's parents, but cannot actually be parented to another particle
+	std::pair<int, int> getParentObjAndSig() const override;
+
 	float getLifetime() const override;
 
 	float getScale() const override;
