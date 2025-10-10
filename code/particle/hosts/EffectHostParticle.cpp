@@ -27,6 +27,15 @@ std::pair<vec3d, matrix> EffectHostParticle::getPositionAndOrientation(bool rela
 		pos = particle->pos;
 	}
 
+	//We might need to convert the position to global space if the parent particle has a parent
+	if (particle->attached_objnum >= 0) {
+		vec3d global_pos;
+		vm_vec_linear_interpolate(&global_pos, &Objects[particle->attached_objnum].pos, &Objects[particle->attached_objnum].last_pos, interp);
+
+		vm_vec_unrotate(&pos, &pos, &Objects[particle->attached_objnum].orient);
+		pos += global_pos;
+	}
+
 	// find the particle direction (normalized vector)
 	// note: this can't be computed for particles with 0 velocity, so use the safe version
 	vec3d particle_dir;
