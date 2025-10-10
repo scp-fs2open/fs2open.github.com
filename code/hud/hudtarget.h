@@ -101,7 +101,7 @@ void	hud_target_subsystem_in_reticle();
 void	hud_show_targeting_gauges(float frametime);
 void	hud_target_targets_target();
 void	hud_check_reticle_list();
-void	hud_target_missile(object *source_obj, int next_flag);
+void	hud_target_hostile_bomb_or_bomber(object *source_obj, int next_flag, bool target_bombs = true, bool target_bombers = true, bool target_closest = false);
 void	hud_target_next_list(int hostile=1, int next_flag=1, int team_mask = -1, int attacked_objnum = -1, int play_fail_sound = TRUE, int filter = 0, int turret_attacking_target = 0);
 int	hud_target_closest_repair_ship(int goal_objnum=-1);
 void	hud_target_auto_target_next();
