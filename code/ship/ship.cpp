@@ -1302,6 +1302,7 @@ void ship_info::clone(const ship_info& other)
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
 	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
 	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
@@ -1656,6 +1657,7 @@ void ship_info::move(ship_info&& other)
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
 	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
 	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
@@ -2058,6 +2060,7 @@ ship_info::ship_info()
 	autoaim_lost_snd = gamesnd_id();
 
 	aims_at_flight_cursor = false;
+	aims_at_flight_cursor_secondary = false;
 	flight_cursor_aim_extent = -1.0f;
 
 	topdown_offset_def = false;
@@ -3766,6 +3769,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else if (sip->aims_at_flight_cursor && sip->flight_cursor_aim_extent < 0.0f) {
 			error_display(0, "Ship %s needs to have an +Extent defined if $Aims at Flight Cursor is true.", sip->name);
 			sip->aims_at_flight_cursor = false;
+			sip->aims_at_flight_cursor_secondary = false;
 		}
 	}
 
