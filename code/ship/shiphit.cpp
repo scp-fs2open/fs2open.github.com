@@ -435,8 +435,6 @@ static float subsys_get_range(const object *other_obj, const ship_subsys *subsys
 	return range;
 }
 
-#define	MAX_SUBSYS_LIST	200 //DTP MAX SUBSYS LIST BUMPED FROM 32 to 200, ahmm 32???
-
 typedef struct {
 	float	dist;
 	float	range;
@@ -452,7 +450,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 	float			healing_left;
 	int				weapon_info_index;
 	ship* ship_p;
-	sublist			subsys_list[MAX_SUBSYS_LIST];
+	SCP_vector<sublist> subsys_list;
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the healing; index into subsys_list
 	vec3d			hitpos2;
 
@@ -476,8 +474,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
-	int	count = 0;
-	for (auto subsys = GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys))
+	for (auto subsys : list_range(&ship_p->subsys_list))
 	{
 		model_subsystem* mss = subsys->system_info;
 
@@ -510,7 +507,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 				if (Damage_impacted_subsystem_first && submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
 					// If the hit impacted this subsystem's submodel, then make sure this subsys
 					// gets healed first, even if another subsystem is closer to the hit location
-					subsys_hit_first = count;
+					subsys_hit_first = sz2i(subsys_list.size());
 				}
 
 				if (mss->flags[Model::Subsystem_Flags::Collide_submodel]) {
@@ -521,14 +518,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 					}
 				}
 
-				subsys_list[count].dist = dist;
-				subsys_list[count].range = range;
-				subsys_list[count].ptr = subsys;
-				count++;
-
-				if (count >= MAX_SUBSYS_LIST) {
-					break;
-				}
+				subsys_list.push_back({ dist, range, subsys });
 			}
 		}
 	}
@@ -552,8 +542,8 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 	//	Now scan the sorted list of subsystems in range.
 	//	Apply healing to the nearest one first (exception: subsys_hit_first),
 	//	subtracting off healing as we go.
-	int	i, j;
-	for (j = 0; j < count; j++)
+	int count = sz2i(subsys_list.size());
+	for (int j = 0; j < count; j++)
 	{
 		float	dist, range;
 		ship_subsys* subsystem;
@@ -563,7 +553,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 			float	min_dist = 9999999.9f;
 
 			// find the closest subsystem
-			for (i=0; i<count; i++) {
+			for (int i=0; i<count; i++) {
 				if (subsys_list[i].dist < min_dist) {
 					min_dist = subsys_list[i].dist;
 					min_index = i;
@@ -666,6 +656,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_heal_stuff(const object
 				break;
 		}
 	}
+
 	return std::make_pair(subsys_impact, healing);
 }
 
@@ -709,7 +700,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 	float				damage_left, damage_if_hull;
 	int				weapon_info_index;
 	ship				*ship_p;
-	sublist			subsys_list[MAX_SUBSYS_LIST];
+	SCP_vector<sublist> subsys_list;
 	int				subsys_hit_first = -1; // the subsys which should be hit first and take most of the damage; index into subsys_list
 	vec3d			hitpos2;
 	float			ss_dif_scale = 1.0f; // Nuke: Set a base dificulty scale for compatibility
@@ -808,8 +799,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 
 	//	First, create a list of the N subsystems within range.
 	//	Then, one at a time, process them in order.
-	int	count = 0;
-	for ( auto subsys=GET_FIRST(&ship_p->subsys_list); subsys != END_OF_LIST(&ship_p->subsys_list); subsys = GET_NEXT(subsys) )
+	for (auto subsys : list_range(&ship_p->subsys_list))
 	{
 		model_subsystem *mss = subsys->system_info;
 
@@ -864,7 +854,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 				if (Damage_impacted_subsystem_first && submodel_num != -1 && (submodel_num == mss->subobj_num || submodel_num == mss->turret_gun_sobj)) {
 					// If the hit impacted this subsystem's submodel, then make sure this subsys
 					// gets dealt damage first, even if another subsystem is closer to the hit location
-					subsys_hit_first = count;
+					subsys_hit_first = sz2i(subsys_list.size());
 				}
 
 				if (mss->flags[Model::Subsystem_Flags::Collide_submodel]) {
@@ -875,14 +865,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 					}
 				}
 
-				subsys_list[count].dist = dist;
-				subsys_list[count].range = range;
-				subsys_list[count].ptr = subsys;
-				count++;
-
-				if (count >= MAX_SUBSYS_LIST){
-					break;
-				}
+				subsys_list.push_back({ dist, range, subsys });
 			}
 		}
 	}
@@ -913,8 +896,8 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 	//	Now scan the sorted list of subsystems in range.
 	//	Apply damage to the nearest one first (exception: subsys_hit_first),
 	//	subtracting off damage as we go.
-	int	i, j;
-	for (j=0; j<count; j++)
+	int count = sz2i(subsys_list.size());
+	for (int j=0; j<count; j++)
 	{
 		float	dist, range;
 		ship_subsys	*subsystem;
@@ -924,7 +907,7 @@ std::pair<std::optional<ConditionData>, float> do_subobj_hit_stuff(object *ship_
 			float	min_dist = 9999999.9f;
 
 			// find the closest subsystem
-			for (i=0; i<count; i++) {
+			for (int i=0; i<count; i++) {
 				if (subsys_list[i].dist < min_dist) {
 					min_dist = subsys_list[i].dist;
 					min_index = i;
