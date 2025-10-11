@@ -101,6 +101,9 @@ public:
 
 	float detail_distance_mult[MAX_DETAIL_VALUE + 1];	//MAX_DETAIL_VALUE really needs to be 4
 
+	// max number of allies allowed to be rearming at the same time
+	int max_allies_rearming_threshold;	
+
 	// minimum radius for the line-of-sight (los) detection --wookieejedi
 	float los_min_detection_radius;
 
