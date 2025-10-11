@@ -36,7 +36,7 @@ LOCAL int Mouse_y;
 LOCAL int Mouse_wheel_x;
 LOCAL int Mouse_wheel_y;
 
-SDL_mutex* mouse_lock;
+SDL_Mutex* mouse_lock;
 
 int mouse_flags;
 int mouse_left_pressed = 0;
@@ -105,19 +105,19 @@ namespace
 
 		switch (e.button.button) {
 			case SDL_BUTTON_LEFT:
-				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_LEFT_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_RIGHT:
-				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_RIGHT_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_MIDDLE:
-				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_MIDDLE_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_X1:
-				mouse_mark_button(MOUSE_X1_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_X1_BUTTON, e.button.down);
 				break;
 			case SDL_BUTTON_X2:
-				mouse_mark_button(MOUSE_X2_BUTTON, e.button.state);
+				mouse_mark_button(MOUSE_X2_BUTTON, e.button.down);
 				break;
 			default:
 				// SDL gave us an unknown button. Just log it
@@ -144,17 +144,11 @@ namespace
 			return false;
 		}
 
-#if SDL_VERSION_ATLEAST(2, 0, 4)
 		mousewheel_motion(e.wheel.x, e.wheel.y, e.wheel.direction == SDL_MOUSEWHEEL_FLIPPED);
-#else
-		mousewheel_motion(e.wheel.x, e.wheel.y, false);
-#endif
 
 		return true;
 	}
 }
-
-void mouse_force_pos(int x, int y);
 
 /**
  * @brief Decays the mousewheel position back to 0 and clears the appropriate flags when nuetral
@@ -193,18 +187,18 @@ void mouse_init()
 
 	// we do want to make sure that button presses go through event polling though
 	// (should be on by default already, just here as a reminder)
-	SDL_EventState( SDL_MOUSEBUTTONDOWN, SDL_ENABLE );
-	SDL_EventState( SDL_MOUSEBUTTONUP, SDL_ENABLE );
-	SDL_EventState( SDL_MOUSEWHEEL, SDL_ENABLE );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_BUTTON_DOWN, true );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_BUTTON_UP, true );
+	SDL_SetEventEnabled( SDL_EVENT_MOUSE_WHEEL, true );
 
 	SDL_UnlockMutex( mouse_lock );
 
-	os::events::addEventListener(SDL_MOUSEBUTTONDOWN, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
-	os::events::addEventListener(SDL_MOUSEBUTTONUP, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_DOWN, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_BUTTON_UP, os::events::DEFAULT_LISTENER_WEIGHT, mouse_key_event_handler);
 
-	os::events::addEventListener(SDL_MOUSEMOTION, os::events::DEFAULT_LISTENER_WEIGHT, mouse_motion_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_MOTION, os::events::DEFAULT_LISTENER_WEIGHT, mouse_motion_event_handler);
 
-	os::events::addEventListener(SDL_MOUSEWHEEL, os::events::DEFAULT_LISTENER_WEIGHT, mouse_wheel_event_handler);
+	os::events::addEventListener(SDL_EVENT_MOUSE_WHEEL, os::events::DEFAULT_LISTENER_WEIGHT, mouse_wheel_event_handler);
 
 	atexit( mouse_close );
 }
@@ -522,7 +516,7 @@ void mouse_get_delta(int *dx, int *dy, int *dz)
 }
 
 // Forces the actual windows cursor to be at (x,y).  This may be independent of our tracked (x,y) mouse pos.
-void mouse_force_pos(int x, int y)
+void mouse_force_pos(float x, float y)
 {
 	if (os_foreground()) {  // only mess with windows's mouse if we are in control of it
 		SDL_WarpMouseInWindow(os::getSDLMainWindow(), SCALE_MOUSE_TO_WINDOW(x, y, /));
@@ -535,15 +529,15 @@ void mouse_reset_deltas()
 	Mouse_dx = Mouse_dy = Mouse_dz = 0;
 }
 
-void mouse_event(int x, int y, int dx, int dy)
+void mouse_event(float x, float y, float dx, float dy)
 {
-	Mouse_x = x;
-	Mouse_y = y;
+	Mouse_x = static_cast<int>(x);
+	Mouse_y = static_cast<int>(y);
 
 	// Add up these delta values so we don't overwrite previous events,
 	// should be reset in gr_flip my mouse_reset_deltas()
-	Mouse_dx += dx;
-	Mouse_dy += dy;
+	Mouse_dx += static_cast<int>(dx);
+	Mouse_dy += static_cast<int>(dy);
 
 	if ((Mouse_dx != 0 || Mouse_dy != 0) && scripting::hooks::OnMouseMoved->isActive())
 	{
@@ -611,7 +605,12 @@ int mouse_get_pos_unscaled( int *xpos, int *ypos )
 
 void mouse_get_real_pos(int *mx, int *my)
 {
-	SDL_GetMouseState(mx, my);
+	float fx, fy;
+	SDL_GetMouseState(&fx, &fy);
+
+	if (mx)	*mx = fl2i(fx);
+	if (my) *my = fl2i(fy);
+
 	if (Cmdline_window_res) {
 		if (mx)
 			*mx *= gr_screen.max_w / Cmdline_window_res->first;
@@ -622,17 +621,17 @@ void mouse_get_real_pos(int *mx, int *my)
 
 void mouse_set_pos(int xpos, int ypos)
 {
-	mouse_force_pos(xpos, ypos);
+	mouse_force_pos(static_cast<float>(xpos), static_cast<float>(ypos));
 }
 
-void mousewheel_motion(int x, int y, bool reversed) {
+void mousewheel_motion(float x, float y, bool reversed) {
 	if (reversed) {
 		x = -x;
 		y = -y;
 	}
 
-	Mouse_wheel_x += x;
-	Mouse_wheel_y += y;
+	Mouse_wheel_x += static_cast<int>(x);
+	Mouse_wheel_y += static_cast<int>(y);
 
 	// These nested if's should take care of all edge cases.
 	// Since x and y's magnitudes can be larger than 1, it is possible to ignore the idle state
@@ -660,7 +659,7 @@ void mousewheel_motion(int x, int y, bool reversed) {
 		mouse_flags &= ~(MOUSE_WHEEL_RIGHT | MOUSE_WHEEL_LEFT);
 	}
 
-	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', y), scripting::hook_param("MouseWheelX", 'i', x)));
+	OnMouseWheelHook->run(scripting::hook_param_list(scripting::hook_param("MouseWheelY", 'i', static_cast<int>(y)), scripting::hook_param("MouseWheelX", 'i', static_cast<int>(x))));
 }
 
 void mousewheel_decay(int btn) {

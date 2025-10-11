@@ -14,8 +14,8 @@
 #include <windows.h>
 #endif
 
-#include "freespace.h"
 #include "globalincs/pstypes.h"
+#include "freespace.h"
 #include "globalincs/alphacolors.h"
 #include "globalincs/systemvars.h"
 #include "io/cursor.h"
@@ -80,9 +80,7 @@ void showVideoInfo(const PlayerState& state) {
 
 	size_t audio_queue_size = state.decoder->getAudioQueueSize();
 	if (state.hasAudio) {
-		ALint queued;
-		OpenAL_ErrorPrint(alGetSourcei(state.audioSid, AL_BUFFERS_QUEUED, &queued));
-		audio_queue_size += queued;
+		audio_queue_size += SDL_GetAudioStreamQueued(state.audioStream);
 	}
 
 	y = print_string(x, y, "Audio Queue size: " SIZE_T_ARG, audio_queue_size);
@@ -208,7 +206,7 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 	auto sleepTime = static_cast<std::uint64_t>((1. / (4. * player->getMovieProperties().fps)) * 1000.);
 
 	auto listener = [state](const SDL_Event& event) {
-		switch (event.key.keysym.sym) {
+		switch (event.key.key) {
 		case SDLK_ESCAPE:
 		case SDLK_KP_ENTER:
 		case SDLK_RETURN:
@@ -220,7 +218,7 @@ void movie_display_loop(Player* player, PlaybackState* state) {
 		}
 	};
 	// Use a dedicated listener here since we want to listen for the KEYUP event
-	auto key_handle = os::events::addEventListener(SDL_KEYUP, os::events::DEFAULT_LISTENER_WEIGHT - 10, listener);
+	auto key_handle = os::events::addEventListener(SDL_EVENT_KEY_UP, os::events::DEFAULT_LISTENER_WEIGHT - 10, listener);
 
 	// slight hack to make sure that game_set_frametime() doesn't also try to cap the framerate
 	auto fpsCapSave = Cmdline_NoFPSCap;
