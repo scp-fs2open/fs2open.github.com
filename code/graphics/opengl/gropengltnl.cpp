@@ -38,6 +38,9 @@
 #include "particle/particle.h"
 #include "render/3d.h"
 #include "weapon/trails.h"
+#ifdef USE_OPENGL_ES
+#include "es_compatibility.h"
+#endif
 
 #define MODEL_SDR_FLAG_MODE_CPP
 #include "def_files/data/effects/model_shader_flags.h"
