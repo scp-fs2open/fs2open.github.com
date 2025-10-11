@@ -98,12 +98,12 @@ void mouse_flush();
  * @note Calls mousewheel_decay() if the mousewheel direction is "down".  
  *       Please ensure mouse_down() is called only once per frame.
  */
-int mouse_down(const CC_bind &bind);
+int mouse_down(const CC_bind& bind, bool must_be_wheel = false);
 
 /**
  * Returns 1 if any of the given mouse buttons are down. 0 otherwise
  */
-int mouse_down(int btn);
+int mouse_down(int btn, bool must_be_wheel = false);
 
 void mouse_reset_deltas();
 void mouse_get_delta(int *dx = NULL, int *dy = NULL, int *dz = NULL);

@@ -2888,17 +2888,10 @@ int check_control_used(int id, int key)
 
 	// special case to allow actual mouse wheel to work with trigger controls --wookieejedi
 	if (item.type == CC_TYPE_TRIGGER) {
-
-		int first_btn = 1 << item.first.get_btn();
-		int second_btn = 1 << item.second.get_btn();
-
-		if ( (first_btn >= LOWEST_MOUSE_WHEEL && first_btn <= HIGHEST_MOUSE_WHEEL) ||
-			 (second_btn >= LOWEST_MOUSE_WHEEL && second_btn <= HIGHEST_MOUSE_WHEEL) ) {
-			if ( mouse_down(item.first) || mouse_down(item.second) ) {
-				// Mouse wheel bound to this trigger control was pressed, control activated
-				control_used(id);
-				return 1;
-			}
+		if ( mouse_down(item.first, true) || mouse_down(item.second, true) ) {
+			// Mouse wheel bound to this trigger control was pressed, control activated
+			control_used(id);
+			return 1;
 		}
 	}
 
