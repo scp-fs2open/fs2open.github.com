@@ -1302,6 +1302,7 @@ void ship_info::clone(const ship_info& other)
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
 	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
 	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
@@ -1656,6 +1657,7 @@ void ship_info::move(ship_info&& other)
 	autoaim_lost_snd = other.autoaim_lost_snd;
 
 	aims_at_flight_cursor = other.aims_at_flight_cursor;
+	aims_at_flight_cursor_secondary = other.aims_at_flight_cursor_secondary;
 	flight_cursor_aim_extent = other.flight_cursor_aim_extent;
 
 	topdown_offset_def = other.topdown_offset_def;
@@ -2058,6 +2060,7 @@ ship_info::ship_info()
 	autoaim_lost_snd = gamesnd_id();
 
 	aims_at_flight_cursor = false;
+	aims_at_flight_cursor_secondary = false;
 	flight_cursor_aim_extent = -1.0f;
 
 	topdown_offset_def = false;
@@ -3766,6 +3769,7 @@ static void parse_ship_values(ship_info* sip, const bool is_template, const bool
 		} else if (sip->aims_at_flight_cursor && sip->flight_cursor_aim_extent < 0.0f) {
 			error_display(0, "Ship %s needs to have an +Extent defined if $Aims at Flight Cursor is true.", sip->name);
 			sip->aims_at_flight_cursor = false;
+			sip->aims_at_flight_cursor_secondary = false;
 		}
 	}
 
@@ -8909,6 +8913,43 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 			wingp->special_ship_ship_info_index = Ships[wingp->ship_index[0]].ship_info_index;
 	}
 
+	wing_maybe_cleanup(wingp, team);
+}
+
+// Assume the team of the wing is the same as the team of the most recently exited ship from that wing.
+// Returns -1 if no ship from that wing has exited.
+int wing_determine_team(const wing *wingp)
+{
+	int wingnum = WING_INDEX(wingp);
+	int team = -1;
+	fix latest_exit_time = -1;
+
+	// Grab the team from the most recent ship in this wing to have exited the mission.  If there are no exited ships from this wing,
+	// that means they all vanished.  In that case we must return -1, but it doesn't matter for logging because vanished wings aren't logged.
+	for (const auto &entry : Ships_exited)
+	{
+		if ((entry.wingnum == wingnum) && (entry.time > latest_exit_time))
+		{
+			latest_exit_time = entry.time;
+			team = entry.team;
+		}
+	}
+
+	return team;
+}
+
+/**
+ * This was originally part of ::ship_wing_cleanup, but it can now be called separately.  It sets various flags and mission log entries
+ * associated with a wing no longer being in a mission.
+ * 
+ * The team parameter is used for logging.  If it is not supplied (i.e. is not >= 0), it will be derived using wing_determine_team().
+ */
+void wing_maybe_cleanup( wing *wingp, int team )
+{
+	// not if the wing is already gone or has not yet arrived
+	if (wingp->flags[Ship::Wing_Flags::Gone] || wingp->total_arrived_count == 0)
+		return;
+
 	// if the current count is 0, check to see if the wing departed or was destroyed.
 	if (wingp->current_count == 0)
 	{
@@ -8933,7 +8974,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 				// first, be sure to mark a wing destroyed event if all members of wing were destroyed and on
 				// the last wave.  This circumvents a problem where the wing could be marked as departed and
 				// destroyed if the last ships were destroyed after the wing's departure cue became true.
-				mission_log_add_entry(LOG_WING_DESTROYED, wingp->name, NULL, team);
+				mission_log_add_entry(LOG_WING_DESTROYED, wingp->name, nullptr, team >= 0 ? team : wing_determine_team(wingp));
 			}
 			// if some ships escaped, log it as departed
 			else if (wingp->total_vanished != wingp->total_arrived_count)
@@ -8941,7 +8982,7 @@ void ship_wing_cleanup( int shipnum, wing *wingp )
 				// if the wing wasn't destroyed, and it is departing, then mark it as departed -- in this
 				// case, there had better be ships in this wing with departure entries in the log file.  The
 				// logfile code checks for this case.  
-				mission_log_add_entry(LOG_WING_DEPARTED, wingp->name, NULL, team);
+				mission_log_add_entry(LOG_WING_DEPARTED, wingp->name, nullptr, team >= 0 ? team : wing_determine_team(wingp));
 			}
 
 #ifndef NDEBUG
