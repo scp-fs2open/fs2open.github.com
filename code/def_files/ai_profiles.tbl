@@ -65,7 +65,7 @@ $Max Player Attackers: 2, 3, 4, 5, 99
 																		
 ;; maximum number of active (i.e. 'thrown') asteroids that can be		
 ;; heading toward a friendly ship at any given time						
-$Max Incoming Asteroids: 3, 4, 5, 7, 10									
+$Max Incoming Asteroids: 3, 4, 5, 7, 10
 																		
 ;; factor applied to damage suffered by the player						
 $Player Damage Factor: 0.25, 0.5, 0.65, 0.85, 1							
@@ -181,9 +181,8 @@ $Player Autoaim FOV: 0, 0, 0, 0, 0
 $Detail Distance Multiplier: 0.125, 0.25, 1.0, 4.0, 8.0					
 																		
 ;; General AI-related flags.  These were previously all lumped together	
-;; under the New AI mission flag.										
-																		
-																		
+;; under the New AI mission flag.
+																												
 ;; if set, big ships can attack a beam turret that's firing on them		
 ;; from a ship that they don't currently have targeted.					
 $big ships can attack beam turrets on untargeted ships: NO				
@@ -354,6 +353,10 @@ $no warp camera:	NO
 																		
 ;; If set, this flag overrides the retail behavior whereby a ship		
 ;; assigned to guard a ship in a wing will instead guard the entire wing
-$ai guards specific ship in wing:	NO									
+$ai guards specific ship in wing:	NO	
+
+;; maximum number of allies allowed to be rearming at the same time 
+;; before the AI will hold off on requesting support
+$max allies rearming threshold: 2
 																		
 #End																	

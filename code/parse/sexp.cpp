@@ -869,12 +869,12 @@ SCP_vector<sexp_oper> Operators = {
 	{ "ai-waypoints-once",				OP_AI_WAYPOINTS_ONCE,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore",						OP_AI_IGNORE,							2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-ignore-new",					OP_AI_IGNORE_NEW,						2,	2,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	1,			SEXP_GOAL_OPERATOR, },
+	{ "ai-form-on-wing",				OP_AI_FORM_ON_WING,						1,	5,			SEXP_GOAL_OPERATOR, },
 	{ "ai-fly-to-ship",					OP_AI_FLY_TO_SHIP,						2,	5,			SEXP_GOAL_OPERATOR, },
 	{ "ai-stay-near-ship",				OP_AI_STAY_NEAR_SHIP,					2,	5,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-evade-ship",					OP_AI_EVADE_SHIP,						2,	2,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-keep-safe-distance",			OP_AI_KEEP_SAFE_DISTANCE,				1,	1,			SEXP_GOAL_OPERATOR,	},
-	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	2,			SEXP_GOAL_OPERATOR,	},
+	{ "ai-stay-still",					OP_AI_STAY_STILL,						2,	3,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead",					OP_AI_PLAY_DEAD,						1,	1,			SEXP_GOAL_OPERATOR,	},
 	{ "ai-play-dead-persistent",		OP_AI_PLAY_DEAD_PERSISTENT,				1,	1,			SEXP_GOAL_OPERATOR, },
 
@@ -15480,10 +15480,16 @@ void sexp_self_destruct(int node)
 
 void sexp_cancel_future_waves(int node)
 {
-	for (int n = node; n != -1; n = CDR(n))	{
+	for (int n = node; n != -1; n = CDR(n))
+	{
 		auto wingp = eval_wing(n);
-		if (wingp) {
+		if (wingp)
+		{
+			// prevent any more waves from arriving by marking this as the last wave
 			wingp->num_waves = wingp->current_wave;
+
+			// we might need to clean up this wing if there are no ships currently in the mission
+			wing_maybe_cleanup(wingp);
 		}
 	}
 }
@@ -33179,13 +33185,20 @@ int query_operator_argument_type(int op, int argnum)
 			return OPF_POSITIVE;
 
 		case OP_AI_STAY_STILL:
-			if (!argnum)
+			if (argnum == 0)
 				return OPF_SHIP_POINT;
-			else
+			else if (argnum == 1)
 				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_AI_FORM_ON_WING:
-			return OPF_SHIP;
+			if (argnum == 0)
+				return OPF_SHIP;
+			else if (argnum == 1)
+				return OPF_POSITIVE;
+			else
+				return OPF_BOOL;
 
 		case OP_GOOD_REARM_TIME:
 		case OP_BAD_REARM_TIME:
@@ -40037,21 +40050,25 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 		"\t1:\tName of target to ignore.\r\n"
 		"\t2:\tGoal priority (number between 0 and 89) - note, this does not imply any ranking of ignored targets." },
 
-	{ OP_AI_STAY_STILL, "Ai-stay still (Ship goal)\r\n"
+	{ OP_AI_STAY_STILL, "Ai-stay-still (Ship goal)\r\n"
 		"\tCauses the specified ship to stay still.  The ship will do nothing until attacked at "
 		"which time the ship will come to life and defend itself.\r\n\r\n"
-		"Takes 2 arguments...\r\n"
+		"By default all goals on the ship's goal list will be cleared when this goal runs, which means that the ship forgets both "
+		"this goal and all previous goals, and if it receives any other goal in any way, "
+		"it will immediately begin a new behavior.  Use the optional sexp flag (argument 3) to prevent this from happening.\r\n\r\n"
+		"Takes 2 to 3 arguments...\r\n"
 		"\t1:\tShip or waypoint the ship staying still will directly face (currently not implemented)\r\n"
-		"\t2:\tGoal priority (number between 0 and 89)." },
+		"\t2:\tGoal priority (number between 0 and 89).\r\n"
+		"\t3:\tWhether to clear all goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
+	},
 
 	{ OP_AI_PLAY_DEAD, "Ai-play-dead (Ship goal)\r\n"
 		"\tCauses the specified ship to pretend that it is dead and not do anything.  This "
 		"expression should be used to indicate that a ship has no pilot and cannot respond "
 		"to any enemy threats.  A ship playing dead will not respond to any attack.\r\n\r\n"
-		"Do note that the ship's goal list is cleared, which means both that it forgets "
-		"this goal and all previous goals, and that if it receives any other goal in any way, "
-		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this "
-		"from happening.\r\n\r\n"
+		"By default all goals on the ship's goal list will be cleared when this goal runs, which means that the ship forgets both "
+		"this goal and all previous goals, and if it receives any other goal in any way, "
+		"it will immediately come back to life.  Use ai-play-dead-persistent to prevent this from happening.\r\n\r\n"
 		"Takes 1 argument...\r\n"
 		"\t1:\tGoal priority (number between 0 and 89)." },
 
@@ -40067,9 +40084,17 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 
 	{ OP_AI_FORM_ON_WING, "Ai-form-on-wing (Ship Goal)\r\n"
 		"\tCauses the ship to form on the specified ship's wing. This works analogous to the "
-		"player order, and will cause all other goals specified for the ship to be purged.\r\n\r\n"
-		"Takes 1 argument...\r\n"
-		"\t1:\tShip to form on." },
+		"player order, and by default will cause all goals on the ship's goal list to be cleared when this goal runs, which means that the ship forgets both "
+		"this goal and all previous goals, and if it receives any other goal in any way, "
+		"it will immediately begin a new behavior.  By default it will also be given an internal override flag that will cause it to "
+		"take priority over all other goals.\r\n\r\n"
+		"Takes 1 to 5 arguments...\r\n"
+		"\t1:\tShip to form on.\r\n"
+		"\t2:\tGoal priority (number between 0 and 89, optional).  If not specified this will be 99, or the number defined in ai_profiles.\r\n"
+		"\t3:\tWhether to clear all goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
+		"\t4:\tWhether this goal should override all other goals (optional).  If not specified this will be true, or the value defined in ai_profiles.\r\n"
+		"\t5:\tWhether this goal should be cleared if any other goal is assigned (optional).  If not specified this will be false.\r\n"
+	},
 
 	{ OP_FLASH_HUD_GAUGE, "Ai-flash hud gauge (Training goal)\r\n"
 		"\tCauses the specified hud gauge to flash to draw the player's attention to it.\r\n\r\n"
@@ -40094,10 +40119,12 @@ SCP_vector<sexp_help_struct> Sexp_help = {
 	},
 
 	{ OP_CANCEL_FUTURE_WAVES, "cancel-future-waves\r\n"
-		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. is-destroyed-delay, ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false. That wing is not marked as destroyed.\r\n\r\n"
+		"\tCancel all waves of a wing which have not yet arrived. Waves that have arrived already are not affected. The is-destroyed-delay, "
+		"ship-type-destroyed, and similar operators behave as though the cancelled waves do not exist.\r\n\r\nIf this operator is called on a wing "
+		"which has not arrived, the wing will never arrive, exactly as if its arrival cue were set to false; and that wing is not marked as destroyed. "
+		"Otherwise, wings will be marked as destroyed or departed in the same manner as they would have been if they were truly on the last wave.\r\n\r\n"
 		"Takes 1 or more arguments...\r\n"
 		"\tAll:\tThe name of a wing to cancel." },
-
 
 	{ OP_SHIP_VISIBLE, "ship-visible\r\n"
 		"\tCauses the ships listed in this sexpression to be visible with player sensors.\r\n\r\n"
