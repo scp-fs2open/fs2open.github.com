@@ -44,12 +44,15 @@ namespace AI {
 		Goal_on_hold,		// when set, this goal cannot currently be satisfied, although it could be in the future
 		Subsys_needs_fixup,	// when set, the subsystem index (for a destroy subsystem goal) is invalid and must be gotten from the subsys name stored in docker.name field!!
 		Goal_override,		// paired with ai_goal_type::DYNAMIC to mean this goal overrides any other goal
+		Want_override,		// a goal should set this flag if Goal_override should be assigned when the goal is achievable
 		Purge,				// purge this goal next time we process
-		Goals_purged,		// this goal has already caused other goals to get purged
+		Purge_when_new_goal_added,	// this goal is perpetual until any other goal is added, at which time it sets its own Purge flag
+		Goals_purged,		// this goal has already caused other goals to get purged (because it is something like ai-disarm that renders other goals invalid)
 		Depart_sound_played,// Goober5000 - replacement for AL's hack ;)
 		Target_own_team,	// this attack goal is allowed to target friendlies
 		Afterburn_hard,		// afterburn as hard as possible to the goal
 		Waypoints_in_reverse,	// decrement instead of increment
+		Clear_all_goals_first,	// this goal wipes all goals (including itself) before it runs (handled separately, and in a different place, from purging invalid goals)
 
 		NUM_VALUES
 	};
@@ -181,6 +184,10 @@ namespace AI {
 		ETS_uses_power_output,
 		ETS_energy_same_regardless_of_system_presence,
 		Dont_form_on_wing_at_mission_start,
+		Do_not_clear_goals_when_running_form_on_wing,
+		Do_not_clear_goals_when_running_stay_still,
+		Do_not_set_override_when_assigning_form_on_wing,
+		Purge_player_issued_form_on_wing_after_subsequent_order,
 
 		NUM_VALUES
 	};
