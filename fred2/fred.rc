@@ -320,36 +320,6 @@ BEGIN
             MENUITEM "x50\tShift+5",                32907
         END
     END
-    POPUP "E&ditors"
-    BEGIN
-        MENUITEM "&Ships\tShift+S",             32799
-        MENUITEM "&Wings\tShift+W",             32955
-        MENUITEM "&Objects\tShift+O",           32973
-        MENUITEM "Waypoint Paths\tShift+Y",     32979
-        MENUITEM "Jump Nodes\tShift+J",         ID_EDITORS_JUMPNODE
-        MENUITEM SEPARATOR
-        MENUITEM "&Mission Specs\tShift+N",     32771
-        MENUITEM "Mission &Goals\tShift+G",     32800
-        MENUITEM "Mission &Events\tShift+E",    32974
-        MENUITEM "Mission Cutscenes",           ID_EDITORS_CUTSCENES
-        MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
-        MENUITEM SEPARATOR
-        MENUITEM "&Fiction Viewer\tShift+F",    ID_EDITORS_FICTION
-        MENUITEM "&Command Briefing\tShift+C",  33054
-        MENUITEM "Team &Loadout\tShift+P",      32972
-        MENUITEM "&Briefing\tShift+B",          33006
-        MENUITEM "&Debriefing\tShift+D",        33007
-        MENUITEM SEPARATOR
-        MENUITEM "Background\tShift+I",         32976
-        MENUITEM "Asteroid Field\tShift+A",     32984
-        MENUITEM "Volumetric Nebula",           ID_EDITORS_VOLUMETRICS
-        MENUITEM SEPARATOR
-        MENUITEM "Reinforcements\tShift+R",     32977
-        MENUITEM "Shield System",               33033
-        MENUITEM "Set Global Ship Flags",       33073
-        MENUITEM SEPARATOR
-        MENUITEM "Campaign",                    32986
-    END
     POPUP "&Groups"
     BEGIN
         MENUITEM "Group 1\tCtrl+1",             33012
@@ -374,11 +344,17 @@ BEGIN
             MENUITEM "Group 9",                     33029
         END
     END
-    POPUP "&Misc"
+    POPUP "Objects"
     BEGIN
+        MENUITEM "&Ships\tShift+S",             32799
+        MENUITEM "&Wings\tShift+W",             32955
+        MENUITEM "&Objects\tShift+O",           32973
+        MENUITEM "Waypoint Paths\tShift+Y",     32979
+        MENUITEM "Jump Nodes\tShift+J",         ID_EDITORS_JUMPNODE
+        MENUITEM SEPARATOR
+        MENUITEM "Control Object\tT",           33041
         MENUITEM "Next Object\tTab",            33039
         MENUITEM "Previous Object\tCtrl+Tab",   33040
-        MENUITEM "Control Object\tT",           33041
         MENUITEM "Level Object\tL",             33037
         MENUITEM "Align Object\tCtrl+L",        33036
         MENUITEM SEPARATOR
@@ -387,23 +363,57 @@ BEGIN
         MENUITEM "Cancel Subsystem\tAlt+K",     33061
         MENUITEM SEPARATOR
         MENUITEM "Mark Wing\tW",                33038
-        MENUITEM "Adjust Grid",                 33032
+    END
+    POPUP "Environment"
+    BEGIN
+        MENUITEM "Background\tShift+I",         32976
+        MENUITEM "Asteroid Field\tShift+A",     32984
+        MENUITEM "Volumetric Nebula",           ID_EDITORS_VOLUMETRICS
+    END
+    POPUP "Mission"
+    BEGIN
+        MENUITEM "&Mission Specs\tShift+N",     32771
+        MENUITEM "Mission &Goals\tShift+G",     32800
+        MENUITEM "Mission &Events\tShift+E",    32974
+        MENUITEM "Mission Cutscenes",           ID_EDITORS_CUTSCENES
+        MENUITEM SEPARATOR
+        MENUITEM "Team &Loadout\tShift+P",      32972
+        MENUITEM "Reinforcements\tShift+R",     32977
+        MENUITEM "Shield System",               33033
+    END
+    POPUP "Narrative"
+    BEGIN
+        MENUITEM "&Fiction Viewer\tShift+F",    ID_EDITORS_FICTION
+        MENUITEM "&Command Briefing\tShift+C",  33054
+        MENUITEM "&Briefing\tShift+B",          33006
+        MENUITEM "&Debriefing\tShift+D",        33007
+        MENUITEM SEPARATOR
+        MENUITEM "Campaign",                    32986
+    END
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "&Voice Acting Manager",       ID_EDITORS_VOICE
+        MENUITEM "Set Global Ship Flags",       33073
         MENUITEM "Calculate Relative Coordinates", 33030
+        MENUITEM "Music Player",                ID_MUSIC_PLAYER
+        MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
+        MENUITEM "Error Checker\tShift+H",      32978
+    END
+    POPUP "Settings"
+    BEGIN
+        MENUITEM "Adjust Grid",                 33032
         MENUITEM "Point Ships Using UVec",      33101
         MENUITEM "Move Ships When Undocking",   33098, CHECKED
-        MENUITEM "Mission Statistics\tCtrl+Shift+D", 33067
-        MENUITEM "Music Player",                ID_MUSIC_PLAYER
         MENUITEM SEPARATOR
         MENUITEM "Always save Display Names", ID_ALWAYS_SAVE_DISPLAY_NAMES
         MENUITEM "Error checker checks for potential issues", ID_ERROR_CHECKER_CHECKS_POTENTIAL_ISSUES, CHECKED
-        MENUITEM "Error checker\tShift+H",      32978
     END
     POPUP "&Help"
     BEGIN
         MENUITEM "&Help Topics",                57667
+        MENUITEM "Show Sexp Help",              33010
         MENUITEM SEPARATOR
         MENUITEM "&About FRED2",                57664
-        MENUITEM "Show Sexp Help",              33010
     END
 END
 
