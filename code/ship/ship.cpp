@@ -9267,6 +9267,20 @@ void ship_cleanup(int shipnum, int cleanup_mode)
 		ship_wing_cleanup(shipnum, wingp);
 	}
 
+	// maybe clean up any wings that arrived from this ship
+	if (The_mission.ai_profile->flags[AI::Profile_Flags::Cancel_future_waves_of_any_wing_launched_from_an_exited_ship]) {
+		for (int child_wingnum = 0; child_wingnum < Num_wings; ++child_wingnum) {
+			auto child_wingp = &Wings[child_wingnum];
+			if (child_wingp->arrival_location == ArrivalLocation::FROM_DOCK_BAY && child_wingp->arrival_anchor == shipnum) {
+				// prevent any more waves from arriving by marking this as the last wave
+				child_wingp->num_waves = child_wingp->current_wave;
+
+				// we might need to clean up this wing if there are no ships currently in the mission
+				wing_maybe_cleanup(child_wingp);
+			}
+		}
+	}
+
 	// Note, this call to ai_ship_destroy() must come after ship_wing_cleanup for guarded wings to
 	// properly note the destruction of a ship in their wing.
 	ai_ship_destroy(shipnum);	// Do AI stuff for destruction/leave of ship.
