@@ -2769,22 +2769,18 @@ int button_function(int n)
 			break;
 			
 		case TARGET_NEXT_BOMB:
-			bool target_bomb =
-				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS ||
-					Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBS);
-			bool target_bomber =
-				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS ||
-					Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBERS);
+			bool target_bomb = ((Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) || 
+				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBS));
+			bool target_bomber = ((Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) || 
+				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBERS));
 			hud_target_hostile_bomb_or_bomber(Player_obj, 1, target_bomb, target_bomber, Target_bomb_or_bomber_use_distance);
 			break;
 
 		case TARGET_PREV_BOMB:
-			bool target_bomb =
-				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS ||
-					Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBS);
-			bool target_bomber =
-				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS ||
-					Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBERS);
+			bool target_bomb = ((Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) || 
+				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBS));
+			bool target_bomber = ((Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS) || 
+				(Target_bomb_or_bomber_behavior == TargetBomborBomberBehaviorOptions::ONLY_BOMBERS));
 			hud_target_hostile_bomb_or_bomber(Player_obj, 0, target_bomb, target_bomber, Target_bomb_or_bomber_use_distance);
 			break;
 
