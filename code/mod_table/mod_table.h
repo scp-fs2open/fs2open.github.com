@@ -196,6 +196,7 @@ extern bool Fix_scripted_velocity;
 extern color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 extern bool Preload_briefing_icon_models;
 extern EscapeKeyBehaviorInOptions Escape_key_behavior_in_options;
+extern bool Target_bomb_or_bomber_use_distance;
 extern TargetBomborBomberBehaviorOptions Target_bomb_or_bomber_behavior;
 extern bool Fix_asteroid_bounding_box_check;
 extern bool Disable_intro_movie;
