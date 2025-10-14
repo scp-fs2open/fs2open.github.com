@@ -72,9 +72,9 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 	const SCP_string HOSTNAME_QUALIFIED = HOST_NAME + ".local.";
 
 	std::array<char, 256> NAME{};
-	mdns_record_t answer;
+	mdns_record_t answer{};
 	SCP_vector<mdns_record_t> records;
-	mdns_record_t n_record;
+	mdns_record_t n_record{};
 
 	answer.type = MDNS_RECORDTYPE_IGNORE;
 
@@ -112,6 +112,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add A record
 			if (has_ipv4) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_A;
 				n_record.data.a.addr = IPv4_addr;
@@ -121,6 +122,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add AAAA record
 			if (has_ipv6) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_AAAA;
 				n_record.data.aaaa.addr = IPv6_addr;
@@ -145,6 +147,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add A record
 			if (has_ipv4) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_A;
 				n_record.data.a.addr = IPv4_addr;
@@ -154,6 +157,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add AAAA record
 			if (has_ipv6) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_AAAA;
 				n_record.data.aaaa.addr = IPv6_addr;
@@ -174,6 +178,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add AAAA record
 			if (has_ipv6) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_AAAA;
 				n_record.data.aaaa.addr = IPv6_addr;
@@ -190,6 +195,7 @@ static int service_callback(int sock, const struct sockaddr* from, size_t addrle
 
 			// add A record
 			if (has_ipv4) {
+				n_record = {};
 				n_record.name = { HOSTNAME_QUALIFIED.c_str(), HOSTNAME_QUALIFIED.length() };
 				n_record.type = MDNS_RECORDTYPE_A;
 				n_record.data.a.addr = IPv4_addr;
