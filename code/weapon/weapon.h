@@ -1022,7 +1022,6 @@ void	weapon_area_apply_blast(const vec3d *force_apply_pos, object *ship_objp, co
 int	weapon_area_calc_damage(const object *objp, const vec3d *pos, float inner_rad, float outer_rad, float max_blast, float max_damage,
 										float *blast, float *damage, float limit);
 
-missile_obj *missile_obj_return_address(int index);
 void find_homing_object_cmeasures(const SCP_vector<object*> &cmeasure_list);
 
 // THE FOLLOWING FUNCTION IS IN SHIP.CPP!!!!
