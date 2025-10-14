@@ -1602,7 +1602,7 @@ void parse_mod_table(const char *filename)
 				}
 				else
 				{
-					Warning(LOCATION, "$Objects targeted with 'Target Hostile Bomb or Bomber' control: Invalid selection. Must be value of 'default' or 'bombs and bombers' or 'only bombs' or 'only bombers'. Reverting to 'default' value.");
+					Warning(LOCATION, "$Objects targeted with 'Target Hostile Bomb or Bomber' control: Invalid selection. Must be value of 'default' or 'bombs and bombers' or 'only bombs' or 'only bombers'. Reverting to 'bombs and bombers' value.");
 					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS;
 				}
 			}
