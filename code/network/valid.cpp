@@ -543,7 +543,7 @@ void ValidIdle()
 //Send an ACK to the server
 void AckValidServer(unsigned int sig)
 {
-	udp_packet_header ack_pack;
+	udp_packet_header ack_pack{};
 	ubyte packet_data[sizeof(udp_packet_header)];
 	int packet_length = 0;
 
