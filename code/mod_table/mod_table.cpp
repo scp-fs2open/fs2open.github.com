@@ -1588,7 +1588,7 @@ void parse_mod_table(const char *filename)
 				stuff_string(temp, F_RAW);
 				SCP_tolower(temp);
 
-				if (temp == "default")
+				if (temp == "default" || temp == "bombs and bombers")
 				{
 					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS;
 				}
