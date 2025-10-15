@@ -946,6 +946,10 @@ float check_control_timef(int id);
  * @param[in] id    The IoActionId of the control to check
  * @param[in] key   DO NOT USE OUTSIDE OF THE MAIN LOOP.  Key combination acquired from game_poll(), or -1 to check against a previous poll
  *
+ * @returns 0 If the control was disabled by a mod, or
+ * @returns 0 If locked by a script, or
+ * @returns 0 If controls need to be ignored for multiplayer, or
+ * @returns 0 If a script is handling the control execution, or
  * @returns 0 If the control wasn't used, or
  * @returns 1 If the control was used
  *
