@@ -1570,11 +1570,11 @@ void hud_target_hostile_bomb_or_bomber(object* source_obj, int next_flag, bool t
 			} else {
 				// cycle with wraparound
 				int next_index;
-				int num_candiates = static_cast<int>(candidates.size());
+				int num_candidates = static_cast<int>(candidates.size());
 				if (next_flag > 0) {
-					next_index = (current_target_index + 1) % num_candiates;
+					next_index = (current_target_index + 1) % num_candidates;
 				} else {
-					next_index = (current_target_index - 1 + num_candiates) % num_candiates;
+					next_index = (current_target_index - 1 + num_candidates) % num_candidates;
 				}
 				target_to_set = candidates[next_index];
 			}

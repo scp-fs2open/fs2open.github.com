@@ -1281,7 +1281,7 @@ void options_menu_do_frame(float  /*frametime*/)
 			break;
 
 		case KEY_ESC:
-			if (escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
+			if (Escape_key_behavior_in_options == EscapeKeyBehaviorInOptions::SAVE) {
 				options_accept();
 				gamesnd_play_iface(InterfaceSounds::COMMIT_PRESSED);
 				gameseq_post_event(GS_EVENT_PREVIOUS_STATE);

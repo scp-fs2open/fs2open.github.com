@@ -173,7 +173,9 @@ bool Hide_main_rearm_items_in_comms_gauge;
 bool Fix_scripted_velocity;
 color Overhead_line_colors[MAX_SHIP_SECONDARY_BANKS];
 bool Preload_briefing_icon_models;
-EscapeKeyBehaviorInOptions escape_key_behavior_in_options;
+EscapeKeyBehaviorInOptions Escape_key_behavior_in_options;
+bool Target_bomb_or_bomber_use_distance;
+TargetBomborBomberBehaviorOptions Target_bomb_or_bomber_behavior;
 bool Fix_asteroid_bounding_box_check;
 bool Disable_intro_movie;
 bool Show_locked_status_scramble_missions;
@@ -1564,16 +1566,44 @@ void parse_mod_table(const char *filename)
 
 				if (temp == "default")
 				{
-					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+					Escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
 				}
 				else if (temp == "save")
 				{
-					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::SAVE;
+					Escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::SAVE;
 				}
 				else
 				{
 					Warning(LOCATION, "$Behavior for pressing Escape key in options menu: Invalid selection. Must be value of 'default' or 'save'. Reverting to 'default' value.");
-					escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+					Escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+				}
+			}
+
+			if (optional_string("$Use closest distance method for 'Target Hostile Bomb or Bomber' control:")) {
+				stuff_boolean(&Target_bomb_or_bomber_use_distance);
+			}
+
+			if (optional_string("$Objects targeted with 'Target Hostile Bomb or Bomber' control:")) {
+				SCP_string temp;
+				stuff_string(temp, F_RAW);
+				SCP_tolower(temp);
+
+				if (temp == "default" || temp == "bombs and bombers")
+				{
+					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS;
+				}
+				else if (temp == "only bombs")
+				{
+					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::ONLY_BOMBS;
+				}
+				else if (temp == "only bombers")
+				{
+					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::ONLY_BOMBERS;
+				}
+				else
+				{
+					Warning(LOCATION, "$Objects targeted with 'Target Hostile Bomb or Bomber' control: Invalid selection. Must be value of 'default' or 'bombs and bombers' or 'only bombs' or 'only bombers'. Reverting to 'bombs and bombers' value.");
+					Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS;
 				}
 			}
 
@@ -1845,7 +1875,9 @@ void mod_table_reset()
 	gr_init_alphacolor(&Overhead_line_colors[2], 175, 175, 175, 255);
 	gr_init_alphacolor(&Overhead_line_colors[3], 100, 100, 100, 255);
 	Preload_briefing_icon_models = false;
-	escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+	Escape_key_behavior_in_options = EscapeKeyBehaviorInOptions::DEFAULT;
+	Target_bomb_or_bomber_use_distance = false;
+	Target_bomb_or_bomber_behavior = TargetBomborBomberBehaviorOptions::BOMBS_AND_BOMBERS;
 	Fix_asteroid_bounding_box_check = false;
 	Disable_intro_movie = false;
 	Show_locked_status_scramble_missions = false;
