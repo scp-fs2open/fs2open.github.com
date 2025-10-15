@@ -459,7 +459,7 @@ int mouse_up_count(int n) {
 
 // returns 1 if mouse button btn is down, 0 otherwise
 
-int mouse_down(const CC_bind &bind)
+int mouse_down(const CC_bind &bind, bool must_be_wheel)
 {
 	// Bail if the incoming bind is not the right CID according to mouse-fly mode
 	auto CID = bind.get_cid();
@@ -483,20 +483,22 @@ int mouse_down(const CC_bind &bind)
 
 	btn = 1 << btn;
 
-	return mouse_down(btn);
+	return mouse_down(btn, must_be_wheel);
 }
 
-int mouse_down(int btn) {
-	int tmp;
+int mouse_down(int btn, bool must_be_wheel) {
 	if ( !mouse_inited ) return 0;
 
 	// Bail if not a button or wheel direction
 	if ((btn < LOWEST_MOUSE_BUTTON) || (btn > HIGHEST_MOUSE_WHEEL)) return 0;
 
+	// Bail if needs to be a mouse wheel and is not --wookieejedi 
+	if (must_be_wheel && (btn < LOWEST_MOUSE_WHEEL || btn > HIGHEST_MOUSE_WHEEL)) return 0;
+
 
 	SDL_LockMutex( mouse_lock );
 
-
+	int tmp;
 	if (mouse_flags & btn) {
 		tmp = 1;
 		if ((btn >= LOWEST_MOUSE_WHEEL) && (btn <= HIGHEST_MOUSE_WHEEL)) {
