@@ -2802,6 +2802,15 @@ void control_check_indicate()
 	Control_check_count = 0;
 }
 
+/**
+ * @brief Checks if a control is being used by the player this frame by checking the bound control input bindings
+ * 
+ * @param[in] id    The IoActionId of the control to check
+ * @param[in] key   DO NOT USE.  Key combination acquired from game_poll(), or -1 to check against a previous poll
+ * 
+ * @returns 0 if none of the bound inputs are activate this frame, or
+ * @returns 1 if one or more of the bound inputs are active this frame
+ */
 int check_control_used(int id, int key)
 {
 	// Make sure mouse_down() is only called once during any logic path, 
