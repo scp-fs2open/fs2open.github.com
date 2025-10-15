@@ -116,6 +116,8 @@ namespace particle
 	 * @return A weak reference to the particle
 	 */
 	WeakParticlePtr createPersistent(particle&& new_particle);
+
+	float getPixelSize(const particle& subject_particle);
 }
 
 #endif // _PARTICLE_H
