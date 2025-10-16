@@ -1035,6 +1035,7 @@ void game_level_init()
 	CheatUsed = "";
 
 	Game_shudder_time = TIMESTAMP::invalid();
+	Game_shudder_perpetual = false;
 
 	Perspective_locked = false;
 	Slew_locked = false;
