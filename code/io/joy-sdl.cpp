@@ -483,7 +483,8 @@ bool device_event_handler(const SDL_Event &evt)
 
 			for (auto iter = joysticks.begin(); iter != joysticks.end(); ++iter)
 			{
-				if ((*iter)->getID() == added->getID())
+				// must use GUID here as joystick IDs are never reused
+				if ((*iter)->getGUID() == added->getGUID())
 				{
 					// Already have this stick
 					*(*iter) = std::move(*added);
