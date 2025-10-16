@@ -1035,6 +1035,10 @@ void game_level_init()
 	CheatUsed = "";
 
 	Game_shudder_time = TIMESTAMP::invalid();
+	Game_shudder_perpetual = false;
+	Game_shudder_everywhere = false;
+	Game_shudder_total = 0;
+	Game_shudder_intensity = 0.0f;
 
 	Perspective_locked = false;
 	Slew_locked = false;
