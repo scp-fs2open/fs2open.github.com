@@ -2,18 +2,16 @@
 
 #include <cstring>
 
-#include "globalincs/pstypes.h"
-
-inline char *vm_strndup(const char *ptr, size_t size)
+inline char *vm_strndup(const char *ptr, size_t len)
 {
-	char *dst = (char *) vm_malloc(size + 1);
+	char *dst = static_cast<char *>(vm_malloc(len + 1));
 
 	if (!dst)
-		return NULL;
+		return nullptr;
 
-	std::strncpy(dst, ptr, size);
+	std::strncpy(dst, ptr, len);
 	// make sure it has a NULL terminiator
-	dst[size] = '\0';
+	dst[len] = '\0';
 
 	return dst;
 }

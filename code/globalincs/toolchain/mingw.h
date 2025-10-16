@@ -23,6 +23,7 @@
 #include <stdio.h>
 
 #define SCP_FORMAT_STRING
+// from gcc: Since non-static C++ methods have an implicit this argument, the arguments of such methods should be counted from two, not one, when giving values for string-index and first-to-check.
 #define SCP_FORMAT_STRING_ARGS(x,y)  __attribute__((format(__MINGW_PRINTF_FORMAT, x, y)))
 
 #define __UNUSED __attribute__((__unused__))

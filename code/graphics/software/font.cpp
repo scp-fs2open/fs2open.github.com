@@ -801,60 +801,81 @@ void gr_string_win(int x, int y, char *s)
 
 #endif   // ifdef _WIN32
 
-char grx_printf_text[2048];
+static char grx_printf_text[2048];
 
-void gr_printf(int x, int y, const char * format, ...)
+void gr_printf_args(int resize_mode, int x, int y, size_t len, SCP_FORMAT_STRING const char *format, va_list args)
 {
-	va_list args;
+	if (!FontManager::isReady())
+		return;
 
-	if (!FontManager::isReady()) return;
+	len = std::min(len, sizeof(grx_printf_text) - 1);
 
-	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
-	va_end(args);
-	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
+	vsnprintf(grx_printf_text, len+1, format, args);
+	grx_printf_text[len] = '\0';
 
-	gr_string(x, y, grx_printf_text);
+	gr_string(x, y, grx_printf_text, resize_mode, 1.0f, len);
 }
 
-void gr_printf_menu(int x, int y, const char * format, ...)
+void gr_printf(int x, int y, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
-
-	if (!FontManager::isReady()) return;
-
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
+	gr_printf_args(GR_RESIZE_FULL, x, y, std::string::npos, format, args);
 	va_end(args);
-	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
-
-	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU);
 }
 
-void gr_printf_menu_zoomed(int x, int y, const char * format, ...)
+void gr_printf(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
-
-	if (!FontManager::isReady()) return;
-
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
+	gr_printf_args(GR_RESIZE_FULL, x, y, len, format, args);
 	va_end(args);
-	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
-
-	gr_string(x, y, grx_printf_text, GR_RESIZE_MENU_ZOOMED);
 }
 
-void gr_printf_no_resize(int x, int y, const char * format, ...)
+void gr_printf_menu(int x, int y, SCP_FORMAT_STRING const char *format, ...)
 {
 	va_list args;
-
-	if (!FontManager::isReady()) return;
-
 	va_start(args, format);
-	vsnprintf(grx_printf_text, sizeof(grx_printf_text), format, args);
+	gr_printf_args(GR_RESIZE_MENU, x, y, std::string::npos, format, args);
 	va_end(args);
-	grx_printf_text[sizeof(grx_printf_text) - 1] = '\0';
+}
 
-	gr_string(x, y, grx_printf_text, GR_RESIZE_NONE);
+void gr_printf_menu(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gr_printf_args(GR_RESIZE_MENU, x, y, len, format, args);
+	va_end(args);
+}
+
+void gr_printf_menu_zoomed(int x, int y, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gr_printf_args(GR_RESIZE_MENU_ZOOMED, x, y, std::string::npos, format, args);
+	va_end(args);
+}
+
+void gr_printf_menu_zoomed(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gr_printf_args(GR_RESIZE_MENU_ZOOMED, x, y, len, format, args);
+	va_end(args);
+}
+
+void gr_printf_no_resize(int x, int y, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gr_printf_args(GR_RESIZE_NONE, x, y, std::string::npos, format, args);
+	va_end(args);
+}
+
+void gr_printf_no_resize(int x, int y, size_t len, SCP_FORMAT_STRING const char *format, ...)
+{
+	va_list args;
+	va_start(args, format);
+	gr_printf_args(GR_RESIZE_NONE, x, y, len, format, args);
+	va_end(args);
 }
