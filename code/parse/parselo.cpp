@@ -3627,6 +3627,7 @@ void display_parse_diagnostics()
 char *split_str_once(char *src, int max_pixel_w, float scale)
 {
 	char *brk = nullptr;
+	char *word_brk = nullptr; // if we fail, break here (even if its in the middle of a word)
 	bool last_was_white = false;
 
 	Assert(src);
@@ -3651,6 +3652,9 @@ char *split_str_once(char *src, int max_pixel_w, float scale)
 				return src + i + 1;
 			}
 		}
+		else if (word_brk == nullptr) {
+			word_brk = src + i;
+		}
 
 		if (is_white_space(src[i])) {
 			if (!last_was_white) {
@@ -3672,10 +3676,9 @@ char *split_str_once(char *src, int max_pixel_w, float scale)
 	}
 
 	// if we are over max pixel width and weren't able to come up with a good non-word
-	// split then just return the original src text and the calling function should
-	// have to handle the result
+	// split then just split the word
 	if ( (w > max_pixel_w) && ((i == 0) || !brk) ) {
-		return src;
+		return word_brk;
 	}
 
 	if (!brk) {
