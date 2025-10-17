@@ -333,6 +333,10 @@ public:
 			 modular_curves_submember_input<&particle::max_life>,
 			 ModularCurvesMathOperators::division>{}},
 		std::pair {"Radius", modular_curves_submember_input<&particle::radius>{}},
+		std::pair {"Apparent Size", modular_curves_math_input<
+			modular_curves_functional_input<&getPixelSize>,
+			modular_curves_global_submember_input<gr_screen, &screen::max_w>,
+			ModularCurvesMathOperators::division>{}},
 		std::pair {"Velocity", modular_curves_submember_input<&particle::velocity, &vm_vec_mag_quick>{}},
 		std::pair {"Parent Object Hitpoints", modular_curves_submember_input<&particle::attached_objnum, &Objects, &object::hull_strength>{}},
 		std::pair {"Parent Ship Hitpoints Fraction", modular_curves_math_input<

@@ -249,8 +249,7 @@ public:
 };
 
 template<auto grabber_fnc>
-struct modular_curves_functional_input {
-  private:
+struct modular_curves_functional_input {  private:
 	template<int tuple_idx, typename input_type>
 	static inline auto grab_from_tuple(const input_type& input) {
 		if constexpr(tuple_idx < 0)
