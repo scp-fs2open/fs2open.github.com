@@ -752,7 +752,7 @@ void LabManager::changeDisplayedObject(LabMode mode, int info_index, int subtype
 		break;
 	case LabMode::Prop:
 		CurrentObject = prop_create(&CurrentOrientation, &CurrentPosition, CurrentClass);
-		if (isSafeForShips()) {
+		if (isSafeForProps()) {
 			ModelFilename = Prop_info[CurrentClass].pof_file;
 		}
 		break;

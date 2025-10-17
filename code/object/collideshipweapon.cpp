@@ -901,7 +901,7 @@ int collide_prop_weapon(obj_pair* pair)
 		// Note: culling ships with auto spread shields seems to waste more performance than it saves,
 		// so we're not doing that here
 		if (vm_vec_dist_squared(&prop_obj->pos, &weapon_obj->pos) < (1.2f * prop_obj->radius * prop_obj->radius)) {
-			auto [do_postproc, never_hits, collision_data] =
+			const auto& [do_postproc, never_hits, collision_data] =
                 check_inside_radius_for_big_ships(prop_obj, weapon_obj, pair);
 
             if (do_postproc) {
