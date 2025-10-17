@@ -14364,7 +14364,12 @@ void sexp_play_sound_from_file(int n)
 	int type = ASF_MENUMUSIC;
 	if (n >= 0)
 	{
-		// TODO: SDL3 => make this work with ds_play somehow to get EFX
+		// TODO: SDL3 => Having AudioStream::WriteWaveData() pipe the data through
+		//				 new ds functions would be the cleanest way to replicate
+		//				 this but it may not be worth the effort considering EFX
+		//				 is disabled by default and most players probably don't
+		//				 bother enabling it. This really wasn't a well thought out
+		//				 feature in the first place and should maybe be dropped.
 
 		if (eval_sexp(n) != 0)
 			type = ASF_SOUNDFX;
