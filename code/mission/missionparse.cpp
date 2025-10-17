@@ -5284,7 +5284,7 @@ void post_process_path_stuff()
 // MjnMixael
 void post_process_mission_props()
 {
-	for (auto& propp : Parse_props) {
+	for (const auto& propp : Parse_props) {
 		int objnum = prop_create(&propp.orientation, &propp.position, propp.prop_info_index, propp.name);
 
 		if (objnum >= 0) {

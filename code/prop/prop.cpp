@@ -112,7 +112,7 @@ void parse_prop_table(const char* filename)
 
 			required_string("+Color:");
 			int rgb[3];
-			stuff_int_list(rgb, 3, RAW_INTEGER_TYPE);
+			stuff_int_list(rgb, 3, ParseLookupType::RAW_INTEGER_TYPE);
 			gr_init_color(&pc.list_color, rgb[0], rgb[1], rgb[2]);
 
 			Prop_categories.push_back(pc);
@@ -271,7 +271,7 @@ void parse_prop_table(const char* filename)
 		}
 
 		if(optional_string("$Detail distance:")) {
-			pip->num_detail_levels = (int)stuff_int_list(pip->detail_distance, MAX_PROP_DETAIL_LEVELS, RAW_INTEGER_TYPE);
+			pip->num_detail_levels = (int)stuff_int_list(pip->detail_distance, MAX_PROP_DETAIL_LEVELS, ParseLookupType::RAW_INTEGER_TYPE);
 		}
 
 		if (optional_string("$Category:")) {
@@ -423,7 +423,7 @@ void prop_init()
  * Returns object index of prop.
  * @return -1 means failed.
  */
-int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
+int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const char* name)
 {
 	prop_info* pip;
 	prop* propp;
@@ -454,7 +454,7 @@ int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name)
 		char base_name[NAME_LENGTH];
 		char suffix[NAME_LENGTH];
 		strcpy_s(base_name, Prop_info[prop_type].name.c_str());
-		sprintf(suffix, NOX(" %d"), static_cast<int>(Props.size()));
+		sprintf(suffix, NOX(" %d"), new_id);
 
 		// start building name
 		strcpy_s(propp->prop_name, base_name);

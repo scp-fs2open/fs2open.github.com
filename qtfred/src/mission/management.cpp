@@ -219,8 +219,8 @@ initialize(const std::string& cfilepath, int argc, char* argv[], Editor* editor,
 	listener(SubSystem::Ships);
 	ship_init();
 
-	//listener(subsystem::Props);
-	//prop_init();
+	//listener(Subsystem::Props);
+	prop_init();
 
 	listener(SubSystem::TechroomIntel);
 	techroom_intel_init();

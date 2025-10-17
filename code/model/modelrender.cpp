@@ -3026,7 +3026,7 @@ void model_render_only_glowpoint_lights(const model_render_params* interp, int m
 		objp = &Objects[objnum];
 		int tentative_num = -1;
 
-		// ADD PROP HERE
+		// TODO: Add Prop support here
 		if (objp->type == OBJ_SHIP) {
 			shipp = &Ships[objp->instance];
 			tentative_num = shipp->model_instance_num;

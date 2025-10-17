@@ -1545,7 +1545,7 @@ void LabUi::show_object_options() const
 
 			with_CollapsingHeader("Object actions")
 			{
-				if (getLabManager()->isSafeForAsteroids()) {
+				if (getLabManager()->isSafeForProps()) {
 					// No actions yet
 				}
 			}

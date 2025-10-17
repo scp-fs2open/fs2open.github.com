@@ -1426,12 +1426,12 @@ ADE_FUNC(createProp,
 	"Prop handle, or invalid prop handle if prop couldn't be created")
 {
 	const char* name = nullptr;
-	int pclass       = -1;
+	int pclass       = 0;
 	matrix_h* orient = nullptr;
 	vec3d pos        = vmd_zero_vector;
 	ade_get_args(L, "|sooo", &name, l_Propclass.Get(&pclass), l_Matrix.GetPtr(&orient), l_Vector.Get(&pos));
 
-	if (Prop_info.empty()) {
+	if (!SCP_vector_inbounds(Prop_info, pclass)) {
 		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 	}
 
@@ -1439,10 +1439,6 @@ ADE_FUNC(createProp,
 	if(orient != nullptr)
 	{
 		real_orient = orient->GetMatrix();
-	}
-
-	if (pclass == -1) {
-		return ade_set_error(L, "o", l_Prop.Set(object_h()));
 	}
 
 	int obj_idx = prop_create(real_orient, &pos, pclass, name);

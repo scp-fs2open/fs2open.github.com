@@ -107,7 +107,7 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			sprintf(buf, "%s beam", Weapon_info[Beams[objh->objp()->instance].weapon_info_index].name);
 			break;
 		case OBJ_PROP:
-			sprintf(buf, "%s prop", "TEMP");
+			sprintf(buf, "%s prop", Props[Objects[objh->objnum].instance]->prop_name);
 			break;
 		default:
 			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
