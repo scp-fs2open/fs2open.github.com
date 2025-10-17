@@ -34,7 +34,7 @@ typedef struct prop {
 	fix time_created;
 	float alpha_mult;
 	// glow points
-	std::deque<bool> glow_point_bank_active;
+	SCP_deque<bool> glow_point_bank_active;
 	flagset<Prop::Prop_Flags> flags;
 } prop;
 
@@ -74,7 +74,7 @@ inline int prop_info_size()
 void prop_init();
 
 // Object management
-int prop_create(matrix* orient, vec3d* pos, int prop_type, const char* name = nullptr);
+int prop_create(const matrix* orient, const vec3d* pos, int prop_type, const char* name = nullptr);
 void prop_delete(object* obj);
 void prop_render(object* obj, model_draw_list* scene);
 
