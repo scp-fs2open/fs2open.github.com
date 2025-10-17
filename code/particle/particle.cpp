@@ -195,15 +195,14 @@ namespace particle
 	}
 
 	float getPixelSize(const particle& subject_particle) {
-		vec3d pos;
+		vec3d world_pos = subject_particle.pos;
 
-		if (subject_particle.attached_objnum < 0) {
-			pos = subject_particle.pos;
-		} else {
-			pos = subject_particle.pos + Objects[subject_particle.attached_objnum].pos;
+		if (subject_particle.attached_objnum >= 0) {
+			vm_vec_unrotate(&world_pos, &world_pos, &Objects[subject_particle.attached_objnum].orient);
+			world_pos += Objects[subject_particle.attached_objnum].pos;
 		}
 
-		float distance_to_eye = vm_vec_dist(&Eye_position, &pos);
+		float distance_to_eye = vm_vec_dist(&Eye_position, &world_pos);
 
 		return convert_distance_and_diameter_to_pixel_size(
 			distance_to_eye,
