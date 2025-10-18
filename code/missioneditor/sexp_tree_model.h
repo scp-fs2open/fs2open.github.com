@@ -225,6 +225,10 @@ public:
 	virtual void ui_select_item(void* handle) = 0;
 	virtual void ui_ensure_visible(void* handle) = 0;
 
+	// Subtree operations
+	virtual void ui_add_children_visual(int parent_node_index) = 0;
+	virtual void ui_expand_branch(void* handle) = 0;
+
 	// Notifications
 	virtual void ui_notify_modified() = 0;
 	virtual void ui_update_help(void* handle) = 0;

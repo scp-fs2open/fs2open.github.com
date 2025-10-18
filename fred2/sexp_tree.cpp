@@ -168,6 +168,20 @@ void sexp_tree::ui_update_help(void* handle)
 	update_help(static_cast<HTREEITEM>(handle));
 }
 
+void sexp_tree::ui_add_children_visual(int parent_node_index)
+{
+	int i = tree_nodes[parent_node_index].child;
+	while (i != -1) {
+		add_sub_tree(i, tree_item_handle(tree_nodes[parent_node_index]));
+		i = tree_nodes[i].next;
+	}
+}
+
+void sexp_tree::ui_expand_branch(void* handle)
+{
+	expand_branch((HTREEITEM)handle);
+}
+
 // clears out the tree, so all the nodes are unused.
 void sexp_tree::clear_tree(const char *op)
 {
@@ -2369,158 +2383,17 @@ void sexp_tree::NodeDelete()
 
 void sexp_tree::NodeCopy()
 {
-	if (item_index < 0)
-		return;
-
-	// If a clipboard already exist, unmark it as persistent and free old clipboard
-	if (Sexp_clipboard != -1) {
-		sexp_unmark_persistent(Sexp_clipboard);
-		free_sexp2(Sexp_clipboard);
-	}
-
-	// Allocate new clipboard and mark persistent
-	Sexp_clipboard = save_branch(item_index, 1);
-	sexp_mark_persistent(Sexp_clipboard);
+	_actions.clipboard_copy();
 }
 
 void sexp_tree::NodeReplacePaste()
 {
-	if (item_index < 0 || Sexp_clipboard < 0)
-		return;
-
-	int i;
-
-	// the following assumptions are made..
-	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
-	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
-		"Attempt to use container name %s from SEXP clipboard. Please report!",
-		Sexp_nodes[Sexp_clipboard].text);
-
-	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-		expand_operator(item_index);
-		replace_operator(CTEXT(Sexp_clipboard));
-		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-			i = tree_nodes[item_index].child;
-			while (i != -1) {
-				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
-				i = tree_nodes[i].next;
-			}
-		}
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
-		expand_operator(item_index);
-		const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-		Assertion(p_container,
-			"Attempt to paste unknown container %s. Please report!",
-			Sexp_nodes[Sexp_clipboard].text);
-		const auto &container = *p_container;
-		// this should always be true, but just in case
-		const bool has_modifiers = (Sexp_nodes[Sexp_clipboard].first != -1);
-		int new_type = tree_nodes[item_index].type & ~(SEXPT_VARIABLE | SEXPT_CONTAINER_NAME) | SEXPT_CONTAINER_DATA;
-		replace_container_data(container, new_type, false, true, !has_modifiers);
-		if (has_modifiers) {
-			load_branch(Sexp_nodes[Sexp_clipboard].first, item_index);
-			i = tree_nodes[item_index].child;
-			while (i != -1) {
-				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
-				i = tree_nodes[i].next;
-			}
-		} else {
-			add_default_modifier(container);
-		}
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-			Assert(var_idx > -1);
-			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_NUMBER | SEXPT_VALID));
-		}
-		else {
-			expand_operator(item_index);
-			replace_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-		}
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-		if (Sexp_nodes[Sexp_clipboard].type & SEXP_FLAG_VARIABLE) {
-			int var_idx = get_index_sexp_variable_name(Sexp_nodes[Sexp_clipboard].text);
-			Assert(var_idx > -1);
-			replace_variable_data(var_idx, (SEXPT_VARIABLE | SEXPT_STRING | SEXPT_VALID));
-		}
-		else {
-			expand_operator(item_index);
-			replace_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-		}
-
-	} else
-		Assert(0);  // unknown and/or invalid sexp type
-
-	expand_branch(item_handle);
+	_actions.clipboard_paste_replace();
 }
 
 void sexp_tree::NodeAddPaste()
 {
-	if (item_index < 0 || Sexp_clipboard < 0)
-		return;
-
-	int i;
-
-	// the following assumptions are made..
-	Assert(Sexp_nodes[Sexp_clipboard].type != SEXP_NOT_USED);
-	Assert(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_LIST);
-	Assertion(Sexp_nodes[Sexp_clipboard].subtype != SEXP_ATOM_CONTAINER_NAME,
-		"Attempt to use container name %s from SEXP clipboard. Please report!",
-		Sexp_nodes[Sexp_clipboard].text);
-
-	if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_OPERATOR) {
-		expand_operator(item_index);
-		add_operator(CTEXT(Sexp_clipboard));
-		if (Sexp_nodes[Sexp_clipboard].rest != -1) {
-			load_branch(Sexp_nodes[Sexp_clipboard].rest, item_index);
-			i = tree_nodes[item_index].child;
-			while (i != -1) {
-				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
-				i = tree_nodes[i].next;
-			}
-		}
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_CONTAINER_DATA) {
-		expand_operator(item_index);
-		add_container_data(Sexp_nodes[Sexp_clipboard].text);
-		const int modifier_node = Sexp_nodes[Sexp_clipboard].first;
-		if (modifier_node != -1) {
-			load_branch(modifier_node, item_index);
-			i = tree_nodes[item_index].child;
-			while (i != -1) {
-				add_sub_tree(i, tree_item_handle(tree_nodes[item_index]));
-				i = tree_nodes[i].next;
-			}
-		} else {
-			// this shouldn't happen, but just in case
-			const auto *p_container = get_sexp_container(Sexp_nodes[Sexp_clipboard].text);
-			Assertion(p_container,
-				"Attempt to add-paste unknown container %s. Please report!",
-				Sexp_nodes[Sexp_clipboard].text);
-			add_default_modifier(*p_container);
-		}
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_NUMBER) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-		expand_operator(item_index);
-		add_data(CTEXT(Sexp_clipboard), (SEXPT_NUMBER | SEXPT_VALID));
-
-	} else if (Sexp_nodes[Sexp_clipboard].subtype == SEXP_ATOM_STRING) {
-		Assert(Sexp_nodes[Sexp_clipboard].rest == -1);
-		expand_operator(item_index);
-		add_data(CTEXT(Sexp_clipboard), (SEXPT_STRING | SEXPT_VALID));
-
-	} else
-		Assert(0);  // unknown and/or invalid sexp type
-
-	expand_branch(item_handle);
+	_actions.clipboard_paste_add();
 }
 
 // adds to or replaces (based on passed in flag) the current operator

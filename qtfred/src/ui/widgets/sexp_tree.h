@@ -285,6 +285,8 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	void ui_ensure_visible(void* handle) override;
 	void ui_notify_modified() override;
 	void ui_update_help(void* handle) override;
+	void ui_add_children_visual(int parent_node_index) override;
+	void ui_expand_branch(void* handle) override;
 
  signals:
 	void miniHelpChanged(const QString& text);

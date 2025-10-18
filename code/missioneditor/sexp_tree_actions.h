@@ -50,6 +50,11 @@ public:
 	// --- Validation ---
 	void verify_and_fix_arguments(int node);
 
+	// --- Clipboard operations ---
+	void clipboard_copy();
+	void clipboard_paste_replace();
+	void clipboard_paste_add();
+
 	// --- Variable/container bulk operations ---
 	void delete_sexp_tree_variable(const char* var_name);
 	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
