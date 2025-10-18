@@ -60,6 +60,25 @@ if (FSO_INSTALL_DEBUG_FILES)
 	endif()
 endif()
 
+if(FSO_BUILD_APPIMAGE)
+	configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/AppRun.in" "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen" @ONLY)
+	file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>"
+		INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppRun.gen")
+
+	install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/AppRun-$<CONFIG>" DESTINATION "." RENAME "AppRun"
+			COMPONENT "Freespace2")
+
+	configure_file("${CMAKE_CURRENT_LIST_DIR}/cmake/AppImage.desktop.in" "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen" @ONLY)
+	file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop"
+		INPUT "${CMAKE_CURRENT_BINARY_DIR}/AppImage.desktop.gen")
+
+	install(FILES "${CMAKE_CURRENT_BINARY_DIR}/AppImage-$<CONFIG>.desktop" DESTINATION "." RENAME "fso.desktop"
+			COMPONENT "Freespace2")
+
+	install(FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/app_icon.png" DESTINATION "."
+			COMPONENT "Freespace2")
+endif()
+
 enable_clang_tidy(Freespace2)
 
 INCLUDE(util)
