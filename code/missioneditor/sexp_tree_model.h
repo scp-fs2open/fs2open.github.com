@@ -235,6 +235,76 @@ public:
 };
 
 // -----------------------------------------------------------------------
+// Context menu state — computed by model, consumed by UI to build menus
+// -----------------------------------------------------------------------
+
+struct SexpContextMenuState {
+	// Special labeled root case (item_index == -1 with labeled root mode)
+	bool is_labeled_root = false;
+	bool is_root_editable = false;
+
+	// Simple boolean flags
+	bool can_edit_text = false;
+	bool can_edit_comment = false;
+	bool can_edit_bg_color = false;
+	bool can_add_variable = true;
+	bool can_modify_variable = false;
+	bool can_copy = true;
+	bool can_cut = false;
+	bool can_paste = false;
+	bool can_paste_add = false;
+	bool can_delete = true;
+	bool can_replace_number = false;
+	bool can_replace_string = false;
+	bool can_add_number = false;
+	bool can_add_string = false;
+
+	// Types for operator enabling in menus
+	int add_type = 0;       // OPR_* return type expected for add context
+	int replace_type = 0;   // OPR_* return type expected for replace context
+	int insert_opf_type = 0; // OPF_* type for insert context
+
+	// State needed by command handlers
+	int add_count = 0;
+	int replace_count = 0;
+	int modify_variable = 0;
+
+	// Campaign mode filtering
+	bool campaign_mode = false;
+
+	// Data lists for add/replace data submenus (caller must call destroy())
+	// Entries with op >= 0 are operators to enable; op < 0 are data items for the submenu
+	sexp_list_item* add_data_list = nullptr;
+	int add_data_opf_type = 0;  // OPF_* type, needed for OPF_VARIABLE_NAME display
+	sexp_list_item* replace_data_list = nullptr;
+
+	// Operators enabled from data lists (indices into Operators[])
+	SCP_vector<int> add_enabled_op_indices;
+	SCP_vector<int> replace_enabled_op_indices;
+
+	// Variable replacement menu entries
+	struct VariableEntry {
+		int var_index;
+		bool enabled;
+	};
+	SCP_vector<VariableEntry> replace_variables;
+
+	// Container replacement menu entries (index = position in get_all_sexp_containers())
+	struct ContainerEntry {
+		bool enabled;
+	};
+	bool show_container_names = false;
+	SCP_vector<ContainerEntry> replace_container_names;
+	bool show_container_data = false;
+	SCP_vector<ContainerEntry> replace_container_data;
+
+	void cleanup() {
+		if (add_data_list) { add_data_list->destroy(); add_data_list = nullptr; }
+		if (replace_data_list) { replace_data_list->destroy(); replace_data_list = nullptr; }
+	}
+};
+
+// -----------------------------------------------------------------------
 // SexpTreeModel — shared UI-independent sexp tree model
 // -----------------------------------------------------------------------
 // Owns tree node data and provides all pure-logic operations.
@@ -429,6 +499,10 @@ public:
 	sexp_list_item* get_list_container_modifiers() const;
 	sexp_list_item* get_map_container_modifiers(int con_data_node) const;
 	sexp_list_item* get_container_multidim_modifiers(int con_data_node) const;
+
+	// --- Context menu state computation ---
+	SexpContextMenuState compute_context_menu_state(int mode);
+	static bool is_operator_hidden(int op_value);
 
 	// Static utilities
 	static bool is_container_name_opf_type(int op_type);
