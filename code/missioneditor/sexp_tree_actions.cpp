@@ -572,3 +572,92 @@ void SexpTreeActions::verify_and_fix_arguments(int node)
 	_model.item_index = tmp;
 	here_count--;
 }
+
+// -----------------------------------------------------------------------
+// Variable/container bulk operations
+// -----------------------------------------------------------------------
+
+void SexpTreeActions::delete_sexp_tree_variable(const char* var_name)
+{
+	char search_str[64];
+	char replace_text[TOKEN_LENGTH];
+
+	sprintf(search_str, "%s(", var_name);
+
+	int old_item_index = _model.item_index;
+
+	for (int idx = 0; idx < (int)_model.tree_nodes.size(); idx++) {
+		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if (strstr(_model.tree_nodes[idx].text, search_str) != nullptr) {
+				Assert((_model.tree_nodes[idx].type & SEXPT_NUMBER) || (_model.tree_nodes[idx].type & SEXPT_STRING));
+
+				int type = _model.tree_nodes[idx].type &= ~SEXPT_VARIABLE;
+
+				if (_model.tree_nodes[idx].type & SEXPT_NUMBER) {
+					strcpy_s(replace_text, "number");
+				} else {
+					strcpy_s(replace_text, "string");
+				}
+
+				_model.item_index = idx;
+				replace_data(replace_text, type);
+			}
+		}
+	}
+
+	_model.item_index = old_item_index;
+}
+
+void SexpTreeActions::modify_sexp_tree_variable(const char* old_name, int sexp_var_index)
+{
+	char search_str[64];
+	int type;
+
+	Assert(Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_SET);
+	Assert((Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) ||
+	       (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING));
+
+	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
+		type = (SEXPT_NUMBER | SEXPT_VALID);
+	} else {
+		type = (SEXPT_STRING | SEXPT_VALID);
+	}
+
+	int old_item_index = _model.item_index;
+
+	sprintf(search_str, "%s(", old_name);
+
+	for (int idx = 0; idx < (int)_model.tree_nodes.size(); idx++) {
+		if (_model.tree_nodes[idx].type & SEXPT_VARIABLE) {
+			if (strstr(_model.tree_nodes[idx].text, search_str) != nullptr) {
+				_model.item_index = idx;
+				replace_variable_data(sexp_var_index, (type | SEXPT_VARIABLE));
+			}
+		}
+	}
+
+	_model.item_index = old_item_index;
+}
+
+bool SexpTreeActions::rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name)
+{
+	Assertion(!old_name.empty(),
+		"Attempt to rename container nodes looking for empty name. Please report!");
+	Assertion(!new_name.empty(),
+		"Attempt to rename container nodes with empty name. Please report!");
+	Assertion(new_name.length() <= sexp_container::NAME_MAX_LENGTH,
+		"Attempt to rename container nodes with name %s that is too long (%d > %d). Please report!",
+		new_name.c_str(), (int)new_name.length(), sexp_container::NAME_MAX_LENGTH);
+
+	bool renamed_anything = false;
+
+	for (int node_idx = 0; node_idx < (int)_model.tree_nodes.size(); node_idx++) {
+		if (_model.is_matching_container_node(node_idx, old_name)) {
+			strcpy_s(_model.tree_nodes[node_idx].text, new_name.c_str());
+			_ui.ui_set_item_text(_model.tree_nodes[node_idx].handle, new_name.c_str());
+			renamed_anything = true;
+		}
+	}
+
+	return renamed_anything;
+}

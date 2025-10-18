@@ -50,6 +50,11 @@ public:
 	// --- Validation ---
 	void verify_and_fix_arguments(int node);
 
+	// --- Variable/container bulk operations ---
+	void delete_sexp_tree_variable(const char* var_name);
+	void modify_sexp_tree_variable(const char* old_name, int sexp_var_index);
+	bool rename_container_nodes(const SCP_string& old_name, const SCP_string& new_name);
+
 private:
 	// Helper: delete all UI children of a node and clear model child link
 	void clear_node_children(int node_index);

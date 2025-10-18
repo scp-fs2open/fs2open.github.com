@@ -267,7 +267,7 @@ public:
 
 	int& m_mode = _model.m_mode;
 	int& item_index = _model.item_index;
-	int select_sexp_node;  // used to select an sexp item on dialog box open.
+	int& select_sexp_node = _model.select_sexp_node;  // used to select an sexp item on dialog box open.
 	BOOL		m_dragging;
 	HTREEITEM	m_h_drag;
 	HTREEITEM	m_h_drop;
@@ -323,7 +323,7 @@ protected:
 	int save_branch(int cur, int at_root = 0);
 	void free_node2(int node);
 
-	int flag;
+	int& flag = _model.flag;
 	int*& modified = _model.modified;
 	bool m_operator_popup_active;
 	bool m_operator_popup_created;
@@ -334,7 +334,7 @@ protected:
 	int& total_nodes = _model.total_nodes;
 
 	HTREEITEM item_handle;
-	int root_item;
+	int& root_item = _model.root_item;
 	// these 2 variables are used to help location data sources.  Sometimes looking up
 	// valid data can require complex code just to get to an index that is required to
 	// locate data.  These are set up in right_clicked() to try and short circuit having

@@ -265,7 +265,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 
 	int getCurrentItemIndex() const;
 	void setCurrentItemIndex(int index);
-	int select_sexp_node;  // used to select an sexp item on dialog box open.
+	int& select_sexp_node = _model.select_sexp_node;  // used to select an sexp item on dialog box open.
 
 	void initializeEditor(Editor* edit, SexpTreeEditorInterface* editorInterface = nullptr);
 
@@ -331,7 +331,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	int save_branch(int cur, int at_root = 0);
 	void free_node2(int node);
 
-	int flag;
+	int& flag = _model.flag;
 
 	SCP_vector<sexp_tree_item>& tree_nodes = _model.tree_nodes;
 	int& total_nodes = _model.total_nodes;
@@ -339,7 +339,7 @@ class sexp_tree: public QTreeWidget, public ISexpTreeUI {
 	// This flag is used for keeping track if we are currently editing a tree node
 	bool _currently_editing = false;
 
-	int root_item;
+	int& root_item = _model.root_item;
 	// these 2 variables are used to help location data sources.  Sometimes looking up
 	// valid data can require complex code just to get to an index that is required to
 	// locate data.  These are set up in right_clicked() to try and short circuit having

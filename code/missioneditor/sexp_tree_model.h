@@ -196,6 +196,8 @@ public:
 void get_variable_name_from_sexp_tree_node_text(const char* text, char* var_name);
 // Extract default value from "varname(value)" format
 void get_variable_default_text_from_variable_text(char* text, char* default_text);
+// Build "varname(value)" combined text for variable display in tree
+void get_combined_variable_name(char* combined_name, const char* sexp_var_name);
 
 // Forward declaration for OPF function parameter
 enum class ContainerType;
@@ -246,6 +248,11 @@ public:
 	int m_mode;
 	int item_index;
 
+	// Tree loading state
+	int root_item;
+	int select_sexp_node;  // translates global sexp node index to tree node during load
+	int flag;              // "found select_sexp_node" flag during load
+
 	// Editor context interface (set by UI layer)
 	SexpTreeEditorInterface* _interface;
 
@@ -265,6 +272,15 @@ public:
 	void set_node(int node, int type, const char* text);
 	void free_node(int node, int cascade = 0);
 	void free_node2(int node);
+
+	// --- Tree loading (populate tree_nodes from Sexp_nodes) ---
+	void clear_tree_data(const char* op = nullptr);
+	void load_tree_data(int index, const char* deflt = "true");
+	int load_branch(int index, int parent);
+	int load_sub_tree(int index, bool valid, const char* text);
+
+	// --- Tree structure manipulation ---
+	void move_branch_data(int source, int parent);
 
 	// --- Tree serialization ---
 	int save_tree(int node) const;

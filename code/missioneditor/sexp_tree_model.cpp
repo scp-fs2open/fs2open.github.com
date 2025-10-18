@@ -216,7 +216,9 @@ bool SexpTreeEditorInterface::requireCampaignOperators() const
 // -----------------------------------------------------------------------
 
 SexpTreeModel::SexpTreeModel()
-	: total_nodes(0), m_mode(0), item_index(-1), _interface(nullptr), modified(nullptr)
+	: total_nodes(0), m_mode(0), item_index(-1),
+	  root_item(-1), select_sexp_node(-1), flag(0),
+	  _interface(nullptr), modified(nullptr)
 {
 }
 
@@ -367,6 +369,191 @@ void SexpTreeModel::free_node2(int node)
 
 	if (tree_nodes[node].next != -1)
 		free_node2(tree_nodes[node].next);
+}
+
+// -----------------------------------------------------------------------
+// Tree loading — populate tree_nodes from global Sexp_nodes
+// -----------------------------------------------------------------------
+
+// Build "varname(value)" combined text for variable display in tree
+void get_combined_variable_name(char* combined_name, const char* sexp_var_name)
+{
+	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
+
+	if (sexp_var_index >= 0)
+		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
+	else
+		sprintf(combined_name, "%s(undefined)", sexp_var_name);
+}
+
+void SexpTreeModel::clear_tree_data(const char* op)
+{
+	mprintf(("Resetting dynamic tree node limit from " SIZE_T_ARG " to %d...\n", tree_nodes.size(), 0));
+
+	total_nodes = flag = 0;
+	tree_nodes.clear();
+
+	if (op && strlen(op)) {
+		set_node(allocate_node(-1), (SEXPT_OPERATOR | SEXPT_VALID), op);
+	}
+}
+
+void SexpTreeModel::load_tree_data(int index, const char* deflt)
+{
+	int cur;
+
+	clear_tree_data();
+	root_item = 0;
+
+	if (index < 0) {
+		cur = allocate_node(-1);
+		set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), deflt);
+		return;
+	}
+
+	if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {
+		cur = allocate_node(-1);
+		if (atoi(Sexp_nodes[index].text))
+			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), "true");
+		else
+			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), "false");
+		return;
+	}
+
+	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
+	load_branch(index, -1);
+}
+
+int SexpTreeModel::load_branch(int index, int parent)
+{
+	int cur = -1;
+	char combined_var_name[2 * TOKEN_LENGTH + 2];
+
+	while (index != -1) {
+		int additional_flags = SEXPT_VALID;
+
+		// special check for container modifiers
+		if ((parent != -1) && (tree_nodes[parent].type & SEXPT_CONTAINER_DATA)) {
+			additional_flags |= SEXPT_MODIFIER;
+		}
+
+		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
+		if (Sexp_nodes[index].subtype == SEXP_ATOM_LIST) {
+			load_branch(Sexp_nodes[index].first, parent);
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR) {
+			cur = allocate_node(parent);
+			if ((index == select_sexp_node) && !flag) {
+				select_sexp_node = cur;
+				flag = 1;
+			}
+
+			set_node(cur, (SEXPT_OPERATOR | additional_flags), Sexp_nodes[index].text);
+			load_branch(Sexp_nodes[index].rest, cur);
+			return cur;
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {
+			cur = allocate_node(parent);
+			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
+				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
+				set_node(cur, (SEXPT_VARIABLE | SEXPT_NUMBER | additional_flags), combined_var_name);
+			} else {
+				set_node(cur, (SEXPT_NUMBER | additional_flags), Sexp_nodes[index].text);
+			}
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_STRING) {
+			cur = allocate_node(parent);
+			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
+				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
+				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
+			} else {
+				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
+			}
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_NAME) {
+			Assertion(!(additional_flags & SEXPT_MODIFIER),
+				"Found a container name node %s that is also a container modifier. Please report!",
+				Sexp_nodes[index].text);
+			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
+				"Attempt to load unknown container data %s into SEXP tree. Please report!",
+				Sexp_nodes[index].text);
+			cur = allocate_node(parent);
+			set_node(cur, (SEXPT_CONTAINER_NAME | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
+
+		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_DATA) {
+			cur = allocate_node(parent);
+			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
+				"Attempt to load unknown container data %s into SEXP tree. Please report!",
+				Sexp_nodes[index].text);
+			set_node(cur, (SEXPT_CONTAINER_DATA | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
+			load_branch(Sexp_nodes[index].first, cur);
+
+		} else
+			Assert(0);
+
+		if ((index == select_sexp_node) && !flag) {
+			select_sexp_node = cur;
+			flag = 1;
+		}
+
+		index = Sexp_nodes[index].rest;
+		if (index == -1)
+			return cur;
+	}
+
+	return cur;
+}
+
+int SexpTreeModel::load_sub_tree(int index, bool valid, const char* text)
+{
+	int cur;
+
+	if (index < 0) {
+		cur = allocate_node(-1);
+		set_node(cur, (SEXPT_OPERATOR | (valid ? SEXPT_VALID : 0)), text);
+		return cur;
+	}
+
+	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
+	cur = load_branch(index, -1);
+	return cur;
+}
+
+void SexpTreeModel::move_branch_data(int source, int parent)
+{
+	int node;
+
+	if (source == -1)
+		return;
+
+	// unlink source from its current parent
+	node = tree_nodes[source].parent;
+	if (node != -1) {
+		if (tree_nodes[node].child == source) {
+			tree_nodes[node].child = tree_nodes[source].next;
+		} else {
+			node = tree_nodes[node].child;
+			while (tree_nodes[node].next != source) {
+				node = tree_nodes[node].next;
+				Assert(node != -1);
+			}
+			tree_nodes[node].next = tree_nodes[source].next;
+		}
+	}
+
+	// link source as child of new parent
+	tree_nodes[source].parent = parent;
+	tree_nodes[source].next = -1;
+	if (parent != -1 && parent != 0) {
+		if (tree_nodes[parent].child == -1) {
+			tree_nodes[parent].child = source;
+		} else {
+			node = tree_nodes[parent].child;
+			while (tree_nodes[node].next != -1)
+				node = tree_nodes[node].next;
+			tree_nodes[node].next = source;
+		}
+	}
 }
 
 // -----------------------------------------------------------------------

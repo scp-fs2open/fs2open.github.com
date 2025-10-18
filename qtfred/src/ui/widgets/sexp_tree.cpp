@@ -303,17 +303,11 @@ void sexp_tree::ui_update_help(void* handle)
 
 // clears out the tree, so all the nodes are unused.
 void sexp_tree::clear_tree(const char* op) {
-	mprintf(("Resetting dynamic tree node limit from "
-				SIZE_T_ARG
-				" to %d...\n", tree_nodes.size(), 0));
-
-	total_nodes = flag = 0;
-	tree_nodes.clear();
-
+	_model.clear_tree_data(nullptr);
 	if (op) {
-		clear();
+		clear();  // QTreeWidget::clear()
 		if (strlen(op)) {
-			set_node(allocate_node(-1), (SEXPT_OPERATOR | SEXPT_VALID), op);
+			_model.set_node(_model.allocate_node(-1), (SEXPT_OPERATOR | SEXPT_VALID), op);
 			build_tree();
 		}
 	}
@@ -329,126 +323,15 @@ void sexp_tree::reset_handles() {
 
 // initializes and creates a tree from a given sexp startpoint.
 void sexp_tree::load_tree(int index, const char* deflt) {
-	int cur;
-
-	clear_tree();
-	root_item = 0;
-	if (index < 0) {
-		cur = allocate_node(-1);
-		set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), deflt);  // setup a default tree if none
-		build_tree();
-		return;
-	}
-
-	if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {  // handle numbers allender likes to use so much..
-		cur = allocate_node(-1);
-		if (atoi(Sexp_nodes[index].text)) {
-			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), "true");
-		} else {
-			set_node(cur, (SEXPT_OPERATOR | SEXPT_VALID), "false");
-		}
-
-		build_tree();
-		return;
-	}
-
-	// assumption: first token is an operator.  I require this because it would cause problems
-	// with child/parent relations otherwise, and it should be this way anyway, since the
-	// return type of the whole sexp is boolean, and only operators can satisfy this.
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	load_branch(index, -1);
+	_model.load_tree_data(index, deflt);
+	clear();  // QTreeWidget::clear() - clear visual tree
 	build_tree();
-}
-
-void get_combined_variable_name(char* combined_name, const char* sexp_var_name) {
-	int sexp_var_index = get_index_sexp_variable_name(sexp_var_name);
-
-	if (sexp_var_index >= 0)
-		sprintf(combined_name, "%s(%s)", Sexp_variables[sexp_var_index].variable_name, Sexp_variables[sexp_var_index].text);
-	else
-		sprintf(combined_name, "%s(undefined)", sexp_var_name);
 }
 
 // creates a tree from a given Sexp_nodes[] point under a given parent.  Recursive.
 // Returns the allocated current node.
 int sexp_tree::load_branch(int index, int parent) {
-	int cur = -1;
-	char combined_var_name[2 * TOKEN_LENGTH + 2];
-
-	while (index != -1) {
-		int additional_flags = SEXPT_VALID;
-
-		// special check for container modifiers
-		if ((parent != -1) && (tree_nodes[parent].type & SEXPT_CONTAINER_DATA)) {
-			additional_flags |= SEXPT_MODIFIER;
-		}
-
-		Assert(Sexp_nodes[index].type != SEXP_NOT_USED);
-		if (Sexp_nodes[index].subtype == SEXP_ATOM_LIST) {
-			load_branch(Sexp_nodes[index].first, parent);  // do the sublist and continue
-
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR) {
-			cur = allocate_node(parent);
-			if ((index == select_sexp_node) && !flag) {  // translate sexp node to our node
-				select_sexp_node = cur;
-				flag = 1;
-			}
-
-			set_node(cur, (SEXPT_OPERATOR | additional_flags), Sexp_nodes[index].text);
-			load_branch(Sexp_nodes[index].rest, cur);  // operator is new parent now
-			return cur;  // 'rest' was just used, so nothing left to use.
-
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_NUMBER) {
-			cur = allocate_node(parent);
-			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
-				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
-				set_node(cur, (SEXPT_VARIABLE | SEXPT_NUMBER | additional_flags), combined_var_name);
-			} else {
-				set_node(cur, (SEXPT_NUMBER | additional_flags), Sexp_nodes[index].text);
-			}
-
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_STRING) {
-			cur = allocate_node(parent);
-			if (Sexp_nodes[index].type & SEXP_FLAG_VARIABLE) {
-				get_combined_variable_name(combined_var_name, Sexp_nodes[index].text);
-				set_node(cur, (SEXPT_VARIABLE | SEXPT_STRING | additional_flags), combined_var_name);
-			}  else {
-				set_node(cur, (SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
-			}
-
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_NAME) {
-			Assertion(!(additional_flags & SEXPT_MODIFIER),
-				"Found a container name node %s that is also a container modifier. Please report!",
-				Sexp_nodes[index].text);
-			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
-				"Attempt to load unknown container data %s into SEXP tree. Please report!",
-				Sexp_nodes[index].text);
-			cur = allocate_node(parent);
-			set_node(cur, (SEXPT_CONTAINER_NAME | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
-
-		} else if (Sexp_nodes[index].subtype == SEXP_ATOM_CONTAINER_DATA) {
-			cur = allocate_node(parent);
-			Assertion(get_sexp_container(Sexp_nodes[index].text) != nullptr,
-				"Attempt to load unknown container %s into SEXP tree. Please report!",
-				Sexp_nodes[index].text);
-			set_node(cur, (SEXPT_CONTAINER_DATA | SEXPT_STRING | additional_flags), Sexp_nodes[index].text);
-			load_branch(Sexp_nodes[index].first, cur);  // container is new parent now
-
-		} else
-			Assert(0);  // unknown and/or invalid sexp type
-
-		if ((index == select_sexp_node) && !flag) {  // translate sexp node to our node
-			select_sexp_node = cur;
-			flag = 1;
-		}
-
-		index = Sexp_nodes[index].rest;
-		if (index == -1) {
-			return cur;
-		}
-	}
-
-	return cur;
+	return _model.load_branch(index, parent);
 }
 
 int sexp_tree::query_false(int node) {
@@ -621,20 +504,7 @@ void sexp_tree::add_sub_tree(int node, QTreeWidgetItem* root) {
 
 // construct tree nodes for an sexp, adding them to the list and returning first node
 int sexp_tree::load_sub_tree(int index, bool valid, const char* text) {
-	int cur;
-
-	if (index < 0) {
-		cur = allocate_node(-1);
-		set_node(cur, (SEXPT_OPERATOR | (valid ? SEXPT_VALID : 0)), text);  // setup a default tree if none
-		return cur;
-	}
-
-	// assumption: first token is an operator.  I require this because it would cause problems
-	// with child/parent relations otherwise, and it should be this way anyway, since the
-	// return type of the whole sexp is boolean, and only operators can satisfy this.
-	Assert(Sexp_nodes[index].subtype == SEXP_ATOM_OPERATOR);
-	cur = load_branch(index, -1);
-	return cur;
+	return _model.load_sub_tree(index, valid, text);
 }
 
 // counts the number of arguments an operator has.  Call this with the node of the first
@@ -1121,41 +991,10 @@ void sexp_tree::replace_operator(const char* op) {
 // moves a whole sexp tree branch to a new position under 'parent' and after 'after'.
 // The expansion state is preserved, and node handles are updated.
 void sexp_tree::move_branch(int source, int parent) {
-	int node;
-
-	// if no source, skip everything
 	if (source != -1) {
-		node = tree_nodes[source].parent;
-		if (node != -1) {
-			if (tree_nodes[node].child == source) {
-				tree_nodes[node].child = tree_nodes[source].next;
-			} else {
-				node = tree_nodes[node].child;
-				while (tree_nodes[node].next != source) {
-					node = tree_nodes[node].next;
-					Assert(node != -1);
-				}
-
-				tree_nodes[node].next = tree_nodes[source].next;
-			}
-		}
-
-		tree_nodes[source].parent = parent;
-		tree_nodes[source].next = -1;
+		_model.move_branch_data(source, parent);
 		if (parent) {
-			if (tree_nodes[parent].child == -1) {
-				tree_nodes[parent].child = source;
-			} else {
-				node = tree_nodes[parent].child;
-				while (tree_nodes[node].next != -1) {
-					node = tree_nodes[node].next;
-				}
-
-				tree_nodes[node].next = source;
-			}
-
 			move_branch(tree_item_handle(tree_nodes[source]), tree_item_handle(tree_nodes[parent]));
-
 		} else {
 			move_branch(tree_item_handle(tree_nodes[source]));
 		}
@@ -2285,79 +2124,13 @@ bool sexp_tree::is_node_eligible_for_special_argument(int parent_node) const
 // Deletes sexp_variable from sexp_tree.
 // resets tree to not include given variable, and resets text and type
 void sexp_tree::delete_sexp_tree_variable(const char* var_name) {
-	char search_str[64];
-	char replace_text[TOKEN_LENGTH];
-
-	sprintf(search_str, "%s(", var_name);
-
-	// store old item index
-	int old_item_index = item_index;
-
-	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
-		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
-			if (strstr(tree_nodes[idx].text, search_str) != NULL) {
-
-				// check type is number or string
-				Assert((tree_nodes[idx].type & SEXPT_NUMBER) || (tree_nodes[idx].type & SEXPT_STRING));
-
-				// reset type as not variable
-				int type = tree_nodes[idx].type &= ~SEXPT_VARIABLE;
-
-				// reset text
-				if (tree_nodes[idx].type & SEXPT_NUMBER) {
-					strcpy_s(replace_text, "number");
-				} else {
-					strcpy_s(replace_text, "string");
-				}
-
-				// set item_index and replace data
-				setCurrentItemIndex(idx);
-				replace_data(replace_text, type);
-			}
-		}
-	}
-
-	// restore item_index
-	setCurrentItemIndex(old_item_index);
+	_actions.delete_sexp_tree_variable(var_name);
 }
 
 
 // Modify sexp_tree for a change in sexp_variable (name, type, or default value)
 void sexp_tree::modify_sexp_tree_variable(const char* old_name, int sexp_var_index) {
-	char search_str[64];
-	int type;
-
-	Assert(Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_SET);
-	Assert((Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER)
-			   || (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_STRING));
-
-	// Get type for sexp_tree node
-	if (Sexp_variables[sexp_var_index].type & SEXP_VARIABLE_NUMBER) {
-		type = (SEXPT_NUMBER | SEXPT_VALID);
-	} else {
-		type = (SEXPT_STRING | SEXPT_VALID);
-	}
-
-	// store item index;
-	int old_item_index = item_index;
-
-	// Search string in sexp_tree nodes
-	sprintf(search_str, "%s(", old_name);
-
-	for (uint idx = 0; idx < tree_nodes.size(); idx++) {
-		if (tree_nodes[idx].type & SEXPT_VARIABLE) {
-			if (strstr(tree_nodes[idx].text, search_str) != NULL) {
-				// temp set item_index
-				item_index = idx;
-
-				// replace variable data
-				replace_variable_data(sexp_var_index, (type | SEXPT_VARIABLE));
-			}
-		}
-	}
-
-	// restore item_index
-	item_index = old_item_index;
+	_actions.modify_sexp_tree_variable(old_name, sexp_var_index);
 }
 
 
