@@ -66,7 +66,7 @@ IF(RESET_INSTALL_PREFIX)
 		IF(NOT IS_DIRECTORY $ENV{FS2PATH})
 			MESSAGE(WARNING "The path '$ENV{FS2PATH}' of the environment variable FS2PATH does not point to a directory! Install prefix wasn't set.")
 		ELSE(NOT IS_DIRECTORY $ENV{FS2PATH})
-			SET(CMAKE_INSTALL_PREFIX "$ENV{FS2PATH}" CACHE FILEPATH "Install path" FORCE)
+			SET(CMAKE_INSTALL_PREFIX "$ENV{FS2PATH}" CACHE PATH "Install path" FORCE)
 			FILE(TO_CMAKE_PATH ${CMAKE_INSTALL_PREFIX} CMAKE_INSTALL_PREFIX)
 		ENDIF(NOT IS_DIRECTORY $ENV{FS2PATH})
 	ELSE(NOT $ENV{FS2PATH} STREQUAL "")
@@ -109,7 +109,7 @@ OPTION(FSO_USE_OPENALSOFT "Download and build OpenAL Soft instead of using the s
 
 OPTION(FSO_FATAL_WARNINGS "Determines if warnings in the build are considered fatal errors, primarily used for CI" OFF)
 
-SET(FSO_FREESPACE_PATH "${CMAKE_INSTALL_PREFIX}" CACHE FILEPATH "The path of the FreeSpace directory you want to use. Please note that you will have to change CMAKE_INSTALL_PREFIX if you change this at some point.")
+SET(FSO_FREESPACE_PATH "${CMAKE_INSTALL_PREFIX}" CACHE PATH "The path of the FreeSpace directory you want to use. Please note that you will have to change CMAKE_INSTALL_PREFIX if you change this at some point.")
 
 SET(FSO_RUN_ARGUMENTS "" CACHE STRING "Additional arguments passed to a generated executable when run with the generated build files.")
 
