@@ -366,7 +366,7 @@ extern size_t maybe_convert_foreign_characters(const char *in, char *out, bool a
 extern void maybe_convert_foreign_characters(SCP_string &text);
 extern size_t get_converted_string_length(const char *text);
 extern size_t get_converted_string_length(const SCP_string &text);
-char *split_str_once(char *src, int max_pixel_w, float scale = 1.0f);
+std::tuple<size_t, size_t, bool> split_str_once(const char *src, int max_pixel_w, size_t max_line_len = std::string::npos, float scale = 1.0f, int *w = nullptr, int *h = nullptr);
 int split_str(const char* src,
 			  int max_pixel_w,
 			  int* n_chars,
@@ -382,10 +382,6 @@ int split_str(const char* src,
 			  int max_line_length = INT_MAX,
 			  unicode::codepoint_t ignore_char = (unicode::codepoint_t) -1,
 			  bool strip_leading_whitespace = true);
-
-SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const SCP_string& source_string, int max_pixel_width, bool strip_leading_whitespace = true, size_t source_start = 0, size_t source_length = std::string::npos);
-
-SCP_vector<std::pair<size_t, size_t>> str_wrap_to_width(const char* source_string, int max_pixel_width, bool strip_leading_whitespace = true, size_t source_length = std::string::npos);
 
 // fred
 extern int required_string_fred(const char *pstr, const char *end = NULL);
