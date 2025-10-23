@@ -189,7 +189,18 @@ class Option : public OptionBase {
 		auto json     = _serializer(val);
 		auto json_str = json_dump_string_new(json, JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 		if (_displayFunc) {
-			return ValueDescription(_displayFunc(val), json_str);
+			try {
+				return ValueDescription(_displayFunc(val), json_str);
+			} catch (const std::exception& e) {
+				static bool rel_warning_triggered = false;
+				if (!rel_warning_triggered) {
+					rel_warning_triggered = true;
+					ReleaseWarning(LOCATION, "Option %s has an invalid value %s! Please change the value!", _title.c_str(), json_str.c_str());
+				}
+				//This will logspam once a frame, but it's super rare, so it should be fine
+				mprintf(("Tried to show an invalid options value %s for option %s! Likely due to a malformed ini: %s\n", json_str.c_str(), _title.c_str(), e.what()));
+				return ValueDescription(json_str, json_str);
+			}
 		} else {
 			return ValueDescription(json_str, json_str);
 		}
