@@ -24,9 +24,10 @@
 #define GLAD_GL_ARB_timer_query                 0
 #define GL_DOUBLE                               0x140A
 #define GL_TIMESTAMP							1
-#define GL_UNSIGNED_SHORT_1_5_5_5_REV			0x1CCC
-#define GL_UNSIGNED_INT_8_8_8_8_REV				0xBAAA
-#define GL_BGR									0x2CCA
+#define GL_UNSIGNED_SHORT_1_5_5_5_REV			0x8366
+#define GL_UNSIGNED_INT_8_8_8_8_REV				0x8367
+#define GL_BGR									0x80E0
+#define GL_MULTISAMPLE							0x809D
 
 //Enums
 #define GL_CLIP_DISTANCE0						GL_CLIP_DISTANCE0_EXT // GL_EXT_clip_cull_distance

@@ -353,10 +353,15 @@ void opengl_setup_scene_textures()
 		return;
 	}
 
+#ifdef USE_OPENGL_ES
 	if (Cmdline_msaa_enabled > 0) {
-		#ifndef USE_OPENGL_ES
+		Cmdline_msaa_enabled = 0;
+		Warning(LOCATION, "MSAA is not currently supported under OpenGL ES. Disabling MSAA.");
+	}
+#endif
+
+	if (Cmdline_msaa_enabled > 0) {
 		glEnable(GL_MULTISAMPLE);
-		#endif
 
 		// Make sure our MSAA setting are valid
 		int maxSamples;
