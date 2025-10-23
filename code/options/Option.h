@@ -189,7 +189,13 @@ class Option : public OptionBase {
 		auto json     = _serializer(val);
 		auto json_str = json_dump_string_new(json, JSON_COMPACT | JSON_ENSURE_ASCII | JSON_ENCODE_ANY);
 		if (_displayFunc) {
-			return ValueDescription(_displayFunc(val), json_str);
+			try {
+				return ValueDescription(_displayFunc(val), json_str);
+			} catch (const std::exception& e) {
+				//This will logspam once a frame, but it's super rare, so it should be fine
+				mprintf(("Tried to show an invalid options value! Likely due to a malformed ini: %s\n", e.what()));
+				return ValueDescription(json_str, json_str);
+			}
 		} else {
 			return ValueDescription(json_str, json_str);
 		}
