@@ -992,7 +992,7 @@ void HudGauge::renderPrintf(int x, int y, float scale, bool config, const char* 
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 
@@ -1006,7 +1006,7 @@ void HudGauge::renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bo
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp)-1, format, args);
+	vsnprintf(tmp, sizeof(tmp), format, args);
 	va_end(args);
 	tmp[sizeof(tmp)-1] = '\0';
 

@@ -276,7 +276,7 @@ void gr_opengl_print_screen(const char *filename)
 	GLuint pbo = 0;
 
 	// save to a "screenshots" directory and tack on the filename
-	snprintf(tmp, MAX_PATH_LEN-1, "screenshots/%s.png", filename);
+	snprintf(tmp, MAX_PATH_LEN, "screenshots/%s.png", filename);
 
     _mkdir(os_get_config_path("screenshots").c_str());
 
@@ -436,7 +436,7 @@ void gr_opengl_dump_envmap(const char* filename)
 	glBindTexture(sphere_tex->texture_target, sphere_tex->texture_id);
 	pixels = (GLubyte*)vm_malloc(sphere_width * sphere_height * 4, memory::quiet_alloc);
 	glGetTexImage(sphere_tex->texture_target, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels);
-	snprintf(tmp, MAX_PATH_LEN - 1, "envmaps/%s.png", filename);
+	snprintf(tmp, MAX_PATH_LEN, "envmaps/%s.png", filename);
 	if (!png_write_bitmap(os_get_config_path(tmp).c_str(), 4 * width, 2 * height, true, pixels)) {
 		ReleaseWarning(LOCATION, "Failed to write envmap to \"%s\".", os_get_config_path(tmp).c_str());
 	}

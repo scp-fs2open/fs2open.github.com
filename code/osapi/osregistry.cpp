@@ -1108,7 +1108,7 @@ void os_config_write_uint(const char* section, const char* name, unsigned int va
 
 	char buf[21];
 
-	snprintf(buf, 20, "%u", value);
+	snprintf(buf, 21, "%u", value);
 
 	profile = profile_update(profile, section, name, buf);
 	profile_save(profile, file);
