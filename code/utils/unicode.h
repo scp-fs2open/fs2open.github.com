@@ -42,7 +42,11 @@ class text_iterator {
  public:
 	explicit text_iterator(const char* current_byte, const char* range_start_byte, const char* range_end_byte = nullptr);
 
-	typedef codepoint_t value_type;
+	using difference_type = std::ptrdiff_t;
+	using value_type = codepoint_t;
+	using pointer = text_iterator*;
+	using reference = text_iterator&;
+	using iterator_category = std::bidirectional_iterator_tag;
 
 	const char* pos() const;
 

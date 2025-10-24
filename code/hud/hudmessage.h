@@ -16,7 +16,7 @@
 #include "graphics/generic.h"
 #include "hud/hud.h"
 
-#define MAX_HUD_LINE_LEN			256			// maximum number of characters for a HUD message
+#define MAX_HUD_LINE_BUF			256			// maximum size for a HUD message
 
 // If these are changed, the lua 'addMessageToScrollback' method in mission.cpp should be updated.
 #define HUD_SOURCE_COMPUTER		0
@@ -67,12 +67,12 @@ int HUD_team_get_source(int team);
 int HUD_source_get_team(int team);
 void HUD_printf(SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(1, 2);
 void hud_sourced_print(int source, const char *msg);
+void hud_sourced_print(int source, const SCP_string &msg);
 void HUD_sourced_printf(int source, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(2, 3);  // send hud message from specified source
 void HUD_fixed_printf(float duration, color col, SCP_FORMAT_STRING const char *format, ...) SCP_FORMAT_STRING_ARGS(3, 4);		//	Display a single message for duration seconds.
 void HUD_init_fixed_text();			//	Clear all pending fixed text.
 
 void HUD_add_to_scrollback(const char *text, int source);
-void hud_add_line_to_scrollback(const char *text, int source, int t, int x, int y, int w);
 void hud_add_msg_to_scrollback(const char *text, int source, int t);
 
 class HudGaugeMessages: public HudGauge // HUD_MESSAGE_LINES
