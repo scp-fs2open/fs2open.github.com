@@ -18,6 +18,7 @@
 #include "object/objcollide.h"
 #include "object/objectshield.h"
 #include "object/objectsnd.h"
+#include "prop/prop.h"
 #include "scripting/api/LuaEventCallback.h"
 #include "scripting/api/objs/color.h"
 #include "scripting/lua/LuaFunction.h"
@@ -104,6 +105,9 @@ ADE_FUNC(__tostring, l_Object, NULL, "Returns name of object (if any)", "string"
 			break;
 		case OBJ_BEAM:
 			sprintf(buf, "%s beam", Weapon_info[Beams[objh->objp()->instance].weapon_info_index].name);
+			break;
+		case OBJ_PROP:
+			sprintf(buf, "%s prop", Props[Objects[objh->objnum].instance]->prop_name);
 			break;
 		default:
 			sprintf(buf, "object num=%d sig=%d type=%d instance=%d", objh->objnum, objh->sig, objh->objp()->type, objh->objp()->instance);
@@ -540,6 +544,12 @@ ADE_FUNC(
 			model_num = Asteroid_info[Asteroids[obj->instance].asteroid_type].subtypes[temp].model_number;
 			flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
 			break;
+		case OBJ_PROP:
+			if (Props[obj->instance].has_value()) {
+				model_num = Prop_info[Props[obj->instance].value().prop_info_index].model_num;
+				flags = (MC_CHECK_MODEL | MC_CHECK_RAY);
+			}
+			break;
 		default:
 			return ADE_RETURN_NIL;
 	}
@@ -566,6 +576,8 @@ ADE_FUNC(
 		model_instance_num = Weapons[obj->instance].model_instance_num;
 	} else if (obj->type == OBJ_ASTEROID) {
 		model_instance_num = Asteroids[obj->instance].model_instance_num;
+	} else if (obj->type == OBJ_PROP) {
+		model_instance_num = Props[obj->instance].value().model_instance_num;
 	}
 
 	mc_info hull_check;

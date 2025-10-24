@@ -326,6 +326,9 @@ extern const size_t Num_parse_object_flags;
 extern flag_def_list_new<Ship::Wing_Flags> Parse_wing_flags[];
 extern parse_object_flag_description<Ship::Wing_Flags> Parse_wing_flag_descriptions[];
 extern const size_t Num_parse_wing_flags;
+extern flag_def_list_new<Mission::Parse_Object_Flags> Parse_prop_flags[];
+extern parse_object_flag_description<Mission::Parse_Object_Flags> Parse_prop_flag_descriptions[];
+extern const size_t Num_parse_prop_flags;
 extern const char *Icon_names[];
 extern const char *Mission_event_log_flags[];
 
@@ -349,6 +352,7 @@ extern fix	Entry_delay_time;
 extern int	Loading_screen_bm_index;
 
 extern int Num_unknown_ship_classes;
+extern int Num_unknown_prop_classes;
 extern int Num_unknown_weapon_classes;
 extern int Num_unknown_loadout_classes;
 
