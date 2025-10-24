@@ -987,30 +987,28 @@ void HudGauge::renderStringAlignCenter(int x, int y, int area_width, const char 
 
 void HudGauge::renderPrintf(int x, int y, float scale, bool config, const char* format, ...)
 {
-	char tmp[256] = "";
+	SCP_string tmp;
 	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, tmp, scale, config);
+	renderString(x, y, tmp.c_str(), scale, config);
 }
 
 void HudGauge::renderPrintfWithGauge(int x, int y, int gauge_id, float scale, bool config, const char* format, ...)
 {
-	char tmp[256] = "";
+	SCP_string tmp;
 	va_list args;
 	
 	// format the text
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
-	renderString(x, y, gauge_id, tmp, scale, config);
+	renderString(x, y, gauge_id, tmp.c_str(), scale, config);
 }
 
 void HudGauge::renderBitmapColor(int frame, int x, int y, float scale, bool config) const
