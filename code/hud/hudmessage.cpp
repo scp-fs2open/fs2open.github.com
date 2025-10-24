@@ -140,7 +140,7 @@ static SCP_vector<line_node> Msg_scrollback_lines;
 
 typedef struct HUD_ft {
 	int	end_time;						//	Timestamp at which this message will go away.
-	char	text[MAX_HUD_LINE_LEN];		//	Text to display.
+	char	text[MAX_HUD_LINE_BUF];		//	Text to display.
 	int	color;							//	0rgb color, 8 bit fields.
 } HUD_ft;
 
@@ -487,8 +487,6 @@ void HudGaugeMessages::render(float  /*frametime*/, bool config)
 void HUD_fixed_printf(float duration, color col, const char *format, ...)
 {
 	va_list	args;
-	char		tmp[HUD_MSG_LENGTH_MAX];
-	size_t		msg_length;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Netgame.game_state != NETGAME_STATE_IN_MISSION)){
@@ -497,22 +495,9 @@ void HUD_fixed_printf(float duration, color col, const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsnprintf(HUD_fixed_text[0].text, MAX_HUD_LINE_BUF, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
-
-	msg_length = strlen(tmp);
-
-	if ( !msg_length ) {
-		nprintf(("Warning", "HUD_fixed_printf ==> attempt to print a 0 length string in msg window\n"));
-		return;
-
-	} else if (msg_length > MAX_HUD_LINE_LEN - 1){
-		nprintf(("Warning", "HUD_fixed_printf ==> Following string truncated to %d chars: %s\n", MAX_HUD_LINE_LEN - 1, tmp));
-		tmp[MAX_HUD_LINE_LEN-1] = '\0';
-	}
-
-	strcpy_s(HUD_fixed_text[0].text, tmp);
+	HUD_fixed_text[0].text[MAX_HUD_LINE_BUF-1] = '\0';
 
 	if (duration == 0.0f){
 		HUD_fixed_text[0].end_time = timestamp(-1);
@@ -544,7 +529,7 @@ int HUD_source_get_team(int source)
 void HUD_printf(const char *format, ...)
 {
 	va_list args;
-	char tmp[HUD_MSG_LENGTH_MAX];
+	SCP_string tmp;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -553,9 +538,8 @@ void HUD_printf(const char *format, ...)
 	}
 
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
 	hud_sourced_print(HUD_SOURCE_COMPUTER, tmp);
 }
@@ -570,7 +554,7 @@ void HUD_printf(const char *format, ...)
 void HUD_sourced_printf(int source, const char *format, ...)
 {
 	va_list args;
-	char tmp[HUD_MSG_LENGTH_MAX];
+	SCP_string tmp;
 
 	// make sure we only print these messages if we're in the correct state
 	if((Game_mode & GM_MULTIPLAYER) && (Net_player->state != NETPLAYER_STATE_IN_MISSION)){
@@ -579,16 +563,40 @@ void HUD_sourced_printf(int source, const char *format, ...)
 	}
 	
 	va_start(args, format);
-	vsnprintf(tmp, sizeof(tmp), format, args);
+	vsprintf(tmp, format, args);
 	va_end(args);
-	tmp[sizeof(tmp)-1] = '\0';
 
 	hud_sourced_print(source, tmp);
 }
 
+void hud_sourced_print(int source, const SCP_string &msg)
+{
+	if ( msg.empty() ) {
+		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
+		return;
+	}
+
+	// add message to the scrollback log first
+	hud_add_msg_to_scrollback(msg.c_str(), source, Missiontime);
+
+	HUD_message_data new_msg;
+
+	new_msg.text = msg;
+	new_msg.source = source;
+	new_msg.x = 0;
+
+	HUD_msg_buffer.push_back(new_msg);
+
+	// Invoke the scripting hook
+	if (OnHudMessageReceivedHook->isActive()) {
+		OnHudMessageReceivedHook->run(scripting::hook_param_list(scripting::hook_param("Text", 's', msg.c_str()),
+			scripting::hook_param("SourceType", 'i', source)));
+	}
+}
+
 void hud_sourced_print(int source, const char *msg)
 {
-	if ( !strlen(msg) ) {
+	if ( !*msg ) {
 		nprintf(("Warning", "HUD ==> attempt to print a 0 length string in msg window\n"));
 		return;
 	}
@@ -643,21 +651,15 @@ void HUD_add_to_scrollback(const char *text, int source)
 
 void hud_add_msg_to_scrollback(const char *text, int source, int t)
 {
-	size_t msg_len = strlen(text);
-	if (msg_len == 0)
+	if (!*text)
 		return;
-	
-	Assert(msg_len < HUD_MSG_LENGTH_MAX);
-
-	char buf[HUD_MSG_LENGTH_MAX], *ptr;
-	strcpy_s(buf, text);
-	ptr = strstr(buf, NOX(": "));
 
 	int w = 0;
 
 	// determine the length of the sender's name for underlining
+	auto ptr = strstr(text, NOX(": "));
 	if (ptr) {
-		gr_get_string_size(&w, nullptr, buf, 1.0f, (ptr - buf));
+		gr_get_string_size(&w, nullptr, text, 1.0f, (ptr - text));
 	}
 
 	// create the new node for the vector

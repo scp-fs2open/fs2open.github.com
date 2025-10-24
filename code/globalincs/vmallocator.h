@@ -32,6 +32,16 @@ public:
 		return std::find(this->begin(), this->end(), item) != this->end();
 	}
 
+	void concat(SCP_vector<T>&& other)
+	{
+		insert(this->end(), std::make_move_iterator(other.begin()), std::make_move_iterator(other.end()));
+	}
+
+	void concat(const SCP_vector<T>& other)
+	{
+		insert(this->end(), other.begin(), other.end());
+	}
+
 	bool in_bounds(int idx) const
 	{
 		return (idx >= 0) && (static_cast<size_t>(idx) < this->size());

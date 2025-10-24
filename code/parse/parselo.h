@@ -89,8 +89,9 @@ extern void consolidate_double_characters(char *str, char ch);
 char *three_dot_truncate(char *buffer, const char *source, size_t buffer_size);
 
 // white space
-extern int is_white_space(char ch);
-extern int is_white_space(unicode::codepoint_t cp);
+extern bool is_white_space(char ch);
+extern bool is_white_space(unicode::codepoint_t cp);
+extern size_t find_white_space(const char *str);
 extern void ignore_white_space(const char **pp = nullptr);
 extern void drop_trailing_white_space(char *str);
 extern void drop_leading_white_space(char *str);
@@ -102,8 +103,9 @@ extern void drop_leading_white_space(SCP_string &str);
 extern void drop_white_space(SCP_string &str);
 
 // gray space
-extern int is_gray_space(char ch);
+extern bool is_gray_space(char ch);
 extern bool is_gray_space(unicode::codepoint_t cp);
+extern size_t find_gray_space(const char *str);
 extern void ignore_gray_space(const char **pp = nullptr);
 
 // other
