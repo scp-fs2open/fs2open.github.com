@@ -75,6 +75,7 @@ struct log_text_seg {
 	SCP_vm_unique_ptr<char> text; // the text
 	int color;                    // color text should be displayed in
 	int x;                        // x offset to display text at
+	int line_offset;              // if this is part of an entry that spans multiple lines
 	int flags;                    // used to possibly print special characters when displaying the log
 };
 
