@@ -202,8 +202,7 @@
 #include "weapon/weapon.h"
 
 
-#include <SDL.h>
-#include <SDL_main.h>
+#include <SDL3/SDL_main.h>
 
 #include <cinttypes>
 #include <stdexcept>
@@ -1717,10 +1716,6 @@ DCF(force_fullscreen, "Forces game to startup in fullscreen mode")
 
 int	Framerate_delay = 0;
 
-#ifdef FS2_VOICER
-// This is really awful but thank the guys of X11 for naming something "Window"
-#	include "SDL_syswm.h" // For SDL_SysWMinfo
-#endif
 
 /**
  * Game initialisation
@@ -1890,13 +1885,13 @@ void game_init()
 #ifdef FS2_VOICER
 	if(Cmdline_voice_recognition)
 	{
-		SDL_SysWMinfo info;
-		SDL_VERSION(&info.version); // initialize info structure with SDL version info
-
+		auto hwnd = static_cast<HWND>(SDL_GetPointerProperty(SDL_GetWindowProperties(os::getSDLMainWindow()),
+															 SDL_PROP_WINDOW_WIN32_HWND_POINTER,
+															 nullptr));
 		bool voiceRectOn = false;
-		if(SDL_GetWindowWMInfo(os::getSDLMainWindow(), &info)) { // the call returns true on success
+		if(hwnd) { // the call returns true on success
 			// success
-			voiceRectOn = VOICEREC_init(info.info.win.window, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
+			voiceRectOn = VOICEREC_init(hwnd, WM_RECOEVENT, GRAMMARID1, IDR_CMD_CFG);
 		} else {
 			// call failed
 			mprintf(( "Couldn't get window information: %s\n", SDL_GetError() ));
@@ -6042,8 +6037,7 @@ void game_enter_state( int old_state, int new_state )
 
 #ifndef NDEBUG
 			// required to truely make mouse deltas zeroed in debug mouse code
-void mouse_force_pos(int x, int y);
-			mouse_force_pos(gr_screen.max_w / 2, gr_screen.max_h / 2);
+			mouse_force_pos(gr_screen.max_w / 2.0f, gr_screen.max_h / 2.0f);
 #endif
 
 			game_flush();
@@ -8062,9 +8056,8 @@ int main(int argc, char *argv[])
     if (strcmp("/sbin/launchd", pathbuf) == 0) {
         // Finder sets the working directory to the root of the drive so we have to get a little creative
         // to find out where on the disk we should be running from for CFILE's sake.
-        char *path_name = SDL_GetBasePath();
+        auto path_name = SDL_GetBasePath();
         chdir(path_name);
-        SDL_free(path_name);
     }
 #endif
 #endif
