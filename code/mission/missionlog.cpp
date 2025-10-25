@@ -444,9 +444,9 @@ void message_log_add_seg(log_text_seg* entry, int x, int msg_color, const char* 
 	entry->flags = flags;
 }
 
-void message_log_add_segs(const char* source_string, int msg_color, int flags = 0, SCP_vector<log_text_seg> *entry = nullptr, bool split_string = false)
+void message_log_add_segs(const char *source_string, int msg_color, int flags, SCP_vector<log_text_seg> *entry, bool split_string)
 {
-	if (!source_string) {
+	if (!source_string || !entry) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
 		return;
 	}
