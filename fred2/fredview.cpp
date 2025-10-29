@@ -1463,12 +1463,11 @@ void CFREDView::OnContextMenu(CWnd* /*pWnd*/, CPoint point)
 					str.Format("Edit %s", jnp->GetName());
 
 				} else if (Objects[objnum].type == OBJ_WAYPOINT) {
-					int idx;
-					waypoint_list *wp_list = find_waypoint_list_with_instance(Objects[objnum].instance, &idx);
-					Assert(wp_list != NULL);
+					char text[NAME_LENGTH];
+					waypoint_stuff_name(text, Objects[objnum].instance);
 
 					id = ID_EDITORS_WAYPOINT;
-					str.Format("Edit %s:%d", wp_list->get_name(), idx + 1);
+					str.Format("Edit %s", text);
 
 				} else if (Objects[objnum].type == OBJ_POINT) {
 					return;
@@ -2574,7 +2573,7 @@ int CFREDView::global_error_check()
 				return internal_error("Object references an illegal waypoint number in path");
 			}
 
-			sprintf(buf, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			waypoint_stuff_name(buf, i);
 			names[obj_count] = new char[strlen(buf) + 1];
 			strcpy(names[obj_count], buf);
 			flags[obj_count] = 1;
@@ -2900,8 +2899,8 @@ int CFREDView::global_error_check()
 			}
 		}
 
-		for (j = 0; (uint) j < ii.get_waypoints().size(); j++) {
-			sprintf(buf, "%s:%d", ii.get_name(), j + 1);
+		for (const auto &jj: ii.get_waypoints()) {
+			waypoint_stuff_name(buf, jj);
 			for (z=0; z<obj_count; z++){
 				if (names[z]){
 					if (!stricmp(names[z], buf)){

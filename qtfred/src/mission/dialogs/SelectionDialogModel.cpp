@@ -97,15 +97,8 @@ void SelectionDialogModel::updateObjectList() {
 		auto ptr = GET_FIRST(&obj_used_list);
 		while (ptr != END_OF_LIST(&obj_used_list)) {
 			if (ptr->type == OBJ_WAYPOINT) {
-				int waypoint_num;
-				waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-				Assert(wp_list != NULL);
-
-				SCP_string text;
-				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-
 				ListEntry entry;
-				entry.name = text;
+				waypoint_stuff_name(entry.name, ptr->instance);
 				entry.id = OBJ_INDEX(ptr);
 				entry.selected = ptr->flags[Object::Object_Flags::Temp_marked];
 

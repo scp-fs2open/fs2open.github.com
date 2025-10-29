@@ -129,11 +129,7 @@ BOOL orient_editor::OnInitDialog()
 				index[total++] = objnum;
 
 			} else if (ptr->type == OBJ_WAYPOINT) {
-				int waypoint_num;
-				waypoint_list *wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-				Assert(wp_list != NULL);
-				sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-
+				waypoint_stuff_name(text, ptr->instance);
 				box->AddString(text);
 				index[total++] = objnum;
 
