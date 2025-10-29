@@ -265,15 +265,22 @@ int waypoint_path_dlg::update_data(int redraw)
 
 
 		strcpy_s(old_name, cur_waypoint_list->get_name());
-		str = (char *) (LPCTSTR) m_name;
-		cur_waypoint_list->set_name(str);
+		cur_waypoint_list->set_name((LPCTSTR) m_name);
+		str = cur_waypoint_list->get_name();
 		if (strcmp(old_name, str)) {
 			set_modified(TRUE);
 			update_sexp_references(old_name, str);
-			ai_update_goal_references(sexp_ref_type::WAYPOINT, old_name, str);
-			update_texture_replacements(old_name, str);
-		}
+			ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, old_name, str);
 
+			for (auto &wpt: cur_waypoint_list->get_waypoints()) {
+				char old_buf[NAME_LENGTH + 8];
+				char new_buf[NAME_LENGTH + 8];
+				sprintf(old_buf, "%s:%d", old_name, wpt.get_index() + 1);
+				sprintf(new_buf, "%s:%d", str, wpt.get_index() + 1);
+				update_sexp_references(old_buf, new_buf);
+				ai_update_goal_references(sexp_ref_type::WAYPOINT, old_buf, new_buf);
+			}
+		}
 	}
 
 	if (redraw)
