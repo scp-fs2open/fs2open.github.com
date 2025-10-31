@@ -22,7 +22,7 @@ bool WaypointEditorDialogModel::apply()
 	}
 
 	// apply name
-	char old_name[255];
+	char old_name[NAME_LENGTH];
 	strcpy_s(old_name, _editor->cur_waypoint_list->get_name());
 	_editor->cur_waypoint_list->set_name(_currentName.c_str());
 	auto str = _editor->cur_waypoint_list->get_name();
@@ -32,8 +32,8 @@ bool WaypointEditorDialogModel::apply()
 		_editor->ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, old_name, str);
 
 		for (auto &wpt : _editor->cur_waypoint_list->get_waypoints()) {
-			char old_buf[NAME_LENGTH + 8];
-			char new_buf[NAME_LENGTH + 8];
+			char old_buf[NAME_LENGTH + 12];
+			char new_buf[NAME_LENGTH + 12];
 			sprintf(old_buf, "%s:%d", old_name, wpt.get_index() + 1);
 			sprintf(new_buf, "%s:%d", str, wpt.get_index() + 1);
 			update_sexp_references(old_buf, new_buf);

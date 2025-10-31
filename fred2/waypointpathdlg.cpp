@@ -138,8 +138,6 @@ void waypoint_path_dlg::initialize_data(int full_update)
 
 int waypoint_path_dlg::update_data(int redraw)
 {
-	const char *str;
-	char old_name[255];
 	int i, z;
 	object *ptr;
 
@@ -264,9 +262,10 @@ int waypoint_path_dlg::update_data(int redraw)
 		}
 
 
+		char old_name[NAME_LENGTH];
 		strcpy_s(old_name, cur_waypoint_list->get_name());
 		cur_waypoint_list->set_name((LPCTSTR) m_name);
-		str = cur_waypoint_list->get_name();
+		auto str = cur_waypoint_list->get_name();
 		if (strcmp(old_name, str)) {
 			set_modified(TRUE);
 			update_sexp_references(old_name, str);
