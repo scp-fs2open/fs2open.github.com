@@ -31,7 +31,7 @@
 
 #define NUM_LOG_COLORS		3
 
-static int X, P_width;
+static int X, Line_offset, P_width;
 
 SCP_vector<log_line_complete> Log_scrollback_vec;
 SCP_vector<log_entry> Log_entries;
@@ -435,18 +435,29 @@ int mission_log_get_count( LogType type, const char *pname, const char *sname )
 }
 
 
-void message_log_add_seg(log_text_seg* entry, int x, int msg_color, const char* text, int flags = 0)
+void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_color, const char *text, int flags = 0)
 {
 	// set the vector
 	entry->text.reset(vm_strdup(text));
 	entry->color = msg_color;
 	entry->x = x;
+	entry->line_offset = line_offset;
 	entry->flags = flags;
 }
 
-void message_log_add_segs(const char* source_string, int msg_color, int flags = 0, SCP_vector<log_text_seg> *entry = nullptr, bool split_string = false)
+void message_log_add_seg(log_text_seg *entry, int x, int line_offset, int msg_color, const char *text, size_t len, int flags = 0)
 {
-	if (!source_string) {
+	// set the vector
+	entry->text.reset(vm_strndup(text, len));
+	entry->color = msg_color;
+	entry->x = x;
+	entry->line_offset = line_offset;
+	entry->flags = flags;
+}
+
+void message_log_add_segs(const char *source_string, int msg_color, int flags, SCP_vector<log_text_seg> *entry, bool split_string)
+{
+	if (!source_string || !entry) {
 		mprintf(("Why are you passing a NULL pointer to message_log_add_segs?\n"));
 		return;
 	}
@@ -454,43 +465,51 @@ void message_log_add_segs(const char* source_string, int msg_color, int flags = 
 		return;
 	}
         
-	int w;
-
 	// duplicate the string so that we can split it without modifying the source
 	char *dup_string = vm_strdup(source_string);
 	char *str = dup_string;
 	char *split = NULL;
 
 	if (split_string) {
+		int sanity_counter = 0;
+
 		while (true) {
 			if (X == ACTION_X) {
 				while (is_white_space(*str))
 					str++;
 			}
 
-			if (P_width - X < 1)
-				split = str;
-			else
+			if (P_width - X > 0) {
 				split = split_str_once(str, P_width - X);
 
-			if (split != str) {
-				log_text_seg new_seg;
-				message_log_add_seg(&new_seg, X, msg_color, str, flags);
-				entry->push_back(std::move(new_seg));
-			}
+				// if we couldn't actually split the string, try again on a new line
+				if (split == str) {
+					sanity_counter++;
+					if (sanity_counter > 5) {
+						Error(LOCATION, "Too many attempts to wrap a mission log line!  Get a coder!\nLine = %s", str);
+						break;
+					}
+				} else {
+					log_text_seg new_seg;
+					message_log_add_seg(&new_seg, X, Line_offset, msg_color, str, flags);
+					entry->push_back(std::move(new_seg));
 
-			if (!split) {
-				gr_get_string_size(&w, NULL, str);
-				X += w;
-				break;
+					if (!split) {
+						int w;
+						gr_get_string_size(&w, nullptr, str);
+						X += w;
+						break;
+					}
+				}
 			}
 
 			X = ACTION_X;
+			Line_offset++;
 			str = split;
 		}
 	} else {
 		log_text_seg new_seg;
-		message_log_add_seg(&new_seg, X, msg_color, str, flags);
+		message_log_add_seg(&new_seg, X, Line_offset, msg_color, str, flags);
 		entry->push_back(std::move(new_seg));
 	}
 
@@ -548,12 +567,12 @@ void mission_log_init_scrollback(int pw, bool split_string)
 		if ( (Lcl_gr) && ((entry.type == LOG_GOAL_FAILED) || (entry.type == LOG_GOAL_SATISFIED)) ) {
 			// in german goal events, just say "objective" instead of objective name
 			// this is cuz we can't translate objective names
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Einsatzziel");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, 0, thisColor, "Einsatzziel");
 		} else if ( (Lcl_pl) && ((entry.type == LOG_GOAL_FAILED) || (entry.type == LOG_GOAL_SATISFIED)) ) {
 			// same thing for polish
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, "Cel misji");
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, 0, thisColor, "Cel misji");
 		} else {
-			message_log_add_seg(&thisEntry.objective, OBJECT_X, thisColor, entry.pname_display.c_str());
+			message_log_add_seg(&thisEntry.objective, OBJECT_X, 0, thisColor, entry.pname_display.c_str());
 		}
 
 		//Set the flags for objectives
@@ -567,6 +586,7 @@ void mission_log_init_scrollback(int pw, bool split_string)
 
 		// now on to the actual message itself
 		X = ACTION_X;
+		Line_offset = 0;
 
 		// Goober5000
 		if (entry.secondary_team >= 0)
@@ -771,24 +791,31 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 			printSymbols = true;
 			symbolFlag = Log_scrollback_vec[i].objective.flags;
 		}
-			
+
 		char buf[256];
 		strcpy_s(buf, Log_scrollback_vec[i].objective.text.get());
 		font::force_fit_string(buf, 256, ACTION_X - OBJECT_X - 8);
 		gr_string(list_x + Log_scrollback_vec[i].objective.x, list_y + y, buf, GR_RESIZE_MENU);
 
 		// print the segments
+		int max_seg_line_offset = 0;
 		for (int j = 0; j < (int)Log_scrollback_vec[i].segments.size(); j++) {
 
 			const auto& thisSeg = Log_scrollback_vec[i].segments[j];
+			if (thisSeg.line_offset > max_seg_line_offset)
+				max_seg_line_offset = thisSeg.line_offset;
+
+			int seg_y = y + (font_h * thisSeg.line_offset);
+			// extra printable area check, since we may have multiple lines here
+			if (seg_y + font_h > list_h)
+				break;
 
 			auto this_color = log_line_get_color(Log_scrollback_vec[i].segments[j].color);
 			gr_set_color_fast(this_color);
 
 			strcpy_s(buf, thisSeg.text.get());
 			font::force_fit_string(buf, 256, list_w - thisSeg.x);
-			gr_string(list_x + thisSeg.x, list_y + y, buf, GR_RESIZE_MENU);
-
+			gr_string(list_x + thisSeg.x, list_y + seg_y, buf, GR_RESIZE_MENU);
 		}
 
 		if (printSymbols) {
@@ -807,7 +834,7 @@ void mission_log_scrollback(int line_offset, int list_x, int list_y, int list_w,
 			gr_line(list_x + TIME_X - 6, loc_y + 2, list_x + TIME_X - 6, loc_y + 4, GR_RESIZE_MENU);
 		}
 
-		y += font_h;
+		y += font_h * (max_seg_line_offset + 1);
 
 	}
 }
