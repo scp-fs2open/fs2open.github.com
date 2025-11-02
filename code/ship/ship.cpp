@@ -2,11 +2,151 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
+
+/**
+ * @file ship.cpp
+ * @brief Ship System - Core Ship Management and Behavior
+ *
+ * OVERVIEW:
+ * This file implements the comprehensive ship management system for FreeSpace 2.
+ * At 22,194 lines, it is the second-largest file in the codebase and handles all
+ * aspects of ship lifecycle, behavior, damage, subsystems, and rendering.
+ *
+ * PURPOSE:
+ * The ship system is the heart of FreeSpace 2's 3D space combat. Every flyable
+ * and AI-controlled spacecraft in the game is managed through this system, from
+ * small fighters to massive capital ships. This file orchestrates the interaction
+ * between models, physics, AI, weapons, and visual effects.
+ *
+ * KEY RESPONSIBILITIES:
+ *  - Ship Creation and Destruction: Spawning/removing ships from missions
+ *  - Damage Model: Hull damage, subsystem damage, shields, armor
+ *  - Subsystem Management: Engines, weapons, sensors, communication, etc.
+ *  - Physics Integration: Movement, rotation, velocity, afterburners
+ *  - Rendering Coordination: Model display, shield effects, damage decals
+ *  - AI Integration: Autopilot, docking, warping, wing formations
+ *  - Weapon Systems: Firing, targeting, ammo management
+ *  - Special Effects: Explosions, engine trails, shield impacts
+ *  - Ship Classes: Loading ship stats from tables (ships.tbl)
+ *  - Multiplayer Sync: Network state updates for ships
+ *
+ * ARCHITECTURE:
+ *
+ * 1. Ship Data Structures:
+ *    - ship_info[] - Ship class definitions (GTF Ulysses, GTC Fenris, etc.)
+ *      Contains: max speed, hull, shields, weapon banks, subsystem layout
+ *    - Ships[] - Active ship instances in current mission
+ *      Contains: position, velocity, damage state, AI, current orders
+ *    - ship_subsys - Subsystem instances (engines, turrets, sensors)
+ *      Each subsystem has: hit points, position, rotation, functionality
+ *
+ * 2. Ship Lifecycle:
+ *    Creation:  ship_create() → initialize physics → load model → add to object system
+ *    Per-Frame: ship_process_pre() → AI → physics → weapons → ship_process_post()
+ *    Destruction: ship_die() → explosion effects → cleanup → remove from object list
+ *
+ * 3. Damage System:
+ *    - ship_apply_global_damage() - Applies damage to hull and subsystems
+ *    - do_subobj_hit_stuff() - Routes damage to specific subsystem
+ *    - ship_check_destroyed() - Determines if ship should explode
+ *    - Shield quadrant system (4 quadrants, regeneration, modulation)
+ *    - Armor class resistance values
+ *
+ * 4. Subsystem Architecture:
+ *    Each ship has a tree of subsystems (model_subsystem definitions):
+ *     - Primary systems: Engine, sensors, weapons, communication
+ *     - Turrets: Independently tracked weapons with AI targeting
+ *     - Docking points: For ship-to-ship docking
+ *     - Special systems: Awacs, navigation, gas collection
+ *    Subsystems can be:
+ *     - Damaged (reduced functionality)
+ *     - Destroyed (offline)
+ *     - Targeted independently by player/AI
+ *
+ * 5. Ship Types and Behaviors:
+ *    - Fighters: Player-flyable small craft, high maneuverability
+ *    - Bombers: Anti-capital ship role, heavy torpedoes
+ *    - Capital Ships: Large vessels, turrets, multiple subsystems
+ *    - Support Ships: Repair/rearm functionality
+ *    - Freighters/Transports: Cargo vessels
+ *    - Sentries: Stationary defense platforms
+ *    - Special: Nav buoys, escape pods, debris
+ *
+ * INTEGRATION POINTS:
+ *
+ * Object System (object/object.cpp):
+ *   Ships are one of several object types (OBJ_SHIP)
+ *   obj_create() → ship_create() → initializes ship instance
+ *   Each frame: object_move() → ship_process() → ship physics/AI
+ *
+ * AI System (ai/aicode.cpp):
+ *   AI updates ship orders, targeting, maneuvering
+ *   ship.cpp provides: ship_get_subsystem_strength(), ship_subsys_disrupted()
+ *   AI calls: ship_apply_global_damage(), ship_set_subsystem_strength()
+ *
+ * Physics (physics/physics.cpp):
+ *   Ship movement integrated via physics_sim()
+ *   ship.cpp sets: desired velocity, rotational velocity
+ *   physics.cpp updates: position, orientation, velocity
+ *
+ * Model Rendering (model/modelrender.cpp):
+ *   ship.cpp calls model_render() with ship orientation/position
+ *   Damage states affect texture selection (damage decals)
+ *
+ * Weapons (weapon/weapons.cpp):
+ *   Ships fire weapons via ship_fire_primary(), ship_fire_secondary()
+ *   Weapons hit ships via ship_apply_global_damage()
+ *
+ * PERFORMANCE CONSIDERATIONS:
+ *  - 22K lines with ~390 functions (only 29% documented)
+ *  - Per-frame processing for every active ship (100+ in large missions)
+ *  - Subsystem tree traversal for damage calculations
+ *  - Collision detection against all ship subsystems
+ *  - Frequent modifications make this high-risk code
+ *
+ * MODDING SUPPORT:
+ *  - ships.tbl defines all ship classes (100+ stock, 1000+ in mods)
+ *  - Extensive table options: speeds, weapons, subsystems, physics
+ *  - Lua scripting can hook ship events (creation, death, damage)
+ *  - Ship flags enable special behaviors
+ *
+ * COMMON FUNCTIONS:
+ *  - ship_create() - Create new ship instance
+ *  - ship_die() - Destroy ship and create explosion
+ *  - ship_apply_global_damage() - Apply damage to ship
+ *  - ship_get_subsystem() - Get subsystem by name
+ *  - ship_do_damage() - Damage ship hull and subsystems
+ *  - ship_fire_primary() - Fire primary weapons
+ *  - ship_fire_secondary() - Fire secondary weapons
+ *  - ship_get_exp_damage_init_vel() - Calculate explosion velocity
+ *
+ * MAINTAINER NOTES:
+ *  - Only 29% of functions are documented - needs improvement
+ *  - Contains 67 TODO/FIXME comments indicating incomplete features
+ *  - Frequently modified - extensive testing required for changes
+ *  - Tight coupling with AI, physics, and rendering systems
+ *  - See CLAUDE.md: "Core game logic without adequate documentation"
+ *
+ * HISTORICAL CONTEXT:
+ *  This file originates from the 1999 FreeSpace 2 source release. Over 25+ years
+ *  of community development, it has grown to encompass modern features like:
+ *   - Advanced thruster systems
+ *   - Glowpoint animations
+ *   - Ship trails and particle effects
+ *   - Dynamic subsystem targeting
+ *   - Cockpit display systems
+ *
+ * @see ship.h - Ship data structure definitions
+ * @see ship/shipfx.cpp - Ship visual effects (engine glow, shield hits)
+ * @see ship/shiph.cpp - Ship hit detection and damage
+ * @see model/model.h - 3D model system used by ships
+ * @see ai/aicode.cpp - AI that controls ship behavior
+ */
 
 #include <csetjmp>
 #include <algorithm>

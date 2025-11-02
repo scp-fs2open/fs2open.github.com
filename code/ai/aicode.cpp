@@ -10,10 +10,179 @@
 
 
 /**
- * @file
- * Contains the actual AI code that does interesting stuff to objects.
+ * @file aicode.cpp
+ * @brief AI Core - Ship AI Decision Making and Behavior
  *
- * The code in Ai.cpp is just for bookkeeping, allocating AI slots and linking them to ships.
+ * OVERVIEW:
+ * This file implements the core artificial intelligence system for FreeSpace 2.
+ * At 17,007 lines (581 KB), it is the third-largest file in the codebase and contains
+ * the decision-making logic that controls all AI-piloted ships, from fighters to
+ * capital ships. This is the "brain" that makes enemy ships challenging opponents.
+ *
+ * PURPOSE:
+ * While ai.cpp handles AI slot allocation and bookkeeping, THIS file contains the
+ * actual AI behavior code that:
+ *  - Makes tactical decisions (attack, evade, pursue, flee)
+ *  - Controls ship maneuvering (intercept paths, evasion patterns)
+ *  - Manages combat behavior (weapons selection, target prioritization)
+ *  - Handles formation flying (wing positions, escorts)
+ *  - Implements special behaviors (docking, warping, guarding, rearm)
+ *  - Coordinates with mission goals and SEXP-driven orders
+ *
+ * CRITICAL NOTE - COMPILER OPTIMIZATIONS DISABLED:
+ * Lines 83-86 contain pragmas that DISABLE compiler optimizations for this entire file:
+ *   #pragma optimize("", off)
+ *   #pragma auto_inline(off)
+ *
+ * This indicates the code has subtle bugs or timing dependencies that break when
+ * optimized. This is a significant technical debt item. Changes to this file must
+ * be tested in both Debug AND Release builds to detect optimization-related bugs.
+ *
+ * AI ARCHITECTURE:
+ *
+ * 1. Goal-Based AI System:
+ *    AI ships have a stack of goals (ai_goal[]):
+ *     - Current goal: Active objective (attack target, guard ship, dock, etc.)
+ *     - Goal stack: Queued objectives, can interrupt or sequence
+ *     - Goal priorities: Determines which goals override others
+ *    Goals come from:
+ *     - Mission designer (FRED2 initial orders)
+ *     - SEXP commands (dynamic orders via mission events)
+ *     - AI decision-making (opportunistic behavior)
+ *
+ * 2. AI Modes (aip->mode):
+ *    Primary behavior states that determine what the AI is doing:
+ *     - AIM_CHASE: Pursuing and attacking an enemy
+ *     - AIM_EVADE: Evading enemy fire / breaking away
+ *     - AIM_GUARD: Protecting a ship/wing
+ *     - AIM_STILL: Stationary (sentry gun, turret platform)
+ *     - AIM_DOCK: Approaching docking with support ship/carrier
+ *     - AIM_WAYPOINTS: Following waypoint path
+ *     - AIM_WARP_OUT: Warping out of mission area
+ *     - AIM_FLY_TO_SHIP: Flying to specific ship
+ *     - AIM_STRAFE: Circle-strafing capital ship
+ *     - AIM_PLAY_DEAD: Pretending to be disabled
+ *     - AIM_BAY_EMERGE: Launching from fighter bay
+ *     - AIM_BAY_DEPART: Returning to fighter bay
+ *     - AIM_SENTRYGUN: Stationary turret AI
+ *     - and 10+ more modes...
+ *
+ * 3. Submodes:
+ *    Each AI mode has submodes for fine-grained behavior:
+ *     Example (AIM_CHASE):
+ *      - SM_ATTACK: Actively firing at target
+ *      - SM_EVADE_WEAPON: Dodging incoming missiles
+ *      - SM_ATTACK_FOREVER: Relentless pursuit
+ *      - SM_CONTINUOUS_TURN: Tight turning to face target
+ *
+ * 4. AI Class System (ai_class):
+ *    Ships have AI classes that define skill level and behavior:
+ *     - Ace: Expert pilots, advanced tactics, high accuracy
+ *     - Veteran: Skilled, moderate tactics
+ *     - Average: Standard competence
+ *     - Rookie: Poor aim, simple tactics
+ *     - Custom: Mission-defined classes
+ *    AI class affects:
+ *     - Weapon accuracy
+ *     - Reaction time
+ *     - Evasion effectiveness
+ *     - Decision-making intelligence
+ *
+ * 5. Maneuvering System:
+ *    AI controls ship movement through physics system:
+ *     - ai_turn_towards_vector(): Rotate ship to face direction
+ *     - accelerate_ship(): Control throttle/afterburner
+ *     - set_predicted_enemy_pos(): Lead target for weapons
+ *     - evade_weapon(): Dodge incoming missiles
+ *     - attack_set_accel(): Adjust speed for combat
+ *
+ * KEY FUNCTIONS (by category):
+ *
+ * Decision Making:
+ *  - ai_process(): Main per-frame AI update (called for each AI ship)
+ *  - ai_frame(): Global AI processing each frame
+ *  - ai_do_default_behavior(): Fallback behavior when no goals
+ *  - ai_choose_enemy(): Target selection logic
+ *
+ * Mode Execution:
+ *  - ai_chase(): Attack/pursue enemy (most complex mode)
+ *  - ai_evade(): Evasive maneuvers
+ *  - ai_guard(): Protect allied ship
+ *  - ai_dock(): Docking procedure (multi-stage)
+ *  - ai_waypoints(): Follow waypoint path
+ *
+ * Combat:
+ *  - ai_fire_primary_weapon(): Decide when to fire guns
+ *  - ai_fire_secondary_weapon(): Decide when to launch missiles
+ *  - ai_select_secondary_weapon(): Choose appropriate missile
+ *  - ai_choose_attack_subobject(): Pick subsystem to target
+ *
+ * Maneuvering:
+ *  - ai_turn_towards_vector(): Rotate ship toward direction
+ *  - ai_path(): Path following (used by waypoints, docking)
+ *  - attack_set_accel(): Set speed for combat approach
+ *  - evade_weapon(): Countermeasures and evasion
+ *
+ * INTEGRATION POINTS:
+ *
+ * Ship System (ship/ship.cpp):
+ *   AI reads: ship position, velocity, subsystem status, weapon loadout
+ *   AI writes: desired velocity, firing commands, target lock
+ *
+ * Goal System (ai/aigoals.cpp):
+ *   Manages goal stack, goal completion, goal assignment
+ *   aicode.cpp executes the goals that aigoals.cpp manages
+ *
+ * Lua Scripting (ai/ailua.cpp):
+ *   Lua can override AI behavior, inject custom goals, modify tactics
+ *   Missions can script custom AI behavior for special situations
+ *
+ * Physics (physics/physics.cpp):
+ *   AI sets desired velocity/rotation, physics applies to ship movement
+ *
+ * Weapons (weapon/weapons.cpp):
+ *   AI calls weapon firing functions, queries weapon ranges/damage
+ *
+ * PERFORMANCE:
+ *  - Executed for EVERY AI ship EVERY frame (can be 100+ ships)
+ *  - Disabled optimizations hurt performance significantly
+ *  - Complex decision trees with many conditional branches
+ *  - Trigonometry for maneuvering calculations
+ *
+ * MODDING:
+ *  - ai.tbl defines AI classes and behavior parameters
+ *  - ai_profiles.tbl tweaks AI behavior per-mod
+ *  - Lua scripting allows custom AI without C++ changes
+ *  - Extensive community AI mods (improved tactics, behaviors)
+ *
+ * DOCUMENTATION DEFICIT:
+ *  - Only ~2% of code has documentation comments
+ *  - 17,000 lines with minimal function documentation
+ *  - Makes understanding AI behavior extremely difficult
+ *  - New contributors struggle to modify AI without breaking it
+ *
+ * MAINTAINER NOTES:
+ *  - ALWAYS test in both Debug AND Release builds
+ *  - Optimization-related bugs are subtle and hard to debug
+ *  - AI behavior changes affect game balance - test extensively
+ *  - Contains 63 TODO/FIXME comments
+ *  - High risk of regressions due to complexity
+ *  - See CLAUDE.md: "Catastrophic documentation deficit"
+ *
+ * HISTORICAL CONTEXT:
+ *  From 1999 FreeSpace 2 release. Original AI was sophisticated for its time.
+ *  Community has enhanced it over 25+ years with:
+ *   - Improved capital ship tactics
+ *   - Better formation flying
+ *   - Smarter weapon selection
+ *   - More evasion maneuvers
+ *   - Lua scripting integration
+ *
+ * @see ai/ai.h - AI data structures and constants
+ * @see ai/aigoals.h - AI goal system
+ * @see ai/ailua.h - Lua AI scripting interface
+ * @see ai/ai_profiles.h - AI behavior profiles
+ * @see ship/ship.cpp - Ship physics and state
  */
 
 

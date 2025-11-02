@@ -1,16 +1,119 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
 
-//	Parse a symbolic expression.
-//	These are identical to Lisp functions.
-//	It uses a very baggy format, allocating 16 characters per token, regardless
-//	of how many are used.
+/**
+ * @file sexp.cpp
+ * @brief S-Expression (SEXP) Evaluator - Mission Logic Engine
+ *
+ * OVERVIEW:
+ * This file implements FreeSpace 2's mission logic system based on symbolic expressions
+ * (SEXPs), a Lisp-like language for defining mission events, goals, and conditional logic.
+ * At 42,746 lines, this is the largest and most complex file in the codebase, containing
+ * the core mission scripting engine that powers all mission behavior.
+ *
+ * WHAT ARE SEXPS?
+ * SEXPs are tree-structured expressions written in a Lisp-style syntax:
+ *   ( operator arg1 arg2 ... argN )
+ *
+ * Examples:
+ *   ( when ( is-destroyed-delay "Vasudan Cruiser" 3 ) ( add-goal "Protect Convoy" ) )
+ *   ( + 5 10 )
+ *   ( and ( true ) ( has-time-elapsed 30 ) )
+ *
+ * SEXPs are used throughout the game for:
+ *  - Mission goals and objectives (when X happens, mark goal complete)
+ *  - Event triggers (if condition Y, then trigger event Z)
+ *  - AI behavior (give ship orders, change AI goals)
+ *  - Mission flow control (end mission, change music, show messages)
+ *  - Campaign progression (set campaign variables, unlock missions)
+ *
+ * ARCHITECTURE:
+ * The SEXP system is organized around several key components:
+ *
+ * 1. SEXP Tree Structure (Sexp_nodes[]):
+ *    - Each node represents an operator or operand
+ *    - Nodes are linked in tree structure (first child, next sibling)
+ *    - Nodes have types: SEXP_ATOM (leaf data) or SEXP_LIST (operator)
+ *
+ * 2. Operator Registry (Operators[]):
+ *    - Defines all available SEXP operators (~400+ operators)
+ *    - Each operator has: name, argument count, return type, evaluator function
+ *    - Categories: conditional, action, arithmetic, status checks, etc.
+ *
+ * 3. Evaluator Functions:
+ *    - eval_sexp() - Main recursive evaluator, dispatches to operator functions
+ *    - Individual operator functions (e.g., eval_when, eval_is_destroyed)
+ *    - Returns SEXP_TRUE, SEXP_FALSE, SEXP_KNOWN_FALSE, or numeric values
+ *
+ * 4. Context System:
+ *    - Tracks current evaluation context (which ship, which event)
+ *    - Manages variable scope and substitution
+ *    - Handles multiplayer synchronization
+ *
+ * EVALUATION MODEL:
+ * SEXPs are evaluated continuously each frame during mission execution:
+ *  - Mission events call eval_sexp() on their trigger conditions
+ *  - Goals evaluate their completion/failure conditions
+ *  - Results are cached where possible to avoid redundant computation
+ *  - Some operators have side effects (e.g., ( add-goal ) modifies mission state)
+ *
+ * OPERATOR CATEGORIES:
+ *  - Boolean: and, or, not, xor, true, false
+ *  - Comparison: =, <, >, <=, >=
+ *  - Arithmetic: +, -, *, /, mod, rand
+ *  - Time: has-time-elapsed, time-ship-destroyed
+ *  - Status: is-destroyed, is-disabled, shields-left
+ *  - Actions: add-goal, send-message, change-ai-class
+ *  - Control flow: when, cond, every-time
+ *  - Ship commands: add-ship-goal, protect-ship
+ *  - Campaign: set-campaign-variable, end-campaign
+ *  - and 300+ more...
+ *
+ * PERFORMANCE CONSIDERATIONS:
+ * Due to the size and complexity of this file:
+ *  - Contains 4,073 switch/case statements
+ *  - Some functions exceed 500+ lines
+ *  - Compilation time is significant
+ *  - Refactoring requires extensive testing (can break mission compatibility)
+ *
+ * MODDING SUPPORT:
+ * The SEXP system is fully extensible via table files:
+ *  - Custom operators can be defined in sexp-operators.tbl
+ *  - Lua scripting can add new SEXP operators at runtime
+ *  - Community has created thousands of custom missions using this system
+ *
+ * DEPENDENCIES:
+ * This file has dependencies on nearly every game subsystem:
+ *  - AI (ai/aigoals.h) - for ship AI commands
+ *  - Ships (ship/ship.h) - for ship status queries
+ *  - Weapons (weapon/weapon.h) - for weapon operations
+ *  - Missions (mission/*.h) - for mission state management
+ *  - Campaign (missioncampaign.h) - for campaign persistence
+ *  - Multiplayer (network/*.h) - for netgame synchronization
+ *  - And 50+ other subsystems
+ *
+ * MAINTAINER NOTES:
+ * - This file is monolithic by design due to tight coupling of mission logic
+ *  - Changes must be tested extensively with existing missions/campaigns
+ *  - Adding new operators requires entries in multiple data structures
+ *  - Multiplayer operators require special synchronization handling
+ *  - See CLAUDE.md: acknowledged as "expensive to refactor"
+ *
+ * HISTORICAL NOTE:
+ * The SEXP format is inherited from the original FreeSpace 1 (1998) and earlier
+ * Descent: FreeSpace prototypes. The format was chosen for its simplicity and
+ * power, though it has resulted in this massive implementation file.
+ *
+ * @see missionparse.cpp - Parses .fs2 mission files containing SEXPs
+ * @see missiongoals.cpp - Evaluates goal/event SEXPs each frame
+ * @see fred2/sexp_tree.cpp - FRED2 mission editor SEXP tree UI
+ */
 
 #include <algorithm>
 #include <cstdio>

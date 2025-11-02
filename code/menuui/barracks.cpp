@@ -238,7 +238,6 @@ static barracks_buttons Buttons[GR_NUM_RESOLUTIONS][BARRACKS_NUM_BUTTONS] = {
 };
 
 
-// FIXME add to strings.tbl, set correct coords
 #define BARRACKS_NUM_TEXT			2
 UI_XSTR Barracks_text[GR_NUM_RESOLUTIONS][BARRACKS_NUM_TEXT] = {
 	{ 
@@ -295,158 +294,147 @@ void barracks_squad_change_popup();
 	strcpy_s(a, b); \
 } while (false)
 
+/**
+ * @brief Helper function to add a blank line to stats display
+ */
+static void add_stat_blank_line(size_t max_lines)
+{
+	Assert(Num_stat_lines < max_lines);
+	Stat_labels[Num_stat_lines][0] = 0;
+	Stats[Num_stat_lines][0] = 0;
+	Num_stat_lines++;
+}
+
+/**
+ * @brief Helper function to add a section header to stats display
+ * @param label The header text
+ * @param xstr_id Translation string ID
+ * @param max_lines Maximum allowed stat lines
+ */
+static void add_stat_header(const char* label, int xstr_id, size_t max_lines)
+{
+	Assert(Num_stat_lines < max_lines);
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR(label, xstr_id));
+	Stats[Num_stat_lines][0] = 0;
+	Num_stat_lines++;
+}
+
+/**
+ * @brief Helper function to add a stat line with unsigned integer value
+ * @param label The stat label text
+ * @param xstr_id Translation string ID
+ * @param value The integer value to display
+ * @param max_lines Maximum allowed stat lines
+ */
+static void add_stat_line_uint(const char* label, int xstr_id, unsigned int value, size_t max_lines)
+{
+	Assert(Num_stat_lines < max_lines);
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR(label, xstr_id));
+	sprintf(Stats[Num_stat_lines], "%u", value);
+	Num_stat_lines++;
+}
+
+/**
+ * @brief Helper function to add a stat line with signed integer value
+ * @param label The stat label text
+ * @param xstr_id Translation string ID
+ * @param value The integer value to display
+ * @param max_lines Maximum allowed stat lines
+ */
+static void add_stat_line_int(const char* label, int xstr_id, int value, size_t max_lines)
+{
+	Assert(Num_stat_lines < max_lines);
+	if (xstr_id != -1) {
+		STRCPY1(Stat_labels[Num_stat_lines], XSTR(label, xstr_id));
+	} else {
+		strcpy_s(Stat_labels[Num_stat_lines], label);
+	}
+	sprintf(Stats[Num_stat_lines], "%d", value);
+	Num_stat_lines++;
+}
+
+/**
+ * @brief Helper function to add a percentage stat line
+ * @param label The stat label text
+ * @param xstr_id Translation string ID
+ * @param numerator The numerator for percentage calculation
+ * @param denominator The denominator for percentage calculation
+ * @param max_lines Maximum allowed stat lines
+ */
+static void add_stat_percentage(const char* label, int xstr_id, unsigned int numerator, unsigned int denominator, size_t max_lines)
+{
+	Assert(Num_stat_lines < max_lines);
+	STRCPY1(Stat_labels[Num_stat_lines], XSTR(label, xstr_id));
+
+	float percentage = 0.0f;
+	if (denominator > 0) {
+		percentage = (float)numerator * 100.0f / (float)denominator;
+	}
+	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), percentage);
+	Num_stat_lines++;
+}
+
+/**
+ * @brief Initialize and populate the statistics display in the barracks
+ * @param stats Pointer to the player's scoring statistics
+ *
+ * Populates global Stat_labels and Stats arrays with formatted player statistics
+ * including weapon accuracy, kills by ship type, and total score.
+ */
 void barracks_init_stats(scoring_struct *stats)
 {
 	size_t Max_stat_lines = Ship_info.size() + 23;
 	size_t i;
-	float f;
 	int score_from_kills = 0;
 
-	//Set up variables
-	if(Stat_labels != NULL)
-	{
+	// Clean up existing allocations
+	if(Stat_labels != NULL) {
 		delete[] Stat_labels;
 	}
-	if(Stats != NULL)
-	{
+	if(Stats != NULL) {
 		delete[] Stats;
 	}
 
+	// Allocate arrays for stats display
 	Stat_labels = (char (*)[STAT_COLUMN1_W]) new char[Max_stat_lines * STAT_COLUMN1_W];
 	Stats = (char (*)[STAT_COLUMN2_W]) new char[Max_stat_lines * STAT_COLUMN2_W];
 
-	//Now start throwing stuff in
+	// Initialize stat counter
 	Num_stat_lines = 0;
 
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "*All Time Stats", 50));
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	// All Time Stats section
+	add_stat_header("*All Time Stats", 50, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;	
+	// Primary weapons stats
+	add_stat_line_uint("Primary weapon shots:", 51, stats->p_shots_fired, Max_stat_lines);
+	add_stat_line_uint("Primary weapon hits:", 52, stats->p_shots_hit, Max_stat_lines);
+	add_stat_line_uint("Primary friendly hits:", 53, stats->p_bonehead_hits, Max_stat_lines);
+	add_stat_percentage("Primary hit %:", 54, stats->p_shots_hit, stats->p_shots_fired, Max_stat_lines);
+	add_stat_percentage("Primary friendly hit %:", 56, stats->p_bonehead_hits, stats->p_shots_fired, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon shots:", 51));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_fired);
-	Num_stat_lines++;
+	// Secondary weapons stats
+	add_stat_line_uint("Secondary weapon shots:", 57, stats->s_shots_fired, Max_stat_lines);
+	add_stat_line_uint("Secondary weapon hits:", 58, stats->s_shots_hit, Max_stat_lines);
+	add_stat_line_uint("Secondary friendly hits:", 59, stats->s_bonehead_hits, Max_stat_lines);
+	add_stat_percentage("Secondary hit %:", 60, stats->s_shots_hit, stats->s_shots_fired, Max_stat_lines);
+	add_stat_percentage("Secondary friendly hit %:", 61, stats->s_bonehead_hits, stats->s_shots_fired, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary weapon hits:", 52));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_shots_hit);
-	Num_stat_lines++;
+	// Combat performance stats
+	add_stat_line_int("Total kills:", 62, stats->kill_count_ok, Max_stat_lines);
+	add_stat_line_int("Assists:", 63, stats->assists, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hits:", 53));
-	sprintf(Stats[Num_stat_lines], "%u", stats->p_bonehead_hits);
-	Num_stat_lines++;
+	// Score
+	add_stat_line_int("Current Score:", 1583, stats->score, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary hit %:", 54));
-	if (stats->p_shots_fired > 0) {
-		f = (float) stats->p_shots_hit * 100.0f / (float) stats->p_shots_fired;
-	} else {
-		f = 0.0f;
-	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Primary friendly hit %:", 56));
-	if (stats->p_shots_fired > 0) {
-		f = (float) stats->p_bonehead_hits * 100.0f / (float) stats->p_shots_fired;
-	} else {
-		f = 0.0f;
-	}
-	sprintf(Stats[Num_stat_lines], XSTR( "%.1f%%", 55), f);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon shots:", 57));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_fired);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR( "Secondary weapon hits:", 58));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_shots_hit);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hits:", 59));
-	sprintf(Stats[Num_stat_lines], "%u", stats->s_bonehead_hits);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary hit %:", 60));
-	if (stats->s_shots_fired > 0) {
-		f = (float)stats->s_shots_hit * 100.0f / (float)stats->s_shots_fired;
-	}
-	else {
-		f = 0.0f;
-	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Secondary friendly hit %:", 61));
-	if (stats->s_shots_fired > 0) {
-		f = (float)stats->s_bonehead_hits * 100.0f / (float)stats->s_shots_fired;
-	}
-	else {
-		f = 0.0f;
-	}
-	sprintf(Stats[Num_stat_lines], XSTR("%.1f%%", 55), f);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Total kills:", 62));
-	sprintf(Stats[Num_stat_lines], "%d", stats->kill_count_ok);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Assists:", 63));
-	sprintf(Stats[Num_stat_lines], "%d", stats->assists);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	strcpy_s(Stat_labels[Num_stat_lines], XSTR("Current Score:", 1583));
-	sprintf(Stats[Num_stat_lines], "%d", stats->score);
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("*Kills by Ship Type", 64));
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
-
-	Assert(Num_stat_lines < Max_stat_lines);
-	Stat_labels[Num_stat_lines][0] = 0;
-	Stats[Num_stat_lines][0] = 0;
-	Num_stat_lines++;
+	// Kills by Ship Type section
+	add_stat_header("*Kills by Ship Type", 64, Max_stat_lines);
+	add_stat_blank_line(Max_stat_lines);
 
 	// Goober5000 - make sure we have room for all ships
 	Assert((Num_stat_lines + Ship_info.size()) < Max_stat_lines);
@@ -479,11 +467,8 @@ void barracks_init_stats(scoring_struct *stats)
 		Num_stat_lines++;
 	}
 
-	// add the score from kills
-	Assert((Num_stat_lines + 1) < Max_stat_lines);
-	STRCPY1(Stat_labels[Num_stat_lines], XSTR("Score from kills only:", 1636));
-	sprintf(Stats[Num_stat_lines], "%d", score_from_kills);
-	Num_stat_lines++;
+	// Add the score from kills
+	add_stat_line_int("Score from kills only:", 1636, score_from_kills, Max_stat_lines);
 
 	int w;
 	Stats_max_width = 0;

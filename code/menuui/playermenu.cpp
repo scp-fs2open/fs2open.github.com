@@ -112,7 +112,6 @@ static barracks_buttons Player_select_buttons[GR_NUM_RESOLUTIONS][NUM_PLAYER_SEL
 	}
 };
 
-// FIXME add to strings.tbl
 #define PLAYER_SELECT_NUM_TEXT			1
 UI_XSTR Player_select_text[GR_NUM_RESOLUTIONS][PLAYER_SELECT_NUM_TEXT] = {
 	{ // GR_640
@@ -245,6 +244,36 @@ bool valid_pilot(const char* callsign, bool no_popup) {
 
 	// All validation checks passed
 	return true;
+}
+
+/**
+ * @brief Set game mode based on player flags
+ *
+ * Sets the global Game_mode variable to either GM_MULTIPLAYER or GM_NORMAL
+ * based on whether the PLAYER_FLAGS_IS_MULTI flag is set in Player->flags.
+ */
+static void player_set_game_mode_from_flags()
+{
+	if (Player->flags & PLAYER_FLAGS_IS_MULTI) {
+		Game_mode = GM_MULTIPLAYER;
+	} else {
+		Game_mode = GM_NORMAL;
+	}
+}
+
+/**
+ * @brief Set player_was_multi flag based on player select mode
+ *
+ * Sets Player->player_was_multi to 1 if in multiplayer select mode, 0 otherwise.
+ * This preserves whether the pilot was created in single or multiplayer mode.
+ */
+static void player_set_multi_flag_from_select_mode()
+{
+	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
+		Player->player_was_multi = 1;
+	} else {
+		Player->player_was_multi = 0;
+	}
 }
 
 /**
@@ -542,11 +571,7 @@ void player_select_close()
 	}
 
 	// WMC - Set appropriate game mode
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
+	player_set_game_mode_from_flags();
 
 	// now read in a the pilot data
 	if ( !Pilot.load_player(Pilots[Player_select_pilot], Player) ) {
@@ -557,17 +582,13 @@ void player_select_close()
 
 	// set the local multi options from the player flags
 	multi_options_init_globals();
-	
+
 	// read in the current campaign
 	// NOTE: this may fail if there is no current campaign, it's not fatal
 	Pilot.load_savefile(Player, Player->current_campaign);
 
 	// Set singleplayer/multiplayer mode in Player
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->player_was_multi = 1;
-	} else {
-		Player->player_was_multi = 0;
-	}
+	player_set_multi_flag_from_select_mode();
 
 	// save the pilot file to a version that we work with
 	Pilot.save_player(Player);
@@ -1539,11 +1560,7 @@ void player_finish_select(const char* callsign, bool is_multi) {
 	}
 
 	// WMC - Set appropriate game mode
-	if ( Player->flags & PLAYER_FLAGS_IS_MULTI ) {
-		Game_mode = GM_MULTIPLAYER;
-	} else {
-		Game_mode = GM_NORMAL;
-	}
+	player_set_game_mode_from_flags();
 
 	// now read in a the pilot data
 	if ( !Pilot.load_player(callsign, Player) ) {
@@ -1554,11 +1571,8 @@ void player_finish_select(const char* callsign, bool is_multi) {
 		Pilot.load_savefile(Player, Player->current_campaign);
 	}
 
-	if (Player_select_mode == PLAYER_SELECT_MODE_MULTI) {
-		Player->player_was_multi = 1;
-	} else {
-		Player->player_was_multi = 0;
-	}
+	// Set singleplayer/multiplayer mode in Player
+	player_set_multi_flag_from_select_mode();
 
 	// set the local multi options from the player flags
 	multi_options_init_globals();

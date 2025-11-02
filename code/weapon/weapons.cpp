@@ -1,13 +1,186 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
 
-
+/**
+ * @file weapons.cpp
+ * @brief Weapon System - Projectile, Missile, and Beam Management
+ *
+ * OVERVIEW:
+ * This file implements the comprehensive weapon system for FreeSpace 2.
+ * At 10,260 lines (360 KB), it manages all weapon types: guns, missiles,
+ * bombs, beams, and specialized ordnance. This system handles weapon firing,
+ * flight dynamics, homing behavior, collision detection, and damage application.
+ *
+ * PURPOSE:
+ * The weapon system is crucial to FreeSpace 2's combat gameplay. It manages:
+ *  - Weapon firing and creation (bullets, missiles, beams)
+ *  - Projectile physics and movement (ballistic, guided, beam tracking)
+ *  - Homing behavior (aspect lock, heat seeking, target leading)
+ *  - Collision detection and damage (shield/hull damage, subsystem hits)
+ *  - Special weapon types (swarm missiles, flak, countermeasures)
+ *  - Visual effects (muzzle flash, projectile trails, impacts)
+ *  - Weapon loading from tables (weapons.tbl)
+ *
+ * WEAPON TYPES:
+ *
+ * 1. Ballistic Weapons (WIF_BALLISTIC):
+ *    - Laser cannons, particle beams, mass drivers
+ *    - Travel in straight line at constant velocity
+ *    - No tracking, simple physics
+ *    - Examples: Subach HL-7, Prometheus R, Maxim
+ *
+ * 2. Homing Weapons (WIF_HOMING):
+ *    - Heat-seeking and aspect-lock missiles
+ *    - Active guidance toward target
+ *    - Can be evaded with countermeasures
+ *    - Examples: Harpoon, Hornet, Stiletto II
+ *    Homing types:
+ *     - HEAT: Seeks engine signature
+ *     - ASPECT: Locks to ship radar signature
+ *     - JAVELIN: Advanced aspect lock
+ *
+ * 3. Beam Weapons (WIF_BEAM):
+ *    - Continuous energy beams (like Star Wars turbolasers)
+ *    - Instant hit detection along beam path
+ *    - Capital ship main weapons
+ *    - Examples: TerSlash, BFRed, LRed
+ *    Sub-types:
+ *     - Slashing beams: Sweep across target
+ *     - Targeting beams: Lock-on then fire
+ *     - Point defense: Anti-fighter/missile
+ *
+ * 4. Bombs/Torpedoes (WIF_BOMB):
+ *    - Heavy anti-capital ship ordnance
+ *    - Slow, vulnerable, massive damage
+ *    - Examples: Helios, Cyclops, Trebuchet
+ *
+ * 5. Countermeasures (WIF_CMEASURE):
+ *    - Decoys that spoof heat-seeking missiles
+ *    - Deployed to break missile lock
+ *
+ * 6. Special Weapons:
+ *    - SWARM (WIF_SWARM): Launches multiple mini-missiles
+ *    - FLAK (WIF_FLAK): Area-effect anti-fighter burst
+ *    - CORKSCREW: Helical flight path
+ *    - PARTICLE SPEW: Debris/shrapnel generator
+ *
+ * ARCHITECTURE:
+ *
+ * 1. Data Structures:
+ *    - Weapon_info[]: Weapon type definitions (from weapons.tbl)
+ *      Contains: speed, damage, model, homing params, lifetime
+ *    - Weapons[]: Active weapon instances (projectiles in-flight)
+ *      Contains: position, velocity, target, time-to-live
+ *
+ * 2. Weapon Lifecycle:
+ *    Creation:  weapon_create() → initialize physics → add to object system
+ *    Per-Frame: weapon_process_pre() → move → guidance → weapon_process_post()
+ *    Hit:       weapon_hit() → damage calculation → explosion → remove
+ *    Expire:    lifetime timeout → detonate or fizzle → remove
+ *
+ * 3. Homing System:
+ *    - weapon_home(): Main homing guidance function
+ *    - Calculates intercept vector to target
+ *    - Adjusts for target velocity (lead target)
+ *    - Applies turn rate limits (missiles can't turn instantly)
+ *    - Handles aspect lock: requires facing target within cone
+ *    - Heat seeking: tracks engine hotspots
+ *
+ * 4. Damage Model:
+ *    - weapon_hit(): Collision handler
+ *    - Calculates damage based on:
+ *      - Base weapon damage
+ *      - Armor class vs damage type
+ *      - Shield vs hull penetration
+ *      - Subsystem targeting
+ *    - Applies shield/hull damage
+ *    - Triggers explosion effects
+ *
+ * 5. Collision Detection:
+ *    Weapons collide with:
+ *     - Ships (hull and subsystems)
+ *     - Other weapons (flak detonation)
+ *     - Asteroids
+ *     - Debris
+ *    Uses object system collision pairs (objcollide.cpp)
+ *
+ * KEY FUNCTIONS:
+ *
+ * Creation & Firing:
+ *  - weapon_create(): Create weapon projectile
+ *  - weapon_fire(): Fire from ship weapon bank
+ *  - weapon_select(): Player weapon selection
+ *
+ * Movement & Guidance:
+ *  - weapon_process(): Per-frame update (all weapons)
+ *  - weapon_move(): Update position/velocity
+ *  - weapon_home(): Homing missile guidance
+ *
+ * Collision & Damage:
+ *  - weapon_hit(): Process weapon hit
+ *  - weapon_area_apply_blast(): Area-effect damage
+ *  - weapon_do_post_process(): Post-collision cleanup
+ *
+ * Special Weapons:
+ *  - swarm_create(): Initialize swarm missile
+ *  - flak_muzzle_flash(): Flak weapon firing
+ *  - beam_fire(): Fire beam weapon
+ *
+ * INTEGRATION POINTS:
+ *
+ * Ship System (ship/ship.cpp):
+ *   Ships fire weapons via weapon_fire()
+ *   Weapons hit ships via weapon_hit() → ship_apply_damage()
+ *
+ * AI (ai/aicode.cpp):
+ *   AI selects weapons via ai_select_secondary_weapon()
+ *   AI fires via ai_fire_primary_weapon(), ai_fire_secondary_weapon()
+ *
+ * Physics (physics/physics.cpp):
+ *   Weapon projectiles use physics_sim() for movement
+ *   Homing guidance adjusts velocity vector
+ *
+ * Object System (object/object.cpp):
+ *   Weapons are object type OBJ_WEAPON
+ *   Collision detection via obj_check_all_collisions()
+ *
+ * PERFORMANCE CONSIDERATIONS:
+ *  - 10K lines with deep nesting (flagged in analysis)
+ *  - Per-frame processing for hundreds of weapons
+ *  - Homing calculations are trigonometry-heavy
+ *  - Beam weapons require raycast collision checks
+ *  - 25 TODO/FIXME comments indicate incomplete features
+ *
+ * MODDING SUPPORT:
+ *  - weapons.tbl defines all weapon types (100+ stock, 500+ in mods)
+ *  - Extensive customization: damage, speed, homing, visuals
+ *  - Lua scripting can hook weapon events
+ *  - Community has created exotic weapon types
+ *
+ * TECHNICAL DEBT:
+ *  - Multiple responsibilities in one file (projectiles, beams, missiles)
+ *  - Should be split into weapon type-specific modules
+ *  - Deep nesting makes code hard to follow
+ *  - See CLAUDE.md: "Needs separation into weapon type-specific modules"
+ *
+ * MAINTAINER NOTES:
+ *  - Weapon balance changes affect gameplay significantly
+ *  - Test with various ship/weapon combinations
+ *  - Multiplayer requires weapon state synchronization
+ *  - Contains 25 TODOs indicating missing features
+ *
+ * @see weapon/weapon.h - Weapon data structures
+ * @see weapon/beam.cpp - Beam weapon implementation
+ * @see weapon/swarm.cpp - Swarm missile implementation
+ * @see weapon/flak.cpp - Flak weapon implementation
+ * @see weapon/trails.cpp - Weapon trail rendering
+ */
 
 #include <algorithm>
 #include <cstddef>

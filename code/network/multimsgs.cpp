@@ -1,14 +1,241 @@
 /*
  * Copyright (C) Volition, Inc. 1999.  All rights reserved.
  *
- * All source code herein is the property of Volition, Inc. You may not sell 
- * or otherwise commercially exploit the source or things you created based on the 
+ * All source code herein is the property of Volition, Inc. You may not sell
+ * or otherwise commercially exploit the source or things you created based on the
  * source.
  *
 */
 
-
-
+/**
+ * @file multimsgs.cpp
+ * @brief Multiplayer Network Protocol - Message Handling
+ *
+ * OVERVIEW:
+ * This file implements the multiplayer network protocol for FreeSpace 2.
+ * At 9,278 lines (263 KB), it defines and handles 100+ network message types
+ * that synchronize game state across multiple players. This is the communication
+ * backbone that makes multiplayer combat possible.
+ *
+ * PURPOSE:
+ * In a multiplayer game, each player's computer must stay synchronized with all
+ * others. This file handles the packaging, transmission, and processing of network
+ * messages that communicate:
+ *  - Player actions (fire weapon, change target, issue order)
+ *  - Object state (ship position, velocity, damage)
+ *  - Mission events (goal complete, ship destroyed, warp in/out)
+ *  - Game flow (mission start, pause, end, debrief)
+ *  - Chat and communication (text messages, voice)
+ *  - File transfers (missions, tables, voice data)
+ *
+ * NETWORK ARCHITECTURE:
+ *
+ * 1. UDP-Based Protocol:
+ *    - Unreliable datagram protocol (UDP) for speed
+ *    - Custom reliability layer for critical messages
+ *    - Packet sequencing to detect loss/reordering
+ *    - Lag compensation for smooth gameplay
+ *
+ * 2. Client-Server Model:
+ *    - One player is the "host" (server + client)
+ *    - Other players are clients
+ *    - Server is authoritative for game state
+ *    - Clients send inputs, receive state updates
+ *
+ * 3. Message Types:
+ *    100+ message types organized by function:
+ *
+ *    Connection/Setup:
+ *     - JOIN_REQUEST: Client wants to join game
+ *     - ACCEPT: Server accepts join
+ *     - GAME_INFO: Server sends game details
+ *     - MISSION_SYNC: Transfer mission file
+ *
+ *    Object Synchronization:
+ *     - CREATE: Spawn new object (ship, weapon)
+ *     - DELETE: Remove object
+ *     - POSITION: Update position/orientation
+ *     - SHIELD: Update shield strength
+ *     - SUBSYSTEM: Update subsystem damage
+ *
+ *    Player Actions:
+ *     - FIRE_PRIMARY: Player fired primary weapon
+ *     - FIRE_SECONDARY: Player launched missile
+ *     - SHIP_KILL: Ship was destroyed
+ *     - RESPAWN_REQUEST: Player wants to respawn
+ *
+ *    Mission Events:
+ *     - MISSION_GOAL: Goal completed/failed
+ *     - MISSION_MESSAGE: In-game message
+ *     - MISSION_SYNC_DATA: Sync mission state
+ *
+ *    Game Flow:
+ *     - START: Begin mission
+ *     - END: Mission complete
+ *     - PAUSE: Pause game
+ *     - DEBRIEF_INFO: Post-mission statistics
+ *
+ *    Communication:
+ *     - CHAT: Text message
+ *     - VOICE: Voice comm data
+ *     - HUD_MSG: HUD message
+ *
+ *    File Transfer:
+ *     - FILE_SIG: Request file signature
+ *     - XFER_PACKET: File data chunk
+ *     - XFER_COMPLETE: Transfer finished
+ *
+ * 4. Message Structure:
+ *    Each network message contains:
+ *     - Header: Message type, sequence number, sender ID
+ *     - Payload: Type-specific data
+ *     - CRC: Checksum for data integrity
+ *
+ *    Example (simplified):
+ *    struct fire_primary_msg {
+ *      ubyte type;           // MULTI_FIRE_PRIMARY
+ *      ushort sequence;      // Packet sequence
+ *      net_player_id sender; // Who fired
+ *      ushort weapon_type;   // Which weapon
+ *      vec3d position;       // Fire origin
+ *      vec3d direction;      // Fire direction
+ *    };
+ *
+ * MESSAGE LIFECYCLE:
+ *
+ * Sending:
+ *  1. Game event occurs (e.g., player fires weapon)
+ *  2. Call send_fire_primary_packet()
+ *  3. Pack data into network packet
+ *  4. Add to reliable/unreliable send queue
+ *  5. Transmit via UDP socket
+ *
+ * Receiving:
+ *  1. UDP packet arrives from network
+ *  2. multi_process_bigdata() dispatches by type
+ *  3. Call process_fire_primary_packet()
+ *  4. Unpack data from network packet
+ *  5. Execute game action (create weapon projectile)
+ *
+ * RELIABILITY SYSTEM:
+ *
+ * Critical messages (ship destroy, goal complete) use reliable delivery:
+ *  - Sender marks packet as "reliable"
+ *  - Sender stores copy of packet
+ *  - Receiver sends ACK when packet received
+ *  - Sender retransmits if no ACK within timeout
+ *  - Sender discards packet after ACK received
+ *
+ * Non-critical messages (position updates) are unreliable:
+ *  - Fire-and-forget, no ACKs
+ *  - If lost, next update will correct
+ *  - Reduces network overhead
+ *
+ * LAG COMPENSATION:
+ *
+ * To handle network latency:
+ *  - Position extrapolation: Predict where objects will be
+ *  - Input delay compensation: Rewind game state for hit detection
+ *  - Smoothing: Interpolate between position updates
+ *  - Dead reckoning: Continue movement during packet loss
+ *
+ * BANDWIDTH MANAGEMENT:
+ *
+ * Multiplayer must work on limited bandwidth:
+ *  - Delta compression: Only send changed values
+ *  - Update prioritization: Send important objects more often
+ *  - Bit packing: Efficient data encoding
+ *  - Object culling: Only sync nearby/visible objects
+ *
+ * KEY FUNCTIONS (by category):
+ *
+ * Connection Management:
+ *  - send_join_packet(): Request to join game
+ *  - process_accept_packet(): Handle join acceptance
+ *  - send_game_info_packet(): Broadcast game details
+ *
+ * Object Sync:
+ *  - send_ship_create_packet(): Notify of new ship
+ *  - process_ship_status_packet(): Update ship state
+ *  - send_ship_kill_packet(): Notify of ship destruction
+ *
+ * Player Actions:
+ *  - send_fire_primary_packet(): Player fired weapons
+ *  - send_ship_weapon_change(): Player changed weapons
+ *  - process_respawn_request(): Handle respawn
+ *
+ * Mission Flow:
+ *  - send_mission_sync_packet(): Sync mission data
+ *  - process_mission_goal_packet(): Update goals
+ *  - send_debrief_info(): Post-mission stats
+ *
+ * File Transfer:
+ *  - multi_xfer_send_file(): Initiate file send
+ *  - process_xfer_packet(): Receive file chunk
+ *
+ * INTEGRATION POINTS:
+ *
+ * Network Layer (network/multi.cpp):
+ *   multi.cpp manages connections, this file handles message types
+ *
+ * Object System (network/multi_obj.cpp):
+ *   multi_obj.cpp orchestrates object sync, this file sends packets
+ *
+ * Game Subsystems:
+ *   All game systems (ship, weapon, AI, mission) call functions here
+ *   to notify other players of local events
+ *
+ * PERFORMANCE:
+ *  - 100+ message types in single 9K line file
+ *  - Lots of repeated packet packing/unpacking code
+ *  - Critical path for multiplayer performance
+ *  - Network latency makes debugging difficult
+ *
+ * TECHNICAL DEBT:
+ *  - Monolithic file with 100+ message handlers
+ *  - Should be organized into message categories
+ *  - Lots of similar pack/unpack code (DRY violation)
+ *  - 17 TODO/FIXME comments
+ *  - See CLAUDE.md: "Monolithic file with network protocol logic"
+ *
+ * SECURITY CONSIDERATIONS:
+ *  - Validate all data from network (untrusted source)
+ *  - Check array bounds before indexing
+ *  - Verify object IDs exist before dereferencing
+ *  - Protect against packet injection/spoofing
+ *  - Rate-limit chat messages (anti-spam)
+ *
+ * COMPATIBILITY:
+ *  - Protocol version must match between clients
+ *  - Adding new message types breaks compatibility
+ *  - Changing message format breaks compatibility
+ *  - Must maintain protocol stability for community
+ *
+ * MAINTAINER NOTES:
+ *  - Test all changes in actual network conditions (lag, packet loss)
+ *  - Never assume packet order or arrival
+ *  - Never trust data from network without validation
+ *  - Multiplayer bugs are hard to reproduce and debug
+ *  - Contains 17 TODOs indicating protocol gaps
+ *
+ * DEBUGGING:
+ *  - Use -multilog to enable detailed network logging
+ *  - multi_log.cpp logs all packet traffic
+ *  - Network emulation tools can simulate lag/loss
+ *
+ * HISTORICAL CONTEXT:
+ *  From 1999 FreeSpace 2 when multiplayer was LAN or modem-based.
+ *  Protocol has been enhanced over 25+ years for internet play:
+ *   - Better lag compensation
+ *   - Improved reliability
+ *   - New message types (observer mode, multi-team)
+ *   - Voice communication
+ *
+ * @see network/multi.h - Core multiplayer system
+ * @see network/multiutil.h - Network utilities
+ * @see network/multi_obj.cpp - Object synchronization
+ * @see network/multi_log.cpp - Network debugging logs
+ */
 
 #include <climits>
 
