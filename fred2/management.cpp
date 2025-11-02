@@ -1201,8 +1201,7 @@ int common_object_delete(int obj)
 		waypoint *wpt = find_waypoint_with_instance(Objects[obj].instance);
 		Assert(wpt != NULL);
 		waypoint_list *wp_list = wpt->get_parent_list();
-		int index = calc_waypoint_list_index(Objects[obj].instance);
-		int count = (int) wp_list->get_waypoints().size();
+		auto count = wp_list->get_waypoints().size();
 
 		// we'll end up deleting the path, so check for path references
 		if (count == 1) {
@@ -1213,7 +1212,7 @@ int common_object_delete(int obj)
 		}
 
 		// check for waypoint references
-		sprintf(msg, "%s:%d", wp_list->get_name(), index + 1);
+		waypoint_stuff_name(msg, *wpt);
 		name = msg;
 		r = reference_handler(name, sexp_ref_type::WAYPOINT, obj);
 		if (r)
@@ -2225,8 +2224,6 @@ int sexp_reference_handler(int node, sexp_src source, int source_index, char *ms
 char *object_name(int obj)
 {
 	static char text[80];
-	waypoint_list *wp_list;
-	int waypoint_num;
 
 	if (!query_valid_object(obj))
 		return "*none*";
@@ -2237,9 +2234,7 @@ char *object_name(int obj)
 			return Ships[Objects[obj].instance].ship_name;
 
 		case OBJ_WAYPOINT:
-			wp_list = find_waypoint_list_with_instance(Objects[obj].instance, &waypoint_num);
-			Assert(wp_list != NULL);
-			sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
+			waypoint_stuff_name(text, Objects[obj].instance);
 			return text;
 
 		case OBJ_POINT:

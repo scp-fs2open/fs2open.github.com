@@ -40,11 +40,7 @@ void ObjectOrientEditorDialogModel::initializeData()
 					_pointToObjectList.emplace_back(ObjectEntry(Ships[ptr->instance].ship_name, OBJ_INDEX(ptr)));
 					break;
 				case OBJ_WAYPOINT: {
-					int waypoint_num;
-					waypoint_list* wp_list = find_waypoint_list_with_instance(ptr->instance, &waypoint_num);
-					Assertion(wp_list != nullptr, "Waypoint list was nullptr!");
-					sprintf(text, "%s:%d", wp_list->get_name(), waypoint_num + 1);
-
+					waypoint_stuff_name(text, ptr->instance);
 					_pointToObjectList.emplace_back(ObjectEntry(text, OBJ_INDEX(ptr)));
 					break;
 				}
