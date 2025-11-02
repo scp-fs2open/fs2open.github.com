@@ -127,8 +127,14 @@ SCP_vector<waypoint> &waypoint_list::get_waypoints()
 
 void waypoint_list::set_name(const char *name)
 {
-	Assert(name != NULL);
-	strcpy_s(this->m_name, name);
+	Assertion(name != nullptr, "Waypoint name cannot be null!");
+
+	auto len = strlen(name);
+	if (len >= NAME_LENGTH)
+		len = NAME_LENGTH - 5;	// leave room for a colon, three digits, and a null terminator for points that belong to this list
+
+	strncpy(this->m_name, name, len);
+	this->m_name[len] = '\0';
 }
 
 //********************FUNCTIONS********************

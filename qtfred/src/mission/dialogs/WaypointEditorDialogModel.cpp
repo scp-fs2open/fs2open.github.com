@@ -22,17 +22,25 @@ bool WaypointEditorDialogModel::apply()
 	}
 
 	// apply name
-	char old_name[255];
+	char old_name[NAME_LENGTH];
 	strcpy_s(old_name, _editor->cur_waypoint_list->get_name());
-	const char* str = _currentName.c_str();
-	_editor->cur_waypoint_list->set_name(str);
+	_editor->cur_waypoint_list->set_name(_currentName.c_str());
+	auto str = _editor->cur_waypoint_list->get_name();
 	if (strcmp(old_name, str) != 0) {
+		_editor->missionChanged();
 		update_sexp_references(old_name, str);
-		_editor->ai_update_goal_references(sexp_ref_type::WAYPOINT, old_name, str);
-		_editor->update_texture_replacements(old_name, str); // ?? Uh really? Check that FRED does this also
+		_editor->ai_update_goal_references(sexp_ref_type::WAYPOINT_PATH, old_name, str);
+
+		for (auto &wpt : _editor->cur_waypoint_list->get_waypoints()) {
+			char old_buf[NAME_LENGTH + 12];
+			char new_buf[NAME_LENGTH + 12];
+			sprintf(old_buf, "%s:%d", old_name, wpt.get_index() + 1);
+			sprintf(new_buf, "%s:%d", str, wpt.get_index() + 1);
+			update_sexp_references(old_buf, new_buf);
+			_editor->ai_update_goal_references(sexp_ref_type::WAYPOINT, old_buf, new_buf);
+		}
 	}
 
-	_editor->missionChanged();
 	return true;
 }
 
