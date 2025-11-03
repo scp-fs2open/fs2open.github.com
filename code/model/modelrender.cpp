@@ -1121,7 +1121,7 @@ void model_render_buffers(model_draw_list* scene, model_material *rendering_mate
 					texture_maps[TM_BASE_TYPE] = model_interp_get_texture(&tmap->textures[TM_BASE_TYPE], elapsed_time);
 				}
 
-				if ( texture_maps[TM_BASE_TYPE] <= 0 ) {
+				if ( texture_maps[TM_BASE_TYPE] < 0 ) {
 					continue;
 				}
 			}
