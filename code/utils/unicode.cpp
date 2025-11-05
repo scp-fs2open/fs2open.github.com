@@ -51,7 +51,17 @@ text_iterator& text_iterator::operator--() {
 
 	return *this;
 }
-text_iterator::value_type text_iterator::operator*() {
+text_iterator text_iterator::operator++(int) {
+	auto copy{*this};
+	this->operator++();
+	return copy;
+}
+text_iterator text_iterator::operator--(int) {
+	auto copy{*this};
+	this->operator--();
+	return copy;
+}
+text_iterator::value_type text_iterator::operator*() const {
 	if (Unicode_text_mode) {
 		try {
 			return utf8::peek_next(current_byte, range_end_byte);
