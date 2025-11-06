@@ -768,19 +768,19 @@ int model_material::get_shader_runtime_flags() const {
 		flags |= MODEL_SDR_FLAG_DEFERRED;
 	if (is_hdr())
 		flags |= MODEL_SDR_FLAG_HDR;
-	if (get_texture_map(TM_BASE_TYPE) > 0)
+	if (get_texture_map(TM_BASE_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_DIFFUSE;
-	if (get_texture_map(TM_GLOW_TYPE) > 0)
+	if (get_texture_map(TM_GLOW_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_GLOW;
-	if (get_texture_map(TM_SPECULAR_TYPE) > 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) > 0)
+	if (get_texture_map(TM_SPECULAR_TYPE) >= 0 || get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_SPEC;
-	if (get_texture_map(TM_NORMAL_TYPE) > 0)
+	if (get_texture_map(TM_NORMAL_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_NORMAL;
-	if (get_texture_map(TM_AMBIENT_TYPE) > 0)
+	if (get_texture_map(TM_AMBIENT_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_AMBIENT;
-	if (get_texture_map(TM_MISC_TYPE) > 0)
+	if (get_texture_map(TM_MISC_TYPE) >= 0)
 		flags |= MODEL_SDR_FLAG_MISC;
-	if (get_texture_map(TM_MISC_TYPE) > 0 && is_team_color_set())
+	if (get_texture_map(TM_MISC_TYPE) >= 0 && is_team_color_set())
 		flags |= MODEL_SDR_FLAG_TEAMCOLOR;
 	if (is_fogged())
 		flags |= MODEL_SDR_FLAG_FOG;

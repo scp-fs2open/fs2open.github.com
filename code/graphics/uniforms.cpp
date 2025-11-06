@@ -109,7 +109,7 @@ void convert_model_material(model_uniform_data* data_out,
 	}
 	data_out->defaultGloss = 0.6f;
 
-	if (material.get_texture_map(TM_BASE_TYPE) > 0) {
+	if (material.get_texture_map(TM_BASE_TYPE) >= 0) {
 		if (material.is_desaturated()) {
 			data_out->desaturate = 1;
 		} else {
@@ -132,12 +132,12 @@ void convert_model_material(model_uniform_data* data_out,
 		data_out->sBasemapIndex = bm_get_array_index(material.get_texture_map(TM_BASE_TYPE));
 	}
 
-	if (material.get_texture_map(TM_GLOW_TYPE) > 0) {
+	if (material.get_texture_map(TM_GLOW_TYPE) >= 0) {
 		data_out->sGlowmapIndex = bm_get_array_index(material.get_texture_map(TM_GLOW_TYPE));
 	}
 
 
-	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) > 0) {
+	if (material.get_texture_map(TM_SPEC_GLOSS_TYPE) >= 0) {
 		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPEC_GLOSS_TYPE));
 
 		data_out->gammaSpec = 1;
@@ -145,22 +145,22 @@ void convert_model_material(model_uniform_data* data_out,
 
 	} 
 
-	if (material.get_texture_map(TM_SPECULAR_TYPE) > 0) {
+	if (material.get_texture_map(TM_SPECULAR_TYPE) >= 0) {
 		data_out->sSpecmapIndex = bm_get_array_index(material.get_texture_map(TM_SPECULAR_TYPE));
 
 		data_out->gammaSpec = 0;
 		data_out->alphaGloss = 0;
 	}
 	
-	if (material.get_texture_map(TM_NORMAL_TYPE) > 0) {
+	if (material.get_texture_map(TM_NORMAL_TYPE) >= 0) {
 		data_out->sNormalmapIndex = bm_get_array_index(material.get_texture_map(TM_NORMAL_TYPE));
 	}
 
-	if (material.get_texture_map(TM_AMBIENT_TYPE) > 0) {
+	if (material.get_texture_map(TM_AMBIENT_TYPE) >= 0) {
 		data_out->sAmbientmapIndex = bm_get_array_index(material.get_texture_map(TM_AMBIENT_TYPE));
 	}
 
-	if (material.get_texture_map(TM_MISC_TYPE) > 0) {
+	if (material.get_texture_map(TM_MISC_TYPE) >= 0) {
 		data_out->sMiscmapIndex = bm_get_array_index(material.get_texture_map(TM_MISC_TYPE));
 	}
 
