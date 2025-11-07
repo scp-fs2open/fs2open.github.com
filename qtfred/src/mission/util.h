@@ -7,6 +7,10 @@ void stuff_special_arrival_anchor_name(char *buf, int iff_index, int restrict_to
 
 void stuff_special_arrival_anchor_name(char *buf, int anchor_num, int retail_format);
 
+int anchor_to_target(int anchor);
+
+int target_to_anchor(int target);
+
 void generate_weaponry_usage_list_team(int team, int *arr);
 
 void generate_weaponry_usage_list_wing(int wing_num, int *arr);

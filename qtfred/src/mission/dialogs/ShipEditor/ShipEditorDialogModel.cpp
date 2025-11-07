@@ -273,11 +273,11 @@ void ShipEditorDialogModel::initializeData()
 								_m_departure_tree_formula = Ships[i].departure_cue;
 								_m_arrival_location = static_cast<int>(Ships[i].arrival_location);
 								_m_arrival_dist = Ships[i].arrival_distance;
-								_m_arrival_target = Ships[i].arrival_anchor;
+								_m_arrival_target = anchor_to_target(Ships[i].arrival_anchor);
 								_m_arrival_delay = Ships[i].arrival_delay;
 								_m_departure_location = static_cast<int>(Ships[i].departure_location);
 								_m_departure_delay = Ships[i].departure_delay;
-								_m_departure_target = Ships[i].departure_anchor;
+								_m_departure_target = anchor_to_target(Ships[i].departure_anchor);
 
 							} else {
 								cue_init++;
@@ -293,7 +293,7 @@ void ShipEditorDialogModel::initializeData()
 								_m_arrival_delay = Ships[i].arrival_delay;
 								_m_departure_delay = Ships[i].departure_delay;
 
-								if (Ships[i].arrival_anchor != _m_arrival_target) {
+								if (Ships[i].arrival_anchor != target_to_anchor(_m_arrival_target)) {
 									_m_arrival_target = -1;
 								}
 
@@ -307,7 +307,7 @@ void ShipEditorDialogModel::initializeData()
 									_m_update_departure = false;
 								}
 
-								if (Ships[i].departure_anchor != _m_departure_target) {
+								if (Ships[i].departure_anchor != target_to_anchor(_m_departure_target)) {
 									_m_departure_target = -1;
 								}
 							}
@@ -818,7 +818,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		Ships[ship].arrival_delay = _m_arrival_delay;
 		Ships[ship].departure_delay = _m_departure_delay;
 		if (_m_arrival_target >= 0) {
-			Ships[ship].arrival_anchor = _m_arrival_target;
+			Ships[ship].arrival_anchor = target_to_anchor(_m_arrival_target);
 
 			// if the arrival is not hyperspace or docking bay -- force arrival distance to be
 			// greater than 2*radius of target.
@@ -847,7 +847,7 @@ bool ShipEditorDialogModel::update_ship(int ship)
 		}
 		if (_m_departure_target >= 0) {
 
-			Ships[ship].departure_anchor = _m_departure_target;
+			Ships[ship].departure_anchor = target_to_anchor(_m_departure_target);
 		}
 	}
 

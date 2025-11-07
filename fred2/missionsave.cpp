@@ -3736,22 +3736,18 @@ int CFred_mission_save::save_objects()
 				// save it
 				fout(" %s", tmp);
 			} else {
-				fout(" %s", Ships[z].ship_name);
+				fout(" %s", ship_registry_get(z)->name);
 			}
 		}
 
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if ((shipp->arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (shipp->arrival_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel *pm;
-
-				anchor_shipnum = shipp->arrival_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(shipp->arrival_anchor);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (shipp->arrival_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -3789,7 +3785,7 @@ int CFred_mission_save::save_objects()
 			parse_comments();
 
 			if (shipp->departure_anchor >= 0)
-				fout(" %s", Ships[shipp->departure_anchor].ship_name);
+				fout(" %s", ship_registry_get(shipp->departure_anchor)->name);
 			else
 				fout(" <error>");
 		}
@@ -3797,15 +3793,11 @@ int CFred_mission_save::save_objects()
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if ((shipp->departure_location == DepartureLocation::TO_DOCK_BAY) && (shipp->departure_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel *pm;
-
-				anchor_shipnum = shipp->departure_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(shipp->departure_anchor);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (shipp->departure_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -5087,22 +5079,18 @@ int CFred_mission_save::save_wings()
 				// save it
 				fout(" %s", tmp);
 			} else {
-				fout(" %s", Ships[z].ship_name);
+				fout(" %s", ship_registry_get(z)->name);
 			}
 		}
 
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].arrival_location == ArrivalLocation::FROM_DOCK_BAY) && (Wings[i].arrival_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel *pm;
-
-				anchor_shipnum = Wings[i].arrival_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(Wings[i].arrival_anchor);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Arrival Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (Wings[i].arrival_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);
@@ -5136,7 +5124,7 @@ int CFred_mission_save::save_wings()
 			parse_comments();
 
 			if (Wings[i].departure_anchor >= 0)
-				fout(" %s", Ships[Wings[i].departure_anchor].ship_name);
+				fout(" %s", ship_registry_get(Wings[i].departure_anchor)->name);
 			else
 				fout(" <error>");
 		}
@@ -5144,15 +5132,11 @@ int CFred_mission_save::save_wings()
 		// Goober5000
 		if (Mission_save_format != FSO_FORMAT_RETAIL) {
 			if ((Wings[i].departure_location == DepartureLocation::TO_DOCK_BAY) && (Wings[i].departure_path_mask > 0)) {
-				int anchor_shipnum;
-				polymodel *pm;
-
-				anchor_shipnum = Wings[i].departure_anchor;
-				Assert(anchor_shipnum >= 0 && anchor_shipnum < MAX_SHIPS);
+				auto anchor_entry = ship_registry_get(Wings[i].departure_anchor);
+				auto pm = model_get(anchor_entry->sip()->model_num);
 
 				fout("\n+Departure Paths: ( ");
 
-				pm = model_get(Ship_info[Ships[anchor_shipnum].ship_info_index].model_num);
 				for (auto n = 0; n < pm->ship_bay->num_paths; n++) {
 					if (Wings[i].departure_path_mask & (1 << n)) {
 						fout("\"%s\" ", pm->paths[pm->ship_bay->path_indexes[n]].name);

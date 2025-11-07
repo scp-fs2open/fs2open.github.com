@@ -1286,10 +1286,11 @@ static int ship_getset_anchor_helper(lua_State* L, int ship::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+		shipp->*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
 	}
 
-	return ade_set_args(L, "s", (shipp->*field >= 0) ? Parse_names[shipp->*field].c_str() : "<no anchor>");
+	auto anchor_entry = ship_registry_get(shipp->*field);
+	return ade_set_args(L, "s", anchor_entry ? anchor_entry->name : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Ship, "string", "The ship's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")

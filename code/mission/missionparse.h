@@ -49,7 +49,7 @@ enum class DepartureLocation;
 #define MIN_TARGET_ARRIVAL_MULTIPLIER           2.0f // minimum distance is 2 * target radius, but at least 500
 
 int get_special_anchor(const char *name);
-void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchor_shipnums_checked, int anchor_shipnum, const char *other_name, bool other_is_ship, bool is_arrival);
+void check_anchor_for_hangar_bay(SCP_string &message, SCP_set<int> &anchors_checked, int anchor, const char *other_name, bool other_is_ship, bool is_arrival);
 
 // MISSION_VERSION should be the earliest version of FSO that can load the current mission format without
 // requiring version-specific comments.  It should be updated whenever the format changes, but it should
@@ -443,7 +443,7 @@ public:
 
 	ArrivalLocation arrival_location = ArrivalLocation::AT_LOCATION;
 	int	arrival_distance = 0;					// used when arrival location is near or in front of some ship
-	int	arrival_anchor = -1;						// ship used for anchoring an arrival point
+	int	arrival_anchor = -1;						// ship registry entry used for anchoring an arrival point
 	int arrival_path_mask = 0;					// Goober5000
 	int	arrival_cue = -1;				//	Index in Sexp_nodes of this sexp.
 	int	arrival_delay = 0;

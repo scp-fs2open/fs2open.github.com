@@ -322,10 +322,11 @@ static int wing_getset_anchor_helper(lua_State* L, int wing::* field)
 
 	if (ADE_SETTING_VAR && s != nullptr)
 	{
-		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : get_parse_name_index(s);
+		Wings[wingnum].*field = (stricmp(s, "<no anchor>") == 0) ? -1 : ship_registry_get_index(s);
 	}
 
-	return ade_set_args(L, "s", (Wings[wingnum].*field >= 0) ? Parse_names[Wings[wingnum].*field].c_str() : "<no anchor>");
+	auto anchor_entry = ship_registry_get(Wings[wingnum].*field);
+	return ade_set_args(L, "s", anchor_entry ? anchor_entry->name : "<no anchor>");
 }
 
 ADE_VIRTVAR(ArrivalAnchor, l_Wing, "string", "The wing's arrival anchor", "string", "Arrival anchor, or nil if handle is invalid")
